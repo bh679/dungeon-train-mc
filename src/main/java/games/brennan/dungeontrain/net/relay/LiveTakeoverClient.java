@@ -29,11 +29,20 @@ public final class LiveTakeoverClient {
      * {@code tenureMs} (carried across their re-wears), protected until {@code takeoverMinMs}; this is
      * their {@code streamCount}th time streaming. {@code voteNeeded}: still inside the protected minutes.
      * {@code pollEndsMs}: another player's takeover vote closes then (0 when none is running).
+     * {@code holderVoteMs}: past this much tenure the holder can no longer vote on a takeover.
      */
     public record Holder(String holder, long tenureMs, long takeoverMinMs, int streamCount, boolean voteNeeded,
-                         long pollEndsMs) {
+                         long pollEndsMs, long holderVoteMs) {
+        /** What an old relay, which sends no {@code holderVoteMs}, used: the holder always voted. */
+        public static final long DEFAULT_HOLDER_VOTE_MS = 600_000L;
+
         public Holder(String holder, long tenureMs, long takeoverMinMs, int streamCount, boolean voteNeeded) {
-            this(holder, tenureMs, takeoverMinMs, streamCount, voteNeeded, 0L);
+            this(holder, tenureMs, takeoverMinMs, streamCount, voteNeeded, 0L, DEFAULT_HOLDER_VOTE_MS);
+        }
+
+        /** Whether a vote opened {@code elapsedMs} after this was read would leave the holder out of it. */
+        public boolean holderLockedAfter(long elapsedMs) {
+            return tenureMs + elapsedMs >= holderVoteMs;
         }
 
         /** Whether the vote is still needed {@code elapsedMs} after this was read (the prompt's live counter). */
@@ -52,10 +61,10 @@ public final class LiveTakeoverClient {
     /**
      * A takeover vote's opening or result line in the chat room. {@code holder} is the streamer being
      * voted on, {@code holderUuid} theirs (32-hex) so they can be told their vote's weight; {@code yes}/{@code no}
-     * are −1 until the result.
+     * are −1 until the result. {@code holderLocked}: the holder is past their voting minutes and cannot vote.
      */
     public record PollLine(String id, String requester, String holder, @Nullable String holderUuid, long endsTs,
-                           int holderWeight, String state, int yes, int no) {
+                           int holderWeight, String state, int yes, int no, boolean holderLocked) {
         public boolean open() { return "open".equals(state); }
     }
 
@@ -69,7 +78,8 @@ public final class LiveTakeoverClient {
         JsonObject b = r.body();
         String holder = LiveChatRules.clean(r.str("holder"), LiveChatRules.MAX_AUTHOR);
         return new Holder(holder.isBlank() ? "Someone" : holder, num(b, "tenureMs"), num(b, "takeoverMinMs"),
-            (int) Math.max(1, num(b, "streamCount")), tooSoon, num(b, "pollEndsTs"));
+            (int) Math.max(1, num(b, "streamCount")), tooSoon, num(b, "pollEndsTs"),
+            b.has("holderVoteMs") ? num(b, "holderVoteMs") : Holder.DEFAULT_HOLDER_VOTE_MS);
     }
 
     /** Ask the audience to let this player take over. 200 → {@link #parsePoll}; 409 not_needed / busy / too_soon. */
@@ -118,7 +128,7 @@ public final class LiveTakeoverClient {
         String holderUuid = str(p, "holderUuid");
         return new PollLine(id, requester, holder, holderUuid.isEmpty() ? null : holderUuid, num(p, "endsTs"),
             (int) Math.max(1, num(p, "holderWeight")), state,
-            p.has("yes") ? (int) num(p, "yes") : -1, p.has("no") ? (int) num(p, "no") : -1);
+            p.has("yes") ? (int) num(p, "yes") : -1, p.has("no") ? (int) num(p, "no") : -1, bool(p, "holderLocked"));
     }
 
     private static long num(JsonObject o, String key) {
@@ -126,6 +136,14 @@ public final class LiveTakeoverClient {
             return o != null && o.has(key) && o.get(key).isJsonPrimitive() ? o.get(key).getAsLong() : 0L;
         } catch (RuntimeException e) {
             return 0L;
+        }
+    }
+
+    private static boolean bool(JsonObject o, String key) {
+        try {
+            return o.has(key) && o.get(key).isJsonPrimitive() && o.get(key).getAsBoolean();
+        } catch (RuntimeException e) {
+            return false;
         }
     }
 
