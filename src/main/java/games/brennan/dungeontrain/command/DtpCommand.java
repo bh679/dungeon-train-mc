@@ -290,7 +290,7 @@ public final class DtpCommand {
             return 0;
         }
 
-        DtpPlacementService.enqueue(player, trainLevel, x);
+        DtpPlacementService.enqueue(player, trainLevel, x, holdY, holdZ);
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.package.teleporting_x_spawning_train", x, requestedTier), true);
         return 1;
     }

@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.IntPredicate;
 
 /**
  * Teleports joining players to natural ground beside the corridor near
@@ -681,6 +682,50 @@ public final class PlayerJoinEvents {
             }
         }
         if (Double.isNaN(bestPadX)) return null; // no settled group yet
+
+        return new FlatbedTarget(
+            bestPadX,
+            trainY + 1 + FLATBED_FEET_EPSILON,
+            g.trackCenterZ() + 0.5);
+    }
+
+    /**
+     * Like {@link #findNearestFlatbedTarget(ServerLevel, DungeonTrainWorldData, double)}, but for a
+     * player who must stay on the train after landing: only FRONT pads, and none in a group
+     * {@code skipGroup} rejects (by anchor pIdx).
+     *
+     * <p>Front pads only because the train moves +X, so a player standing on a pad drifts backward
+     * relative to it: off a front pad that is onto the group's own carriages, off a back pad it is
+     * into the group behind. {@code /dtp} skips portal groups — on a seed whose first eligible
+     * portal group is group 0, every reseeded train carries a portal at the target X, and landing
+     * beside it swapped the player straight into the portal room (issue #2133).</p>
+     *
+     * <p>Returns {@code null} until a qualifying group has settled — callers retry next tick.</p>
+     */
+    public static FlatbedTarget findNearestFrontPadTarget(
+        ServerLevel trainLevel, DungeonTrainWorldData data, double targetX, IntPredicate skipGroup
+    ) {
+        CarriageDims dims = data.dims();
+        int trainY = data.getTrainY();
+        int halfPad = CarriagePlacer.halfPadLen(dims);
+        TrackGeometry g = TrackGeometry.from(dims, trainY);
+
+        double bestPadX = Double.NaN;
+        double bestDist = Double.POSITIVE_INFINITY;
+        for (Trains.Carriage carriage : Trains.allCarriages(trainLevel)) {
+            if (skipGroup.test(carriage.provider().getPIdx())) continue;
+            Vector3d center = resolveTrainCenter(carriage.provider());
+            if (center == null) continue; // unsettled group — skip, matches findTrain's guard
+
+            int stride = carriage.provider().getGroupSize() * dims.length() + 2 * halfPad;
+            double frontPadX = center.x + stride / 2.0 - halfPad / 2.0;
+            double dist = Math.abs(frontPadX - targetX);
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestPadX = frontPadX;
+            }
+        }
+        if (Double.isNaN(bestPadX)) return null; // no qualifying settled group yet
 
         return new FlatbedTarget(
             bestPadX,

@@ -27989,6 +27989,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dtp-lands-clear-of-portals",
+      "version": "0.1373.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "internal"
+      ],
+      "title": "Dev command improvement",
+      "summary": "Improved a developer command.",
+      "highlights": [],
+      "pr": 2142,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
