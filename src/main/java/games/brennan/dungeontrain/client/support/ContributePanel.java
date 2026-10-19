@@ -325,15 +325,25 @@ public final class ContributePanel {
         Component label;
         if (!open) {
             label = Component.translatable("gui.dungeontrain.rewards.give.soon");
-        } else if (on) {
-            String month = CommunityRewards.nextFreeMonth(state, reward, now, ZoneId.systemDefault())
-                    .getMonth().getDisplayName(shortForm ? TextStyle.SHORT : TextStyle.FULL, javaLocale());
-            label = Component.translatable("gui.dungeontrain.rewards.give.month", month);
         } else if (shortForm) {
-            label = Component.translatable("gui.dungeontrain.rewards.give.amount",
-                    CurrencyFormat.amount(reward.costAud(), reward.amountShortKey()));
+            // The Contribute card: "Give $94", or "Give Nov" when a gift would queue.
+            if (on) {
+                String month = CommunityRewards.nextFreeMonth(state, reward, now, ZoneId.systemDefault())
+                        .getMonth().getDisplayName(TextStyle.SHORT, javaLocale());
+                label = Component.translatable("gui.dungeontrain.rewards.give.month", month);
+            } else {
+                label = Component.translatable("gui.dungeontrain.rewards.give.amount",
+                        CurrencyFormat.amount(reward.costAud(), reward.amountShortKey()));
+            }
         } else {
-            label = Component.translatable("gui.dungeontrain.rewards.give.this_month");
+            // The rewards page carries the amount only here: "Give $94", or "Give $94 · Dec" when it would queue.
+            Component amount = CurrencyFormat.amount(reward.costAud(), reward.amountShortKey());
+            if (on) {
+                String month = CommunityRewards.nextFreeMonth(state, reward, now, ZoneId.systemDefault())
+                        .getMonth().getDisplayName(TextStyle.SHORT, javaLocale());
+                amount = amount.copy().append(" · " + month);
+            }
+            label = Component.translatable("gui.dungeontrain.rewards.give.amount", amount);
         }
         Button b = new ColorTintedButton(x, y, w, h, label, TINT_PURPLE[0], TINT_PURPLE[1], TINT_PURPLE[2],
                 p -> opener.openLink(CommunityRewards.giveUrl(reward), reward.analyticsTarget()));

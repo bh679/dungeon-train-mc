@@ -16988,15 +16988,6 @@
       ]
     }
   },
-  "gui.dungeontrain.rewards.amount_line": {
-    "1": {
-      "label": "the gift amount with its currency",
-      "examples": [
-        "$94 AUD",
-        "$160 AUD"
-      ]
-    }
-  },
   "gui.dungeontrain.rewards.status.on_by": {
     "1": {
       "label": "the day and short month the reward ends",

@@ -263,8 +263,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
      */
     private int personalSection(int y, int perRow, int cardW) {
         int lh = this.font.lineHeight;
-        Component title = Component.literal(Component.translatable("gui.dungeontrain.rewards.personal.title").getString()
-                        .toUpperCase(ContributePanel.javaLocale()))
+        Component title = Component.translatable("gui.dungeontrain.rewards.personal.title")
                 .withStyle(st -> st.withBold(true).withColor(COLOUR_PERSONAL_TITLE));
         Component heading = Component.empty().append(title).append(" · ")
                 .append(Component.translatable("gui.dungeontrain.rewards.personal.label"));
@@ -311,7 +310,9 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         personalIcons.add(new PersonalIcon(tier, tx, iconTop));
         ty = wrap(Component.translatable(tier.nameKey()), tx + ICON + ICON_GAP, ty, tw - ICON - ICON_GAP, COLOUR_NAME);
         ty = Math.max(ty, iconTop + ICON + 1);
-        ty = wrap(CurrencyFormat.amount(tier.audAmount(), tier.amountKey()), tx, ty, tw, COLOUR_AMOUNT);
+        // The amount is on the Give button; the yellow line sums up what the gift brings.
+        ty = wrap(Component.translatable("gui.dungeontrain.rewards.personal.summary." + tier.name().toLowerCase(java.util.Locale.ROOT)),
+                tx, ty, tw, COLOUR_AMOUNT);
         ty += 2;
         // The tier's thank-yous as inventory slots: name tag, Priority Books (stack = how many), copy.
         // Clicking one shows its explanation under the tiers.
@@ -337,9 +338,8 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         icons.add(new Icon(r, tx, iconTop));
         ty = wrap(Component.translatable(r.nameKey()), tx + ICON + ICON_GAP, ty, tw - ICON - ICON_GAP, COLOUR_NAME);
         ty = Math.max(ty, iconTop + ICON + 1);
-        ty = wrap(Component.translatable("gui.dungeontrain.rewards.amount_line",
-                        CurrencyFormat.amount(r.costAud(), r.amountKey())),
-                tx, ty, tw, COLOUR_AMOUNT);
+        // The amount is on the Give button; the yellow line only says who it is for.
+        ty = wrap(Component.translatable("gui.dungeontrain.contribute.keeps_on"), tx, ty, tw, COLOUR_AMOUNT);
         ty += 2;
         ty += 2;
         ty = wrap(Component.translatable(r.lineKey()), tx, ty, tw, COLOUR_LINE);
