@@ -55,7 +55,7 @@ public final class CommunityRewards {
 
         public String id() { return id; }
         public Group group() { return group; }
-        /** Whole AUD, for reference only (the shown figure is {@link #amountKey()}); must match the lang keys. */
+        /** Whole AUD: the figure converted into the player's chosen currency. Must match {@link #amountKey()}. */
         public int costAud() { return costAud; }
 
         public String nameKey() { return KEY + id + ".name"; }

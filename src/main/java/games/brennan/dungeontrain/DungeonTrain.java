@@ -384,6 +384,11 @@ public class DungeonTrain {
                 ModConfig.Type.CLIENT,
                 games.brennan.dungeontrain.config.LiveFeedClientConfig.SPEC,
                 "dungeontrain-live-client.toml");
+        // The Contribute screens' currency choice — its own small file for the same reason.
+        modContainer.registerConfig(
+                ModConfig.Type.CLIENT,
+                games.brennan.dungeontrain.config.SupportClientConfig.SPEC,
+                "dungeontrain-support-client.toml");
 
         // Common gameplay defaults readable on the title screen (no world) and
         // on a dedicated server. Holds the global DEFAULT PlayerMob spawn rate;
