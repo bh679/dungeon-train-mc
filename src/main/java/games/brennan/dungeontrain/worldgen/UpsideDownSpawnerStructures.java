@@ -7,10 +7,11 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
 
 import java.util.Set;
+import java.util.function.IntPredicate;
 
 /**
  * The spawner structures that never generate in the {@link UpsideDownBand} (its entry lead-in and exit
- * fade included): dungeons, trial chambers and mineshafts.
+ * fade included, plus a short margin around them): dungeons, trial chambers and mineshafts.
  *
  * <p>The band is a vertical mirror, so these end up hanging in the ceiling, and while
  * {@code BandMobSpawnEvents} cancels every natural spawn there, a spawner's mobs are not natural — they
@@ -40,13 +41,33 @@ public final class UpsideDownSpawnerStructures {
         "minecraft:monster_room",
         "minecraft:monster_room_deep");
 
-    /** Whether any column of overworld chunk {@code (chunkX, chunkZ)} is in the band, its entry lead-in or exit fade. */
+    /**
+     * How far beyond the stretch's edges the veto still holds. A mineshaft starting right past the
+     * Reassembly would otherwise run its rails and chest minecarts up to where the band stops flipping.
+     * Applied on both sides: the reversed run (walking −X) meets the Reassembly from the other side, and
+     * ahead of the entry lead-in is the End's void, where it costs nothing.
+     */
+    static final int MARGIN_BLOCKS = 128;
+
+    /**
+     * Whether overworld chunk {@code (chunkX, chunkZ)} is vetoed: any column in the band, its entry lead-in
+     * or exit fade, or within {@link #MARGIN_BLOCKS} of them.
+     */
     public static boolean appliesTo(ServerLevel level, int chunkX, int chunkZ) {
         if (!level.dimension().equals(Level.OVERWORLD)) return false;
-        int minX = chunkX << 4;
         int minZ = chunkZ << 4;
-        return UpsideDownBand.isInBandEntryLeadOrExit(level, minX, minZ)
-            || UpsideDownBand.isInBandEntryLeadOrExit(level, minX + 15, minZ);
+        return coversChunk(x -> UpsideDownBand.isInBandEntryLeadOrExit(level, x, minZ), chunkX << 4);
+    }
+
+    /**
+     * Whether the chunk starting at {@code minX} is covered, given {@code inStretch} — the upside-down
+     * stretch (band, lead-in, exit fade) at a world-X: its own two edges, or {@link #MARGIN_BLOCKS} out
+     * from either. The stretch is thousands of blocks long, so sampling those four points cannot miss it.
+     */
+    static boolean coversChunk(IntPredicate inStretch, int minX) {
+        int maxX = minX + 15;
+        return inStretch.test(minX) || inStretch.test(maxX)
+            || inStretch.test(minX - MARGIN_BLOCKS) || inStretch.test(maxX + MARGIN_BLOCKS);
     }
 
     public static boolean excludesStructure(ResourceLocation id) {
