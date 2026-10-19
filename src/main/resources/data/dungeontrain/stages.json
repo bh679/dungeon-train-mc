@@ -1,6 +1,7 @@
 {
   "acacia": {
     "name": "acacia",
+    "group": "wood",
     "minLevel": 176,
     "maxLevel": 205,
     "phases": [
@@ -57,6 +58,7 @@
   },
   "anchor_tree": {
     "name": "anchor_tree",
+    "group": "wood",
     "minLevel": 660,
     "maxLevel": 675,
     "phases": [
@@ -113,6 +115,7 @@
   },
   "bamboo": {
     "name": "bamboo",
+    "group": "wood",
     "minLevel": 356,
     "maxLevel": 375,
     "phases": [
@@ -167,6 +170,7 @@
   },
   "bamboo_mosaic": {
     "name": "bamboo_mosaic",
+    "group": "wood",
     "minLevel": 416,
     "maxLevel": 435,
     "phases": [
@@ -221,6 +225,7 @@
   },
   "birch": {
     "name": "birch",
+    "group": "wood",
     "minLevel": 161,
     "maxLevel": 175,
     "phases": [
@@ -280,6 +285,7 @@
   },
   "cherry": {
     "name": "cherry",
+    "group": "wood",
     "minLevel": 266,
     "maxLevel": 285,
     "phases": [
@@ -397,6 +403,7 @@
   },
   "crimson": {
     "name": "crimson",
+    "group": "wood",
     "minLevel": 286,
     "maxLevel": 320,
     "phases": [
@@ -453,6 +460,7 @@
   },
   "darkwood": {
     "name": "darkwood",
+    "group": "wood",
     "minLevel": 376,
     "maxLevel": 415,
     "phases": [
@@ -509,6 +517,7 @@
   },
   "dead": {
     "name": "dead",
+    "group": "wood",
     "minLevel": 564,
     "maxLevel": 579,
     "phases": [
@@ -685,6 +694,7 @@
   },
   "dragon_tree": {
     "name": "dragon_tree",
+    "group": "wood",
     "minLevel": 836,
     "maxLevel": 851,
     "phases": [
@@ -741,6 +751,7 @@
   },
   "empyreal": {
     "name": "empyreal",
+    "group": "wood",
     "minLevel": 644,
     "maxLevel": 659,
     "phases": [
@@ -797,6 +808,7 @@
   },
   "end_lotus": {
     "name": "end_lotus",
+    "group": "wood",
     "minLevel": 932,
     "maxLevel": 947,
     "phases": [
@@ -853,6 +865,7 @@
   },
   "fir": {
     "name": "fir",
+    "group": "wood",
     "minLevel": 452,
     "maxLevel": 467,
     "phases": [
@@ -909,6 +922,7 @@
   },
   "gloomwood": {
     "name": "gloomwood",
+    "group": "wood",
     "minLevel": 676,
     "maxLevel": 691,
     "phases": [
@@ -965,6 +979,7 @@
   },
   "gloomwood_dark": {
     "name": "gloomwood_dark",
+    "group": "wood",
     "minLevel": 692,
     "maxLevel": 707,
     "phases": [
@@ -1021,6 +1036,7 @@
   },
   "helix_tree": {
     "name": "helix_tree",
+    "group": "wood",
     "minLevel": 852,
     "maxLevel": 867,
     "phases": [
@@ -1077,6 +1093,7 @@
   },
   "hellbark": {
     "name": "hellbark",
+    "group": "wood",
     "minLevel": 628,
     "maxLevel": 643,
     "phases": [
@@ -1133,6 +1150,7 @@
   },
   "jacaranda": {
     "name": "jacaranda",
+    "group": "wood",
     "minLevel": 516,
     "maxLevel": 531,
     "phases": [
@@ -1189,6 +1207,7 @@
   },
   "jellyshroom": {
     "name": "jellyshroom",
+    "group": "wood",
     "minLevel": 948,
     "maxLevel": 963,
     "phases": [
@@ -1245,6 +1264,7 @@
   },
   "jungle": {
     "name": "jungle",
+    "group": "wood",
     "minLevel": 206,
     "maxLevel": 225,
     "phases": [
@@ -1301,6 +1321,7 @@
   },
   "lacugrove": {
     "name": "lacugrove",
+    "group": "wood",
     "minLevel": 868,
     "maxLevel": 883,
     "phases": [
@@ -1357,6 +1378,7 @@
   },
   "lucernia": {
     "name": "lucernia",
+    "group": "wood",
     "minLevel": 884,
     "maxLevel": 899,
     "phases": [
@@ -1413,6 +1435,7 @@
   },
   "magic": {
     "name": "magic",
+    "group": "wood",
     "minLevel": 580,
     "maxLevel": 595,
     "phases": [
@@ -1469,6 +1492,7 @@
   },
   "mahogany": {
     "name": "mahogany",
+    "group": "wood",
     "minLevel": 500,
     "maxLevel": 515,
     "phases": [
@@ -1525,6 +1549,7 @@
   },
   "mangrove": {
     "name": "mangrove",
+    "group": "wood",
     "minLevel": 226,
     "maxLevel": 265,
     "phases": [
@@ -1581,6 +1606,7 @@
   },
   "maple": {
     "name": "maple",
+    "group": "wood",
     "minLevel": 596,
     "maxLevel": 611,
     "phases": [
@@ -1637,6 +1663,7 @@
   },
   "mossy_glowshroom": {
     "name": "mossy_glowshroom",
+    "group": "wood",
     "minLevel": 964,
     "maxLevel": 979,
     "phases": [
@@ -1746,6 +1773,7 @@
   },
   "mushroom_fir": {
     "name": "mushroom_fir",
+    "group": "wood",
     "minLevel": 708,
     "maxLevel": 723,
     "phases": [
@@ -1845,6 +1873,7 @@
   },
   "nether_mushroom": {
     "name": "nether_mushroom",
+    "group": "wood",
     "minLevel": 724,
     "maxLevel": 739,
     "phases": [
@@ -1901,6 +1930,7 @@
   },
   "nether_reed": {
     "name": "nether_reed",
+    "group": "wood",
     "minLevel": 740,
     "maxLevel": 755,
     "phases": [
@@ -1957,6 +1987,7 @@
   },
   "nether_sakura": {
     "name": "nether_sakura",
+    "group": "wood",
     "minLevel": 756,
     "maxLevel": 771,
     "phases": [
@@ -2013,6 +2044,7 @@
   },
   "nether_willow": {
     "name": "nether_willow",
+    "group": "wood",
     "minLevel": 820,
     "maxLevel": 835,
     "phases": [
@@ -2137,6 +2169,7 @@
   },
   "pale_oak": {
     "name": "pale_oak",
+    "group": "wood",
     "minLevel": 436,
     "maxLevel": 451,
     "phases": [
@@ -2193,6 +2226,7 @@
   },
   "palm": {
     "name": "palm",
+    "group": "wood",
     "minLevel": 532,
     "maxLevel": 547,
     "phases": [
@@ -2249,6 +2283,7 @@
   },
   "pine": {
     "name": "pine",
+    "group": "wood",
     "minLevel": 468,
     "maxLevel": 483,
     "phases": [
@@ -2305,6 +2340,7 @@
   },
   "pythadendron": {
     "name": "pythadendron",
+    "group": "wood",
     "minLevel": 900,
     "maxLevel": 915,
     "phases": [
@@ -2428,6 +2464,7 @@
   },
   "redwood": {
     "name": "redwood",
+    "group": "wood",
     "minLevel": 484,
     "maxLevel": 499,
     "phases": [
@@ -2484,6 +2521,7 @@
   },
   "rubeus": {
     "name": "rubeus",
+    "group": "wood",
     "minLevel": 772,
     "maxLevel": 787,
     "phases": [
@@ -2540,6 +2578,7 @@
   },
   "spruce": {
     "name": "spruce",
+    "group": "wood",
     "minLevel": 996,
     "phases": [
       "OVERWORLD",
@@ -2595,6 +2634,7 @@
   },
   "stalagnate": {
     "name": "stalagnate",
+    "group": "wood",
     "minLevel": 788,
     "maxLevel": 803,
     "phases": [
@@ -2709,6 +2749,7 @@
   },
   "tenanea": {
     "name": "tenanea",
+    "group": "wood",
     "minLevel": 916,
     "maxLevel": 931,
     "phases": [
@@ -2765,6 +2806,7 @@
   },
   "umbran": {
     "name": "umbran",
+    "group": "wood",
     "minLevel": 612,
     "maxLevel": 627,
     "phases": [
@@ -2821,6 +2863,7 @@
   },
   "umbrella_tree": {
     "name": "umbrella_tree",
+    "group": "wood",
     "minLevel": 980,
     "maxLevel": 995,
     "phases": [
@@ -2877,6 +2920,7 @@
   },
   "warped": {
     "name": "warped",
+    "group": "wood",
     "minLevel": 321,
     "maxLevel": 355,
     "phases": [
@@ -2933,6 +2977,7 @@
   },
   "wart": {
     "name": "wart",
+    "group": "wood",
     "minLevel": 804,
     "maxLevel": 819,
     "phases": [
@@ -2989,6 +3034,7 @@
   },
   "willow": {
     "name": "willow",
+    "group": "wood",
     "minLevel": 548,
     "maxLevel": 563,
     "phases": [
@@ -3045,6 +3091,7 @@
   },
   "wood_oak": {
     "name": "wood_oak",
+    "group": "wood",
     "minLevel": 131,
     "maxLevel": 160,
     "phases": [

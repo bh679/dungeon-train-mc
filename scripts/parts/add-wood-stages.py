@@ -7,6 +7,8 @@ family (`block/stage/StageWoodFamily.java`), so a new wood is just:
      phases as every wood stage, a palette naming the wood's blocks and its designed colours;
   2. a copy of `spruce`'s entries in every `templates/*.parts.json` manifest with `stage` swapped.
 
+Every wood stage carries `"group": "wood"`, which folds them into one entry in the editor's Stages tab.
+
 `spruce` stays the open-ended top band and moves to start after the last new wood.
 
 WOODS mirrors the modded constants in StageWoodFamily (family id, naming style, leaves fill); keep the two
@@ -29,6 +31,7 @@ STAGES = DATA / "stages.json"
 TEMPLATES = DATA / "templates"
 
 TEMPLATE_STAGE = "spruce"
+GROUP = "wood"
 TOP_STAGE = "spruce"
 FIRST_LEVEL = 436
 BAND = 16
@@ -117,6 +120,17 @@ def palette(ns: str, w: str, style: str, terra, concrete) -> dict:
     }
 
 
+def with_group(stage: dict) -> dict:
+    """A copy of the stage in the wood group, `group` placed right after `name` as Stage.toJson writes it."""
+    out = {}
+    for key, value in stage.items():
+        if key != "group":
+            out[key] = value
+        if key == "name":
+            out["group"] = GROUP
+    return out
+
+
 def update_stages(stages: dict) -> list[str]:
     """Adds missing wood stages and moves the top band; returns what changed."""
     changes = []
@@ -125,9 +139,13 @@ def update_stages(stages: dict) -> list[str]:
         if sid in stages:
             continue
         lo = FIRST_LEVEL + i * BAND
-        stages[sid] = {"name": sid, "minLevel": lo, "maxLevel": lo + BAND - 1, "phases": list(phases),
-                       "palette": palette(ns, w, style, terra, conc)}
+        stages[sid] = {"name": sid, "group": GROUP, "minLevel": lo, "maxLevel": lo + BAND - 1,
+                       "phases": list(phases), "palette": palette(ns, w, style, terra, conc)}
         changes.append(f"stage {sid} {lo}-{lo + BAND - 1}")
+    for sid in [TEMPLATE_STAGE] + [w[0] for w in WOODS]:
+        if stages[sid].get("group") != GROUP:
+            stages[sid] = with_group(stages[sid])
+            changes.append(f"stage {sid} group -> {GROUP}")
     top = FIRST_LEVEL + len(WOODS) * BAND
     if stages[TOP_STAGE].get("minLevel") != top:
         stages[TOP_STAGE]["minLevel"] = top
