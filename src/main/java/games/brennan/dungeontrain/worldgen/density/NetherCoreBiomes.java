@@ -75,7 +75,7 @@ public final class NetherCoreBiomes {
     private final BetterNetherCoreBiomes<Holder<Biome>> betterNether; // nullable — no BetterNether biomes
     private final BetterNetherCoreBiomes<BiomeSource> bopRegions;     // nullable — no BoP Nether regions
     private final long seed;                     // world seed — the split-seam dither (WorldGenCycle#netherLookAt)
-    private final BiomeSource othersideSource;   // nullable — no Otherside (Deeper Darker) dimension
+    private final BiomeSource othersideSource;   // nullable — no Otherside (Deeper Darker) rules
     private final Climate.Sampler othersideSampler;
 
     private NetherCoreBiomes(BiomeSource netherBiomeSource, Climate.Sampler netherSampler, Holder<Biome> fallback,
@@ -100,8 +100,8 @@ public final class NetherCoreBiomes {
      *   <li>{@code BOP} — Biomes O' Plenty's Nether: each {@link BetterNetherCoreBiomes#CELL_BLOCKS}
      *       cell takes one of BoP's TerraBlender Nether regions, and that region's
      *       climate table is sampled like the vanilla Nether — the way a BoP world blends its Nether;</li>
-     *   <li>{@code OTHERSIDE} — Deeper Darker's Otherside, sampled from the live Otherside's own source and
-     *       climate at the same block X/Z the core's terrain is copied from ({@code OthersideCore});</li>
+     *   <li>{@code OTHERSIDE} — Deeper Darker's Otherside, sampled from its own biome source and climate
+     *       ({@code OthersideSettings}) at the same block X/Z the core's terrain is generated at;</li>
      *   <li>anything else — vanilla.</li>
      * </ul>
      * A look whose biomes are not registered falls back to vanilla.
@@ -128,12 +128,12 @@ public final class NetherCoreBiomes {
         return sample(netherBiomeSource, worldX, worldZ, memo);
     }
 
-    /** True when the Otherside was found at server start (the Deeper Dark passes will use it). */
+    /** True when the Otherside's rules were found at server start (the Deeper Dark passes will use them). */
     public boolean hasOtherside() {
         return othersideSource != null;
     }
 
-    /** True if {@code style} resolves to the Otherside on this server — a Deeper Dark pass with the level present. */
+    /** True if {@code style} resolves to the Otherside on this server — a Deeper Dark pass with Deeper Darker present. */
     public boolean isOtherside(CycleLayout.Style style) {
         return style == CycleLayout.Style.OTHERSIDE && othersideSource != null;
     }
@@ -192,13 +192,16 @@ public final class NetherCoreBiomes {
     /**
      * Capture the real Nether's biome source + climate sampler at server start. Returns a fallback-only
      * instance (every {@link #biomeAt} yields {@code nether_wastes}) if the world has no Nether dimension.
+     * {@code otherside} (nullable) is Deeper Darker's Otherside read from the registries
+     * ({@link games.brennan.dungeontrain.worldgen.OthersideSettings}): its biome source and climate sampler
+     * label the Deeper Dark passes, exactly as the Otherside dimension would label the same block X/Z.
      */
-    public static NetherCoreBiomes resolve(MinecraftServer server, Holder<Biome> fallback) {
+    public static NetherCoreBiomes resolve(MinecraftServer server, Holder<Biome> fallback,
+                                           games.brennan.dungeontrain.worldgen.OthersideSettings otherside) {
         BetterNetherCoreBiomes<Holder<Biome>> betterNether = resolveBetterNether(server);
         long seed = server.getWorldData().worldGenOptions().seed();
-        ServerLevel otherside = games.brennan.dungeontrain.worldgen.OthersideCore.level(server);
-        BiomeSource othersideSource = otherside == null ? null : otherside.getChunkSource().getGenerator().getBiomeSource();
-        Climate.Sampler othersideSampler = otherside == null ? null : otherside.getChunkSource().randomState().sampler();
+        BiomeSource othersideSource = otherside == null ? null : otherside.biomes();
+        Climate.Sampler othersideSampler = otherside == null ? null : otherside.sampler();
         try {
             ServerLevel nether = server.getLevel(Level.NETHER);
             if (nether == null) {
