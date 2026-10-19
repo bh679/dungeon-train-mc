@@ -16982,5 +16982,20 @@
         "11"
       ]
     }
+  },
+  "chat.dungeontrain.advancement_tab_unlocked": {
+    "1": {
+      "label": "the name of the advancement tab that just opened",
+      "examples": [
+        "Secrete Menu",
+        "Train Explorer"
+      ]
+    },
+    "2": {
+      "label": "the advancements key, as this player has it bound",
+      "examples": [
+        "L"
+      ]
+    }
   }
 }

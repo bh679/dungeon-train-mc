@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.mixin;
 
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.advancement.AdvancementReveal;
 import games.brennan.dungeontrain.advancement.BandAdvancements;
 import games.brennan.dungeontrain.advancement.HiddenGap;
 import games.brennan.dungeontrain.net.AdvancementGapsPacket;
@@ -11,8 +10,6 @@ import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.advancements.AdvancementTree;
-import net.minecraft.advancements.DisplayInfo;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundUpdateAdvancementsPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.PlayerAdvancements;
@@ -26,7 +23,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -73,10 +69,6 @@ import java.util.Set;
  * sent with is remembered per player. When a later flush reveals a skipped parent, the advancements now
  * hanging from the wrong ancestor are listed as re-links in that same {@link AdvancementGapsPacket}, and the
  * client moves them in place instead of leaving the revealed parent as a side branch.</p>
- *
- * <p>The same "added" list is what an earn just revealed: after a flush that follows an earn, the
- * player gets a chat line naming the newly visible advancements they haven't earned yet — see
- * {@link AdvancementReveal}.</p>
  */
 @Mixin(PlayerAdvancements.class)
 public abstract class PlayerAdvancementsRehomeMixin {
@@ -87,25 +79,6 @@ public abstract class PlayerAdvancementsRehomeMixin {
     @Shadow
     @Final
     private Set<AdvancementHolder> visible;
-
-    @Shadow
-    public abstract AdvancementProgress getOrStartProgress(AdvancementHolder holder);
-
-    /** An advancement was completed since the last flush, so this flush's reveals are announced. */
-    @Unique
-    private boolean dungeontrain$earnedSinceFlush;
-
-    /** The reveal line built in {@link #dungeontrain$rehomeChainNodes}; sent after the packet goes out. */
-    @Unique
-    private Component dungeontrain$pendingReveal;
-
-    @Inject(method = "award", at = @At("RETURN"))
-    private void dungeontrain$noteEarn(AdvancementHolder holder, String criterion,
-                                       CallbackInfoReturnable<Boolean> cir) {
-        if (cir.getReturnValueZ() && getOrStartProgress(holder).isDone()) {
-            dungeontrain$earnedSinceFlush = true;
-        }
-    }
 
     @Redirect(
         method = "flushDirty",
@@ -119,8 +92,6 @@ public abstract class PlayerAdvancementsRehomeMixin {
         Map<ResourceLocation, AdvancementProgress> progress
     ) {
         if (reset) dungeontrain$sentParent.clear();
-        dungeontrain$pendingReveal = (!reset && dungeontrain$earnedSinceFlush) ? dungeontrain$revealLine(added) : null;
-        dungeontrain$earnedSinceFlush = false;
         removed.forEach(dungeontrain$sentParent::remove);
         List<AdvancementHolder> rehomed = new ArrayList<>(added.size());
         Map<ResourceLocation, Integer> gaps = new HashMap<>();
@@ -179,28 +150,6 @@ public abstract class PlayerAdvancementsRehomeMixin {
         AdvancementGapsPacket pending = dungeontrain$pendingGaps;
         dungeontrain$pendingGaps = null;
         if (pending != null) DungeonTrainNet.sendTo(player, pending);
-    }
-
-    /** Sends the reveal line once the packet it describes is on its way, so the names are already in L. */
-    @Inject(method = "flushDirty",
-            at = @At(value = "INVOKE",
-                     target = "Lnet/minecraft/server/network/ServerGamePacketListenerImpl;send(Lnet/minecraft/network/protocol/Packet;)V",
-                     shift = At.Shift.AFTER))
-    private void dungeontrain$sendReveal(ServerPlayer player, CallbackInfo ci) {
-        Component reveal = dungeontrain$pendingReveal;
-        dungeontrain$pendingReveal = null;
-        if (reveal != null) player.sendSystemMessage(reveal);
-    }
-
-    /** The chat line naming {@code added}'s unearned advancements, or null when there are none. */
-    @Unique
-    private Component dungeontrain$revealLine(Collection<AdvancementHolder> added) {
-        List<AdvancementHolder> revealed = AdvancementReveal.select(added,
-            holder -> getOrStartProgress(holder).isDone(),
-            holder -> holder.value().display().map(DisplayInfo::getTitle).map(Component::getString));
-        List<Component> names = new ArrayList<>(revealed.size());
-        for (AdvancementHolder holder : revealed) holder.value().name().ifPresent(names::add);
-        return AdvancementReveal.message(names).orElse(null);
     }
 
     /**

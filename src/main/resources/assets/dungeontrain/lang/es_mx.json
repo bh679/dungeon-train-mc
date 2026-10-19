@@ -618,6 +618,8 @@
   "chat.dungeontrain.advancements_hint.12": "Cuidado con el hueco… y presiona %s para ver todos tus progresos del Dungeon Train.",
   "chat.dungeontrain.advancement_revealed": "Revelado: %s",
   "chat.dungeontrain.advancement_revealed_more": "+%s más",
+  "chat.dungeontrain.advancement_tab_unlocked": "★ ¡Nueva pestaña de progresos desbloqueada: %1$s! Presiona %2$s para explorarla ★",
+  "gui.dungeontrain.advancement_tab_unlocked.title": "¡Nueva pestaña!",
   "chat.dungeontrain.familiar_book.1": "Un libro familiar. Parece que %1$s lo sostuvieron, y %2$s lo leyeron hasta el final.",
   "chat.dungeontrain.familiar_book.2": "Este libro reconoce tu mano: unas %1$s lo sostuvieron; %2$s lo llevaron hasta la última página.",
   "chat.dungeontrain.familiar_book.3": "Un peso familiar. Cerca de %1$s lo sostuvieron, y un lector se quedó con él %2$s seguidas.",

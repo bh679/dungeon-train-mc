@@ -618,6 +618,8 @@
   "chat.dungeontrain.advancements_hint.12": "Vorsicht an der Bahnsteigkante – und drücke %s, um all deine Dungeon-Train-Fortschritte zu sehen.",
   "chat.dungeontrain.advancement_revealed": "Enthüllt: %s",
   "chat.dungeontrain.advancement_revealed_more": "+%s weitere",
+  "chat.dungeontrain.advancement_tab_unlocked": "★ Neuer Fortschritts-Tab freigeschaltet: %1$s! Drücke %2$s, um ihn zu erkunden ★",
+  "gui.dungeontrain.advancement_tab_unlocked.title": "Neuer Tab!",
   "chat.dungeontrain.familiar_book.1": "Ein vertrautes Buch. %1$s es gehalten, und %2$s es bis zum Ende gelesen.",
   "chat.dungeontrain.familiar_book.2": "Dieses Buch kennt deine Hand — %1$s es gehalten; %2$s es bis zur letzten Seite gelesen.",
   "chat.dungeontrain.familiar_book.3": "Ein vertrautes Gewicht. Etwa %1$s es gehalten, und ein Leser blieb %2$s am Stück dabei.",

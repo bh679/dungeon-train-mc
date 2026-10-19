@@ -261,6 +261,8 @@
       "chat.dungeontrain.first_ever",
       "chat.dungeontrain.advancement_revealed",
       "chat.dungeontrain.advancement_revealed_more",
+      "chat.dungeontrain.advancement_tab_unlocked",
+      "gui.dungeontrain.advancement_tab_unlocked.title",
       "chat.dungeontrain.deathnote.already",
       "chat.dungeontrain.lovenote.already",
       "chat.dungeontrain.shared_photo.1",

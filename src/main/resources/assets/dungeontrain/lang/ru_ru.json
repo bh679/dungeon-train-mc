@@ -646,6 +646,8 @@
   "chat.dungeontrain.advancements_hint.12": "Осторожно, не провались, а ещё нажми %s, чтобы увидеть все свои достижения в Dungeon Train.",
   "chat.dungeontrain.advancement_revealed": "Открыто: %s",
   "chat.dungeontrain.advancement_revealed_more": "ещё +%s",
+  "chat.dungeontrain.advancement_tab_unlocked": "★ Открыта новая вкладка достижений: %1$s! Нажмите %2$s, чтобы изучить её ★",
+  "gui.dungeontrain.advancement_tab_unlocked.title": "Новая вкладка!",
   "chat.dungeontrain.familiar_book.1": "Знакомая книга. Кажется, её держали %1$s, а %2$s дочитали до конца.",
   "chat.dungeontrain.familiar_book.2": "Эта книга запомнит вашу руку: до этого её держали %1$s, %2$s дочитали её до последней страницы.",
   "chat.dungeontrain.familiar_book.3": "Знакомый вес. Её держали около %1$s, а один из них провёл с ней %2$s подряд.",

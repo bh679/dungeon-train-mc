@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.advancement;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 
@@ -16,8 +17,10 @@ import java.util.function.Predicate;
  * revealed: those their advancement screen shows for the first time and that they haven't earned yet.
  *
  * <p>Which advancements became visible is decided by the server's own visibility pass (vanilla plus
- * {@code AdvancementVisibilityEvaluatorMixin}); {@code PlayerAdvancementsRehomeMixin} hands the newly
- * visible set to {@link #select} and sends {@link #message} to that player only.</p>
+ * {@code AdvancementVisibilityEvaluatorMixin}); the client reads the newly visible set off the update
+ * packet and, for the tabs the player has switched on, shows these lines — see
+ * {@code games.brennan.dungeontrain.client.AdvancementRevealClient}. A whole tab appearing gets the
+ * louder {@link #tabUnlocked} line instead of a mention in the reveal list.</p>
  */
 public final class AdvancementReveal {
 
@@ -28,6 +31,8 @@ public final class AdvancementReveal {
     // trip PluralRules' per-locale key validation.
     static final String KEY_LINE = "chat.dungeontrain.advancement_revealed";
     static final String KEY_MORE = "chat.dungeontrain.advancement_revealed_more";
+    static final String KEY_TAB = "chat.dungeontrain.advancement_tab_unlocked";
+    public static final String KEY_TAB_TITLE = "gui.dungeontrain.advancement_tab_unlocked.title";
 
     private AdvancementReveal() {}
 
@@ -62,5 +67,10 @@ public final class AdvancementReveal {
             list.append(" ").append(Component.translatable(KEY_MORE, names.size() - shown));
         }
         return list;
+    }
+
+    /** "★ New advancement tab unlocked: [Tab]! Press L to explore it ★", in bold gold. */
+    public static Component tabUnlocked(Component tabName, Component key) {
+        return Component.translatable(KEY_TAB, tabName, key).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
     }
 }

@@ -595,6 +595,8 @@
   "chat.dungeontrain.advancements_hint.12": "ระวังช่องว่าง - แล้วกด %s เพื่อดูความสำเร็จ Dungeon Train ทั้งหมดของคุณ",
   "chat.dungeontrain.advancement_revealed": "เปิดเผยแล้ว: %s",
   "chat.dungeontrain.advancement_revealed_more": "+อีก %s",
+  "chat.dungeontrain.advancement_tab_unlocked": "★ ปลดล็อกแท็บความก้าวหน้าใหม่: %1$s! กด %2$s เพื่อสำรวจ ★",
+  "gui.dungeontrain.advancement_tab_unlocked.title": "แท็บใหม่!",
   "chat.dungeontrain.familiar_book.1": "หนังสือที่คุ้นเคย รู้สึกเหมือนมี %1$s เคยถือมันไว้ และถูกอ่านจนจบเล่ม %2$s",
   "chat.dungeontrain.familiar_book.2": "หนังสือเล่มนี้รู้จักมือคุณ — ราว %1$s เคยถือมัน %2$s อ่านมันจนถึงหน้าสุดท้าย",
   "chat.dungeontrain.familiar_book.3": "น้ำหนักที่คุ้นเคย ราว %1$s เคยถือมัน และมีผู้อ่านคนหนึ่งอยู่กับมันนานถึง %2$s ติดต่อกัน",

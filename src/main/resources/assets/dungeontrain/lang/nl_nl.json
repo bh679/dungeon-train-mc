@@ -618,6 +618,8 @@
   "chat.dungeontrain.advancements_hint.12": "Let op de opening — en druk op %s om al je Dungeon Train-prestaties te zien.",
   "chat.dungeontrain.advancement_revealed": "Onthuld: %s",
   "chat.dungeontrain.advancement_revealed_more": "+%s meer",
+  "chat.dungeontrain.advancement_tab_unlocked": "★ Nieuw vooruitgangstabblad ontgrendeld: %1$s! Druk op %2$s om het te verkennen ★",
+  "gui.dungeontrain.advancement_tab_unlocked.title": "Nieuw tabblad!",
   "chat.dungeontrain.familiar_book.1": "Een vertrouwd boek. Het voelt alsof %1$s het vastgehouden, en %2$s het helemaal uitgelezen.",
   "chat.dungeontrain.familiar_book.2": "Dit boek kent je hand — zo'n %1$s het vastgehouden; %2$s het tot de laatste pagina uitgelezen.",
   "chat.dungeontrain.familiar_book.3": "Een vertrouwd gewicht. Ongeveer %1$s het vastgehouden, en één lezer bleef er %2$s aaneen bij.",
