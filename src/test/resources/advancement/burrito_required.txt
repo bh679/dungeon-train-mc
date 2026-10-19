@@ -32,7 +32,6 @@ dungeontrain:dungeon_train/faulthursts_favourite
 dungeontrain:dungeon_train/friends
 dungeontrain:dungeon_train/fully_developed
 dungeontrain:dungeon_train/going_the_distance
-dungeontrain:dungeon_train/help_i_cant_get_off
 dungeontrain:dungeon_train/heros_handbook
 dungeontrain:dungeon_train/i_live_here_now
 dungeontrain:dungeon_train/i_must_know
