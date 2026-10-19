@@ -137,9 +137,13 @@ public final class LiveTakeoverChat {
         Minecraft mc = Minecraft.getInstance();
         boolean mine = mc.getUser() != null && mc.getUser().getName().equalsIgnoreCase(p.requester());
         if (mine) return LiveChatRules.systemLine(line);
+        boolean holder = me != null && p.holderUuid() != null && p.holderUuid().equalsIgnoreCase(me.toString().replace("-", ""));
+        // Past their voting minutes the streamer is left out: no buttons, just why.
+        if (holder && p.holderLocked()) {
+            return LiveChatRules.systemLine(line.append(" ").append(Component.translatable(KEY + "holder_locked").withStyle(ChatFormatting.GRAY)));
+        }
         line.append(" ").append(button("yes", ChatFormatting.GREEN))
             .append(" ").append(button("no", ChatFormatting.RED));
-        boolean holder = me != null && p.holderUuid() != null && p.holderUuid().equalsIgnoreCase(me.toString().replace("-", ""));
         if (holder) line.append(" ").append(Component.translatable(KEY + "your_weight", p.holderWeight()).withStyle(ChatFormatting.GRAY));
         return LiveChatRules.systemLine(line);
     }
@@ -169,6 +173,8 @@ public final class LiveTakeoverChat {
                     sendAction("voted_live_takeover");
                 } else if ("requester".equals(r.str("voteReason"))) {
                     said = Component.translatable(KEY + "own_request");
+                } else if ("holder_locked".equals(r.str("voteReason"))) {
+                    said = Component.translatable(KEY + "holder_locked_vote");
                 } else {
                     said = Component.translatable(KEY + "vote_not_counted");
                 }

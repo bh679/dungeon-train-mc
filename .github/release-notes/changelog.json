@@ -28351,6 +28351,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "takeover-vote-twenty-minutes",
+      "version": "0.1391.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Longer takeover votes",
+      "summary": "Taking over someone's Live Eye stream now needs a vote from the viewers for their first 20 minutes on air. For the first 10 the streamer votes too; after that, the viewers decide on their own.",
+      "highlights": [],
+      "pr": 2168,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
