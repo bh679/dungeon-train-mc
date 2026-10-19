@@ -5,6 +5,7 @@ import com.mojang.math.Axis;
 import games.brennan.dungeontrain.block.PhotographFrameBlock;
 import games.brennan.dungeontrain.block.entity.PhotographFrameBlockEntity;
 import games.brennan.dungeontrain.compat.photo.PhotoFrameLayout;
+import games.brennan.dungeontrain.compat.photo.TestFramePhoto;
 import io.github.mortuusars.exposure.Config;
 import io.github.mortuusars.exposure.ExposureClient;
 import net.minecraft.client.Minecraft;
@@ -22,6 +23,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 
 /**
@@ -40,6 +42,8 @@ public class PhotographFrameBlockRenderer implements BlockEntityRenderer<Photogr
     private static final float PHOTO_Z = 0.48F;
     private static final float PHOTO_Z_NO_FRAME = 0.497F;
     private static final int FULL_BRIGHT = LightTexture.FULL_BRIGHT;
+    /** What a frame holding the random-photo placeholder draws; built on first use. */
+    private static ItemStack placeholderPhoto;
 
     private final BlockRenderDispatcher blockRenderer;
 
@@ -51,7 +55,9 @@ public class PhotographFrameBlockRenderer implements BlockEntityRenderer<Photogr
     public void render(PhotographFrameBlockEntity be, float partialTick, PoseStack pose, MultiBufferSource buffers,
                        int light, int overlay) {
         BlockState state = be.getBlockState();
-        if (!(state.getBlock() instanceof PhotographFrameBlock)) return;
+        // Only a master draws: the client keeps a block entity when its cell turns into another part
+        // of a frame (same block), and that stale one would draw an old picture there.
+        if (!(state.getBlock() instanceof PhotographFrameBlock) || !PhotographFrameBlock.isMaster(state)) return;
         Direction facing = state.getValue(PhotographFrameBlock.FACING);
         boolean glass = state.getValue(PhotographFrameBlock.GLASS);
         int size = be.size();
@@ -82,8 +88,15 @@ public class PhotographFrameBlockRenderer implements BlockEntityRenderer<Photogr
         pose.scale(scale, scale, 1.0F);
         int photoLight = be.glowing() ? FULL_BRIGHT : light;
         int b = be.glowing() ? 255 : brightness(be.getLevel(), be.getBlockPos(), facing);
-        ExposureClient.photographRenderer().render(be.photo(), false, false, pose, buffers, photoLight, b, b, b, 255);
+        // The editor's random-photo placeholder shows the picture Test the Carriage hangs in its place.
+        ItemStack shown = be.hasRandomPlaceholder() ? placeholderPhoto() : be.photo();
+        ExposureClient.photographRenderer().render(shown, false, false, pose, buffers, photoLight, b, b, b, 255);
         pose.popPose();
+    }
+
+    private static ItemStack placeholderPhoto() {
+        if (placeholderPhoto == null) placeholderPhoto = TestFramePhoto.photograph();
+        return placeholderPhoto;
     }
 
     private void renderFrame(boolean glass, int size, PoseStack pose, MultiBufferSource buffers, int light) {
