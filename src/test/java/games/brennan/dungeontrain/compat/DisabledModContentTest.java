@@ -189,7 +189,7 @@ final class DisabledModContentTest {
     /** Every non-vanilla enchantment in the jars DT builds against (BetterNether + BetterEnd). */
     private static final List<String> MOD_ENCHANTMENTS = List.of(
         "betterend:resonance", "betterend:end_veil", "betternether:obsidian_breaker", "betternether:ruby_fire",
-        "deeperdarker:catalysis", "deeperdarker:reverberation", "deeperdarker:sculk_smite", "deeperdarker:volume");
+        "deeperdarker:volume");
 
     @Test
     @DisplayName("every mod enchantment is disabled; vanilla ones are kept")
@@ -221,5 +221,27 @@ final class DisabledModContentTest {
                 assertEquals(Set.copyOf(MOD_ENCHANTMENTS), removed, tag);
             }
         }
+    }
+
+    @Test
+    @DisplayName("Deeper Darker: its gear and upgrade templates are off, its ores and materials stay")
+    void deeperDarkerGearOnly() {
+        assertTrue(DisabledModContent.isDisabledItem(id("deeperdarker:warden_sword"), true));
+        assertTrue(DisabledModContent.isDisabledItem(id("deeperdarker:resonarium_chestplate"), true));
+        assertTrue(DisabledModContent.isDisabledItem(id("deeperdarker:soul_elytra"), true));
+        assertTrue(DisabledModContent.isDisabledItem(id("deeperdarker:warden_upgrade_smithing_template"), false));
+        assertTrue(DisabledModContent.isDisabledItem(id("deeperdarker:sonorous_staff"), false));
+        assertFalse(DisabledModContent.isDisabledItem(id("deeperdarker:sculk_stone_diamond_ore"), false));
+        assertFalse(DisabledModContent.isDisabledItem(id("deeperdarker:warden_carapace"), false));
+        assertFalse(DisabledModContent.isDisabledItem(id("deeperdarker:heart_of_the_deep"), false));
+    }
+
+    @Test
+    @DisplayName("Deeper Darker's Sculk Smite, Catalysis and Reverberation are kept; Volume is off")
+    void deeperDarkerEnchantments() {
+        assertFalse(DisabledModContent.isDisabledEnchantment(id("deeperdarker:sculk_smite")));
+        assertFalse(DisabledModContent.isDisabledEnchantment(id("deeperdarker:catalysis")));
+        assertFalse(DisabledModContent.isDisabledEnchantment(id("deeperdarker:reverberation")));
+        assertTrue(DisabledModContent.isDisabledEnchantment(id("deeperdarker:volume")));
     }
 }
