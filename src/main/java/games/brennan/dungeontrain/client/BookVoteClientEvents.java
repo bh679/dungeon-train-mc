@@ -205,6 +205,7 @@ public final class BookVoteClientEvents {
         isPrivate = BookPrivateTag.isPrivate(stack);
         protested = BookProtestTag.isProtested(stack);
         isPriority = BookPriorityTag.isPriority(stack);
+        BookBoostControl.open(stack);
         boolean hasVotes = BookVoteCountsTag.has(stack);
         votesUp = hasVotes ? BookVoteCountsTag.up(stack) : -1;
         votesDown = hasVotes ? BookVoteCountsTag.down(stack) : -1;
@@ -235,6 +236,8 @@ public final class BookVoteClientEvents {
         if (!onVotePage()) {
             reportArmed = false; // turning off the page abandons a half-made report
             priorityArmed = false;
+            BookBoostControl.disarm();
+            BookBoostControl.beginFrame();
             return;
         }
         adoptOwnStateIfItArrived();
@@ -275,6 +278,7 @@ public final class BookVoteClientEvents {
                 gfx.drawString(font, line, centerX - font.width(line) / 2, y, COLOR_TEXT, false);
                 y += 9;
             }
+            statusBottom = y; // the Boost line, when there is one, goes under the question
         }
 
         // Thumbs — but never on a book you WROTE. The relay weights which books get served by player
@@ -290,12 +294,29 @@ public final class BookVoteClientEvents {
             Component no = Component.translatable("gui.dungeontrain.book_vote.reject");
             gfx.drawString(font, yes, upX() + BUTTON_SIZE / 2 - font.width(yes) / 2, labelsY(), COLOR_TEXT, false);
             gfx.drawString(font, no, downX() + BUTTON_SIZE / 2 - font.width(no) / 2, labelsY(), COLOR_TEXT, false);
+            renderBoost(gfx, font, centerX, mouseX, mouseY);
         } else {
             renderVoteCounts(gfx, font);
         }
 
         renderAction(gfx, font, centerX, mouseX, mouseY);
         renderPriority(gfx, font, centerX, mouseX, mouseY);
+    }
+
+    /**
+     * Somebody else's book, and the reader has boosts to give (or already gave this copy one): the gold
+     * line under the question, then the star beside the thumbs. See {@link BookBoostControl}.
+     */
+    private static void renderBoost(GuiGraphics gfx, Font font, int centerX, int mouseX, int mouseY) {
+        BookBoostControl.beginFrame();
+        if (!boostShown()) return;
+        BookBoostControl.renderLine(gfx, font, centerX, bookLeft() + TEXT_X_OFFSET, TEXT_WIDTH,
+            priorityY(), (buttonsY() - 2 - priorityY()) / LINE_H, mouseX, mouseY);
+        BookBoostControl.renderStar(gfx, font, starX(), buttonsY(), labelsY(), mouseX, mouseY);
+    }
+
+    private static boolean boostShown() {
+        return "shared".equals(bookType) && BookBoostControl.shown(moderation.isOwn());
     }
 
     /**
@@ -528,6 +549,7 @@ public final class BookVoteClientEvents {
         // A report half-armed against a stranger's book has no meaning on one that turns out to be
         // the reader's own — the control under the pointer is no longer the one they armed.
         reportArmed = false;
+        BookBoostControl.disarm();
     }
 
     /** {@code held} when it is still the book this page is about, else null. */
@@ -544,6 +566,13 @@ public final class BookVoteClientEvents {
         if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
         int mx = (int) event.getMouseX();
         int my = (int) event.getMouseY();
+        // Boost somebody else's book: two taps on the star or the gold line; the book stays open.
+        if (!moderation.isOwn() && BookBoostControl.click(mx, my, bookType, bookId)) {
+            event.setCanceled(true);
+            clickSound();
+            reportArmed = false;
+            return;
+        }
         // The Priority Book line on your own released book: two taps, since a spend cannot be undone.
         if (!isPriority && inPriority(Minecraft.getInstance().font, mx, my)) {
             event.setCanceled(true);
@@ -784,12 +813,21 @@ public final class BookVoteClientEvents {
         return bookTop() + REPORT_TEXT_DY;
     }
 
+    // With the Boost star the row holds three icons, re-centred on the page: 👍 👎 ★.
     private static int upX() {
-        return bookLeft() + PAGE_CENTER_X_OFFSET - BUTTON_SIZE - BUTTON_GAP / 2;
+        return boostShown()
+            ? bookLeft() + PAGE_CENTER_X_OFFSET - BUTTON_SIZE / 2 - BUTTON_GAP - BUTTON_SIZE
+            : bookLeft() + PAGE_CENTER_X_OFFSET - BUTTON_SIZE - BUTTON_GAP / 2;
     }
 
     private static int downX() {
-        return bookLeft() + PAGE_CENTER_X_OFFSET + BUTTON_GAP / 2;
+        return boostShown()
+            ? bookLeft() + PAGE_CENTER_X_OFFSET - BUTTON_SIZE / 2
+            : bookLeft() + PAGE_CENTER_X_OFFSET + BUTTON_GAP / 2;
+    }
+
+    private static int starX() {
+        return bookLeft() + PAGE_CENTER_X_OFFSET + BUTTON_SIZE / 2 + BUTTON_GAP;
     }
 
     private static boolean inUpButton(int x, int y) {
@@ -847,6 +885,7 @@ public final class BookVoteClientEvents {
         protested = false;
         isPriority = false;
         priorityArmed = false;
+        BookBoostControl.reset();
         statusBottom = 0;
         votesUp = -1;
         votesDown = -1;

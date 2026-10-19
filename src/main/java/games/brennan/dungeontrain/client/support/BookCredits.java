@@ -33,6 +33,10 @@ import java.time.Duration;
  * lowers the cached count at once ({@link #spentOne()}): the relay answers through the server's outbox
  * some seconds later, and the toggle should not keep offering a book that is already on its way.
  * Never throws; a failed fetch leaves the last known value.</p>
+ *
+ * <p>Boosts are counted in tenths: one Priority Book is ten boosts on other players' books
+ * ({@link #boostsLeft()}). They are read from the relay's {@code boostsLeft}; a relay too old to send
+ * it answers 0, which keeps the Boost control hidden rather than offering one that would be refused.</p>
  */
 public final class BookCredits {
 
@@ -45,6 +49,8 @@ public final class BookCredits {
 
     /** -1 until the relay has answered once this session. */
     private static volatile int known = -1;
+    /** Boosts left (tenths of a Priority Book); -1 until a relay that knows about boosts has answered. */
+    private static volatile int knownBoosts = -1;
     private static volatile long fetchedAt = 0L;
     private static volatile boolean inFlight = false;
 
@@ -85,9 +91,12 @@ public final class BookCredits {
                     int balance = parseBalance(resp.body());
                     if (balance < 0) return;
                     int before = known;
+                    int boostsBefore = knownBoosts;
                     known = balance;
+                    knownBoosts = parseBoostsLeft(resp.body());
                     fetchedAt = System.currentTimeMillis();
-                    if (balance != before && onChange != null) Minecraft.getInstance().execute(onChange);
+                    boolean changed = balance != before || knownBoosts != boostsBefore;
+                    if (changed && onChange != null) Minecraft.getInstance().execute(onChange);
                 } catch (Throwable t) {
                     LOGGER.debug("[DungeonTrain] book credits parse failed: {}", t.toString());
                 }
@@ -102,6 +111,25 @@ public final class BookCredits {
     public static void spentOne() {
         int k = current();
         known = Math.max(0, k - 1);
+        if (knownBoosts >= 0) knownBoosts = Math.max(0, knownBoosts - 10);
+        fetchedAt = 0L;
+    }
+
+    /**
+     * Boosts this player can give other players' books: tenths of a Priority Book. 0 when unknown,
+     * none, no consent, or the relay does not know about boosts.
+     */
+    public static int boostsLeft() {
+        if (!consented()) return 0;
+        return Math.max(0, knownBoosts);
+    }
+
+    /** A boost just left this client: a tenth fewer now (a whole book once ten are gone), re-read next time. */
+    public static void boostedOne() {
+        int b = boostsLeft();
+        if (b <= 0) return;
+        knownBoosts = b - 1;
+        known = knownBoosts / 10;
         fetchedAt = 0L;
     }
 
@@ -115,6 +143,20 @@ public final class BookCredits {
         JsonElement b = o.get("balance");
         if (b == null || !b.isJsonPrimitive()) return -1;
         return Math.max(0, b.getAsInt());
+    }
+
+    /** {@code boostsLeft} from a {@code /books/credits} body, or -1 when the relay did not send it. */
+    static int parseBoostsLeft(String body) {
+        if (body == null || body.isBlank()) return -1;
+        JsonElement root = JsonParser.parseString(body);
+        if (!root.isJsonObject()) return -1;
+        JsonElement b = root.getAsJsonObject().get("boostsLeft");
+        if (b == null || !b.isJsonPrimitive()) return -1;
+        try {
+            return Math.max(0, b.getAsInt());
+        } catch (RuntimeException e) {
+            return -1;
+        }
     }
 
     private static boolean consented() {

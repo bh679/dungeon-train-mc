@@ -69,4 +69,34 @@ class PriorityBookResponsesTest {
         assertFalse(PriorityBookResponses.parseSpend(req, 402, "{\"error\":\"no_credits\"}").spent());
         assertNull(PriorityBookResponses.parseSpend(req, -1, null));
     }
+
+    @Test
+    void aBoostCountsOnceAndReadsWhatIsLeft() {
+        String req = "{\"uuid\":\"" + HEX + "\",\"name\":\"Alex\",\"id\":\"7\",\"nonce\":\"n1\"}";
+        PriorityBookResponses.BoostOutcome ok =
+                PriorityBookResponses.parseBoost(req, 200, "{\"ok\":true,\"id\":7,\"balance\":0,\"boostsLeft\":9}");
+        assertEquals(PriorityBookResponses.BoostOutcome.Result.BOOSTED, ok.result());
+        assertEquals(PLAYER, ok.player());
+        assertEquals(7, ok.bookId());
+        assertEquals(9L, ok.boostsLeft());
+        assertNotNull(PriorityBookResponses.lineFor(ok, "en_us"));
+
+        PriorityBookResponses.BoostOutcome again =
+                PriorityBookResponses.parseBoost(req, 200, "{\"ok\":true,\"repeat\":true,\"boostsLeft\":9}");
+        assertEquals(PriorityBookResponses.BoostOutcome.Result.REPEAT, again.result());
+        assertNull(PriorityBookResponses.lineFor(again, "en_us"), "an outbox re-send says nothing twice");
+    }
+
+    @Test
+    void aRefusedBoostSaysWhy() {
+        String req = "{\"uuid\":\"" + HEX + "\",\"id\":\"7\"}";
+        assertEquals(PriorityBookResponses.BoostOutcome.Result.FULL,
+                PriorityBookResponses.parseBoost(req, 409, "{\"error\":\"boost_full\"}").result());
+        assertEquals(PriorityBookResponses.BoostOutcome.Result.UNUSED,
+                PriorityBookResponses.parseBoost(req, 402, "{\"error\":\"no_credits\"}").result());
+        assertEquals(PriorityBookResponses.BoostOutcome.Result.UNUSED,
+                PriorityBookResponses.parseBoost(req, 404, "").result(), "an older relay without the route");
+        assertNull(PriorityBookResponses.parseBoost(req, -1, null));
+        assertNull(PriorityBookResponses.parseBoost("{\"id\":\"7\"}", 200, "{\"ok\":true}"));
+    }
 }

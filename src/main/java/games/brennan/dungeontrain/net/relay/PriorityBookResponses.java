@@ -4,8 +4,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.discord.BookBoostReporter;
 import games.brennan.dungeontrain.discord.BookPriorityReporter;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
+import games.brennan.dungeontrain.narrative.BookBoostTag;
 import games.brennan.dungeontrain.narrative.BookPriorityTag;
 import games.brennan.dungeontrain.narrative.PriorityBookMessage;
 import games.brennan.dungeontrain.narrative.SharedBookReadTag;
@@ -33,6 +35,11 @@ import java.util.UUID;
  * the vote page shows the mark instead of offering to spend again. A player who has logged off hears
  * nothing; the next {@code /books/stats} greeting stamps the tag anyway. No-throw throughout, and an
  * older relay that sends no {@code priority} block parses to "nothing to say".</p>
+ *
+ * <p>A third route is the reader's: a boost of somebody else's book from its vote page answers on
+ * {@code /books/credits/boost}: 200 {@code {ok, boostsLeft, repeat?}}, 402 {@code no_credits},
+ * 409 {@code boost_full}, or another refusal. A {@code repeat} is an outbox re-send of a boost the relay
+ * already charged, so it says nothing and counts nothing twice.</p>
  */
 public final class PriorityBookResponses {
 
@@ -43,9 +50,91 @@ public final class PriorityBookResponses {
     /** What the relay said about one spend. {@code bookId} is -1 when the request named none. */
     record Outcome(UUID player, int bookId, boolean spent, boolean held, long balance) {}
 
-    /** Register the {@code /books/credits/spend} handler on the shared outbox. Called once at mod setup. */
+    /** What the relay said about one boost. {@code boostsLeft} is -1 when it did not say. */
+    record BoostOutcome(UUID player, int bookId, Result result, long boostsLeft) {
+        enum Result { BOOSTED, REPEAT, FULL, UNUSED }
+    }
+
+    /** Register the spend and boost handlers on the shared outbox. Called once at mod setup. */
     public static void register() {
         RelayOutbox.get().onResponse(BookPriorityReporter.PATH, PriorityBookResponses::handleSpend);
+        RelayOutbox.get().onResponse(BookBoostReporter.PATH, PriorityBookResponses::handleBoost);
+    }
+
+    static void handleBoost(String requestBody, int status, String responseBody) {
+        BoostOutcome o = parseBoost(requestBody, status, responseBody);
+        if (o != null) announceBoost(o);
+    }
+
+    /** The outcome of a vote-page boost, or null on a network failure / unattributable request. */
+    static BoostOutcome parseBoost(String requestBody, int status, String responseBody) {
+        if (status < 0) return null;
+        JsonObject req = asObject(requestBody);
+        if (req == null) return null;
+        UUID player = uuidOf(optString(req, "uuid"));
+        if (player == null) return null;
+        int id = (int) optLong(req, "id", -1L);
+        JsonObject resp = asObject(responseBody);
+        long left = resp == null ? -1L : optLong(resp, "boostsLeft", -1L);
+        if (status / 100 == 2) {
+            BoostOutcome.Result r = resp != null && optBool(resp, "repeat")
+                ? BoostOutcome.Result.REPEAT : BoostOutcome.Result.BOOSTED;
+            return new BoostOutcome(player, id, r, left);
+        }
+        String error = resp == null ? null : optString(resp, "error");
+        BoostOutcome.Result r = "boost_full".equals(error) ? BoostOutcome.Result.FULL : BoostOutcome.Result.UNUSED;
+        return new BoostOutcome(player, id, r, left);
+    }
+
+    /** The chat line for a boost outcome, or null when there is nothing new to say. Package-private for tests. */
+    static Component lineFor(BoostOutcome o, String locale) {
+        return switch (o.result()) {
+            case BOOSTED -> o.boostsLeft() >= 0
+                ? PriorityBookMessage.boosted(locale, o.boostsLeft()) : PriorityBookMessage.boostedNoCount();
+            case REPEAT -> null; // the player heard about it when it first landed
+            case FULL -> PriorityBookMessage.boostFull();
+            case UNUSED -> PriorityBookMessage.boostUnused();
+        };
+    }
+
+    /** Post onto the server thread: count the boost on the reader's copies, then say one line. */
+    private static void announceBoost(BoostOutcome o) {
+        try {
+            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+            if (server == null) return;
+            server.execute(() -> {
+                try {
+                    ServerPlayer player = server.getPlayerList().getPlayer(o.player());
+                    if (player == null) return;
+                    if (o.result() == BoostOutcome.Result.BOOSTED) countBoost(player, o.bookId());
+                    Component line = lineFor(o, WorldInfoReporter.clientLanguage(player));
+                    if (line != null) player.sendSystemMessage(line);
+                } catch (Throwable t) {
+                    LOGGER.debug("[DungeonTrain] priority-book boost notice failed: {}", t.toString());
+                }
+            });
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] priority-book boost notice could not be scheduled: {}", t.toString());
+        }
+    }
+
+    /** One more boost on the first copy of {@code bookId} the reader holds: the one they boosted from. */
+    private static void countBoost(ServerPlayer player, int bookId) {
+        if (bookId <= 0) return;
+        // Held first, in the packet's own order (main hand, then off hand).
+        ItemStack main = player.getMainHandItem();
+        if (sameId(main, bookId)) { BookBoostTag.increment(main); return; }
+        for (ItemStack stack : player.getInventory().offhand) {
+            if (sameId(stack, bookId)) { BookBoostTag.increment(stack); return; }
+        }
+        for (ItemStack stack : player.getInventory().items) {
+            if (sameId(stack, bookId)) { BookBoostTag.increment(stack); return; }
+        }
+    }
+
+    private static boolean sameId(ItemStack stack, int bookId) {
+        OptionalInt id = SharedBookReadTag.readId(stack);
+        return id.isPresent() && id.getAsInt() == bookId;
     }
 
     /** {@code /books/submit} answered: act on its {@code priority} block, if the upload asked for one. */

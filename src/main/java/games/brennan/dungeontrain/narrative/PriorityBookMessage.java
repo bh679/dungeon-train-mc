@@ -2,6 +2,9 @@ package games.brennan.dungeontrain.narrative;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+
+import java.util.List;
 
 /**
  * Every line the game says about Priority Books — the thank-you a donation carries: one credit makes
@@ -67,5 +70,72 @@ public final class PriorityBookMessage {
     /** The passive mark on a book that already is one. */
     public static Component isPriority() {
         return Component.translatable(GUI + "is_priority");
+    }
+
+    // ---- boosts: a tenth of a Priority Book, given to somebody else's book ----
+
+    /** How many booster names the author's line spells out before "and N more". */
+    static final int NAMED_BOOSTERS = 3;
+
+    /** The reader's boost landed, with {@code left} boosts remaining. */
+    public static Component boosted(String locale, long left) {
+        return PluralRules.clause(locale, CHAT + "boosted", left).withStyle(ChatFormatting.GOLD);
+    }
+
+    /** The boost landed, but the relay did not say how many are left. */
+    public static Component boostedNoCount() {
+        return Component.translatable(CHAT + "boosted_plain").withStyle(ChatFormatting.GOLD);
+    }
+
+    /** The book already carries as many boosts as count, so nothing was spent. */
+    public static Component boostFull() {
+        return Component.translatable(CHAT + "boost_full").withStyle(ChatFormatting.GRAY);
+    }
+
+    /** The reader asked to boost and none was used (nothing left, or the relay could not apply it). */
+    public static Component boostUnused() {
+        return Component.translatable(CHAT + "boost_unused").withStyle(ChatFormatting.GRAY);
+    }
+
+    /**
+     * To the author: who boosted their book. Names the newest {@link #NAMED_BOOSTERS} readers and counts
+     * the rest; {@code total} is the number of boosts, so a reader who boosted twice counts twice.
+     */
+    public static Component boostedBy(String locale, List<String> names, int total) {
+        List<String> shown = names == null ? List.of() : names.subList(0, Math.min(NAMED_BOOSTERS, names.size()));
+        if (shown.isEmpty()) {
+            return PluralRules.clause(locale, CHAT + "boosted_by_anon", total).withStyle(ChatFormatting.GOLD);
+        }
+        Component who = Component.literal(String.join(", ", shown));
+        int others = names.size() - shown.size();
+        MutableComponent line = others > 0
+            ? Component.translatable(CHAT + "boosted_by_more", who, others)
+            : Component.translatable(CHAT + "boosted_by", who);
+        return line.withStyle(ChatFormatting.GOLD);
+    }
+
+    /** The vote page line on somebody else's book: "Boost this book (N boosts left)". */
+    public static Component boost(String locale, long n) {
+        return PluralRules.clause(locale, GUI + "boost", n);
+    }
+
+    /** Second tap of the boost line or star: a boost cannot be taken back, so it asks once. */
+    public static Component boostConfirm() {
+        return Component.translatable(GUI + "boost_confirm");
+    }
+
+    /** What a boost does, on hover. */
+    public static Component boostTooltip() {
+        return Component.translatable(GUI + "boost_tooltip");
+    }
+
+    /** The word under the star, beside (Y)es and (N)o. */
+    public static Component boostLabel() {
+        return Component.translatable(GUI + "boost_label");
+    }
+
+    /** The passive line once the reader has boosted this copy, {@code n} times. */
+    public static Component youBoosted(String locale, long n) {
+        return PluralRules.clause(locale, GUI + "you_boosted", n);
     }
 }

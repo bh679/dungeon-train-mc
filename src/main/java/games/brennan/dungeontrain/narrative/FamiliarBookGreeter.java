@@ -34,6 +34,9 @@ public final class FamiliarBookGreeter {
     /** Per-stack "already greeted this author for this copy" marker, in the item's CUSTOM_DATA. */
     private static final String NBT_GREETED = "dt_familiar_greeted";
 
+    /** Per-stack: how many reader boosts this copy has already told its author about. */
+    private static final String NBT_BOOSTS_SEEN = "dt_boosts_seen";
+
     private FamiliarBookGreeter() {}
 
     /**
@@ -62,6 +65,13 @@ public final class FamiliarBookGreeter {
                 // Always refresh what the book knows about itself — cheap, idempotent, and the whole
                 // point of re-asking.
                 stampOwnState(stack, stats);
+                // Readers boosting this book is news the author hears as it happens, not once per
+                // copy: say so whenever the count has grown since this copy last told them.
+                if (stats.boosts() > boostsSeen(stack)) {
+                    markBoostsSeen(stack, stats.boosts());
+                    player.sendSystemMessage(PriorityBookMessage.boostedBy(
+                            WorldInfoReporter.clientLanguage(player), stats.boostedBy(), stats.boosts()));
+                }
                 if (isGreeted(stack)) return; // lost a race with a concurrent equip — show once
                 markGreeted(stack);
                 player.sendSystemMessage(FamiliarBookMessage.build(
@@ -100,6 +110,16 @@ public final class FamiliarBookGreeter {
         BookPrivateTag.stamp(stack, stats.isPrivate());
         // Same both-ways rule: a book refunded by a rejection must stop showing the mark.
         BookPriorityTag.stamp(stack, stats.priority());
+    }
+
+    private static int boostsSeen(ItemStack stack) {
+        CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
+        return cd == null || cd.isEmpty() ? 0 : cd.copyTag().getInt(NBT_BOOSTS_SEEN);
+    }
+
+    private static void markBoostsSeen(ItemStack stack, int boosts) {
+        if (stack == null || stack.isEmpty()) return;
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putInt(NBT_BOOSTS_SEEN, boosts));
     }
 
     private static boolean isGreeted(ItemStack stack) {
