@@ -27933,6 +27933,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "mobs-survive-carriage-impacts",
+      "version": "0.1370.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Mobs no longer die to passing carriages",
+      "summary": "Mobs riding with you, and the ones you meet along the way, no longer drop dead from \"kinetic energy\" when a carriage clips them.",
+      "highlights": [
+        "Mobs no longer die from being clipped by a carriage"
+      ],
+      "pr": 2139,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
