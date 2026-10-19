@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.AdvancementRevocations;
 import games.brennan.dungeontrain.advancement.BurritoClock;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
@@ -1002,6 +1003,11 @@ public final class AchievementEvents {
         // profile (a world from before the split, or a difficulty changed while offline), bank it
         // there and swap in this difficulty's. First, so a fresh world's tree is still empty.
         AdvancementProfiles.alignOnLogin(player);
+        // Advancements the developer took back (relay revocations): strip any earn they cover from
+        // this world and the profile BEFORE absorb/replay below, or either would put it back. From
+        // the on-disk cache now; the relay's fresh list is applied when it answers.
+        AdvancementRevocations.applyCached(player);
+        AdvancementRevocations.fetchAndApply(player);
         // Multiplayer-join grant runs next, independent of the sidecar replay
         // below — a first-time joiner has an empty sidecar and would otherwise
         // be skipped by the early-return inside AdvancementProfiles.replay.

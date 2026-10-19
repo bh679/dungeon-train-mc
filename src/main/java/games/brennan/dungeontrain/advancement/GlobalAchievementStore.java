@@ -229,6 +229,20 @@ public final class GlobalAchievementStore {
         return removed;
     }
 
+    /**
+     * Remove {@code advancement} from every partition's sidecar — a revocation
+     * ({@link AdvancementRevocations}) covers the player, not one difficulty.
+     *
+     * @return {@code true} when any file was actually mutated.
+     */
+    public static synchronized boolean removeEverywhere(UUID playerUuid, ResourceLocation advancement) {
+        boolean removed = false;
+        for (String partition : ALL_PARTITIONS) {
+            removed |= removeFrom(file(playerUuid, partition), advancement);
+        }
+        return removed;
+    }
+
     private static boolean removeFrom(Path path, ResourceLocation advancement) {
         Set<ResourceLocation> current = new LinkedHashSet<>(readFile(path));
         if (!current.remove(advancement)) return false;
