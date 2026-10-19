@@ -76,12 +76,23 @@ public final class LiveFeedClient {
      */
     public record Twitch(String login, String url, boolean restream, boolean setTitle) {}
 
-    /** What a claim gives the streamer. {@code twitch} is null when they have not linked a channel. */
-    public record Claim(String session, String token, String playlistUrl, @Nullable String prevName, @Nullable Twitch twitch) {
+    /**
+     * What a claim gives the streamer. {@code twitch} is null when they have not linked a channel.
+     * {@code segmentSeconds}/{@code listSize}: the stream's HLS cadence when the relay sets one (2 s and a
+     * 30-entry window while the server's Quicker Streams reward is on), 0 when it does not (the client
+     * config then decides). Fixed for the session: a reward starting or lapsing lands on the next claim.
+     */
+    public record Claim(String session, String token, String playlistUrl, @Nullable String prevName, @Nullable Twitch twitch,
+                        int segmentSeconds, int listSize) {
         public Claim(String session, String token, String playlistUrl, @Nullable String prevName) {
-            this(session, token, playlistUrl, prevName, null);
+            this(session, token, playlistUrl, prevName, null, 0, 0);
         }
     }
+
+    /** The segment lengths a claim may set; anything outside reads as unset. Matches the config's own range. */
+    static final int MIN_SEGMENT_SECONDS = 2, MAX_SEGMENT_SECONDS = 30;
+    /** Playlist window sizes a claim may set; anything outside reads as unset. */
+    static final int MIN_LIST_SIZE = 3, MAX_LIST_SIZE = 60;
 
     /** Where a chat line was typed: the relay's {@code source} field. */
     public enum Source {
@@ -384,7 +395,16 @@ public final class LiveFeedClient {
         String session = r.str("session"), token = r.str("token"), url = r.str("playlistUrl");
         if (session.isEmpty() || token.isEmpty() || url.isEmpty()) return null;
         String prev = r.str("prevName");
-        return new Claim(session, token, url, prev.isEmpty() ? null : prev, parseTwitch(r.body()));
+        int segment = intIn(r.body(), "segmentSeconds", MIN_SEGMENT_SECONDS, MAX_SEGMENT_SECONDS);
+        int list = segment == 0 ? 0 : intIn(r.body(), "listSize", MIN_LIST_SIZE, MAX_LIST_SIZE);
+        return new Claim(session, token, url, prev.isEmpty() ? null : prev, parseTwitch(r.body()), segment, list);
+    }
+
+    /** A whole number field within {@code [min, max]}, else 0 (absent, malformed or out of range). */
+    static int intIn(@Nullable JsonObject body, String key, int min, int max) {
+        if (body == null || !body.has(key) || !body.get(key).isJsonPrimitive() || !body.getAsJsonPrimitive(key).isNumber()) return 0;
+        double v = body.get(key).getAsDouble();
+        return v == Math.rint(v) && v >= min && v <= max ? (int) v : 0;
     }
 
     /** The {@code twitch} object of a claim or status, or null when absent/malformed. The login is checked against Twitch's own alphabet. */
