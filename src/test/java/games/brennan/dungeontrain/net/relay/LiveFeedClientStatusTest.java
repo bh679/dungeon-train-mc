@@ -122,6 +122,9 @@ class LiveFeedClientStatusTest {
         }
         assertEquals(0, claim(base + ",\"segmentSeconds\":2,\"listSize\":500}").listSize(), "a window out of range reads as unset");
         assertEquals(0, claim(base + ",\"listSize\":30}").listSize(), "a window without a segment length is ignored");
+        assertEquals(3, claim(base + ",\"segmentSeconds\":3,\"listSize\":20,\"keyframeSeconds\":3}").keyframeSeconds());
+        assertEquals(0, plain.keyframeSeconds(), "absent: the encoder's own rule");
+        assertEquals(0, claim(base + ",\"keyframeSeconds\":5}").keyframeSeconds(), "over Twitch's 4 s reads as unset");
     }
 
     private static LiveFeedClient.Claim claim(String json) {

@@ -8,8 +8,8 @@ max-age it was uploaded with (2 s, or 1 s for a Quicker Streams session), segmen
 
     python3 -I scripts/live/stub-relay.py --port 8787 --out <dir> [--quick] [--relay-public <dp-relay>/public/dungeontrain]
 
---quick makes every claim a Quicker Streams one (segmentSeconds 2, listSize 30), as the relay does
-while the reward is on. Measurements:
+--quick makes every claim a Quicker Streams one (--quick-seconds, default 3: segmentSeconds 3,
+listSize 20, keyframeSeconds 3), as the relay does while the reward is on. Measurements:
 
 - Website: open http://127.0.0.1:<port>/harness.html (needs --relay-public). It plays the stream
   with the relay's own live-player.js hls.js settings and posts `now - hls.playingDate` once a second.
@@ -139,14 +139,17 @@ class Handler(BaseHTTPRequestHandler):
             out = {"ok": True, "channel": "main", "session": session, "token": "tok-" + session,
                    "playlistUrl": "http://127.0.0.1:%d/files/%s/live.m3u8" % (port, session)}
             if ARGS.quick:
-                out.update(segmentSeconds=2, listSize=30)
-            print("[stub] claim -> session %s (%s)" % (session, "2 s quick" if ARGS.quick else "default cadence"), flush=True)
+                seg = ARGS.quick_seconds
+                out.update(segmentSeconds=seg, listSize=max(6, -(-60 // seg)))
+                if seg % 2:
+                    out["keyframeSeconds"] = seg if seg <= 4 else 1
+            print("[stub] claim -> session %s (%s)" % (session, "%d s quick" % ARGS.quick_seconds if ARGS.quick else "default cadence"), flush=True)
             return self._send(200, out)
         if path.endswith("/live/presign"):
             body = self._json()
             session = STATE["session"]
             urls = {}
-            max_age = 1 if ARGS.quick else 2
+            max_age = 1 if ARGS.quick and ARGS.quick_seconds <= 4 else 2
             for f in body.get("files", []):
                 name = f.get("name") if isinstance(f, dict) else f
                 kind = "playlist" if name == "live.m3u8" else "segment"
@@ -262,10 +265,11 @@ def main():
     p.add_argument("--port", type=int, default=8787)
     p.add_argument("--out", required=True)
     p.add_argument("--quick", action="store_true")
+    p.add_argument("--quick-seconds", type=int, default=3)
     p.add_argument("--relay-public", default="")
     ARGS = p.parse_args()
-    STATE["segment_seconds"] = 2 if ARGS.quick else 10
-    STATE["list_size"] = 30 if ARGS.quick else 6
+    STATE["segment_seconds"] = ARGS.quick_seconds if ARGS.quick else 10
+    STATE["list_size"] = max(6, -(-60 // STATE["segment_seconds"]))
     os.makedirs(ARGS.out, exist_ok=True)
     print("[stub] listening on 127.0.0.1:%d (%s)" % (ARGS.port, "quick" if ARGS.quick else "default"), flush=True)
     ThreadingHTTPServer(("127.0.0.1", ARGS.port), Handler).serve_forever()

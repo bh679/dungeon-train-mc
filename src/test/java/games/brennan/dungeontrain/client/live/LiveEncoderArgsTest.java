@@ -37,7 +37,7 @@ class LiveEncoderArgsTest {
         List<String> ten = Arrays.asList(LiveEncoder.args(1280, 720, 20, 2500, 10, Path.of("/tmp/live/abc")));
         assertEquals("6", ten.get(ten.indexOf("-hls_list_size") + 1));
         Path dir = Path.of("/tmp/live/abc");
-        List<String> quick = Arrays.asList(LiveEncoder.args(1280, 720, 20, 2500, 2, LiveEncoder.listSizeFor(2), dir, 0, false));
+        List<String> quick = Arrays.asList(LiveEncoder.args(1280, 720, 20, 2500, LiveEncoder.Cadence.of(2), dir, 0, false));
         assertEquals("2", quick.get(quick.indexOf("-hls_time") + 1), "Quicker Streams: 2 s segments");
         assertEquals("30", quick.get(quick.indexOf("-hls_list_size") + 1), "30 x 2 s keeps the ~60 s window the Twitch pushers read");
         assertEquals("40", quick.get(quick.indexOf("-g") + 1), "still a keyframe every 2 s: one per segment");
@@ -47,6 +47,26 @@ class LiveEncoderArgsTest {
         assertEquals(6, LiveEncoder.listSizeFor(30), "never below 6");
         assertTrue(ten.get(ten.indexOf("-hls_flags") + 1).contains("program_date_time"),
             "each segment carries its wall-clock start, so players can tell how far behind they are");
+    }
+
+    @Test
+    void keyframesFollowTheClaimedCadence() {
+        Path dir = Path.of("/tmp/live/abc");
+        List<String> three = Arrays.asList(LiveEncoder.args(1280, 720, 20, 2500, LiveEncoder.Cadence.of(3, 20, 3), dir, 0, false));
+        assertEquals("3", three.get(three.indexOf("-hls_time") + 1));
+        assertEquals("20", three.get(three.indexOf("-hls_list_size") + 1));
+        assertEquals("60", three.get(three.indexOf("-g") + 1), "3 s keyframes at 20 fps: one per 3 s segment");
+        assertEquals("60", three.get(three.indexOf("-keyint_min") + 1));
+        assertEquals("expr:gte(t,n_forced*3)", three.get(three.indexOf("-force_key_frames") + 1));
+        // Unset: 3 s segments cannot open on a 2 s grid, so they get 3 s keyframes by themselves.
+        assertEquals(new LiveEncoder.Cadence(3, 20, 3), LiveEncoder.Cadence.of(3));
+        assertEquals(new LiveEncoder.Cadence(10, 6, 2), LiveEncoder.Cadence.of(10));
+        assertEquals(new LiveEncoder.Cadence(10, 6, 1), LiveEncoder.Cadence.of(10, 0, 1), "the relay may ask for 1 s");
+        assertEquals(2, LiveEncoder.keyframeFor(10, 3), "3 does not divide 10: the default");
+        assertEquals(2, LiveEncoder.keyframeFor(10, 5), "over Twitch's 4 s: the default");
+        assertEquals(4, LiveEncoder.keyframeFor(4, 4));
+        assertEquals(1, LiveEncoder.keyframeFor(5, 0));
+        assertEquals(1, LiveEncoder.keyframeFor(3, 1));
     }
 
     @Test
@@ -76,8 +96,8 @@ class LiveEncoderArgsTest {
     @Test
     void saveBandwidthCompressesHarderButKeepsKeyframesAndSegments() {
         Path dir = Path.of("/tmp/live/abc");
-        List<String> off = Arrays.asList(LiveEncoder.args(1280, 720, 20, 2500, 10, 6, dir, 0, false));
-        List<String> a = Arrays.asList(LiveEncoder.args(1280, 720, 20, 2500, 10, 6, dir, 0, true));
+        List<String> off = Arrays.asList(LiveEncoder.args(1280, 720, 20, 2500, LiveEncoder.Cadence.of(10), dir, 0, false));
+        List<String> a = Arrays.asList(LiveEncoder.args(1280, 720, 20, 2500, LiveEncoder.Cadence.of(10), dir, 0, true));
         assertEquals(Arrays.asList(LiveEncoder.args(1280, 720, 20, 2500, 10, dir)), off, "off is today's encoder");
         assertEquals("medium", a.get(a.indexOf("-preset") + 1));
         assertFalse(a.contains("-tune"), "no zerolatency: B-frames and lookahead are most of the saving");

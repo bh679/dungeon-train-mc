@@ -78,14 +78,15 @@ public final class LiveFeedClient {
 
     /**
      * What a claim gives the streamer. {@code twitch} is null when they have not linked a channel.
-     * {@code segmentSeconds}/{@code listSize}: the stream's HLS cadence when the relay sets one (2 s and a
-     * 30-entry window while the server's Quicker Streams reward is on), 0 when it does not (the client
-     * config then decides). Fixed for the session: a reward starting or lapsing lands on the next claim.
+     * {@code segmentSeconds}/{@code listSize}/{@code keyframeSeconds}: the stream's HLS cadence when the
+     * relay sets one (3 s segments, a 20-entry window and 3 s keyframes while the server's Quicker Streams
+     * reward is on, by default; the relay's env decides), 0 when it does not (the client config and the
+     * encoder's defaults then decide). Fixed for the session: a change lands on the next claim.
      */
     public record Claim(String session, String token, String playlistUrl, @Nullable String prevName, @Nullable Twitch twitch,
-                        int segmentSeconds, int listSize) {
+                        int segmentSeconds, int listSize, int keyframeSeconds) {
         public Claim(String session, String token, String playlistUrl, @Nullable String prevName) {
-            this(session, token, playlistUrl, prevName, null, 0, 0);
+            this(session, token, playlistUrl, prevName, null, 0, 0, 0);
         }
     }
 
@@ -93,6 +94,8 @@ public final class LiveFeedClient {
     static final int MIN_SEGMENT_SECONDS = 2, MAX_SEGMENT_SECONDS = 30;
     /** Playlist window sizes a claim may set; anything outside reads as unset. */
     static final int MIN_LIST_SIZE = 3, MAX_LIST_SIZE = 60;
+    /** Keyframe intervals a claim may set (Twitch caps them at 4 s); the encoder still checks it divides the segment. */
+    static final int MIN_KEYFRAME_SECONDS = 1, MAX_KEYFRAME_SECONDS = 4;
 
     /** Where a chat line was typed: the relay's {@code source} field. */
     public enum Source {
@@ -397,7 +400,8 @@ public final class LiveFeedClient {
         String prev = r.str("prevName");
         int segment = intIn(r.body(), "segmentSeconds", MIN_SEGMENT_SECONDS, MAX_SEGMENT_SECONDS);
         int list = segment == 0 ? 0 : intIn(r.body(), "listSize", MIN_LIST_SIZE, MAX_LIST_SIZE);
-        return new Claim(session, token, url, prev.isEmpty() ? null : prev, parseTwitch(r.body()), segment, list);
+        int keyframe = intIn(r.body(), "keyframeSeconds", MIN_KEYFRAME_SECONDS, MAX_KEYFRAME_SECONDS);
+        return new Claim(session, token, url, prev.isEmpty() ? null : prev, parseTwitch(r.body()), segment, list, keyframe);
     }
 
     /** A whole number field within {@code [min, max]}, else 0 (absent, malformed or out of range). */
