@@ -247,7 +247,8 @@ public record EditorPlotActionPacket(
             case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.Carriage(variant));
             case CLEAR -> {
                 BlockPos origin = CarriageEditor.plotOrigin(variant, dims);
-                if (origin != null) CarriagePlacer.eraseAt(overworld, origin, dims);
+                // The variant's own box — a group-length carriage outruns the world's single dims.
+                if (origin != null) CarriagePlacer.eraseAt(overworld, origin, CarriageEditor.plotDims(variant, dims));
                 sender.sendSystemMessage(Component.literal(
                     "Editor: cleared all blocks in '" + variant.id() + "'.")
                     .copy().withStyle(ChatFormatting.GREEN));
@@ -275,7 +276,9 @@ public record EditorPlotActionPacket(
             case CLEAR -> {
                 BlockPos origin = CarriageContentsEditor.plotOrigin(contents, dims);
                 if (origin != null) {
-                    games.brennan.dungeontrain.train.CarriageContentsPlacer.eraseAt(overworld, origin, dims);
+                    // The contents' own box — a Half/Full plot is a whole group long, not one carriage.
+                    games.brennan.dungeontrain.train.CarriageContentsPlacer.eraseAt(overworld, origin,
+                        CarriageContentsEditor.plotDims(contents, dims));
                 }
                 sender.sendSystemMessage(Component.literal(
                     "Editor: cleared all blocks in contents '" + contents.id() + "'.")

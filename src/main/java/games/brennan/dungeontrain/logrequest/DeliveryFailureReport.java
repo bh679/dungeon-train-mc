@@ -29,7 +29,8 @@ public final class DeliveryFailureReport {
         ALREADY_PENDING("a log request is already waiting on them"),
         TOO_SOON("a log request was sent less than a minute ago"),
         DECLINED("they declined to send their logs"),
-        NO_ANSWER("they didn't answer the log request in time");
+        NO_ANSWER("they didn't answer the log request in time"),
+        UPLOAD_FAILED("they approved, but their logs didn't upload; ask them to try /bug again");
 
         private final String text;
 

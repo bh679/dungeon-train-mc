@@ -80,11 +80,14 @@ public record BugReportLogsPacket(String optionLabel, String systemInfo, List<Lo
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             // A "Developer request" upload is only taken (and only pings the dev) when it answers a
-            // log request the server actually issued — never on a client's say-so.
-            boolean requested = LogRequestManager.UPLOAD_LABEL.equals(packet.optionLabel());
-            if (requested && !LogRequestManager.consumeUpload(player)) return;
+            // log request the server actually issued — never on a client's say-so. The ping waits
+            // for the post's outcome, so the dev hears "sent" only when the files really landed.
+            if (LogRequestManager.UPLOAD_LABEL.equals(packet.optionLabel())) {
+                LogRequestManager.acceptRequestedUpload(player, () ->
+                        BugReportSink.accept(player, packet.optionLabel(), packet.systemInfo(), packet.files()));
+                return;
+            }
             BugReportSink.accept(player, packet.optionLabel(), packet.systemInfo(), packet.files());
-            if (requested) LogRequestManager.pingDeveloper(player);
         });
     }
 }
