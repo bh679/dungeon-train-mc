@@ -30,7 +30,33 @@ public final class WindyMixinPlugin implements IMixinConfigPlugin {
     public static final String WINDY_MODID = "windy";
     public static final String TARGET = "xyz.bonfiremc.windy.LivingWindCompat";
 
+    public static final String PARTICLE_TARGET = "xyz.bonfiremc.windy.particle.WindParticle";
+    private static final String TWO_SIDED_MIXIN = "WindyParticleTwoSidedMixin";
+
     private final boolean apply = decide();
+    private final boolean twoSided = apply && decideTwoSided();
+
+    /** The streak-back-face mixin needs Windy's particle to still draw through {@code livingWindRotation}. */
+    private static boolean decideTwoSided() {
+        try {
+            ClassNode node = MixinService.getService().getBytecodeProvider()
+                    .getClassNode(PARTICLE_TARGET.replace('.', '/'));
+            List<String> misses = MixinTargetCheck.missing(node, List.of(
+                    MixinTargetRequirement.method("render",
+                            "(Lcom/mojang/blaze3d/vertex/VertexConsumer;Lnet/minecraft/client/Camera;F)V"),
+                    MixinTargetRequirement.method("livingWindRotation", "()Lorg/joml/Quaternionf;")));
+            if (!misses.isEmpty()) {
+                LOGGER.warn("[DungeonTrain] Windy's WindParticle no longer has {}; wind streaks stay one-sided",
+                        String.join(", ", misses));
+                return false;
+            }
+            return true;
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Could not read Windy's WindParticle ({}); wind streaks stay one-sided",
+                    t.getClass().getSimpleName());
+            return false;
+        }
+    }
 
     private static boolean decide() {
         try {
@@ -64,6 +90,7 @@ public final class WindyMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        if (mixinClassName.endsWith(TWO_SIDED_MIXIN)) return twoSided;
         return apply;
     }
 

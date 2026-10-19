@@ -33,8 +33,8 @@ public final class WindyDrive {
     static final double SPEED_PER_PUSH = 10.0;
     private static final double STRONG_SPEED = 1.3;
     /** DT push that gives Windy's base spawn rate. */
-    static final double DENSITY_PUSH = 0.004;
-    static final double MAX_DENSITY = 12.0;
+    static final double DENSITY_PUSH = 0.002;
+    static final double MAX_DENSITY = 24.0;
     private static final String WINDY_PARTICLE = "xyz.bonfiremc.windy.particle.WindParticle";
 
     private static volatile boolean owns = false;
