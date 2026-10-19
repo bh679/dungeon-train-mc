@@ -9,6 +9,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The earned-distance rule: only walking back along the train into new ground brings the reversed bands
@@ -92,6 +94,15 @@ final class ReverseSlideTest {
         assertEquals(0L, step(BOARDED, on(-35.0, -15.0)).earned());                     // too far for a walk
         assertEquals(0L, step(BOARDED,
                 new Sample(-515.0, true, true, -15.0, ReverseSlide.DEV_MAX_EARNED_STEP)).earned());
+    }
+
+    @Test
+    @DisplayName("only players whose position moves the reach count for the reverse advancements")
+    void countsForReach() {
+        assertTrue(ReverseSlide.countsForReach(on(-100.0, NONE)));
+        assertTrue(ReverseSlide.countsForReach(off(-100.0)));
+        assertTrue(ReverseSlide.countsForReach(new Sample(-100.0, true, false, NONE)));     // creative on a server, aboard
+        assertFalse(ReverseSlide.countsForReach(new Sample(-100.0, false, false, NONE)));   // creative on a server, flying off it
     }
 
     @Test
