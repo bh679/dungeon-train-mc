@@ -27916,6 +27916,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "camera-hidden-challenge-hints",
+      "version": "0.1369.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "The camera tells you when a shot almost counted",
+      "summary": "Chasing one of the hidden photo challenges? If your shot nearly made it, a line in chat now says what was off, like a subject standing too far away or one whose eyes didn't make the frame.",
+      "highlights": [],
+      "pr": 2136,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
