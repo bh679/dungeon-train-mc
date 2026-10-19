@@ -108,10 +108,10 @@ final class BookBoostControl {
         if (hover && !lineDrawn() && text != null) {
             // No room for the line under a long question (it is drawn first, so this frame knows):
             // the tooltip carries what it would have said, the "click again" included.
-            gfx.renderTooltip(font, armed ? text
+            tooltip(gfx, font, armed ? text
                 : text.copy().append(" ").append(PriorityBookMessage.boostTooltip()), mouseX, mouseY);
         } else if (hover && !armed) {
-            gfx.renderTooltip(font, PriorityBookMessage.boostTooltip(), mouseX, mouseY);
+            tooltip(gfx, font, PriorityBookMessage.boostTooltip(), mouseX, mouseY);
         }
     }
 
@@ -141,7 +141,7 @@ final class BookBoostControl {
             gfx.drawString(font, line, centerX - font.width(line) / 2, ly, color, false);
             ly += LINE_H;
         }
-        if (hover && !armed) gfx.renderTooltip(font, PriorityBookMessage.boostTooltip(), mouseX, mouseY);
+        if (hover && !armed) tooltip(gfx, font, PriorityBookMessage.boostTooltip(), mouseX, mouseY);
     }
 
     /**
@@ -162,6 +162,13 @@ final class BookBoostControl {
         DungeonTrainNet.sendToServer(new BookBoostPacket(bookType, bookId));
         BookCredits.boostedOne();
         return true;
+    }
+
+    /** Max tooltip width before it wraps: vanilla's own tooltips never wrap, and this one is a sentence. */
+    private static final int TOOLTIP_WIDTH = 200;
+
+    private static void tooltip(GuiGraphics gfx, Font font, Component text, int mouseX, int mouseY) {
+        gfx.renderTooltip(font, font.split(text, TOOLTIP_WIDTH), mouseX, mouseY);
     }
 
     /** What the line says now, or null when there is nothing to say. */
