@@ -82,7 +82,7 @@ public final class PhotoAdvancementEvents {
             List<LivingEntity> inFrame = event.getEntitiesInFrame();
             ModAdvancementTriggers.PHOTO_SUBJECT.get().trigger(player,
                     PhotoSubjects.keys(facts(player, data, inFrame), PhotoScene.of(player, inFrame)));
-            SelfieChallengeHints.send(player, data.getOrDefault(Frame.SELFIE, false), inFrame);
+            SelfieChallengeHints.send(player, event, data.getOrDefault(Frame.SELFIE, false));
             PhotoCounts.record(player, PhotoSubjectTally.of(player, inFrame));
             PhotoFinalMoments.remember(player, event.getFrame(), inFrame);
             data.get(Frame.BIOME).ifPresent(biome -> recordBiome(player, biome));
