@@ -28118,6 +28118,77 @@
       "released": true,
       "released_in": "v0.1378.0",
       "released_at": "2026-10-19T12:33:46Z"
+    },
+    {
+      "id": "advancement-visibility-tweak",
+      "version": "0.1379.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Advancement tweak",
+      "summary": "Advancement tweak.",
+      "highlights": [],
+      "pr": 2153,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "log-request-upload-feedback",
+      "version": "0.1379.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "internal"
+      ],
+      "title": "Bug report fix",
+      "summary": "When you agree to send your logs to the developer, the developer is now told whether they actually arrived.",
+      "highlights": [],
+      "pr": 2151,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "quicker-streams-live-delay",
+      "version": "0.1379.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Quicker Streams: watch the Live Eye with seconds of delay",
+      "summary": "When Quicker Streams is on for the server, Live Eye streams reach TVs and the website about 6 seconds after it happens, instead of up to half a minute. It switches on with the next stream after the reward starts, and back off the same way when it ends.",
+      "highlights": [
+        "Website viewers go from about 28 seconds behind to about 6",
+        "TV viewers go from about 14 seconds behind to about 6",
+        "When a streamer dies, viewers are offered the Live Eye much sooner"
+      ],
+      "pr": 2154,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-clear-long-contents",
+      "version": "0.1379.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Editor fix: Clear empties long carriages",
+      "summary": "Clearing all blocks in a long carriage's contents or a long carriage plot now empties the whole thing, not just the first carriage.",
+      "highlights": [],
+      "pr": 2155,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

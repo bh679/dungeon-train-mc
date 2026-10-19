@@ -24,8 +24,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 /**
  * Server side of the Developer log request: Brennan types {@code /bug} in a player's Discord thread
@@ -181,22 +183,68 @@ public final class LogRequestManager {
     }
 
     /**
-     * A bug-report upload labelled {@link #UPLOAD_LABEL} arrived: true (and the request is closed) only
-     * when it answers an outstanding SEND, so a client can't post unrequested "developer" uploads.
+     * A bug-report upload labelled {@link #UPLOAD_LABEL} arrived. Taken only when it answers an
+     * outstanding SEND (so a client can't post unrequested "developer" uploads); the request is closed
+     * and {@code post} runs. Once the post resolves, Brennan is pinged either way: "logs sent" when the
+     * files landed, "approved but didn't arrive" when the upload dropped. Server thread.
      */
-    public static boolean consumeUpload(ServerPlayer player) {
-        Pending p = PENDING.get(player.getUUID());
-        if (p == null || !p.sending() || System.currentTimeMillis() > p.deadlineMs()) return false;
-        PENDING.remove(player.getUUID());
-        return true;
+    public static void acceptRequestedUpload(ServerPlayer player, Supplier<CompletableFuture<Boolean>> post) {
+        UUID uuid = player.getUUID();
+        Pending p = consumable(PENDING.get(uuid), System.currentTimeMillis());
+        if (p == null) return;
+        PENDING.remove(uuid);
+        MinecraftServer server = player.server;
+        CompletableFuture<Boolean> outcome;
+        try {
+            outcome = post.get();
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] requested log upload failed to start: {}", t.toString());
+            outcome = CompletableFuture.completedFuture(false);
+        }
+        outcome.whenComplete((ok, err) -> server.execute(() -> {
+            if (Boolean.TRUE.equals(ok)) {
+                pingDeveloper(player);
+            } else {
+                pingDeveloperUploadFailed(player, p);
+            }
+        }));
+    }
+
+    /** {@code p} when it is a SEND whose upload window is still open at {@code now}, else null. Package-private for tests. */
+    @Nullable
+    static Pending consumable(@Nullable Pending p, long now) {
+        if (p == null || !p.sending() || now > p.deadlineMs()) return null;
+        return p;
     }
 
     /** After an approved upload is posted: tag Brennan in the player's thread. */
     public static void pingDeveloper(ServerPlayer player) {
+        ping(player, "📎 Logs sent at your request — " + name(player),
+                "They approved the developer log request; the files are in the bug report above.");
+    }
+
+    /**
+     * The player approved but the upload never reached Discord (a dropped or timed-out body is not
+     * retried). Brennan is still tagged, so he knows they tried; a thread request also gets the
+     * one-line answer under his {@code /bug}, like every other outcome.
+     */
+    static void pingDeveloperUploadFailed(ServerPlayer player, Pending p) {
+        ping(player, "📎 Logs approved but didn't arrive — " + name(player),
+                "They approved the developer log request, but the upload dropped before it reached "
+                        + "Discord (a network drop or timeout on their side). Ask them to try /bug again.");
+        if (p.reply() != null) {
+            try {
+                p.reply().send(DeliveryFailureReport.line(name(player), Reason.UPLOAD_FAILED));
+            } catch (Throwable t) {
+                LOGGER.warn("[DungeonTrain] log-request upload-failed reply failed: {}", t.toString());
+            }
+        }
+        LOGGER.info("[DungeonTrain] {}", DeliveryFailureReport.line(name(player), Reason.UPLOAD_FAILED));
+    }
+
+    private static void ping(ServerPlayer player, String title, String description) {
         try {
-            DiscordService.get().postSurveyResponse(player,
-                    "📎 Logs sent at your request — " + name(player),
-                    "They approved the developer log request; the files are in the bug report above.",
+            DiscordService.get().postSurveyResponse(player, title, description,
                     List.of(), List.of(DungeonTrain.BRENNAN_DISCORD_ID));
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] developer log-request ping failed: {}", t.toString());
