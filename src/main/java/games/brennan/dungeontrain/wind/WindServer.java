@@ -57,6 +57,8 @@ public final class WindServer {
     /** How far above a carriage's bounds wind still reaches (jumping, arrows in flight over the roof). */
     private static final double ABOVE_REACH = 4.0;
     private static final double SIDE_REACH = 1.0;
+    /** Wind only touches things within this many carriages (rooms) of a player, either way along the train. */
+    static final int WIND_ROOMS = 3;
 
     /** Immutable snapshot of everything the wind needs. */
     public record State(WindProfile profile, int seed, long startX, boolean forcedOff) {
@@ -196,13 +198,18 @@ public final class WindServer {
         logProbes(level);
         State s = state;
         if (!s.active()) return;
+        List<ServerPlayer> players = level.players().stream().filter(p -> !p.isSpectator()).toList();
+        if (players.isEmpty()) return;
         List<Trains.Carriage> carriages = Trains.allCarriages(level);
         if (carriages.isEmpty()) return;
         long tick = level.getGameTime();
+        // Only near a player: WIND_ROOMS carriages either way. Nobody sees wind further out, so it isn't computed.
+        double reach = WIND_ROOMS * carriages.get(0).provider().dims().length();
         // Neighbouring carriages' boxes overlap at the couplings: push each entity once per tick.
         Set<Entity> done = Collections.newSetFromMap(new IdentityHashMap<>());
         for (Trains.Carriage c : carriages) {
-            pushAround(level, c.ship(), s, tick, done);
+            if (!nearAnyPlayer(c.ship().worldAABB(), players, reach)) continue;
+            pushAround(level, c.ship(), s, tick, done, players, reach);
         }
         pushedSinceReport += done.size();
         if (tick % REPORT_PERIOD == 0) {
@@ -212,7 +219,27 @@ public final class WindServer {
         }
     }
 
-    private static void pushAround(ServerLevel level, ManagedShip ship, State s, long tick, Set<Entity> done) {
+    /** Horizontal distance from the carriage group's box to the nearest player is within {@code reach}. */
+    private static boolean nearAnyPlayer(AABBdc bb, List<ServerPlayer> players, double reach) {
+        for (ServerPlayer p : players) {
+            double dx = Math.max(0.0, Math.max(bb.minX() - p.getX(), p.getX() - bb.maxX()));
+            double dz = Math.max(0.0, Math.max(bb.minZ() - p.getZ(), p.getZ() - bb.maxZ()));
+            if (dx * dx + dz * dz <= reach * reach) return true;
+        }
+        return false;
+    }
+
+    private static boolean withinReach(Entity e, List<ServerPlayer> players, double reach) {
+        for (ServerPlayer p : players) {
+            double dx = e.getX() - p.getX();
+            double dz = e.getZ() - p.getZ();
+            if (dx * dx + dz * dz <= reach * reach) return true;
+        }
+        return false;
+    }
+
+    private static void pushAround(ServerLevel level, ManagedShip ship, State s, long tick, Set<Entity> done,
+                                   List<ServerPlayer> players, double reach) {
         AABBdc bb = ship.worldAABB();
         if (bb.maxX() < s.startX()) return; // whole carriage still before the wind
         if (!(ship instanceof SableManagedShip sable)) return;
@@ -221,7 +248,7 @@ public final class WindServer {
         AABB box = new AABB(bb.minX() - SIDE_REACH, bb.minY(), bb.minZ() - SIDE_REACH,
                 bb.maxX() + SIDE_REACH, bb.maxY() + ABOVE_REACH, bb.maxZ() + SIDE_REACH);
         for (Entity e : level.getEntities((Entity) null, box, WindServer::pushable)) {
-            if (done.contains(e)) continue;
+            if (done.contains(e) || !withinReach(e, players, reach)) continue;
             // Only entities that will actually move this tick: a non-ticking one would just bank velocity.
             if (!level.isPositionEntityTicking(e.blockPosition())) continue;
             WindSample w = s.sampleAt(e.getX(), tick);

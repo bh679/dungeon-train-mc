@@ -1,7 +1,44 @@
 {
   "udEndX": 21194,
-  "note": "from/to are blocks past the end of the first Upside-down band",
+  "startX": 0,
+  "note": "from/to are blocks past the end of the first Upside-down band (negative \u003d before it, from spawn on); the wind is calm before 0",
   "bands": [
+    {
+      "label": "overworld",
+      "from": -21194,
+      "to": -18444,
+      "run": 0
+    },
+    {
+      "label": "nether",
+      "from": -18444,
+      "to": -14630,
+      "run": 0
+    },
+    {
+      "label": "overworld wwoo",
+      "from": -14630,
+      "to": -11380,
+      "run": 0
+    },
+    {
+      "label": "end",
+      "from": -11380,
+      "to": -9440,
+      "run": 0
+    },
+    {
+      "label": "end bop",
+      "from": -9440,
+      "to": -6700,
+      "run": 0
+    },
+    {
+      "label": "upside_down",
+      "from": -6700,
+      "to": 0,
+      "run": 0
+    },
     {
       "label": "overworld bop",
       "from": 0,
