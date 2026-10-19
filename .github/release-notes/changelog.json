@@ -28044,6 +28044,23 @@
       "released": true,
       "released_in": "v0.1375.0",
       "released_at": "2026-10-19T11:46:32Z"
+    },
+    {
+      "id": "log-request-upload-feedback",
+      "version": "0.1376.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "internal"
+      ],
+      "title": "Bug report fix",
+      "summary": "When you agree to send your logs to the developer, the developer is now told whether they actually arrived.",
+      "highlights": [],
+      "pr": 2151,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
