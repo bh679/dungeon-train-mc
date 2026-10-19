@@ -202,7 +202,7 @@ public final class LiveHeadViewer {
         }
 
         if (streaming && !showingOwnBroadcast(frame, streamer.playlistUrl())) {
-            int n = countdownSeconds(streamer.streamStartedMs(), LiveFeedClientConfig.segmentSeconds(),
+            int n = countdownSeconds(streamer.streamStartedMs(), streamer.segmentSeconds(),
                 System.currentTimeMillis());
             countdown(g, b, font, n);
         }
