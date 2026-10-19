@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Train Wind Tuner</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --panel: #ffffff; --ink: #1d1c1a; --muted: #6b6860; --line: #e2dfd6;
+    --steady: #2f6db5; --gust: #d0582b; --band: #2f6db533; --heading: #7a4fb0; --rate: #3d8f5a;
+    --mark: #1d1c1a; --ok: #2f8a4c; --bad: #c0392b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151515; --panel: #1f1f1e; --ink: #ecebe6; --muted: #9a978f; --line: #33322f;
+      --steady: #6ea6ea; --gust: #f08a5d; --band: #6ea6ea33; --heading: #b48ce8; --rate: #6cc48a;
+      --mark: #ecebe6; --ok: #57c27a; --bad: #ef6b5b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, sans-serif; }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 17px; margin: 0 12px 0 0; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 16px; padding: 16px 20px 40px; }
+  @media (max-width: 1100px) { main { grid-template-columns: minmax(0, 1fr); } }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; }
+  section h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 6px; }
+  .hint { color: var(--muted); font-size: 12px; margin: 0 0 8px; }
+  canvas { width: 100%; display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .legend i { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin-right: 5px; border-radius: 2px; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 6px 0; }
+  label { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+  input[type=number], input[type=text] { width: 86px; padding: 3px 5px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); color: var(--ink); font: inherit; font-size: 12px; }
+  input[type=range] { width: 220px; }
+  button { padding: 5px 11px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); font: inherit; cursor: pointer; }
+  button.primary { background: var(--steady); border-color: var(--steady); color: #fff; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  th { text-align: left; color: var(--muted); font-weight: 500; padding: 3px 2px; white-space: nowrap; }
+  td { padding: 2px; }
+  td input[type=number] { width: 100%; min-width: 52px; }
+  tr.sel td { background: var(--band); }
+  .badge { font-size: 12px; padding: 2px 8px; border-radius: 99px; border: 1px solid currentColor; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); }
+  #status { font-size: 12px; color: var(--muted); }
+  .readout { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--muted); }
+  .scroll { overflow-x: auto; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Train Wind Tuner</h1>
+  <span id="parity" class="badge">parity …</span>
+  <button id="save" class="primary">Save profile.json</button>
+  <button id="revert">Revert</button>
+  <span id="status"></span>
+</header>
+<main>
+  <div>
+    <section>
+      <h2>Along the line</h2>
+      <p class="hint">Blocks past the end of the first Upside-down band. Band strip from bands.json. Click to pick a spot.</p>
+      <canvas id="line" height="300"></canvas>
+      <div class="legend">
+        <span><i style="background:var(--steady)"></i>steady push</span>
+        <span><i style="background:var(--band);height:8px"></i>flutter range</span>
+        <span><i style="background:var(--gust)"></i>gust peak (steady + strongest gust)</span>
+        <span><i style="background:var(--rate)"></i>gusts / min (right axis)</span>
+        <span><i style="background:var(--heading)"></i>direction wander ± deg (right axis ÷10)</span>
+      </div>
+    </section>
+    <section>
+      <h2>What it feels like</h2>
+      <div class="row">
+        <label>at <input type="number" id="d" step="500" min="0"> blocks past UD</label>
+        <input type="range" id="dRange" min="0" max="150000" step="250">
+        <label>window <input type="number" id="win" value="120" min="10" step="10"> s</label>
+        <label><input type="checkbox" id="ride"> ride the train at <input type="number" id="speed" value="8" step="1" min="0"> blocks/s</label>
+        <label>seed <input type="text" id="seed" value="1592639215"></label>
+        <button id="reroll">new seed</button>
+      </div>
+      <p class="readout" id="feelStats"></p>
+      <canvas id="feel" height="240"></canvas>
+      <div class="legend">
+        <span><i style="background:var(--steady)"></i>steady</span>
+        <span><i style="background:var(--gust)"></i>total with gusts</span>
+        <span>Push is blocks/tick² at multiplier 1. A grounded player settles at about 2.2 × that in blocks/tick (walk ≈ 0.22).</span>
+      </div>
+      <canvas id="heading" height="150"></canvas>
+      <div class="legend"><span><i style="background:var(--heading)"></i>heading the wind blows toward (deg; 0 = +X along the track, 90 = +Z)</span></div>
+    </section>
+  </div>
+  <div>
+    <section>
+      <h2>Profile</h2>
+      <div class="row">
+        <label><input type="checkbox" id="enabled"> enabled</label>
+        <label>heading° <input type="number" id="headingDeg" step="5"></label>
+        <label>sneak × <input type="number" id="sneakFactor" step="0.05"></label>
+        <label>visual lead (ticks) <input type="number" id="visualLeadTicks" step="1"></label>
+      </div>
+      <div class="row" id="mults"></div>
+    </section>
+    <section>
+      <h2>Stages</h2>
+      <p class="hint">Keyframes by blocks past UD, linearly blended. The last one holds forever.</p>
+      <div class="scroll"><table id="stages"></table></div>
+      <div class="row"><button id="addStage">+ stage</button></div>
+    </section>
+  </div>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>
