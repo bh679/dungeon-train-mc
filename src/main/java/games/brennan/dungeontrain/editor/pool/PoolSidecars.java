@@ -80,7 +80,7 @@ public final class PoolSidecars {
             LOGGER.warn("[DungeonTrain] Pool move: weights for '{}' did not carry: {}", to.id(), e.toString());
             dropped.add("weight");
         }
-        carryCredit(from, to);
+        carryCredit(from, to, dropped);
         return dropped;
     }
 
@@ -253,13 +253,21 @@ public final class PoolSidecars {
         };
     }
 
-    private static void carryCredit(PoolRef from, PoolRef to) {
+    /** The player-facing name of a credit that could not travel — {@code to} has no relay naming. */
+    static final String DROPPED_CREDIT = "builder credit";
+
+    private static void carryCredit(PoolRef from, PoolRef to, List<String> dropped) {
         EditorRelayWrite.Naming source = namingOf(from);
         if (source == null) return;
         BuildCredits.Credit credit = BuildCredits.get(source.kind(), source.subKind(), source.id());
         EditorRelayWrite.Naming target = namingOf(to);
-        if (credit != null && credit.known() && target != null) {
+        boolean known = credit != null && credit.known();
+        if (known && target != null) {
             BuildCredits.put(target.kind(), target.subKind(), target.id(), credit);
+        } else if (known) {
+            // The destination pool (a whole half) has no relay naming to file it under; the source is
+            // about to be removed, so say so rather than losing it silently.
+            dropped.add(DROPPED_CREDIT);
         }
         BuildCredits.forget(source.kind(), source.subKind(), source.id());
     }

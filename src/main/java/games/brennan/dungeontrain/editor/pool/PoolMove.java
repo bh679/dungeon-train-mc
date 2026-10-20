@@ -130,6 +130,7 @@ public final class PoolMove {
         if (boxOpt.isEmpty()) return Result.of(Outcome.BOX_MISMATCH, from.tier().name().toLowerCase(Locale.ROOT));
         CarriageDims box = boxOpt.get();
 
+        boolean written = false;
         try {
             StructureTemplate saved = read(overworld, from, box, groupSize);
             if (saved == null) {
@@ -142,6 +143,7 @@ public final class PoolMove {
             if (target == null) return Result.of(Outcome.BOX_MISMATCH, boxText(box));
 
             write(landing, target);
+            written = true;
             List<String> dropped = PoolSidecars.carry(from, landing, box);
             remove(overworld, dims, from, source);
             show(overworld, dims, landing);
@@ -151,7 +153,23 @@ public final class PoolMove {
             return new Result(Outcome.MOVED, landing, dropped, "");
         } catch (IOException | RuntimeException e) {
             LOGGER.error("[DungeonTrain] Pool move: {} '{}' -> {} failed", from.pool().key(), from.id(), to.key(), e);
+            // The copy landed but the original could not be taken away: take the copy back out, so
+            // a failed move never leaves the template in two pools with its weight counted twice.
+            if (written) rollback(overworld, dims, landing);
             return Result.of(Outcome.FAILED, e.toString());
+        }
+    }
+
+    /** Remove the destination copy of a move that failed after {@link #write}; a failure here is only logged. */
+    private static void rollback(ServerLevel overworld, CarriageDims dims, PoolRef landing) {
+        try {
+            Template landed = landing.template();
+            if (landed == null) return;
+            remove(overworld, dims, landing, landed);
+            LOGGER.info("[DungeonTrain] Pool move: rolled back the copy at {} '{}'", landing.pool().key(), landing.id());
+        } catch (IOException | RuntimeException e) {
+            LOGGER.error("[DungeonTrain] Pool move: could not roll back the copy at {} '{}' — it stands in both pools",
+                landing.pool().key(), landing.id(), e);
         }
     }
 
@@ -228,8 +246,18 @@ public final class PoolMove {
                 CarriageContents.Custom c = landing.asContents();
                 // The size names the row the plot lands in, so it is set before the registry places it.
                 TemplateSizeStore.CONTENTS.set(landing.id(), landing.tier().contentsSize());
-                CarriageContentsStore.save(c, template);
-                if (dev && CarriageContentsStore.sourceTreeAvailable()) CarriageContentsStore.saveToSource(c, template);
+                try {
+                    CarriageContentsStore.save(c, template);
+                    if (dev && CarriageContentsStore.sourceTreeAvailable()) CarriageContentsStore.saveToSource(c, template);
+                } catch (IOException e) {
+                    try {
+                        TemplateSizeStore.CONTENTS.forget(landing.id());
+                    } catch (IOException forgetFailed) {
+                        LOGGER.warn("[DungeonTrain] Pool move: size entry for '{}' could not be forgotten: {}",
+                            landing.id(), forgetFailed.toString());
+                    }
+                    throw e;
+                }
                 CarriageContentsRegistry.register(c);
                 // A template arriving in Contents starts in every carriage's Contents list, like a new one.
                 CarriageContentsWeights.markNewOptIn(landing.id());
