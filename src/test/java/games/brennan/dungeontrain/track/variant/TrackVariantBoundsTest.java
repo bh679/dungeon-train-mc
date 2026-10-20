@@ -59,6 +59,14 @@ final class TrackVariantBoundsTest {
     /** abandonedroom's authored footprint, from its template. */
     private static final Vec3i REAL_SIZE = new Vec3i(20, 11, 26);
 
+    /**
+     * Rooms whose sidecar is known to reach past the template and is left alone on purpose:
+     * statue2 carries 139 cells at z=10..19 against a 35x10x10 template, a whole deeper layout
+     * rather than a stray row, so deciding whether the template or the sidecar is right is an
+     * authoring call, not a test's. Shrink this set as they are resolved.
+     */
+    private static final java.util.Set<String> KNOWN_OVERSIZED_SIDECARS = java.util.Set.of("statue2");
+
     /** What {@code PortalRoomSizes} answers with before the template has loaded. */
     private static final Vec3i BUILT_IN_SIZE = new Vec3i(11, 7, 13);
 
@@ -184,5 +192,76 @@ final class TrackVariantBoundsTest {
             "cells above the shorter interior are bounded out of the view");
         assertEquals(total, CarriageContentsVariantBlocks.loadFor(contents, new Vec3i(7, 40, 5)).size(),
             "the taller interior still sees every authored cell");
+    }
+
+    @Test
+    @DisplayName("a bounded footprint is cropped once and the view reused")
+    void boundedViewIsMemoisedPerFootprint() {
+        TrackVariantBlocks first = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
+        TrackVariantBlocks second = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
+        assertSame(first, second,
+            "a room stamped many times at one size must not re-crop (and re-warn) on every stamp");
+        assertTrue(first.isCropped());
+
+        TrackVariantBlocks other = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, new Vec3i(11, 7, 14));
+        assertTrue(other != first, "a different footprint is its own view");
+    }
+
+    @Test
+    @DisplayName("an edit to the sidecar retires the memoised view")
+    void editRetiresTheMemoisedView() {
+        TrackVariantBlocks before = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
+        BlockPos cell = new BlockPos(2, 2, 2);
+        boolean fresh = before.statesAt(cell) == null;
+        TrackVariantBlocks whole = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, REAL_SIZE);
+        whole.put(cell, List.of(
+            VariantState.of(Blocks.STONE_BRICKS.defaultBlockState()),
+            VariantState.of(Blocks.MOSSY_STONE_BRICKS.defaultBlockState())));
+
+        TrackVariantBlocks after = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
+        assertTrue(after != before, "a view built before the edit must not be handed out after it");
+        assertNotNull(after.statesAt(cell), "the fresh view carries the edit");
+        assertEquals(cellsWithinBuiltIn + (fresh ? 1 : 0), after.size());
+
+        assertTrue(after.remove(cell));
+        assertTrue(TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE) != after,
+            "an edit through the view retires it too");
+    }
+
+    /**
+     * Every bundled portal-room sidecar fits its own template. A stray cell outside the footprint
+     * costs a WARN on load for every player; two rooms shipped that way for six weeks (book: five
+     * cells one row past the far wall; statue6: its whole last layer keyed one row too far) and
+     * were 6,400 lines across 92 bug reports before anyone saw them. Fail the build instead.
+     */
+    @Test
+    @DisplayName("every bundled portal-room sidecar fits its template")
+    void bundledRoomSidecarsFitTheirTemplates() throws Exception {
+        java.net.URL dir = TrackVariantBoundsTest.class.getResource("/data/dungeontrain/portals/room");
+        assertNotNull(dir, "bundled portal rooms missing from the test classpath");
+        java.nio.file.Path root = java.nio.file.Path.of(dir.toURI());
+        List<String> rooms;
+        try (java.util.stream.Stream<java.nio.file.Path> files = java.nio.file.Files.list(root)) {
+            rooms = files.map(p -> p.getFileName().toString())
+                .filter(n -> n.endsWith(TrackKind.VARIANTS_EXT))
+                .map(n -> n.substring(0, n.length() - TrackKind.VARIANTS_EXT.length()))
+                .filter(n -> java.nio.file.Files.exists(root.resolve(n + ".nbt")))
+                .sorted().toList();
+        }
+        assertTrue(rooms.size() > 10, "expected the bundled rooms, found " + rooms);
+        List<String> outside = new java.util.ArrayList<>();
+        for (String room : rooms) {
+            if (KNOWN_OVERSIZED_SIDECARS.contains(room)) continue;
+            Vec3i size;
+            try (InputStream in = java.nio.file.Files.newInputStream(root.resolve(room + ".nbt"))) {
+                net.minecraft.nbt.ListTag sz = net.minecraft.nbt.NbtIo.readCompressed(in,
+                    net.minecraft.nbt.NbtAccounter.unlimitedHeap()).getList("size", net.minecraft.nbt.Tag.TAG_INT);
+                size = new Vec3i(sz.getInt(0), sz.getInt(1), sz.getInt(2));
+            }
+            if (TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, room, size).isCropped()) {
+                outside.add(room + " (" + size.getX() + "x" + size.getY() + "x" + size.getZ() + ")");
+            }
+        }
+        assertTrue(outside.isEmpty(), "sidecar cells outside their template footprint: " + outside);
     }
 }
