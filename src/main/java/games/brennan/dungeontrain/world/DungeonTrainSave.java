@@ -56,6 +56,8 @@ public final class DungeonTrainSave {
     private static final String WORLD_DATA_FILE = DungeonTrainWorldData.NAME + ".dat";
     /** Where {@code SavedData} keeps its payload inside the file. */
     private static final String SAVED_DATA_ROOT = "data";
+    /** The files a save's level data can live in, in the order vanilla tries them. */
+    private static final String[] LEVEL_DATA_FILES = {"level.dat", "level.dat_old"};
 
     private DungeonTrainSave() {}
 
@@ -85,6 +87,18 @@ public final class DungeonTrainSave {
         CompoundTag data = worldData.getCompound(SAVED_DATA_ROOT);
         if (data.contains(PRESET_MARKER_TAG)) return data.getBoolean(PRESET_MARKER_TAG);
         return compatibleTerrainDefault && isVanillaOverworld(levelDat) && startsWithTrain(data);
+    }
+
+    /**
+     * Whether {@code levelDir} holds any level data at all ({@code level.dat} or {@code level.dat_old}),
+     * readable or not. A folder without either is not a world: vanilla's quick-play path creates one
+     * on the way to a load that is bound to fail, and there is nothing in it for anyone to fix.
+     */
+    public static boolean hasLevelData(Path levelDir) {
+        for (String name : LEVEL_DATA_FILES) {
+            if (Files.isRegularFile(levelDir.resolve(name))) return true;
+        }
+        return false;
     }
 
     /** Whether a parsed {@code level.dat} root stores a {@code dungeontrain:} overworld. Missing tags read as non-DT. */
@@ -118,7 +132,7 @@ public final class DungeonTrainSave {
 
     @Nullable
     private static CompoundTag readLevelDat(Path levelDir) {
-        for (String name : new String[] {"level.dat", "level.dat_old"}) {
+        for (String name : LEVEL_DATA_FILES) {
             CompoundTag tag = readCompressed(levelDir.resolve(name));
             if (tag != null) return tag;
         }
