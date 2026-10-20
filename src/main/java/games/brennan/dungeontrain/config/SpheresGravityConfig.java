@@ -15,7 +15,7 @@ public final class SpheresGravityConfig {
     public static final double DEFAULT_STRENGTH = 0.6;
     public static final double DEFAULT_FALLOFF = 0.5;
     public static final double MAX_FALLOFF = 3.0;
-    public static final double DEFAULT_REACH_RADII = 6.0;
+    public static final double DEFAULT_REACH_RADII = 4.0;
     public static final double MIN_REACH_RADII = 1.0;
     public static final double MAX_REACH_RADII = 8.0;
     public static final double DEFAULT_RIDER_FACTOR = 0.3;
@@ -48,7 +48,7 @@ public final class SpheresGravityConfig {
                 .defineInRange("spheresGravityFalloff", DEFAULT_FALLOFF, 0.0, MAX_FALLOFF);
         reachRadii = b
                 .comment("How far a sphere's pull reaches, in multiples of its radius from its centre. Past half",
-                        "way to this edge the pull fades smoothly to nothing there. Default 6.0.")
+                        "way to this edge the pull fades smoothly to nothing there. Default 4.0.")
                 .defineInRange("spheresGravityReachRadii", DEFAULT_REACH_RADII, MIN_REACH_RADII, MAX_REACH_RADII);
         riderFactor = b
                 .comment("Fraction of the pull felt by anyone out on the train (a roof, a flatbed). Inside a",
