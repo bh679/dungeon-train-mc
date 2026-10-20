@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -90,6 +92,8 @@ public final class EndBandBiomeRemap {
     private final long seed;
     private final boolean enabled;
     private final Table<Holder<Biome>> table;
+    /** {@link #wrap}'s wrapper per live source. */
+    private final Map<BiomeSource, BiomeSource> wrapped = new ConcurrentHashMap<>();
 
     private EndBandBiomeRemap(long seed, boolean enabled, Table<Holder<Biome>> table) {
         this.seed = seed;
@@ -182,9 +186,14 @@ public final class EndBandBiomeRemap {
         return pool.get(pickIndex(seed, qx, qz, pool.size()));
     }
 
-    /** {@code live} seen through {@link #apply}; its possible biomes are {@code live}'s own, in the same order. */
+    /**
+     * {@code live} seen through {@link #apply}; its possible biomes are {@code live}'s own, in the same order.
+     * One wrapper per live source for the life of this remap, so callers that key per-server state on the
+     * source instance ({@code EndBandBiomeFill}, the sampler's carver verdict) see the same key every sample.
+     */
     public BiomeSource wrap(BiomeSource live) {
-        return isActive() ? new Remapped(live) : live;
+        if (!isActive()) return live;
+        return wrapped.computeIfAbsent(live, Remapped::new);
     }
 
     /**
