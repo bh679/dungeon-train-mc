@@ -44,6 +44,25 @@ import java.util.concurrent.atomic.AtomicReference;
  * and matching on either of those would have suppressed the one report that diagnosed it. What it
  * does not do is go through {@code waitUntilNextTick}, because the work is inside {@code tickServer}.
  * Those frames are the whole signal, and nothing broader is tested.</p>
+ *
+ * <h2>What is a stall</h2>
+ * <p>The idle test alone was not enough. A paused integrated server does not stay parked in
+ * {@code waitUntilNextTick}: its tick counter stands still while the thread spins through
+ * {@code runServer}'s bookkeeping ({@code Util.getNanos}, {@code logFullTickTime},
+ * {@code finishMeasuringTaskExecutionTime}, ModernFix's {@code preventTicks} wrapper,
+ * {@code isPaused}), and a sample that lands on any of those frames reads as neither idle nor
+ * paused. A player log of October 2026 carried 53 dumps of exactly that, the last claiming a stall
+ * of ~9,480,025 ms, which filled the 512 KB log tail a bug report attaches and buried the lines
+ * that matter.</p>
+ *
+ * <p>So besides the negative test there is a positive one: {@link #isInsideTick} asks whether the
+ * thread is actually doing tick work. A stall is reported only when the stack carries
+ * {@code MinecraftServer.tickServer} or {@code tickChildren} (work inside a tick),
+ * {@code BlockableEventLoop.doRunTask} (a queued task between ticks) or the off-thread chunk-load
+ * marshal {@code lambda$getChunk$0}. Checked against the 172 watchdog dumps in that sweep's
+ * bug-report corpus: every one of the 84 genuine stalls (Sable's {@code inhabitChunk} chunk load,
+ * the synchronous log flush, {@code saveAll}, the fluid post-process) carries one of those frames,
+ * and none of the 88 pause dumps does.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class ServerStallWatchdog {
@@ -108,6 +127,12 @@ public final class ServerStallWatchdog {
     /** Frames kept per requester thread — enough to reach the mod that asked, not the whole stack. */
     private static final int REQUESTER_FRAMES = 25;
 
+    /** Methods on {@link #SERVER_CLASS} that mean the thread is inside a tick. */
+    private static final String[] TICK_METHODS = {"tickServer", "tickChildren"};
+    /** The event loop, and the method that runs one queued task between ticks (a chunk load, a save). */
+    private static final String EVENT_LOOP_CLASS = "net.minecraft.util.thread.BlockableEventLoop";
+    private static final String RUN_TASK_METHOD = "doRunTask";
+
     private static final AtomicReference<Thread> RUNNING = new AtomicReference<>();
 
     private ServerStallWatchdog() {}
@@ -163,6 +188,8 @@ public final class ServerStallWatchdog {
                 StackTraceElement[] stack = serverThread.getStackTrace();
                 // Between ticks rather than stuck in one — a pause, not a freeze. Nothing to say.
                 if (isIdleBetweenTicks(stack)) continue;
+                // Not doing tick work either (the paused integrated server's bookkeeping spin).
+                if (!isInsideTick(stack)) continue;
 
                 dumpServerThread(server, serverThread, stack, stalled);
                 reported = true;
@@ -192,6 +219,30 @@ public final class ServerStallWatchdog {
             }
         }
         return false;
+    }
+
+    /**
+     * True when this stack shows the server thread doing work a stall can be made of: inside
+     * {@code tickServer}/{@code tickChildren}, running a queued task in
+     * {@code BlockableEventLoop.doRunTask}, or servicing an off-thread chunk load — see the class
+     * javadoc for the corpus this was validated against. The whole stack is scanned, with method
+     * names matched as substrings because mixins rename the frames they wrap. Package-private,
+     * Minecraft-free, unit-tested.
+     */
+    static boolean isInsideTick(StackTraceElement[] stack) {
+        if (stack == null) return false;
+        for (StackTraceElement frame : stack) {
+            String cls = frame.getClassName();
+            String method = frame.getMethodName();
+            if (SERVER_CLASS.equals(cls)) {
+                for (String tick : TICK_METHODS) {
+                    if (method.contains(tick)) return true;
+                }
+            } else if (EVENT_LOOP_CLASS.equals(cls) && method.contains(RUN_TASK_METHOD)) {
+                return true;
+            }
+        }
+        return isOffThreadChunkLoad(stack);
     }
 
     /**
