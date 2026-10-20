@@ -106,6 +106,34 @@ public final class TrainExposure {
     }
 
     /**
+     * Boxed in by carriage blocks on every side — the frostbite's only shelter. Solid plot blocks within
+     * {@link #WALL_SCAN} along both axes at foot and head height, within {@link #COVER_SCAN} overhead and within
+     * {@link #DECK_SCAN} underfoot. A flatbed, a coupling pad, an open roof or a doorway-sized gap in the direction
+     * scanned leaves you in the cold; the wind's lee and cover tests are not enough here.
+     */
+    public static boolean enclosed(SubLevel sub, Entity e) {
+        if (sub == null || sub.isRemoved()) return false;
+        LevelPlot plot = sub.getPlot();
+        if (plot == null) return false;
+        Vector3d feet = sub.logicalPose().transformPositionInverse(new Vector3d(e.getX(), e.getY() + 0.05, e.getZ()));
+        for (double rise : WALL_ROWS) {
+            double y = feet.y + rise;
+            if (!wallToward(plot, feet.x, y, feet.z, 0, 1) || !wallToward(plot, feet.x, y, feet.z, 0, -1)) return false;
+            if (!wallToward(plot, feet.x, y, feet.z, 1, 0) || !wallToward(plot, feet.x, y, feet.z, -1, 0)) return false;
+        }
+        BlockPos column = BlockPos.containing(feet.x, feet.y, feet.z);
+        boolean floor = false;
+        for (int dy = 0; dy <= DECK_SCAN && !floor; dy++) floor = solid(plot, column.below(dy));
+        if (!floor) return false;
+        double eye = Math.max(0.2, e.getEyeHeight());
+        BlockPos head = BlockPos.containing(feet.x, feet.y + eye, feet.z);
+        for (int dy = 1; dy <= COVER_SCAN; dy++) {
+            if (solid(plot, head.above(dy))) return true;
+        }
+        return false;
+    }
+
+    /**
      * The carriage the client-side player is over: Sable's tracking sub-level when it is carrying them, else
      * any sub-level whose bounds reach under their feet (mid-jump, or standing on a pad Sable hasn't latched).
      */
@@ -143,8 +171,12 @@ public final class TrainExposure {
     }
 
     private static boolean wallToward(LevelPlot plot, double x, double y, double z, int dir) {
+        return wallToward(plot, x, y, z, 0, dir);
+    }
+
+    private static boolean wallToward(LevelPlot plot, double x, double y, double z, int dx, int dz) {
         for (int step = 0; step <= WALL_SCAN; step++) {
-            if (solid(plot, BlockPos.containing(x, y, z + dir * step))) return true;
+            if (solid(plot, BlockPos.containing(x + dx * step, y, z + dz * step))) return true;
         }
         return false;
     }
