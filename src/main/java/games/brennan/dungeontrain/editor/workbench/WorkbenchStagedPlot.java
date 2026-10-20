@@ -12,7 +12,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * One staged build where it stands — the answer every per-type editor aid asks the Workbench for:
@@ -84,9 +87,25 @@ public record WorkbenchStagedPlot(String stagedId, @Nullable BuilderPhotoPaths.K
      * uploaded before rooms carried one reads as the defaults.
      */
     public static PortalRoomSettings roomSettings(String stagedId) {
-        return WorkbenchStagingStore.find(stagedId)
+        if (stagedId == null) return PortalRoomSettings.DEFAULT;
+        // Parsed once per document: the labels, door ghosts, plot sky and settings rows all ask every
+        // editor tick, and the document embeds every sidecar file the build carries.
+        return SETTINGS.computeIfAbsent(stagedId.toLowerCase(Locale.ROOT), key -> WorkbenchStagingStore.find(stagedId)
                 .flatMap(b -> TemplateSidecars.weightsModeOf(b.sidecars()))
                 .map(PortalRoomSettings::parse)
-                .orElse(PortalRoomSettings.DEFAULT);
+                .orElse(PortalRoomSettings.DEFAULT));
+    }
+
+    /** Parsed settings by lower-cased staged id — dropped whenever the shelf rewrites a document. */
+    private static final Map<String, PortalRoomSettings> SETTINGS = new ConcurrentHashMap<>();
+
+    /** Forget {@code stagedId}'s parsed settings; the next {@link #roomSettings} re-reads its document. */
+    static void forgetSettings(String stagedId) {
+        if (stagedId != null) SETTINGS.remove(stagedId.toLowerCase(Locale.ROOT));
+    }
+
+    /** Forget every parsed settings entry — the shelf's cache was dropped. */
+    static void forgetAllSettings() {
+        SETTINGS.clear();
     }
 }

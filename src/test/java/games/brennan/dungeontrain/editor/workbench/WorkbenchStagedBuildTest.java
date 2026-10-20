@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The staged build record: its id rule and the JSON the shelf writes for it. */
@@ -30,8 +31,9 @@ final class WorkbenchStagedBuildTest {
     void metaJsonRoundTrip() {
         WorkbenchStagedBuild build = new WorkbenchStagedBuild("brick-cabin-4271", 4271, "contents", "", "Brick Cabin",
             "desert", "0000-1111", "Alex", true, new Vec3i(11, 7, 13), "{\"files\":{}}",
-            Map.of("gold_hoard", "{\"x\":1}"), 1700000000000L);
+            Map.of("gold_hoard", "{\"x\":1}"), 1700000000000L, true);
         JsonObject meta = WorkbenchStagingStore.metaJson(build);
+        assertTrue(meta.get("live").getAsBoolean());
         assertEquals("brick-cabin-4271", meta.get("stagedId").getAsString());
         assertEquals(4271, meta.get("relayId").getAsInt());
         assertEquals("contents", meta.get("kind").getAsString());
@@ -49,6 +51,15 @@ final class WorkbenchStagedBuildTest {
     }
 
     @Test
+    @DisplayName("a record with no relay named is a dev-relay one — what old shelf folders read as")
+    void liveDefaultsToDev() {
+        WorkbenchStagedBuild build = new WorkbenchStagedBuild("a-1", 1, "building", "", "A", "", "u", "n", false,
+            new Vec3i(1, 1, 1), "", Map.of(), 5L);
+        assertFalse(build.live());
+        assertFalse(WorkbenchStagingStore.metaJson(build).get("live").getAsBoolean());
+    }
+
+    @Test
     @DisplayName("withSize keeps everything but the footprint")
     void withSize() {
         WorkbenchStagedBuild build = new WorkbenchStagedBuild("a-1", 1, "building", "", "A", "", "u", "n", false,
@@ -58,5 +69,6 @@ final class WorkbenchStagedBuildTest {
         assertEquals(build.stagedId(), resized.stagedId());
         assertEquals(build.relayKind(), resized.relayKind());
         assertEquals(build.stagedAt(), resized.stagedAt());
+        assertEquals(build.live(), resized.live());
     }
 }
