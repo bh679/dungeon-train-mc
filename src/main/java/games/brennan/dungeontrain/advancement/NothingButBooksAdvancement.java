@@ -13,12 +13,23 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * "Nothing But Books" — granted when every one of the player's 27 main-storage
- * inventory slots holds a mod-authored story book. Deliberately scoped to main
+ * "Nothing But Books" — granted when the player's 27 main-storage inventory
+ * slots hold nothing but mod-authored story books, at least
+ * {@value #MAIN_STORAGE_SLOTS} of them in all. Deliberately scoped to main
  * storage only (indices {@value #MAIN_STORAGE_START}–{@value #MAIN_STORAGE_END}
  * of {@link Inventory}) — hotbar (0–8), armor (36–39) and offhand (40) don't
  * count, matching the "your whole inventory" framing.
+ *
+ * <p>Stacks count by their size. Written books stack to 16, and identical
+ * unresolved community-book placeholders merge when shift-clicked out of a
+ * chest, so a player who took well over 27 books from a book room could end up
+ * with gaps in the grid and still be refused — that is exactly what happened.
+ * Nine stacks of three and eighteen empty slots now pass, just as 27 singles
+ * always did. A slot holding anything that is not a story book still fails.</p>
  *
  * <p>A stack counts as a "story book" when it's a vanilla
  * {@link Items#WRITTEN_BOOK} that {@link BurnableBookTag#isBurnable} recognizes
@@ -51,6 +62,8 @@ public final class NothingButBooksAdvancement {
     private static final int MAIN_STORAGE_START = 9;
     /** Last main-storage slot index in {@link Inventory} (inclusive; 36–40 is armor + offhand). */
     private static final int MAIN_STORAGE_END = 35;
+    /** How many story books the main storage must hold in all, stacks counted by size. */
+    static final int MAIN_STORAGE_SLOTS = MAIN_STORAGE_END - MAIN_STORAGE_START + 1;
 
     private NothingButBooksAdvancement() {}
 
@@ -67,16 +80,32 @@ public final class NothingButBooksAdvancement {
     }
 
     /**
-     * True when every main-storage slot (indices {@value #MAIN_STORAGE_START}
-     * through {@value #MAIN_STORAGE_END}, inclusive) of {@code player}'s
-     * inventory holds a story book per {@link #isStoryBook}.
+     * True when {@code mainStorage} — the stacks of the 27 main-storage slots, empty ones
+     * included — holds nothing but story books per {@link #isStoryBook}, and at least
+     * {@value #MAIN_STORAGE_SLOTS} of them counting each stack by its size.
+     */
+    static boolean countsAsFull(List<ItemStack> mainStorage) {
+        if (mainStorage == null) return false;
+        int books = 0;
+        for (ItemStack stack : mainStorage) {
+            if (stack == null || stack.isEmpty()) continue;
+            if (!isStoryBook(stack)) return false;
+            books += stack.getCount();
+        }
+        return books >= MAIN_STORAGE_SLOTS;
+    }
+
+    /**
+     * {@link #countsAsFull} over {@code player}'s main-storage slots (indices
+     * {@value #MAIN_STORAGE_START} through {@value #MAIN_STORAGE_END}, inclusive).
      */
     private static boolean hasFullBookInventory(ServerPlayer player) {
         Inventory inv = player.getInventory();
+        List<ItemStack> mainStorage = new ArrayList<>(MAIN_STORAGE_SLOTS);
         for (int i = MAIN_STORAGE_START; i <= MAIN_STORAGE_END; i++) {
-            if (!isStoryBook(inv.getItem(i))) return false;
+            mainStorage.add(inv.getItem(i));
         }
-        return true;
+        return countsAsFull(mainStorage);
     }
 
     /**
