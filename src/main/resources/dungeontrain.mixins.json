@@ -109,6 +109,7 @@
     "LevelAcceleratorNoSyncLoadMixin",
     "SubLevelEntityCollisionNoLoadMixin",
     "LivingEntityClimbPushMixin",
+    "CombatRulesArmorCurveMixin",
     "RapierPipelineNoSyncLoadMixin",
     "RapierPipelineBlockChangeNoLoadMixin",
     "FluidInteractionNoLoadMixin",

@@ -28772,9 +28772,9 @@
         "No change to the rain without shaders"
       ],
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1417.0",
+      "released_at": "2026-10-20T13:36:23Z"
     },
     {
       "id": "stranger-places-pull",
@@ -28791,9 +28791,9 @@
         "Strength, reach and how the pull lets go are all in the config."
       ],
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1417.0",
+      "released_at": "2026-10-20T13:36:23Z"
     },
     {
       "id": "plot-chunk-lookup-o1",
@@ -28807,9 +28807,9 @@
       "highlights": [],
       "pr": 2194,
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1417.0",
+      "released_at": "2026-10-20T13:36:23Z"
     },
     {
       "id": "quieter-logs",
@@ -28824,14 +28824,34 @@
       "summary": "The game log no longer fills with the same few lines repeated thousands of times. Bug reports now carry the part that matters, and the game spends less time writing to disk while you play.",
       "highlights": [],
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1417.0",
+      "released_at": "2026-10-20T13:36:23Z",
       "pr": 2197
     },
     {
+      "id": "armor-keeps-paying-off",
+      "version": "0.1416.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "balance"
+      ],
+      "title": "Heavy armor keeps helping",
+      "summary": "Stacking armor and armor toughness now keeps paying off. Armor used to stop helping once it blocked 80% of a hit; now heavier armor and tougher gear keep blocking a little more, slowly climbing toward a ceiling just under 90%. Very heavily armored mobs deep in the run get a little tougher too.",
+      "highlights": [
+        "Armor past the old limit now blocks more damage, never reaching 90%",
+        "Armor toughness keeps helping once your armor is maxed out"
+      ],
+      "pr": 2195,
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "quick-world-launch-guard",
-      "version": "0.1418.0",
+      "version": "0.1419.0",
       "type": "fix",
       "tags": [
         "fix",
