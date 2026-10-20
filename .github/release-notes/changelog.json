@@ -28828,6 +28828,22 @@
       "released_in": null,
       "released_at": null,
       "pr": 2197
+    },
+    {
+      "id": "quick-world-launch-guard",
+      "version": "0.1418.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "internal"
+      ],
+      "title": "Dev launch improvement",
+      "summary": "Launching a dev client straight into a world that no longer exists now stops with a clear message listing the worlds that do, instead of a failed load.",
+      "highlights": [],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
