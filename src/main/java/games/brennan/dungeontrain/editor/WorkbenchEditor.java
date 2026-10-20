@@ -72,7 +72,7 @@ public final class WorkbenchEditor {
     public static Optional<String> plotContaining(ServerLevel level, BlockPos pos) {
         if (!EditorStampedCategoryState.isActive(EditorCategory.WORKBENCH)) return Optional.empty();
         for (Map.Entry<String, int[]> e : DungeonTrainWorldData.get(level.getServer().overworld())
-                .workbenchPlotBoxes().entrySet()) {
+                .workbenchPlotBoxesView().entrySet()) {
             BoundingBox box = WorkbenchPlacement.boxOf(e.getValue());
             if (box != null && box.isInside(pos)) return Optional.of(e.getKey());
         }
@@ -82,7 +82,7 @@ public final class WorkbenchEditor {
     /** Every recorded plot box, cage included. */
     public static List<BoundingBox> recordedBoxes(ServerLevel overworld) {
         List<BoundingBox> out = new ArrayList<>();
-        for (int[] b : DungeonTrainWorldData.get(overworld).workbenchPlotBoxes().values()) {
+        for (int[] b : DungeonTrainWorldData.get(overworld).workbenchPlotBoxesView().values()) {
             BoundingBox box = WorkbenchPlacement.boxOf(b);
             if (box != null) out.add(box);
         }
@@ -122,7 +122,7 @@ public final class WorkbenchEditor {
     public static BlockPos allocate(ServerLevel overworld, WorkbenchStagedBuild build, int anchorX) {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
         List<BoundingBox> taken = new ArrayList<>();
-        for (Map.Entry<String, int[]> e : data.workbenchPlotBoxes().entrySet()) {
+        for (Map.Entry<String, int[]> e : data.workbenchPlotBoxesView().entrySet()) {
             if (e.getKey().equals(build.stagedId())) continue;
             BoundingBox box = WorkbenchPlacement.boxOf(e.getValue());
             if (box != null) taken.add(box);
@@ -134,12 +134,37 @@ public final class WorkbenchEditor {
         return origin;
     }
 
-    /** Whether any cell of {@code box} is not air. Loads the few chunks it spans; a plot is small. */
+    /**
+     * Whether any cell of {@code box} is not air. Section first: a 16-cube the chunk already knows is
+     * all air is skipped in one flag, and only a section holding something is walked block by block
+     * — the slot scan asks this up to {@link WorkbenchPlacement#MAX_OCCUPIED_STEPS} times per
+     * allocation, and a staged building can span a dozen sections.
+     */
     static boolean holdsBlocks(ServerLevel level, BoundingBox box) {
-        for (int x = box.minX(); x <= box.maxX(); x++) {
-            for (int z = box.minZ(); z <= box.maxZ(); z++) {
-                for (int y = box.minY(); y <= box.maxY(); y++) {
-                    if (!level.getBlockState(new BlockPos(x, y, z)).isAir()) return true;
+        for (int cx = box.minX() >> 4; cx <= box.maxX() >> 4; cx++) {
+            for (int cz = box.minZ() >> 4; cz <= box.maxZ() >> 4; cz++) {
+                net.minecraft.world.level.chunk.LevelChunk chunk = level.getChunk(cx, cz);
+                for (int sy = box.minY() >> 4; sy <= box.maxY() >> 4; sy++) {
+                    int index = chunk.getSectionIndex(sy << 4);
+                    if (index < 0 || index >= chunk.getSectionsCount()) continue;
+                    if (chunk.getSection(index).hasOnlyAir()) continue;
+                    if (holdsBlocksIn(level, box, cx, cz, sy)) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** The block-by-block check of {@code box} within one chunk section, for a section that is not all air. */
+    private static boolean holdsBlocksIn(ServerLevel level, BoundingBox box, int cx, int cz, int sy) {
+        int x0 = Math.max(box.minX(), cx << 4), x1 = Math.min(box.maxX(), (cx << 4) + 15);
+        int z0 = Math.max(box.minZ(), cz << 4), z1 = Math.min(box.maxZ(), (cz << 4) + 15);
+        int y0 = Math.max(box.minY(), sy << 4), y1 = Math.min(box.maxY(), (sy << 4) + 15);
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                for (int y = y0; y <= y1; y++) {
+                    if (!level.getBlockState(pos.set(x, y, z)).isAir()) return true;
                 }
             }
         }
@@ -178,7 +203,7 @@ public final class WorkbenchEditor {
     /** One erase job per recorded plot — what a category switch away from the Workbench queues. */
     public static List<EditorStampQueue.Job> clearAllPlotJobs(ServerLevel overworld) {
         List<EditorStampQueue.Job> jobs = new ArrayList<>();
-        for (Map.Entry<String, int[]> e : DungeonTrainWorldData.get(overworld).workbenchPlotBoxes().entrySet()) {
+        for (Map.Entry<String, int[]> e : DungeonTrainWorldData.get(overworld).workbenchPlotBoxesView().entrySet()) {
             BoundingBox box = WorkbenchPlacement.boxOf(e.getValue());
             if (box == null) continue;
             String id = e.getKey();
