@@ -99,6 +99,11 @@
         "AMPLIFIED",
         "LOST_CITY"
       ]
+    },
+    {
+      "id": "deep",
+      "weight": 4,
+      "minLevel": 10
     }
   ]
 }

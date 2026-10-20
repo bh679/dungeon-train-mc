@@ -56,6 +56,11 @@
       "stage": "deepdark"
     },
     {
+      "name": "standard_deepdark",
+      "weight": 1,
+      "stage": "deeper_dark"
+    },
+    {
       "name": "mudbricks_wood",
       "weight": 1,
       "stage": "darkwood"
@@ -441,6 +446,15 @@
       "stage": "deepdark"
     },
     {
+      "name": "cracked_deepdark",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
+    },
+    {
       "name": "broken_deepdark",
       "weight": 1,
       "sideMode": "either",
@@ -459,6 +473,15 @@
         "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
+    },
+    {
+      "name": "broken_deepdark",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
     },
     {
       "name": "mudopen_wood",
@@ -1135,6 +1158,14 @@
       "stage": "deepdark"
     },
     {
+      "name": "cracked_deepdark",
+      "weight": 1,
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
+    },
+    {
       "name": "broken_deepdark",
       "weight": 1,
       "phases": [
@@ -1152,6 +1183,14 @@
         "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
+    },
+    {
+      "name": "broken_deepdark",
+      "weight": 1,
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
     },
     {
       "name": "mud_wood",
@@ -1714,6 +1753,15 @@
       "stage": "deepdark"
     },
     {
+      "name": "cracked_deepdark",
+      "weight": 10,
+      "sideMode": "either",
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
+    },
+    {
       "name": "broken_deepdark",
       "weight": 1,
       "sideMode": "either",
@@ -1732,6 +1780,15 @@
         "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
+    },
+    {
+      "name": "broken_deepdark",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
     },
     {
       "name": "mud_wood",

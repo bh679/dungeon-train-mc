@@ -79,6 +79,7 @@ final class NetherPassesDebug {
         return switch (style) {
             case BETTER -> biomes.hasBetterNether() ? "BetterNether" : "vanilla";
             case BOP -> biomes.hasBopNether() ? "BoP" : "vanilla";
+            case OTHERSIDE -> biomes.hasOtherside() ? "Deeper Dark" : "Deeper Dark unavailable → vanilla";
             default -> "vanilla";
         };
     }
@@ -100,6 +101,7 @@ final class NetherPassesDebug {
         return switch (cycle.netherStyleOfPass(pass)) {
             case BETTER -> ChatFormatting.GREEN;
             case BOP -> ChatFormatting.LIGHT_PURPLE;
+            case OTHERSIDE -> ChatFormatting.DARK_AQUA;
             default -> ChatFormatting.GOLD;
         };
     }

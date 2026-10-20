@@ -120,6 +120,14 @@
       "stage": "deepdark"
     },
     {
+      "name": "cracked_deepdark",
+      "weight": 1,
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
+    },
+    {
       "name": "standard_deepdark",
       "weight": 40,
       "phases": [
@@ -139,9 +147,22 @@
       "stage": "deepdark"
     },
     {
+      "name": "standard_deepdark",
+      "weight": 40,
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
+    },
+    {
       "name": "wool",
       "weight": 1,
       "stage": "deepdark"
+    },
+    {
+      "name": "wool",
+      "weight": 1,
+      "stage": "deeper_dark"
     },
     {
       "name": "mudbricks_wood",
@@ -576,7 +597,45 @@
       "stage": "deepdark"
     },
     {
+      "name": "standard_deepdark",
+      "weight": 1,
+      "sideMode": "one",
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
+    },
+    {
       "name": "slotwindow_deepdark",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "slotwindow_deepdark",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
+    },
+    {
+      "name": "smallwindows_deepdark",
       "weight": 1,
       "sideMode": "either",
       "phases": [
@@ -600,20 +659,9 @@
       "weight": 1,
       "sideMode": "either",
       "phases": [
-        "OVERWORLD",
-        "VOID",
-        "END",
-        "BETA",
-        "ALPHA",
-        "INFDEV",
-        "CLASSIC",
-        "FAR_LANDS",
-        "LARGE_BIOMES",
-        "AMPLIFIED",
-        "LOST_CITY",
-        "CAVES_OF_CHAOS"
+        "DEEPER_DARK"
       ],
-      "stage": "deepdark"
+      "stage": "deeper_dark"
     },
     {
       "name": "window2_deepdark",
@@ -634,6 +682,15 @@
         "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
+    },
+    {
+      "name": "window2_deepdark",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
     },
     {
       "name": "mudwindows_wood",
@@ -1376,6 +1433,14 @@
       "stage": "deepdark"
     },
     {
+      "name": "sunroof_deepdark",
+      "weight": 2,
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
+    },
+    {
       "name": "windowed_deepdark",
       "weight": 30,
       "phases": [
@@ -1393,6 +1458,14 @@
         "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
+    },
+    {
+      "name": "windowed_deepdark",
+      "weight": 30,
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
     },
     {
       "name": "open_deepdark",
@@ -1414,6 +1487,14 @@
       "stage": "deepdark"
     },
     {
+      "name": "open_deepdark",
+      "weight": 1,
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
+    },
+    {
       "name": "standard_deepdark",
       "weight": 10,
       "phases": [
@@ -1431,6 +1512,14 @@
         "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
+    },
+    {
+      "name": "standard_deepdark",
+      "weight": 10,
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
     },
     {
       "name": "mud_wood",
@@ -2031,6 +2120,14 @@
       "stage": "deepdark"
     },
     {
+      "name": "standard_deepdark",
+      "weight": 10,
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
+    },
+    {
       "name": "wooddoor_deepdark",
       "weight": 2,
       "sideMode": "either",
@@ -2051,8 +2148,46 @@
       "stage": "deepdark"
     },
     {
+      "name": "wooddoor_deepdark",
+      "weight": 2,
+      "sideMode": "either",
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
+    },
+    {
       "name": "irondoor_deepdark",
       "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "irondoor_deepdark",
+      "weight": 1,
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
+    },
+    {
+      "name": "open_wall_deepdark",
+      "weight": 8,
+      "sideMode": "either",
+      "endMode": "mid",
       "phases": [
         "OVERWORLD",
         "VOID",
@@ -2075,20 +2210,9 @@
       "sideMode": "either",
       "endMode": "mid",
       "phases": [
-        "OVERWORLD",
-        "VOID",
-        "END",
-        "BETA",
-        "ALPHA",
-        "INFDEV",
-        "CLASSIC",
-        "FAR_LANDS",
-        "LARGE_BIOMES",
-        "AMPLIFIED",
-        "LOST_CITY",
-        "CAVES_OF_CHAOS"
+        "DEEPER_DARK"
       ],
-      "stage": "deepdark"
+      "stage": "deeper_dark"
     },
     {
       "name": "mud_wood",

@@ -48,7 +48,9 @@ public final class NetherBandLava {
     public static boolean isNetherLava(LevelReader level, BlockPos pos) {
         if (!(level instanceof ServerLevel server)) return false;   // spreading is server-driven
         if (!server.dimension().equals(Level.OVERWORLD)) return false;
-        return NetherBand.isInNetherBiome(server, pos.getX(), pos.getZ());
+        // Nether-speed lava is the Nether's; the Deeper Dark (not ultrawarm) keeps overworld lava.
+        return NetherBand.isInNetherBiome(server, pos.getX(), pos.getZ())
+                && !NetherBand.isOthersideAt(server, pos.getX(), pos.getZ());
     }
 
     /** Nether tick delay (10) inside the core, else the vanilla value. */

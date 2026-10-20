@@ -14,7 +14,7 @@ import static games.brennan.dungeontrain.compat.mixinguard.MixinTargetRequiremen
 
 /**
  * What each DT mixin into a third-party library's <b>internals</b> needs to find there. These libraries
- * (WorldWeaver, BCLib, BetterEnd, TerraBlender) are declared with open-ended {@code [floor,)} ranges, so a
+ * (WorldWeaver, BCLib, BetterEnd, TerraBlender, Deeper Darker) are declared with open-ended {@code [floor,)} ranges, so a
  * player can load a newer build that renamed one of those internals. {@code ThirdPartyMixinPlugin} checks
  * every entry here before the mixin applies, and skips a mixin whose targets moved instead of crashing the
  * game. The feature then falls back as {@link Spec#degradesTo} says.
@@ -50,7 +50,10 @@ public final class ThirdPartyMixinTargets {
     public static final String MIXIN_PACKAGE = "games.brennan.dungeontrain.mixin.";
 
     private static final String BE = "org.betterx.betterend.world.";
+    private static final String DD = "com.kyanite.deeperdarker.";
     private static final String DIRECTIONS = "[Lnet/minecraft/core/Direction;";
+    private static final String OTHERSIDE_REAL =
+            "Otherside portals on the ride lead to Deeper Darker's real Otherside, not to a Deeper Dark core along the track";
     private static final String END_VANILLA =
             "BetterEnd End bands stamp vanilla End (the BetterEnd End would lay out differently each boot)";
 
@@ -217,7 +220,26 @@ public final class ThirdPartyMixinTargets {
                 method("<init>", "(Lnet/minecraft/world/level/levelgen/SurfaceRules$RuleSource;Ljava/util/Map;)V"))),
             "vanilla biomes in DT worlds take TerraBlender's default surface rule instead of DT's; the "
                 + "bedrock floor gets vanilla's specks up to 4 blocks above it, so chunks generated now show "
-                + "a seam at the floor against chunks an existing world generated earlier", false))
+                + "a seam at the floor against chunks an existing world generated earlier", false)),
+
+        // ── Deeper Darker ────────────────────────────────────────────────────────────────────────
+        // The mixin's handler runs through NetherPortalBandJump#othersideDestination, which also catches a
+        // LinkageError at call time, so a member that passes this check but fails to link falls back the same way.
+        Map.entry(MIXIN_PACKAGE + "deeperdarker.OthersidePortalBlockBandJumpMixin", new Spec(
+            Map.of(DD + "content.blocks.OthersidePortalBlock", List.of(
+                method("getPortalDestination", "(Lnet/minecraft/server/level/ServerLevel;"
+                        + "Lnet/minecraft/world/entity/Entity;Lnet/minecraft/core/BlockPos;)"
+                        + "Lnet/minecraft/world/level/portal/DimensionTransition;"),
+                staticField("AXIS", "Lnet/minecraft/world/level/block/state/properties/EnumProperty;"))),
+            Map.of(
+                DD + "world.otherside.OthersideTeleporter", List.of(
+                    method("getExitPortal", "(Lnet/minecraft/server/level/ServerLevel;"
+                            + "Lnet/minecraft/world/entity/Entity;Lnet/minecraft/core/BlockPos;"
+                            + "Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/border/WorldBorder;)"
+                            + "Lnet/minecraft/world/level/portal/DimensionTransition;")),
+                DD + "world.otherside.OthersideDimension", List.of(
+                    staticField("OTHERSIDE_PORTAL", "Lnet/neoforged/neoforge/registries/DeferredHolder;"))),
+            OTHERSIDE_REAL, false))
     );
 
     /** Mod id by package prefix, for every class a {@link Spec} checks. */
@@ -225,7 +247,8 @@ public final class ThirdPartyMixinTargets {
             "org.betterx.wover.", "wover",
             "org.betterx.bclib.", "bclib",
             "org.betterx.betterend.", "betterend",
-            "terrablender.", "terrablender");
+            "terrablender.", "terrablender",
+            "com.kyanite.deeperdarker.", "deeperdarker");
 
     private ThirdPartyMixinTargets() {}
 

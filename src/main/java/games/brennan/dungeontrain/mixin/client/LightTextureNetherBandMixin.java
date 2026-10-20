@@ -68,6 +68,22 @@ public abstract class LightTextureNetherBandMixin {
     @Unique
     private static final float DUNGEONTRAIN_NETHER_SKY = 0.60F;
 
+    /** The Deeper Dark's floor tint: a faint cold sculk teal (the Otherside's ambient light is 0.05, no ember). */
+    @Unique
+    private static final Vector3f DUNGEONTRAIN_OTHERSIDE_TINT = new Vector3f(0.10F, 0.22F, 0.30F);
+
+    /** The Deeper Dark's floor lift: smaller than the Nether's, so shadow stays shadow. */
+    @Unique
+    private static final float DUNGEONTRAIN_OTHERSIDE_LIFT = 0.12F;
+
+    /** The Deeper Dark's pinned sky-darken: near night, as the Otherside is fixed at midnight. */
+    @Unique
+    private static final float DUNGEONTRAIN_OTHERSIDE_SKY = 0.20F;
+
+    /** Whether the in-progress rebuild is in a Deeper Dark pass (captured with {@link #dungeontrain$netherN}). */
+    @Unique
+    private boolean dungeontrain$otherside;
+
     /**
      * Band intensity for the in-progress lightmap rebuild, captured by the dim-pin hook (which
      * runs once, before the 16×16 cell loop) and reused by the per-cell floor-lift so the band is
@@ -91,7 +107,9 @@ public abstract class LightTextureNetherBandMixin {
         if (!games.brennan.dungeontrain.client.shader.ShaderBisect.bandLightmapEnabled()) return skyDarken;
         float n = dungeontrain$netherIntensity();
         this.dungeontrain$netherN = n;
-        return n <= 0.0F ? skyDarken : Mth.lerp(n, skyDarken, DUNGEONTRAIN_NETHER_SKY);
+        this.dungeontrain$otherside = n > 0.0F && dungeontrain$isOtherside();
+        float pinned = this.dungeontrain$otherside ? DUNGEONTRAIN_OTHERSIDE_SKY : DUNGEONTRAIN_NETHER_SKY;
+        return n <= 0.0F ? skyDarken : Mth.lerp(n, skyDarken, pinned);
     }
 
     /**
@@ -112,8 +130,16 @@ public abstract class LightTextureNetherBandMixin {
         if (!games.brennan.dungeontrain.client.shader.ShaderBisect.bandLightmapEnabled()) return;
         float n = this.dungeontrain$netherN;
         if (n > 0.0F) {
-            cellColor.lerp(DUNGEONTRAIN_NETHER_TINT, DUNGEONTRAIN_NETHER_LIFT * n);
+            if (this.dungeontrain$otherside) cellColor.lerp(DUNGEONTRAIN_OTHERSIDE_TINT, DUNGEONTRAIN_OTHERSIDE_LIFT * n);
+            else cellColor.lerp(DUNGEONTRAIN_NETHER_TINT, DUNGEONTRAIN_NETHER_LIFT * n);
         }
+    }
+
+    /** True when the camera is in a Deeper Dark pass. */
+    @Unique
+    private static boolean dungeontrain$isOtherside() {
+        Minecraft mc = Minecraft.getInstance();
+        return ClientNetherBand.isOthersideAt(mc.gameRenderer.getMainCamera().getPosition().x);
     }
 
     /** Nether-core band intensity at the camera, {@code 0} outside the overworld or any active core. */

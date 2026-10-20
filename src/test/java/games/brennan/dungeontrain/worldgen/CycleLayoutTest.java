@@ -37,17 +37,18 @@ final class CycleLayoutTest {
     }
 
     @Test
-    @DisplayName("the shipped order parses to 17 slots and the planned run-1 length")
+    @DisplayName("the shipped order parses to 18 slots and the planned run-1 length")
     void shippedGeometry() {
         CycleLayout l = shipped();
-        assertEquals(17, l.count());
+        assertEquals(18, l.count());
         // Lap 1: 2750 + 3814 (a 2750-core Nether) + 3250 (WWOO) + joined End (740+1200 | 2000+740)
         //        + (600+2500+3000+600) = 21,194 — no trailing fade: the core runs straight into the Reassembly
-        // Lap 2: 4500 (BoP) + 5564 + Lost City (480+3000+480) + 6480 + (750+6550) + 500 (the sunk approach) = 28,304
+        // Lap 2: 4500 (BoP) + 5564 (BetterNether) + 4064 (Deeper Dark, joined to it) + Lost City (480+3000+480)
+        //        + 6480 + (750+6550) + 500 (the sunk approach) = 32,368
         // Lap 3: legacy (480·12 + 4000 + 2500 + 4320 + 3500 + 4000 + 2000·4 + 1000 + 200 = 33,280)
         //        + 650 + (1500+2000) + 4000 (the mix zone) + 6500 = 47,930
-        assertEquals(97_428L, l.period());
-        assertEquals(2, l.typeCount(Type.NETHER));
+        assertEquals(101_492L, l.period());
+        assertEquals(3, l.typeCount(Type.NETHER));
         assertEquals(3, l.typeCount(Type.END));
         assertEquals(2, l.typeCount(Type.LEGACY_RUN));
         assertEquals(5, l.typeCount(Type.OVERWORLD));
@@ -66,8 +67,13 @@ final class CycleLayoutTest {
         assertEquals(21_194L, l.start(6));                     // OW·BoP opens lap 2
         assertEquals(Style.BOP, l.slot(6).style());
         assertEquals(Style.BETTER, l.slot(7).style());
-        assertEquals(Type.LEGACY_RUN, l.slot(8).type());        // Lost City, its own run
-        assertEquals(Style.BETTER, l.slot(9).style());
+        assertEquals(Type.NETHER, l.slot(8).type());            // the Deeper Dark, joined to BetterNether
+        assertEquals(Style.OTHERSIDE, l.slot(8).style());
+        assertEquals(4064L, l.length(8));
+        assertTrue(l.netherJoinedAfter(7));
+        assertTrue(l.netherJoinedBefore(8));
+        assertEquals(Type.LEGACY_RUN, l.slot(9).type());        // Lost City, its own run
+        assertEquals(Style.BETTER, l.slot(10).style());
         // Lap 1's Nether: vanilla for its first 1000 core blocks on the first run, then Biomes O' Plenty;
         // Biomes O' Plenty on every run after.
         assertEquals(Style.VANILLA, l.slot(1).styleOnRun(0));
@@ -84,17 +90,18 @@ final class CycleLayoutTest {
         assertEquals(Style.BOP, l.slot(4).styleOnRun(2));
         assertEquals(Style.VANILLA, l.slot(0).styleOnRun(1));             // Lap 1's overworld stays vanilla
         assertEquals(Style.BETTER, l.slot(7).styleOnRun(1));              // Lap 2 is the same every run
-        assertEquals(Type.SPHERES, l.slot(10).type());
-        assertEquals(Type.LEGACY_RUN, l.slot(12).type());
-        assertEquals(21_194L + 28_304L, l.start(12));
-        assertEquals(Style.SUNK, l.slot(11).style());            // the short approach into Amplified
-        assertEquals(Type.MIX, l.slot(15).type());
-        assertEquals(4000L, l.length(15));                      // hard-edged: no fades
-        assertEquals(Type.STACKS, l.slot(16).type());
+        assertEquals(Type.SPHERES, l.slot(11).type());
+        assertEquals(Type.LEGACY_RUN, l.slot(13).type());
+        assertEquals(21_194L + 32_368L, l.start(13));
+        assertEquals(Style.SUNK, l.slot(12).style());            // the short approach into Amplified
+        assertEquals(Type.MIX, l.slot(16).type());
+        assertEquals(4000L, l.length(16));                      // hard-edged: no fades
+        assertEquals(Type.STACKS, l.slot(17).type());
         assertEquals(1, l.occurrence(7));                       // the BetterNether slot is Nether occurrence 1
+        assertEquals(2, l.occurrence(8));                       // the Deeper Dark is Nether occurrence 2
         assertEquals(0, l.occurrence(1));
         assertEquals(1, l.occurrence(4));                       // the BoP End piece is End occurrence 1
-        assertEquals(2, l.occurrence(9));                       // BetterEnd is End occurrence 2
+        assertEquals(2, l.occurrence(10));                      // BetterEnd is End occurrence 2
     }
 
     @Test
@@ -110,10 +117,10 @@ final class CycleLayoutTest {
         // The joined band is exactly as long as one 3200-core End.
         assertEquals(Disintegration.bandLength(120, 500, 3200), l.endGroupLength(3));
         // A lone End is untouched.
-        assertEquals(9, l.endGroupFirst(9));
-        assertEquals(1, l.endGroupSize(9));
-        assertEquals(5000, l.endGroupCore(9));
-        assertEquals(Disintegration.bandLength(120, 500, 5000), l.length(9));
+        assertEquals(10, l.endGroupFirst(10));
+        assertEquals(1, l.endGroupSize(10));
+        assertEquals(5000, l.endGroupCore(10));
+        assertEquals(Disintegration.bandLength(120, 500, 5000), l.length(10));
         // Three in a row: only the ends carry fades.
         CycleLayout three = CycleLayout.parse("end:100, end:200, end:300", FADES, eraDefaults(), t -> true, m -> {});
         assertEquals(740L + 100L, three.length(0));
@@ -126,15 +133,15 @@ final class CycleLayoutTest {
     @DisplayName("the legacy runs lay their eras back to back with one shared crossfade; Lost City runs alone")
     void legacyRun() {
         CycleLayout l = shipped();
-        LegacySpan[] lost = l.eras(8);
+        LegacySpan[] lost = l.eras(9);
         assertEquals(1, lost.length);
         assertEquals(LegacyBandKind.LOST_CITY, lost[0].kind());
         assertEquals(3000, lost[0].hold());
-        assertEquals(480L + 3000L + 480L, l.length(8));
-        assertEquals(8, l.legacySlotOf(LegacyBandKind.LOST_CITY));
+        assertEquals(480L + 3000L + 480L, l.length(9));
+        assertEquals(9, l.legacySlotOf(LegacyBandKind.LOST_CITY));
         assertEquals(0, l.eraIndex(LegacyBandKind.LOST_CITY));
 
-        LegacySpan[] eras = l.eras(12);
+        LegacySpan[] eras = l.eras(13);
         assertEquals(11, eras.length);
         // The shipped run order is the order the token writes, not declaration order.
         assertArrayEquals(new LegacyBandKind[] {LegacyBandKind.AMPLIFIED, LegacyBandKind.BETA, LegacyBandKind.FAR_LANDS,
@@ -147,12 +154,12 @@ final class CycleLayoutTest {
         assertEquals(3500, eras[3].hold());
         assertEquals(1000, eras[9].hold());
         assertEquals(200, eras[10].hold());
-        assertEquals(480L, l.eraCoreStart(12, 0));
-        assertEquals(480L + 4000L + 480L, l.eraCoreStart(12, 1));
-        assertEquals(480L + 4000L + 480L + 2500L + 480L, l.eraCoreStart(12, 2));
+        assertEquals(480L, l.eraCoreStart(13, 0));
+        assertEquals(480L + 4000L + 480L, l.eraCoreStart(13, 1));
+        assertEquals(480L + 4000L + 480L + 2500L + 480L, l.eraCoreStart(13, 2));
         long total = 480L * 12 + 4000 + 2500 + 4320 + 3500 + 4000 + 2000 * 4 + 1000 + 200;
-        assertEquals(total, l.length(12));
-        assertEquals(12, l.legacySlotOf(LegacyBandKind.BETA));
+        assertEquals(total, l.length(13));
+        assertEquals(13, l.legacySlotOf(LegacyBandKind.BETA));
         assertEquals(1, l.eraIndex(LegacyBandKind.BETA));
         assertEquals(12, l.allEras().size());
         assertEquals(0, l.eras(0).length);                     // a non-legacy slot has no eras
@@ -162,12 +169,12 @@ final class CycleLayoutTest {
     @DisplayName("a legacy run can wear a look; a vanilla-terrain run after a Nether leads in over its exit mountains")
     void legacyStyleAndLeadIn() {
         CycleLayout l = shipped();
-        assertEquals(Style.WWOO, l.slot(8).style());                 // legacy:wwoo:lost_city=3000
-        assertEquals(1, l.eras(8).length);
-        assertEquals(Style.VANILLA, l.slot(12).style());
-        assertEquals(232L, l.legacyLeadIn(8));                       // megaHold 0 + rise 232
-        assertEquals(0L, l.legacyLeadIn(12));                        // after an overworld gap
-        assertEquals(0L, l.legacyLeadIn(7));                         // not a legacy slot
+        assertEquals(Style.WWOO, l.slot(9).style());                 // legacy:wwoo:lost_city=3000
+        assertEquals(1, l.eras(9).length);
+        assertEquals(Style.VANILLA, l.slot(13).style());
+        assertEquals(232L, l.legacyLeadIn(9));                       // megaHold 0 + rise 232, over the Deeper Dark's exit
+        assertEquals(0L, l.legacyLeadIn(13));                        // after an overworld gap
+        assertEquals(0L, l.legacyLeadIn(8));                         // not a legacy slot
         List<String> warnings = new ArrayList<>();
         CycleLayout bare = CycleLayout.parse("ow:100, legacy:bop", FADES, eraDefaults(), t -> true, warnings::add);
         assertEquals(Style.BOP, bare.slot(1).style());
@@ -278,14 +285,15 @@ final class CycleLayoutTest {
         assertFalse(l.anyOfTypeIn(Type.NETHER, 0L, 2749L));
         assertFalse(l.anyOfTypeIn(Type.END, 0L, 9_813L));
         assertTrue(l.anyOfTypeIn(Type.END, 9_813L, 9_814L));
-        // Spheres (slot 10) follows BetterEnd directly: approach starts at its own slot.
-        assertEquals(l.start(10), l.approachStart(10));
-        // Chuncks (slot 14) sits after an OW gap that follows the legacy run: approach starts at the run's end.
-        assertEquals(l.start(12) + l.length(12), l.approachStart(14));
+        // Spheres (slot 11) follows BetterEnd directly: approach starts at its own slot.
+        assertEquals(l.start(11), l.approachStart(11));
+        // Chuncks (slot 15) sits after an OW gap that follows the legacy run: approach starts at the run's end.
+        assertEquals(l.start(13) + l.length(13), l.approachStart(15));
         // Occurrence passes.
         assertEquals(-1, l.occurrencesStarted(Type.NETHER, 0L));
         assertEquals(0, l.occurrencesStarted(Type.NETHER, 2750L));
         assertEquals(0, l.occurrencesStarted(Type.NETHER, l.start(7) - 1));
         assertEquals(1, l.occurrencesStarted(Type.NETHER, l.start(7)));
+        assertEquals(2, l.occurrencesStarted(Type.NETHER, l.start(8)));   // the joined Deeper Dark is its own pass
     }
 }

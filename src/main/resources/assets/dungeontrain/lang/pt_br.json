@@ -3503,6 +3503,7 @@
   "gui.dungeontrain.editor_menu.phase.large_biomes": "Biomas grandes",
   "gui.dungeontrain.editor_menu.phase.amplified": "Amplificado",
   "gui.dungeontrain.editor_menu.phase.lost_city": "Cidade perdida",
+  "gui.dungeontrain.editor_menu.phase.deeper_dark": "Escuridão mais profunda",
   "gui.dungeontrain.editor_menu.phase.caves_of_chaos": "Cavernas do Caos",
   "gui.dungeontrain.editor_menu.stage.title": "Estágio: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Excluir estágio",

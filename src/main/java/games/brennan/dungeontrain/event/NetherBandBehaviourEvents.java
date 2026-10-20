@@ -93,6 +93,7 @@ public final class NetherBandBehaviourEvents {
         if (!level.dimension().equals(Level.OVERWORLD)) return;
         BlockPos pos = event.getPos();
         if (!NetherBand.isInNetherBiome(level, pos.getX(), pos.getZ())) return;
+        if (NetherBand.isOthersideAt(level, pos.getX(), pos.getZ())) return;   // the Deeper Dark is not ultrawarm
 
         level.setBlock(pos, Blocks.SPONGE.defaultBlockState(), 3);
         level.levelEvent(2009, pos, 0); // drying smoke puff
