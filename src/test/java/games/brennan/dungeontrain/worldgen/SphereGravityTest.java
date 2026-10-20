@@ -23,13 +23,13 @@ final class SphereGravityTest {
     }
 
     @Test
-    @DisplayName("outside: inverse-square, fading to exactly 0 at the reach; inside: the full surface pull")
+    @DisplayName("outside: falls off with distance (1/d), fading to exactly 0 at the reach; inside: the full surface pull")
     void falloff() {
         int r = 20;
         double g = SphereGravity.surfacePull(r, 1.0);
         assertEquals(g, SphereGravity.pullAt(r, r, 1.0, 2.0), EPS);
-        assertEquals(g * (20.0 / 28) * (20.0 / 28), SphereGravity.pullAt(28, r, 1.0, 2.0), EPS, "before the fade");
-        assertTrue(SphereGravity.pullAt(35, r, 1.0, 2.0) < g * (20.0 / 35) * (20.0 / 35), "fading");
+        assertEquals(g * (20.0 / 28), SphereGravity.pullAt(28, r, 1.0, 2.0), EPS, "before the fade");
+        assertTrue(SphereGravity.pullAt(35, r, 1.0, 2.0) < g * (20.0 / 35), "fading");
         assertEquals(0.0, SphereGravity.pullAt(40, r, 1.0, 2.0), EPS);
         assertEquals(0.0, SphereGravity.pullAt(400, r, 1.0, 2.0), EPS);
         assertEquals(g, SphereGravity.pullAt(10, r, 1.0, 2.0), EPS);

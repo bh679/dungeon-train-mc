@@ -13,8 +13,9 @@ import java.util.List;
  *   <li><b>Surface pull</b> {@code g = strength × 0.08 × size(r)}: 0.08 is vanilla's gravity per tick, and
  *       {@code size} grows with the radius up to 1 at {@link #FULL_SIZE_RADIUS}, so a big sphere at
  *       strength 1 pulls as hard as the ground does while a small one only nudges.</li>
- *   <li><b>Outside</b> ({@code d ≥ r}): inverse-square, {@code g × (r/d)²}, smoothly faded to 0 over the
- *       outer half of the reach ({@code reachRadii × r}) so there's no edge you can feel.</li>
+ *   <li><b>Outside</b> ({@code d ≥ r}): falls off with distance, {@code g × (r/d)} (gentler than a real planet's
+ *       inverse square, which faded to nothing within a couple of radii), smoothly faded to 0 over the outer
+ *       half of the reach ({@code reachRadii × r}) so there's no edge you can feel.</li>
  *   <li><b>Inside</b> ({@code d < r}): the full surface pull. A sphere's ground is usually well inside its
  *       radius — an overworld sphere's top is the natural surface, about 0.3·r above the centre — so this is
  *       what you feel when you jump off it.</li>
@@ -77,7 +78,7 @@ public final class SphereGravity {
         if (d < r) return g;
         double reach = Math.max(1.0, reachRadii) * r;
         if (d >= reach) return 0.0;
-        double a = g * (r / d) * (r / d);
+        double a = g * (r / d);
         double fadeFrom = r + (reach - r) * FADE_START;
         if (d > fadeFrom) {
             double t = (d - fadeFrom) / (reach - fadeFrom);
