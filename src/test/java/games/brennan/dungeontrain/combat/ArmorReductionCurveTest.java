@@ -34,13 +34,15 @@ final class ArmorReductionCurveTest {
     }
 
     @Test
-    @DisplayName("hits the anchors with no toughness: 20 = 80%, 120 = 83%, 320 = 84%")
+    @DisplayName("climbs very slowly past 80%: 120 = 80.3%, 520 = 81.4%, 1044 = 82.5%, 2048 = 84%")
     void anchors() {
         assertEquals(0.80f, ArmorReductionCurve.curve(20.0f), EPS);
-        assertEquals(0.83f, ArmorReductionCurve.curve(120.0f), EPS);
-        assertEquals(0.84f, ArmorReductionCurve.curve(320.0f), EPS);
-        // A tiny hit barely pierces, so the armor value is the curve input.
-        assertEquals(0.83f, ArmorReductionCurve.reduction(120.0f, 0.0f, 0.0f), EPS);
+        assertEquals(0.8032f, ArmorReductionCurve.curve(120.0f), 1e-3f);
+        assertEquals(0.8143f, ArmorReductionCurve.curve(520.0f), 1e-3f);
+        assertEquals(0.8254f, ArmorReductionCurve.curve(1044.0f), 1e-3f);
+        assertEquals(0.8403f, ArmorReductionCurve.curve(2048.0f), 1e-3f);
+        // With no hit to pierce, the armor value is the curve input.
+        assertEquals(ArmorReductionCurve.curve(120.0f), ArmorReductionCurve.reduction(120.0f, 0.0f, 0.0f), EPS);
     }
 
     @Test
@@ -53,7 +55,7 @@ final class ArmorReductionCurveTest {
         assertEquals(0.80f, atNeeded, 1e-3f);
         assertEquals(ArmorReductionCurve.curve(20.0f + 128.0f - needed),
             ArmorReductionCurve.reduction(23.0f, 128.0f, 20.0f), 1e-3f);
-        assertTrue(ArmorReductionCurve.reduction(23.0f, 1024.0f, 20.0f) > 0.86f);
+        assertTrue(ArmorReductionCurve.reduction(23.0f, 1024.0f, 20.0f) > 0.82f);
         // At or below 20 armor toughness can never lift you past 80%.
         assertTrue(ArmorReductionCurve.reduction(20.0f, 1024.0f, 5.0f) <= 0.80f + EPS);
     }
@@ -100,9 +102,6 @@ final class ArmorReductionCurveTest {
         for (float t : new float[] {0.0f, 12.0f, 50.0f, 500.0f}) {
             assertEquals(ArmorReductionCurve.reduction(99.99f, t, 1000.0f),
                 ArmorReductionCurve.reduction(100.01f, t, 1000.0f), 1e-3f, "toughness=" + t);
-        }
-        for (float join : new float[] {20.0f, 120.0f, 320.0f}) {
-            assertEquals(ArmorReductionCurve.curve(join - 0.01f), ArmorReductionCurve.curve(join + 0.01f), 1e-4f);
         }
     }
 

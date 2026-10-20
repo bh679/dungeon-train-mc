@@ -14,9 +14,10 @@ package games.brennan.dungeontrain.combat;
  *       piercing, as in vanilla.</li>
  *   <li>Past 20, toughness also counts toward the curve, one armor point per point of toughness beyond
  *       what vanilla needed to reach 20 ({@link #toughnessToReachCap}), so nothing jumps at 80%.</li>
- *   <li>Curve input 20–120: 80% → 83%, linear. 120–320: 83% → 84%, linear.</li>
- *   <li>Above 320: a hyperbolic tail with the same slope at 320, approaching {@link #MAX_REDUCTION}
- *       and never reaching it.</li>
+ *   <li>Curve input {@code x} past 20 climbs very slowly, one hyperbola from 80% toward
+ *       {@link #MAX_REDUCTION} that never reaches it: {@code 0.90 - 0.10 * S / (S + x - 20)},
+ *       S = {@link #CLIMB_SCALE}. 120 is about 80.3%, 520 about 81.4%, 1044 about 82.5%,
+ *       2048 (AIS's armor and toughness caps together) about 84%.</li>
  * </ul>
  *
  * <p>Applies to every living entity. Protection enchantments and Breach are applied by vanilla on
@@ -32,16 +33,8 @@ public final class ArmorReductionCurve {
     static final float VANILLA_CAP_POINTS = 20.0f;
     static final float VANILLA_MAX_REDUCTION = VANILLA_CAP_POINTS / VANILLA_DIVIDER;
 
-    static final float MID_POINT = 120.0f;
-    static final float MID_REDUCTION = 0.83f;
-    static final float TAIL_START = 320.0f;
-    static final float TAIL_START_REDUCTION = 0.84f;
-
-    /**
-     * Tail shape: {@code MAX - (MAX - 0.84) * S / (S + x - 320)}. Its slope at 320 is
-     * {@code (MAX - 0.84) / S}, which equals the 120–320 segment's slope (0.01 / 200) when S = 1200.
-     */
-    static final float TAIL_SCALE = 1200.0f;
+    /** How slowly the climb past 80% goes: input {@code 20 + S} sits halfway between 80% and 90%. */
+    static final float CLIMB_SCALE = 3000.0f;
 
     private ArmorReductionCurve() {}
 
@@ -74,15 +67,9 @@ public final class ArmorReductionCurve {
     /** Reduction for curve input {@code x} (armor points, plus spare toughness) at or past 20. */
     static float curve(float x) {
         if (!(x > VANILLA_CAP_POINTS)) return VANILLA_MAX_REDUCTION;
-        if (x <= MID_POINT) return lerp(x, VANILLA_CAP_POINTS, MID_POINT, VANILLA_MAX_REDUCTION, MID_REDUCTION);
-        if (x <= TAIL_START) return lerp(x, MID_POINT, TAIL_START, MID_REDUCTION, TAIL_START_REDUCTION);
-        double headroom = MAX_REDUCTION - TAIL_START_REDUCTION;
-        double r = MAX_REDUCTION - headroom * TAIL_SCALE / (TAIL_SCALE + (double) x - TAIL_START);
+        double headroom = MAX_REDUCTION - VANILLA_MAX_REDUCTION;
+        double r = MAX_REDUCTION - headroom * CLIMB_SCALE / (CLIMB_SCALE + (double) x - VANILLA_CAP_POINTS);
         // Infinity drives r to exactly MAX; keep the "never reaches 90%" promise in float.
         return Math.min((float) r, Math.nextDown(MAX_REDUCTION));
-    }
-
-    private static float lerp(float x, float x0, float x1, float y0, float y1) {
-        return y0 + (y1 - y0) * (x - x0) / (x1 - x0);
     }
 }
