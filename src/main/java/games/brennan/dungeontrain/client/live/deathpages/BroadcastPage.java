@@ -26,7 +26,7 @@ import static games.brennan.dungeontrain.client.live.deathpages.LiveDeathText.tr
  * the life, the moments and photos they put on air, how many times they picked the Eye up, the delay
  * their viewers lived with, the death clip and who took the Eye after them, and whether the stream
  * outlives them (Replays Kept), with a small aqua link to the Community Rewards page. The
- * status line is left out until {@link RewardsLink#PAGE_READY}.
+ * status line and link go with {@link RewardsLink#PAGE_READY}.
  */
 public final class BroadcastPage {
 
