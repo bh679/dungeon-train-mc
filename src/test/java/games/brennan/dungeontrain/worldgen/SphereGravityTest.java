@@ -60,6 +60,8 @@ final class SphereGravityTest {
 
         SphereGravity.Pull capped = SphereGravity.pull(List.of(s), 100.5, 150.5, 100.5, 0, -0.7, 0, false, 1.0, 2.0);
         assertTrue(capped.isZero(), "already falling in fast");
+        SphereGravity.Pull eased = SphereGravity.pull(List.of(s), 100.5, 150.5, 100.5, 0, -0.3, 0, false, 1.0, 2.0);
+        assertEquals(p.length() / 2, eased.length(), EPS, "halfway to the limit: half the pull (smooth, not on/off)");
         SphereGravity.Pull away = SphereGravity.pull(List.of(s), 100.5, 150.5, 100.5, 0, 0.7, 0, false, 1.0, 2.0);
         assertEquals(p, away, "moving away is still pulled");
     }
@@ -68,7 +70,7 @@ final class SphereGravityTest {
     @DisplayName("standing on a sphere (or in a tunnel through it) stops its pull; jumping brings it back at full strength; others still pull")
     void standingAndInside() {
         SphereField.Sphere s = new SphereField.Sphere(100, 100, 100, 40, 0);
-        assertTrue(SphereGravity.pull(List.of(s), 100.5, 141.5, 100.5, 0, 0, 0, true, 1.0, 4.0).isZero(), "standing on top");
+        assertTrue(SphereGravity.pull(List.of(s), 100.5, 141.5, 100.5, 0, 0, 0, true, 1.0, 4.0).isZero(), "standing on top (or swimming there: same flag)");
         assertTrue(!SphereGravity.pull(List.of(s), 100.5, 141.5, 100.5, 0, 0, 0, false, 1.0, 4.0).isZero(), "airborne just above");
         assertTrue(!SphereGravity.pull(List.of(s), 100.5, 150.5, 100.5, 0, 0, 0, true, 1.0, 4.0).isZero(),
                 "on other ground well clear of the sphere (a train roof) still pulled");

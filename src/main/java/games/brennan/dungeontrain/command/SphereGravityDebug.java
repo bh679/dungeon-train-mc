@@ -58,7 +58,7 @@ final class SphereGravityDebug {
         List<SphereField.Sphere> inReach = SpheresBand.spheresNear(overworld, at.x, at.y, at.z, SphereGravityPush.lookupReach());
         Entity self = source.getEntity();
         SphereGravity.Pull pull = SphereGravity.pull(inReach, at.x, at.y, at.z, 0, 0, 0,
-                self != null && self.onGround(), SpheresGravityConfig.strength(), SpheresGravityConfig.reachRadii());
+                self != null && SphereGravityPush.held(self), SpheresGravityConfig.strength(), SpheresGravityConfig.reachRadii());
         String exposure = "";
         if (self != null) exposure = " exposure=" + SphereGravityShelter.classify(self) + " onGround=" + self.onGround();
         send(source, String.format("  total pull (%.4f, %.4f, %.4f) |%.4f|%s",

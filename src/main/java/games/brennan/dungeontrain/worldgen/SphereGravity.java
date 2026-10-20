@@ -18,12 +18,14 @@ import java.util.List;
  *   <li><b>Inside</b> ({@code d < r}): the full surface pull. A sphere's ground is usually well inside its
  *       radius — an overworld sphere's top is the natural surface, about 0.3·r above the centre — so this is
  *       what you feel when you jump off it.</li>
- *   <li><b>Standing on it</b>: on the ground inside the sphere or within {@link #STAND_MARGIN} of its surface
- *       (its top, a tunnel, the train's corridor) — no pull, so walking about feels like normal ground and
- *       only a jump brings the pull back. Only that sphere lets go; others still pull.</li>
+ *   <li><b>Standing on it, or swimming in it</b>: on the ground or in water/lava inside the sphere or within
+ *       {@link #STAND_MARGIN} of its surface (its top, a tunnel, the train's corridor, its lakes) — no pull, so
+ *       walking and swimming feel normal and only a jump brings the pull back. Only that sphere lets go; others
+ *       still pull.</li>
  * </ul>
- * Pulls from overlapping spheres add. A sphere stops pulling once the thing is already moving toward its
- * centre at {@link #MAX_SPEED_TOWARD} blocks/tick, so nothing builds runaway speed.
+ * Pulls from overlapping spheres add. Each sphere's pull eases off as the thing speeds toward its centre,
+ * reaching 0 at {@link #MAX_SPEED_TOWARD} blocks/tick — a smooth taper rather than an on/off cut, which
+ * flickered tick to tick near the limit — so nothing builds runaway speed.
  */
 public final class SphereGravity {
 
@@ -33,7 +35,7 @@ public final class SphereGravity {
     public static final double FULL_SIZE_RADIUS = 40.0;
     /** Smallest size factor — even the tiniest sphere is felt a little up close. */
     public static final double MIN_SIZE = 0.15;
-    /** Speed toward a sphere's centre (blocks/tick) past which it stops adding pull. */
+    /** Speed toward a sphere's centre (blocks/tick) at which its pull has eased off to nothing. */
     public static final double MAX_SPEED_TOWARD = 0.6;
     /**
      * How far past a sphere's surface something on the ground still counts as standing on it. Generous: a
@@ -84,6 +86,12 @@ public final class SphereGravity {
         return a;
     }
 
+    /** {@code 1} while not closing on the centre, easing linearly to {@code 0} at {@link #MAX_SPEED_TOWARD}. */
+    static double speedEase(double speedToward) {
+        if (speedToward <= 0) return 1.0;
+        return Math.max(0.0, 1.0 - speedToward / MAX_SPEED_TOWARD);
+    }
+
     /** Extra distance past the largest radius a lookup must cover for {@code reachRadii}. */
     public static double lookupReach(int rMax, double reachRadii) {
         return Math.max(0.0, reachRadii - 1.0) * Math.max(0, rMax);
@@ -91,20 +99,21 @@ public final class SphereGravity {
 
     /**
      * Summed pull of {@code spheres} on a point {@code (x, y, z)} moving at {@code (vx, vy, vz)};
-     * {@code onGround} lets go of any sphere it is standing on.
+     * {@code held} (on the ground or in a fluid) lets go of any sphere it is standing or swimming in.
      */
     public static Pull pull(List<SphereField.Sphere> spheres, double x, double y, double z,
-                            double vx, double vy, double vz, boolean onGround,
+                            double vx, double vy, double vz, boolean held,
                             double strength, double reachRadii) {
         if (spheres.isEmpty() || strength <= 0) return Pull.ZERO;
         double ax = 0, ay = 0, az = 0;
         for (SphereField.Sphere s : spheres) {
             double dx = s.cx() + 0.5 - x, dy = s.cy() + 0.5 - y, dz = s.cz() + 0.5 - z;
             double d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            if (d < 1e-6 || (onGround && d <= s.r() + STAND_MARGIN)) continue;
+            if (d < 1e-6 || (held && d <= s.r() + STAND_MARGIN)) continue;
             double ux = dx / d, uy = dy / d, uz = dz / d;
-            if (vx * ux + vy * uy + vz * uz >= MAX_SPEED_TOWARD) continue;
-            double a = pullAt(d, s.r(), strength, reachRadii);
+            double ease = speedEase(vx * ux + vy * uy + vz * uz);
+            if (ease <= 0) continue;
+            double a = pullAt(d, s.r(), strength, reachRadii) * ease;
             if (a <= 0) continue;
             ax += ux * a;
             ay += uy * a;
