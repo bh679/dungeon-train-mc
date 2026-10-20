@@ -38,8 +38,19 @@ class AmbientWindTest {
         assertEquals(0.0, AmbientWind.slantTarget(-1.0, 15.0, 0.6));
         assertEquals(0.15, AmbientWind.slantTarget(0.01, 15.0, 0.6), 1e-9);
         assertEquals(0.6, AmbientWind.slantTarget(1.0, 15.0, 0.6));
-        assertTrue(AmbientWind.slantTarget(0.01, AmbientWind.SNOW_SLANT_PER_PUSH, AmbientWind.SNOW_MAX_SLANT)
-                > AmbientWind.slantTarget(0.01, AmbientWind.RAIN_SLANT_PER_PUSH, AmbientWind.RAIN_MAX_SLANT));
+    }
+
+    @Test
+    @DisplayName("snow scroll: U offset is minus the distance blown along the quad's axis, kept to one tile")
+    void snowScroll() {
+        // Blown 0.25 along the quad's axis: texture shifts back 0.25 so flakes move forward.
+        assertEquals(-0.25f, AmbientWind.scrollU(0.25, 0.0, 1.0, 0.0), 1e-6);
+        // Wind across the quad (perpendicular to its axis) doesn't scroll it.
+        assertEquals(0.0f, AmbientWind.scrollU(0.0, 5.0, 1.0, 0.0), 1e-6);
+        // Far along, still within one tile.
+        float far = AmbientWind.scrollU(12345.7, 0.0, 1.0, 0.0);
+        assertTrue(far <= 0.0f && far > -1.0f);
+        assertEquals(-0.7f, far, 1e-4);
     }
 
     @Test

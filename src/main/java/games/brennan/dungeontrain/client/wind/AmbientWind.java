@@ -10,6 +10,10 @@ import net.minecraft.core.BlockPos;
  * splashes — {@link WindParticleTypes}) and the rain and snow sheets slanting over. Refreshed once per client tick
  * by {@link WindClientEvents} from the same wind the streaks show, so a gust bends everything at once.
  *
+ * <h2>Rain and snow</h2>
+ * Rain slants: its sheet is sheared downwind. Snow doesn't lean; its flakes are blown sideways instead, by
+ * scrolling the snow texture across each sheet at the speed snowflakes drift ({@link #snowScrollU}).
+ *
  * <h2>Ground frame</h2>
  * Unlike the streaks, nothing here gets the carriage's velocity: a campfire beside the track smokes downwind and
  * stays behind as the train passes.
@@ -28,12 +32,10 @@ public final class AmbientWind {
     /** Ticks between a particle's shelter checks. */
     public static final int SHELTER_RECHECK = 8;
 
-    /** Sheet slant (horizontal blocks per block of height) per unit of push, and its cap. Snow is lighter. */
+    /** Rain sheet slant (horizontal blocks per block of height) per unit of push, and its cap. */
     static final double RAIN_SLANT_PER_PUSH = 15.0;
     static final double RAIN_MAX_SLANT = 0.6;
-    static final double SNOW_SLANT_PER_PUSH = 30.0;
-    static final double SNOW_MAX_SLANT = 1.0;
-    /** Share of the gap to the target slant closed each tick, so a gust swings the rain over and back. */
+    /** Share of the gap to the target slant (and snow scroll speed) closed each tick, so a gust swings over and back. */
     static final double SLANT_EASE = 0.15;
 
     private static final byte UNKNOWN = 0;
@@ -45,8 +47,11 @@ public final class AmbientWind {
     private static volatile double driftZ = 0.0;
     private static volatile double rainSlantX = 0.0;
     private static volatile double rainSlantZ = 0.0;
-    private static volatile double snowSlantX = 0.0;
-    private static volatile double snowSlantZ = 0.0;
+    /** Snow scroll speed (blocks/tick, eased) and how far it has scrolled since login (blocks, never wrapped). */
+    private static double snowVelX = 0.0;
+    private static double snowVelZ = 0.0;
+    private static double snowScrollX = 0.0;
+    private static double snowScrollZ = 0.0;
 
     /** Shelter per block for this tick; client thread only (particles tick there too). */
     private static final Long2ByteOpenHashMap SHELTER = new Long2ByteOpenHashMap();
@@ -63,11 +68,9 @@ public final class AmbientWind {
         driftX = dx * speed;
         driftZ = dz * speed;
         double rain = slantTarget(push, RAIN_SLANT_PER_PUSH, RAIN_MAX_SLANT);
-        double snow = slantTarget(push, SNOW_SLANT_PER_PUSH, SNOW_MAX_SLANT);
         rainSlantX = ease(rainSlantX, dx * rain);
         rainSlantZ = ease(rainSlantZ, dz * rain);
-        snowSlantX = ease(snowSlantX, dx * snow);
-        snowSlantZ = ease(snowSlantZ, dz * snow);
+        stepSnow(driftX * WindParticleTypes.LIGHT, driftZ * WindParticleTypes.LIGHT);
         active = true;
     }
 
@@ -79,14 +82,21 @@ public final class AmbientWind {
         driftZ = 0.0;
         rainSlantX = ease(rainSlantX, 0.0);
         rainSlantZ = ease(rainSlantZ, 0.0);
-        snowSlantX = ease(snowSlantX, 0.0);
-        snowSlantZ = ease(snowSlantZ, 0.0);
+        stepSnow(0.0, 0.0);
+    }
+
+    /** Scroll the snow by this tick's speed, then ease the speed toward {@code (targetX, targetZ)}. */
+    private static void stepSnow(double targetX, double targetZ) {
+        snowScrollX += snowVelX;
+        snowScrollZ += snowVelZ;
+        snowVelX = ease(snowVelX, targetX);
+        snowVelZ = ease(snowVelZ, targetZ);
     }
 
     /** Clear everything at once (logging out). */
     static void reset() {
         release();
-        rainSlantX = rainSlantZ = snowSlantX = snowSlantZ = 0.0;
+        rainSlantX = rainSlantZ = snowVelX = snowVelZ = snowScrollX = snowScrollZ = 0.0;
     }
 
     public static boolean active() {
@@ -102,13 +112,32 @@ public final class AmbientWind {
         return driftZ;
     }
 
-    /** Horizontal offset per block of height for the rain or snow sheet. */
-    public static double slantX(boolean snow) {
-        return snow ? snowSlantX : rainSlantX;
+    /** Horizontal offset per block of height for the rain sheet. */
+    public static double rainSlantX() {
+        return rainSlantX;
     }
 
-    public static double slantZ(boolean snow) {
-        return snow ? snowSlantZ : rainSlantZ;
+    public static double rainSlantZ() {
+        return rainSlantZ;
+    }
+
+    /** True while the snow is scrolling at all (skip the per-vertex work otherwise). */
+    public static boolean snowScrolling() {
+        return snowVelX != 0.0 || snowVelZ != 0.0 || snowScrollX != 0.0 || snowScrollZ != 0.0;
+    }
+
+    /**
+     * Texture U offset for a snow sheet whose U runs along world {@code (axisX, axisZ)} (unit), so its flakes move
+     * downwind: minus the snow's scrolled distance along that axis, interpolated by {@code partialTick} and kept
+     * to 0..1 (the snow texture repeats).
+     */
+    public static float snowScrollU(double axisX, double axisZ, float partialTick) {
+        return scrollU(snowScrollX + snowVelX * partialTick, snowScrollZ + snowVelZ * partialTick, axisX, axisZ);
+    }
+
+    static float scrollU(double scrollX, double scrollZ, double axisX, double axisZ) {
+        double along = scrollX * axisX + scrollZ * axisZ;
+        return (float) -(along - Math.floor(along));
     }
 
     /** True when the wind does not reach this point (inside a carriage, under terrain); cached per block per tick. */
