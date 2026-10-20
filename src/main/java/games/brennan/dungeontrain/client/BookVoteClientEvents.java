@@ -300,7 +300,7 @@ public final class BookVoteClientEvents {
         BookBoostControl.beginFrame();
         if (!starShown()) return;
         BookBoostControl.render(gfx, font, moderation.isOwn(), starX(), buttonsY(), labelsY(), mouseX, mouseY);
-        BookBoostControl.renderWallet(gfx, font, bookLeft() + WALLET_X, bookTop() + WALLET_Y, mouseX, mouseY);
+        BookBoostControl.renderWallet(gfx, font, moderation.isOwn(), bookLeft() + WALLET_X, bookTop() + WALLET_Y, mouseX, mouseY);
     }
 
     private static boolean starShown() {
