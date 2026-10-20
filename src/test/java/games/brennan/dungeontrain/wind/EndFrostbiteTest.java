@@ -23,15 +23,15 @@ class EndFrostbiteTest {
     }
 
     @Test
-    void startsAtAMinuteToFreeze() {
-        assertEquals(60.0, EndFrostbite.secondsToFreeze(0L, HALF_LIFE), 1e-9);
-        assertEquals(TICKS_TO_FREEZE / 1200.0, EndFrostbite.netRate(0L, HALF_LIFE, TICKS_TO_FREEZE), 1e-9);
+    void startsAtHalfAMinuteToFreeze() {
+        assertEquals(30.0, EndFrostbite.secondsToFreeze(0L, HALF_LIFE), 1e-9);
+        assertEquals(TICKS_TO_FREEZE / 600.0, EndFrostbite.netRate(0L, HALF_LIFE, TICKS_TO_FREEZE), 1e-9);
     }
 
     @Test
     void gapToFloorHalvesEveryHalfLife() {
-        assertEquals(7.0 + 53.0 / 2, EndFrostbite.secondsToFreeze(HALF_LIFE, HALF_LIFE), 1e-9);
-        assertEquals(7.0 + 53.0 / 4, EndFrostbite.secondsToFreeze(2 * HALF_LIFE, HALF_LIFE), 1e-9);
+        assertEquals(7.0 + 23.0 / 2, EndFrostbite.secondsToFreeze(HALF_LIFE, HALF_LIFE), 1e-9);
+        assertEquals(7.0 + 23.0 / 4, EndFrostbite.secondsToFreeze(2 * HALF_LIFE, HALF_LIFE), 1e-9);
     }
 
     @Test
@@ -53,7 +53,7 @@ class EndFrostbiteTest {
 
     @Test
     void noHalfLifeHoldsTheStartingPace() {
-        assertEquals(60.0, EndFrostbite.secondsToFreeze(1_000_000L, 0L), 1e-9);
+        assertEquals(30.0, EndFrostbite.secondsToFreeze(1_000_000L, 0L), 1e-9);
     }
 
     @Test

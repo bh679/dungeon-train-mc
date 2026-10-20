@@ -26,7 +26,7 @@ import org.joml.primitives.AABBdc;
  * <p><b>Pace.</b> Where the cold first appears (the start of lap {@value #FIRST_FREEZING_CYCLE}) a player takes
  * {@value #SECONDS_TO_FREEZE_AT_START} s out on the roof to freeze solid; the gap to powder snow's
  * {@value #SECONDS_TO_FREEZE_FLOOR} s halves every {@link WorldGenCycle#period() cycle} travelled, so it creeps
- * toward that floor and never quite reaches it (cycle 2 ≈ 60 s, 3 ≈ 33 s, 4 ≈ 20 s, 5 ≈ 13 s, …). The counter is
+ * toward that floor and never quite reaches it (cycle 2 ≈ 30 s, 3 ≈ 18.5 s, 4 ≈ 13 s, 5 ≈ 10 s, …). The counter is
  * an int, so fractional rates are applied with a stateless step on the level's game time
  * ({@link #frostThisTick}) that averages exactly the rate over time. Scaled by the End-sky intensity so it fades
  * in and out with the band's edges, netting a thaw below about two-thirds sky.</p>
@@ -41,7 +41,7 @@ public final class EndFrostbite {
     static final long FIRST_FREEZING_CYCLE = 1L;
     static final int VANILLA_THAW = 2;
     /** Seconds on the roof to freeze solid where the cold first appears. */
-    static final double SECONDS_TO_FREEZE_AT_START = 60.0;
+    static final double SECONDS_TO_FREEZE_AT_START = 30.0;
     /** Seconds the pace approaches but never reaches: powder snow's. */
     static final double SECONDS_TO_FREEZE_FLOOR = 7.0;
     /** Cycles travelled per halving of the gap between the current pace and the floor. */
