@@ -28880,6 +28880,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sable-autosave-no-fsync",
+      "version": "0.1419.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility"
+      ],
+      "title": "Shorter autosave pause",
+      "summary": "The game paused for a second or more every time it autosaved, because the train was being written to disk the slow way. Autosaves now write the train the same way the rest of the world is written, so the pause is much shorter. Saving on quit is unchanged.",
+      "highlights": [
+        "Autosaves and the pause save no longer wait on the disk for every train file",
+        "Quitting the world still saves everything fully before it closes"
+      ],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2200,
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
