@@ -139,7 +139,7 @@ public final class NetherMobSpawner {
     private static final int GHAST_POCKET_CEILING = 18;
 
     /** Tag for accounting only (NOT the carriage-contents prefix, so kill-ahead/confinement ignore it). */
-    private static final String NETHER_MOB_TAG = "dungeontrain_nether_band_mob";
+    public static final String NETHER_MOB_TAG = "dungeontrain_nether_band_mob";
 
     // Per-biome ground rosters — only mobs that DON'T convert outside the Nether (no piglins/hoglins).
     @SuppressWarnings("unchecked")

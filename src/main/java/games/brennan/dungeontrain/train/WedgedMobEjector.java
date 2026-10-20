@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.event.NetherMobSpawner;
 import games.brennan.dungeontrain.util.DtLogging;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -56,14 +57,27 @@ public final class WedgedMobEjector {
             double tz = targets[i + 1];
             AABB moved = e.getBoundingBox().move(tx - e.getX(), 0.0, tz - e.getZ());
             if (level.noCollision(e, moved) && !CarriageSpace.overlapsAnyCarriage(level, moved)) {
-                LOGGER.debug("[DungeonTrain] Moved {} out of a carriage floor to ({}, {}, {})",
-                    e.getType().toShortString(), tx, e.getY(), tz);
+                LOGGER.info("[DungeonTrain] Moved {} out of a carriage floor to ({}, {}, {}) source={} tags={}",
+                    e.getType().toShortString(), tx, e.getY(), tz, sourceOf(e), e.getTags());
                 e.teleportTo(tx, e.getY(), tz);
                 return;
             }
         }
-        LOGGER.debug("[DungeonTrain] Discarded {} stuck in a carriage floor at ({}, {}, {}): no room beside it",
-            e.getType().toShortString(), e.getX(), e.getY(), e.getZ());
+        LOGGER.info("[DungeonTrain] Discarded {} stuck in a carriage floor at ({}, {}, {}): no room beside it source={} tags={}",
+            e.getType().toShortString(), e.getX(), e.getY(), e.getZ(), sourceOf(e), e.getTags());
         e.discard();
+    }
+
+    /**
+     * Where a wedged mob came from, for the log: placed by the train as carriage contents, spawned
+     * by the Nether band's own spawner, or anything else (vanilla spawning, eggs, commands). Read
+     * from the tags each source stamps, so a /bug log answers "who put it there" on its own.
+     */
+    private static String sourceOf(Entity e) {
+        for (String tag : e.getTags()) {
+            if (tag.startsWith(CarriageContentsPlacer.DT_CONTENTS_TAG_PREFIX)) return "carriage-contents";
+            if (tag.equals(NetherMobSpawner.NETHER_MOB_TAG)) return "nether-band-spawner";
+        }
+        return "other";
     }
 }
