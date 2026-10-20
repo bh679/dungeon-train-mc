@@ -93,6 +93,12 @@ public final class OfficialLinks {
     public static String paymentCn() { return resolve("payment_cn", null); }
 
     /**
+     * The relay's Community Rewards checkout route ({@code /rewards/pay}), or null until the relay
+     * serves it: null keeps every reward's Give button greyed ("Soon").
+     */
+    public static String rewardsPay() { return resolve("rewards_pay", null); }
+
+    /**
      * The relay's own checkout route, which builds a Stripe Checkout Session carrying the player's
      * name already filled into the display-name field — something a raw Stripe link cannot do, since
      * a Payment Link accepts no custom-field prefill from its URL.

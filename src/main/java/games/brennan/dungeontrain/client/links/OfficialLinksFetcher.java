@@ -109,6 +109,9 @@ public final class OfficialLinksFetcher {
         mc.execute(() -> {
             if (mc.screen instanceof TitleScreen title && PaymentLinks.useChinaPayment()) {
                 title.resize(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
+            } else if (mc.screen instanceof RefreshOnLinks) {
+                // Contribute and the rewards page: tiers and Give buttons appear once the links are in.
+                mc.screen.resize(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
             }
         });
     }

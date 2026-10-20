@@ -203,6 +203,39 @@ public final class ContentsDespawnController {
     }
 
     /**
+     * How far below the carriage box's floor a swept mob's feet may sit. A mob aboard stands on a
+     * deck block, so its feet are at least a block above {@code worldAABB().minY}; the half-block
+     * slack only absorbs the box disagreeing with the drawn pose by a few tenths of a block. A mob
+     * on the ground or track bed beside or under the carriage is a block or more below, and is not
+     * aboard.
+     */
+    static final double ABOARD_FLOOR_SLACK_BLOCKS = 0.5;
+
+    /**
+     * Pure "is this mob aboard the carriage" test for the sweep — no Minecraft types.
+     *
+     * <p>A contents mob that walked off the carriage keeps its contents tag, and the sweep used to
+     * take anything tagged inside the carriage box grown by a block each way. That box reaches the
+     * ground beside and under the carriage, so a mob that had stepped off onto it, and was nudged
+     * along by the passing carriage, was frozen into the carriage's snapshot — which is only ever
+     * restored if the player comes back to that carriage. Off the train it is a world mob now, and
+     * stays one.</p>
+     *
+     * @param carriedByThisShip Sable is carrying the mob on this carriage's sub-level
+     * @param x                 mob centre X
+     * @param feetY             mob feet Y
+     * @param z                 mob centre Z
+     */
+    static boolean isAboard(boolean carriedByThisShip, double x, double feetY, double z,
+                            double minX, double minY, double minZ,
+                            double maxX, double maxY, double maxZ) {
+        if (carriedByThisShip) return true;
+        return x >= minX && x <= maxX
+            && z >= minZ && z <= maxZ
+            && feetY >= minY - ABOARD_FLOOR_SLACK_BLOCKS && feetY <= maxY + 1;
+    }
+
+    /**
      * Per-tick reconcile. Called from {@code TrainTickEvents} immediately AFTER
      * {@code PhysicsFreezeController.reconcile} — a carriage coming back into range is unfrozen by
      * that pass first, so its pose is already recovering by the time a restore looks at it.
