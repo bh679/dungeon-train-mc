@@ -4680,7 +4680,6 @@
   "gui.dungeontrain.priority_book.make_confirm": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "01860d5df01f08f7"},
   "gui.dungeontrain.priority_book.is_priority": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "d8e24345c228afd4"},
   "gui.dungeontrain.priority_book.boost.other": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "cd3325096cf59c50"},
-  "gui.dungeontrain.priority_book.boost_confirm": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "ed1cf25e24da9106"},
   "gui.dungeontrain.priority_book.boost_tooltip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "536b3aadae0bddf8"},
   "gui.dungeontrain.priority_book.boost_label": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0d791a0a6f011001"},
   "gui.dungeontrain.priority_book.you_boosted": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "2e99c239f9dde02b"},
