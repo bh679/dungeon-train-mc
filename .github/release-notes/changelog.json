@@ -28810,6 +28810,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stranger-stretches-lighter-tick",
+      "version": "0.1417.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Lighter ride through the stranger stretches",
+      "summary": "The stranger stretches of the line now cost the server less work every tick, so the ride stays smooth with more mobs and items about. Nothing looks or behaves differently.",
+      "highlights": [],
+      "pr": 2196,
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
