@@ -96,8 +96,8 @@ public final class BookVoteClientEvents {
     private static final int REPORT_DY = LABELS_DY + 12; // its own row under the (Y)es/(N)o labels
     private static final int REPORT_TEXT_DY = REPORT_DY + BUTTON_SIZE + 3; // confirmation line, when shown
     // The boosts-left wallet: just outside the book's bottom-right corner, clear of the page buttons.
-    private static final int WALLET_X = 168;
-    private static final int WALLET_Y = 150;
+    private static final int WALLET_X = 172;
+    private static final int WALLET_Y = 160;
     // Vanilla nails both page-turn buttons to this y in createPageControlButtons(), which is what
     // makes the back button usable as a probe for how far the book has been moved. See bookTop().
     private static final int VANILLA_PAGE_BUTTON_Y = 159;
