@@ -28503,6 +28503,52 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "contribute-currency-setting",
+      "version": "0.1400.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Gift amounts in your own currency",
+      "summary": "The Contribute screens now have a currency button at the top right. Pick your currency and every gift shows roughly what it comes to in your money. Gifts are still made in Australian dollars. Your choice is remembered, and the game starts from the currency that matches your language.",
+      "highlights": [
+        "13 currencies to choose from, each with its own flag",
+        "A currency picker on the website's support page too"
+      ],
+      "pr": 2134,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "contribute-screen-rewards",
+      "version": "0.1400.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Community Rewards",
+      "summary": "Support the solo-dev now opens one Contribute screen, the same one the engine room shows. Give to the dev, or give a Community Reward: a month of something switched on for everyone.",
+      "highlights": [
+        "Support the solo-dev opens Contribute from the title screen, the pause menu and Credits",
+        "Quicker Streams can now be given: for a month, everyone watches streams about 6 seconds behind instead of 30. More Community Rewards are coming",
+        "A new rewards page: Community Rewards for everyone, and Personal Rewards showing what each gift brings you",
+        "Every gift puts your name aboard, and gifts to the dev also bring Priority Books",
+        "Copying the books you read is now a thank-you for gifts of $30 or more"
+      ],
+      "pr": 2146,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "major": true,
+      "description": "Rewards the whole community benefits from. There are features I'd love to provide, but they cost more than I can take on alone. Now one person can unlock them for everyone! Give a Community Reward and everyone gets it, not just the donor.\n\nThe first reward is **Quicker Streams**: cover the server costs and the Live Eye stream delay drops from 30s to 6s for a whole month, for everyone. More rewards are on the way.\n\n## Other significant updates\n- Support the solo-dev now opens one Contribute screen, the same one the engine room shows, from the title screen, the pause menu and Credits\n- A new rewards page: Community Rewards for everyone, and Personal Rewards showing what each gift to the dev brings you\n- Every gift puts your name aboard, and gifts to the dev also bring Priority Books\n- Copying the books you read is now a thank-you for gifts of $30 or more",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/community-rewards.jpg"
     }
   ]
 }

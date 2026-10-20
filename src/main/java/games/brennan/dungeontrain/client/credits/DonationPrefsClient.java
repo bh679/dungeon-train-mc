@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
+import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.client.chat.RelayChatClient;
 import games.brennan.dungeontrain.net.relay.RelayTarget;
 import net.minecraft.client.Minecraft;
@@ -69,9 +70,17 @@ public final class DonationPrefsClient {
         }
     }
 
-    /** The relay's answer; {@code ok == false} means nothing usable came back. */
-    public record Prefs(boolean ok, Visibility visibility, boolean tag) {
-        static final Prefs FAILED = new Prefs(false, Visibility.PUBLIC, true);
+    /**
+     * The relay's answer; {@code ok == false} means nothing usable came back. {@code currency} is the
+     * ISO code the player views gift amounts in, or {@code null} when they never picked one (and
+     * against a relay that predates it).
+     */
+    public record Prefs(boolean ok, Visibility visibility, boolean tag, String currency) {
+        static final Prefs FAILED = new Prefs(false, Visibility.PUBLIC, true, null);
+
+        public Prefs(boolean ok, Visibility visibility, boolean tag) {
+            this(ok, visibility, tag, null);
+        }
     }
 
     private DonationPrefsClient() {}
@@ -99,6 +108,30 @@ public final class DonationPrefsClient {
     /** Change whether the player's Discord is tagged. */
     public static CompletableFuture<Prefs> setTag(boolean tag) {
         return post(buildPayload(ownUuid(), null, tag));
+    }
+
+    /**
+     * The currency the player last picked on any of their installs, for a fresh install to adopt.
+     * Gated on network consent alone (the Account choices above also need dev chat on): the currency
+     * is a display preference, not a Discord one.
+     */
+    public static CompletableFuture<Prefs> getCurrency() {
+        String uuid = consentedUuid();
+        if (uuid == null) return CompletableFuture.completedFuture(Prefs.FAILED);
+        try {
+            HttpRequest req = HttpRequest.newBuilder(URI.create(RelayTarget.live() + PATH + "?uuid=" + uuid))
+                .timeout(REQUEST_TIMEOUT)
+                .GET()
+                .build();
+            return send(req);
+        } catch (Throwable t) {
+            return CompletableFuture.completedFuture(Prefs.FAILED);
+        }
+    }
+
+    /** Store the picked currency against the player's account (no-op without network consent). */
+    public static CompletableFuture<Prefs> setCurrency(String code) {
+        return post(buildCurrencyPayload(consentedUuid(), code));
     }
 
     private static CompletableFuture<Prefs> post(JsonObject body) {
@@ -132,6 +165,23 @@ public final class DonationPrefsClient {
         return uuid.toString().replace("-", "");
     }
 
+    /** This player's undashed profile uuid, or {@code null} without a signed-in user or network consent. */
+    private static String consentedUuid() {
+        Minecraft mc = Minecraft.getInstance();
+        UUID uuid = mc != null && mc.getUser() != null ? mc.getUser().getProfileId() : null;
+        if (uuid == null || !DiscordPresenceClientConfig.isGranted()) return null;
+        return uuid.toString().replace("-", "");
+    }
+
+    /** The currency POST body; {@code null} without a uuid or a code. */
+    static JsonObject buildCurrencyPayload(String uuid, String code) {
+        if (uuid == null || uuid.isEmpty() || code == null || code.isBlank()) return null;
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid);
+        body.addProperty("currency", code);
+        return body;
+    }
+
     /** The POST body; {@code null} without a uuid. Omitted fields keep their stored value on the relay. */
     static JsonObject buildPayload(String uuid, Visibility visibility, Boolean tag) {
         if (uuid == null || uuid.isEmpty()) return null;
@@ -155,7 +205,9 @@ public final class DonationPrefsClient {
             if (vis == null || t == null || !t.isJsonPrimitive() || !t.getAsJsonPrimitive().isBoolean()) {
                 return Prefs.FAILED;
             }
-            return new Prefs(true, vis, t.getAsBoolean());
+            JsonElement c = o.get("currency");
+            String currency = c != null && c.isJsonPrimitive() ? c.getAsString() : null;
+            return new Prefs(true, vis, t.getAsBoolean(), currency);
         } catch (RuntimeException e) {
             return Prefs.FAILED;
         }
