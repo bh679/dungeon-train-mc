@@ -43,6 +43,20 @@ public final class DisabledModContent {
     /** Mods whose gear and ores are disabled. BoP ships none today — it is covered for future updates. */
     static final Set<String> NAMESPACES = Set.of("betternether", "betterend", "biomesoplenty");
 
+    /**
+     * Mods whose gear alone is disabled — armour, weapons, tools, elytra and their upgrade smithing templates —
+     * while their ores and materials stay: Deeper Darker's Warden and Resonarium sets and Soul Elytra (for now);
+     * its ores are the Deeper Dark core's own rock.
+     */
+    static final Set<String> GEAR_ONLY_NAMESPACES = Set.of("deeperdarker");
+
+    /**
+     * Mod enchantments DT keeps (every other non-vanilla one is disabled): Deeper Darker's Sculk Smite, Catalysis
+     * and Reverberation. Its Volume is off for now.
+     */
+    static final Set<String> KEPT_MOD_ENCHANTMENTS = Set.of(
+        "deeperdarker:sculk_smite", "deeperdarker:catalysis", "deeperdarker:reverberation");
+
     /** Mods whose own creative tabs are hidden by default: the ones above, plus VanillaBackport — its gear is
      *  kept — and Exposure with its Polaroid add-on, whose one item players get is DT's own disposable camera. */
     private static final Set<String> HIDDEN_TAB_NAMESPACES =
@@ -80,6 +94,9 @@ public final class DisabledModContent {
      * creeper tape drops ({@code vista:inject/*}), which arrive through the same loot tables. Mirrors and the
      * music disc are left as Vista ships them; Picture Tape is too, except that it can't be crafted
      * ({@link #DISABLED_RECIPES}).</p>
+     *
+     * <p>And Deeper Darker's Sonorous Staff and Sculk Transmitters (plain and all sixteen dyed): disabled for now.
+     * (Its armour, tools and Soul Elytra go by item class — {@link #GEAR_ONLY_NAMESPACES}.)</p>
      */
     static final Set<String> HIDDEN_ITEMS = Set.of(
         "exposure:camera",
@@ -98,7 +115,25 @@ public final class DisabledModContent {
         "vista:viewfinder",
         "vista:wave_gate",
         "vista:cassette",
-        "vista:hollow_cassette");
+        "vista:hollow_cassette",
+        "deeperdarker:sonorous_staff",
+        "deeperdarker:sculk_transmitter",
+        "deeperdarker:white_sculk_transmitter",
+        "deeperdarker:orange_sculk_transmitter",
+        "deeperdarker:magenta_sculk_transmitter",
+        "deeperdarker:light_blue_sculk_transmitter",
+        "deeperdarker:yellow_sculk_transmitter",
+        "deeperdarker:lime_sculk_transmitter",
+        "deeperdarker:pink_sculk_transmitter",
+        "deeperdarker:gray_sculk_transmitter",
+        "deeperdarker:light_gray_sculk_transmitter",
+        "deeperdarker:cyan_sculk_transmitter",
+        "deeperdarker:purple_sculk_transmitter",
+        "deeperdarker:blue_sculk_transmitter",
+        "deeperdarker:brown_sculk_transmitter",
+        "deeperdarker:green_sculk_transmitter",
+        "deeperdarker:red_sculk_transmitter",
+        "deeperdarker:black_sculk_transmitter");
 
     /**
      * Blocks turned off outright: BetterNether's Respawner Statue and BetterEnd's Respawn Obelisk (both set a
@@ -170,9 +205,10 @@ public final class DisabledModContent {
         return isDisabledItem(stack.getItem());
     }
 
-    /** Any enchantment a mod adds — vanilla's {@code minecraft:} ones are the only ones DT keeps. */
+    /** Any enchantment a mod adds — vanilla's {@code minecraft:} ones and {@link #KEPT_MOD_ENCHANTMENTS} are the ones DT keeps. */
     public static boolean isDisabledEnchantment(ResourceLocation id) {
-        return id != null && !ResourceLocation.DEFAULT_NAMESPACE.equals(id.getNamespace());
+        return id != null && !ResourceLocation.DEFAULT_NAMESPACE.equals(id.getNamespace())
+            && !KEPT_MOD_ENCHANTMENTS.contains(id.toString());
     }
 
     private static boolean isDisabledEnchantment(Holder<Enchantment> enchantment) {
@@ -230,6 +266,9 @@ public final class DisabledModContent {
         }
         if (HIDDEN_ITEMS.contains(id.toString()) || DISABLED_BLOCKS.contains(id.toString())) {
             return true;
+        }
+        if (GEAR_ONLY_NAMESPACES.contains(id.getNamespace())) {
+            return gearClass || SMITHING_TEMPLATE.matcher(id.getPath()).matches();
         }
         if (!NAMESPACES.contains(id.getNamespace())) {
             return false;

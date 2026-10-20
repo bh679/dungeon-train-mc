@@ -81,8 +81,8 @@ public final class ZoneProgressEvents {
 
             // "Nether Return Again" — deep inside a Nether band on the SECOND (or later) Nether pass.
             // The first Nether band is pass 0, so index >= 1 is the second band onward.
-            if (NetherBand.isInNetherBiome(level, px)
-                && NetherBand.isInNetherBiome(level, px - BandAdvancements.ENTRY_DEPTH_BLOCKS)
+            if (NetherBand.isInRealNetherBiome(level, px)
+                && NetherBand.isInRealNetherBiome(level, px - BandAdvancements.ENTRY_DEPTH_BLOCKS)
                 && NetherBand.netherPassIndex(level, px) >= 1) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "nether_return_again");
             }

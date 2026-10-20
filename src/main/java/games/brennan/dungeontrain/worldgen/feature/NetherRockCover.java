@@ -33,6 +33,9 @@ final class NetherRockCover {
      */
     static boolean isOverworldRock(BlockState s) {
         if (s.isAir() || !s.getFluidState().isEmpty()) return false;
+        // Deeper Darker's ores join the vanilla ore tags, but in the band they are the copied Otherside core.
+        if (net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(s.getBlock()).getNamespace()
+                .equals(games.brennan.dungeontrain.worldgen.OthersideCore.NAMESPACE)) return false;
         if (s.is(BlockTags.BASE_STONE_OVERWORLD)) return true;
         if (s.is(BlockTags.DIRT)) return true;
         if (s.is(Blocks.GRAVEL) || s.is(Blocks.CLAY) || s.is(Blocks.CALCITE) || s.is(Blocks.DRIPSTONE_BLOCK)) {

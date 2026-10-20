@@ -87,6 +87,8 @@ public final class NetherFoliageStrip {
             double ramp = NetherBand.netherRampAt(overworld, worldX, chunkMinZ);
             band[dx] = ramp > 0.0 && DisintegrationBand.middleRampAt(overworld, worldX, chunkMinZ) <= 0.0;
             core[dx] = ramp >= WorldGenCycle.NETHER_CORE_THRESHOLD;
+            // A Deeper Dark core grows the Otherside's own trees and plants (echo trees, lily flowers) — keep them all.
+            if (core[dx] && NetherBand.isOthersideAt(overworld, worldX, chunkMinZ)) band[dx] = false;
             if (band[dx]) any = true;
         }
         if (!any) return null;

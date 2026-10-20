@@ -541,9 +541,9 @@ public final class TrackGenerator {
         if (NetherFade.intersectsCrossfade(overworld, tileX, tileX + TrackPlacer.TILE_LENGTH - 1)) {
             long genSeed = DungeonTrainWorldData.get(overworld).getGenerationSeed();
             String owName = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx,
-                new GateContext(baseCtx.level(), TrainPhase.OVERWORLD));
+                new GateContext(baseCtx.level(), NetherFade.basePhaseAt(overworld, tileX)));
             String ntName = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx,
-                new GateContext(baseCtx.level(), TrainPhase.NETHER));
+                new GateContext(baseCtx.level(), NetherFade.fadePhaseAt(overworld, tileX)));
             return new TilePaint(
                 TrackTemplateStore.getCellsFor(level, dims, owName),
                 TrackVariantBlocks.loadFor(TrackKind.TILE, owName, tileFootprint),

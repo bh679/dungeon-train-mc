@@ -3450,6 +3450,7 @@
   "gui.dungeontrain.editor_menu.phase.large_biomes": "Malalaking Biome",
   "gui.dungeontrain.editor_menu.phase.amplified": "Pinalakas",
   "gui.dungeontrain.editor_menu.phase.lost_city": "Nawawalang Lungsod",
+  "gui.dungeontrain.editor_menu.phase.deeper_dark": "Mas Malalim na Dilim",
   "gui.dungeontrain.editor_menu.phase.caves_of_chaos": "Mga Kuweba ng Kaguluhan",
   "gui.dungeontrain.editor_menu.stage.title": "Stage: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Tanggalin ang Stage",

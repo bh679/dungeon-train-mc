@@ -138,12 +138,14 @@ final class WorldGenCycleMirrorTest {
                 nethers++;
                 assertTrue(C.isNetherCore(mid), "nether core at slot " + i);
                 assertEquals(better, C.isBetterNetherAt(mid), "better nether at slot " + i);
+                assertEquals(slot.style() == CycleLayout.Style.OTHERSIDE,
+                        C.netherLookAt(mid) == CycleLayout.Style.OTHERSIDE, "deeper dark at slot " + i);
             } else if (slot.type() == CycleLayout.Type.END) {
                 ends++;
                 assertEquals(better, C.isBetterEndAt(mid), "better end at slot " + i);
             }
         }
-        assertEquals(2, nethers);
+        assertEquals(3, nethers);   // Lap 2's BetterNether + Deeper Dark
         assertEquals(3, ends);   // Lap 1's End is two joined pieces (vanilla, BoP) plus the Better End
     }
 

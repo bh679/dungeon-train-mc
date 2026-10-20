@@ -33,6 +33,7 @@ final class StageColourPalettesTest {
         Map.entry("crimson", List.of("magenta", "red", "purple", "red", "magenta", "light_gray")),
         Map.entry("darkwood", List.of("black", "brown", "gray", "black", "brown", "gray")),
         Map.entry("deepdark", List.of("cyan", "blue", "gray", "cyan", "gray", "black")),
+        Map.entry("deeper_dark", List.of("cyan", "black", "blue", "cyan", "black", "blue")),
         Map.entry("desert", List.of("orange", "blue", "purple", "black", "orange", "cyan")),
         Map.entry("jungle", List.of("brown", "", "cyan", "green", "brown", "gray")),
         Map.entry("mangrove", List.of("red", "pink", "brown", "red", "brown", "white")),

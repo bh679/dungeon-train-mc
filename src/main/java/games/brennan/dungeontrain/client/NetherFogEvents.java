@@ -62,6 +62,12 @@ public final class NetherFogEvents {
      */
     private static final Music NETHER_MUSIC = new Music(SoundEvents.MUSIC_BIOME_NETHER_WASTES, 20, 200, true);
 
+    /** The Deeper Dark's track: vanilla's deep dark music (Deeper Darker ships none), on the same short delays. */
+    private static final Music DEEPER_DARK_MUSIC = new Music(SoundEvents.MUSIC_BIOME_DEEP_DARK, 20, 200, true);
+
+    /** The Deeper Dark's fallback colour (packed {@code 0xRRGGBB}): the deeplands' dark navy fog. */
+    private static final int DEEPER_DARK_FOG = 0x141C33;
+
     /** True while we are actively scaling the music volume, so we force one final restore tick on leaving. */
     private static boolean musicFadeActive = false;
 
@@ -151,14 +157,17 @@ public final class NetherFogEvents {
     }
 
     public static int netherTargetColor(Level level, net.minecraft.core.BlockPos pos) {
+        boolean otherside = ClientNetherBand.isOthersideAt(pos.getX());
         try {
             Holder<Biome> biome = level.getBiome(pos);
-            if (isNetherBiome(biome)) {
+            if (isNetherBiome(biome) || (otherside && isOthersideBiome(biome))) {
                 return biome.value().getFogColor() & 0xFFFFFF;
             }
         } catch (Throwable ignored) {
-            // fall through to the fixed nether_wastes red
+            // fall through to the fixed fallback colour
         }
+        // A Deeper Dark pass fades in through sculk to the Otherside's dark navy, not the Nether's red.
+        if (otherside) return DEEPER_DARK_FOG;
         return ((int) (NETHER_FOG_R * 255.0f) << 16)
                 | ((int) (NETHER_FOG_G * 255.0f) << 8)
                 | (int) (NETHER_FOG_B * 255.0f);
@@ -170,6 +179,13 @@ public final class NetherFogEvents {
      */
     private static boolean isNetherBiome(Holder<Biome> biome) {
         return biome.is(BiomeTags.IS_NETHER);
+    }
+
+    /** True for one of Deeper Darker's Otherside biomes — what a Deeper Dark core is labelled with. */
+    private static boolean isOthersideBiome(Holder<Biome> biome) {
+        return biome.unwrapKey()
+                .map(k -> games.brennan.dungeontrain.worldgen.OthersideCore.NAMESPACE.equals(k.location().getNamespace()))
+                .orElse(false);
     }
 
     @SubscribeEvent
@@ -184,8 +200,9 @@ public final class NetherFogEvents {
         if (n <= 0.0) return; // outside any nether band → leave vanilla selection alone
 
         if (n > ClientNetherBand.MUSIC_CROSSOVER) {
-            // Past the crossover the Nether track plays (the volume mixin fades it in/out by position).
-            event.setMusic(NETHER_MUSIC);
+            // Past the crossover the Nether track plays (the volume mixin fades it in/out by position) —
+            // or the deep dark's, in a Deeper Dark pass.
+            event.setMusic(ClientNetherBand.isOthersideAt(mc.player.getX()) ? DEEPER_DARK_MUSIC : NETHER_MUSIC);
         } else {
             // Overworld side of a fade zone: keep the Overworld track, but give it short delays so it
             // resumes promptly on the way out instead of waiting vanilla's multi-minute idle gap.

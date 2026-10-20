@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "155";
+    public static final String PROTOCOL_VERSION = "156";
 
     private DungeonTrainNet() {}
 

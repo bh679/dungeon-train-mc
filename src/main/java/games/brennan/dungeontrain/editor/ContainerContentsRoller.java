@@ -582,8 +582,21 @@ public final class ContainerContentsRoller {
     }
 
     public static boolean isDecoratedPot(BlockState state) {
-        return state.is(Blocks.DECORATED_POT);
+        return state.is(Blocks.DECORATED_POT) || isGloomslatePot(state);
     }
+
+    /**
+     * Deeper Darker's Gloomslate Pot — a vase like vanilla's: its block entity is the same single-item
+     * container holding its stack under the {@link #NBT_POT_ITEM} key, so every pot path here (the roll, the
+     * Luck bonus, the drop on break) treats it as a decorated pot. (The mod's Ancient Vase has no block entity
+     * at all — it drops its own loot table on break — so it needs nothing from here.)
+     */
+    public static boolean isGloomslatePot(BlockState state) {
+        return net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).equals(GLOOMSLATE_POT);
+    }
+
+    private static final net.minecraft.resources.ResourceLocation GLOOMSLATE_POT =
+        net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("deeperdarker", "gloomslate_pot");
 
     /**
      * Decorated-pot roll path — picks a single weighted entry and writes it as

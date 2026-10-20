@@ -251,6 +251,13 @@
       ]
     },
     {
+      "id": "sculkmobs",
+      "weight": 12,
+      "phases": [
+        "DEEPER_DARK"
+      ]
+    },
+    {
       "id": "endslime",
       "weight": 5,
       "phases": [

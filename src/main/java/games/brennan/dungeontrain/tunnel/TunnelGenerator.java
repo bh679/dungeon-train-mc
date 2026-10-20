@@ -252,7 +252,7 @@ public final class TunnelGenerator {
         return TunnelRunGroups.resolve(TunnelGroupData.get(serverLevel), chunkX,
             TunnelRunGroups.runs(qualified, prevQualified, nextQualified),
             (key, worldX) -> NetherFade.intersectsCrossfade(overworld, worldX, worldX)
-                ? TunnelPlacer.FADE_BASE_GROUP
+                ? TunnelPlacer.fadeBaseGroup(NetherFade.basePhaseAt(overworld, worldX))
                 : TunnelGroupRoll.roll(seed, key, GateContext.atWorldX(serverLevel, worldX)));
     }
 
