@@ -28670,6 +28670,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "end-frostbite-roof",
+      "version": "0.1409.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "world",
+        "balance"
+      ],
+      "title": "The train gets cold",
+      "summary": "Deep down the line, some stretches turn bitterly cold. Out on the roof, a flatbed or a coupling pad, frost creeps over you; only a carriage closed in on every side keeps you warm. It starts slow and bites faster the further you have travelled, never quite reaching the cold of powder snow.",
+      "highlights": [
+        "Step inside a closed carriage to thaw.",
+        "Leather armour keeps the frost off, as it does in powder snow."
+      ],
+      "pr": 2187,
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
