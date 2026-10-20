@@ -2,49 +2,73 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
-import games.brennan.dungeontrain.client.support.ContributePanel;
-import games.brennan.dungeontrain.client.support.currency.CurrencyPicker;
+import games.brennan.dungeontrain.client.menu.ColorTintedButton;
+import games.brennan.dungeontrain.client.support.BookCredits;
+import games.brennan.dungeontrain.client.support.PaymentConfirmScreen;
+import games.brennan.dungeontrain.client.support.PaymentLinks;
+import games.brennan.dungeontrain.client.support.SupportTier;
+import games.brennan.dungeontrain.narrative.PriorityBookMessage;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 
+import java.net.URI;
 import java.util.List;
 
 /**
- * Full-screen "Contribute" window opened from the death-screen donation page's Contribute button:
- * the shared {@link ContributePanel} (three gift tiers, one featured community reward with See All
- * Rewards, the open-ended options as a line of links) on the engine room's dark blue. The same
- * chooser the Contribute page shows from "Support the Mod", so both always offer the same gifts in
- * the same words. Back returns to the death screen it was opened from.
+ * Full-screen "Contribute" window opened from the death-screen donation page's Contribute button.
+ * Offers the three named price points ({@link SupportTier}) on one row, with the open-ended options
+ * under them — Custom Amount (Revolut, name-tagged) and Recurring (Patreon). Each opens through
+ * vanilla's {@link ConfirmLinkScreen} with support-funnel analytics, returning here so the player can
+ * follow more than one. Closing returns to the death screen it was opened from.
  *
- * <p>Two clients see something different, both handled inside the panel: Simplified-Chinese clients
- * lose the open-ended options (Revolut and Patreon are walled there; the Stripe tiers work), and a
- * client whose relay never served a checkout route gets the open-ended options as its main row.</p>
+ * <p>Two clients see something different. Simplified-Chinese clients lose the open-ended row, since
+ * Revolut and Patreon are both walled there and the Stripe-backed price points work regardless. And
+ * a client whose relay never served a checkout route ({@link PaymentLinks#tiersAvailable()}) gets the
+ * pre-price-point layout it always had: Revolut plus Patreon, or Revolut plus the China payment
+ * route. Mirrors the Support page's Financial section — see
+ * {@link games.brennan.dungeontrain.client.support.SupportScreen}.</p>
+ *
+ * <p>Styled to match the death screen: the same dark-blue backdrop, an amber title and muted
+ * narration over the two coloured buttons. URLs come from {@link OfficialLinks} (relay-served,
+ * baked fallbacks offline).</p>
  */
-public final class DonationOptionsScreen extends Screen implements games.brennan.dungeontrain.client.links.RefreshOnLinks {
+public final class DonationOptionsScreen extends Screen {
 
     // Match the death-screen backdrop (NarrativeDeathScreen.OVERLAY) for a seamless hand-off.
     private static final int OVERLAY = 0xF2070C1E;
     private static final int TITLE   = 0xFFE0B56A;
     private static final int NARR    = 0xFFC7BDA7;
+    private static final int YOU     = 0xFF8FE08A; // the "you" line: this player's own thank-you
+    private static final float[] TINT_GREEN  = {0.30F, 0.80F, 0.35F}; // direct donation
+    private static final float[] TINT_ORANGE = {1.00F, 0.47F, 0.38F}; // Patreon
+    private static final float[] TINT_BLUE   = {0.35F, 0.62F, 1.00F}; // China payment — distinct from the green direct-donation button
 
     private final Screen parent;
-    private final ContributePanel panel;
-    private final CurrencyPicker currency;
+    // Text positions computed in init(), drawn in render() (title + subtitle + a per-column
+    // description above each button).
     private int titleY;
     private int subtitleTop;
+    private int descTop;
+    private int leftColCenter;
+    private int rightColCenter;
     private List<FormattedCharSequence> subtitleLines = List.of();
+    // "N Priority Books waiting", under the subtitle, only when the relay says this player has some.
+    private List<FormattedCharSequence> youLines = List.of();
+    private int youTop;
+    private List<FormattedCharSequence> revolutDescLines = List.of();
+    private List<FormattedCharSequence> patreonDescLines = List.of();
 
     public DonationOptionsScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.death.narr.donate_button"));
         this.parent = parent;
-        this.panel = new ContributePanel(this, UiAnalytics.SURFACE_DEATH_SCREEN, ContributePanel.Style.DEATH,
-                this::rebuildWidgets);
-        this.currency = new CurrencyPicker(UiAnalytics.SURFACE_DEATH_SCREEN, this::rebuildWidgets);
         // Distinct funnel step from "viewed the DONATE page": the player opened the Contribute window.
         UiAnalytics.pageOpen(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.PAGE_CONTRIBUTE);
         OfficialLinks.ensureFetched();
@@ -54,26 +78,119 @@ public final class DonationOptionsScreen extends Screen implements games.brennan
     protected void init() {
         int cx = this.width / 2;
         int lineH = this.font.lineHeight + 2;
-        int rowW = Math.min(340, this.width - 60);
-        subtitleLines = this.font.split(Component.translatable("gui.dungeontrain.contribute.subtitle"), rowW);
 
-        int panelH = panel.measure(this.font, rowW);
-        // A short window (240 px in the smallest GUI scale) cannot fit everything: the subtitle goes
-        // first, so the gifts and Back always stay on screen.
-        if (lineH + 6 + subtitleLines.size() * lineH + 8 + panelH + 8 + 20 + 6 > this.height) subtitleLines = List.of();
+        int wrapW = Math.min(360, this.width - 80);
+        subtitleLines = this.font.split(
+                Component.translatable("gui.dungeontrain.death.narr.donate_options_sub"), wrapW);
+        // Re-read the wallet (consent-gated, cached a minute) and lay out again if the count moved.
+        BookCredits.refresh(() -> {
+            if (this.minecraft != null && this.minecraft.screen == this) rebuildWidgets();
+        });
+        int boosts = BookCredits.boostsLeftOrEstimate();
+        youLines = boosts > 0
+                ? this.font.split(PriorityBookMessage.waiting(locale(), boosts), wrapW)
+                : List.of();
+
+        int rowW = Math.min(340, this.width - 60);
+        int gap = 10;
+        int rowX = cx - rowW / 2;
+        int bh = 32;
+
+        boolean tiers = PaymentLinks.tiersAvailable();
+        boolean cn = PaymentLinks.useChinaPayment();
+        boolean showModes = !tiers || !PaymentLinks.hidesOpenEndedOptions();
+
+        // With price points on screen the open-ended options are the fallback for people those
+        // amounts don't suit, so they get a short, narrow row and NO description — a two-line
+        // explanation above each would give them back exactly the weight this removes. Hover
+        // tooltips still answer "no fees?" and "what's Recurring?" at no cost in layout.
+        int modeRowW = tiers ? rowW / 2 : rowW;
+        int modeBh = tiers ? 16 : bh;
+        int modeX = cx - modeRowW / 2;
+        int modeEach = (modeRowW - gap) / 2;
+        leftColCenter = modeX + modeEach / 2;
+        rightColCenter = modeX + modeEach + gap + modeEach / 2;
+
+        // The pre-tier layout keeps its descriptions: there are no tiers there to be secondary to.
+        boolean showDescs = showModes && !tiers;
+        revolutDescLines = showDescs
+                ? this.font.split(Component.translatable("gui.dungeontrain.support.donate_tooltip"), modeEach - 4)
+                : List.of();
+        patreonDescLines = showDescs
+                ? this.font.split(Component.translatable(cn
+                        ? "gui.dungeontrain.death.narr.donate_cn_desc"
+                        : "gui.dungeontrain.death.narr.donate_patreon_desc"), modeEach - 4)
+                : List.of();
+        int descRows = Math.max(revolutDescLines.size(), patreonDescLines.size());
+
+        // Vertically centre the whole title → back block. The tier row (when present) sits above the
+        // descriptions, so it adds its own height plus a gap.
+        int tierRowH = tiers ? bh + gap : 0;
         int subH = subtitleLines.size() * lineH;
-        int blockH = lineH + 6 + subH + 8 + panelH + 8 + 20;
-        int top = Math.max(6, (this.height - blockH) / 2);
+        int youH = youLines.isEmpty() ? 0 : youLines.size() * lineH + 6;
+        int descH = descRows * lineH;
+        int modeRowH = showModes ? descH + 4 + modeBh : 0;
+        int blockH = lineH + 6 + subH + youH + 12 + tierRowH + modeRowH + 12 + 20;
+        int top = Math.max(20, (this.height - blockH) / 2);
 
         titleY = top;
-        // The currency button sits at the column's top right, level with the title.
-        currency.layout(this.font, cx + rowW / 2, titleY - 3, this.height, this::addRenderableWidget);
         subtitleTop = titleY + lineH + 6;
-        int y = subtitleTop + subH + 8;
-        y += panel.layout(this.font, cx - rowW / 2, y, rowW, this::addRenderableWidget);
+        youTop = subtitleTop + subH + 6;
+        int y = subtitleTop + subH + youH + 12;
+
+        if (tiers) {
+            int tierEach = (rowW - gap * (SupportTier.values().length - 1)) / SupportTier.values().length;
+            int i = 0;
+            for (SupportTier tier : SupportTier.values()) {
+                Button b = new ColorTintedButton(rowX + i * (tierEach + gap), y, tierEach, bh,
+                        Component.translatable(tier.labelKey()),
+                        TINT_BLUE[0], TINT_BLUE[1], TINT_BLUE[2],
+                        p -> openLink(PaymentLinks.tierUrl(tier), tier.analyticsTarget()));
+                b.setTooltip(Tooltip.create(Component.translatable(tier.tooltipKey())));
+                addRenderableWidget(b);
+                i++;
+            }
+            y += bh + gap;
+        }
+
+        descTop = y;
+        y += descH + 4;
+
+        if (showModes) {
+            // Left: the custom-amount route (Revolut, no fees). Right: Patreon — or, on the pre-tier
+            // layout only, the China payment route where Patreon is unreachable.
+            Button left = new ColorTintedButton(modeX, y, modeEach, modeBh,
+                    Component.translatable(tiers
+                            ? "gui.dungeontrain.support.financial.custom_amount"
+                            : "gui.dungeontrain.death.narr.donate_revolut"),
+                    TINT_GREEN[0], TINT_GREEN[1], TINT_GREEN[2],
+                    b -> openLink(revolutUrl(), UiAnalytics.TARGET_DONATE));
+
+            boolean rightIsCn = !tiers && cn;
+            float[] rightTint = rightIsCn ? TINT_BLUE : TINT_ORANGE;
+            String rightLabel = rightIsCn ? "gui.dungeontrain.death.narr.donate_cn"
+                    : tiers ? "gui.dungeontrain.support.financial.recurring"
+                            : "gui.dungeontrain.death.narr.donate_patreon";
+            String rightUrl = rightIsCn ? PaymentLinks.chinaUrl() : OfficialLinks.patreon();
+            String rightTarget = rightIsCn ? UiAnalytics.TARGET_DONATE_CN : UiAnalytics.TARGET_PATREON;
+            Button right = new ColorTintedButton(modeX + modeEach + gap, y, modeEach, modeBh,
+                    Component.translatable(rightLabel),
+                    rightTint[0], rightTint[1], rightTint[2],
+                    b -> openLink(rightUrl, rightTarget));
+
+            // The descriptions these buttons used to carry are gone in the tier layout, so the
+            // tooltip is now the only place that explains them.
+            if (tiers) {
+                left.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.support.donate_tooltip")));
+                right.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.support.recurring_tooltip")));
+            }
+            addRenderableWidget(left);
+            addRenderableWidget(right);
+            y += modeBh;
+        }
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> onClose())
-                .bounds(cx - 100, y + 8, 200, 20).build());
+                .bounds(cx - 100, y + 12, 200, 20).build());
     }
 
     @Override
@@ -87,25 +204,32 @@ public final class DonationOptionsScreen extends Screen implements games.brennan
             g.drawString(this.font, line, cx - this.font.width(line) / 2, y, NARR, false);
             y += lineH;
         }
-        panel.render(g, this.font, mouseX, mouseY);
-        currency.render(g, this.font, mouseX, mouseY);
+        y = youTop;
+        for (FormattedCharSequence line : youLines) {
+            g.drawString(this.font, line, cx - this.font.width(line) / 2, y, YOU, false);
+            y += lineH;
+        }
+        // Per-column descriptions, sitting directly above their button.
+        drawColumnDesc(g, revolutDescLines, leftColCenter, lineH);
+        drawColumnDesc(g, patreonDescLines, rightColCenter, lineH);
     }
 
-    @Override
-    public boolean mouseClicked(double mx, double my, int button) {
-        if (currency.mouseClicked(mx, my, button)) return true;
-        if (button == 0 && panel.mouseClicked(this.font, mx, my)) return true;
-        return super.mouseClicked(mx, my, button);
+    /** This client's own language, for the plural form of the "you" line (see PluralRules). */
+    private static String locale() {
+        try {
+            return Minecraft.getInstance().getLanguageManager().getSelected();
+        } catch (Throwable t) {
+            return "";
+        }
     }
 
-    @Override
-    public boolean mouseScrolled(double mx, double my, double dx, double dy) {
-        return currency.mouseScrolled(mx, my, dy) || super.mouseScrolled(mx, my, dx, dy);
-    }
-
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        return currency.keyPressed(keyCode) || super.keyPressed(keyCode, scanCode, modifiers);
+    /** Draw a wrapped description block centred on {@code centerX}, anchored at {@link #descTop}. */
+    private void drawColumnDesc(GuiGraphics g, List<FormattedCharSequence> lines, int centerX, int lineH) {
+        int y = descTop;
+        for (FormattedCharSequence line : lines) {
+            g.drawString(this.font, line, centerX - this.font.width(line) / 2, y, NARR, false);
+            y += lineH;
+        }
     }
 
     @Override
@@ -116,5 +240,26 @@ public final class DonationOptionsScreen extends Screen implements games.brennan
     @Override
     public void onClose() {
         Minecraft.getInstance().setScreen(parent);
+    }
+
+    /** Open {@code url} through the payment confirm, tracking the click + follow-through, then return here. */
+    private void openLink(String url, String analyticsTarget) {
+        // See SupportScreen.openLink — a relay-served base can go away under a built button, and an
+        // NPE in front of a would-be donor is the worst possible way to handle that.
+        if (url == null) return;
+        UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, analyticsTarget);
+        // Every button on this window is a payment link, so this is the path taken in practice; the
+        // vanilla screen below is the fallback for a target the copy resolver does not know.
+        if (PaymentConfirmScreen.tryOpen(this, UiAnalytics.SURFACE_DEATH_SCREEN, analyticsTarget, url)) return;
+        Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
+            UiAnalytics.confirm(UiAnalytics.SURFACE_DEATH_SCREEN, analyticsTarget, yes);
+            if (yes) Util.getPlatform().openUri(URI.create(url));
+            Minecraft.getInstance().setScreen(this);
+        }, url, true));
+    }
+
+    /** @see PaymentLinks#donateUrl() */
+    private static String revolutUrl() {
+        return PaymentLinks.donateUrl();
     }
 }

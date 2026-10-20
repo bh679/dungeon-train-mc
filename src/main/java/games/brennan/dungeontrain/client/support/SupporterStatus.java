@@ -24,7 +24,7 @@ import net.minecraft.client.User;
 public final class SupporterStatus {
 
     /** All-time contribution, in AUD, that unlocks the perks. */
-    public static final int MIN_TOTAL_AUD = 30;
+    public static final int MIN_TOTAL_AUD = 10;
 
     private static final long TTL_MS = 10 * 60_000L;
 

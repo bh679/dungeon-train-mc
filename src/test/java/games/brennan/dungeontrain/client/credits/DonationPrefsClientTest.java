@@ -58,16 +58,4 @@ final class DonationPrefsClientTest {
         assertNull(Visibility.byWireId("everyone"));
         assertNull(Visibility.byWireId(null));
     }
-
-    @Test
-    @DisplayName("currency rides its own payload, and parses back (null when never picked)")
-    void currencyPayloadAndParse() {
-        assertEquals("{\"uuid\":\"" + UUID + "\",\"currency\":\"EUR\"}",
-                DonationPrefsClient.buildCurrencyPayload(UUID, "EUR").toString());
-        assertNull(DonationPrefsClient.buildCurrencyPayload(null, "EUR"), "no consent, no request");
-        assertNull(DonationPrefsClient.buildCurrencyPayload(UUID, null));
-        assertEquals(new Prefs(true, Visibility.PUBLIC, true, "EUR"),
-                DonationPrefsClient.parse(200, "{\"ok\":true,\"visibility\":\"public\",\"tag\":true,\"currency\":\"EUR\"}"));
-        assertNull(DonationPrefsClient.parse(200, "{\"ok\":true,\"visibility\":\"public\",\"tag\":true,\"currency\":null}").currency());
-    }
 }

@@ -80,9 +80,6 @@ public record PaymentConfirmCopy(String titleKey, String bodyKey, String amountK
                 return new PaymentConfirmCopy(TITLE_STRIPE, BODY_STRIPE, tier.amountKey());
             }
         }
-        // A gift to a community reward is one whole Stripe checkout, named by its amount like a tier.
-        CommunityRewards.Reward reward = CommunityRewards.Reward.byTarget(analyticsTarget);
-        if (reward != null) return new PaymentConfirmCopy(TITLE_STRIPE, BODY_STRIPE, reward.amountKey());
         return switch (analyticsTarget) {
             // The China route is a Stripe checkout too, so it shares Stripe's explanation line.
             case UiAnalytics.TARGET_DONATE_CN -> new PaymentConfirmCopy(TITLE_WECHAT, BODY_STRIPE, null);

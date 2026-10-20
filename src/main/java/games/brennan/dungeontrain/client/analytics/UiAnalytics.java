@@ -60,8 +60,6 @@ public final class UiAnalytics {
     // The main-menu Videos page (VideosScreen): each row opened is a TARGET_VIDEO_OPEN click, then
     // the confirm from vanilla's link screen. Whitelisted relay-side as `videos_page`.
     public static final String SURFACE_VIDEOS = "videos_page";
-    /** The Community Rewards page (the shelf "See All Rewards" opens). Relay ui-events.js SURFACES. */
-    public static final String SURFACE_REWARDS_PAGE = "rewards_page";
     // Targets
     public static final String TARGET_PAGE = "page";
     public static final String TARGET_SUPPORT = "support";
@@ -79,12 +77,6 @@ public final class UiAnalytics {
     public static final String TARGET_DONATE_HELP_DEV = "donate_help_dev";
     public static final String TARGET_DONATE_BIG_FAN = "donate_big_fan";
     public static final String TARGET_DONATE_SERVER_COSTS = "donate_server_costs";
-    /**
-     * The Contribute panel's "See All Rewards" button. Each reward's Give button reports its own
-     * target, {@code reward_<id>} ({@code CommunityRewards.Reward#analyticsTarget}); relay
-     * ui-events.js lists all six.
-     */
-    public static final String TARGET_REWARDS = "rewards";
     // The Adult / Kid answer on the first-launch consent card (and on any later re-ask). Lock-step
     // with the relay's ui-events.js TARGETS whitelist, or these 400 silently.
     public static final String TARGET_CONTENT_MODE_ADULT = "content_mode_adult";
@@ -135,10 +127,6 @@ public final class UiAnalytics {
     public static final String TARGET_SHADERS_OFF = "shaders_off";
     public static final String TARGET_SHADER_SETTINGS = "shader_settings";
     // Death-screen button targets (see NarrativeDeathScreen). Lock-step with ui-events.js TARGETS.
-    // The currency button on the Contribute screens (client/support/currency/CurrencyPicker): a bare
-    // click when its list opens, and currencyPicked() with the chosen code. Lock-step with
-    // ui-events.js TARGETS, which also takes the optional `currency` field.
-    public static final String TARGET_CURRENCY = "currency";
     public static final String TARGET_CONTRIBUTE = "contribute"; // "Contribute" opens the donate-options window
     public static final String TARGET_BOARD_ANEW = "board_anew";  // "Board anew" — start the next run
     public static final String TARGET_LEAVE = "leave";           // "Leave" — back to title / quit
@@ -219,17 +207,9 @@ public final class UiAnalytics {
         pair = cardPair == null || cardPair.isBlank() ? null : cardPair;
     }
 
-    /**
-     * A currency was picked on the Contribute screens' currency button: a {@link #TARGET_CURRENCY}
-     * click carrying the ISO code (opening the list is a bare click on the same target).
-     */
-    public static void currencyPicked(String surface, String code) {
-        send(surface, TARGET_CURRENCY, "click", -1, null, null, -1, -1, code);
-    }
-
     /** A button/link was pressed (before any confirm screen). */
     public static void click(String surface, String target) {
-        send(surface, target, "click", -1, null, null, -1, -1, null);
+        send(surface, target, "click", -1, null, null, -1, -1);
     }
 
     /**
@@ -250,17 +230,17 @@ public final class UiAnalytics {
 
     /** The ConfirmLinkScreen resolved — {@code yes} means the external link actually opened. */
     public static void confirm(String surface, String target, boolean yes) {
-        send(surface, target, yes ? "confirm_yes" : "confirm_no", -1, null, null, -1, -1, null);
+        send(surface, target, yes ? "confirm_yes" : "confirm_no", -1, null, null, -1, -1);
     }
 
     /** A tracked page was opened (fire once per visit — from the screen's constructor, not init()). */
     public static void pageOpen(String surface) {
-        send(surface, TARGET_PAGE, "open", -1, null, null, -1, -1, null);
+        send(surface, TARGET_PAGE, "open", -1, null, null, -1, -1);
     }
 
     /** A tracked page was closed after {@code durationMs} on it (fire once per visit). */
     public static void pageTime(String surface, long durationMs) {
-        send(surface, TARGET_PAGE, "page_time", Math.max(0, durationMs), null, null, -1, -1, null);
+        send(surface, TARGET_PAGE, "page_time", Math.max(0, durationMs), null, null, -1, -1);
     }
 
     /**
@@ -278,7 +258,7 @@ public final class UiAnalytics {
      * alone can't tell them apart. Null/blank for non-survey pages. Lock-step with ui-events.js.
      */
     public static void pageOpen(String surface, String page, String questionId) {
-        send(surface, TARGET_PAGE, "open", -1, page, questionId, -1, -1, null);
+        send(surface, TARGET_PAGE, "open", -1, page, questionId, -1, -1);
     }
 
     /** As {@link #pageTime(String, long)} but identifying which multi-page {@code page} was left. */
@@ -288,7 +268,7 @@ public final class UiAnalytics {
 
     /** As {@link #pageTime(String, String, long)} but carrying a survey page's {@code questionId}. */
     public static void pageTime(String surface, String page, String questionId, long durationMs) {
-        send(surface, TARGET_PAGE, "page_time", Math.max(0, durationMs), page, questionId, -1, -1, null);
+        send(surface, TARGET_PAGE, "page_time", Math.max(0, durationMs), page, questionId, -1, -1);
     }
 
     /**
@@ -297,12 +277,12 @@ public final class UiAnalytics {
      * enums only — never the free-text comment. Fired once per question (see maybeSubmit).
      */
     public static void surveyAnswer(String surface, String questionId, int score, int scoreMax) {
-        send(surface, TARGET_PAGE, "survey_answer", -1, PAGE_SURVEY, questionId, score, scoreMax, null);
+        send(surface, TARGET_PAGE, "survey_answer", -1, PAGE_SURVEY, questionId, score, scoreMax);
     }
 
     /** Consent-gate, build, and POST one event. Never throws; failures are debug-logged only. */
     private static void send(String surface, String target, String action, long durationMs,
-                             String page, String questionId, int score, int scoreMax, String currency) {
+                             String page, String questionId, int score, int scoreMax) {
         try {
             if (!DiscordPresenceClientConfig.isGranted()) {
                 return; // no network consent — no analytics, full stop
@@ -316,8 +296,6 @@ public final class UiAnalytics {
             JsonObject payload = buildPayload(
                     noDashes(uuid), player, VersionInfo.VERSION, surface, target, action, durationMs,
                     page, questionId, score, scoreMax, experimentId, variant, pair);
-            // Which currency was picked on the currency button; the relay clamps it to an ISO code.
-            if (currency != null && !currency.isBlank()) payload.addProperty("currency", currency);
             HttpRequest req = HttpRequest.newBuilder(
                             URI.create(DungeonTrain.relayBaseUrl() + "/telemetry/ui-event"))
                     .timeout(REQUEST_TIMEOUT)
