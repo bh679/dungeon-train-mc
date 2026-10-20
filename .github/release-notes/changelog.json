@@ -28482,9 +28482,9 @@
       "highlights": [],
       "pr": 2175,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1403.0",
+      "released_at": "2026-10-20T06:25:18Z"
     },
     {
       "id": "mob-buff-level-spread",
@@ -28500,9 +28500,9 @@
       "highlights": [],
       "pr": 2178,
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1403.0",
+      "released_at": "2026-10-20T06:25:18Z",
       "major": true,
       "description": "Deep train potion buffs on train mobs have been reworked. The later stages of the game are more balanced. Rather than a flat potion effect for every mob, the effect is now a max, and they will get a random level between 1 and the current stage max. Additionally, mobs that turn up later get potion effects delayed (and babies get effects a little later too).\n\n- **More variety:** the further you ride, the wider the spread. A buffed mob now rolls anywhere from level I up to that stretch's top level, so some are weaker than before and none are stronger.\n- **Late arrivals catch up gradually:** mobs that only start showing up further down the train no longer get buffed the moment they appear. Their buffs begin later, counted from where they first show up.\n- **Babies get a head start for you:** baby mobs get their buffs a little later than adults.",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/smarter-mob-buffs.jpg"
@@ -28520,9 +28520,9 @@
       "highlights": [],
       "pr": 2176,
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1403.0",
+      "released_at": "2026-10-20T06:25:18Z"
     }
   ]
 }
