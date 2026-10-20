@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.config.SpheresGravityConfig;
+import games.brennan.dungeontrain.util.ProjectilePush;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -50,10 +51,15 @@ public final class SphereGravityPush {
         return 1.0;
     }
 
-    /** Add {@code pull × factor} to the entity's velocity. No-op for a zero pull or factor. */
+    /**
+     * Add {@code pull × factor} to the entity's velocity. No-op for a zero pull or factor, and for a projectile
+     * stuck in a block; a pulled projectile has its new velocity sent to clients this tick, the same two steps
+     * the train wind takes ({@link ProjectilePush}) so an arrow's curve toward a sphere reads smoothly.
+     */
     public static void apply(Entity e, SphereGravity.Pull pull, double factor) {
-        if (pull.isZero() || factor <= 0.0) return;
+        if (pull.isZero() || factor <= 0.0 || ProjectilePush.stuck(e)) return;
         e.setDeltaMovement(e.getDeltaMovement().add(pull.x() * factor, pull.y() * factor, pull.z() * factor));
+        ProjectilePush.markPushed(e);
     }
 
     /** Lookup reach for the current config: the largest sphere's pull, past its surface. */
