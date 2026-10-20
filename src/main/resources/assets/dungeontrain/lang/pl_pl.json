@@ -5253,6 +5253,7 @@
   "chat.dungeontrain.update_notice": "[Dungeon Train] Wersja %s już dostępna!",
   "chat.dungeontrain.update_notice.ago": " - wyszła %s temu",
   "chat.dungeontrain.update_notice.link": "[Co nowego]",
+  "chat.dungeontrain.update_notice.named": "[Dungeon Train] %s (v%s) już dostępne!",
   "chat.dungeontrain.low_memory_notice": "[Dungeon Train] Minecraft ma tylko %s GB pamięci. Przydziel w launcherze 6 GB lub więcej, aby gra działała płynniej.",
   "chat.dungeontrain.low_memory_notice.link": "[Jak]",
   "chat.dungeontrain.low_memory_notice.dismiss": "[Nie pokazuj więcej]",

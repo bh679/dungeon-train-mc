@@ -107,12 +107,16 @@ public final class LiveUpdateNotice {
         baseline = latest;
         LOGGER.info("Update notice: announcing {} (installed {})", latest, installed);
         VersionCheckState.accept(VersionCheckState.Status.UPDATE_AVAILABLE, latest);
-        // Look up when it was published, then work out "N ago" at the moment the line is sent.
-        ReleaseTime.fetchPublishedAt(latest, installed)
-            .thenAcceptAsync(publishedAt -> announce(latest, publishedAt), Minecraft.getInstance());
+        // Look up its name and when it was published, then work out "N ago" at the moment the
+        // line is sent. Either lookup failing only drops its part of the line.
+        ReleaseName.fetchName(latest, installed)
+            .thenCombine(ReleaseTime.fetchPublishedAt(latest, installed), Announcement::new)
+            .thenAcceptAsync(a -> announce(latest, a.name(), a.publishedAtMs()), Minecraft.getInstance());
     }
 
-    private static void announce(String version, Long publishedAtMs) {
+    private record Announcement(String name, Long publishedAtMs) {}
+
+    private static void announce(String version, String name, Long publishedAtMs) {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null || !ClientDisplayConfig.isUpdateNoticeChatEnabled()) return;
         MutableComponent link = Component.translatable("chat.dungeontrain.update_notice.link")
@@ -120,7 +124,10 @@ public final class LiveUpdateNotice {
                 .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, RELEASE_URL + version))
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                     Component.literal(RELEASE_URL + version))));
-        Component msg = Component.translatable("chat.dungeontrain.update_notice", version)
+        MutableComponent headline = name == null
+            ? Component.translatable("chat.dungeontrain.update_notice", version)
+            : Component.translatable("chat.dungeontrain.update_notice.named", Component.literal(name), version);
+        Component msg = headline
             .withStyle(ChatFormatting.GOLD)
             .append(" ")
             .append(link);

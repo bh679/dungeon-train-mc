@@ -926,6 +926,22 @@
       ]
     }
   },
+  "chat.dungeontrain.update_notice.named": {
+    "1": {
+      "label": "the name of the new Dungeon Train release (the title of its lead change)",
+      "examples": [
+        "The Creaking joins the Train",
+        "Twitch integration"
+      ]
+    },
+    "2": {
+      "label": "the version number of the new Dungeon Train release",
+      "examples": [
+        "0.984.0",
+        "1.2.0"
+      ]
+    }
+  },
   "gui.dungeontrain.low_memory.body": {
     "1": {
       "label": "how much memory Minecraft has been given, in GB (a plain number)",

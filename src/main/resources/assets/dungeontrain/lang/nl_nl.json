@@ -5192,6 +5192,7 @@
   "chat.dungeontrain.update_notice": "[Dungeon Train] Versie %s is uit!",
   "chat.dungeontrain.update_notice.ago": " - %s geleden verschenen",
   "chat.dungeontrain.update_notice.link": "[Wat is er nieuw]",
+  "chat.dungeontrain.update_notice.named": "[Dungeon Train] %s (v%s) is uit!",
   "chat.dungeontrain.low_memory_notice": "[Dungeon Train] Minecraft heeft maar %s GB geheugen. Wijs in je launcher 6 GB of meer toe voor soepeler spelen.",
   "chat.dungeontrain.low_memory_notice.link": "[Hoe]",
   "chat.dungeontrain.low_memory_notice.dismiss": "[Niet meer tonen]",

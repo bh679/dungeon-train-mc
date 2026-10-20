@@ -5253,6 +5253,7 @@
   "chat.dungeontrain.update_notice": "[Dungeon Train] Вышла версия %s!",
   "chat.dungeontrain.update_notice.ago": " — вышла %s назад",
   "chat.dungeontrain.update_notice.link": "[Что нового]",
+  "chat.dungeontrain.update_notice.named": "[Dungeon Train] Вышло обновление %s (v%s)!",
   "chat.dungeontrain.low_memory_notice": "[Dungeon Train] У Minecraft всего %s ГБ памяти. Выделите в лаунчере 6 ГБ или больше, чтобы игра шла плавнее.",
   "chat.dungeontrain.low_memory_notice.link": "[Как]",
   "chat.dungeontrain.low_memory_notice.dismiss": "[Больше не показывать]",

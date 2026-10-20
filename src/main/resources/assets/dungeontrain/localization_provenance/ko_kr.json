@@ -5134,6 +5134,7 @@
       "chat.dungeontrain.update_notice",
       "chat.dungeontrain.update_notice.ago",
       "chat.dungeontrain.update_notice.link",
+      "chat.dungeontrain.update_notice.named",
       "chat.dungeontrain.low_memory_notice",
       "chat.dungeontrain.low_memory_notice.link",
       "chat.dungeontrain.low_memory_notice.dismiss",

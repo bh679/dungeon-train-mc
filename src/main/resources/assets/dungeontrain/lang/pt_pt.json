@@ -5192,6 +5192,7 @@
   "chat.dungeontrain.update_notice": "[Dungeon Train] A versão %s já saiu!",
   "chat.dungeontrain.update_notice.ago": " - saiu há %s",
   "chat.dungeontrain.update_notice.link": "[Novidades]",
+  "chat.dungeontrain.update_notice.named": "[Dungeon Train] %s (v%s) já saiu!",
   "chat.dungeontrain.low_memory_notice": "[Dungeon Train] O Minecraft só tem %s GB de memória. Atribui 6 GB ou mais no teu launcher para o jogo correr com mais fluidez.",
   "chat.dungeontrain.low_memory_notice.link": "[Como]",
   "chat.dungeontrain.low_memory_notice.dismiss": "[Não mostrar novamente]",

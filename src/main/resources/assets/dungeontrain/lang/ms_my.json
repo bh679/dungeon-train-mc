@@ -5131,6 +5131,7 @@
   "chat.dungeontrain.update_notice": "[Dungeon Train] Versi %s sudah keluar!",
   "chat.dungeontrain.update_notice.ago": " - dikeluarkan %s yang lalu",
   "chat.dungeontrain.update_notice.link": "[Apa yang baharu]",
+  "chat.dungeontrain.update_notice.named": "[Dungeon Train] %s (v%s) sudah keluar!",
   "chat.dungeontrain.low_memory_notice": "[Dungeon Train] Minecraft hanya ada memori %s GB. Peruntukkan 6 GB atau lebih dalam pelancar anda untuk permainan yang lebih lancar.",
   "chat.dungeontrain.low_memory_notice.link": "[Caranya]",
   "chat.dungeontrain.low_memory_notice.dismiss": "[Jangan tunjuk lagi]",

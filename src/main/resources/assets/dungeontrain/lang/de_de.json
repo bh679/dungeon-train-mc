@@ -5192,6 +5192,7 @@
   "chat.dungeontrain.update_notice": "[Dungeon Train] Version %s ist erschienen!",
   "chat.dungeontrain.update_notice.ago": " – erschienen vor %s",
   "chat.dungeontrain.update_notice.link": "[Was ist neu]",
+  "chat.dungeontrain.update_notice.named": "[Dungeon Train] %s (v%s) ist erschienen!",
   "chat.dungeontrain.low_memory_notice": "[Dungeon Train] Minecraft hat nur %s GB Arbeitsspeicher. Weise im Launcher 6 GB oder mehr zu, damit das Spiel flüssiger läuft.",
   "chat.dungeontrain.low_memory_notice.link": "[So geht's]",
   "chat.dungeontrain.low_memory_notice.dismiss": "[Nicht mehr anzeigen]",

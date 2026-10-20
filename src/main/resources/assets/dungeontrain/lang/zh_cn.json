@@ -5145,6 +5145,7 @@
   "chat.dungeontrain.update_notice": "[Dungeon Train] 版本 %s 已发布！",
   "chat.dungeontrain.update_notice.ago": "（%s前发布）",
   "chat.dungeontrain.update_notice.link": "[更新内容]",
+  "chat.dungeontrain.update_notice.named": "[Dungeon Train] %s (v%s) 已发布！",
   "chat.dungeontrain.low_memory_notice": "[Dungeon Train] Minecraft 只分配到 %s GB 内存。在启动器中分配 6 GB 或更多，游戏会更流畅。",
   "chat.dungeontrain.low_memory_notice.link": "[如何设置]",
   "chat.dungeontrain.low_memory_notice.dismiss": "[不再显示]",

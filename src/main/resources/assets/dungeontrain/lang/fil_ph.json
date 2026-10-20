@@ -5131,6 +5131,7 @@
   "chat.dungeontrain.update_notice": "[Dungeon Train] Labas na ang bersyon %s!",
   "chat.dungeontrain.update_notice.ago": " - lumabas %s na ang nakalipas",
   "chat.dungeontrain.update_notice.link": "[Ano'ng bago]",
+  "chat.dungeontrain.update_notice.named": "[Dungeon Train] Labas na ang %s (v%s)!",
   "chat.dungeontrain.low_memory_notice": "[Dungeon Train] %s GB lang ang memory ng Minecraft. Maglaan ng 6 GB o higit pa sa iyong launcher para mas maayos ang laro.",
   "chat.dungeontrain.low_memory_notice.link": "[Paano]",
   "chat.dungeontrain.low_memory_notice.dismiss": "[Huwag nang ipakita]",

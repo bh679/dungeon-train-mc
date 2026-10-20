@@ -5131,6 +5131,7 @@
   "chat.dungeontrain.update_notice": "[Dungeon Train] Phiên bản %s đã ra mắt!",
   "chat.dungeontrain.update_notice.ago": " - ra mắt %s trước",
   "chat.dungeontrain.update_notice.link": "[Có gì mới]",
+  "chat.dungeontrain.update_notice.named": "[Dungeon Train] %s (v%s) đã ra mắt!",
   "chat.dungeontrain.low_memory_notice": "[Dungeon Train] Minecraft chỉ có %s GB bộ nhớ. Hãy cấp 6 GB trở lên trong launcher để chơi mượt hơn.",
   "chat.dungeontrain.low_memory_notice.link": "[Cách làm]",
   "chat.dungeontrain.low_memory_notice.dismiss": "[Không hiện lại]",
