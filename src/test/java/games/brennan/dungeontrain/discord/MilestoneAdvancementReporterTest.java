@@ -42,13 +42,11 @@ class MilestoneAdvancementReporterTest {
     }
 
     @Test
-    @DisplayName("description is the advancement text, then the carriage/difficulty line")
+    @DisplayName("description is the advancement hint alone — no carriage / difficulty line")
     void descriptionShape() {
-        assertEquals("Clear them all. Start Again.\n\nCarriage +7 · Difficulty Level 3",
-                MilestoneAdvancementReporter.description("Clear them all. Start Again.",
-                        "Carriage +7 · Difficulty Level 3"));
         assertEquals("Clear them all. Start Again.",
-                MilestoneAdvancementReporter.description("Clear them all. Start Again.", ""));
-        assertEquals("Difficulty Level 1", MilestoneAdvancementReporter.description(null, "Difficulty Level 1"));
+                MilestoneAdvancementReporter.description("  Clear them all. Start Again.\n"));
+        assertEquals("", MilestoneAdvancementReporter.description(""));
+        assertEquals("", MilestoneAdvancementReporter.description(null));
     }
 }
