@@ -20,6 +20,10 @@ import net.minecraft.server.level.ServerPlayer;
  * {@code SurveySubmitClientHook} into {@link BugLogReporter}, and the report is answered in chat
  * ({@code BugResponseChatNotifier}) the way the death screen answers it with its response card.
  * Whitelisted in {@code CommandAllowlist} so running it never taints a run.</p>
+ *
+ * <p>The survey pauses the run while the report is written: {@code SurveyScreenPauseMixin} makes it a
+ * pause screen when opened over the world, so singleplayer freezes behind it and multiplayer reports
+ * the player paused ({@code ClientActivityReporter}), stopping the train-time clocks.</p>
  */
 public final class BugCommand {
 

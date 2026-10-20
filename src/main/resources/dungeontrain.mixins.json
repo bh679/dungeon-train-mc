@@ -145,6 +145,7 @@
     "client.ParticleEngineWindDriftMixin",
     "client.ParticleWindDriftMixin",
     "client.IntegratedServerPauseSaveThrottleMixin",
+    "client.SurveyScreenPauseMixin",
     "client.audio.ChannelMirrorMixin",
     "client.audio.SoundBufferMirrorMixin",
     "client.audio.ListenerMirrorMixin",
