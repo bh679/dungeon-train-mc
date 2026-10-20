@@ -48,6 +48,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * World generation into a chunk that belongs to nobody — a dimension's real generator run over a
@@ -281,8 +282,10 @@ public final class OfflineChunkSampler {
     private static ProtoChunk finishGround(ServerLevel level, NoiseBasedChunkGenerator generator,
                                            RandomState random, ChunkAccess filled, BiomeSource source) {
         if (!(filled instanceof ProtoChunk ground)) return null;
+        // The noise fill keeps the two *_WG heightmaps current block by block (NoiseChunk updates them for
+        // every placed block), so only the FINAL pair features read is primed here; re-priming the WG pair
+        // walked the whole chunk again for the same answer.
         Heightmap.primeHeightmaps(ground, EnumSet.of(
-            Heightmap.Types.WORLD_SURFACE_WG, Heightmap.Types.OCEAN_FLOOR_WG,
             Heightmap.Types.MOTION_BLOCKING, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES));
         // Vanilla carves at CARVERS and decorates at FEATURES, where setBlockState keeps the FINAL
         // heightmaps (OCEAN_FLOOR, WORLD_SURFACE, MOTION_BLOCKING*) current. At SURFACE only the *_WG
@@ -414,15 +417,21 @@ public final class OfflineChunkSampler {
         ChunkPos centre = chunk.getPos();
         int radius = Math.max(1, step.accumulatedDependencies().getRadius());
         Registry<Biome> biomeRegistry = level.registryAccess().registryOrThrow(Registries.BIOME);
+        // StaticCache2D fills every cell of the (2r+1)^2 grid up front, so the holders are cheap shells and
+        // a blank neighbour's ProtoChunk is only built when something reaches for it: of the 288 ring
+        // positions at radius 8, features touch at most the 8 immediate neighbours. Measured 2026-10-20 on
+        // the BetterEnd band: the eager ring was 67% of a sample's allocation and ~7% of its CPU.
         StaticCache2D<GenerationChunkHolder> cache = StaticCache2D.create(
             centre.x, centre.z, radius, (x, z) -> {
                 ChunkPos pos = new ChunkPos(x, z);
                 if (pos.equals(centre)) return new SampleHolder(pos, chunk);
                 ProtoChunk supplied = ring.apply(pos);
                 if (supplied != null) return new SampleHolder(pos, supplied);
-                ProtoChunk blank = new ProtoChunk(pos, UpgradeData.EMPTY, level, biomeRegistry, null);
-                blank.setPersistedStatus(ChunkStatus.SURFACE);
-                return new SampleHolder(pos, blank);
+                return new SampleHolder(pos, () -> {
+                    ProtoChunk blank = new ProtoChunk(pos, UpgradeData.EMPTY, level, biomeRegistry, null);
+                    blank.setPersistedStatus(ChunkStatus.SURFACE);
+                    return blank;
+                });
             });
         return new SampleRegion(level, cache, step, chunk);
     }
@@ -496,26 +505,44 @@ public final class OfflineChunkSampler {
      */
     private static final class SampleHolder extends GenerationChunkHolder {
 
-        private final ChunkAccess chunk;
+        private final Supplier<? extends ChunkAccess> source;
+        private ChunkAccess chunk;
 
         private SampleHolder(ChunkPos pos, ChunkAccess chunk) {
             super(pos);
+            this.source = null;
             this.chunk = chunk;
+        }
+
+        /** A holder whose chunk is built on first access — the blank ring around a sample. */
+        private SampleHolder(ChunkPos pos, Supplier<? extends ChunkAccess> source) {
+            super(pos);
+            this.source = source;
+        }
+
+        /** The chunk, built now if this holder was given a supplier. A sample is read by one thread. */
+        private ChunkAccess chunk() {
+            ChunkAccess c = chunk;
+            if (c == null) {
+                c = source.get();
+                chunk = c;
+            }
+            return c;
         }
 
         @Override
         public ChunkAccess getChunkIfPresent(ChunkStatus status) {
-            return chunk;
+            return chunk();
         }
 
         @Override
         public ChunkAccess getChunkIfPresentUnchecked(ChunkStatus status) {
-            return chunk;
+            return chunk();
         }
 
         @Override
         public ChunkAccess getLatestChunk() {
-            return chunk;
+            return chunk();
         }
 
         @Override
