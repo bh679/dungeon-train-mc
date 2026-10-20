@@ -21,7 +21,9 @@ import org.jetbrains.annotations.Nullable;
  * through {@link SableStorageSync#shouldForce()}.</p>
  *
  * <p>HEAD sets the flag, RETURN restores the default ({@code true}), so a Sable flush outside a
- * level save keeps syncing. Saves run on the server thread, one level at a time.</p>
+ * level save keeps syncing. DT's own in-game catch-up save
+ * ({@code SableShipyard#saveSubLevelsNow}) sets the flag to {@code false} itself, since it is
+ * never a shutdown. Saves run on the server thread, one level at a time.</p>
  */
 @Mixin(ServerLevel.class)
 public abstract class ServerLevelSaveFlushFlagMixin {
