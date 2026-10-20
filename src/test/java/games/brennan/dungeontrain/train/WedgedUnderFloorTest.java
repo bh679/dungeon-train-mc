@@ -8,16 +8,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * A carriage box x 100..137, y 78..85, z 0..7 (floor block y 78, deck surface y 79) and an
- * Enderman (2.9 tall, 0.6 wide) standing on the track bed under it.
+ * Enderman (2.9 tall, eyes 2.55 up, 0.6 wide) standing on the track bed under it.
  */
 class WedgedUnderFloorTest {
 
     private static final double MIN_X = 100, MIN_Y = 78, MIN_Z = 0;
     private static final double MAX_X = 137, MAX_Z = 7;
-    private static final double ENDERMAN_HEIGHT = 2.9;
+    private static final double ENDERMAN_EYE = 2.55;
+    private static final double SPIDER_EYE = 0.65;
+    private static final double ZOMBIFIED_PIGLIN_EYE = 1.79;
 
     private static boolean wedged(double x, double feetY, double z) {
-        return WedgedUnderFloor.isWedged(x, feetY, z, feetY + ENDERMAN_HEIGHT,
+        return wedged(x, feetY, z, ENDERMAN_EYE);
+    }
+
+    private static boolean wedged(double x, double feetY, double z, double eyeHeight) {
+        return WedgedUnderFloor.isWedged(x, feetY, z, feetY + eyeHeight,
             MIN_X, MIN_Y, MIN_Z, MAX_X, MAX_Z);
     }
 
@@ -46,7 +52,20 @@ class WedgedUnderFloorTest {
 
     @Test
     void tooLowToReachTheFloorIsNotWedged() {
-        assertFalse(wedged(110, 74, 3.5)); // head at 76.9, under the floor block
+        assertFalse(wedged(110, 74, 3.5)); // eyes at 76.55, under the floor block
+    }
+
+    @Test
+    void zombifiedPiglinOnTrackBedIsWedged() {
+        assertTrue(wedged(110, 77, 0.4, ZOMBIFIED_PIGLIN_EYE)); // eyes at 78.79, in the floor
+    }
+
+    @Test
+    void spiderBesideTheTrackWithItsBackGrazingTheFloorIsNotWedged() {
+        // The 0.1407.0 loop: feet 77.1875, box top 78.09 (0.09 into the floor), eyes 77.84, centre
+        // just under the floor's edge as it walks at a rider. Nothing of it shows on the deck.
+        assertFalse(wedged(110, 77.1875, 0.1, SPIDER_EYE));
+        assertFalse(wedged(110, 77.1875, 6.9, SPIDER_EYE));
     }
 
     @Test
