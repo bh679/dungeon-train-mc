@@ -28810,6 +28810,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "passenger-log-no-state-line",
+      "version": "0.1417.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Quieter passenger log announcements",
+      "summary": "The public passenger log's milestone and first-ever announcements no longer end with your carriage and difficulty. Where you are on the train stays yours to share.",
+      "highlights": [],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
