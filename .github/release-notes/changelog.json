@@ -28919,6 +28919,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "advancement-earn-no-freeze",
+      "version": "0.1423.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "No freeze when you earn an advancement",
+      "summary": "Earning an advancement could freeze the game for several seconds on some computers, because it waited on the disk before carrying on. The save now happens in the background, so the game keeps running while it writes.",
+      "highlights": [
+        "Earning an advancement no longer waits on the disk",
+        "Leaving a server no longer holds up the other players while your advancements save"
+      ],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2202,
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
