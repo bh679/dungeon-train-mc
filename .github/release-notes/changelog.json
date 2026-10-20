@@ -28812,6 +28812,24 @@
       "released_at": null
     },
     {
+      "id": "quieter-logs",
+      "version": "0.1416.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "internal"
+      ],
+      "title": "Quieter logs",
+      "summary": "The game log no longer fills with the same few lines repeated thousands of times. Bug reports now carry the part that matters, and the game spends less time writing to disk while you play.",
+      "highlights": [],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 2197
+    },
+    {
       "id": "stranger-stretches-lighter-tick",
       "version": "0.1417.0",
       "type": "perf",
