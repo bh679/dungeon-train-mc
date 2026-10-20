@@ -1069,8 +1069,8 @@ public final class AchievementEvents {
         GlobalBookBurnStats.flush(uuid);
         GlobalBookBurnStats.evict(uuid);
         AdvancementProfiles.reconcileRevokes(player);
-        // After the reconcile, which may still strike ids: land the profile writes, drop the cache.
-        GlobalAchievementStore.flushAndEvict(uuid);
+        // After the reconcile, which may still strike ids. Queued writes finish in the background.
+        GlobalAchievementStore.evict(uuid);
     }
 
     /**

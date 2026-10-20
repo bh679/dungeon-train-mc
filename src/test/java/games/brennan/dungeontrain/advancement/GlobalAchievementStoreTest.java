@@ -12,6 +12,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -154,5 +155,22 @@ class GlobalAchievementStoreTest {
         assertEquals(Set.of(EDITOR), GlobalAchievementStore.readFile(
             dir.resolve(GlobalAchievementStore.fileName(PLAYER, GlobalAchievementStore.SHARED))));
         assertFalse(java.nio.file.Files.exists(normalFile(dir)));
+    }
+
+    @Test
+    @DisplayName("Logout doesn't wait for a slow write, and a rejoin still sees the queued earn")
+    void evictWhileWritePendingKeepsEarn(@TempDir Path dir) throws Exception {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        CountDownLatch slowDisk = new CountDownLatch(1);
+        GlobalAchievementStore.runOnWriterForTests(() -> {
+            try { slowDisk.await(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        });
+        GlobalAchievementStore.append(PLAYER, "normal", GAMEPLAY);
+        GlobalAchievementStore.evict(PLAYER);
+        assertFalse(java.nio.file.Files.exists(normalFile(dir)));
+        assertTrue(GlobalAchievementStore.read(PLAYER, "normal").contains(GAMEPLAY));
+        slowDisk.countDown();
+        GlobalAchievementStore.flush();
+        assertEquals(Set.of(GAMEPLAY), GlobalAchievementStore.readFile(normalFile(dir)));
     }
 }

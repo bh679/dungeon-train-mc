@@ -73,8 +73,8 @@ import java.util.stream.Stream;
  * cached once loaded; earns and revokes update the cache and hand the file write to one
  * background thread. An earn used to re-read and rewrite the file on the server thread, and on
  * Windows opening that small file once took 8 s (an antivirus scan or a sleeping drive), freezing
- * the game. The cache lives for one server: logout flushes and evicts the player
- * ({@link #flushAndEvict}), server stop flushes and empties it ({@link #flushAndClearAll}).</p>
+ * the game. The cache lives for one server: logout drops the player without waiting for the
+ * writer ({@link #evict}), server stop flushes and empties it ({@link #flushAndClearAll}).</p>
  *
  * <p>Concurrency: the public methods are {@code synchronized} on the class, so a read-modify-write
  * never interleaves. The writer never takes that lock, so a slow disk can't block a caller.</p>
@@ -293,7 +293,8 @@ public final class GlobalAchievementStore {
      * @return {@code true} when a file was actually removed.
      */
     public static synchronized boolean deleteFor(UUID playerUuid) throws IOException {
-        flushAndEvict(playerUuid);
+        flush();
+        evict(playerUuid);
         // Both addresses: a legacy copy the migration had to leave behind would otherwise survive
         // the reset and reappear as soon as the new file was gone.
         boolean removed = false;
@@ -354,9 +355,12 @@ public final class GlobalAchievementStore {
         }
     }
 
-    /** Logout: land the player's queued writes, then forget their profiles until they're next read. */
-    public static void flushAndEvict(UUID playerUuid) {
-        flush();
+    /**
+     * Logout: forget the player's profiles until they're next read. Doesn't wait for the writer —
+     * on a slow disk that would stall the server for everyone else — and needn't: a write still
+     * queued keeps its snapshot in {@code PENDING}, which {@link #cached} prefers over the file.
+     */
+    public static void evict(UUID playerUuid) {
         CACHE.keySet().removeIf(key -> key.uuid().equals(playerUuid));
     }
 
@@ -374,6 +378,11 @@ public final class GlobalAchievementStore {
     static void useDirectoryForTests(Path dir) {
         flushAndClearAll();
         resolver = (uuid, partition) -> dir.resolve(fileName(uuid, partition));
+    }
+
+    /** Tests only: queue {@code task} on the writer, e.g. to hold it back like a slow disk. */
+    static void runOnWriterForTests(Runnable task) {
+        WRITER.execute(task);
     }
 
     /** Tests only: back to the game directory, with nothing cached. */
