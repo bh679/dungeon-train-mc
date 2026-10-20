@@ -2,8 +2,9 @@ package games.brennan.dungeontrain.worldgen;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The seed-stable field of floating spheres behind the <b>spheres</b> band (see {@code SpheresBand}
@@ -26,7 +27,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * i.e. {@code surfaceBias} of the diameter sits underground.</p>
  *
  * <p>Per-cell rolls are memoised (bounded, thread-safe) because a large sphere touches dozens of
- * chunks and the surface sample is the one non-trivial cost.</p>
+ * chunks and the surface sample is the one non-trivial cost. The memo is a primitive-keyed map under its own
+ * monitor: the server's field is read by worldgen workers ({@link #candidatesFor}, behind {@code SpheresBand}'s
+ * per-chunk candidate cache) and by the server thread ({@link #spheresNear}, behind sphere gravity's per-tick
+ * section memo), so contention is rare and the critical section is one hash probe. Rolls happen outside the
+ * lock — they are pure, so two threads rolling the same cell agree.</p>
  */
 public final class SphereField {
 
@@ -152,12 +157,12 @@ public final class SphereField {
 
     /** Sentinel for "this cell rolled no sphere" in the memo (a {@code null} value can't be stored). */
     private static final Sphere NONE = new Sphere(0, 0, 0, 0, 0);
-    private static final int MAX_MEMO = 1 << 16;
+    static final int MAX_MEMO = 1 << 16;
 
     private final Params p;
     private final SurfaceSampler surface;
     private final Mixer mixer;
-    private final ConcurrentHashMap<Long, Sphere> memo = new ConcurrentHashMap<>();
+    private final Long2ObjectOpenHashMap<Sphere> memo = new Long2ObjectOpenHashMap<>();
 
     public SphereField(Params params, SurfaceSampler surface) {
         this(params, surface, Mixer.OVERWORLD_ONLY);
@@ -252,14 +257,26 @@ public final class SphereField {
     /** The sphere rolled for a placement cube, or {@code null}; memoised. */
     Sphere sphereInCell(int cellX, int cellY, int cellZ) {
         long key = ((long) cellX & 0x1FFFFFL) | (((long) cellZ & 0x1FFFFFL) << 21) | (((long) cellY & 0xFFFFFL) << 42);
-        Sphere hit = memo.get(key);
+        Sphere hit;
+        synchronized (memo) {
+            hit = memo.get(key);
+        }
         if (hit == null) {
             hit = roll(cellX, cellY, cellZ);
             if (hit == null) hit = NONE;
-            if (memo.size() >= MAX_MEMO) memo.clear();          // bound memory; re-rolling is cheap
-            memo.put(key, hit);
+            synchronized (memo) {
+                if (memo.size() >= MAX_MEMO) memo.clear();      // bound memory; re-rolling is cheap
+                memo.put(key, hit);
+            }
         }
         return hit == NONE ? null : hit;
+    }
+
+    /** Cells memoised right now (tests). */
+    int memoSize() {
+        synchronized (memo) {
+            return memo.size();
+        }
     }
 
     /** Pure per-cell roll (no memo): presence, centre jitter, radius, then the surface-anchored lift. */
