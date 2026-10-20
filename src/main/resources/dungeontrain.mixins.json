@@ -138,6 +138,9 @@
     "PlayerEnderChestContainerSizeMixin"
   ],
   "client": [
+    "client.LevelRendererWeatherSlantMixin",
+    "client.ParticleEngineWindDriftMixin",
+    "client.ParticleWindDriftMixin",
     "client.IntegratedServerPauseSaveThrottleMixin",
     "client.audio.ChannelMirrorMixin",
     "client.audio.SoundBufferMirrorMixin",

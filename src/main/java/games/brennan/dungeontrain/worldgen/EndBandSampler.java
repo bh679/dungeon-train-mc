@@ -23,6 +23,7 @@ import net.minecraft.world.level.chunk.PalettedContainer;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
+import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.RandomState;
@@ -93,6 +94,8 @@ public final class EndBandSampler {
     private static final ConcurrentLinkedQueue<Result> READY = new ConcurrentLinkedQueue<>();
     /** Bumped on server stop so a job still running for the old server drops its result. */
     private static final AtomicInteger EPOCH = new AtomicInteger();
+    /** Per biome source: whether any of its biomes carries an AIR carver ({@link #hasCarvers}). */
+    private static final Map<BiomeSource, Boolean> CARVERS = new ConcurrentHashMap<>();
     /** Undecorated End ground shared between samples under {@code endBandFeatureSpill} ({@link #sampleWithSpill}). */
     private static final EndBandGroundCache<ProtoChunk> GROUND = new EndBandGroundCache<>(EndBandGroundCache.DEFAULT_CAP);
 
@@ -205,6 +208,8 @@ public final class EndBandSampler {
      */
     public static void clear() {
         EndBandBiomeRemap.clear();
+        EndBandBiomeFill.clear();
+        CARVERS.clear();
         EPOCH.incrementAndGet();
         SamplerPool.shared().cancel(SamplerPool.Kind.END_BAND);
         READY.clear();
@@ -232,19 +237,20 @@ public final class EndBandSampler {
         ChunkPos endPos = new ChunkPos(pos.x + EndBandStyle.endChunkOffsetX(passIndex), pos.z);
         // A BetterEnd pass reads its biomes through the band's remap (vanilla End patches -> BetterEnd,
         // #1785); a BoP pass reads its own generator's source as it is.
-        BiomeSource biomes = bop ? noise.getBiomeSource() : EndBandBiomeRemap.forEnd(end).wrap(noise.getBiomeSource());
+        BiomeSource source = bop ? noise.getBiomeSource() : EndBandBiomeRemap.forEnd(end).wrap(noise.getBiomeSource());
+        boolean carve = hasCarvers(source);
+        // One answer per column for this sample: the source is read ~1,100 times a chunk otherwise (biome
+        // fill + the surface rules' fuzzed lookups), and End sources do not vary with height — checked, not
+        // assumed (EndBandBiomeFill).
+        BiomeSource biomes = EndBandBiomeFill.memoised(source, random.sampler(), end.getSeed(), endPos);
         if (EndBandConfig.featureSpill()) {
-            return sampleWithSpill(end, noise, random, biomes, bop, pos, endPos, passIndex, bedY, displayMinY, displayMaxY, fill);
+            return sampleWithSpill(end, noise, random, biomes, carve, bop, pos, endPos, passIndex, bedY, displayMinY, displayMaxY, fill);
         }
         ProtoChunk chunk = OfflineChunkSampler.blankSample(end, noise, random, endPos, biomes);
         OfflineChunkSampler.Workspace workspace = OfflineChunkSampler.workspaceFor(end, noise, random, chunk, biomes);
         ProtoChunk ground = fill.fill(end, noise, random, chunk, workspace);
         if (ground == null) return null;
-        try {
-            OfflineChunkSampler.carve(noise, random, ground, workspace, end.getSeed());
-        } catch (Throwable t) {
-            LOGGER.debug("[DungeonTrain] End-band carvers failed at {} — keeping uncarved terrain", endPos, t);
-        }
+        if (carve) carveGround(noise, random, ground, workspace, end.getSeed(), endPos);
         try {
             // A BoP pass keeps vanilla + BoP features only: BetterEnd injects its ores into the vanilla
             // End biomes, which the BoP End shares.
@@ -265,10 +271,10 @@ public final class EndBandSampler {
      * first. A neighbour whose ground fails to generate is left blank, as before.
      */
     private static Result sampleWithSpill(ServerLevel end, NoiseBasedChunkGenerator noise, RandomState random,
-                                          BiomeSource biomes, boolean bop, ChunkPos pos, ChunkPos endPos,
+                                          BiomeSource biomes, boolean carve, boolean bop, ChunkPos pos, ChunkPos endPos,
                                           long passIndex, int bedY, int displayMinY, int displayMaxY, GroundFill fill) {
         CycleLayout.Style style = bop ? CycleLayout.Style.BOP : CycleLayout.Style.BETTER;
-        ProtoChunk cached = cachedGround(end, noise, random, biomes, style, endPos, fill);
+        ProtoChunk cached = cachedGround(end, noise, random, biomes, carve, style, endPos, fill);
         if (cached == null) return null;
         ProtoChunk centre = copyGround(end, cached);
         Map<ChunkPos, ProtoChunk> originals = new HashMap<>(8);
@@ -277,7 +283,7 @@ public final class EndBandSampler {
             for (int dz = -1; dz <= 1; dz++) {
                 if (dx == 0 && dz == 0) continue;
                 ChunkPos n = new ChunkPos(endPos.x + dx, endPos.z + dz);
-                ProtoChunk g = cachedGround(end, noise, random, biomes, style, n, fill);
+                ProtoChunk g = cachedGround(end, noise, random, biomes, carve, style, n, fill);
                 if (g == null) continue;
                 originals.put(n, g);
                 ring.put(n, copyGround(end, g));
@@ -306,9 +312,10 @@ public final class EndBandSampler {
 
     /** The undecorated ground of End chunk {@code endPos} for look {@code style}, generated once and shared. */
     private static ProtoChunk cachedGround(ServerLevel end, NoiseBasedChunkGenerator noise, RandomState random,
-                                           BiomeSource biomes, CycleLayout.Style style, ChunkPos endPos, GroundFill fill) {
+                                           BiomeSource biomes, boolean carve, CycleLayout.Style style, ChunkPos endPos,
+                                           GroundFill fill) {
         return GROUND.get(new EndBandGroundCache.Key(style, endPos.toLong()),
-                () -> generateGround(end, noise, random, biomes, endPos, fill));
+                () -> generateGround(end, noise, random, biomes, carve, endPos, fill));
     }
 
     /**
@@ -316,17 +323,39 @@ public final class EndBandSampler {
      * ground's biomes are filled, so every sampler reads the same {@code biomes} for the same key.
      */
     private static ProtoChunk generateGround(ServerLevel end, NoiseBasedChunkGenerator noise, RandomState random,
-                                             BiomeSource biomes, ChunkPos endPos, GroundFill fill) {
+                                             BiomeSource biomes, boolean carve, ChunkPos endPos, GroundFill fill) {
         ProtoChunk chunk = OfflineChunkSampler.blankSample(end, noise, random, endPos, biomes);
         OfflineChunkSampler.Workspace workspace = OfflineChunkSampler.workspaceFor(end, noise, random, chunk, biomes);
         ProtoChunk ground = fill.fill(end, noise, random, chunk, workspace);
         if (ground == null) return null;
+        if (carve) carveGround(noise, random, ground, workspace, end.getSeed(), endPos);
+        return ground;
+    }
+
+    /** The carver pass, best effort: a failure keeps the uncarved terrain. */
+    private static void carveGround(NoiseBasedChunkGenerator noise, RandomState random, ProtoChunk ground,
+                                    OfflineChunkSampler.Workspace workspace, long seed, ChunkPos endPos) {
         try {
-            OfflineChunkSampler.carve(noise, random, ground, workspace, end.getSeed());
+            OfflineChunkSampler.carve(noise, random, ground, workspace, seed);
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] End-band carvers failed at {} — keeping uncarved terrain", endPos, t);
         }
-        return ground;
+    }
+
+    /**
+     * Whether any biome {@code source} can place carries an AIR carver. No End biome does (vanilla,
+     * BetterEnd, Biomes O' Plenty), and the carver pass still costs 289 neighbour biome lookups a chunk
+     * deciding so; decided once per source and kept for the server's life. A biome TerraBlender surfaces
+     * outside {@code possibleBiomes()} with a carver would lose its caves in the band, nothing more.
+     */
+    private static boolean hasCarvers(BiomeSource source) {
+        return CARVERS.computeIfAbsent(source, s -> {
+            boolean any = s.possibleBiomes().stream().anyMatch(b ->
+                    b.value().getGenerationSettings().getCarvers(GenerationStep.Carving.AIR).iterator().hasNext());
+            LOGGER.info("[DungeonTrain] End-band biome source {}: {}", s.getClass().getSimpleName(),
+                    any ? "has carvers; samples run the carver pass" : "no biome has carvers; samples skip the carver pass");
+            return any;
+        });
     }
 
     /**

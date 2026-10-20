@@ -138,7 +138,7 @@ public final class WindDebugHud {
             you = "You: not pushed (" + f.skip() + ")";
             youColor = COLOR_IDLE;
         } else {
-            you = "You: " + describe(f.exposure());
+            you = "You: " + describe(f.exposure()) + (f.overTrain() ? "   (train)" : "   (ground)");
             youColor = f.exposure().exposed() ? COLOR_EXPOSED : COLOR_SHELTERED;
         }
         out.add(new Line(you + (f.onGround() ? "   on ground" : "   IN THE AIR") + (f.sneaking() ? "   sneaking" : ""),
@@ -174,7 +174,7 @@ public final class WindDebugHud {
             case IN_TUNNEL -> "sheltered (tunnel / terrain overhead)";
             case UNDER_COVER -> "sheltered (under cover)";
             case IN_LEE -> "sheltered (in a lee)";
-            case NOT_ON_TRAIN -> "not over the train";
+            case NOT_ON_TRAIN -> "not in the wind (calm)";
         };
     }
 
