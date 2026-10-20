@@ -28881,6 +28881,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "pot-surprise",
+      "version": "0.1420.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Not every pot is quite what it seems",
+      "summary": "Break them carefully.",
+      "highlights": [],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 2203
     }
   ]
 }
