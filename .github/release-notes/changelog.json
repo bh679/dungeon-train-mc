@@ -28523,6 +28523,23 @@
       "released": true,
       "released_in": "v0.1403.0",
       "released_at": "2026-10-20T06:25:18Z"
+    },
+    {
+      "id": "named-update-chat-notice",
+      "version": "0.1404.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Updates have names",
+      "summary": "When a new version comes out while you're playing, the chat message now tells you what the update is called, not just its number.",
+      "highlights": [],
+      "pr": 2184,
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
