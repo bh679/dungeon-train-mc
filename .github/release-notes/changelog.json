@@ -28569,6 +28569,23 @@
       "major": true,
       "description": "Rewards the whole community benefits from. There are features I'd love to provide, but they cost more than I can take on alone. Now one person can unlock them for everyone! Give a Community Reward and everyone gets it, not just the donor.\n\nThe first reward is **Quicker Streams**: cover the server costs and the Live Eye stream delay drops from 30s to 6s for a whole month, for everyone. More rewards are on the way.\n\n## Other significant updates\n- Support the solo-dev now opens one Contribute screen, the same one the engine room shows, from the title screen, the pause menu and Credits\n- A new rewards page: Community Rewards for everyone, and Personal Rewards showing what each gift to the dev brings you\n- Every gift puts your name aboard, and gifts to the dev also bring Priority Books\n- Copying the books you read is now a thank-you for gifts of $30 or more",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/community-rewards.jpg"
+    },
+    {
+      "id": "named-update-chat-notice",
+      "version": "0.1405.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Updates have names",
+      "summary": "When a new version comes out while you're playing, the chat message now tells you what the update is called, not just its number. Big updates stand out with a banner, a short description and a sound.",
+      "highlights": [],
+      "pr": 2184,
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
