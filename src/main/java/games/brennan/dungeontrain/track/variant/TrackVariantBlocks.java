@@ -46,8 +46,10 @@ import java.util.Map;
  * <p>Local coordinates are clamped to the footprint the caller asks for —
  * entries outside that box are dropped with a warning so a kind-renamed
  * template doesn't poison neighbouring blocks. The clamp produces a
- * throwaway {@link #croppedTo view}; the cache always holds the whole
- * sidecar, and a view's edits and saves go through to it. See {@link #loadFor}.</p>
+ * {@link #croppedTo view}; the cache always holds the whole sidecar, and a
+ * view's edits and saves go through to it. Views are memoised per footprint on
+ * the sidecar they bound, and the skip is logged once per footprint, not once
+ * per call. See {@link #loadFor}.</p>
  */
 public final class TrackVariantBlocks {
 
@@ -58,6 +60,17 @@ public final class TrackVariantBlocks {
 
     /** Session cache keyed on {@code <kind>:<name>}. Invalidated on save and on editor enter. */
     private static final Map<String, TrackVariantBlocks> CACHE = new HashMap<>();
+
+    /**
+     * Footprints already warned about, keyed {@code <kind>:<name>@WxHxD}. One line per sidecar
+     * and footprint per session: a stamp re-reads its room's sidecar on every placement, and a
+     * line per cell per read was 6,400 WARN lines across 92 player bug reports (2026-10-20),
+     * each one a synchronous log flush. Cleared with {@link #CACHE}.
+     */
+    private static final java.util.Set<String> WARNED_FOOTPRINTS = new java.util.HashSet<>();
+
+    /** How many out-of-footprint positions the one warning lists before trailing off. */
+    private static final int WARN_POSITIONS_SHOWN = 8;
 
     private final Map<BlockPos, List<VariantState>> entries;
 
@@ -120,6 +133,14 @@ public final class TrackVariantBlocks {
      * rooms' sidecars on 2026-09-02.</p>
      */
     private final TrackVariantBlocks source;
+
+    /**
+     * Bounded views of this sidecar by footprint, so repeated {@link #loadFor} calls at one size
+     * share a view rather than re-cropping on every call. Only a source ever holds any (a view is
+     * never asked to crop); every mutator clears it, so no view outlives an edit. Session-only,
+     * like {@link #CACHE}, and dropped with the source when the cache evicts it.
+     */
+    private final Map<Vec3i, TrackVariantBlocks> views = new HashMap<>();
 
     /**
      * pos → per-cell {@link games.brennan.dungeontrain.editor.VariantSpan} — how a single block fills a two-space cell (door /
@@ -213,6 +234,7 @@ public final class TrackVariantBlocks {
     /** Set all three mirror axes — used by the {@code editor mirror} command before {@link #save}. */
     public synchronized void setMirrorAxes(boolean x, boolean y, boolean z) {
         if (source != null) source.setMirrorAxes(x, y, z);
+        views.clear();
         this.mirrorX = x;
         this.mirrorY = y;
         this.mirrorZ = z;
@@ -221,6 +243,7 @@ public final class TrackVariantBlocks {
     /** Set the mirror-variants ("V") opt-in — used by {@code editor mirror v on|off} before {@link #save}. */
     public synchronized void setMirrorVariants(boolean v) {
         if (source != null) source.setMirrorVariants(v);
+        views.clear();
         this.mirrorVariants = v;
     }
 
@@ -255,6 +278,9 @@ public final class TrackVariantBlocks {
      * for the rest of the session, and the next editor save wrote that pruned form over the source
      * tree. So the cache holds the whole sidecar and each caller gets {@link #croppedTo its own
      * bounded view}; a view cannot be saved. See {@link #cropped}.</p>
+     *
+     * <p>The view is memoised on the sidecar per footprint ({@link #views}), so the common case of
+     * one room stamped many times at one size crops once, not once per stamp.</p>
      */
     public static synchronized TrackVariantBlocks loadFor(TrackKind kind, String name, Vec3i expectedSize) {
         String key = cacheKey(kind, name);
@@ -268,11 +294,14 @@ public final class TrackVariantBlocks {
 
     /**
      * This sidecar bounded to {@code size} — {@code this} when every cell already fits (the common
-     * path, and the only one that yields a saveable instance), otherwise a detached copy without
-     * the out-of-bounds cells, flagged {@link #cropped}.
+     * path, and the only one that yields a saveable instance), otherwise the memoised view for that
+     * footprint: a detached copy without the out-of-bounds cells, flagged {@link #cropped}.
      */
     private synchronized TrackVariantBlocks croppedTo(String name, Vec3i size) {
         if (size == null) return this;
+        Vec3i footprint = new Vec3i(size.getX(), size.getY(), size.getZ());
+        TrackVariantBlocks memoised = views.get(footprint);
+        if (memoised != null) return memoised;
         List<BlockPos> outside = null;
         for (BlockPos pos : entries.keySet()) {
             if (inBounds(pos, size)) continue;
@@ -291,11 +320,28 @@ public final class TrackVariantBlocks {
             keptLocks.remove(pos);
             keptRolls.remove(pos);
             keptScopes.remove(pos);
-            LOGGER.warn("[DungeonTrain] Track variant sidecar {}: pos {} outside footprint {}x{}x{}, skipping.",
-                contextId, pos, size.getX(), size.getY(), size.getZ());
         }
-        return withSpans(new TrackVariantBlocks(kept, keptLocks, keptRolls, keptScopes, kind,
+        warnOutsideOnce(contextId, footprint, outside);
+        TrackVariantBlocks view = withSpans(new TrackVariantBlocks(kept, keptLocks, keptRolls, keptScopes, kind,
             mirrorX, mirrorY, mirrorZ, mirrorVariants, this), spans);
+        views.put(footprint, view);
+        return view;
+    }
+
+    /** One WARN per sidecar and footprint per session, listing the dropped cells — see {@link #WARNED_FOOTPRINTS}. */
+    private static void warnOutsideOnce(String contextId, Vec3i size, List<BlockPos> outside) {
+        String key = contextId + "@" + size.getX() + "x" + size.getY() + "x" + size.getZ();
+        if (!WARNED_FOOTPRINTS.add(key)) return;
+        int shown = Math.min(outside.size(), WARN_POSITIONS_SHOWN);
+        LOGGER.warn("[DungeonTrain] Track variant sidecar {}: {} cell(s) outside footprint {}x{}x{}, skipping: {}{}",
+            contextId, outside.size(), size.getX(), size.getY(), size.getZ(),
+            outside.subList(0, shown), outside.size() > shown ? " ..." : "");
+    }
+
+    /** Forget the warned footprints of one sidecar, so a re-authored file warns afresh. */
+    private static void forgetWarnings(TrackKind kind, String name) {
+        String prefix = cacheKey(kind, name) + "@";
+        WARNED_FOOTPRINTS.removeIf(k -> k.startsWith(prefix));
     }
 
     private static TrackVariantBlocks loadFromDisk(TrackKind kind, String name) {
@@ -450,6 +496,7 @@ public final class TrackVariantBlocks {
             if (s == null) throw new IllegalArgumentException("null state");
         }
         if (source != null) source.put(localPos, states);
+        views.clear();
         entries.put(localPos.immutable(), List.copyOf(states));
         groupRefs.invalidate();
     }
@@ -462,6 +509,7 @@ public final class TrackVariantBlocks {
     /** Set the cell's multi-space span (default clears it). Throws if no cell exists at {@code localPos}. */
     public synchronized void setSpan(BlockPos localPos, games.brennan.dungeontrain.editor.VariantSpan span) {
         if (source != null) source.setSpan(localPos, span);
+        views.clear();
         if (!entries.containsKey(localPos)) {
             throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
         }
@@ -480,6 +528,7 @@ public final class TrackVariantBlocks {
     public synchronized boolean remove(BlockPos localPos) {
         spans.remove(localPos);
         if (source != null) source.remove(localPos);
+        views.clear();
         lockIds.remove(localPos);
         copyRolls.remove(localPos);
         copyScopes.remove(localPos);
@@ -493,6 +542,7 @@ public final class TrackVariantBlocks {
 
     public synchronized void setLockId(BlockPos localPos, int lockId) {
         if (source != null) source.setLockId(localPos, lockId);
+        views.clear();
         if (!entries.containsKey(localPos)) {
             throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
         }
@@ -521,6 +571,7 @@ public final class TrackVariantBlocks {
     public synchronized void setCopyRoll(BlockPos localPos,
                                          games.brennan.dungeontrain.editor.VariantCopyRoll roll) {
         if (source != null) source.setCopyRoll(localPos, roll);
+        views.clear();
         if (!entries.containsKey(localPos)) {
             throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
         }
@@ -544,6 +595,7 @@ public final class TrackVariantBlocks {
     public synchronized void setCopyScope(BlockPos localPos,
                                           games.brennan.dungeontrain.editor.VariantCopyScope scope) {
         if (source != null) source.setCopyScope(localPos, scope);
+        views.clear();
         if (!entries.containsKey(localPos)) {
             throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
         }
@@ -711,6 +763,7 @@ public final class TrackVariantBlocks {
         Path file = configPathFor(kind, name);
         boolean existed = Files.deleteIfExists(file);
         CACHE.remove(cacheKey(kind, name));
+        forgetWarnings(kind, name);
         if (existed) LOGGER.info("[DungeonTrain] Deleted track variant sidecar {}:{} ({})",
             kind.id(), name, file);
         return existed;
@@ -718,9 +771,11 @@ public final class TrackVariantBlocks {
 
     public static synchronized void invalidate(TrackKind kind, String name) {
         CACHE.remove(cacheKey(kind, name));
+        forgetWarnings(kind, name);
     }
 
     public static synchronized void clearCache() {
         CACHE.clear();
+        WARNED_FOOTPRINTS.clear();
     }
 }
