@@ -28495,14 +28495,16 @@
         "mobs",
         "balance"
       ],
-      "title": "Mob buffs vary more, and arrive later on late mobs",
+      "title": "Smarter mob buffs",
       "summary": "Further down the train, buffed mobs no longer all share the same effect strength. Each one now rolls anywhere from level I up to that stretch's top level, so some are weaker than before and none are stronger. Mobs that only show up further down the train now start getting buffs later too, and baby mobs a little later than adults.",
       "highlights": [],
       "pr": 2178,
       "date": "2026-10-20",
       "released": false,
       "released_in": null,
-      "released_at": null
+      "released_at": null,
+      "major": true,
+      "description": "Potion buffs on train mobs have been reworked.\n\n- **More variety:** the further you ride, the wider the spread. A buffed mob now rolls anywhere from level I up to that stretch's top level, so some are weaker than before and none are stronger.\n- **Late arrivals catch up gradually:** mobs that only start showing up further down the train no longer get buffed the moment they appear. Their buffs begin later, counted from where they first show up.\n- **Babies get a head start for you:** baby mobs get their buffs a little later than adults."
     }
   ]
 }
