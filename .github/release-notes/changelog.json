@@ -29050,6 +29050,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nothing-but-books-stacks",
+      "version": "0.1428.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "books",
+        "advancements"
+      ],
+      "title": "Nothing But Books counts stacks",
+      "summary": "The Nothing But Books advancement now counts stacked story books by how many are in the stack, so a grid of merged stacks with gaps between them earns it just like a grid of singles. Anything that is not a signed story book still breaks it.",
+      "highlights": [],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
