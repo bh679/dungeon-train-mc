@@ -12,7 +12,9 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 public final class SpheresGravityConfig {
 
     public static final boolean DEFAULT_ENABLED = true;
-    public static final double DEFAULT_STRENGTH = 1.0;
+    public static final double DEFAULT_STRENGTH = 0.6;
+    public static final double DEFAULT_FALLOFF = 0.5;
+    public static final double MAX_FALLOFF = 3.0;
     public static final double DEFAULT_REACH_RADII = 6.0;
     public static final double MIN_REACH_RADII = 1.0;
     public static final double MAX_REACH_RADII = 8.0;
@@ -20,6 +22,7 @@ public final class SpheresGravityConfig {
 
     private static ModConfigSpec.BooleanValue enabled;
     private static ModConfigSpec.DoubleValue strength;
+    private static ModConfigSpec.DoubleValue falloff;
     private static ModConfigSpec.DoubleValue reachRadii;
     private static ModConfigSpec.DoubleValue riderFactor;
 
@@ -34,11 +37,18 @@ public final class SpheresGravityConfig {
                 .define("spheresGravityEnabled", DEFAULT_ENABLED);
         strength = b
                 .comment("Pull at a sphere's surface as a multiple of normal gravity, for the largest sphere",
-                        "(radius 40); smaller spheres pull proportionally less. 0 = off. Default 1.0.")
+                        "(radius 40); smaller spheres pull proportionally less. Inside the sphere the pull stays",
+                        "at this surface value, never stronger. 0 = off. Default 0.6.")
                 .defineInRange("spheresGravityStrength", DEFAULT_STRENGTH, 0.0, 10.0);
+        falloff = b
+                .comment("How fast the pull drops off with distance outside the sphere: the pull is the surface",
+                        "value times (radius / distance) to this power. 2 = a real planet's inverse square (gone",
+                        "within a couple of radii), 1 = halves at twice the radius, 0.5 = still 70% at twice the",
+                        "radius, 0 = flat out to the reach. Default 0.5.")
+                .defineInRange("spheresGravityFalloff", DEFAULT_FALLOFF, 0.0, MAX_FALLOFF);
         reachRadii = b
-                .comment("How far a sphere's pull reaches, in multiples of its radius from its centre. It falls off",
-                        "with distance and fades to nothing at this edge. Default 6.0.")
+                .comment("How far a sphere's pull reaches, in multiples of its radius from its centre. Past half",
+                        "way to this edge the pull fades smoothly to nothing there. Default 6.0.")
                 .defineInRange("spheresGravityReachRadii", DEFAULT_REACH_RADII, MIN_REACH_RADII, MAX_REACH_RADII);
         riderFactor = b
                 .comment("Fraction of the pull felt by anyone out on the train (a roof, a flatbed). Inside a",
@@ -56,6 +66,10 @@ public final class SpheresGravityConfig {
 
     public static double strength() {
         return loaded() ? strength.get() : DEFAULT_STRENGTH;
+    }
+
+    public static double falloff() {
+        return loaded() ? falloff.get() : DEFAULT_FALLOFF;
     }
 
     public static double reachRadii() {

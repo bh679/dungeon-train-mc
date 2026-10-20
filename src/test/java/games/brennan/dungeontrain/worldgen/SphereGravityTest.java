@@ -45,6 +45,19 @@ final class SphereGravityTest {
     }
 
     @Test
+    @DisplayName("falloff exponent: 2 is inverse-square, 0.5 keeps most of the pull at twice the radius, 0 is flat; inside is never stronger")
+    void falloffExponent() {
+        int r = 20;
+        double g = SphereGravity.surfacePull(r, 1.0);
+        assertEquals(g * 0.25, SphereGravity.pullAt(40, r, 1.0, 6.0, 2.0), EPS, "inverse square");
+        assertEquals(g * 0.5, SphereGravity.pullAt(40, r, 1.0, 6.0, 1.0), EPS, "1/d");
+        assertEquals(g * Math.sqrt(0.5), SphereGravity.pullAt(40, r, 1.0, 6.0, 0.5), EPS, "1/sqrt d");
+        assertEquals(g, SphereGravity.pullAt(40, r, 1.0, 6.0, 0.0), EPS, "flat");
+        assertEquals(g, SphereGravity.pullAt(5, r, 1.0, 6.0, 0.5), EPS, "inside holds the surface value");
+        assertEquals(0.0, SphereGravity.pullAt(120, r, 1.0, 6.0, 0.5), EPS, "still 0 at the reach");
+    }
+
+    @Test
     @DisplayName("pull points at the centre, sums across spheres, and stops once moving toward the centre fast enough")
     void pullVector() {
         SphereField.Sphere s = new SphereField.Sphere(100, 100, 100, 40, 0);

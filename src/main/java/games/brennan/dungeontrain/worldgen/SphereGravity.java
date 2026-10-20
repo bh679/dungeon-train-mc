@@ -13,12 +13,13 @@ import java.util.List;
  *   <li><b>Surface pull</b> {@code g = strength × 0.08 × size(r)}: 0.08 is vanilla's gravity per tick, and
  *       {@code size} grows with the radius up to 1 at {@link #FULL_SIZE_RADIUS}, so a big sphere at
  *       strength 1 pulls as hard as the ground does while a small one only nudges.</li>
- *   <li><b>Outside</b> ({@code d ≥ r}): falls off with distance, {@code g × (r/d)} (gentler than a real planet's
- *       inverse square, which faded to nothing within a couple of radii), smoothly faded to 0 over the outer
- *       half of the reach ({@code reachRadii × r}) so there's no edge you can feel.</li>
- *   <li><b>Inside</b> ({@code d < r}): the full surface pull. A sphere's ground is usually well inside its
- *       radius — an overworld sphere's top is the natural surface, about 0.3·r above the centre — so this is
- *       what you feel when you jump off it.</li>
+ *   <li><b>Outside</b> ({@code d ≥ r}): falls off as {@code g × (r/d)^falloff} — {@code falloff} 2 is a real
+ *       planet's inverse square (gone within a couple of radii), 1 is 1/d, 0.5 (the default) keeps a decent
+ *       pull a few radii out — then smoothly faded to 0 over the outer half of the reach
+ *       ({@code reachRadii × r}) so there's no edge you can feel.</li>
+ *   <li><b>Inside</b> ({@code d < r}): held at the surface pull, no stronger. A sphere's ground is usually
+ *       well inside its radius — an overworld sphere's top is the natural surface, about 0.3·r above the
+ *       centre — so this is what you feel when you jump off it.</li>
  *   <li><b>Standing on it, or swimming in it</b>: on the ground or in water/lava inside the sphere or within
  *       {@link #STAND_MARGIN} of its surface (its top, a tunnel, the train's corridor, its lakes) — no pull, so
  *       walking and swimming feel normal and only a jump brings the pull back. Only that sphere lets go; others
@@ -71,14 +72,22 @@ public final class SphereGravity {
         return strength * VANILLA_G * size;
     }
 
-    /** Magnitude of a sphere's pull at distance {@code d} from its centre. */
+    /** Falloff exponent the test-only short forms use: plain {@code 1/d}. */
+    static final double PLAIN_FALLOFF = 1.0;
+
+    /** {@link #pullAt(double, int, double, double, double)} with a plain {@code 1/d} falloff. */
     public static double pullAt(double d, int r, double strength, double reachRadii) {
+        return pullAt(d, r, strength, reachRadii, PLAIN_FALLOFF);
+    }
+
+    /** Magnitude of a sphere's pull at distance {@code d} from its centre; {@code falloff} is the exponent on {@code r/d}. */
+    public static double pullAt(double d, int r, double strength, double reachRadii, double falloff) {
         if (r <= 0 || strength <= 0) return 0.0;
         double g = surfacePull(r, strength);
         if (d < r) return g;
         double reach = Math.max(1.0, reachRadii) * r;
         if (d >= reach) return 0.0;
-        double a = g * (r / d);
+        double a = g * Math.pow(r / d, Math.max(0.0, falloff));
         double fadeFrom = r + (reach - r) * FADE_START;
         if (d > fadeFrom) {
             double t = (d - fadeFrom) / (reach - fadeFrom);
@@ -98,13 +107,20 @@ public final class SphereGravity {
         return Math.max(0.0, reachRadii - 1.0) * Math.max(0, rMax);
     }
 
+    /** {@link #pull(List, double, double, double, double, double, double, boolean, double, double, double)} with a plain {@code 1/d} falloff. */
+    public static Pull pull(List<SphereField.Sphere> spheres, double x, double y, double z,
+                            double vx, double vy, double vz, boolean held,
+                            double strength, double reachRadii) {
+        return pull(spheres, x, y, z, vx, vy, vz, held, strength, reachRadii, PLAIN_FALLOFF);
+    }
+
     /**
      * Summed pull of {@code spheres} on a point {@code (x, y, z)} moving at {@code (vx, vy, vz)};
      * {@code held} (on the ground or in a fluid) lets go of any sphere it is standing or swimming in.
      */
     public static Pull pull(List<SphereField.Sphere> spheres, double x, double y, double z,
                             double vx, double vy, double vz, boolean held,
-                            double strength, double reachRadii) {
+                            double strength, double reachRadii, double falloff) {
         if (spheres.isEmpty() || strength <= 0) return Pull.ZERO;
         double ax = 0, ay = 0, az = 0;
         for (SphereField.Sphere s : spheres) {
@@ -114,7 +130,7 @@ public final class SphereGravity {
             double ux = dx / d, uy = dy / d, uz = dz / d;
             double ease = speedEase(vx * ux + vy * uy + vz * uz);
             if (ease <= 0) continue;
-            double a = pullAt(d, s.r(), strength, reachRadii) * ease;
+            double a = pullAt(d, s.r(), strength, reachRadii, falloff) * ease;
             if (a <= 0) continue;
             ax += ux * a;
             ay += uy * a;

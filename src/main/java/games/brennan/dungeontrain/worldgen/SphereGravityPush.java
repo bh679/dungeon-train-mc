@@ -32,7 +32,7 @@ public final class SphereGravityPush {
         Vec3 v = e.getDeltaMovement();
         double midY = e.getY() + e.getBbHeight() * 0.5;
         SphereGravity.Pull p = SphereGravity.pull(spheres, e.getX(), midY, e.getZ(), v.x, v.y, v.z, held(e),
-                SpheresGravityConfig.strength(), SpheresGravityConfig.reachRadii());
+                SpheresGravityConfig.strength(), SpheresGravityConfig.reachRadii(), SpheresGravityConfig.falloff());
         return p.isZero() ? p : p.scale(entityFactor(e));
     }
 
