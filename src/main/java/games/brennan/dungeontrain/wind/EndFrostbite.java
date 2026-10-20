@@ -31,8 +31,10 @@ import org.joml.primitives.AABBdc;
  * ({@link #frostThisTick}) that averages exactly the rate over time. Scaled by the End-sky intensity so it fades
  * in and out with the band's edges, netting a thaw below about two-thirds sky.</p>
  *
- * <p>Exposure reuses the wind's tests with the same rule as {@code WindServer#nearVerdict} (shelter in any nearby
- * group wins), minus the lee scan: the End has no wind to hide from.</p>
+ * <p><b>Shelter is stricter than the wind's.</b> The cold reaches everyone at the train; only being boxed in by
+ * carriage blocks on every side ({@link TrainExposure#enclosed}) saves you. A flatbed, a coupling pad, an open
+ * roof or standing in a doorway all leave you freezing, and a tunnel does not help: the End has no wind to hide
+ * from, and no warmth to find outside four walls.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class EndFrostbite {
@@ -95,7 +97,7 @@ public final class EndFrostbite {
         double rate = frostRate(WindZones.endSkyAt(x), cycle.cycleIndex(x), blocksIn(cycle, x), halfLife(cycle),
                 player.getTicksRequiredToFreeze());
         int frost = frostThisTick(rate, level.getGameTime());
-        if (frost == 0 || !onTopOfTrain(level, player)) return;
+        if (frost == 0 || !inTheCold(level, player)) return;
         int cap = player.getTicksRequiredToFreeze() + OVERSHOOT;
         player.setTicksFrozen(Math.min(cap, player.getTicksFrozen() + frost));
     }
@@ -112,19 +114,16 @@ public final class EndFrostbite {
         return period <= 0L ? 0L : Math.round(period * HALF_LIFE_CYCLES);
     }
 
-    /** Out in the open on any carriage group near the player, and sheltered by none of them. */
-    static boolean onTopOfTrain(ServerLevel level, ServerPlayer player) {
-        boolean exposed = false;
+    /** At any carriage group near the player, and boxed in by none of them. */
+    static boolean inTheCold(ServerLevel level, ServerPlayer player) {
+        boolean atTrain = false;
         for (Trains.Carriage c : Trains.allCarriages(level)) {
             ManagedShip ship = c.ship();
             if (!near(ship.worldAABB(), player)) continue;
-            if (FarWind.classify(c, player) == FarWind.Verdict.SHELTERED) return false;
-            if (!(ship instanceof SableManagedShip sable) || sable.subLevel() == null) continue;
-            TrainExposure.Result r = TrainExposure.classify(sable.subLevel(), player, 0.0, 0.0);
-            if (r == TrainExposure.Result.EXPOSED) exposed = true;
-            else if (r != TrainExposure.Result.NOT_ON_TRAIN) return false;
+            atTrain = true;
+            if (ship instanceof SableManagedShip sable && TrainExposure.enclosed(sable.subLevel(), player)) return false;
         }
-        return exposed;
+        return atTrain;
     }
 
     private static boolean near(AABBdc bb, ServerPlayer p) {
