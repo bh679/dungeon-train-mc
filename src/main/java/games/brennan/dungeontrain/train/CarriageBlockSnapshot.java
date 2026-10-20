@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
-import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
+import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderGetter;
@@ -467,11 +467,6 @@ public final class CarriageBlockSnapshot {
     }
 
     private static LevelChunk chunkAt(LevelPlot plot, BlockPos shipLocal) {
-        long key = net.minecraft.world.level.ChunkPos.asLong(shipLocal.getX() >> 4, shipLocal.getZ() >> 4);
-        for (PlotChunkHolder holder : plot.getLoadedChunks()) {
-            LevelChunk chunk = holder.getChunk();
-            if (chunk != null && chunk.getPos().toLong() == key) return chunk;
-        }
-        return null;
+        return CarriageDeck.chunkInPlot(plot, shipLocal);
     }
 }
