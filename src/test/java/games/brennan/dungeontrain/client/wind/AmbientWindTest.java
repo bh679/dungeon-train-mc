@@ -43,9 +43,12 @@ class AmbientWindTest {
     @Test
     @DisplayName("under a shader pack the lean is stronger, still fits vanilla's table, and the rain is redrawn")
     void shaderRain() {
-        double perPush = AmbientWind.RAIN_SLANT_PER_PUSH * AmbientWind.SHADER_RAIN_SLANT_MULT;
-        assertEquals(0.375, AmbientWind.slantTarget(0.01, perPush, AmbientWind.SHADER_RAIN_MAX_SLANT), 1e-9);
-        assertEquals(AmbientWind.SHADER_RAIN_MAX_SLANT, AmbientWind.slantTarget(1.0, perPush, AmbientWind.SHADER_RAIN_MAX_SLANT));
+        assertEquals(0.0, AmbientWind.shaderSlantTarget(0.0));
+        // A weak wind (29k blocks past the start, push ~0.0076) still leans at the floor, past the pack's own sway.
+        assertEquals(AmbientWind.SHADER_RAIN_LEAN_FLOOR, AmbientWind.shaderSlantTarget(0.0076), 1e-9);
+        // A strong one grows past the floor (0.025 * 15 * 2.5 = 0.9375) up to the cap.
+        assertEquals(0.9375, AmbientWind.shaderSlantTarget(0.025), 1e-9);
+        assertEquals(AmbientWind.SHADER_RAIN_MAX_SLANT, AmbientWind.shaderSlantTarget(1.0));
         assertTrue(AmbientWind.radiusFor(10, AmbientWind.SHADER_RAIN_MAX_SLANT) <= AmbientWind.MAX_RAIN_RADIUS);
         // Extra passes only under a pack, and only once the rain actually leans.
         assertEquals(1, AmbientWind.rainPassesFor(false, 1.0));

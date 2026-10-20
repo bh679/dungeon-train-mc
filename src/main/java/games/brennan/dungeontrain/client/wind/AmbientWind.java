@@ -45,6 +45,12 @@ public final class AmbientWind {
      */
     static final double SHADER_RAIN_SLANT_MULT = 2.5;
     static final double SHADER_RAIN_MAX_SLANT = 1.0;
+    /**
+     * Least lean under a pack once there is any wind: the pack's sway is about 0.6 at its widest, so a lean that
+     * only grows with the push stays buried for the first tens of thousands of blocks; from the floor up, gusts
+     * still show on top (to the cap).
+     */
+    static final double SHADER_RAIN_LEAN_FLOOR = 0.7;
     static final int SHADER_RAIN_PASSES = 3;
     static final double SHADER_PASS_SHIFT = 0.35;
     /** Below this lean the pack's own look is left alone (no extra passes). */
@@ -90,9 +96,7 @@ public final class AmbientWind {
                 : (WindyDrive.SPEED_BASE + push * WindyDrive.SPEED_PER_PUSH) * SPEED_FACTOR;
         driftX = dx * speed;
         driftZ = dz * speed;
-        double rain = shaderPackActive
-                ? slantTarget(push, RAIN_SLANT_PER_PUSH * SHADER_RAIN_SLANT_MULT, SHADER_RAIN_MAX_SLANT)
-                : slantTarget(push, RAIN_SLANT_PER_PUSH, RAIN_MAX_SLANT);
+        double rain = shaderPackActive ? shaderSlantTarget(push) : slantTarget(push, RAIN_SLANT_PER_PUSH, RAIN_MAX_SLANT);
         rainSlantX = ease(rainSlantX, dx * rain);
         rainSlantZ = ease(rainSlantZ, dz * rain);
         stepSnow(driftX * WindParticleTypes.LIGHT, driftZ * WindParticleTypes.LIGHT);
@@ -213,6 +217,13 @@ public final class AmbientWind {
         boolean s = WindVisualShelter.sheltered(level, x, y, z);
         SHELTER.put(key, s ? SHELTERED : OPEN);
         return s;
+    }
+
+    /** Sheet slant for a push under a shader pack: at least the floor once there is any wind, proportional above it, capped. */
+    static double shaderSlantTarget(double push) {
+        if (push <= 0.0) return 0.0;
+        double scaled = slantTarget(push, RAIN_SLANT_PER_PUSH * SHADER_RAIN_SLANT_MULT, SHADER_RAIN_MAX_SLANT);
+        return Math.max(SHADER_RAIN_LEAN_FLOOR, scaled);
     }
 
     /** Sheet slant for a push: proportional, capped. */
