@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalTestSessionPacket;
 import games.brennan.dungeontrain.portal.PortalClear;
@@ -265,7 +266,7 @@ public final class CarriageTestCommand {
             plan.shell().id(), contentsId, shellSeed, contentsSeed,
             planB.shell().id(), contentsIdB, shellSeedB, contentsSeedB);
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.carriage_test.standing_in",
-            games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(id), games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(plan.shell().id()), games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(contentsId)).withStyle(ChatFormatting.AQUA), false);
+            WorkbenchTestScratch.shownName(id), WorkbenchTestScratch.shownName(plan.shell().id()), WorkbenchTestScratch.shownName(contentsId)).withStyle(ChatFormatting.AQUA), false);
         return 1;
     }
 
@@ -402,7 +403,7 @@ public final class CarriageTestCommand {
             shell.id(), contentsId, band.phase(), band.level(), testSeed, sceneSeed);
         Component bandName = Component.translatable(
             "gui.dungeontrain.editor_menu.phase." + band.phase().name().toLowerCase(java.util.Locale.ROOT));
-        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.track_test.standing_in", games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(name), bandName)
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.track_test.standing_in", WorkbenchTestScratch.shownName(name), bandName)
             .withStyle(ChatFormatting.AQUA), false);
         return 1;
     }
@@ -448,7 +449,7 @@ public final class CarriageTestCommand {
         player.teleportTo(overworld, arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5,
             FACE_EAST, 0.0f);
         DungeonTrainNet.sendTo(player, PortalTestSessionPacket.active(player,
-            games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(id)));
+            WorkbenchTestScratch.shownName(id)));
     }
 
     /** A carriage footprint as a size: x = length, y = height, z = width. */
@@ -529,7 +530,7 @@ public final class CarriageTestCommand {
             kind.literal(), id, origin, player.getName().getString(), shellSeed,
             room ? ", second roll seed=" + seedB : "");
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.carriage_test.standing_in",
-            games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(id), games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(id), "none").withStyle(ChatFormatting.AQUA), false);
+            WorkbenchTestScratch.shownName(id), WorkbenchTestScratch.shownName(id), "none").withStyle(ChatFormatting.AQUA), false);
         return 1;
     }
 
@@ -774,7 +775,7 @@ public final class CarriageTestCommand {
             player.getName().getString(), cleared, discarded, session.kind().literal(), session.templateId());
         // A piece of the line is filed as model:name; the author knows it by its name.
         String shown = TrackTestPiece.parseTemplateId(session.templateId())
-            .map(TrackTestPiece.Named::name).map(games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch::shownName).orElse(games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(session.templateId()));
+            .map(TrackTestPiece.Named::name).map(WorkbenchTestScratch::shownName).orElse(WorkbenchTestScratch.shownName(session.templateId()));
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.back_plot_test_has",
             shown).withStyle(ChatFormatting.GRAY), false);
         return 1;

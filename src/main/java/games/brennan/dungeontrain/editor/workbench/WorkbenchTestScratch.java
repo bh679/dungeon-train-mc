@@ -37,8 +37,11 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -121,9 +124,28 @@ public final class WorkbenchTestScratch {
 
     // ---- pure helpers (unit-tested) ----
 
-    /** The reserved id a staged build tests under: the prefix and a hash, so it is always a legal name. */
+    /** Hex digits of the digest kept in a scratch id: with the prefix, 27 of the 32 a name may have. */
+    private static final int ID_HASH_CHARS = 20;
+
+    /**
+     * The reserved id a staged build tests under: the prefix and a truncated SHA-256 of the staged id,
+     * so it is always a legal name and two staged ids never share one (a 32-bit {@code hashCode} could
+     * collide, and the second install would then tear down the first mid-test).
+     */
     public static String scratchIdFor(String stagedId) {
-        return ID_PREFIX + String.format(Locale.ROOT, "%08x", stagedId == null ? 0 : stagedId.hashCode());
+        byte[] digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256")
+                .digest((stagedId == null ? "" : stagedId).getBytes(StandardCharsets.UTF_8));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 unavailable", e);
+        }
+        StringBuilder hex = new StringBuilder(ID_HASH_CHARS);
+        for (byte b : digest) {
+            if (hex.length() >= ID_HASH_CHARS) break;
+            hex.append(String.format(Locale.ROOT, "%02x", b));
+        }
+        return ID_PREFIX + hex.substring(0, ID_HASH_CHARS);
     }
 
     public static boolean isScratchId(String id) {
@@ -151,6 +173,15 @@ public final class WorkbenchTestScratch {
             }
             case PART, BUILDING, CHUNK_FRAME, LOST_CITY -> null;
         };
+    }
+
+    /**
+     * The kind a scratch install files its sidecars under. A dimensional room can arrive as the relay
+     * kind {@code track/portal_room}; filed as a track it would get only its variants, so a room is
+     * always filed as {@code PORTAL_ROOM}, whose roles include the copies and contents-allow files.
+     */
+    public static BuilderPhotoPaths.Kind sidecarKindFor(BuilderPhotoPaths.Kind kind, Scene scene) {
+        return scene == Scene.PORTAL_ROOM ? BuilderPhotoPaths.Kind.PORTAL_ROOM : kind;
     }
 
     // ---- what the rest of the mod asks ----
@@ -255,7 +286,8 @@ public final class WorkbenchTestScratch {
         writeOverride = dirFor(scratchId);
         try {
             write(installed, template);
-            TemplateSidecars.applyFilesForTest(kind, staged.subKind(), scratchId, staged.sidecars());
+            TemplateSidecars.applyFilesForTest(sidecarKindFor(kind, scene), staged.subKind(), scratchId,
+                staged.sidecars());
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Workbench test: could not stand '{}' up as {}: {}",
                 stagedId, scene, e.toString());
