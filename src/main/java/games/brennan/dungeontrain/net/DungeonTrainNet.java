@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "153";
+    public static final String PROTOCOL_VERSION = "154";
 
     private DungeonTrainNet() {}
 
@@ -202,6 +202,8 @@ public final class DungeonTrainNet {
         // the vote page, or tick it on the sign page just ahead of vanilla's sign packet.
         registrar.playToServer(BookPriorityPacket.TYPE, BookPriorityPacket.STREAM_CODEC, BookPriorityPacket::handle);
         registrar.playToServer(PriorityBookIntentPacket.TYPE, PriorityBookIntentPacket.STREAM_CODEC, PriorityBookIntentPacket::handle);
+        // ...or boost somebody else's book with one, from its vote page. Boosts stack across readers.
+        registrar.playToServer(BookBoostPacket.TYPE, BookBoostPacket.STREAM_CODEC, BookBoostPacket::handle);
 
         // Lectern letters: server → client to open the book sign screen when a book & quill is
         // right-clicked onto a lectern and the feature is active; client → server when that screen is

@@ -926,6 +926,54 @@
       ]
     }
   },
+  "chat.dungeontrain.update_notice.named": {
+    "1": {
+      "label": "the name of the new Dungeon Train release (the title of its lead change)",
+      "examples": [
+        "The Creaking joins the Train",
+        "Twitch integration"
+      ]
+    },
+    "2": {
+      "label": "the version number of the new Dungeon Train release",
+      "examples": [
+        "0.984.0",
+        "1.2.0"
+      ]
+    }
+  },
+  "chat.dungeontrain.update_notice.notable": {
+    "1": {
+      "label": "the name of the new Dungeon Train release (the title of its headline change)",
+      "examples": [
+        "The Creaking joins the Train",
+        "Twitch integration"
+      ]
+    },
+    "2": {
+      "label": "the version number of the new Dungeon Train release",
+      "examples": [
+        "0.984.0",
+        "1.2.0"
+      ]
+    }
+  },
+  "chat.dungeontrain.update_notice.major_name": {
+    "1": {
+      "label": "the name of the new Dungeon Train release (the title of its headline change)",
+      "examples": [
+        "The Creaking joins the Train",
+        "Twitch integration"
+      ]
+    },
+    "2": {
+      "label": "the version number of the new Dungeon Train release",
+      "examples": [
+        "0.984.0",
+        "1.2.0"
+      ]
+    }
+  },
   "gui.dungeontrain.low_memory.body": {
     "1": {
       "label": "how much memory Minecraft has been given, in GB (a plain number)",
@@ -16832,7 +16880,7 @@
   },
   "gui.dungeontrain.priority_book.waiting.one": {
     "1": {
-      "label": "Priority Books the player has waiting to spend",
+      "label": "Book Boosts the player has left (each Priority Book is 10)",
       "examples": [
         "1"
       ]
@@ -16840,17 +16888,17 @@
   },
   "gui.dungeontrain.priority_book.waiting.other": {
     "1": {
-      "label": "Priority Books the player has waiting to spend",
+      "label": "Book Boosts the player has left (each Priority Book is 10)",
       "examples": [
         "0",
-        "3",
-        "7"
+        "10",
+        "25"
       ]
     }
   },
   "gui.dungeontrain.priority_book.sign.one": {
     "1": {
-      "label": "Priority Books the player has left to spend",
+      "label": "Book Boosts the player has left (each Priority Book is 10)",
       "examples": [
         "1"
       ]
@@ -16858,35 +16906,17 @@
   },
   "gui.dungeontrain.priority_book.sign.other": {
     "1": {
-      "label": "Priority Books the player has left to spend",
+      "label": "Book Boosts the player has left (each Priority Book is 10)",
       "examples": [
         "0",
-        "3",
-        "7"
-      ]
-    }
-  },
-  "gui.dungeontrain.priority_book.make.one": {
-    "1": {
-      "label": "Priority Books the player has left to spend",
-      "examples": [
-        "1"
-      ]
-    }
-  },
-  "gui.dungeontrain.priority_book.make.other": {
-    "1": {
-      "label": "Priority Books the player has left to spend",
-      "examples": [
-        "0",
-        "3",
-        "7"
+        "10",
+        "25"
       ]
     }
   },
   "chat.dungeontrain.priority_book.spent.one": {
     "1": {
-      "label": "Priority Books left after this one was spent",
+      "label": "Book Boosts left after boosting the book",
       "examples": [
         "1"
       ]
@@ -16894,11 +16924,78 @@
   },
   "chat.dungeontrain.priority_book.spent.other": {
     "1": {
-      "label": "Priority Books left after this one was spent",
+      "label": "Book Boosts left after boosting the book",
       "examples": [
         "0",
-        "3",
-        "7"
+        "10",
+        "15"
+      ]
+    }
+  },
+  "chat.dungeontrain.priority_book.boosted.one": {
+    "1": {
+      "label": "Boosts left after this one was given",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.priority_book.boosted.other": {
+    "1": {
+      "label": "Boosts left after this one was given",
+      "examples": [
+        "0",
+        "9",
+        "24"
+      ]
+    }
+  },
+  "chat.dungeontrain.priority_book.boosted_by.one": {
+    "1": {
+      "label": "Name of the donor who boosted the book",
+      "examples": [
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.priority_book.boosted_by.other": {
+    "1": {
+      "label": "Names of the donors who boosted the book, comma separated",
+      "examples": [
+        "Alex, Sam",
+        "Alex, Sam, Kai"
+      ]
+    }
+  },
+  "chat.dungeontrain.priority_book.boosted_by_more": {
+    "1": {
+      "label": "Names of the three newest players who boosted the book, comma separated",
+      "examples": [
+        "Alex, Sam, Kai"
+      ]
+    },
+    "2": {
+      "label": "How many more players boosted it",
+      "examples": [
+        "1",
+        "4"
+      ]
+    }
+  },
+  "chat.dungeontrain.priority_book.boosted_by_anon.one": {
+    "1": {
+      "label": "How many boosts the book has had",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.priority_book.boosted_by_anon.other": {
+    "1": {
+      "label": "How many boosts the book has had",
+      "examples": [
+        "2",
+        "6"
       ]
     }
   },
@@ -17032,6 +17129,103 @@
       "label": "the advancements key, as this player has it bound",
       "examples": [
         "L"
+      ]
+    }
+  },
+  "gui.dungeontrain.contribute.own_way": {
+    "1": {
+      "label": "the Any Amount link",
+      "examples": [
+        "Any Amount"
+      ]
+    },
+    "2": {
+      "label": "the Monthly on Patreon link",
+      "examples": [
+        "Monthly on Patreon"
+      ]
+    }
+  },
+  "gui.dungeontrain.contribute.affiliate": {
+    "1": {
+      "label": "the affiliate link text",
+      "examples": [
+        "affiliate link"
+      ]
+    }
+  },
+  "gui.dungeontrain.currency.approx": {
+    "1": {
+      "label": "the name of the currency amounts are shown in",
+      "examples": [
+        "US dollars",
+        "Euros"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_by": {
+    "1": {
+      "label": "the day and short month the reward ends",
+      "examples": [
+        "12 Nov",
+        "3 Dec"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.give.month": {
+    "1": {
+      "label": "a month name, short or full",
+      "examples": [
+        "Nov",
+        "December"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.give.amount": {
+    "1": {
+      "label": "the gift amount, figure only",
+      "examples": [
+        "$94",
+        "$140"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.thanks.later": {
+    "1": {
+      "label": "a community reward's name",
+      "examples": [
+        "Quicker Streams",
+        "Replays Kept"
+      ]
+    },
+    "2": {
+      "label": "the day and short month that gift starts",
+      "examples": [
+        "14 Nov",
+        "3 Dec"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.quicker_streams.line": {
+    "1": {
+      "label": "seconds viewers are behind the streamer normally",
+      "examples": [
+        "30",
+        "28"
+      ]
+    },
+    "2": {
+      "label": "seconds behind with Quicker Streams on",
+      "examples": [
+        "6",
+        "4"
       ]
     }
   }

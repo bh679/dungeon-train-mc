@@ -167,6 +167,8 @@ public final class DonationSummaryClient {
                             }
                             // The community-rewards state rides the same payload (absent on an older relay).
                             LiveRewards.remember(resp.body());
+                            // So are the display-currency rates (fxRates; absent on an older relay).
+                            games.brennan.dungeontrain.client.support.currency.CurrencyRates.remember(resp.body());
                             Summary summary = parse(resp.body());
                             if (summary != null) callback.accept(summary);
                         } catch (Throwable t) {

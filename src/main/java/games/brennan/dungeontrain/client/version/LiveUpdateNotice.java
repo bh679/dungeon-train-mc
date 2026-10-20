@@ -7,11 +7,14 @@ import games.brennan.dungeontrain.util.PresenceLine;
 import net.minecraft.ChatFormatting;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.sounds.SoundEvents;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -107,30 +110,80 @@ public final class LiveUpdateNotice {
         baseline = latest;
         LOGGER.info("Update notice: announcing {} (installed {})", latest, installed);
         VersionCheckState.accept(VersionCheckState.Status.UPDATE_AVAILABLE, latest);
-        // Look up when it was published, then work out "N ago" at the moment the line is sent.
-        ReleaseTime.fetchPublishedAt(latest, installed)
-            .thenAcceptAsync(publishedAt -> announce(latest, publishedAt), Minecraft.getInstance());
+        // Look up its name and when it was published, then work out "N ago" at the moment the
+        // line is sent. Either lookup failing only drops its part of the notice.
+        ReleaseName.fetch(latest, installed)
+            .thenCombine(ReleaseTime.fetchPublishedAt(latest, installed), Announcement::new)
+            .thenAcceptAsync(a -> announce(latest, a.info(), a.publishedAtMs()), Minecraft.getInstance());
     }
 
-    private static void announce(String version, Long publishedAtMs) {
-        LocalPlayer player = Minecraft.getInstance().player;
+    private record Announcement(ReleaseName.Info info, Long publishedAtMs) {}
+
+    /**
+     * An ordinary release gets one line. A notable one gets its name in bold, its summary and a
+     * chime; a major one a banner, its summary, a toast and a fanfare, so it can't be missed.
+     */
+    private static void announce(String version, ReleaseName.Info info, Long publishedAtMs) {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer player = mc.player;
         if (player == null || !ClientDisplayConfig.isUpdateNoticeChatEnabled()) return;
-        MutableComponent link = Component.translatable("chat.dungeontrain.update_notice.link")
+        // Empty parent so the "ago" clause doesn't inherit the link's underline.
+        MutableComponent footer = Component.empty().append(link(version));
+        if (publishedAtMs != null) {
+            String locale = mc.getLanguageManager().getSelected();
+            Duration ago = ReleaseTime.since(publishedAtMs, System.currentTimeMillis());
+            footer.append(Component.translatable("chat.dungeontrain.update_notice.ago",
+                    PresenceLine.agoComponent(locale, ago)).withStyle(ChatFormatting.GRAY));
+        }
+        ReleaseName.Tier tier = info == null ? ReleaseName.Tier.NORMAL : info.tier();
+        LOGGER.info("Update notice: {} release {} ({})", tier, version, info == null ? "unnamed" : info.name());
+        switch (tier) {
+            case MAJOR -> {
+                player.displayClientMessage(Component.empty(), false);
+                player.displayClientMessage(Component.translatable("chat.dungeontrain.update_notice.major_header")
+                    .withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD), false);
+                player.displayClientMessage(INDENT.copy().append(Component.translatable(
+                        "chat.dungeontrain.update_notice.major_name", name(info, ChatFormatting.GOLD), version)
+                    .withStyle(ChatFormatting.GOLD)), false);
+                summary(player, info, ChatFormatting.WHITE);
+                player.displayClientMessage(INDENT.copy().append(footer), false);
+                SystemToast.add(mc.getToasts(), SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+                    Component.translatable("toast.dungeontrain.update_notice.major"), Component.literal(info.name()));
+                mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0F));
+            }
+            case NOTABLE -> {
+                player.displayClientMessage(Component.translatable("chat.dungeontrain.update_notice.notable",
+                        name(info, ChatFormatting.AQUA), version).withStyle(ChatFormatting.GOLD), false);
+                summary(player, info, ChatFormatting.GRAY);
+                player.displayClientMessage(INDENT.copy().append(footer), false);
+                mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_TOAST_IN, 1.0F));
+            }
+            case NORMAL -> {
+                MutableComponent headline = info == null
+                    ? Component.translatable("chat.dungeontrain.update_notice", version)
+                    : Component.translatable("chat.dungeontrain.update_notice.named", Component.literal(info.name()), version);
+                player.displayClientMessage(headline.withStyle(ChatFormatting.GOLD).append(" ").append(footer), false);
+            }
+        }
+    }
+
+    private static final Component INDENT = Component.literal("  ");
+
+    private static MutableComponent link(String version) {
+        return Component.translatable("chat.dungeontrain.update_notice.link")
             .withStyle(s -> s.withColor(ChatFormatting.AQUA).withUnderlined(true)
                 .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, RELEASE_URL + version))
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                     Component.literal(RELEASE_URL + version))));
-        Component msg = Component.translatable("chat.dungeontrain.update_notice", version)
-            .withStyle(ChatFormatting.GOLD)
-            .append(" ")
-            .append(link);
-        if (publishedAtMs != null) {
-            String locale = Minecraft.getInstance().getLanguageManager().getSelected();
-            Duration ago = ReleaseTime.since(publishedAtMs, System.currentTimeMillis());
-            msg = msg.copy().append(Component.translatable("chat.dungeontrain.update_notice.ago",
-                    PresenceLine.agoComponent(locale, ago)).withStyle(ChatFormatting.GRAY));
-        }
-        player.displayClientMessage(msg, false);
+    }
+
+    private static Component name(ReleaseName.Info info, ChatFormatting colour) {
+        return Component.literal(info.name()).withStyle(colour, ChatFormatting.BOLD);
+    }
+
+    private static void summary(LocalPlayer player, ReleaseName.Info info, ChatFormatting colour) {
+        if (info.summary().isEmpty()) return;
+        player.displayClientMessage(INDENT.copy().append(Component.literal(info.summary()).withStyle(colour)), false);
     }
 
     /** Off when the player turned it off, and on dev builds unless a test feed is supplied. */

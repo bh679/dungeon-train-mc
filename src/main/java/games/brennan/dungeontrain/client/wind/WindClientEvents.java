@@ -97,7 +97,7 @@ public final class WindClientEvents {
         // Visuals follow the wind, not the player: they keep blowing outside while you shelter, and each streak
         // is kept out of carriages and tunnels on its own (WindVisualShelter).
         WindyDrive.set(visual.strength(), visual.gust01(), visual.headingRad(), carriageVel[0], carriageVel[1]);
-        // Smoke, snow, ash and the rain sheets blow with the same wind, in the ground frame (AmbientWind).
+        // Smoke, snow, ash and the weather blow with the same wind, in the ground frame (AmbientWind).
         AmbientWind.set(visual);
         boolean directional = WindyPresence.directional();
         if (!directional && sub != null && !visual.isCalm()) {
