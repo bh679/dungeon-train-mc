@@ -45,7 +45,7 @@ final class BookBoostControl {
     private static final int TOOLTIP_WIDTH = 200;
     private static final int COLOR_LABEL = 0x0C0602;
     private static final int COLOR_COUNT = 0xFFFFFF;
-    private static final int COLOR_COST = 0xFF6B5A;      // the "-10" price beside the wallet on your own book
+    private static final int COLOR_COST = 0xFF6B5A;      // the "-N" beside the wallet: boosts used on this book
     private static final float COST_SCALE = 0.75F;
     /** What making your own book a Priority Book costs, in boosts: a whole Priority Book. */
     private static final int OWN_BOOK_COST = 10;
@@ -140,18 +140,20 @@ final class BookBoostControl {
         int countX = x + BUTTON_SIZE + 2;
         gfx.drawString(font, count, countX, y + (BUTTON_SIZE - 8) / 2, COLOR_COUNT, true);
         int w = BUTTON_SIZE + 2 + font.width(count);
-        // On your own book, what the star by the thumbs will take: small, beside the count.
-        if (own && !priority && BookCredits.current() > 0) drawCost(gfx, font, countX + font.width(count) + 2, y);
+        // Small, beside the count: the boosts this reader has put into THIS book. Each boost on
+        // somebody else's is one; making your own a Priority Book is ten.
+        int used = own ? (priority ? OWN_BOOK_COST : 0) : given;
+        if (used > 0) drawCost(gfx, font, used, countX + font.width(count) + 2, y);
         boolean hover = mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + BUTTON_SIZE;
         if (hover) tooltip(gfx, font, List.of(PriorityBookMessage.boostTooltip()), mouseX, mouseY);
     }
 
-    /** The small "-10" price, top-aligned with the wallet count like a superscript. */
-    private static void drawCost(GuiGraphics gfx, Font font, int x, int y) {
+    /** The small "-N", top-aligned with the wallet count like a superscript. */
+    private static void drawCost(GuiGraphics gfx, Font font, int used, int x, int y) {
         gfx.pose().pushPose();
         gfx.pose().translate(x, y + (BUTTON_SIZE - 8) / 2F - 1, 0);
         gfx.pose().scale(COST_SCALE, COST_SCALE, 1F);
-        gfx.drawString(font, "-" + OWN_BOOK_COST, 0, 0, COLOR_COST, true);
+        gfx.drawString(font, "-" + used, 0, 0, COLOR_COST, true);
         gfx.pose().popPose();
     }
 
