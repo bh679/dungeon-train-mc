@@ -28504,7 +28504,8 @@
       "released_in": null,
       "released_at": null,
       "major": true,
-      "description": "Potion buffs on train mobs have been reworked.\n\n- **More variety:** the further you ride, the wider the spread. A buffed mob now rolls anywhere from level I up to that stretch's top level, so some are weaker than before and none are stronger.\n- **Late arrivals catch up gradually:** mobs that only start showing up further down the train no longer get buffed the moment they appear. Their buffs begin later, counted from where they first show up.\n- **Babies get a head start for you:** baby mobs get their buffs a little later than adults."
+      "description": "Potion buffs on train mobs have been reworked.\n\n- **More variety:** the further you ride, the wider the spread. A buffed mob now rolls anywhere from level I up to that stretch's top level, so some are weaker than before and none are stronger.\n- **Late arrivals catch up gradually:** mobs that only start showing up further down the train no longer get buffed the moment they appear. Their buffs begin later, counted from where they first show up.\n- **Babies get a head start for you:** baby mobs get their buffs a little later than adults.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/smarter-mob-buffs.jpg"
     }
   ]
 }
