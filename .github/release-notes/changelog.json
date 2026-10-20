@@ -28794,6 +28794,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "plot-chunk-lookup-o1",
+      "version": "0.1416.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Lighter carriage checks",
+      "summary": "Looking up a carriage's blocks now costs the same however big the carriage is, so the wind and other checks around the train stay cheap on long and wide carriages.",
+      "highlights": [],
+      "pr": 2194,
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
