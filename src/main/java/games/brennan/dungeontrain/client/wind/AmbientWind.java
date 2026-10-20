@@ -35,6 +35,12 @@ public final class AmbientWind {
     /** Rain sheet slant (horizontal blocks per block of height) per unit of push, and its cap. */
     static final double RAIN_SLANT_PER_PUSH = 15.0;
     static final double RAIN_MAX_SLANT = 0.6;
+    /**
+     * Widest weather radius vanilla's column tables allow (its {@code rainSizeX/Z} are 32 x 32, centred on the
+     * camera), and how high the curtain reaches above/below eye level, which is how far a lean pushes its ends.
+     */
+    static final int MAX_RAIN_RADIUS = 15;
+    static final double CURTAIN_HALF_HEIGHT = 10.0;
     /** Share of the gap to the target slant (and snow scroll speed) closed each tick, so a gust swings over and back. */
     static final double SLANT_EASE = 0.15;
 
@@ -119,6 +125,19 @@ public final class AmbientWind {
 
     public static double rainSlantZ() {
         return rainSlantZ;
+    }
+
+    /**
+     * Weather radius (columns) for vanilla's {@code base}: widened by how far the lean pushes the curtain's ends
+     * sideways, so the shifted sheets still cover the sky all round. Unchanged with no lean.
+     */
+    public static int rainRadius(int base) {
+        return radiusFor(base, Math.hypot(rainSlantX, rainSlantZ));
+    }
+
+    static int radiusFor(int base, double slant) {
+        if (slant <= 0.0) return base;
+        return Math.min(MAX_RAIN_RADIUS, Math.max(base, base + (int) Math.ceil(slant * CURTAIN_HALF_HEIGHT)));
     }
 
     /** True while the snow is scrolling at all (skip the per-vertex work otherwise). */

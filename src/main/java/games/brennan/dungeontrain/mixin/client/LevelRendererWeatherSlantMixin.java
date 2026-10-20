@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.mixin.client;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -20,7 +21,9 @@ import org.spongepowered.asm.mixin.injection.At;
  *   <li><b>Rain slants.</b> Each sheet vertex is camera-relative, so shearing it by its height
  *       ({@code x -= slant * y}) tilts the whole curtain about eye level the way a blown drop travels: upwind
  *       above, downwind below. The slant follows the visual wind the streaks show, which is the wind relative to
- *       the carriage, so from a moving train the rain leans exactly as the push is felt.</li>
+ *       the carriage, so from a moving train the rain leans exactly as the push is felt. Leaning pushes the
+ *       top of the curtain away from the camera on one side, so while it leans the rain is drawn further out
+ *       ({@link AmbientWind#rainRadius}) and the sky above stays full on every side.</li>
  *   <li><b>Snow scrolls.</b> Its sheets stay upright and the flakes are carried sideways: the snow texture's U is
  *       offset along each column quad's own horizontal axis (vanilla's {@code rainSizeX/Z} half-axis, locals
  *       {@code d0}/{@code d1}) by how far the snow has blown.</li>
@@ -44,6 +47,19 @@ public abstract class LevelRendererWeatherSlantMixin {
     private void dungeontrain$noteSheet(int unit, ResourceLocation texture, Operation<Void> original) {
         dungeontrain$drawingSnow = SNOW_LOCATION.equals(texture);
         original.call(unit, texture);
+    }
+
+    /** Vanilla's weather radius: 5 columns, 10 on Fancy. Widened while the rain leans. */
+    @ModifyExpressionValue(method = "renderSnowAndRain(Lnet/minecraft/client/renderer/LightTexture;FDDD)V",
+            at = @At(value = "CONSTANT", args = "intValue=5"))
+    private int dungeontrain$widenFast(int radius) {
+        return AmbientWind.rainRadius(radius);
+    }
+
+    @ModifyExpressionValue(method = "renderSnowAndRain(Lnet/minecraft/client/renderer/LightTexture;FDDD)V",
+            at = @At(value = "CONSTANT", args = "intValue=10"))
+    private int dungeontrain$widenFancy(int radius) {
+        return AmbientWind.rainRadius(radius);
     }
 
     @WrapOperation(method = "renderSnowAndRain(Lnet/minecraft/client/renderer/LightTexture;FDDD)V",

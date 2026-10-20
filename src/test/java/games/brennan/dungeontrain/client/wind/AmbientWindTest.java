@@ -64,6 +64,15 @@ class AmbientWindTest {
     }
 
     @Test
+    @DisplayName("rain radius widens with the lean, never past vanilla's table")
+    void rainRadius() {
+        assertEquals(10, AmbientWind.radiusFor(10, 0.0));
+        assertEquals(12, AmbientWind.radiusFor(10, 0.15));
+        assertEquals(AmbientWind.MAX_RAIN_RADIUS, AmbientWind.radiusFor(10, 0.6));
+        assertEquals(8, AmbientWind.radiusFor(5, 0.3));
+    }
+
+    @Test
     @DisplayName("slant eases toward its target and settles to exactly zero")
     void slantEases() {
         double s = AmbientWind.ease(0.0, 0.5);
