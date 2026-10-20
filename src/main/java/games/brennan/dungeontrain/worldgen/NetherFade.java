@@ -61,9 +61,32 @@ public final class NetherFade {
         return (h >>> 11) * 0x1.0p-53;
     }
 
-    /** The band's Nether intensity ramp at {@code worldX} (0 outside the band). Convenience wrapper. */
+    /**
+     * How far the track and tunnels at {@code worldX} have faded into the band's look ({@link #fadePhaseAt}) from
+     * the base look ({@link #basePhaseAt}): the band's Nether ramp, except on the way out of a Nether joined to the
+     * next band — the deep-dark range between BetterNether and the Deeper Dark — where they stay fully Nether
+     * ({@code 1}) instead of fading back to the overworld. The Deeper Dark's own way in then fades Nether →
+     * Deeper Dark over its crossfade.
+     */
     public static double rampAt(ServerLevel overworld, int worldX) {
+        if (NetherBand.joinSideAt(overworld, worldX) == WorldGenCycle.JOIN_AFTER) return 1.0;
         return NetherBand.netherRampAt(overworld, worldX);
+    }
+
+    /**
+     * The look a crossfade at {@code worldX} fades <em>from</em>: the overworld, except on the way into a Nether
+     * slot joined to the one before (the Deeper Dark after BetterNether), where the track arrives still Nether.
+     */
+    public static TrainPhase basePhaseAt(ServerLevel overworld, int worldX) {
+        return NetherBand.joinSideAt(overworld, worldX) == WorldGenCycle.JOIN_BEFORE ? TrainPhase.NETHER : TrainPhase.OVERWORLD;
+    }
+
+    /**
+     * The band phase a crossfade at {@code worldX} dithers into: {@link TrainPhase#DEEPER_DARK} in a Deeper Dark
+     * pass, {@link TrainPhase#NETHER} otherwise. Shared by the track and tunnel crossfades so they agree.
+     */
+    public static TrainPhase fadePhaseAt(ServerLevel overworld, int worldX) {
+        return NetherBand.isOthersideAt(overworld, worldX) ? TrainPhase.DEEPER_DARK : TrainPhase.NETHER;
     }
 
     /**
@@ -75,7 +98,7 @@ public final class NetherFade {
      */
     public static boolean intersectsCrossfade(ServerLevel overworld, int xLo, int xHi) {
         for (int x = xLo; x <= xHi; x++) {
-            double r = NetherBand.netherRampAt(overworld, x);
+            double r = rampAt(overworld, x);
             if (r > 0.0 && r < 1.0) return true;
         }
         return false;

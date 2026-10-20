@@ -37,7 +37,7 @@ final class NetherBandFloodednessDensityFunctionTest {
         long seed = 0x1234_5678L;
         NetherBandFloodednessDensityFunction df = new NetherBandFloodednessDensityFunction(new Const());
         assertEquals(0.9, df.compute(new DensityFunction.SinglePointContext(1500, 100, 0)), 0.0, "no context");
-        NetherBandContext.publish(new NetherBandContext(true, seed, 63, 320, 40, 100, CYCLE, null, null, null, null, null, null));
+        NetherBandContext.publish(new NetherBandContext(true, seed, 63, 320, 40, 100, CYCLE, null, null, null, null, null, null, null));
         boolean sawDry = false, sawWet = false;
         for (int x = 1200; x <= 2000; x += 3) {
             for (int z = -12; z <= 12; z += 6) {
@@ -57,7 +57,7 @@ final class NetherBandFloodednessDensityFunctionTest {
     @DisplayName("fillArray matches compute per sample; mapAll re-wraps")
     void fillArrayAndMapAll() {
         long seed = 0xBEEFL;
-        NetherBandContext.publish(new NetherBandContext(true, seed, 63, 320, 40, 100, CYCLE, null, null, null, null, null, null));
+        NetherBandContext.publish(new NetherBandContext(true, seed, 63, 320, 40, 100, CYCLE, null, null, null, null, null, null, null));
         NetherBandFloodednessDensityFunction df = new NetherBandFloodednessDensityFunction(new Const());
         int[] xs = new int[64];
         for (int i = 0; i < xs.length; i++) xs[i] = 1250 + i * 12;

@@ -615,7 +615,8 @@ public final class RunStatsEvents {
         if (event.getLevel().isClientSide()) return;
         if (!(event.getPlayer() instanceof ServerPlayer player)) return;
         BlockState state = event.getState();
-        if (!(state.getBlock() instanceof DecoratedPotBlock)) return;
+        if (!(state.getBlock() instanceof DecoratedPotBlock)
+            && !games.brennan.dungeontrain.editor.ContainerContentsRoller.isGloomslatePot(state)) return;
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementContainersOpened();
     }
 

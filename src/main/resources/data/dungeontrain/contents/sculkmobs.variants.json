@@ -1,0 +1,1323 @@
+{
+  "schemaVersion": 10,
+  "variants": {
+    "4,1,2": [
+      "dungeontrain:variant_placeholder",
+      {
+        "entity": "deeperdarker:shattered",
+        "difficulty": {
+          "min": 5,
+          "max": "all"
+        }
+      },
+      {
+        "entity": "deeperdarker:sculk_snapper"
+      },
+      {
+        "entity": "deeperdarker:stalker",
+        "difficulty": {
+          "min": 6,
+          "max": "all"
+        }
+      },
+      {
+        "entity": "deeperdarker:sculk_centipede",
+        "difficulty": {
+          "min": 4,
+          "max": "all"
+        }
+      }
+    ],
+    "3,0,1": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      }
+    ],
+    "3,0,2": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      }
+    ],
+    "3,0,3": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      }
+    ],
+    "4,0,3": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      }
+    ],
+    "5,0,3": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      }
+    ],
+    "5,0,2": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      }
+    ],
+    "5,0,1": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      }
+    ],
+    "4,0,1": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      }
+    ],
+    "2,0,4": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_bricks",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:cobbled_sculk_stone",
+        "weight": 7,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:sculk_stone_tiles",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "minecraft:gold_block",
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      }
+    ],
+    "1,0,1": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      }
+    ],
+    "2,0,1": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      }
+    ],
+    "1,0,2": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      }
+    ],
+    "1,0,3": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      }
+    ],
+    "2,0,3": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      }
+    ],
+    "2,0,2": [
+      "deeperdarker:cobbled_sculk_stone",
+      "deeperdarker:sculk_stone_tiles",
+      "deeperdarker:sculk_stone_bricks"
+    ],
+    "1,0,4": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_bricks",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:cobbled_sculk_stone",
+        "weight": 7,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:sculk_stone_tiles",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      }
+    ],
+    "3,0,4": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_bricks",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:cobbled_sculk_stone",
+        "weight": 7,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:sculk_stone_tiles",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      }
+    ],
+    "5,0,4": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_bricks",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:cobbled_sculk_stone",
+        "weight": 7,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:sculk_stone_tiles",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      }
+    ],
+    "4,0,4": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_bricks",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:cobbled_sculk_stone",
+        "weight": 7,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:sculk_stone_tiles",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "minecraft:gold_block",
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      }
+    ],
+    "6,0,4": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_bricks",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:cobbled_sculk_stone",
+        "weight": 7,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:sculk_stone_tiles",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      }
+    ],
+    "6,0,0": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_bricks",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:cobbled_sculk_stone",
+        "weight": 7,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:sculk_stone_tiles",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      }
+    ],
+    "5,0,0": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_bricks",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:cobbled_sculk_stone",
+        "weight": 7,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:sculk_stone_tiles",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      }
+    ],
+    "4,0,0": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_bricks",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:cobbled_sculk_stone",
+        "weight": 7,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:sculk_stone_tiles",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      }
+    ],
+    "3,0,0": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_bricks",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:cobbled_sculk_stone",
+        "weight": 7,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:sculk_stone_tiles",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "minecraft:gold_block",
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      }
+    ],
+    "2,0,0": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_bricks",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:cobbled_sculk_stone",
+        "weight": 7,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:sculk_stone_tiles",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      }
+    ],
+    "1,0,0": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_bricks",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:cobbled_sculk_stone",
+        "weight": 7,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:sculk_stone_tiles",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      }
+    ],
+    "0,0,0": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_bricks",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:cobbled_sculk_stone",
+        "weight": 7,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:sculk_stone_tiles",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      }
+    ],
+    "0,0,4": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      "dungeontrain:variant_placeholder",
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_bricks",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:cobbled_sculk_stone",
+        "weight": 7,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      },
+      {
+        "state": "deeperdarker:sculk_stone_tiles",
+        "weight": 6,
+        "rotation": {
+          "mode": "lock",
+          "dirs": [
+            "north"
+          ]
+        }
+      }
+    ],
+    "0,0,1": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "dungeontrain:variant_placeholder",
+        "weight": 12
+      },
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      }
+    ],
+    "0,0,3": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "dungeontrain:variant_placeholder",
+        "weight": 12
+      },
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      }
+    ],
+    "6,0,3": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "dungeontrain:variant_placeholder",
+        "weight": 12
+      },
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      }
+    ],
+    "6,0,1": [
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:polished_sculk_stone_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_slab[type=bottom,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "dungeontrain:variant_placeholder",
+        "weight": 12
+      },
+      {
+        "state": "deeperdarker:cobbled_sculk_stone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      },
+      {
+        "state": "deeperdarker:sculk_stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]",
+        "half": "bottom"
+      }
+    ],
+    "2,1,2": [
+      {
+        "state": "dungeontrain:variant_placeholder",
+        "weight": 4
+      },
+      {
+        "entity": "deeperdarker:shattered",
+        "difficulty": {
+          "min": 5,
+          "max": "all"
+        }
+      },
+      {
+        "entity": "deeperdarker:sculk_snapper",
+        "difficulty": {
+          "min": 6,
+          "max": "all"
+        }
+      },
+      {
+        "entity": "deeperdarker:stalker",
+        "difficulty": {
+          "min": 18,
+          "max": "all"
+        }
+      },
+      {
+        "entity": "deeperdarker:sculk_centipede",
+        "difficulty": {
+          "min": 11,
+          "max": "all"
+        }
+      }
+    ],
+    "3,1,2": [
+      {
+        "state": "dungeontrain:variant_placeholder",
+        "weight": 5
+      },
+      {
+        "entity": "deeperdarker:shattered",
+        "difficulty": {
+          "min": 4,
+          "max": "all"
+        }
+      },
+      {
+        "entity": "deeperdarker:sculk_snapper",
+        "difficulty": {
+          "min": 12,
+          "max": "all"
+        }
+      },
+      {
+        "entity": "deeperdarker:stalker",
+        "difficulty": {
+          "min": 31,
+          "max": "all"
+        }
+      },
+      {
+        "entity": "deeperdarker:sculk_centipede",
+        "difficulty": {
+          "min": 20,
+          "max": "all"
+        }
+      }
+    ],
+    "2,1,0": {
+      "lockId": 1,
+      "states": [
+        "minecraft:gold_block",
+        "deeperdarker:polished_sculk_stone",
+        "deeperdarker:chiseled_sculk_stone",
+        {
+          "state": "dungeontrain:variant_placeholder",
+          "weight": 3
+        }
+      ]
+    },
+    "3,1,0": [
+      "minecraft:gold_block",
+      "deeperdarker:polished_sculk_stone",
+      "deeperdarker:chiseled_sculk_stone",
+      {
+        "state": "dungeontrain:variant_placeholder",
+        "weight": 3
+      }
+    ],
+    "3,1,4": [
+      "minecraft:gold_block",
+      "deeperdarker:polished_sculk_stone",
+      "deeperdarker:chiseled_sculk_stone",
+      {
+        "state": "dungeontrain:variant_placeholder",
+        "weight": 3
+      }
+    ],
+    "2,1,4": [
+      "minecraft:gold_block",
+      "deeperdarker:polished_sculk_stone",
+      "deeperdarker:chiseled_sculk_stone",
+      {
+        "state": "dungeontrain:variant_placeholder",
+        "weight": 3
+      }
+    ],
+    "2,2,0": [
+      {
+        "state": "minecraft:gold_block",
+        "groupRef": 1
+      },
+      "dungeontrain:variant_placeholder"
+    ]
+  }
+}

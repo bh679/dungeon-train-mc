@@ -94,5 +94,14 @@
       "mossy",
       "stone"
     ]
+  },
+  "sculktunnel": {
+    "weight": 1,
+    "phases": [
+      "DEEPER_DARK"
+    ],
+    "groups": [
+      "sculk"
+    ]
   }
 }

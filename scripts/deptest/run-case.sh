@@ -16,6 +16,7 @@
 #   blc                         Big Lost City
 #   lctf       Lost City Terrain Fit (hybrid: jarJar'd AND a CurseForge sibling)
 #   vb pf      VanillaBackport + its Platform library (third-party required deps)
+#   dd         Deeper Darker (third-party required dep — the Deeper Dark pass's Otherside)
 #   exp expp   Exposure + its Polaroid add-on (third-party required deps)
 #              (second-lap overworld mods, third-party required deps)
 #   sp         Sable Pathfinder (Modrinth-required, `optional` in mods.toml — absent on CurseForge)
@@ -97,6 +98,7 @@ resolve() {
     blc)      cached "maven.modrinth/big-lost-city"   "$(prop biglostcity_version)" ;;
     # VanillaBackport + Platform — required; the Nether-exit sulfur caves.
     vb)       cached "maven.modrinth/vanillabackport" "$(prop vanillabackport_version)" ;;
+    dd)       cached "maven.modrinth/deeperdarker" "$(prop deeperdarker_version)" ;;
     pf)       cached "maven.modrinth/platform"        "$(prop platform_version)" ;;
     # Exposure + its Polaroid add-on — required; the cameras, film and photographs.
     exp)      cached "maven.modrinth/exposure"        "$(prop exposure_version)" ;;

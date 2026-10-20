@@ -264,9 +264,13 @@ public final class PlayerJoinEvents {
         // bedrockY comes off the overworld's chunk generator, which the client has no access to; it
         // bounds the sealed space portal twins stand in, and the band's block-render flip has to
         // leave that space alone. See ClientUpsideDownBand#isInTwinSpace.
+        games.brennan.dungeontrain.worldgen.density.NetherBandContext bandCtx =
+                games.brennan.dungeontrain.worldgen.density.NetherBandContext.current();
+        boolean othersideAvailable = bandCtx != null && bandCtx.netherCoreBiomes() != null
+                && bandCtx.netherCoreBiomes().hasOtherside();
         DungeonTrainNet.sendTo(player, new VoidBandSyncPacket(bandData.dims().length(),
                 bandData.startsWithTrain(), bandData.getTrainY(), WorldFloor.bedrockY(bandLevel),
-                bandData.getGenerationSeed()));
+                bandData.getGenerationSeed(), othersideAvailable));
         // How far the reversed bands behind spawn have slid back (worldgen.ReverseSlide).
         DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.worldgen.ReverseSlide.packetFor(bandData, player, false));
         // Reopening a saved Train Builder world: re-stamp it from what the world records it is

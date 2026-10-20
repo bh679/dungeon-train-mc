@@ -45,10 +45,21 @@ public final class NetherPortalLinks extends SavedData {
 
     NetherPortalLinks() {}
 
+    /** Otherside portals' pairs, kept apart so a Nether frame and an Otherside frame never pair. */
+    public static final String OTHERSIDE_NAME = "dungeontrain_otherside_portal_links";
+
     public static NetherPortalLinks get(ServerLevel overworld) {
         return overworld.getDataStorage().computeIfAbsent(
             new SavedData.Factory<>(NetherPortalLinks::new, (tag, registries) -> load(tag)),
             NAME
+        );
+    }
+
+    /** The Otherside portals' pairs ({@link #OTHERSIDE_NAME}). */
+    public static NetherPortalLinks getOtherside(ServerLevel overworld) {
+        return overworld.getDataStorage().computeIfAbsent(
+            new SavedData.Factory<>(NetherPortalLinks::new, (tag, registries) -> load(tag)),
+            OTHERSIDE_NAME
         );
     }
 

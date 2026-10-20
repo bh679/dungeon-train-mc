@@ -460,6 +460,25 @@
       "modrinth_version": "v7P0nBi2"
     },
     {
+      "name": "Deeper Darker",
+      "slug": "deeperdarker",
+      "mod_ids": [
+        "deeperdarker"
+      ],
+      "sha1": "b6094adde68bd4b909bc75c64901e1f3fb99ad8f",
+      "packages": [
+        "com.kyanite"
+      ],
+      "project_id": 659011,
+      "file_id": 8201775,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "deeperdarker_min_version",
+      "version": "1.4.1",
+      "modrinth_project": "deeperdarker",
+      "modrinth_version": "TuD0Zvi3"
+    },
+    {
       "name": "Exposure",
       "slug": "exposure",
       "mod_ids": [
