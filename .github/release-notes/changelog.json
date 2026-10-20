@@ -28572,7 +28572,7 @@
     },
     {
       "id": "named-update-chat-notice",
-      "version": "0.1404.0",
+      "version": "0.1405.0",
       "type": "feat",
       "tags": [
         "feature",
