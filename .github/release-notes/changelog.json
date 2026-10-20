@@ -28652,6 +28652,24 @@
       "major": true,
       "description": "Deep down the line, for the most brave, skilled and committed adventurers, lies a new challenge.\n\nThe carts might be full of buffed up monsters, but now the roof of the train, and anywhere the walls don't protect you, face gusts of wind! The taller places feel it more, and underground is safe from it. Forever growing stronger. The train continues to get harder.\n\nSpecial thanks to Lil Detective Crunch for the idea.\n\n*I will be taking feedback on the wind balancing, and I will be rebalancing monsters later too.*",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-deep-train-gets-windy.jpg"
+    },
+    {
+      "id": "community-rewards-review-tidy-ups",
+      "version": "0.1408.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui",
+        "internal"
+      ],
+      "title": "Community Rewards tidy-ups",
+      "summary": "The Live Eye death pages now show where Community Rewards stand and lead into the rewards page. The currency picker no longer stays hidden on a fresh install, and the Contribute screen's time-on-page no longer counts a visit to the rewards page.",
+      "highlights": [],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

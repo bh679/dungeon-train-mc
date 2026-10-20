@@ -45,21 +45,33 @@ public final class CurrencyRates {
         return rate(c) > 0;
     }
 
-    /** Take {@code fxRates} from a donation-summary body; keeps the old table when it has none. */
+    /**
+     * Take {@code fxRates} from a donation-summary body; keeps the old table when it has none.
+     * Runs on the HTTP completion thread, so the table swap and the file write take the same lock
+     * as {@link #table}'s first load: on a fresh install (no cached file) a late first load must not
+     * overwrite a table that has just arrived, or the currency picker would hide until the next fetch.
+     */
     public static void remember(String body) {
         Map<DisplayCurrency, Double> parsed = parse(body);
         if (parsed.isEmpty()) return;
-        rates = parsed;
-        save(body);
+        synchronized (CurrencyRates.class) {
+            rates = parsed;
+            save(body);
+        }
     }
 
+    /** The current table, loading the cached file once; never replaces a table already set. */
     private static Map<DisplayCurrency, Double> table() {
         Map<DisplayCurrency, Double> t = rates;
-        if (t == null) {
-            t = load();
-            rates = t;
+        if (t != null) return t;
+        synchronized (CurrencyRates.class) {
+            t = rates;
+            if (t == null) {
+                t = load();
+                rates = t;
+            }
+            return t;
         }
-        return t;
     }
 
     /**

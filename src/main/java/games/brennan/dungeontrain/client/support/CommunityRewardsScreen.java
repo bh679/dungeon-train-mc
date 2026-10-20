@@ -485,6 +485,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
             timeReported = true;
             UiAnalytics.pageTime(UiAnalytics.SURFACE_REWARDS_PAGE, System.currentTimeMillis() - openedAtMs);
         }
+        if (parent instanceof PageTimer timer) timer.resumeTimer();
         Minecraft.getInstance().setScreen(parent);
     }
 }
