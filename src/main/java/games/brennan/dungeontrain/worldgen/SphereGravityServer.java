@@ -71,7 +71,9 @@ public final class SphereGravityServer {
             WorldGenCycle cycle = MixBand.cycleAtBlock(level, player.getBlockX(), player.getBlockZ());
             if (!SpheresBand.nearBand(cycle, player.getX(), half)) continue;
             keepAloft(level, player, reach);
-            AABB box = player.getBoundingBox().inflate(half);
+            AABB box = queryBox(player.getBoundingBox(), half,
+                    DungeonTrainCommonConfig.getSpheresCenterMinY(), DungeonTrainCommonConfig.getSpheresCenterMaxY());
+            if (box == null) continue;
             for (Entity e : level.getEntities((Entity) null, box, SphereGravityServer::pullable)) {
                 if (seen == null) {
                     seen = new HashSet<>();
@@ -81,6 +83,21 @@ public final class SphereGravityServer {
                 pull(level, e, reach, bySection);
             }
         }
+    }
+
+    /**
+     * The entity box to query around a player: the player's box grown by {@code half} in X/Z, but in Y only as
+     * far as a sphere can reach — centres lie in {@code [centerMinY, centerMaxY]} and {@code half} already holds
+     * the largest radius, the lookup reach and the pad — so nothing far above or below the sphere layer is
+     * fetched. {@code null} when the player's own span misses that layer entirely: nothing near them can be
+     * pulled, so the query is skipped.
+     */
+    static AABB queryBox(AABB playerBox, double half, int centerMinY, int centerMaxY) {
+        double minY = Math.max(playerBox.minY - half, centerMinY - half);
+        double maxY = Math.min(playerBox.maxY + half, centerMaxY + half);
+        if (minY > maxY) return null;
+        return new AABB(playerBox.minX - half, minY, playerBox.minZ - half,
+                playerBox.maxX + half, maxY, playerBox.maxZ + half);
     }
 
     private static void pull(ServerLevel level, Entity e, double reach,

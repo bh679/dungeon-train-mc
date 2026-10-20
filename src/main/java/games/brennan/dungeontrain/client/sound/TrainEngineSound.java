@@ -5,6 +5,7 @@ import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.registry.ModSounds;
 import net.minecraft.client.Minecraft;
@@ -284,8 +285,11 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
         // Log once per 5s (100 ticks) so we can verify the volume curve
         // without spamming the console. INFO so it shows up under default
         // forge logging — gated to only print while there's a carriage so
-        // the empty-world case stays silent.
-        if (++tickCounter % 100 == 0 && carriageCount > 0) {
+        // the empty-world case stays silent, and to dev builds only: at 15,000
+        // lines across 92 player bug reports it was the largest INFO source in
+        // them, and every line is a synchronous log flush. DEBUG would not help,
+        // debug.log takes DEBUG and is flushed the same way.
+        if (++tickCounter % 100 == 0 && carriageCount > 0 && DungeonTrain.isDevBuild()) {
             double dist = insideAny ? 0.0 : Math.sqrt(minDistSq);
             LOGGER.info("[DungeonTrain] TrainEngineSound: carriages={} inside={} dist={} setting={} volume={}",
                 carriageCount, insideAny, String.format("%.2f", dist),

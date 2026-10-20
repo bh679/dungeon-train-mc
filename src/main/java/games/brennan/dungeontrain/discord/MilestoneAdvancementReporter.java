@@ -5,7 +5,6 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
-import games.brennan.dungeontrain.compat.DiscordAdvancementSuffix;
 import games.brennan.dungeontrain.net.CaptureAdvancementPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.advancements.AdvancementHolder;
@@ -89,8 +88,9 @@ public final class MilestoneAdvancementReporter {
         try {
             // The hint, never the description: the description is a secret other players are meant
             // to find for themselves; the hint is what the advancements screen already shows everyone.
-            String description = description(hint(advancement.id()),
-                    DiscordAdvancementSuffix.forPlayer(player.getUUID()));
+            // No carriage / difficulty line either: this feed is public, and where a passenger is on
+            // the train is theirs to share.
+            String description = description(hint(advancement.id()));
             LOGGER.info("[DungeonTrain] {} earned {} — announcing in the passenger log.",
                     player.getGameProfile().getName(), advancement.id());
             MilestonePostBuffer.await(player, advancement.id(), title, description,
@@ -129,11 +129,8 @@ public final class MilestoneAdvancementReporter {
         return "🏆 " + playerName + " earned " + advancementTitle;
     }
 
-    /** The advancement's own description, then the carriage/difficulty line on its own line when there is one. */
-    static String description(String advancementDescription, String gameStateLine) {
-        String body = advancementDescription == null ? "" : advancementDescription.strip();
-        String state = gameStateLine == null ? "" : gameStateLine.strip();
-        if (state.isEmpty()) return body;
-        return body.isEmpty() ? state : body + "\n\n" + state;
+    /** The advancement's hint alone, stripped — {@code ""} when it has none. */
+    static String description(String advancementDescription) {
+        return advancementDescription == null ? "" : advancementDescription.strip();
     }
 }

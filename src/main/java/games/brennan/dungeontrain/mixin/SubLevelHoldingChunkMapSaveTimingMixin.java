@@ -14,8 +14,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Logs each Sable holding save's duration and how many storage files it synced and skipped
- * (#1508): WARN when slower than {@link SableStorageSync#SLOW_SAVE_LOG_MS}, DEBUG otherwise (so
+ * Logs each Sable holding save's duration, whether it was a flush save, how many storage files
+ * it synced, deferred (autosave: left in the OS cache) and skipped, and how the time split between
+ * serialising, writing and syncing (#1508): WARN when slower than
+ * {@link SableStorageSync#SLOW_SAVE_LOG_MS}, DEBUG otherwise (so
  * bug reports' attached {@code debug.log} carries every save). A bug report's log tail is only 512 KB
  * and a thread dump can fill it, so this one line is what tells us whether a player's "Saving
  * world" freeze is still Sable's save — and whether {@link SubLevelStorageFileNoDsyncMixin} is
@@ -49,9 +51,12 @@ public abstract class SubLevelHoldingChunkMapSaveTimingMixin {
     @Inject(method = "saveAll", at = @At("RETURN"))
     private void dungeontrain$logSlowSave(CallbackInfo ci) {
         long elapsedMs = (System.nanoTime() - dungeontrain$saveStartNanos) / 1_000_000L;
-        String message = "[DT-SableSave] saveAll {} took {} ms ({} files synced, {} unchanged skipped)";
-        Object[] args = {level.dimension().location(), elapsedMs,
-            SableStorageSync.forcedSinceBegin(), SableStorageSync.skippedSinceBegin()};
+        String message = "[DT-SableSave] saveAll {} took {} ms (flush={}; {} files synced, {} deferred, "
+            + "{} unchanged skipped; serialise {} ms, write {} ms, sync {} ms)";
+        Object[] args = {level.dimension().location(), elapsedMs, SableStorageSync.shouldForce(),
+            SableStorageSync.forcedSinceBegin(), SableStorageSync.deferredSinceBegin(),
+            SableStorageSync.skippedSinceBegin(), SableStorageSync.serialiseMsSinceBegin(),
+            SableStorageSync.writeMsSinceBegin(), SableStorageSync.syncMsSinceBegin()};
         if (elapsedMs >= SableStorageSync.SLOW_SAVE_LOG_MS) {
             DUNGEONTRAIN$LOGGER.warn(message, args);
         } else {

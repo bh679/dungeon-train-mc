@@ -289,12 +289,47 @@ public final class SharedPhotos {
         pendingMobPosts = List.copyOf(next);
     }
 
+    /**
+     * Exposure's data storage key for an exposure id — what {@code ExposureRepository.load} resolves
+     * (Exposure 1.9.19: {@code "exposures/" + id} in the overworld's {@code DimensionDataStorage}).
+     */
+    private static final String EXPOSURE_STORAGE_PREFIX = ExposureRepository.EXPOSURES_DIRECTORY_NAME + "/";
+
+    /**
+     * The exposure under {@code id}, from memory or disk, without Exposure's ERROR line when it is
+     * absent.
+     *
+     * <p>{@code ExposureRepository.load} answers the same question but logs
+     * {@code "Exposure '…' was not loaded. File … does not exist"} at ERROR for a miss, and the
+     * callers here ask precisely when a miss is expected: a found photo not yet copied into this
+     * world, an upload still in flight. Across 92 player bug reports that was up to 118 ERROR lines
+     * a session. Minecraft's own {@code DimensionDataStorage.get} is silent on a missing file and
+     * is where {@code load} reads from, so this asks it directly.</p>
+     */
+    static Optional<ExposureData> peekExposure(MinecraftServer server, String id) {
+        if (server == null || id == null || id.isBlank()) return Optional.empty();
+        ExposureData data = server.overworld().getDataStorage()
+                .get(ExposureData.factory(), EXPOSURE_STORAGE_PREFIX + id);
+        return Optional.ofNullable(data);
+    }
+
+    /**
+     * {@link #peekExposure} while a client upload is awaited; on the last tick the real
+     * {@code load} answers instead, so a drift in Exposure's storage key can delay a photo by the
+     * wait, never lose it.
+     */
+    private static Optional<ExposureData> awaitedExposure(MinecraftServer server, ExposureRepository repository,
+                                                          String id, int ticksLeft) {
+        if (ticksLeft > 1) return peekExposure(server, id);
+        return repository.load(id).getData();
+    }
+
     private static void tickMobPosts(MinecraftServer server) {
         if (pendingMobPosts.isEmpty()) return;
         ExposureRepository repository = ExposureServer.exposureRepository();
         List<PendingMobPost> waiting = new ArrayList<>();
         for (PendingMobPost post : pendingMobPosts) {
-            Optional<ExposureData> data = repository.load(post.exposureId()).getData();
+            Optional<ExposureData> data = awaitedExposure(server, repository, post.exposureId(), post.ticksLeft());
             if (data.isPresent()) {
                 encodeThen(server, data.get(), (w, h, pixels, palette) -> discordPng(w, h, pixels, palette, Optional.empty()),
                         post.exposureId(), png -> {
@@ -364,7 +399,7 @@ public final class SharedPhotos {
         ExposureRepository repository = ExposureServer.exposureRepository();
         List<PendingUpload> waiting = new ArrayList<>();
         for (PendingUpload upload : pendingUploads) {
-            Optional<ExposureData> data = repository.load(upload.exposureId()).getData();
+            Optional<ExposureData> data = awaitedExposure(server, repository, upload.exposureId(), upload.ticksLeft());
             if (data.isPresent()) {
                 encodeThen(server, data.get(), upload.exposureId(), png -> {
                     RelayOutbox.get().enqueue(SUBMIT_PATH,
@@ -577,7 +612,7 @@ public final class SharedPhotos {
         // The frame carries the Tributes the photo had when handed out; this one is the next.
         int tributeNumber = (frame == null ? 0 : Math.max(0, frame.extraData().getInt(SHARED_TRIBUTES_KEY))) + 1;
         String exposureId = exposureIdFor(photoId);
-        Optional<ExposureData> data = ExposureServer.exposureRepository().load(exposureId).getData();
+        Optional<ExposureData> data = peekExposure(server, exposureId);
         if (data.isEmpty()) {
             LOGGER.debug("[DungeonTrain] Tributed photo {} has no copy in this world; not posted.", photoId);
             return;
@@ -620,7 +655,7 @@ public final class SharedPhotos {
     /** Send the picture back from this world's copy. */
     private static void restore(MinecraftServer server, int photoId) {
         String exposureId = exposureIdFor(photoId);
-        Optional<ExposureData> data = ExposureServer.exposureRepository().load(exposureId).getData();
+        Optional<ExposureData> data = peekExposure(server, exposureId);
         if (data.isEmpty()) {
             LOGGER.warn("[DungeonTrain] Tributed photo {} is no longer in this world; it cannot be sent back.", photoId);
             return;
@@ -816,7 +851,8 @@ public final class SharedPhotos {
         try {
             String exposureId = exposureIdFor(photo.id());
             ExposureRepository repository = ExposureServer.exposureRepository();
-            if (repository.load(exposureId).getData().isEmpty()) {
+            // A first handout copies the photo into this world; a miss is the normal case, not an error.
+            if (peekExposure(ServerLifecycleHooks.getCurrentServer(), exposureId).isEmpty()) {
                 PhotoPngCodec.Decoded image = photo.image();
                 repository.save(exposureId, new ExposureData(image.width(), image.height(), image.pixels(),
                         ColorPalettes.DEFAULT.location(), ExposureData.Tag.EMPTY));

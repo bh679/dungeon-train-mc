@@ -372,7 +372,14 @@ public final class SableShipyard implements Shipyard {
         if (holding == null) return false;
         // Sable's own per-level save (what the world save calls for each level): mints a
         // serialization pointer for every live sub-level, writes held data, flushes storage.
-        holding.saveAll();
+        // An in-game catch-up save, not a shutdown: like the autosave it leaves the bytes in
+        // the OS cache rather than syncing every file (SubLevelStorageFileNoDsyncMixin).
+        SableStorageSync.beginLevelSave(false);
+        try {
+            holding.saveAll();
+        } finally {
+            SableStorageSync.endLevelSave();
+        }
         return true;
     }
 

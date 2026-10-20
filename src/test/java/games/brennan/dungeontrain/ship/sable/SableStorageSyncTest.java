@@ -9,6 +9,8 @@ import java.nio.file.StandardOpenOption;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
@@ -18,6 +20,7 @@ final class SableStorageSyncTest {
     @BeforeEach
     void reset() {
         SableStorageSync.beginSave();
+        SableStorageSync.endLevelSave();
     }
 
     @Test
@@ -75,5 +78,59 @@ final class SableStorageSyncTest {
 
         assertEquals(0, SableStorageSync.forcedSinceBegin());
         assertEquals(0, SableStorageSync.skippedSinceBegin());
+    }
+
+    @Test
+    @DisplayName("outside any level save every dirty file is forced")
+    void forcesOutsideLevelSave() {
+        assertTrue(SableStorageSync.shouldForce());
+    }
+
+    @Test
+    @DisplayName("an autosave (flush=false) defers the sync; a flush save forces it")
+    void autosaveDefersFlushSaveForces() {
+        SableStorageSync.beginLevelSave(false);
+        assertFalse(SableStorageSync.shouldForce());
+
+        SableStorageSync.endLevelSave();
+        assertTrue(SableStorageSync.shouldForce());
+
+        SableStorageSync.beginLevelSave(true);
+        assertTrue(SableStorageSync.shouldForce());
+    }
+
+    @Test
+    @DisplayName("the end of a level save restores forcing even after a non-flush save")
+    void endLevelSaveRestoresDefault() {
+        SableStorageSync.beginLevelSave(false);
+        SableStorageSync.endLevelSave();
+
+        assertTrue(SableStorageSync.shouldForce());
+    }
+
+    @Test
+    @DisplayName("deferred count and phase timers reset at the start of each save")
+    void deferredAndTimersResetPerSave() {
+        SableStorageSync.recordDeferred();
+        SableStorageSync.addSerialiseNanos(3_000_000L);
+        SableStorageSync.addWriteNanos(2_500_000L);
+        SableStorageSync.addSyncNanos(1_000_000L);
+        assertEquals(1, SableStorageSync.deferredSinceBegin());
+        assertEquals(3, SableStorageSync.serialiseMsSinceBegin());
+        assertEquals(2, SableStorageSync.writeMsSinceBegin());
+        assertEquals(1, SableStorageSync.syncMsSinceBegin());
+
+        SableStorageSync.beginSave();
+
+        assertEquals(0, SableStorageSync.deferredSinceBegin());
+        assertEquals(0, SableStorageSync.serialiseMsSinceBegin());
+        assertEquals(0, SableStorageSync.writeMsSinceBegin());
+        assertEquals(0, SableStorageSync.syncMsSinceBegin());
+    }
+
+    @Test
+    @DisplayName("the escape hatch is off unless the JVM property is set")
+    void escapeHatchOffByDefault() {
+        assertFalse(SableStorageSync.forcesOnAutosave());
     }
 }
