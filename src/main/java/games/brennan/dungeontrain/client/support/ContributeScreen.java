@@ -24,7 +24,8 @@ import java.util.List;
  * ({@code pageOpen} here, {@code pageTime} on close), the surface the old Ways to Help page used, so
  * the Support funnel stays comparable across the change.</p>
  */
-public final class ContributeScreen extends Screen implements games.brennan.dungeontrain.client.links.RefreshOnLinks {
+public final class ContributeScreen extends Screen
+        implements games.brennan.dungeontrain.client.links.RefreshOnLinks, PageTimer {
 
     // The death screen's Contribute window (DonationOptionsScreen), matched exactly.
     private static final int OVERLAY = 0xF2070C1E;
@@ -34,7 +35,8 @@ public final class ContributeScreen extends Screen implements games.brennan.dung
     private final Screen parent;
     private final ContributePanel panel;
     private final CurrencyPicker currency;
-    private final long openedAtMs = System.currentTimeMillis();
+    /** Contribute-only time: paused while the Community Rewards page is open over this one. */
+    private PageClock clock = PageClock.open(System.currentTimeMillis());
     private boolean timeReported;
 
     private int titleY;
@@ -126,8 +128,18 @@ public final class ContributeScreen extends Screen implements games.brennan.dung
     public void onClose() {
         if (!timeReported) {
             timeReported = true;
-            UiAnalytics.pageTime(UiAnalytics.SURFACE_SUPPORT_PAGE, System.currentTimeMillis() - openedAtMs);
+            UiAnalytics.pageTime(UiAnalytics.SURFACE_SUPPORT_PAGE, clock.elapsedMs(System.currentTimeMillis()));
         }
         Minecraft.getInstance().setScreen(parent);
+    }
+
+    @Override
+    public void pauseTimer() {
+        clock = clock.pause(System.currentTimeMillis());
+    }
+
+    @Override
+    public void resumeTimer() {
+        clock = clock.resume(System.currentTimeMillis());
     }
 }

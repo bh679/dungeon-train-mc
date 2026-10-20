@@ -28652,6 +28652,66 @@
       "major": true,
       "description": "Deep down the line, for the most brave, skilled and committed adventurers, lies a new challenge.\n\nThe carts might be full of buffed up monsters, but now the roof of the train, and anywhere the walls don't protect you, face gusts of wind! The taller places feel it more, and underground is safe from it. Forever growing stronger. The train continues to get harder.\n\nSpecial thanks to Lil Detective Crunch for the idea.\n\n*I will be taking feedback on the wind balancing, and I will be rebalancing monsters later too.*",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-deep-train-gets-windy.jpg"
+    },
+    {
+      "id": "community-rewards-review-tidy-ups",
+      "version": "0.1408.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui",
+        "internal"
+      ],
+      "title": "Community Rewards tidy-ups",
+      "summary": "The Live Eye death pages now show where Community Rewards stand and lead into the rewards page. The currency picker no longer stays hidden on a fresh install, and the Contribute screen's time-on-page no longer counts a visit to the rewards page.",
+      "highlights": [],
+      "date": "2026-10-20",
+      "released": true,
+      "released_in": "v0.1408.0",
+      "released_at": "2026-10-20T09:32:35Z"
+    },
+    {
+      "id": "wind-weather-particles",
+      "version": "0.1408.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "The wind blows the weather",
+      "summary": "Where the train's wind blows, the weather feels it too. Rain leans into the gusts, snow is swept sideways and comes at you when you face into it, and smoke, petals and ash drift away downwind. Inside a carriage or under cover the air stays still.",
+      "highlights": [
+        "Rain leans with each gust and swings back as it passes.",
+        "Look into the wind in a snowstorm and the flakes fly at you.",
+        "Campfire smoke and falling petals beside the track blow away downwind."
+      ],
+      "date": "2026-10-20",
+      "released": true,
+      "released_in": "v0.1408.0",
+      "released_at": "2026-10-20T09:32:35Z"
+    },
+    {
+      "id": "end-frostbite-roof",
+      "version": "0.1409.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "world",
+        "balance"
+      ],
+      "title": "The train gets cold",
+      "summary": "Deep down the line, some stretches turn bitterly cold. Out on the roof, a flatbed or a coupling pad, frost creeps over you; only a carriage closed in on every side keeps you warm. It starts slow and bites faster the further you have travelled, never quite reaching the cold of powder snow.",
+      "highlights": [
+        "Step inside a closed carriage to thaw.",
+        "Leather armour keeps the frost off, as it does in powder snow."
+      ],
+      "pr": 2187,
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
