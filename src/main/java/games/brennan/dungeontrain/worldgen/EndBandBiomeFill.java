@@ -47,6 +47,15 @@ public final class EndBandBiomeFill {
 
     /** Flatness verdict per source instance: true = the memo may be used. */
     private static final Map<BiomeSource, Boolean> VERDICTS = new ConcurrentHashMap<>();
+    /**
+     * {@code DT_END_BAND_MEMO_VERIFY=1}: every memo answer is checked against the live source and every
+     * mismatch counted ({@link #mismatches}) and the first few logged — the harness proof that a source
+     * really is Y-flat over whole slabs, not just at the probe's columns.
+     */
+    private static final boolean VERIFY = "1".equals(System.getenv("DT_END_BAND_MEMO_VERIFY"));
+    private static final java.util.concurrent.atomic.AtomicLong MISMATCHES = new java.util.concurrent.atomic.AtomicLong();
+    private static final java.util.concurrent.atomic.AtomicLong VERIFIED = new java.util.concurrent.atomic.AtomicLong();
+    private static final games.brennan.dungeontrain.util.LogFirstN MISMATCH_LOG = new games.brennan.dungeontrain.util.LogFirstN(20);
 
     private EndBandBiomeFill() {}
 
@@ -157,7 +166,23 @@ public final class EndBandBiomeFill {
 
         @Override
         public Holder<Biome> getNoiseBiome(int quartX, int quartY, int quartZ, Climate.Sampler sampler) {
-            return memo.at(quartX, quartY, quartZ);     // the sample's sampler is the one it was built with
+            Holder<Biome> answer = memo.at(quartX, quartY, quartZ);     // the sample's sampler is the one it was built with
+            if (VERIFY) verify(answer, quartX, quartY, quartZ, sampler);
+            return answer;
+        }
+
+        private void verify(Holder<Biome> answer, int quartX, int quartY, int quartZ, Climate.Sampler sampler) {
+            Holder<Biome> truth = live.getNoiseBiome(quartX, quartY, quartZ, sampler);
+            long n = VERIFIED.incrementAndGet();
+            if (!Objects.equals(answer, truth)) {
+                long m = MISMATCHES.incrementAndGet();
+                MISMATCH_LOG.error(LOGGER, "[DungeonTrain] End-band memo mismatch #" + m + " at quart (" + quartX + ", " + quartY + ", " + quartZ
+                        + "): memo " + answer.unwrapKey().map(k -> k.location().toString()).orElse("?")
+                        + " live " + truth.unwrapKey().map(k -> k.location().toString()).orElse("?"), null);
+            }
+            if (n % 100_000 == 0) {
+                LOGGER.info("[DungeonTrain] End-band memo verify: {} checked, {} mismatches", n, MISMATCHES.get());
+            }
         }
     }
 }
