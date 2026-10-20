@@ -29,7 +29,7 @@ import java.util.List;
  *       corner like a stack of items, going up with every click. One click each: a boost is small, and
  *       the count is the feedback.</li>
  *   <li><b>Your own released book</b>: the star makes it a Priority Book, spending a whole one (ten
- *       boosts), once. Two clicks, since that cannot be undone; the hover says "click again" between.</li>
+ *       boosts), once. One click, the same as on anyone else's.</li>
  * </ul>
  *
  * <p>Beside the book sits the wallet ({@link #renderWallet}): the reader's boosts left, and the page's
@@ -63,8 +63,6 @@ final class BookBoostControl {
     private static int given = 0;
     /** The author's own copy is a Priority Book: seeded from its tag, set at once on a spend. */
     private static boolean priority = false;
-    /** Own book only: the first click armed the spend; a second commits. */
-    private static boolean armed = false;
     // Last frame's hit box; width 0 = not drawn.
     private static int starX, starY, starW;
 
@@ -74,20 +72,13 @@ final class BookBoostControl {
     static void open(ItemStack stack) {
         given = BookBoostTag.count(stack);
         priority = BookPriorityTag.isPriority(stack);
-        armed = false;
         starW = 0;
     }
 
     static void reset() {
         given = 0;
         priority = false;
-        armed = false;
         starW = 0;
-    }
-
-    /** Forget a half-made spend: a click elsewhere, a page turn. */
-    static void disarm() {
-        armed = false;
     }
 
     /** Begin a frame: nothing is clickable until it is drawn again. */
@@ -112,7 +103,7 @@ final class BookBoostControl {
         starW = BUTTON_SIZE;
         boolean hover = inStar(mouseX, mouseY);
         boolean clickable = own ? !priority && BookCredits.current() > 0 : BookCredits.boostsLeft() > 0;
-        boolean lit = clickable && (hover || armed);
+        boolean lit = clickable && hover;
         boolean filled = own ? priority : given > 0;
         ResourceLocation sprite = filled
             ? (lit ? STAR_FILLED_HIGHLIGHTED : STAR_FILLED)
@@ -123,9 +114,12 @@ final class BookBoostControl {
         Component label = PriorityBookMessage.boostLabel();
         gfx.drawString(font, label, x + BUTTON_SIZE / 2 - font.width(label) / 2, labelY, COLOR_LABEL, false);
 
-        // No explanation here (that lives on the wallet star); only the "click again" a whole
-        // Priority Book's spend on your own book asks for.
-        if (hover && own && armed) tooltip(gfx, font, List.of(PriorityBookMessage.makeConfirm()), mouseX, mouseY);
+        // No explanation here (that lives on the wallet star): just what it does and what is left.
+        if (hover) {
+            Component line = own && priority ? PriorityBookMessage.isPriority()
+                : PriorityBookMessage.signToggle(locale(), BookCredits.boostsLeftOrEstimate());
+            tooltip(gfx, font, List.of(line), mouseX, mouseY);
+        }
     }
 
     /**
@@ -168,15 +162,12 @@ final class BookBoostControl {
     }
 
     /**
-     * A left click on the page. True when it was the star and the click is consumed. On somebody else's
-     * book that is one boost; on your own, the first click arms and the second spends. Any other click
-     * disarms and returns false.
+     * A left click on the page. True when it was the star and the click is consumed: one boost on
+     * somebody else's book, ten on your own. One click either way, so the star behaves the same on
+     * every book.
      */
     static boolean click(int mx, int my, boolean own, String bookType, String bookId) {
-        if (!inStar(mx, my)) {
-            armed = false;
-            return false;
-        }
+        if (!inStar(mx, my)) return false;
         if (own) return clickOwn(bookType, bookId);
         if (BookCredits.boostsLeft() <= 0) return true;
         given++;
@@ -186,17 +177,12 @@ final class BookBoostControl {
     }
 
     /**
-     * Make your own book a Priority Book. Shown at once (optimistic): the server stamps the copy when the
-     * relay confirms, and if it refuses, the chat line says no book was used and the next open reads the
-     * stack's real state.
+     * Boost your own book, a whole Priority Book's worth (ten boosts), once. Shown at once (optimistic):
+     * the server stamps the copy when the relay confirms, and if it refuses, the chat line says no boost
+     * was used and the next open reads the stack's real state.
      */
     private static boolean clickOwn(String bookType, String bookId) {
         if (priority || BookCredits.current() <= 0) return true;
-        if (!armed) {
-            armed = true;
-            return true;
-        }
-        armed = false;
         priority = true;
         DungeonTrainNet.sendToServer(new BookPriorityPacket(bookType, bookId));
         BookCredits.spentOne();

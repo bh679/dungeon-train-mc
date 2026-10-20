@@ -31,7 +31,7 @@ class PriorityBookResponsesTest {
         assertEquals(12, o.bookId());
         assertTrue(o.spent());
         assertFalse(o.held());
-        assertEquals(2L, o.balance());
+        assertEquals(20L, o.balance(), "an older relay's whole books, counted in boosts");
     }
 
     @Test
@@ -63,7 +63,9 @@ class PriorityBookResponsesTest {
         PriorityBookResponses.Outcome ok = PriorityBookResponses.parseSpend(req, 200, "{\"ok\":true,\"id\":7,\"balance\":1}");
         assertTrue(ok.spent());
         assertEquals(7, ok.bookId());
-        assertEquals(1L, ok.balance());
+        assertEquals(10L, ok.balance());
+        assertEquals(13L, PriorityBookResponses.parseSpend(req, 200,
+                "{\"ok\":true,\"id\":7,\"balance\":1,\"boostsLeft\":13}").balance(), "boostsLeft wins when sent");
         PriorityBookResponses.Outcome again = PriorityBookResponses.parseSpend(req, 409, "{\"error\":\"already_priority\"}");
         assertTrue(again.spent(), "an outbox re-send of a spend that landed");
         assertFalse(PriorityBookResponses.parseSpend(req, 402, "{\"error\":\"no_credits\"}").spent());

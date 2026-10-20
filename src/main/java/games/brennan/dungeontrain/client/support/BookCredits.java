@@ -42,6 +42,8 @@ public final class BookCredits {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final long TTL_MS = 60_000L;
+    /** One Priority Book is ten boosts. */
+    public static final int BOOSTS_PER_BOOK = 10;
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(8))
             .version(HttpClient.Version.HTTP_1_1)
@@ -111,7 +113,7 @@ public final class BookCredits {
     public static void spentOne() {
         int k = current();
         known = Math.max(0, k - 1);
-        if (knownBoosts >= 0) knownBoosts = Math.max(0, knownBoosts - 10);
+        if (knownBoosts >= 0) knownBoosts = Math.max(0, knownBoosts - BOOSTS_PER_BOOK);
         fetchedAt = 0L;
     }
 
@@ -124,12 +126,21 @@ public final class BookCredits {
         return Math.max(0, knownBoosts);
     }
 
+    /**
+     * Boosts left for showing a count when the relay may not have said: the relay's own figure, or the
+     * whole Priority Books times ten. Never gates a control; {@link #boostsLeft()} does that.
+     */
+    public static int boostsLeftOrEstimate() {
+        if (!consented()) return 0;
+        return knownBoosts >= 0 ? knownBoosts : current() * BOOSTS_PER_BOOK;
+    }
+
     /** A boost just left this client: a tenth fewer now (a whole book once ten are gone), re-read next time. */
     public static void boostedOne() {
         int b = boostsLeft();
         if (b <= 0) return;
         knownBoosts = b - 1;
-        known = knownBoosts / 10;
+        known = knownBoosts / BOOSTS_PER_BOOK;
         fetchedAt = 0L;
     }
 

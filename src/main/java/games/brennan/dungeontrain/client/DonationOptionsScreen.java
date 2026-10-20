@@ -86,9 +86,9 @@ public final class DonationOptionsScreen extends Screen {
         BookCredits.refresh(() -> {
             if (this.minecraft != null && this.minecraft.screen == this) rebuildWidgets();
         });
-        int books = BookCredits.current();
-        youLines = books > 0
-                ? this.font.split(PriorityBookMessage.waiting(locale(), books), wrapW)
+        int boosts = BookCredits.boostsLeftOrEstimate();
+        youLines = boosts > 0
+                ? this.font.split(PriorityBookMessage.waiting(locale(), boosts), wrapW)
                 : List.of();
 
         int rowW = Math.min(340, this.width - 60);

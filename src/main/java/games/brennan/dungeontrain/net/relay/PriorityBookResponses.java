@@ -25,10 +25,10 @@ import java.util.UUID;
  * Reads the relay's answer to a Priority Book spend and tells the player what happened.
  *
  * <p>Two routes carry a spend. A book signed with "Use a Priority Book" ticked answers on
- * {@code /books/submit} with a {@code priority} block ({@code {spent, balance, held}} or
+ * {@code /books/submit} with a {@code priority} block ({@code {spent, balance, boostsLeft, held}} or
  * {@code {spent:false, error}}); {@link SharedBookSubmitResponses} hands those here, since the outbox
  * holds one handler per path. A spend on an already-approved book from the vote page answers on
- * {@code /books/credits/spend}: 200 {@code {ok, balance}}, 409 {@code already_priority} (an outbox
+ * {@code /books/credits/spend}: 200 {@code {ok, balance, boostsLeft}}, 409 {@code already_priority} (an outbox
  * re-send of a spend that landed, so: done), 402 {@code no_credits}, or another refusal.</p>
  *
  * <p>On success the author's copies of that book in their inventory get {@link BookPriorityTag}, so
@@ -48,6 +48,7 @@ public final class PriorityBookResponses {
     private PriorityBookResponses() {}
 
     /** What the relay said about one spend. {@code bookId} is -1 when the request named none. */
+    /** {@code balance} is what the player has left, in boosts (-1: a re-send, nothing new to say). */
     record Outcome(UUID player, int bookId, boolean spent, boolean held, long balance) {}
 
     /** What the relay said about one boost. {@code boostsLeft} is -1 when it did not say. */
@@ -90,7 +91,7 @@ public final class PriorityBookResponses {
             case BOOSTED -> o.boostsLeft() >= 0
                 ? PriorityBookMessage.boosted(locale, o.boostsLeft()) : PriorityBookMessage.boostedNoCount();
             case REPEAT -> null; // the player heard about it when it first landed
-            case UNUSED -> PriorityBookMessage.boostUnused();
+            case UNUSED -> PriorityBookMessage.unused();
         };
     }
 
@@ -156,7 +157,7 @@ public final class PriorityBookResponses {
         if (player == null) return null;
         JsonObject p = resp.getAsJsonObject("priority");
         int id = (int) optLong(resp, "id", -1L);
-        return new Outcome(player, id, optBool(p, "spent"), optBool(p, "held"), optLong(p, "balance", 0L));
+        return new Outcome(player, id, optBool(p, "spent"), optBool(p, "held"), boostsLeft(p));
     }
 
     /** The outcome of a vote-page spend, or null on a network failure / unattributable request. */
@@ -169,7 +170,7 @@ public final class PriorityBookResponses {
         int id = (int) optLong(req, "id", -1L);
         JsonObject resp = asObject(responseBody);
         if (status / 100 == 2) {
-            return new Outcome(player, id, true, false, resp == null ? 0L : optLong(resp, "balance", 0L));
+            return new Outcome(player, id, true, false, resp == null ? 0L : boostsLeft(resp));
         }
         String error = resp == null ? null : optString(resp, "error");
         if (status == 409 && "already_priority".equals(error)) {
@@ -218,6 +219,17 @@ public final class PriorityBookResponses {
         OptionalInt id = SharedBookReadTag.readId(stack);
         if (id.isPresent() && id.getAsInt() == bookId) BookPriorityTag.stamp(stack, true);
     }
+
+    /**
+     * What the player has left, in boosts: the relay's {@code boostsLeft}, or an older relay's whole
+     * {@code balance} times ten. Every count the player sees is in boosts.
+     */
+    private static long boostsLeft(JsonObject o) {
+        long boosts = optLong(o, "boostsLeft", -1L);
+        return boosts >= 0 ? boosts : optLong(o, "balance", 0L) * BOOSTS_PER_BOOK;
+    }
+
+    private static final long BOOSTS_PER_BOOK = 10L;
 
     private static UUID uuidOf(String raw) {
         if (raw == null) return null;

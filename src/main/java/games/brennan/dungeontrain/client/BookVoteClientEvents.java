@@ -228,7 +228,6 @@ public final class BookVoteClientEvents {
         if (!active || event.getScreen() != screen) return;
         if (!onVotePage()) {
             reportArmed = false; // turning off the page abandons a half-made report
-            BookBoostControl.disarm();
             BookBoostControl.beginFrame();
             return;
         }
@@ -479,7 +478,6 @@ public final class BookVoteClientEvents {
         // A report half-armed against a stranger's book has no meaning on one that turns out to be
         // the reader's own — the control under the pointer is no longer the one they armed.
         reportArmed = false;
-        BookBoostControl.disarm();
     }
 
     /** {@code held} when it is still the book this page is about, else null. */

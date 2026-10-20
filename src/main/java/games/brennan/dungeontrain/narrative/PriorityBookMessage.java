@@ -57,16 +57,6 @@ public final class PriorityBookMessage {
         return Component.translatable(GUI + "sign_note");
     }
 
-    /** The vote page control on the author's own approved book: "Make this a Priority Book (N left)". */
-    public static Component make(String locale, long n) {
-        return PluralRules.clause(locale, GUI + "make", n);
-    }
-
-    /** Second tap of that control — spending is final, so it asks once. */
-    public static Component makeConfirm() {
-        return Component.translatable(GUI + "make_confirm");
-    }
-
     /** The passive mark on a book that already is one. */
     public static Component isPriority() {
         return Component.translatable(GUI + "is_priority");
@@ -85,11 +75,6 @@ public final class PriorityBookMessage {
     /** The boost landed, but the relay did not say how many are left. */
     public static Component boostedNoCount() {
         return Component.translatable(CHAT + "boosted_plain").withStyle(ChatFormatting.GOLD);
-    }
-
-    /** The reader asked to boost and none was used (nothing left, or the relay could not apply it). */
-    public static Component boostUnused() {
-        return Component.translatable(CHAT + "boost_unused").withStyle(ChatFormatting.GRAY);
     }
 
     /**
