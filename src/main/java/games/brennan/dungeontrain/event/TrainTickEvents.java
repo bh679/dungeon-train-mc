@@ -25,6 +25,7 @@ import games.brennan.dungeontrain.train.RunwayZone;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.TrainStaticContentsCarrier;
 import games.brennan.dungeontrain.train.Trains;
+import games.brennan.dungeontrain.train.WedgedMobEjector;
 import games.brennan.dungeontrain.util.DtLogging;
 import games.brennan.dungeontrain.util.ThrottledLog;
 import net.minecraft.core.BlockPos;
@@ -426,6 +427,9 @@ public final class TrainTickEvents {
         // AABB, which is what the kill-ahead filter spares.
         for (List<Trains.Carriage> train : trainsById.values()) {
             killEntitiesAhead(level, train);
+            // Mobs stuck in a carriage floor (head through the deck) go out beside the carriage;
+            // kill-ahead no longer catches them since walked-off mobs were spared.
+            WedgedMobEjector.eject(level, train);
         }
         long tAfterKill = System.nanoTime();
 
