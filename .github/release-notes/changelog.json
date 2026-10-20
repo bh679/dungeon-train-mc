@@ -28670,6 +28670,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "wind-weather-particles",
+      "version": "0.1408.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "The wind blows the weather",
+      "summary": "Where the train's wind blows, the weather feels it too. Rain leans into the gusts, snow is swept sideways and comes at you when you face into it, and smoke, petals and ash drift away downwind. Inside a carriage or under cover the air stays still.",
+      "highlights": [
+        "Rain leans with each gust and swings back as it passes.",
+        "Look into the wind in a snowstorm and the flakes fly at you.",
+        "Campfire smoke and falling petals beside the track blow away downwind."
+      ],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
