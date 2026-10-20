@@ -28432,9 +28432,9 @@
       "highlights": [],
       "pr": 2170,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1397.0",
+      "released_at": "2026-10-19T19:16:33Z"
     },
     {
       "id": "sky-fix-2",
@@ -28447,6 +28447,79 @@
       "summary": "Sky fix.",
       "highlights": [],
       "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1397.0",
+      "released_at": "2026-10-19T19:16:33Z"
+    },
+    {
+      "id": "walked-off-mobs-stay",
+      "version": "0.1397.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Mobs that step off the train stay put",
+      "summary": "Animals and monsters that wander off a carriage onto the ground beside the track no longer vanish. They stay where they stepped off, just like ones you knock off.",
+      "highlights": [],
+      "pr": 2174,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1397.0",
+      "released_at": "2026-10-19T19:16:33Z"
+    },
+    {
+      "id": "mobs-hold-place-in-carriages",
+      "version": "0.1398.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train",
+        "mobs"
+      ],
+      "title": "Mobs stay put in moving carriages",
+      "summary": "Animals, villagers and monsters standing inside a carriage no longer slowly slide toward the back of the train. The further you travelled, the faster they slid, up to several blocks a minute on long runs. Now they stay where they stand.",
+      "highlights": [],
+      "pr": 2175,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "mob-buff-level-spread",
+      "version": "0.1399.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Smarter mob buffs",
+      "summary": "Further down the train, buffed mobs no longer all share the same effect strength. Each one now rolls anywhere from level I up to that stretch's top level, so some are weaker than before and none are stronger. Mobs that only show up further down the train now start getting buffs later too, and baby mobs a little later than adults.",
+      "highlights": [],
+      "pr": 2178,
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "major": true,
+      "description": "Deep train potion buffs on train mobs have been reworked. The later stages of the game are more balanced. Rather than a flat potion effect for every mob, the effect is now a max, and they will get a random level between 1 and the current stage max. Additionally, mobs that turn up later get potion effects delayed (and babies get effects a little later too).\n\n- **More variety:** the further you ride, the wider the spread. A buffed mob now rolls anywhere from level I up to that stretch's top level, so some are weaker than before and none are stronger.\n- **Late arrivals catch up gradually:** mobs that only start showing up further down the train no longer get buffed the moment they appear. Their buffs begin later, counted from where they first show up.\n- **Babies get a head start for you:** baby mobs get their buffs a little later than adults.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/smarter-mob-buffs.jpg"
+    },
+    {
+      "id": "mobs-stuck-in-train-floor",
+      "version": "0.1399.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Mobs no longer get stuck in the train floor",
+      "summary": "Mobs could appear standing inside a carriage floor, with their heads poking up through the deck as the train carried them along. An Enderman stuck there could even be angered by a glance from inside the carriage. Mobs no longer appear there, and any already stuck are moved out to the ground beside the train.",
+      "highlights": [],
+      "pr": 2176,
+      "date": "2026-10-20",
       "released": false,
       "released_in": null,
       "released_at": null

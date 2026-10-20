@@ -21,9 +21,11 @@ import games.brennan.dungeontrain.train.CarriageFootprint;
 import games.brennan.dungeontrain.train.ContentsDespawnController;
 import games.brennan.dungeontrain.train.PlayerBlockBreakOff;
 import games.brennan.dungeontrain.train.PlayerPlacedTrainBlocks;
+import games.brennan.dungeontrain.train.RunwayZone;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.TrainStaticContentsCarrier;
 import games.brennan.dungeontrain.train.Trains;
+import games.brennan.dungeontrain.train.WedgedMobEjector;
 import games.brennan.dungeontrain.util.DtLogging;
 import games.brennan.dungeontrain.util.ThrottledLog;
 import net.minecraft.core.BlockPos;
@@ -425,6 +427,9 @@ public final class TrainTickEvents {
         // AABB, which is what the kill-ahead filter spares.
         for (List<Trains.Carriage> train : trainsById.values()) {
             killEntitiesAhead(level, train);
+            // Mobs stuck in a carriage floor (head through the deck) go out beside the carriage;
+            // kill-ahead no longer catches them since walked-off mobs were spared.
+            WedgedMobEjector.eject(level, train);
         }
         long tAfterKill = System.nanoTime();
 
@@ -1110,9 +1115,10 @@ public final class TrainTickEvents {
 
     /**
      * Wipe non-player entities in the forward look-ahead slab in front of
-     * the train — the runway the lead is about to enter. Entities INSIDE
-     * the train's current AABB are spared so dropped items in carriage
-     * interiors survive.
+     * the train — the runway the lead is about to enter. Only entities
+     * standing AHEAD of the leading face and within the train's lateral span
+     * go ({@link RunwayZone#isInRunway}); anything level with the train —
+     * aboard, under it, or on the ground beside it — is spared.
      *
      * <p>The slab geometry: train's full AABB (union across all carriages)
      * extended by {@link #LOOKAHEAD_BLOCKS} along each axis whose velocity
@@ -1149,24 +1155,24 @@ public final class TrainTickEvents {
         final AABB train_aabb = aabb;
         List<Entity> victims = level.getEntitiesOfClass(
             Entity.class, expanded,
-            // Skip players, dead entities, and entities inside the train's
-            // interior AABB. Also skip anything tagged as carriage contents:
-            // those entities live in shipyard chunks at absolute shipyard
-            // coords, so when the kill-ahead AABB is computed in visible-
-            // world coords the contents entities fail the
-            // {@code train_aabb.contains} sparing check even though they're
-            // logically inside the train. The diagnostic tag survives the
-            // {@code Entity.RemovalReason} and is the most reliable identity
-            // for "this is one of ours; do not kill."
+            // Skip players, dead entities, and anything not actually in the runway ahead of the
+            // leading face — see RunwayZone for why the old "centre inside the train box" spare
+            // discarded mobs that had walked off onto the ground beside or under the train. Also
+            // skip anything tagged as carriage contents: the tag is the most reliable identity for
+            // "this is one of ours; do not kill."
             e -> !(e instanceof Player) && e.isAlive()
+                && RunwayZone.isInRunway(
+                    train_aabb.minX, train_aabb.minY, train_aabb.minZ,
+                    train_aabb.maxX, train_aabb.maxY, train_aabb.maxZ,
+                    LOOKAHEAD_BLOCKS, signX, signY, signZ,
+                    e.getX(), e.getY(), e.getZ(), e.getBoundingBox().minY, e.getBoundingBox().maxY)
                 // Items get a wider spare box than everything else. sweepFootprint breaks blocks
                 // strictly inside train_aabb, so its drops start inside the sparing region — but a
                 // drop from the frontmost cell column pops with a small outward velocity and can
                 // cross maxX into this slab before the train catches up. Inflating for items only
                 // keeps train-broken drops collectable without sparing mobs on the runway.
                 && !(e instanceof ItemEntity
-                    ? train_aabb.inflate(ITEM_SPARE_INFLATE).contains(e.getX(), e.getY(), e.getZ())
-                    : train_aabb.contains(e.getX(), e.getY(), e.getZ()))
+                    && train_aabb.inflate(ITEM_SPARE_INFLATE).contains(e.getX(), e.getY(), e.getZ()))
                 && !isCarriageContentsEntity(e)
                 // Spare train passengers (e.g. PlayerMob): they fall off
                 // carriages by design and recover, so kill-ahead must not

@@ -53,7 +53,8 @@ public record DifficultyTier(
 
     /**
      * One potion effect roll. {@code durationTicks &lt; 0} means infinite
-     * ({@link Integer#MAX_VALUE}).
+     * ({@link Integer#MAX_VALUE}). {@code amplifier} is the stage's maximum:
+     * {@link DifficultyApplier} rolls each mob's level uniformly from 0 up to it.
      */
     public record EffectSpec(
             ResourceLocation id,
