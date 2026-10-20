@@ -60,6 +60,7 @@ public final class WindClientEvents {
         if (player == null || level == null || mc.isPaused()) return;
         if (level.dimension() != Level.OVERWORLD || !ClientWind.active()) {
             WindyDrive.release();
+            AmbientWind.release();
             WindSound.silence();
             WindDebugState.clear(level.dimension() == Level.OVERWORLD ? "wind off" : "not in the Overworld");
             return;
@@ -67,6 +68,7 @@ public final class WindClientEvents {
         // A dimensional carriage is somewhere else entirely: no wind, no streaks, no sound.
         if (ClientUpsideDownBand.isInPortalTwinSpace((int) Math.floor(player.getX()), (int) Math.floor(player.getY()))) {
             WindyDrive.release();
+            AmbientWind.release();
             WindSound.silence();
             WindDebugState.clear("in a dimensional carriage: no wind");
             return;
@@ -95,6 +97,8 @@ public final class WindClientEvents {
         // Visuals follow the wind, not the player: they keep blowing outside while you shelter, and each streak
         // is kept out of carriages and tunnels on its own (WindVisualShelter).
         WindyDrive.set(visual.strength(), visual.gust01(), visual.headingRad(), carriageVel[0], carriageVel[1]);
+        // Smoke, snow, ash and the rain sheets blow with the same wind, in the ground frame (AmbientWind).
+        AmbientWind.set(visual);
         boolean directional = WindyPresence.directional();
         if (!directional && sub != null && !visual.isCalm()) {
             fallbackStreaks(level, player, visual, carriageVel);
@@ -181,6 +185,7 @@ public final class WindClientEvents {
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         ClientWind.reset();
         WindyDrive.release();
+        AmbientWind.reset();
         WindSound.silence();
     }
 }
