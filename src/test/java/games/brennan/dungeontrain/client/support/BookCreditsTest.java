@@ -16,4 +16,13 @@ class BookCreditsTest {
         assertEquals(-1, BookCredits.parseBalance(""));
         assertEquals(-1, BookCredits.parseBalance(null));
     }
+
+    @Test
+    void readsBoostsLeftOnlyFromARelayThatSendsThem() {
+        assertEquals(25, BookCredits.parseBoostsLeft("{\"ok\":true,\"balance\":2,\"boostsLeft\":25}"));
+        assertEquals(-1, BookCredits.parseBoostsLeft("{\"ok\":true,\"balance\":2}"));
+        assertEquals(0, BookCredits.parseBoostsLeft("{\"ok\":true,\"boostsLeft\":-3}"));
+        assertEquals(-1, BookCredits.parseBoostsLeft("{\"ok\":true,\"boostsLeft\":\"lots\"}"));
+        assertEquals(-1, BookCredits.parseBoostsLeft(null));
+    }
 }

@@ -160,10 +160,10 @@ public final class ContributePanel {
         int lh = font.lineHeight;
         int top = y;
 
-        // The thank-you this player already has waiting: "3 Priority Books waiting".
-        int books = BookCredits.current();
-        if (books > 0) {
-            for (FormattedCharSequence l : font.split(PriorityBookMessage.waiting(locale(), books), w)) {
+        // The thank-you this player already has waiting, in boosts: "30 Book Boosts waiting".
+        int boosts = BookCredits.boostsLeftOrEstimate();
+        if (boosts > 0) {
+            for (FormattedCharSequence l : font.split(PriorityBookMessage.waiting(locale(), boosts), w)) {
                 if (commit) texts.add(new Text(l, x + w / 2, y, COLOUR_YOU, true));
                 y += lh + 1;
             }
