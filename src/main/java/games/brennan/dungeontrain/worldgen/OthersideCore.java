@@ -1,10 +1,12 @@
 package games.brennan.dungeontrain.worldgen;
 
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -58,6 +60,18 @@ public final class OthersideCore {
             sculkStone = s;
         }
         return s;
+    }
+
+    /** True for one of Deeper Darker's Otherside biomes — the label a Deeper Dark core carries. */
+    public static boolean isOthersideBiome(Holder<Biome> biome) {
+        return biome != null && biome.unwrapKey()
+                .map(k -> NAMESPACE.equals(k.location().getNamespace()))
+                .orElse(false);
+    }
+
+    /** True for a block Deeper Darker registers — the Otherside's rock, decoration and ores. */
+    public static boolean isOthersideBlock(BlockState state) {
+        return NAMESPACE.equals(BuiltInRegistries.BLOCK.getKey(state.getBlock()).getNamespace());
     }
 
     /** World y of Otherside y {@code othersideY} on a track bed at {@code bedY}. */

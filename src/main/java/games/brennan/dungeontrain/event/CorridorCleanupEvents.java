@@ -514,8 +514,7 @@ public final class CorridorCleanupEvents {
         if (!state.getFluidState().isEmpty()) return false;
         if (state.is(Blocks.SCULK) || state.is(Blocks.SCULK_VEIN) || state.is(Blocks.SCULK_CATALYST)
                 || state.is(Blocks.SCULK_SENSOR) || state.is(Blocks.SCULK_SHRIEKER)) return true;
-        return net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).getNamespace()
-                .equals(games.brennan.dungeontrain.worldgen.OthersideCore.NAMESPACE);
+        return games.brennan.dungeontrain.worldgen.OthersideCore.isOthersideBlock(state);
     }
 
     /**

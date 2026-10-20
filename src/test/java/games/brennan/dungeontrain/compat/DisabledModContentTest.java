@@ -258,6 +258,7 @@ final class DisabledModContentTest {
                 "betterend:tool_assembly_smithing_template", "betterend:netherite_upgrade_smithing_template")) {
             assertTrue(DisabledModContent.isDisabledItem(id(t), false), t);
         }
+    }
 
     @Test
     @DisplayName("Deeper Darker: its gear and upgrade templates are off, its ores and materials stay")
@@ -267,6 +268,9 @@ final class DisabledModContentTest {
         assertTrue(DisabledModContent.isDisabledItem(id("deeperdarker:soul_elytra"), true));
         assertTrue(DisabledModContent.isDisabledItem(id("deeperdarker:warden_upgrade_smithing_template"), false));
         assertTrue(DisabledModContent.isDisabledItem(id("deeperdarker:sonorous_staff"), false));
+        assertTrue(DisabledModContent.isDisabledItem(id("deeperdarker:sculk_transmitter"), false));
+        assertTrue(DisabledModContent.isDisabledItem(id("deeperdarker:light_blue_sculk_transmitter"), false));
+        assertFalse(DisabledModContent.isDisabledItem(id("deeperdarker:sculk_transmitter_frame"), false));
         assertFalse(DisabledModContent.isDisabledItem(id("deeperdarker:sculk_stone_diamond_ore"), false));
         assertFalse(DisabledModContent.isDisabledItem(id("deeperdarker:warden_carapace"), false));
         assertFalse(DisabledModContent.isDisabledItem(id("deeperdarker:heart_of_the_deep"), false));

@@ -7,7 +7,7 @@ import java.util.Set;
 
 /**
  * The twenty worldgen phases a column of the repeating {@link WorldGenCycle} can sit in, as a
- * single 15-value classification — unlike {@link Disintegration.Zone} (3 values, Nether-less).
+ * single 20-value classification — unlike {@link Disintegration.Zone} (3 values, Nether-less).
  * Used by the per-template spawn gate
  * ({@link games.brennan.dungeontrain.template.TemplateGate}): a weighted template may restrict
  * itself to a subset of phases, and the generator filters the candidate pool by the phase of the

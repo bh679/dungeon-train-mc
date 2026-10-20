@@ -66,6 +66,14 @@ public final class NetherBandContextEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /**
+     * The Otherside rules resolved for {@link #othersideServer}: a pure function of its registries and seed,
+     * and {@code RandomState.create} is the expensive part, so every republish on the same server (the
+     * Nether-Load one at least) reuses the first. Cleared with the context on server stop.
+     */
+    private static MinecraftServer othersideServer;
+    private static OthersideSettings othersideCache;
+
     /** Nether-space rows sampled above the bed in {@code NetherTransitionFeature}
      *  ({@code NETHER_SAMPLE_Y_MAX 120 − NETHER_CENTER_Y 40}); the mountain tapers to {@code bedY + this}. */
     public static final int NETHER_TOP_ABOVE_BED = 80;
@@ -128,7 +136,7 @@ public final class NetherBandContextEvents {
                     .lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.NETHER_WASTES);
             // Deeper Darker's Otherside rules, from the registries (never its level): the Deeper Dark core's
             // terrain, skin and carvers generate in place from these, and its biome labels sample their source.
-            OthersideSettings otherside = OthersideSettings.resolve(server);
+            OthersideSettings otherside = othersideFor(server);
             NetherCoreBiomes netherCoreBiomes = NetherCoreBiomes.resolve(server, netherFallback, otherside);
 
             // Same idea for the End band's core columns — samples the real End's biome source, swept
@@ -191,10 +199,25 @@ public final class NetherBandContextEvents {
         }
     }
 
+    /** {@link OthersideSettings#resolve} once per server; later publishes on the same server reuse it. */
+    private static synchronized OthersideSettings othersideFor(MinecraftServer server) {
+        if (othersideServer != server) {
+            othersideCache = OthersideSettings.resolve(server);
+            othersideServer = server;
+        }
+        return othersideCache;
+    }
+
+    private static synchronized void clearOtherside() {
+        othersideServer = null;
+        othersideCache = null;
+    }
+
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         // After stopServer(): the last generated chunks have been baked and saved against a live context.
         NetherBandContext.clear();
+        clearOtherside();
         games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes.clear();
         games.brennan.dungeontrain.worldgen.legacy.SuperflatHeight.clear();
         games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain.clear();

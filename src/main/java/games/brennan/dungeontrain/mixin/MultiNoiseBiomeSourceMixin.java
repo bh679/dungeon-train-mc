@@ -4,6 +4,8 @@ import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
+import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
+import games.brennan.dungeontrain.worldgen.OthersideCore;
 import games.brennan.dungeontrain.worldgen.SecondLapOverworld;
 import games.brennan.dungeontrain.worldgen.density.BandBiomeDecision;
 import games.brennan.dungeontrain.worldgen.density.ColumnBiomePlan;
@@ -145,7 +147,7 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
         // below the slab the column keeps its overworld biome, or the chunk would lose DT's overworld features.
         if (blockY < ctx.seaLevel() && blockY >= ctx.othersideSlabBottom()
                 && column.aboveSea() == BandBiomeDecision.Result.NETHER_CORE
-                && dungeontrain$isOtherside(column.core())) {
+                && OthersideCore.isOthersideBiome(column.core())) {
             return column.core();
         }
         if (blockY >= ctx.seaLevel()) {
@@ -206,13 +208,6 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
         }
     }
 
-    /** True for one of Deeper Darker's Otherside biomes. */
-    private static boolean dungeontrain$isOtherside(Holder<Biome> biome) {
-        return biome != null && biome.unwrapKey()
-                .map(k -> games.brennan.dungeontrain.worldgen.OthersideCore.NAMESPACE.equals(k.location().getNamespace()))
-                .orElse(false);
-    }
-
     /** The forced Nether-core / End-core / highland biome, or {@code null} for an ordinary column. */
     private static Holder<Biome> dungeontrain$bandBiome(NetherBandContext ctx, int x, int y, int z) {
         if (!ctx.enabled() || ctx.highlandBiomes() == null) return null;
@@ -226,13 +221,15 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
         WorldGenCycle cycle = ctx.cycle();
         if (blockY < ctx.seaLevel()) {
             // A Deeper Dark core keeps its Otherside biome below sea level too, down to its bedrock floor:
-            // decide the column at sea level.
+            // decide the column at sea level. The netherInfluence gate first — it is the cheap part of
+            // decide's own early-out, and most of the ride is nowhere near a Nether slot.
             if (blockY >= ctx.othersideSlabBottom() && ctx.netherCoreBiomes() != null && ctx.netherCoreBiomes().hasOtherside()
+                    && cycle.netherInfluence(blockX, NetherMountainTerrain.maxEdgeShift())
                     && BandBiomeDecision.decide(cycle, ctx.generationSeed(), ctx.seaLevel(), true, ctx.endCoreBiomes() != null,
                             blockX, ctx.seaLevel(), blockZ) == BandBiomeDecision.Result.NETHER_CORE) {
                 Holder<Biome> core = ctx.netherCoreBiomes().biomeAt(blockX, blockZ,
                         cycle.netherLookAt(blockX, blockZ, ctx.netherCoreBiomes().seed()));
-                if (dungeontrain$isOtherside(core)) return core;
+                if (OthersideCore.isOthersideBiome(core)) return core;
             }
             return null;
         }

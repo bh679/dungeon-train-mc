@@ -116,24 +116,10 @@ public final class DisabledModContent {
         "vista:wave_gate",
         "vista:cassette",
         "vista:hollow_cassette",
-        "deeperdarker:sonorous_staff",
-        "deeperdarker:sculk_transmitter",
-        "deeperdarker:white_sculk_transmitter",
-        "deeperdarker:orange_sculk_transmitter",
-        "deeperdarker:magenta_sculk_transmitter",
-        "deeperdarker:light_blue_sculk_transmitter",
-        "deeperdarker:yellow_sculk_transmitter",
-        "deeperdarker:lime_sculk_transmitter",
-        "deeperdarker:pink_sculk_transmitter",
-        "deeperdarker:gray_sculk_transmitter",
-        "deeperdarker:light_gray_sculk_transmitter",
-        "deeperdarker:cyan_sculk_transmitter",
-        "deeperdarker:purple_sculk_transmitter",
-        "deeperdarker:blue_sculk_transmitter",
-        "deeperdarker:brown_sculk_transmitter",
-        "deeperdarker:green_sculk_transmitter",
-        "deeperdarker:red_sculk_transmitter",
-        "deeperdarker:black_sculk_transmitter");
+        "deeperdarker:sonorous_staff");
+
+    /** Deeper Darker's Sculk Transmitter and every dyed one ({@code <dye>_sculk_transmitter}): off for now. */
+    static final Pattern SCULK_TRANSMITTER = Pattern.compile("^(\\w+_)?sculk_transmitter$");
 
     /**
      * Blocks turned off outright: BetterNether's Respawner Statue and BetterEnd's Respawn Obelisk (both set a
@@ -268,7 +254,8 @@ public final class DisabledModContent {
             return true;
         }
         if (GEAR_ONLY_NAMESPACES.contains(id.getNamespace())) {
-            return gearClass || SMITHING_TEMPLATE.matcher(id.getPath()).matches();
+            return gearClass || SMITHING_TEMPLATE.matcher(id.getPath()).matches()
+                || SCULK_TRANSMITTER.matcher(id.getPath()).matches();
         }
         if (!NAMESPACES.contains(id.getNamespace())) {
             return false;

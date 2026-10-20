@@ -160,7 +160,7 @@ public final class NetherFogEvents {
         boolean otherside = ClientNetherBand.isOthersideAt(pos.getX());
         try {
             Holder<Biome> biome = level.getBiome(pos);
-            if (isNetherBiome(biome) || (otherside && isOthersideBiome(biome))) {
+            if (isNetherBiome(biome) || (otherside && games.brennan.dungeontrain.worldgen.OthersideCore.isOthersideBiome(biome))) {
                 return biome.value().getFogColor() & 0xFFFFFF;
             }
         } catch (Throwable ignored) {
@@ -179,13 +179,6 @@ public final class NetherFogEvents {
      */
     private static boolean isNetherBiome(Holder<Biome> biome) {
         return biome.is(BiomeTags.IS_NETHER);
-    }
-
-    /** True for one of Deeper Darker's Otherside biomes — what a Deeper Dark core is labelled with. */
-    private static boolean isOthersideBiome(Holder<Biome> biome) {
-        return biome.unwrapKey()
-                .map(k -> games.brennan.dungeontrain.worldgen.OthersideCore.NAMESPACE.equals(k.location().getNamespace()))
-                .orElse(false);
     }
 
     @SubscribeEvent

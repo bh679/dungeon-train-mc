@@ -79,8 +79,7 @@ public abstract class ChunkGeneratorStructureStateMixin {
             // DT's temple set never doubles the temples the Otherside already has.
             return biomeSource.possibleBiomes().stream()
                     .noneMatch(biome -> biome.is(BiomeTags.IS_NETHER) || biome.is(BiomeTags.IS_END)
-                            || biome.unwrapKey().map(k -> games.brennan.dungeontrain.worldgen.OthersideCore.NAMESPACE
-                                    .equals(k.location().getNamespace())).orElse(false));
+                            || games.brennan.dungeontrain.worldgen.OthersideCore.isOthersideBiome(biome));
         } catch (Throwable t) {
             return false;
         }

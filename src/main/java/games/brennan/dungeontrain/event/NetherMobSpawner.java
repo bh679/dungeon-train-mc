@@ -205,13 +205,6 @@ public final class NetherMobSpawner {
                 .orElse(false);
     }
 
-    /** True for one of Deeper Darker's Otherside biomes — the label a Deeper Dark core carries. */
-    private static boolean isOthersideBiome(Holder<Biome> biome) {
-        return biome.unwrapKey()
-                .map(k -> games.brennan.dungeontrain.worldgen.OthersideCore.NAMESPACE.equals(k.location().getNamespace()))
-                .orElse(false);
-    }
-
     /**
      * Ghast spawn odds (1-in-N) at the biome and Nether pass of a spawn attempt — denser in the
      * biomes vanilla fills with ghasts, and one step denser per completed lap.
@@ -319,7 +312,7 @@ public final class NetherMobSpawner {
             if (BandStructureSpawns.inMonsterSpawningStructure(level, pos)) return;
             // A Deeper Dark core spawns from its Otherside biomes' own lists (snappers, shattered, centipedes),
             // as the Otherside does; only the overworld mountains around it stay empty.
-            if (isOthersideBiome(level.getBiome(pos))) return;
+            if (games.brennan.dungeontrain.worldgen.OthersideCore.isOthersideBiome(level.getBiome(pos))) return;
             event.setSpawnCancelled(true);
         }
     }

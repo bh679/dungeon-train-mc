@@ -433,8 +433,7 @@ public final class BandAdvancements {
      */
     private static ColumnTest reverseTest(String forwardId) {
         return switch (forwardId) {
-            case NETHER -> (l, x) -> NetherBand.isInNetherBiome(l, x) && !cycle(l).isBetterNetherAt(x)
-                    && cycle(l).netherLookAt(x) != CycleLayout.Style.OTHERSIDE;   // the Deeper Dark is not the Nether
+            case NETHER -> (l, x) -> NetherBand.isInRealNetherBiome(l, x) && !cycle(l).isBetterNetherAt(x);   // the Deeper Dark is not the Nether
             case VOID -> (l, x) -> DisintegrationBand.zoneAt(l, x) == Disintegration.Zone.VOID
                     && !cycle(l).isBetterEndAt(x);
             case END_ISLANDS -> (l, x) -> isInEndIslands(l, x) && !cycle(l).isBetterEndAt(x);
