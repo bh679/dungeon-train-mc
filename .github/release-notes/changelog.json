@@ -28736,6 +28736,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "wind-on-the-ground",
+      "version": "0.1411.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "The wind follows you off the train",
+      "summary": "The wind no longer stops at the edge of the train. Step down onto the ground and it keeps shoving you about just the same. Walls, tunnels and the train itself still give you shelter when you stand behind them, and it leaves you alone in the water.",
+      "highlights": [
+        "Jump off the train and the wind comes with you.",
+        "Duck behind a wall, or behind the train, and it drops away."
+      ],
+      "pr": 2191,
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

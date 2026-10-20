@@ -23,7 +23,8 @@ import javax.annotation.Nullable;
  * {@link CarriageDeck#blockAt}). Three tests, all cheap block lookups:</p>
  * <ol>
  *   <li><b>Over the train</b>: a solid carriage block within {@link #DECK_SCAN} cells under any part of the
- *       footprint — a roof, a flatbed or a coupling pad. Once clear of the edge it stops being pushed and falls.</li>
+ *       footprint — a roof, a flatbed or a coupling pad. Once clear of the edge it falls; on the ground
+ *       {@link GroundExposure} takes over for players.</li>
  *   <li><b>Not in a tunnel</b>: no solid terrain within {@link #TERRAIN_COVER_SCAN} blocks overhead
  *       ({@link #underTerrain}) — tunnels, bridges and overhangs stop the wind.</li>
  *   <li><b>Not between the walls</b>: inside a carriage counts even under an open roof ({@link #walledIn}).</li>
