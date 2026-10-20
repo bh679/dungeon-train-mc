@@ -37,8 +37,7 @@ public final class RewardsLink {
 
     /** Open the Community Rewards page over {@code parent}; Done returns there. */
     public static void open(@Nullable Screen parent) {
-        // TODO: open CommunityRewardsScreen once the "Community Rewards page and sales" session lands it.
-        Minecraft.getInstance().setScreen(new SupportScreen(parent));
+        Minecraft.getInstance().setScreen(new CommunityRewardsScreen(parent));
     }
 
     @SubscribeEvent
