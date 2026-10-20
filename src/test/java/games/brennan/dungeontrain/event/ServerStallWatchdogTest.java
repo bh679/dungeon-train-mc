@@ -146,6 +146,70 @@ final class ServerStallWatchdogTest {
         assertFalse(ServerStallWatchdog.isIdleBetweenTicks(new StackTraceElement[0]));
     }
 
+    /**
+     * One of the 53 dumps from a player log of October 2026: the paused integrated server spinning
+     * through {@code runServer}'s bookkeeping. The tick counter stands still, the thread is neither
+     * parked in {@code waitUntilNextTick} nor in {@code tickPaused}, and no tick work is on the stack.
+     */
+    private static StackTraceElement[] integratedPauseBookkeepingStack() {
+        return new StackTraceElement[] {
+            frame("net.minecraft.Util", "getNanos"),
+            frame(SERVER, "logFullTickTime"),
+            frame(SERVER, "finishMeasuringTaskExecutionTime"),
+            frame(SERVER, "wrapOperation$zpa000$modernfix$preventTicks"),
+            frame(SERVER, "runServer"),
+            frame(SERVER, "lambda$spin$2"),
+            frame("java.lang.Thread", "run"),
+        };
+    }
+
+    @Test
+    @DisplayName("the paused server's bookkeeping spin is not idle by the old rule, so the positive test must catch it")
+    void pauseBookkeeping_isNotInsideTick() {
+        assertFalse(ServerStallWatchdog.isIdleBetweenTicks(integratedPauseBookkeepingStack()));
+        assertFalse(ServerStallWatchdog.isInsideTick(integratedPauseBookkeepingStack()));
+    }
+
+    @Test
+    @DisplayName("the other pause shapes carry no tick work either")
+    void pauseStacks_areNotInsideTick() {
+        assertFalse(ServerStallWatchdog.isInsideTick(pausedStack()));
+        assertFalse(ServerStallWatchdog.isInsideTick(integratedPausedStack()));
+        assertFalse(ServerStallWatchdog.isInsideTick(null));
+        assertFalse(ServerStallWatchdog.isInsideTick(new StackTraceElement[0]));
+    }
+
+    @Test
+    @DisplayName("a stall inside tickChildren is tick work")
+    void chunkLoadStall_isInsideTick() {
+        assertTrue(ServerStallWatchdog.isInsideTick(chunkLoadStallStack()));
+    }
+
+    @Test
+    @DisplayName("a queued task run between ticks (doRunTask) is tick work")
+    void queuedTask_isInsideTick() {
+        StackTraceElement[] stack = {
+            frame("org.apache.logging.log4j.core.appender.rolling.RollingRandomAccessFileManager", "flush"),
+            frame("net.minecraft.server.MinecraftServer", "lambda$saveEverything$0"),
+            frame("net.minecraft.util.thread.BlockableEventLoop", "doRunTask"),
+            frame(SERVER, "pollTaskInternal"),
+            frame(SERVER, "waitUntilNextTick"),
+            frame(SERVER, "runServer"),
+        };
+        assertTrue(ServerStallWatchdog.isInsideTick(stack));
+    }
+
+    @Test
+    @DisplayName("a mixin-wrapped tickServer frame still counts as tick work")
+    void wrappedTickFrame_isInsideTick() {
+        StackTraceElement[] stack = {
+            frame("dev.ryanhcode.sable.physics.PhysicsChunkTicketManager", "inhabitChunk"),
+            frame(SERVER, "wrapOperation$abc000$somemod$tickServer"),
+            frame(SERVER, "runServer"),
+        };
+        assertTrue(ServerStallWatchdog.isInsideTick(stack));
+    }
+
     private static final String CHUNK_CACHE = "net.minecraft.server.level.ServerChunkCache";
 
     /**
@@ -175,6 +239,12 @@ final class ServerStallWatchdogTest {
     @DisplayName("the marshal frame marks the server thread as servicing an off-thread chunk load")
     void offThreadLoad_isRecognised() {
         assertTrue(ServerStallWatchdog.isOffThreadChunkLoad(offThreadChunkLoadStack()));
+    }
+
+    @Test
+    @DisplayName("an off-thread chunk load serviced between ticks is tick work")
+    void offThreadLoad_isInsideTick() {
+        assertTrue(ServerStallWatchdog.isInsideTick(offThreadChunkLoadStack()));
     }
 
     @Test

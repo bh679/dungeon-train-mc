@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.util.AsyncPerfLog;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -338,7 +339,7 @@ public final class ContentsDespawnController {
         restoredWindow += restored;
 
         if (lastSnapshotted > 0 && level.getGameTime() % LOG_PERIOD_TICKS == 0) {
-            PERF_LOGGER.debug("[despawn] dim={} groups={} away={} snapshotted={} entitiesHeld={} swept={} restored={}",
+            AsyncPerfLog.debug(PERF_LOGGER, "[despawn] dim={} groups={} away={} snapshotted={} entitiesHeld={} swept={} restored={}",
                 level.dimension().location(), lastGroups, lastAway, lastSnapshotted, lastEntitiesHeld,
                 sweptWindow, restoredWindow);
             sweptWindow = 0;

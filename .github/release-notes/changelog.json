@@ -28919,6 +28919,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "perf-log-off-thread-pause-watchdog",
+      "version": "0.1423.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Smoother ticks and quieter logs",
+      "summary": "The game's performance notes are now written in the background instead of making the world wait for the log file, and sitting in the pause menu no longer fills your log with false freeze reports.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
