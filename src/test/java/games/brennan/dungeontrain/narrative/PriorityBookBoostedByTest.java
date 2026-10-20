@@ -18,8 +18,14 @@ class PriorityBookBoostedByTest {
     @Test
     void namesUpToThreeBoosters() {
         TranslatableContents t = tr(PriorityBookMessage.boostedBy("en_us", List.of("Alex", "Sam"), 4));
-        assertEquals("chat.dungeontrain.priority_book.boosted_by", t.getKey());
+        assertEquals("chat.dungeontrain.priority_book.boosted_by.other", t.getKey());
         assertEquals("Alex, Sam", ((Component) t.getArgs()[0]).getString());
+    }
+
+    @Test
+    void oneDonorIsSingular() {
+        TranslatableContents t = tr(PriorityBookMessage.boostedBy("en_us", List.of("Alex"), 3));
+        assertEquals("chat.dungeontrain.priority_book.boosted_by.one", t.getKey());
     }
 
     @Test

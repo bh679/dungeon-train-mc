@@ -16920,11 +16920,18 @@
       ]
     }
   },
-  "chat.dungeontrain.priority_book.boosted_by": {
+  "chat.dungeontrain.priority_book.boosted_by.one": {
     "1": {
-      "label": "Names of the players who boosted the book, comma separated",
+      "label": "Name of the donor who boosted the book",
       "examples": [
-        "Alex",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.priority_book.boosted_by.other": {
+    "1": {
+      "label": "Names of the donors who boosted the book, comma separated",
+      "examples": [
         "Alex, Sam",
         "Alex, Sam, Kai"
       ]

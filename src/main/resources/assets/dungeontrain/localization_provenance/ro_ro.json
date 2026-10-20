@@ -62,6 +62,7 @@
       "command.dungeontrain.live_appeal.usage",
       "command.dungeontrain.live_appeal.sent",
       "gui.dungeontrain.priority_book.boost_tooltip",
+      "chat.dungeontrain.priority_book.boosted_by_more",
       "gui.dungeontrain.death.live.broadcast.narr.to_the_end",
       "gui.dungeontrain.death.live.broadcast.narr.ended_early",
       "gui.dungeontrain.death.live.broadcast.narr.nobody",

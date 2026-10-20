@@ -93,8 +93,8 @@ public final class PriorityBookMessage {
     }
 
     /**
-     * To the author: who boosted their book. Names the newest {@link #NAMED_BOOSTERS} readers and counts
-     * the rest; {@code total} is the number of boosts, so a reader who boosted twice counts twice.
+     * To the author: which donors boosted their book ("Donor Alex", "Donors Alex, Sam"). Names the
+     * newest {@link #NAMED_BOOSTERS} and counts the rest; {@code total} is the number of boosts, so a reader who boosted twice counts twice.
      */
     public static Component boostedBy(String locale, List<String> names, int total) {
         List<String> shown = names == null ? List.of() : names.subList(0, Math.min(NAMED_BOOSTERS, names.size()));
@@ -105,7 +105,7 @@ public final class PriorityBookMessage {
         int others = names.size() - shown.size();
         MutableComponent line = others > 0
             ? Component.translatable(CHAT + "boosted_by_more", who, others)
-            : Component.translatable(CHAT + "boosted_by", who);
+            : Component.translatable(CHAT + "boosted_by." + PluralRules.category(locale, shown.size()), who);
         return line.withStyle(ChatFormatting.GOLD);
     }
 

@@ -4691,7 +4691,7 @@
   "chat.dungeontrain.priority_book.boosted.other": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "8037b3342add9c1d"},
   "chat.dungeontrain.priority_book.boosted_plain": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "897c59112c5c7fe5"},
   "chat.dungeontrain.priority_book.boost_unused": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "fe79e3d312e159b4"},
-  "chat.dungeontrain.priority_book.boosted_by": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "fe0a7438179e5adc"},
+  "chat.dungeontrain.priority_book.boosted_by.other": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "5bf0101678893d47"},
   "chat.dungeontrain.priority_book.boosted_by_more": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0600195fd7006127"},
   "chat.dungeontrain.priority_book.boosted_by_anon.other": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "369338b456b7a472"},
   "gui.dungeontrain.death.modrec.report": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "b6ce788d9786917c"},
