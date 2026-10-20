@@ -41,6 +41,25 @@ class AmbientWindTest {
     }
 
     @Test
+    @DisplayName("under a shader pack the lean is stronger, still fits vanilla's table, and the rain is redrawn")
+    void shaderRain() {
+        double perPush = AmbientWind.RAIN_SLANT_PER_PUSH * AmbientWind.SHADER_RAIN_SLANT_MULT;
+        assertEquals(0.375, AmbientWind.slantTarget(0.01, perPush, AmbientWind.SHADER_RAIN_MAX_SLANT), 1e-9);
+        assertEquals(AmbientWind.SHADER_RAIN_MAX_SLANT, AmbientWind.slantTarget(1.0, perPush, AmbientWind.SHADER_RAIN_MAX_SLANT));
+        assertTrue(AmbientWind.radiusFor(10, AmbientWind.SHADER_RAIN_MAX_SLANT) <= AmbientWind.MAX_RAIN_RADIUS);
+        // Extra passes only under a pack, and only once the rain actually leans.
+        assertEquals(1, AmbientWind.rainPassesFor(false, 1.0));
+        assertEquals(1, AmbientWind.rainPassesFor(true, 0.0));
+        assertEquals(1, AmbientWind.rainPassesFor(true, 0.04));
+        assertEquals(AmbientWind.SHADER_RAIN_PASSES, AmbientWind.rainPassesFor(true, 0.3));
+        // Each pass steps downwind along the lean; no lean, no step.
+        assertEquals(2 * AmbientWind.SHADER_PASS_SHIFT, AmbientWind.passShift(2, 0.5, 0.0, true), 1e-9);
+        assertEquals(0.0, AmbientWind.passShift(2, 0.5, 0.0, false), 1e-9);
+        assertEquals(-AmbientWind.SHADER_PASS_SHIFT, AmbientWind.passShift(1, 0.0, -0.8, false), 1e-9);
+        assertEquals(0.0, AmbientWind.passShift(1, 0.0, 0.0, true));
+    }
+
+    @Test
     @DisplayName("snow scroll: U offset is minus the distance blown along the quad's axis, kept to one tile")
     void snowScroll() {
         // Blown 0.25 along the quad's axis: texture shifts back 0.25 so flakes move forward.
