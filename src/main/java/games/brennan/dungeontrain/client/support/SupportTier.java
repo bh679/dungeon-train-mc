@@ -36,6 +36,8 @@ public enum SupportTier {
     SERVER_COSTS(7, "server_costs", UiAnalytics.TARGET_DONATE_SERVER_COSTS);
 
     private static final String LABEL_PREFIX = "gui.dungeontrain.support.tier.";
+    /** The relay's checkout unit price, in AUD (one {@code ?qty=} unit). */
+    private static final int UNIT_AUD = 10;
 
     private final int quantity;
     private final String key;
@@ -52,6 +54,14 @@ public enum SupportTier {
         return quantity;
     }
 
+    /**
+     * The gift in whole AUD: {@link #quantity()} units of the relay's A$10 checkout price. Only the
+     * currency selector reads it, to show a converted figure; the AUD wording stays in the lang files.
+     */
+    public int audAmount() {
+        return quantity * UNIT_AUD;
+    }
+
     /** Button label, carrying the amount (e.g. "$30 A Big Fan"). */
     public String labelKey() {
         return LABEL_PREFIX + key;
@@ -64,6 +74,16 @@ public enum SupportTier {
      */
     public String amountKey() {
         return LABEL_PREFIX + key + ".amount";
+    }
+
+    /** The bare figure for a tier button that shows only the amount ("$30"); the name goes under it. */
+    public String shortKey() {
+        return LABEL_PREFIX + key + ".short";
+    }
+
+    /** The tier's name alone ("A Big Fan"), drawn under its amount-only button. */
+    public String nameKey() {
+        return LABEL_PREFIX + key + ".name";
     }
 
     /** Hover copy spelling out what the tier is for — the label alone has no room for it. */
