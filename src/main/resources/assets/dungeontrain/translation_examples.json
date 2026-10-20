@@ -16880,7 +16880,7 @@
   },
   "gui.dungeontrain.priority_book.waiting.one": {
     "1": {
-      "label": "Priority Books the player has waiting to spend",
+      "label": "Book Boosts the player has left (each Priority Book is 10)",
       "examples": [
         "1"
       ]
@@ -16888,17 +16888,17 @@
   },
   "gui.dungeontrain.priority_book.waiting.other": {
     "1": {
-      "label": "Priority Books the player has waiting to spend",
+      "label": "Book Boosts the player has left (each Priority Book is 10)",
       "examples": [
         "0",
-        "3",
-        "7"
+        "10",
+        "25"
       ]
     }
   },
   "gui.dungeontrain.priority_book.sign.one": {
     "1": {
-      "label": "Priority Books the player has left to spend",
+      "label": "Book Boosts the player has left (each Priority Book is 10)",
       "examples": [
         "1"
       ]
@@ -16906,35 +16906,17 @@
   },
   "gui.dungeontrain.priority_book.sign.other": {
     "1": {
-      "label": "Priority Books the player has left to spend",
+      "label": "Book Boosts the player has left (each Priority Book is 10)",
       "examples": [
         "0",
-        "3",
-        "7"
-      ]
-    }
-  },
-  "gui.dungeontrain.priority_book.make.one": {
-    "1": {
-      "label": "Priority Books the player has left to spend",
-      "examples": [
-        "1"
-      ]
-    }
-  },
-  "gui.dungeontrain.priority_book.make.other": {
-    "1": {
-      "label": "Priority Books the player has left to spend",
-      "examples": [
-        "0",
-        "3",
-        "7"
+        "10",
+        "25"
       ]
     }
   },
   "chat.dungeontrain.priority_book.spent.one": {
     "1": {
-      "label": "Priority Books left after this one was spent",
+      "label": "Book Boosts left after boosting the book",
       "examples": [
         "1"
       ]
@@ -16942,11 +16924,78 @@
   },
   "chat.dungeontrain.priority_book.spent.other": {
     "1": {
-      "label": "Priority Books left after this one was spent",
+      "label": "Book Boosts left after boosting the book",
       "examples": [
         "0",
-        "3",
-        "7"
+        "10",
+        "15"
+      ]
+    }
+  },
+  "chat.dungeontrain.priority_book.boosted.one": {
+    "1": {
+      "label": "Boosts left after this one was given",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.priority_book.boosted.other": {
+    "1": {
+      "label": "Boosts left after this one was given",
+      "examples": [
+        "0",
+        "9",
+        "24"
+      ]
+    }
+  },
+  "chat.dungeontrain.priority_book.boosted_by.one": {
+    "1": {
+      "label": "Name of the donor who boosted the book",
+      "examples": [
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.priority_book.boosted_by.other": {
+    "1": {
+      "label": "Names of the donors who boosted the book, comma separated",
+      "examples": [
+        "Alex, Sam",
+        "Alex, Sam, Kai"
+      ]
+    }
+  },
+  "chat.dungeontrain.priority_book.boosted_by_more": {
+    "1": {
+      "label": "Names of the three newest players who boosted the book, comma separated",
+      "examples": [
+        "Alex, Sam, Kai"
+      ]
+    },
+    "2": {
+      "label": "How many more players boosted it",
+      "examples": [
+        "1",
+        "4"
+      ]
+    }
+  },
+  "chat.dungeontrain.priority_book.boosted_by_anon.one": {
+    "1": {
+      "label": "How many boosts the book has had",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.priority_book.boosted_by_anon.other": {
+    "1": {
+      "label": "How many boosts the book has had",
+      "examples": [
+        "2",
+        "6"
       ]
     }
   },

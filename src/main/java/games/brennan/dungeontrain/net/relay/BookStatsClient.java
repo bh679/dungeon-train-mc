@@ -12,6 +12,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -52,12 +54,28 @@ public final class BookStatsClient {
      * endpoint is already author-gated. Absent is NOT the same as {@code "approved"}: the mod stamps
      * nothing on absent, so a book already carrying a state from the author's-own-shelf pool path
      * keeps it. {@code isPrivate} is the author's own withdrawal, false unless the relay says so.
-     * {@code priority} is whether the author spent a Priority Book on it, likewise false unless said.
+     * {@code priority} is whether the book is a Priority Book (the author spent one, or readers boosted
+     * it), likewise false unless said. {@code boosts} is how many boosts other players have given it and
+     * {@code boostedBy} their names, newest first: 0 and empty from a relay too old to say.
      */
     public record Stats(boolean isAuthor, int held, int completers, int opens,
                         long longestReadMs, long longestPageMs, int longestPageIndex,
                         int pageTurns, int rereads, int votesUp, int votesDown,
-                        String status, boolean isPrivate, boolean priority) {
+                        String status, boolean isPrivate, boolean priority,
+                        int boosts, List<String> boostedBy) {
+
+        public Stats {
+            boostedBy = boostedBy == null ? List.of() : List.copyOf(boostedBy);
+        }
+
+        /** The pre-boost shape: no boosts. */
+        public Stats(boolean isAuthor, int held, int completers, int opens,
+                     long longestReadMs, long longestPageMs, int longestPageIndex,
+                     int pageTurns, int rereads, int votesUp, int votesDown,
+                     String status, boolean isPrivate, boolean priority) {
+            this(isAuthor, held, completers, opens, longestReadMs, longestPageMs, longestPageIndex,
+                    pageTurns, rereads, votesUp, votesDown, status, isPrivate, priority, 0, List.of());
+        }
 
         /** The pre-Priority-Book shape: {@code priority} false. */
         public Stats(boolean isAuthor, int held, int completers, int opens,
@@ -126,7 +144,8 @@ public final class BookStatsClient {
                 optLong(o, "longestReadMs"), optLong(o, "longestPageMs"), optInt(o, "longestPageIndex"),
                 optInt(o, "pageTurns"), optInt(o, "rereads"),
                 optInt(o, "votesUp"), optInt(o, "votesDown"),
-                optStr(o, "status"), optBool(o, "private"), optBool(o, "priority"));
+                optStr(o, "status"), optBool(o, "private"), optBool(o, "priority"),
+                optInt(o, "boosts"), optNames(o, "boostedBy"));
     }
 
     private static int optInt(JsonObject o, String k) {
@@ -141,6 +160,28 @@ public final class BookStatsClient {
      * A string field, or null when absent / blank / not a string. Null is load-bearing here — see
      * {@link Stats} — so a garbled value reads as "the relay did not say" rather than as a state.
      */
+    /** At most this many booster names are kept, whatever the relay sends. */
+    private static final int MAX_BOOSTER_NAMES = 10;
+    private static final int MAX_NAME_CHARS = 32;
+
+    /** A list of non-blank names, capped; empty when absent or malformed. */
+    private static List<String> optNames(JsonObject o, String k) {
+        List<String> out = new ArrayList<>();
+        try {
+            if (!o.has(k) || !o.get(k).isJsonArray()) return out;
+            for (JsonElement el : o.getAsJsonArray(k)) {
+                if (out.size() >= MAX_BOOSTER_NAMES) break;
+                if (!el.isJsonPrimitive()) continue;
+                String name = el.getAsString().strip();
+                if (name.isEmpty()) continue;
+                out.add(name.length() > MAX_NAME_CHARS ? name.substring(0, MAX_NAME_CHARS) : name);
+            }
+        } catch (RuntimeException e) {
+            return new ArrayList<>();
+        }
+        return out;
+    }
+
     private static String optStr(JsonObject o, String k) {
         try {
             // isString(), not merely isJsonPrimitive(): a number or boolean here is a garbled reply,
