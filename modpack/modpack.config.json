@@ -88,18 +88,18 @@
       "mod_ids": [
         "enderchestpersistence"
       ],
-      "sha1": "46d7fee5eca4a95485102bbb30d502621b0f2017",
+      "sha1": "55a85c4d8efad980111aa0c9073279f1328a1dba",
       "packages": [
         "games.brennan"
       ],
       "project_id": 1579341,
-      "file_id": 8885474,
+      "file_id": 9267847,
       "required": true,
       "dependency_type": "required",
-      "version": "0.5.0",
+      "version": "0.7.0",
       "gradle_property": "enderchestpersistence_min_version",
       "modrinth_project": "ender-chest-persistence",
-      "modrinth_version": "jQdBzB9o"
+      "modrinth_version": "bgXudlac"
     },
     {
       "name": "Trade Everything",
