@@ -3503,6 +3503,7 @@
   "gui.dungeontrain.editor_menu.phase.large_biomes": "Grote biomen",
   "gui.dungeontrain.editor_menu.phase.amplified": "Versterkt",
   "gui.dungeontrain.editor_menu.phase.lost_city": "Verloren stad",
+  "gui.dungeontrain.editor_menu.phase.deeper_dark": "Diepere duisternis",
   "gui.dungeontrain.editor_menu.phase.caves_of_chaos": "Grotten van Chaos",
   "gui.dungeontrain.editor_menu.stage.title": "Etappe: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Etappe verwijderen",

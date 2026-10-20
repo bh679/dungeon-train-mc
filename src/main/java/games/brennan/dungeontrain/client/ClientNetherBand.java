@@ -17,17 +17,21 @@ import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 public final class ClientNetherBand {
 
     private static volatile boolean startsWithTrain = false;
+    /** Whether the server resolved the Otherside's rules — a {@code nether:otherside} pass is a vanilla Nether without them. */
+    private static volatile boolean othersideAvailable = false;
 
     private ClientNetherBand() {}
 
-    /** Apply a server sync (whether this world has the train system). */
-    public static void update(boolean starts) {
+    /** Apply a server sync (whether this world has the train system, and whether its Deeper Dark passes are real). */
+    public static void update(boolean starts, boolean otherside) {
         startsWithTrain = starts;
+        othersideAvailable = otherside;
     }
 
     /** Reset on disconnect so a band never leaks into the next world. */
     public static void reset() {
         startsWithTrain = false;
+        othersideAvailable = false;
     }
 
     /**
@@ -52,6 +56,19 @@ public final class ClientNetherBand {
     private static double netherBandRampAt(WorldGenCycle cycle, int worldX) {
         if (!DungeonTrainCommonConfig.isNetherTransitionEnabled()) return 0.0;
         return cycle.netherRamp(worldX);
+    }
+
+    /**
+     * True when the Nether band at {@code worldX} is a Deeper Dark pass (its core is the Otherside). Read from
+     * this client's own copy of the cycle, like the rest of the band's atmosphere — and false everywhere when the
+     * server reported no Otherside rules, since its passes are then vanilla Nether ({@code NetherBand#isOthersideAt}).
+     */
+    public static boolean isOthersideAt(double worldX) {
+        if (!startsWithTrain || !othersideAvailable || !DungeonTrainCommonConfig.isNetherTransitionEnabled()) return false;
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        int x = (int) Math.floor(worldX);
+        return cycle.netherHeightRamp(x) > 0.0
+                && cycle.netherLookAt(x) == games.brennan.dungeontrain.worldgen.CycleLayout.Style.OTHERSIDE;
     }
 
     /** Nether intensity {@code n} crosses this point: below it the Overworld track plays, above it the Nether track. */

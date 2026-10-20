@@ -12,9 +12,15 @@ import games.brennan.dungeontrain.worldgen.MixBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
+import games.brennan.dungeontrain.worldgen.CellDensityGeometry;
+import games.brennan.dungeontrain.worldgen.CycleLayout;
+import games.brennan.dungeontrain.worldgen.OthersideCore;
+import games.brennan.dungeontrain.worldgen.OthersideGeometry;
+import games.brennan.dungeontrain.worldgen.OthersideSettings;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
+import games.brennan.dungeontrain.worldgen.density.NetherCoreBiomes;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -128,6 +134,14 @@ public final class NetherCoreStamp {
         ColumnWriter w = new ColumnWriter(chunk);
         boolean changed = false;
         int columns = 0;
+        // A Deeper Dark pass generates the Otherside in place — geometry, skin and biome memo opened on the first
+        // column that wants them (a Nether core chunk never pays for them); the carvers run once the chunk is
+        // known to be Deeper Dark core throughout.
+        OthersideSettings othersideSettings = bandCtx == null ? null : bandCtx.otherside();
+        OthersideGeometry othersideGeom = null;
+        OthersideSurfaceSkin othersideSkin = null;
+        NetherCoreBiomes.SampleMemo othersideMemo = null;
+        int othersideColumns = 0;
         for (int dx = 0; dx < 16; dx++) {
             int worldX = chunkMinX + dx;
             for (int dz = 0; dz < 16; dz++) {
@@ -139,6 +153,25 @@ public final class NetherCoreStamp {
                 if (endBandActive && cycle.endMiddleRamp(wx) > 0.0) continue;
                 if (cycle.netherRamp(wx) < CORE_THRESHOLD) continue;
 
+                if (othersideSettings != null && isOthersideColumn(bandCtx, worldX, worldZ)) {
+                    if (othersideGeom == null) {
+                        othersideGeom = othersideSettings.open(bedY, WorldFloor.bedrockY(overworld), overworld.getMaxBuildHeight() - 1);
+                        othersideSkin = new OthersideSurfaceSkin(OthersideSurfaceSkin.Randoms.of(othersideSettings),
+                                OthersideSurfaceSkin.Blocks4.resolve());
+                        othersideMemo = new NetherCoreBiomes.SampleMemo();
+                    }
+                    if (othersideGeom.isUsable()) {
+                        long coreT0 = GenProfiler.t0();
+                        ResourceKey<Biome> othersideBiome = bandCtx.netherCoreBiomes()
+                                .biomeAt(worldX, worldZ, CycleLayout.Style.OTHERSIDE, othersideMemo).unwrapKey().orElse(null);
+                        changed |= fillOthersideColumn(chunk, dx, dz, worldX, worldZ, g, tg, othersideGeom, othersideSettings,
+                                othersideSkin, othersideBiome);
+                        GenProfiler.add(GenProfiler.Bucket.OTHERSIDE_CORE, coreT0);
+                        columns++;
+                        othersideColumns++;
+                        continue;
+                    }
+                }
                 int sampleX = NetherCoreGeometry.sampleX(wx);
                 ResourceKey<Biome> coreBiome = coreBiomeKeyAt(bandCtx, worldX, worldZ);
                 long coreT0 = GenProfiler.t0();       // real-Nether router sampling — the confirmed DT hotspot
@@ -149,6 +182,20 @@ public final class NetherCoreStamp {
             }
         }
 
+        // The Otherside's caves, once every column of the chunk holds Deeper Dark terrain (a carve reaches 8 chunks
+        // out, so a chunk at the core's edge, whose neighbours are not all Deeper Dark, keeps the uncarved slab —
+        // where the sampled Otherside chunk used to stop too).
+        if (othersideColumns == 256) {
+            long carveT0 = GenProfiler.t0();
+            TrackCells track = TrackCells.snapshot(chunk, g, tg);
+            if (OthersideCarve.carve(chunk, bedY, othersideSettings, bandCtx.netherCoreBiomes(), othersideMemo,
+                    overworld.registryAccess(), overworld.getSeed())) {
+                track.restore(chunk);
+                changed = true;
+            }
+            GenProfiler.add(GenProfiler.Bucket.OTHERSIDE_CORE, carveT0);
+        }
+
         if (GenDeterminismLog.ENABLED) {
             GenDeterminismLog.log("stamp", "chunk=(%d,%d) columns=%d changed=%b bedY=%d genSeed=%016x",
                     cp.x, cp.z, columns, changed, bedY, seed);
@@ -156,6 +203,103 @@ public final class NetherCoreStamp {
         if (!changed) return;
         Heightmap.primeHeightmaps(chunk, CARVER_HEIGHTMAPS);
         chunk.setUnsaved(true);
+    }
+
+    /**
+     * True when a core column belongs to a Deeper Dark pass on a server with Deeper Darker — the same verdict
+     * the column's biome label comes from ({@code NetherCoreBiomes#isOtherside}), so terrain and label agree.
+     */
+    static boolean isOthersideColumn(NetherBandContext bandCtx, int worldX, int worldZ) {
+        if (bandCtx == null || bandCtx.netherCoreBiomes() == null) return false;
+        NetherCoreBiomes ncb = bandCtx.netherCoreBiomes();
+        return ncb.hasOtherside() && ncb.isOtherside(bandCtx.cycle().netherLookAt(worldX, worldZ, ncb.seed()));
+    }
+
+    /**
+     * REPLACE the column with the Otherside generated at this X/Z, its whole height — bedrock floor to bedrock
+     * roof — shifted so Otherside y {@link OthersideCore#CENTER_Y} sits on the track bed: the noise fill (sculk
+     * stone where the Otherside's density is solid, sculk grime below its sea, air above), then its surface rule
+     * ({@link OthersideSurfaceSkin}) over the column, as the Otherside's own chunk generation would. Only the
+     * track's own bed and rails are kept; {@code track_bed} then tunnels through the sculk stone and rides pillars
+     * over the caves and grime lakes, as it does through a Nether core. No caps: bedrock already closes the slab
+     * top and bottom.
+     */
+    private static boolean fillOthersideColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
+                                               TrackGeometry g, TunnelGeometry tg, OthersideGeometry geom,
+                                               OthersideSettings settings, OthersideSurfaceSkin skin,
+                                               ResourceKey<Biome> biome) {
+        int bedY = g.bedY();
+        int yLo = geom.minY();
+        int yHi = geom.maxY();
+        if (yLo > yHi) return false;
+        CellDensityGeometry.Column density = geom.column(worldX, worldZ);
+        BlockState stone = settings.defaultBlock();
+        BlockState grime = settings.defaultFluid();
+        ColumnWriter w = new ColumnWriter(chunk);
+        boolean changed = false;
+        for (int y = yLo; y <= yHi; y++) {
+            if (isTrackBlock(worldZ, y, g, tg)) continue;
+            double d = density.densityAt(y);
+            if (Double.isNaN(d)) continue;   // outside the sampled cell rows — leave the block untouched
+            BlockState target = d > 0.0 ? stone : geom.isGrimeLevel(y) ? grime : AIR;
+            if (w.isSame(dx, y, dz, target)) continue;
+            w.set(dx, y, dz, target);
+            changed = true;
+        }
+        OthersideSurfaceSkin.Column column = new OthersideSurfaceSkin.Column() {
+            @Override
+            public BlockState get(int othersideY) {
+                return w.state(dx, OthersideCore.displayY(othersideY, bedY), dz);
+            }
+
+            @Override
+            public void set(int othersideY, BlockState state) {
+                int y = OthersideCore.displayY(othersideY, bedY);
+                if (!isTrackBlock(worldZ, y, g, tg)) w.set(dx, y, dz, state);
+            }
+        };
+        changed |= skin.dress(column, worldX, worldZ, OthersideCore.othersideY(yHi, bedY), OthersideCore.othersideY(yLo, bedY), biome);
+        return changed;
+    }
+
+    /**
+     * The track's own cells in a chunk — the bed row across the track span and the two rail cells — saved before
+     * the Otherside carvers run and put back after: a cave through the track bed would otherwise swallow them.
+     */
+    private record TrackCells(int[] ys, int[] zs, BlockState[] states) {
+
+        static TrackCells snapshot(ChunkAccess chunk, TrackGeometry g, TunnelGeometry tg) {
+            ColumnWriter w = new ColumnWriter(chunk);
+            int minZ = chunk.getPos().getMinBlockZ();
+            java.util.List<int[]> cells = new java.util.ArrayList<>();
+            java.util.List<BlockState> states = new java.util.ArrayList<>();
+            for (int dz = 0; dz < 16; dz++) {
+                int worldZ = minZ + dz;
+                for (int y : new int[] {g.bedY(), g.railY()}) {
+                    if (!isTrackBlock(worldZ, y, g, tg)) continue;
+                    for (int dx = 0; dx < 16; dx++) {
+                        cells.add(new int[] {dx, y, dz});
+                        states.add(w.state(dx, y, dz));
+                    }
+                }
+            }
+            int[] ys = new int[cells.size()];
+            int[] zs = new int[cells.size()];
+            for (int i = 0; i < cells.size(); i++) {
+                ys[i] = cells.get(i)[1];
+                zs[i] = (cells.get(i)[0] << 8) | cells.get(i)[2];
+            }
+            return new TrackCells(ys, zs, states.toArray(new BlockState[0]));
+        }
+
+        void restore(ChunkAccess chunk) {
+            ColumnWriter w = new ColumnWriter(chunk);
+            for (int i = 0; i < ys.length; i++) {
+                int dx = zs[i] >> 8;
+                int dz = zs[i] & 0xFF;
+                if (!w.isSame(dx, ys[i], dz, states[i])) w.set(dx, ys[i], dz, states[i]);
+            }
+        }
     }
 
     /** The real-Nether biome KEY for a core column (drives the per-biome surface skin); nether_wastes fallback. */

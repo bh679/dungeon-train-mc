@@ -98,5 +98,14 @@
       "mossy",
       "stone"
     ]
+  },
+  "sculkportal": {
+    "weight": 1,
+    "phases": [
+      "DEEPER_DARK"
+    ],
+    "groups": [
+      "sculk"
+    ]
   }
 }

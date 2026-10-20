@@ -3464,6 +3464,7 @@
   "gui.dungeontrain.editor_menu.phase.large_biomes": "巨型生物群系",
   "gui.dungeontrain.editor_menu.phase.amplified": "放大化",
   "gui.dungeontrain.editor_menu.phase.lost_city": "失落之城",
+  "gui.dungeontrain.editor_menu.phase.deeper_dark": "更深的黑暗",
   "gui.dungeontrain.editor_menu.phase.caves_of_chaos": "混沌洞穴",
   "gui.dungeontrain.editor_menu.stage.title": "区段：%s",
   "gui.dungeontrain.editor_menu.stage.delete": "删除区段",

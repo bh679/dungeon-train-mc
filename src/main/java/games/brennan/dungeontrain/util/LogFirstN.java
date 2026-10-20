@@ -29,6 +29,15 @@ public final class LogFirstN {
         }
     }
 
+    /** As {@link #error}, at WARN. */
+    public void warn(Logger logger, String message, Throwable t) {
+        int n = count.incrementAndGet();
+        if (n <= max) {
+            logger.warn("{} (occurrence {}/{}{})", message, n, max,
+                    n == max ? "; suppressing further reports" : "", t);
+        }
+    }
+
     /** Debug-log the first {@code max} occurrences ({@code format} is an SLF4J pattern); then silent. */
     public void debug(Logger logger, String format, Object... args) {
         if (count.get() >= max) return; // per-quart hot path: no counting (or overflow) once silent

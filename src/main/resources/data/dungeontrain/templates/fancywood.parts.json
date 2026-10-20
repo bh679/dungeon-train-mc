@@ -31,9 +31,19 @@
       "stage": "deepdark"
     },
     {
+      "name": "wool",
+      "weight": 1,
+      "stage": "deeper_dark"
+    },
+    {
       "name": "standard_deepdark",
       "weight": 1,
       "stage": "deepdark"
+    },
+    {
+      "name": "standard_deepdark",
+      "weight": 1,
+      "stage": "deeper_dark"
     }
   ],
   "walls": [
@@ -184,6 +194,15 @@
         "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
+    },
+    {
+      "name": "open_deepdark",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
     },
     {
       "name": "mudwindows_wood",
@@ -873,6 +892,14 @@
       "stage": "deepdark"
     },
     {
+      "name": "standard_deepdark",
+      "weight": 5,
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
+    },
+    {
       "name": "windowed_deepdark",
       "weight": 1,
       "phases": [
@@ -890,6 +917,14 @@
         "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
+    },
+    {
+      "name": "windowed_deepdark",
+      "weight": 1,
+      "phases": [
+        "DEEPER_DARK"
+      ],
+      "stage": "deeper_dark"
     },
     {
       "name": "mud_wood",

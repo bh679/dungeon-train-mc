@@ -28937,6 +28937,102 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "advancement-earn-no-freeze",
+      "version": "0.1424.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "No freeze when you earn an advancement",
+      "summary": "Earning an advancement could freeze the game for several seconds on some computers, because it waited on the disk before carrying on. The save now happens in the background, so the game keeps running while it writes.",
+      "highlights": [
+        "Earning an advancement no longer waits on the disk",
+        "Leaving a server no longer holds up the other players while your advancements save"
+      ],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2202,
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "jade-block-info-surprise",
+      "version": "0.1425.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Block info spoiler fix",
+      "summary": "A block-info mod could give away a hidden surprise in some walls. In survival it now tells you only what you would see with your own eyes.",
+      "highlights": [],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-mod-update-safety",
+      "version": "0.1420.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Safer with mod updates",
+      "summary": "If one of the bundled mods updates ahead of the pack, its portals keep working and the game still starts.",
+      "highlights": [],
+      "pr": 2157,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "pot-surprise",
+      "version": "0.1420.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Not every pot is quite what it seems",
+      "summary": "Break them carefully.",
+      "highlights": [],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 2203
+    },
+    {
+      "id": "deeper-down-the-line",
+      "version": "0.1420.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "train",
+        "world",
+        "mobs"
+      ],
+      "title": "A Deeper Darker Train - Mobs & New Dimension",
+      "summary": "Deep down the line, a new stretch of the journey waits, darker than anything before it, with its own scenery, ruins and creatures.",
+      "highlights": [
+        "A new stretch deep in the ride, with its own scenery, structures and dangers.",
+        "New creatures ride the train and roam that stretch."
+      ],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "major": true,
+      "description": "Deep down the line, past the stranger stretches you already know, the ride now drops into somewhere darker than anything before it.\n\n**A new stretch of the journey.** Its own scenery, its own ruins to find, its own sea and its own sky. The track, the tunnels and the carriages all dress for it, and the way the mountains lead you in is one long unbroken climb from the stretch before.\n\n**New creatures ride the train.** Some carriages deep down carry what lives there, and the stretch itself is home to them too. They are not from around here.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/a-deeper-darker-train.jpg"
     }
   ]
 }
