@@ -22,10 +22,19 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 /**
@@ -60,16 +69,38 @@ import java.util.stream.Stream;
  *   ] }
  * }</pre>
  *
- * <p>Concurrency: methods are {@code synchronized} on the class. In
- * single-player there is never contention (single thread). On dedicated
- * server, simultaneous logins for different players still serialize
- * through this lock — fine, the I/O is microseconds.</p>
+ * <p>Disk I/O stays off the server thread after a profile's first read. Each partition is
+ * cached once loaded; earns and revokes update the cache and hand the file write to one
+ * background thread. An earn used to re-read and rewrite the file on the server thread, and on
+ * Windows opening that small file once took 8 s (an antivirus scan or a sleeping drive), freezing
+ * the game. The cache lives for one server: logout flushes and evicts the player
+ * ({@link #flushAndEvict}), server stop flushes and empties it ({@link #flushAndClearAll}).</p>
+ *
+ * <p>Concurrency: the public methods are {@code synchronized} on the class, so a read-modify-write
+ * never interleaves. The writer never takes that lock, so a slow disk can't block a caller.</p>
  */
 public final class GlobalAchievementStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     /** Pre-relocation home, still read when a migration hasn't managed to move a file yet. */
     private static final String LEGACY_DIR_NAME = "dungeontrain-achievements";
+    /** How long a flush waits for the writer before giving up (and logging). */
+    private static final long FLUSH_TIMEOUT_SECONDS = 10;
+
+    /** One player's profile in one partition — the cache key, so lookups never touch the disk. */
+    private record Key(UUID uuid, String partition) {}
+
+    /** Each loaded partition's own file contents (unmodifiable snapshots). */
+    private static final Map<Key, Set<ResourceLocation>> CACHE = new ConcurrentHashMap<>();
+    /** The newest snapshot of each partition still waiting to be written. */
+    private static final Map<Key, Set<ResourceLocation>> PENDING = new ConcurrentHashMap<>();
+    private static final ExecutorService WRITER = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "DungeonTrain-AchievementStore");
+        thread.setDaemon(true);
+        return thread;
+    });
+    /** Where a partition's file lives; swapped for a temp directory in tests. */
+    private static volatile BiFunction<UUID, String, Path> resolver = GlobalAchievementStore::file;
 
     /** Schema record. {@code granted} stored as a list to preserve insertion order in the JSON. */
     public record Data(List<ResourceLocation> granted) {
@@ -141,14 +172,17 @@ public final class GlobalAchievementStore {
      * Read {@code playerUuid}'s {@code partitionKey} sidecar. Returns an empty set when the file
      * does not exist or is malformed (warn-logged in the malformed case).
      *
+     * <p>Served from the cache once the partition has been loaded, so only the first read of a
+     * session touches the disk.</p>
+     *
      * <p>The {@link #SHARED} partition also reports the editor ids still sitting in the Normal file,
      * where every editor earn went before the split — read-time, so nothing has to be rewritten and
      * a Hard profile sees the editor tab it already earned. See {@link #sharedView}.</p>
      */
     public static synchronized Set<ResourceLocation> read(UUID playerUuid, String partitionKey) {
-        Set<ResourceLocation> own = readFile(file(playerUuid, partitionKey));
-        if (!SHARED.equals(partitionKey)) return own;
-        return sharedView(own, readFile(file(playerUuid, DifficultyPartition.LEGACY_KEY)));
+        Set<ResourceLocation> own = cached(new Key(playerUuid, partitionKey));
+        if (!SHARED.equals(partitionKey)) return new LinkedHashSet<>(own);
+        return sharedView(own, cached(new Key(playerUuid, DifficultyPartition.LEGACY_KEY)));
     }
 
     /** The shared partition's contents: its own file plus the legacy file's editor ids. */
@@ -179,35 +213,33 @@ public final class GlobalAchievementStore {
     }
 
     /**
-     * Append {@code advancement} to the partition's sidecar if not already present.
-     * Atomic-replace write so a crash mid-write can't corrupt the file.
+     * Append {@code advancement} to the partition's sidecar if not already present. The cache is
+     * updated at once; the file is written by the background writer ({@link #store}).
      *
-     * @return {@code true} when the file was actually mutated.
+     * @return {@code true} when the profile actually changed.
      */
     public static synchronized boolean append(UUID playerUuid, String partitionKey, ResourceLocation advancement) {
-        Set<ResourceLocation> current = new LinkedHashSet<>(read(playerUuid, partitionKey));
+        Set<ResourceLocation> current = read(playerUuid, partitionKey);
         if (!current.add(advancement)) return false;
-        writeAtomic(file(playerUuid, partitionKey), current);
+        store(new Key(playerUuid, partitionKey), current);
         return true;
     }
 
     /**
-     * Append every advancement in {@code advancements} not already present, in a
-     * single atomic read-modify-write. Used by the login back-fill that absorbs a
-     * world's already-earned advancements into the cross-world store — far cheaper
-     * than calling {@link #append} once per id (one file write, not N), and never
-     * writes when nothing new is added.
+     * Append every advancement in {@code advancements} not already present, in a single
+     * read-modify-write. Used by the login back-fill that absorbs a world's already-earned
+     * advancements into the cross-world store — one write, not N, and none when nothing new is added.
      *
      * @return the number of ids actually added (0 when all were already present).
      */
     public static synchronized int appendAll(UUID playerUuid, String partitionKey,
                                              Collection<ResourceLocation> advancements) {
         if (advancements.isEmpty()) return 0;
-        Set<ResourceLocation> current = new LinkedHashSet<>(read(playerUuid, partitionKey));
+        Set<ResourceLocation> current = read(playerUuid, partitionKey);
         int before = current.size();
         current.addAll(advancements);
         int added = current.size() - before;
-        if (added > 0) writeAtomic(file(playerUuid, partitionKey), current);
+        if (added > 0) store(new Key(playerUuid, partitionKey), current);
         return added;
     }
 
@@ -219,12 +251,12 @@ public final class GlobalAchievementStore {
      * <p>Removing from {@link #SHARED} also strikes the id from the Normal file, or
      * {@link #sharedView} would hand it straight back.</p>
      *
-     * @return {@code true} when a file was actually mutated.
+     * @return {@code true} when a profile actually changed.
      */
     public static synchronized boolean remove(UUID playerUuid, String partitionKey, ResourceLocation advancement) {
-        boolean removed = removeFrom(file(playerUuid, partitionKey), advancement);
+        boolean removed = removeFrom(new Key(playerUuid, partitionKey), advancement);
         if (SHARED.equals(partitionKey)) {
-            removed |= removeFrom(file(playerUuid, DifficultyPartition.LEGACY_KEY), advancement);
+            removed |= removeFrom(new Key(playerUuid, DifficultyPartition.LEGACY_KEY), advancement);
         }
         return removed;
     }
@@ -233,20 +265,20 @@ public final class GlobalAchievementStore {
      * Remove {@code advancement} from every partition's sidecar — a revocation
      * ({@link AdvancementRevocations}) covers the player, not one difficulty.
      *
-     * @return {@code true} when any file was actually mutated.
+     * @return {@code true} when any profile actually changed.
      */
     public static synchronized boolean removeEverywhere(UUID playerUuid, ResourceLocation advancement) {
         boolean removed = false;
         for (String partition : ALL_PARTITIONS) {
-            removed |= removeFrom(file(playerUuid, partition), advancement);
+            removed |= removeFrom(new Key(playerUuid, partition), advancement);
         }
         return removed;
     }
 
-    private static boolean removeFrom(Path path, ResourceLocation advancement) {
-        Set<ResourceLocation> current = new LinkedHashSet<>(readFile(path));
+    private static boolean removeFrom(Key key, ResourceLocation advancement) {
+        Set<ResourceLocation> current = new LinkedHashSet<>(cached(key));
         if (!current.remove(advancement)) return false;
-        writeAtomic(path, current);
+        store(key, current);
         return true;
     }
 
@@ -255,11 +287,13 @@ public final class GlobalAchievementStore {
      * drops every grant at once — used by the Video Tools profile reset, where the point is that the
      * login replay in {@code AchievementEvents} has nothing left to replay.
      *
-     * <p>Reads are file-backed with no cache, so unlinking the files is the entire operation.</p>
+     * <p>Queued writes land first and the player's cache is dropped, so neither can bring a deleted
+     * file back.</p>
      *
      * @return {@code true} when a file was actually removed.
      */
     public static synchronized boolean deleteFor(UUID playerUuid) throws IOException {
+        flushAndEvict(playerUuid);
         // Both addresses: a legacy copy the migration had to leave behind would otherwise survive
         // the reset and reappear as soon as the new file was gone.
         boolean removed = false;
@@ -269,6 +303,83 @@ public final class GlobalAchievementStore {
             }
         }
         return removed;
+    }
+
+    // ---------------- Cache + background writer ----------------
+
+    /** The partition's own file contents, loaded from disk on first use and cached after that. */
+    private static Set<ResourceLocation> cached(Key key) {
+        return CACHE.computeIfAbsent(key, k -> {
+            Set<ResourceLocation> pending = PENDING.get(k);
+            return pending != null ? pending : freeze(readFile(resolver.apply(k.uuid(), k.partition())));
+        });
+    }
+
+    /** Make {@code granted} the partition's contents now, and queue it for disk. */
+    private static void store(Key key, Set<ResourceLocation> granted) {
+        Set<ResourceLocation> snapshot = freeze(granted);
+        CACHE.put(key, snapshot);
+        // Only the newest snapshot is kept: a burst of earns queues several tasks, the first writes
+        // the final state and the rest find nothing left to do.
+        PENDING.put(key, snapshot);
+        WRITER.execute(() -> writePending(key));
+    }
+
+    private static void writePending(Key key) {
+        Set<ResourceLocation> snapshot = PENDING.get(key);
+        if (snapshot == null) return;
+        try {
+            writeAtomic(resolver.apply(key.uuid(), key.partition()), snapshot);
+        } catch (RuntimeException e) {
+            LOGGER.error("[DungeonTrain] GlobalAchievementStore: background write for {} failed", key, e);
+        }
+        // Only once it's on disk, and only if no newer snapshot arrived meanwhile — until then a
+        // cache miss is served this snapshot rather than the file it is replacing.
+        PENDING.remove(key, snapshot);
+    }
+
+    private static Set<ResourceLocation> freeze(Set<ResourceLocation> granted) {
+        return Collections.unmodifiableSet(new LinkedHashSet<>(granted));
+    }
+
+    /** Wait for every write queued so far to reach the disk. */
+    public static void flush() {
+        try {
+            WRITER.submit(() -> {}).get(FLUSH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.warn("[DungeonTrain] GlobalAchievementStore: flush interrupted");
+        } catch (ExecutionException | TimeoutException e) {
+            LOGGER.warn("[DungeonTrain] GlobalAchievementStore: flush did not finish: {}", e.toString());
+        }
+    }
+
+    /** Logout: land the player's queued writes, then forget their profiles until they're next read. */
+    public static void flushAndEvict(UUID playerUuid) {
+        flush();
+        CACHE.keySet().removeIf(key -> key.uuid().equals(playerUuid));
+    }
+
+    /**
+     * Server stop: land every queued write and empty the cache. The title-screen tools
+     * ({@link AdvancementPromotion}, the Video Tools reset) edit the files directly, so a cache
+     * outliving its world could hand the next world a stale profile.
+     */
+    public static void flushAndClearAll() {
+        flush();
+        CACHE.clear();
+    }
+
+    /** Tests only: read and write profiles under {@code dir} instead of the game directory. */
+    static void useDirectoryForTests(Path dir) {
+        flushAndClearAll();
+        resolver = (uuid, partition) -> dir.resolve(fileName(uuid, partition));
+    }
+
+    /** Tests only: back to the game directory, with nothing cached. */
+    static void resetForTests() {
+        flushAndClearAll();
+        resolver = GlobalAchievementStore::file;
     }
 
     static void writeAtomic(Path path, Set<ResourceLocation> granted) {

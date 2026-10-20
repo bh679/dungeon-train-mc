@@ -1,11 +1,13 @@
 package games.brennan.dungeontrain.advancement;
 
 import net.minecraft.resources.ResourceLocation;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -72,5 +74,85 @@ class GlobalAchievementStoreTest {
         assertEquals(Set.of(GAMEPLAY, VANILLA), GlobalAchievementStore.readFile(normal));
         assertEquals(Set.of(VANILLA), GlobalAchievementStore.readFile(hard));
         assertTrue(GlobalAchievementStore.readFile(dir.resolve("missing.json")).isEmpty());
+    }
+
+    // ---------------- Cache + background writer ----------------
+
+    @AfterEach
+    void restoreStore() {
+        GlobalAchievementStore.resetForTests();
+    }
+
+    private static Path normalFile(Path dir) {
+        return dir.resolve(GlobalAchievementStore.fileName(PLAYER, "normal"));
+    }
+
+    @Test
+    @DisplayName("An earn reaches the disk once the writer is flushed; a repeat earn changes nothing")
+    void appendWritesInBackground(@TempDir Path dir) {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        assertTrue(GlobalAchievementStore.append(PLAYER, "normal", GAMEPLAY));
+        GlobalAchievementStore.flush();
+        assertEquals(Set.of(GAMEPLAY), GlobalAchievementStore.readFile(normalFile(dir)));
+        assertFalse(GlobalAchievementStore.append(PLAYER, "normal", GAMEPLAY));
+    }
+
+    @Test
+    @DisplayName("A read straight after an earn sees it, before the write has landed")
+    void readServedFromCache(@TempDir Path dir) {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        GlobalAchievementStore.append(PLAYER, "hard", VANILLA);
+        assertTrue(GlobalAchievementStore.read(PLAYER, "hard").contains(VANILLA));
+    }
+
+    @Test
+    @DisplayName("A burst of earns ends with every id on disk, in earn order")
+    void burstKeepsEveryIdInOrder(@TempDir Path dir) {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        List<ResourceLocation> ids = new ArrayList<>();
+        for (int i = 0; i < 50; i++) {
+            ResourceLocation id = ResourceLocation.parse("dungeontrain:test/burst_" + i);
+            ids.add(id);
+            GlobalAchievementStore.append(PLAYER, "normal", id);
+        }
+        GlobalAchievementStore.flush();
+        assertEquals(ids, List.copyOf(GlobalAchievementStore.readFile(normalFile(dir))));
+    }
+
+    @Test
+    @DisplayName("Revoking strikes the id from the cache and from every partition's file")
+    void removeEverywhereUpdatesCacheAndDisk(@TempDir Path dir) {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        GlobalAchievementStore.append(PLAYER, "normal", GAMEPLAY);
+        GlobalAchievementStore.append(PLAYER, "hard", GAMEPLAY);
+        GlobalAchievementStore.append(PLAYER, "hard", VANILLA);
+        assertTrue(GlobalAchievementStore.removeEverywhere(PLAYER, GAMEPLAY));
+        assertFalse(GlobalAchievementStore.read(PLAYER, "hard").contains(GAMEPLAY));
+        GlobalAchievementStore.flush();
+        assertTrue(GlobalAchievementStore.readFile(normalFile(dir)).isEmpty());
+        assertEquals(Set.of(VANILLA),
+            GlobalAchievementStore.readFile(dir.resolve(GlobalAchievementStore.fileName(PLAYER, "hard"))));
+    }
+
+    @Test
+    @DisplayName("After a server stop the next read comes from disk, so title-screen edits aren't lost")
+    void clearAllDropsStaleCache(@TempDir Path dir) {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        GlobalAchievementStore.append(PLAYER, "normal", GAMEPLAY);
+        GlobalAchievementStore.flushAndClearAll();
+        // What AdvancementPromotion does at the title screen: edit the file directly.
+        GlobalAchievementStore.writeAtomic(normalFile(dir), new LinkedHashSet<>(List.of(GAMEPLAY, VANILLA)));
+        assertEquals(Set.of(GAMEPLAY, VANILLA), GlobalAchievementStore.read(PLAYER, "normal"));
+    }
+
+    @Test
+    @DisplayName("Editor ids banked in the shared partition stay out of the difficulty file")
+    void sharedAppendGoesToSharedFile(@TempDir Path dir) {
+        GlobalAchievementStore.useDirectoryForTests(dir);
+        GlobalAchievementStore.append(PLAYER, GlobalAchievementStore.SHARED, EDITOR);
+        GlobalAchievementStore.flush();
+        assertEquals(Set.of(EDITOR), GlobalAchievementStore.readFile(
+            dir.resolve(GlobalAchievementStore.fileName(PLAYER, GlobalAchievementStore.SHARED))));
+        assertFalse(java.nio.file.Files.exists(normalFile(dir)));
     }
 }
