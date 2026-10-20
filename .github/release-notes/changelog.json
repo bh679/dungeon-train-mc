@@ -28866,6 +28866,117 @@
       "released_at": null
     },
     {
+      "id": "stranger-stretches-lighter-tick",
+      "version": "0.1419.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Lighter ride through the stranger stretches",
+      "summary": "The stranger stretches of the line now cost the server less work every tick, so the ride stays smooth with more mobs and items about. Nothing looks or behaves differently.",
+      "highlights": [],
+      "pr": 2196,
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "sable-autosave-no-fsync",
+      "version": "0.1419.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility"
+      ],
+      "title": "Shorter autosave pause",
+      "summary": "The game paused for a second or more every time it autosaved, because the train was being written to disk the slow way. Autosaves now write the train the same way the rest of the world is written, so the pause is much shorter. Saving on quit is unchanged.",
+      "highlights": [
+        "Autosaves and the pause save no longer wait on the disk for every train file",
+        "Quitting the world still saves everything fully before it closes"
+      ],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2200,
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "passenger-log-no-state-line",
+      "version": "0.1417.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Quieter passenger log announcements",
+      "summary": "The public passenger log's milestone and first-ever announcements no longer end with your carriage and difficulty. Where you are on the train stays yours to share.",
+      "highlights": [],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perf-log-off-thread-pause-watchdog",
+      "version": "0.1423.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Smoother ticks and quieter logs",
+      "summary": "The game's performance notes are now written in the background instead of making the world wait for the log file, and sitting in the pause menu no longer fills your log with false freeze reports.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "advancement-earn-no-freeze",
+      "version": "0.1424.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "No freeze when you earn an advancement",
+      "summary": "Earning an advancement could freeze the game for several seconds on some computers, because it waited on the disk before carrying on. The save now happens in the background, so the game keeps running while it writes.",
+      "highlights": [
+        "Earning an advancement no longer waits on the disk",
+        "Leaving a server no longer holds up the other players while your advancements save"
+      ],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2202,
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "jade-block-info-surprise",
+      "version": "0.1425.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Block info spoiler fix",
+      "summary": "A block-info mod could give away a hidden surprise in some walls. In survival it now tells you only what you would see with your own eyes.",
+      "highlights": [],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "portal-mod-update-safety",
       "version": "0.1420.0",
       "type": "fix",

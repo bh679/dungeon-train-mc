@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.live;
 
+import games.brennan.dungeontrain.util.AsyncPerfLog;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.live.audio.AudioMirror;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
@@ -102,7 +103,7 @@ public final class LivePerfStats {
             LivePerfWindow.Context context = new LivePerfWindow.Context(streaming, size, encCpu,
                 sessions, session == null ? 0 : session.width(), decCpu, Minecraft.getInstance().getFps(),
                 audio == null ? null : new LivePerfWindow.Audio(audio.sources(), audio.twinBytes()));
-            PERF.debug(LivePerfWindow.format(snapshot, context));
+            AsyncPerfLog.debug(PERF, LivePerfWindow.format(snapshot, context));
         }
         activeSeen = active;
     }

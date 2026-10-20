@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import games.brennan.dungeontrain.util.AsyncPerfLog;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -253,7 +254,7 @@ public final class TrainTickEvents {
         double endApplyMs = s.ms(GenProfiler.Bucket.END_BAND_APPLY);
         // End-band sampling runs off the gen workers, so a window can have End work and no chunks fulled.
         if (s.chunks() <= 0 && endSampleMs <= 0 && endApplyMs <= 0) return;
-        PERF_LOGGER.debug(
+        AsyncPerfLog.debug(PERF_LOGGER, 
             "[gen.timing] dim={} chunksFulled={} dtGenMs={} perChunkDtMs={} | totals df={} nether={} core={} deco={} otherside={} biome={} pick={} mirror={} netherStrip={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={} sphSample={} sphApply={} endSample={} endApply={} | perChunk df={} nether={} core={} deco={} otherside={} biome={} pick={} mirror={} netherStrip={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={}",
             level.dimension().location(), s.chunks(),
             String.format("%.2f", s.dtTotalMs()), String.format("%.3f", s.dtTotalPerChunkMs()),
@@ -404,7 +405,7 @@ public final class TrainTickEvents {
             // their poses, and how many carriages re-anchored in the window — the fields
             // needed to attribute a slow physMs while the player is away from the train
             // (player logs of 28 Sep 2026: 45–205 ms at near=0). See PhysicsFreezeController.
-            PERF_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={} physMs={} substeps={} blockChanges={} activeTracked={} activeEntity={} activeSettling={} frozen={} maxBodyLag={} reparks={} reanchors={} colliderRebuilds={} batchedBlockChanges={} blockChangeMs={}"
+            AsyncPerfLog.debug(PERF_LOGGER, "[mspt] dim={} avgTickMs={} carriages={} near={} trains={} physMs={} substeps={} blockChanges={} activeTracked={} activeEntity={} activeSettling={} frozen={} maxBodyLag={} reparks={} reanchors={} colliderRebuilds={} batchedBlockChanges={} blockChangeMs={}"
                     + " gcMs={} gcN={} heapUsedMb={} heapMaxMb={} chunkWaitMs={} chunkWaits={} chunksLoaded={} pendingChunkTasks={} entities={} onCarriages={} tickMaxMs={}"
                     + " stepDeferred={} secluded={}",
                 level.dimension().location(), String.format("%.2f", avgTickMs), carriages,
@@ -506,7 +507,7 @@ public final class TrainTickEvents {
             int totalCarriages = 0;
             for (List<Trains.Carriage> train : trainsById.values()) totalCarriages += train.size();
             int nearCarriages = countNearCarriages(level, trainsById);
-            PERF_LOGGER.debug(
+            AsyncPerfLog.debug(PERF_LOGGER, 
                 "[stuck.timing] tick={} total={}ms appender={}ms overlay={}ms find={}ms kill={}ms sweep={}ms tracks={}ms mirror={}ms tunnels={}ms trains={} carriages={} near={} broke={} slowTicks={}",
                 level.getGameTime(), totalMs,
                 (tAfterAppender - t0) / 1_000_000,
@@ -655,7 +656,7 @@ public final class TrainTickEvents {
             // repeats per dimension every 2 s); any window with measurable cost still logs, which
             // keeps the applied==0 frontier-waste case the A/B reads.
             if (winApplied > 0 || winDrainNanos >= UD_DRAIN_WIN_IDLE_NANOS) {
-                PERF_LOGGER.debug("[ud-drain.win] mode={} totalMs={} applied={} backlog={} ready={}",
+                AsyncPerfLog.debug(PERF_LOGGER, "[ud-drain.win] mode={} totalMs={} applied={} backlog={} ready={}",
                     mirrorDrainLegacy ? "legacy" : "ready",
                     String.format("%.2f", winDrainNanos / 1_000_000.0),
                     winApplied, pending.size(), ready.size());
@@ -962,7 +963,7 @@ public final class TrainTickEvents {
      */
     private static void logSweepPerf(ServerLevel level) {
         if (perfTicks == 0) return;
-        PERF_LOGGER.debug("[sweep.perf] dim={} breaking={} ticks={} avgMs={} maxMs={} cells/tick={} nonAir/tick={} lookups/tick={} breaks={} unloadedCols/tick={} deferred={}",
+        AsyncPerfLog.debug(PERF_LOGGER, "[sweep.perf] dim={} breaking={} ticks={} avgMs={} maxMs={} cells/tick={} nonAir/tick={} lookups/tick={} breaks={} unloadedCols/tick={} deferred={}",
             level.dimension().location(),
             DungeonTrainWorldData.get(level).getEffectiveBreakBlocksOnContact() ? "ON" : "OFF",
             perfTicks,

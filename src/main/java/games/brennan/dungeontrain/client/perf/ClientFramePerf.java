@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.perf;
 
+import games.brennan.dungeontrain.util.AsyncPerfLog;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.util.DtLogging;
 import net.minecraft.client.Minecraft;
@@ -75,6 +76,6 @@ public final class ClientFramePerf {
             mc.options.enableVsync().get(),
             mc.isWindowActive(),
             mc.screen == null ? "none" : mc.screen.getClass().getSimpleName());
-        PERF.debug(FrameTimeWindow.format(snapshot, context));
+        AsyncPerfLog.debug(PERF, FrameTimeWindow.format(snapshot, context));
     }
 }
