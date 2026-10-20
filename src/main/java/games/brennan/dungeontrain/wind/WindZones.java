@@ -18,6 +18,9 @@ import net.minecraft.world.level.biome.Biomes;
  * <ul>
  *   <li><b>Under an End sky</b> (the End band and its void, and the spheres band's End-sky window) — no wind;
  *       it fades out as the sky turns and back in as it returns.</li>
+ *   <li><b>Over the spheres band's void</b> — no wind, whatever the sky: it fades out as the terrain dissolves
+ *       across the entry fade and back in over the closing void, so it is fully back where the world returns
+ *       ({@link #spheresVoidAt}).</li>
  *   <li><b>Under a Nether sky</b> — no wind ({@link #NETHER_FACTOR}), fading with the sky; where any is left
  *       the streaks turn orange.</li>
  *   <li><b>Riding high</b> over the sunk approach to the Amplified band and the Amplified band itself — 1.5x
@@ -45,16 +48,18 @@ public final class WindZones {
     private WindZones() {}
 
     /**
-     * Wind multiplier from the band at {@code worldX}: 0 under a full End sky or a full Nether sky (fading between),
-     * {@link #HIGH_UP_FACTOR} where the train rides high over the sunk approach to the Amplified band and the band.
+     * Wind multiplier from the band at {@code worldX}: 0 under a full End sky, a full Nether sky or over the
+     * spheres band's void (fading between), {@link #HIGH_UP_FACTOR} where the train rides high over the sunk
+     * approach to the Amplified band and the band.
      */
     public static double bandFactor(double worldX) {
         int x = (int) Math.floor(worldX);
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
         double end = endSky(cycle, x);
         double nether = nether(cycle, x);
+        double spheres = spheresVoid(cycle, x);
         double high = isHighUp(cycle, x) ? HIGH_UP_FACTOR : 1.0;
-        return (1.0 - end) * (1.0 - (1.0 - NETHER_FACTOR) * nether) * high;
+        return (1.0 - end) * (1.0 - (1.0 - NETHER_FACTOR) * nether) * (1.0 - spheres) * high;
     }
 
     /**
@@ -98,6 +103,15 @@ public final class WindZones {
         return endSky(WorldGenCycle.fromConfig(), (int) Math.floor(worldX));
     }
 
+    /**
+     * Spheres-band void {@code 0..1} at {@code worldX}: rising as the terrain dissolves across the entry fade,
+     * 1 through the band, easing back to 0 over the closing empty void ({@code spheresExitVoidBlocks}) so the
+     * wind is fully back where the world returns.
+     */
+    public static double spheresVoidAt(double worldX) {
+        return spheresVoid(WorldGenCycle.fromConfig(), (int) Math.floor(worldX));
+    }
+
     public static boolean isDeepDark(Level level, BlockPos pos) {
         return level.getBiome(pos).is(Biomes.DEEP_DARK);
     }
@@ -132,6 +146,11 @@ public final class WindZones {
                     SpheresProgressionConfig.endSkyExitFadeBlocks(), SpheresProgressionConfig.exitVoidBlocks());
         }
         return clamp(Math.max(end, spheres));
+    }
+
+    private static double spheresVoid(WorldGenCycle cycle, int x) {
+        if (!DungeonTrainCommonConfig.isSpheresEnabled()) return 0.0;
+        return clamp(cycle.spheresVoidReturnRamp(x, SpheresProgressionConfig.exitVoidBlocks()));
     }
 
     private static double clamp(double v) {

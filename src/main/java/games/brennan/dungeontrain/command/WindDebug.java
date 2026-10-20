@@ -79,10 +79,11 @@ final class WindDebug {
                 state, s.startX(), x - s.startX()), ChatFormatting.AQUA);
         send(source, String.format("  push %.4f (gust %.0f%%) toward %.0f° (0=+X, 90=+Z)",
                 w.strength(), w.gust01() * 100.0, Math.toDegrees(w.headingRad())), ChatFormatting.WHITE);
-        send(source, String.format("  zone x%.2f (End sky %.0f%%, Nether sky %.0f%%, high up %s, sky islands %s)",
+        send(source, String.format("  zone x%.2f (End sky %.0f%%, Nether sky %.0f%%, spheres void %.0f%%, high up %s, sky islands %s)",
                 games.brennan.dungeontrain.wind.WindZones.bandFactor(x),
                 games.brennan.dungeontrain.wind.WindZones.endSkyAt(x) * 100.0,
                 games.brennan.dungeontrain.wind.WindZones.netherAt(x) * 100.0,
+                games.brennan.dungeontrain.wind.WindZones.spheresVoidAt(x) * 100.0,
                 games.brennan.dungeontrain.wind.WindZones.isHighUpAt(x) ? "yes" : "no",
                 games.brennan.dungeontrain.wind.WindZones.isSkyAt(x) ? "yes" : "no"), ChatFormatting.WHITE);
         if (e != null) {

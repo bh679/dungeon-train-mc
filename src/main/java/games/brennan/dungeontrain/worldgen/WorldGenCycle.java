@@ -1989,6 +1989,25 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * How much of the spheres band's open void is around {@code worldX}, {@code 0..1}, for things that stop
+     * with the world rather than the terrain: {@link #spheresVoidRamp} (0 → 1 as the terrain dissolves across
+     * the entry fade, 1 through the core) but easing back {@code 1 → 0} over the core's last
+     * {@code returnFade} blocks, so it is 0 exactly where the terrain snaps back at the core's hard far edge
+     * instead of jumping there. {@code returnFade} is clamped to a quarter of the core; {@code 0} keeps the
+     * hard edge. The train wind reads this ({@code wind.WindZones}): no wind over the void, like the End's.
+     */
+    public double spheresVoidReturnRamp(int worldX, int returnFade) {
+        double v = spheresVoidRamp(worldX);
+        if (v <= 0.0) return 0.0;
+        long len = spheresLen();
+        long ls = spheresOffset(worldX);
+        long fo = Math.max(0L, Math.min(returnFade, len / 4L));
+        if (ls < 0L || fo == 0L) return v;
+        double out = (double) (len - ls) / fo;              // 1/fo on the core's last column
+        return Math.min(v, Math.min(1.0, out));
+    }
+
+    /**
      * End sky/light ramp {@code 0..1} over the <b>later part</b> of the spheres band core: {@code 0}
      * across the entry fade and the core's first {@code startBlocks} (normal overworld sky), climbing
      * {@code 0 → 1} over {@code fade} blocks from there, held at {@code 1}, then back {@code 1 → 0} over
