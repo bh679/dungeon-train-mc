@@ -28714,8 +28714,28 @@
       "released_at": null
     },
     {
-      "id": "wind-on-the-ground",
+      "id": "end-band-sampler-trims",
       "version": "0.1410.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Lighter End islands generation",
+      "summary": "The End islands crossings now generate each chunk with less work and far less memory churn: the terrain copy no longer builds a wide ring of empty scratch chunks, asks the biome layout once per column instead of once per block row, and skips a cave pass that never carved anything. What you see on the islands is unchanged.",
+      "highlights": [
+        "End islands chunks generate with about a fifth less processing and a quarter of the memory churn",
+        "No change to how the islands look"
+      ],
+      "pr": 2189,
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "wind-on-the-ground",
+      "version": "0.1411.0",
       "type": "feat",
       "tags": [
         "feature",
