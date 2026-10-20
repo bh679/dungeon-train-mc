@@ -352,6 +352,18 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# windy (Windy: Configurable on CurseForge, Windy on Modrinth). Client-only visual mod: the streaks the
+# train wind shows (see the [[mixins]] entry below). Required on the CLIENT only, so a dedicated server
+# boots without it. versionRange admits the original Windy (1.1.x, the Modrinth pack's build) too; there
+# DT's own particles carry the wind direction because only the fork has the hook DT steers.
+
+[[dependencies.${mod_id}]]
+    modId="windy"
+    type="required"
+    versionRange="[1.1,)"
+    ordering="NONE"
+    side="CLIENT"
+
 # vivecraft (VR). Optional, player-installed — NOT bundled, NOT a compile dep. Metadata only.
 #
 # Vivecraft breaks in two ways on a Sable sub-level — VR melee hits nothing, and VR teleport drops
@@ -472,3 +484,10 @@ logoFile="logo.png"
 # own Nether/End atmosphere, fog and lighting there. No-ops without Iris; no dependency declared.
 [[mixins]]
     config="${mod_id}.iris.mixins.json"
+
+# Windy (client). The train wind steers Windy: Configurable's streaks through the fork's Living Wind hook
+# (xyz.bonfiremc.windy.LivingWindCompat). dungeontrain.windy.mixins.json is gated by WindyMixinPlugin: the
+# original Windy (Modrinth) has no such hook, and without Windy at all DT draws its own vanilla-particle
+# wind (client/wind/WindVisuals). @Pseudo, so DT has no compile dependency on Windy.
+[[mixins]]
+    config="${mod_id}.windy.mixins.json"

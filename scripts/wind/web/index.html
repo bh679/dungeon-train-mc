@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Train Wind Tuner</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --panel: #ffffff; --ink: #1d1c1a; --muted: #6b6860; --line: #e2dfd6;
+    --steady: #2f6db5; --gust: #d0582b; --band: #2f6db533; --heading: #7a4fb0; --rate: #3d8f5a;
+    --mark: #1d1c1a; --muted-line: #b9b5aa; --ok: #2f8a4c; --bad: #c0392b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151515; --panel: #1f1f1e; --ink: #ecebe6; --muted: #9a978f; --line: #33322f;
+      --steady: #6ea6ea; --gust: #f08a5d; --band: #6ea6ea33; --heading: #b48ce8; --rate: #6cc48a;
+      --mark: #ecebe6; --ok: #57c27a; --bad: #ef6b5b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, sans-serif; }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 17px; margin: 0 12px 0 0; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 16px; padding: 16px 20px 40px; }
+  @media (max-width: 1100px) { main { grid-template-columns: minmax(0, 1fr); } }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; }
+  section h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 6px; }
+  .hint { color: var(--muted); font-size: 12px; margin: 0 0 8px; }
+  canvas { width: 100%; display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .legend i { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin-right: 5px; border-radius: 2px; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 6px 0; }
+  label { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+  input[type=number], input[type=text] { width: 86px; padding: 3px 5px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); color: var(--ink); font: inherit; font-size: 12px; }
+  input[type=range] { width: 220px; }
+  button { padding: 5px 11px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); font: inherit; cursor: pointer; }
+  button.primary { background: var(--steady); border-color: var(--steady); color: #fff; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  th { text-align: left; color: var(--muted); font-weight: 500; padding: 3px 2px; white-space: nowrap; }
+  td { padding: 2px; }
+  td input[type=number] { width: 100%; min-width: 52px; }
+  tr.sel td { background: var(--band); }
+  .badge { font-size: 12px; padding: 2px 8px; border-radius: 99px; border: 1px solid currentColor; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); }
+  #status { font-size: 12px; color: var(--muted); }
+  .readout { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--muted); }
+  .scroll { overflow-x: auto; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+  @media (max-width: 700px) { .pair { grid-template-columns: 1fr; } }
+  select { padding: 3px 4px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); color: var(--ink); font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Train Wind Tuner</h1>
+  <span id="parity" class="badge">parity …</span>
+  <button id="save" class="primary">Save profile.json</button>
+  <button id="revert">Revert</button>
+  <span id="status"></span>
+</header>
+<main>
+  <div>
+    <section>
+      <h2>Along the line</h2>
+      <p class="hint">From spawn, in blocks past the end of the first Upside-down band (negative = before it, where there is no wind). Band strip from bands.json. Click to pick a spot.
+        Show up to <input type="number" id="range" value="300000" step="50000" min="10000"> blocks.</p>
+      <canvas id="line" height="260"></canvas>
+      <div class="legend">
+        <span><i style="background:var(--steady)"></i>steady push (log, no limit)</span>
+        <span><i style="background:var(--band);height:8px"></i>flutter range</span>
+        <span><i style="background:var(--gust)"></i>gust peak on top of steady (log, no limit)</span>
+      </div>
+      <div class="pair">
+        <div><canvas id="rate" height="150"></canvas>
+          <div class="legend"><span><i style="background:var(--rate)"></i>gusts / min</span><span><i style="background:var(--muted)"></i>cap 60</span></div></div>
+        <div><canvas id="glen" height="150"></canvas>
+          <div class="legend"><span><i style="background:var(--heading)"></i>longest gust, s (each gust 0.1 s up to this)</span><span><i style="background:var(--muted)"></i>cap 5</span></div></div>
+      </div>
+    </section>
+    <section>
+      <h2>What it feels like</h2>
+      <div class="row">
+        <label>at <input type="number" id="d" step="500" min="0"> blocks past UD</label>
+        <input type="range" id="dRange" min="0" max="150000" step="250">
+        <label>window <input type="number" id="win" value="120" min="10" step="10"> s</label>
+        <label title="Caves of Chaos, Skylands, Floating: half gusts, 3x steady swing with ~15 s calm gaps, slower changes"><input type="checkbox" id="sky"> sky islands</label>
+        <label><input type="checkbox" id="ride"> ride the train at <input type="number" id="speed" value="8" step="1" min="0"> blocks/s</label>
+        <label>seed <input type="text" id="seed" value="1592639215"></label>
+        <button id="reroll">new seed</button>
+      </div>
+      <p class="readout" id="feelStats"></p>
+      <canvas id="feel" height="240"></canvas>
+      <div class="legend">
+        <span><i style="background:var(--steady)"></i>steady</span>
+        <span><i style="background:var(--gust)"></i>total with gusts</span>
+        <span>Push is blocks/tick² at multiplier 1. A grounded player settles at about 2.2 × that in blocks/tick (walk ≈ 0.22).</span>
+      </div>
+      <canvas id="heading" height="150"></canvas>
+      <div class="legend"><span><i style="background:var(--heading)"></i>heading the wind blows toward (deg; 0 = +X along the track, 90 = +Z)</span></div>
+    </section>
+    <section>
+      <h2>Sound preview</h2>
+      <p class="hint">The game's wind sound (vanilla elytra rush; a gust doubles it with a second copy and turns the breeze up), driven by the wind at the spot above. Silent inside a carriage or a tunnel. Same rules as the game (WindSound.java); uses "ride the train" and the seed above.</p>
+      <div class="row">
+        <button id="soundPlay" class="primary">Play</button>
+        <label>you are <select id="muffle">
+          <option value="open">out in the wind</option>
+          <option value="lee">in a lee</option>
+          <option value="cover">inside a carriage</option>
+          <option value="tunnel">in a tunnel</option>
+        </select></label>
+      </div>
+      <canvas id="soundMeter" height="70"></canvas>
+      <p class="readout" id="soundStats">stopped</p>
+    </section>
+  </div>
+  <div>
+    <section>
+      <h2>Profile</h2>
+      <div class="row">
+        <label><input type="checkbox" id="enabled"> enabled</label>
+        <label>heading° <input type="number" id="headingDeg" step="5"></label>
+        <label>sneak × <input type="number" id="sneakFactor" step="0.05"></label>
+        <label>in the air × <input type="number" id="airFactor" step="0.25"></label>
+        <label>visual lead (ticks) <input type="number" id="visualLeadTicks" step="1"></label>
+      </div>
+      <div class="row" id="mults"></div>
+    </section>
+    <section>
+      <h2>Weight</h2>
+      <p class="hint">Mass = bounding-box volume. Lighter things get × (ref / mass)^exponent (capped), and on the ground the wind must beat grip × mass before anything moves.</p>
+      <div class="row" id="weight"></div>
+      <div class="scroll"><table id="whoMoves"></table></div>
+    </section>
+    <section>
+      <h2>Curves</h2>
+      <p class="hint"><b>log</b>: scale × ln(1 + d / ref), rising forever. <b>approach</b>: closes half the gap from start to max every half-life blocks, never reaching it.</p>
+      <div class="scroll"><table id="curves"></table></div>
+    </section>
+  </div>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>

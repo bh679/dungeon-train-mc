@@ -28627,6 +28627,31 @@
       "notable": true,
       "description": "The thank-you that comes with a gift to the dev is now something you can use in Dungeon Train.\n\n**Book Boosts.** Every $10 you give carries 10 Book Boosts. Found a book you loved? Turn to its last page and tap the star to boost it, as many times as you like. Each boost on someone else's book costs 1, and the author is told which donors boosted it. Want your own writing seen? Boost it when you sign it, or tap the star on your own copy later, for 10. The star beside the book shows how many boosts you have left.\n\nAlso, a **Copy Book button**, for the donors who are making an archive of every book they've read.\n\nRewards are matched to your Minecraft account, so they need network features switched on.\n\n## Other significant updates\n\n- New cargo: crates, trees and a TNT boxcar\n- Many new woods down the line, and new enemy rooms\n- Quicker Streams: when it's on, the Live Eye reaches viewers in seconds\n- Community photos hang in the carriages' picture frames\n- Website watchers wear their own skin, and the Live page names viewers wearing a TV\n- Mobs stay put: they no longer die to passing carriages, slide to the back, or vanish when they step off\n- See what each advancement unlocks\n- Distant Horizons fits in better, and Bobby is an approved mod\n- Lighter terrain generation and many bug fixes",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/donation-rewards-in-game.png"
+    },
+    {
+      "id": "train-wind",
+      "version": "0.1407.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "world"
+      ],
+      "title": "The Deep Train gets Windy",
+      "summary": "Deep down the line, the roof of the train and anywhere the walls don't protect you now face gusts of wind, forever growing stronger.",
+      "highlights": [
+        "Watch the streaks in the air: the wind shows itself just before it hits.",
+        "Arrows, items and lighter creatures go first.",
+        "New Wind volume slider in the sound options."
+      ],
+      "pr": 2173,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "major": true,
+      "description": "Deep down the line, for the most brave, skilled and committed adventurers, lies a new challenge.\n\nThe carts might be full of buffed up monsters, but now the roof of the train, and anywhere the walls don't protect you, face gusts of wind! The taller places feel it more, and underground is safe from it. Forever growing stronger. The train continues to get harder.\n\nSpecial thanks to Lil Detective Crunch for the idea.\n\n*I will be taking feedback on the wind balancing, and I will be rebalancing monsters later too.*",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-deep-train-gets-windy.jpg"
     }
   ]
 }

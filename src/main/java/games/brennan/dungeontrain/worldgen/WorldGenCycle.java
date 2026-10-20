@@ -1895,6 +1895,33 @@ public record WorldGenCycle(long startX, int owGap,
         return startX + CycleLayout.runStart(k, layout.period()) + (u << k);
     }
 
+    /**
+     * World X where the <b>first</b> upside-down stretch ahead of spawn ends — its Reassembly (exit
+     * crossfade) included — or {@link Long#MIN_VALUE} when this cycle has no upside-down band. The train
+     * wind ({@code wind.WindStart}) measures its distance from here.
+     *
+     * <p>With an ordered layout this is the first {@code UPSIDE_DOWN} slot's end in run 0. The classic
+     * fixed cycle has no public slot table, so it walks {@link #isInUpsideDownStretch} forward from the
+     * anchor in 32-block steps (once — callers cache it).</p>
+     */
+    public long upsideDownEndX() {
+        if (period() <= 0L || upsideDownLen() <= 0L) return Long.MIN_VALUE;
+        if (layout != null) {
+            int i = layout.firstIndexOf(CycleLayout.Type.UPSIDE_DOWN);
+            if (i < 0 || layout.length(i) <= 0L) return Long.MIN_VALUE;
+            return worldXOfBase(0, layout.start(i) + layout.length(i));
+        }
+        final int step = 32;
+        long limit = startX + period();
+        boolean seen = false;
+        for (long x = startX; x <= limit && x < Integer.MAX_VALUE; x += step) {
+            boolean in = isInUpsideDownStretch((int) x);
+            if (in) seen = true;
+            else if (seen) return x;
+        }
+        return Long.MIN_VALUE;
+    }
+
     /** World X of base coordinate {@code u} in the run containing {@code worldX}, forward or reversed (layout only). */
     public long worldXOfBaseNear(int worldX, long u) {
         return worldOf(worldX, u);

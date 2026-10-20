@@ -877,6 +877,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // accessor, so a player who came looking here rather than there finds the same control at
             // the same value. The slider carries the sound screen's long tooltip; the row has its own short one.
             case TRAIN_VOLUME -> Setting.of(slider(TrainVolumeOption.valueOnly()), key + ".tip");
+            case WIND_VOLUME -> Setting.of(slider(games.brennan.dungeontrain.client.wind.WindVolumeOption.valueOnly()),
+                    key + ".tip");
 
             // The standing answer to the start-of-world prompt shown when the player has Train Editor
             // edits or an imported dtpack. This is the "can be changed in options" half of that

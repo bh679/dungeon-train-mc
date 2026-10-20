@@ -5824,6 +5824,19 @@
         "slug": "what-are-they-up-to"
       }
     },
+    "windy": {
+      "platform": "modrinth",
+      "project": "EwYg6C78",
+      "slug": "windy",
+      "name": "Windy",
+      "sha1": [
+        "8af1c26a4873d9deb3ca670676dbd01ebd3391fb",
+        "f857d20a426d78832493d118a239c70bf0def86d"
+      ],
+      "packages": [
+        "xyz.bonfiremc"
+      ]
+    },
     "worldedit": {
       "platform": "modrinth",
       "project": "1u6JkXh5",

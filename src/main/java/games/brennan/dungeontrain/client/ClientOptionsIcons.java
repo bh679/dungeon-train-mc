@@ -74,6 +74,7 @@ final class ClientOptionsIcons {
             case CONFIRM_BUILD_RESTORE -> Icon.item(Items.WRITABLE_BOOK);
 
             case TRAIN_VOLUME -> Icon.item(Items.NOTE_BLOCK);
+            case WIND_VOLUME -> Icon.item(Items.FEATHER);
             case CUSTOM_CONTENT -> FREE_PLAY;
             case SNAPSHOT_MAX_RES -> Icon.item(Items.PAINTING);
             case SNAPSHOT_CHAT_LOG -> Icon.item(Items.PAPER);
