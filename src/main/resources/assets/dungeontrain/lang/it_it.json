@@ -3503,6 +3503,7 @@
   "gui.dungeontrain.editor_menu.phase.large_biomes": "Biomi grandi",
   "gui.dungeontrain.editor_menu.phase.amplified": "Amplificato",
   "gui.dungeontrain.editor_menu.phase.lost_city": "Città perduta",
+  "gui.dungeontrain.editor_menu.phase.deeper_dark": "Oscurità più profonda",
   "gui.dungeontrain.editor_menu.phase.caves_of_chaos": "Grotte del Caos",
   "gui.dungeontrain.editor_menu.stage.title": "Tratto: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Elimina tratto",

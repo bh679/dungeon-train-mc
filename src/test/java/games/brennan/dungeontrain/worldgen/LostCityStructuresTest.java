@@ -91,11 +91,11 @@ final class LostCityStructuresTest {
     }
 
     @Test
-    @DisplayName("Lost City runs 3000 blocks alone between BetterNether and BetterEnd, entered over its own 750-block fade")
+    @DisplayName("Lost City runs 3000 blocks alone between the Deeper Dark and BetterEnd, entered over its own 750-block fade")
     void shippedPlacement() {
         int slot = slot();
         assertEquals(CycleLayout.Type.NETHER, LAYOUT.slot(slot - 1).type());
-        assertEquals(CycleLayout.Style.BETTER, LAYOUT.slot(slot - 1).style());
+        assertEquals(CycleLayout.Style.OTHERSIDE, LAYOUT.slot(slot - 1).style());
         assertEquals(CycleLayout.Type.END, LAYOUT.slot(slot + 1).type());
         assertEquals(CycleLayout.Style.BETTER, LAYOUT.slot(slot + 1).style());
         assertEquals(1, LAYOUT.eras(slot).length);

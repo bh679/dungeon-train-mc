@@ -91,6 +91,7 @@ public final class BandLabel {
             case NETHER -> !NetherBand.isInNetherBand(overworld, worldX) ? "" : switch (cycle.netherLookAt(worldX)) {
                 case BETTER -> "Better Nether";
                 case BOP -> "Biomes O' Plenty Nether";
+                case OTHERSIDE -> "Deeper Dark";
                 default -> "";
             };
             case END -> switch (cycle.endLookAt(worldX)) {

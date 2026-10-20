@@ -55,5 +55,11 @@
       "LOST_CITY",
       "CAVES_OF_CHAOS"
     ]
+  },
+  "sculktracks": {
+    "weight": 1,
+    "phases": [
+      "DEEPER_DARK"
+    ]
   }
 }

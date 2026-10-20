@@ -30,6 +30,14 @@ public abstract class JigsawStructureMixin extends Structure {
     private void dungeontrain$siteBastionInBand(GenerationContext context,
                                                 CallbackInfoReturnable<Optional<GenerationStub>> cir) {
         JigsawStructure self = (JigsawStructure) (Object) this;
+        if (games.brennan.dungeontrain.worldgen.structure.BandOthersideStructures.isTemple(self)) {
+            // Deeper Darker's Ancient Temple in a Deeper Dark core, sited onto the Otherside slab. Anywhere else —
+            // the real Otherside included — vanilla's own siting runs untouched.
+            Optional<GenerationStub> temple = games.brennan.dungeontrain.worldgen.structure.BandOthersideStructures.site(
+                    self, context, this.biomes());
+            if (temple.isPresent()) cir.setReturnValue(temple);
+            return;
+        }
         if (!BandNetherStructures.isBastion(self)) return;
         Optional<GenerationStub> banded = BandBastionSiting.site(self, context, this.biomes());
         if (banded.isPresent()) cir.setReturnValue(banded);

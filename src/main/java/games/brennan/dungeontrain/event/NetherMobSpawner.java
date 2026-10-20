@@ -272,6 +272,8 @@ public final class NetherMobSpawner {
             int px = (int) Math.floor(player.getX());
             if (NetherBand.netherRampAt(level, px) < SPAWN_INTENSITY_THRESHOLD) continue;
             if (DisintegrationBand.middleRampAt(level, px) > 0.0) continue;
+            // The Deeper Dark is no Nether: its own biomes spawn its mobs naturally (onFinalizeSpawn lets them).
+            if (NetherBand.isOthersideAt(level, px)) continue;
             // A player under the floor is in the basement — a portal room, almost always. Every
             // candidate height is derived from theirs, so there is nothing legal to find down here.
             if (WorldFloor.isBelowFloor(player.getBlockY(), bedrockY)) continue;
@@ -308,6 +310,9 @@ public final class NetherMobSpawner {
             // Nether. Blanket-cancelling the band would eat those too, and the fortresses would stand empty.
             BlockPos pos = BlockPos.containing(event.getX(), event.getY(), event.getZ());
             if (BandStructureSpawns.inMonsterSpawningStructure(level, pos)) return;
+            // A Deeper Dark core spawns from its Otherside biomes' own lists (snappers, shattered, centipedes),
+            // as the Otherside does; only the overworld mountains around it stay empty.
+            if (games.brennan.dungeontrain.worldgen.OthersideCore.isOthersideBiome(level.getBiome(pos))) return;
             event.setSpawnCancelled(true);
         }
     }

@@ -3556,6 +3556,7 @@
   "gui.dungeontrain.editor_menu.phase.large_biomes": "Duże biomy",
   "gui.dungeontrain.editor_menu.phase.amplified": "Spotęgowany",
   "gui.dungeontrain.editor_menu.phase.lost_city": "Zaginione miasto",
+  "gui.dungeontrain.editor_menu.phase.deeper_dark": "Głębsza ciemność",
   "gui.dungeontrain.editor_menu.phase.caves_of_chaos": "Jaskinie Chaosu",
   "gui.dungeontrain.editor_menu.stage.title": "Etap: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Usuń etap",
