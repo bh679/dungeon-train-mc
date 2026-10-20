@@ -33,8 +33,11 @@ final class WindVisualShelter {
 
     static final int CARRIAGE_SCAN = 7;
     static final int TERRAIN_SCAN = 12;
-    /** Path sampling step, ticks. Streaks move under ~1 block/tick, so 2 ticks can't skip a wall-thick room. */
-    private static final int STEP = 2;
+    /**
+     * Path sampling step, ticks: the per-streak cost. Even a strong late gust streak (~1.5 blocks/tick relative)
+     * moves about 6 blocks in 4 ticks, under a carriage room's width, so it still lands a sample inside any room.
+     */
+    private static final int STEP = 4;
 
     private WindVisualShelter() {}
 

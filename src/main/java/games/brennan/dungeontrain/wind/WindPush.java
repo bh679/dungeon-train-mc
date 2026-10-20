@@ -24,6 +24,11 @@ public final class WindPush {
      * (a frozen or non-ticking one) would bank velocity every tick and be launched when it next moves.
      */
     static final double MAX_DOWNWIND_SPEED = 0.6;
+    /**
+     * Downwind speed band below {@link #MAX_DOWNWIND_SPEED} over which the push eases to nothing, instead of
+     * switching off at the cap (a hard cut made an arrow's drift stutter as its speed crossed it).
+     */
+    static final double TAPER = 0.25;
 
     private WindPush() {}
 
@@ -67,13 +72,33 @@ public final class WindPush {
         return Math.max(0.0, a);
     }
 
-    /** Push {@code e} by {@code w}; returns the acceleration applied (0 when capped or calm). */
+    /**
+     * Push {@code e} by {@code w}; returns the acceleration applied (0 when capped or calm).
+     *
+     * <p>Projectiles get two extra steps so their drift reads smoothly: one stuck in a block (it didn't move last
+     * tick) is left alone, and a pushed one is flagged {@code hasImpulse} so the server sends its new velocity to
+     * clients this tick. Arrows otherwise sync motion only once a second; the client flew them without the wind
+     * meanwhile and snapped them across when the sync came.</p>
+     */
     public static double apply(Entity e, WindSample w, WindProfile profile, double extra) {
-        double a = accel(e, w, profile, extra);
+        boolean projectile = e instanceof Projectile;
+        if (projectile && stuck(e)) return 0.0;
+        double a = accel(e, w, profile, extra) * taper(e.getDeltaMovement(), w);
         if (a <= 0.0) return 0.0;
         Vec3 v = e.getDeltaMovement();
-        if (v.x * w.dirX() + v.z * w.dirZ() >= MAX_DOWNWIND_SPEED) return 0.0;
         e.setDeltaMovement(v.x + w.dirX() * a, v.y, v.z + w.dirZ() * a);
+        if (projectile) e.hasImpulse = true;
         return a;
+    }
+
+    /** 1 well under the downwind cap, easing to 0 across the last {@link #TAPER} of it. */
+    static double taper(Vec3 v, WindSample w) {
+        double downwind = v.x * w.dirX() + v.z * w.dirZ();
+        return Math.max(0.0, Math.min(1.0, (MAX_DOWNWIND_SPEED - downwind) / TAPER));
+    }
+
+    /** Didn't move last tick: an arrow in a block, a projectile resting on the deck. */
+    private static boolean stuck(Entity e) {
+        return e.getX() == e.xo && e.getY() == e.yo && e.getZ() == e.zo;
     }
 }

@@ -32,9 +32,28 @@ public final class WindyMixinPlugin implements IMixinConfigPlugin {
 
     public static final String PARTICLE_TARGET = "xyz.bonfiremc.windy.particle.WindParticle";
     private static final String TWO_SIDED_MIXIN = "WindyParticleTwoSidedMixin";
+    private static final String SPAWN_CLOSER_MIXIN = "WindySpawnCloserMixin";
+    private static final String SHIFTED_DESC = "(Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD"
+            + "Lnet/minecraft/client/particle/SpriteSet;Z)Lnet/minecraft/client/particle/Particle;";
 
     private final boolean apply = decide();
     private final boolean twoSided = apply && decideTwoSided();
+    private final boolean spawnCloser = apply && particleHas("closer streak spawns",
+            MixinTargetRequirement.method("createShiftedParticle", SHIFTED_DESC));
+
+    private static boolean particleHas(String what, MixinTargetRequirement... needs) {
+        try {
+            ClassNode node = MixinService.getService().getBytecodeProvider()
+                    .getClassNode(PARTICLE_TARGET.replace('.', '/'));
+            List<String> misses = MixinTargetCheck.missing(node, List.of(needs));
+            if (misses.isEmpty()) return true;
+            LOGGER.warn("[DungeonTrain] Windy's WindParticle no longer has {}; no {}", String.join(", ", misses), what);
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Could not read Windy's WindParticle ({}); no {}", t.getClass().getSimpleName(),
+                    what);
+        }
+        return false;
+    }
 
     /** The streak-back-face mixin needs Windy's particle to still draw through {@code livingWindRotation}. */
     private static boolean decideTwoSided() {
@@ -91,6 +110,7 @@ public final class WindyMixinPlugin implements IMixinConfigPlugin {
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
         if (mixinClassName.endsWith(TWO_SIDED_MIXIN)) return twoSided;
+        if (mixinClassName.endsWith(SPAWN_CLOSER_MIXIN)) return spawnCloser;
         return apply;
     }
 

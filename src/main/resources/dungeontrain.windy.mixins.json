@@ -9,7 +9,8 @@
     "client.windy.WindyLivingWindCompatMixin",
     "client.windy.WindyParticleAccessor",
     "client.windy.ParticleEngineWindyMixin",
-    "client.windy.WindyParticleTwoSidedMixin"
+    "client.windy.WindyParticleTwoSidedMixin",
+    "client.windy.WindySpawnCloserMixin"
   ],
   "server": [],
   "injectors": {

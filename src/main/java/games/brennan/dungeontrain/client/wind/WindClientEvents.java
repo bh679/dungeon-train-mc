@@ -86,16 +86,18 @@ public final class WindClientEvents {
             applied = WindPush.apply(player, now, profile, extra);
         }
 
-        WindSound.update(player, now, exposure, TrainExposure.underTerrain(player));
-
         WindSample ahead = ClientWind.sampleAt(player.getX(), tick + profile.visualLeadTicks()).scaled(deepDark);
+        // Timing of a gust: sound and streaks both start visualLeadTicks early (you hear and see it coming before
+        // it shoves); the sound ends that early too, but the streaks hold until the shove itself is over.
+        WindSound.update(player, ahead, exposure, TrainExposure.underTerrain(player));
+        WindSample visual = visualSample(now, ahead);
         double[] carriageVel = carriageVelocity(sub);
         // Visuals follow the wind, not the player: they keep blowing outside while you shelter, and each streak
         // is kept out of carriages and tunnels on its own (WindVisualShelter).
-        WindyDrive.set(ahead.strength(), ahead.headingRad(), carriageVel[0], carriageVel[1]);
+        WindyDrive.set(visual.strength(), visual.gust01(), visual.headingRad(), carriageVel[0], carriageVel[1]);
         boolean directional = WindyPresence.directional();
-        if (!directional && sub != null && !ahead.isCalm()) {
-            fallbackStreaks(level, player, ahead, carriageVel);
+        if (!directional && sub != null && !visual.isCalm()) {
+            fallbackStreaks(level, player, visual, carriageVel);
         }
 
         WindDebugState.record(new WindDebugState.Frame(
@@ -134,6 +136,15 @@ public final class WindClientEvents {
         smoothVx += (vx - smoothVx) * VELOCITY_SMOOTHING;
         smoothVz += (vz - smoothVz) * VELOCITY_SMOOTHING;
         return new double[] {smoothVx, smoothVz};
+    }
+
+    /**
+     * The wind the streaks show: whichever is stronger of the wind arriving ({@code ahead}) and the wind blowing
+     * now. A gust shows from the moment it is coming until it has stopped shoving, never dying down while it is
+     * still pushing you.
+     */
+    static WindSample visualSample(WindSample now, WindSample ahead) {
+        return now.strength() > ahead.strength() ? now : ahead;
     }
 
     /** Why the local player isn't pushed at all, or {@code null} when they can be. */
