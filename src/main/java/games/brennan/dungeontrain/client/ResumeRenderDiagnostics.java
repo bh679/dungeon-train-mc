@@ -36,7 +36,9 @@ import java.util.UUID;
  * → {@link ClientSubLevelContainer#getAllSubLevels()} → per-sub-level interpolator),
  * the same path {@code NearestCarriage}/{@code TrainEngineSound} already use.
  *
- * <p>Remove (or gate off) once the mechanism is confirmed and the fix lands.</p>
+ * <p>Gated to dev builds ({@link DungeonTrain#isDevBuild()}): the per-tick dump ran in every
+ * player's client and reached 1,600 INFO lines in one session's bug report, each a synchronous
+ * log flush. A release build still logs the one resume line, never the dump.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class ResumeRenderDiagnostics {
@@ -70,8 +72,8 @@ public final class ResumeRenderDiagnostics {
         if (prev != 0L) {
             long gapMs = (now - prev) / 1_000_000L;
             if (gapMs >= RESUME_GAP_MS) {
-                logTicksRemaining = LOG_TICKS;
-                LOGGER.info("[DT-resume-diag] CLIENT resume after {}ms wall-clock gap — dumping sub-level render state for {} ticks", gapMs, LOG_TICKS);
+                logTicksRemaining = DungeonTrain.isDevBuild() ? LOG_TICKS : 0;
+                LOGGER.info("[DT-resume-diag] CLIENT resume after {}ms wall-clock gap — dumping sub-level render state for {} ticks", gapMs, logTicksRemaining);
             }
         }
 
