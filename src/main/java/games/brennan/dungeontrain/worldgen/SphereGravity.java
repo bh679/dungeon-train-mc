@@ -13,10 +13,11 @@ import java.util.List;
  *   <li><b>Surface pull</b> {@code g = strength × 0.08 × size(r)}: 0.08 is vanilla's gravity per tick, and
  *       {@code size} grows with the radius up to 1 at {@link #FULL_SIZE_RADIUS}, so a big sphere at
  *       strength 1 pulls as hard as the ground does while a small one only nudges.</li>
- *   <li><b>Outside</b> ({@code d ≥ r}): falls off as {@code g × (r/d)^falloff} — {@code falloff} 2 is a real
- *       planet's inverse square (gone within a couple of radii), 1 is 1/d, 0.5 (the default) keeps a decent
- *       pull a few radii out — then smoothly faded to 0 over the outer half of the reach
- *       ({@code reachRadii × r}) so there's no edge you can feel.</li>
+ *   <li><b>Outside</b> ({@code d ≥ r}): holds near the surface pull at first and dives to 0 at the reach
+ *       ({@code reachRadii × r}): with {@code t} the fraction of the way from the surface to the reach, the pull
+ *       is {@code g × (1 − t^hold)}. {@code hold} 1 is a straight ramp down; 3 (the default) is still 88% half
+ *       way out and 49% at 80%, then drops fast — slow at first, quick at the end, not a planet's inverse
+ *       square (which is gone within a couple of radii).</li>
  *   <li><b>Inside</b> ({@code d < r}): held at the surface pull, no stronger. A sphere's ground is usually
  *       well inside its radius — an overworld sphere's top is the natural surface, about 0.3·r above the
  *       centre — so this is what you feel when you jump off it.</li>
@@ -25,7 +26,8 @@ import java.util.List;
  *       walking and swimming feel normal and only a jump brings the pull back. Only that sphere lets go; others
  *       still pull.</li>
  * </ul>
- * Pulls from overlapping spheres add. Each sphere's pull eases off as the thing speeds toward its centre,
+ * Pulls from overlapping spheres add, but only the {@link #MAX_SPHERES} strongest at that spot count, so a dense
+ * cluster can't stack into more than a few surface pulls. Each sphere's pull eases off as the thing speeds toward its centre,
  * reaching 0 at {@link #MAX_SPEED_TOWARD} blocks/tick — a smooth taper rather than an on/off cut, which
  * flickered tick to tick near the limit — so nothing builds runaway speed.
  */
@@ -44,8 +46,8 @@ public final class SphereGravity {
      * sphere's surface is blocky terrain, and its upper part is open air above the cut surface.
      */
     public static final double STAND_MARGIN = 3.0;
-    /** Fraction of the reach beyond the surface where the fade-out begins. */
-    static final double FADE_START = 0.5;
+    /** At most this many spheres pull on one thing at once: the strongest at its spot. Bounds a dense cluster's stack. */
+    public static final int MAX_SPHERES = 3;
 
     private SphereGravity() {}
 
@@ -72,28 +74,27 @@ public final class SphereGravity {
         return strength * VANILLA_G * size;
     }
 
-    /** Falloff exponent the test-only short forms use: plain {@code 1/d}. */
-    static final double PLAIN_FALLOFF = 1.0;
+    /** The hold the test-only short forms use: a straight ramp from the surface pull to 0 at the reach. */
+    static final double LINEAR_HOLD = 1.0;
 
-    /** {@link #pullAt(double, int, double, double, double)} with a plain {@code 1/d} falloff. */
+    /** {@link #pullAt(double, int, double, double, double)} with a straight ramp down to the reach. */
     public static double pullAt(double d, int r, double strength, double reachRadii) {
-        return pullAt(d, r, strength, reachRadii, PLAIN_FALLOFF);
+        return pullAt(d, r, strength, reachRadii, LINEAR_HOLD);
     }
 
-    /** Magnitude of a sphere's pull at distance {@code d} from its centre; {@code falloff} is the exponent on {@code r/d}. */
-    public static double pullAt(double d, int r, double strength, double reachRadii, double falloff) {
+    /**
+     * Magnitude of a sphere's pull at distance {@code d} from its centre: {@code g × (1 − t^hold)} outside, where
+     * {@code t} runs 0 at the surface to 1 at the reach; higher {@code hold} keeps the pull up longer and drops it
+     * harder at the end.
+     */
+    public static double pullAt(double d, int r, double strength, double reachRadii, double hold) {
         if (r <= 0 || strength <= 0) return 0.0;
         double g = surfacePull(r, strength);
         if (d < r) return g;
         double reach = Math.max(1.0, reachRadii) * r;
         if (d >= reach) return 0.0;
-        double a = g * Math.pow(r / d, Math.max(0.0, falloff));
-        double fadeFrom = r + (reach - r) * FADE_START;
-        if (d > fadeFrom) {
-            double t = (d - fadeFrom) / (reach - fadeFrom);
-            a *= 1.0 - t * t * (3.0 - 2.0 * t);              // smoothstep down to 0 at the reach
-        }
-        return a;
+        double t = (d - r) / (reach - r);
+        return g * (1.0 - Math.pow(t, Math.max(1.0, hold)));
     }
 
     /** {@code 1} while not closing on the centre, easing linearly to {@code 0} at {@link #MAX_SPEED_TOWARD}. */
@@ -107,11 +108,11 @@ public final class SphereGravity {
         return Math.max(0.0, reachRadii - 1.0) * Math.max(0, rMax);
     }
 
-    /** {@link #pull(List, double, double, double, double, double, double, boolean, double, double, double)} with a plain {@code 1/d} falloff. */
+    /** {@link #pull(List, double, double, double, double, double, double, boolean, double, double, double)} with a straight ramp down to the reach. */
     public static Pull pull(List<SphereField.Sphere> spheres, double x, double y, double z,
                             double vx, double vy, double vz, boolean held,
                             double strength, double reachRadii) {
-        return pull(spheres, x, y, z, vx, vy, vz, held, strength, reachRadii, PLAIN_FALLOFF);
+        return pull(spheres, x, y, z, vx, vy, vz, held, strength, reachRadii, LINEAR_HOLD);
     }
 
     /**
@@ -120,9 +121,12 @@ public final class SphereGravity {
      */
     public static Pull pull(List<SphereField.Sphere> spheres, double x, double y, double z,
                             double vx, double vy, double vz, boolean held,
-                            double strength, double reachRadii, double falloff) {
+                            double strength, double reachRadii, double hold) {
         if (spheres.isEmpty() || strength <= 0) return Pull.ZERO;
-        double ax = 0, ay = 0, az = 0;
+        // The MAX_SPHERES strongest pulls, kept sorted strongest first; a weaker one drops off the end.
+        double[] mag = new double[MAX_SPHERES];
+        double[] px = new double[MAX_SPHERES], py = new double[MAX_SPHERES], pz = new double[MAX_SPHERES];
+        int kept = 0;
         for (SphereField.Sphere s : spheres) {
             double dx = s.cx() + 0.5 - x, dy = s.cy() + 0.5 - y, dz = s.cz() + 0.5 - z;
             double d = Math.sqrt(dx * dx + dy * dy + dz * dz);
@@ -130,12 +134,23 @@ public final class SphereGravity {
             double ux = dx / d, uy = dy / d, uz = dz / d;
             double ease = speedEase(vx * ux + vy * uy + vz * uz);
             if (ease <= 0) continue;
-            double a = pullAt(d, s.r(), strength, reachRadii, falloff) * ease;
-            if (a <= 0) continue;
-            ax += ux * a;
-            ay += uy * a;
-            az += uz * a;
+            double a = pullAt(d, s.r(), strength, reachRadii, hold) * ease;
+            if (a <= 0 || (kept == MAX_SPHERES && a <= mag[MAX_SPHERES - 1])) continue;
+            int i = Math.min(kept, MAX_SPHERES - 1);
+            while (i > 0 && mag[i - 1] < a) {
+                mag[i] = mag[i - 1]; px[i] = px[i - 1]; py[i] = py[i - 1]; pz[i] = pz[i - 1];
+                i--;
+            }
+            mag[i] = a; px[i] = ux * a; py[i] = uy * a; pz[i] = uz * a;
+            if (kept < MAX_SPHERES) kept++;
         }
-        return ax == 0 && ay == 0 && az == 0 ? Pull.ZERO : new Pull(ax, ay, az);
+        if (kept == 0) return Pull.ZERO;
+        double ax = 0, ay = 0, az = 0;
+        for (int i = 0; i < kept; i++) {
+            ax += px[i];
+            ay += py[i];
+            az += pz[i];
+        }
+        return new Pull(ax, ay, az);
     }
 }

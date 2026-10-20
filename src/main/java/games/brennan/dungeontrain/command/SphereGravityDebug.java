@@ -38,9 +38,9 @@ final class SphereGravityDebug {
     static int report(CommandSourceStack source) {
         ServerLevel overworld = source.getServer().overworld();
         Vec3 at = source.getPosition();
-        send(source, String.format("[DungeonTrain] sphere-gravity at %.1f %.1f %.1f: enabled=%s forcedOff=%s strength=%.2f falloff=%.2f reach=%.1fr rider=%.2f",
+        send(source, String.format("[DungeonTrain] sphere-gravity at %.1f %.1f %.1f: enabled=%s forcedOff=%s strength=%.2f hold=%.2f reach=%.1fr rider=%.2f",
                 at.x, at.y, at.z, SpheresGravityConfig.enabled(), SphereGravityServer.isForcedOff(),
-                SpheresGravityConfig.strength(), SpheresGravityConfig.falloff(), SpheresGravityConfig.reachRadii(),
+                SpheresGravityConfig.strength(), SpheresGravityConfig.hold(), SpheresGravityConfig.reachRadii(),
                 SpheresGravityConfig.riderFactor()),
                 ChatFormatting.AQUA);
         List<SphereField.Sphere> near = new ArrayList<>(SpheresBand.spheresNear(overworld, at.x, at.y, at.z, SEARCH));
@@ -53,7 +53,7 @@ final class SphereGravityDebug {
             SphereField.Sphere s = near.get(i);
             double d = centreDistance(s, at);
             double a = SphereGravity.pullAt(d, s.r(), SpheresGravityConfig.strength(), SpheresGravityConfig.reachRadii(),
-                    SpheresGravityConfig.falloff());
+                    SpheresGravityConfig.hold());
             send(source, String.format("  sphere %d %d %d r=%d %s: %.1f from centre, pull %.4f b/t² (%.2fx gravity)",
                     s.cx(), s.cy(), s.cz(), s.r(), s.source(), d, a, a / SphereGravity.VANILLA_G), ChatFormatting.WHITE);
         }
@@ -61,7 +61,7 @@ final class SphereGravityDebug {
         Entity self = source.getEntity();
         SphereGravity.Pull pull = SphereGravity.pull(inReach, at.x, at.y, at.z, 0, 0, 0,
                 self != null && SphereGravityPush.held(self), SpheresGravityConfig.strength(), SpheresGravityConfig.reachRadii(),
-                SpheresGravityConfig.falloff());
+                SpheresGravityConfig.hold());
         String exposure = "";
         if (self != null) exposure = " exposure=" + SphereGravityShelter.classify(self) + " onGround=" + self.onGround();
         send(source, String.format("  total pull (%.4f, %.4f, %.4f) |%.4f|%s",

@@ -23,13 +23,13 @@ final class SphereGravityTest {
     }
 
     @Test
-    @DisplayName("outside: falls off with distance (1/d), fading to exactly 0 at the reach; inside: the full surface pull")
+    @DisplayName("outside: a straight ramp (hold 1) from the surface pull to exactly 0 at the reach; inside: the surface pull, never more")
     void falloff() {
         int r = 20;
         double g = SphereGravity.surfacePull(r, 1.0);
         assertEquals(g, SphereGravity.pullAt(r, r, 1.0, 2.0), EPS);
-        assertEquals(g * (20.0 / 28), SphereGravity.pullAt(28, r, 1.0, 2.0), EPS, "before the fade");
-        assertTrue(SphereGravity.pullAt(35, r, 1.0, 2.0) < g * (20.0 / 35), "fading");
+        assertEquals(g * 0.6, SphereGravity.pullAt(28, r, 1.0, 2.0), EPS, "40% of the way out: 60% left");
+        assertEquals(g * 0.25, SphereGravity.pullAt(35, r, 1.0, 2.0), EPS, "75% of the way out: a quarter left");
         assertEquals(0.0, SphereGravity.pullAt(40, r, 1.0, 2.0), EPS);
         assertEquals(0.0, SphereGravity.pullAt(400, r, 1.0, 2.0), EPS);
         assertEquals(g, SphereGravity.pullAt(10, r, 1.0, 2.0), EPS);
@@ -45,16 +45,25 @@ final class SphereGravityTest {
     }
 
     @Test
-    @DisplayName("falloff exponent: 2 is inverse-square, 0.5 keeps most of the pull at twice the radius, 0 is flat; inside is never stronger")
-    void falloffExponent() {
+    @DisplayName("hold: slow drop at first, fast at the end; higher hold keeps the pull up longer; inside is never stronger")
+    void hold() {
         int r = 20;
         double g = SphereGravity.surfacePull(r, 1.0);
-        assertEquals(g * 0.25, SphereGravity.pullAt(40, r, 1.0, 6.0, 2.0), EPS, "inverse square");
-        assertEquals(g * 0.5, SphereGravity.pullAt(40, r, 1.0, 6.0, 1.0), EPS, "1/d");
-        assertEquals(g * Math.sqrt(0.5), SphereGravity.pullAt(40, r, 1.0, 6.0, 0.5), EPS, "1/sqrt d");
-        assertEquals(g, SphereGravity.pullAt(40, r, 1.0, 6.0, 0.0), EPS, "flat");
-        assertEquals(g, SphereGravity.pullAt(5, r, 1.0, 6.0, 0.5), EPS, "inside holds the surface value");
-        assertEquals(0.0, SphereGravity.pullAt(120, r, 1.0, 6.0, 0.5), EPS, "still 0 at the reach");
+        // Reach 6r = 120, so the surface-to-reach run is [20, 120); half way out is 70, 80% is 100.
+        assertEquals(g * 0.875, SphereGravity.pullAt(70, r, 1.0, 6.0, 3.0), EPS, "hold 3, half way: 1 - 0.5^3");
+        assertEquals(g * 0.488, SphereGravity.pullAt(100, r, 1.0, 6.0, 3.0), EPS, "hold 3, 80% out: 1 - 0.8^3");
+        assertEquals(g * 0.5, SphereGravity.pullAt(70, r, 1.0, 6.0, 1.0), EPS, "hold 1 is the straight ramp");
+        assertTrue(SphereGravity.pullAt(100, r, 1.0, 6.0, 6.0) > SphereGravity.pullAt(100, r, 1.0, 6.0, 3.0),
+                "a higher hold keeps more of the pull late");
+        assertEquals(g, SphereGravity.pullAt(5, r, 1.0, 6.0, 3.0), EPS, "inside holds the surface value");
+        assertEquals(g, SphereGravity.pullAt(20, r, 1.0, 6.0, 3.0), EPS, "the surface itself: full pull");
+        assertEquals(0.0, SphereGravity.pullAt(120, r, 1.0, 6.0, 3.0), EPS, "0 at the reach");
+        double prev = Double.MAX_VALUE;
+        for (double d = r; d <= 120; d += 0.5) {
+            double a = SphereGravity.pullAt(d, r, 1.0, 6.0, 3.0);
+            assertTrue(a <= prev + EPS, "monotone outside at " + d);
+            prev = a;
+        }
     }
 
     @Test
@@ -77,6 +86,26 @@ final class SphereGravityTest {
         assertEquals(p.length() / 2, eased.length(), EPS, "halfway to the limit: half the pull (smooth, not on/off)");
         SphereGravity.Pull away = SphereGravity.pull(List.of(s), 100.5, 150.5, 100.5, 0, 0.7, 0, false, 1.0, 2.0);
         assertEquals(p, away, "moving away is still pulled");
+    }
+
+    @Test
+    @DisplayName("only the three strongest spheres at a spot pull; weaker ones are ignored whatever their order in the list")
+    void strongestThreeOnly() {
+        // Five spheres all pulling +X from the same distance-ish band: three big (r 40) and two small (r 20, in reach),
+        // the small ones listed first and last so the cap can't just be "the first three".
+        SphereField.Sphere small1 = new SphereField.Sphere(160, 100, 100, 20, 0);
+        SphereField.Sphere big1 = new SphereField.Sphere(160, 100, 100, 40, 0);
+        SphereField.Sphere big2 = new SphereField.Sphere(160, 140, 100, 40, 0);
+        SphereField.Sphere big3 = new SphereField.Sphere(160, 60, 100, 40, 0);
+        SphereField.Sphere small2 = new SphereField.Sphere(160, 100, 140, 20, 0);
+        List<SphereField.Sphere> all = List.of(small1, big1, big2, big3, small2);
+        SphereGravity.Pull capped = SphereGravity.pull(all, 100.5, 100.5, 100.5, 0, 0, 0, false, 1.0, 4.0);
+        SphereGravity.Pull bigs = SphereGravity.pull(List.of(big1, big2, big3), 100.5, 100.5, 100.5, 0, 0, 0, false, 1.0, 4.0);
+        assertEquals(bigs.x(), capped.x(), EPS);
+        assertEquals(bigs.y(), capped.y(), EPS);
+        assertEquals(bigs.z(), capped.z(), EPS);
+        SphereGravity.Pull uncapped = SphereGravity.pull(List.of(small1, small2), 100.5, 100.5, 100.5, 0, 0, 0, false, 1.0, 4.0);
+        assertTrue(uncapped.length() > 0, "the small ones would have pulled on their own");
     }
 
     @Test
