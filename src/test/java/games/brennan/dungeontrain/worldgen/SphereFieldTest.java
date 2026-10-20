@@ -315,4 +315,31 @@ final class SphereFieldTest {
         }
         assertEquals(n, ids.size());
     }
+
+    @Test
+    @DisplayName("the memo is safe under concurrent readers: every answer equals a fresh field's roll, size stays bounded")
+    void memoIsThreadSafe() throws Exception {
+        SphereField shared = field(0.5);
+        SphereField reference = field(0.5);
+        int threads = 8, perThread = 20_000;
+        java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(threads);
+        java.util.List<java.util.concurrent.Future<Integer>> results = new java.util.ArrayList<>();
+        for (int t = 0; t < threads; t++) {
+            int salt = t;
+            results.add(pool.submit(() -> {
+                java.util.Random rng = new java.util.Random(salt);
+                int mismatches = 0;
+                for (int i = 0; i < perThread; i++) {
+                    int cx = rng.nextInt(400) - 200, cy = rng.nextInt(4), cz = rng.nextInt(400) - 200;
+                    if (!java.util.Objects.equals(shared.sphereInCell(cx, cy, cz), reference.sphereInCell(cx, cy, cz))) mismatches++;
+                }
+                return mismatches;
+            }));
+        }
+        int total = 0;
+        for (java.util.concurrent.Future<Integer> f : results) total += f.get(60, java.util.concurrent.TimeUnit.SECONDS);
+        pool.shutdownNow();
+        assertEquals(0, total, "memoised rolls differ from pure rolls");
+        assertTrue(shared.memoSize() <= SphereField.MAX_MEMO, "memo exceeded its bound: " + shared.memoSize());
+    }
 }

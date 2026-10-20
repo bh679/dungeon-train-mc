@@ -63,7 +63,11 @@ final class SphereGravityDebug {
                 self != null && SphereGravityPush.held(self), SpheresGravityConfig.strength(), SpheresGravityConfig.reachRadii(),
                 SpheresGravityConfig.hold());
         String exposure = "";
-        if (self != null) exposure = " exposure=" + SphereGravityShelter.classify(self) + " onGround=" + self.onGround();
+        if (self != null) {
+            exposure = " exposure=" + SphereGravityShelter.classify(self)
+                    + " (scan " + SphereGravityShelter.classifyUncached(self)
+                    + ", memo " + SphereGravityShelter.serverCacheSize() + ") onGround=" + self.onGround();
+        }
         send(source, String.format("  total pull (%.4f, %.4f, %.4f) |%.4f|%s",
                 pull.x(), pull.y(), pull.z(), pull.length(), exposure), ChatFormatting.GOLD);
         return 1;
