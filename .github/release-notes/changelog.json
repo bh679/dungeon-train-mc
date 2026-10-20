@@ -28775,6 +28775,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stranger-places-pull",
+      "version": "0.1414.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Some places pull you in",
+      "summary": "Deep down the line, some of the stranger places have a pull of their own. Step off the train near one and you drift toward it, land on it, and can jump free again. Whatever you throw or shoot curves in too, and the wind dies away there.",
+      "highlights": [
+        "Riders out on the roof feel a gentle tug. Inside a carriage you feel nothing.",
+        "Strength, reach and how the pull lets go are all in the config."
+      ],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
