@@ -304,6 +304,10 @@
         "AMPLIFIED",
         "LOST_CITY"
       ]
+    },
+    {
+      "id": "deeper",
+      "weight": 1
     }
   ]
 }
