@@ -17082,5 +17082,102 @@
         "L"
       ]
     }
+  },
+  "gui.dungeontrain.contribute.own_way": {
+    "1": {
+      "label": "the Any Amount link",
+      "examples": [
+        "Any Amount"
+      ]
+    },
+    "2": {
+      "label": "the Monthly on Patreon link",
+      "examples": [
+        "Monthly on Patreon"
+      ]
+    }
+  },
+  "gui.dungeontrain.contribute.affiliate": {
+    "1": {
+      "label": "the affiliate link text",
+      "examples": [
+        "affiliate link"
+      ]
+    }
+  },
+  "gui.dungeontrain.currency.approx": {
+    "1": {
+      "label": "the name of the currency amounts are shown in",
+      "examples": [
+        "US dollars",
+        "Euros"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_by": {
+    "1": {
+      "label": "the day and short month the reward ends",
+      "examples": [
+        "12 Nov",
+        "3 Dec"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.give.month": {
+    "1": {
+      "label": "a month name, short or full",
+      "examples": [
+        "Nov",
+        "December"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.give.amount": {
+    "1": {
+      "label": "the gift amount, figure only",
+      "examples": [
+        "$94",
+        "$140"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.thanks.later": {
+    "1": {
+      "label": "a community reward's name",
+      "examples": [
+        "Quicker Streams",
+        "Replays Kept"
+      ]
+    },
+    "2": {
+      "label": "the day and short month that gift starts",
+      "examples": [
+        "14 Nov",
+        "3 Dec"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.quicker_streams.line": {
+    "1": {
+      "label": "seconds viewers are behind the streamer normally",
+      "examples": [
+        "30",
+        "28"
+      ]
+    },
+    "2": {
+      "label": "seconds behind with Quicker Streams on",
+      "examples": [
+        "6",
+        "4"
+      ]
+    }
   }
 }
