@@ -28772,9 +28772,9 @@
         "No change to the rain without shaders"
       ],
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1417.0",
+      "released_at": "2026-10-20T13:36:23Z"
     },
     {
       "id": "stranger-places-pull",
@@ -28791,9 +28791,9 @@
         "Strength, reach and how the pull lets go are all in the config."
       ],
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1417.0",
+      "released_at": "2026-10-20T13:36:23Z"
     },
     {
       "id": "plot-chunk-lookup-o1",
@@ -28807,9 +28807,9 @@
       "highlights": [],
       "pr": 2194,
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1417.0",
+      "released_at": "2026-10-20T13:36:23Z"
     },
     {
       "id": "quieter-logs",
@@ -28824,9 +28824,9 @@
       "summary": "The game log no longer fills with the same few lines repeated thousands of times. Bug reports now carry the part that matters, and the game spends less time writing to disk while you play.",
       "highlights": [],
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1417.0",
+      "released_at": "2026-10-20T13:36:23Z",
       "pr": 2197
     },
     {
