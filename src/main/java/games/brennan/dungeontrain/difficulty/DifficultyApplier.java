@@ -169,8 +169,11 @@ public final class DifficultyApplier {
         // Creepers convert their active effects into a lingering AreaEffectCloud on
         // explosion (vanilla Creeper#explodeCreeper), so never give them difficulty
         // potion effects — otherwise every train creeper leaves a potion cloud behind.
+        // The effect curve is read later for mobs that first spawn further down the train
+        // (and for babies), so they are not buffed the moment they appear.
         if (applyEffects && !(mob instanceof Creeper)) {
-            for (DifficultyTier.EffectSpec spec : tier.effects()) {
+            int effectLevel = tierIndex - MobEffectOffsets.offsetFor(mob);
+            for (DifficultyTier.EffectSpec spec : ProceduralTiers.effectsFor(effectLevel)) {
                 if (rng.nextDouble() >= spec.chance()) continue;
                 Holder<MobEffect> holder = lookupEffect(spec.id());
                 if (holder == null) {
@@ -183,12 +186,23 @@ public final class DifficultyApplier {
                 int duration = spec.durationTicks() < 0
                         ? MobEffectInstance.INFINITE_DURATION
                         : spec.durationTicks();
-                mob.addEffect(new MobEffectInstance(holder, duration, Math.max(0, spec.amplifier()), false, true));
+                mob.addEffect(new MobEffectInstance(holder, duration, rollAmplifier(spec.amplifier(), rng), false, true));
             }
         }
 
         mob.addTag(APPLIED_TAG);
         return true;
+    }
+
+    /**
+     * Amplifier actually applied for an effect whose stage cap is {@code cap}: uniform over
+     * {@code [0, cap]}, so later stages spread their buffs downward (Speed IV stage = Speed I-IV)
+     * and never above the cap. A cap of 0 draws nothing from {@code rng}, so early-stage rolls
+     * are unchanged.
+     */
+    static int rollAmplifier(int cap, RandomSource rng) {
+        int max = Math.max(0, cap);
+        return max == 0 ? 0 : rng.nextInt(max + 1);
     }
 
     private static void applyArmorSlot(Mob mob, EquipmentSlot slot,
