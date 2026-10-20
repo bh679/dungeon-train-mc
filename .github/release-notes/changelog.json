@@ -28794,6 +28794,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "armor-keeps-paying-off",
+      "version": "0.1416.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "balance"
+      ],
+      "title": "Heavy armor keeps helping",
+      "summary": "Stacking armor now keeps paying off. Armor used to stop helping once it blocked 80% of a hit; now heavier armor keeps blocking a little more, slowly climbing toward a ceiling just under 90%. Very heavily armored mobs deep in the run get a little tougher too.",
+      "highlights": [
+        "Armor past the old limit now blocks more damage, never reaching 90%",
+        "Nothing changes for armor up to 100 points"
+      ],
+      "pr": 2195,
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
