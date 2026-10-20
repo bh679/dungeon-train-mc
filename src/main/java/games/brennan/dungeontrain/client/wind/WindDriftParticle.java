@@ -8,6 +8,9 @@ public interface WindDriftParticle {
 
     void dungeontrain$setWindWeight(float weight);
 
+    /** Start the drift at the wind's full speed instead of easing into it (particles DT spawns already blowing). */
+    void dungeontrain$primeDrift();
+
     /** Called once per particle tick, after the particle's own tick. */
     void dungeontrain$windDrift();
 }

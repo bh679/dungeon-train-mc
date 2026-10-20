@@ -99,6 +99,7 @@ public final class WindClientEvents {
         WindyDrive.set(visual.strength(), visual.gust01(), visual.headingRad(), carriageVel[0], carriageVel[1]);
         // Smoke, snow, ash and the weather blow with the same wind, in the ground frame (AmbientWind).
         AmbientWind.set(visual);
+        WindSnowflakes.tick(mc, level, visual);
         boolean directional = WindyPresence.directional();
         if (!directional && sub != null && !visual.isCalm()) {
             fallbackStreaks(level, player, visual, carriageVel);

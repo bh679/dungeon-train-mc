@@ -54,6 +54,16 @@ class AmbientWindTest {
     }
 
     @Test
+    @DisplayName("snowflakes: none in calm or no snow, rise with the push, capped")
+    void snowflakeRate() {
+        assertEquals(0.0, WindSnowflakes.flakesPerTick(0.0, 1.0f));
+        assertEquals(0.0, WindSnowflakes.flakesPerTick(0.02, 0.0f));
+        assertEquals(1.5, WindSnowflakes.flakesPerTick(0.01, 1.0f), 1e-9);
+        assertEquals(0.75, WindSnowflakes.flakesPerTick(0.01, 0.5f), 1e-9);
+        assertEquals(WindSnowflakes.MAX_PER_TICK, WindSnowflakes.flakesPerTick(1.0, 1.0f));
+    }
+
+    @Test
     @DisplayName("slant eases toward its target and settles to exactly zero")
     void slantEases() {
         double s = AmbientWind.ease(0.0, 0.5);

@@ -42,6 +42,13 @@ public abstract class ParticleWindDriftMixin implements WindDriftParticle {
     }
 
     @Override
+    public void dungeontrain$primeDrift() {
+        if (!AmbientWind.active()) return;
+        dungeontrain$driftX = AmbientWind.driftX() * dungeontrain$windWeight;
+        dungeontrain$driftZ = AmbientWind.driftZ() * dungeontrain$windWeight;
+    }
+
+    @Override
     public void dungeontrain$windDrift() {
         if (dungeontrain$windWeight <= 0.0f || removed) return;
         boolean calm = !AmbientWind.active();
