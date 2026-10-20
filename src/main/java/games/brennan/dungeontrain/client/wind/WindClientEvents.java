@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.wind;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.ClientUpsideDownBand;
+import games.brennan.dungeontrain.client.GraphicsCapabilities;
 import games.brennan.dungeontrain.wind.GroundExposure;
 import games.brennan.dungeontrain.wind.TrainExposure;
 import games.brennan.dungeontrain.wind.WindZones;
@@ -99,7 +100,7 @@ public final class WindClientEvents {
         // is kept out of carriages and tunnels on its own (WindVisualShelter).
         WindyDrive.set(visual.strength(), visual.gust01(), visual.headingRad(), carriageVel[0], carriageVel[1]);
         // Smoke, snow, ash and the weather blow with the same wind, in the ground frame (AmbientWind).
-        AmbientWind.set(visual);
+        AmbientWind.set(visual, GraphicsCapabilities.shaderPackActive());
         WindSnowflakes.tick(mc, level, visual);
         boolean directional = WindyPresence.directional();
         if (!directional && sub != null && !visual.isCalm()) {

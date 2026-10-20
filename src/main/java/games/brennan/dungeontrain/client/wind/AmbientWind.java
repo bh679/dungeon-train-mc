@@ -36,6 +36,26 @@ public final class AmbientWind {
     static final double RAIN_SLANT_PER_PUSH = 15.0;
     static final double RAIN_MAX_SLANT = 0.6;
     /**
+     * Under a shader pack the lean is pushed harder and drawn denser. Packs draw the rain sheets far fainter than
+     * vanilla (Complementary keeps a quarter of the texture's opacity) and sway them with a slow wobble of their
+     * own, up to about 0.6 blocks per block of height, which is as much as the vanilla lean: so under a pack the
+     * lean goes to {@link #SHADER_RAIN_MAX_SLANT} to beat the sway, and while it leans the rain batch is drawn
+     * {@link #SHADER_RAIN_PASSES} times (each pass {@link #SHADER_PASS_SHIFT} blocks further downwind) so the
+     * faint sheets stack into a curtain that can be read. None of this touches the no-shader path.
+     */
+    static final double SHADER_RAIN_SLANT_MULT = 2.5;
+    static final double SHADER_RAIN_MAX_SLANT = 1.0;
+    /**
+     * Least lean under a pack once there is any wind: the pack's sway is about 0.6 at its widest, so a lean that
+     * only grows with the push stays buried for the first tens of thousands of blocks; from the floor up, gusts
+     * still show on top (to the cap).
+     */
+    static final double SHADER_RAIN_LEAN_FLOOR = 0.7;
+    static final int SHADER_RAIN_PASSES = 3;
+    static final double SHADER_PASS_SHIFT = 0.35;
+    /** Below this lean the pack's own look is left alone (no extra passes). */
+    static final double SHADER_RAIN_MIN_SLANT = 0.05;
+    /**
      * Widest weather radius vanilla's column tables allow (its {@code rainSizeX/Z} are 32 x 32, centred on the
      * camera), and how high the curtain reaches above/below eye level, which is how far a lean pushes its ends.
      */
@@ -53,6 +73,8 @@ public final class AmbientWind {
     private static volatile double driftZ = 0.0;
     private static volatile double rainSlantX = 0.0;
     private static volatile double rainSlantZ = 0.0;
+    /** Whether a shader pack is drawing this tick (sampled by {@link WindClientEvents}). */
+    private static volatile boolean shaderPack = false;
     /** Snow scroll speed (blocks/tick, eased) and how far it has scrolled since login (blocks, never wrapped). */
     private static double snowVelX = 0.0;
     private static double snowVelZ = 0.0;
@@ -64,8 +86,9 @@ public final class AmbientWind {
 
     private AmbientWind() {}
 
-    static void set(WindSample visual) {
+    static void set(WindSample visual, boolean shaderPackActive) {
         SHELTER.clear();
+        shaderPack = shaderPackActive;
         double push = Math.max(0.0, visual.strength());
         double dx = visual.dirX();
         double dz = visual.dirZ();
@@ -73,7 +96,7 @@ public final class AmbientWind {
                 : (WindyDrive.SPEED_BASE + push * WindyDrive.SPEED_PER_PUSH) * SPEED_FACTOR;
         driftX = dx * speed;
         driftZ = dz * speed;
-        double rain = slantTarget(push, RAIN_SLANT_PER_PUSH, RAIN_MAX_SLANT);
+        double rain = shaderPackActive ? shaderSlantTarget(push) : slantTarget(push, RAIN_SLANT_PER_PUSH, RAIN_MAX_SLANT);
         rainSlantX = ease(rainSlantX, dx * rain);
         rainSlantZ = ease(rainSlantZ, dz * rain);
         stepSnow(driftX * WindParticleTypes.LIGHT, driftZ * WindParticleTypes.LIGHT);
@@ -128,6 +151,33 @@ public final class AmbientWind {
     }
 
     /**
+     * How many times the rain batch is drawn this frame: 1 (vanilla) unless a shader pack is active and the rain
+     * leans, then {@link #SHADER_RAIN_PASSES}.
+     */
+    public static int rainPasses() {
+        return rainPassesFor(shaderPack, Math.hypot(rainSlantX, rainSlantZ));
+    }
+
+    static int rainPassesFor(boolean shaderPackActive, double slant) {
+        return shaderPackActive && slant > SHADER_RAIN_MIN_SLANT ? SHADER_RAIN_PASSES : 1;
+    }
+
+    /** World-axis shift (blocks) of extra rain pass {@code pass} (1-based): downwind, along the lean. */
+    public static double rainPassShiftX(int pass) {
+        return passShift(pass, rainSlantX, rainSlantZ, true);
+    }
+
+    public static double rainPassShiftZ(int pass) {
+        return passShift(pass, rainSlantX, rainSlantZ, false);
+    }
+
+    static double passShift(int pass, double slantX, double slantZ, boolean x) {
+        double len = Math.hypot(slantX, slantZ);
+        if (len <= 0.0) return 0.0;
+        return pass * SHADER_PASS_SHIFT * (x ? slantX : slantZ) / len;
+    }
+
+    /**
      * Weather radius (columns) for vanilla's {@code base}: widened by how far the lean pushes the curtain's ends
      * sideways, so the shifted sheets still cover the sky all round. Unchanged with no lean.
      */
@@ -167,6 +217,13 @@ public final class AmbientWind {
         boolean s = WindVisualShelter.sheltered(level, x, y, z);
         SHELTER.put(key, s ? SHELTERED : OPEN);
         return s;
+    }
+
+    /** Sheet slant for a push under a shader pack: at least the floor once there is any wind, proportional above it, capped. */
+    static double shaderSlantTarget(double push) {
+        if (push <= 0.0) return 0.0;
+        double scaled = slantTarget(push, RAIN_SLANT_PER_PUSH * SHADER_RAIN_SLANT_MULT, SHADER_RAIN_MAX_SLANT);
+        return Math.max(SHADER_RAIN_LEAN_FLOOR, scaled);
     }
 
     /** Sheet slant for a push: proportional, capped. */

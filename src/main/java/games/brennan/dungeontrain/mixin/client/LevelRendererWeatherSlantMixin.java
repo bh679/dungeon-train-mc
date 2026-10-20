@@ -4,7 +4,12 @@ import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.BufferUploader;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.MeshData;
+import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import games.brennan.dungeontrain.client.wind.AmbientWind;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -13,6 +18,7 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
+import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
@@ -32,6 +38,12 @@ import org.spongepowered.asm.mixin.injection.At;
  *
  * <p>Vertex-level, not a matrix push, so it can't unbalance anything when another injector cancels the method
  * (the Nether/End bands do), and Iris's weather pass draws the same sheared geometry.</p>
+ *
+ * <p><b>Under a shader pack</b> the leaning rain batch is also drawn again, {@link AmbientWind#rainPasses()} times
+ * in all, each extra pass a step further downwind: packs draw the sheets at a fraction of vanilla's opacity and
+ * sway them on their own, and one faint pass can't show the lean. Vanilla's draw uploads the batch into the
+ * format's immediate buffer and leaves it bound, so the extra passes redraw that buffer through the same shader
+ * (Iris keeps its weather program up for the whole method) without re-uploading. Snow is never redrawn.</p>
  */
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererWeatherSlantMixin {
@@ -73,6 +85,23 @@ public abstract class LevelRendererWeatherSlantMixin {
         if (sx == 0.0 && sz == 0.0) return original.call(builder, x, y, z);
         // A drop blown downwind starts upwind and lands downwind: the top of the sheet sits upwind (-slant * y).
         return original.call(builder, (float) (x - sx * y), y, (float) (z - sz * y));
+    }
+
+    @WrapOperation(method = "renderSnowAndRain(Lnet/minecraft/client/renderer/LightTexture;FDDD)V",
+            at = @At(value = "INVOKE",
+                    target = "Lcom/mojang/blaze3d/vertex/BufferUploader;drawWithShader(Lcom/mojang/blaze3d/vertex/MeshData;)V"))
+    private void dungeontrain$redrawLeaningRain(MeshData mesh, Operation<Void> original) {
+        original.call(mesh);
+        if (dungeontrain$drawingSnow) return;
+        int passes = AmbientWind.rainPasses();
+        if (passes <= 1) return;
+        VertexBuffer buffer = DefaultVertexFormat.PARTICLE.getImmediateDrawVertexBuffer();
+        Matrix4f projection = RenderSystem.getProjectionMatrix();
+        for (int pass = 1; pass < passes; pass++) {
+            Matrix4f modelView = new Matrix4f(RenderSystem.getModelViewMatrix())
+                    .translate((float) AmbientWind.rainPassShiftX(pass), 0.0f, (float) AmbientWind.rainPassShiftZ(pass));
+            buffer.drawWithShader(modelView, projection, RenderSystem.getShader());
+        }
     }
 
     @WrapOperation(method = "renderSnowAndRain(Lnet/minecraft/client/renderer/LightTexture;FDDD)V",

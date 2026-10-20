@@ -41,6 +41,28 @@ class AmbientWindTest {
     }
 
     @Test
+    @DisplayName("under a shader pack the lean is stronger, still fits vanilla's table, and the rain is redrawn")
+    void shaderRain() {
+        assertEquals(0.0, AmbientWind.shaderSlantTarget(0.0));
+        // A weak wind (29k blocks past the start, push ~0.0076) still leans at the floor, past the pack's own sway.
+        assertEquals(AmbientWind.SHADER_RAIN_LEAN_FLOOR, AmbientWind.shaderSlantTarget(0.0076), 1e-9);
+        // A strong one grows past the floor (0.025 * 15 * 2.5 = 0.9375) up to the cap.
+        assertEquals(0.9375, AmbientWind.shaderSlantTarget(0.025), 1e-9);
+        assertEquals(AmbientWind.SHADER_RAIN_MAX_SLANT, AmbientWind.shaderSlantTarget(1.0));
+        assertTrue(AmbientWind.radiusFor(10, AmbientWind.SHADER_RAIN_MAX_SLANT) <= AmbientWind.MAX_RAIN_RADIUS);
+        // Extra passes only under a pack, and only once the rain actually leans.
+        assertEquals(1, AmbientWind.rainPassesFor(false, 1.0));
+        assertEquals(1, AmbientWind.rainPassesFor(true, 0.0));
+        assertEquals(1, AmbientWind.rainPassesFor(true, 0.04));
+        assertEquals(AmbientWind.SHADER_RAIN_PASSES, AmbientWind.rainPassesFor(true, 0.3));
+        // Each pass steps downwind along the lean; no lean, no step.
+        assertEquals(2 * AmbientWind.SHADER_PASS_SHIFT, AmbientWind.passShift(2, 0.5, 0.0, true), 1e-9);
+        assertEquals(0.0, AmbientWind.passShift(2, 0.5, 0.0, false), 1e-9);
+        assertEquals(-AmbientWind.SHADER_PASS_SHIFT, AmbientWind.passShift(1, 0.0, -0.8, false), 1e-9);
+        assertEquals(0.0, AmbientWind.passShift(1, 0.0, 0.0, true));
+    }
+
+    @Test
     @DisplayName("snow scroll: U offset is minus the distance blown along the quad's axis, kept to one tile")
     void snowScroll() {
         // Blown 0.25 along the quad's axis: texture shifts back 0.25 so flakes move forward.

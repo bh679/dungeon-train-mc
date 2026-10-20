@@ -28756,6 +28756,25 @@
       "released": true,
       "released_in": "v0.1413.0",
       "released_at": "2026-10-20T10:59:42Z"
+    },
+    {
+      "id": "wind-rain-lean-shaders",
+      "version": "0.1414.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Rain leans with the wind under shader packs",
+      "summary": "Deep down the line the train wind already tilts the rain. With a shader pack on, the rain was too faint and too busy with the pack's own sway for that lean to show. It now reads there too: the rain leans harder and falls thicker while the wind blows, so you can see which way it is coming from. Without shaders nothing changes.",
+      "highlights": [
+        "Rain visibly leans with the wind under shader packs",
+        "No change to the rain without shaders"
+      ],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
