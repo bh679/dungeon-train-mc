@@ -18,7 +18,9 @@ import org.spongepowered.asm.mixin.injection.At;
  * Blows the falling weather with the train wind ({@link AmbientWind}):
  * <ul>
  *   <li><b>Rain slants.</b> Each sheet vertex is camera-relative, so shearing it by its height
- *       ({@code x += slant * y}) tilts the whole curtain about eye level, leaning downwind.</li>
+ *       ({@code x -= slant * y}) tilts the whole curtain about eye level the way a blown drop travels: upwind
+ *       above, downwind below. The slant follows the visual wind the streaks show, which is the wind relative to
+ *       the carriage, so from a moving train the rain leans exactly as the push is felt.</li>
  *   <li><b>Snow scrolls.</b> Its sheets stay upright and the flakes are carried sideways: the snow texture's U is
  *       offset along each column quad's own horizontal axis (vanilla's {@code rainSizeX/Z} half-axis, locals
  *       {@code d0}/{@code d1}) by how far the snow has blown.</li>
@@ -53,7 +55,8 @@ public abstract class LevelRendererWeatherSlantMixin {
         double sx = AmbientWind.rainSlantX();
         double sz = AmbientWind.rainSlantZ();
         if (sx == 0.0 && sz == 0.0) return original.call(builder, x, y, z);
-        return original.call(builder, (float) (x + sx * y), y, (float) (z + sz * y));
+        // A drop blown downwind starts upwind and lands downwind: the top of the sheet sits upwind (-slant * y).
+        return original.call(builder, (float) (x - sx * y), y, (float) (z - sz * y));
     }
 
     @WrapOperation(method = "renderSnowAndRain(Lnet/minecraft/client/renderer/LightTexture;FDDD)V",
