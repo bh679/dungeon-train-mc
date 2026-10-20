@@ -9,9 +9,6 @@ import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import net.minecraft.world.level.levelgen.NoiseSettings;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * Where the Nether band's core terrain is — the single source of truth for the netherrack/lava/air shape,
  * shared by {@link games.brennan.dungeontrain.worldgen.feature.NetherTransitionFeature} (which stamps it)
@@ -22,16 +19,13 @@ import java.util.Map;
  * terrain density ({@code netherLevel.getChunkSource().randomState().router().finalDensity()}), sampled at
  * an X offset ({@link #sampleX}) so successive bands get different — but internally continuous — Nether,
  * and translated from the Nether's open layer onto the train's track level ({@code bedY} ↔
- * {@link #NETHER_CENTER_Y}). Columns are trilinearly interpolated between the Nether's own noise-cell
- * corners exactly the way the Nether's {@code NoiseChunk} does.</p>
+ * {@link #NETHER_CENTER_Y}). The sampling itself — trilinear interpolation between the Nether's own
+ * noise-cell corners with a per-instance corner memo — is {@link CellDensityGeometry}, shared with the
+ * Deeper Dark core's {@link OthersideGeometry}.</p>
  *
  * <p>An instance owns a corner-column memo and is therefore <b>not thread-safe</b>: open one per chunk /
- * per placement attempt ({@link Source#open}) and let it go. The memo is what keeps full-resolution
- * sampling affordable — the four cell corners a column interpolates between are shared by every column in
- * that cell, so without it each column re-walks the whole Nether density tree (~16k evaluations per chunk;
- * this is the confirmed dominant Nether-crossing generation cost, {@code GenProfiler.Bucket.CORE_REPLACE}).
- * Callers that walk a whole column must {@link #column} once and reuse it rather than calling a
- * per-block lookup, which would re-do the four corner lookups for every Y.</p>
+ * per placement attempt ({@link Source#open}) and let it go. Callers that walk a whole column must
+ * {@link #column} once and reuse it rather than calling a per-block lookup.</p>
  */
 public final class NetherCoreGeometry {
 
@@ -47,7 +41,7 @@ public final class NetherCoreGeometry {
     public static final int NETHER_Y_SAMPLE_MAX = 120;
 
     /** Returned by the density accessors for a Y outside the sampled cell rows. */
-    public static final double NO_DENSITY = Double.NaN;
+    public static final double NO_DENSITY = CellDensityGeometry.NO_DENSITY;
 
     /**
      * The per-world Nether-density handle: everything needed to {@link #open} a geometry, resolved once
@@ -92,19 +86,12 @@ public final class NetherCoreGeometry {
     }
 
     private final Source source;
-    private final int yLo;         // lowest world Y the core band can occupy
-    private final int yHi;         // highest world Y the core band can occupy
-    private final int cellRowBase; // cell-row index of the first sampled Nether-space Y boundary
-    private final int rows;        // number of cell-Y boundaries per corner column
-    private final Map<Long, double[]> cornerColumns = new HashMap<>();
+    private final CellDensityGeometry cells;
 
     private NetherCoreGeometry(Source source, int worldMinY, int worldMaxY) {
         this.source = source;
-        this.yLo = Math.max(worldMinY, source.bedY() + (NETHER_Y_SAMPLE_MIN - NETHER_CENTER_Y));
-        this.yHi = Math.min(worldMaxY, source.bedY() + (NETHER_Y_SAMPLE_MAX - NETHER_CENTER_Y));
-        int netherYLo = NETHER_CENTER_Y + (yLo - source.bedY());
-        this.cellRowBase = Math.floorDiv(netherYLo, source.cellH());
-        this.rows = Math.floorDiv(NETHER_CENTER_Y + (yHi - source.bedY()), source.cellH()) - cellRowBase + 2;
+        this.cells = new CellDensityGeometry(source.netherDensity(), source.cellW(), source.cellH(),
+                NETHER_CENTER_Y, NETHER_Y_SAMPLE_MIN, NETHER_Y_SAMPLE_MAX, source.bedY(), worldMinY, worldMaxY);
     }
 
     /** The X to sample the Nether density at, for a band column already resolved to its edge-waved X. */
@@ -114,12 +101,12 @@ public final class NetherCoreGeometry {
 
     /** Lowest world Y core terrain can occupy. */
     public int minCoreY() {
-        return yLo;
+        return cells.minY();
     }
 
     /** Highest world Y core terrain can occupy. */
     public int maxCoreY() {
-        return yHi;
+        return cells.maxY();
     }
 
     /** The track bed's world Y — {@link #NETHER_CENTER_Y} in Nether space. */
@@ -129,17 +116,17 @@ public final class NetherCoreGeometry {
 
     /** True when the geometry has any sampled rows at all (a degenerate world could clamp them away). */
     public boolean isUsable() {
-        return yLo <= yHi && rows >= 2;
+        return cells.isUsable();
     }
 
     /** Nether-space Y for a band world Y. */
     public int netherY(int worldY) {
-        return NETHER_CENTER_Y + (worldY - source.bedY());
+        return cells.spaceY(worldY);
     }
 
     /** Band world Y for a Nether-space Y — the inverse of {@link #netherY}. */
     public int worldY(int netherY) {
-        return source.bedY() + (netherY - NETHER_CENTER_Y);
+        return cells.worldY(netherY);
     }
 
     /**
@@ -152,44 +139,25 @@ public final class NetherCoreGeometry {
 
     /**
      * A single band column's view of the Nether density, with the four shared noise-cell corner profiles
-     * hoisted out. Walk a column through one of these — {@link #densityAt} on a fresh column per block
-     * would re-do four memo lookups per Y on the hottest path in Nether generation.
+     * hoisted out. Walk a column through one of these — {@link Column#densityAt} on a fresh column per
+     * block would re-do four memo lookups per Y on the hottest path in Nether generation.
      */
     public Column column(int sampleX, int worldZ) {
-        return new Column(sampleX, worldZ);
+        return new Column(cells.column(sampleX, worldZ));
     }
 
     /** True when {@code worldY} falls inside the sampled cell rows — outside it the density is undefined. */
     public boolean isSampled(int worldY) {
-        if (worldY < yLo || worldY > yHi) return false;
-        int r = Math.floorDiv(netherY(worldY), source.cellH()) - cellRowBase;
-        return r >= 0 && r + 1 < rows;
+        return cells.isSampled(worldY);
     }
 
     /** @see #column */
-    public final class Column {
+    public static final class Column {
 
-        private final int worldZ;
-        private final double fx;
-        private final double fz;
-        private final double[] c00;
-        private final double[] c10;
-        private final double[] c01;
-        private final double[] c11;
+        private final CellDensityGeometry.Column inner;
 
-        private Column(int sampleX, int worldZ) {
-            this.worldZ = worldZ;
-            int cellW = source.cellW();
-            int x0 = Math.floorDiv(sampleX, cellW) * cellW;
-            int x1 = x0 + cellW;
-            this.fx = (double) (sampleX - x0) / cellW;
-            int z0 = Math.floorDiv(worldZ, cellW) * cellW;
-            int z1 = z0 + cellW;
-            this.fz = (double) (worldZ - z0) / cellW;
-            this.c00 = cornerColumn(x0, z0);
-            this.c10 = cornerColumn(x1, z0);
-            this.c01 = cornerColumn(x0, z1);
-            this.c11 = cornerColumn(x1, z1);
+        private Column(CellDensityGeometry.Column inner) {
+            this.inner = inner;
         }
 
         /**
@@ -198,20 +166,12 @@ public final class NetherCoreGeometry {
          * them as air).
          */
         public double densityAt(int worldY) {
-            int netherY = NETHER_CENTER_Y + (worldY - source.bedY());
-            int cellH = source.cellH();
-            int r = Math.floorDiv(netherY, cellH) - cellRowBase;
-            if (r < 0 || r + 1 >= rows) return NO_DENSITY;
-            double fy = (double) (netherY - (cellRowBase + r) * cellH) / cellH;
-            double bot = bilerp(c00[r], c10[r], c01[r], c11[r], fx, fz);
-            double top = bilerp(c00[r + 1], c10[r + 1], c01[r + 1], c11[r + 1], fx, fz);
-            return bot + (top - bot) * fy;
+            return inner.densityAt(worldY);
         }
 
         /** True when the core is solid netherrack at this world Y. */
         public boolean isSolid(int worldY) {
-            double d = densityAt(worldY);
-            return d > 0.0;   // NaN compares false — an unsampled Y is not solid
+            return inner.isSolid(worldY);
         }
 
         /**
@@ -219,10 +179,7 @@ public final class NetherCoreGeometry {
          * column is open the whole way down (lava lake or cavern).
          */
         public int topSolidY() {
-            for (int y = yHi; y >= yLo; y--) {
-                if (isSolid(y)) return y;
-            }
-            return Integer.MIN_VALUE;
+            return inner.topSolidY();
         }
 
         /**
@@ -233,48 +190,12 @@ public final class NetherCoreGeometry {
          * the core replaces.
          */
         public int floorBelow(int startY) {
-            int from = Math.min(startY, yHi);
-            boolean openAbove = from >= yHi || !isSolid(from + 1);
-            for (int y = from; y >= yLo; y--) {
-                boolean solid = isSolid(y);
-                if (solid && openAbove) return y;
-                openAbove = !solid;
-            }
-            return Integer.MIN_VALUE;
+            return inner.floorBelow(startY);
         }
 
         /** The Z this column was opened at — handy for callers threading columns around. */
         public int worldZ() {
-            return worldZ;
+            return inner.worldZ();
         }
-    }
-
-    /**
-     * Real-Nether density column at a single noise-cell corner, sampled at each cell-Y boundary spanning
-     * the core band. Memoised per geometry instance (keyed by the packed corner XZ) — a pure memo of a
-     * pure {@code compute}, so it is byte-identical to re-walking the density tree, removing only
-     * duplicate evaluations.
-     *
-     * <p>Correctness rests on {@code cellRowBase}, {@code rows} and {@code cellH} being constant for the
-     * life of the instance (they derive from {@code bedY} and the build limits, not from the column), so a
-     * corner's profile is independent of which column requests it.</p>
-     */
-    private double[] cornerColumn(int cornerX, int cornerZ) {
-        long key = (((long) cornerX) << 32) ^ (cornerZ & 0xFFFFFFFFL);
-        double[] col = cornerColumns.get(key);
-        if (col != null) return col;
-        col = new double[rows];
-        for (int r = 0; r < rows; r++) {
-            int by = (cellRowBase + r) * source.cellH();
-            col[r] = source.netherDensity().compute(new DensityFunction.SinglePointContext(cornerX, by, cornerZ));
-        }
-        cornerColumns.put(key, col);
-        return col;
-    }
-
-    private static double bilerp(double d00, double d10, double d01, double d11, double fx, double fz) {
-        double a = d00 + (d10 - d00) * fx;
-        double b = d01 + (d11 - d01) * fx;
-        return a + (b - a) * fz;
     }
 }

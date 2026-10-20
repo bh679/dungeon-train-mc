@@ -28845,9 +28845,9 @@
       ],
       "pr": 2195,
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1426.0",
+      "released_at": "2026-10-20T17:11:04Z"
     },
     {
       "id": "quick-world-launch-guard",
@@ -28861,9 +28861,9 @@
       "summary": "Launching a dev client straight into a world that no longer exists now stops with a clear message listing the worlds that do, instead of a failed load.",
       "highlights": [],
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1426.0",
+      "released_at": "2026-10-20T17:11:04Z"
     },
     {
       "id": "stranger-stretches-lighter-tick",
@@ -28877,9 +28877,9 @@
       "highlights": [],
       "pr": 2196,
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1426.0",
+      "released_at": "2026-10-20T17:11:04Z"
     },
     {
       "id": "sable-autosave-no-fsync",
@@ -28900,9 +28900,9 @@
       ],
       "pr": 2200,
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1426.0",
+      "released_at": "2026-10-20T17:11:04Z"
     },
     {
       "id": "passenger-log-no-state-line",
@@ -28916,9 +28916,9 @@
       "summary": "The public passenger log's milestone and first-ever announcements no longer end with your carriage and difficulty. Where you are on the train stays yours to share.",
       "highlights": [],
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1426.0",
+      "released_at": "2026-10-20T17:11:04Z"
     },
     {
       "id": "perf-log-off-thread-pause-watchdog",
@@ -28934,9 +28934,9 @@
         "lag"
       ],
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1426.0",
+      "released_at": "2026-10-20T17:11:04Z"
     },
     {
       "id": "advancement-earn-no-freeze",
@@ -28956,9 +28956,9 @@
       ],
       "pr": 2202,
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1426.0",
+      "released_at": "2026-10-20T17:11:04Z"
     },
     {
       "id": "jade-block-info-surprise",
@@ -28971,6 +28971,81 @@
       "title": "Block info spoiler fix",
       "summary": "A block-info mod could give away a hidden surprise in some walls. In survival it now tells you only what you would see with your own eyes.",
       "highlights": [],
+      "date": "2026-10-20",
+      "released": true,
+      "released_in": "v0.1426.0",
+      "released_at": "2026-10-20T17:11:04Z"
+    },
+    {
+      "id": "portal-mod-update-safety",
+      "version": "0.1420.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Safer with mod updates",
+      "summary": "If one of the bundled mods updates ahead of the pack, its portals keep working and the game still starts.",
+      "highlights": [],
+      "pr": 2157,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1426.0",
+      "released_at": "2026-10-20T17:11:04Z"
+    },
+    {
+      "id": "pot-surprise",
+      "version": "0.1420.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Not every pot is quite what it seems",
+      "summary": "Break them carefully.",
+      "highlights": [],
+      "date": "2026-10-20",
+      "released": true,
+      "released_in": "v0.1426.0",
+      "released_at": "2026-10-20T17:11:04Z",
+      "pr": 2203
+    },
+    {
+      "id": "deeper-down-the-line",
+      "version": "0.1420.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "train",
+        "world",
+        "mobs"
+      ],
+      "title": "A Deeper Darker Train - Mobs & New Dimension",
+      "summary": "Deep down the line, a new stretch of the journey waits, darker than anything before it, with its own scenery, ruins and creatures.",
+      "highlights": [
+        "A new stretch deep in the ride, with its own scenery, structures and dangers.",
+        "New creatures ride the train and roam that stretch."
+      ],
+      "date": "2026-10-20",
+      "released": true,
+      "released_in": "v0.1426.0",
+      "released_at": "2026-10-20T17:11:04Z",
+      "major": true,
+      "description": "Deep down the line, past the stranger stretches you already know, the ride now drops into somewhere darker than anything before it.\n\n**A new stretch of the journey.** Its own scenery, its own ruins to find, its own sea and its own sky. The track, the tunnels and the carriages all dress for it, and the way the mountains lead you in is one long unbroken climb from the stretch before.\n\n**New creatures ride the train.** Some carriages deep down carry what lives there, and the stretch itself is home to them too. They are not from around here.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/a-deeper-darker-train.jpg"
+    },
+    {
+      "id": "spider-floor-bounce-fix",
+      "version": "0.1426.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Spider fix",
+      "summary": "Spiders beside the train no longer twitch back and forth against the side of a carriage.",
+      "highlights": [],
+      "pr": 2206,
       "date": "2026-10-20",
       "released": false,
       "released_in": null,

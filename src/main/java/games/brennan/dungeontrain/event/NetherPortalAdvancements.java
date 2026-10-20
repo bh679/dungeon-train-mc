@@ -17,7 +17,10 @@ public final class NetherPortalAdvancements {
     /** A trip that counts as a vanilla dimension change. */
     public enum Crossing {
         INTO_NETHER(Level.OVERWORLD, Level.NETHER),
-        OUT_OF_NETHER(Level.NETHER, Level.OVERWORLD);
+        OUT_OF_NETHER(Level.NETHER, Level.OVERWORLD),
+        /** An Otherside portal into a Deeper Dark core — Deeper Darker's "enter the Otherside". */
+        INTO_OTHERSIDE(Level.OVERWORLD, games.brennan.dungeontrain.worldgen.OthersideCore.LEVEL),
+        OUT_OF_OTHERSIDE(games.brennan.dungeontrain.worldgen.OthersideCore.LEVEL, Level.OVERWORLD);
 
         private final ResourceKey<Level> from;
         private final ResourceKey<Level> to;
@@ -42,5 +45,11 @@ public final class NetherPortalAdvancements {
     public static Optional<Crossing> crossing(boolean fromNether, boolean toNether) {
         if (fromNether == toNether) return Optional.empty();
         return Optional.of(toNether ? Crossing.INTO_NETHER : Crossing.OUT_OF_NETHER);
+    }
+
+    /** {@link #crossing} for an Otherside portal trip: a Deeper Dark core stands for the Otherside. */
+    public static Optional<Crossing> othersideCrossing(boolean fromDeeperDark, boolean toDeeperDark) {
+        if (fromDeeperDark == toDeeperDark) return Optional.empty();
+        return Optional.of(toDeeperDark ? Crossing.INTO_OTHERSIDE : Crossing.OUT_OF_OTHERSIDE);
     }
 }

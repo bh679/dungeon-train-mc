@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.worldgen.density;
 
 import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
 import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
+import games.brennan.dungeontrain.worldgen.OthersideSettings;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.world.level.biome.BiomeSource;
 
@@ -44,15 +45,30 @@ import net.minecraft.world.level.biome.BiomeSource;
  *                       for the same reason as {@code endIslands}: structure-start creation runs on the
  *                       worldgen thread pool and must not touch the server. {@code null} when the world has
  *                       no Nether dimension (so no core terrain, and no structures).
+ * @param otherside      Deeper Darker's Otherside generation rules (noise, surface rule, carvers, biomes) read from
+ *                       the registries, for the Deeper Dark core to generate in place — {@code null} without the
+ *                       mod (Deeper Dark passes then stay vanilla Nether).
  */
 public record NetherBandContext(boolean enabled, long generationSeed, int seaLevel, int worldCeiling,
                                 int netherTop, int baseRelief, WorldGenCycle cycle,
                                 BiomeSource overworldBiomeSource, NetherBandBiomeSet highlandBiomes,
                                 NetherCoreBiomes netherCoreBiomes, EndCoreBiomes endCoreBiomes,
                                 EndIslandGeometry.Source endIslands,
-                                NetherCoreGeometry.Source netherCore) {
+                                NetherCoreGeometry.Source netherCore,
+                                OthersideSettings otherside) {
 
     private static volatile NetherBandContext current;
+
+    /**
+     * World y of a Deeper Dark core's bedrock floor ({@code OthersideCore#slabBottom}) — the track bed is
+     * {@link #netherTop} less {@code NETHER_TOP_ABOVE_BED}. The Otherside biome label reaches down to here and
+     * no further: the rows under the slab keep their overworld biome, so the chunk still runs DT's overworld
+     * band features (the track bed and the core's own decoration among them).
+     */
+    public int othersideSlabBottom() {
+        return games.brennan.dungeontrain.worldgen.OthersideCore.slabBottom(
+                netherTop - games.brennan.dungeontrain.event.NetherBandContextEvents.NETHER_TOP_ABOVE_BED);
+    }
 
     /** The active context, or {@code null} before {@link #publish} / after {@link #clear}. */
     public static NetherBandContext current() {

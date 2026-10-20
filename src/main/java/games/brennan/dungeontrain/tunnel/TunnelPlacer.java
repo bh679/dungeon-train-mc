@@ -84,6 +84,13 @@ public final class TunnelPlacer {
     public static final TemplateGroup FADE_BASE_GROUP = TemplateGroup.of("stone");
     /** …dithering into this group's Nether look. */
     public static final TemplateGroup FADE_NETHER_GROUP = TemplateGroup.of("blackstone");
+    /** …or, in a Deeper Dark pass, this group's sculk look. */
+    public static final TemplateGroup FADE_DEEPER_DARK_GROUP = TemplateGroup.of("sculk");
+
+    /** The group a crossfade's base look is built from: {@link #FADE_BASE_GROUP}, or the Nether's arriving from one. */
+    public static TemplateGroup fadeBaseGroup(TrainPhase basePhase) {
+        return basePhase == TrainPhase.NETHER ? FADE_NETHER_GROUP : FADE_BASE_GROUP;
+    }
 
     private TunnelPlacer() {}
 
@@ -220,8 +227,9 @@ public final class TunnelPlacer {
         }
 
         // Inside the crossfade: Overworld base, then a per-block-masked Nether overlay.
+        TrainPhase basePhase = NetherFade.basePhaseAt(overworld, origin.getX());
         String owName = TrackVariantRegistry.pickName(kind, worldSeed, tileIndex,
-            new GateContext(baseCtx.level(), TrainPhase.OVERWORLD), FADE_BASE_GROUP);
+            new GateContext(baseCtx.level(), basePhase), fadeBaseGroup(basePhase));
         Optional<StructureTemplate> owTemplate = TunnelTemplateStore.getFor(serverLevel, variant, owName);
         if (owTemplate.isEmpty()) return false;
         eraseInteriorAirspaceWorldgen(level, origin);
@@ -229,8 +237,10 @@ public final class TunnelPlacer {
         applyTunnelSidecarWorldgen(level, origin, mirrorX, kind, owName, worldSeed, tileIndex, diffIndex);
 
         long genSeed = DungeonTrainWorldData.get(overworld).getGenerationSeed();
+        TrainPhase fadePhase = NetherFade.fadePhaseAt(overworld, origin.getX());
         String netherName = TrackVariantRegistry.pickName(kind, worldSeed, tileIndex,
-            new GateContext(baseCtx.level(), TrainPhase.NETHER), FADE_NETHER_GROUP);
+            new GateContext(baseCtx.level(), fadePhase),
+            fadePhase == TrainPhase.DEEPER_DARK ? FADE_DEEPER_DARK_GROUP : FADE_NETHER_GROUP);
         Optional<StructureTemplate> netherTemplate = TunnelTemplateStore.getFor(serverLevel, variant, netherName);
         if (netherTemplate.isPresent()) {
             stampTemplateWorldgen(level, stampOrigin, netherTemplate.get(), mirrorX,

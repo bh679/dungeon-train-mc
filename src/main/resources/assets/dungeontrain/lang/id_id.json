@@ -3450,6 +3450,7 @@
   "gui.dungeontrain.editor_menu.phase.large_biomes": "Bioma Besar",
   "gui.dungeontrain.editor_menu.phase.amplified": "Diperkuat",
   "gui.dungeontrain.editor_menu.phase.lost_city": "Kota yang Hilang",
+  "gui.dungeontrain.editor_menu.phase.deeper_dark": "Kegelapan Lebih Dalam",
   "gui.dungeontrain.editor_menu.phase.caves_of_chaos": "Gua Kekacauan",
   "gui.dungeontrain.editor_menu.stage.title": "Tahap: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Hapus Tahap",

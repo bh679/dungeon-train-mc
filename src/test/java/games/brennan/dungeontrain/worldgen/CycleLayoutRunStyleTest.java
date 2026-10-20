@@ -117,11 +117,13 @@ final class CycleLayoutRunStyleTest {
             assertTrue(C.isBopNetherAt(mid(1, k)));
             assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, mid(0, k)), "Lap 1 overworld stays vanilla");
         }
-        // passes: 2 Nether occurrences per run → pass 0 vanilla, 1 Better, 2 BoP, 3 Better
+        // passes: 3 Nether occurrences per run → pass 0 vanilla, 1 Better, 2 Otherside, 3 BoP, 4 Better, 5 Otherside
         assertEquals(Style.VANILLA, C.netherStyleOfPass(0));
         assertEquals(Style.BETTER, C.netherStyleOfPass(1));
-        assertEquals(Style.BOP, C.netherStyleOfPass(2));
-        assertEquals(Style.BETTER, C.netherStyleOfPass(3));
+        assertEquals(Style.OTHERSIDE, C.netherStyleOfPass(2));
+        assertEquals(Style.BOP, C.netherStyleOfPass(3));
+        assertEquals(Style.BETTER, C.netherStyleOfPass(4));
+        assertEquals(Style.OTHERSIDE, C.netherStyleOfPass(5));
         // 3 End occurrences per run → vanilla, BoP, Better, repeating
         assertEquals(Style.VANILLA, C.endStyleOfPass(3));
         assertEquals(Style.BOP, C.endStyleOfPass(4));
@@ -129,13 +131,15 @@ final class CycleLayoutRunStyleTest {
     }
 
     @Test
-    @DisplayName("Lap 2 is BoP → BetterNether → Lost City → BetterEnd on every cycle")
+    @DisplayName("Lap 2 is BoP → BetterNether → Deeper Dark → Lost City → BetterEnd on every cycle")
     void lap2Unchanged() {
         for (int k = 0; k <= 2; k++) {
             assertEquals(Style.BOP, C.overworldStyleAt(mid(6, k)));
             assertEquals(Style.BETTER, C.netherStyleAt(mid(7, k)));
-            assertTrue(C.isInLegacyBand(games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.LOST_CITY, mid(8, k)));
-            assertEquals(Style.BETTER, C.endStyleAt(mid(9, k)));
+            assertEquals(Style.OTHERSIDE, C.netherStyleAt(mid(8, k)));
+            assertEquals(Style.OTHERSIDE, C.netherLookAt(mid(8, k)));
+            assertTrue(C.isInLegacyBand(games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.LOST_CITY, mid(9, k)));
+            assertEquals(Style.BETTER, C.endStyleAt(mid(10, k)));
         }
     }
 }

@@ -111,7 +111,7 @@ class BandHoldDefaultsTest {
                 "v13 -> v14 changed only the upside-down's Reassembly length");
         assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 14,
                 "CURRENT_CONFIG_VERSION must be at least 14, or the v13 -> v14 order step never runs");
-        assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
+        assertEquals(DungeonTrainCommonConfig.V15_WORLDGEN_CYCLE_ORDER,
                 DungeonTrainCommonConfig.V14_WORLDGEN_CYCLE_ORDER
                         .replace("nether:vanilla>bop:3000, ow:wwoo:4500,", "nether:vanilla=1000~400+bop>bop:2750, ow:wwoo:3250,")
                         .replace("upside_down:2500:5000", "upside_down:2500:3000")
@@ -122,6 +122,13 @@ class BandHoldDefaultsTest {
                 "v14 -> v15 shortened the bands and split Lap 1's first Nether");
         assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 15,
                 "CURRENT_CONFIG_VERSION must be at least 15, or the v14 -> v15 order step never runs");
+        assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
+                DungeonTrainCommonConfig.V15_WORLDGEN_CYCLE_ORDER
+                        .replace("nether:better:4500, legacy:wwoo:lost_city=3000,",
+                                "nether:better:4500, nether:otherside:3000, legacy:wwoo:lost_city=3000,"),
+                "v15 -> v16 added only the Deeper Dark after BetterNether");
+        assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 16,
+                "CURRENT_CONFIG_VERSION must be at least 16, or the v15 -> v16 order step never runs");
         assertTrue(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER.contains("spheres:"
                 + DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS + ","));
     }

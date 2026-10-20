@@ -97,7 +97,11 @@ public final class GenProfiler {
         END_BAND_SAMPLE,
         /** {@code WorldEndBandEvents} — writing a finished End-band sample into its live chunk (MAIN-thread;
          *  excluded from {@link Sample#dtTotalMs}). */
-        END_BAND_APPLY
+        END_BAND_APPLY,
+        /** {@code NetherCoreStamp}'s Deeper Dark core — the in-place Otherside noise fill, surface skin and carvers
+         *  (worker-thread; a sub-portion of {@link #NETHER_FEATURE}, like {@link #CORE_REPLACE}, so not added to
+         *  {@link Sample#dtTotalMs}). Logged as {@code otherside=}. */
+        OTHERSIDE_CORE
     }
 
     private static final int N = Bucket.values().length;

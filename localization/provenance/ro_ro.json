@@ -4192,6 +4192,7 @@
   "gui.dungeontrain.editor_menu.phase.large_biomes": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "f78b44080d2c04b5"},
   "gui.dungeontrain.editor_menu.phase.amplified": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "38f6299e0c15f2ae"},
   "gui.dungeontrain.editor_menu.phase.lost_city": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "aeb171dc86663a91"},
+  "gui.dungeontrain.editor_menu.phase.deeper_dark": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "98663bd7160f0f77"},
   "gui.dungeontrain.editor_menu.phase.caves_of_chaos": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "dbdaf7b17204cf0e"},
   "gui.dungeontrain.editor_menu.stage.title": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "74d93c796c61696e"},
   "gui.dungeontrain.editor_menu.stage.delete": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "5d80b043f1245939"},

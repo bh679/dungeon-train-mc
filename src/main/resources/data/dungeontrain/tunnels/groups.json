@@ -37,7 +37,13 @@
     },
     "mossy": 10,
     "mud": 1,
-    "stone": 100
+    "stone": 100,
+    "sculk": {
+      "weight": 200,
+      "phases": [
+        "DEEPER_DARK"
+      ]
+    }
   },
   "ungroupedWeight": 1
 }

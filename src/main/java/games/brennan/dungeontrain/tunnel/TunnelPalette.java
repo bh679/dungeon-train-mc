@@ -80,6 +80,25 @@ public final class TunnelPalette {
         return ResourceKey.create(Registries.BLOCK, ResourceLocation.withDefaultNamespace(path));
     }
 
+    /**
+     * Deeper Darker's natural Otherside rock — the Deeper Dark core's bulk (sculk stone, gloomslate) and the
+     * surface skins its rules lay over them. Its ores already match through the vanilla ore tags it joins; its
+     * crafted forms (cobbled, polished, bricks, tiles) stay out, like end-stone bricks; sculk grime is its sea.
+     */
+    public static final Set<ResourceKey<Block>> OTHERSIDE_ROCK = Set.of(
+            othersideBlock("sculk_stone"), othersideBlock("gloomslate"), othersideBlock("blooming_sculk_stone"),
+            othersideBlock("gloomy_sculk"), othersideBlock("echo_soil"), othersideBlock("infested_sculk"));
+
+    /** True for Deeper Darker's Otherside rock — matched by registry key, like {@link #isBackportRock}. */
+    static boolean isOthersideRock(Block block) {
+        return OTHERSIDE_ROCK.contains(block.builtInRegistryHolder().key());
+    }
+
+    private static ResourceKey<Block> othersideBlock(String path) {
+        return ResourceKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(
+                games.brennan.dungeontrain.worldgen.OthersideCore.NAMESPACE, path));
+    }
+
     public static boolean isUndergroundMaterial(BlockState s) {
         if (s.isAir()) return false;
         if (!s.getFluidState().isEmpty()) return false;
@@ -99,6 +118,8 @@ public final class TunnelPalette {
 
         if (isClayFamilyMaterial(s)) return true;
         if (isBackportRock(s.getBlock())) return true;
+        if (isOthersideRock(s.getBlock())) return true;
+        if (s.is(Blocks.SCULK)) return true;                 // Otherside surfaces + overworld deep-dark patches
 
         if (s.is(BlockTags.COAL_ORES)) return true;
         if (s.is(BlockTags.IRON_ORES)) return true;

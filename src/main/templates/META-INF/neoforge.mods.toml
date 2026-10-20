@@ -96,6 +96,15 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Deeper Darker — REQUIRED. Its Otherside dimension is the core of the Deeper Dark pass on Lap 2; the level,
+# its blocks and its mobs have to exist on both sides.
+[[dependencies.${mod_id}]]
+    modId="deeperdarker"
+    type="required"
+    versionRange="[${deeperdarker_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # VanillaBackport (+ its Platform library) — REQUIRED. Its sulfur caves join the caves on the way out of
 # every Nether pass; its blocks and network channels have to exist on both sides.
 [[dependencies.${mod_id}]]
@@ -439,6 +448,12 @@ logoFile="logo.png"
 # Carriage (see CreakingHeartSettingsMixin, CreakingHeartBlockEntityMixin).
 [[mixins]]
     config="${mod_id}.vanillabackport.mixins.json"
+
+# Deeper Darker (required dep) — Otherside portals on the ride lead to a Deeper Dark core along the track, like
+# Nether portals do (see mixin/deeperdarker/OthersidePortalBlockBandJumpMixin). Gated by ThirdPartyMixinPlugin: a newer
+# Deeper Darker build that moved what it hooks skips the mixin with a WARN instead of stopping the boot.
+[[mixins]]
+    config="${mod_id}.deeperdarker.mixins.json"
 
 # Vista (required dep) — TVs toggle on a redstone pulse or an empty-hand click instead of
 # following a steady signal (see compat/vista/TvPowerToggle).

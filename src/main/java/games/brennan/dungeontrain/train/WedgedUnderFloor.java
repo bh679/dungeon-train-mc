@@ -29,14 +29,19 @@ public final class WedgedUnderFloor {
 
     /**
      * True when the mob's centre is inside the carriage footprint, its feet are below the deck,
-     * and its box reaches up into the floor.
+     * and its eyes are in the floor or above it.
+     *
+     * <p>Eyes, not the top of the box: a spider on the ground beside the track grazes the bottom of
+     * the floor with its back (0.09 of a block) as it walks at a rider, but nothing of it shows on
+     * the deck. Counting that moved it out a hair's width, it walked straight back, and it was moved
+     * again about once a second for minutes (0.1407.0 log, 279 lines).</p>
      */
-    public static boolean isWedged(double x, double feetY, double z, double boxMaxY,
+    public static boolean isWedged(double x, double feetY, double z, double eyeY,
                                    double cMinX, double cMinY, double cMinZ,
                                    double cMaxX, double cMaxZ) {
         boolean inFootprint = x > cMinX && x < cMaxX && z > cMinZ && z < cMaxZ;
         double deckY = cMinY + 1.0;
-        return inFootprint && feetY < deckY - BELOW_DECK_BLOCKS && boxMaxY > cMinY;
+        return inFootprint && feetY < deckY - BELOW_DECK_BLOCKS && eyeY > cMinY;
     }
 
     /**

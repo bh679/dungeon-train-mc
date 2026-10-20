@@ -68,9 +68,11 @@ public abstract class BucketItemMixin {
     /** Side-aware "is this world-X inside the Nether core?" — server uses band data, client the synced cache. */
     @Unique
     private static boolean dungeontrain$inNetherCore(Level level, int worldX) {
+        // The Deeper Dark is not ultrawarm: water stays water there.
         if (level instanceof ServerLevel serverLevel) {
-            return NetherBand.isInNetherBiome(serverLevel, worldX);
+            return NetherBand.isInRealNetherBiome(serverLevel, worldX);
         }
-        return ClientNetherBand.netherBandIntensityAt(worldX) >= NetherBand.NETHER_CORE_RAMP;
+        return ClientNetherBand.netherBandIntensityAt(worldX) >= NetherBand.NETHER_CORE_RAMP
+                && !ClientNetherBand.isOthersideAt(worldX);
     }
 }

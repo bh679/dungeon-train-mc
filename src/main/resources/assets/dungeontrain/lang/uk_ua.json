@@ -4189,6 +4189,7 @@
   "gui.dungeontrain.editor_menu.phase.large_biomes": "Великі біоми",
   "gui.dungeontrain.editor_menu.phase.amplified": "Посилений",
   "gui.dungeontrain.editor_menu.phase.lost_city": "Загублене місто",
+  "gui.dungeontrain.editor_menu.phase.deeper_dark": "Глибша темрява",
   "gui.dungeontrain.editor_menu.phase.caves_of_chaos": "Печери хаосу",
   "gui.dungeontrain.editor_menu.stage.title": "Етап: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Видалити етап",

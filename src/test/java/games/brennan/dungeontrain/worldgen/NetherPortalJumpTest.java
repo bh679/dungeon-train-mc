@@ -152,4 +152,70 @@ final class NetherPortalJumpTest {
         long t = target(fromX);
         assertTrue(NetherPortalJump.coreOf(ow, C).contains(t), "lands in the first overworld core, got " + t);
     }
+
+    // ---- Otherside portals (the Deeper Dark) ----------------------------------------------------------
+
+    /** As {@link #LABEL}, but a Deeper Dark pass reads as its own band — as {@code BandLabel} names it. */
+    private static final IntFunction<String> DD_LABEL = x -> NetherBand.isInNetherBand(C, x)
+        ? (C.netherLookAt(x) == CycleLayout.Style.OTHERSIDE ? "Deeper Dark" : "Nether")
+        : (C.endMiddleRamp(x) > 0.0 ? "End" : "Overworld");
+
+    private static long ddTarget(long fromX) {
+        OptionalLong t = NetherPortalJump.targetX(C, DD_LABEL, (int) fromX, NetherPortalJump.Target.DEEPER_DARK);
+        assertTrue(t.isPresent(), "an Otherside target from x=" + fromX);
+        return t.getAsLong();
+    }
+
+    private static Segment ddCore() {
+        Optional<Segment> c = NetherPortalJump.core(C, 2, NetherPortalJump.Target.DEEPER_DARK);
+        assertTrue(c.isPresent(), "the Deeper Dark (pass 2) has a core");
+        return c.get();
+    }
+
+    @Test
+    @DisplayName("the Deeper Dark pass is no Nether core, but is the Otherside portal's core")
+    void deeperDarkCoreIsTheOthersidePortalsOnly() {
+        assertFalse(NetherPortalJump.netherCore(C, 2).isPresent());
+        assertFalse(NetherPortalJump.core(C, 1, NetherPortalJump.Target.DEEPER_DARK).isPresent());   // BetterNether
+        Segment dd = ddCore();
+        assertTrue(C.isNetherCore((int) dd.start()) && C.isNetherCore((int) dd.end() - 1));
+        assertEquals(CycleLayout.Style.OTHERSIDE, C.netherLookAt((int) dd.start()));
+    }
+
+    @Test
+    @DisplayName("an Otherside portal before the first Deeper Dark, or after it, lands in that Deeper Dark core")
+    void othersidePortalLandsInTheDeeperDark() {
+        Segment dd = ddCore();
+        long bnMid = (C.netherPassRange(1)[0] + C.netherPassRange(1)[1]) / 2;     // in BetterNether
+        assertTrue(dd.contains(ddTarget(bnMid)));
+        long afterDd = C.netherPassRange(2)[1] + 1000;                             // Lost City
+        assertTrue(dd.contains(ddTarget(afterDd)));
+        assertTrue(dd.contains(ddTarget(1000)));                                    // first overworld: forward
+    }
+
+    @Test
+    @DisplayName("an Otherside portal inside the Deeper Dark goes back to the overworld before the joined range")
+    void othersidePortalInTheDeeperDarkGoesBackToTheOverworld() {
+        long inside = (ddCore().start() + ddCore().end()) / 2;
+        long t = ddTarget(inside);
+        long groupStart = C.netherPassRange(1)[0];                                 // BetterNether's slot start
+        assertTrue(t < groupStart, "lands before the BetterNether slot: " + t + " vs " + groupStart);
+        assertEquals("Overworld", DD_LABEL.apply((int) t));
+        // ... while a Nether portal there still leads to the previous real Nether (BetterNether)
+        Segment bn = core(1);
+        assertTrue(bn.contains(target(inside)));
+    }
+
+    @Test
+    @DisplayName("an order without a Deeper Dark gives an Otherside portal nowhere to go (it goes to the real Otherside)")
+    void noDeeperDarkNoTarget() {
+        CycleLayout l = CycleLayout.parse("ow:1000, nether:3000, ow:2000", CycleLayoutTest.FADES,
+            CycleLayoutTest.eraDefaults(), t -> true, w -> {});
+        WorldGenCycle c = new WorldGenCycle(0L, 10_000, 40, new int[] {1, 2, 4, 8, 15}, 32, 0, 300, 5000,
+            120, 500, 5000, 600, 5000, 600, 10_000, 8000, 1500, 5000, 0.3, 0.4, 6550, 750, 5000, 8000, 1500, 10_000, 0.08,
+            CycleLayoutTest.eraDefaults(), l, 0);
+        IntFunction<String> label = x -> NetherBand.isInNetherBand(c, x) ? "Nether" : "Overworld";
+        assertFalse(NetherPortalJump.targetX(c, label, 500, NetherPortalJump.Target.DEEPER_DARK).isPresent());
+        assertTrue(NetherPortalJump.targetX(c, label, 500).isPresent());
+    }
 }
