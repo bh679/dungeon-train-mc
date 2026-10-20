@@ -4676,7 +4676,6 @@
   "chat.dungeontrain.priority_book.unused": "ครั้งนี้ไม่ได้ใช้หนังสือสิทธิพิเศษ",
   "chat.dungeontrain.priority_book.boosted.other": "คุณบูสต์หนังสือเล่มนี้แล้ว เหลือบูสต์อีก %s ครั้ง",
   "chat.dungeontrain.priority_book.boosted_plain": "คุณบูสต์หนังสือเล่มนี้แล้ว",
-  "chat.dungeontrain.priority_book.boost_full": "หนังสือเล่มนี้ได้รับบูสต์เต็มที่แล้ว ไม่ได้ใช้บูสต์ของคุณ",
   "chat.dungeontrain.priority_book.boost_unused": "ครั้งนี้ไม่ได้ใช้บูสต์",
   "chat.dungeontrain.priority_book.boosted_by": "%s บูสต์หนังสือของคุณ! ตอนนี้หนังสือของคุณไปถึงผู้เล่นคนอื่นบ่อยขึ้นมาก",
   "chat.dungeontrain.priority_book.boosted_by_more": "%s และอีก %s คนบูสต์หนังสือของคุณ! ตอนนี้หนังสือของคุณไปถึงผู้เล่นคนอื่นบ่อยขึ้นมาก",

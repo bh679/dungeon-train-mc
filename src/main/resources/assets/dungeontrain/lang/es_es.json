@@ -4738,7 +4738,6 @@
   "chat.dungeontrain.priority_book.boosted.one": "Has impulsado este libro. Te queda %s impulso.",
   "chat.dungeontrain.priority_book.boosted.other": "Has impulsado este libro. Te quedan %s impulsos.",
   "chat.dungeontrain.priority_book.boosted_plain": "Has impulsado este libro.",
-  "chat.dungeontrain.priority_book.boost_full": "Este libro ya está impulsado al máximo. No se ha usado ningún impulso.",
   "chat.dungeontrain.priority_book.boost_unused": "Esta vez no se ha usado ningún impulso.",
   "chat.dungeontrain.priority_book.boosted_by": "¡Tu libro recibió un impulso de %s! Ahora llega a otros jugadores mucho más a menudo.",
   "chat.dungeontrain.priority_book.boosted_by_more": "¡Tu libro recibió impulsos de %s y de otros jugadores (%s más)! Ahora llega a otros jugadores mucho más a menudo.",

@@ -4676,7 +4676,6 @@
   "chat.dungeontrain.priority_book.unused": "今回は優先本を使いませんでした。",
   "chat.dungeontrain.priority_book.boosted.other": "この本をブーストしました。残り%s回です。",
   "chat.dungeontrain.priority_book.boosted_plain": "この本をブーストしました。",
-  "chat.dungeontrain.priority_book.boost_full": "この本はすでに上限までブーストされています。ブーストは消費されませんでした。",
   "chat.dungeontrain.priority_book.boost_unused": "今回はブーストは消費されませんでした。",
   "chat.dungeontrain.priority_book.boosted_by": "%sがあなたの本をブーストしてくれました！他のプレイヤーにずっと多く届くようになります。",
   "chat.dungeontrain.priority_book.boosted_by_more": "%sとほか%s人があなたの本をブーストしてくれました！他のプレイヤーにずっと多く届くようになります。",

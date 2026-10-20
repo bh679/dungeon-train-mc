@@ -4690,7 +4690,6 @@
   "chat.dungeontrain.priority_book.unused": "这次没有使用优先之书。",
   "chat.dungeontrain.priority_book.boosted.other": "你助推了这本书。还剩 %s 次助推。",
   "chat.dungeontrain.priority_book.boosted_plain": "你助推了这本书。",
-  "chat.dungeontrain.priority_book.boost_full": "这本书已助推到上限。没有消耗助推。",
   "chat.dungeontrain.priority_book.boost_unused": "这次没有消耗助推。",
   "chat.dungeontrain.priority_book.boosted_by": "%s 助推了你的书！它现在会更频繁地出现在其他玩家面前。",
   "chat.dungeontrain.priority_book.boosted_by_more": "%s 和另外 %s 人助推了你的书！它现在会更频繁地出现在其他玩家面前。",

@@ -4738,7 +4738,6 @@
   "chat.dungeontrain.priority_book.boosted.one": "Du hast dieses Buch geboostet. Noch %s Boost übrig.",
   "chat.dungeontrain.priority_book.boosted.other": "Du hast dieses Buch geboostet. Noch %s Boosts übrig.",
   "chat.dungeontrain.priority_book.boosted_plain": "Du hast dieses Buch geboostet.",
-  "chat.dungeontrain.priority_book.boost_full": "Dieses Buch ist schon so weit geboostet, wie es geht. Es wurde kein Boost verbraucht.",
   "chat.dungeontrain.priority_book.boost_unused": "Diesmal wurde kein Boost verbraucht.",
   "chat.dungeontrain.priority_book.boosted_by": "Dein Buch wurde von %s geboostet! Es erreicht andere Spieler jetzt viel häufiger.",
   "chat.dungeontrain.priority_book.boosted_by_more": "Dein Buch wurde von %s und %s weiteren Spielern geboostet! Es erreicht andere Spieler jetzt viel häufiger.",

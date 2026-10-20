@@ -87,11 +87,6 @@ public final class PriorityBookMessage {
         return Component.translatable(CHAT + "boosted_plain").withStyle(ChatFormatting.GOLD);
     }
 
-    /** The book already carries as many boosts as count, so nothing was spent. */
-    public static Component boostFull() {
-        return Component.translatable(CHAT + "boost_full").withStyle(ChatFormatting.GRAY);
-    }
-
     /** The reader asked to boost and none was used (nothing left, or the relay could not apply it). */
     public static Component boostUnused() {
         return Component.translatable(CHAT + "boost_unused").withStyle(ChatFormatting.GRAY);

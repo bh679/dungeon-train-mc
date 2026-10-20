@@ -37,8 +37,8 @@ import java.util.UUID;
  * older relay that sends no {@code priority} block parses to "nothing to say".</p>
  *
  * <p>A third route is the reader's: a boost of somebody else's book from its vote page answers on
- * {@code /books/credits/boost}: 200 {@code {ok, boostsLeft, repeat?}}, 402 {@code no_credits},
- * 409 {@code boost_full}, or another refusal. A {@code repeat} is an outbox re-send of a boost the relay
+ * {@code /books/credits/boost}: 200 {@code {ok, boostsLeft, repeat?}}, 402 {@code no_credits}, or another
+ * refusal. There is no cap on a book's boosts. A {@code repeat} is an outbox re-send of a boost the relay
  * already charged, so it says nothing and counts nothing twice.</p>
  */
 public final class PriorityBookResponses {
@@ -52,7 +52,7 @@ public final class PriorityBookResponses {
 
     /** What the relay said about one boost. {@code boostsLeft} is -1 when it did not say. */
     record BoostOutcome(UUID player, int bookId, Result result, long boostsLeft) {
-        enum Result { BOOSTED, REPEAT, FULL, UNUSED }
+        enum Result { BOOSTED, REPEAT, UNUSED }
     }
 
     /** Register the spend and boost handlers on the shared outbox. Called once at mod setup. */
@@ -81,9 +81,7 @@ public final class PriorityBookResponses {
                 ? BoostOutcome.Result.REPEAT : BoostOutcome.Result.BOOSTED;
             return new BoostOutcome(player, id, r, left);
         }
-        String error = resp == null ? null : optString(resp, "error");
-        BoostOutcome.Result r = "boost_full".equals(error) ? BoostOutcome.Result.FULL : BoostOutcome.Result.UNUSED;
-        return new BoostOutcome(player, id, r, left);
+        return new BoostOutcome(player, id, BoostOutcome.Result.UNUSED, left);
     }
 
     /** The chat line for a boost outcome, or null when there is nothing new to say. Package-private for tests. */
@@ -92,7 +90,6 @@ public final class PriorityBookResponses {
             case BOOSTED -> o.boostsLeft() >= 0
                 ? PriorityBookMessage.boosted(locale, o.boostsLeft()) : PriorityBookMessage.boostedNoCount();
             case REPEAT -> null; // the player heard about it when it first landed
-            case FULL -> PriorityBookMessage.boostFull();
             case UNUSED -> PriorityBookMessage.boostUnused();
         };
     }

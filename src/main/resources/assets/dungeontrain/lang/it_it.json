@@ -4738,7 +4738,6 @@
   "chat.dungeontrain.priority_book.boosted.one": "Hai potenziato questo libro. Ti resta %s potenziamento.",
   "chat.dungeontrain.priority_book.boosted.other": "Hai potenziato questo libro. Ti restano %s potenziamenti.",
   "chat.dungeontrain.priority_book.boosted_plain": "Hai potenziato questo libro.",
-  "chat.dungeontrain.priority_book.boost_full": "Questo libro è già potenziato al massimo. Non è stato usato nessun potenziamento.",
   "chat.dungeontrain.priority_book.boost_unused": "Questa volta non è stato usato nessun potenziamento.",
   "chat.dungeontrain.priority_book.boosted_by": "Il tuo libro è stato potenziato da %s! Ora raggiunge gli altri giocatori molto più spesso.",
   "chat.dungeontrain.priority_book.boosted_by_more": "Il tuo libro è stato potenziato da %s e da altri giocatori (%s in più)! Ora raggiunge gli altri giocatori molto più spesso.",

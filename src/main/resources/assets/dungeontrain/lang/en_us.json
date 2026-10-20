@@ -1032,7 +1032,6 @@
   "chat.dungeontrain.priority_book.boosted.one": "You boosted this book. %s boost left.",
   "chat.dungeontrain.priority_book.boosted.other": "You boosted this book. %s boosts left.",
   "chat.dungeontrain.priority_book.boosted_plain": "You boosted this book.",
-  "chat.dungeontrain.priority_book.boost_full": "This book is already boosted as far as it can go. No boost was used.",
   "chat.dungeontrain.priority_book.boost_unused": "No boost was used this time.",
   "chat.dungeontrain.priority_book.boosted_by": "%s boosted your book! It reaches other players far more often now.",
   "chat.dungeontrain.priority_book.boosted_by_more": "%s and %s more boosted your book! It reaches other players far more often now.",

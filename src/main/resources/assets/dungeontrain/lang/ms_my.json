@@ -4676,7 +4676,6 @@
   "chat.dungeontrain.priority_book.unused": "Tiada Buku Keutamaan digunakan kali ini.",
   "chat.dungeontrain.priority_book.boosted.other": "Anda telah mendorong buku ini. Tinggal %s dorongan.",
   "chat.dungeontrain.priority_book.boosted_plain": "Anda telah mendorong buku ini.",
-  "chat.dungeontrain.priority_book.boost_full": "Buku ini sudah didorong sehabis mungkin. Tiada dorongan digunakan.",
   "chat.dungeontrain.priority_book.boost_unused": "Tiada dorongan digunakan kali ini.",
   "chat.dungeontrain.priority_book.boosted_by": "%s telah mendorong buku anda! Kini ia sampai kepada pemain lain jauh lebih kerap.",
   "chat.dungeontrain.priority_book.boosted_by_more": "%s dan %s pemain lain telah mendorong buku anda! Kini ia sampai kepada pemain lain jauh lebih kerap.",

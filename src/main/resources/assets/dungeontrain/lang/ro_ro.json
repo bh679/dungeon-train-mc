@@ -1074,7 +1074,6 @@
   "chat.dungeontrain.priority_book.boosted.few": "Ai impulsionat această carte. Îți mai rămân %s impulsuri.",
   "chat.dungeontrain.priority_book.boosted.other": "Ai impulsionat această carte. Îți mai rămân %s de impulsuri.",
   "chat.dungeontrain.priority_book.boosted_plain": "Ai impulsionat această carte.",
-  "chat.dungeontrain.priority_book.boost_full": "Această carte are deja impulsul maxim. Nu s-a folosit niciun impuls.",
   "chat.dungeontrain.priority_book.boost_unused": "De data aceasta nu s-a folosit niciun impuls.",
   "chat.dungeontrain.priority_book.boosted_by": "Cartea ta a primit un impuls de la %s! Acum ajunge mult mai des la alți jucători.",
   "chat.dungeontrain.priority_book.boosted_by_more": "Cartea ta a primit impulsuri de la %s și de la alți jucători (încă %s)! Acum ajunge mult mai des la alți jucători.",

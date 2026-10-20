@@ -4676,7 +4676,6 @@
   "chat.dungeontrain.priority_book.unused": "Lần này không dùng Sách Ưu Tiên nào.",
   "chat.dungeontrain.priority_book.boosted.other": "Bạn đã đẩy cuốn sách này. Còn %s lượt đẩy.",
   "chat.dungeontrain.priority_book.boosted_plain": "Bạn đã đẩy cuốn sách này.",
-  "chat.dungeontrain.priority_book.boost_full": "Cuốn sách này đã được đẩy tối đa. Không lượt đẩy nào bị dùng.",
   "chat.dungeontrain.priority_book.boost_unused": "Lần này không lượt đẩy nào bị dùng.",
   "chat.dungeontrain.priority_book.boosted_by": "%s đã đẩy sách của bạn! Giờ sách của bạn đến với người chơi khác thường xuyên hơn nhiều.",
   "chat.dungeontrain.priority_book.boosted_by_more": "%s và %s người khác đã đẩy sách của bạn! Giờ sách của bạn đến với người chơi khác thường xuyên hơn nhiều.",

@@ -1074,7 +1074,6 @@
   "chat.dungeontrain.priority_book.boosted.few": "Книгу підсилено. Залишилося %s підсилення.",
   "chat.dungeontrain.priority_book.boosted.many": "Книгу підсилено. Залишилося %s підсилень.",
   "chat.dungeontrain.priority_book.boosted_plain": "Книгу підсилено.",
-  "chat.dungeontrain.priority_book.boost_full": "Ця книга вже підсилена до межі. Підсилення не витрачено.",
   "chat.dungeontrain.priority_book.boost_unused": "Цього разу підсилення не витрачено.",
   "chat.dungeontrain.priority_book.boosted_by": "Твоя книга отримала підсилення від %s! Тепер вона набагато частіше потрапляє до інших гравців.",
   "chat.dungeontrain.priority_book.boosted_by_more": "Твоя книга отримала підсилення від %s та інших гравців (ще %s)! Тепер вона набагато частіше потрапляє до інших гравців.",

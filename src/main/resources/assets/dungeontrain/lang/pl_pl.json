@@ -4800,7 +4800,6 @@
   "chat.dungeontrain.priority_book.boosted.few": "Książka wzmocniona. Zostały %s wzmocnienia.",
   "chat.dungeontrain.priority_book.boosted.many": "Książka wzmocniona. Zostało %s wzmocnień.",
   "chat.dungeontrain.priority_book.boosted_plain": "Książka wzmocniona.",
-  "chat.dungeontrain.priority_book.boost_full": "Ta książka jest już wzmocniona do maksimum. Nie zużyto wzmocnienia.",
   "chat.dungeontrain.priority_book.boost_unused": "Tym razem nie zużyto wzmocnienia.",
   "chat.dungeontrain.priority_book.boosted_by": "Twoja książka dostała wzmocnienie od: %s! Teraz trafia do innych graczy o wiele częściej.",
   "chat.dungeontrain.priority_book.boosted_by_more": "Twoja książka dostała wzmocnienie od: %s oraz innych graczy (jeszcze %s)! Teraz trafia do innych graczy o wiele częściej.",

@@ -4800,7 +4800,6 @@
   "chat.dungeontrain.priority_book.boosted.few": "Вы усилили эту книгу. Осталось %s усиления.",
   "chat.dungeontrain.priority_book.boosted.many": "Вы усилили эту книгу. Осталось %s усилений.",
   "chat.dungeontrain.priority_book.boosted_plain": "Вы усилили эту книгу.",
-  "chat.dungeontrain.priority_book.boost_full": "Эта книга уже усилена до предела. Усиление не потрачено.",
   "chat.dungeontrain.priority_book.boost_unused": "В этот раз усиление не потрачено.",
   "chat.dungeontrain.priority_book.boosted_by": "Ваша книга получила усиление от %s! Теперь она гораздо чаще попадается другим игрокам.",
   "chat.dungeontrain.priority_book.boosted_by_more": "Ваша книга получила усиление от %s и других игроков (ещё %s)! Теперь она гораздо чаще попадается другим игрокам.",

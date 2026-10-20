@@ -4738,7 +4738,6 @@
   "chat.dungeontrain.priority_book.boosted.one": "Je hebt dit boek geboost. Nog %s boost over.",
   "chat.dungeontrain.priority_book.boosted.other": "Je hebt dit boek geboost. Nog %s boosts over.",
   "chat.dungeontrain.priority_book.boosted_plain": "Je hebt dit boek geboost.",
-  "chat.dungeontrain.priority_book.boost_full": "Dit boek is al zo ver geboost als kan. Er is geen boost gebruikt.",
   "chat.dungeontrain.priority_book.boost_unused": "Deze keer is er geen boost gebruikt.",
   "chat.dungeontrain.priority_book.boosted_by": "Je boek is geboost door %s! Het komt nu veel vaker bij andere spelers terecht.",
   "chat.dungeontrain.priority_book.boosted_by_more": "Je boek is geboost door %s en andere spelers (nog %s)! Het komt nu veel vaker bij andere spelers terecht.",

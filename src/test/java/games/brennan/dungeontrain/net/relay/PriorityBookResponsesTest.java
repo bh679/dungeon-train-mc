@@ -90,8 +90,6 @@ class PriorityBookResponsesTest {
     @Test
     void aRefusedBoostSaysWhy() {
         String req = "{\"uuid\":\"" + HEX + "\",\"id\":\"7\"}";
-        assertEquals(PriorityBookResponses.BoostOutcome.Result.FULL,
-                PriorityBookResponses.parseBoost(req, 409, "{\"error\":\"boost_full\"}").result());
         assertEquals(PriorityBookResponses.BoostOutcome.Result.UNUSED,
                 PriorityBookResponses.parseBoost(req, 402, "{\"error\":\"no_credits\"}").result());
         assertEquals(PriorityBookResponses.BoostOutcome.Result.UNUSED,
