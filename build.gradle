@@ -124,6 +124,21 @@ repositories {
     }
 }
 
+// Fails the build when -PquickWorld names a save that does not exist (or has no level.dat).
+// Vanilla's quick-play path creates the empty save folder before it reads level.dat, and the
+// BetterX library then prompts to "fix" a world that was never there (see BclibFixPromptMixin);
+// refusing here keeps that from happening at all and lists the saves that do exist.
+def requireQuickWorldSave = { File gameDir, String world ->
+    def saves = new File(gameDir, 'saves')
+    if (!new File(saves, "${world}/level.dat").isFile()) {
+        def names = saves.isDirectory()
+                ? saves.listFiles().findAll { new File(it, 'level.dat').isFile() }*.name.sort()
+                : []
+        throw new GradleException("-PquickWorld=\"${world}\": no save with a level.dat at ${saves}/${world}. " +
+                "Existing saves: " + (names ? names.collect { "\"${it}\"" }.join(', ') : '(none)'))
+    }
+}
+
 neoForge {
     // disableRecompilation: run dev against Mojang's ORIGINAL bytecode (remapped), not a
     // decompile→recompile. Recompiling reorders lambda captures, which breaks third-party
@@ -211,6 +226,7 @@ neoForge {
             // candidate poses to run/screenshots/tvpose-NN.png. Dev only; neither flag exists in production.
             def quickWorld = project.findProperty('quickWorld')
             if (quickWorld) {
+                requireQuickWorldSave(file('run'), quickWorld.toString())
                 programArgument '--quickPlaySingleplayer'
                 programArgument quickWorld.toString()
             }
@@ -386,6 +402,7 @@ neoForge {
             // candidate poses to run/screenshots/tvpose-NN.png. Dev only; neither flag exists in production.
             def quickWorld = project.findProperty('quickWorld')
             if (quickWorld) {
+                requireQuickWorldSave(file(project.findProperty('serverDir') ?: 'run'), quickWorld.toString())
                 programArgument '--quickPlaySingleplayer'
                 programArgument quickWorld.toString()
             }

@@ -31,6 +31,12 @@ import java.util.function.Consumer;
  * untouched. The DT check reads the save folder ({@link DungeonTrainSave}: {@code level.dat}, then the
  * preset marker that covers Compatible Terrain worlds) because this runs before the world opens. Wrapping the call inside the private {@code fixData(File, …)} rather than
  * {@code showBackupWarning} itself is what gives us the save folder; the latter only sees the level id.</p>
+ *
+ * <p>A save folder with no {@code level.dat} (nor {@code level.dat_old}) is answered the same way, DT world
+ * or not. Vanilla's quick-play path ({@code --quickPlaySingleplayer <name>}) creates the folder before it
+ * reads the level data, so a name that no longer exists reaches this hook as an empty folder: there is
+ * nothing in it for BCLib to fix, the load fails right after anyway, and the prompt would only be
+ * friction on the way to that failure.</p>
  */
 @Mixin(value = DataFixerAPI.class, remap = false)
 public abstract class BclibFixPromptMixin {
@@ -47,6 +53,11 @@ public abstract class BclibFixPromptMixin {
                                                           File levelBaseDir, String levelID, boolean showUI,
                                                           Consumer<Boolean> onResume,
                                                           LevelStorageSource.LevelStorageAccess access) {
+        if (!DungeonTrainSave.hasLevelData(levelBaseDir.toPath())) {
+            DUNGEONTRAIN$LOGGER.info("[DT] Save folder '{}' has no level.dat; nothing for BCLib to fix, skipping its prompt", levelId);
+            callback.accept(false, true);
+            return;
+        }
         if (!DungeonTrainSave.isDungeonTrainSave(levelBaseDir.toPath(),
                 DungeonTrainCommonConfig.getDefaultCompatibleTerrain())) {
             original.call(levelId, callback);
