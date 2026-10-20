@@ -10,7 +10,9 @@ import net.neoforged.fml.loading.FMLEnvironment;
  * every player, and {@code isDebugEnabled()} is always true unless a logger is capped explicitly.
  * DT caps the {@link #JITTER} namespace (its per-event physics/train probes) at INFO for players
  * and DEBUG in dev; the windowed summaries lag reports are read from ({@code [mspt]} and friends,
- * one line per 2 s) log on {@link #PERF}, which is left uncapped so they stay in players' logs.</p>
+ * one line per 2 s) log on {@link #PERF}, which is left uncapped so they stay in players' logs.
+ * They are handed to {@link AsyncPerfLog}, which writes them from its own daemon thread, so the
+ * synchronous {@code debug.log} flush never lands on the server or render thread.</p>
  */
 public final class DtLogging {
 

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.ship.sable;
 
+import games.brennan.dungeontrain.util.AsyncPerfLog;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import games.brennan.dungeontrain.ship.ManagedShip;
@@ -256,7 +257,7 @@ public final class PhysicsFreezeController {
         REPARKS.add(reparks);
 
         if (frozen > 0 && level.getGameTime() % LOG_PERIOD_TICKS == 0) {
-            PERF_LOGGER.debug("[freeze] dim={} resident={} active={} frozen={}",
+            AsyncPerfLog.debug(PERF_LOGGER, "[freeze] dim={} resident={} active={} frozen={}",
                 level.dimension().location(), resident, active, frozen);
         }
     }
