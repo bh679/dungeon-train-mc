@@ -16902,34 +16902,6 @@
       ]
     }
   },
-  "gui.dungeontrain.priority_book.boost.one": {
-    "1": {
-      "label": "Boosts the player has left to give (each is a tenth of a Priority Book)",
-      "examples": [
-        "1"
-      ]
-    }
-  },
-  "gui.dungeontrain.priority_book.boost.other": {
-    "1": {
-      "label": "Boosts the player has left to give (each is a tenth of a Priority Book)",
-      "examples": [
-        "0",
-        "9",
-        "25"
-      ]
-    }
-  },
-  "gui.dungeontrain.priority_book.you_boosted": {
-    "1": {
-      "label": "How many times the player has boosted this book",
-      "examples": [
-        "1",
-        "2",
-        "5"
-      ]
-    }
-  },
   "chat.dungeontrain.priority_book.boosted.one": {
     "1": {
       "label": "Boosts left after this one was given",

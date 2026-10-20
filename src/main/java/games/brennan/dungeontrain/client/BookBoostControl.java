@@ -20,19 +20,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The star on the vote page, left of the thumbs: the one Priority Book control, with its explanation
- * on hover and no line of text on the page.
+ * The star on the vote page, left of the thumbs: the one Priority Book control, with no line of text
+ * on the page.
  *
  * <ul>
  *   <li><b>Somebody else's book</b>: each click is one boost, a tenth of one of the reader's Priority
  *       Books, and lifts the book like a whole one. Boosts repeat, so the star wears a count in its
  *       corner like a stack of items, going up with every click. One click each: a boost is small, and
  *       the count is the feedback.</li>
- *   <li><b>Your own released book</b>: the star makes it a Priority Book, spending a whole one, once.
- *       Two clicks, since that cannot be undone; the hover says "click again" in between.</li>
+ *   <li><b>Your own released book</b>: the star makes it a Priority Book, spending a whole one (ten
+ *       boosts), once. Two clicks, since that cannot be undone; the hover says "click again" between.</li>
  * </ul>
  *
- * <p>Invisible to anyone with nothing to give: on somebody else's book it shows while
+ * <p>Beside the book sits the wallet ({@link #renderWallet}): the reader's boosts left, and the page's
+ * only explanation, on its hover. Invisible to anyone with nothing to give: on somebody else's book it shows while
  * {@link BookCredits#boostsLeft} is above zero or this copy already carries the reader's boosts; on your
  * own while you have a Priority Book to spend or it already is one. {@link BookVoteClientEvents} owns the
  * page and its geometry and calls in here; the hit box is the star drawn on the last frame.</p>
@@ -118,7 +119,24 @@ final class BookBoostControl {
         Component label = PriorityBookMessage.boostLabel();
         gfx.drawString(font, label, x + BUTTON_SIZE / 2 - font.width(label) / 2, labelY, COLOR_LABEL, false);
 
-        if (hover) tooltip(gfx, font, own ? ownTooltip() : boostTooltip(), mouseX, mouseY);
+        // No explanation here (that lives on the wallet star); only the "click again" a whole
+        // Priority Book's spend on your own book asks for.
+        if (hover && own && armed) tooltip(gfx, font, List.of(PriorityBookMessage.makeConfirm()), mouseX, mouseY);
+    }
+
+    /**
+     * The wallet: a filled star outside the book's bottom-right corner with the boosts the reader has
+     * left beside it, going down as they spend them. Its hover is the one explanation on the page.
+     * Drawn whenever the page's star is, so the count is always next to what spends it.
+     */
+    static void renderWallet(GuiGraphics gfx, Font font, int x, int y, int mouseX, int mouseY) {
+        int left = BookCredits.boostsLeft();
+        gfx.blitSprite(STAR_FILLED, x, y, BUTTON_SIZE, BUTTON_SIZE);
+        String count = Integer.toString(left);
+        gfx.drawString(font, count, x + BUTTON_SIZE + 2, y + (BUTTON_SIZE - 8) / 2, COLOR_COUNT, true);
+        int w = BUTTON_SIZE + 2 + font.width(count);
+        boolean hover = mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + BUTTON_SIZE;
+        if (hover) tooltip(gfx, font, List.of(PriorityBookMessage.boostTooltip()), mouseX, mouseY);
     }
 
     /** The count in the star's bottom-right corner, drawn the way an item stack draws its size. */
@@ -165,22 +183,6 @@ final class BookBoostControl {
         DungeonTrainNet.sendToServer(new BookPriorityPacket(bookType, bookId));
         BookCredits.spentOne();
         return true;
-    }
-
-    /** Somebody else's book: what is left, then what a boost does. */
-    private static List<Component> boostTooltip() {
-        List<Component> lines = new ArrayList<>();
-        int left = BookCredits.boostsLeft();
-        lines.add(left > 0 ? PriorityBookMessage.boost(locale(), left) : PriorityBookMessage.youBoosted(locale(), given));
-        lines.add(PriorityBookMessage.boostTooltip());
-        return lines;
-    }
-
-    /** Your own book: already one, "click again", or the offer with what is left. */
-    private static List<Component> ownTooltip() {
-        if (priority) return List.of(PriorityBookMessage.isPriority());
-        if (armed) return List.of(PriorityBookMessage.makeConfirm());
-        return List.of(PriorityBookMessage.make(locale(), BookCredits.current()), PriorityBookMessage.boostTooltip());
     }
 
     private static void tooltip(GuiGraphics gfx, Font font, List<Component> parts, int mouseX, int mouseY) {

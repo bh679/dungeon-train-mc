@@ -114,12 +114,7 @@ public final class PriorityBookMessage {
         return line.withStyle(ChatFormatting.GOLD);
     }
 
-    /** The star's hover on somebody else's book: "Boost this book (N boosts left)". */
-    public static Component boost(String locale, long n) {
-        return PluralRules.clause(locale, GUI + "boost", n);
-    }
-
-    /** What the star does, on hover: one short line. */
+    /** The wallet star's hover beside the book: what a boost does, and that your own costs ten. */
     public static Component boostTooltip() {
         return Component.translatable(GUI + "boost_tooltip");
     }
@@ -129,8 +124,4 @@ public final class PriorityBookMessage {
         return Component.translatable(GUI + "boost_label");
     }
 
-    /** The star's hover once the reader has boosted this copy {@code n} times and has none left. */
-    public static Component youBoosted(String locale, long n) {
-        return Component.translatable(GUI + "you_boosted", n);
-    }
 }
