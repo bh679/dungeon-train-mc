@@ -28701,7 +28701,7 @@
         "world",
         "balance"
       ],
-      "title": "The train gets cold",
+      "title": "The train gets cold, and the wind blows the weather",
       "summary": "Deep down the line, some stretches turn bitterly cold. Out on the roof, a flatbed or a coupling pad, frost creeps over you; only a carriage closed in on every side keeps you warm. It starts slow and bites faster the further you have travelled, never quite reaching the cold of powder snow.",
       "highlights": [
         "Step inside a closed carriage to thaw.",
@@ -28711,7 +28711,10 @@
       "date": "2026-10-20",
       "released": false,
       "released_in": null,
-      "released_at": null
+      "released_at": null,
+      "major": true,
+      "notable": true,
+      "description": "Deep down the line, the ride is getting harsher in two ways.\n\n**The train gets cold.** Some stretches turn bitterly cold. Out on the roof, a flatbed or a coupling pad, frost creeps over you, just as it does in powder snow. Only a carriage closed in on every side keeps you warm, so step inside to thaw. It starts slow and bites faster the further you have travelled, never quite reaching the cold of powder snow. Leather armour keeps the frost off, as it does in powder snow.\n\n**The wind blows the weather.** Where the train's wind blows, the weather feels it too. Rain leans into each gust and swings back as it passes, snow is swept sideways and flies at you when you face into it, and campfire smoke, petals and ash beside the track drift away downwind. Inside a carriage or under cover the air stays still.\n\n*The train continues to get harder. Feedback on the balance is welcome.*"
     }
   ]
 }
