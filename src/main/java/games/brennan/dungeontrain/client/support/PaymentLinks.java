@@ -127,21 +127,6 @@ public final class PaymentLinks {
     }
 
     /**
-     * The checkout URL for a gift to community reward {@code rewardId} on the relay's
-     * {@code rewards_pay} route ({@code base}): one whole gift, so no quantity, the player's name
-     * prefilled like the tiers, and Stripe's language when it has ours.
-     */
-    public static String rewardUrl(String base, String rewardId) {
-        if (base == null || rewardId == null) return null;
-        return withRewardId(withDisplayName(base, playerName(), stripeLocale(selectedLocale())), rewardId);
-    }
-
-    /** {@code base} with {@code reward=<id>} appended. */
-    static String withRewardId(String base, String rewardId) {
-        return withParam(base, "reward", rewardId);
-    }
-
-    /**
      * Whether to hide the open-ended options — Custom Amount (Revolut) and Recurring (Patreon) —
      * because neither provider is reachable for this player. Both are walled in mainland China, so
      * the row is dropped rather than shown broken; the price points remain, since they run through

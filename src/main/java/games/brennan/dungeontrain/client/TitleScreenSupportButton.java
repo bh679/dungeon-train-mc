@@ -8,7 +8,7 @@ import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.menu.PatreonIconButton;
 import games.brennan.dungeontrain.client.support.PaymentConfirmScreen;
 import games.brennan.dungeontrain.client.support.PaymentLinks;
-import games.brennan.dungeontrain.client.support.ContributeScreen;
+import games.brennan.dungeontrain.client.support.SupportScreen;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
@@ -29,7 +29,7 @@ import java.net.URI;
 /**
  * Replaces the vanilla <b>Minecraft Realms</b> button on the title screen with
  * a row split between a <b>Support the Mod</b> button (opening {@link
- * ContributeScreen}) and a compact <b>Patreon</b> icon button — together filling
+ * SupportScreen}) and a compact <b>Patreon</b> icon button — together filling
  * the exact bounds the Realms button occupied.
  *
  * <p>Realms is a paid first-party service irrelevant to a modded single-player
@@ -94,11 +94,11 @@ public final class TitleScreenSupportButton {
         int iconW = h;
         int supportW = showPatreon ? w - iconW - GAP : w;
 
-        event.addListener(ContributeScreen.withSupportTooltip(new DarkTintedButton(x, y, supportW, h, SUPPORT_LABEL, b -> {
+        event.addListener(new DarkTintedButton(x, y, supportW, h, SUPPORT_LABEL, b -> {
             // The headline funnel metric: how many players tap "Support the Mod" at all.
             UiAnalytics.click(UiAnalytics.SURFACE_TITLE_SCREEN, UiAnalytics.TARGET_SUPPORT);
-            Minecraft.getInstance().setScreen(new ContributeScreen(titleScreen));
-        })));
+            Minecraft.getInstance().setScreen(new SupportScreen(titleScreen));
+        }));
 
         if (showPatreon) {
             PatreonIconButton patreon = new PatreonIconButton(x + supportW + GAP, y, iconW,
