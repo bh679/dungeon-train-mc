@@ -29047,9 +29047,9 @@
       "highlights": [],
       "pr": 2206,
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1429.0",
+      "released_at": "2026-10-20T17:43:29Z"
     },
     {
       "id": "bug-report-pauses-run",
@@ -29066,9 +29066,9 @@
         "On servers, your run clock stops while the report screen is open"
       ],
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1429.0",
+      "released_at": "2026-10-20T17:43:29Z"
     },
     {
       "id": "advancement-unlock-fix",
@@ -29082,9 +29082,9 @@
       "summary": "A hidden advancement that some players had earned was not unlocking. It does now.",
       "highlights": [],
       "date": "2026-10-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1429.0",
+      "released_at": "2026-10-20T17:43:29Z"
     }
   ]
 }
