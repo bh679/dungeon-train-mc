@@ -215,6 +215,15 @@ public final class ProceduralTiers {
         return new DifficultyTier.WeaponSet(pool, chance);
     }
 
+    /**
+     * Potion effects a mob gets at {@code level}; empty at or below level 0. The applier calls
+     * this with the level shifted by {@link MobEffectOffsets} so late-appearing mobs and babies
+     * start their buffs later.
+     */
+    public static List<DifficultyTier.EffectSpec> effectsFor(int level) {
+        return level <= 0 ? List.of() : effectsAt(level);
+    }
+
     private static List<DifficultyTier.EffectSpec> effectsAt(int level) {
         List<DifficultyTier.EffectSpec> out = new ArrayList<>();
         for (EffectCurve ec : EFFECTS) {

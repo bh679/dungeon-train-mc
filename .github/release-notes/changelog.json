@@ -28495,8 +28495,8 @@
         "mobs",
         "balance"
       ],
-      "title": "Mob buffs vary more",
-      "summary": "Further down the train, buffed mobs no longer all share the same effect strength. Each one now rolls anywhere from level I up to that stretch's top level, so some are weaker than before and none are stronger.",
+      "title": "Mob buffs vary more, and arrive later on late mobs",
+      "summary": "Further down the train, buffed mobs no longer all share the same effect strength. Each one now rolls anywhere from level I up to that stretch's top level, so some are weaker than before and none are stronger. Mobs that only show up further down the train now start getting buffs later too, and baby mobs a little later than adults.",
       "highlights": [],
       "pr": 2178,
       "date": "2026-10-20",
