@@ -22,7 +22,8 @@ import snownee.jade.api.WailaPlugin;
  * the contents, so the tooltip shows what the player would find on opening it.
  *
  * <p>On the client it also moves Jade's tooltip down under the Live stream's name pill while this
- * player is live ({@link LiveEyeJadeClient}).</p>
+ * player is live ({@link LiveEyeJadeClient}), and hides infested blocks behind their host block for
+ * survival players ({@link InfestedBlockJadeClient}).</p>
  *
  * <p>Optional: Jade finds this class by its {@link WailaPlugin} annotation, so nothing loads it — or
  * any Jade class — when Jade is not installed.</p>
@@ -40,6 +41,7 @@ public final class LiveEyeJadePlugin implements IWailaPlugin {
     public void registerClient(IWailaClientRegistration registration) {
         registration.addBeforeRenderCallback(LiveEyeJadeClient.INSTANCE);
         registration.addAfterRenderCallback(LiveEyeJadeClient.INSTANCE);
+        InfestedBlockJadeClient.register(registration);
     }
 
     enum LiveEyeProvider implements IServerDataProvider<BlockAccessor> {
