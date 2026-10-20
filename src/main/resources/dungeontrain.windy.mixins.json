@@ -1,0 +1,20 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "games.brennan.dungeontrain.mixin",
+  "plugin": "games.brennan.dungeontrain.mixin.WindyMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [],
+  "client": [
+    "client.windy.WindyLivingWindCompatMixin",
+    "client.windy.WindyParticleAccessor",
+    "client.windy.ParticleEngineWindyMixin",
+    "client.windy.WindyParticleTwoSidedMixin",
+    "client.windy.WindySpawnCloserMixin"
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "refmap": "dungeontrain.refmap.json"
+}

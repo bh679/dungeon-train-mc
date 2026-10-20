@@ -28432,9 +28432,9 @@
       "highlights": [],
       "pr": 2170,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1397.0",
+      "released_at": "2026-10-19T19:16:33Z"
     },
     {
       "id": "sky-fix-2",
@@ -28447,6 +28447,226 @@
       "summary": "Sky fix.",
       "highlights": [],
       "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1397.0",
+      "released_at": "2026-10-19T19:16:33Z"
+    },
+    {
+      "id": "walked-off-mobs-stay",
+      "version": "0.1397.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Mobs that step off the train stay put",
+      "summary": "Animals and monsters that wander off a carriage onto the ground beside the track no longer vanish. They stay where they stepped off, just like ones you knock off.",
+      "highlights": [],
+      "pr": 2174,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1397.0",
+      "released_at": "2026-10-19T19:16:33Z"
+    },
+    {
+      "id": "mobs-hold-place-in-carriages",
+      "version": "0.1398.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train",
+        "mobs"
+      ],
+      "title": "Mobs stay put in moving carriages",
+      "summary": "Animals, villagers and monsters standing inside a carriage no longer slowly slide toward the back of the train. The further you travelled, the faster they slid, up to several blocks a minute on long runs. Now they stay where they stand.",
+      "highlights": [],
+      "pr": 2175,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1403.0",
+      "released_at": "2026-10-20T06:25:18Z"
+    },
+    {
+      "id": "mob-buff-level-spread",
+      "version": "0.1399.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Smarter mob buffs",
+      "summary": "Further down the train, buffed mobs no longer all share the same effect strength. Each one now rolls anywhere from level I up to that stretch's top level, so some are weaker than before and none are stronger. Mobs that only show up further down the train now start getting buffs later too, and baby mobs a little later than adults.",
+      "highlights": [],
+      "pr": 2178,
+      "date": "2026-10-20",
+      "released": true,
+      "released_in": "v0.1403.0",
+      "released_at": "2026-10-20T06:25:18Z",
+      "major": true,
+      "description": "Deep train potion buffs on train mobs have been reworked. The later stages of the game are more balanced. Rather than a flat potion effect for every mob, the effect is now a max, and they will get a random level between 1 and the current stage max. Additionally, mobs that turn up later get potion effects delayed (and babies get effects a little later too).\n\n- **More variety:** the further you ride, the wider the spread. A buffed mob now rolls anywhere from level I up to that stretch's top level, so some are weaker than before and none are stronger.\n- **Late arrivals catch up gradually:** mobs that only start showing up further down the train no longer get buffed the moment they appear. Their buffs begin later, counted from where they first show up.\n- **Babies get a head start for you:** baby mobs get their buffs a little later than adults.\n\n## Other significant updates\n- New cargo: crates, trees and a TNT boxcar\n- Many new woods down the line, and new enemy rooms\n- Quicker Streams: when it's on, the Live Eye reaches viewers in seconds\n- Community photos hang in the carriages' picture frames\n- Website watchers wear their own skin, and the Live page names viewers wearing a TV\n- Mobs stay put: they no longer die to passing carriages, slide to the back, or vanish when they step off\n- See what each advancement unlocks\n- Distant Horizons fits in better, and Bobby is an approved mod\n- Lighter terrain generation and many bug fixes",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/smarter-mob-buffs.jpg"
+    },
+    {
+      "id": "mobs-stuck-in-train-floor",
+      "version": "0.1399.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Mobs no longer get stuck in the train floor",
+      "summary": "Mobs could appear standing inside a carriage floor, with their heads poking up through the deck as the train carried them along. An Enderman stuck there could even be angered by a glance from inside the carriage. Mobs no longer appear there, and any already stuck are moved out to the ground beside the train.",
+      "highlights": [],
+      "pr": 2176,
+      "date": "2026-10-20",
+      "released": true,
+      "released_in": "v0.1403.0",
+      "released_at": "2026-10-20T06:25:18Z"
+    },
+    {
+      "id": "contribute-currency-setting",
+      "version": "0.1404.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Gift amounts in your own currency",
+      "summary": "The Contribute screens now have a currency button at the top right. Pick your currency and every gift shows roughly what it comes to in your money. Gifts are still made in Australian dollars. Your choice is remembered, and the game starts from the currency that matches your language.",
+      "highlights": [
+        "13 currencies to choose from, each with its own flag",
+        "A currency picker on the website's support page too"
+      ],
+      "pr": 2134,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1404.0",
+      "released_at": "2026-10-20T06:40:16Z"
+    },
+    {
+      "id": "contribute-screen-rewards",
+      "version": "0.1404.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Community Rewards",
+      "summary": "Support the solo-dev now opens one Contribute screen, the same one the engine room shows. Give to the dev, or give a Community Reward: a month of something switched on for everyone.",
+      "highlights": [
+        "Support the solo-dev opens Contribute from the title screen, the pause menu and Credits",
+        "Quicker Streams can now be given: for a month, everyone watches streams about 6 seconds behind instead of 30. More Community Rewards are coming",
+        "A new rewards page: Community Rewards for everyone, and Personal Rewards showing what each gift brings you",
+        "Every gift puts your name aboard, and gifts to the dev also bring Priority Books",
+        "Copying the books you read is now a thank-you for gifts of $30 or more"
+      ],
+      "pr": 2146,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1404.0",
+      "released_at": "2026-10-20T06:40:16Z",
+      "major": true,
+      "description": "Rewards the whole community benefits from. There are features I'd love to provide, but they cost more than I can take on alone. Now one person can unlock them for everyone! Give a Community Reward and everyone gets it, not just the donor.\n\nThe first reward is **Quicker Streams**: cover the server costs and the Live Eye stream delay drops from 30s to 6s for a whole month, for everyone. More rewards are on the way.\n\n## Other significant updates\n- Support the solo-dev now opens one Contribute screen, the same one the engine room shows, from the title screen, the pause menu and Credits\n- A new rewards page: Community Rewards for everyone, and Personal Rewards showing what each gift to the dev brings you\n- Every gift puts your name aboard, and gifts to the dev also bring Priority Books\n- Copying the books you read is now a thank-you for gifts of $30 or more",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/community-rewards.jpg"
+    },
+    {
+      "id": "named-update-chat-notice",
+      "version": "0.1405.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Updates have names",
+      "summary": "When a new version comes out while you're playing, the chat message now tells you what the update is called, not just its number. Big updates stand out with a banner, a short description and a sound.",
+      "highlights": [],
+      "pr": 2184,
+      "date": "2026-10-20",
+      "released": true,
+      "released_in": "v0.1406.0",
+      "released_at": "2026-10-20T07:07:11Z"
+    },
+    {
+      "id": "book-boosts-for-everyone",
+      "version": "0.1401.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "books",
+        "ui"
+      ],
+      "title": "Boost other players' books",
+      "summary": "Book Boosts from donating can now go on anyone's book, not just your own. Tap the star on a book's last page to help it reach more players, as many times as you like.",
+      "highlights": [
+        "Each Priority Book is now 10 Book Boosts. Boosting someone else's book uses 1, boosting your own uses 10.",
+        "Your boosts left sit beside the book, and authors are told which donors boosted their writing."
+      ],
+      "pr": 2179,
+      "date": "2026-10-20",
+      "released": true,
+      "released_in": "v0.1406.0",
+      "released_at": "2026-10-20T07:07:11Z"
+    },
+    {
+      "id": "release-donation-rewards-in-game",
+      "version": "0.1398.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Donation rewards, now in game",
+      "summary": "Gave to the dev? The thank-you that came with your gift is yours to use in game: Book Boosts that put books in front of more players, and a Copy button for books.",
+      "highlights": [],
+      "date": "2026-10-20",
+      "released": true,
+      "released_in": "v0.1406.0",
+      "released_at": "2026-10-20T07:07:11Z",
+      "major": true,
+      "notable": true,
+      "description": "The thank-you that comes with a gift to the dev is now something you can use in Dungeon Train.\n\n**Book Boosts.** Every $10 you give carries 10 Book Boosts. Found a book you loved? Turn to its last page and tap the star to boost it, as many times as you like. Each boost on someone else's book costs 1, and the author is told which donors boosted it. Want your own writing seen? Boost it when you sign it, or tap the star on your own copy later, for 10. The star beside the book shows how many boosts you have left.\n\nAlso, a **Copy Book button**, for the donors who are making an archive of every book they've read.\n\nRewards are matched to your Minecraft account, so they need network features switched on.\n\n## Other significant updates\n\n- New cargo: crates, trees and a TNT boxcar\n- Many new woods down the line, and new enemy rooms\n- Quicker Streams: when it's on, the Live Eye reaches viewers in seconds\n- Community photos hang in the carriages' picture frames\n- Website watchers wear their own skin, and the Live page names viewers wearing a TV\n- Mobs stay put: they no longer die to passing carriages, slide to the back, or vanish when they step off\n- See what each advancement unlocks\n- Distant Horizons fits in better, and Bobby is an approved mod\n- Lighter terrain generation and many bug fixes",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/donation-rewards-in-game.png"
+    },
+    {
+      "id": "train-wind",
+      "version": "0.1407.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "world"
+      ],
+      "title": "The Deep Train gets Windy",
+      "summary": "Deep down the line, the roof of the train and anywhere the walls don't protect you now face gusts of wind, forever growing stronger.",
+      "highlights": [
+        "Watch the streaks in the air: the wind shows itself just before it hits.",
+        "Arrows, items and lighter creatures go first.",
+        "New Wind volume slider in the sound options."
+      ],
+      "pr": 2173,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1407.0",
+      "released_at": "2026-10-20T07:35:25Z",
+      "major": true,
+      "description": "Deep down the line, for the most brave, skilled and committed adventurers, lies a new challenge.\n\nThe carts might be full of buffed up monsters, but now the roof of the train, and anywhere the walls don't protect you, face gusts of wind! The taller places feel it more, and underground is safe from it. Forever growing stronger. The train continues to get harder.\n\nSpecial thanks to Lil Detective Crunch for the idea.\n\n*I will be taking feedback on the wind balancing, and I will be rebalancing monsters later too.*",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-deep-train-gets-windy.jpg"
+    },
+    {
+      "id": "community-rewards-review-tidy-ups",
+      "version": "0.1408.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui",
+        "internal"
+      ],
+      "title": "Community Rewards tidy-ups",
+      "summary": "The Live Eye death pages now show where Community Rewards stand and lead into the rewards page. The currency picker no longer stays hidden on a fresh install, and the Contribute screen's time-on-page no longer counts a visit to the rewards page.",
+      "highlights": [],
+      "date": "2026-10-20",
       "released": false,
       "released_in": null,
       "released_at": null

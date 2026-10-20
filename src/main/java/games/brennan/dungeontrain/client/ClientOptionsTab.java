@@ -144,6 +144,7 @@ public enum ClientOptionsTab {
 
         // --- Train ---
         TRAIN_VOLUME("gui.dungeontrain.options.train_volume"),
+        WIND_VOLUME("gui.dungeontrain.options.wind_volume"),
         CUSTOM_CONTENT("gui.dungeontrain.options.custom_content"),
         SNAPSHOT_MAX_RES("gui.dungeontrain.options.snapshot_max_res"),
         SNAPSHOT_CHAT_LOG("gui.dungeontrain.options.snapshot_chat_log"),
@@ -319,10 +320,11 @@ public enum ClientOptionsTab {
                 rows.add(Row.CONFIRM_BUILD_RESTORE);
             }
             case TRAIN -> {
-                // The two short-captioned rows lead so they pair on one line; the two whose captions
-                // need a full-width row follow. Packing is sequential — it will not reach past a wide
-                // row to find a partner — so adjacency here is what puts them side by side.
+                // The short-captioned rows lead so they pair on one line (the two volumes, then the chat
+                // log); the two whose captions need a full-width row follow. Packing is sequential — it will
+                // not reach past a wide row to find a partner — so adjacency here is what puts them side by side.
                 rows.add(Row.TRAIN_VOLUME);
+                rows.add(Row.WIND_VOLUME);
                 rows.add(Row.SNAPSHOT_CHAT_LOG);
                 rows.add(Row.CUSTOM_CONTENT);
                 rows.add(Row.SNAPSHOT_MAX_RES);

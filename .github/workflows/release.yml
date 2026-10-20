@@ -309,6 +309,7 @@ jobs:
             glitchcore(required)
             big-lost-city(required)
             sable-pathfinder(required)
+            windy(required)
             # keep-trim + dungeon-train-backup + sable-fence-trapdoor-fix are ABSENT by design:
             # on Modrinth they stay jarJar'd inside the DT jar; only CurseForge treats them as
             # separate mods. (keep-trim's Modrinth listing is also still in review — mc-publish
@@ -349,6 +350,7 @@ jobs:
             platform(required)
             exposure(required)
             exposure-polaroid(required)
+            windy-configurable(required)
             vista(required)
             william-wythers-overhauled-overworld(required)
             cristel-lib(required)

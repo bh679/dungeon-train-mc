@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Set;
 
+import static games.brennan.dungeontrain.train.ContentsDespawnController.ABOARD_FLOOR_SLACK_BLOCKS;
 import static games.brennan.dungeontrain.train.ContentsDespawnController.AWAY_GRACE_TICKS;
 import static games.brennan.dungeontrain.train.ContentsDespawnController.Action;
 import static games.brennan.dungeontrain.train.ContentsDespawnController.DESPAWN_RADIUS_BLOCKS;
@@ -14,6 +15,7 @@ import static games.brennan.dungeontrain.train.ContentsDespawnController.MAX_SWE
 import static games.brennan.dungeontrain.train.ContentsDespawnController.RESTORE_RADIUS_BLOCKS;
 import static games.brennan.dungeontrain.train.ContentsDespawnController.RESTORE_RADIUS_SQ;
 import static games.brennan.dungeontrain.train.ContentsDespawnController.decide;
+import static games.brennan.dungeontrain.train.ContentsDespawnController.isAboard;
 import static games.brennan.dungeontrain.train.ContentsDespawnController.isSweepable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -191,5 +193,47 @@ class ContentsDespawnControllerTest {
         // Same semantics as TrainMembership.hasContentsTag — the suffix is not parsed here.
         assertTrue(isSweepable("minecraft:zombie",
             List.of(CarriageContentsPlacer.DT_CONTENTS_TAG_PREFIX), Set.of()));
+    }
+
+    // --- isAboard: the sweep only takes mobs actually on the carriage -------------------------
+    // Carriage box from the headless repro (2026-10-20): x 378.2..415.2, y 78..85, z 0..7; the
+    // deck surface is y 79.
+
+    private static boolean aboard(boolean carried, double x, double feetY, double z) {
+        return isAboard(carried, x, feetY, z, 378.2, 78, 0, 415.2, 85, 7);
+    }
+
+    @Test
+    void mobStandingOnTheDeckIsAboard() {
+        assertTrue(aboard(false, 395, 79, 3.5));
+    }
+
+    @Test
+    void mobOnTheRoofIsAboard() {
+        assertTrue(aboard(false, 395, 85, 3.5));
+    }
+
+    @Test
+    void walkedOffMobOnTheTrackBedUnderTheCarriageIsNotAboard() {
+        // The recorded case: feet y 77.19, nudged along under the carriage, swept with it.
+        assertFalse(aboard(false, 403.48, 77.19, 4.55));
+    }
+
+    @Test
+    void walkedOffMobBesideTheCarriageIsNotAboard() {
+        assertFalse(aboard(false, 395, 79, 7.6));
+        assertFalse(aboard(false, 395, 79, -0.6));
+    }
+
+    @Test
+    void floorSlackOnlyAbsorbsPoseJitter() {
+        assertTrue(aboard(false, 395, 78 - ABOARD_FLOOR_SLACK_BLOCKS, 3.5));
+        assertFalse(aboard(false, 395, 78 - ABOARD_FLOOR_SLACK_BLOCKS - 0.01, 3.5));
+    }
+
+    @Test
+    void sableCarryingTheMobOnThisCarriageAlwaysCountsAsAboard() {
+        // e.g. mid-jump on the deck edge, centre momentarily past the box
+        assertTrue(aboard(true, 395, 80, 7.3));
     }
 }

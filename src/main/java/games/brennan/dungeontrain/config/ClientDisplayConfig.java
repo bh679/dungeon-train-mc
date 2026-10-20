@@ -229,6 +229,8 @@ public final class ClientDisplayConfig {
     /** Open the pause menu when AFK is detected. See {@link #isAfkPauseEnabled()}. */
     public static final ModConfigSpec.BooleanValue AFK_PAUSE_ENABLED;
     public static final ModConfigSpec.DoubleValue TRAIN_ENGINE_VOLUME;
+    /** How loud the train wind plays. See {@link #getWindVolume()}. */
+    public static final ModConfigSpec.DoubleValue WIND_VOLUME;
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
     /** Tiles per row in the Train Builder's Open screen grid. See {@link #getBuilderTilesPerRow()}. */
     public static final ModConfigSpec.IntValue BUILDER_TILES_PER_ROW;
@@ -423,6 +425,7 @@ public final class ClientDisplayConfig {
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         AFK_PAUSE_ENABLED = pair.getLeft().afkPauseEnabled;
         TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
+        WIND_VOLUME = pair.getLeft().windVolume;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
         BUILDER_TILES_PER_ROW = pair.getLeft().builderTilesPerRow;
         MENU_RENDER_DISTANCE = pair.getLeft().menuRenderDistance;
@@ -602,6 +605,10 @@ public final class ClientDisplayConfig {
         ModConfigSpec.DoubleValue trainEngineVolume = b
                 .comment("How loud the train engine loop plays, 0.0 (off) to 1.0 (unscaled). Multiplies the volume Dungeon Train already computes from your distance to the nearest carriage, so the falloff and the in-carriage maximum keep their shape - this only scales the whole curve. Separate from vanilla's Ambient slider, which also moves cave sounds and mob ambience. 0.0 stops the sound outright rather than looping it silently. Also settable in Options -> Music & Sounds, in Options -> Dungeon Train..., and in the X menu -> Options.")
                 .defineInRange("trainEngineVolume", DEFAULT_TRAIN_ENGINE_VOLUME,
+                        MIN_TRAIN_ENGINE_VOLUME, MAX_TRAIN_ENGINE_VOLUME);
+        ModConfigSpec.DoubleValue windVolume = b
+                .comment("How loud the wind on the train plays, 0.0 (off) to 1.0 (unscaled). Scales the breeze and the gusts together. Separate from vanilla's Ambient slider. Also settable in Options -> Music & Sounds and in Options -> Dungeon Train...")
+                .defineInRange("windVolume", DEFAULT_TRAIN_ENGINE_VOLUME,
                         MIN_TRAIN_ENGINE_VOLUME, MAX_TRAIN_ENGINE_VOLUME);
         b.pop();
 
@@ -937,7 +944,7 @@ public final class ClientDisplayConfig {
                 portalRoomHideDistantHorizons,
                 chuncksHideDistantHorizons, spheresHideDistantHorizons, stacksHideDistantHorizons,
                 voidBandsDistantHorizonsMargin,
-                framerateThrottleEnabled, framerateThrottleFps, afkPauseEnabled, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, scribbleFileButtonsVisible, scribbleInsertPageButtonVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
+                framerateThrottleEnabled, framerateThrottleFps, afkPauseEnabled, trainEngineVolume, windVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, scribbleFileButtonsVisible, scribbleInsertPageButtonVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
                 creativeModBlockTabs, creativeModBlocksInSearch, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
@@ -1573,6 +1580,25 @@ public final class ClientDisplayConfig {
         games.brennan.dungeontrain.client.sound.TrainVolumeAdvancement.onVolumeChanged();
     }
 
+    // ----- Wind volume (see client/wind/WindSound) -----
+
+    /**
+     * How loud the train wind plays: {@code 0.0} (off) to {@code 1.0} (unscaled), multiplying both the breeze
+     * and the gust layer. Full before the config loads, for the same reason as {@link #getTrainEngineVolume()}.
+     */
+    public static double getWindVolume() {
+        return isLoaded() ? snapToTenth(WIND_VOLUME.get()) : DEFAULT_TRAIN_ENGINE_VOLUME;
+    }
+
+    /** Persist the wind volume, clamped and snapped to a tenth; skips unchanged writes (sliders call this live). */
+    public static void setWindVolume(double value) {
+        if (!isLoaded()) return;
+        double snapped = snapToTenth(Math.max(MIN_TRAIN_ENGINE_VOLUME, Math.min(MAX_TRAIN_ENGINE_VOLUME, value)));
+        if (WIND_VOLUME.get() == snapped) return;
+        WIND_VOLUME.set(snapped);
+        WIND_VOLUME.save();
+    }
+
     // ----- Delete old world on reboard (death-screen trash toggle) -----
 
     /**
@@ -2193,6 +2219,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.BooleanValue afkPauseEnabled,
             ModConfigSpec.DoubleValue trainEngineVolume,
+            ModConfigSpec.DoubleValue windVolume,
             ModConfigSpec.BooleanValue skyboxPunchEnabled,
             ModConfigSpec.BooleanValue skyboxBlocksOn,
             ModConfigSpec.BooleanValue portalCrossingFade,

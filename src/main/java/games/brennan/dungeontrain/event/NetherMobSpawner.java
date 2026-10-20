@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageSpace;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
@@ -138,7 +139,7 @@ public final class NetherMobSpawner {
     private static final int GHAST_POCKET_CEILING = 18;
 
     /** Tag for accounting only (NOT the carriage-contents prefix, so kill-ahead/confinement ignore it). */
-    private static final String NETHER_MOB_TAG = "dungeontrain_nether_band_mob";
+    public static final String NETHER_MOB_TAG = "dungeontrain_nether_band_mob";
 
     // Per-biome ground rosters — only mobs that DON'T convert outside the Nether (no piglins/hoglins).
     @SuppressWarnings("unchecked")
@@ -368,7 +369,7 @@ public final class NetherMobSpawner {
                 // reason to give up on the legal ones above it.
                 if (blockedSpawnSite(dims, bedrockY, air)) continue;
                 if (!isNetherSpawnBiome(level.getBiome(air))) continue;   // the mountain caves spawn nothing
-                if (hasRoomFor(level, EntityType.GHAST, air)) {
+                if (hasRoomFor(level, EntityType.GHAST, air) && !insideCarriage(level, EntityType.GHAST, air)) {
                     spawn(level, EntityType.GHAST, air, rng);
                     return;
                 }
@@ -389,6 +390,9 @@ public final class NetherMobSpawner {
             EntityType<? extends Mob>[] roster = groundMobsFor(feetBiome);
             EntityType<?> betterNether = betterNetherGroundMob(feetBiome, rng);
             EntityType<?> type = betterNether != null ? betterNether : roster[rng.nextInt(roster.length)];
+            // The "2 air above" test reads the main level only, which can't see a carriage: under a
+            // train it finds the track bed and would stand the mob inside the carriage floor.
+            if (insideCarriage(level, type, feet)) continue;
             spawn(level, type, feet, rng);
             return;
         }
@@ -425,6 +429,16 @@ public final class NetherMobSpawner {
         return level.noCollision(box);
     }
 
+    /**
+     * True when {@code type}'s box at {@code pos} (same placement as {@link #spawn}) overlaps a train
+     * carriage. Carriages are Sable sub-levels, invisible to the main-level block checks above, so
+     * without this the spawner happily stands mobs on the track bed inside a carriage floor.
+     */
+    private static boolean insideCarriage(ServerLevel level, EntityType<?> type, BlockPos pos) {
+        AABB box = type.getDimensions().makeBoundingBox(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+        return CarriageSpace.overlapsAnyCarriage(level, box);
+    }
+
     private static void spawn(ServerLevel level, EntityType<?> type, BlockPos pos, RandomSource rng) {
         Entity entity = type.create(level);
         if (!(entity instanceof Mob mob)) {
@@ -436,6 +450,12 @@ public final class NetherMobSpawner {
             mob.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null);
         } catch (Throwable ignored) {
             // finalizeSpawn is best-effort; the mob still functions with defaults.
+        }
+        // finalizeSpawn can grow the mob (a magma cube rolls size 1, 2 or 4), so the base-size test in
+        // insideCarriage isn't the last word: re-check the real box before it enters the world.
+        if (CarriageSpace.overlapsAnyCarriage(level, mob.getBoundingBox())) {
+            mob.discard();
+            return;
         }
         mob.addTag(NETHER_MOB_TAG);
         level.addFreshEntity(mob);

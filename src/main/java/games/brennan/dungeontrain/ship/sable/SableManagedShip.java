@@ -379,6 +379,14 @@ public final class SableManagedShip implements ManagedShip {
         handle.addLinearAndAngularVelocity(curLin.negate(), curAng.negate());
         handle.addLinearAndAngularVelocity(output.linearVelocity(), output.angularVelocity());
 
+        // Remember, in double precision, where this body is and how fast it goes, so the next
+        // physics step's pose read-back — Rapier's is single precision — can be replaced with the
+        // exact pose before Sable carries the mobs inside by it. See KinematicPoseTarget.
+        if (subLevel instanceof DtKinematicPoseHolder holder) {
+            holder.dt$kinematicTarget().record(output.position(), output.linearVelocity(),
+                    subLevel.getLevel().getGameTime());
+        }
+
         // Pure-kinematic enforcement: wipe any queued forces (gravity, drag,
         // lift, propulsion) that Sable's per-frame providers scheduled for
         // this body before the next physics tick reads them. With this and

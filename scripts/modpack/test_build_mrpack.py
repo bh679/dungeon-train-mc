@@ -344,7 +344,16 @@ def test_real_config_every_mod_has_modrinth_pins():
     # The hybrid siblings: jarJar'd inside the DT jar for Modrinth, separate Includes on
     # CurseForge only. They must stay out of the Modrinth pack (no double copy) and need no
     # Modrinth keys. Keep Trim rides here while its Modrinth listing is in review.
-    cf_only = bm.curseforge_only_entries(cfg)
+    # A third-party mod can also be split by platform when each platform hosts a different build: Windy is
+    # the CurseForge fork "Windy: Configurable" there (it carries the Living Wind hook DT steers) and the
+    # original "Windy" on Modrinth. Those are real downloads, not jarJar'd siblings, so no gradle floor.
+    split = {"windy-configurable"}
+    cf_only_all = bm.curseforge_only_entries(cfg)
+    assert {o["slug"] for o in cf_only_all} >= split, cf_only_all
+    by_slug_all = {o["slug"]: o for o in cfg["optional_mods"]}
+    assert by_slug_all["windy"].get("modrinth_only") and by_slug_all["windy"].get("modrinth_version"), \
+        by_slug_all["windy"]
+    cf_only = [o for o in cf_only_all if o["slug"] not in split]
     assert sorted(o["slug"] for o in cf_only) == [
         "discord-presence", "dpi-bypass-detect", "dungeon-train-backup",
         "dungeon-train-mod-verification", "edible-backpacks", "keep-trim",

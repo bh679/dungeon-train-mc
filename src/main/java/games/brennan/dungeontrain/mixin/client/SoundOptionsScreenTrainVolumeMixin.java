@@ -50,7 +50,8 @@ public abstract class SoundOptionsScreenTrainVolumeMixin extends OptionsSubScree
     @Inject(method = "addOptions", at = @At("TAIL"))
     private void dungeontrain$addTrainEngineVolume(CallbackInfo ci) {
         if (this.list != null) {
-            this.list.addSmall(TrainVolumeOption.forSoundScreen());
+            this.list.addSmall(TrainVolumeOption.forSoundScreen(),
+                    games.brennan.dungeontrain.client.wind.WindVolumeOption.forSoundScreen());
         }
     }
 }

@@ -84,4 +84,19 @@ class BookStatsClientParseTest {
         assertNull(BookStatsClient.parse("[]"));
         assertNull(BookStatsClient.parse("{}"));
     }
+
+    @Test
+    @DisplayName("Readers' boosts reach the author with their names, capped and cleaned")
+    void boostsAndBoosters() {
+        BookStatsClient.Stats s = BookStatsClient.parse(
+            "{\"ok\":true,\"isAuthor\":true," + NUMBERS + ",\"priority\":true,\"boosts\":3,"
+                + "\"boostedBy\":[\"Alex\",\" \",7,{},\"Sam\"]}");
+        assertTrue(s.priority());
+        assertEquals(3, s.boosts());
+        assertEquals(java.util.List.of("Alex", "7", "Sam"), s.boostedBy());
+
+        BookStatsClient.Stats old = BookStatsClient.parse("{\"ok\":true,\"isAuthor\":true," + NUMBERS + "}");
+        assertEquals(0, old.boosts());
+        assertTrue(old.boostedBy().isEmpty(), "an older relay says nothing about boosts");
+    }
 }

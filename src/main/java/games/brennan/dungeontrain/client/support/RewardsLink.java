@@ -23,10 +23,11 @@ public final class RewardsLink {
 
     /**
      * Whether the death pages mention Community Rewards at all: the way in, the pitch, the Replays
-     * Kept line, and any reward the relay reports. Off until the rewards are built and on sale;
-     * flip it when {@code CommunityRewardsScreen} lands.
+     * Kept line, and any reward the relay reports. On since {@code CommunityRewardsScreen} shipped
+     * (v0.1404.0); kept as the one switch that takes every rewards mention off the death pages
+     * again, should the rewards ever need to go quiet.
      */
-    public static final boolean PAGE_READY = false;
+    public static final boolean PAGE_READY = true;
 
     private RewardsLink() {}
 
@@ -37,8 +38,7 @@ public final class RewardsLink {
 
     /** Open the Community Rewards page over {@code parent}; Done returns there. */
     public static void open(@Nullable Screen parent) {
-        // TODO: open CommunityRewardsScreen once the "Community Rewards page and sales" session lands it.
-        Minecraft.getInstance().setScreen(new SupportScreen(parent));
+        Minecraft.getInstance().setScreen(new CommunityRewardsScreen(parent));
     }
 
     @SubscribeEvent
