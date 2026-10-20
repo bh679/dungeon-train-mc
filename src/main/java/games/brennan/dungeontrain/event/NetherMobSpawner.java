@@ -451,6 +451,12 @@ public final class NetherMobSpawner {
         } catch (Throwable ignored) {
             // finalizeSpawn is best-effort; the mob still functions with defaults.
         }
+        // finalizeSpawn can grow the mob (a magma cube rolls size 1, 2 or 4), so the base-size test in
+        // insideCarriage isn't the last word: re-check the real box before it enters the world.
+        if (CarriageSpace.overlapsAnyCarriage(level, mob.getBoundingBox())) {
+            mob.discard();
+            return;
+        }
         mob.addTag(NETHER_MOB_TAG);
         level.addFreshEntity(mob);
     }

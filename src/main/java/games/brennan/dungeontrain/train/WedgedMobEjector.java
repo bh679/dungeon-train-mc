@@ -57,14 +57,14 @@ public final class WedgedMobEjector {
             double tz = targets[i + 1];
             AABB moved = e.getBoundingBox().move(tx - e.getX(), 0.0, tz - e.getZ());
             if (level.noCollision(e, moved) && !CarriageSpace.overlapsAnyCarriage(level, moved)) {
-                LOGGER.info("[DungeonTrain] Moved {} out of a carriage floor to ({}, {}, {}) source={} tags={}",
-                    e.getType().toShortString(), tx, e.getY(), tz, sourceOf(e), e.getTags());
+                LOGGER.info("[DungeonTrain] Moved {} out of a carriage floor to ({}, {}, {}) source={} ageTicks={} tags={}",
+                    e.getType().toShortString(), tx, e.getY(), tz, sourceOf(e), e.tickCount, e.getTags());
                 e.teleportTo(tx, e.getY(), tz);
                 return;
             }
         }
-        LOGGER.info("[DungeonTrain] Discarded {} stuck in a carriage floor at ({}, {}, {}): no room beside it source={} tags={}",
-            e.getType().toShortString(), e.getX(), e.getY(), e.getZ(), sourceOf(e), e.getTags());
+        LOGGER.info("[DungeonTrain] Discarded {} stuck in a carriage floor at ({}, {}, {}): no room beside it source={} ageTicks={} tags={}",
+            e.getType().toShortString(), e.getX(), e.getY(), e.getZ(), sourceOf(e), e.tickCount, e.getTags());
         e.discard();
     }
 
