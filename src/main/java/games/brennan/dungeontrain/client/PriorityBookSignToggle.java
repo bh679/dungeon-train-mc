@@ -248,12 +248,12 @@ public final class PriorityBookSignToggle {
     }
 
     /**
-     * The Priority Books left AFTER this sign: ticking the star takes one, so the badge and the
-     * "(N left)" go down by one the moment it is pressed and come back if it is pressed again.
+     * The boosts left AFTER this sign: ticking the star takes a whole Priority Book (ten boosts), so the
+     * badge and the "(N left)" go down the moment it is pressed and come back if it is pressed again.
      */
     private static int shownCount() {
-        int now = BookCredits.current();
-        return ticked ? Math.max(0, now - 1) : now;
+        int now = BookCredits.boostsLeftOrEstimate();
+        return ticked ? Math.max(0, now - BookCredits.BOOSTS_PER_BOOK) : now;
     }
 
     private static Component label(int left) {

@@ -28586,6 +28586,47 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "book-boosts-for-everyone",
+      "version": "0.1401.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "books",
+        "ui"
+      ],
+      "title": "Boost other players' books",
+      "summary": "Book Boosts from donating can now go on anyone's book, not just your own. Tap the star on a book's last page to help it reach more players, as many times as you like.",
+      "highlights": [
+        "Each Priority Book is now 10 Book Boosts. Boosting someone else's book uses 1, boosting your own uses 10.",
+        "Your boosts left sit beside the book, and authors are told which donors boosted their writing."
+      ],
+      "pr": 2179,
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "release-donation-rewards-in-game",
+      "version": "0.1398.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Donation rewards, now in game",
+      "summary": "Gave to the dev? The thank-you that came with your gift is yours to use in game: Book Boosts that put books in front of more players, and a Copy button for books.",
+      "highlights": [],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "major": true,
+      "notable": true,
+      "description": "The thank-you that comes with a gift to the dev is now something you can use in Dungeon Train.\n\n**Book Boosts.** Every $10 you give carries 10 Book Boosts. Found a book you loved? Turn to its last page and tap the star to boost it, as many times as you like. Each boost on someone else's book costs 1, and the author is told which donors boosted it. Want your own writing seen? Boost it when you sign it, or tap the star on your own copy later, for 10. The star beside the book shows how many boosts you have left.\n\nAlso, a **Copy Book button**, for the donors who are making an archive of every book they've read.\n\nRewards are matched to your Minecraft account, so they need network features switched on.\n\n## Other significant updates\n\n- New cargo: crates, trees and a TNT boxcar\n- Many new woods down the line, and new enemy rooms\n- Quicker Streams: when it's on, the Live Eye reaches viewers in seconds\n- Community photos hang in the carriages' picture frames\n- Website watchers wear their own skin, and the Live page names viewers wearing a TV\n- Mobs stay put: they no longer die to passing carriages, slide to the back, or vanish when they step off\n- See what each advancement unlocks\n- Distant Horizons fits in better, and Bobby is an approved mod\n- Lighter terrain generation and many bug fixes",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/donation-rewards-in-game.png"
     }
   ]
 }
