@@ -28654,6 +28654,24 @@
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-deep-train-gets-windy.jpg"
     },
     {
+      "id": "community-rewards-review-tidy-ups",
+      "version": "0.1408.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui",
+        "internal"
+      ],
+      "title": "Community Rewards tidy-ups",
+      "summary": "The Live Eye death pages now show where Community Rewards stand and lead into the rewards page. The currency picker no longer stays hidden on a fresh install, and the Contribute screen's time-on-page no longer counts a visit to the rewards page.",
+      "highlights": [],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "wind-weather-particles",
       "version": "0.1408.0",
       "type": "feat",
