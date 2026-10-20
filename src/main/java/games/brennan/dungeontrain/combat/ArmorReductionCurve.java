@@ -6,17 +6,17 @@ package games.brennan.dungeontrain.combat;
  *
  * <p>Vanilla ({@code CombatRules.getDamageAfterAbsorb}) computes armor points as
  * {@code clamp(armor - damage / (2 + toughness / 4), armor * 0.2, 20)} and blocks {@code points / 25}
- * of the hit. AIS raises the armor attribute ceiling to 1024, but that clamp at 20 means anything past
- * 100 armor does nothing. This curve takes the same value <b>without</b> the upper clamp
- * ({@code raw}), so toughness and big-hit piercing behave exactly as before:</p>
+ * of the hit. AIS raises the armor and toughness attribute ceilings to 1024, but that clamp at 20 means
+ * nothing past it helps. Here {@code raw} is the same value <b>without</b> the upper clamp:</p>
  *
  * <ul>
- *   <li>{@code raw} 0–20: {@code raw / 25}, exactly vanilla.</li>
- *   <li>20–100: flat 80%, exactly vanilla.</li>
- *   <li>100–200: 80% → 83%, linear.</li>
- *   <li>200–400: 83% → 84%, linear.</li>
- *   <li>Above 400: a hyperbolic tail with the same slope at 400, approaching {@link #MAX_REDUCTION}
- *       and never reaching it (1024 → about 86%).</li>
+ *   <li>{@code raw} up to 20: {@code raw / 25}, exactly vanilla. Toughness only stops big hits
+ *       piercing, as in vanilla.</li>
+ *   <li>Past 20, toughness also counts toward the curve, one armor point per point of toughness beyond
+ *       what vanilla needed to reach 20 ({@link #toughnessToReachCap}), so nothing jumps at 80%.</li>
+ *   <li>Curve input 20–120: 80% → 83%, linear. 120–320: 83% → 84%, linear.</li>
+ *   <li>Above 320: a hyperbolic tail with the same slope at 320, approaching {@link #MAX_REDUCTION}
+ *       and never reaching it.</li>
  * </ul>
  *
  * <p>Applies to every living entity. Protection enchantments and Breach are applied by vanilla on
@@ -32,36 +32,52 @@ public final class ArmorReductionCurve {
     static final float VANILLA_CAP_POINTS = 20.0f;
     static final float VANILLA_MAX_REDUCTION = VANILLA_CAP_POINTS / VANILLA_DIVIDER;
 
-    static final float FLAT_END = 100.0f;
-    static final float MID_POINT = 200.0f;
+    static final float MID_POINT = 120.0f;
     static final float MID_REDUCTION = 0.83f;
-    static final float TAIL_START = 400.0f;
+    static final float TAIL_START = 320.0f;
     static final float TAIL_START_REDUCTION = 0.84f;
 
     /**
-     * Tail shape: {@code MAX - (MAX - 0.84) * S / (S + raw - 400)}. Its slope at 400 is
-     * {@code (MAX - 0.84) / S}, which equals the 200–400 segment's slope (0.01 / 200) when S = 1200.
+     * Tail shape: {@code MAX - (MAX - 0.84) * S / (S + x - 320)}. Its slope at 320 is
+     * {@code (MAX - 0.84) / S}, which equals the 120–320 segment's slope (0.01 / 200) when S = 1200.
      */
     static final float TAIL_SCALE = 1200.0f;
 
     private ArmorReductionCurve() {}
 
     /**
-     * Fraction of the hit armor blocks for vanilla's unclamped armor points {@code raw}.
-     * Always in [0, {@link #MAX_REDUCTION}). Non-finite or negative input blocks nothing.
+     * Fraction of a {@code damage} hit blocked by {@code armor} and {@code toughness}.
+     * Always in [0, {@link #MAX_REDUCTION}). Non-finite or negative stats block nothing extra.
      */
-    public static float reduction(float raw) {
+    public static float reduction(float armor, float toughness, float damage) {
+        float t = toughness > 0.0f ? toughness : 0.0f;
+        float d = damage > 0.0f ? damage : 0.0f;
+        float raw = Math.max(armor - d / (2.0f + t / 4.0f), armor * 0.2f);
         if (!(raw > 0.0f)) return 0.0f;
         if (raw <= VANILLA_CAP_POINTS) return raw / VANILLA_DIVIDER;
-        if (raw <= FLAT_END) return VANILLA_MAX_REDUCTION;
-        if (raw <= MID_POINT) return lerp(raw, FLAT_END, MID_POINT, VANILLA_MAX_REDUCTION, MID_REDUCTION);
-        if (raw <= TAIL_START) return lerp(raw, MID_POINT, TAIL_START, MID_REDUCTION, TAIL_START_REDUCTION);
-        return tail(raw);
+        float spareToughness = Math.max(0.0f, t - toughnessToReachCap(armor, d));
+        return curve(raw + spareToughness);
     }
 
-    private static float tail(float raw) {
+    /**
+     * Toughness vanilla needs for a {@code damage} hit to leave {@code armor} at the 20-point cap:
+     * solves {@code armor - damage / (2 + t / 4) = 20}, ignoring the {@code armor * 0.2} floor so it
+     * stays smooth as armor crosses 100 (when the floor carries a huge hit past 20, toughness only
+     * starts counting once it would have got there by itself). Infinite at 20 armor or below.
+     */
+    static float toughnessToReachCap(float armor, float damage) {
+        float headroom = armor - VANILLA_CAP_POINTS;
+        if (!(headroom > 0.0f)) return Float.POSITIVE_INFINITY;
+        return Math.max(0.0f, 4.0f * (damage / headroom - 2.0f));
+    }
+
+    /** Reduction for curve input {@code x} (armor points, plus spare toughness) at or past 20. */
+    static float curve(float x) {
+        if (!(x > VANILLA_CAP_POINTS)) return VANILLA_MAX_REDUCTION;
+        if (x <= MID_POINT) return lerp(x, VANILLA_CAP_POINTS, MID_POINT, VANILLA_MAX_REDUCTION, MID_REDUCTION);
+        if (x <= TAIL_START) return lerp(x, MID_POINT, TAIL_START, MID_REDUCTION, TAIL_START_REDUCTION);
         double headroom = MAX_REDUCTION - TAIL_START_REDUCTION;
-        double r = MAX_REDUCTION - headroom * TAIL_SCALE / (TAIL_SCALE + (double) raw - TAIL_START);
+        double r = MAX_REDUCTION - headroom * TAIL_SCALE / (TAIL_SCALE + (double) x - TAIL_START);
         // Infinity drives r to exactly MAX; keep the "never reaches 90%" promise in float.
         return Math.min((float) r, Math.nextDown(MAX_REDUCTION));
     }
