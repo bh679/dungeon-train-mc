@@ -18,9 +18,10 @@ import java.util.List;
  * weight as a flavor "rare drop" across all levels.</p>
  *
  * <p>Above level 50 the gear pools stay pinned to netherite. Additional
- * potion effects layer in at progressively higher levels, and effect
- * amplifiers tick up every 25 levels — keeping post-cap progression
- * meaningful well beyond level 100.</p>
+ * potion effects layer in at progressively higher levels, and the effect
+ * amplifier cap ticks up every 25 levels — keeping post-cap progression
+ * meaningful well beyond level 100. Each mob rolls its amplifier from 0 up
+ * to that cap, so later stages vary more without getting stronger.</p>
  */
 public final class ProceduralTiers {
 
@@ -88,7 +89,7 @@ public final class ProceduralTiers {
     /**
      * Potion effect curve. {@code startLevel} is where the effect first
      * appears at any chance > 0; {@code ampEveryLevels} = how many levels
-     * between amplifier increments (or {@link #TOP} to lock at amp 0).
+     * between amplifier-cap increments (or {@link #TOP} to lock at amp 0).
      * {@code chanceRampLevels} = how many levels to climb from 0 to
      * {@code maxChance}.
      */
@@ -212,6 +213,15 @@ public final class ProceduralTiers {
 
         double chance = Math.min(1.0, level / 10.0);
         return new DifficultyTier.WeaponSet(pool, chance);
+    }
+
+    /**
+     * Potion effects a mob gets at {@code level}; empty at or below level 0. The applier calls
+     * this with the level shifted by {@link MobEffectOffsets} so late-appearing mobs and babies
+     * start their buffs later.
+     */
+    public static List<DifficultyTier.EffectSpec> effectsFor(int level) {
+        return level <= 0 ? List.of() : effectsAt(level);
     }
 
     private static List<DifficultyTier.EffectSpec> effectsAt(int level) {
