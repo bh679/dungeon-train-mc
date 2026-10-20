@@ -12,6 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
  * Per-tick safety net: moves any mob stuck in a carriage floor out to the ground beside the
@@ -26,6 +28,9 @@ public final class WedgedMobEjector {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DtLogging.JITTER);
 
+    /** One per level, so a mob that keeps getting back in logs once per window, not per move. */
+    private static final Map<ServerLevel, EjectLogThrottle> LOG_THROTTLES = new WeakHashMap<>();
+
     private WedgedMobEjector() {}
 
     /** Run once per train per level tick. Players are never touched. */
@@ -37,7 +42,7 @@ public final class WedgedMobEjector {
             AABB floorBand = new AABB(c.minX(), c.minY() - 3.0, c.minZ(), c.maxX(), c.minY() + 1.0, c.maxZ());
             List<Entity> wedged = level.getEntitiesOfClass(Entity.class, floorBand,
                 e -> !(e instanceof Player) && e.isAlive() && !e.isPassenger()
-                    && WedgedUnderFloor.isWedged(e.getX(), e.getY(), e.getZ(), e.getBoundingBox().maxY,
+                    && WedgedUnderFloor.isWedged(e.getX(), e.getY(), e.getZ(), e.getEyeY(),
                         c.minX(), c.minY(), c.minZ(), c.maxX(), c.maxZ()));
             if (wedged.isEmpty()) continue;
 
@@ -57,8 +62,12 @@ public final class WedgedMobEjector {
             double tz = targets[i + 1];
             AABB moved = e.getBoundingBox().move(tx - e.getX(), 0.0, tz - e.getZ());
             if (level.noCollision(e, moved) && !CarriageSpace.overlapsAnyCarriage(level, moved)) {
-                LOGGER.info("[DungeonTrain] Moved {} out of a carriage floor to ({}, {}, {}) source={} ageTicks={} tags={}",
-                    e.getType().toShortString(), tx, e.getY(), tz, sourceOf(e), e.tickCount, e.getTags());
+                int repeats = LOG_THROTTLES.computeIfAbsent(level, l -> new EjectLogThrottle())
+                    .record(e.getId(), level.getGameTime());
+                if (repeats >= 0) {
+                    LOGGER.info("[DungeonTrain] Moved {} out of a carriage floor to ({}, {}, {}) source={} ageTicks={} tags={} repeats={}",
+                        e.getType().toShortString(), tx, e.getY(), tz, sourceOf(e), e.tickCount, e.getTags(), repeats);
+                }
                 e.teleportTo(tx, e.getY(), tz);
                 return;
             }
