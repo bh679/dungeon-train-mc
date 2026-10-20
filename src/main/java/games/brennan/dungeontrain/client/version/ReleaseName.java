@@ -17,7 +17,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
 /**
- * What a release is called, from the curated changelog ledger on {@code main}. Releases have no
+ * What a release is called and how big it is, from the curated changelog ledger on {@code main}. Releases have no
  * name of their own, so the name is the title of the release's lead entry: its major entry when it
  * has one, otherwise its first feature, then content, then fix. {@code release.yml} stamps the
  * ledger's {@code released_in} before it pushes {@code update.json}, so the entries are there by the
@@ -27,6 +27,15 @@ import java.util.regex.Pattern;
  * version alone rather than being held back.</p>
  */
 final class ReleaseName {
+
+    /** How loudly a release is announced: the ledger's major, notable (a smaller major) or neither. */
+    enum Tier { MAJOR, NOTABLE, NORMAL }
+
+    /** A release's name, tier and one-sentence summary ({@code ""} when there is none worth showing). */
+    record Info(String name, Tier tier, String summary) {}
+
+    /** Longest summary shown in chat before it is cut with an ellipsis. */
+    static final int SUMMARY_MAX = 140;
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -53,7 +62,7 @@ final class ReleaseName {
     private ReleaseName() {}
 
     /** The name of release {@code version}, or {@code null}. */
-    static CompletableFuture<String> fetchName(String version, String modVersion) {
+    static CompletableFuture<Info> fetch(String version, String modVersion) {
         HttpRequest req;
         try {
             req = HttpRequest.newBuilder(URI.create(System.getProperty(URL_PROPERTY, DEFAULT_URL)))
@@ -71,7 +80,7 @@ final class ReleaseName {
                     LOGGER.debug("Update notice: changelog lookup returned HTTP {}", resp.statusCode());
                     return null;
                 }
-                return pickName(resp.body(), version);
+                return pick(resp.body(), version);
             })
             .exceptionally(t -> {
                 LOGGER.debug("Update notice: changelog lookup failed: {}", t.toString());
@@ -80,18 +89,18 @@ final class ReleaseName {
     }
 
     /**
-     * Title of the lead entry released in {@code version} (matched on major.minor, so a cascade tag
-     * still finds its release), or {@code null} when the ledger is malformed or has none.
-     * Internal entries never name a release.
+     * The lead entry released in {@code version} (matched on major.minor, so a cascade tag still
+     * finds its release), or {@code null} when the ledger is malformed or has none. Internal entries
+     * never name a release.
      */
-    static String pickName(String body, String version) {
+    static Info pick(String body, String version) {
         if (body == null || body.isBlank() || !isVersion(version)) return null;
         try {
             JsonElement root = JsonParser.parseString(body);
             if (!root.isJsonObject()) return null;
             JsonElement entries = root.getAsJsonObject().get("entries");
             if (entries == null || !entries.isJsonArray()) return null;
-            String best = null;
+            JsonObject best = null;
             int bestRank = Integer.MAX_VALUE;
             for (JsonElement el : entries.getAsJsonArray()) {
                 if (!el.isJsonObject()) continue;
@@ -100,14 +109,49 @@ final class ReleaseName {
                 if (title == null || !releasedIn(e, version) || hasTag(e, INTERNAL_TAG)) continue;
                 int rank = rank(e);
                 if (rank < bestRank) {
-                    best = title;
+                    best = e;
                     bestRank = rank;
                 }
             }
-            return best;
+            if (best == null) return null;
+            Tier tier = bestRank == 0 ? Tier.MAJOR : bestRank == 1 ? Tier.NOTABLE : Tier.NORMAL;
+            String summary = string(best, "summary");
+            return new Info(string(best, "title"), tier, shortSummary(summary == null ? "" : summary));
         } catch (RuntimeException e) {
             return null;
         }
+    }
+
+    /**
+     * The first sentence (or line) of a ledger summary as plain text for chat: markdown headings,
+     * emphasis and links stripped, cut at {@link #SUMMARY_MAX} with an ellipsis. {@code ""} when
+     * nothing readable is left, or when it is only a link.
+     */
+    static String shortSummary(String summary) {
+        String text = summary
+            .replaceAll("(?m)^\\s*#{1,6}\\s+.*$", "")              // headings
+            .replaceAll("\\[([^\\]]*)]\\([^)]*\\)", "$1")     // [text](url) -> text
+            .replaceAll("[*_`]", "")
+            .strip();
+        int nl = text.indexOf('\n');
+        if (nl >= 0) text = text.substring(0, nl).strip();
+        int stop = firstSentenceEnd(text);
+        if (stop > 0) text = text.substring(0, stop);
+        if (text.isEmpty() || text.startsWith("http://") || text.startsWith("https://")) return "";
+        if (text.length() > SUMMARY_MAX) {
+            int cut = text.lastIndexOf(' ', SUMMARY_MAX - 3);
+            text = text.substring(0, cut > 0 ? cut : SUMMARY_MAX - 3).strip() + "...";
+        }
+        return text;
+    }
+
+    /** Index just past the first ". ", "! " or "? ", or -1. */
+    private static int firstSentenceEnd(String text) {
+        for (int i = 0; i < text.length() - 1; i++) {
+            char c = text.charAt(i);
+            if ((c == '.' || c == '!' || c == '?') && text.charAt(i + 1) == ' ') return i + 1;
+        }
+        return -1;
     }
 
     private static boolean releasedIn(JsonObject e, String version) {

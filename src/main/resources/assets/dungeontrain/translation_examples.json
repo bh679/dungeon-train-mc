@@ -942,6 +942,38 @@
       ]
     }
   },
+  "chat.dungeontrain.update_notice.notable": {
+    "1": {
+      "label": "the name of the new Dungeon Train release (the title of its headline change)",
+      "examples": [
+        "The Creaking joins the Train",
+        "Twitch integration"
+      ]
+    },
+    "2": {
+      "label": "the version number of the new Dungeon Train release",
+      "examples": [
+        "0.984.0",
+        "1.2.0"
+      ]
+    }
+  },
+  "chat.dungeontrain.update_notice.major_name": {
+    "1": {
+      "label": "the name of the new Dungeon Train release (the title of its headline change)",
+      "examples": [
+        "The Creaking joins the Train",
+        "Twitch integration"
+      ]
+    },
+    "2": {
+      "label": "the version number of the new Dungeon Train release",
+      "examples": [
+        "0.984.0",
+        "1.2.0"
+      ]
+    }
+  },
   "gui.dungeontrain.low_memory.body": {
     "1": {
       "label": "how much memory Minecraft has been given, in GB (a plain number)",

@@ -28533,7 +28533,7 @@
         "ui"
       ],
       "title": "Updates have names",
-      "summary": "When a new version comes out while you're playing, the chat message now tells you what the update is called, not just its number.",
+      "summary": "When a new version comes out while you're playing, the chat message now tells you what the update is called, not just its number. Big updates stand out with a banner, a short description and a sound.",
       "highlights": [],
       "pr": 2184,
       "date": "2026-10-20",
