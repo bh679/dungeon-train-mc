@@ -4,6 +4,7 @@ import dev.ryanhcode.sable.sublevel.SubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.ClientUpsideDownBand;
 import games.brennan.dungeontrain.client.GraphicsCapabilities;
+import games.brennan.dungeontrain.wind.GroundExposure;
 import games.brennan.dungeontrain.wind.TrainExposure;
 import games.brennan.dungeontrain.wind.WindZones;
 import games.brennan.dungeontrain.wind.WindProfile;
@@ -25,7 +26,8 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * Client half of the train wind, once per client tick:
  * <ul>
  *   <li><b>Push the local player</b> with the wind <em>now</em> when they are out in the open on the train
- *       ({@link TrainExposure}) — player movement is client-authoritative, so this side does it.</li>
+ *       ({@link TrainExposure}) or on the ground past the wind start ({@link GroundExposure}) — player
+ *       movement is client-authoritative, so this side does it.</li>
  *   <li><b>Show the wind {@code visualLeadTicks} ahead</b>: hand it to Windy through {@link WindyDrive}, or,
  *       without Windy: Configurable's hook, spawn DT's own vanilla streaks that fly along the heading.</li>
  * </ul>
@@ -80,8 +82,7 @@ public final class WindClientEvents {
         double deepDark = WindZones.deepDarkFactor(level, player.blockPosition());
         WindSample now = ClientWind.sampleAt(player.getX(), tick).scaled(deepDark);
 
-        TrainExposure.Result exposure = now.isCalm() ? TrainExposure.Result.NOT_ON_TRAIN
-                : TrainExposure.classify(sub, player, now.dirX(), now.dirZ());
+        TrainExposure.Result exposure = classify(sub, player, now);
         String skip = skipReason(player, sub);
         double extra = player.isShiftKeyDown() ? profile.sneakFactor() : 1.0;
         double applied = 0.0;
@@ -153,13 +154,23 @@ public final class WindClientEvents {
         return now.strength() > ahead.strength() ? now : ahead;
     }
 
+    /**
+     * Where the player stands in the wind: over a carriage, the train's own blocks decide ({@link TrainExposure});
+     * on the ground, the world's and any carriage upwind ({@link GroundExposure}). Calm wind is nowhere.
+     */
+    private static TrainExposure.Result classify(SubLevel sub, LocalPlayer player, WindSample now) {
+        if (now.isCalm()) return TrainExposure.Result.NOT_ON_TRAIN;
+        if (sub != null) return TrainExposure.classify(sub, player, now.dirX(), now.dirZ());
+        return GroundExposure.classify(player, now.dirX(), now.dirZ());
+    }
+
     /** Why the local player isn't pushed at all, or {@code null} when they can be. */
     private static String skipReason(LocalPlayer player, SubLevel sub) {
         if (player.isSpectator()) return "spectator";
         if (player.getAbilities().flying) return "flying";
         if (player.isPassenger()) return "riding";
         if (player.isFallFlying()) return "elytra";
-        if (sub == null) return "not over a carriage";
+        if (sub == null && player.isInWater()) return "in water";
         return null;
     }
 
