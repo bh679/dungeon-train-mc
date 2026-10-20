@@ -82,13 +82,9 @@ public final class TrainExposure {
 
         if (!overDeck(plot, feet, e.getBbWidth() / 2.0)) return Result.NOT_ON_TRAIN;
         if (underTerrain(e)) return Result.IN_TUNNEL;
-        if (walledIn(plot, feet)) return Result.UNDER_COVER;
-
-        double eye = Math.max(0.2, e.getEyeHeight());
-        BlockPos head = BlockPos.containing(feet.x, feet.y + eye, feet.z);
-        for (int dy = 1; dy <= COVER_SCAN; dy++) {
-            if (solid(plot, head.above(dy))) return Result.UNDER_COVER;
-        }
+        Result cover = carriageCover(plot, feet, e);
+        if (cover != Result.EXPOSED) return cover;
+        double eye = eyeRise(e);
 
         // Upwind = against the wind, rotated into the carriage frame (trains only yaw, but don't assume it).
         Vector3d up = pose.transformNormalInverse(new Vector3d(-dirX, 0.0, -dirZ));
@@ -103,6 +99,37 @@ public final class TrainExposure {
             if (solid(plot, BlockPos.containing(x, feet.y + eye, z))) return Result.IN_LEE;
         }
         return Result.EXPOSED;
+    }
+
+    /**
+     * The carriage-only part of {@link #classify}: {@link Result#NOT_ON_TRAIN} off the train, {@link Result#UNDER_COVER}
+     * inside a carriage (between its walls or under its roof), else {@link Result#EXPOSED} — out on a roof, a
+     * flatbed or a coupling pad. No tunnel or lee test: those are the wind's, with a direction and terrain to
+     * read; sphere gravity ({@code worldgen.SphereGravityShelter}) pulls from every side and the terrain
+     * overhead may be the sphere doing the pulling.
+     */
+    public static Result classifyCover(SubLevel sub, Entity e) {
+        if (sub == null || sub.isRemoved()) return Result.NOT_ON_TRAIN;
+        LevelPlot plot = sub.getPlot();
+        if (plot == null) return Result.NOT_ON_TRAIN;
+        Vector3d feet = sub.logicalPose().transformPositionInverse(new Vector3d(e.getX(), e.getY() + 0.05, e.getZ()));
+        if (!overDeck(plot, feet, e.getBbWidth() / 2.0)) return Result.NOT_ON_TRAIN;
+        return carriageCover(plot, feet, e);
+    }
+
+    /** Between the side walls, or something solid within {@link #COVER_SCAN} above the head: {@code UNDER_COVER}. */
+    private static Result carriageCover(LevelPlot plot, Vector3d feet, Entity e) {
+        if (walledIn(plot, feet)) return Result.UNDER_COVER;
+        BlockPos head = BlockPos.containing(feet.x, feet.y + eyeRise(e), feet.z);
+        for (int dy = 1; dy <= COVER_SCAN; dy++) {
+            if (solid(plot, head.above(dy))) return Result.UNDER_COVER;
+        }
+        return Result.EXPOSED;
+    }
+
+    /** Eye height above the feet, never below a small minimum so tiny things still look up. */
+    private static double eyeRise(Entity e) {
+        return Math.max(0.2, e.getEyeHeight());
     }
 
     /**

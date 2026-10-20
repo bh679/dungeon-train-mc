@@ -512,6 +512,30 @@ final class WorldGenCycleTest {
     }
 
     @Test
+    @DisplayName("spheres void return ramp: follows the void ramp, then eases back to 0 over the core's last returnFade blocks")
+    void spheresVoidReturnRamp() {
+        assertEquals(0.0, C.spheresVoidReturnRamp(3390, 100), EPS);          // disabled band → inert
+
+        // Lead gap [4390,4490), fade [4490,4690), core [4690,5090), len 400.
+        WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
+                100, 40, 200, 50, 200, 150, 0, 500, 200, 300, 0.12, 0.5, 400, 200, 100, 0);
+        assertEquals(0.0, c.spheresVoidReturnRamp(4489, 100), EPS);          // lead gap
+        assertEquals(0.5, c.spheresVoidReturnRamp(4590, 100), EPS);          // entry fade, same as the void ramp
+        assertEquals(1.0, c.spheresVoidReturnRamp(4690, 100), EPS);          // core start
+        assertEquals(1.0, c.spheresVoidReturnRamp(4990, 100), EPS);          // 100 left: still full
+
+        // Eases out over the last 100 columns: 1/100 on the core's last column, 0 where the terrain returns.
+        assertEquals(0.5, c.spheresVoidReturnRamp(5040, 100), EPS);
+        assertEquals(0.01, c.spheresVoidReturnRamp(5089, 100), EPS);
+        assertEquals(0.0, c.spheresVoidReturnRamp(5090, 100), EPS);
+
+        // returnFade 0 keeps the hard edge; an oversized one is clamped to a quarter of the core.
+        assertEquals(1.0, c.spheresVoidReturnRamp(5089, 0), EPS);
+        assertEquals(1.0, c.spheresVoidReturnRamp(4990, 1000), EPS);         // clamp 100 → 100 left is full
+        assertEquals(0.5, c.spheresVoidReturnRamp(5040, 1000), EPS);
+    }
+
+    @Test
     @DisplayName("spheres End sky: 0 through the fade + first startBlocks of the core, End after, overworld again at the core's far edge")
     void spheresEndSkyRamp() {
         assertEquals(0.0, C.spheresEndSkyRamp(3390, 100, 50), EPS);       // disabled band → inert

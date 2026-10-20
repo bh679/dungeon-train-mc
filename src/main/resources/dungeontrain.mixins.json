@@ -27,6 +27,7 @@
     "ServerPlayerBedSpawnMixin",
     "BucketItemMixin",
     "ChunkAccessAccessor",
+    "ServerGamePacketListenerFloatAccessor",
     "ChunkMapMixin",
     "MinecraftServerSaveMixin",
     "MultiNoiseBiomeSourceMixin",

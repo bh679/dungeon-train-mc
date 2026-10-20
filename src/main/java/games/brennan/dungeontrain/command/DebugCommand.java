@@ -201,6 +201,11 @@ public final class DebugCommand {
             // /dungeontrain debug mix-pick — the mix-zone band each chunk around you generates as (a letter grid,
             // +X to the right), plus the candidate counts. Also logged at INFO for RCON runs.
             .then(Commands.literal("mix-pick").executes(ctx -> MixPickDebug.report(ctx.getSource())))
+            // /dungeontrain debug sphere-gravity [on|off] — the spheres pulling at your position and the summed
+            // pull; on|off force-toggles the server pass (mobs, items, projectiles). Also logged at INFO.
+            .then(Commands.literal("sphere-gravity").executes(ctx -> SphereGravityDebug.report(ctx.getSource()))
+                .then(Commands.literal("on").executes(ctx -> SphereGravityDebug.setForcedOff(ctx.getSource(), false)))
+                .then(Commands.literal("off").executes(ctx -> SphereGravityDebug.setForcedOff(ctx.getSource(), true))))
             // /dungeontrain debug spider-jockey — spawn spiders through the carriage variant-mob path
             // at your feet until one rolls a skeleton jockey; reports whether the rider is in the level
             // and carries the contents tag (regression probe for the ghost-passenger bug).

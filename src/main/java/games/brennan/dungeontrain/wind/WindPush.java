@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.wind;
 
+import games.brennan.dungeontrain.util.ProjectilePush;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
@@ -75,19 +76,16 @@ public final class WindPush {
     /**
      * Push {@code e} by {@code w}; returns the acceleration applied (0 when capped or calm).
      *
-     * <p>Projectiles get two extra steps so their drift reads smoothly: one stuck in a block (it didn't move last
-     * tick) is left alone, and a pushed one is flagged {@code hasImpulse} so the server sends its new velocity to
-     * clients this tick. Arrows otherwise sync motion only once a second; the client flew them without the wind
-     * meanwhile and snapped them across when the sync came.</p>
+     * <p>Projectiles get the two extra steps in {@link ProjectilePush} so their drift reads smoothly: a stuck one
+     * is left alone, and a pushed one has its new velocity sent to clients this tick.</p>
      */
     public static double apply(Entity e, WindSample w, WindProfile profile, double extra) {
-        boolean projectile = e instanceof Projectile;
-        if (projectile && stuck(e)) return 0.0;
+        if (ProjectilePush.stuck(e)) return 0.0;
         double a = accel(e, w, profile, extra) * taper(e.getDeltaMovement(), w);
         if (a <= 0.0) return 0.0;
         Vec3 v = e.getDeltaMovement();
         e.setDeltaMovement(v.x + w.dirX() * a, v.y, v.z + w.dirZ() * a);
-        if (projectile) e.hasImpulse = true;
+        ProjectilePush.markPushed(e);
         return a;
     }
 
@@ -95,10 +93,5 @@ public final class WindPush {
     static double taper(Vec3 v, WindSample w) {
         double downwind = v.x * w.dirX() + v.z * w.dirZ();
         return Math.max(0.0, Math.min(1.0, (MAX_DOWNWIND_SPEED - downwind) / TAPER));
-    }
-
-    /** Didn't move last tick: an arrow in a block, a projectile resting on the deck. */
-    private static boolean stuck(Entity e) {
-        return e.getX() == e.xo && e.getY() == e.yo && e.getZ() == e.zo;
     }
 }

@@ -156,14 +156,16 @@ public final class WindDebugHud {
         double x = mc.player.getX();
         double end = games.brennan.dungeontrain.wind.WindZones.endSkyAt(x);
         double nether = games.brennan.dungeontrain.wind.WindZones.netherAt(x);
+        double spheres = games.brennan.dungeontrain.wind.WindZones.spheresVoidAt(x);
         boolean cave = games.brennan.dungeontrain.wind.WindZones.isCave(mc.level, mc.player.blockPosition());
         double factor = games.brennan.dungeontrain.wind.WindZones.bandFactor(x)
                 * games.brennan.dungeontrain.wind.WindZones.deepDarkFactor(mc.level, mc.player.blockPosition());
         boolean high = games.brennan.dungeontrain.wind.WindZones.isHighUpAt(x);
         boolean sky = games.brennan.dungeontrain.wind.WindZones.isSkyAt(x);
         return String.format(Locale.ROOT,
-                "Zone: End %.0f%%  Nether %.0f%%  caves %s  high up %s  sky islands %s  -> wind x%.2f",
-                end * 100, nether * 100, cave ? "yes" : "no", high ? "yes" : "no", sky ? "yes" : "no", factor);
+                "Zone: End %.0f%%  Nether %.0f%%  spheres void %.0f%%  caves %s  high up %s  sky islands %s  -> wind x%.2f",
+                end * 100, nether * 100, spheres * 100, cave ? "yes" : "no", high ? "yes" : "no", sky ? "yes" : "no",
+                factor);
     }
 
     private static String describe(TrainExposure.Result r) {
