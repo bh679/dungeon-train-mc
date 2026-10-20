@@ -471,8 +471,10 @@ public final class ContributePanel {
         return true;
     }
 
+    /** Open the Community Rewards page over the host; the host's page time stops until Done returns. */
     private void openRewards() {
         UiAnalytics.click(surface, UiAnalytics.TARGET_REWARDS);
+        if (host instanceof PageTimer timer) timer.pauseTimer();
         Minecraft.getInstance().setScreen(new CommunityRewardsScreen(host));
     }
 
