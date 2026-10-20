@@ -85,6 +85,27 @@ class DungeonTrainSaveTest {
     }
 
     @Test
+    @DisplayName("a folder with no level data is not a world, even with the generator file quick-play leaves behind")
+    void emptySaveFolderHasNoLevelData() throws IOException {
+        assertFalse(DungeonTrainSave.hasLevelData(saveDir));
+        Files.createDirectories(saveDir.resolve("data"));
+        Files.writeString(saveDir.resolve("data").resolve("wover-generator.nbt"), "generator");
+        Files.writeString(saveDir.resolve("session.lock"), "");
+        assertFalse(DungeonTrainSave.hasLevelData(saveDir));
+        assertFalse(DungeonTrainSave.hasLevelData(saveDir.resolve("missing")));
+    }
+
+    @Test
+    @DisplayName("either level file counts as level data, readable or not")
+    void levelDatOrLevelDatOldCountsAsLevelData() throws IOException {
+        Files.writeString(saveDir.resolve("level.dat_old"), "not nbt");
+        assertTrue(DungeonTrainSave.hasLevelData(saveDir));
+        Files.delete(saveDir.resolve("level.dat_old"));
+        NbtIo.writeCompressed(vanillaLevelDat(), saveDir.resolve("level.dat"));
+        assertTrue(DungeonTrainSave.hasLevelData(saveDir));
+    }
+
+    @Test
     @DisplayName("a dungeontrain: overworld needs no marker, and a marker can't talk it out of being DT")
     void dtOverworldWinsOverTheMarker() throws IOException {
         writeSave(levelDat("dungeontrain:overworld", "dungeontrain:overworld"), worldData(false, true));

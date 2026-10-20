@@ -59,6 +59,7 @@ public final class SphereGravityClient {
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         ClientSphereField.reset();
+        SphereGravityShelter.clearClient();
         lastPull = SphereGravity.Pull.ZERO;
     }
 }
