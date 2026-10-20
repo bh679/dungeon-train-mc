@@ -29050,6 +29050,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "bug-report-pauses-run",
+      "version": "0.1428.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Bug reports pause the run",
+      "summary": "Writing a bug report with /bug now pauses the game while the report screen is open, so the train and its mobs wait for you instead of carrying on without you. On a server, your run clock stops while you type, the same as opening the pause menu.",
+      "highlights": [
+        "/bug pauses the game while you write the report",
+        "On servers, your run clock stops while the report screen is open"
+      ],
+      "date": "2026-10-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
