@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.ship;
 
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
-import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.Trains;
 import net.minecraft.core.BlockPos;
@@ -159,26 +158,38 @@ public final class CarriageDeck {
     /**
      * Block at a <b>ship-local</b> position within {@code plot}, or air when that chunk isn't loaded.
      *
-     * <p>Scans {@link LevelPlot#getLoadedChunks()} for the matching chunk key rather than using
-     * {@code plot.getChunk(plot.toLocal(pos))}: a plot holds only a handful of chunks (a carriage is
-     * ~9x7x7) so the scan is trivial, and it is the idiom already proven in shipped code here and in
-     * {@code VillagerJobSiteAssigner} / {@code SoulCampfireHealEvents}. The O(1) path depends on
-     * whether {@code getChunk} bounds-checks plot-local or global coords; guessing wrong there
-     * returns null, which reads as air and silently disables every caller.</p>
+     * <p>This is a per-tick hot path: the train wind and the gravity shelter read up to ~80 cells per
+     * riding entity per tick through it, so {@link #chunkInPlot} must not walk
+     * {@link LevelPlot#getLoadedChunks()} the way the bulk iterators in {@code VillagerJobSiteAssigner}
+     * / {@code SoulCampfireHealEvents} legitimately do.</p>
      */
     public static BlockState blockInPlot(LevelPlot plot, BlockPos shipLocal) {
         LevelChunk chunk = chunkInPlot(plot, shipLocal);
         return chunk == null ? Blocks.AIR.defaultBlockState() : chunk.getBlockState(shipLocal);
     }
 
-    /** The loaded plot chunk holding ship-local {@code shipLocal}, or {@code null}; see {@link #blockInPlot}. */
+    /**
+     * The loaded plot chunk holding ship-local {@code shipLocal}, or {@code null}; see {@link #blockInPlot}.
+     *
+     * <p>O(1): a keyed read of the plot's own chunk array. Until DT 0.1416 this scanned
+     * {@code getLoadedChunks()} for the matching chunk key because nobody had confirmed which
+     * coordinate space {@link LevelPlot#getChunk} bounds-checks; a wrong guess returns {@code null},
+     * which reads as air and silently disables every caller. Read from Sable 2.0.5's bytecode:
+     * {@code getChunkHolder(local)} range-checks {@code 0 <= x,z < 1 << logSize} and indexes
+     * {@code chunks[z << logSize | x]}, i.e. it takes <b>plot-local</b> chunk coordinates;
+     * {@code toLocal(global)} is {@code global - (plotPos << logSize)}; and {@code newChunk} stores every
+     * holder at {@code toLocal(chunk.getPos())}, so {@code getChunk(toLocal(new ChunkPos(pos)))} is exactly
+     * the chunk the old scan found. Sable uses the same idiom itself in {@code expandIfNecessary}.
+     * {@code CarriageDeckChunkInPlotTest} pins the equivalence against the real {@code LevelPlot}.</p>
+     *
+     * <p>The {@code isEmpty()} guard (O(1) on Sable's array list) keeps one edge of the old behaviour:
+     * {@code LevelPlot.onRemove()} clears the loaded list but not the array, and a removed plot must
+     * still answer "nothing here".</p>
+     */
     @Nullable
     public static LevelChunk chunkInPlot(LevelPlot plot, BlockPos shipLocal) {
-        long chunkKey = ChunkPos.asLong(shipLocal.getX() >> 4, shipLocal.getZ() >> 4);
-        for (PlotChunkHolder holder : plot.getLoadedChunks()) {
-            LevelChunk chunk = holder.getChunk();
-            if (chunk != null && chunk.getPos().toLong() == chunkKey) return chunk;
-        }
-        return null;
+        if (plot.getLoadedChunks().isEmpty()) return null;
+        ChunkPos global = new ChunkPos(shipLocal.getX() >> 4, shipLocal.getZ() >> 4);
+        return plot.getChunk(plot.toLocal(global));
     }
 }
