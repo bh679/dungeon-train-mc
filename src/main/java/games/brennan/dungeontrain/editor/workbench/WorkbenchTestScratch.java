@@ -396,7 +396,7 @@ public final class WorkbenchTestScratch {
     }
 
     /** The contents size whose interior {@code size} is, or null for none. */
-    static ContentsSize contentsSizeFor(Vec3i size, CarriageDims dims) {
+    public static ContentsSize contentsSizeFor(Vec3i size, CarriageDims dims) {
         int group = games.brennan.dungeontrain.config.DungeonTrainConfig.getGroupSize();
         for (ContentsSize s : ContentsSize.values()) {
             if (!s.available(dims, group)) continue;

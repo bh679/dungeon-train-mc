@@ -27,10 +27,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * reads it. Door ghosts, the block-variant plot and the room settings all go through here rather
  * than each re-deriving it.</p>
  *
- * <p>A staged contents build stands interior-only at its origin (the Workbench stamps no shell), so
- * its variant cells — interior-relative in the contents sidecar — line up with the origin as they
- * are. Only the doors, which a contents plot draws on the shell around the interior, need the box
- * grown ({@link #shellOrigin}).</p>
+ * <p>A staged contents build's origin is its interior's: the Workbench stamps its tier's default
+ * shell one block out around it ({@code WorkbenchEditor.shellFor}), so its variant cells —
+ * interior-relative in the contents sidecar — line up with the origin as they are. The doors, which
+ * a contents plot draws on that shell, are measured from the grown box ({@link #shellOrigin}).</p>
  *
  * @param stagedId the staged build
  * @param kind     the kind the relay said it is, or null for a relay kind this install cannot place
