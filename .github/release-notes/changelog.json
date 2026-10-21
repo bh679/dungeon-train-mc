@@ -29230,6 +29230,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "drifting-carriage-sign-text",
+      "version": "0.1438.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Signs on drifting carriages keep their words",
+      "summary": "Signs you write on a drifting carriage now travel with it. Before, the next player to find that carriage saw the signs blank. New writing is checked before other players see it, the same way books are.",
+      "highlights": [],
+      "pr": 2218,
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
