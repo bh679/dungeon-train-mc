@@ -29303,6 +29303,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "discord-echo-story-underscores",
+      "version": "0.1441.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Discord echo story fix",
+      "summary": "Echo encounter stories posted to Discord no longer turn underlined or italic when a player's name ends in an underscore.",
+      "highlights": [],
+      "pr": 2224,
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
