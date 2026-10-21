@@ -89,11 +89,17 @@ public final class TvSpawnPower {
         List<BlockPos> tvs = TvTemplateJoin.findTvs(level, origin, size);
         if (tvs.isEmpty() || !allowed(level.getServer())) return;
         try {
-            for (BlockPos master : masters(level, tvs)) {
+            Set<BlockPos> screens = masters(level, tvs);
+            int switchedOn = 0;
+            for (BlockPos master : screens) {
                 BlockState state = level.getBlockState(master);
                 if (!state.hasProperty(TVBlock.POWER_STATE) || state.getValue(TVBlock.POWER_STATE).isOn()) continue;
-                if (rollOn(seed, carriageIndex, master.subtract(origin))) TvPowerToggle.toggle(level, master);
+                if (rollOn(seed, carriageIndex, master.subtract(origin))) {
+                    TvPowerToggle.toggle(level, master);
+                    switchedOn++;
+                }
             }
+            LOGGER.debug("[DT-TvSpawn] carriage {}: {} of {} screens switched on", carriageIndex, switchedOn, screens.size());
         } catch (RuntimeException e) {
             // A TV left off is cosmetic; a failed carriage stamp is not.
             LOGGER.warn("[DungeonTrain] TV spawn power failed at {} ({} TVs); leaving them off", origin, tvs.size(), e);
