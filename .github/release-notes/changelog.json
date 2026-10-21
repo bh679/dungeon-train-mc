@@ -29178,6 +29178,26 @@
       "released_at": null
     },
     {
+      "id": "editor-redstone-tnt-toggles",
+      "version": "0.1435.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Editor: Redstone and TNT switches",
+      "summary": "The editor's Settings tab can now switch redstone and TNT off, so you can wire up a contraption or place TNT in your build without it going off. Your runs are never affected.",
+      "highlights": [
+        "Redstone Off: nothing in the editor gives power, so lamps, pistons and doors stay put until you switch it back on.",
+        "TNT Off: lit TNT in the editor fizzles out without breaking anything."
+      ],
+      "pr": 2215,
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "wind-streaks-only-when-windy",
       "version": "0.1435.0",
       "type": "fix",
