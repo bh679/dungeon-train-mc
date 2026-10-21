@@ -9,7 +9,7 @@ import java.util.List;
 
 /**
  * How many photos a player has taken of animals, hostile mobs and passengers — the tallies behind
- * The Enchiridion's 50 / 200 / 500 photo tiers. A photo counts once per category, however many of
+ * The Enchiridion's 10 / 25 / 50 photo tiers. A photo counts once per category, however many of
  * that kind are in frame; what counts as which is {@link PhotoSubjectTally#of}, the same reading the
  * relay's photo leaderboards use.
  *
