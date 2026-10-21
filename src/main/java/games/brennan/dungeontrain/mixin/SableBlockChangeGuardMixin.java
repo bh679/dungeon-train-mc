@@ -44,7 +44,9 @@ import java.util.UUID;
  *       is uploaded/saved to the relay. Which changes count is
  *       {@link SharedCarriageChangeFilter}'s call — it excludes breaking a loot container (so ordinary
  *       looting never dirties a carriage) and transient property flips (a plate powering, a door
- *       swinging), which otherwise upload a delta every ~1.5&nbsp;s while a player walks around.</li>
+ *       swinging), which otherwise upload a delta every ~1.5&nbsp;s while a player walks around.
+ *       An edit that changes no block state (a sign's text) never reaches this hook; see
+ *       {@code SignBlockEntityEditMixin}.</li>
  *   <li><b>Player-block unmark (TAIL)</b> — a change of block type ends a player-added block's
  *       claim on its cell ({@link PlayerPlacedTrainBlocks}); whatever fills the cell next is judged
  *       afresh, and a player's own placement re-marks it when its place event fires.</li>
