@@ -418,8 +418,13 @@ public final class EditorDetailPane {
 
     /** The developer's verdict on the staged build behind the selection — the Submitted answers page's row. */
     public void openReview(String verdict) {
+        openReview(verdict, null);
+    }
+
+    /** As above, with what follows the sent verdict — the commit picker after an accept. */
+    public void openReview(String verdict, Runnable afterSent) {
         if (!canReview()) return;
-        games.brennan.dungeontrain.client.builder.BuilderReviewCommentScreen.open(reviewEntry, reviewLive, verdict);
+        games.brennan.dungeontrain.client.builder.BuilderReviewCommentScreen.open(reviewEntry, reviewLive, verdict, afterSent);
     }
 
     private static boolean hits(InventoryEditorLayout.Rect r, double mx, double my) {

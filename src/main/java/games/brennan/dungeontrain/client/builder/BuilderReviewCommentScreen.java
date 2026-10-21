@@ -56,6 +56,8 @@ public final class BuilderReviewCommentScreen extends Screen {
     private final boolean live;
     private final String review;
     private final boolean resubmit;
+    /** What follows a sent verdict, once the screen behind is back — nothing for a plain verdict. */
+    private final Runnable afterSent;
     private String comment;
     private Source source = Source.LATEST;
     private String customVersion = "";
@@ -64,9 +66,11 @@ public final class BuilderReviewCommentScreen extends Screen {
     private EditBox versionField;
     private int top;
 
-    private BuilderReviewCommentScreen(Screen backScreen, BuilderProfilePacket.Entry entry, boolean live, String review) {
+    private BuilderReviewCommentScreen(Screen backScreen, BuilderProfilePacket.Entry entry, boolean live, String review,
+                                       Runnable afterSent) {
         super(Component.translatable(titleKey(review)));
         this.backScreen = backScreen;
+        this.afterSent = afterSent == null ? () -> { } : afterSent;
         this.entry = entry;
         this.live = live;
         this.review = review;
@@ -110,9 +114,18 @@ public final class BuilderReviewCommentScreen extends Screen {
 
     /** Open over the current screen for a verdict on {@code entry}, returning to it afterwards. */
     public static void open(BuilderProfilePacket.Entry entry, boolean live, String review) {
+        open(entry, live, review, null);
+    }
+
+    /**
+     * As {@link #open(BuilderProfilePacket.Entry, boolean, String)}, running {@code afterSent} once the
+     * verdict is sent and the screen behind is back — the Workbench follows an accept with the commit
+     * picker, so an accepted build is filed where it belongs in the same breath.
+     */
+    public static void open(BuilderProfilePacket.Entry entry, boolean live, String review, Runnable afterSent) {
         if (entry == null || !BuilderReviewEdits.isVerdict(review)) return;
         Minecraft mc = Minecraft.getInstance();
-        mc.setScreen(new BuilderReviewCommentScreen(mc.screen, entry, live, review));
+        mc.setScreen(new BuilderReviewCommentScreen(mc.screen, entry, live, review, afterSent));
     }
 
     @Override
@@ -201,6 +214,7 @@ public final class BuilderReviewCommentScreen extends Screen {
         DungeonTrainNet.sendToServer(new BuilderReviewPacket(entry.relayId(), entry.ownerUuid(), entry.ownerName(),
                 entry.buildName(), entry.kind(), entry.subKind(), live, review, written, render, version, resubmit ? op : ""));
         this.minecraft.setScreen(backScreen);
+        afterSent.run();
     }
 
     @Override
