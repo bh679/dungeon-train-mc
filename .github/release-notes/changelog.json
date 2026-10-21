@@ -29102,9 +29102,9 @@
         "Requires Ender Chest Persistence 0.7.0 (auto-installed by the CurseForge / Modrinth apps)"
       ],
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1433.0",
+      "released_at": "2026-10-21T06:37:06Z"
     },
     {
       "id": "workbench-dev-only",
@@ -29118,9 +29118,9 @@
       "summary": "A reviewer-only panel in the editor was showing up for everyone. It is now kept to development builds, so the editor's tabs and category strip only list the places you can actually use.",
       "highlights": [],
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1433.0",
+      "released_at": "2026-10-21T06:37:06Z"
     },
     {
       "id": "tv-drops-only-tv",
@@ -29135,9 +29135,9 @@
       "highlights": [],
       "pr": 2211,
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1433.0",
+      "released_at": "2026-10-21T06:37:06Z"
     },
     {
       "id": "mob-buffs-never-unbeatable",
@@ -29153,9 +29153,9 @@
       "highlights": [],
       "pr": 2212,
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1433.0",
+      "released_at": "2026-10-21T06:37:06Z"
     },
     {
       "id": "live-eye-buttons-free-play",
