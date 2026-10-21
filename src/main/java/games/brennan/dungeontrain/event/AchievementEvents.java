@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.advancement.TabCompleteAdvancements;
 import games.brennan.dungeontrain.advancement.FarStartAdvancement;
 import games.brennan.dungeontrain.advancement.FirstEverAdvancements;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
+import games.brennan.dungeontrain.advancement.GlobalCriteriaProgress;
 import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
@@ -1024,6 +1025,9 @@ public final class AchievementEvents {
         // re-fire AdvancementEarnEvent — is captured before the replay below
         // mirrors the store back onto this world.
         AdvancementProfiles.absorb(player, AdvancementProfiles.currentKey(player));
+        // Half-finished collections too (Most Wanted's 34 mobs): the store above only holds
+        // finished advancements, so without this a new world started them from zero.
+        AdvancementProfiles.absorbCriteria(player, AdvancementProfiles.currentKey(player));
         // Replay the cross-world sidecar onto this world's advancements, then
         // re-evaluate the "Everything Burrito" capstone. The capstone check runs
         // last and unconditionally: a player who finished every other advancement
@@ -1032,6 +1036,7 @@ public final class AchievementEvents {
         // place that backfill can happen. It reads this world's restored
         // (post-replay) progress and grants normally (replaying is false here).
         AdvancementProfiles.replay(player, AdvancementProfiles.currentKey(player));
+        AdvancementProfiles.replayCriteria(player, AdvancementProfiles.currentKey(player));
         // Tab copies follow their originals as restored above (or revoked by Start Again).
         TabGateways.sync(player);
         TabCompleteAdvancements.checkAndGrant(player);
@@ -1071,6 +1076,7 @@ public final class AchievementEvents {
         AdvancementProfiles.reconcileRevokes(player);
         // After the reconcile, which may still strike ids. Queued writes finish in the background.
         GlobalAchievementStore.evict(uuid);
+        GlobalCriteriaProgress.evict(uuid);
     }
 
     /**
@@ -1083,6 +1089,7 @@ public final class AchievementEvents {
         GlobalPlayerStats.flushAll();
         GlobalBookBurnStats.flushAll();
         GlobalAchievementStore.flushAndClearAll();
+        GlobalCriteriaProgress.flushAndClearAll();
     }
 
     /**
@@ -1171,6 +1178,18 @@ public final class AchievementEvents {
                 "commands.advancement.revoke.many.to.one.success", cleared, player.getDisplayName()), true);
     }
 
+    /**
+     * Bank each criterion of a half-finished collection as it lands (or strike it when revoked), so
+     * the next world carries the progress on — see {@link GlobalCriteriaProgress}.
+     */
+    @SubscribeEvent
+    public static void onAdvancementProgress(AdvancementEvent.AdvancementProgressEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        AdvancementProfiles.recordProgress(player, event.getAdvancement(), event.getAdvancementProgress(),
+            event.getCriterionName(),
+            event.getProgressType() == AdvancementEvent.AdvancementProgressEvent.ProgressType.GRANT);
+    }
+
     @SubscribeEvent
     public static void onAdvancementEarn(AdvancementEvent.AdvancementEarnEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
@@ -1217,7 +1236,11 @@ public final class AchievementEvents {
             // The burrito's play time (since first played or the last reset) is recorded here and rides
             // the relay claim below, for the fastest-burrito board.
             BurritoClock.Completion burrito = id.equals(CompletionistAdvancement.ID) ? BurritoClock.recordEarn(player) : null;
-            FirstEverAdvancements.onEarn(player, advancement, burrito);
+            // The Challenge is a one-life feat, so its time is this life's time aboard — the
+            // fastest-challenge board.
+            long challengeTicks = id.equals(AllAtOnceAdvancement.THE_CHALLENGE)
+                    ? player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).trainTimeTicks() : 0L;
+            FirstEverAdvancements.onEarn(player, advancement, burrito, challengeTicks);
             // Re-evaluate the "Everything Burrito" capstone (every non-editor
             // advancement earned). Skip its own earn: the award inside
             // checkAndGrant re-fires this event, and the id guard avoids the

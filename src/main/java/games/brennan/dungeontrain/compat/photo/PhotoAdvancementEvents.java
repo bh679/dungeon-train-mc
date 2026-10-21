@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.BandAdvancements;
 import games.brennan.dungeontrain.advancement.EnchiridionAdvancements;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.EchoIdentity;
 import games.brennan.dungeontrain.event.StartingBookEvents;
 import games.brennan.dungeontrain.narrative.TechnobladePigNames;
@@ -16,6 +17,7 @@ import io.github.mortuusars.exposure.world.camera.frame.Frame;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
@@ -34,6 +36,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
 import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PhotoBiomesPacket;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
@@ -41,7 +44,10 @@ import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import org.slf4j.Logger;
 
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -102,10 +108,52 @@ public final class PhotoAdvancementEvents {
         }
     }
 
-    /** Tell the client which biomes this world's photos already cover, so the biome album matches. */
+    /**
+     * Carry the photo tallies across worlds ({@link GlobalPhotoProgress}), then tell the client which
+     * biomes the photos already cover, so the biome album matches.
+     */
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) syncPhotographedBiomes(player);
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        GlobalPhotoProgress.Tally world = worldTally(player);
+        GlobalPhotoProgress.Tally merged = world.merge(GlobalPhotoProgress.read(player.getUUID()));
+        if (!merged.equals(world)) writeWorldTally(player, merged);
+        mirrorTally(player);
+        syncPhotographedBiomes(player);
+    }
+
+    @SubscribeEvent
+    public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        GlobalPhotoProgress.evict(event.getEntity().getUUID());
+    }
+
+    @SubscribeEvent
+    public static void onServerStopping(ServerStoppingEvent event) {
+        GlobalPhotoProgress.flushAndClearAll();
+    }
+
+    /** Push this world's tallies to the cross-world copy. A Free Play run keeps its own. */
+    static void mirrorTally(ServerPlayer player) {
+        if (RunIntegrity.isCheated(player)) return;
+        GlobalPhotoProgress.merge(player.getUUID(), worldTally(player));
+    }
+
+    private static GlobalPhotoProgress.Tally worldTally(ServerPlayer player) {
+        CompoundTag countsTag = player.getPersistentData().getCompound(PhotoCounts.KEY);
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        for (String category : countsTag.getAllKeys()) counts.put(category, countsTag.getInt(category));
+        Set<String> biomes = new LinkedHashSet<>();
+        for (Tag t : player.getPersistentData().getList(PHOTO_BIOMES_KEY, Tag.TAG_STRING)) biomes.add(t.getAsString());
+        return new GlobalPhotoProgress.Tally(counts, biomes);
+    }
+
+    private static void writeWorldTally(ServerPlayer player, GlobalPhotoProgress.Tally tally) {
+        CompoundTag countsTag = new CompoundTag();
+        tally.counts().forEach(countsTag::putInt);
+        player.getPersistentData().put(PhotoCounts.KEY, countsTag);
+        ListTag biomes = new ListTag();
+        for (String biome : tally.biomes()) biomes.add(StringTag.valueOf(biome));
+        player.getPersistentData().put(PHOTO_BIOMES_KEY, biomes);
     }
 
     @SubscribeEvent
@@ -212,6 +260,7 @@ public final class PhotoAdvancementEvents {
         ListTag updated = seen.copy();
         updated.add(StringTag.valueOf(id));
         player.getPersistentData().put(PHOTO_BIOMES_KEY, updated);
+        mirrorTally(player);
         // A new biome: its photo joins the biome tiers' album (the frame is current — see onFrameAdded).
         AdvancementPhotoCapture.sendEntry(player,
                 ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, EnchiridionAdvancements.BIOME_ALBUM), id);

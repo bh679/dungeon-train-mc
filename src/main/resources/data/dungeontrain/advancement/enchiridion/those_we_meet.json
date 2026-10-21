@@ -10,7 +10,7 @@
     "description": {
       "translate": "advancements.dungeontrain.enchiridion.photo_count.passenger.description",
       "with": [
-        50
+        10
       ]
     },
     "frame": "task",
@@ -23,7 +23,7 @@
       "trigger": "dungeontrain:photo_count",
       "conditions": {
         "category": "passenger",
-        "threshold": 50
+        "threshold": 10
       }
     }
   },

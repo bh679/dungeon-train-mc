@@ -41,6 +41,7 @@ import games.brennan.dungeontrain.portal.PortalRoomTiler;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalSever;
 import games.brennan.dungeontrain.portal.PortalStampRecord;
+import games.brennan.dungeontrain.portal.PortalStranding;
 import games.brennan.dungeontrain.portal.PortalSwapDiagnostics;
 import games.brennan.dungeontrain.portal.PortalSwapDrift;
 import games.brennan.dungeontrain.portal.PortalStructure;
@@ -215,13 +216,16 @@ public final class PortalCarriageEvents {
     private static final Map<Integer, Long> OVERLAP_WARNED_AT = new HashMap<>();
 
     /**
-     * How far outside the corridor's own cross-section the room extends, for the "is anyone in this
-     * structure" test. The room is wider and taller than a corridor, and a player standing in it
+     * How far outside the corridor's own cross-section the room extends <b>sideways</b>, for the "is
+     * anyone in this structure" test. The room is wider than a corridor, and a player standing in it
      * must still pin the structure against being re-stamped.
      *
      * <p>A floor, not the figure: {@link #structureBox} takes the larger of this and what the
      * pair's actual room needs, so an authored room bigger than the built-in one widens the box
      * rather than falling outside it.</p>
+     *
+     * <p>Z only. It used to pad the box's top as well, eight rows over a lane that is only one row
+     * clear of the next — see {@link PortalRoomLayout#structureCeilingY} for what that did.</p>
      */
     private static final int POCKET_ROOM_SLACK = 8;
 
@@ -1005,12 +1009,32 @@ public final class PortalCarriageEvents {
         if (STRUCTURES.isEmpty()) return;
 
         // Snapshot: handlePortalCarriage can relocate a structure, which replaces the entry.
-        for (Map.Entry<Integer, PortalStructure> entry : new ArrayList<>(STRUCTURES.entrySet())) {
+        List<Map.Entry<Integer, PortalStructure>> entries = new ArrayList<>(STRUCTURES.entrySet());
+
+        // Every room whose corridors ran this tick. A player inside one of them is that pair's, not
+        // stranded — even when a dead pair's room one lane below shares their X and its box reaches
+        // them. See PortalStranding.
+        List<AABB> liveBoxes = new ArrayList<>();
+        for (Map.Entry<Integer, PortalStructure> entry : entries) {
+            if (LIVE_PAIRS.contains(entry.getKey())) {
+                liveBoxes.add(structureBox(dims, entry.getValue()));
+            }
+        }
+
+        for (Map.Entry<Integer, PortalStructure> entry : entries) {
             int pairKey = entry.getKey();
             if (LIVE_PAIRS.contains(pairKey)) continue;
             // Only for somebody who is actually in there. A pair the train has simply rolled away
             // from is not stranding anybody, and reviving it would pin a sub-level for nothing.
-            if (!anyPlayerInStructure(players, dims, entry.getValue())) continue;
+            List<ServerPlayer> stranded = PortalStranding.strandedIn(players, Entity::position,
+                structureBox(dims, entry.getValue()), liveBoxes);
+            if (stranded.isEmpty()) {
+                // Nobody left inside, so whatever this pair was waiting for, nobody is waiting on it.
+                // Left running, the clock made the NEXT visit start already past the grace: a player
+                // who stepped back in three seconds later was carried out on their first tick.
+                WAITING_SINCE.remove(pairKey);
+                continue;
+            }
 
             ManagedShip ship = PortalPairResidency.groupFor(pairKey);
             PortalCarriageRevival.Status status =
@@ -1040,11 +1064,11 @@ public final class PortalCarriageEvents {
             // beats being teleported.
             long inertFor = inertTicks(level, pairKey);
             long grace = reviving ? RESCUE_DELAY_REVIVING_TICKS : RESCUE_DELAY_TICKS;
-            if (inertFor >= grace && rescueOccupants(level, players, dims, structure, pairKey)) {
+            if (inertFor >= grace && rescueOccupants(level, stranded, structure, pairKey)) {
                 continue;
             }
 
-            tellWaiting(level, players, dims, structure, pairKey,
+            tellWaiting(level, stranded, pairKey,
                 reviving
                     ? PortalSwapDiagnostics.Reason.GROUP_REVIVING
                     : PortalSwapDiagnostics.Reason.PAIR_NOT_WALKED,
@@ -1066,25 +1090,18 @@ public final class PortalCarriageEvents {
     }
 
     /**
-     * Put everybody in this room back on the train.
+     * Put everybody stranded in this room back on the train.
      *
-     * <p>The occupants are gathered before any of them is moved. {@code players} is the level's live
-     * list, and a teleport is exactly the kind of thing that has no business happening while
-     * something is walking it — it holds today only because the destination is the same level, which
-     * is a fact about the train, not about this loop.</p>
+     * <p>{@code occupants} is gathered by the caller, before any of them is moved, and is already a
+     * copy rather than the level's live list — a teleport is exactly the kind of thing that has no
+     * business happening while something is walking it. It is also already only the players this pair
+     * is stranding: one inside a live pair's room is left alone (see {@link PortalStranding}).</p>
      *
      * @return true if anybody was moved — false when there is no settled carriage anywhere to land
      *         on, which is the one case where saying so is still all that can be done
      */
-    private static boolean rescueOccupants(ServerLevel level, List<ServerPlayer> players,
-                                           CarriageDims dims, PortalStructure structure, int pairKey) {
-        AABB box = structureBox(dims, structure);
-        List<ServerPlayer> occupants = new ArrayList<>();
-        for (ServerPlayer player : players) {
-            if (box.contains(player.getX(), player.getY(), player.getZ())) occupants.add(player);
-        }
-        // Nobody in the box is not a failure — the caller only reaches here with somebody inside, but
-        // they can leave between the two tests, and there is nothing left to tell them either way.
+    private static boolean rescueOccupants(ServerLevel level, List<ServerPlayer> occupants,
+                                           PortalStructure structure, int pairKey) {
         if (occupants.isEmpty()) return false;
 
         for (ServerPlayer player : occupants) {
@@ -1115,8 +1132,7 @@ public final class PortalCarriageEvents {
      * so re-sending it twenty times a second is a packet per player per tick for no visible
      * difference.</p>
      */
-    private static void tellWaiting(ServerLevel level, List<ServerPlayer> players, CarriageDims dims,
-                                    PortalStructure structure, int pairKey,
+    private static void tellWaiting(ServerLevel level, List<ServerPlayer> occupants, int pairKey,
                                     PortalSwapDiagnostics.Reason reason, String messageKey) {
         if (PortalSwapDiagnostics.due(level, reason, pairKey)) {
             PortalSwapDiagnostics.refused(reason, "pair " + pairKey,
@@ -1134,9 +1150,7 @@ public final class PortalCarriageEvents {
 
         long now = level.getGameTime();
         if (now % WAITING_MESSAGE_PERIOD_TICKS != 0) return;
-        AABB box = structureBox(dims, structure);
-        for (ServerPlayer player : players) {
-            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
+        for (ServerPlayer player : occupants) {
             player.displayClientMessage(
                 Component.translatable(messageKey).withStyle(ChatFormatting.GRAY), true);
         }
@@ -2871,7 +2885,7 @@ public final class PortalCarriageEvents {
         // sunken room's box reached the train deck overhead (see structureCeilingY).
         int minY = Math.min(origin.getY(), roomOrigin.getY()) - 1;
         int maxY = PortalRoomLayout.structureCeilingY(origin.getY(), roomOrigin.getY(), room.getY(),
-            dims.height(), POCKET_ROOM_SLACK);
+            dims.height());
         if (corridors != null) {
             minX = Math.min(minX, corridors.minX() - 1);
             maxX = Math.max(maxX, corridors.maxX() + 2);

@@ -43,7 +43,7 @@ public final class DeathManifestFormat {
 
     /** The embed title: "{player} - Carriage {n}" — a compact header above the narrated body. */
     public static String title(String playerName, int carriage) {
-        return playerName + " - Carriage " + carriage;
+        return DiscordMarkdown.escape(playerName) + " - Carriage " + carriage;
     }
 
     /**
@@ -106,7 +106,7 @@ public final class DeathManifestFormat {
 
         // The fall — cause / distance / time.
         StringBuilder fall = new StringBuilder();
-        String cause = clean(deathCause);
+        String cause = DiscordMarkdown.escape(clean(deathCause));
         if (!cause.isBlank()) fall.append(E_CAUSE).append(' ').append(cause).append('\n');
         fall.append(E_DIST).append(' ').append(DeathReportFormat.distance(distanceBlocks)).append('\n')
             .append(E_TIME).append(' ').append(DeathReportFormat.time(trainTimeTicks));
@@ -137,7 +137,8 @@ public final class DeathManifestFormat {
         // Earned advancements get their own row at the bottom — a 4th field renders on its own row
         // under the three columns. Omitted entirely when none were earned.
         if (advancementTitles != null && !advancementTitles.isEmpty()) {
-            out.add(new DeathField("Advancements", E_ADV + " " + String.join(", ", advancementTitles)));
+            out.add(new DeathField("Advancements", E_ADV + " " + String.join(", ",
+                    advancementTitles.stream().map(DiscordMarkdown::escape).toList())));
         }
         return out;
     }
