@@ -29176,6 +29176,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "wind-streaks-only-when-windy",
+      "version": "0.1435.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Wind fix",
+      "summary": "Wind streaks no longer drift past when there is no wind blowing.",
+      "highlights": [],
+      "pr": 2216,
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
