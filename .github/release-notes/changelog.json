@@ -29105,6 +29105,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "workbench-dev-only",
+      "version": "0.1430.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Editor tidy-up",
+      "summary": "A reviewer-only panel in the editor was showing up for everyone. It is now kept to development builds, so the editor's tabs and category strip only list the places you can actually use.",
+      "highlights": [],
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
