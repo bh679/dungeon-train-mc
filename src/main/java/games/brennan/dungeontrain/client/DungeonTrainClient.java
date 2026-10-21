@@ -10,6 +10,11 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import games.brennan.dungeontrain.client.skybox.SkyboxStencil;
+import games.brennan.dungeontrain.client.live.LiveTakeoverOffer;
+import games.brennan.dungeontrain.client.live.LiveTakeoverChat;
+import games.brennan.dungeontrain.client.live.LiveGiftClient;
+import games.brennan.dungeontrain.client.live.LiveOptionsCommand;
+import games.brennan.dungeontrain.logrequest.LogRequestClient;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import games.brennan.dungeontrain.registry.ModMenuTypes;
 import games.brennan.dungeontrain.worldgen.UpsideDownGravity;
@@ -32,6 +37,16 @@ public final class DungeonTrainClient {
 
     @SubscribeEvent
     public static void clientSetup(FMLClientSetupEvent event) {
+        // Chat buttons that run a client action instead of a command (chat.ChatClick): nothing to
+        // type, nothing for the server to see.
+        LiveTakeoverOffer.registerClicks();
+        LiveTakeoverChat.registerClicks();
+        LiveGiftClient.registerClicks();
+        LiveOptionsCommand.registerClicks();
+        LogRequestClient.registerClicks();
+        BugResponseChatNotifier.registerClicks();
+        LowMemoryNotice.registerClicks();
+
         // Falling blocks rise in the upside-down band on the client too (FallingBlockEntityUpsideDownMixin).
         UpsideDownGravity.setClientBand(ClientUpsideDownBand::isInBand);
         ModList.get().getModContainerById(DungeonTrain.MOD_ID).ifPresent(container ->

@@ -1,7 +1,8 @@
 package games.brennan.dungeontrain.client.live;
 
-import com.mojang.brigadier.arguments.StringArgumentType;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.chat.ChatClick;
+import games.brennan.dungeontrain.client.ChatClickActions;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.event.LiveEyeLootResolver;
 import games.brennan.dungeontrain.net.ClientActionPacket;
@@ -13,7 +14,6 @@ import games.brennan.dungeontrain.net.relay.LiveFeedClient.GiftJoin;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.GiftOffer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -22,7 +22,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -35,7 +34,7 @@ import java.util.Set;
  * <p><b>Streamer:</b> a TV viewer who has never streamed joined the chat (a {@code joins[]} notice from
  * {@link LiveChatBridge}). At most one every {@link #PROMPT_GAP_MS} (12 minutes) prints
  * "X joins via a TV, they have never had the Live Eye. <b>[Gift it to them]</b>"; the rest are dropped.
- * The button runs {@code /dtlivegift give <joinId>}, which offers this streamer's own Live Eye through the
+ * The button offers this streamer's own Live Eye through the
  * relay. It is a donation: once the viewer's own stream claims the channel, the relay hands it over, so this
  * stream's next upload is refused and the server burns the Live Eye ("moves onto the next streamer"). A
  * viewer who accepts but never goes live leaves this stream running.</p>
@@ -49,7 +48,8 @@ public final class LiveGiftClient {
 
     /** The streamer sees the gift prompt at most this often. */
     public static final long PROMPT_GAP_MS = 12L * 60L * 1000L;
-    private static final String COMMAND = "dtlivegift";
+    /** The buttons' action ({@link ChatClick}): {@code live-gift/give|accept|decline/<id>}. */
+    static final String CLICK_ACTION = "live-gift";
     private static final String KEY = "chat.dungeontrain.live_gift.";
     private static final int CAP = 32;
 
@@ -93,7 +93,7 @@ public final class LiveGiftClient {
         put(PROMPTED_JOINS, join.joinId(), join.name());
         MutableComponent line = Component.translatable(KEY + "prompt", join.name()).withStyle(ChatFormatting.LIGHT_PURPLE)
             .append(Component.literal(" "))
-            .append(button(KEY + "give", "/" + COMMAND + " give " + join.joinId(), ChatFormatting.GOLD, false));
+            .append(button(KEY + "give", ChatClick.event(CLICK_ACTION, "give", join.joinId()), ChatFormatting.GOLD, false));
         Minecraft.getInstance().gui.getChat().addMessage(line);
     }
 
@@ -106,21 +106,24 @@ public final class LiveGiftClient {
         put(OFFERS, offer.giftId(), new Offer(offer.from(), channel));
         MutableComponent line = Component.translatable(KEY + "offer", offer.from()).withStyle(ChatFormatting.LIGHT_PURPLE)
             .append(Component.literal(" "))
-            .append(button(KEY + "accept", "/" + COMMAND + " accept " + offer.giftId(), ChatFormatting.GREEN, true))
+            .append(button(KEY + "accept", ChatClick.event(CLICK_ACTION, "accept", offer.giftId()), ChatFormatting.GREEN, true))
             .append(Component.literal(" "))
-            .append(button(KEY + "decline", "/" + COMMAND + " decline " + offer.giftId(), ChatFormatting.GRAY, true));
+            .append(button(KEY + "decline", ChatClick.event(CLICK_ACTION, "decline", offer.giftId()), ChatFormatting.GRAY, true));
         Minecraft.getInstance().gui.getChat().addMessage(line);
     }
 
-    @SubscribeEvent
-    public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal(COMMAND)
-            .then(Commands.literal("give").then(Commands.argument("id", StringArgumentType.word())
-                .executes(ctx -> give(StringArgumentType.getString(ctx, "id")))))
-            .then(Commands.literal("accept").then(Commands.argument("id", StringArgumentType.word())
-                .executes(ctx -> answer(StringArgumentType.getString(ctx, "id"), true))))
-            .then(Commands.literal("decline").then(Commands.argument("id", StringArgumentType.word())
-                .executes(ctx -> answer(StringArgumentType.getString(ctx, "id"), false)))));
+    /** Wire the gift buttons ({@code DungeonTrainClient.clientSetup}). */
+    public static void registerClicks() {
+        ChatClickActions.register(CLICK_ACTION, args -> {
+            if (args.size() < 2) return;
+            String id = args.get(1);
+            switch (args.get(0)) {
+                case "give" -> give(id);
+                case "accept" -> answer(id, true);
+                case "decline" -> answer(id, false);
+                default -> { }
+            }
+        });
     }
 
     @SubscribeEvent
@@ -174,11 +177,11 @@ public final class LiveGiftClient {
     }
 
     /** A clickable {@code [label]}; {@code tip} adds the {@code key + ".tip"} hover text. */
-    private static Component button(String key, String command, ChatFormatting colour, boolean tip) {
+    private static Component button(String key, ClickEvent click, ChatFormatting colour, boolean tip) {
         return Component.literal("[").append(Component.translatable(key)).append("]")
             .withStyle(s -> {
                 var style = s.withColor(colour).withBold(true)
-                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command));
+                    .withClickEvent(click);
                 return tip ? style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable(key + ".tip"))) : style;
             });
     }

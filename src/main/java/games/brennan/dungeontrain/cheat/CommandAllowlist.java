@@ -77,6 +77,10 @@ public final class CommandAllowlist {
      * own builds, or putting back builds a modpack update deleted, is recovering what you already
      * had. Neither can add anything that wasn't already yours — a restore only ever writes files
      * that are missing, from an archive this install wrote or an instance folder on this machine.
+     * {@code /reportcarriage} (report the shared carriage underfoot) and {@code /dtrebuild} (re-upload
+     * builds the relay lost) are player-facing and can give a player nothing, so they are exempt like
+     * {@code /bug}; {@code /dungeonbackup} is the root the {@code /dtbackup}/{@code /dtrestore} aliases
+     * point at. All of those are kept out of survival tab completion by {@link HiddenCommands}.
      * {@code advancement} is handled in {@link #isAllowed} rather than here:
      * only the exact form {@code /advancement revoke @s everything} is clean
      * (see {@link #isSelfRevokeEverything}) — every other spelling, target
@@ -85,7 +89,23 @@ public final class CommandAllowlist {
     private static final Set<String> ALLOWED_ROOTS = Set.of(
         "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list",
         "feedback", "bug", "fixaisconfig", "fixconfig", "customcontent", "new-world",
-        "playanimation", "stopsound", "dtbackup", "dtrestore", "liveappeal");
+        "playanimation", "stopsound", "dtbackup", "dtrestore", "dungeonbackup", "liveappeal",
+        "reportcarriage", "dtrebuild");
+
+    /**
+     * Roots DT registers <b>client-side only</b> ({@code RegisterClientCommandsEvent}) that players type
+     * on purpose: the streamer, options and rewards commands, the Twitch/Discord links, the framerate
+     * throttle, and the client preview tools. NeoForge runs a client command on the client, but when the
+     * typed form is incomplete ("unknown or incomplete command" on the client dispatcher) it hands the
+     * string to the server instead. None of these roots exists on the server, so the command can do
+     * nothing to the run, and it must not offer Free Play for it. Unknown commands in general still
+     * taint by design; this is a by-name exemption for the game's own typed commands only. DT's chat
+     * <em>buttons</em> (Live Eye takeover, vote, gift, log request, bug response, memory notice,
+     * consent) are not commands at all — see {@code chat.ChatClick} — so there is nothing to exempt.
+     */
+    private static final Set<String> CLIENT_ONLY_ROOTS = Set.of(
+        "streamer", "dungeontrain-options", "dungeontrain-rewards", "framerate-throttle", "twitch",
+        "discord", "dt-ledger-preview", "dungeontrain-debug-contribute", "dungeontrain-debug-death-pages");
 
     private CommandAllowlist() {}
 
@@ -116,7 +136,7 @@ public final class CommandAllowlist {
         if (root.equals("kill")) return sub.isEmpty(); // bare /kill (self) only; /kill @e taints
         // Exactly "/advancement revoke @s everything" — see isSelfRevokeEverything.
         if (root.equals("advancement")) return isSelfRevokeEverything(root, parts);
-        return ALLOWED_ROOTS.contains(root);
+        return ALLOWED_ROOTS.contains(root) || CLIENT_ONLY_ROOTS.contains(root);
     }
 
     /**

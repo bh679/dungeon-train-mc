@@ -1,22 +1,16 @@
 package games.brennan.dungeontrain.client.live;
 
-import com.mojang.brigadier.arguments.StringArgumentType;
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.chat.ChatClick;
+import games.brennan.dungeontrain.client.ChatClickActions;
 import games.brennan.dungeontrain.net.ClientActionPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveTakeoverClient.PollLine;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
@@ -34,10 +28,10 @@ import java.util.UUID;
  * <p>A counted vote earns Every Vote Counts, and voting for the side that wins earns Called It — both
  * through {@link ClientActionPacket}, since only this client sees the relay's replies.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveTakeoverChat {
 
-    static final String VOTE_COMMAND = "dungeontrain-live-vote";
+    /** The [Yes]/[No] buttons' action ({@link ChatClick}): {@code live-vote/yes|no}. */
+    static final String VOTE_ACTION = "live-vote";
     private static final String KEY = "chat.dungeontrain.live.takeover_";
 
     /** The open vote this client has seen, or null. */
@@ -151,7 +145,7 @@ public final class LiveTakeoverChat {
     private static Component button(String choice, ChatFormatting colour) {
         return Component.translatable(KEY + "vote_" + choice).withStyle(style -> style
             .withColor(colour).withBold(true)
-            .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/" + VOTE_COMMAND + " " + choice))
+            .withClickEvent(ChatClick.event(VOTE_ACTION, choice))
             .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable(KEY + "vote_hover"))));
     }
 
@@ -187,13 +181,11 @@ public final class LiveTakeoverChat {
         if (Minecraft.getInstance().getConnection() != null) DungeonTrainNet.sendToServer(new ClientActionPacket(actionId));
     }
 
-    @SubscribeEvent
-    public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal(VOTE_COMMAND)
-            .then(Commands.argument("choice", StringArgumentType.word()).executes(ctx -> {
-                String choice = voteOf(StringArgumentType.getString(ctx, "choice"));
-                if (choice != null && voteOpen()) vote(choice);
-                return 1;
-            })));
+    /** Wire the [Yes]/[No] buttons ({@code DungeonTrainClient.clientSetup}). */
+    public static void registerClicks() {
+        ChatClickActions.register(VOTE_ACTION, args -> {
+            String choice = voteOf(args.isEmpty() ? null : args.get(0));
+            if (choice != null && voteOpen()) vote(choice);
+        });
     }
 }

@@ -290,4 +290,48 @@ class CommandAllowlistTest {
         assertFalse(CommandAllowlist.taints("   "));
         assertFalse(CommandAllowlist.taints("/"));
     }
+
+    // ---- DT client-only commands --------------------------------------
+
+    @Test
+    @DisplayName("DT typed client-only commands (/streamer, /twitch, ...) never taint, bare or with args")
+    void clientOnlyCommandsAreClean() {
+        for (String root : new String[] {
+                "streamer", "dungeontrain-options", "dungeontrain-rewards", "framerate-throttle", "twitch",
+                "discord", "dt-ledger-preview", "dungeontrain-debug-contribute", "dungeontrain-debug-death-pages"}) {
+            assertFalse(CommandAllowlist.taints(root), root);
+            assertFalse(CommandAllowlist.taints("/" + root), "/" + root);
+            assertFalse(CommandAllowlist.taints(root + " abc123"), root + " abc123");
+        }
+    }
+
+    @Test
+    @DisplayName("The chat buttons' old command names are plain unknown commands: they taint")
+    void retiredButtonCommandsTaint() {
+        for (String root : new String[] {
+                "dungeontrain-live-takeover", "dungeontrain-live-vote", "dtlivegift", "dtlogs",
+                "dt-bug-response", "dt-memory-notice", "dungeontrain-consent"}) {
+            assertTrue(CommandAllowlist.taints(root), root);
+            assertTrue(CommandAllowlist.taints(root + " abc123"), root + " abc123");
+        }
+    }
+
+    @Test
+    @DisplayName("Unknown commands and typos still taint (deny by default)")
+    void unknownCommandsStillTaint() {
+        assertTrue(CommandAllowlist.taints("giev @s stone"));
+        assertTrue(CommandAllowlist.taints("givee"));
+        assertTrue(CommandAllowlist.taints("give"));
+        assertTrue(CommandAllowlist.taints("dungeontrain-live-takeoverx"));
+    }
+
+    @Test
+    @DisplayName("Player-facing /reportcarriage, /dtrebuild and /dungeonbackup never taint")
+    void playerFacingRootsAreClean() {
+        assertFalse(CommandAllowlist.taints("reportcarriage"));
+        assertFalse(CommandAllowlist.taints("reportcarriage the floor is missing"));
+        assertFalse(CommandAllowlist.taints("dtrebuild"));
+        assertFalse(CommandAllowlist.taints("dtrebuild backups"));
+        assertFalse(CommandAllowlist.taints("dungeonbackup backup"));
+    }
 }

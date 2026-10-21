@@ -31,6 +31,9 @@ import java.util.function.Predicate;
  * {@link SelfSelectorGrant} ({@code @s} only) and by the {@code CommandEvent} guard in
  * {@code AchievementEvents} (exact form only, cancelled before the cheat detector sees it).</p>
  *
+ * <p>The opposite trick — a command that works but is not <em>offered</em> — is
+ * {@link games.brennan.dungeontrain.cheat.HiddenCommands}, which prunes the client's suggestion tree.</p>
+ *
  * <p><b>Reflection, deliberately.</b> {@code CommandNode.requirement} is {@code private final}
  * in Brigadier — a library, not a Minecraft class, so it is left to plain reflection rather than a
  * mixin (the jar ships no {@code module-info}, so its packages are open). Fails soft: if the field
