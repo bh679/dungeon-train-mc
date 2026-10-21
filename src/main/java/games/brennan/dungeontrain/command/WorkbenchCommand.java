@@ -87,7 +87,9 @@ final class WorkbenchCommand {
                         .executes(ctx -> commit(ctx.getSource(), replace, StringArgumentType.getString(ctx, "id"),
                             StringArgumentType.getString(ctx, "kind"), StringArgumentType.getString(ctx, "subKind"),
                             StringArgumentType.getString(ctx, "name"), ""))
-                        .then(Commands.argument("parent", StringArgumentType.word())
+                        // Greedy: the Whole destinations are the sentinels whole:room / whole:half,
+                        // and a word() argument refuses the colon.
+                        .then(Commands.argument("parent", StringArgumentType.greedyString())
                             .executes(ctx -> commit(ctx.getSource(), replace, StringArgumentType.getString(ctx, "id"),
                                 StringArgumentType.getString(ctx, "kind"), StringArgumentType.getString(ctx, "subKind"),
                                 StringArgumentType.getString(ctx, "name"), StringArgumentType.getString(ctx, "parent")))))));
