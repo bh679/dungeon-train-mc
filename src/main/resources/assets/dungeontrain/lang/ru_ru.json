@@ -3271,6 +3271,7 @@
   "dungeontrain.leaderboard.advancements.header": "Кто добился больше всего достижений?",
   "dungeontrain.leaderboard.builder_time.header": "Кто потратил больше всего времени на строительство?",
   "dungeontrain.leaderboard.burrito_fastest.header": "Кто получил «Шаурму со всем», проведя в поезде меньше всего времени?",
+  "dungeontrain.leaderboard.challenge_fastest.header": "Кто быстрее всех прошёл «Испытание»?",
   "dungeontrain.leaderboard.live_stream_time.header": "Кто дольше всех носил вещательную видеокамеру?",
   "dungeontrain.leaderboard.live_view_time.header": "Кто дольше всех смотрел трансляции по телевизору?",
   "dungeontrain.leaderboard.live_gifts.header": "Кто чаще всех дарил вещательную видеокамеру?",
