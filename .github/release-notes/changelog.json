@@ -29173,9 +29173,9 @@
       ],
       "pr": 2213,
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1439.0",
+      "released_at": "2026-10-21T10:04:20Z"
     },
     {
       "id": "editor-redstone-tnt-toggles",
@@ -29193,9 +29193,9 @@
       ],
       "pr": 2215,
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1439.0",
+      "released_at": "2026-10-21T10:04:20Z"
     },
     {
       "id": "wind-streaks-only-when-windy",
@@ -29210,9 +29210,9 @@
       "highlights": [],
       "pr": 2216,
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1439.0",
+      "released_at": "2026-10-21T10:04:20Z"
     },
     {
       "id": "dimensional-carriage-trap-rooms",
@@ -29227,9 +29227,9 @@
       "summary": "Dimensional carriages deeper down the train have a new room to find, and some of the riskier rooms now hold better loot. One of the libraries has had a small touch-up too.",
       "highlights": [],
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1439.0",
+      "released_at": "2026-10-21T10:04:20Z"
     },
     {
       "id": "photo-advancement-tuning",
@@ -29245,9 +29245,9 @@
       "highlights": [],
       "pr": 2219,
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1439.0",
+      "released_at": "2026-10-21T10:04:20Z"
     },
     {
       "id": "advancement-progress-across-worlds",
@@ -29262,9 +29262,9 @@
       "highlights": [],
       "pr": 2220,
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1439.0",
+      "released_at": "2026-10-21T10:04:20Z"
     }
   ]
 }
