@@ -29213,6 +29213,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-trap-rooms",
+      "version": "0.1437.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "loot"
+      ],
+      "title": "More dimensional carriage rooms",
+      "summary": "Dimensional carriages deeper down the train have a new room to find, and some of the riskier rooms now hold better loot. One of the libraries has had a small touch-up too.",
+      "highlights": [],
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

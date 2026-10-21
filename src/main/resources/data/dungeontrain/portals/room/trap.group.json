@@ -9,6 +9,10 @@
     {
       "id": "tntfull",
       "weight": 1
+    },
+    {
+      "id": "tntlong",
+      "weight": 1
     }
   ]
 }
