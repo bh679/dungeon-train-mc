@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "157";
+    public static final String PROTOCOL_VERSION = "158";
 
     private DungeonTrainNet() {}
 
@@ -182,6 +182,10 @@ public final class DungeonTrainNet {
         // Pause-screen open/close. The server can't see a client's screen, and on a dedicated
         // server the world keeps ticking behind the menu — see PlayerActivityTracker.
         registrar.playToServer(PlayerPausedPacket.TYPE, PlayerPausedPacket.STREAM_CODEC, PlayerPausedPacket::handle);
+
+        // Whether this player lets spawned TVs come on — a client-only Performance setting the
+        // carriage stamp reads (TvSpawnPower).
+        registrar.playToServer(TvSpawnPrefPacket.TYPE, TvSpawnPrefPacket.STREAM_CODEC, TvSpawnPrefPacket::handle);
 
         // Mouse movement / clicks inside an open screen, which freeze the camera and so are
         // invisible to the server's own look sampling — see PlayerActivityTracker.

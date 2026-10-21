@@ -29284,6 +29284,27 @@
       "released_at": null
     },
     {
+      "id": "tvs-sometimes-spawn-on",
+      "version": "0.1440.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "ui"
+      ],
+      "title": "TVs switch themselves on",
+      "summary": "Some TVs on the train now come already switched on, so a carriage full of screens is no longer dark until you click each one.",
+      "highlights": [
+        "About one in four TVs starts on, showing the live feed",
+        "Options, Performance, Watch live feeds: pick TVs start off to keep every new TV off"
+      ],
+      "pr": 2221,
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "discord-echo-story-underscores",
       "version": "0.1441.0",
       "type": "fix",
@@ -29294,6 +29315,7 @@
       "title": "Discord echo story fix",
       "summary": "Echo encounter stories posted to Discord no longer turn underlined or italic when a player's name ends in an underscore.",
       "highlights": [],
+      "pr": 2224,
       "date": "2026-10-21",
       "released": false,
       "released_in": null,
