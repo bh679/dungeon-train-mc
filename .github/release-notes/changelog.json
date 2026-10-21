@@ -29230,6 +29230,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "advancement-progress-across-worlds",
+      "version": "0.1438.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement progress carries over",
+      "summary": "Advancements you had partly finished no longer start again from zero in a new world. Your photo counts carry over too.",
+      "highlights": [],
+      "pr": 2220,
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
