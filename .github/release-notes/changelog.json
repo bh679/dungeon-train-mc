@@ -29265,6 +29265,23 @@
       "released": true,
       "released_in": "v0.1439.0",
       "released_at": "2026-10-21T10:04:20Z"
+    },
+    {
+      "id": "passenger-log-hardest-challenge",
+      "version": "0.1440.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Bigger feats, louder log",
+      "summary": "One more of the train's hardest feats is now announced in the community passenger log when a passenger earns it.",
+      "highlights": [],
+      "pr": 2222,
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
