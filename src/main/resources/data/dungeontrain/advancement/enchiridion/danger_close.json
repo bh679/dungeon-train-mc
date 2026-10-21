@@ -10,7 +10,7 @@
     "description": {
       "translate": "advancements.dungeontrain.enchiridion.photo_count.hostile.description",
       "with": [
-        50
+        10
       ]
     },
     "frame": "task",
@@ -23,7 +23,7 @@
       "trigger": "dungeontrain:photo_count",
       "conditions": {
         "category": "hostile",
-        "threshold": 50
+        "threshold": 10
       }
     }
   },
