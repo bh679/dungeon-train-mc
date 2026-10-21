@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.client.live;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.chat.ChatClick;
+import games.brennan.dungeontrain.client.ChatClickActions;
 import games.brennan.dungeontrain.compat.vista.TvItems;
 import games.brennan.dungeontrain.net.LiveTakeoverPacket;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
@@ -9,8 +11,6 @@ import games.brennan.dungeontrain.net.relay.LiveFeedClient.Channel;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Takeover;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
@@ -19,7 +19,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -41,7 +40,8 @@ import java.util.UUID;
 public final class LiveTakeoverOffer {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    static final String COMMAND = "dungeontrain-live-takeover";
+    /** The chat button's action ({@link ChatClick}): {@code live-takeover/<offer id>}. */
+    static final String CLICK_ACTION = "live-takeover";
     /** How long a won ticket waits for the Live Eye to land and its claim to go out. */
     static final long TICKET_TTL_MS = 55_000;
 
@@ -104,7 +104,7 @@ public final class LiveTakeoverOffer {
     static Component promptLine(Takeover t) {
         MutableComponent button = Component.literal("[").append(Component.translatable("chat.dungeontrain.live.takeover.button")).append("]")
             .withStyle(s -> s.withColor(ChatFormatting.GREEN).withBold(true)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/" + COMMAND + " " + t.id()))
+                .withClickEvent(ChatClick.event(CLICK_ACTION, t.id()))
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable("chat.dungeontrain.live.takeover.button.tip"))));
         return Component.translatable("chat.dungeontrain.live.takeover.offer", t.from().isEmpty() ? "?" : t.from(), button)
             .withStyle(ChatFormatting.YELLOW);
@@ -155,22 +155,17 @@ public final class LiveTakeoverOffer {
         return t != null && nowMs < ticketUntilMs ? t : null;
     }
 
-    @SubscribeEvent
-    public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal(COMMAND)
-            .then(Commands.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word()).executes(ctx -> {
-                String id = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "id");
-                Minecraft mc = Minecraft.getInstance();
-                mc.execute(() -> {
-                    Takeover t = offer;
-                    if (t != null && !t.id().equals(id)) {
-                        say(Component.translatable("chat.dungeontrain.live.takeover.gone").withStyle(ChatFormatting.GRAY));
-                        return;
-                    }
-                    accept();
-                });
-                return 1;
-            })));
+    /** Wire the "[Take the Live Eye]" button ({@code DungeonTrainClient.clientSetup}). */
+    public static void registerClicks() {
+        ChatClickActions.register(CLICK_ACTION, args -> {
+            String id = args.isEmpty() ? "" : args.get(0);
+            Takeover t = offer;
+            if (t != null && !t.id().equals(id)) {
+                say(Component.translatable("chat.dungeontrain.live.takeover.gone").withStyle(ChatFormatting.GRAY));
+                return;
+            }
+            accept();
+        });
     }
 
     @SubscribeEvent

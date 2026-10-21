@@ -1,16 +1,14 @@
 package games.brennan.dungeontrain.client;
 
-import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.chat.ChatClick;
 import games.brennan.dungeontrain.client.version.LauncherDetector;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.util.MachineSpecs;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -19,7 +17,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
 
@@ -68,7 +65,8 @@ public final class LowMemoryNotice {
     /** Wiki hub page: why 6 GB, and a link to every launcher's own page. */
     static final String WIKI_MEMORY = "https://github.com/bh679/dungeon-train-mc/wiki/Memory";
 
-    static final String COMMAND = "dt-memory-notice";
+    /** The chat line's dismiss link action ({@link ChatClick}): {@code memory-notice/off}. */
+    static final String CLICK_ACTION = "memory-notice";
 
     /** Ticks to wait after arming before opening — matches the sibling title-screen prompts. */
     private static final int OPEN_DELAY_TICKS = 24;
@@ -172,7 +170,7 @@ public final class LowMemoryNotice {
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(url))));
         MutableComponent dismiss = Component.translatable("chat.dungeontrain.low_memory_notice.dismiss")
             .withStyle(s -> s.withColor(ChatFormatting.GRAY).withUnderlined(true)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/" + COMMAND + " off")));
+                .withClickEvent(ChatClick.event(CLICK_ACTION, "off")));
         return Component.translatable("chat.dungeontrain.low_memory_notice", formatGb(heapBytes))
             .withStyle(ChatFormatting.GOLD)
             .append(" ")
@@ -181,19 +179,17 @@ public final class LowMemoryNotice {
             .append(dismiss);
     }
 
-    @SubscribeEvent
-    public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
-        register(event.getDispatcher());
-    }
-
-    private static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal(COMMAND)
-            .then(Commands.literal("off").executes(ctx -> {
-                ClientDisplayConfig.setLowMemoryNoticeChat(false);
-                ctx.getSource().sendSystemMessage(
+    /** Wire the chat line's dismiss link ({@code DungeonTrainClient.clientSetup}). */
+    public static void registerClicks() {
+        ChatClickActions.register(CLICK_ACTION, args -> {
+            if (args.isEmpty() || !args.get(0).equals("off")) return;
+            ClientDisplayConfig.setLowMemoryNoticeChat(false);
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player != null) {
+                mc.player.displayClientMessage(
                     Component.translatable("chat.dungeontrain.low_memory_notice.dismissed")
-                        .withStyle(ChatFormatting.GRAY));
-                return 1;
-            })));
+                        .withStyle(ChatFormatting.GRAY), false);
+            }
+        });
     }
 }

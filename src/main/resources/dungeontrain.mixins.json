@@ -244,6 +244,7 @@
     "client.LanguageManagerReapplyMixin",
     "client.NetworkRegistryReplayPlaybackMixin",
     "client.ChatScreenAccessor",
+    "client.ScreenChatClickMixin",
     "client.ChatComponentAccessor",
     "client.BookEditScreenInvoker"
   ],

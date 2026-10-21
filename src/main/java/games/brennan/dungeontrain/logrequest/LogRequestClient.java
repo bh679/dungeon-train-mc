@@ -1,8 +1,9 @@
 package games.brennan.dungeontrain.logrequest;
 
-import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.chat.ChatClick;
+import games.brennan.dungeontrain.client.ChatClickActions;
 import games.brennan.dungeontrain.client.LogCollector;
 import games.brennan.dungeontrain.client.SystemSpecCollector;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -13,7 +14,6 @@ import games.brennan.dungeontrain.net.LogRequestAnswerPacket;
 import games.brennan.dungeontrain.net.LogRequestFromLivePacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -23,7 +23,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientChatEvent;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import org.slf4j.Logger;
 
 import java.util.LinkedHashSet;
@@ -36,8 +35,8 @@ import java.util.Set;
  *
  * <p>A request arrives as {@code LogRequestPromptPacket}. With Developer chat switched off the client
  * answers BLOCKED without showing anything (Brennan hears why). Otherwise it prints the developer line
- * with clickable <b>[Send logs]</b> / <b>[No thanks]</b>, which run the client command
- * {@code /dtlogs send|decline <id>}; typing {@code @Dev} while a request is waiting also sends. On
+ * with clickable <b>[Send logs]</b> / <b>[No thanks]</b> (chat-click actions, {@link ChatClick}, so
+ * there is no command to type); typing {@code @Dev} while a request is waiting also sends. On
  * send it collects the same capped, home-redacted log set as the {@code /bug} survey plus the system
  * spec, and ships it as a bug report labelled {@link LogRequestManager#UPLOAD_LABEL}.</p>
  *
@@ -49,7 +48,8 @@ import java.util.Set;
 public final class LogRequestClient {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String COMMAND = "dtlogs";
+    /** The buttons' action ({@link ChatClick}): {@code logs/send|decline/<request id>}. */
+    static final String CLICK_ACTION = "logs";
     private static final int SEEN_LIVE_CAP = 64;
 
     /** The request awaiting an answer, or -1. Client thread only. */
@@ -76,13 +76,23 @@ public final class LogRequestClient {
         DungeonTrainNet.sendToServer(new LogRequestFromLivePacket());
     }
 
-    @SubscribeEvent
-    public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal(COMMAND)
-            .then(Commands.literal("send").then(Commands.argument("id", IntegerArgumentType.integer(1))
-                .executes(ctx -> respond(IntegerArgumentType.getInteger(ctx, "id"), true))))
-            .then(Commands.literal("decline").then(Commands.argument("id", IntegerArgumentType.integer(1))
-                .executes(ctx -> respond(IntegerArgumentType.getInteger(ctx, "id"), false)))));
+    /** Wire the [Send logs] / [No thanks] buttons ({@code DungeonTrainClient.clientSetup}). */
+    public static void registerClicks() {
+        ChatClickActions.register(CLICK_ACTION, args -> {
+            if (args.size() < 2) return;
+            int id;
+            try {
+                id = Integer.parseInt(args.get(1));
+            } catch (NumberFormatException ex) {
+                return;
+            }
+            if (id < 1) return;
+            switch (args.get(0)) {
+                case "send" -> respond(id, true);
+                case "decline" -> respond(id, false);
+                default -> { }
+            }
+        });
     }
 
     /** Typing {@code @Dev} while a request waits sends the logs. The line itself still goes out. */
@@ -145,16 +155,16 @@ public final class LogRequestClient {
         MutableComponent line = Component.translatable("chat.dungeontrain.dev_message.prefix").withStyle(ChatFormatting.AQUA)
             .append(Component.translatable("chat.dungeontrain.log_request.prompt").withStyle(ChatFormatting.YELLOW))
             .append(Component.literal(" "));
-        line.append(button("chat.dungeontrain.log_request.send", "/" + COMMAND + " send " + id, ChatFormatting.GREEN));
+        line.append(button("chat.dungeontrain.log_request.send", ChatClick.event(CLICK_ACTION, "send", Integer.toString(id)), ChatFormatting.GREEN));
         line.append(Component.literal(" "));
-        line.append(button("chat.dungeontrain.log_request.decline", "/" + COMMAND + " decline " + id, ChatFormatting.GRAY));
+        line.append(button("chat.dungeontrain.log_request.decline", ChatClick.event(CLICK_ACTION, "decline", Integer.toString(id)), ChatFormatting.GRAY));
         return line;
     }
 
-    private static Component button(String key, String command, ChatFormatting colour) {
+    private static Component button(String key, ClickEvent click, ChatFormatting colour) {
         return Component.literal("[").append(Component.translatable(key)).append("]")
             .withStyle(s -> s.withColor(colour).withBold(true)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
+                .withClickEvent(click)
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable(key + ".tip"))));
     }
 }

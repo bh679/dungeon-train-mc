@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
+import games.brennan.dungeontrain.chat.ChatClick;
 import games.brennan.dungeontrain.compat.vista.LiveBroadcastLocation;
 import games.brennan.dungeontrain.net.LiveStreamEndedPacket;
 import games.brennan.dungeontrain.net.LiveLifePacket;
@@ -64,8 +65,8 @@ public final class LiveFeedEvents {
 
     /** How often (server ticks) the streamer's Free Play state is rechecked mid-stream. */
     private static final int FREE_PLAY_CHECK_TICKS = 20;
-    /** Client command that reopens the internet consent card ({@code LiveOptionsCommand}). */
-    public static final String CONSENT_COMMAND = "/dungeontrain-consent";
+    /** Chat-click action that reopens the internet consent card ({@code LiveOptionsCommand#CONSENT_ACTION}). */
+    public static final String CONSENT_ACTION = "consent";
 
     private LiveFeedEvents() {}
 
@@ -263,7 +264,7 @@ public final class LiveFeedEvents {
                 Component.translatable("chat.dungeontrain.live.needs_internet.link").withStyle(style -> style
                     .withUnderlined(true)
                     .withColor(ChatFormatting.AQUA)
-                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, CONSENT_COMMAND))))
+                    .withClickEvent(ChatClick.event(CONSENT_ACTION))))
             .withStyle(ChatFormatting.GRAY);
     }
 

@@ -294,18 +294,26 @@ class CommandAllowlistTest {
     // ---- DT client-only commands --------------------------------------
 
     @Test
-    @DisplayName("DT client-only commands (Live Eye takeover/vote etc.) never taint, bare or with args")
+    @DisplayName("DT typed client-only commands (/streamer, /twitch, ...) never taint, bare or with args")
     void clientOnlyCommandsAreClean() {
         for (String root : new String[] {
-                "dungeontrain-live-takeover", "dungeontrain-live-vote", "dtlivegift", "streamer",
-                "dungeontrain-options", "dungeontrain-consent", "dungeontrain-rewards", "dtlogs",
-                "dt-bug-response", "dt-memory-notice", "framerate-throttle", "twitch", "discord",
-                "dt-ledger-preview", "dungeontrain-debug-contribute", "dungeontrain-debug-death-pages"}) {
+                "streamer", "dungeontrain-options", "dungeontrain-rewards", "framerate-throttle", "twitch",
+                "discord", "dt-ledger-preview", "dungeontrain-debug-contribute", "dungeontrain-debug-death-pages"}) {
             assertFalse(CommandAllowlist.taints(root), root);
             assertFalse(CommandAllowlist.taints("/" + root), "/" + root);
             assertFalse(CommandAllowlist.taints(root + " abc123"), root + " abc123");
         }
-        assertFalse(CommandAllowlist.taints("dungeontrain-live-vote yes"));
+    }
+
+    @Test
+    @DisplayName("The chat buttons' old command names are plain unknown commands: they taint")
+    void retiredButtonCommandsTaint() {
+        for (String root : new String[] {
+                "dungeontrain-live-takeover", "dungeontrain-live-vote", "dtlivegift", "dtlogs",
+                "dt-bug-response", "dt-memory-notice", "dungeontrain-consent"}) {
+            assertTrue(CommandAllowlist.taints(root), root);
+            assertTrue(CommandAllowlist.taints(root + " abc123"), root + " abc123");
+        }
     }
 
     @Test
