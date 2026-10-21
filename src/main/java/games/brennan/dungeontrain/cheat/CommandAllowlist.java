@@ -87,6 +87,23 @@ public final class CommandAllowlist {
         "feedback", "bug", "fixaisconfig", "fixconfig", "customcontent", "new-world",
         "playanimation", "stopsound", "dtbackup", "dtrestore", "liveappeal");
 
+    /**
+     * Roots DT registers <b>client-side only</b> ({@code RegisterClientCommandsEvent}): the Live Eye
+     * takeover/vote/gift chat buttons, the streamer, options and consent commands, the log-request,
+     * bug-response and memory-notice replies, the Twitch/Discord links, the framerate throttle, and
+     * the client preview tools. NeoForge runs a client command on the client, but when the typed
+     * form is incomplete ("unknown or incomplete command" on the client dispatcher, e.g.
+     * {@code /dungeontrain-live-takeover} with no id from tab completion) it hands the string to the
+     * server instead. None of these roots exists on the server, so the command can do nothing to the
+     * run, and it must not offer Free Play for it. Unknown commands in general still taint by design;
+     * this is a by-name exemption for the game's own commands only.
+     */
+    private static final Set<String> CLIENT_ONLY_ROOTS = Set.of(
+        "dungeontrain-live-takeover", "dungeontrain-live-vote", "dtlivegift", "streamer",
+        "dungeontrain-options", "dungeontrain-consent", "dungeontrain-rewards", "dtlogs",
+        "dt-bug-response", "dt-memory-notice", "framerate-throttle", "twitch", "discord",
+        "dt-ledger-preview", "dungeontrain-debug-contribute", "dungeontrain-debug-death-pages");
+
     private CommandAllowlist() {}
 
     /** @return true when running this parsed command should mark the run cheated. */
@@ -116,7 +133,7 @@ public final class CommandAllowlist {
         if (root.equals("kill")) return sub.isEmpty(); // bare /kill (self) only; /kill @e taints
         // Exactly "/advancement revoke @s everything" — see isSelfRevokeEverything.
         if (root.equals("advancement")) return isSelfRevokeEverything(root, parts);
-        return ALLOWED_ROOTS.contains(root);
+        return ALLOWED_ROOTS.contains(root) || CLIENT_ONLY_ROOTS.contains(root);
     }
 
     /**

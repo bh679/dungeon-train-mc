@@ -290,4 +290,30 @@ class CommandAllowlistTest {
         assertFalse(CommandAllowlist.taints("   "));
         assertFalse(CommandAllowlist.taints("/"));
     }
+
+    // ---- DT client-only commands --------------------------------------
+
+    @Test
+    @DisplayName("DT client-only commands (Live Eye takeover/vote etc.) never taint, bare or with args")
+    void clientOnlyCommandsAreClean() {
+        for (String root : new String[] {
+                "dungeontrain-live-takeover", "dungeontrain-live-vote", "dtlivegift", "streamer",
+                "dungeontrain-options", "dungeontrain-consent", "dungeontrain-rewards", "dtlogs",
+                "dt-bug-response", "dt-memory-notice", "framerate-throttle", "twitch", "discord",
+                "dt-ledger-preview", "dungeontrain-debug-contribute", "dungeontrain-debug-death-pages"}) {
+            assertFalse(CommandAllowlist.taints(root), root);
+            assertFalse(CommandAllowlist.taints("/" + root), "/" + root);
+            assertFalse(CommandAllowlist.taints(root + " abc123"), root + " abc123");
+        }
+        assertFalse(CommandAllowlist.taints("dungeontrain-live-vote yes"));
+    }
+
+    @Test
+    @DisplayName("Unknown commands and typos still taint (deny by default)")
+    void unknownCommandsStillTaint() {
+        assertTrue(CommandAllowlist.taints("giev @s stone"));
+        assertTrue(CommandAllowlist.taints("givee"));
+        assertTrue(CommandAllowlist.taints("give"));
+        assertTrue(CommandAllowlist.taints("dungeontrain-live-takeoverx"));
+    }
 }
