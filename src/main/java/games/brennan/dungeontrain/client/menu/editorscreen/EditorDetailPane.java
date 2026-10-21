@@ -196,6 +196,9 @@ public final class EditorDetailPane {
         // The server's answer is cached by relay id alone, so a staged build asks afresh on selection
         // rather than inheriting an answer given about the other relay's row of the same number.
         if (other != null && newSelection) BuilderSubmitHintsRequests.forget(relayId);
+        // No listing has carried this row yet (the Workbench tab was not opened this session): fetch
+        // the queue it sits in, and the page appears once the answer lands.
+        if (staged && relayId > 0 && other == null) EditorCreatorBuilds.requestRowFor(relayId);
         BuilderProfilePacket.Entry shownEntry = own != null ? own : other;
         reviewEntry = other;
         reviewLive = other == null ? false : EditorCreatorBuilds.liveOf(relayId);

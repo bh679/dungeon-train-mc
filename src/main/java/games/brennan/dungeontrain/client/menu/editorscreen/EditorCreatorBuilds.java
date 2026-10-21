@@ -56,6 +56,12 @@ public final class EditorCreatorBuilds {
      * state) after creator mode was left for the standing plot.
      */
     private static final Map<Integer, Seen> SEEN = new HashMap<>();
+
+    /** When the submission queue was last asked for on a staged build's behalf — once a while, not per frame. */
+    private static long rowAskedAt;
+    private static final long ROW_ASK_EVERY_MS = 15_000;
+    /** Which relay the last such ask went to, so its rows are remembered under the right one. */
+    private static boolean rowAskLive;
     private static int selectedId = -1;
 
     /**
@@ -226,7 +232,15 @@ public final class EditorCreatorBuilds {
      * leaves two in flight, and nothing promises they come back in the order they were sent.</p>
      */
     private static void onProfile(BuilderProfilePacket packet) {
-        if (!active() || !uuid.equals(packet.ownerUuid())) return;
+        boolean pooledAnswer = BuilderProfileRequestPacket.ALL.equals(packet.ownerUuid());
+        if (!active() || !uuid.equals(packet.ownerUuid())) {
+            // The queue asked for on a staged build's behalf (requestRowFor): nobody is looking at
+            // the pool, so it is only remembered, row by row, for the sheet that asked.
+            if (pooledAnswer) {
+                for (BuilderProfilePacket.Entry entry : packet.builds()) SEEN.put(entry.relayId(), new Seen(entry, rowAskLive));
+            }
+            return;
+        }
         builds = packet.builds();
         status = packet.status();
         boolean live = BuilderProfileState.live();
@@ -425,6 +439,21 @@ public final class EditorCreatorBuilds {
         }
         Seen seen = SEEN.get(relayId);
         return seen == null ? null : seen.entry();
+    }
+
+    /**
+     * A staged build's relay row is wanted and no listing has carried it this session: ask for the
+     * submission queue (where a staged build comes from) without entering creator mode, so the row
+     * lands in {@link #byId} and the sheet fills in. Submissions are reviewed on the live relay, so
+     * that is where the ask goes. Throttled: a sheet redraws every frame.
+     */
+    public static void requestRowFor(int relayId) {
+        if (relayId <= 0 || SEEN.containsKey(relayId) || pooled()) return;
+        long now = System.currentTimeMillis();
+        if (now - rowAskedAt < ROW_ASK_EVERY_MS) return;
+        rowAskedAt = now;
+        rowAskLive = true;
+        DungeonTrainNet.sendToServer(BuilderProfileRequestPacket.pending(rowAskLive));
     }
 
     /** Which relay {@code relayId} was last listed from — what a review of it must be sent to. */
