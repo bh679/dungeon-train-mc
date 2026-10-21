@@ -29085,6 +29085,26 @@
       "released": true,
       "released_in": "v0.1429.0",
       "released_at": "2026-10-20T17:43:29Z"
+    },
+    {
+      "id": "ender-chest-launcher-proof",
+      "version": "0.1430.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Your Ender Chest stays with you",
+      "summary": "Your Ender Chest now lives in one place whichever launcher starts the game. Before this, some launchers kept it inside their own game folder, so switching launcher showed an empty chest while the real one sat in the old folder. A chest left behind that way is picked up on your next login from the old launcher, and you are told in chat when it happens. Ender Chest Persistence 0.7.0 is now required; the CurseForge and Modrinth apps update it for you.",
+      "highlights": [
+        "Ender Chest contents are found in the same place no matter which launcher you use",
+        "A chest left behind by a previous launcher is carried across and announced in chat",
+        "Requires Ender Chest Persistence 0.7.0 (auto-installed by the CurseForge / Modrinth apps)"
+      ],
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
