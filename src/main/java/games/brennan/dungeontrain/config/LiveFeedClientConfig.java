@@ -30,6 +30,7 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.BooleanValue SAVE_BANDWIDTH;
     public static final ModConfigSpec.IntValue SEGMENT_SECONDS;
     public static final ModConfigSpec.BooleanValue VIEWING_ENABLED;
+    public static final ModConfigSpec.BooleanValue TVS_SPAWN_ON;
     public static final ModConfigSpec.IntValue VIEWER_WIDTH;
     public static final ModConfigSpec.BooleanValue HEAD_VIEWER_ENABLED;
     public static final ModConfigSpec.IntValue HEAD_VIEWER_WIDTH;
@@ -102,6 +103,9 @@ public final class LiveFeedClientConfig {
         VIEWING_ENABLED = b
             .comment("Decode the live feed on Live Feed antennas in your world. Off = those TVs show static.")
             .define("viewingEnabled", true);
+        TVS_SPAWN_ON = b
+            .comment("Let TVs on the train sometimes come already switched on. Off = every TV spawns off for everyone on the server while you are online (a click still turns one on). Ignored while viewingEnabled is off, which keeps them off too.")
+            .define("tvsSpawnOn", true);
         VIEWER_WIDTH = b
             .comment("Width the feed is decoded at for your TVs (16:9). 640 is plenty for a block screen; higher costs CPU.")
             .defineInRange("viewerWidth", 640, 160, 1280);
@@ -134,6 +138,8 @@ public final class LiveFeedClientConfig {
     public static int bitrateKbps() { return loaded() ? BITRATE_KBPS.get() : 2500; }
     public static int segmentSeconds() { return loaded() ? SEGMENT_SECONDS.get() : 10; }
     public static boolean viewingEnabled() { return !loaded() || VIEWING_ENABLED.get(); }
+    /** Whether spawned TVs may come on: the switch as set, and never while viewing is off. */
+    public static boolean tvsSpawnOn() { return viewingEnabled() && (!loaded() || TVS_SPAWN_ON.get()); }
     public static int viewerWidth() { return loaded() ? VIEWER_WIDTH.get() : 640; }
     public static boolean headViewerEnabled() { return !loaded() || HEAD_VIEWER_ENABLED.get(); }
     public static int headViewerWidth() { return loaded() ? HEAD_VIEWER_WIDTH.get() : 160; }
@@ -157,6 +163,16 @@ public final class LiveFeedClientConfig {
         if (!loaded() || VIEWING_ENABLED.get() == value) return;
         VIEWING_ENABLED.set(value);
         VIEWING_ENABLED.save();
+    }
+
+    /**
+     * Persist whether spawned TVs may come on (see {@link #tvsSpawnOn}). Driven by the Live feed row's
+     * three-way cycle; idempotent, no-op pre-load. The caller tells the server.
+     */
+    public static void setTvsSpawnOn(boolean value) {
+        if (!loaded() || TVS_SPAWN_ON.get() == value) return;
+        TVS_SPAWN_ON.set(value);
+        TVS_SPAWN_ON.save();
     }
 
     /** Whether viewers see the HUD and the listed menus ({@code client.live.StreamableScreens}). */
