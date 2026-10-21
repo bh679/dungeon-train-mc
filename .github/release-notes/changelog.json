@@ -29105,6 +29105,39 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "workbench-dev-only",
+      "version": "0.1430.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Editor tidy-up",
+      "summary": "A reviewer-only panel in the editor was showing up for everyone. It is now kept to development builds, so the editor's tabs and category strip only list the places you can actually use.",
+      "highlights": [],
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "tv-drops-only-tv",
+      "version": "0.1432.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot"
+      ],
+      "title": "TVs drop only a TV",
+      "summary": "Breaking a TV no longer drops a stray item along with it. Those TVs now tune in to the Live Feed when switched on, and TVs in trains you have already ridden are fixed when they load.",
+      "highlights": [],
+      "pr": 2211,
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

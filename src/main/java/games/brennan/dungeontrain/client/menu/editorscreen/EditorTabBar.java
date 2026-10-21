@@ -46,17 +46,26 @@ public final class EditorTabBar {
         return layout(strip, widthOf, labelOf, false);
     }
 
-    /**
-     * As {@link #layout(InventoryEditorLayout.Rect, ToIntFunction, Function)}, with the Groups tab
-     * (after Nav) when {@code showGroups} — the screen passes true only while it is on Tracks.
-     */
+    /** As the four-argument form, showing the Workbench tab only on a dev build. */
     public static List<Tab> layout(InventoryEditorLayout.Rect strip, ToIntFunction<String> widthOf,
                                    Function<EditorScreenPage, String> labelOf, boolean showGroups) {
+        return layout(strip, widthOf, labelOf, showGroups, games.brennan.dungeontrain.DungeonTrain.isDevBuild());
+    }
+
+    /**
+     * As {@link #layout(InventoryEditorLayout.Rect, ToIntFunction, Function)}, with the Groups tab
+     * (after Nav) when {@code showGroups} — the screen passes true only while it is on Tracks — and
+     * the dev-only pages ({@link EditorScreenPage#devOnly}) when {@code showDevOnly}.
+     */
+    public static List<Tab> layout(InventoryEditorLayout.Rect strip, ToIntFunction<String> widthOf,
+                                   Function<EditorScreenPage, String> labelOf, boolean showGroups,
+                                   boolean showDevOnly) {
         List<Tab> out = new ArrayList<>();
         int x = strip.x();
         for (EditorScreenPage page : EditorScreenPage.values()) {
             if (page == EditorScreenPage.SETTINGS) continue;
             if (page == EditorScreenPage.GROUPS && !showGroups) continue;
+            if (page.devOnly() && !showDevOnly) continue;
             Tab t = tab(Kind.PAGE, page, labelOf.apply(page), x, widthOf);
             out.add(t);
             x = t.x() + t.w() + GAP;

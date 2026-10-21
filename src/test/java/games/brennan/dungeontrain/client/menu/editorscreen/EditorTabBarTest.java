@@ -17,7 +17,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class EditorTabBarTest {
 
     private static List<EditorTabBar.Tab> tabs(int width) {
-        return EditorTabBar.layout(new Rect(6, 4, width - 12, 16), s -> s.length() * 6, EditorScreenPage::name);
+        return EditorTabBar.layout(new Rect(6, 4, width - 12, 16), s -> s.length() * 6, EditorScreenPage::name,
+            false, true);
+    }
+
+    @Test
+    @DisplayName("a release build has no Workbench tab; Settings and Exit stay locked to the right")
+    void releaseHidesWorkbench() {
+        List<EditorTabBar.Tab> t = EditorTabBar.layout(new Rect(6, 4, 640 - 12, 16), s -> s.length() * 6,
+            EditorScreenPage::name, false, false);
+        assertEquals(6, t.size());
+        for (EditorTabBar.Tab tab : t) assertTrue(tab.page() != EditorScreenPage.WORKBENCH, "no Workbench tab");
+        assertEquals(EditorScreenPage.NAV, t.get(3).page());
+        assertEquals(EditorScreenPage.SETTINGS, t.get(4).page());
+        assertEquals(EditorTabBar.Kind.EXIT, t.get(5).kind());
+        assertEquals(6 + 640 - 12, t.get(5).x() + t.get(5).w());
+        assertTrue(EditorScreenPage.WORKBENCH.devOnly() && !EditorScreenPage.TEMPLATES.devOnly());
     }
 
     @Test
@@ -44,7 +59,7 @@ final class EditorTabBarTest {
     @DisplayName("the Groups tab sits after Nav, and only when the screen shows it (Tracks)")
     void groupsTabSitsAfterNavOnlyWhenShown() {
         List<EditorTabBar.Tab> t = EditorTabBar.layout(new Rect(6, 4, 640 - 12, 16), s -> s.length() * 6,
-            EditorScreenPage::name, true);
+            EditorScreenPage::name, true, true);
         assertEquals(8, t.size());
         assertEquals(EditorScreenPage.NAV, t.get(3).page());
         assertEquals(EditorScreenPage.GROUPS, t.get(4).page());
