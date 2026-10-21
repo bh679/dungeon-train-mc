@@ -29279,9 +29279,9 @@
       "highlights": [],
       "pr": 2222,
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1445.0",
+      "released_at": "2026-10-21T14:21:35Z"
     },
     {
       "id": "tvs-sometimes-spawn-on",
@@ -29300,9 +29300,9 @@
       ],
       "pr": 2221,
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1445.0",
+      "released_at": "2026-10-21T14:21:35Z"
     },
     {
       "id": "discord-echo-story-underscores",
@@ -29317,9 +29317,9 @@
       "highlights": [],
       "pr": 2224,
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1445.0",
+      "released_at": "2026-10-21T14:21:35Z"
     },
     {
       "id": "fastest-time-leaderboard",
@@ -29334,9 +29334,9 @@
       "highlights": [],
       "pr": 2223,
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1445.0",
+      "released_at": "2026-10-21T14:21:35Z"
     },
     {
       "id": "dimensional-carriage-early-return",
@@ -29351,9 +29351,9 @@
       "highlights": [],
       "pr": 2226,
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1445.0",
+      "released_at": "2026-10-21T14:21:35Z"
     },
     {
       "id": "discord-markdown-escape-all-feeds",
@@ -29368,9 +29368,9 @@
       "highlights": [],
       "pr": 2225,
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1445.0",
+      "released_at": "2026-10-21T14:21:35Z"
     },
     {
       "id": "drifting-carriage-sign-text",
@@ -29385,9 +29385,9 @@
       "highlights": [],
       "pr": 2218,
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1445.0",
+      "released_at": "2026-10-21T14:21:35Z"
     }
   ]
 }
