@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
 import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import games.brennan.dungeontrain.worldgen.NetherBand;
+import games.brennan.dungeontrain.worldgen.OthersideSettings;
 import games.brennan.dungeontrain.worldgen.StrongholdRingGate;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.VanillaBiomeFeatures;
@@ -65,9 +66,17 @@ public final class NetherBandContextEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /**
+     * The Otherside rules resolved for {@link #othersideServer}: a pure function of its registries and seed,
+     * and {@code RandomState.create} is the expensive part, so every republish on the same server (the
+     * Nether-Load one at least) reuses the first. Cleared with the context on server stop.
+     */
+    private static MinecraftServer othersideServer;
+    private static OthersideSettings othersideCache;
+
     /** Nether-space rows sampled above the bed in {@code NetherTransitionFeature}
      *  ({@code NETHER_SAMPLE_Y_MAX 120 − NETHER_CENTER_Y 40}); the mountain tapers to {@code bedY + this}. */
-    private static final int NETHER_TOP_ABOVE_BED = 80;
+    public static final int NETHER_TOP_ABOVE_BED = 80;
 
     private NetherBandContextEvents() {}
 
@@ -125,7 +134,10 @@ public final class NetherBandContextEvents {
             // nether_wastes if this world has no Nether.
             Holder<Biome> netherFallback = overworld.registryAccess()
                     .lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.NETHER_WASTES);
-            NetherCoreBiomes netherCoreBiomes = NetherCoreBiomes.resolve(server, netherFallback);
+            // Deeper Darker's Otherside rules, from the registries (never its level): the Deeper Dark core's
+            // terrain, skin and carvers generate in place from these, and its biome labels sample their source.
+            OthersideSettings otherside = othersideFor(server);
+            NetherCoreBiomes netherCoreBiomes = NetherCoreBiomes.resolve(server, netherFallback, otherside);
 
             // Same idea for the End band's core columns — samples the real End's biome source, swept
             // from the main island out into the outer noise field across successive End-band passes.
@@ -148,7 +160,7 @@ public final class NetherBandContextEvents {
             NetherBandContext.publish(new NetherBandContext(
                     enabled, data.getGenerationSeed(), seaLevel, worldCeiling, netherTop, baseRelief, cycle,
                     overworldBiomeSource, highlandBiomes, netherCoreBiomes, endCoreBiomes, endIslands,
-                    netherCore));
+                    netherCore, otherside));
             // Second-lap overworld stretches: BoP only in its stretch, vanilla elsewhere. Published
             // alongside the band context so it is live before the first chunk bakes too.
             long stretchT0 = System.nanoTime();
@@ -187,10 +199,25 @@ public final class NetherBandContextEvents {
         }
     }
 
+    /** {@link OthersideSettings#resolve} once per server; later publishes on the same server reuse it. */
+    private static synchronized OthersideSettings othersideFor(MinecraftServer server) {
+        if (othersideServer != server) {
+            othersideCache = OthersideSettings.resolve(server);
+            othersideServer = server;
+        }
+        return othersideCache;
+    }
+
+    private static synchronized void clearOtherside() {
+        othersideServer = null;
+        othersideCache = null;
+    }
+
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         // After stopServer(): the last generated chunks have been baked and saved against a live context.
         NetherBandContext.clear();
+        clearOtherside();
         games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes.clear();
         games.brennan.dungeontrain.worldgen.legacy.SuperflatHeight.clear();
         games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain.clear();

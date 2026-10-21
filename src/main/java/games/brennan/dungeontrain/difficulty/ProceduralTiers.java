@@ -20,8 +20,12 @@ import java.util.List;
  * <p>Above level 50 the gear pools stay pinned to netherite. Additional
  * potion effects layer in at progressively higher levels, and the effect
  * amplifier cap ticks up every 25 levels — keeping post-cap progression
- * meaningful well beyond level 100. Each mob rolls its amplifier from 0 up
- * to that cap, so later stages vary more without getting stronger.</p>
+ * meaningful well beyond level 100. Each mob rolls its amplifier from a
+ * floor up to that cap. The floor stays at 0 (level I) until
+ * {@link #MIN_RISE_START_LEVEL}, then climbs one step every
+ * {@link #MIN_RISE_EVERY_LEVELS} levels, so very deep mobs stop rolling the
+ * weakest buffs. See {@link EffectSoftCaps} for how Resistance and
+ * Regeneration behave above level IV.</p>
  */
 public final class ProceduralTiers {
 
@@ -82,6 +86,15 @@ public final class ProceduralTiers {
     private static final MaterialCurve IRON_W       = new MaterialCurve(13, 20,  28,  38);
     private static final MaterialCurve DIAMOND_W    = new MaterialCurve(25, 35,  43, TOP);
     private static final MaterialCurve NETHERITE_W  = new MaterialCurve(38, 50, TOP, TOP);
+
+    /**
+     * Difficulty level (after {@link MobEffectOffsets}) at which a buff's floor first rises
+     * above level I: here it becomes level II.
+     */
+    static final int MIN_RISE_START_LEVEL = 250;
+
+    /** Levels between each further floor increment after {@link #MIN_RISE_START_LEVEL}. */
+    static final int MIN_RISE_EVERY_LEVELS = 100;
 
     /** Golden gear stays at a constant low weight at every level — flavor sprinkle. */
     private static final int GOLDEN_WEIGHT = 2;
@@ -224,6 +237,17 @@ public final class ProceduralTiers {
         return level <= 0 ? List.of() : effectsAt(level);
     }
 
+    /**
+     * Lowest amplifier a mob may roll at {@code level} for an effect whose cap is {@code cap}:
+     * 0 below {@link #MIN_RISE_START_LEVEL}, then 1 (level II) there, +1 every
+     * {@link #MIN_RISE_EVERY_LEVELS}, never above {@code cap}.
+     */
+    static int minAmplifier(int level, int cap) {
+        if (level < MIN_RISE_START_LEVEL || cap <= 0) return 0;
+        int floor = 1 + (level - MIN_RISE_START_LEVEL) / MIN_RISE_EVERY_LEVELS;
+        return Math.min(cap, floor);
+    }
+
     private static List<DifficultyTier.EffectSpec> effectsAt(int level) {
         List<DifficultyTier.EffectSpec> out = new ArrayList<>();
         for (EffectCurve ec : EFFECTS) {
@@ -231,6 +255,7 @@ public final class ProceduralTiers {
             if (chance <= 0) continue;
             out.add(new DifficultyTier.EffectSpec(
                 ResourceLocation.parse(ec.id()),
+                minAmplifier(level, ec.amplifier(level)),
                 ec.amplifier(level),
                 -1, // infinite duration
                 chance

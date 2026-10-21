@@ -9306,6 +9306,14 @@
   "screen",
   "world"
  ],
+ "gui.dungeontrain.editor_menu.editor.redstone": [
+  "screen",
+  "world"
+ ],
+ "gui.dungeontrain.editor_menu.editor.tnt": [
+  "screen",
+  "world"
+ ],
  "gui.dungeontrain.editor_menu.editor.mobs": [
   "screen",
   "world"
@@ -11278,6 +11286,18 @@
   "chat"
  ],
  "chat.dungeontrain.editor.observers_off_observers_plots": [
+  "chat"
+ ],
+ "chat.dungeontrain.editor.redstone_on": [
+  "chat"
+ ],
+ "chat.dungeontrain.editor.redstone_off": [
+  "chat"
+ ],
+ "chat.dungeontrain.editor.tnt_on": [
+  "chat"
+ ],
+ "chat.dungeontrain.editor.tnt_off": [
   "chat"
  ],
  "chat.dungeontrain.editor.mobs_live_spawn_eggs": [

@@ -40,7 +40,10 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>Flow (server-side):
  * <ul>
- *   <li>{@link CommandEvent} — a player runs a non-allowlisted command (covers
+ *   <li>{@link CommandEvent} — a player runs a non-allowlisted command. DT's own typed client-only
+ *       commands are exempt by name in {@link CommandAllowlist}: an incomplete one is handed to the
+ *       server, where it has no root. DT's chat buttons are not commands ({@code chat.ChatClick}),
+ *       so typing their old names is just an unknown command and taints like any other. (Covers
  *       {@code /gamemode}, the F3+F4 switcher and {@code /dungeontrain
  *       cinematographer}, all of which route through commands, plus {@code /give}
  *       et al.). The command is <b>canceled</b> and held; a confirm prompt is sent.

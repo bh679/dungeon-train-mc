@@ -1,26 +1,22 @@
 package games.brennan.dungeontrain.client.bugresponse;
 
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.client.SurveyScreen;
 import games.brennan.discordpresence.network.SurveyQuestionPayload;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.BugLogReporter;
+import games.brennan.dungeontrain.client.ChatClickActions;
 import games.brennan.dungeontrain.client.ClientLanguage;
 import games.brennan.dungeontrain.client.version.compare.Platform;
 import games.brennan.dungeontrain.client.version.compare.VersionCompareScreen;
 import games.brennan.dungeontrain.client.version.compare.VersionCompareState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import org.slf4j.Logger;
 
 import java.lang.reflect.Field;
@@ -34,8 +30,8 @@ import java.util.List;
  * and changelog have arrived (or {@link #SETTLE_TIMEOUT_TICKS} has passed, so an offline report still
  * gets an answer, with fewer facts). The death screen never fires that hook, so it never doubles up.
  *
- * <p>The links in the response run {@code /dt-bug-response}, a client-only command: it never reaches
- * the server, so it works on any server and never touches run integrity.</p>
+ * <p>The links in the response are chat-click actions ({@code chat.ChatClick}), not commands: nothing
+ * reaches the server, so they work on any server and never touch run integrity.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class BugResponseChatNotifier {
@@ -145,27 +141,20 @@ public final class BugResponseChatNotifier {
         }
     }
 
-    // ---- /dt-bug-response ----
+    // ---- The response's links ----
 
-    @SubscribeEvent
-    public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
-        register(event.getDispatcher());
-    }
-
-    private static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal(BugResponseChat.COMMAND)
-                .then(Commands.literal("changes").executes(ctx -> {
-                    Minecraft mc = Minecraft.getInstance();
-                    mc.tell(() -> mc.setScreen(new VersionCompareScreen(null)));
-                    return 1;
-                }))
-                .then(Commands.literal("tip")
-                        .then(Commands.argument("id", StringArgumentType.word()).executes(ctx -> {
-                            String id = StringArgumentType.getString(ctx, "id");
-                            // Re-checked at click time: a tip that no longer applies does nothing.
-                            Minecraft.getInstance().tell(() -> runTip(id));
-                            return 1;
-                        }))));
+    /** Wire the response's "See changes" and lag-tip links ({@code DungeonTrainClient.clientSetup}). */
+    public static void registerClicks() {
+        ChatClickActions.register(BugResponseChat.CLICK_ACTION, args -> {
+            if (args.isEmpty()) return;
+            Minecraft mc = Minecraft.getInstance();
+            switch (args.get(0)) {
+                case BugResponseChat.CHANGES -> mc.setScreen(new VersionCompareScreen(null));
+                // Re-checked at click time: a tip that no longer applies does nothing.
+                case BugResponseChat.TIP -> { if (args.size() > 1) runTip(args.get(1)); }
+                default -> { }
+            }
+        });
     }
 
     private static void runTip(String id) {

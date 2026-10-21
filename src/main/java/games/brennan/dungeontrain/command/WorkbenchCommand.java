@@ -54,6 +54,8 @@ final class WorkbenchCommand {
 
     static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("workbench")
+            // The reviewer's bench: a release server neither lists nor runs it.
+            .requires(src -> games.brennan.dungeontrain.DungeonTrain.isDevBuild())
             .executes(ctx -> EditorCommand.enterCategory(ctx.getSource(), EditorCategory.WORKBENCH))
             .then(Commands.literal("list").executes(ctx -> list(ctx.getSource())))
             .then(Commands.literal("goto")

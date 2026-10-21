@@ -1069,6 +1069,8 @@ public final class AchievementEvents {
         GlobalBookBurnStats.flush(uuid);
         GlobalBookBurnStats.evict(uuid);
         AdvancementProfiles.reconcileRevokes(player);
+        // After the reconcile, which may still strike ids. Queued writes finish in the background.
+        GlobalAchievementStore.evict(uuid);
     }
 
     /**
@@ -1080,6 +1082,7 @@ public final class AchievementEvents {
     public static void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
         GlobalPlayerStats.flushAll();
         GlobalBookBurnStats.flushAll();
+        GlobalAchievementStore.flushAndClearAll();
     }
 
     /**

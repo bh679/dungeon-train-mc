@@ -58,7 +58,9 @@ public record SnapshotMeta(String biome, String band, int difficulty, int cart, 
      */
     private static String bandAt(double worldX) {
         if (ClientUpsideDownBand.isInBand((int) Math.floor(worldX))) return "UPSIDE_DOWN";
-        if (ClientNetherBand.netherIntensityAt(worldX) >= BAND_THRESHOLD) return "NETHER";
+        if (ClientNetherBand.netherIntensityAt(worldX) >= BAND_THRESHOLD) {
+            return ClientNetherBand.isOthersideAt(worldX) ? "DEEPER_DARK" : "NETHER";
+        }
         if (ClientVoidBand.endSkyIntensityAt(worldX) >= BAND_THRESHOLD) return "END";
         return "OVERWORLD";
     }

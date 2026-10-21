@@ -20,6 +20,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -118,6 +122,72 @@ final class NothingButBooksAdvancementTest {
 
         RunStatBookTag.markHeld(note);
         assertTrue(NothingButBooksAdvancement.isStoryBook(note));
+    }
+
+    /** A held community book, {@code count} to the stack. */
+    private static ItemStack storyStack(int count) {
+        ItemStack stack = book();
+        SharedBookFoundTag.stamp(stack);
+        SharedBookFoundTag.markHeld(stack);
+        stack.setCount(count);
+        return stack;
+    }
+
+    /** {@code stacks} padded with empty slots to the 27 of main storage. */
+    private static List<ItemStack> mainStorage(List<ItemStack> stacks) {
+        List<ItemStack> slots = new ArrayList<>(stacks);
+        while (slots.size() < NothingButBooksAdvancement.MAIN_STORAGE_SLOTS) slots.add(ItemStack.EMPTY);
+        return slots;
+    }
+
+    private static List<ItemStack> storyStacks(int stacks, int count) {
+        List<ItemStack> out = new ArrayList<>();
+        for (int i = 0; i < stacks; i++) out.add(storyStack(count));
+        return out;
+    }
+
+    @Test
+    @DisplayName("27 single story books fill the inventory, as before")
+    void twentySevenSinglesCount() {
+        assertTrue(NothingButBooksAdvancement.countsAsFull(mainStorage(storyStacks(27, 1))));
+    }
+
+    @Test
+    @DisplayName("Stacked story books count by their size")
+    void stacksCountBySize() {
+        assertTrue(NothingButBooksAdvancement.countsAsFull(mainStorage(storyStacks(9, 3))),
+            "nine stacks of three and eighteen empty slots");
+        assertTrue(NothingButBooksAdvancement.countsAsFull(mainStorage(storyStacks(2, 16))),
+            "two full stacks");
+    }
+
+    @Test
+    @DisplayName("Too few books in all fail, whether spread out or stacked")
+    void tooFewBooksFail() {
+        assertFalse(NothingButBooksAdvancement.countsAsFull(mainStorage(storyStacks(26, 1))),
+            "26 singles and one gap");
+        assertFalse(NothingButBooksAdvancement.countsAsFull(mainStorage(storyStacks(10, 2))),
+            "ten stacks of two is only twenty books");
+        assertFalse(NothingButBooksAdvancement.countsAsFull(Collections.emptyList()));
+        assertFalse(NothingButBooksAdvancement.countsAsFull(null));
+    }
+
+    @Test
+    @DisplayName("One slot of anything but a story book fails, even with stacks to spare")
+    void anyNonStorySlotFails() {
+        List<ItemStack> quill = storyStacks(9, 3);
+        quill.add(new ItemStack(Items.WRITABLE_BOOK));
+        assertFalse(NothingButBooksAdvancement.countsAsFull(mainStorage(quill)), "book & quill");
+
+        List<ItemStack> unstamped = storyStacks(9, 3);
+        unstamped.add(book());
+        assertFalse(NothingButBooksAdvancement.countsAsFull(mainStorage(unstamped)), "unstamped written book");
+
+        List<ItemStack> unheld = storyStacks(9, 3);
+        ItemStack neverHeld = book();
+        SharedBookFoundTag.stamp(neverHeld);
+        unheld.add(neverHeld);
+        assertFalse(NothingButBooksAdvancement.countsAsFull(mainStorage(unheld)), "never-held community book");
     }
 
     @Test

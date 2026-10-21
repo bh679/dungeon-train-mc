@@ -286,12 +286,17 @@ public final class EditorCreatorPane {
         boolean enabled = entry != null && !loading;
         boolean underParent = entry != null && CreatorLoadParent.supports(entry.kind());
         // To Workbench, on the left: stage the build to look at first, and decide its kind later.
-        int workbenchW = (int) (r.w() * WORKBENCH_SHARE);
-        workbenchRect = new InventoryEditorLayout.Rect(r.x(), r.y(), workbenchW, r.h());
-        button(g, font, workbenchRect, EditorScreenLang.text(EditorScreenLang.CREATOR_LOAD_WORKBENCH), enabled, mouseX, mouseY);
-        if (!enabled) workbenchRect = null;
-        InventoryEditorLayout.Rect load = new InventoryEditorLayout.Rect(
-            r.x() + workbenchW + BUTTON_GAP, r.y(), r.w() - workbenchW - BUTTON_GAP, r.h());
+        // A release build has no Workbench, so Load takes the whole row there.
+        boolean dev = games.brennan.dungeontrain.DungeonTrain.isDevBuild();
+        int workbenchW = dev ? (int) (r.w() * WORKBENCH_SHARE) : 0;
+        workbenchRect = null;
+        if (dev) {
+            workbenchRect = new InventoryEditorLayout.Rect(r.x(), r.y(), workbenchW, r.h());
+            button(g, font, workbenchRect, EditorScreenLang.text(EditorScreenLang.CREATOR_LOAD_WORKBENCH), enabled, mouseX, mouseY);
+            if (!enabled) workbenchRect = null;
+        }
+        int loadX = dev ? r.x() + workbenchW + BUTTON_GAP : r.x();
+        InventoryEditorLayout.Rect load = new InventoryEditorLayout.Rect(loadX, r.y(), r.right() - loadX, r.h());
         if (underParent) {
             int parentW = (int) (r.w() * PARENT_SHARE);
             load = new InventoryEditorLayout.Rect(load.x(), r.y(), load.w() - parentW - BUTTON_GAP, r.h());

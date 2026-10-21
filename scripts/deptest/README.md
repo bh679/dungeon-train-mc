@@ -48,7 +48,7 @@ The NeoForge version follows `neo_version` for the same reason.
 
 | Case | `mods/` contents | Expected |
 |---|---|---|
-| **A** | DT + Sable + all five siblings + Fast Paintings + Moonlight + BetterNether + BetterEnd and their three shared libraries + WWOO/BoP and their libraries + VanillaBackport + Platform + Exposure + Exposure: Polaroid + top-level KeepTrim/DungeonBackup/SableFenceTrapdoorFix (CurseForge-app layout) | Server starts cleanly; prints `JarJar: nested copy skipped, mods/ copy wins` for all three hybrid ids |
+| **A** | DT + Sable + all five siblings + Fast Paintings + Moonlight + BetterNether + BetterEnd and their three shared libraries + WWOO/BoP and their libraries + VanillaBackport + Platform + Deeper Darker + Exposure + Exposure: Polaroid + top-level KeepTrim/DungeonBackup/SableFenceTrapdoorFix (CurseForge-app layout) | Server starts cleanly; prints `JarJar: nested copy skipped, mods/ copy wins` for all three hybrid ids |
 | **B** | minus AIN | Fails — `adventureitemnames … Actual version: '[MISSING]'` |
 | **C** | DT + Sable only | Fails — names **all five**, with each declared range (the hybrid trio is nested, so never missing) |
 | **D** | PlayerMob **above** the floor | Server starts cleanly |
@@ -69,6 +69,7 @@ The NeoForge version follows `neo_version` for the same reason.
 | **R** | Case A minus TerraBlender (the only case without it) | Fails — names `terrablender` with DT's own `[x,)` floor (Biomes O' Plenty asks for it too) |
 | **S** | **CurseForge jar** + Case L's set (CurseForge-app layout: top-level StreamDetect/DpiBypassDetect, no Sable Pathfinder) | Server starts cleanly; the two add-ons load from `mods/` (nothing nested to skip) |
 | **T** | **CurseForge jar**, Case S minus StreamDetect + DpiBypassDetect (manual CurseForge download that skipped them) | Server starts cleanly (both `optional`); `streamdetect` / `dpibypassdetect` absent from the mod list |
+| **U** | minus Deeper Darker (the only case without it) | Fails — names `deeperdarker` with its `[x,)` floor |
 
 **A is the positive control.** If it fails, every other "failed" result is meaningless — fix A
 before reading anything else.

@@ -37,15 +37,18 @@ final class TransitionLandmarksTest {
         assertEquals(2_782L, lm.get("nether_rise").worldX());
         assertEquals(3_282L, lm.get("nether_core_0").worldX());
         assertEquals(26_226L, lm.get("nether_core_1").worldX());
+        // The Deeper Dark (nether:otherside:3000, joined to BetterNether) is Nether core 2 and pushes every
+        // landmark after it along by its 4064-block slot.
+        assertEquals(31_790L, lm.get("nether_core_2").worldX());
         assertEquals(9_814L, lm.get("end_void_0").worldX());
         assertEquals(10_554L, lm.get("end_islands_0").worldX());
         assertEquals(15_094L, lm.get("upside_down").worldX());
         assertEquals(19_094L, lm.get("reassembly_mid").worldX());
-        assertEquals(35_488L - 270L, lm.get("end_void_1").worldX());
-        assertEquals(36_228L - 270L, lm.get("end_islands_1").worldX());
-        assertEquals(47_468L - 270L, lm.get("spheres_peak").worldX());
-        assertEquals(49_268L - 270L, lm.get("amplified").worldX());     // the ow:sunk approach
-        assertEquals(18, lm.size());
+        assertEquals(35_488L - 270L + 4_064L, lm.get("end_void_1").worldX());
+        assertEquals(36_228L - 270L + 4_064L, lm.get("end_islands_1").worldX());
+        assertEquals(47_468L - 270L + 4_064L, lm.get("spheres_peak").worldX());
+        assertEquals(49_268L - 270L + 4_064L, lm.get("amplified").worldX());     // the ow:sunk approach
+        assertEquals(19, lm.size());
     }
 
     @Test

@@ -27,13 +27,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Pins {@link ThirdPartyMixinTargets} to the library jars DT is built against. If a WorldWeaver / BCLib /
- * BetterEnd / TerraBlender bump moves something a mixin hooks, the first test fails here rather than the
+ * BetterEnd / TerraBlender / Deeper Darker bump moves something a mixin hooks, the first test fails here rather than the
  * mixin silently skipping itself (and the feature falling back) for every player.
  */
 final class ThirdPartyMixinTargetsTest {
 
     private static final List<String> GUARDED_CONFIGS = List.of(
-            "dungeontrain.betterend.mixins.json", "dungeontrain.terrablender.mixins.json");
+            "dungeontrain.betterend.mixins.json", "dungeontrain.terrablender.mixins.json",
+            "dungeontrain.deeperdarker.mixins.json");
     private static final String PLUGIN = "games.brennan.dungeontrain.mixin.ThirdPartyMixinPlugin";
     private static final String MIXIN_ANNOTATION = "Lorg/spongepowered/asm/mixin/Mixin;";
 
@@ -118,6 +119,8 @@ final class ThirdPartyMixinTargetsTest {
         assertEquals("betterend", ThirdPartyMixinTargets.libraryOf("org.betterx.betterend.world.features.WallScatterFeature"));
         assertEquals("wover", ThirdPartyMixinTargets.libraryOf("org.betterx.wover.generator.api.biomesource.WoverBiomePicker"));
         assertEquals("terrablender", ThirdPartyMixinTargets.libraryOf("terrablender.api.SurfaceRuleManager"));
+        assertEquals("deeperdarker", ThirdPartyMixinTargets.libraryOf("com.kyanite.deeperdarker.content.blocks.OthersidePortalBlock"));
+        assertEquals("deeperdarker", ThirdPartyMixinTargets.libraryOf("com.kyanite.deeperdarker.world.otherside.OthersideTeleporter"));
         assertEquals(null, ThirdPartyMixinTargets.libraryOf("net.minecraft.core.Registry"));
     }
 

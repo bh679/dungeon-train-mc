@@ -85,6 +85,8 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_HELP_PANEL_DISMISSED = "editorHelpPanelDismissed";
     private static final String TAG_PORTAL_TEST_RESEED = "portalTestReseed";
     private static final String TAG_EDITOR_OBSERVERS_ON = "editorObserversOn";
+    private static final String TAG_EDITOR_REDSTONE_ON = "editorRedstoneOn";
+    private static final String TAG_EDITOR_TNT_ON = "editorTntOn";
     private static final String TAG_EDITOR_MOBS_LIVE = "editorMobsLive";
     private static final String TAG_TEST_MOBS_LIVE = "testMobsLive";
     private static final String TAG_DEBUG_GRANTS = "DebugGrants";
@@ -325,6 +327,10 @@ public final class DungeonTrainWorldData extends SavedData {
     private boolean portalTestReseed = false;
     /** Editor Settings → Observers. Off mutes every observer inside an editor plot; see {@code EditorObservers}. */
     private boolean editorObserversOn = true;
+    /** Editor Settings → Redstone. Off cuts every redstone signal inside an editor plot; see {@code EditorRedstone}. */
+    private boolean editorRedstoneOn = true;
+    /** Editor Settings → TNT. Off stops TNT exploding inside an editor plot; see {@code EditorTnt}. */
+    private boolean editorTntOn = true;
     /**
      * Editor Settings → Mobs. Default Blocks ({@code false}): a spawn egg used in an editor plot places a
      * frozen, one-hit mob and variant cells with mob entries show a ghost; Live restores vanilla eggs.
@@ -659,6 +665,12 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_EDITOR_OBSERVERS_ON)) {
             data.editorObserversOn = tag.getBoolean(TAG_EDITOR_OBSERVERS_ON);
         }
+        if (tag.contains(TAG_EDITOR_REDSTONE_ON)) {
+            data.editorRedstoneOn = tag.getBoolean(TAG_EDITOR_REDSTONE_ON);
+        }
+        if (tag.contains(TAG_EDITOR_TNT_ON)) {
+            data.editorTntOn = tag.getBoolean(TAG_EDITOR_TNT_ON);
+        }
         if (tag.contains(TAG_EDITOR_MOBS_LIVE)) {
             data.editorMobsLive = tag.getBoolean(TAG_EDITOR_MOBS_LIVE);
         }
@@ -785,6 +797,8 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         if (portalTestReseed) tag.putBoolean(TAG_PORTAL_TEST_RESEED, true);
         if (!editorObserversOn) tag.putBoolean(TAG_EDITOR_OBSERVERS_ON, false);
+        if (!editorRedstoneOn) tag.putBoolean(TAG_EDITOR_REDSTONE_ON, false);
+        if (!editorTntOn) tag.putBoolean(TAG_EDITOR_TNT_ON, false);
         if (editorMobsLive) tag.putBoolean(TAG_EDITOR_MOBS_LIVE, true);
         if (testMobsLive) tag.putBoolean(TAG_TEST_MOBS_LIVE, true);
         return tag;
@@ -809,6 +823,30 @@ public final class DungeonTrainWorldData extends SavedData {
     public void setEditorObserversOn(boolean on) {
         if (editorObserversOn == on) return;
         editorObserversOn = on;
+        setDirty();
+    }
+
+    /** True unless the editor's Redstone setting is Off — the default, and every play world. */
+    public boolean isEditorRedstoneOn() {
+        return editorRedstoneOn;
+    }
+
+    /** Editor Settings → Redstone On / Off. Go through {@code EditorRedstone.set}, which keeps its fast path in step. */
+    public void setEditorRedstoneOn(boolean on) {
+        if (editorRedstoneOn == on) return;
+        editorRedstoneOn = on;
+        setDirty();
+    }
+
+    /** True unless the editor's TNT setting is Off — the default, and every play world. */
+    public boolean isEditorTntOn() {
+        return editorTntOn;
+    }
+
+    /** Editor Settings → TNT On / Off. */
+    public void setEditorTntOn(boolean on) {
+        if (editorTntOn == on) return;
+        editorTntOn = on;
         setDirty();
     }
 

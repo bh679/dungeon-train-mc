@@ -23,10 +23,13 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * portal twins are stamped into — the one part of an upside-down band that must
  * <em>not</em> render flipped. {@code generationSeed} lets the client roll the spheres band's
  * {@code SphereField} itself, so it can pull its own player toward the spheres (sphere gravity) without
- * a per-tick sync. Sent once on login.
+ * a per-tick sync. {@code othersideAvailable} is whether this server resolved Deeper Darker's Otherside rules
+ * ({@code NetherCoreBiomes#hasOtherside}): without them a {@code nether:otherside} pass is stamped as a vanilla
+ * Nether core, and the client's fog, music, lightmap and snapshot band follow that fallback. Sent once on login.
  */
 public record VoidBandSyncPacket(int carriageLength, boolean startsWithTrain, int trainY,
-                                 int bedrockY, long generationSeed) implements CustomPacketPayload {
+                                 int bedrockY, long generationSeed, boolean othersideAvailable)
+        implements CustomPacketPayload {
 
     public static final Type<VoidBandSyncPacket> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "void_band_sync"));
@@ -39,9 +42,11 @@ public record VoidBandSyncPacket(int carriageLength, boolean startsWithTrain, in
                         buf.writeVarInt(packet.trainY);
                         buf.writeInt(packet.bedrockY);
                         buf.writeLong(packet.generationSeed);
+                        buf.writeBoolean(packet.othersideAvailable);
                     },
                     buf -> new VoidBandSyncPacket(
-                            buf.readVarInt(), buf.readBoolean(), buf.readVarInt(), buf.readInt(), buf.readLong())
+                            buf.readVarInt(), buf.readBoolean(), buf.readVarInt(), buf.readInt(), buf.readLong(),
+                            buf.readBoolean())
             );
 
     @Override
@@ -52,7 +57,7 @@ public record VoidBandSyncPacket(int carriageLength, boolean startsWithTrain, in
     public static void handle(VoidBandSyncPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             ClientVoidBand.update(packet.carriageLength, packet.startsWithTrain);
-            ClientNetherBand.update(packet.startsWithTrain);
+            ClientNetherBand.update(packet.startsWithTrain, packet.othersideAvailable);
             ClientUpsideDownBand.update(packet.startsWithTrain, packet.trainY, packet.bedrockY);
             ClientSphereField.update(packet.generationSeed);
         });

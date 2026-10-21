@@ -1452,6 +1452,23 @@
         "dev.jaronline"
       ]
     },
+    "deeperdarker": {
+      "platform": "modrinth",
+      "project": "fnAffV0n",
+      "slug": "deeperdarker",
+      "name": "Deeper and Darker",
+      "sha1": [
+        "b075797d51bcc431a10ef902e48e8c3633633e3e",
+        "b6094adde68bd4b909bc75c64901e1f3fb99ad8f",
+        "ba6a751b9365b3e08a28c13ddfb43c566dfdf496",
+        "dd5d827e77bf0af8dac4d5599f4167f1da3c6b7f",
+        "e519bed972f9728af38f351c3dcffc1324e883bf",
+        "fa64e72cf308429db950b878c475668f394f80a1"
+      ],
+      "packages": [
+        "com.kyanite"
+      ]
+    },
     "distanthorizons": {
       "platform": "modrinth",
       "project": "uCdwusMi",
