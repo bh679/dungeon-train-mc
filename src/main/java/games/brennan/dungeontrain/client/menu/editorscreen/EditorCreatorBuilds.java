@@ -46,6 +46,16 @@ public final class EditorCreatorBuilds {
     private static String name = "";
     private static List<BuilderProfilePacket.Entry> builds = List.of();
     private static BuilderProfilePacket.Status status;
+
+    /** A relay row as it was last listed here, and which relay listed it. */
+    private record Seen(BuilderProfilePacket.Entry entry, boolean live) {}
+
+    /**
+     * Every relay row that has passed through this pane, by relay id — kept across {@link #clear},
+     * so a build staged on the Workbench still resolves to its row (its author, answers and review
+     * state) after creator mode was left for the standing plot.
+     */
+    private static final Map<Integer, Seen> SEEN = new HashMap<>();
     private static int selectedId = -1;
 
     /**
@@ -219,6 +229,8 @@ public final class EditorCreatorBuilds {
         if (!active() || !uuid.equals(packet.ownerUuid())) return;
         builds = packet.builds();
         status = packet.status();
+        boolean live = BuilderProfileState.live();
+        for (BuilderProfilePacket.Entry entry : builds) SEEN.put(entry.relayId(), new Seen(entry, live));
         if (name.isEmpty()) name = packet.ownerName();
         if (builds.stream().noneMatch(e -> e.relayId() == selectedId)) selectedId = -1;
         // A profile listing's rows carry this viewer's own stars, so they are the truth about the
@@ -411,7 +423,14 @@ public final class EditorCreatorBuilds {
         for (BuilderProfilePacket.Entry entry : builds) {
             if (entry.relayId() == relayId) return entry;
         }
-        return null;
+        Seen seen = SEEN.get(relayId);
+        return seen == null ? null : seen.entry();
+    }
+
+    /** Which relay {@code relayId} was last listed from — what a review of it must be sent to. */
+    public static boolean liveOf(int relayId) {
+        Seen seen = SEEN.get(relayId);
+        return seen == null ? BuilderProfileState.live() : seen.live();
     }
 
     /**

@@ -46,7 +46,8 @@ public final class EditorDetailPane {
     static final int DISABLED_ICON = 0x60FFFFFF;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT, LOOT_ITEM, EDIT_NOTE, BLOCK_GROUP, TEST_ICON, TEST_ROW }
+    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT, LOOT_ITEM, EDIT_NOTE, BLOCK_GROUP, TEST_ICON, TEST_ROW,
+        REVIEW_ACCEPT, REVIEW_FEEDBACK, REVIEW_RESUBMIT, REVIEW_DECLINE }
 
     private final VersionStrip versions = new VersionStrip();
     /** The relay row of the selected template, and the version of it being shown (0 = as it is now). */
@@ -72,6 +73,14 @@ public final class EditorDetailPane {
     private String reviewComment = "";
     private String reviewVersion = "";
     private String reviewVersionOp = "";
+    /**
+     * The relay row behind a staged Workbench build, when it is somebody else's: the verdict row on
+     * the Submitted answers page reviews this. Null for the player's own build and for anything that
+     * is not staged.
+     */
+    private BuilderProfilePacket.Entry reviewEntry;
+    private boolean reviewLive;
+    private SubmissionPage.Buttons reviewButtons = SubmissionPage.Buttons.NONE;
     /** Which questions the selection earns and whether the player may edit them — asked of the server once. */
     private BuilderSubmitHintsRequests.Answer submitAnswer = BuilderSubmitHintsRequests.Answer.UNKNOWN;
     /** The Submitted answers page's Edit button as last drawn; null when not on screen. */
@@ -177,14 +186,23 @@ public final class EditorDetailPane {
         // Any template the relay holds has the page, answered or not: its questions are worth seeing,
         // and editable, before the build is ever submitted.
         BuilderProfilePacket.Entry own = BuilderProfileState.ownBuild(relayId);
-        submitNote = own == null ? SubmitNote.EMPTY : own.note();
-        review = own == null ? "" : own.review();
-        reviewComment = own == null ? "" : own.reviewComment();
-        reviewVersion = own == null ? "" : own.reviewVersion();
-        reviewVersionOp = own == null ? "" : own.reviewVersionOp();
-        submitAnswer = own == null ? BuilderSubmitHintsRequests.Answer.UNKNOWN
-            : BuilderSubmitHintsRequests.peek(relayId, "", false);
-        int submitPages = own == null ? 0 : 1;
+        // A build staged on the Workbench is somebody's relay row too: its answers and review state
+        // come from the row the Workbench tab (or Find a Builder) listed, and the developer gets the
+        // verdict row on it here, standing in the build, rather than only on the relay listing.
+        boolean staged = ctx.hasSelection() && ctx.selection().category() == PlotCategory.WORKBENCH;
+        BuilderProfilePacket.Entry other = own == null && staged && relayId > 0 ? EditorCreatorBuilds.byId(relayId) : null;
+        BuilderProfilePacket.Entry shownEntry = own != null ? own : other;
+        reviewEntry = other;
+        reviewLive = other == null ? false : EditorCreatorBuilds.liveOf(relayId);
+        submitNote = shownEntry == null ? SubmitNote.EMPTY : shownEntry.note();
+        review = shownEntry == null ? "" : shownEntry.review();
+        reviewComment = shownEntry == null ? "" : shownEntry.reviewComment();
+        reviewVersion = shownEntry == null ? "" : shownEntry.reviewVersion();
+        reviewVersionOp = shownEntry == null ? "" : shownEntry.reviewVersionOp();
+        submitAnswer = own != null ? BuilderSubmitHintsRequests.peek(relayId, "", false)
+            : other != null ? BuilderSubmitHintsRequests.peek(relayId, EditorCreatorBuilds.ownerOf(other), reviewLive)
+            : BuilderSubmitHintsRequests.Answer.UNKNOWN;
+        int submitPages = shownEntry == null ? 0 : 1;
         int perBlockPage = LootGrid.of(lootGridArea(), 0).capacity();
         int blockPages = blockEntries.isEmpty() || perBlockPage <= 0 ? 0
             : (blockEntries.size() + perBlockPage - 1) / perBlockPage;
@@ -385,6 +403,21 @@ public final class EditorDetailPane {
     /** True while the Submitted answers page is showing. */
     public boolean onSubmitPage() { return pages.isSubmitPage(page); }
 
+    /** Whether the verdict row is offered: a staged build of somebody else's, and this player may review. */
+    private boolean canReview() {
+        return reviewEntry != null && submitAnswer.canReview();
+    }
+
+    /** The developer's verdict on the staged build behind the selection — the Submitted answers page's row. */
+    public void openReview(String verdict) {
+        if (!canReview()) return;
+        games.brennan.dungeontrain.client.builder.BuilderReviewCommentScreen.open(reviewEntry, reviewLive, verdict);
+    }
+
+    private static boolean hits(InventoryEditorLayout.Rect r, double mx, double my) {
+        return r != null && r.contains(mx, my);
+    }
+
     /** The page the body is on, zero-based: 0 is the model and its sheet, the rest are the rows. */
     public int page() { return page; }
 
@@ -399,6 +432,7 @@ public final class EditorDetailPane {
                        float yaw, int mouseX, int mouseY) {
         hovered = hitTest(mouseX, mouseY);
         editNoteRect = null;
+        reviewButtons = SubmissionPage.Buttons.NONE;
         drawHeader(g, font, theme, art);
         String name = tile == null ? "" : tile.variant().displayName();
         shownName = name;
@@ -434,9 +468,12 @@ public final class EditorDetailPane {
             sheetCells = List.of();
             if (onBlocksPage()) drawBlocksPage(g, font);
             else if (onLootPage()) drawLootPage(g, font, theme);
-            else if (onSubmitPage()) editNoteRect = SubmissionPage.draw(g, font, rowArea(), submitNote,
-                submitAnswer.hints(), submitAnswer.canEdit(), false, review, reviewComment, reviewVersion, reviewVersionOp,
-                mouseX, mouseY).edit();
+            else if (onSubmitPage()) {
+                reviewButtons = SubmissionPage.draw(g, font, rowArea(), submitNote,
+                    submitAnswer.hints(), submitAnswer.canEdit(), canReview(), review, reviewComment, reviewVersion,
+                    reviewVersionOp, mouseX, mouseY);
+                editNoteRect = reviewButtons.edit();
+            }
             else drawRows(g, font, theme);
         }
         if (pages.hasPager()) drawPager(g, font);
@@ -730,6 +767,12 @@ public final class EditorDetailPane {
         if (goHereRect != null && goHereRect.contains(mx, my)) return new Hit(HitKind.GO_HERE, 0, 0);
         if (editNoteRect != null && onSubmitPage() && editNoteRect.contains(mx, my)) {
             return new Hit(HitKind.EDIT_NOTE, 0, 0);
+        }
+        if (onSubmitPage() && canReview()) {
+            if (hits(reviewButtons.accept(), mx, my)) return new Hit(HitKind.REVIEW_ACCEPT, 0, 0);
+            if (hits(reviewButtons.feedback(), mx, my)) return new Hit(HitKind.REVIEW_FEEDBACK, 0, 0);
+            if (hits(reviewButtons.resubmit(), mx, my)) return new Hit(HitKind.REVIEW_RESUBMIT, 0, 0);
+            if (hits(reviewButtons.decline(), mx, my)) return new Hit(HitKind.REVIEW_DECLINE, 0, 0);
         }
         if (pages.hasPager() && pagerRect().contains(mx, my)) {
             return switch (EditorPager.hit(pagerRect(), page, pages.pageCount(), mx, my)) {

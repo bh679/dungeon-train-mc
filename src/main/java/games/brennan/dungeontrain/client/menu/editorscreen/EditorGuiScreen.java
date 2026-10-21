@@ -1326,6 +1326,22 @@ public final class EditorGuiScreen extends Screen {
                 detail.openNoteEditor();
                 return true;
             }
+            case REVIEW_ACCEPT -> {
+                detail.openReview(BuilderReviewState.ACCEPTED);
+                return true;
+            }
+            case REVIEW_FEEDBACK -> {
+                detail.openReview(BuilderReviewState.FEEDBACK);
+                return true;
+            }
+            case REVIEW_RESUBMIT -> {
+                detail.openReview(BuilderReviewState.RESUBMIT);
+                return true;
+            }
+            case REVIEW_DECLINE -> {
+                detail.openReview(BuilderReviewState.DECLINED);
+                return true;
+            }
             case PAGE_NEXT -> {
                 return detail.scrollBy(+1);
             }
