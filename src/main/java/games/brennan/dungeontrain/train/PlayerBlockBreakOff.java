@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import games.brennan.dungeontrain.compat.vista.TvBlocks;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.EmptyBlockGetter;
@@ -125,8 +126,9 @@ public final class PlayerBlockBreakOff {
 
         List<ItemStack> drops = new ArrayList<>(Block.getDrops(state, level, worldPos, blockEntity));
         // A shulker box keeps its contents inside the dropped item (its loot table copies them), so
-        // spilling them too would duplicate every item.
-        if (blockEntity instanceof Container container && !(blockEntity instanceof ShulkerBoxBlockEntity)) {
+        // spilling them too would duplicate every item. A TV's one slot is its tuner, never storage.
+        if (blockEntity instanceof Container container && !(blockEntity instanceof ShulkerBoxBlockEntity)
+                && !TvBlocks.isTelevision(state)) {
             for (int i = 0; i < container.getContainerSize(); i++) {
                 ItemStack stack = container.getItem(i);
                 if (!stack.isEmpty()) drops.add(stack.copy());

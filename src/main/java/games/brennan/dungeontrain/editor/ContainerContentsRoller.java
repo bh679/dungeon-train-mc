@@ -373,7 +373,7 @@ public final class ContainerContentsRoller {
         if (isBrushable(state)) {
             return rollBrushable(pool, totalWeight, localPos, worldSeed, carriageIndex, diffIndex, baseNbt, registries);
         }
-        int slots = nativeContainerSlots(state);
+        int slots = containerSlotsFor(state);
         if (slots <= 0) return baseNbt;
 
         // Furnace family has semantic slots (input / fuel / output) — route to
@@ -565,6 +565,9 @@ public final class ContainerContentsRoller {
      * casts to {@link Container}. Returns 0 for non-container BEs.
      */
     private static int containerSlotsFor(BlockState state) {
+        // A Vista TV's block entity is a one-slot container, but the slot is its tuner: loot rolled
+        // into it hid there and spilled when the TV broke. No pool ever fills a TV.
+        if (games.brennan.dungeontrain.compat.vista.TvBlocks.isTelevision(state)) return 0;
         return nativeContainerSlots(state);
     }
 
