@@ -16,6 +16,7 @@
     "TamableAnimalTameMixin",
     "AbstractHorseTameMixin",
     "LightningBoltVisualOnlyMixin",
+    "RegenerationSoftCapMixin",
     "FlowingFluidExternalWaterMixin",
     "AdvancementVisibilityEvaluatorMixin",
     "AdvancementTreeOrderMixin",

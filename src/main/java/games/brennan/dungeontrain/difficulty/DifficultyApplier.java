@@ -186,7 +186,7 @@ public final class DifficultyApplier {
                 int duration = spec.durationTicks() < 0
                         ? MobEffectInstance.INFINITE_DURATION
                         : spec.durationTicks();
-                mob.addEffect(new MobEffectInstance(holder, duration, rollAmplifier(spec.amplifier(), rng), false, true));
+                mob.addEffect(new MobEffectInstance(holder, duration, rollAmplifier(spec.minAmplifier(), spec.amplifier(), rng), false, true));
             }
         }
 
@@ -195,14 +195,15 @@ public final class DifficultyApplier {
     }
 
     /**
-     * Amplifier actually applied for an effect whose stage cap is {@code cap}: uniform over
-     * {@code [0, cap]}, so later stages spread their buffs downward (Speed IV stage = Speed I-IV)
-     * and never above the cap. A cap of 0 draws nothing from {@code rng}, so early-stage rolls
-     * are unchanged.
+     * Amplifier actually applied for an effect whose stage range is {@code [min, cap]}: uniform
+     * over it, so later stages spread their buffs downward (Speed IV stage = Speed I-IV) and never
+     * above the cap. A floor above the cap clamps to the cap. A single-value range (including a
+     * cap of 0) draws nothing from {@code rng}, so early-stage rolls are unchanged.
      */
-    static int rollAmplifier(int cap, RandomSource rng) {
+    static int rollAmplifier(int min, int cap, RandomSource rng) {
         int max = Math.max(0, cap);
-        return max == 0 ? 0 : rng.nextInt(max + 1);
+        int lo = Math.max(0, Math.min(min, max));
+        return lo == max ? max : lo + rng.nextInt(max - lo + 1);
     }
 
     private static void applyArmorSlot(Mob mob, EquipmentSlot slot,
