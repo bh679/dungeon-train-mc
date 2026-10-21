@@ -29230,6 +29230,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "photo-advancement-tuning",
+      "version": "0.1438.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "balance"
+      ],
+      "title": "Advancement tuning",
+      "summary": "A few hidden advancements are now much quicker to earn.",
+      "highlights": [],
+      "pr": 2219,
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
