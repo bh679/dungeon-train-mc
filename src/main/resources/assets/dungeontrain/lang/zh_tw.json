@@ -1880,6 +1880,7 @@
   "gui.dungeontrain.editor_screen.creator.parent_title": "載入到",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s（新建）",
   "gui.dungeontrain.editor_screen.creator.parent_whole_room": "整節車廂房間",
+  "gui.dungeontrain.editor_screen.creator.parent_whole_half": "整節車廂半節",
   "gui.dungeontrain.editor_screen.creator.parent_top_level": "車廂外殼（頂層）",
   "gui.dungeontrain.editor_screen.creators.all": "全部建築者",
   "gui.dungeontrain.editor_screen.creators.pick_title": "這是誰建造的？",

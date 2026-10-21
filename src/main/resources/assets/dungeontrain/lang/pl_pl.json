@@ -1970,6 +1970,7 @@
   "gui.dungeontrain.editor_screen.creator.parent_title": "Wczytaj pod",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (nowy)",
   "gui.dungeontrain.editor_screen.creator.parent_whole_room": "Cały pokój wagonu",
+  "gui.dungeontrain.editor_screen.creator.parent_whole_half": "Cała połowa wagonu",
   "gui.dungeontrain.editor_screen.creator.parent_top_level": "Powłoka wagonu (poziom główny)",
   "gui.dungeontrain.editor_screen.creators.all": "Wszyscy budowniczowie",
   "gui.dungeontrain.editor_screen.creators.pick_title": "Kto to zbudował?",

@@ -1925,6 +1925,7 @@
   "gui.dungeontrain.editor_screen.creator.parent_title": "Laden unter",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (neu)",
   "gui.dungeontrain.editor_screen.creator.parent_whole_room": "Ganzer Waggonraum",
+  "gui.dungeontrain.editor_screen.creator.parent_whole_half": "Ganze Waggonhälfte",
   "gui.dungeontrain.editor_screen.creator.parent_top_level": "Waggonhülle (oberste Ebene)",
   "gui.dungeontrain.editor_screen.creators.all": "Alle Baumeister",
   "gui.dungeontrain.editor_screen.creators.pick_title": "Wer hat das gebaut?",

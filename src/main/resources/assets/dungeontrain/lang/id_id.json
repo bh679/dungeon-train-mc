@@ -1880,6 +1880,7 @@
   "gui.dungeontrain.editor_screen.creator.parent_title": "Muat di bawah",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (baru)",
   "gui.dungeontrain.editor_screen.creator.parent_whole_room": "Ruang gerbong utuh",
+  "gui.dungeontrain.editor_screen.creator.parent_whole_half": "Setengah gerbong utuh",
   "gui.dungeontrain.editor_screen.creator.parent_top_level": "Cangkang gerbong (tingkat atas)",
   "gui.dungeontrain.editor_screen.creators.all": "Semua pembangun",
   "gui.dungeontrain.editor_screen.creators.pick_title": "Siapa yang membangun ini?",

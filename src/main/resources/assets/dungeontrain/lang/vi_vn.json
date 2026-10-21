@@ -1880,6 +1880,7 @@
   "gui.dungeontrain.editor_screen.creator.parent_title": "Tải vào",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (mới)",
   "gui.dungeontrain.editor_screen.creator.parent_whole_room": "Phòng toa nguyên toa",
+  "gui.dungeontrain.editor_screen.creator.parent_whole_half": "Nửa toa nguyên toa",
   "gui.dungeontrain.editor_screen.creator.parent_top_level": "Vỏ toa (cấp cao nhất)",
   "gui.dungeontrain.editor_screen.creators.all": "Tất cả người xây",
   "gui.dungeontrain.editor_screen.creators.pick_title": "Ai đã xây dựng cái này?",

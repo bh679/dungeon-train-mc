@@ -135,9 +135,10 @@ public final class WorkbenchCommit {
         // What the build's tools wrote while it stood here (its chests) folded in first, so it commits as left.
         String stagedSidecars = games.brennan.dungeontrain.editor.workbench.WorkbenchSidecarFold.fold(staged.stagedId());
         String sidecars = TemplateSidecars.retargeted(stagedSidecars, fromKind, staged.subKind(), kind, request.subKind());
-        boolean wholeRoom = BuilderRelayWholeRoom.requested(request.parentId()) && BuilderRelayWholeRoom.supports(kind);
+        games.brennan.dungeontrain.train.WholeKind whole = BuilderRelayWholeRoom.kindOf(request.parentId());
+        boolean wholeRoom = whole != null && BuilderRelayWholeRoom.supports(kind);
         BuilderRelayInstall.Outcome installed = wholeRoom
-                ? BuilderRelayWholeRoom.install(level, kind, request.name(), staged.stage(), template,
+                ? BuilderRelayWholeRoom.install(level, kind, whole, request.name(), staged.stage(), template,
                         request.resolution(), "", sidecars, staged.mine())
                 : BuilderRelayInstall.install(kind, request.name(), request.subKind(), staged.stage(), template,
                         request.resolution(), "", sidecars, staged.mine());
@@ -149,7 +150,8 @@ public final class WorkbenchCommit {
         List<String> prefabsWritten = TemplateLootPrefabs.install(staged.lootPrefabs(),
                 request.prefabs().overwrite(), request.prefabs().renames());
         if (wholeRoom) {
-            TemplateLootPrefabs.relinkPlot(TemplateSidecars.wholeRoomPlotKey(request.name()),
+            TemplateLootPrefabs.relinkPlot(
+                    games.brennan.dungeontrain.editor.BlockVariantPlot.wholeKey(whole, request.name()),
                     request.prefabs().renames(), prefabsWritten);
         } else {
             TemplateLootPrefabs.relink(kind, request.subKind(), request.name(), request.prefabs().renames(), prefabsWritten);

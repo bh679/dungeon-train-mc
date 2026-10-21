@@ -1975,6 +1975,7 @@
   "gui.dungeontrain.editor_screen.creator.parent_title": "Загрузить в",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (новый)",
   "gui.dungeontrain.editor_screen.creator.parent_whole_room": "Целая комната вагона",
+  "gui.dungeontrain.editor_screen.creator.parent_whole_half": "Целая половина вагона",
   "gui.dungeontrain.editor_screen.creator.parent_top_level": "Корпус вагона (верхний уровень)",
   "gui.dungeontrain.editor_screen.creators.all": "Все строители",
   "gui.dungeontrain.editor_screen.creators.pick_title": "Кто это построил?",

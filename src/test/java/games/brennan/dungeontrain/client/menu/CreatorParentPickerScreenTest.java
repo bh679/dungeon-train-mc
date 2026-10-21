@@ -57,6 +57,7 @@ final class CreatorParentPickerScreenTest {
     private static final String NEW = "User builds (new)";
     private static final String BACK = "< Back";
     private static final String WHOLE_ROOM = "Whole carriage room";
+    private static final String WHOLE_HALF = "Whole carriage half";
     private static final String TOP_LEVEL = "Carriage shell (top level)";
 
     private static List<String> labels(List<CommandMenuEntry> entries) {
@@ -78,7 +79,7 @@ final class CreatorParentPickerScreenTest {
     void offersNewDefaultFirst() {
         CreatorParentPickerScreen picker = new CreatorParentPickerScreen(PlotCategory.CONTENTS, null);
         List<CommandMenuEntry> rows = picker.entries(roster(false));
-        assertEquals(List.of(NEW, "maze", "shop", WHOLE_ROOM, BACK), labels(rows),
+        assertEquals(List.of(NEW, "maze", "shop", WHOLE_ROOM, WHOLE_HALF, BACK), labels(rows),
             "members (copper) are never parents; the default leads because the load will create it; "
                 + "the Whole pool is the last destination");
         assertTrue(((CommandMenuEntry.ClientAction) rows.get(0)).highlighted(),
@@ -90,7 +91,7 @@ final class CreatorParentPickerScreenTest {
     void existingDefaultIsNotOfferedTwice() {
         CreatorParentPickerScreen picker = new CreatorParentPickerScreen(PlotCategory.CONTENTS, null);
         List<String> rows = labels(picker.entries(roster(true)));
-        assertEquals(List.of("maze", "shop", "User builds  ·  user_builds", WHOLE_ROOM, BACK), rows);
+        assertEquals(List.of("maze", "shop", "User builds  ·  user_builds", WHOLE_ROOM, WHOLE_HALF, BACK), rows);
     }
 
     @Test
@@ -137,12 +138,15 @@ final class CreatorParentPickerScreenTest {
     void carriagesPickShellOrWhole() {
         CreatorParentPickerScreen picker = new CreatorParentPickerScreen(PlotCategory.CARRIAGES, null);
         List<CommandMenuEntry> rows = picker.entries(roster(false));
-        assertEquals(List.of(TOP_LEVEL, WHOLE_ROOM, BACK), labels(rows));
+        assertEquals(List.of(TOP_LEVEL, WHOLE_ROOM, WHOLE_HALF, BACK), labels(rows));
         assertTrue(((CommandMenuEntry.ClientAction) rows.get(0)).highlighted(), "top level is the default");
         assertEquals("", CreatorLoadParent.parentFor(PlotCategory.CARRIAGES));
         ((CommandMenuEntry.ClientAction) rows.get(1)).action().run();
         assertEquals(CreatorLoadParent.WHOLE_ROOM, CreatorLoadParent.parentFor(PlotCategory.CARRIAGES));
         assertEquals(WHOLE_ROOM, CreatorLoadParent.labelFor(PlotCategory.CARRIAGES, roster(false)));
+        ((CommandMenuEntry.ClientAction) rows.get(2)).action().run();
+        assertEquals(CreatorLoadParent.WHOLE_HALF, CreatorLoadParent.parentFor(PlotCategory.CARRIAGES));
+        assertEquals(WHOLE_HALF, CreatorLoadParent.labelFor(PlotCategory.CARRIAGES, roster(false)));
         assertEquals(BuilderRelaySubVariant.DEFAULT_PARENT_ID, CreatorLoadParent.parentFor(PlotCategory.CONTENTS),
             "a carriage choice must not move where the next contents land");
         CreatorLoadParent.set(PlotCategory.CARRIAGES, "");

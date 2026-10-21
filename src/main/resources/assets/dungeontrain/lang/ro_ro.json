@@ -2482,6 +2482,7 @@
   "gui.dungeontrain.editor_screen.creator.parent_title": "Încarcă sub",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (nou)",
   "gui.dungeontrain.editor_screen.creator.parent_whole_room": "Cameră de vagon întreagă",
+  "gui.dungeontrain.editor_screen.creator.parent_whole_half": "Jumătate de vagon întreagă",
   "gui.dungeontrain.editor_screen.creator.parent_top_level": "Carcasa vagonului (nivel superior)",
   "gui.dungeontrain.editor_screen.creators.all": "Toți constructorii",
   "gui.dungeontrain.editor_screen.creators.pick_title": "Cine a construit asta?",

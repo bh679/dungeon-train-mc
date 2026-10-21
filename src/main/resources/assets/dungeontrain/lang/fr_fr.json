@@ -1925,6 +1925,7 @@
   "gui.dungeontrain.editor_screen.creator.parent_title": "Charger sous",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (nouveau)",
   "gui.dungeontrain.editor_screen.creator.parent_whole_room": "Salle de wagon entière",
+  "gui.dungeontrain.editor_screen.creator.parent_whole_half": "Demi-wagon entier",
   "gui.dungeontrain.editor_screen.creator.parent_top_level": "Coque du wagon (niveau supérieur)",
   "gui.dungeontrain.editor_screen.creators.all": "Tous les constructeurs",
   "gui.dungeontrain.editor_screen.creators.pick_title": "Qui a construit ceci ?",

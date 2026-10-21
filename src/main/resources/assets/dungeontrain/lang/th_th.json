@@ -1880,6 +1880,7 @@
   "gui.dungeontrain.editor_screen.creator.parent_title": "โหลดไว้ใต้",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (ใหม่)",
   "gui.dungeontrain.editor_screen.creator.parent_whole_room": "ห้องตู้ทั้งตู้",
+  "gui.dungeontrain.editor_screen.creator.parent_whole_half": "ครึ่งตู้ทั้งตู้",
   "gui.dungeontrain.editor_screen.creator.parent_top_level": "เปลือกตู้ (ระดับบนสุด)",
   "gui.dungeontrain.editor_screen.creators.all": "ผู้สร้างทั้งหมด",
   "gui.dungeontrain.editor_screen.creators.pick_title": "ใครสร้างสิ่งนี้?",

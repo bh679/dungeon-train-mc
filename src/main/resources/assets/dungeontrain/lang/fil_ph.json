@@ -1880,6 +1880,7 @@
   "gui.dungeontrain.editor_screen.creator.parent_title": "I-load sa ilalim ng",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (bago)",
   "gui.dungeontrain.editor_screen.creator.parent_whole_room": "Buong silid ng bagon",
+  "gui.dungeontrain.editor_screen.creator.parent_whole_half": "Buong kalahating bagon",
   "gui.dungeontrain.editor_screen.creator.parent_top_level": "Balat ng bagon (pinakamataas na antas)",
   "gui.dungeontrain.editor_screen.creators.all": "Lahat ng builder",
   "gui.dungeontrain.editor_screen.creators.pick_title": "Sino ang nagtayo nito?",

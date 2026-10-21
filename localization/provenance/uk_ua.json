@@ -2479,6 +2479,7 @@
   "gui.dungeontrain.editor_screen.creator.parent_title": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "7985b5e7a6f8b6c8"},
   "gui.dungeontrain.editor_screen.creator.parent_new": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "dddf980d1d85dbe5"},
   "gui.dungeontrain.editor_screen.creator.parent_whole_room": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "fb7c9368d90c8188"},
+  "gui.dungeontrain.editor_screen.creator.parent_whole_half": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "2bdaa0d1d432b68c"},
   "gui.dungeontrain.editor_screen.creator.parent_top_level": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "e495e121385ec3cc"},
   "gui.dungeontrain.editor_screen.creators.all": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "4439aa5666e04ad9"},
   "gui.dungeontrain.editor_screen.creators.pick_title": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "8543c3407b6c9072"},

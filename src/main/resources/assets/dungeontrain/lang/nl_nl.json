@@ -1925,6 +1925,7 @@
   "gui.dungeontrain.editor_screen.creator.parent_title": "Laden onder",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (nieuw)",
   "gui.dungeontrain.editor_screen.creator.parent_whole_room": "Gehele wagonkamer",
+  "gui.dungeontrain.editor_screen.creator.parent_whole_half": "Gehele halve wagon",
   "gui.dungeontrain.editor_screen.creator.parent_top_level": "Wagonomhulsel (bovenste niveau)",
   "gui.dungeontrain.editor_screen.creators.all": "Alle bouwers",
   "gui.dungeontrain.editor_screen.creators.pick_title": "Wie heeft dit gebouwd?",

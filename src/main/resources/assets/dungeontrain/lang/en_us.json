@@ -2428,6 +2428,7 @@
   "gui.dungeontrain.editor_screen.creator.parent_title": "Load under",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (new)",
   "gui.dungeontrain.editor_screen.creator.parent_whole_room": "Whole carriage room",
+  "gui.dungeontrain.editor_screen.creator.parent_whole_half": "Whole carriage half",
   "gui.dungeontrain.editor_screen.creator.parent_top_level": "Carriage shell (top level)",
   "gui.dungeontrain.editor_screen.creators.all": "All builders",
   "gui.dungeontrain.editor_screen.creators.pick_title": "Who built this?",

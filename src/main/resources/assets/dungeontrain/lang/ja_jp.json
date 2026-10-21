@@ -1880,6 +1880,7 @@
   "gui.dungeontrain.editor_screen.creator.parent_title": "読み込み先",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s（新規）",
   "gui.dungeontrain.editor_screen.creator.parent_whole_room": "まるごと車両ルーム",
+  "gui.dungeontrain.editor_screen.creator.parent_whole_half": "まるごと車両ハーフ",
   "gui.dungeontrain.editor_screen.creator.parent_top_level": "車両の外殻（トップレベル）",
   "gui.dungeontrain.editor_screen.creators.all": "すべての建築者",
   "gui.dungeontrain.editor_screen.creators.pick_title": "誰が建てた？",

@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.train.WholeCarriage;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -24,6 +25,12 @@ final class BuilderRelayWholeRoomTest {
     @DisplayName("requested only by the exact sentinel")
     void requested() {
         assertTrue(BuilderRelayWholeRoom.requested(BuilderRelayWholeRoom.WHOLE_ROOM_PARENT));
+        assertTrue(BuilderRelayWholeRoom.requested(BuilderRelayWholeRoom.WHOLE_HALF_PARENT));
+        assertEquals(games.brennan.dungeontrain.train.WholeKind.ROOM,
+            BuilderRelayWholeRoom.kindOf(BuilderRelayWholeRoom.WHOLE_ROOM_PARENT));
+        assertEquals(games.brennan.dungeontrain.train.WholeKind.HALF,
+            BuilderRelayWholeRoom.kindOf(BuilderRelayWholeRoom.WHOLE_HALF_PARENT));
+        assertFalse(WholeCarriage.isValidName(BuilderRelayWholeRoom.WHOLE_HALF_PARENT));
         assertFalse(BuilderRelayWholeRoom.requested(BuilderRelaySubVariant.DEFAULT_PARENT_ID));
         assertFalse(BuilderRelayWholeRoom.requested(""));
         assertFalse(BuilderRelayWholeRoom.requested(null));

@@ -2,6 +2,9 @@ package games.brennan.dungeontrain.editor.pool;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageEditor;
+import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.train.CarriageVariant;
+import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.editor.EditorLayout;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
@@ -13,6 +16,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
+
+import java.util.Optional;
 
 /**
  * A scratch box high in the sky where a template is stamped, re-captured in another frame, and
@@ -30,7 +35,28 @@ public final class PoolScratch {
     /** Behind the editor's rows, where no category lays a plot. */
     static final int SCRATCH_Z = -(EditorLayout.GAP * 8);
 
+    /** The bundled shell each tier's contents are baked onto when they become a full box. */
+    static final String HALF_DEFAULT_SHELL = "standard_half";
+    static final String GROUP_DEFAULT_SHELL = "carriage";
+
     private PoolScratch() {}
+
+    /** The id of the bundled shell {@code tier}'s contents are baked onto. */
+    public static String defaultShellId(PoolTier tier) {
+        return switch (tier) {
+            case ROOM -> CarriageVariant.of(CarriagePlacer.CarriageType.STANDARD).id();
+            case HALF -> HALF_DEFAULT_SHELL;
+            case GROUP -> GROUP_DEFAULT_SHELL;
+        };
+    }
+
+    /** The bundled shell contents of {@code tier} are baked onto; empty when this install lacks it. */
+    public static Optional<StructureTemplate> defaultShell(ServerLevel level, PoolTier tier, CarriageDims box) {
+        if (tier == PoolTier.ROOM) {
+            return CarriageTemplateStore.get(level, CarriageVariant.of(CarriagePlacer.CarriageType.STANDARD), box);
+        }
+        return CarriageVariantRegistry.find(defaultShellId(tier)).flatMap(v -> CarriageTemplateStore.get(level, v, box));
+    }
 
     /** Where a scratch box of {@code box} sits: at the top of the world, clear of every plot height. */
     static BlockPos origin(ServerLevel level, CarriageDims box) {

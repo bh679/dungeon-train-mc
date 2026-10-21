@@ -74,8 +74,8 @@ public final class WholeRoomSidecars {
      * install cannot parse is one the room does without, and failing an install over it would cost the
      * build — the same posture {@link TemplateSidecars#apply} takes.
      */
-    public static void apply(BuilderPhotoPaths.Kind kind, String id, String doc) {
-        if (id == null || id.isEmpty() || doc == null || doc.isBlank()) return;
+    public static void apply(BuilderPhotoPaths.Kind kind, WholeKind whole, String id, String doc) {
+        if (id == null || id.isEmpty() || doc == null || doc.isBlank() || whole == null) return;
         JsonObject files;
         try {
             JsonObject root = JsonParser.parseString(doc).getAsJsonObject();
@@ -88,16 +88,16 @@ public final class WholeRoomSidecars {
         }
         int shift = shiftFor(kind);
         write(id, text(files, ROLE_VARIANTS), shift,
-            UserContentPaths.activeSubDir(WholeKind.ROOM.userSubdir()), id + WholeVariantBlocks.EXT,
+            UserContentPaths.activeSubDir(whole.userSubdir()), id + WholeVariantBlocks.EXT,
             ROLE_VARIANTS);
         write(id, text(files, ROLE_CONTAINERS), shift,
             UserContentPaths.activeSubDir(ContainerContentsStore.SUBDIR),
-            ContainerContentsStore.basenameFor(BlockVariantPlot.wholeKey(WholeKind.ROOM, id)),
+            ContainerContentsStore.basenameFor(BlockVariantPlot.wholeKey(whole, id)),
             ROLE_CONTAINERS);
         // Both stores cache what they read, and a file written underneath one is invisible until it is
         // told. TemplateSidecars.invalidateCaches has no whole arm to do this for us.
-        WholeVariantBlocks.invalidate(WholeKind.ROOM, id);
-        ContainerContentsStore.invalidate(BlockVariantPlot.wholeKey(WholeKind.ROOM, id));
+        WholeVariantBlocks.invalidate(whole, id);
+        ContainerContentsStore.invalidate(BlockVariantPlot.wholeKey(whole, id));
     }
 
     /** How far a build of {@code kind} sits from the whole-carriage frame, per axis. */

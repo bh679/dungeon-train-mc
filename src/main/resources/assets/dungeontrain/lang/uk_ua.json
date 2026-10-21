@@ -2479,6 +2479,7 @@
   "gui.dungeontrain.editor_screen.creator.parent_title": "Завантажити під",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (новий)",
   "gui.dungeontrain.editor_screen.creator.parent_whole_room": "Ціла кімната вагона",
+  "gui.dungeontrain.editor_screen.creator.parent_whole_half": "Ціла половина вагона",
   "gui.dungeontrain.editor_screen.creator.parent_top_level": "Корпус вагона (верхній рівень)",
   "gui.dungeontrain.editor_screen.creators.all": "Усі будівельники",
   "gui.dungeontrain.editor_screen.creators.pick_title": "Хто це збудував?",

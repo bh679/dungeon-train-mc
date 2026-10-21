@@ -1925,6 +1925,7 @@
   "gui.dungeontrain.editor_screen.creator.parent_title": "Carica sotto",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (nuovo)",
   "gui.dungeontrain.editor_screen.creator.parent_whole_room": "Stanza del vagone intera",
+  "gui.dungeontrain.editor_screen.creator.parent_whole_half": "Mezzo vagone intero",
   "gui.dungeontrain.editor_screen.creator.parent_top_level": "Guscio del vagone (livello superiore)",
   "gui.dungeontrain.editor_screen.creators.all": "Tutti i costruttori",
   "gui.dungeontrain.editor_screen.creators.pick_title": "Chi ha costruito questo?",

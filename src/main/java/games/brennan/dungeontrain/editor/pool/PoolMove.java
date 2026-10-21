@@ -53,10 +53,6 @@ public final class PoolMove {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** The bundled shell each tier's contents are baked onto when they become a full box. */
-    static final String HALF_DEFAULT_SHELL = "standard_half";
-    static final String GROUP_DEFAULT_SHELL = "carriage";
-
     private PoolMove() {}
 
     public enum Outcome {
@@ -139,7 +135,7 @@ public final class PoolMove {
                     : Result.of(Outcome.BOX_MISMATCH, boxText(box));
             }
             StructureTemplate target = reframe(overworld, saved, from.pool(), to, from.tier(), box);
-            if (target == NO_SHELL) return Result.of(Outcome.NO_SHELL, defaultShellId(from.tier()));
+            if (target == NO_SHELL) return Result.of(Outcome.NO_SHELL, PoolScratch.defaultShellId(from.tier()));
             if (target == null) return Result.of(Outcome.BOX_MISMATCH, boxText(box));
 
             write(landing, target);
@@ -203,26 +199,11 @@ public final class PoolMove {
         boolean toFull = to != Pool.CONTENTS;
         if (fromFull && toFull) return CarriagePlacer.sizeMatches(saved.getSize(), box) ? saved : null;
         if (fromFull) return PoolScratch.interiorOf(level, saved, box);
-        Optional<StructureTemplate> shell = defaultShell(level, tier, box);
+        Optional<StructureTemplate> shell = PoolScratch.defaultShell(level, tier, box);
         if (shell.isEmpty()) return NO_SHELL;
         return PoolScratch.bake(level, shell.get(), saved, box);
     }
 
-    static String defaultShellId(PoolTier tier) {
-        return switch (tier) {
-            case ROOM -> CarriageVariant.of(CarriagePlacer.CarriageType.STANDARD).id();
-            case HALF -> HALF_DEFAULT_SHELL;
-            case GROUP -> GROUP_DEFAULT_SHELL;
-        };
-    }
-
-    /** The bundled shell contents of {@code tier} are baked onto; empty when this install lacks it. */
-    static Optional<StructureTemplate> defaultShell(ServerLevel level, PoolTier tier, CarriageDims box) {
-        if (tier == PoolTier.ROOM) {
-            return CarriageTemplateStore.get(level, CarriageVariant.of(CarriagePlacer.CarriageType.STANDARD), box);
-        }
-        return CarriageVariantRegistry.find(defaultShellId(tier)).flatMap(v -> CarriageTemplateStore.get(level, v, box));
-    }
 
     // ---- write / remove / show --------------------------------------------------------------------
 

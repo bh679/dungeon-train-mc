@@ -1880,6 +1880,7 @@
   "gui.dungeontrain.editor_screen.creator.parent_title": "Muatkan di bawah",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (baharu)",
   "gui.dungeontrain.editor_screen.creator.parent_whole_room": "Bilik gerabak penuh",
+  "gui.dungeontrain.editor_screen.creator.parent_whole_half": "Separuh gerabak penuh",
   "gui.dungeontrain.editor_screen.creator.parent_top_level": "Cangkerang gerabak (peringkat atas)",
   "gui.dungeontrain.editor_screen.creators.all": "Semua pembina",
   "gui.dungeontrain.editor_screen.creators.pick_title": "Siapa yang membina ini?",
