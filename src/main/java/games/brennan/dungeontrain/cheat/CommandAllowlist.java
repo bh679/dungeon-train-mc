@@ -77,6 +77,10 @@ public final class CommandAllowlist {
      * own builds, or putting back builds a modpack update deleted, is recovering what you already
      * had. Neither can add anything that wasn't already yours — a restore only ever writes files
      * that are missing, from an archive this install wrote or an instance folder on this machine.
+     * {@code /reportcarriage} (report the shared carriage underfoot) and {@code /dtrebuild} (re-upload
+     * builds the relay lost) are player-facing and can give a player nothing, so they are exempt like
+     * {@code /bug}; {@code /dungeonbackup} is the root the {@code /dtbackup}/{@code /dtrestore} aliases
+     * point at. All of those are kept out of survival tab completion by {@link HiddenCommands}.
      * {@code advancement} is handled in {@link #isAllowed} rather than here:
      * only the exact form {@code /advancement revoke @s everything} is clean
      * (see {@link #isSelfRevokeEverything}) — every other spelling, target
@@ -85,7 +89,8 @@ public final class CommandAllowlist {
     private static final Set<String> ALLOWED_ROOTS = Set.of(
         "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list",
         "feedback", "bug", "fixaisconfig", "fixconfig", "customcontent", "new-world",
-        "playanimation", "stopsound", "dtbackup", "dtrestore", "liveappeal");
+        "playanimation", "stopsound", "dtbackup", "dtrestore", "dungeonbackup", "liveappeal",
+        "reportcarriage", "dtrebuild");
 
     /**
      * Roots DT registers <b>client-side only</b> ({@code RegisterClientCommandsEvent}) that players type

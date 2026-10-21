@@ -324,4 +324,14 @@ class CommandAllowlistTest {
         assertTrue(CommandAllowlist.taints("give"));
         assertTrue(CommandAllowlist.taints("dungeontrain-live-takeoverx"));
     }
+
+    @Test
+    @DisplayName("Player-facing /reportcarriage, /dtrebuild and /dungeonbackup never taint")
+    void playerFacingRootsAreClean() {
+        assertFalse(CommandAllowlist.taints("reportcarriage"));
+        assertFalse(CommandAllowlist.taints("reportcarriage the floor is missing"));
+        assertFalse(CommandAllowlist.taints("dtrebuild"));
+        assertFalse(CommandAllowlist.taints("dtrebuild backups"));
+        assertFalse(CommandAllowlist.taints("dungeonbackup backup"));
+    }
 }
