@@ -3811,6 +3811,7 @@
   "chat.dungeontrain.workbench.unknown": "'%s'이라는 이름의 작업대 건축물이 없습니다.",
   "chat.dungeontrain.workbench.bad_kind": "'%s'은(는) 작업대 건축물이 될 수 있는 종류가 아닙니다.",
   "chat.dungeontrain.workbench.committed": "에디터: '%s'을(를) %s '%s'(으)로 확정했습니다.",
+  "chat.dungeontrain.workbench.committed_renamed": "에디터: '%s'은(는) 이미 사용 중이라 %s '%s'(으)로 확정했습니다.",
   "chat.dungeontrain.workbench.name_taken": "'%1$s'이라는 이름의 %2$s이(가) 이미 있습니다 — 덮어쓰려면 'replace'를 붙이거나 다른 이름을 지정하세요.",
   "chat.dungeontrain.workbench.prefabs_kept_local": "이 설치본의 전리품 프리팹은 그대로 유지했습니다: %s.",
   "chat.dungeontrain.workbench.list_empty": "작업대가 비어 있습니다.",

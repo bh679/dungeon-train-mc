@@ -3811,6 +3811,7 @@
   "chat.dungeontrain.workbench.unknown": "「%s」という名前のワークベンチの建築はありません。",
   "chat.dungeontrain.workbench.bad_kind": "「%s」はワークベンチの建築がなれる種類ではありません。",
   "chat.dungeontrain.workbench.committed": "エディター: 「%s」を%s「%s」として確定しました。",
+  "chat.dungeontrain.workbench.committed_renamed": "エディター: 「%s」は使用中のため、%s「%s」として確定しました。",
   "chat.dungeontrain.workbench.name_taken": "「%1$s」という名前の%2$sはすでにここにあります — 上書きするには「replace」を付けるか、別の名前を付けてください。",
   "chat.dungeontrain.workbench.prefabs_kept_local": "このインストール独自のルートプレハブを維持しました: %s。",
   "chat.dungeontrain.workbench.list_empty": "ワークベンチは空です。",

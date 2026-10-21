@@ -3868,6 +3868,7 @@
   "chat.dungeontrain.workbench.unknown": "Geen Werkbank-bouwsel met de naam '%s'.",
   "chat.dungeontrain.workbench.bad_kind": "'%s' is geen soort waarin een Werkbank-bouwsel kan veranderen.",
   "chat.dungeontrain.workbench.committed": "Editor: '%s' vastgelegd als %s '%s'.",
+  "chat.dungeontrain.workbench.committed_renamed": "Editor: '%s' was al in gebruik, dus vastgelegd als %s '%s'.",
   "chat.dungeontrain.workbench.name_taken": "Er is hier al een %2$s met de naam '%1$s' — voeg 'replace' toe om die te overschrijven, of kies een andere naam.",
   "chat.dungeontrain.workbench.prefabs_kept_local": "De eigen versie van de buit-prefabs van deze installatie is behouden: %s.",
   "chat.dungeontrain.workbench.list_empty": "De Werkbank is leeg.",

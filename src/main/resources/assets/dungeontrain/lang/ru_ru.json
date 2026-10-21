@@ -3930,6 +3930,7 @@
   "chat.dungeontrain.workbench.unknown": "На Верстаке нет постройки с именем «%s».",
   "chat.dungeontrain.workbench.bad_kind": "«%s» не является типом, которым может стать постройка с Верстака.",
   "chat.dungeontrain.workbench.committed": "Редактор: «%s» зафиксирована как %s «%s».",
+  "chat.dungeontrain.workbench.committed_renamed": "Редактор: имя «%s» уже занято, поэтому зафиксирована как %s «%s».",
   "chat.dungeontrain.workbench.name_taken": "%2$s с именем «%1$s» уже есть — добавьте «replace», чтобы перезаписать, или выберите другое имя.",
   "chat.dungeontrain.workbench.prefabs_kept_local": "Сохранена собственная версия префабов добычи этой установки: %s.",
   "chat.dungeontrain.workbench.list_empty": "Верстак пуст.",

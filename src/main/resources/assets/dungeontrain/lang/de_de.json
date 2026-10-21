@@ -3868,6 +3868,7 @@
   "chat.dungeontrain.workbench.unknown": "Kein Werkbank-Bau namens '%s'.",
   "chat.dungeontrain.workbench.bad_kind": "'%s' ist keine Art, zu der ein Werkbank-Bau werden kann.",
   "chat.dungeontrain.workbench.committed": "Editor: '%s' als %s '%s' übernommen.",
+  "chat.dungeontrain.workbench.committed_renamed": "Editor: '%s' war schon vergeben, daher als %s '%s' übernommen.",
   "chat.dungeontrain.workbench.name_taken": "Ein %2$s namens '%1$s' ist bereits hier — füge 'replace' hinzu, um es zu überschreiben, oder wähle einen anderen Namen.",
   "chat.dungeontrain.workbench.prefabs_kept_local": "Die eigene Version der Beute-Fertigteile dieser Installation wurde behalten: %s.",
   "chat.dungeontrain.workbench.list_empty": "Die Werkbank ist leer.",

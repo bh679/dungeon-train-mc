@@ -3868,6 +3868,7 @@
   "chat.dungeontrain.workbench.unknown": "Aucune construction d’Atelier nommée '%s'.",
   "chat.dungeontrain.workbench.bad_kind": "'%s' n’est pas un type que peut devenir une construction d’Atelier.",
   "chat.dungeontrain.workbench.committed": "Éditeur : '%s' validé comme %s '%s'.",
+  "chat.dungeontrain.workbench.committed_renamed": "Éditeur : '%s' était déjà pris, donc validé comme %s '%s'.",
   "chat.dungeontrain.workbench.name_taken": "Un %2$s nommé '%1$s' existe déjà ici — ajoutez 'replace' pour l’écraser, ou choisissez un autre nom.",
   "chat.dungeontrain.workbench.prefabs_kept_local": "La version propre à cette installation des préfabriqués de butin a été conservée : %s.",
   "chat.dungeontrain.workbench.list_empty": "L’Atelier est vide.",

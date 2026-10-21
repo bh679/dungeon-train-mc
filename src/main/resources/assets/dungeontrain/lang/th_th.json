@@ -3811,6 +3811,7 @@
   "chat.dungeontrain.workbench.unknown": "ไม่มีสิ่งก่อสร้างบนโต๊ะทำงานชื่อ '%s'",
   "chat.dungeontrain.workbench.bad_kind": "'%s' ไม่ใช่ชนิดที่สิ่งก่อสร้างบนโต๊ะทำงานจะกลายเป็นได้",
   "chat.dungeontrain.workbench.committed": "ตัวแก้ไข: ยืนยัน '%s' เป็น%s '%s' แล้ว",
+  "chat.dungeontrain.workbench.committed_renamed": "ตัวแก้ไข: '%s' ถูกใช้แล้ว จึงยืนยันเป็น%s '%s' แทน",
   "chat.dungeontrain.workbench.name_taken": "มี%2$sชื่อ '%1$s' อยู่ที่นี่แล้ว — เพิ่ม 'replace' เพื่อเขียนทับ หรือตั้งชื่ออื่น",
   "chat.dungeontrain.workbench.prefabs_kept_local": "คงพรีแฟบของที่ปล้นเวอร์ชันของการติดตั้งนี้ไว้: %s",
   "chat.dungeontrain.workbench.list_empty": "โต๊ะทำงานว่างเปล่า",

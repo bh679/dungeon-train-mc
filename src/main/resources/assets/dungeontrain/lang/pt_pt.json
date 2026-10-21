@@ -3868,6 +3868,7 @@
   "chat.dungeontrain.workbench.unknown": "Nenhuma construção da Bancada chamada '%s'.",
   "chat.dungeontrain.workbench.bad_kind": "'%s' não é um tipo em que uma construção da Bancada se possa tornar.",
   "chat.dungeontrain.workbench.committed": "Editor: '%s' confirmada como %s '%s'.",
+  "chat.dungeontrain.workbench.committed_renamed": "Editor: '%s' já estava em uso, por isso confirmada como %s '%s'.",
   "chat.dungeontrain.workbench.name_taken": "Já existe aqui um %2$s chamado '%1$s' — acrescenta 'replace' para o substituir, ou escolhe outro nome.",
   "chat.dungeontrain.workbench.prefabs_kept_local": "Foi mantida a versão própria desta instalação dos pré-fabricados de loot: %s.",
   "chat.dungeontrain.workbench.list_empty": "A Bancada está vazia.",

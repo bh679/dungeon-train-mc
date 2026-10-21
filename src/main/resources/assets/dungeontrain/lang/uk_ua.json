@@ -4558,6 +4558,7 @@
   "chat.dungeontrain.workbench.unknown": "На Верстаку немає будівлі з назвою «%s».",
   "chat.dungeontrain.workbench.bad_kind": "«%s» — не той тип, яким може стати будівля з Верстака.",
   "chat.dungeontrain.workbench.committed": "Редактор: «%s» затверджено як %s «%s».",
+  "chat.dungeontrain.workbench.committed_renamed": "Редактор: ім'я «%s» уже зайняте, тож затверджено як %s «%s».",
   "chat.dungeontrain.workbench.name_taken": "%2$s з назвою «%1$s» уже є — додай 'replace', щоб перезаписати, або дай іншу назву.",
   "chat.dungeontrain.workbench.prefabs_kept_local": "Збережено власні версії шаблонів здобичі: %s.",
   "chat.dungeontrain.workbench.list_empty": "Верстак порожній.",

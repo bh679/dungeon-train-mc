@@ -4561,6 +4561,7 @@
   "chat.dungeontrain.workbench.unknown": "Nicio construcție numită '%s' pe Bancul de lucru.",
   "chat.dungeontrain.workbench.bad_kind": "'%s' nu este un tip în care poate deveni o construcție de pe Bancul de lucru.",
   "chat.dungeontrain.workbench.committed": "Editor: '%s' confirmată ca %s '%s'.",
+  "chat.dungeontrain.workbench.committed_renamed": "Editor: '%s' era deja folosit, așa că s-a confirmat ca %s '%s'.",
   "chat.dungeontrain.workbench.name_taken": "Există deja %2$s numit '%1$s' — adaugă 'replace' pentru a-l suprascrie sau alege alt nume.",
   "chat.dungeontrain.workbench.prefabs_kept_local": "S-a păstrat versiunea proprie a prefabricatelor de pradă ale acestei instalări: %s.",
   "chat.dungeontrain.workbench.list_empty": "Bancul de lucru e gol.",

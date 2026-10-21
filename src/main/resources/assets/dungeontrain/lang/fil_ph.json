@@ -3811,6 +3811,7 @@
   "chat.dungeontrain.workbench.unknown": "Walang Workbench build na may pangalang '%s'.",
   "chat.dungeontrain.workbench.bad_kind": "Hindi uri na maaaring maging Workbench build ang '%s'.",
   "chat.dungeontrain.workbench.committed": "Editor: na-commit ang '%s' bilang %s na '%s'.",
+  "chat.dungeontrain.workbench.committed_renamed": "Editor: gamit na ang '%s', kaya na-commit bilang %s na '%s'.",
   "chat.dungeontrain.workbench.name_taken": "May %2$s na dito na may pangalang '%1$s' — idagdag ang 'replace' para i-overwrite ito, o magbigay ng ibang pangalan.",
   "chat.dungeontrain.workbench.prefabs_kept_local": "Pinanatili ang sariling bersyon ng loot prefab ng install na ito: %s.",
   "chat.dungeontrain.workbench.list_empty": "Walang laman ang Workbench.",

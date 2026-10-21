@@ -3825,6 +3825,7 @@
   "chat.dungeontrain.workbench.unknown": "沒有名為「%s」的工作台建築。",
   "chat.dungeontrain.workbench.bad_kind": "「%s」不是工作台建築可以成為的類型。",
   "chat.dungeontrain.workbench.committed": "編輯器：已將「%s」提交為%s「%s」。",
+  "chat.dungeontrain.workbench.committed_renamed": "編輯器：「%s」已被佔用，因此提交為%s「%s」。",
   "chat.dungeontrain.workbench.name_taken": "這裡已有名為「%1$s」的%2$s——加上「replace」可覆寫它，或改用其他名字。",
   "chat.dungeontrain.workbench.prefabs_kept_local": "保留了本安裝自帶的戰利品預製件：%s。",
   "chat.dungeontrain.workbench.list_empty": "工作台為空。",

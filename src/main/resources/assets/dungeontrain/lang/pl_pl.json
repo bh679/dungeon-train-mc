@@ -3925,6 +3925,7 @@
   "chat.dungeontrain.workbench.unknown": "Brak budowli o nazwie '%s' w Warsztacie.",
   "chat.dungeontrain.workbench.bad_kind": "'%s' nie jest rodzajem, którym może stać się budowla z Warsztatu.",
   "chat.dungeontrain.workbench.committed": "Edytor: zatwierdzono '%s' jako %s '%s'.",
+  "chat.dungeontrain.workbench.committed_renamed": "Edytor: nazwa '%s' była zajęta, więc zatwierdzono jako %s '%s'.",
   "chat.dungeontrain.workbench.name_taken": "%2$s o nazwie '%1$s' już tu jest — dodaj 'replace', aby nadpisać, albo podaj inną nazwę.",
   "chat.dungeontrain.workbench.prefabs_kept_local": "Zachowano własną wersję prefabrykatów łupów tej instalacji: %s.",
   "chat.dungeontrain.workbench.list_empty": "Warsztat jest pusty.",

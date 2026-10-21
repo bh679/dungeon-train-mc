@@ -4416,6 +4416,7 @@
       "chat.dungeontrain.workbench.unknown",
       "chat.dungeontrain.workbench.bad_kind",
       "chat.dungeontrain.workbench.committed",
+      "chat.dungeontrain.workbench.committed_renamed",
       "chat.dungeontrain.workbench.name_taken",
       "chat.dungeontrain.workbench.prefabs_kept_local",
       "chat.dungeontrain.workbench.list_empty",

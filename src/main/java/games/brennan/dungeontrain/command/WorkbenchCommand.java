@@ -197,10 +197,24 @@ final class WorkbenchCommand {
             // The command has no prefab-conflict screen: this install's prefabs stay as they are.
             BuilderRelayDownload.PrefabAnswer.resolved(java.util.List.of(), java.util.Map.of()));
         BuilderRelayDownload.Result result = WorkbenchCommit.commit(source.getServer().overworld(), request);
+        // "Commit as" renames rather than refuses: a taken name lands under the next free one.
+        String asked = landsOn;
+        for (int n = 2; !replace && nameTaken(result.outcome()) && n < MAX_RENAME_TRIES; n++) {
+            String candidate = nextFreeName(asked, n);
+            if (result.takenNames().contains(candidate)) continue;
+            landsOn = candidate;
+            result = WorkbenchCommit.commit(source.getServer().overworld(), request.named(candidate));
+        }
+        String installedAs = landsOn;
         switch (result.outcome()) {
             case INSTALLED -> {
-                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.workbench.committed",
-                    id, kind.id(), landsOn).withStyle(ChatFormatting.GREEN), true);
+                if (installedAs.equals(asked)) {
+                    source.sendSuccess(() -> Component.translatable("chat.dungeontrain.workbench.committed",
+                        id, kind.id(), installedAs).withStyle(ChatFormatting.GREEN), true);
+                } else {
+                    source.sendSuccess(() -> Component.translatable("chat.dungeontrain.workbench.committed_renamed",
+                        asked, kind.id(), installedAs).withStyle(ChatFormatting.GREEN), true);
+                }
                 if (!result.conflicts().isEmpty()) {
                     String kept = String.join(", ", result.conflicts().stream().map(c -> c.id()).toList());
                     source.sendSuccess(() -> Component.translatable("chat.dungeontrain.workbench.prefabs_kept_local", kept)
@@ -208,10 +222,31 @@ final class WorkbenchCommand {
                 }
             }
             case ALREADY_HERE, NAME_TAKEN -> source.sendFailure(
-                Component.translatable("chat.dungeontrain.workbench.name_taken", landsOn, kind.id()));
+                Component.translatable("chat.dungeontrain.workbench.name_taken", installedAs, kind.id()));
             default -> source.sendFailure(Component.translatable("chat.dungeontrain.workbench.failed", result.outcome().name()));
         }
         return result.outcome() == BuilderRelayDownload.Outcome.INSTALLED ? 1 : 0;
+    }
+
+    /** How many suffixed names a commit tries before giving the taken-name refusal after all. */
+    static final int MAX_RENAME_TRIES = 100;
+
+    private static final int NAME_MAX_LENGTH = 32;
+
+    private static boolean nameTaken(BuilderRelayDownload.Outcome outcome) {
+        return outcome == BuilderRelayDownload.Outcome.ALREADY_HERE || outcome == BuilderRelayDownload.Outcome.NAME_TAKEN;
+    }
+
+    /**
+     * {@code base} with {@code _n} appended, lower-cased and cut so the whole id fits the 32-character
+     * name rule every kind shares ({@code CarriageVariant.NAME_PATTERN}).
+     */
+    static String nextFreeName(String base, int n) {
+        String suffix = "_" + n;
+        String stem = (base == null ? "" : base).toLowerCase(java.util.Locale.ROOT);
+        int room = NAME_MAX_LENGTH - suffix.length();
+        if (stem.length() > room) stem = stem.substring(0, room);
+        return stem + suffix;
     }
 
     private static int unknown(CommandSourceStack source, String id) {

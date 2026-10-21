@@ -3811,6 +3811,7 @@
   "chat.dungeontrain.workbench.unknown": "Tidak ada bangunan Meja kerja bernama '%s'.",
   "chat.dungeontrain.workbench.bad_kind": "'%s' bukan jenis yang bisa dijadikan bangunan Meja kerja.",
   "chat.dungeontrain.workbench.committed": "Editor: '%s' ditetapkan sebagai %s '%s'.",
+  "chat.dungeontrain.workbench.committed_renamed": "Editor: '%s' sudah dipakai, jadi ditetapkan sebagai %s '%s'.",
   "chat.dungeontrain.workbench.name_taken": "Sudah ada %2$s bernama '%1$s' di sini — tambahkan 'replace' untuk menimpanya, atau beri nama lain.",
   "chat.dungeontrain.workbench.prefabs_kept_local": "Versi prefab jarahan milik instalasi ini dipertahankan: %s.",
   "chat.dungeontrain.workbench.list_empty": "Meja kerja kosong.",

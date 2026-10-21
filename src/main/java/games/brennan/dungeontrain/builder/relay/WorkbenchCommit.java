@@ -65,6 +65,11 @@ public final class WorkbenchCommit {
             resolution = resolution == null ? BuilderRelayInstall.Resolution.AS_IS : resolution;
             prefabs = prefabs == null ? BuilderRelayDownload.PrefabAnswer.UNASKED : prefabs;
         }
+
+        /** This request landing under {@code otherName} instead. */
+        public Request named(String otherName) {
+            return new Request(stagedId, kind, subKind, otherName, parentId, resolution, prefabs);
+        }
     }
 
     /** The kinds a staged build may be committed as. */

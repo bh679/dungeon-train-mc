@@ -3868,6 +3868,7 @@
   "chat.dungeontrain.workbench.unknown": "Nessuna costruzione del Banco di lavoro chiamata '%s'.",
   "chat.dungeontrain.workbench.bad_kind": "'%s' non è un tipo in cui una costruzione del Banco di lavoro possa trasformarsi.",
   "chat.dungeontrain.workbench.committed": "Editor: '%s' confermata come %s '%s'.",
+  "chat.dungeontrain.workbench.committed_renamed": "Editor: '%s' era già in uso, quindi confermata come %s '%s'.",
   "chat.dungeontrain.workbench.name_taken": "Esiste già un %2$s chiamato '%1$s' — aggiungi 'replace' per sovrascriverlo, oppure scegli un altro nome.",
   "chat.dungeontrain.workbench.prefabs_kept_local": "Mantenuta la versione propria di questa installazione dei prefabbricati del bottino: %s.",
   "chat.dungeontrain.workbench.list_empty": "Il Banco di lavoro è vuoto.",
