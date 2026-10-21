@@ -153,6 +153,8 @@ public final class EditorScreenState {
     /** Change tab. The type strip is left alone: it belongs to the category, not the page. */
     public static void setPage(EditorScreenPage next) {
         if (next == null || next == page) return;
+        // A release build has no Workbench tab; nothing else may land on it either.
+        if (next.devOnly() && !games.brennan.dungeontrain.DungeonTrain.isDevBuild()) return;
         EditorScreenPage previous = page;
         page = next;
         if (next == EditorScreenPage.WORKBENCH) enterWorkbenchTab();

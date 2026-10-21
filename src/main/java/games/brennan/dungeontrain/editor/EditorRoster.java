@@ -320,6 +320,7 @@ public final class EditorRoster {
     /** The buildings, one group — shipped Lost City buildings first, then new ones. */
     /** The Workbench shelf: one group, one row per staged build, named by staged id. */
     private static void addWorkbench(List<EditorRosterPacket.Group> out) {
+        if (!games.brennan.dungeontrain.DungeonTrain.isDevBuild()) return;
         List<games.brennan.dungeontrain.editor.workbench.WorkbenchStagedBuild> staged =
             games.brennan.dungeontrain.editor.workbench.WorkbenchStagingStore.list();
         if (staged.isEmpty()) return;

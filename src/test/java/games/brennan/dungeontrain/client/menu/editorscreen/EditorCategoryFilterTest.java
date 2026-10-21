@@ -22,6 +22,10 @@ final class EditorCategoryFilterTest {
             EditorCategoryFilter.CONTENTS, EditorCategoryFilter.TRACKS, EditorCategoryFilter.DIMENSIONS,
             EditorCategoryFilter.BUILDINGS, EditorCategoryFilter.WORKBENCH,
         }, EditorCategoryFilter.values());
+        assertEquals(java.util.List.of(EditorCategoryFilter.values()), EditorCategoryFilter.cells(true));
+        assertEquals(java.util.List.of(EditorCategoryFilter.ALL, EditorCategoryFilter.WHOLE, EditorCategoryFilter.CARRIAGES,
+            EditorCategoryFilter.CONTENTS, EditorCategoryFilter.TRACKS, EditorCategoryFilter.DIMENSIONS,
+            EditorCategoryFilter.BUILDINGS), EditorCategoryFilter.cells(false), "a release build has no Workbench cell");
         assertEquals(PlotCategory.WHOLE, EditorCategoryFilter.WHOLE.category());
         assertNull(EditorCategoryFilter.ALL.category());
         assertEquals(PlotCategory.PORTALS, EditorCategoryFilter.DIMENSIONS.category());
