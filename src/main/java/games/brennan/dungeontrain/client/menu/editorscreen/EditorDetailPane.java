@@ -458,9 +458,22 @@ public final class EditorDetailPane {
                 sheetLines = TemplateDataSheet.lines(tile, pathLabel, summary,
                     tile == null ? EditorRosterIndex.Provenance.BUILTIN : EditorRosterIndex.provenanceOf(tile.variant()),
                     ctx.selection(), roomRows);
-                sheetCells = TemplateDataSheet.place(sheetLines, layout.sheet(), font);
-                TemplateDataSheet.draw(g, font, layout.sheet(), sheetLines, sheetCells,
+                // A reviewer's verdict row stands at the foot of the first page too, in sight without
+                // turning to the answers: the sheet gives up one row's height to it.
+                InventoryEditorLayout.Rect sheet = layout.sheet();
+                if (canReview()) {
+                    int rowH = SubmissionPage.BUTTON_H + 2;
+                    sheet = new InventoryEditorLayout.Rect(sheet.x(), sheet.y(), sheet.w(), Math.max(0, sheet.h() - rowH));
+                }
+                sheetCells = TemplateDataSheet.place(sheetLines, sheet, font);
+                TemplateDataSheet.draw(g, font, sheet, sheetLines, sheetCells,
                     hovered.kind() == HitKind.SHEET ? hovered.index() : -1);
+                if (canReview()) {
+                    InventoryEditorLayout.Rect full = layout.sheet();
+                    reviewButtons = SubmissionPage.drawVerdicts(g, font, new InventoryEditorLayout.Rect(
+                        full.x() + 2, full.bottom() - SubmissionPage.BUTTON_H - 1, Math.max(10, full.w() - 4),
+                        SubmissionPage.BUTTON_H), review, mouseX, mouseY);
+                }
             }
         } else {
             // Nothing of the model page is hittable while another page is up.
@@ -768,7 +781,7 @@ public final class EditorDetailPane {
         if (editNoteRect != null && onSubmitPage() && editNoteRect.contains(mx, my)) {
             return new Hit(HitKind.EDIT_NOTE, 0, 0);
         }
-        if (onSubmitPage() && canReview()) {
+        if ((onSubmitPage() || (onModelPage() && !testing)) && canReview()) {
             if (hits(reviewButtons.accept(), mx, my)) return new Hit(HitKind.REVIEW_ACCEPT, 0, 0);
             if (hits(reviewButtons.feedback(), mx, my)) return new Hit(HitKind.REVIEW_FEEDBACK, 0, 0);
             if (hits(reviewButtons.resubmit(), mx, my)) return new Hit(HitKind.REVIEW_RESUBMIT, 0, 0);
