@@ -29138,6 +29138,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "mob-buffs-never-unbeatable",
+      "version": "0.1433.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Deep mobs hit harder, but never unbeatable",
+      "summary": "Very far down the train, buffed mobs stop rolling the weakest buffs. Mobs with extreme protection or healing can always be worn down now.",
+      "highlights": [],
+      "pr": 2212,
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
