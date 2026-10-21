@@ -185,12 +185,17 @@ public final class EditorDetailPane {
         // is the only one that carries the answers. No answers, no page — as with the Loot page.
         // Any template the relay holds has the page, answered or not: its questions are worth seeing,
         // and editable, before the build is ever submitted.
-        BuilderProfilePacket.Entry own = BuilderProfileState.ownBuild(relayId);
         // A build staged on the Workbench is somebody's relay row too: its answers and review state
         // come from the row the Workbench tab (or Find a Builder) listed, and the developer gets the
         // verdict row on it here, standing in the build, rather than only on the relay listing.
+        // Never read off My Builds for one: the dev and live relays number rows independently, so a
+        // live build can share its id with one of this player's own dev builds and read as "mine".
         boolean staged = ctx.hasSelection() && ctx.selection().category() == PlotCategory.WORKBENCH;
-        BuilderProfilePacket.Entry other = own == null && staged && relayId > 0 ? EditorCreatorBuilds.byId(relayId) : null;
+        BuilderProfilePacket.Entry own = staged ? null : BuilderProfileState.ownBuild(relayId);
+        BuilderProfilePacket.Entry other = staged && relayId > 0 ? EditorCreatorBuilds.byId(relayId) : null;
+        // The server's answer is cached by relay id alone, so a staged build asks afresh on selection
+        // rather than inheriting an answer given about the other relay's row of the same number.
+        if (other != null && newSelection) BuilderSubmitHintsRequests.forget(relayId);
         BuilderProfilePacket.Entry shownEntry = own != null ? own : other;
         reviewEntry = other;
         reviewLive = other == null ? false : EditorCreatorBuilds.liveOf(relayId);
