@@ -87,7 +87,11 @@ public final class WindyDrive {
 
     private WindyDrive() {}
 
-    /** True while DT is driving Windy (a train world, in the Overworld). Calm still counts — that's the point. */
+    /**
+     * True while DT is driving Windy (a train world, in the Overworld). Calm still counts — that's the point: with
+     * DT's wind off, before the wind start, or in a dimensional carriage, DT holds Windy at no wind ({@link #calm}),
+     * so Windy's own wind never shows in a train world.
+     */
     public static boolean owns() {
         return owns;
     }
@@ -149,6 +153,13 @@ public final class WindyDrive {
         owns = true;
     }
 
+    /** DT's wind isn't blowing here: keep hold of Windy, at no wind, so Windy spawns nothing of its own. */
+    static void calm() {
+        release();
+        owns = true;
+    }
+
+    /** Hand Windy back its own wind (not a train world, or another dimension, or logged out). */
     static void release() {
         owns = false;
         strength = 0.0f;
