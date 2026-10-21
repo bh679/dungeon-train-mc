@@ -13,7 +13,8 @@ import java.util.List;
  * that kind are in frame; what counts as which is {@link PhotoSubjectTally#of}, the same reading the
  * relay's photo leaderboards use.
  *
- * <p>Kept in the player's persistent data, beside the photographed-biome list.</p>
+ * <p>Kept in the player's persistent data, beside the photographed-biome list, and mirrored across
+ * worlds by {@link GlobalPhotoProgress}.</p>
  */
 final class PhotoCounts {
 
@@ -46,5 +47,6 @@ final class PhotoCounts {
             ModAdvancementTriggers.PHOTO_COUNT.get().trigger(player, category, count);
         }
         player.getPersistentData().put(KEY, counts);
+        PhotoAdvancementEvents.mirrorTally(player);
     }
 }
