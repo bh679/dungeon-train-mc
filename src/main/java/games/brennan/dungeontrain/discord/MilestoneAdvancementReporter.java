@@ -112,7 +112,8 @@ public final class MilestoneAdvancementReporter {
 
     /** {@code "🥇 Steve — first passenger ever to earn Cross-Country"}. */
     static String firstEverTitle(String playerName, String advancementTitle) {
-        return "🥇 " + playerName + " — first passenger ever to earn " + advancementTitle;
+        return "🥇 " + DiscordMarkdown.escape(playerName) + " — first passenger ever to earn "
+                + DiscordMarkdown.escape(advancementTitle);
     }
 
     /** The lang key of an advancement's hint — {@code dungeon_train/the_long_run} → {@code advancements.dungeontrain.dungeon_train.the_long_run.hint}. */
@@ -129,7 +130,7 @@ public final class MilestoneAdvancementReporter {
 
     /** {@code "🏆 Steve earned Everything Burrito"}. */
     static String title(String playerName, String advancementTitle) {
-        return "🏆 " + playerName + " earned " + advancementTitle;
+        return "🏆 " + DiscordMarkdown.escape(playerName) + " earned " + DiscordMarkdown.escape(advancementTitle);
     }
 
     /** The advancement's hint alone, stripped — {@code ""} when it has none. */
