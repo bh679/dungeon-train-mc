@@ -332,10 +332,11 @@ final class EditorFilterBar {
         List<StripCell> sc = new ArrayList<>();
         loadAllRect = null;
         if (expanded) {
-            EditorCategoryFilter[] filters_ = EditorCategoryFilter.values();
-            List<Cells> cc = Cells.across(categoryRect, filters_.length, 0);
-            for (int i = 0; i < filters_.length; i++) {
-                cat.add(new CategoryCell(filters_[i], cc.get(i).x(), cc.get(i).w()));
+            List<EditorCategoryFilter> filters_ =
+                EditorCategoryFilter.cells(games.brennan.dungeontrain.DungeonTrain.isDevBuild());
+            List<Cells> cc = Cells.across(categoryRect, filters_.size(), 0);
+            for (int i = 0; i < filters_.size(); i++) {
+                cat.add(new CategoryCell(filters_.get(i), cc.get(i).x(), cc.get(i).w()));
             }
             PlotCategory page = EditorScreenState.category().category();
             boolean loadAll = showLoadAll && !creatorMode && page != null;

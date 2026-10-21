@@ -78,6 +78,11 @@ public record WorkbenchAutoloadPacket(List<Item> items, boolean live) implements
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             MinecraftServer server = player.getServer();
             if (server == null || !player.hasPermissions(2) || packet.items.isEmpty()) return;
+            if (!DungeonTrain.isDevBuild()) {
+                LOGGER.warn("[DungeonTrain] Workbench: autoload request from {} ignored on a release build",
+                    player.getName().getString());
+                return;
+            }
             ServerLevel level = server.overworld();
             boolean live = BuilderProfileRequestPacket.liveRequested(packet.live);
             // Into the Workbench first, so the stages below stamp beside the player as they land.

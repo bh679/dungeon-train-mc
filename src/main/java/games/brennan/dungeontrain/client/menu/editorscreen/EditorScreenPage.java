@@ -33,6 +33,11 @@ public enum EditorScreenPage {
         return langKey;
     }
 
+    /** Offered only in a dev checkout — the Workbench is the reviewer's bench, never a release's. */
+    public boolean devOnly() {
+        return this == WORKBENCH;
+    }
+
     /** Whether this page shows the tile browser — only Templates does. */
     public boolean isBrowser() {
         return this == TEMPLATES || this == WORKBENCH;

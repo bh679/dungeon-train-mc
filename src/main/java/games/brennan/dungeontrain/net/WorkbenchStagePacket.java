@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.net;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayStage;
 import net.minecraft.network.FriendlyByteBuf;
@@ -9,6 +10,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import org.slf4j.Logger;
 
 /**
  * Client → server: put relay build {@code relayId} on the editor's Workbench — staged, not installed.
@@ -24,6 +26,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  */
 public record WorkbenchStagePacket(int relayId, String ownerUuid, String ownerName, boolean live)
         implements CustomPacketPayload {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     public WorkbenchStagePacket {
         ownerUuid = ownerUuid == null ? "" : ownerUuid;
@@ -55,6 +59,11 @@ public record WorkbenchStagePacket(int relayId, String ownerUuid, String ownerNa
             if (player.getServer() == null) return;
             // OP-only, like every editor write.
             if (!player.hasPermissions(2)) return;
+            if (!DungeonTrain.isDevBuild()) {
+                LOGGER.warn("[DungeonTrain] Workbench: stage request from {} ignored on a release build",
+                    player.getName().getString());
+                return;
+            }
             ServerLevel level = player.getServer().overworld();
             String owner = BuilderProfileRequestPacket.viewedOwner(player, packet.ownerUuid);
             boolean live = BuilderProfileRequestPacket.liveRequested(packet.live);

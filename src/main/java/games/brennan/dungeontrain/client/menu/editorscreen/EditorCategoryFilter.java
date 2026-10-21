@@ -29,6 +29,11 @@ public enum EditorCategoryFilter {
         this.langKey = langKey;
     }
 
+    /** The cells the strip shows: every value, minus the dev-only Workbench on a release build. */
+    public static java.util.List<EditorCategoryFilter> cells(boolean dev) {
+        return java.util.Arrays.stream(values()).filter(c -> dev || c != WORKBENCH).toList();
+    }
+
     /** The one category this cell browses, or null for All. */
     public PlotCategory category() {
         return category;
