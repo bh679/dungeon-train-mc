@@ -1236,7 +1236,11 @@ public final class AchievementEvents {
             // The burrito's play time (since first played or the last reset) is recorded here and rides
             // the relay claim below, for the fastest-burrito board.
             BurritoClock.Completion burrito = id.equals(CompletionistAdvancement.ID) ? BurritoClock.recordEarn(player) : null;
-            FirstEverAdvancements.onEarn(player, advancement, burrito);
+            // The Challenge is a one-life feat, so its time is this life's time aboard — the
+            // fastest-challenge board.
+            long challengeTicks = id.equals(AllAtOnceAdvancement.THE_CHALLENGE)
+                    ? player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).trainTimeTicks() : 0L;
+            FirstEverAdvancements.onEarn(player, advancement, burrito, challengeTicks);
             // Re-evaluate the "Everything Burrito" capstone (every non-editor
             // advancement earned). Skip its own earn: the award inside
             // checkAndGrant re-fires this event, and the id guard avoids the

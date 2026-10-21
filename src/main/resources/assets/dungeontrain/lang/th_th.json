@@ -3162,6 +3162,7 @@
   "dungeontrain.leaderboard.advancements.header": "ใครได้รับความสำเร็จมากที่สุด",
   "dungeontrain.leaderboard.builder_time.header": "ใครใช้เวลาสร้างนานที่สุด",
   "dungeontrain.leaderboard.burrito_fastest.header": "ใครได้เบอร์ริโตครบทุกอย่างโดยใช้เวลาบนขบวนน้อยที่สุด",
+  "dungeontrain.leaderboard.challenge_fastest.header": "ใครผ่าน \"ความท้าทาย\" ได้เร็วที่สุด",
   "dungeontrain.leaderboard.live_stream_time.header": "ใครสวมกล้องวิดีโอถ่ายทอดนานที่สุด",
   "dungeontrain.leaderboard.live_view_time.header": "ใครดูถ่ายทอดสดทางทีวีนานที่สุด",
   "dungeontrain.leaderboard.live_gifts.header": "ใครส่งต่อกล้องวิดีโอถ่ายทอดบ่อยที่สุด",

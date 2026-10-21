@@ -29320,6 +29320,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "fastest-time-leaderboard",
+      "version": "0.1441.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "New leaderboard book",
+      "summary": "A new leaderboard book ranks the quickest players to pull off one of the hardest runs aboard the train. Lowest time wins.",
+      "highlights": [],
+      "pr": 2223,
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
