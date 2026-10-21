@@ -43,6 +43,10 @@ import net.minecraft.world.level.block.Block;
  *
  * <p>A hand-held TV that was switched on ({@code compat/vista/TvItems}) is placed switched on, through
  * the same latch, so it comes up tuned like any other TV that comes on.</p>
+ *
+ * <p>A broken TV drops one TV and nothing else. Vista spills the slot on removal like a chest; in DT the
+ * slot only ever holds a cassette ({@link TVBlockEntityMixin}), and no cassette is ever a player's item,
+ * so the spill is skipped outright rather than relying on each dropped stack being caught later.</p>
  */
 @Mixin(value = TVBlock.class, remap = false)
 public abstract class TVBlockMixin {
@@ -97,6 +101,12 @@ public abstract class TVBlockMixin {
             tv.setChanged();
             level.sendBlockUpdated(tv.getBlockPos(), tv.getBlockState(), tv.getBlockState(), Block.UPDATE_CLIENTS);
         }
+    }
+
+    @Redirect(method = "onRemove",
+              at = @At(value = "INVOKE", target = "Lnet/minecraft/world/Containers;dropContentsOnDestroy(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;)V"))
+    private void dungeontrain$noSpill(BlockState state, BlockState newState, Level level, BlockPos pos) {
+        // Deliberately empty: a TV's slot is its tuner, never storage.
     }
 
     @Inject(method = "setPlacedBy", at = @At("TAIL"))

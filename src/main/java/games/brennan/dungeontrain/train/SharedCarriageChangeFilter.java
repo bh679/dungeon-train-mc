@@ -80,6 +80,9 @@ public final class SharedCarriageChangeFilter {
     private static boolean isLootContainer(BlockState state) {
         return ContainerContentsRoller.isContainerState(state)
                 || ContainerContentsRoller.isDecoratedPot(state)
-                || ContainerContentsRoller.isBrushable(state);
+                || ContainerContentsRoller.isBrushable(state)
+                // Not a container to the roller (its slot is a tuner), but breaking one is still
+                // taking an item off the train, not building.
+                || games.brennan.dungeontrain.compat.vista.TvBlocks.isTelevision(state);
     }
 }
