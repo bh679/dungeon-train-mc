@@ -183,6 +183,10 @@ public final class DungeonTrainNet {
         // server the world keeps ticking behind the menu — see PlayerActivityTracker.
         registrar.playToServer(PlayerPausedPacket.TYPE, PlayerPausedPacket.STREAM_CODEC, PlayerPausedPacket::handle);
 
+        // Whether this player lets spawned TVs come on — a client-only Performance setting the
+        // carriage stamp reads (TvSpawnPower).
+        registrar.playToServer(TvSpawnPrefPacket.TYPE, TvSpawnPrefPacket.STREAM_CODEC, TvSpawnPrefPacket::handle);
+
         // Mouse movement / clicks inside an open screen, which freeze the camera and so are
         // invisible to the server's own look sampling — see PlayerActivityTracker.
         registrar.playToServer(ClientInputPacket.TYPE, ClientInputPacket.STREAM_CODEC, ClientInputPacket::handle);
