@@ -29035,8 +29035,60 @@
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/a-deeper-darker-train.jpg"
     },
     {
+      "id": "spider-floor-bounce-fix",
+      "version": "0.1426.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Spider fix",
+      "summary": "Spiders beside the train no longer twitch back and forth against the side of a carriage.",
+      "highlights": [],
+      "pr": 2206,
+      "date": "2026-10-20",
+      "released": true,
+      "released_in": "v0.1429.0",
+      "released_at": "2026-10-20T17:43:29Z"
+    },
+    {
+      "id": "bug-report-pauses-run",
+      "version": "0.1428.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Bug reports pause the run",
+      "summary": "Writing a bug report with /bug now pauses the game while the report screen is open, so the train and its mobs wait for you instead of carrying on without you. On a server, your run clock stops while you type, the same as opening the pause menu.",
+      "highlights": [
+        "/bug pauses the game while you write the report",
+        "On servers, your run clock stops while the report screen is open"
+      ],
+      "date": "2026-10-20",
+      "released": true,
+      "released_in": "v0.1429.0",
+      "released_at": "2026-10-20T17:43:29Z"
+    },
+    {
+      "id": "advancement-unlock-fix",
+      "version": "0.1429.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "A hidden advancement that some players had earned was not unlocking. It does now.",
+      "highlights": [],
+      "date": "2026-10-20",
+      "released": true,
+      "released_in": "v0.1429.0",
+      "released_at": "2026-10-20T17:43:29Z"
+    },
+    {
       "id": "ender-chest-launcher-proof",
-      "version": "0.1427.0",
+      "version": "0.1430.0",
       "type": "fix",
       "tags": [
         "fix",
@@ -29049,7 +29101,7 @@
         "A chest left behind by a previous launcher is carried across and announced in chat",
         "Requires Ender Chest Persistence 0.7.0 (auto-installed by the CurseForge / Modrinth apps)"
       ],
-      "date": "2026-10-20",
+      "date": "2026-10-21",
       "released": false,
       "released_in": null,
       "released_at": null
