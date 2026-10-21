@@ -29354,6 +29354,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "discord-markdown-escape-all-feeds",
+      "version": "0.1444.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Discord post fix",
+      "summary": "Names, builds and pets with underscores or asterisks now show exactly as written in every Discord post, instead of turning the rest of the post underlined or italic.",
+      "highlights": [],
+      "pr": 2225,
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
