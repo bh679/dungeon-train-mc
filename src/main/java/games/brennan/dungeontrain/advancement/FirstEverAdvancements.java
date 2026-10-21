@@ -49,8 +49,11 @@ public final class FirstEverAdvancements {
      *
      * @param burrito the Everything Burrito's recorded play time when this earn is the burrito, else null —
      *                sent on the claim for the relay's fastest-burrito board
+     * @param challengeTicks this life's ticks aboard when this earn is The Challenge, else 0 — sent on
+     *                the claim for the relay's fastest-challenge board
      */
-    public static void onEarn(ServerPlayer player, AdvancementHolder advancement, BurritoClock.Completion burrito) {
+    public static void onEarn(ServerPlayer player, AdvancementHolder advancement, BurritoClock.Completion burrito,
+                              long challengeTicks) {
         ResourceLocation id = advancement.id();
         if (!eligible(id)) return;
         if (!DungeonTrainConfig.isWorldInfoToRelay()) return;   // the relay is what knows; no relay, no firsts
@@ -64,7 +67,7 @@ public final class FirstEverAdvancements {
         // The real vanilla difficulty, isolation on or off: the relay's per-difficulty stats ride
         // on this claim, and a Hard earn is a Hard earn whether or not the profiles are split.
         String difficulty = DifficultyPartition.keyFor(player.level());
-        AdvancementFirstClient.claim(player.getUUID(), name, id.toString(), difficulty, burrito, answer -> {
+        AdvancementFirstClient.claim(player.getUUID(), name, id.toString(), difficulty, burrito, challengeTicks, answer -> {
             if (!answer.first()) return;
             server.execute(() -> celebrate(server, player, advancement));
         });

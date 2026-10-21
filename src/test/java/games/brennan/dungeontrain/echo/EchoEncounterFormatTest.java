@@ -177,4 +177,21 @@ class EchoEncounterFormatTest {
         assertTrue(EchoEncounterFormat.story("B", enc, EndReason.YOU_DIED).contains("B fell, and the echo"));
         assertTrue(EchoEncounterFormat.story("B", enc, EndReason.LEFT_BEHIND).contains("left behind"));
     }
+
+    @Test
+    @DisplayName("names, items and chat are markdown-escaped so a trailing underscore can't underline the post")
+    void escapesDiscordMarkdown() {
+        EchoEncounter enc = encounter("ashy_", 233, List.of("Teal_Edge (4.5 attack)"),
+                EchoEvent.SPAWNED, EchoEvent.PLAYER_STRUCK_ECHO, EchoEvent.CHAT);
+        enc.chatLine = "*gg*";
+        String story = EchoEncounterFormat.story("lak_04171", enc, EndReason.ECHO_SLAIN_BY_YOU);
+
+        assertTrue(story.contains("A remote echo of ashy\\_ — a soul lost around carriage 233"));
+        assertTrue(story.contains("Teal\\_Edge (4.5 attack)"));
+        assertTrue(story.contains("lak\\_04171 drew steel"));
+        assertTrue(story.contains("“\\*gg\\*”"));
+        assertTrue(story.contains("the echo of ashy\\_ fell once more."));
+        assertFalse(story.replace("\\_", "").contains("_"), "no unescaped underscore left");
+        assertEquals("👁 lak\\_04171 met the echo of ashy\\_", EchoEncounterFormat.title("lak_04171", "ashy_"));
+    }
 }

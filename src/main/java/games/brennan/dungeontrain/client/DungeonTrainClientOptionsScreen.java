@@ -703,10 +703,17 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case STREAM_SAVE_BANDWIDTH -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.saveBandwidth(),
                     LiveFeedClientConfig::setSaveBandwidth), key + ".tip");
 
-            // Decoding live feeds onto TVs and the pinned viewer; off = static, and the idle
-            // watchdog stops the decoder. On the Performance tab too, as a frame-rate cost.
-            case LIVE_FEED_VIEWING -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.viewingEnabled(),
-                    LiveFeedClientConfig::setViewingEnabled), key + ".tip");
+            // Decoding live feeds onto TVs and the pinned viewer, and whether spawned TVs may come on
+            // (TvSpawnPower); off = static, and the idle watchdog stops the decoder. On the
+            // Performance tab too, as a frame-rate cost. TvSpawnPrefSyncClient tells the server.
+            case LIVE_FEED_VIEWING -> Setting.of(
+                    CycleButton.<LiveFeedTvMode>builder(DungeonTrainClientOptionsScreen::liveFeedTvModeLabel)
+                            .withValues(LiveFeedTvMode.values())
+                            .withInitialValue(LiveFeedTvMode.current())
+                            .displayOnlyValue()
+                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
+                                    (btn, mode) -> mode.store()),
+                    key + ".tip");
 
             // Whose name viewers see above the hotbar. Kid mode shows None, greyed, whatever is stored.
             case STREAM_NAME_TAG -> {
@@ -1115,6 +1122,25 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     }
 
     /** A broadcast width as its picture height: {@code 1280} reads "720p". */
+    /** The Live feed row's three settings, stored as {@code viewingEnabled} + {@code tvsSpawnOn}. */
+    enum LiveFeedTvMode {
+        ON, SPAWN_OFF, OFF;
+
+        static LiveFeedTvMode current() {
+            if (!LiveFeedClientConfig.viewingEnabled()) return OFF;
+            return LiveFeedClientConfig.tvsSpawnOn() ? ON : SPAWN_OFF;
+        }
+
+        void store() {
+            LiveFeedClientConfig.setViewingEnabled(this != OFF);
+            LiveFeedClientConfig.setTvsSpawnOn(this == ON);
+        }
+    }
+
+    private static Component liveFeedTvModeLabel(LiveFeedTvMode mode) {
+        return Component.translatable("gui.dungeontrain.options.live_feed_viewing." + mode.name().toLowerCase(java.util.Locale.ROOT));
+    }
+
     private static Component streamNameTagLabel(LiveFeedClientConfig.NameTag tag) {
         return Component.translatable("gui.dungeontrain.options.stream_name_tag." + tag.name().toLowerCase(java.util.Locale.ROOT));
     }

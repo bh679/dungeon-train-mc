@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.player.DifficultyPartition;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerAdvancements;
@@ -15,7 +16,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameRules;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -47,6 +51,13 @@ public final class AdvancementProfiles {
      * loop.
      */
     private static volatile boolean replaying = false;
+
+    /**
+     * Set while a profile swap revokes the outgoing profile from the tree ({@link #clearProfile}).
+     * Those revokes move progress between profiles; they are not the player giving it up, so the
+     * criteria store must not hear them.
+     */
+    private static volatile boolean clearing = false;
 
     private AdvancementProfiles() {}
 
@@ -216,6 +227,116 @@ public final class AdvancementProfiles {
         return removed;
     }
 
+    // ---------------- Half-finished collections ----------------
+
+    /**
+     * Does {@code holder} keep criterion-level progress across worlds? Any GUI-visible advancement
+     * with more than one criterion — a collection such as Most Wanted, Adventuring Time or a biome
+     * album. A single-criterion advancement is either done (and in {@link GlobalAchievementStore}) or
+     * not started.
+     */
+    static boolean tracksCriteria(AdvancementHolder holder) {
+        return shouldPersist(holder) && holder.value().criteria().size() > 1 && !TabGateways.isLinked(holder.id());
+    }
+
+    /**
+     * A criterion landed on, or left, the live tree. Bank it into the cross-world criteria store, or
+     * strike it, so the next world starts the collection where this one is. A finished advancement's
+     * entry is dropped — {@link #record} banks the advancement itself.
+     *
+     * <p>Quiet during a replay or a profile swap: those move what is already banked. A cheated run
+     * ({@link RunIntegrity}) banks nothing, as with full earns, but its revokes still count.</p>
+     */
+    public static void recordProgress(ServerPlayer player, AdvancementHolder holder, AdvancementProgress progress,
+                                      String criterion, boolean granted) {
+        if (replaying || clearing || !tracksCriteria(holder)) return;
+        UUID uuid = player.getUUID();
+        String partition = partitionFor(player, holder.id());
+        boolean persists = RunIntegrity.persistsAdvancement(player, holder);
+        if (progress.isDone()) {
+            // Only once the finished advancement itself is banked: a cheated finish isn't, so the
+            // honest progress behind it stays.
+            if (persists) GlobalCriteriaProgress.removeAdvancement(uuid, partition, holder.id());
+            return;
+        }
+        if (persists) {
+            // Everything this world holds, not just the new criterion, so a revoke from a finished
+            // advancement leaves the rest of it banked rather than nothing.
+            GlobalCriteriaProgress.addAll(uuid, partition, holder.id(), completedCriteria(progress));
+        }
+        if (!granted) GlobalCriteriaProgress.removeCriterion(uuid, partition, holder.id(), criterion);
+    }
+
+    /**
+     * Bank this world's half-finished collections into {@code profileKey} (the shared partition for
+     * the editor tab). Login and the swap's outgoing profile — the counterpart of {@link #absorb}, and
+     * what recovers progress made before the criteria store existed.
+     */
+    public static void absorbCriteria(ServerPlayer player, String profileKey) {
+        MinecraftServer server = player.getServer();
+        if (server == null) return;
+        UUID uuid = player.getUUID();
+        int added = 0;
+        for (AdvancementHolder holder : server.getAdvancements().getAllAdvancements()) {
+            if (!tracksCriteria(holder)) continue;
+            if (!RunIntegrity.persistsAdvancement(player, holder)) continue;
+            AdvancementProgress progress = player.getAdvancements().getOrStartProgress(holder);
+            if (progress.isDone()) continue;
+            List<String> held = completedCriteria(progress);
+            if (held.isEmpty()) continue;
+            String partition = GlobalAchievementStore.isShared(holder.id()) ? GlobalAchievementStore.SHARED : profileKey;
+            added += GlobalCriteriaProgress.addAll(uuid, partition, holder.id(), held);
+        }
+        if (added > 0) {
+            LOGGER.info("[DungeonTrain] Absorbed {} in-progress criteria into the {} profile for {}",
+                added, profileKey, player.getName().getString());
+        }
+    }
+
+    /**
+     * Re-award {@code profileKey}'s (and the shared partition's) banked criteria onto this world's
+     * tree, silently. Criteria earned in different worlds can add up to a finished advancement here;
+     * that one is banked as earned and its criteria entry dropped.
+     */
+    public static void replayCriteria(ServerPlayer player, String profileKey) {
+        MinecraftServer server = player.getServer();
+        if (server == null) return;
+        ServerAdvancementManager mgr = server.getAdvancements();
+        UUID uuid = player.getUUID();
+        int[] replayed = {0};
+        List<Runnable> finished = new ArrayList<>();
+        silently(server, () -> {
+            for (String partition : List.of(profileKey, GlobalAchievementStore.SHARED)) {
+                for (Map.Entry<ResourceLocation, Set<String>> entry : GlobalCriteriaProgress.read(uuid, partition).entrySet()) {
+                    AdvancementHolder holder = mgr.get(entry.getKey());
+                    if (holder == null) continue; // removed mod/datapack: keep it, it may come back
+                    for (String criterion : entry.getValue()) {
+                        // A criterion the advancement no longer has is ignored by award().
+                        if (player.getAdvancements().award(holder, criterion)) replayed[0]++;
+                    }
+                    if (player.getAdvancements().getOrStartProgress(holder).isDone()) {
+                        ResourceLocation id = holder.id();
+                        finished.add(() -> {
+                            GlobalAchievementStore.append(uuid, partition, id);
+                            GlobalCriteriaProgress.removeAdvancement(uuid, partition, id);
+                        });
+                    }
+                }
+            }
+        });
+        finished.forEach(Runnable::run);
+        if (replayed[0] > 0) {
+            LOGGER.info("[DungeonTrain] Replayed {} in-progress criteria from the {} profile for {} (silent)",
+                replayed[0], profileKey, player.getName().getString());
+        }
+    }
+
+    private static List<String> completedCriteria(AdvancementProgress progress) {
+        List<String> held = new ArrayList<>();
+        progress.getCompletedCriteria().forEach(held::add);
+        return held;
+    }
+
     // ---------------- Difficulty change ----------------
 
     /**
@@ -246,8 +367,16 @@ public final class AdvancementProfiles {
     /** Bank the tree into {@code from}, clear its profile advancements, replay {@code to}'s. */
     private static void swapTree(ServerPlayer player, String from, String to) {
         absorb(player, from);
-        int cleared = clearProfile(player);
+        absorbCriteria(player, from);
+        int cleared;
+        clearing = true;
+        try {
+            cleared = clearProfile(player);
+        } finally {
+            clearing = false;
+        }
         replay(player, to);
+        replayCriteria(player, to);
         LOGGER.info("[DungeonTrain] Advancement profile {} → {} for {} ({} cleared)",
             from, to, player.getName().getString(), cleared);
     }

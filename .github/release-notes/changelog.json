@@ -29173,9 +29173,9 @@
       ],
       "pr": 2213,
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1439.0",
+      "released_at": "2026-10-21T10:04:20Z"
     },
     {
       "id": "editor-redstone-tnt-toggles",
@@ -29193,9 +29193,9 @@
       ],
       "pr": 2215,
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1439.0",
+      "released_at": "2026-10-21T10:04:20Z"
     },
     {
       "id": "wind-streaks-only-when-windy",
@@ -29210,9 +29210,9 @@
       "highlights": [],
       "pr": 2216,
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1439.0",
+      "released_at": "2026-10-21T10:04:20Z"
     },
     {
       "id": "dimensional-carriage-trap-rooms",
@@ -29227,9 +29227,9 @@
       "summary": "Dimensional carriages deeper down the train have a new room to find, and some of the riskier rooms now hold better loot. One of the libraries has had a small touch-up too.",
       "highlights": [],
       "date": "2026-10-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1439.0",
+      "released_at": "2026-10-21T10:04:20Z"
     },
     {
       "id": "photo-advancement-tuning",
@@ -29244,6 +29244,95 @@
       "summary": "A few hidden advancements are now much quicker to earn.",
       "highlights": [],
       "pr": 2219,
+      "date": "2026-10-21",
+      "released": true,
+      "released_in": "v0.1439.0",
+      "released_at": "2026-10-21T10:04:20Z"
+    },
+    {
+      "id": "advancement-progress-across-worlds",
+      "version": "0.1438.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement progress carries over",
+      "summary": "Advancements you had partly finished no longer start again from zero in a new world. Your photo counts carry over too.",
+      "highlights": [],
+      "pr": 2220,
+      "date": "2026-10-21",
+      "released": true,
+      "released_in": "v0.1439.0",
+      "released_at": "2026-10-21T10:04:20Z"
+    },
+    {
+      "id": "passenger-log-hardest-challenge",
+      "version": "0.1440.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Bigger feats, louder log",
+      "summary": "One more of the train's hardest feats is now announced in the community passenger log when a passenger earns it.",
+      "highlights": [],
+      "pr": 2222,
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "tvs-sometimes-spawn-on",
+      "version": "0.1440.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "ui"
+      ],
+      "title": "TVs switch themselves on",
+      "summary": "Some TVs on the train now come already switched on, so a carriage full of screens is no longer dark until you click each one.",
+      "highlights": [
+        "About one in four TVs starts on, showing the live feed",
+        "Options, Performance, Watch live feeds: pick TVs start off to keep every new TV off"
+      ],
+      "pr": 2221,
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "discord-echo-story-underscores",
+      "version": "0.1441.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Discord echo story fix",
+      "summary": "Echo encounter stories posted to Discord no longer turn underlined or italic when a player's name ends in an underscore.",
+      "highlights": [],
+      "pr": 2224,
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "fastest-time-leaderboard",
+      "version": "0.1441.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "New leaderboard book",
+      "summary": "A new leaderboard book ranks the quickest players to pull off one of the hardest runs aboard the train. Lowest time wins.",
+      "highlights": [],
+      "pr": 2223,
       "date": "2026-10-21",
       "released": false,
       "released_in": null,
