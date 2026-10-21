@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.bugresponse;
 import games.brennan.dungeontrain.client.bugresponse.BugResponse.Fix;
 import games.brennan.dungeontrain.client.bugresponse.BugResponse.Kind;
 import games.brennan.dungeontrain.client.bugresponse.BugResponse.Result;
+import games.brennan.dungeontrain.chat.ChatClick;
 import games.brennan.dungeontrain.client.version.compare.ChangelogTag;
 import games.brennan.dungeontrain.client.version.compare.FullSemver;
 import games.brennan.dungeontrain.client.version.compare.Platform;
@@ -23,7 +24,7 @@ import java.util.Optional;
  * {@code /feedback}) where there is no death-screen card to show it on. Says what
  * {@link BugResponseCard} says, from the same {@link BugResponse} result and the same lang keys; the
  * card's buttons become clickable links: Update and Get open the modpack page, See changes and the lag
- * tips run {@link #COMMAND}, which opens the screen on the client.
+ * tips are chat-click actions ({@link #CLICK_ACTION}) handled on the client.
  *
  * <p>Pure: the caller hands in the locale (for plural forms) and the applicable tips as data, so the
  * lines can be built and checked without a running client.</p>
@@ -34,17 +35,18 @@ public final class BugResponseChat {
     static final String PREFIX_KEY = "chat.dungeontrain.bug_response.prefix";
     static final String UPDATE_KEY = "gui.dungeontrain.death.update_button";
 
-    /** The client command the links run; registered by {@link BugResponseChatNotifier}. */
-    public static final String COMMAND = "dt-bug-response";
-    static final String CHANGES_COMMAND = "/" + COMMAND + " changes";
+    /** The links' chat-click action ({@link ChatClick}); handled by {@link BugResponseChatNotifier}. */
+    public static final String CLICK_ACTION = "bug-response";
+    static final String CHANGES = "changes";
+    static final String TIP = "tip";
 
     /** One lag tip as chat needs it. {@code button} null: nothing to click; {@code hint} is shown instead. */
     public record TipLine(String id, Component text, @Nullable Component button, @Nullable Component hint) {}
 
     private BugResponseChat() {}
 
-    static String tipCommand(String tipId) {
-        return "/" + COMMAND + " tip " + tipId;
+    static ClickEvent tipClick(String tipId) {
+        return ChatClick.event(CLICK_ACTION, TIP, tipId);
     }
 
     /** The tips as chat data; a tip is clickable when the card would give it a button. */
@@ -158,7 +160,7 @@ public final class BugResponseChat {
     private static Component tipRow(TipLine tip) {
         MutableComponent row = Component.literal("• ").append(tip.text()).withStyle(ChatFormatting.GRAY);
         if (tip.button() != null) {
-            row.append(" ").append(commandLink(tip.button(), tipCommand(tip.id())));
+            row.append(" ").append(actionLink(tip.button(), tipClick(tip.id())));
         } else if (tip.hint() != null) {
             row.append(" ").append(tip.hint().copy().withStyle(ChatFormatting.DARK_GRAY));
         }
@@ -184,7 +186,7 @@ public final class BugResponseChat {
                     Platform.MODRINTH.displayName()), BugResponseCard.packUrl(Platform.MODRINTH)));
         }
         if (r.behind() || r.kind() == Kind.FIXED) {
-            links.add(commandLink(Component.translatable(KEY + "button.changes"), CHANGES_COMMAND));
+            links.add(actionLink(Component.translatable(KEY + "button.changes"), ChatClick.event(CLICK_ACTION, CHANGES)));
         }
         if (links.isEmpty()) return Optional.empty();
         MutableComponent row = Component.empty();
@@ -208,10 +210,10 @@ public final class BugResponseChat {
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(url))));
     }
 
-    private static Component commandLink(Component label, String command) {
+    private static Component actionLink(Component label, ClickEvent click) {
         return Component.literal("[").append(label).append("]").withStyle(s -> s
                 .withColor(ChatFormatting.AQUA).withUnderlined(true)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command)));
+                .withClickEvent(click));
     }
 
     private static String installedText(Result r) {

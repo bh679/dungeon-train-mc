@@ -45,7 +45,7 @@ class BugResponseChatTest {
     private static final String KEY = "gui.dungeontrain.bug_response.";
     private static final String MODRINTH_PACK = "https://modrinth.com/modpack/bEFyz3ji";
     private static final String CURSEFORGE_PACK = "https://www.curseforge.com/projects/1556213";
-    private static final String CHANGES = "RUN_COMMAND /dt-bug-response changes";
+    private static final String CHANGES = "RUN_COMMAND dungeontrain:bug-response/changes";
 
     private static FullSemver v(String s) {
         return FullSemver.parse(s).orElseThrow();
@@ -198,7 +198,7 @@ class BugResponseChatTest {
 
         assertEquals(List.of(BugResponseChat.PREFIX_KEY, KEY + "tips.title", KEY + "tips.photos",
                 KEY + "tips.photos.button", KEY + "tips.memory", KEY + "tips.memory.hint"), keys(lines));
-        assertEquals(List.of("RUN_COMMAND /dt-bug-response tip photos"), clicks(lines));
+        assertEquals(List.of("RUN_COMMAND dungeontrain:bug-response/tip/photos"), clicks(lines));
     }
 
     @Test

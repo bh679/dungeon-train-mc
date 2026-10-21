@@ -12,6 +12,7 @@
     "WitherRoseBlockCreditMixin",
     "RecipeManagerDisableMixin",
     "PlayerFudgeSpawnMixin",
+    "SignalGetterMuteMixin",
     "PlayerSprintFlyMixin",
     "TamableAnimalTameMixin",
     "AbstractHorseTameMixin",
@@ -246,6 +247,8 @@
     "client.LanguageManagerReapplyMixin",
     "client.NetworkRegistryReplayPlaybackMixin",
     "client.ChatScreenAccessor",
+    "client.ScreenChatClickMixin",
+    "client.ClientPacketListenerCommandsMixin",
     "client.ChatComponentAccessor",
     "client.BookEditScreenInvoker"
   ],
