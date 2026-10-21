@@ -362,19 +362,26 @@ public final class PortalRoomLayout {
     }
 
     /**
-     * Top of a pair structure's box: the room's own ceiling plus a block, and never below the lane's
-     * carriage height plus {@code minSlack}.
+     * Top of a pair structure's box: one row over whichever of its roofs is higher, the corridor lane's
+     * or the room's own.
      *
      * <p><b>Measured from the room's floor, not the lane.</b> A room with a door-height offset stands
      * its floor far below the corridor lane, and its height counted up from the lane instead reached
      * clean through the basement to the train deck overhead — the 80-tall terrarium's box topped out
      * at y 92 over a deck at 79. A rider back on the deck then still read as in the room, and the
-     * train that freezes for its room occupants never thawed. With no offset the floor <i>is</i> the
-     * lane, and this is exactly the height the box always had.</p>
+     * train that freezes for its room occupants never thawed.</p>
+     *
+     * <p><b>No headroom slack, unlike X and Z.</b> The box used to reach eight rows over the lane's
+     * carriage height. Lanes are only {@code PortalTwinLanes.laneHeight} — the structure plus one row —
+     * apart, so that slack put the bottom of the lane above inside this one's box: a player walking
+     * the upper room read as standing in the lower one, and when the lower pair's train was long gone
+     * its rescue carried them out of a room that was working (2026-10-21, pair -105 over -138). One
+     * row over the roof is the spare row the lane spacing already leaves, so no two lanes' boxes can
+     * share a place anybody stands.</p>
      */
     public static int structureCeilingY(int laneY, int roomFloorY, int roomHeight,
-                                        int carriageHeight, int minSlack) {
-        return Math.max(laneY + carriageHeight + minSlack, roomFloorY + roomHeight + 1);
+                                        int carriageHeight) {
+        return Math.max(laneY + carriageHeight, roomFloorY + roomHeight) + 1;
     }
 
     /**

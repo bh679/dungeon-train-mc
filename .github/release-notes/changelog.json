@@ -29337,6 +29337,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-early-return",
+      "version": "0.1443.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage fix",
+      "summary": "Fixed a case where walking through a dimensional carriage could send you back to the train before you reached the way out.",
+      "highlights": [],
+      "pr": 2226,
+      "date": "2026-10-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
