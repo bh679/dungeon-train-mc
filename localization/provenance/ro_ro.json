@@ -3899,6 +3899,7 @@
   "dungeontrain.leaderboard.advancements.header": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "c83ce7b4700de860"},
   "dungeontrain.leaderboard.builder_time.header": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "44bbb32d550cf328"},
   "dungeontrain.leaderboard.burrito_fastest.header": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "d2cc074926ee5e5d"},
+  "dungeontrain.leaderboard.challenge_fastest.header": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "013b3bbac1f2e341"},
   "dungeontrain.leaderboard.live_stream_time.header": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "89661e8faa816490"},
   "dungeontrain.leaderboard.live_view_time.header": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "837212bae2ebfa7f"},
   "dungeontrain.leaderboard.live_gifts.header": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "7ff8496d89eebebc"},

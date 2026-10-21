@@ -3211,6 +3211,7 @@
   "dungeontrain.leaderboard.advancements.header": "Qui a obtenu le plus de progrès ?",
   "dungeontrain.leaderboard.builder_time.header": "Qui a passé le plus de temps à construire ?",
   "dungeontrain.leaderboard.burrito_fastest.header": "Qui a obtenu le Burrito de tout en passant le moins de temps à bord ?",
+  "dungeontrain.leaderboard.challenge_fastest.header": "Qui a obtenu « Le Défi » en passant le moins de temps à bord ?",
   "dungeontrain.leaderboard.live_stream_time.header": "Qui a porté le caméscope de diffusion le plus longtemps ?",
   "dungeontrain.leaderboard.live_view_time.header": "Qui a regardé des diffusions à la télé le plus longtemps ?",
   "dungeontrain.leaderboard.live_gifts.header": "Qui a offert le caméscope de diffusion le plus souvent ?",
