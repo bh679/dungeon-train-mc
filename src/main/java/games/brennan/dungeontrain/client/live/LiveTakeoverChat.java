@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.client.live;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.chat.ChatClick;
 import games.brennan.dungeontrain.client.ChatClickActions;
 import games.brennan.dungeontrain.net.ClientActionPacket;
@@ -12,8 +11,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.common.EventBusSubscriber;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
@@ -31,7 +28,6 @@ import java.util.UUID;
  * <p>A counted vote earns Every Vote Counts, and voting for the side that wins earns Called It — both
  * through {@link ClientActionPacket}, since only this client sees the relay's replies.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveTakeoverChat {
 
     /** The [Yes]/[No] buttons' action ({@link ChatClick}): {@code live-vote/yes|no}. */
