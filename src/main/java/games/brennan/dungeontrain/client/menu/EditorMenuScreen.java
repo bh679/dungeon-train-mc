@@ -463,6 +463,12 @@ public final class EditorMenuScreen implements MenuScreen {
         // why it is a server round-trip rather than a client preference like Plot Lighting.
         out.add(observersRow());
 
+        // Redstone / TNT — Off cuts every redstone signal in an editor plot / makes TNT fizzle
+        // there, so a contraption can be wired and TNT placed without either going off. World state
+        // like Observers, so a server round-trip.
+        out.add(redstoneRow());
+        out.add(tntRow());
+
         // Mobs — Blocks places a frozen, one-hit mob from a spawn egg and ghosts the mob entries of
         // variant cells; Live is vanilla eggs. World state like Observers, so a server round-trip.
         out.add(mobsRow());
@@ -630,6 +636,26 @@ public final class EditorMenuScreen implements MenuScreen {
             new CommandMenuEntry.Label(MenuLang.t("editor.observers")),
             new CommandMenuEntry.Stay(MenuLang.t("common.on"), "dungeontrain editor observers on", on),
             new CommandMenuEntry.Stay(MenuLang.t("common.off"), "dungeontrain editor observers off", !on),
+            0.46, 0.73);
+    }
+
+    /** Redstone | On | Off — same shape as Observers. */
+    private static CommandMenuEntry redstoneRow() {
+        boolean on = games.brennan.dungeontrain.client.EditorRedstoneTntState.redstoneOn();
+        return new CommandMenuEntry.Triple(
+            new CommandMenuEntry.Label(MenuLang.t("editor.redstone")),
+            new CommandMenuEntry.Stay(MenuLang.t("common.on"), "dungeontrain editor redstone on", on),
+            new CommandMenuEntry.Stay(MenuLang.t("common.off"), "dungeontrain editor redstone off", !on),
+            0.46, 0.73);
+    }
+
+    /** TNT | On | Off — same shape as Observers. */
+    private static CommandMenuEntry tntRow() {
+        boolean on = games.brennan.dungeontrain.client.EditorRedstoneTntState.tntOn();
+        return new CommandMenuEntry.Triple(
+            new CommandMenuEntry.Label(MenuLang.t("editor.tnt")),
+            new CommandMenuEntry.Stay(MenuLang.t("common.on"), "dungeontrain editor tnt on", on),
+            new CommandMenuEntry.Stay(MenuLang.t("common.off"), "dungeontrain editor tnt off", !on),
             0.46, 0.73);
     }
 
