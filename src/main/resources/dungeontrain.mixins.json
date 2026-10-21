@@ -12,6 +12,7 @@
     "WitherRoseBlockCreditMixin",
     "RecipeManagerDisableMixin",
     "PlayerFudgeSpawnMixin",
+    "SignalGetterMuteMixin",
     "PlayerSprintFlyMixin",
     "TamableAnimalTameMixin",
     "AbstractHorseTameMixin",

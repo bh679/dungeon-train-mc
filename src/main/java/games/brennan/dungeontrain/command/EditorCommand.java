@@ -739,6 +739,12 @@ public final class EditorCommand {
             .then(Commands.literal("observers")
                 .then(Commands.literal("on").executes(ctx -> runObservers(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runObservers(ctx.getSource(), false))))
+            .then(Commands.literal("redstone")
+                .then(Commands.literal("on").executes(ctx -> runRedstone(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runRedstone(ctx.getSource(), false))))
+            .then(Commands.literal("tnt")
+                .then(Commands.literal("on").executes(ctx -> runTnt(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runTnt(ctx.getSource(), false))))
             .then(Commands.literal("mobs")
                 .then(Commands.literal("blocks").executes(ctx -> runMobsMode(ctx.getSource(), false)))
                 .then(Commands.literal("live").executes(ctx -> runMobsMode(ctx.getSource(), true))))
@@ -4236,6 +4242,50 @@ public final class EditorCommand {
         }
         source.sendSuccess(() -> (on ? Component.translatable("chat.dungeontrain.editor.observers_observers_plots_pulse") : Component.translatable("chat.dungeontrain.editor.observers_off_observers_plots")).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
         return 1;
+    }
+
+    /**
+     * Settings → Redstone On / Off for this world: while Off, no redstone signal is given inside an
+     * editor plot, so a contraption can be wired without running
+     * ({@link games.brennan.dungeontrain.editor.EditorRedstone}). World state, so every online
+     * player's Settings row is told.
+     */
+    private static int runRedstone(CommandSourceStack source, boolean on) {
+        net.minecraft.server.MinecraftServer server = source.getServer();
+        games.brennan.dungeontrain.editor.EditorRedstone.set(server, on);
+        broadcastRedstoneTnt(server);
+        source.sendSuccess(() -> Component.translatable(on
+                ? "chat.dungeontrain.editor.redstone_on"
+                : "chat.dungeontrain.editor.redstone_off")
+            .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
+        return 1;
+    }
+
+    /**
+     * Settings → TNT On / Off for this world: while Off, TNT set off inside an editor plot fizzles
+     * instead of exploding ({@link games.brennan.dungeontrain.editor.EditorTnt}). World state, so
+     * every online player's Settings row is told.
+     */
+    private static int runTnt(CommandSourceStack source, boolean on) {
+        net.minecraft.server.MinecraftServer server = source.getServer();
+        games.brennan.dungeontrain.world.DungeonTrainWorldData.get(server.overworld()).setEditorTntOn(on);
+        broadcastRedstoneTnt(server);
+        source.sendSuccess(() -> Component.translatable(on
+                ? "chat.dungeontrain.editor.tnt_on"
+                : "chat.dungeontrain.editor.tnt_off")
+            .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
+        return 1;
+    }
+
+    /** Tell every online player's Settings rows the world's current Redstone and TNT settings. */
+    private static void broadcastRedstoneTnt(net.minecraft.server.MinecraftServer server) {
+        games.brennan.dungeontrain.world.DungeonTrainWorldData data =
+            games.brennan.dungeontrain.world.DungeonTrainWorldData.get(server.overworld());
+        games.brennan.dungeontrain.net.EditorRedstoneTntPacket packet =
+            new games.brennan.dungeontrain.net.EditorRedstoneTntPacket(data.isEditorRedstoneOn(), data.isEditorTntOn());
+        for (ServerPlayer online : server.getPlayerList().getPlayers()) {
+            games.brennan.dungeontrain.net.DungeonTrainNet.sendTo(online, packet);
+        }
     }
 
     /**
