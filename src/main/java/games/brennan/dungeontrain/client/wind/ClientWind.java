@@ -15,9 +15,9 @@ public final class ClientWind {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private record Snapshot(WindProfile profile, int seed, long startX, boolean on) {}
+    private record Snapshot(WindProfile profile, int seed, long startX, boolean on, boolean known) {}
 
-    private static volatile Snapshot snap = new Snapshot(WindProfile.CALM, 0, Long.MIN_VALUE, false);
+    private static volatile Snapshot snap = new Snapshot(WindProfile.CALM, 0, Long.MIN_VALUE, false, false);
 
     private ClientWind() {}
 
@@ -29,16 +29,24 @@ public final class ClientWind {
             LOGGER.warn("[DungeonTrain] wind: server sent an unreadable profile ({}); wind visuals off", e.getMessage());
             profile = WindProfile.CALM;
         }
-        snap = new Snapshot(profile, p.seed(), p.startX(), p.on());
+        snap = new Snapshot(profile, p.seed(), p.startX(), p.on(), true);
     }
 
     public static void reset() {
-        snap = new Snapshot(WindProfile.CALM, 0, Long.MIN_VALUE, false);
+        snap = new Snapshot(WindProfile.CALM, 0, Long.MIN_VALUE, false, false);
     }
 
     public static boolean active() {
         Snapshot s = snap;
         return s.on() && s.profile().enabled() && s.startX() != Long.MIN_VALUE;
+    }
+
+    /**
+     * True once this server has told us about its wind (a DT server always does at login, even with the wind off).
+     * From then on DT holds Windy calm whenever its own wind isn't blowing, instead of letting Windy's own wind show.
+     */
+    public static boolean known() {
+        return snap.known();
     }
 
     /** World X where the wind starts, {@link Long#MIN_VALUE} for none. */
