@@ -278,6 +278,24 @@ public final class WorkbenchEditor {
         return CarriageVariantRegistry.find(PoolScratch.defaultShellId(PoolTier.of(contentsSize)));
     }
 
+    /**
+     * The shell box (cage excluded) round every staged contents build that stands in one — what the
+     * client fades the shell's stage placeholders inside. Empty off the server.
+     */
+    public static List<BoundingBox> shellBoxes(ServerLevel overworld) {
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        List<BoundingBox> out = new ArrayList<>();
+        for (WorkbenchStagedBuild build : WorkbenchStagingStore.list()) {
+            BlockPos origin = plotOrigin(overworld, build.stagedId());
+            if (origin == null || shellFor(build, dims).isEmpty()) continue;
+            BlockPos shell = origin.offset(-1, -1, -1);
+            Vec3i size = build.size().offset(2, 2, 2);
+            out.add(new BoundingBox(shell.getX(), shell.getY(), shell.getZ(),
+                shell.getX() + size.getX() - 1, shell.getY() + size.getY() - 1, shell.getZ() + size.getZ() - 1));
+        }
+        return out;
+    }
+
     /** One erase job per recorded plot — what a category switch away from the Workbench queues. */
     public static List<EditorStampQueue.Job> clearAllPlotJobs(ServerLevel overworld) {
         List<EditorStampQueue.Job> jobs = new ArrayList<>();

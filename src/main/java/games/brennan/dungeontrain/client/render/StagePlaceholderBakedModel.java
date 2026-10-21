@@ -17,7 +17,10 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.ChunkRenderTypeSet;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.BlockAndTintGetter;
 import net.neoforged.neoforge.client.model.data.ModelData;
+import net.neoforged.neoforge.client.model.data.ModelProperty;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -41,6 +44,12 @@ public final class StagePlaceholderBakedModel implements BakedModel {
 
     /** Opacity of the placeholder tile over the target block. */
     public static final float BLEND_ALPHA = 0.5f;
+
+    /** The same, for a placeholder in the carriage shell round a Workbench build — a frame, not the work. */
+    public static final float SHELL_BLEND_ALPHA = 0.15f;
+
+    /** Set on a placeholder standing inside a Workbench shell ({@link WorkbenchShellFade}). */
+    public static final ModelProperty<Boolean> SHELL_FADED = new ModelProperty<>();
 
     private static final ChunkRenderTypeSet TRANSLUCENT = ChunkRenderTypeSet.of(RenderType.translucent());
 
@@ -82,8 +91,9 @@ public final class StagePlaceholderBakedModel implements BakedModel {
         }
         if (renderType == RenderType.translucent()) {
             // The placeholder's own quads (whichever layer they were authored for), faded.
+            float alpha = Boolean.TRUE.equals(data.get(SHELL_FADED)) ? SHELL_BLEND_ALPHA : BLEND_ALPHA;
             for (RenderType own : original.getRenderTypes(state, rand, data)) {
-                for (BakedQuad q : original.getQuads(state, side, rand, data, own)) out.add(faded(q));
+                for (BakedQuad q : original.getQuads(state, side, rand, data, own)) out.add(faded(q, alpha));
             }
         }
         return out;
@@ -106,11 +116,22 @@ public final class StagePlaceholderBakedModel implements BakedModel {
         return original.getParticleIcon(data);
     }
 
-    /** Copy of {@code q} with every vertex's colour alpha set to {@link #BLEND_ALPHA}. */
-    private static BakedQuad faded(BakedQuad q) {
+    /**
+     * Where this placeholder stands decides how faint its tile is: inside a Workbench shell it is
+     * part of the frame round a staged build, so the tile is barely there.
+     */
+    @Override
+    public ModelData getModelData(BlockAndTintGetter level, BlockPos pos, BlockState state, ModelData modelData) {
+        ModelData base = original.getModelData(level, pos, state, modelData);
+        if (!WorkbenchShellFade.contains(pos)) return base;
+        return base.derive().with(SHELL_FADED, Boolean.TRUE).build();
+    }
+
+    /** Copy of {@code q} with every vertex's colour alpha set to {@code blend}. */
+    private static BakedQuad faded(BakedQuad q, float blend) {
         int[] v = q.getVertices().clone();
         int stride = v.length / 4;
-        int alpha = Math.round(BLEND_ALPHA * 255f) << 24;
+        int alpha = Math.round(blend * 255f) << 24;
         for (int i = 0; i < 4; i++) {
             int c = i * stride + 3; // colour int follows x, y, z
             v[c] = (v[c] & 0x00FFFFFF) | alpha;
