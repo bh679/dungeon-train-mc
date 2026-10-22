@@ -29,11 +29,15 @@ import java.util.Locale;
  * an author can pick it before adding the first value. A failed condition drops its entry from the
  * roll — see {@link VariantConditions#eligible}.</p>
  *
+ * <p>{@link #negate} turns the gate round: the entry is placed only when the target is <i>not</i>
+ * one of the values (the If popup's Is / Is not). It is applied by
+ * {@link VariantConditions#passes} after the match, so Any / All and Kind values keep their meaning.</p>
+ *
  * <p>Sidecar token: {@code "down+north=minecraft:oak_planks,minecraft:stone"} (any listed side),
- * {@code "down&up=…"} (every listed side — {@link #all}) or {@code "group3=…"}. Omitted from JSON
- * when default.</p>
+ * {@code "down&up=…"} (every listed side — {@link #all}) or {@code "group3=…"}, with a leading
+ * {@code !} when negated ({@code "!group3=…"}). Omitted from JSON when default.</p>
  */
-public record VariantCondition(int sideMask, int groupId, List<ResourceLocation> blocks, boolean all) {
+public record VariantCondition(int sideMask, int groupId, List<ResourceLocation> blocks, boolean all, boolean negate) {
 
     /** Most-asked-for target ("only on top of …"), and where a fresh condition starts. */
     public static final Direction DEFAULT_DIRECTION = Direction.DOWN;
@@ -52,6 +56,8 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
     /** The kind values in checkbox order: Solid, Empty, Any block. */
     public static final List<ResourceLocation> KINDS = List.of(SOLID_ID, EMPTY_ID, ANY_ID);
     private static final String GROUP_PREFIX = "group";
+    /** Leading mark on a negated token. */
+    private static final String NOT_PREFIX = "!";
 
     public VariantCondition {
         if (groupId < 0) groupId = 0;
@@ -65,12 +71,22 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
 
     /** A condition that holds on <i>any</i> listed side. */
     public VariantCondition(int sideMask, int groupId, List<ResourceLocation> blocks) {
-        this(sideMask, groupId, blocks, false);
+        this(sideMask, groupId, blocks, false, false);
+    }
+
+    /** A condition that is not negated. */
+    public VariantCondition(int sideMask, int groupId, List<ResourceLocation> blocks, boolean all) {
+        this(sideMask, groupId, blocks, all, false);
+    }
+
+    /** Copy that passes when the target is <i>not</i> one of the values ({@code true}), or is ({@code false}). */
+    public VariantCondition withNegate(boolean not) {
+        return not == negate ? this : new VariantCondition(sideMask, groupId, blocks, all, not);
     }
 
     /** Copy matching on every listed side ({@code true}) or any one of them. */
     public VariantCondition withAll(boolean every) {
-        return new VariantCondition(sideMask, groupId, blocks, every);
+        return new VariantCondition(sideMask, groupId, blocks, every, negate);
     }
 
     public static int bit(Direction d) {
@@ -118,13 +134,13 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         List<ResourceLocation> kinds = new ArrayList<>(KINDS.size());
         for (ResourceLocation id : blocks) if (isKind(id)) kinds.add(id);
         if (kinds.isEmpty()) kinds.add(SOLID_ID);
-        return new VariantCondition(isGroupTarget() ? bit(DEFAULT_DIRECTION) : sideMask, 0, kinds, all);
+        return new VariantCondition(isGroupTarget() ? bit(DEFAULT_DIRECTION) : sideMask, 0, kinds, all, negate);
     }
 
     /** Copy without the kind values — leaving Kind mode for Touching or Group. */
     public VariantCondition withoutKinds() {
         List<ResourceLocation> kept = blockValues();
-        return kept.size() == blocks.size() ? this : new VariantCondition(sideMask, groupId, kept, all);
+        return kept.size() == blocks.size() ? this : new VariantCondition(sideMask, groupId, kept, all, negate);
     }
 
     /** True for a kind value — {@link #SOLID_ID}, {@link #EMPTY_ID} or {@link #ANY_ID}. */
@@ -152,12 +168,12 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
 
     /** Touching mode with exactly {@code dir} selected. */
     public VariantCondition withDirection(Direction dir) {
-        return new VariantCondition(bit(dir), 0, blocks);
+        return new VariantCondition(bit(dir), 0, blocks, false, negate);
     }
 
     /** Touching mode with {@code mask} selected (empty ⇒ every side). */
     public VariantCondition withSides(int mask) {
-        return new VariantCondition(mask, 0, blocks, all);
+        return new VariantCondition(mask, 0, blocks, all, negate);
     }
 
     /** Flip one side — the band picker's plain click. From group mode this starts at that side. */
@@ -175,7 +191,7 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
     }
 
     public VariantCondition withGroup(int lockId) {
-        return new VariantCondition(0, lockId, blocks);
+        return new VariantCondition(0, lockId, blocks, false, negate);
     }
 
     /** Copy with {@code id} appended; unchanged if already present or the list is full. */
@@ -183,7 +199,7 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         if (id == null || blocks.contains(id) || blocks.size() >= MAX_VALUES) return this;
         List<ResourceLocation> out = new ArrayList<>(blocks);
         out.add(id);
-        return new VariantCondition(sideMask, groupId, out, all);
+        return new VariantCondition(sideMask, groupId, out, all, negate);
     }
 
     /** Copy without the value at {@code index}; unchanged when out of range. */
@@ -191,7 +207,7 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         if (index < 0 || index >= blocks.size()) return this;
         List<ResourceLocation> out = new ArrayList<>(blocks);
         out.remove(index);
-        return new VariantCondition(sideMask, groupId, out, all);
+        return new VariantCondition(sideMask, groupId, out, all, negate);
     }
 
     /** Copy with {@code id} removed if present, added otherwise. */
@@ -205,7 +221,7 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         if (isDefault() || isGroupTarget() || rotation == Rotation.NONE) return this;
         int out = 0;
         for (Direction d : sides()) out |= bit(rotation.rotate(d));
-        return new VariantCondition(out, 0, blocks, all);
+        return new VariantCondition(out, 0, blocks, all, negate);
     }
 
     /** Reflect the touching sides across the flipped axes. Group targets have no geometry. */
@@ -220,16 +236,17 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
             };
             out |= bit(flip ? d.getOpposite() : d);
         }
-        return out == sideMask ? this : new VariantCondition(out, 0, blocks, all);
+        return out == sideMask ? this : new VariantCondition(out, 0, blocks, all, negate);
     }
 
     /** Short target label for the editor: side letters ({@code ND}, {@code *} for all) or {@code G3}. */
     public String targetLabel() {
-        if (isGroupTarget()) return "G" + groupId;
-        if (sideMask == ALL_SIDES) return "*";
-        StringBuilder sb = new StringBuilder();
+        String not = negate ? "¬" : "";
+        if (isGroupTarget()) return not + "G" + groupId;
+        if (sideMask == ALL_SIDES) return not + "*";
+        StringBuilder sb = new StringBuilder(not);
         for (Direction d : sides()) {
-            if (all && sb.length() > 0) sb.append('&');
+            if (all && sb.length() > not.length()) sb.append('&');
             sb.append(letter(d));
         }
         return sb.toString();
@@ -260,7 +277,7 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
 
     /** Sidecar / NBT / packet token. */
     public String id() {
-        StringBuilder sb = new StringBuilder(targetToken()).append('=');
+        StringBuilder sb = new StringBuilder(negate ? NOT_PREFIX : "").append(targetToken()).append('=');
         for (int i = 0; i < blocks.size(); i++) {
             if (i > 0) sb.append(',');
             sb.append(blocks.get(i));
@@ -275,10 +292,13 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
     public static VariantCondition parse(@Nullable String token) {
         if (token == null) return NONE;
         String raw = token.trim();
+        boolean not = raw.startsWith(NOT_PREFIX);
+        if (not) raw = raw.substring(NOT_PREFIX.length()).trim();
         int eq = raw.indexOf('=');
         String target = (eq < 0 ? raw : raw.substring(0, eq)).toLowerCase(Locale.ROOT);
         VariantCondition base = parseTarget(target);
         if (base == null) return NONE;
+        base = base.withNegate(not);
         if (eq < 0) return base;
         VariantCondition out = base;
         for (String part : raw.substring(eq + 1).split(",")) {
