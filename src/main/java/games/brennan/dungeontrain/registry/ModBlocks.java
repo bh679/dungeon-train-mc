@@ -151,6 +151,12 @@ public final class ModBlocks {
                 .noOcclusion()
                 .noTerrainParticles()
                 .isValidSpawn((state, level, pos, type) -> false)
+                // Never suffocating or view-blocking: the default derives both from the cached
+                // context-free collision shape, which is a full cube (CollisionContext.empty()
+                // answers "above" to the scaffolding test), so a head inside a marker got the
+                // dark in-wall overlay drawn over the view.
+                .isSuffocating((state, level, pos) -> false)
+                .isViewBlocking((state, level, pos) -> false)
                 .pushReaction(PushReaction.BLOCK)
                 .sound(SoundType.GLASS)
         )
