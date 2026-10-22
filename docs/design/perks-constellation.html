@@ -109,6 +109,7 @@ textarea{min-height:0;resize:none;overflow:hidden;font-family:var(--body);line-h
       <button hidden id="bLinkX" title="Cross-link two perks (dashed)">chord</button>
       <button class="lnk" id="bStyle" title="visual style: sky / minecraft">▣</button>
       <button class="lnk" id="bRev" title="show reviewed rings">✓</button>
+      <button class="lnk" id="bGuide" title="alignment guide: a circle through the furthest perk, and the centre ring">◯</button>
       <button class="lnk" data-t="classes" title="classes">⌘</button><button class="lnk" data-t="io" title="save / load">⇅</button>
       <button class="lnk" id="bTable" title="table view">☰ table</button>
     </div>
@@ -266,6 +267,7 @@ const byId=id=>M.perks.find(p=>p.id===id);const cls=id=>M.classes.find(c=>c.id==
 const color=p=>p.cls?(cls(p.cls)||{}).color||"#888":"#e4b95a";
 let sel=null,selLink=null,selCls=null,mode=null,pick=null,stars=null,mouse=null,hoverId=null;
 let style="sky";try{style=localStorage.getItem("dt-perk-style")||"sky"}catch(e){}
+let showGuide=false;try{showGuide=localStorage.getItem("dt-perk-guide")==="1"}catch(e){}
 let showRev=true;try{showRev=localStorage.getItem("dt-perk-showrev")!=="0"}catch(e){}
 const status=t=>document.getElementById("status").textContent=t||"";
 // Put the panel beside the selected thing (a star, a link's middle, a class label), flipping to stay on screen.
@@ -285,6 +287,7 @@ function render(){renderSky();inspector();classList();if(showTable)renderTable()
 function renderSky(){
   if(!stars){stars=el("g");for(let i=0;i<140;i++)stars.appendChild(el("circle",{cx:Math.random()*800,cy:Math.random()*800,r:Math.random()*1.2+.2,fill:"#e8e4d6",opacity:(Math.random()*.5+.15).toFixed(2)}))}
   svg.replaceChildren(stars);
+  if(showGuide){const far=Math.max(0,...M.perks.filter(p=>p.id!=="root").map(p=>Math.hypot(p.x-CX,p.y-CY)));svg.appendChild(el("circle",{cx:CX,cy:CY,r:far,fill:"none",stroke:"#e4b95a","stroke-opacity":.35,"stroke-dasharray":"4 6"}));svg.appendChild(el("circle",{cx:CX,cy:CY,r:105,fill:"none",stroke:"#e4b95a","stroke-opacity":.25,"stroke-dasharray":"2 6"}))}
   M.links.forEach((l,li)=>{const A=byId(l.a),B=byId(l.b);if(!A||!B)return;const d=l.kind==="cross"?curve(A,B):`M${A.x},${A.y} L${B.x},${B.y}`;
     const hit=el("path",{d:trimmed(A,B,l.kind==="cross"),class:"edgehit","data-li":li});if(style==="mc"&&l.kind!=="cross"){svg.appendChild(el("path",{d,class:"edge mcunder"}))}const e=el("path",{d,class:"edge "+l.kind+(selLink===li?" sel":"")+(style==="mc"?" mc":"")});if(l.kind==="req"){const g=`url(#g${li})`;const d=document.createElementNS(NS,"defs");const lg=el("linearGradient",{id:"g"+li,gradientUnits:"userSpaceOnUse",x1:A.x,y1:A.y,x2:B.x,y2:B.y});lg.appendChild(el("stop",{offset:"0","stop-color":color(A)}));lg.appendChild(el("stop",{offset:"1","stop-color":color(B)}));d.appendChild(lg);svg.appendChild(d);e.style.stroke=g}
     const on=()=>{selLink=li;sel=null;selCls=null;render()};hit.addEventListener("click",on);svg.appendChild(e);svg.appendChild(hit);
@@ -413,6 +416,7 @@ function renderTable(){const t=document.getElementById("ptable");const live=reac
 function toggleTable(on){showTable=on??!showTable;document.getElementById("tableView").hidden=!showTable;document.querySelector(".sky").hidden=showTable;bTable.textContent=showTable?"✦ graph":"☰ table";bTable.classList.toggle("on",showTable);if(showTable)renderTable()}
 bTable.onclick=()=>toggleTable();
 const bStyle=document.getElementById("bStyle");bStyle.classList.toggle("on",style==="mc");bStyle.onclick=()=>{style=style==="sky"?"mc":"sky";bStyle.classList.toggle("on",style==="mc");try{localStorage.setItem("dt-perk-style",style)}catch(e){}render()};
+const bGuide=document.getElementById("bGuide");bGuide.classList.toggle("on",showGuide);bGuide.onclick=()=>{showGuide=!showGuide;bGuide.classList.toggle("on",showGuide);try{localStorage.setItem("dt-perk-guide",showGuide?"1":"0")}catch(e){}renderSky()};
 const bRev=document.getElementById("bRev");bRev.classList.toggle("on",showRev);bRev.onclick=()=>{showRev=!showRev;bRev.classList.toggle("on",showRev);try{localStorage.setItem("dt-perk-showrev",showRev?"1":"0")}catch(e){}renderSky();if(showTable)renderTable()};
 svg.addEventListener("pointerdown",e=>{if(e.button!==0||e.altKey||e.ctrlKey)return;if(e.target===svg||e.target.parentNode===stars){if(mode){mode=null;pick=null;setModeButtons();status("")}sel=null;selLink=null;selCls=null;render()}});
 
