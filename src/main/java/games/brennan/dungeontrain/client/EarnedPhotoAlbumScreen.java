@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.dungeontrain.advancement.EnchiridionAdvancements;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -29,15 +30,18 @@ public final class EarnedPhotoAlbumScreen extends Screen {
 
     private final Screen parent;
     private final List<EarnedPhotos.Entry> entries;
-    private final boolean biomes;
+    /** What an album's entries are: biomes, entities (both named by the game), or numbered counted photos. */
+    public enum Kind { BIOME, ENTITY, COUNT }
+
+    private final Kind kind;
     private int scroll;
     private int enlarged = -1;
 
-    public EarnedPhotoAlbumScreen(Screen parent, Component title, List<EarnedPhotos.Entry> entries, boolean biomes) {
+    public EarnedPhotoAlbumScreen(Screen parent, Component title, List<EarnedPhotos.Entry> entries, Kind kind) {
         super(title);
         this.parent = parent;
         this.entries = entries;
-        this.biomes = biomes;
+        this.kind = kind;
     }
 
     @Override
@@ -92,8 +96,10 @@ public final class EarnedPhotoAlbumScreen extends Screen {
     private void renderGrid(GuiGraphics g, int mouseX, int mouseY) {
         g.drawCenteredString(font, title, width / 2, 12, 0xFFFFFFFF);
         long taken = entries.stream().filter(e -> e.file() != null).count();
-        g.drawCenteredString(font, Component.translatable("gui.dungeontrain.earned_photos.count",
-                taken + "/" + entries.size()), width / 2, 24, 0xFFAAAAAA);
+        // A count album holds only what was kept: its size alone, so it never shows how many a tier asks for.
+        String count = kind == Kind.COUNT ? String.valueOf(taken) : taken + "/" + entries.size();
+        g.drawCenteredString(font, Component.translatable("gui.dungeontrain.earned_photos.count", count),
+                width / 2, 24, 0xFFAAAAAA);
         g.enableScissor(0, TOP - 2, width, height);
         int cols = columns();
         int left = gridLeft();
@@ -110,7 +116,7 @@ public final class EarnedPhotoAlbumScreen extends Screen {
             } else {
                 drawMissing(g, x, y);
             }
-            String label = font.plainSubstrByWidth(name(entries.get(i).id()).getString(), CELL + GAP);
+            String label = font.plainSubstrByWidth(name(entries.get(i).id(), i).getString(), CELL + GAP);
             g.drawString(font, label, x + (CELL - font.width(label)) / 2, y + CELL + 2, 0xFFFFFFFF, true);
         }
         g.disableScissor();
@@ -133,14 +139,21 @@ public final class EarnedPhotoAlbumScreen extends Screen {
         int x = (width - side) / 2;
         int y = (height - side - 14) / 2;
         EarnedPhotoThumbnails.draw(g, entry.file(), x, y, side, LARGE_SAMPLE);
-        Component label = name(entry.id());
+        Component label = name(entry.id(), enlarged);
         g.drawString(font, label, (width - font.width(label)) / 2, y + side + 6, 0xFFFFFFFF, true);
     }
 
-    /** The game's own name for what the photo was logged for — the biome, or the entity; ??? while missing. */
-    private Component name(ResourceLocation id) {
+    /**
+     * The game's own name for what the photo was logged for — the biome, or the entity; ??? while missing.
+     * A counted photo is just its number, {@code #n} ({@code slot}, its 0-based position, if the id has none).
+     */
+    private Component name(ResourceLocation id, int slot) {
+        if (kind == Kind.COUNT) {
+            int n = id == null ? -1 : EnchiridionAdvancements.countEntryNumber(id.getPath());
+            return Component.literal("#" + (n > 0 ? n : slot + 1));
+        }
         if (id == null) return Component.translatable("advancements.dungeontrain.hidden_description");
-        String key = (biomes ? "biome." : "entity.") + id.getNamespace() + "." + id.getPath().replace('/', '.');
+        String key = (kind == Kind.BIOME ? "biome." : "entity.") + id.getNamespace() + "." + id.getPath().replace('/', '.');
         return Component.translatable(key);
     }
 
