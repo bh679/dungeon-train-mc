@@ -29557,15 +29557,14 @@
       "released_at": null
     },
     {
-      "id": "knockback-slime",
+      "id": "something-slimey",
       "version": "0.1455.0",
       "type": "feat",
       "tags": [
-        "feature",
-        "loot"
+        "feature"
       ],
-      "title": "Knockback Slime",
-      "summary": "A new single-use slimeball that hits like a Knockback X weapon. Land a hit and whatever you struck goes flying, then the slimeball is spent. Keep an eye out for one in a barrel.",
+      "title": "Something slimey, knockbacky and rare got added",
+      "summary": "Something slimey, knockbacky and rare got added.",
       "highlights": [],
       "pr": 2237,
       "date": "2026-10-22",
