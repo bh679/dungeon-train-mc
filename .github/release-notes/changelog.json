@@ -29402,9 +29402,9 @@
       "highlights": [],
       "pr": 2229,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1451.0",
+      "released_at": "2026-10-22T06:15:54Z"
     },
     {
       "id": "photo-albums-keep-more",
@@ -29420,9 +29420,9 @@
       "highlights": [],
       "pr": 2231,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1451.0",
+      "released_at": "2026-10-22T06:15:54Z"
     },
     {
       "id": "variant-mirror-condition-group",
@@ -29437,9 +29437,9 @@
       "highlights": [],
       "pr": 2228,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1451.0",
+      "released_at": "2026-10-22T06:15:54Z"
     },
     {
       "id": "challenge-click-tracking",
@@ -29455,9 +29455,9 @@
       "highlights": [],
       "pr": 2230,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1451.0",
+      "released_at": "2026-10-22T06:15:54Z"
     },
     {
       "id": "carriage-contents-refresh",
@@ -29479,9 +29479,9 @@
       ],
       "pr": 2232,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1451.0",
+      "released_at": "2026-10-22T06:15:54Z"
     },
     {
       "id": "live-eye-close-calls",
@@ -29495,6 +29495,27 @@
       "summary": "When another player is getting close to a rare challenge, whoever is streaming with the Live Eye is told and can hand them the Live Eye, so the stream can follow the run. The player chooses whether to take it.",
       "highlights": [],
       "pr": 2233,
+      "date": "2026-10-22",
+      "released": true,
+      "released_in": "v0.1451.0",
+      "released_at": "2026-10-22T06:15:54Z"
+    },
+    {
+      "id": "editor-variant-copy-every-template",
+      "version": "0.1452.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Copy block variants from any template",
+      "summary": "Middle-click on a variant cell now copies its block variants into your hotbar in every kind of template, including group carriages and the Train Builder. The menu's Copy button does the same, putting the copy in your hotbar and swapping out the held item when the hotbar is full.",
+      "highlights": [
+        "Works along the whole length of group carriages",
+        "Works when looking into a template from outside it, and on door tops and paintings",
+        "Still works with the variant overlay turned off"
+      ],
+      "pr": 2234,
       "date": "2026-10-22",
       "released": false,
       "released_in": null,
