@@ -5355,6 +5355,7 @@
       "item.dungeontrain.live_headpiece.tooltip.warning",
       "item.dungeontrain.random_live_headpiece",
       "chat.dungeontrain.editor_bar.variant_check.loop",
+      "advancements.dungeontrain.dungeon_train.reached_deeper_dark.title",
       "advancements.dungeontrain.dungeon_train.the_enchiridion.description",
       "gui.dungeontrain.options.stream_name_tag.hint",
       "gui.dungeontrain.options.live_chat.hint",
@@ -5391,7 +5392,8 @@
       "gui.dungeontrain.options.confirm_build_restore.tip",
       "gui.dungeontrain.options.custom_content.tip",
       "gui.dungeontrain.options.other_advancement_tabs",
-      "gui.dungeontrain.options.other_advancement_tabs.tip"
+      "gui.dungeontrain.options.other_advancement_tabs.tip",
+      "advancements.dungeontrain.enchiridion.photo_deeper_dark.title"
     ],
     "adventureitemnames": [],
     "playermob": [],

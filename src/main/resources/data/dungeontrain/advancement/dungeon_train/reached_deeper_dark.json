@@ -1,7 +1,7 @@
 {
   "parent": "dungeontrain:dungeon_train/reached_better_nether",
   "display": {
-    "icon": { "id": "minecraft:sculk_shrieker" },
+    "icon": { "id": "minecraft:sculk" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_deeper_dark.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reached_deeper_dark.description" },
     "frame": "goal",
