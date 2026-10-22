@@ -29408,7 +29408,7 @@
     },
     {
       "id": "challenge-click-tracking",
-      "version": "0.1447.0",
+      "version": "0.1446.0",
       "type": "fix",
       "tags": [
         "fix",
