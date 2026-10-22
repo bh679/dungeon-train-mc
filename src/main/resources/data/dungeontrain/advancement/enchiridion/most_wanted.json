@@ -219,6 +219,96 @@
       "conditions": {
         "subject": "entity:minecraft:zombified_piglin"
       }
+    },
+    "minecraft:warden": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:warden"
+      }
+    },
+    "betterend:end_slime": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:betterend:end_slime"
+      }
+    },
+    "betterend:shadow_walker": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:betterend:shadow_walker"
+      }
+    },
+    "betternether:jungle_skeleton": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:betternether:jungle_skeleton"
+      }
+    },
+    "betternether:naga": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:betternether:naga"
+      }
+    },
+    "betternether:skull": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:betternether:skull"
+      }
+    },
+    "deeperdarker:anger_pot": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:deeperdarker:anger_pot"
+      }
+    },
+    "deeperdarker:fear_pot": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:deeperdarker:fear_pot"
+      }
+    },
+    "deeperdarker:sculk_centipede": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:deeperdarker:sculk_centipede"
+      }
+    },
+    "deeperdarker:sculk_leech": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:deeperdarker:sculk_leech"
+      }
+    },
+    "deeperdarker:shattered": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:deeperdarker:shattered"
+      }
+    },
+    "deeperdarker:shriek_worm": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:deeperdarker:shriek_worm"
+      }
+    },
+    "deeperdarker:sludge": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:deeperdarker:sludge"
+      }
+    },
+    "deeperdarker:sorrow_pot": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:deeperdarker:sorrow_pot"
+      }
+    },
+    "deeperdarker:stalker": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:deeperdarker:stalker"
+      }
     }
   },
   "requirements": [
@@ -323,6 +413,51 @@
     ],
     [
       "minecraft:zombified_piglin"
+    ],
+    [
+      "minecraft:warden"
+    ],
+    [
+      "betterend:end_slime"
+    ],
+    [
+      "betterend:shadow_walker"
+    ],
+    [
+      "betternether:jungle_skeleton"
+    ],
+    [
+      "betternether:naga"
+    ],
+    [
+      "betternether:skull"
+    ],
+    [
+      "deeperdarker:anger_pot"
+    ],
+    [
+      "deeperdarker:fear_pot"
+    ],
+    [
+      "deeperdarker:sculk_centipede"
+    ],
+    [
+      "deeperdarker:sculk_leech"
+    ],
+    [
+      "deeperdarker:shattered"
+    ],
+    [
+      "deeperdarker:shriek_worm"
+    ],
+    [
+      "deeperdarker:sludge"
+    ],
+    [
+      "deeperdarker:sorrow_pot"
+    ],
+    [
+      "deeperdarker:stalker"
     ]
   ]
 }
