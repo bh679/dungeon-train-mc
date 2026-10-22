@@ -2663,7 +2663,7 @@
   "advancements.dungeontrain.dungeon_train.carts_10000.title": "Papalapit sa Infinity",
   "advancements.dungeontrain.dungeon_train.carts_10000.description": "Lampasan ang %s bagon sa isang buhay.",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.title": "Ang Mahabang Pagbabalik",
-  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Lampasan ang %1$s bagon pasulong at %1$s bagon pabalik sa isang buhay.",
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Abutin ang bagon %1$s at ang bagon -%1$s sa isang buhay.",
   "advancements.dungeontrain.dungeon_train.roof_run_1.title": "Over the Top",
   "advancements.dungeontrain.dungeon_train.roof_run_1.description": "Tumakbo sa bubong ng isang grupo ng bagon nang hindi bumababa sa loob.",
   "advancements.dungeontrain.dungeon_train.roof_runner.title": "Skip the Grind",

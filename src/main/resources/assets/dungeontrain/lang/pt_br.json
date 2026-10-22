@@ -2715,7 +2715,7 @@
   "advancements.dungeontrain.dungeon_train.carts_10000.title": "Beirando o Infinito",
   "advancements.dungeontrain.dungeon_train.carts_10000.description": "Atravesse %s vagões em uma única vida.",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.title": "O Longo Caminho de Volta",
-  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Atravesse %1$s vagões à frente e %1$s vagões de volta em uma única vida.",
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Chegue ao vagão %1$s e ao vagão -%1$s em uma única vida.",
   "advancements.dungeontrain.dungeon_train.roof_run_1.title": "Por Cima de Tudo",
   "advancements.dungeontrain.dungeon_train.roof_run_1.description": "Corra sobre o teto de um grupo de vagões sem cair para dentro.",
   "advancements.dungeontrain.dungeon_train.roof_runner.title": "Pule a Labuta",

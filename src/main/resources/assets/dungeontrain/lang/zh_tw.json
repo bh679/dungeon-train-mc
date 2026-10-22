@@ -2663,7 +2663,7 @@
   "advancements.dungeontrain.dungeon_train.carts_10000.title": "逼近無限",
   "advancements.dungeontrain.dungeon_train.carts_10000.description": "在單一生命中穿越 %s 節車廂。",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.title": "漫漫歸途",
-  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "在單一生命中向前穿越 %1$s 節車廂，再往回 %1$s 節車廂。",
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "在單一生命中抵達第 %1$s 節與第 -%1$s 節車廂。",
   "advancements.dungeontrain.dungeon_train.roof_run_1.title": "翻越車頂",
   "advancements.dungeontrain.dungeon_train.roof_run_1.description": "跑過一組車廂的車頂，途中不掉進車廂內。",
   "advancements.dungeontrain.dungeon_train.roof_runner.title": "省去苦工",

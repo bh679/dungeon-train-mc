@@ -2715,7 +2715,7 @@
   "advancements.dungeontrain.dungeon_train.carts_10000.title": "Aux portes de l'infini",
   "advancements.dungeontrain.dungeon_train.carts_10000.description": "Franchis %s wagons en une seule vie.",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.title": "Le long chemin du retour",
-  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Franchis %1$s wagons en avant et %1$s wagons en arrière en une seule vie.",
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Atteins le wagon %1$s et le wagon -%1$s en une seule vie.",
   "advancements.dungeontrain.dungeon_train.roof_run_1.title": "Par le toit",
   "advancements.dungeontrain.dungeon_train.roof_run_1.description": "Cours sur le toit d'un groupe de wagons sans tomber à l'intérieur.",
   "advancements.dungeontrain.dungeon_train.roof_runner.title": "Zapper la corvée",

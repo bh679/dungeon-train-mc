@@ -2663,7 +2663,7 @@
   "advancements.dungeontrain.dungeon_train.carts_10000.title": "Mendekati Tak Terhingga",
   "advancements.dungeontrain.dungeon_train.carts_10000.description": "Lintasi %s gerbong dalam satu kehidupan.",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.title": "Jalan Panjang Kembali",
-  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Lintasi %1$s gerbong maju dan %1$s gerbong mundur dalam satu kehidupan.",
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Capai gerbong %1$s dan gerbong -%1$s dalam satu kehidupan.",
   "advancements.dungeontrain.dungeon_train.roof_run_1.title": "Lewat Atas",
   "advancements.dungeontrain.dungeon_train.roof_run_1.description": "Berlarilah menyeberangi atap sebuah grup gerbong tanpa jatuh ke dalam.",
   "advancements.dungeontrain.dungeon_train.roof_runner.title": "Lewati Kerja Kerasnya",

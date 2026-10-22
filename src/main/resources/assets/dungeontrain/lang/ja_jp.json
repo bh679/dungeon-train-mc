@@ -2663,7 +2663,7 @@
   "advancements.dungeontrain.dungeon_train.carts_10000.title": "無限に近づく",
   "advancements.dungeontrain.dungeon_train.carts_10000.description": "一つの生で%s両の車両を渡り歩く。",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.title": "長い帰り道",
-  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "一つの生で、%1$s両前進し、%1$s両後退する。",
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "一つの生で、%1$s両目と-%1$s両目の車両にたどり着く。",
   "advancements.dungeontrain.dungeon_train.roof_run_1.title": "屋根を越えて",
   "advancements.dungeontrain.dungeon_train.roof_run_1.description": "車両グループの屋根を、中に落ちずに走り抜ける。",
   "advancements.dungeontrain.dungeon_train.roof_runner.title": "作業をスキップ",

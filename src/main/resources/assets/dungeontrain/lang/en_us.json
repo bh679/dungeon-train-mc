@@ -3233,7 +3233,7 @@
   "advancements.dungeontrain.dungeon_train.carts_10000.title": "Nearing Infinity",
   "advancements.dungeontrain.dungeon_train.carts_10000.description": "Traverse %s carriages in a single life.",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.title": "The Long Way Back",
-  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Traverse %1$s carriages forward and %1$s carriages back in a single life.",
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Reach carriage %1$s and carriage -%1$s in a single life.",
   "advancements.dungeontrain.dungeon_train.roof_run_1.title": "Over the Top",
   "advancements.dungeontrain.dungeon_train.roof_run_1.description": "Run across the roof of a carriage group without dropping inside.",
   "advancements.dungeontrain.dungeon_train.roof_runner.title": "Skip the Grind",
