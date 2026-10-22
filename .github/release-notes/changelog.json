@@ -29405,6 +29405,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "photo-albums-keep-more",
+      "version": "0.1447.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Photo albums",
+      "summary": "More of your photos are now kept with the camera advancements they count toward. Click one of those advancements to look back through every photo that counted.",
+      "highlights": [],
+      "pr": 2231,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
