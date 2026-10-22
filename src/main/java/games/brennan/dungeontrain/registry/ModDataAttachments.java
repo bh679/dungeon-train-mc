@@ -274,6 +274,28 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Highest raw {@link games.brennan.dungeontrain.player.PlayerRunState#travelledCarriageIndex} this
+     * player has stood at this life. With {@link #LONG_WAY_BACK_MIN_CARRIAGE} it drives "The Long Way
+     * Back": reach carriage +threshold and carriage -threshold, in either order
+     * ({@link games.brennan.dungeontrain.advancement.CartsBothDirectionsTrigger}). Same shape and
+     * per-life reset as {@link #CARTS_AT_LAST_CONTAINER_OPEN}, for the same codec-cap reason.
+     */
+    public static final Supplier<AttachmentType<Integer>> LONG_WAY_BACK_MAX_CARRIAGE =
+        TYPES.register("long_way_back_max_carriage",
+            () -> AttachmentType.<Integer>builder(() -> 0)
+                .serialize(Codec.INT)
+                .build()
+        );
+
+    /** Lowest raw travelled-carriage index this life; see {@link #LONG_WAY_BACK_MAX_CARRIAGE}. */
+    public static final Supplier<AttachmentType<Integer>> LONG_WAY_BACK_MIN_CARRIAGE =
+        TYPES.register("long_way_back_min_carriage",
+            () -> AttachmentType.<Integer>builder(() -> 0)
+                .serialize(Codec.INT)
+                .build()
+        );
+
+    /**
      * Per-life flag: has this player opened an ender chest during the current life? Gates
      * {@code contained_loop} ("Contained Loop"), granted on death after 1000+ carriages travelled
      * without ever dipping into the (cross-life, EnderChestPersistence-backed) ender-chest stash.

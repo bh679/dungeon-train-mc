@@ -2663,7 +2663,7 @@
   "advancements.dungeontrain.dungeon_train.carts_10000.title": "ใกล้ถึงอนันต์",
   "advancements.dungeontrain.dungeon_train.carts_10000.description": "ผ่านตู้โดยสาร %s ตู้ในชีวิตเดียว",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.title": "หนทางกลับอันยาวไกล",
-  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "ผ่านตู้โดยสารไปข้างหน้า %1$s ตู้และย้อนกลับ %1$s ตู้ในชีวิตเดียว",
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "ไปให้ถึงตู้ที่ %1$s และตู้ที่ -%1$s ในชีวิตเดียว",
   "advancements.dungeontrain.dungeon_train.roof_run_1.title": "ข้ามหลังคา",
   "advancements.dungeontrain.dungeon_train.roof_run_1.description": "วิ่งข้ามหลังคาของกลุ่มตู้โดยสารโดยไม่ตกลงไปข้างใน",
   "advancements.dungeontrain.dungeon_train.roof_runner.title": "ข้ามความน่าเบื่อ",

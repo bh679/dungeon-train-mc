@@ -29606,6 +29606,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "advancement-requirements-tweak",
+      "version": "0.1458.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement tweaks",
+      "summary": "A hidden travel advancement now asks for a longer journey, and a tab's completion advancement no longer needs an optional secret to finish.",
+      "highlights": [],
+      "pr": 2241,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

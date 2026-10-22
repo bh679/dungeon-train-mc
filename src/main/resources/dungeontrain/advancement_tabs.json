@@ -227,6 +227,9 @@
     "dungeontrain:dungeon_train/fully_developed": "dungeontrain:enchiridion/darkroom",
     "dungeontrain:dungeon_train/all_out_of_secrets": "dungeontrain:secrete_menu/root"
   },
+  "notForTabComplete": [
+    "dungeontrain:dungeon_train/reached_large_biomes"
+  ],
   "needs": {
     "dungeontrain:dungeon_train/all_at_once": [
       "dungeontrain:dungeon_train/apple_a_day",
