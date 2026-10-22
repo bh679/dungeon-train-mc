@@ -6,7 +6,7 @@
     "weight": 5,
     "name": "Cargo"
   },
-  "carriage": 1,
+  "carriage": 5,
   "cracked": 3,
   "fancywood": 13,
   "fire": {
@@ -16,7 +16,7 @@
     ]
   },
   "flatbedgroup": {
-    "weight": 5,
+    "weight": 3,
     "name": "Flatbed"
   },
   "long": 0,
