@@ -164,7 +164,6 @@
       "advancements.dungeontrain.dungeon_train.carts_1000.description",
       "advancements.dungeontrain.dungeon_train.encountered_1000_players.description",
       "advancements.dungeontrain.dungeon_train.carts_10000.description",
-      "advancements.dungeontrain.dungeon_train.the_long_way_back.description",
       "advancements.dungeontrain.dungeon_train.roof_runner.description",
       "advancements.dungeontrain.dungeon_train.enjoying_the_ride.description",
       "advancements.dungeontrain.dungeon_train.settling_in.description",
@@ -225,7 +224,9 @@
       "dungeontrain.leaderboard.deathnotes_people.header",
       "gui.dungeontrain.editor_menu.size.full",
       "gui.dungeontrain.editor_menu.type_name.full",
-      "advancements.dungeontrain.enchiridion.photo_deeper_dark.title"
+      "advancements.dungeontrain.enchiridion.photo_deeper_dark.title",
+      "advancements.dungeontrain.secrete_menu.knockback_slime_hit.title",
+      "advancements.dungeontrain.secrete_menu.knockback_slime_hit.hint"
     ],
     "adventureitemnames": [],
     "playermob": [],

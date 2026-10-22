@@ -6085,7 +6085,7 @@
   },
   "advancements.dungeontrain.dungeon_train.the_long_way_back.description": {
     "1": {
-      "label": "carriages each way, from the requirement",
+      "label": "the carriage number to reach each way, from the requirement",
       "examples": [
         "100",
         "50"

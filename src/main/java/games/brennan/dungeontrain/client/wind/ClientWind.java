@@ -61,13 +61,13 @@ public final class ClientWind {
     /** True when {@code worldX} is past the wind start (cheap gate before any sampling). */
     public static boolean pastStart(double worldX) {
         Snapshot s = snap;
-        return s.startX() != Long.MIN_VALUE && worldX >= s.startX();
+        return games.brennan.dungeontrain.wind.WindDistance.at(s.profile(), worldX, s.startX()) >= 0;
     }
 
     public static WindSample sampleAt(double worldX, long tick) {
         Snapshot s = snap;
         if (!active()) return WindSample.CALM;
-        return WindField.sample(s.profile(), worldX - s.startX(), tick, s.seed(),
+        return WindField.sample(s.profile(), games.brennan.dungeontrain.wind.WindDistance.at(s.profile(), worldX, s.startX()), tick, s.seed(),
                         games.brennan.dungeontrain.wind.WindZones.styleAt(worldX))
                 .scaled(games.brennan.dungeontrain.wind.WindZones.bandFactor(worldX));
     }

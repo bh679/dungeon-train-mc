@@ -2396,6 +2396,10 @@
       "gui.dungeontrain.editor_screen.skybox",
       "gui.dungeontrain.editor_screen.skybox.on",
       "gui.dungeontrain.editor_screen.skybox.off",
+      "gui.dungeontrain.editor_screen.empty_blocks",
+      "gui.dungeontrain.editor_screen.empty_blocks.half_solid",
+      "gui.dungeontrain.editor_screen.empty_blocks.solid",
+      "gui.dungeontrain.editor_screen.empty_blocks.air",
       "gui.dungeontrain.editor_screen.load_all",
       "gui.dungeontrain.editor_screen.load_all.tip",
       "gui.dungeontrain.editor_screen.load_all.progress",
@@ -5401,7 +5405,9 @@
       "gui.dungeontrain.options.custom_content.tip",
       "gui.dungeontrain.options.other_advancement_tabs",
       "gui.dungeontrain.options.other_advancement_tabs.tip",
-      "advancements.dungeontrain.enchiridion.photo_deeper_dark.title"
+      "advancements.dungeontrain.enchiridion.photo_deeper_dark.title",
+      "advancements.dungeontrain.secrete_menu.knockback_slime_hit.title",
+      "advancements.dungeontrain.secrete_menu.knockback_slime_hit.hint"
     ],
     "adventureitemnames": [],
     "playermob": [],

@@ -351,11 +351,10 @@ public final class AchievementEvents {
      * same leader delta.</p>
      *
      * <p>{@link ModAdvancementTriggers#CARTS_BOTH_DIRECTIONS} ("The Long Way
-     * Back") uses the per-life forward / backward subtotals (absolute deltas)
-     * tracked in {@link PlayerRunState#cartsForwardSinceDeath} /
-     * {@link PlayerRunState#cartsBackwardSinceDeath} — backward travel
-     * contributes positively there, while it subtracts from the signed
-     * {@code travelledCarriageIndex} used above.</p>
+     * Back") reads the highest and lowest signed {@code travelledCarriageIndex}
+     * of this life ({@link ModDataAttachments#LONG_WAY_BACK_MAX_CARRIAGE} /
+     * {@link ModDataAttachments#LONG_WAY_BACK_MIN_CARRIAGE}): reach carriage
+     * +100 and carriage -100, in either order.</p>
      *
      * <p>{@link PacifistAdvancement} (100 / 250 / 1000 tiers) uses the same
      * travelled-carriage counter as {@code carts_100}, gated on
@@ -375,8 +374,7 @@ public final class AchievementEvents {
         int effectiveTravelled = Math.abs(DifficultyProgression.effectiveTravelled(travelled));
         ModAdvancementTriggers.CARTS_IN_RUN.get()
             .trigger(player, effectiveTravelled);
-        ModAdvancementTriggers.CARTS_BOTH_DIRECTIONS.get()
-            .trigger(player, run.cartsForwardSinceDeath(), run.cartsBackwardSinceDeath());
+        recordLongWayBackEnds(player, travelled);
         // "The Far Start" — same travelled-carriage counter as carts_100 but a
         // longer haul, reached while still carrying the (unread, unburned)
         // starting book. Gated cheaply, so the inventory scan only runs past the threshold.
@@ -938,6 +936,18 @@ public final class AchievementEvents {
         return anyRules;
     }
 
+    /**
+     * "The Long Way Back": widen this life's furthest-forward / furthest-back carriage marks with the raw
+     * {@code travelled} index (real travel, not the admin difficulty offset), then test both ends.
+     */
+    private static void recordLongWayBackEnds(ServerPlayer player, int travelled) {
+        int max = Math.max(player.getData(ModDataAttachments.LONG_WAY_BACK_MAX_CARRIAGE.get()), travelled);
+        int min = Math.min(player.getData(ModDataAttachments.LONG_WAY_BACK_MIN_CARRIAGE.get()), travelled);
+        player.setData(ModDataAttachments.LONG_WAY_BACK_MAX_CARRIAGE.get(), max);
+        player.setData(ModDataAttachments.LONG_WAY_BACK_MIN_CARRIAGE.get(), min);
+        ModAdvancementTriggers.CARTS_BOTH_DIRECTIONS.get().trigger(player, max, min);
+    }
+
     // ---------------- Respawn reset ----------------
 
     @SubscribeEvent
@@ -954,6 +964,8 @@ public final class AchievementEvents {
         // respawn clone already starts clean — cleared explicitly for the same
         // defensive reason PlayerRunState is.
         player.setData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get(), 0);
+        player.setData(ModDataAttachments.LONG_WAY_BACK_MAX_CARRIAGE.get(), 0);
+        player.setData(ModDataAttachments.LONG_WAY_BACK_MIN_CARRIAGE.get(), 0);
         player.setData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get(), Boolean.FALSE);
         player.setData(ModDataAttachments.STARTING_BOOK_BURNED_THIS_LIFE.get(), Boolean.FALSE);
         LifeChallengeAdvancements.resetForNewLife(player);

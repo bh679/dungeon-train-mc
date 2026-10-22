@@ -74,6 +74,17 @@ class AdvancementTabsTest {
     }
 
     @Test
+    @DisplayName("Dungeon Train Explored leaves out Bigger Picture, and every left-out id is a real advancement")
+    void notForTabCompleteListsRealAdvancements() throws IOException {
+        TabGateways.Layout layout = shippedLayout();
+        assertTrue(TabCompleteAdvancements.leftOut(layout).contains("dungeontrain:dungeon_train/reached_large_biomes"));
+        Map<String, JsonObject> all = advancements();
+        for (String id : layout.notForTabComplete()) {
+            assertTrue(all.containsKey(id.substring(id.indexOf(':') + 1)), "notForTabComplete names a missing advancement: " + id);
+        }
+    }
+
+    @Test
     @DisplayName("no advancement that existed before the tab split was renamed or removed")
     void everyOldIdStillExists() throws IOException {
         Map<String, JsonObject> all = advancements();
