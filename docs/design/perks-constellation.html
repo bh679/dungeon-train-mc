@@ -245,8 +245,7 @@ let DBREF=null,dbTimer=null;
 const persist=()=>{M.savedAt=Date.now();try{localStorage.setItem(KEY,JSON.stringify(M))}catch(e){}
   if(DBREF){clearTimeout(dbTimer);dbTimer=setTimeout(()=>{DBREF.set({json:JSON.stringify(M),savedAt:M.savedAt}).then(()=>status("saved"),()=>status("store write refused"))},700)}};
 // The perks joined straight to the Engine sit on one ring, equally spaced, in their current clockwise order.
-const RING=105;
-function ringCentre(m){const ids=[...new Set(m.links.filter(l=>l.a==="root"||l.b==="root").map(l=>l.a==="root"?l.b:l.a))];const ps=ids.map(id=>m.perks.find(p=>p.id===id)).filter(Boolean);if(!ps.length)return;
+function ringCentre(m){const RING=105;const ids=[...new Set(m.links.filter(l=>l.a==="root"||l.b==="root").map(l=>l.a==="root"?l.b:l.a))];const ps=ids.map(id=>m.perks.find(p=>p.id===id)).filter(Boolean);if(!ps.length)return;
   ps.sort((u,v)=>Math.atan2(u.y-CY,u.x-CX)-Math.atan2(v.y-CY,v.x-CX));const step=2*Math.PI/ps.length;const a0=Math.atan2(ps[0].y-CY,ps[0].x-CX);
   ps.forEach((p,i)=>{const a=a0+i*step;p.x=+(CX+RING*Math.cos(a)).toFixed(1);p.y=+(CY+RING*Math.sin(a)).toFixed(1)})}
 const save=()=>{ringCentre(M);const now=JSON.stringify(M);if(lastSaved===null)lastSaved=now;
@@ -312,7 +311,7 @@ function renderSky(){
     g.addEventListener("pointerenter",()=>{if(mode&&pick){hoverId=p.id;renderSky()}});g.addEventListener("pointerleave",()=>{if(hoverId===p.id){hoverId=null;renderSky()}});g.addEventListener("keydown",ev=>{if(ev.key==="Enter"){select(p.id)}});svg.appendChild(g)});
 }
 // A class label sits on its cluster's centre line, pushed outward until it clears every star and name.
-function labelSpot(a,r0,name){const hw=name.length*5.5+22,hh=26;let r=r0;for(let i=0;i<40;i++){const x=CX+r*Math.cos(a),y=CY+r*Math.sin(a);const hit=M.perks.some(p=>Math.abs(p.x-x)<hw&&Math.abs(p.y-y)<hh);if(!hit)return{x,y};r+=8}return{x:CX+r*Math.cos(a),y:CY+r*Math.sin(a)}}
+function labelSpot(a,r0,name){const hw=name.length*5.5+22,hh=26;const clamp=(x,y)=>({x:Math.max(hw,Math.min(800-hw,x)),y:Math.max(24,Math.min(776,y))});let r=r0;for(let i=0;i<40;i++){const x=CX+r*Math.cos(a),y=CY+r*Math.sin(a);const hit=M.perks.some(p=>Math.abs(p.x-x)<hw&&Math.abs(p.y-y)<hh);if(!hit)return clamp(x,y);r+=8}return clamp(CX+r*Math.cos(a),CY+r*Math.sin(a))}
 function rotateArm(cid,da){M.perks.filter(p=>p.cls===cid).forEach(p=>{const dx=p.x-CX,dy=p.y-CY,r=Math.hypot(dx,dy),a=Math.atan2(dy,dx)+da;p.x=+(CX+r*Math.cos(a)).toFixed(1);p.y=+(CY+r*Math.sin(a)).toFixed(1)})}
 function startArmDrag(ev,c,t){if(ev.button!==0||ev.altKey||ev.ctrlKey)return;ev.preventDefault();const pt=svg.createSVGPoint();const toSvg=e=>{pt.x=e.clientX;pt.y=e.clientY;return pt.matrixTransform(svg.getScreenCTM().inverse())};
   let last=toSvg(ev);let lastA=Math.atan2(last.y-CY,last.x-CX);let moved=false;
