@@ -29555,6 +29555,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "knockback-slime",
+      "version": "0.1455.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot"
+      ],
+      "title": "Knockback Slime",
+      "summary": "A new single-use slimeball that hits like a Knockback X weapon. Land a hit and whatever you struck goes flying, then the slimeball is spent. Keep an eye out for one in a barrel.",
+      "highlights": [],
+      "pr": 2237,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
