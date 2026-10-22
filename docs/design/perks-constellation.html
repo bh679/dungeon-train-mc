@@ -262,8 +262,10 @@ function placePanel(){const a=document.getElementById("aside");let pt=null;
   else if(selCls){const ps=M.perks.filter(p=>p.cls===selCls);if(ps.length){const sx=ps.reduce((t,p)=>t+(p.x-CX),0),sy=ps.reduce((t,p)=>t+(p.y-CY),0);const an=Math.atan2(sy,sx);const r=Math.max(...ps.map(p=>Math.hypot(p.x-CX,p.y-CY)))+40;pt={x:CX+r*Math.cos(an),y:CY+r*Math.sin(an),pad:14}}}
   if(!pt){a.style.left=a.style.top="";a.style.right="";return}
   const m=svg.getScreenCTM();if(!m){return}const sx=m.a*pt.x+m.c*pt.y+m.e,sy=m.b*pt.x+m.d*pt.y+m.f;const pad=pt.pad*m.a+10;
-  const w=a.offsetWidth||300,h=a.offsetHeight||200;let x=sx+pad,y=sy-20;
-  if(x+w>innerWidth-12)x=sx-pad-w;if(x<12)x=12;if(y+h>innerHeight-12)y=innerHeight-12-h;if(y<60)y=60;
+  // Clear the star AND its name (centred under the star): default below-right, else below-left, else above.
+  const nameHalf=(sel&&byId(sel)?(byId(sel).name||"").length*3.2:0)*m.a;const gapX=Math.max(pad,nameHalf+10),gapY=pad+14*m.a;
+  const w=a.offsetWidth||300,h=a.offsetHeight||200;let x=sx+gapX,y=sy+gapY;
+  if(x+w>innerWidth-12)x=sx-gapX-w;if(x<12)x=12;if(y+h>innerHeight-12)y=sy-gapY-h;if(y<60)y=60;
   a.style.right="auto";a.style.left=x+"px";a.style.top=y+"px"}
 const root=p=>p&&p.id==="root";
 function render(){renderSky();inspector();classList();if(showTable)renderTable();document.getElementById("aside").classList.toggle("empty",!sel&&selLink===null&&!selCls&&document.querySelectorAll(".sec:not([hidden])").length===0);placePanel()}
