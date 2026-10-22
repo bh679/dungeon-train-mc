@@ -149,6 +149,7 @@
       "advancements.dungeontrain.disqualified_this_life",
       "advancements.dungeontrain.track.click",
       "advancements.dungeontrain.dungeon_train.deathnote_self_target.hint",
+      "advancements.dungeontrain.dungeon_train.reached_deeper_dark.title",
       "advancements.dungeontrain.dungeon_train.taking_notes.description",
       "advancements.dungeontrain.dungeon_train.burned_unread.description",
       "advancements.dungeontrain.dungeon_train.the_same_but_different.description",
@@ -223,7 +224,10 @@
       "gui.dungeontrain.options.other_advancement_tabs.tip",
       "dungeontrain.leaderboard.deathnotes_people.header",
       "gui.dungeontrain.editor_menu.size.full",
-      "gui.dungeontrain.editor_menu.type_name.full"
+      "gui.dungeontrain.editor_menu.type_name.full",
+      "advancements.dungeontrain.enchiridion.photo_deeper_dark.title",
+      "advancements.dungeontrain.secrete_menu.knockback_slime_hit.title",
+      "advancements.dungeontrain.secrete_menu.knockback_slime_hit.hint"
     ],
     "adventureitemnames": [],
     "playermob": [],

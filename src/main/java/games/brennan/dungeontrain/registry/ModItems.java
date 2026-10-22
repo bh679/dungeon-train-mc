@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.registry;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.photo.WornPhotographItem;
 import games.brennan.dungeontrain.compat.vista.LiveBroadcastSource;
+import games.brennan.dungeontrain.item.KnockbackSlimeItem;
 import games.brennan.dungeontrain.item.LiveCassetteItem;
 import games.brennan.dungeontrain.item.LiveHeadpieceItem;
 import games.brennan.dungeontrain.item.VariantClipboardItem;
@@ -238,6 +239,15 @@ public final class ModItems {
         () -> new Item(new Item.Properties().stacksTo(1))
     );
 
+    /**
+     * Single-use slimeball that hits like Knockback X and is spent on the hit
+     * ({@link KnockbackSlimeItem}). Creative/editor only: no loot table or recipe places it.
+     */
+    public static final DeferredItem<Item> KNOCKBACK_SLIME = ITEMS.register(
+        "knockback_slime",
+        () -> new KnockbackSlimeItem(new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON))
+    );
+
     private ModItems() {}
 
     /** Call from the mod constructor to attach the {@link DeferredRegister} to the mod-event bus. */
@@ -256,6 +266,8 @@ public final class ModItems {
     public static void onBuildCreativeTabs(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(VARIANT_CLIPBOARD.get());
+        } else if (event.getTabKey() == CreativeModeTabs.COMBAT) {
+            event.accept(KNOCKBACK_SLIME.get());
         }
     }
 }
