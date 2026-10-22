@@ -29402,9 +29402,9 @@
       "highlights": [],
       "pr": 2229,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1451.0",
+      "released_at": "2026-10-22T06:15:54Z"
     },
     {
       "id": "photo-albums-keep-more",
@@ -29420,9 +29420,9 @@
       "highlights": [],
       "pr": 2231,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1451.0",
+      "released_at": "2026-10-22T06:15:54Z"
     },
     {
       "id": "variant-mirror-condition-group",
@@ -29437,9 +29437,9 @@
       "highlights": [],
       "pr": 2228,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1451.0",
+      "released_at": "2026-10-22T06:15:54Z"
     },
     {
       "id": "challenge-click-tracking",
@@ -29455,9 +29455,9 @@
       "highlights": [],
       "pr": 2230,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1451.0",
+      "released_at": "2026-10-22T06:15:54Z"
     },
     {
       "id": "carriage-contents-refresh",
@@ -29479,9 +29479,9 @@
       ],
       "pr": 2232,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1451.0",
+      "released_at": "2026-10-22T06:15:54Z"
     },
     {
       "id": "live-eye-close-calls",
@@ -29496,9 +29496,9 @@
       "highlights": [],
       "pr": 2233,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1451.0",
+      "released_at": "2026-10-22T06:15:54Z"
     }
   ]
 }
