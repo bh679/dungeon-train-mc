@@ -2719,7 +2719,7 @@
   "advancements.dungeontrain.dungeon_train.carts_10000.title": "Verso l'Infinito",
   "advancements.dungeontrain.dungeon_train.carts_10000.description": "Attraversa %s vagoni in una sola vita.",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.title": "Il Lungo Ritorno",
-  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Attraversa %1$s vagoni in avanti e %1$s vagoni indietro in una sola vita.",
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Raggiungi il vagone %1$s e il vagone -%1$s in una sola vita.",
   "advancements.dungeontrain.dungeon_train.roof_run_1.title": "Sopra il Tetto",
   "advancements.dungeontrain.dungeon_train.roof_run_1.description": "Corri sul tetto di un gruppo di vagoni senza cadere all'interno.",
   "advancements.dungeontrain.dungeon_train.roof_runner.title": "Salta la Fatica",

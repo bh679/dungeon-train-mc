@@ -2771,7 +2771,7 @@
   "advancements.dungeontrain.dungeon_train.carts_10000.title": "Blisko nieskończoności",
   "advancements.dungeontrain.dungeon_train.carts_10000.description": "Przejedź %s wagonów w jednym życiu.",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.title": "Długa droga powrotna",
-  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Przejedź %1$s wagonów naprzód i %1$s wagonów z powrotem w jednym życiu.",
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Dotrzyj do wagonu %1$s i wagonu -%1$s w jednym życiu.",
   "advancements.dungeontrain.dungeon_train.roof_run_1.title": "Ponad wszystkim",
   "advancements.dungeontrain.dungeon_train.roof_run_1.description": "Przebiegnij po dachu grupy wagonów, nie spadając do środka.",
   "advancements.dungeontrain.dungeon_train.roof_runner.title": "Pomiń mozół",

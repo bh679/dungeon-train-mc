@@ -3293,7 +3293,7 @@
   "advancements.dungeontrain.dungeon_train.carts_10000.title": "Майже безкінечність",
   "advancements.dungeontrain.dungeon_train.carts_10000.description": "Пройди %s вагонів за одне життя.",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.title": "Довгий шлях назад",
-  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Пройди %1$s вагонів уперед і %1$s вагонів назад за одне життя.",
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Дістанься вагона %1$s і вагона -%1$s за одне життя.",
   "advancements.dungeontrain.dungeon_train.roof_run_1.title": "Поверхом вище",
   "advancements.dungeontrain.dungeon_train.roof_run_1.description": "Пробіжи дахом групи вагонів, не впавши всередину.",
   "advancements.dungeontrain.dungeon_train.roof_runner.title": "Без зайвої метушні",

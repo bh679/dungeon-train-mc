@@ -2719,7 +2719,7 @@
   "advancements.dungeontrain.dungeon_train.carts_10000.title": "De oneindigheid nabij",
   "advancements.dungeontrain.dungeon_train.carts_10000.description": "Doorkruis %s wagons in één leven.",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.title": "De lange weg terug",
-  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Doorkruis %1$s wagons vooruit en %1$s wagons terug in één leven.",
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Bereik wagon %1$s en wagon -%1$s in één leven.",
   "advancements.dungeontrain.dungeon_train.roof_run_1.title": "Over de top",
   "advancements.dungeontrain.dungeon_train.roof_run_1.description": "Ren over het dak van een wagongroep zonder erin te vallen.",
   "advancements.dungeontrain.dungeon_train.roof_runner.title": "Sla de sleur over",

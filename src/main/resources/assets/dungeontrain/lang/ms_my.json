@@ -2667,7 +2667,7 @@
   "advancements.dungeontrain.dungeon_train.carts_10000.title": "Menghampiri Tak Terhingga",
   "advancements.dungeontrain.dungeon_train.carts_10000.description": "Lalui %s gerabak dalam satu hayat.",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.title": "Jalan Panjang Pulang",
-  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Lalui %1$s gerabak ke hadapan dan %1$s gerabak berpatah balik dalam satu hayat.",
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Capai gerabak %1$s dan gerabak -%1$s dalam satu hayat.",
   "advancements.dungeontrain.dungeon_train.roof_run_1.title": "Di Atas Puncak",
   "advancements.dungeontrain.dungeon_train.roof_run_1.description": "Berlari merentasi bumbung sekumpulan gerabak tanpa jatuh ke dalam.",
   "advancements.dungeontrain.dungeon_train.roof_runner.title": "Langkau Kerja Keras",

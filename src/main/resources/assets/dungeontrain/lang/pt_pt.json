@@ -2719,7 +2719,7 @@
   "advancements.dungeontrain.dungeon_train.carts_10000.title": "Rumo ao Infinito",
   "advancements.dungeontrain.dungeon_train.carts_10000.description": "Percorre %s carruagens numa só vida.",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.title": "O Longo Caminho de Volta",
-  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Percorre %1$s carruagens para a frente e %1$s carruagens para trás numa só vida.",
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Chega à carruagem %1$s e à carruagem -%1$s numa só vida.",
   "advancements.dungeontrain.dungeon_train.roof_run_1.title": "Por Cima",
   "advancements.dungeontrain.dungeon_train.roof_run_1.description": "Corre pelo tejadilho de um grupo de carruagens sem cair lá dentro.",
   "advancements.dungeontrain.dungeon_train.roof_runner.title": "Salta a Maçada",

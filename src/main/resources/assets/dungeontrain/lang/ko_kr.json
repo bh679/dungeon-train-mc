@@ -2667,7 +2667,7 @@
   "advancements.dungeontrain.dungeon_train.carts_10000.title": "무한에 가까이",
   "advancements.dungeontrain.dungeon_train.carts_10000.description": "한 생에 객차 %s량을 지나갑니다.",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.title": "먼 귀로",
-  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "한 생에 객차 %1$s량을 앞으로, 그리고 %1$s량을 뒤로 지나갑니다.",
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "한 생에 %1$s번 객차와 -%1$s번 객차에 도달합니다.",
   "advancements.dungeontrain.dungeon_train.roof_run_1.title": "지붕 위로",
   "advancements.dungeontrain.dungeon_train.roof_run_1.description": "안으로 떨어지지 않고 객차 그룹의 지붕 위를 가로질러 달립니다.",
   "advancements.dungeontrain.dungeon_train.roof_runner.title": "노가다는 건너뛰고",

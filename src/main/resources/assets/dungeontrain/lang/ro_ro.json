@@ -3296,7 +3296,7 @@
   "advancements.dungeontrain.dungeon_train.carts_10000.title": "Aproape de infinit",
   "advancements.dungeontrain.dungeon_train.carts_10000.description": "Străbate %s de vagoane într-o singură viață.",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.title": "Drumul lung înapoi",
-  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Străbate %1$s de vagoane înainte și %1$s de vagoane înapoi într-o singură viață.",
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Ajungi la vagonul %1$s și la vagonul -%1$s într-o singură viață.",
   "advancements.dungeontrain.dungeon_train.roof_run_1.title": "Pe deasupra",
   "advancements.dungeontrain.dungeon_train.roof_run_1.description": "Aleargă pe acoperișul unui grup de vagoane fără să cazi înăuntru.",
   "advancements.dungeontrain.dungeon_train.roof_runner.title": "Sari peste corvoadă",

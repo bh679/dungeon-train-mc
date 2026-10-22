@@ -2719,7 +2719,7 @@
   "advancements.dungeontrain.dungeon_train.carts_10000.title": "Rozando el infinito",
   "advancements.dungeontrain.dungeon_train.carts_10000.description": "Recorre %s vagones en una sola vida.",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.title": "El largo camino de vuelta",
-  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Recorre %1$s vagones hacia delante y %1$s vagones hacia atrás en una sola vida.",
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": "Llega al vagón %1$s y al vagón -%1$s en una sola vida.",
   "advancements.dungeontrain.dungeon_train.roof_run_1.title": "Por encima",
   "advancements.dungeontrain.dungeon_train.roof_run_1.description": "Corre por el techo de un grupo de vagones sin caer dentro.",
   "advancements.dungeontrain.dungeon_train.roof_runner.title": "Sáltate la faena",
