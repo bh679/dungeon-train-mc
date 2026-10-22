@@ -29537,6 +29537,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "advancement-name-tweak",
+      "version": "0.1454.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations",
+        "advancements"
+      ],
+      "title": "Advancement name tweak",
+      "summary": "One advancement has a new name.",
+      "highlights": [],
+      "pr": 2236,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
