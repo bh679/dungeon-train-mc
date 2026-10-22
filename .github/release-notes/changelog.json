@@ -29640,6 +29640,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-empty-blocks-setting",
+      "version": "0.1459.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Empty blocks setting in the editor",
+      "summary": "A new Empty blocks row in the editor's Settings tab picks how the see-through empty markers behave: Half solid (stand on them, walk through from the side), Solid, or Air.",
+      "highlights": [],
+      "pr": 2244,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

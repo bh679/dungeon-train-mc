@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.block;
 
 import com.mojang.serialization.MapCodec;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.PlaceholderCollision;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
@@ -20,9 +22,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * block and, worse, opened its GUI on right-click, so placing a block against a placeholder cell
  * meant holding shift. This block is a translucent ghost cube with a full outline (so it can be
  * targeted and built against) and <em>no</em> {@code useWithoutItem} — right-click falls straight
- * through to vanilla item placement. Its collision is scaffolding-style: solid only to something
- * standing on top of it, so the author can walk on placeholders but straight through them from the
- * side, and sneaking on one drops through.
+ * through to vanilla item placement. How solid it is to walk into is the author's choice
+ * ({@link PlaceholderCollision}, from the X menu's Settings tab); the default is scaffolding-style,
+ * solid only to something standing on top of it, so the author can walk on placeholders but
+ * straight through them from the side, and sneaking on one drops through.
  * It has no FACING property either, so the menu shows no rotation cells for a "nothing" row.</p>
  *
  * <p>It must never reach a live carriage: the variant appliers overwrite every sentinel cell with
@@ -45,15 +48,22 @@ public class VariantPlaceholderBlock extends Block {
     }
 
     /**
-     * Solid only under an entity whose feet are on or above the top face and that isn't sneaking
-     * to drop — the {@code ScaffoldingBlock} test. Everything else (walking in from the side,
-     * standing inside one) passes through. The outline ({@code getShape}) stays a full cube.
+     * The author's {@link PlaceholderCollision} setting. Half solid is solid only under an entity
+     * whose feet are on or above the top face and that isn't sneaking to drop — the
+     * {@code ScaffoldingBlock} test — so walking in from the side, or standing inside one, passes
+     * through. Client config, read the way {@code SkyboxBlock} reads its switch: in single player
+     * that is the server's answer too, and a dedicated server keeps the default. The outline
+     * ({@code getShape}) stays a full cube in every mode.
      */
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return context.isAbove(Shapes.block(), pos, true) && !context.isDescending()
-            ? Shapes.block()
-            : Shapes.empty();
+        return switch (ClientDisplayConfig.getPlaceholderCollision()) {
+            case SOLID -> Shapes.block();
+            case AIR -> Shapes.empty();
+            case HALF_SOLID -> context.isAbove(Shapes.block(), pos, true) && !context.isDescending()
+                ? Shapes.block()
+                : Shapes.empty();
+        };
     }
 
     /** Adjacent placeholders share no inner faces — the glass rule — so a run of them reads as one slab of ghost. */

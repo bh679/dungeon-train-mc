@@ -343,6 +343,8 @@ public final class ClientDisplayConfig {
     public static final EditorScreenTheme DEFAULT_EDITOR_SCREEN_THEME = EditorScreenTheme.LIGHT;
     /** How the inventory-style editor X menu is painted. See {@link #DEFAULT_EDITOR_SCREEN_THEME}. */
     public static final ModConfigSpec.EnumValue<EditorScreenTheme> EDITOR_SCREEN_THEME;
+    /** How solid the block-variant editor's empty-cell markers are. See {@link #getPlaceholderCollision()}. */
+    public static final ModConfigSpec.EnumValue<PlaceholderCollision> PLACEHOLDER_COLLISION;
 
     /**
      * Remembered answer to the custom-Train-Editor-content prompt — see
@@ -473,6 +475,7 @@ public final class ClientDisplayConfig {
         CONTAINER_CONTENTS_MENU_SPACE = pair.getLeft().containerContentsMenuSpace;
         BLOCK_VARIANT_MENU_SPACE = pair.getLeft().blockVariantMenuSpace;
         EDITOR_SCREEN_THEME = pair.getLeft().editorScreenTheme;
+        PLACEHOLDER_COLLISION = pair.getLeft().placeholderCollision;
     }
 
     private ClientDisplayConfig() {}
@@ -736,6 +739,13 @@ public final class ClientDisplayConfig {
                          "translucent black the other Dungeon Train menus use. Set in-game from the X menu's",
                          "Settings tab.")
                 .defineEnum("editorScreenTheme", DEFAULT_EDITOR_SCREEN_THEME);
+        ModConfigSpec.EnumValue<PlaceholderCollision> placeholderCollision = b
+                .comment("How solid the block variant editor's see-through empty-cell markers are. HALF_SOLID: stand on",
+                         "top, walk through from the side, sneak to drop through. SOLID: a full block. AIR: no collision.",
+                         "They always draw and can always be built against. An authoring convenience: on a multiplayer",
+                         "server the server keeps HALF_SOLID, so another choice there will push you back. Set in-game",
+                         "from the X menu's Settings tab.")
+                .defineEnum("placeholderCollision", PlaceholderCollision.DEFAULT);
         b.pop();
 
         b.push("sharedBooks");
@@ -957,7 +967,7 @@ public final class ClientDisplayConfig {
                 lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
-                editorScreenTheme,
+                editorScreenTheme, placeholderCollision,
                 confirmBuildRestore, humanOnlyTranslations, newRunDifficulty);
     }
 
@@ -2150,6 +2160,22 @@ public final class ClientDisplayConfig {
         return isLoaded() ? EDITOR_SCREEN_THEME.get() : DEFAULT_EDITOR_SCREEN_THEME;
     }
 
+    /**
+     * How solid the block-variant editor's empty-cell markers are. Pre-load, and on a dedicated
+     * server (which never loads the client config), {@link PlaceholderCollision#DEFAULT}.
+     */
+    public static PlaceholderCollision getPlaceholderCollision() {
+        return isLoaded() ? PLACEHOLDER_COLLISION.get() : PlaceholderCollision.DEFAULT;
+    }
+
+    /** Persist the empty-marker collision mode. Idempotent: skips the TOML write when unchanged. */
+    public static void setPlaceholderCollision(PlaceholderCollision value) {
+        if (!isLoaded() || value == null) return;
+        if (PLACEHOLDER_COLLISION.get() == value) return;
+        PLACEHOLDER_COLLISION.set(value);
+        PLACEHOLDER_COLLISION.save();
+    }
+
     /** Persist the editor screen's theme. Idempotent: skips the TOML write when unchanged. */
     public static void setEditorScreenTheme(EditorScreenTheme value) {
         if (!isLoaded() || value == null) return;
@@ -2264,6 +2290,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace,
             ModConfigSpec.EnumValue<EditorScreenTheme> editorScreenTheme,
+            ModConfigSpec.EnumValue<PlaceholderCollision> placeholderCollision,
             ModConfigSpec.BooleanValue confirmBuildRestore,
             ModConfigSpec.BooleanValue humanOnlyTranslations,
             ModConfigSpec.ConfigValue<String> newRunDifficulty
