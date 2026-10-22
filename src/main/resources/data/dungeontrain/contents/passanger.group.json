@@ -5,6 +5,10 @@
     {
       "id": "passanger2",
       "weight": 1
+    },
+    {
+      "id": "library_long",
+      "weight": 1
     }
   ]
 }
