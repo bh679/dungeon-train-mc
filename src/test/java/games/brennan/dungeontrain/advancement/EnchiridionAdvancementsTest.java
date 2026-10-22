@@ -147,4 +147,40 @@ final class EnchiridionAdvancementsTest {
                     .getAsJsonObject("conditions").get("threshold").getAsInt(), t.getKey());
         }
     }
+
+    @Test
+    @DisplayName("count tiers share their category's album, and its targets match the tiers' JSON")
+    void countAlbums() throws IOException {
+        int max = 0;
+        for (Map.Entry<String, Integer> t : EnchiridionAdvancements.COUNT_TIER_TARGETS.entrySet()) {
+            JsonObject conditions = JsonParser.parseString(Files.readString(
+                    RepoPaths.advancements().resolve(t.getKey() + ".json"), StandardCharsets.UTF_8)).getAsJsonObject()
+                    .getAsJsonObject("criteria").getAsJsonObject("done").getAsJsonObject("conditions");
+            assertEquals(t.getValue().intValue(), conditions.get("threshold").getAsInt(), t.getKey());
+            String album = EnchiridionAdvancements.albumOf(t.getKey());
+            assertEquals(EnchiridionAdvancements.COUNT_ALBUM_BY_CATEGORY.get(conditions.get("category").getAsString()),
+                    album, t.getKey());
+            assertTrue(EnchiridionAdvancements.isCountAlbum(album));
+            assertEquals(conditions.get("category").getAsString(), EnchiridionAdvancements.countCategoryOf(album));
+            max = Math.max(max, t.getValue());
+        }
+        assertEquals(9, EnchiridionAdvancements.COUNT_TIER_TARGETS.size());
+        assertEquals(EnchiridionAdvancements.COUNT_ALBUM_MAX, max);
+        assertFalse(EnchiridionAdvancements.isCountAlbum(EnchiridionAdvancements.BIOME_ALBUM));
+        assertEquals(7, EnchiridionAdvancements.countEntryNumber(EnchiridionAdvancements.countEntryPath(7)));
+        assertEquals(-1, EnchiridionAdvancements.countEntryNumber("minecraft/zombie"));
+    }
+
+    @Test
+    @DisplayName("every shipped photo_count advancement is a known count tier")
+    void everyCountTierKnown() throws IOException {
+        try (Stream<Path> tree = Files.walk(RepoPaths.advancements())) {
+            for (Path file : tree.filter(p -> p.toString().endsWith(".json")).toList()) {
+                if (!Files.readString(file, StandardCharsets.UTF_8).contains("dungeontrain:photo_count")) continue;
+                String path = RepoPaths.advancements().relativize(file).toString().replace('\\', '/');
+                path = path.substring(0, path.length() - ".json".length());
+                assertTrue(EnchiridionAdvancements.COUNT_TIER_TARGETS.containsKey(path), path);
+            }
+        }
+    }
 }

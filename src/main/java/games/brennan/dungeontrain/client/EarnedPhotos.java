@@ -75,6 +75,7 @@ public final class EarnedPhotos {
         if (advancement == null || exposureId == null || exposureId.isBlank()) return;
         ResourceLocation album = entry == null || entry.isEmpty() ? null : albumOf(advancement);
         if (album != null && EnchiridionAdvancements.isBiomeAlbum(album.getPath())) PHOTOGRAPHED_BIOMES.add(entry);
+        if (album != null && EnchiridionAdvancements.isCountAlbum(album.getPath())) countLogged(album.getPath(), entry);
         PENDING.put(new Slot(advancement, entry == null ? "" : entry),
                 new Pending(exposureId, type, FETCH_TIMEOUT_TICKS, RETRY_TICKS));
     }
@@ -140,20 +141,29 @@ public final class EarnedPhotos {
 
     /**
      * The album entries this run's progress backs: an animal or mob counts once its criterion is ticked,
-     * a biome once this world's photographed set has it. The album folder outlives worlds (and Free Play
+     * a biome once this world's photographed set has it, a counted photo while its number is within this
+     * world's count for its category (a later run reaching that number overwrites it). The album folder outlives worlds (and Free Play
      * runs, which never carry progress over), so a photo from a run that no longer counts stays hidden
      * until the subject is photographed again here.
      */
     public static List<Entry> visibleEntries(ResourceLocation advancement, AdvancementProgress progress) {
         List<Entry> all = entries(advancement);
         if (all.isEmpty()) return all;
-        boolean biomes = EnchiridionAdvancements.isBiomeAlbum(albumOf(advancement).getPath());
+        String album = albumOf(advancement).getPath();
+        boolean biomes = EnchiridionAdvancements.isBiomeAlbum(album);
+        String category = EnchiridionAdvancements.countCategoryOf(album);
         List<Entry> out = new ArrayList<>(all.size());
         for (Entry e : all) {
-            boolean counts = biomes
-                    ? PHOTOGRAPHED_BIOMES.contains(e.id().toString())
-                    : progress != null && progress.getCriterion(e.id().toString()) != null
-                            && progress.getCriterion(e.id().toString()).isDone();
+            boolean counts;
+            if (category != null) {
+                int n = EnchiridionAdvancements.countEntryNumber(e.id().getPath());
+                counts = n >= 1 && n <= PHOTO_COUNTS.getOrDefault(category, 0);
+            } else {
+                counts = biomes
+                        ? PHOTOGRAPHED_BIOMES.contains(e.id().toString())
+                        : progress != null && progress.getCriterion(e.id().toString()) != null
+                                && progress.getCriterion(e.id().toString()).isDone();
+            }
             if (counts) out.add(e);
         }
         return out;
@@ -166,6 +176,24 @@ public final class EarnedPhotos {
     public static void setPhotographedBiomes(List<String> biomes) {
         PHOTOGRAPHED_BIOMES.clear();
         PHOTOGRAPHED_BIOMES.addAll(biomes);
+    }
+
+    /** Photos counted per category in this world, from the server ({@code PhotoBiomesPacket}) plus each one logged. */
+    private static final Map<String, Integer> PHOTO_COUNTS = new java.util.HashMap<>();
+
+    /** The server's photo counts for this world — sent on join and respawn. */
+    public static void setPhotoCounts(Map<String, Integer> counts) {
+        PHOTO_COUNTS.clear();
+        PHOTO_COUNTS.putAll(counts);
+    }
+
+    /** A counted photo arrived for {@code album}: this world's count is at least its number now. */
+    private static void countLogged(String album, String entry) {
+        String category = EnchiridionAdvancements.countCategoryOf(album);
+        ResourceLocation id = ResourceLocation.tryParse(entry);
+        if (category == null || id == null) return;
+        int n = EnchiridionAdvancements.countEntryNumber(id.getPath());
+        if (n > 0) PHOTO_COUNTS.merge(category, n, Math::max);
     }
 
     /** The picture for {@code advancement}'s tooltip: its own photo once earned, else the album's latest that counts. */
@@ -187,9 +215,12 @@ public final class EarnedPhotos {
         Screen parent = mc.screen;
         ResourceLocation album = albumOf(advancement);
         if (album != null) {
-            boolean biomes = EnchiridionAdvancements.isBiomeAlbum(album.getPath());
-            List<Entry> slots = albumSlots(advancement, progress, biomes);
-            mc.execute(() -> mc.setScreen(new EarnedPhotoAlbumScreen(parent, title, slots, biomes)));
+            EarnedPhotoAlbumScreen.Kind kind = EnchiridionAdvancements.isBiomeAlbum(album.getPath())
+                    ? EarnedPhotoAlbumScreen.Kind.BIOME
+                    : EnchiridionAdvancements.isCountAlbum(album.getPath())
+                            ? EarnedPhotoAlbumScreen.Kind.COUNT : EarnedPhotoAlbumScreen.Kind.ENTITY;
+            List<Entry> slots = albumSlots(advancement, progress, kind);
+            mc.execute(() -> mc.setScreen(new EarnedPhotoAlbumScreen(parent, title, slots, kind)));
             return true;
         }
         if (progress == null || !progress.isDone() || !has(advancement)) return false;
@@ -200,12 +231,15 @@ public final class EarnedPhotos {
     /**
      * Every slot of {@code advancement}'s album: the photos this run counts, then an empty slot
      * ({@code file} null) for each still missing. A creature collection lists its criteria in order; a
-     * biome tier asks for its target number, Coffee Table Book for every biome there is.
+     * biome tier asks for its target number, Coffee Table Book for every biome there is; a count tier has
+     * a slot per photo it asks for, photo #n in slot n.
      */
-    static List<Entry> albumSlots(ResourceLocation advancement, AdvancementProgress progress, boolean biomes) {
+    static List<Entry> albumSlots(ResourceLocation advancement, AdvancementProgress progress,
+                                  EarnedPhotoAlbumScreen.Kind kind) {
         List<Entry> visible = visibleEntries(advancement, progress);
         List<Entry> out = new ArrayList<>();
-        if (biomes) {
+        if (kind == EarnedPhotoAlbumScreen.Kind.COUNT) return countSlots(advancement, visible);
+        if (kind == EarnedPhotoAlbumScreen.Kind.BIOME) {
             out.addAll(visible);
             for (int i = visible.size(); i < biomeTarget(advancement); i++) out.add(new Entry(null, null));
             return out;
@@ -220,6 +254,19 @@ public final class EarnedPhotos {
                 Entry e = byId.get(criterion);
                 out.add(e != null ? e : new Entry(null, null));
             }
+        }
+        return out;
+    }
+
+    /** Slot n holds photo #n when it is kept; the rest are empty, numbered so the album reads in order. */
+    private static List<Entry> countSlots(ResourceLocation advancement, List<Entry> visible) {
+        int target = EnchiridionAdvancements.COUNT_TIER_TARGETS.getOrDefault(advancement.getPath(), visible.size());
+        Map<Integer, Entry> byNumber = new java.util.HashMap<>();
+        for (Entry e : visible) byNumber.put(EnchiridionAdvancements.countEntryNumber(e.id().getPath()), e);
+        List<Entry> out = new ArrayList<>(target);
+        for (int n = 1; n <= target; n++) {
+            Entry e = byNumber.get(n);
+            out.add(e != null ? e : new Entry(null, null));
         }
         return out;
     }

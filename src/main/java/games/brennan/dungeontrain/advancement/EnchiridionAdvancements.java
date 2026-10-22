@@ -96,6 +96,42 @@ public final class EnchiridionAdvancements {
     private static final Set<String> ENTITY_ALBUMS = Set.of(
             PATH_PREFIX + "nature_documentary", PATH_PREFIX + "most_wanted");
 
+    /**
+     * The photo-count categories' albums ({@code PhotoCounts}): every counted photo is kept, numbered,
+     * in one album per category, kept under the category's first tier.
+     */
+    public static final java.util.Map<String, String> COUNT_ALBUM_BY_CATEGORY = java.util.Map.of(
+            "animal", PATH_PREFIX + "wildlife_photographer",
+            "hostile", PATH_PREFIX + "danger_close",
+            "passenger", PATH_PREFIX + "those_we_meet");
+
+    /** Each photo-count tier → its category's album. */
+    private static final java.util.Map<String, String> COUNT_TIERS = java.util.Map.of(
+            PATH_PREFIX + "wildlife_photographer", PATH_PREFIX + "wildlife_photographer",
+            PATH_PREFIX + "field_guide", PATH_PREFIX + "wildlife_photographer",
+            PATH_PREFIX + "gational_neographic", PATH_PREFIX + "wildlife_photographer",
+            PATH_PREFIX + "danger_close", PATH_PREFIX + "danger_close",
+            PATH_PREFIX + "creature_feature", PATH_PREFIX + "danger_close",
+            PATH_PREFIX + "rogues_gallery", PATH_PREFIX + "danger_close",
+            PATH_PREFIX + "those_we_meet", PATH_PREFIX + "those_we_meet",
+            PATH_PREFIX + "inhabitants", PATH_PREFIX + "those_we_meet",
+            PATH_PREFIX + "passenger_log", PATH_PREFIX + "those_we_meet");
+
+    /** How many photos each count tier asks for — its album shows that many slots. A test pins these to the JSON. */
+    public static final java.util.Map<String, Integer> COUNT_TIER_TARGETS = java.util.Map.of(
+            PATH_PREFIX + "wildlife_photographer", 10, PATH_PREFIX + "field_guide", 25,
+            PATH_PREFIX + "gational_neographic", 50,
+            PATH_PREFIX + "danger_close", 10, PATH_PREFIX + "creature_feature", 25,
+            PATH_PREFIX + "rogues_gallery", 50,
+            PATH_PREFIX + "those_we_meet", 10, PATH_PREFIX + "inhabitants", 25,
+            PATH_PREFIX + "passenger_log", 50);
+
+    /** The most photos a count album keeps: the top tier's target. */
+    public static final int COUNT_ALBUM_MAX = 50;
+
+    /** Prefix of a count album's entries: {@code dungeontrain:photo_<n>}. */
+    public static final String COUNT_ENTRY_PREFIX = "photo_";
+
     private EnchiridionAdvancements() {}
 
     /** True when {@code path} (a {@code dungeontrain:} path) is on The Enchiridion tab. */
@@ -122,7 +158,37 @@ public final class EnchiridionAdvancements {
     public static String albumOf(String path) {
         if (path == null) return null;
         if (BIOME_TIERS.contains(path)) return BIOME_ALBUM;
+        String count = COUNT_TIERS.get(path);
+        if (count != null) return count;
         return ENTITY_ALBUMS.contains(path) ? path : null;
+    }
+
+    /** True when {@code album} is a photo-count category's album; its entries are numbered photos. */
+    public static boolean isCountAlbum(String album) {
+        return album != null && COUNT_ALBUM_BY_CATEGORY.containsValue(album);
+    }
+
+    /** The photo-count category {@code album} holds, or {@code null} when it is not a count album. */
+    public static String countCategoryOf(String album) {
+        for (java.util.Map.Entry<String, String> e : COUNT_ALBUM_BY_CATEGORY.entrySet()) {
+            if (e.getValue().equals(album)) return e.getKey();
+        }
+        return null;
+    }
+
+    /** {@code photo_007}: the entry path for a category's {@code n}th counted photo. */
+    public static String countEntryPath(int n) {
+        return COUNT_ENTRY_PREFIX + String.format(java.util.Locale.ROOT, "%03d", n);
+    }
+
+    /** The number in a count entry path ({@link #countEntryPath}), or -1 for anything else. */
+    public static int countEntryNumber(String path) {
+        if (path == null || !path.startsWith(COUNT_ENTRY_PREFIX)) return -1;
+        try {
+            return Integer.parseInt(path.substring(COUNT_ENTRY_PREFIX.length()));
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 
     /** True when {@code album}'s entries are biome ids; otherwise they are entity type ids. */
