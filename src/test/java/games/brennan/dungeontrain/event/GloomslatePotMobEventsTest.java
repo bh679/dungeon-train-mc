@@ -33,14 +33,14 @@ final class GloomslatePotMobEventsTest {
     }
 
     @Test
-    @DisplayName("about one pot in ten wakes up")
-    void convertRateIsAboutTenPercent() {
+    @DisplayName("about one pot in four wakes up")
+    void convertRateIsAboutTwentyFivePercent() {
         RandomSource rng = RandomSource.create(42L);
         int hits = 0;
         int rolls = 20_000;
         for (int i = 0; i < rolls; i++) if (GloomslatePotMobEvents.shouldConvert(rng)) hits++;
         double rate = hits / (double) rolls;
-        assertTrue(rate > 0.085 && rate < 0.115, "rate " + rate);
+        assertTrue(rate > 0.235 && rate < 0.265, "rate " + rate);
     }
 
     @Test
