@@ -555,6 +555,11 @@ public record WorldGenCycle(long startX, int owGap,
         return d < 0L ? -1L : d;
     }
 
+    /** Public read of {@link #backDist}: blocks travelled -X past the overworld buffer behind spawn, or {@code -1}. */
+    public long reverseDistance(long worldX) {
+        return layout == null ? -1L : backDist(worldX);
+    }
+
     /** Lowest world X of reversed run {@code k} behind the anchor — it ends at {@code startX − buffer}, less the later runs. Layout only. */
     public long reversedRunLowX(int k) {
         return startX - mirrorBuffer() - CycleLayout.runStart(k + 1, layout.period());

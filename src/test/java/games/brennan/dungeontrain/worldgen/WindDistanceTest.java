@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.worldgen;
 
+import games.brennan.dungeontrain.wind.EndFrostbite;
+import games.brennan.dungeontrain.wind.EndFrostbiteAccess;
 import games.brennan.dungeontrain.wind.WindDistance;
 import games.brennan.dungeontrain.wind.WindProfile;
 import org.junit.jupiter.api.DisplayName;
@@ -72,6 +74,28 @@ final class WindDistanceTest {
                 () -> WindProfile.parse("{\"curves\":" + curves() + ",\"reverseBandShift\":-1}"));
         assertThrows(IllegalArgumentException.class,
                 () -> WindProfile.parse("{\"curves\":" + curves() + ",\"reverseBandShift\":1.5}"));
+    }
+
+    @Test
+    @DisplayName("frost behind spawn: every backward End freezes as if on lap 2, and the pace only tightens going -X")
+    void frostReversed() {
+        assertEquals(-1L, C.cycleIndex(EndFrostbite.frostX(C, (int) (START - 10))));
+        boolean sawEnd = false;
+        long prevIn = -1L;
+        for (long x = START - BUFFER - 1; x >= START - BUFFER - 2 * P; x -= 53) {
+            int fx = EndFrostbite.frostX(C, (int) x);
+            long in = EndFrostbiteAccess.blocksIn(C, fx);
+            assertTrue(in >= prevIn, "frost pace eased at " + x);
+            prevIn = in;
+            int slot = C.slotIndexAt((int) x);
+            if (slot >= 0 && LAYOUT.slot(slot).type() == CycleLayout.Type.END) {
+                sawEnd = true;
+                assertTrue(C.cycleIndex(fx) >= 1, "backward lap-1 End freezes at " + x);
+            }
+        }
+        assertTrue(sawEnd);
+        assertEquals(0L, EndFrostbiteAccess.blocksIn(C, EndFrostbite.frostX(C, (int) (START - BUFFER - 1))));
+        assertEquals(1234, EndFrostbite.frostX(C, 1234 + (int) START) - (int) START);
     }
 
     private static String curves() {
