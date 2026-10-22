@@ -47,6 +47,24 @@ class LiveFeedClientGiftParseTest {
     }
 
     @Test
+    @DisplayName("a close-call join carries its reason and ETA; a plain join and an unknown reason carry neither")
+    void closeCall() {
+        GiftNotices n = parse("""
+            {"live":true,"seq":9,"messages":[],
+             "joins":[
+               {"seq":4,"joinId":"j-AbCdEfGh1234","uuid":"a","name":"Runner","reason":"close_call","etaMinutes":14},
+               {"seq":5,"joinId":"j-AbCdEfGh5678","uuid":"b","name":"Viewer"},
+               {"seq":6,"joinId":"j-AbCdEfGh9999","uuid":"c","name":"Odd","reason":"/op","etaMinutes":999}
+             ]}""");
+        assertTrue(n.joins().get(0).closeCall());
+        assertEquals(14, n.joins().get(0).etaMinutes());
+        assertFalse(n.joins().get(1).closeCall());
+        assertEquals(0, n.joins().get(1).etaMinutes());
+        assertFalse(n.joins().get(2).closeCall(), "only the relay's own reason is honoured");
+        assertEquals(60, n.joins().get(2).etaMinutes(), "an absurd ETA is clamped");
+    }
+
+    @Test
     @DisplayName("only relay-shaped ids are gift ids")
     void ids() {
         assertTrue(LiveFeedClient.isGiftId("g-AbCd_Ef-1234"));

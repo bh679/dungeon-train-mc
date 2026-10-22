@@ -77,15 +77,21 @@ public final class LiveGiftServer {
         }));
     }
 
+    /** Why {@code player} couldn't take a gifted Live Eye right now, or null when they could. Server thread. */
+    @Nullable
+    public static Refusal refusalFor(ServerPlayer player) {
+        return refusal(ContentModeMirror.isKid(player), ContentModeMirror.isLivestreamOn(player),
+            LiveModeration.isBanned(player.getUUID()), LiveEyeLootResolver.countRealLiveEyes(player.getInventory()) > 0,
+            LiveFeedEvents.streamBlocked(player),
+            LiveFeedEvents.needsInternet(NetworkConsentMirror.isKnown(player.getUUID()), NetworkConsentMirror.isGranted(player)));
+    }
+
     /**
      * The backstop: true (logged, and told to the player) when {@code player} couldn't go live with a Live
      * Eye — the same blockers {@code LiveFeedEvents#startStreaming} applies once it is on.
      */
     private static boolean refused(ServerPlayer player) {
-        Refusal why = refusal(ContentModeMirror.isKid(player), ContentModeMirror.isLivestreamOn(player),
-            LiveModeration.isBanned(player.getUUID()), LiveEyeLootResolver.countRealLiveEyes(player.getInventory()) > 0,
-            LiveFeedEvents.streamBlocked(player),
-            LiveFeedEvents.needsInternet(NetworkConsentMirror.isKnown(player.getUUID()), NetworkConsentMirror.isGranted(player)));
+        Refusal why = refusalFor(player);
         if (why == null) return false;
         LOGGER.info("[DungeonTrain] Live Eye gift accept from {} refused ({}); the gift stays unspent",
             player.getGameProfile().getName(), why);

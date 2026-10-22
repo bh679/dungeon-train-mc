@@ -29482,6 +29482,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-close-calls",
+      "version": "0.1451.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live Eye hand-offs",
+      "summary": "When another player is getting close to a rare challenge, whoever is streaming with the Live Eye is told and can hand them the Live Eye, so the stream can follow the run. The player chooses whether to take it.",
+      "highlights": [],
+      "pr": 2233,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
