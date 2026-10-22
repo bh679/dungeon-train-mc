@@ -220,10 +220,20 @@ public final class EarnedPhotos {
                     : EnchiridionAdvancements.isCountAlbum(album.getPath())
                             ? EarnedPhotoAlbumScreen.Kind.COUNT : EarnedPhotoAlbumScreen.Kind.ENTITY;
             List<Entry> slots = albumSlots(advancement, progress, kind);
+            // A count album with nothing kept yet (photos from before albums) falls back to the tier's own photo.
+            if (kind == EarnedPhotoAlbumScreen.Kind.COUNT && slots.isEmpty()) return openOwn(advancement, title, progress);
             mc.execute(() -> mc.setScreen(new EarnedPhotoAlbumScreen(parent, title, slots, kind)));
             return true;
         }
+        return openOwn(advancement, title, progress);
+    }
+
+    /** Open {@code advancement}'s own photo once earned; false when there is none. */
+    private static boolean openOwn(ResourceLocation advancement, net.minecraft.network.chat.Component title,
+                                   AdvancementProgress progress) {
         if (progress == null || !progress.isDone() || !has(advancement)) return false;
+        Minecraft mc = Minecraft.getInstance();
+        Screen parent = mc.screen;
         mc.execute(() -> mc.setScreen(new EarnedPhotoScreen(parent, title, file(advancement))));
         return true;
     }
@@ -231,14 +241,14 @@ public final class EarnedPhotos {
     /**
      * Every slot of {@code advancement}'s album: the photos this run counts, then an empty slot
      * ({@code file} null) for each still missing. A creature collection lists its criteria in order; a
-     * biome tier asks for its target number, Coffee Table Book for every biome there is; a count tier has
-     * a slot per photo it asks for, photo #n in slot n.
+     * biome tier asks for its target number, Coffee Table Book for every biome there is. A count tier
+     * lists only the photos kept, never its missing ones ({@link #countSlots}).
      */
     static List<Entry> albumSlots(ResourceLocation advancement, AdvancementProgress progress,
                                   EarnedPhotoAlbumScreen.Kind kind) {
         List<Entry> visible = visibleEntries(advancement, progress);
         List<Entry> out = new ArrayList<>();
-        if (kind == EarnedPhotoAlbumScreen.Kind.COUNT) return countSlots(advancement, visible);
+        if (kind == EarnedPhotoAlbumScreen.Kind.COUNT) return countSlots(visible);
         if (kind == EarnedPhotoAlbumScreen.Kind.BIOME) {
             out.addAll(visible);
             for (int i = visible.size(); i < biomeTarget(advancement); i++) out.add(new Entry(null, null));
@@ -258,16 +268,13 @@ public final class EarnedPhotos {
         return out;
     }
 
-    /** Slot n holds photo #n when it is kept; the rest are empty, numbered so the album reads in order. */
-    private static List<Entry> countSlots(ResourceLocation advancement, List<Entry> visible) {
-        int target = EnchiridionAdvancements.COUNT_TIER_TARGETS.getOrDefault(advancement.getPath(), visible.size());
-        Map<Integer, Entry> byNumber = new java.util.HashMap<>();
-        for (Entry e : visible) byNumber.put(EnchiridionAdvancements.countEntryNumber(e.id().getPath()), e);
-        List<Entry> out = new ArrayList<>(target);
-        for (int n = 1; n <= target; n++) {
-            Entry e = byNumber.get(n);
-            out.add(e != null ? e : new Entry(null, null));
-        }
+    /**
+     * Only the photos kept, in the order they were counted — no empty slots, so a count album never
+     * gives away how many photos its hidden tiers ask for.
+     */
+    private static List<Entry> countSlots(List<Entry> visible) {
+        List<Entry> out = new ArrayList<>(visible);
+        out.sort(java.util.Comparator.comparingInt(e -> EnchiridionAdvancements.countEntryNumber(e.id().getPath())));
         return out;
     }
 

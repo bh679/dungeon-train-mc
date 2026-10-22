@@ -117,7 +117,10 @@ public final class EnchiridionAdvancements {
             PATH_PREFIX + "inhabitants", PATH_PREFIX + "those_we_meet",
             PATH_PREFIX + "passenger_log", PATH_PREFIX + "those_we_meet");
 
-    /** How many photos each count tier asks for — its album shows that many slots. A test pins these to the JSON. */
+    /**
+     * How many photos each count tier asks for. The album never shows these (the tiers are hidden, so it
+     * lists only the photos kept); they fix the album's size cap, and a test pins them to the JSON.
+     */
     public static final java.util.Map<String, Integer> COUNT_TIER_TARGETS = java.util.Map.of(
             PATH_PREFIX + "wildlife_photographer", 10, PATH_PREFIX + "field_guide", 25,
             PATH_PREFIX + "gational_neographic", 50,

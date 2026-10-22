@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.dungeontrain.advancement.EnchiridionAdvancements;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -95,8 +96,10 @@ public final class EarnedPhotoAlbumScreen extends Screen {
     private void renderGrid(GuiGraphics g, int mouseX, int mouseY) {
         g.drawCenteredString(font, title, width / 2, 12, 0xFFFFFFFF);
         long taken = entries.stream().filter(e -> e.file() != null).count();
-        g.drawCenteredString(font, Component.translatable("gui.dungeontrain.earned_photos.count",
-                taken + "/" + entries.size()), width / 2, 24, 0xFFAAAAAA);
+        // A count album holds only what was kept: its size alone, so it never shows how many a tier asks for.
+        String count = kind == Kind.COUNT ? String.valueOf(taken) : taken + "/" + entries.size();
+        g.drawCenteredString(font, Component.translatable("gui.dungeontrain.earned_photos.count", count),
+                width / 2, 24, 0xFFAAAAAA);
         g.enableScissor(0, TOP - 2, width, height);
         int cols = columns();
         int left = gridLeft();
@@ -142,10 +145,13 @@ public final class EarnedPhotoAlbumScreen extends Screen {
 
     /**
      * The game's own name for what the photo was logged for — the biome, or the entity; ??? while missing.
-     * A counted photo is just its number, {@code #n}, kept or not ({@code slot} is its 0-based position).
+     * A counted photo is just its number, {@code #n} ({@code slot}, its 0-based position, if the id has none).
      */
     private Component name(ResourceLocation id, int slot) {
-        if (kind == Kind.COUNT) return Component.literal("#" + (slot + 1));
+        if (kind == Kind.COUNT) {
+            int n = id == null ? -1 : EnchiridionAdvancements.countEntryNumber(id.getPath());
+            return Component.literal("#" + (n > 0 ? n : slot + 1));
+        }
         if (id == null) return Component.translatable("advancements.dungeontrain.hidden_description");
         String key = (kind == Kind.BIOME ? "biome." : "entity.") + id.getNamespace() + "." + id.getPath().replace('/', '.');
         return Component.translatable(key);
