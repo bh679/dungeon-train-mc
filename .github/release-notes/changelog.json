@@ -29674,6 +29674,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-markers-inside-view",
+      "version": "0.1462.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Stepping inside editor empty markers",
+      "summary": "Inside one of the editor's see-through empty markers you now see clearly instead of a dark screen, and jumping drops you back in rather than onto its top.",
+      "highlights": [],
+      "pr": 2247,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
