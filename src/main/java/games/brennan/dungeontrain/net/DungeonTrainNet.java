@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "158";
+    public static final String PROTOCOL_VERSION = "159";
 
     private DungeonTrainNet() {}
 
@@ -184,6 +184,10 @@ public final class DungeonTrainNet {
         // server the world keeps ticking behind the menu — see PlayerActivityTracker.
         registrar.playToServer(PlayerPausedPacket.TYPE, PlayerPausedPacket.STREAM_CODEC, PlayerPausedPacket::handle);
 
+        // Whether this player lets spawned TVs come on — a client-only Performance setting the
+        // carriage stamp reads (TvSpawnPower).
+        registrar.playToServer(TvSpawnPrefPacket.TYPE, TvSpawnPrefPacket.STREAM_CODEC, TvSpawnPrefPacket::handle);
+
         // Mouse movement / clicks inside an open screen, which freeze the camera and so are
         // invisible to the server's own look sampling — see PlayerActivityTracker.
         registrar.playToServer(ClientInputPacket.TYPE, ClientInputPacket.STREAM_CODEC, ClientInputPacket::handle);
@@ -295,6 +299,7 @@ public final class DungeonTrainNet {
         registrar.playToServer(BuilderProfileRequestPacket.TYPE, BuilderProfileRequestPacket.STREAM_CODEC, BuilderProfileRequestPacket::handle);
         registrar.playToClient(BuilderProfilePacket.TYPE, BuilderProfilePacket.STREAM_CODEC, BuilderProfilePacket::handle);
         registrar.playToServer(BuilderProfileActionPacket.TYPE, BuilderProfileActionPacket.STREAM_CODEC, BuilderProfileActionPacket::handle);
+        registrar.playToServer(BuilderSuggestionPacket.TYPE, BuilderSuggestionPacket.STREAM_CODEC, BuilderSuggestionPacket::handle);
         registrar.playToServer(BuilderProfileDeletePacket.TYPE, BuilderProfileDeletePacket.STREAM_CODEC, BuilderProfileDeletePacket::handle);
         registrar.playToClient(BuilderProfileDeleteResultPacket.TYPE, BuilderProfileDeleteResultPacket.STREAM_CODEC, BuilderProfileDeleteResultPacket::handle);
         registrar.playToServer(BuilderProfileDownloadPacket.TYPE, BuilderProfileDownloadPacket.STREAM_CODEC, BuilderProfileDownloadPacket::handle);

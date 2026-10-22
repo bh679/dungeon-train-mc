@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.relay.WorkbenchCommit;
+import games.brennan.dungeontrain.builder.relay.WorkbenchSendEdits;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.EditorPlotArrival;
 import games.brennan.dungeontrain.editor.WorkbenchEditor;
@@ -72,6 +73,11 @@ final class WorkbenchCommand {
             .then(Commands.literal("remove")
                 .then(Commands.argument("id", StringArgumentType.word()).suggests(STAGED)
                     .executes(ctx -> remove(ctx.getSource(), StringArgumentType.getString(ctx, "id")))))
+            .then(Commands.literal("send")
+                .then(Commands.argument("id", StringArgumentType.word()).suggests(STAGED)
+                    .then(Commands.argument("comment", StringArgumentType.greedyString())
+                        .executes(ctx -> send(ctx.getSource(), StringArgumentType.getString(ctx, "id"),
+                            StringArgumentType.getString(ctx, "comment"))))))
             .then(Commands.literal("commit")
                 .then(commitNode(false))
                 .then(Commands.literal("replace").then(commitNode(true))));
@@ -181,6 +187,28 @@ final class WorkbenchCommand {
             source.sendFailure(Component.translatable("chat.dungeontrain.workbench.failed", e.getMessage()));
             return 0;
         }
+    }
+
+    /**
+     * Send a staged build's edits back to its author as a suggested edit — see {@link WorkbenchSendEdits}.
+     * The answer arrives after the relay call, so it is told to the player rather than returned.
+     */
+    private static int send(CommandSourceStack source, String id, String comment) {
+        ServerPlayer player = EditorCommand.playerOrNull(source);
+        if (player == null) return 0;
+        net.minecraft.server.MinecraftServer server = source.getServer();
+        WorkbenchSendEdits.send(player, server.overworld(), id.toLowerCase(java.util.Locale.ROOT), comment)
+            .whenComplete((message, error) -> server.execute(() -> {
+                if (player.hasDisconnected()) return;
+                if (error != null) {
+                    LOGGER.warn("[DungeonTrain] Workbench send failed for {}", id, error);
+                    player.sendSystemMessage(Component.translatable("chat.dungeontrain.workbench.send.failed")
+                        .withStyle(ChatFormatting.RED));
+                    return;
+                }
+                player.sendSystemMessage(message);
+            }));
+        return 1;
     }
 
     private static int commit(CommandSourceStack source, boolean replace, String id, String kindId,

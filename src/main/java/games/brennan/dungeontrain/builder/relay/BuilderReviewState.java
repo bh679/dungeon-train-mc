@@ -35,6 +35,11 @@ public final class BuilderReviewState {
      * client on that version ({@code reviewVersion} + {@code reviewVersionOp}).
      */
     public static final String RESUBMIT = "resubmit";
+    /**
+     * The developer edited the build and sent the edit back ({@code reviewComment} says why). The
+     * author's own blocks are untouched until they accept it into their build or keep theirs.
+     */
+    public static final String EDITED = "edited";
 
     /** How a resubmit rule reads its version: this one, this one or newer, this one or older. */
     public static final String OP_EXACT = "exact";
@@ -67,7 +72,7 @@ public final class BuilderReviewState {
     /** Coerce a relay-supplied value. Anything absent, empty or unrecognised reads as never-asked. */
     public static String of(String review) {
         if (SUBMITTED.equals(review) || ACCEPTED.equals(review) || DECLINED.equals(review)
-                || FEEDBACK.equals(review) || RESUBMIT.equals(review)) return review;
+                || FEEDBACK.equals(review) || RESUBMIT.equals(review) || EDITED.equals(review)) return review;
         return NONE;
     }
 
@@ -87,6 +92,8 @@ public final class BuilderReviewState {
     public static final int BORDER_FEEDBACK = 0xFFFFFF55;
     /** Sent back for a version — §6 gold, between feedback's yellow and declined's red. */
     public static final int BORDER_RESUBMIT = 0xFFFFAA00;
+    /** An edit waiting on its author — §d, apart from every verdict's colour: it asks, it does not judge. */
+    public static final int BORDER_EDITED = 0xFFFF55FF;
     /** No colour: the tile keeps the ordinary border every other builder grid draws. */
     public static final int BORDER_NONE = 0;
 
@@ -105,6 +112,7 @@ public final class BuilderReviewState {
             case DECLINED -> BORDER_DECLINED;
             case FEEDBACK -> BORDER_FEEDBACK;
             case RESUBMIT -> BORDER_RESUBMIT;
+            case EDITED -> BORDER_EDITED;
             default -> BORDER_NONE;
         };
     }
@@ -121,6 +129,7 @@ public final class BuilderReviewState {
             case FEEDBACK -> "gui.dungeontrain.builder.profile.review.feedback_note";
             // Takes the rule as its one argument — see ruleText; callers pass it.
             case RESUBMIT -> "gui.dungeontrain.builder.profile.review.resubmit_note";
+            case EDITED -> "gui.dungeontrain.builder.profile.review.edited_note";
             default -> null;
         };
     }

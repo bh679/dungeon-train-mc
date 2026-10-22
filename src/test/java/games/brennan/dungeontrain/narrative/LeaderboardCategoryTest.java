@@ -40,7 +40,7 @@ class LeaderboardCategoryTest {
         "tribute_biggest", "photos_passengers", "photos_hostile", "photos_animals",
         "photos_taken_run", "photos_tributed_run", "photos_passengers_run", "photos_hostile_run", "photos_animals_run",
         "live_stream_time", "live_view_time", "live_stream_run", "live_view_run",
-        "live_gifts", "burrito_fastest");
+        "live_gifts", "burrito_fastest", "challenge_fastest");
 
     @Test
     @DisplayName("every category id matches one the relay serves, and none is missing")

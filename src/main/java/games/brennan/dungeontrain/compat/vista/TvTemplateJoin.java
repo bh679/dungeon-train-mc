@@ -63,7 +63,7 @@ public final class TvTemplateJoin {
         }
     }
 
-    private static List<BlockPos> findTvs(ServerLevel level, BlockPos origin, Vec3i size) {
+    static List<BlockPos> findTvs(ServerLevel level, BlockPos origin, Vec3i size) {
         List<BlockPos> found = new ArrayList<>();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int y = 0; y < size.getY(); y++) {

@@ -450,6 +450,45 @@ public final class BuilderRelayUpload {
     }
 
     /**
+     * The owner's answer to an edit the developer sent back ({@link WorkbenchSendEdits}): accept makes
+     * it their build on the relay and then re-downloads it over this install's copy, so the template
+     * here matches; otherwise the relay drops it and their build stands as it was.
+     *
+     * <p>The secret path every My Builds action takes ({@link #withSecret}). The re-download replaces
+     * the local template by name but stops on unsaved editor changes, as any download does — the chat
+     * line then says so, and Load from My Builds finishes it.</p>
+     */
+    public static CompletableFuture<Component> answerSuggestion(ServerPlayer player, ServerLevel level,
+                                                                int relayId, boolean accept) {
+        return withSecret(player, level, relayId, (key, entry, kind) ->
+                games.brennan.dungeontrain.net.relay.SuggestionClient.decide(RelayTarget.dev(), entry.relayId(),
+                                entry.secret(), accept)
+                        .thenCompose(status -> {
+                            if (status != SharedCarriageClient.CallStatus.OK || !accept) {
+                                return CompletableFuture.completedFuture(suggestionMessage(status, accept));
+                            }
+                            return BuilderRelayDownload.download(player, level, relayId,
+                                            BuilderRelayInstall.Resolution.REPLACE, "", "", "", false, false, "")
+                                    .thenApply(result -> result.outcome() == BuilderRelayDownload.Outcome.INSTALLED
+                                            ? suggestionMessage(status, true)
+                                            : msg("gui.dungeontrain.builder.profile.suggestion.accepted_relay_only",
+                                                    ChatFormatting.YELLOW));
+                        }));
+    }
+
+    /** The chat line for the relay's answer to accept/keep. Package-private for tests. */
+    static Component suggestionMessage(SharedCarriageClient.CallStatus status, boolean accept) {
+        return switch (status) {
+            case OK -> accept
+                    ? msg("gui.dungeontrain.builder.profile.suggestion.accepted", ChatFormatting.GREEN)
+                    : msg("gui.dungeontrain.builder.profile.suggestion.kept", ChatFormatting.GREEN);
+            case UNKNOWN -> msg("gui.dungeontrain.builder.profile.suggestion.none", ChatFormatting.YELLOW);
+            case FORBIDDEN -> msg("gui.dungeontrain.builder.profile.not_yours", ChatFormatting.YELLOW);
+            case ERROR, TIMEOUT -> msg("gui.dungeontrain.builder.profile.action_failed", ChatFormatting.RED);
+        };
+    }
+
+    /**
      * How a delete ended, as the screen needs to hear it. Coded by ordinal on the wire — append only.
      *
      * <p>Three refusals kept apart on purpose: a build in use is a question ("delete anyway?"), a

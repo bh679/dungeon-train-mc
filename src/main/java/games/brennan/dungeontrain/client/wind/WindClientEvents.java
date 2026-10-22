@@ -62,7 +62,7 @@ public final class WindClientEvents {
         ClientLevel level = mc.level;
         if (player == null || level == null || mc.isPaused()) return;
         if (level.dimension() != Level.OVERWORLD || !ClientWind.active()) {
-            WindyDrive.release();
+            stillWindy(level);
             AmbientWind.release();
             WindSound.silence();
             WindDebugState.clear(level.dimension() == Level.OVERWORLD ? "wind off" : "not in the Overworld");
@@ -70,7 +70,7 @@ public final class WindClientEvents {
         }
         // A dimensional carriage is somewhere else entirely: no wind, no streaks, no sound.
         if (ClientUpsideDownBand.isInPortalTwinSpace((int) Math.floor(player.getX()), (int) Math.floor(player.getY()))) {
-            WindyDrive.release();
+            stillWindy(level);
             AmbientWind.release();
             WindSound.silence();
             WindDebugState.clear("in a dimensional carriage: no wind");
@@ -114,6 +114,18 @@ public final class WindClientEvents {
                 WindPush.accel(player, now, profile, extra),
                 player.getDeltaMovement().x, player.getDeltaMovement().z,
                 directional, WindyDrive.strength()));
+    }
+
+    /**
+     * No DT wind here. In a train world's Overworld, hold Windy calm so its own wind doesn't show in place of DT's
+     * (wind visuals only while DT's wind is on); anywhere else, give Windy its wind back.
+     */
+    private static void stillWindy(ClientLevel level) {
+        if (level.dimension() == Level.OVERWORLD && ClientWind.known()) {
+            WindyDrive.calm();
+        } else {
+            WindyDrive.release();
+        }
     }
 
     /**

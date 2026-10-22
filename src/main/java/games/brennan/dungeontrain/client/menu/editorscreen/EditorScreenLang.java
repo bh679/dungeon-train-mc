@@ -296,6 +296,7 @@ public final class EditorScreenLang {
     public static final String COMMIT_REPLACE_ON = PREFIX + "commit.replace_on";
     public static final String COMMIT_REPLACE_OFF = PREFIX + "commit.replace_off";
     public static final String COMMIT_GO = PREFIX + "commit.go";
+    public static final String COMMIT_SEND = PREFIX + "commit.send";
     /** The submit icon wears My Builds' own two words, so one decision reads the same in both. */
     public static final String ICON_SUBMIT = "gui.dungeontrain.builder.profile.submit_for_review";
     public static final String ICON_WITHDRAW = "gui.dungeontrain.builder.profile.withdraw_submission";

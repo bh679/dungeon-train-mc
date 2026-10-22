@@ -72,13 +72,13 @@ final class PhotoTierAdvancementsTest {
     }
 
     @Test
-    @DisplayName("each count tier is 50 / 200 / 500 photos of its category")
+    @DisplayName("each count tier is 10 / 25 / 50 photos of its category")
     void countThresholds() throws IOException {
         String[][] tiers = {
             {"animal", "wildlife_photographer", "field_guide", "gational_neographic"},
             {"hostile", "danger_close", "creature_feature", "rogues_gallery"},
             {"passenger", "those_we_meet", "inhabitants", "passenger_log"}};
-        int[] thresholds = {50, 200, 500};
+        int[] thresholds = {10, 25, 50};
         for (String[] tier : tiers) {
             for (int i = 0; i < 3; i++) {
                 JsonObject c = conditions(tier[i + 1]);

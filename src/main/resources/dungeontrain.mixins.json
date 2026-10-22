@@ -117,6 +117,7 @@
     "RapierPipelineBlockChangeNoLoadMixin",
     "FluidInteractionNoLoadMixin",
     "SableBlockChangeGuardMixin",
+    "SignBlockEntityEditMixin",
     "SubLevelPhysicsBlockChangeBatchMixin",
     "SubLevelPhysicsStepColliderDeferMixin",
     "PhysicsChunkTicketManagerAccessor",

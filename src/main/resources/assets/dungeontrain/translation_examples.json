@@ -16243,6 +16243,22 @@
       ]
     }
   },
+  "chat.dungeontrain.workbench.send.sent": {
+    "1": {
+      "label": "the name of the player who built it",
+      "examples": [
+        "Alex"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.suggestion.title": {
+    "1": {
+      "label": "the build's name",
+      "examples": [
+        "Brick Cabin"
+      ]
+    }
+  },
   "chat.dungeontrain.workbench.committed": {
     "1": {
       "label": "the staged build's Workbench id",

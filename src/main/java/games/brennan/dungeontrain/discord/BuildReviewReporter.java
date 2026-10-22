@@ -90,12 +90,13 @@ public final class BuildReviewReporter {
      * "Brennan sent X by Ada back for Dungeon Train 0.1130.0 or above".
      */
     static String title(String reviewer, String buildName, String ownerName, String review, String version, String op) {
-        String name = buildName == null || buildName.isBlank() ? "a build" : buildName;
-        String by = ownerName == null || ownerName.isBlank() ? "" : " by " + ownerName;
+        String name = buildName == null || buildName.isBlank() ? "a build" : DiscordMarkdown.escape(buildName);
+        String by = ownerName == null || ownerName.isBlank() ? "" : " by " + DiscordMarkdown.escape(ownerName);
+        String who = DiscordMarkdown.escape(reviewer);
         return switch (BuilderReviewState.of(review)) {
-            case BuilderReviewState.FEEDBACK -> reviewer + " sent feedback on " + name + by;
-            case BuilderReviewState.RESUBMIT -> reviewer + " sent " + name + by + " back for Dungeon Train " + ruleText(version, op);
-            default -> reviewer + " accepted " + name + by;
+            case BuilderReviewState.FEEDBACK -> who + " sent feedback on " + name + by;
+            case BuilderReviewState.RESUBMIT -> who + " sent " + name + by + " back for Dungeon Train " + ruleText(version, op);
+            default -> who + " accepted " + name + by;
         };
     }
 
@@ -139,6 +140,6 @@ public final class BuildReviewReporter {
             };
         }
         String c = comment.strip();
-        return c.length() <= COMMENT_MAX ? c : c.substring(0, COMMENT_MAX).stripTrailing() + "…";
+        return DiscordMarkdown.escape(c.length() <= COMMENT_MAX ? c : c.substring(0, COMMENT_MAX).stripTrailing() + "…");
     }
 }

@@ -512,6 +512,11 @@
       "name": "Firefly_on_ytb"
     }
   },
+  "tntlong": {
+    "weight": 1,
+    "minLevel": 10,
+    "mode": "bedrock"
+  },
   "trap": {
     "weight": 1,
     "minLevel": 10,
