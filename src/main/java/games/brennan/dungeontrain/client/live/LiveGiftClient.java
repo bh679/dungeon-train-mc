@@ -109,12 +109,9 @@ public final class LiveGiftClient {
      */
     private static void onCloseCall(GiftJoin join) {
         put(PROMPTED_JOINS, join.joinId(), join.name());
-        Component when = join.etaMinutes() > 0
-            ? Component.translatable(CLOSE_KEY + "prompt", join.name(), join.etaMinutes())
-            : Component.translatable(CLOSE_KEY + "prompt_soon", join.name());
-        MutableComponent line = when.copy().withStyle(ChatFormatting.LIGHT_PURPLE)
+        MutableComponent line = Component.translatable(CLOSE_KEY + "prompt", join.name()).withStyle(ChatFormatting.LIGHT_PURPLE)
             .append(Component.literal(" "))
-            .append(button(CLOSE_KEY + "give", ChatClick.event(CLICK_ACTION, "give", join.joinId()), ChatFormatting.GOLD, true));
+            .append(button(CLOSE_KEY + "give", ChatClick.event(CLICK_ACTION, "give", join.joinId()), ChatFormatting.GOLD, false));
         Minecraft.getInstance().gui.getChat().addMessage(line);
     }
 

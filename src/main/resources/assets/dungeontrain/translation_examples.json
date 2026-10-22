@@ -15801,22 +15801,6 @@
         "Steve",
         "Alex_42"
       ]
-    },
-    "2": {
-      "label": "estimated minutes left, 1 to 20",
-      "examples": [
-        "15",
-        "3"
-      ]
-    }
-  },
-  "chat.dungeontrain.live.close_call.prompt_soon": {
-    "1": {
-      "label": "the player's Minecraft player name",
-      "examples": [
-        "Steve",
-        "Alex_42"
-      ]
     }
   },
   "chat.dungeontrain.live.close_call.offer": {
