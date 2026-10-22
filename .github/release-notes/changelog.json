@@ -29591,7 +29591,7 @@
     },
     {
       "id": "wind-reaches-more-of-the-line",
-      "version": "0.1457.0",
+      "version": "0.1458.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -29602,6 +29602,23 @@
       "summary": "The wind now reaches stretches of the line that used to stay still, and it keeps building the further you go. The End's cold bites there too.",
       "highlights": [],
       "pr": 2240,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "advancement-requirements-tweak",
+      "version": "0.1458.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement tweaks",
+      "summary": "A hidden travel advancement now asks for a longer journey, and a tab's completion advancement no longer needs an optional secret to finish.",
+      "highlights": [],
+      "pr": 2241,
       "date": "2026-10-22",
       "released": false,
       "released_in": null,
