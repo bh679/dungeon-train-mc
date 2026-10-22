@@ -29517,9 +29517,9 @@
       ],
       "pr": 2234,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1457.0",
+      "released_at": "2026-10-22T11:32:26Z"
     },
     {
       "id": "piglin-calm-strange-places",
@@ -29534,9 +29534,9 @@
       "highlights": [],
       "pr": 2235,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1457.0",
+      "released_at": "2026-10-22T11:32:26Z"
     },
     {
       "id": "advancement-name-tweak",
@@ -29552,9 +29552,9 @@
       "highlights": [],
       "pr": 2236,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1457.0",
+      "released_at": "2026-10-22T11:32:26Z"
     },
     {
       "id": "something-slimey",
@@ -29568,9 +29568,9 @@
       "highlights": [],
       "pr": 2237,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1457.0",
+      "released_at": "2026-10-22T11:32:26Z"
     },
     {
       "id": "new-hidden-advancements",
@@ -29585,9 +29585,9 @@
       "highlights": [],
       "pr": 2238,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1457.0",
+      "released_at": "2026-10-22T11:32:26Z"
     },
     {
       "id": "wind-reaches-more-of-the-line",
