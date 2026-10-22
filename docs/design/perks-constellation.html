@@ -80,7 +80,7 @@ textarea{min-height:0;resize:none;overflow:hidden;font-family:var(--body);line-h
 .ctx button{border:0;text-align:left;padding:5px 8px;font-size:12px;color:var(--fg);background:none;border-radius:3px}
 .ctx button:hover{background:var(--field);color:var(--gold)}
 .ctx button.danger{color:var(--danger)}
-.tview{position:fixed;inset:0;z-index:4;background:rgba(7,11,22,.96);overflow:auto;padding:70px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+.tview{position:fixed;inset:0;z-index:1;overflow:auto;padding:70px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
 .tview[hidden]{display:none}
 .tinner{max-width:1100px;margin:0 auto}
 #ptable{border-collapse:collapse;width:100%;font-size:13px}
@@ -239,7 +239,9 @@ if(!M||!M.perks){M=defaultModel();M.v=0}
 M.v=M.v||0;while(M.v<MIGRATIONS.length){try{MIGRATIONS[M.v](M)}catch(e){}M.v++}
 // Undo / redo: every save() is a history step; consecutive keystrokes in the same field coalesce.
 let hist=[],redoStack=[],lastSaved=null,lastKey=null,lastT=0,typingKey=null;
-const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(M))}catch(e){}};
+let DBREF=null,dbTimer=null;
+const persist=()=>{M.savedAt=Date.now();try{localStorage.setItem(KEY,JSON.stringify(M))}catch(e){}
+  if(DBREF){clearTimeout(dbTimer);dbTimer=setTimeout(()=>{DBREF.set({json:JSON.stringify(M),savedAt:M.savedAt}).then(()=>status("saved"),()=>status("store write refused"))},700)}};
 const save=()=>{const now=JSON.stringify(M);if(lastSaved===null)lastSaved=now;
   if(now!==lastSaved){const t=Date.now();const co=typingKey&&typingKey===lastKey&&t-lastT<900;if(!co){hist.push(lastSaved);if(hist.length>200)hist.shift()}redoStack=[];lastSaved=now;lastKey=typingKey;lastT=t}
   typingKey=null;persist()};
@@ -247,6 +249,11 @@ const restore=json=>{M=JSON.parse(json);lastSaved=json;lastKey=null;persist();if
 const undo=()=>{if(!hist.length)return;redoStack.push(lastSaved);restore(hist.pop())};
 const redo=()=>{if(!redoStack.length)return;hist.push(lastSaved);restore(redoStack.pop())};
 lastSaved=JSON.stringify(M);persist();
+// The artifact's shared store keeps the same document, so Claude can read the tree from here and publish it
+// to the website. Newer wins: the store's copy replaces this browser's only when it was saved later.
+(async()=>{try{const db=window.claude&&claude.use?await claude.use("db"):null;if(!db)return;const ref=db.doc("state/tree");const snap=await ref.get();
+  if(snap.exists&&snap.data()&&typeof snap.data().json==="string"){const remote=JSON.parse(snap.data().json);if((remote.savedAt||0)>(M.savedAt||0)+1000){M=remote;M.v=M.v||0;while(M.v<MIGRATIONS.length){try{MIGRATIONS[M.v](M)}catch(e){}M.v++}lastSaved=JSON.stringify(M);try{localStorage.setItem(KEY,lastSaved)}catch(e){}render();status("loaded from the shared store")}}
+  DBREF=ref;if(!snap.exists||(snap.data()&&snap.data().savedAt||0)<(M.savedAt||0))await ref.set({json:JSON.stringify(M),savedAt:M.savedAt||Date.now()});}catch(e){}})();
 const svg=document.querySelector("svg"),NS="http://www.w3.org/2000/svg";
 const el=(t,a={})=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e};
 const byId=id=>M.perks.find(p=>p.id===id);const cls=id=>M.classes.find(c=>c.id===id);
@@ -263,7 +270,7 @@ function placePanel(){const a=document.getElementById("aside");let pt=null;
   if(!pt){a.style.left=a.style.top="";a.style.right="";return}
   const m=svg.getScreenCTM();if(!m){return}const sx=m.a*pt.x+m.c*pt.y+m.e,sy=m.b*pt.x+m.d*pt.y+m.f;const pad=pt.pad*m.a+10;
   // Clear the star AND its name (centred under the star): default below-right, else below-left, else above.
-  const nameHalf=(sel&&byId(sel)?(byId(sel).name||"").length*3.2:0)*m.a;const gapX=Math.max(pad,nameHalf+10),gapY=pad+14*m.a;
+  const nameHalf=(sel&&byId(sel)?(byId(sel).name||"").length*3.2:0)*m.a;const gapX=Math.max(pad,nameHalf+10)/2,gapY=(pad+14*m.a)/2;
   const w=a.offsetWidth||300,h=a.offsetHeight||200;let x=sx+gapX,y=sy+gapY;
   if(x+w>innerWidth-12)x=sx-gapX-w;if(x<12)x=12;if(y+h>innerHeight-12)y=sy-gapY-h;if(y<60)y=60;
   a.style.right="auto";a.style.left=x+"px";a.style.top=y+"px"}
@@ -387,7 +394,7 @@ function renderTable(){const t=document.getElementById("ptable");const live=reac
   let h=`<tr><th></th>${showRev?"<th></th>":""}<th>class</th><th>perk</th><th>description</th></tr>`;order.forEach(o=>o.ps.forEach((p,i)=>{h+=`<tr data-row="${p.id}"${sel===p.id?' class="hl"':""}><td class="go"><button class="lnk goto" data-id="${p.id}" title="show on the graph">◎</button></td>${showRev?`<td class="tick">${p.reviewed?"✓":""}</td>`:""}<td class="cls" style="color:${o.c.color}">${i===0?esc(o.c.name):""}</td><td class="nm" data-id="${p.id}">${esc(p.name)}</td><td class="ds">${esc(p.desc||"")}</td></tr>`}));t.innerHTML=h;
   const go=id=>{sel=id;selLink=null;selCls=null;toggleTable(false);render()};t.querySelectorAll("td.nm").forEach(td=>td.onclick=()=>go(td.dataset.id));t.querySelectorAll("button.goto").forEach(b=>b.onclick=e=>{e.stopPropagation();go(b.dataset.id)});
   const hl=t.querySelector("tr.hl");if(hl)hl.scrollIntoView({block:"center"})}
-function toggleTable(on){showTable=on??!showTable;document.getElementById("tableView").hidden=!showTable;bTable.classList.toggle("on",showTable);if(showTable)renderTable()}
+function toggleTable(on){showTable=on??!showTable;document.getElementById("tableView").hidden=!showTable;document.querySelector(".sky").hidden=showTable;bTable.textContent=showTable?"✦ graph":"☰ table";bTable.classList.toggle("on",showTable);if(showTable)renderTable()}
 bTable.onclick=()=>toggleTable();
 const bStyle=document.getElementById("bStyle");bStyle.classList.toggle("on",style==="mc");bStyle.onclick=()=>{style=style==="sky"?"mc":"sky";bStyle.classList.toggle("on",style==="mc");try{localStorage.setItem("dt-perk-style",style)}catch(e){}render()};
 const bRev=document.getElementById("bRev");bRev.classList.toggle("on",showRev);bRev.onclick=()=>{showRev=!showRev;bRev.classList.toggle("on",showRev);try{localStorage.setItem("dt-perk-showrev",showRev?"1":"0")}catch(e){}renderSky();if(showTable)renderTable()};
