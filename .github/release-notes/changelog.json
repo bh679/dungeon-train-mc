@@ -29623,6 +29623,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-placeholder-walk-through",
+      "version": "0.1458.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Walk through empty markers in the editor",
+      "summary": "In the block variant editor, the see-through blocks that mark empty spots no longer wall you in. Walk through them from the side, stand on top of them, and sneak to drop through. You can still place blocks against them.",
+      "highlights": [],
+      "pr": 2242,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
