@@ -11,6 +11,8 @@ import games.brennan.dungeontrain.editor.RotationApplier;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.editor.WholeVariantBlocks;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
@@ -25,6 +27,8 @@ import net.minecraft.world.level.block.state.BlockState;
  * sidecar keyed by the plot key {@link BlockVariantPlot#wholeKey}.
  */
 public final class WholeOverlay {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     private WholeOverlay() {}
 
@@ -56,6 +60,22 @@ public final class WholeOverlay {
                     ConnectPass.note(level, world, w.entry().connect(), w.state());
                     GrowthPass.note(level, world, w.entry(), w.state(), w.localPos(), seed, carriageIndex, within);
                 }
+            }
+            // The mob cells, as the shell pass spawns its own: a mob pick carries the empty placeholder
+            // state, so the block loop above has already aired the cell and this only spawns the entity.
+            // The contents placer decides between "as authored" (a Test the Carriage stamp) and the
+            // onboarding ramp from the carriage index.
+            int spawned = 0;
+            for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
+                VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
+                if (picked == null || !picked.isMob()) continue;
+                if (CarriageContentsPlacer.spawnVariantMob(level, origin.offset(e.localPos()), picked, carriageIndex)) {
+                    spawned++;
+                }
+            }
+            if (spawned > 0) {
+                LOGGER.info("[DungeonTrain] Mob-variant: spawned {} whole mobs for {} '{}' pIdx={}",
+                    spawned, kind.id(), id, carriageIndex);
             }
         }
     }

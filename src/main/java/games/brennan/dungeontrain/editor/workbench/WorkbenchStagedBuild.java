@@ -29,8 +29,8 @@ import java.util.Objects;
  * @param sidecars   the relay's sidecar document verbatim, or blank
  * @param lootPrefabs the loot prefabs it carried, id → document
  * @param stagedAt   epoch millis of the staging
- * @param live       whether the row came from the live relay (else the dev one) — where edits sent
- *                   back to its owner must go
+ * @param live       whether {@code relayId} is a row of the live relay (else the dev one) — the two
+ *                   relays number their rows independently, so the id alone does not name a build
  */
 public record WorkbenchStagedBuild(String stagedId, int relayId, String relayKind, String subKind,
                                    String buildName, String stage, String ownerUuid, String ownerName,
@@ -53,13 +53,13 @@ public record WorkbenchStagedBuild(String stagedId, int relayId, String relayKin
         lootPrefabs = lootPrefabs == null ? Map.of() : Map.copyOf(lootPrefabs);
     }
 
-    /** A build staged before the relay was recorded: those were all staged from the live relay. */
+    /** A build whose relay is not known — a shelf folder written before {@code live} was recorded. */
     public WorkbenchStagedBuild(String stagedId, int relayId, String relayKind, String subKind,
                                 String buildName, String stage, String ownerUuid, String ownerName,
                                 boolean mine, Vec3i size, String sidecars,
                                 Map<String, String> lootPrefabs, long stagedAt) {
         this(stagedId, relayId, relayKind, subKind, buildName, stage, ownerUuid, ownerName, mine, size,
-                sidecars, lootPrefabs, stagedAt, true);
+                sidecars, lootPrefabs, stagedAt, false);
     }
 
     /** This build with a different footprint — after a resize nothing else about it changes. */

@@ -255,11 +255,16 @@ public final class PortalRoomDoorPointer {
      * in, since the click alone is what says which room and where on it.
      */
     private static Match resolve(BlockPos target, CarriageDims dims) {
-        for (String name : PortalRoomEditor.names()) {
-            BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
-            if (origin == null) continue;
-            Match match = match(name, origin, PortalRoomEditor.plotSize(name, dims), target);
-            if (match != null) return match;
+        // Only while Dimensions is on show: its plot record outlives the stamp, and a staged Workbench
+        // build (plot floor 150, up to 159 tall) reaches into the Dimensions layer at 230, so a click
+        // on one would otherwise match an unstamped room's doorway column and rewrite its settings.
+        if (EditorStampedCategoryState.isActive(EditorCategory.PORTALS)) {
+            for (String name : PortalRoomEditor.names()) {
+                BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
+                if (origin == null) continue;
+                Match match = match(name, origin, PortalRoomEditor.plotSize(name, dims), target);
+                if (match != null) return match;
+            }
         }
         // The rooms staged in the Workbench, each under its staged room name.
         net.minecraft.server.MinecraftServer server =

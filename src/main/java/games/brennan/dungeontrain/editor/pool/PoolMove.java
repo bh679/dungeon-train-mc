@@ -53,10 +53,6 @@ public final class PoolMove {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** The bundled shell each tier's contents are baked onto when they become a full box. */
-    static final String HALF_DEFAULT_SHELL = "standard_half";
-    static final String GROUP_DEFAULT_SHELL = "carriage";
-
     private PoolMove() {}
 
     public enum Outcome {
@@ -130,6 +126,7 @@ public final class PoolMove {
         if (boxOpt.isEmpty()) return Result.of(Outcome.BOX_MISMATCH, from.tier().name().toLowerCase(Locale.ROOT));
         CarriageDims box = boxOpt.get();
 
+        boolean written = false;
         try {
             StructureTemplate saved = read(overworld, from, box, groupSize);
             if (saved == null) {
@@ -138,10 +135,11 @@ public final class PoolMove {
                     : Result.of(Outcome.BOX_MISMATCH, boxText(box));
             }
             StructureTemplate target = reframe(overworld, saved, from.pool(), to, from.tier(), box);
-            if (target == NO_SHELL) return Result.of(Outcome.NO_SHELL, defaultShellId(from.tier()));
+            if (target == NO_SHELL) return Result.of(Outcome.NO_SHELL, PoolScratch.defaultShellId(from.tier()));
             if (target == null) return Result.of(Outcome.BOX_MISMATCH, boxText(box));
 
             write(landing, target);
+            written = true;
             List<String> dropped = PoolSidecars.carry(from, landing, box);
             remove(overworld, dims, from, source);
             show(overworld, dims, landing);
@@ -151,7 +149,23 @@ public final class PoolMove {
             return new Result(Outcome.MOVED, landing, dropped, "");
         } catch (IOException | RuntimeException e) {
             LOGGER.error("[DungeonTrain] Pool move: {} '{}' -> {} failed", from.pool().key(), from.id(), to.key(), e);
+            // The copy landed but the original could not be taken away: take the copy back out, so
+            // a failed move never leaves the template in two pools with its weight counted twice.
+            if (written) rollback(overworld, dims, landing);
             return Result.of(Outcome.FAILED, e.toString());
+        }
+    }
+
+    /** Remove the destination copy of a move that failed after {@link #write}; a failure here is only logged. */
+    private static void rollback(ServerLevel overworld, CarriageDims dims, PoolRef landing) {
+        try {
+            Template landed = landing.template();
+            if (landed == null) return;
+            remove(overworld, dims, landing, landed);
+            LOGGER.info("[DungeonTrain] Pool move: rolled back the copy at {} '{}'", landing.pool().key(), landing.id());
+        } catch (IOException | RuntimeException e) {
+            LOGGER.error("[DungeonTrain] Pool move: could not roll back the copy at {} '{}' — it stands in both pools",
+                landing.pool().key(), landing.id(), e);
         }
     }
 
@@ -185,26 +199,11 @@ public final class PoolMove {
         boolean toFull = to != Pool.CONTENTS;
         if (fromFull && toFull) return CarriagePlacer.sizeMatches(saved.getSize(), box) ? saved : null;
         if (fromFull) return PoolScratch.interiorOf(level, saved, box);
-        Optional<StructureTemplate> shell = defaultShell(level, tier, box);
+        Optional<StructureTemplate> shell = PoolScratch.defaultShell(level, tier, box);
         if (shell.isEmpty()) return NO_SHELL;
         return PoolScratch.bake(level, shell.get(), saved, box);
     }
 
-    static String defaultShellId(PoolTier tier) {
-        return switch (tier) {
-            case ROOM -> CarriageVariant.of(CarriagePlacer.CarriageType.STANDARD).id();
-            case HALF -> HALF_DEFAULT_SHELL;
-            case GROUP -> GROUP_DEFAULT_SHELL;
-        };
-    }
-
-    /** The bundled shell contents of {@code tier} are baked onto; empty when this install lacks it. */
-    static Optional<StructureTemplate> defaultShell(ServerLevel level, PoolTier tier, CarriageDims box) {
-        if (tier == PoolTier.ROOM) {
-            return CarriageTemplateStore.get(level, CarriageVariant.of(CarriagePlacer.CarriageType.STANDARD), box);
-        }
-        return CarriageVariantRegistry.find(defaultShellId(tier)).flatMap(v -> CarriageTemplateStore.get(level, v, box));
-    }
 
     // ---- write / remove / show --------------------------------------------------------------------
 
@@ -228,8 +227,18 @@ public final class PoolMove {
                 CarriageContents.Custom c = landing.asContents();
                 // The size names the row the plot lands in, so it is set before the registry places it.
                 TemplateSizeStore.CONTENTS.set(landing.id(), landing.tier().contentsSize());
-                CarriageContentsStore.save(c, template);
-                if (dev && CarriageContentsStore.sourceTreeAvailable()) CarriageContentsStore.saveToSource(c, template);
+                try {
+                    CarriageContentsStore.save(c, template);
+                    if (dev && CarriageContentsStore.sourceTreeAvailable()) CarriageContentsStore.saveToSource(c, template);
+                } catch (IOException e) {
+                    try {
+                        TemplateSizeStore.CONTENTS.forget(landing.id());
+                    } catch (IOException forgetFailed) {
+                        LOGGER.warn("[DungeonTrain] Pool move: size entry for '{}' could not be forgotten: {}",
+                            landing.id(), forgetFailed.toString());
+                    }
+                    throw e;
+                }
                 CarriageContentsRegistry.register(c);
                 // A template arriving in Contents starts in every carriage's Contents list, like a new one.
                 CarriageContentsWeights.markNewOptIn(landing.id());

@@ -16280,6 +16280,26 @@
       ]
     }
   },
+  "chat.dungeontrain.workbench.committed_renamed": {
+    "1": {
+      "label": "the template name that was asked for but already in use",
+      "examples": [
+        "brick_cabin"
+      ]
+    },
+    "2": {
+      "label": "the kind it became",
+      "examples": [
+        "contents"
+      ]
+    },
+    "3": {
+      "label": "the free name it landed under instead",
+      "examples": [
+        "brick_cabin_2"
+      ]
+    }
+  },
   "chat.dungeontrain.workbench.name_taken": {
     "1": {
       "label": "the template name that is already in use",

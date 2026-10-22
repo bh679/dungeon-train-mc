@@ -1101,6 +1101,15 @@ public final class DungeonTrainWorldData extends SavedData {
         return box == null ? null : box.clone();
     }
 
+    /**
+     * Every Workbench plot box, by staged id, as a read-only view over the live record — for the
+     * per-tick lookups (which plot holds a position, which boxes are taken). Never mutate the arrays;
+     * a caller that changes the record while iterating takes the copy {@link #workbenchPlotBoxes()}.
+     */
+    public java.util.Map<String, int[]> workbenchPlotBoxesView() {
+        return java.util.Collections.unmodifiableMap(editorWorkbenchPlotBoxes);
+    }
+
     /** Every Workbench plot box, by staged id. A copy — write through the methods below. */
     public java.util.Map<String, int[]> workbenchPlotBoxes() {
         java.util.Map<String, int[]> out = new java.util.LinkedHashMap<>();

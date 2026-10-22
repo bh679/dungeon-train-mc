@@ -75,6 +75,13 @@ public final class EditorScreenState {
     private static boolean workbenchOpenedPool;
     /** Whether the Workbench tab switched the profile screens to the live relay, to switch back on leave. */
     private static boolean workbenchFlippedLive;
+    /**
+     * Whether standing in the Workbench category is what put the relay switch on live. Submissions
+     * are reviewed on the live relay, so entering the category (the Nav tile, the editor menu's row,
+     * the title screen's picker — all of which end in the server stamping it) flips the switch, and
+     * leaving the category puts it back. Kept apart from the tab's own flip so neither undoes the other.
+     */
+    private static boolean workbenchCategoryFlippedLive;
 
     private EditorScreenState() {}
 
@@ -166,6 +173,21 @@ public final class EditorScreenState {
      * category the author is standing in — every kind when that is the Workbench itself, which holds
      * every kind. The strip and the status chip stay live: these are defaults, not locks.
      */
+    /** The resident category changed on the server ({@code now} null on logout). */
+    static void stampedCategoryChanged(games.brennan.dungeontrain.editor.PlotCategory before,
+                                       games.brennan.dungeontrain.editor.PlotCategory now) {
+        boolean workbench = now == games.brennan.dungeontrain.editor.PlotCategory.WORKBENCH;
+        if (workbench && !workbenchCategoryFlippedLive
+                && !games.brennan.dungeontrain.client.builder.BuilderProfileState.live()) {
+            EditorSettingsPage.setRelay(true);
+            workbenchCategoryFlippedLive = true;
+        } else if (!workbench && workbenchCategoryFlippedLive) {
+            workbenchCategoryFlippedLive = false;
+            // Only while the tab is not holding the switch itself; its leave restores it otherwise.
+            if (!workbenchFlippedLive) EditorSettingsPage.setRelay(false);
+        }
+    }
+
     static void enterWorkbenchTab() {
         // Submissions are reviewed on the live relay; the dev one is where the author's own test
         // uploads go. The tab reads live and puts the switch back when it is left.

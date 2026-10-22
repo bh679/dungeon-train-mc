@@ -179,6 +179,7 @@ public final class VariantOverlayRenderer {
      * Same {@code null}-means-empty convention as {@link #LAST_DOOR_GHOSTS_KEY}.
      */
     private static final Map<UUID, String> LAST_TUNNEL_ENVELOPE_KEY = new HashMap<>();
+    private static final Map<UUID, String> LAST_SHELL_FADE_KEY = new HashMap<>();
 
     /**
      * Per-player dedup key for the variant-cell mob ghosts — the plot key plus every ghosted cell and
@@ -213,6 +214,7 @@ public final class VariantOverlayRenderer {
         LAST_STRAYS_KEY.clear();
         LAST_DOOR_GHOSTS_KEY.clear();
         LAST_TUNNEL_ENVELOPE_KEY.clear();
+        LAST_SHELL_FADE_KEY.clear();
         LAST_MOB_GHOSTS_KEY.clear();
         EditorPlotSky.clearAll();
         EditorMirrorPlotSync.clearAll();
@@ -335,6 +337,7 @@ public final class VariantOverlayRenderer {
             pushStraysSnapshot(player);
             pushDoorGhostsSnapshot(player, dims);
             pushTunnelEnvelopeSnapshot(player, dims);
+            pushShellFadeSnapshot(player, level);
             pushMobGhostsSnapshot(player, level, dims);
             // Light a portal room's plot with the room's own Sky — the lighting it will ship with,
             // rather than the dark box it was authored in until now.
@@ -1291,6 +1294,36 @@ public final class VariantOverlayRenderer {
         LAST_TUNNEL_ENVELOPE_KEY.put(uuid, key);
         DungeonTrainNet.sendTo(player,
             new games.brennan.dungeontrain.net.EditorTunnelEnvelopePacket(boxes));
+    }
+
+    /**
+     * Push the shell boxes of the Workbench's staged contents builds while the Workbench is resident,
+     * so the client draws the shells' stage placeholders faint. Keyed on the boxes like the tunnel
+     * envelope: a steady Workbench sends nothing, and leaving it clears.
+     */
+    private static void pushShellFadeSnapshot(ServerPlayer player, ServerLevel level) {
+        if (!EditorStampedCategoryState.isActive(EditorCategory.WORKBENCH)) {
+            clearShellFadeIfStale(player);
+            return;
+        }
+        List<net.minecraft.world.level.levelgen.structure.BoundingBox> boxes =
+            WorkbenchEditor.shellBoxes(level.getServer().overworld());
+        if (boxes.isEmpty()) {
+            clearShellFadeIfStale(player);
+            return;
+        }
+        String key = EditorTunnelEnvelopes.key(boxes);
+        UUID uuid = player.getUUID();
+        if (key.equals(LAST_SHELL_FADE_KEY.get(uuid))) return;
+        LAST_SHELL_FADE_KEY.put(uuid, key);
+        DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.WorkbenchShellFadePacket(boxes));
+    }
+
+    /** Send the empty shell-fade packet if the player previously had a non-empty snapshot. */
+    private static void clearShellFadeIfStale(ServerPlayer player) {
+        if (LAST_SHELL_FADE_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.WorkbenchShellFadePacket.empty());
+        }
     }
 
     /** Send the empty tunnel-envelope packet if the player previously had a non-empty snapshot. */

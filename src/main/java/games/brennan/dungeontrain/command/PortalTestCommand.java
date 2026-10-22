@@ -5,6 +5,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
 import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
+import games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch;
 import games.brennan.dungeontrain.event.PortalCarriageEvents;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalTestSessionPacket;
@@ -439,7 +440,7 @@ public final class PortalTestCommand {
         player.teleportTo(overworld, arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5,
             FACE_EAST, 0.0f);
         DungeonTrainNet.sendTo(player, PortalTestSessionPacket.active(player,
-            games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(roomName)));
+            WorkbenchTestScratch.shownName(roomName)));
         // The room's own light. In play PortalCarriageEvents sends this to whoever stands inside a
         // live pair's room, on the same box; a test session is not a pair, so nothing there sees
         // it, and a room set to Daylight tested dark — which is precisely what the test is for.
@@ -449,7 +450,7 @@ public final class PortalTestCommand {
             roomName, roomSize.getX(), roomSize.getY(), roomSize.getZ(), structure.origin(),
             player.getName().getString(), arrival, structure.seedSalt());
 
-        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.you_re_doorway_corridor", games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(roomName)).withStyle(ChatFormatting.AQUA), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.you_re_doorway_corridor", WorkbenchTestScratch.shownName(roomName)).withStyle(ChatFormatting.AQUA), false);
         return 1;
     }
 
@@ -684,7 +685,7 @@ public final class PortalTestCommand {
                 + "mob(s) of '{}'",
             player.getName().getString(), fmt(session.pos()), cleared, removed, session.roomName());
 
-        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.back_plot_test_has", games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(session.roomName())).withStyle(ChatFormatting.GRAY), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.back_plot_test_has", WorkbenchTestScratch.shownName(session.roomName())).withStyle(ChatFormatting.GRAY), false);
         return 1;
     }
 

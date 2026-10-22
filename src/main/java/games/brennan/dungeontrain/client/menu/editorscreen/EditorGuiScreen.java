@@ -1326,6 +1326,27 @@ public final class EditorGuiScreen extends Screen {
                 detail.openNoteEditor();
                 return true;
             }
+            case REVIEW_ACCEPT -> {
+                // An accepted staged build is filed straight away: the commit picker (what the Move
+                // icon opens) follows the sent verdict, so accepting means choosing where it lands.
+                detail.openReview(BuilderReviewState.ACCEPTED, () -> {
+                    CommandMenuEntry commit = EditorScreenActions.commitEntry(context(EditorRosterClient.index()));
+                    if (commit != null) dispatch(commit);
+                });
+                return true;
+            }
+            case REVIEW_FEEDBACK -> {
+                detail.openReview(BuilderReviewState.FEEDBACK);
+                return true;
+            }
+            case REVIEW_RESUBMIT -> {
+                detail.openReview(BuilderReviewState.RESUBMIT);
+                return true;
+            }
+            case REVIEW_DECLINE -> {
+                detail.openReview(BuilderReviewState.DECLINED);
+                return true;
+            }
             case PAGE_NEXT -> {
                 return detail.scrollBy(+1);
             }

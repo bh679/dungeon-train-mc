@@ -52,7 +52,7 @@ public final class BuilderRelayStage {
                 : BuilderRelayDownload.onServer(level, () -> stageFetched(player, level, fetched, ownerName, live)));
     }
 
-    /** Decode, fold and shelve — on the server thread. */
+    /** Decode, fold and shelve — on the server thread. {@code live} says which relay the row is from. */
     static BuilderRelayDownload.Result stageFetched(ServerPlayer player, ServerLevel level,
                                                     BuilderRelayDownload.Fetched fetched, String ownerName,
                                                     boolean live) {
@@ -64,8 +64,10 @@ public final class BuilderRelayStage {
             return BuilderRelayDownload.Result.of(BuilderRelayDownload.Outcome.UNSUPPORTED);
         }
         // Already on the shelf: say so rather than shelving a second copy — Autoload is pressed twice.
+        // The dev and live relays number rows independently, so the same id from the other relay is
+        // another build.
         for (WorkbenchStagedBuild already : WorkbenchStagingStore.list()) {
-            if (already.relayId() == build.id()) {
+            if (already.relayId() == build.id() && already.live() == live) {
                 return new BuilderRelayDownload.Result(BuilderRelayDownload.Outcome.STAGED_ALREADY, kind,
                         already.stagedId(), build.subKind());
             }

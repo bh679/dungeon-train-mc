@@ -79,10 +79,15 @@ public final class EditorRosterClient {
     }
 
     public static void apply(EditorRosterPacket packet) {
+        games.brennan.dungeontrain.editor.PlotCategory before = index.stampedCategory();
         tunnelGroups = packet.tunnelGroups();
         layout = packet.layout();
         index = new EditorRosterIndex(packet.groups(), packet.stampedCategoryId(), packet.trainSize(),
             packet.stages());
+        // Every way into a category ends here: the server stamps it and the next roster says so. The
+        // Workbench's relay switch hangs off that one fact rather than off each tile and row.
+        games.brennan.dungeontrain.editor.PlotCategory after = index.stampedCategory();
+        if (before != after) EditorScreenState.stampedCategoryChanged(before, after);
     }
 
     @SubscribeEvent
@@ -103,6 +108,7 @@ public final class EditorRosterClient {
     /** The next world may be a different install behind the same names. */
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        EditorScreenState.stampedCategoryChanged(index.stampedCategory(), null);
         index = EditorRosterIndex.EMPTY;
         refreshTicks = 0;
         everRequested = false;

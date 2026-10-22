@@ -132,7 +132,7 @@ public final class EditorLayerSweep {
         }
         int minY = EditorLayout.PLOT_Y - 1;
         // Workbench plots are placed, not predicted, and stand on the lower layer: reach them too.
-        for (int[] b : DungeonTrainWorldData.get(overworld).workbenchPlotBoxes().values()) {
+        for (int[] b : DungeonTrainWorldData.get(overworld).workbenchPlotBoxesView().values()) {
             maxX = Math.max(maxX, b[0] + b[3]);
             maxZ = Math.max(maxZ, b[2] + b[5]);
             minY = Math.min(minY, b[1] - 1);
