@@ -238,12 +238,18 @@ const MIGRATIONS=[
 let M;try{const s=localStorage.getItem(KEY);M=s?JSON.parse(s):null}catch(e){M=null}
 if(!M||!M.perks){M=defaultModel();M.v=0}
 M.v=M.v||0;while(M.v<MIGRATIONS.length){try{MIGRATIONS[M.v](M)}catch(e){}M.v++}
+ringCentre(M);
 // Undo / redo: every save() is a history step; consecutive keystrokes in the same field coalesce.
 let hist=[],redoStack=[],lastSaved=null,lastKey=null,lastT=0,typingKey=null;
 let DBREF=null,dbTimer=null;
 const persist=()=>{M.savedAt=Date.now();try{localStorage.setItem(KEY,JSON.stringify(M))}catch(e){}
   if(DBREF){clearTimeout(dbTimer);dbTimer=setTimeout(()=>{DBREF.set({json:JSON.stringify(M),savedAt:M.savedAt}).then(()=>status("saved"),()=>status("store write refused"))},700)}};
-const save=()=>{const now=JSON.stringify(M);if(lastSaved===null)lastSaved=now;
+// The perks joined straight to the Engine sit on one ring, equally spaced, in their current clockwise order.
+const RING=105;
+function ringCentre(m){const ids=[...new Set(m.links.filter(l=>l.a==="root"||l.b==="root").map(l=>l.a==="root"?l.b:l.a))];const ps=ids.map(id=>m.perks.find(p=>p.id===id)).filter(Boolean);if(!ps.length)return;
+  ps.sort((u,v)=>Math.atan2(u.y-CY,u.x-CX)-Math.atan2(v.y-CY,v.x-CX));const step=2*Math.PI/ps.length;const a0=Math.atan2(ps[0].y-CY,ps[0].x-CX);
+  ps.forEach((p,i)=>{const a=a0+i*step;p.x=+(CX+RING*Math.cos(a)).toFixed(1);p.y=+(CY+RING*Math.sin(a)).toFixed(1)})}
+const save=()=>{ringCentre(M);const now=JSON.stringify(M);if(lastSaved===null)lastSaved=now;
   if(now!==lastSaved){const t=Date.now();const co=typingKey&&typingKey===lastKey&&t-lastT<900;if(!co){hist.push(lastSaved);if(hist.length>200)hist.shift()}redoStack=[];lastSaved=now;lastKey=typingKey;lastT=t}
   typingKey=null;persist()};
 const restore=json=>{M=JSON.parse(json);lastSaved=json;lastKey=null;persist();if(sel&&!M.perks.find(p=>p.id===sel))sel=null;if(selLink!==null&&!M.links[selLink])selLink=null;if(selCls&&!M.classes.find(c=>c.id===selCls))selCls=null;mode=null;pick=null;render()};
@@ -331,7 +337,7 @@ function startDrag(ev,p,g){if(ev.button!==0||ev.altKey||ev.ctrlKey)return;ev.pre
   const s=toSvg(ev);const ox=p.x-s.x,oy=p.y-s.y;let moved=false;
   let done=false;
   const mv=e=>{if(done)return;if(e.buttons===0){up();return}const q=toSvg(e);const nx=Math.max(10,Math.min(790,q.x+ox)),ny=Math.max(10,Math.min(790,q.y+oy));if(Math.hypot(nx-p.x,ny-p.y)>0.5||moved){moved=true;p.x=+nx.toFixed(1);p.y=+ny.toFixed(1);render()}};
-  const up=()=>{if(done)return;done=true;window.removeEventListener("pointermove",mv);window.removeEventListener("pointerup",up);window.removeEventListener("pointercancel",up);window.removeEventListener("blur",up);if(moved)save();else select(p.id)};
+  const up=()=>{if(done)return;done=true;window.removeEventListener("pointermove",mv);window.removeEventListener("pointerup",up);window.removeEventListener("pointercancel",up);window.removeEventListener("blur",up);if(moved){save();render()}else select(p.id)};
   window.addEventListener("pointermove",mv);window.addEventListener("pointerup",up);window.addEventListener("pointercancel",up);window.addEventListener("blur",up)}
 function inspector(){const box=document.getElementById("inspector");box.onclick=e=>{if(e.target.classList.contains("xclose")){sel=null;selLink=null;selCls=null;render()}if(e.target.classList.contains("ptable")){toggleTable(true)}};
   if(selLink!==null){const l=M.links[selLink];if(!l){selLink=null;return inspector()}const A=byId(l.a),B=byId(l.b);
