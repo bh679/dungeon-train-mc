@@ -341,7 +341,7 @@ function inspector(){const box=document.getElementById("inspector");box.onclick=
     box.querySelector("#lflip").onclick=()=>{[l.a,l.b]=[l.b,l.a];save();render()};box.querySelector("#ldel").onclick=()=>{M.links.splice(selLink,1);selLink=null;save();render()};return}
   if(selCls){const c=cls(selCls);if(!c){selCls=null;return inspector()}const n=M.perks.filter(p=>p.cls===c.id).length;
     box.innerHTML=`<h2 style="display:none"></h2><div class="row" style="grid-template-columns:1fr 28px 20px;align-items:end"><input id="cname" value="${esc(c.name)}" style="font-family:var(--display);font-size:14px;color:${c.color}"><input type="color" id="ccol" value="${c.color}" style="height:24px;padding:0;border:0"><button class="lnk xclose" title="close">×</button></div>
-    <p class="hint">${n} perks. Drag the name to swing the group.</p>
+    <p class="hint">${n} perks · ${(()=>{const ids=new Set(M.perks.filter(p=>p.cls===c.id).map(p=>p.id));const ls=M.links.filter(l=>ids.has(l.a)||ids.has(l.b));const x=ls.filter(l=>l.kind==="cross").length;return `${ls.length-x} links · ${x} chords · ${ls.length} total`})()}</p>
     <div class="tools"><button id="crotL">↺</button><button id="crotR">↻</button><button id="cmirror">flip</button><button id="caddp">+ perk</button><button id="cdel" class="danger">delete</button></div>`;
     box.querySelector("#cname").oninput=e=>{c.name=e.target.value;typingKey=c.id+":name";save();renderSky();box.querySelector("h2").textContent=e.target.value};box.querySelector("#ccol").oninput=e=>{c.color=e.target.value;typingKey=c.id+":color";save();render()};
     box.querySelector("#crotL").onclick=()=>{rotateArm(c.id,-Math.PI/18);save();render()};box.querySelector("#crotR").onclick=()=>{rotateArm(c.id,Math.PI/18);save();render()};
