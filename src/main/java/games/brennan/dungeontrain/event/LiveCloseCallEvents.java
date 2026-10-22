@@ -6,7 +6,6 @@ import games.brennan.dungeontrain.advancement.AllAtOnceAdvancement;
 import games.brennan.dungeontrain.advancement.CloseCallPace;
 import games.brennan.dungeontrain.advancement.CloseCallRules;
 import games.brennan.dungeontrain.advancement.CloseCallRules.Found;
-import games.brennan.dungeontrain.advancement.CloseCallRules.Target;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.LiveCloseCallPacket;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
@@ -38,19 +37,16 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>Fed by {@code AchievementEvents#notifyRunDistance} on every boarded scan; {@link CloseCallPace}
  * keeps one reading a minute. Nothing is sent while the player is AFK, is the one streaming, could
- * not take a Live Eye anyway, or nobody else is on air. One alert per advancement per life
- * ({@link ModDataAttachments#CLOSE_CALLS_SENT_THIS_LIFE}) and at most one per player every
- * {@link #COOLDOWN_MS}.</p>
+ * not take a Live Eye anyway, or nobody else is on air. Each advancement alerts at most twice a life,
+ * at 20 and at 5 minutes ({@link CloseCallRules.Stage}, recorded in
+ * {@link ModDataAttachments#CLOSE_CALLS_SENT_THIS_LIFE}).</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class LiveCloseCallEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    static final long COOLDOWN_MS = 30L * 60_000L;
-
     private static final Map<UUID, CloseCallPace> PACE = new ConcurrentHashMap<>();
-    private static final Map<UUID, Long> LAST_SENT_MS = new ConcurrentHashMap<>();
 
     private LiveCloseCallEvents() {}
 
@@ -64,12 +60,7 @@ public final class LiveCloseCallEvents {
         CloseCallPace.Sample reading = new CloseCallPace.Sample(now, AchievementEvents.effectiveTravelled(run), runMeters);
         CloseCallPace next = pace.with(reading);
         PACE.put(uuid, next);
-        if (!coolingDown(LAST_SENT_MS.get(uuid), now) && mayAlert(player)) evaluate(player, next, reading, now);
-    }
-
-    /** Pure: whether a player last alerted at {@code lastMs} (null = never) is still inside the cooldown. */
-    static boolean coolingDown(Long lastMs, long now) {
-        return lastMs != null && now >= lastMs && now - lastMs < COOLDOWN_MS;
+        if (mayAlert(player)) evaluate(player, next, reading);
     }
 
     private static boolean mayAlert(ServerPlayer player) {
@@ -80,18 +71,17 @@ public final class LiveCloseCallEvents {
         return LiveGiftServer.refusalFor(player) == null;
     }
 
-    private static void evaluate(ServerPlayer player, CloseCallPace pace, CloseCallPace.Sample reading, long now) {
+    private static void evaluate(ServerPlayer player, CloseCallPace pace, CloseCallPace.Sample reading) {
         List<String> sent = player.getData(ModDataAttachments.CLOSE_CALLS_SENT_THIS_LIFE.get());
         Found found = CloseCallRules.find(pace, reading, t -> eligible(player, t), new HashSet<>(sent));
         if (!found.any()) return;
         List<String> marked = new ArrayList<>(sent);
-        for (Target t : found.close()) marked.add(t.id().toString());
+        marked.addAll(found.keys());
         player.setData(ModDataAttachments.CLOSE_CALLS_SENT_THIS_LIFE.get(), List.copyOf(marked));
-        LAST_SENT_MS.put(player.getUUID(), now);
         int minutes = CloseCallRules.minutes(found.etaMs());
         String name = player.getGameProfile().getName();
-        LOGGER.info("[DungeonTrain] Close call: {} is ~{} min from {}; telling the stream",
-            name, minutes, found.close().get(0).id());
+        LOGGER.info("[DungeonTrain] Close call ({}): {} is ~{} min from {}; telling the stream",
+            found.stage(), name, minutes, found.close().get(0).id());
         MinecraftServer server = player.server;
         UUID uuid = player.getUUID();
         LiveFeedClient.closeCall(LiveFeedClient.viewerBase(Channel.LIVE), uuid, name, minutes)
@@ -110,7 +100,7 @@ public final class LiveCloseCallEvents {
     }
 
     /** Still on course for {@code t} this life: not yet earned, and The Challenge's rules all held. */
-    private static boolean eligible(ServerPlayer player, Target t) {
+    private static boolean eligible(ServerPlayer player, CloseCallRules.Target t) {
         AdvancementHolder holder = player.server.getAdvancements().get(t.id());
         if (holder == null || player.getAdvancements().getOrStartProgress(holder).isDone()) return false;
         return t != CloseCallRules.THE_CHALLENGE || !AllAtOnceAdvancement.anyRuleBroken(player);

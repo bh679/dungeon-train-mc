@@ -341,7 +341,7 @@ public final class ModDataAttachments {
         );
 
     /**
-     * Per-life list of the rare advancements (ids) this player has already been reported "close" to on the
+     * Per-life list of the rare advancements ({@code id@early} / {@code id@final}) this player has already been reported "close" to on the
      * Live Eye stream. See {@code event.LiveCloseCallEvents}. Cleared on respawn by
      * {@code LifeChallengeAdvancements#resetForNewLife}; serialized only while non-empty.
      */
