@@ -29388,6 +29388,23 @@
       "released": true,
       "released_in": "v0.1445.0",
       "released_at": "2026-10-21T14:21:35Z"
+    },
+    {
+      "id": "photo-collections-every-creature",
+      "version": "0.1446.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Bigger photo collections",
+      "summary": "The two creature photo collections now ask for every creature you can meet on the train, and they grow by themselves as new ones arrive. Already finished one? It stays finished.",
+      "highlights": [],
+      "pr": 2229,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
