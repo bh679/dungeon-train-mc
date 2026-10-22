@@ -85,6 +85,13 @@ public final class EditorVariantMirror {
             }
             changed = true;
         }
+        // The reflected pool still reads the source side's group; each image cell follows the
+        // group it touches, as the source did. After the loop so images see each other's lock ids.
+        if (updatedOrNull != null) {
+            for (EditorMirror.Image img : EditorMirror.imagesOf(localEdited, f, mx, my, mz)) {
+                VariantConditionRetarget.around(plot, img.local());
+            }
+        }
         if (changed) trySave(plot);
     }
 
