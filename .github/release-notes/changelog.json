@@ -29442,8 +29442,26 @@
       "released_at": null
     },
     {
+      "id": "challenge-click-tracking",
+      "version": "0.1446.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements",
+        "ui"
+      ],
+      "title": "Track The Challenge",
+      "summary": "Clicking All at Once or The Challenge on the advancements screen now tracks it, as its tooltip says, while still highlighting the challenges it combines.",
+      "highlights": [],
+      "pr": 2230,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "carriage-contents-refresh",
-      "version": "0.1449.0",
+      "version": "0.1450.0",
       "type": "content",
       "tags": [
         "content",

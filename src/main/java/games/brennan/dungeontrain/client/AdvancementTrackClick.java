@@ -15,8 +15,9 @@ import net.minecraft.sounds.SoundEvents;
  * player can still set it up for the next life; the tooltip and chat summary just don't mention
  * it while it is gone. Kept out of the two screen mixins
  * (vanilla + Better Advancements) so they can't drift apart. A left click on an <em>earned</em> camera
- * advancement instead opens the photo that earned it ({@link EarnedPhotos}). The chat confirmation comes once the
- * screen closes — see {@link TrackedAdvancementsSummary}.
+ * advancement instead opens the photo that earned it ({@link EarnedPhotos}). A trackable capstone (All at Once,
+ * The Challenge) does both: the click pins its "what you still need" halo ({@link CapstoneNeeds}) and toggles
+ * tracking. The chat confirmation comes once the screen closes — see {@link TrackedAdvancementsSummary}.
  */
 public final class AdvancementTrackClick {
 
@@ -37,24 +38,32 @@ public final class AdvancementTrackClick {
         if (button != LEFT_BUTTON) return false;
         ResourceLocation id = HoveredAdvancement.current();
         // The Everything Burrito or a tab-complete advancement pins "what you still need"; any other advancement
-        // clicked clears the pin and goes on to its own click behaviour below.
+        // clicked clears the pin and goes on to its own click behaviour below. A trackable capstone (All at Once,
+        // The Challenge) also toggles tracking, as its tooltip promises.
         if (id != null && CapstoneNeeds.onClick(id)) {
-            Minecraft.getInstance().getSoundManager().play(
-                SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            if (canToggleTracking(id)) TrackedAdvancements.toggle(id);
+            playClick();
             return true;
         }
         // A camera advancement opens what this computer kept: a collection's album as it fills, or the
         // photo that earned it once earned.
         if (id != null && EarnedPhotos.tryOpen(id, titleOf(id), HoveredAdvancement.currentProgress())) {
-            Minecraft.getInstance().getSoundManager().play(
-                SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            playClick();
             return true;
         }
-        if (!AdvancementHintText.isTrackable(id)) return false;
-        if (HoveredAdvancement.currentIsEarned()) return false; // nothing left to lose
+        if (!canToggleTracking(id)) return false;
         TrackedAdvancements.toggle(id);
+        playClick();
+        return true;
+    }
+
+    /** A trackable advancement not yet earned (an earned one has nothing left to lose). */
+    private static boolean canToggleTracking(ResourceLocation id) {
+        return AdvancementHintText.isTrackable(id) && !HoveredAdvancement.currentIsEarned();
+    }
+
+    private static void playClick() {
         Minecraft.getInstance().getSoundManager().play(
             SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
-        return true;
     }
 }
