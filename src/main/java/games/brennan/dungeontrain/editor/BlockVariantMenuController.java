@@ -1355,9 +1355,8 @@ public final class BlockVariantMenuController {
     private static void handleCopy(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
         Clipboard clip = buildClipboardStack(player, plot, localPos);
         if (clip == null) return;
-        boolean placed = player.getInventory().add(clip.stack());
-        if (!placed) player.drop(clip.stack(), false);
-        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.copied", clip.summary()), ChatFormatting.GREEN);
+        // Same delivery as middle-click: into the hotbar, over the held slot when it is full.
+        giveToHotbar(player, clip);
     }
 
     /**
@@ -1384,6 +1383,15 @@ public final class BlockVariantMenuController {
         giveToHotbar(player, new Clipboard(stack, Component.translatable("chat.dungeontrain.editor_bar.clipboard.summary",
             options.size(), Component.translatable("chat.dungeontrain.editor_bar.clipboard.lock_suffix", group),
             Component.empty(), Component.empty(), Component.empty())));
+    }
+
+    /**
+     * The cell a look at {@code local} copies: a door's top half (or any square of a painting)
+     * copies the cell the menu opens on. Shared with the hover push that arms middle-click copy
+     * ({@code VariantOverlayRenderer}), so the two can never disagree on which cell is targeted.
+     */
+    static BlockPos copyCell(ServerLevel level, BlockVariantPlot plot, BlockPos local) {
+        return MultiBlockFootprint.ownerCell(plot, paintingCell(level, plot, local));
     }
 
     /** A freshly-built clipboard item plus the action-bar summary describing what it captured. */
@@ -1424,8 +1432,7 @@ public final class BlockVariantMenuController {
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.block_outside_plot"), ChatFormatting.YELLOW);
             return;
         }
-        // Copying from a door's top half (or any square of a painting) copies the cell the menu opens on.
-        localPos = MultiBlockFootprint.ownerCell(plot, paintingCell(level, plot, localPos));
+        localPos = copyCell(level, plot, localPos);
 
         Clipboard clip = buildClipboardStack(player, plot, localPos);
         if (clip == null) return;

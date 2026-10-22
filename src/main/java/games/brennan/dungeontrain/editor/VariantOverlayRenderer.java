@@ -19,15 +19,12 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsAllowList;
-import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.portal.PortalRoomSky;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.Vec3i;
 
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 import java.util.Optional;
 import net.minecraft.core.BlockPos;
@@ -222,6 +219,8 @@ public final class VariantOverlayRenderer {
     public static void setEnabled(ServerPlayer player, boolean on) {
         if (on) DISABLED.remove(player.getUUID());
         else DISABLED.add(player.getUUID());
+        // Re-send the hover next tick so its icon row follows the toggle.
+        LAST_HOVER_POS.remove(player.getUUID());
     }
 
     public static boolean isEnabled(ServerPlayer player) {
@@ -305,6 +304,7 @@ public final class VariantOverlayRenderer {
             // self-deduping, so a steady builder tick is two map lookups.
             if (builderLevel) {
                 pushLockIdSnapshot(player);
+                updateHoverAtCrosshair(player, level, dims);
                 // Honours the same overlay toggle the editor's wireframe does — one switch for the
                 // one overlay, wherever you are standing when you turn it off.
                 if (isEnabled(player)) {
@@ -340,8 +340,11 @@ public final class VariantOverlayRenderer {
             // rather than the dark box it was authored in until now.
             if (EditorPlotSky.update(player, dims) == PortalRoomSky.CYCLE) cycleSeen = true;
 
+            // Independent of the overlay toggle: the hover is what arms middle-click copy, and
+            // the toggle only decides whether its icon row draws.
+            updateHoverAtCrosshair(player, level, dims);
+
             if (!isEnabled(player)) {
-                clearHoverIfStale(player);
                 clearOutlineIfStale(player);
                 continue;
             }
@@ -349,37 +352,18 @@ public final class VariantOverlayRenderer {
 
             BlockPos playerPos = player.blockPosition();
 
-            // A staged Workbench build: its own document, through the same plot every Workbench menu
-            // resolves (BlockVariantPlot.resolveAtPos's Workbench arm) rather than a third copy.
-            games.brennan.dungeontrain.editor.workbench.WorkbenchVariantPlot stagedPlot =
-                games.brennan.dungeontrain.editor.workbench.WorkbenchVariantPlot.at(level, playerPos);
-            if (stagedPlot != null) {
+            // A staged Workbench build has no parts menu.
+            if (games.brennan.dungeontrain.editor.workbench.WorkbenchVariantPlot.at(level, playerPos) != null) {
                 PartPositionMenuController.forget(player);
-                Vec3i stagedSize = stagedPlot.footprint();
-                updateHoverPacket(player, stagedPlot.origin(),
-                    pos -> inBounds(pos, stagedSize),
-                    stagedPlot::statesAt);
                 continue;
             }
 
-            // Carriage plot takes first priority — drives the parts menu
-            // controller and the variant-blocks icon HUD.
+            // Carriage plot — drives the parts menu controller.
             CarriageVariant plotVariant = CarriageEditor.plotContaining(playerPos, dims);
             if (plotVariant != null) {
                 BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant, dims);
                 if (plotOrigin == null) continue;
-
                 PartPositionMenuController.update(player, plotVariant, plotOrigin, dims);
-
-                CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(
-                    plotVariant, CarriageEditor.plotDims(plotVariant, dims));
-                if (sidecar.isEmpty()) {
-                    clearHoverIfStale(player);
-                    continue;
-                }
-                updateHoverPacket(player, plotOrigin,
-                    pos -> inBounds(pos, dims),
-                    sidecar::statesAt);
                 continue;
             }
             // Out of every carriage plot: the parts menu is only ever closed by update(), which runs
@@ -387,86 +371,6 @@ public final class VariantOverlayRenderer {
             // off the end) kept it active client-side, and the floating type menus ignore every
             // click while a parts menu is active.
             PartPositionMenuController.forget(player);
-
-            // Contents plot — icon HUD for the contents' own variant
-            // sidecar, anchored to the interior origin (one block in from
-            // each shell wall).
-            CarriageContents contentsPlot = CarriageContentsEditor.plotContaining(playerPos, dims);
-            if (contentsPlot != null) {
-                BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contentsPlot, dims);
-                if (carriageOrigin == null) continue;
-                BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
-                Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contentsPlot, dims);
-                CarriageContentsVariantBlocks contentsSidecar = CarriageContentsVariantBlocks.loadFor(
-                    contentsPlot, interiorSize);
-                if (contentsSidecar.isEmpty()) {
-                    clearHoverIfStale(player);
-                    continue;
-                }
-                updateHoverPacket(player, interiorOrigin,
-                    pos -> inBounds(pos, interiorSize),
-                    contentsSidecar::statesAt);
-                continue;
-            }
-
-            // Part plot next — icon HUD for the part's own variant
-            // sidecar.
-            CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(playerPos, dims);
-            if (partLoc != null) {
-                BlockPos plotOrigin = CarriagePartEditor.plotOrigin(
-                    new games.brennan.dungeontrain.template.CarriagePartTemplateId(partLoc.kind(), partLoc.name()), dims);
-                if (plotOrigin == null) continue;
-                Vec3i partSize = partLoc.kind().dims(dims);
-                CarriagePartVariantBlocks partSidecar = CarriagePartVariantBlocks.loadFor(
-                    partLoc.kind(), partLoc.name(), partSize);
-                if (partSidecar.isEmpty()) {
-                    clearHoverIfStale(player);
-                    continue;
-                }
-                updateHoverPacket(player, plotOrigin,
-                    pos -> inBounds(pos, partSize),
-                    partSidecar::statesAt);
-                continue;
-            }
-
-            // Chunk frame plot — beside the Dimensions rooms, and only while that category is
-            // resident; same order as BlockVariantPlot.resolveAtPos.
-            if (EditorStampedCategoryState.isActive(EditorCategory.PORTALS)) {
-                java.util.Optional<String> frameName = ChunkFrameEditor.plotContaining(playerPos);
-                if (frameName.isPresent()) {
-                    ChunkFramePlot framePlot = ChunkFramePlot.of(frameName.get());
-                    Vec3i frameSize = framePlot.footprint();
-                    updateHoverPacket(player, framePlot.origin(),
-                        pos -> inBounds(pos, frameSize),
-                        framePlot::statesAt);
-                    continue;
-                }
-            }
-
-            // Track-side plot (track tile / pillar section / stairs adjunct
-            // / tunnel kind) — icon HUD for the kind's own variants.json
-            // sidecar. {@code TrackVariantBlocks.entries()} returns the same
-            // {@link CarriageVariantBlocks.Entry} record the carriage-side
-            // renderer uses, so the existing hover-packet helper applies
-            // unchanged.
-            TrackPlotLocator.PlotInfo trackLoc = TrackPlotLocator.locate(player, dims);
-            if (trackLoc != null) {
-                games.brennan.dungeontrain.track.variant.TrackVariantBlocks trackSidecar =
-                    games.brennan.dungeontrain.track.variant.TrackVariantBlocks.loadFor(
-                        trackLoc.kind(), trackLoc.name(), trackLoc.footprint());
-                if (trackSidecar.isEmpty()) {
-                    clearHoverIfStale(player);
-                    continue;
-                }
-                Vec3i footprint = trackLoc.footprint();
-                updateHoverPacket(player, trackLoc.origin(),
-                    pos -> inBounds(pos, footprint),
-                    trackSidecar::statesAt);
-                continue;
-            }
-
-            // Outside every plot — clear any stale HUD state.
-            clearHoverIfStale(player);
         }
         EditorClock.tick(level, cycleSeen);
         recordEditorTiming(level, System.nanoTime() - tickStart, atPlots);
@@ -1642,49 +1546,48 @@ public final class VariantOverlayRenderer {
 
 
     /**
-     * Raycast the player's eye, figure out which variant-flagged position
-     * (if any) they're currently pointing at, and sync that set of candidate
-     * block ids to the client so the HUD overlay can draw icons. Only sends
-     * a packet when the target block changes — stationary crosshair = zero
-     * network traffic.
+     * Raycast the player's eye, figure out which variant cell (if any) they are pointing at, and
+     * sync its candidate block ids to the client — the HUD icon row, and the signal that arms
+     * middle-click copy. Only sends a packet when the target cell changes — stationary crosshair =
+     * zero network traffic.
      *
-     * <p>Sidecar-agnostic: {@code inBoundsFn} constrains the local position
-     * to the plot's footprint (carriage dims for the carriage editor, the
-     * kind's own {@link Vec3i} extent for part plots) and {@code statesAtFn}
-     * resolves a local position to its candidate list (or {@code null} if
-     * unflagged).</p>
+     * <p>Resolved exactly as {@link BlockVariantMenuController#copyAtCrosshair} resolves the cell it
+     * copies: from the <i>targeted</i> block through {@link BlockVariantPlot#resolveAtPos} (every
+     * template type, Train Builder worlds included), then to the cell that owns a door's top half
+     * or a painting's other squares. A hover that disagreed with the copy left middle-click doing
+     * vanilla pick-block on cells it could have copied.</p>
      */
-    private static void updateHoverPacket(
-        ServerPlayer player, BlockPos plotOrigin,
-        Predicate<BlockPos> inBoundsFn,
-        Function<BlockPos, List<VariantState>> statesAtFn
-    ) {
-        HitResult hit = player.pick(HOVER_REACH, 1.0f, false);
-        BlockPos flaggedPos = null;
+    private static void updateHoverAtCrosshair(ServerPlayer player, ServerLevel level, CarriageDims dims) {
+        BlockPos cellPos = null;
         List<VariantState> states = null;
+        HitResult hit = player.pick(HOVER_REACH, 1.0f, false);
         if (hit instanceof BlockHitResult bhr && bhr.getType() != HitResult.Type.MISS) {
-            BlockPos local = bhr.getBlockPos().subtract(plotOrigin);
-            if (inBoundsFn.test(local)) {
-                List<VariantState> atPos = statesAtFn.apply(local);
-                if (atPos != null) {
-                    flaggedPos = bhr.getBlockPos().immutable();
-                    states = atPos;
+            BlockVariantPlot plot = BlockVariantPlot.resolveAtPos(level, bhr.getBlockPos(), dims);
+            if (plot != null) {
+                BlockPos local = bhr.getBlockPos().subtract(plot.origin());
+                if (plot.inBounds(local)) {
+                    local = BlockVariantMenuController.copyCell(level, plot, local);
+                    List<VariantState> atPos = plot.statesAt(local);
+                    if (atPos != null && !atPos.isEmpty()) {
+                        cellPos = plot.origin().offset(local);
+                        states = atPos;
+                    }
                 }
             }
         }
 
         BlockPos prev = LAST_HOVER_POS.get(player.getUUID());
-        if (flaggedPos == null) {
+        if (cellPos == null) {
             if (prev != null) {
                 LAST_HOVER_POS.remove(player.getUUID());
                 DungeonTrainNet.sendTo(player, VariantHoverPacket.empty());
             }
             return;
         }
-        if (flaggedPos.equals(prev)) return;
+        if (cellPos.equals(prev)) return;
 
-        LAST_HOVER_POS.put(player.getUUID(), flaggedPos);
-        DungeonTrainNet.sendTo(player, new VariantHoverPacket(toBlockIds(states)));
+        LAST_HOVER_POS.put(player.getUUID(), cellPos);
+        DungeonTrainNet.sendTo(player, new VariantHoverPacket(toBlockIds(states), isEnabled(player)));
     }
 
     /** Vec3i-based bounds overload for part plots — local pos inside the part's footprint. */
@@ -1740,7 +1643,7 @@ public final class VariantOverlayRenderer {
      */
     public static void pushImmediateHover(ServerPlayer player, BlockPos worldPos, List<VariantState> states) {
         LAST_HOVER_POS.put(player.getUUID(), worldPos.immutable());
-        DungeonTrainNet.sendTo(player, new VariantHoverPacket(toBlockIds(states)));
+        DungeonTrainNet.sendTo(player, new VariantHoverPacket(toBlockIds(states), isEnabled(player)));
     }
 
     private static boolean inBounds(BlockPos p, CarriageDims dims) {
