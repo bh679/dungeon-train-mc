@@ -255,7 +255,18 @@ let sel=null,selLink=null,selCls=null,mode=null,pick=null,stars=null,mouse=null,
 let style="sky";try{style=localStorage.getItem("dt-perk-style")||"sky"}catch(e){}
 let showRev=true;try{showRev=localStorage.getItem("dt-perk-showrev")!=="0"}catch(e){}
 const status=t=>document.getElementById("status").textContent=t||"";
-function render(){renderSky();inspector();classList();if(showTable)renderTable();document.getElementById("aside").classList.toggle("empty",!sel&&selLink===null&&!selCls&&document.querySelectorAll(".sec:not([hidden])").length===0)}
+// Put the panel beside the selected thing (a star, a link's middle, a class label), flipping to stay on screen.
+function placePanel(){const a=document.getElementById("aside");let pt=null;
+  if(sel){const p=byId(sel);if(p)pt={x:p.x,y:p.y,pad:root(p)?34:26}}
+  else if(selLink!==null&&M.links[selLink]){const l=M.links[selLink],A=byId(l.a),B=byId(l.b);if(A&&B)pt={x:(A.x+B.x)/2,y:(A.y+B.y)/2,pad:10}}
+  else if(selCls){const ps=M.perks.filter(p=>p.cls===selCls);if(ps.length){const sx=ps.reduce((t,p)=>t+(p.x-CX),0),sy=ps.reduce((t,p)=>t+(p.y-CY),0);const an=Math.atan2(sy,sx);const r=Math.max(...ps.map(p=>Math.hypot(p.x-CX,p.y-CY)))+40;pt={x:CX+r*Math.cos(an),y:CY+r*Math.sin(an),pad:14}}}
+  if(!pt){a.style.left=a.style.top="";a.style.right="";return}
+  const m=svg.getScreenCTM();if(!m){return}const sx=m.a*pt.x+m.c*pt.y+m.e,sy=m.b*pt.x+m.d*pt.y+m.f;const pad=pt.pad*m.a+10;
+  const w=a.offsetWidth||300,h=a.offsetHeight||200;let x=sx+pad,y=sy-20;
+  if(x+w>innerWidth-12)x=sx-pad-w;if(x<12)x=12;if(y+h>innerHeight-12)y=innerHeight-12-h;if(y<60)y=60;
+  a.style.right="auto";a.style.left=x+"px";a.style.top=y+"px"}
+const root=p=>p&&p.id==="root";
+function render(){renderSky();inspector();classList();if(showTable)renderTable();document.getElementById("aside").classList.toggle("empty",!sel&&selLink===null&&!selCls&&document.querySelectorAll(".sec:not([hidden])").length===0);placePanel()}
 function renderSky(){
   if(!stars){stars=el("g");for(let i=0;i<140;i++)stars.appendChild(el("circle",{cx:Math.random()*800,cy:Math.random()*800,r:Math.random()*1.2+.2,fill:"#e8e4d6",opacity:(Math.random()*.5+.15).toFixed(2)}))}
   svg.replaceChildren(stars);
