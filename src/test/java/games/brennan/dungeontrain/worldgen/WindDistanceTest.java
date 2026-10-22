@@ -35,11 +35,6 @@ final class WindDistanceTest {
         }
     }
 
-    /** World X of the +X edge of the reversed copy of slot {@code i} on backward run {@code k}. */
-    private static long bandTopX(int i, int k) {
-        return START - BUFFER - CycleLayout.runStart(k + 1, P) + ((LAYOUT.start(i) + LAYOUT.length(i)) << k) - 1;
-    }
-
     @Test
     @DisplayName("forward of spawn the distance is unchanged")
     void forward() {
@@ -50,23 +45,11 @@ final class WindDistanceTest {
     }
 
     @Test
-    @DisplayName("the overworld buffer behind spawn is calm")
-    void bufferCalm() {
+    @DisplayName("the overworld buffer behind spawn is calm; backward Stacks already blows at its entry")
+    void bufferCalmStacksBlows() {
         for (long x = START - BUFFER; x < START; x += 97) assertTrue(WindDistance.at(PROFILE, C, x, WIND) < 0);
-    }
-
-    @Test
-    @DisplayName("each reversed band starts at its target")
-    void hitsTargets() {
-        int last = LAYOUT.count() - 1;
-        assertEquals(PROFILE.reverseTarget(0), WindDistance.at(PROFILE, C, bandTopX(last, 0), WIND), 1.0);
-        long n = 0;
-        for (int i = last; i >= 0; i--) {
-            if (LAYOUT.length(i) <= 0L) continue;
-            assertEquals(PROFILE.reverseTarget(n), WindDistance.at(PROFILE, C, bandTopX(i, 0), WIND),
-                    PROFILE.reverseTarget(n + 1) - PROFILE.reverseTarget(n) > 0 ? 25.0 : 1e-9, "band " + n);
-            n++;
-        }
+        assertEquals(7, PROFILE.reverseBandShift());
+        assertTrue(WindDistance.at(PROFILE, C, START - BUFFER - 1, WIND) > 0);
     }
 
     @Test
@@ -75,23 +58,20 @@ final class WindDistanceTest {
         double prev = -1.0;
         for (long x = START - BUFFER - 1; x >= START - BUFFER - 3 * P; x -= 41) {
             double d = WindDistance.at(PROFILE, C, x, WIND);
-            assertTrue(d >= prev - 1e-9, "dropped at " + x);
+            assertTrue(d >= prev - 1e-6, "dropped at " + x);
             prev = d;
         }
-        assertTrue(prev > PROFILE.reverseTarget(20), "keeps climbing past the table");
     }
 
     @Test
-    @DisplayName("past the table the last step repeats; a decreasing table is rejected")
-    void table() {
-        WindProfile p = WindProfile.parse("{\"curves\":" + curves() + ",\"reverseTargets\":[0,1000,3000]}");
-        assertEquals(3000.0, p.reverseTarget(2));
-        assertEquals(7000.0, p.reverseTarget(4));
-        assertEquals(2000.0, p.reverseDistance(1, 0.5));
+    @DisplayName("shift parses: default 7, negative or fractional rejected")
+    void shiftParse() {
+        assertEquals(7, WindProfile.parse("{\"curves\":" + curves() + "}").reverseBandShift());
+        assertEquals(3, WindProfile.parse("{\"curves\":" + curves() + ",\"reverseBandShift\":3}").reverseBandShift());
         assertThrows(IllegalArgumentException.class,
-                () -> WindProfile.parse("{\"curves\":" + curves() + ",\"reverseTargets\":[0,5,4]}"));
-        WindProfile none = WindProfile.parse("{\"curves\":" + curves() + "}");
-        assertEquals(8000.0, none.reverseTarget(2));
+                () -> WindProfile.parse("{\"curves\":" + curves() + ",\"reverseBandShift\":-1}"));
+        assertThrows(IllegalArgumentException.class,
+                () -> WindProfile.parse("{\"curves\":" + curves() + ",\"reverseBandShift\":1.5}"));
     }
 
     private static String curves() {

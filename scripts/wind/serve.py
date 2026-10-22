@@ -117,23 +117,16 @@ def validate_profile(profile: object) -> dict:
         "visualLeadTicks": int(_number(profile, "visualLeadTicks", "profile")),
         "multipliers": {k: _number(mult, k, "multipliers") for k in MULT_FIELDS},
         "weight": {k: _number(profile.get("weight") or {}, k, "weight") for k in WEIGHT_FIELDS},
-        "reverseTargets": _reverse_targets(profile.get("reverseTargets", [0, 4000])),
+        "reverseBandShift": _reverse_band_shift(profile.get("reverseBandShift", 7)),
         "curves": {name: _curve(curves.get(name), name) for name in CURVE_NAMES},
     }
 
 
-def _reverse_targets(raw: object) -> list:
-    """Wind distance at the start of each reversed band (travel order); never decreasing."""
-    if not isinstance(raw, list) or not raw:
-        raise ValueError("profile.reverseTargets must be a non-empty list of numbers")
-    out = []
-    for i, v in enumerate(raw):
-        if isinstance(v, bool) or not isinstance(v, (int, float)) or v != v or v in (float("inf"), float("-inf")):
-            raise ValueError(f"profile.reverseTargets[{i}] must be a finite number")
-        if out and v < out[-1]:
-            raise ValueError(f"profile.reverseTargets[{i}] must not be lower than the one before")
-        out.append(v)
-    return out
+def _reverse_band_shift(raw: object) -> int:
+    """Behind spawn, the Nth band met walking -X plays the wind of forward band N + this."""
+    if isinstance(raw, bool) or not isinstance(raw, (int, float)) or raw < 0 or raw != int(raw):
+        raise ValueError("profile.reverseBandShift must be a whole number >= 0")
+    return int(raw)
 
 
 def render_profile(profile: dict) -> str:

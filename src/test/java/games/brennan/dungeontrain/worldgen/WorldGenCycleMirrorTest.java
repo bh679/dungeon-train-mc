@@ -190,27 +190,26 @@ final class WorldGenCycleMirrorTest {
     }
 
     @Test
-    @DisplayName("reversed bands count up in travel order (-X) across runs; progress runs 0 to 1 within each")
-    void reverseBands() {
-        int nonEmpty = 0;
-        for (int i = 0; i < LAYOUT.count(); i++) if (LAYOUT.length(i) > 0L) nonEmpty++;
-        assertEquals(0L, C.reverseBandIndex(START - BUFFER - 1));
-        assertEquals(0.0, C.reverseBandProgress(START - BUFFER - 0.5), 1e-3);
-        assertEquals(nonEmpty - 1, C.reverseBandIndex(START - BUFFER - P));
-        assertEquals(nonEmpty, C.reverseBandIndex(START - BUFFER - P - 1));
-        long prev = -1L;
-        double prevP = -1.0;
-        for (long x = START - BUFFER - 1; x >= START - BUFFER - 3 * P; x -= 37) {
-            long n = C.reverseBandIndex(x);
-            double p = C.reverseBandProgress(x);
-            assertTrue(n >= prev, "index never drops at " + x);
-            if (n == prev) assertTrue(p >= prevP, "progress never drops at " + x);
-            assertTrue(p >= 0.0 && p <= 1.0);
-            prev = n;
-            prevP = p;
+    @DisplayName("28 bands a lap; backward band N plays forward band N + shift, entered where each is entered")
+    void reverseWindTwin() {
+        assertEquals(28, C.bandsPerLap());
+        long stacksEntry = START - BUFFER - 1;                       // first reversed column, Stacks' +X edge
+        // shift 6: backward Stacks (1st) -> forward 7th band, Overworld BoP, entered at its start
+        int owBop = -1;
+        for (int i = 0; i < LAYOUT.count(); i++) {
+            if (LAYOUT.slot(i).type() == CycleLayout.Type.OVERWORLD && LAYOUT.slot(i).style() == CycleLayout.Style.BOP) owBop = i;
         }
-        assertEquals(-1L, C.reverseBandIndex(START - 1));
-        assertEquals(-1L, C.reverseBandIndex(START + 123));
-        assertEquals(-1.0, C.reverseBandProgress(START - BUFFER));
+        assertEquals(fx(LAYOUT.start(owBop), 0), C.reverseWindTwinX(stacksEntry + 0.999, 6), 2.0);
+        // shift 7: backward lap-1 Overworld (28th) -> forward 35th = lap-2 Overworld BoP, entered at its start
+        long owEntry = START - BUFFER - P + LAYOUT.length(0) - 1;
+        assertEquals(fx(LAYOUT.start(owBop), 1), C.reverseWindTwinX(owEntry + 0.999, 7), 4.0);
+        assertTrue(Double.isNaN(C.reverseWindTwinX(START - 1, 7)));
+        assertTrue(Double.isNaN(C.reverseWindTwinX(START + 5, 7)));
+        double prev = Double.NEGATIVE_INFINITY;
+        for (long x = START - BUFFER - 1; x >= START - BUFFER - 3 * P; x -= 37) {
+            double tw = C.reverseWindTwinX(x + 0.5, 7);
+            assertTrue(tw >= prev - 1e-6, "twin never moves back at " + x);
+            prev = tw;
+        }
     }
 }
