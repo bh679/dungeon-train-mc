@@ -91,6 +91,9 @@ textarea{min-height:0;resize:none;overflow:hidden;font-family:var(--body);line-h
 #ptable td.nm:hover{color:var(--gold)}
 #ptable td.ds{color:var(--fg);opacity:.85}
 #ptable .tick{color:#5fd38a}
+#ptable td.go{width:22px;padding-right:0}
+#ptable .goto{font-size:14px;padding:0}
+#ptable tr.hl td{background:rgba(228,185,90,.12)}
 .status{color:var(--gold);font-size:11px}
 .status:empty{display:none}
 #inspector{display:grid;gap:4px}
@@ -307,7 +310,7 @@ function startDrag(ev,p,g){if(ev.button!==0||ev.altKey||ev.ctrlKey)return;ev.pre
   const mv=e=>{if(done)return;if(e.buttons===0){up();return}const q=toSvg(e);const nx=Math.max(10,Math.min(790,q.x+ox)),ny=Math.max(10,Math.min(790,q.y+oy));if(Math.hypot(nx-p.x,ny-p.y)>0.5||moved){moved=true;p.x=+nx.toFixed(1);p.y=+ny.toFixed(1);render()}};
   const up=()=>{if(done)return;done=true;window.removeEventListener("pointermove",mv);window.removeEventListener("pointerup",up);window.removeEventListener("pointercancel",up);window.removeEventListener("blur",up);if(moved)save();else select(p.id)};
   window.addEventListener("pointermove",mv);window.addEventListener("pointerup",up);window.addEventListener("pointercancel",up);window.addEventListener("blur",up)}
-function inspector(){const box=document.getElementById("inspector");box.onclick=e=>{if(e.target.classList.contains("xclose")){sel=null;selLink=null;selCls=null;render()}};
+function inspector(){const box=document.getElementById("inspector");box.onclick=e=>{if(e.target.classList.contains("xclose")){sel=null;selLink=null;selCls=null;render()}if(e.target.classList.contains("ptable")){toggleTable(true)}};
   if(selLink!==null){const l=M.links[selLink];if(!l){selLink=null;return inspector()}const A=byId(l.a),B=byId(l.b);
     box.innerHTML=`<div class="line"><p class="hint" style="flex:1">${A.name} · ${B.name}</p><button class="lnk xclose" title="close">×</button></div>
     <div class="row"><select id="lkind"><option value="req"${l.kind==="req"?" selected":""}>needs (spoke)</option><option value="cross"${l.kind==="cross"?" selected":""}>cross-link</option></select>
@@ -328,7 +331,7 @@ function inspector(){const box=document.getElementById("inspector");box.onclick=
   if(!p){box.innerHTML="";return}
   const root=p.id==="root";
   box.innerHTML=`<h2 style="color:${color(p)};display:none"></h2>
-  <div class="line" style="gap:6px"><input type="checkbox" id="prev" title="reviewed" style="width:auto;margin:0"${p.reviewed?" checked":""}><input id="pname" value="${esc(p.name)}" placeholder="name" style="font-family:var(--display);font-size:14px;color:${color(p)};flex:1"><button class="lnk xclose" title="close">×</button></div>
+  <div class="line" style="gap:6px"><input type="checkbox" id="prev" title="reviewed" style="width:auto;margin:0"${p.reviewed?" checked":""}><input id="pname" value="${esc(p.name)}" placeholder="name" style="font-family:var(--display);font-size:14px;color:${color(p)};flex:1"><button class="lnk ptable" title="see in table">☰</button><button class="lnk xclose" title="close">×</button></div>
   <textarea id="pdesc" placeholder="effect">${esc(p.desc||"")}</textarea>
   <div class="line"><input id="pcost" value="${esc(p.cost||"")}" placeholder="cost" title="cost x ranks" style="width:48px">
   <select id="picon" title="icon" style="width:auto;flex:1">${ICON_NAMES.map(n=>`<option value="${n}"${(p.icon||defaultIcon(p))===n?" selected":""}>${label(n)}</option>`).join("")}</select>
@@ -368,8 +371,9 @@ document.querySelectorAll(".lnk[data-t]").forEach(b=>b.onclick=()=>{const t=docu
 let showTable=false;const bTable=document.getElementById("bTable");
 function reachable(){const adj=new Map();M.links.forEach(l=>{if(!adj.has(l.a))adj.set(l.a,[]);if(!adj.has(l.b))adj.set(l.b,[]);adj.get(l.a).push(l.b);adj.get(l.b).push(l.a)});const seen=new Set(["root"]);const q=["root"];while(q.length){const x=q.pop();(adj.get(x)||[]).forEach(y=>{if(!seen.has(y)){seen.add(y);q.push(y)}})}return seen}
 function renderTable(){const t=document.getElementById("ptable");const live=reachable();const order=M.classes.map(c=>{const ps=M.perks.filter(p=>p.cls===c.id&&live.has(p.id));if(!ps.length)return null;const sx=ps.reduce((a,p)=>a+(p.x-CX),0),sy=ps.reduce((a,p)=>a+(p.y-CY),0);return {c,a:(Math.atan2(sy,sx)+Math.PI/2+2*Math.PI)%(2*Math.PI),ps:ps.sort((u,v)=>Math.hypot(u.x-CX,u.y-CY)-Math.hypot(v.x-CX,v.y-CY))}}).filter(Boolean).sort((u,v)=>u.a-v.a);
-  let h=`<tr>${showRev?"<th></th>":""}<th>class</th><th>perk</th><th>description</th></tr>`;order.forEach(o=>o.ps.forEach((p,i)=>{h+=`<tr>${showRev?`<td class="tick">${p.reviewed?"✓":""}</td>`:""}<td class="cls" style="color:${o.c.color}">${i===0?esc(o.c.name):""}</td><td class="nm" data-id="${p.id}">${esc(p.name)}${p.cap?' <span class="cap">CAPSTONE</span>':""}</td><td class="ds">${esc(p.desc||"")}</td></tr>`}));t.innerHTML=h;
-  t.querySelectorAll("td.nm").forEach(td=>td.onclick=()=>{sel=td.dataset.id;selLink=null;selCls=null;toggleTable(false);render()})}
+  let h=`<tr><th></th>${showRev?"<th></th>":""}<th>class</th><th>perk</th><th>description</th></tr>`;order.forEach(o=>o.ps.forEach((p,i)=>{h+=`<tr data-row="${p.id}"${sel===p.id?' class="hl"':""}><td class="go"><button class="lnk goto" data-id="${p.id}" title="show on the graph">◎</button></td>${showRev?`<td class="tick">${p.reviewed?"✓":""}</td>`:""}<td class="cls" style="color:${o.c.color}">${i===0?esc(o.c.name):""}</td><td class="nm" data-id="${p.id}">${esc(p.name)}</td><td class="ds">${esc(p.desc||"")}</td></tr>`}));t.innerHTML=h;
+  const go=id=>{sel=id;selLink=null;selCls=null;toggleTable(false);render()};t.querySelectorAll("td.nm").forEach(td=>td.onclick=()=>go(td.dataset.id));t.querySelectorAll("button.goto").forEach(b=>b.onclick=e=>{e.stopPropagation();go(b.dataset.id)});
+  const hl=t.querySelector("tr.hl");if(hl)hl.scrollIntoView({block:"center"})}
 function toggleTable(on){showTable=on??!showTable;document.getElementById("tableView").hidden=!showTable;bTable.classList.toggle("on",showTable);if(showTable)renderTable()}
 bTable.onclick=()=>toggleTable();
 const bStyle=document.getElementById("bStyle");bStyle.classList.toggle("on",style==="mc");bStyle.onclick=()=>{style=style==="sky"?"mc":"sky";bStyle.classList.toggle("on",style==="mc");try{localStorage.setItem("dt-perk-style",style)}catch(e){}render()};
