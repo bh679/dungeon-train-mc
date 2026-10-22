@@ -10,7 +10,7 @@
   color-scheme:dark;
 }
 html,body{height:100%}
-body{margin:0;background:radial-gradient(ellipse at 50% 45%,var(--bg2),var(--bg) 70%);color:var(--fg);font-family:var(--body);overflow:hidden;
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);overflow:hidden;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0;box-sizing:border-box}
 header{position:fixed;left:0;top:env(safe-area-inset-top,0px);padding:12px max(16px,env(safe-area-inset-left,0px));z-index:6;pointer-events:none;background:linear-gradient(var(--bg),rgba(7,11,22,0));right:0}
 .hrow{display:flex;align-items:center;gap:14px}
@@ -18,7 +18,10 @@ header{position:fixed;left:0;top:env(safe-area-inset-top,0px);padding:12px max(1
 h1{font-family:var(--display);font-weight:500;font-size:clamp(16px,2vw,22px);margin:0;letter-spacing:.04em}
 header p{margin:2px 0 0;color:var(--muted);font-size:12px;max-width:46ch}
 .wrap{position:fixed;inset:0}
-.sky{position:absolute;inset:0;touch-action:none;user-select:none;background:radial-gradient(circle at 50% 50%,rgba(228,185,90,.07),transparent 30%)}
+.sky{position:absolute;inset:0;touch-action:none;user-select:none;background:radial-gradient(ellipse at 50% 45%,var(--bg2) 0%,#0c1225 18%,#0a0f1f 36%,#080c19 54%,var(--bg) 72%)}
+.sky::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 50%,rgba(228,185,90,.06) 0%,rgba(228,185,90,.03) 14%,rgba(228,185,90,.01) 24%,transparent 32%)}
+.sky::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.035;mix-blend-mode:overlay;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
+.sky svg{position:relative}
 svg{width:100%;height:100%;display:block}
 svg image{image-rendering:pixelated;image-rendering:crisp-edges}
 aside{position:fixed;top:calc(env(safe-area-inset-top,0px) + 58px);right:max(16px,env(safe-area-inset-right,0px));width:max-content;min-width:260px;max-width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 70px);overflow-y:auto;overflow-x:hidden;z-index:3;box-shadow:0 10px 40px rgba(0,0,0,.5);background:rgba(17,26,48,.92);backdrop-filter:blur(6px)}
