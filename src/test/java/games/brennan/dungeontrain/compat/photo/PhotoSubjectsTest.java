@@ -70,6 +70,9 @@ final class PhotoSubjectsTest {
         assertTrue(PhotoSubjects.keys(where(Set.of(), "minecraft:overworld", "reached_nether")).contains("nether"));
         assertTrue(PhotoSubjects.keys(where(Set.of(), "minecraft:overworld", "reached_better_nether")).contains("nether"));
         assertTrue(PhotoSubjects.keys(where(Set.of(), "minecraft:the_nether", null)).contains("nether"));
+        // the Deeper Dark is its own dimension, not the Nether
+        assertTrue(PhotoSubjects.keys(where(Set.of(), "minecraft:overworld", "reached_deeper_dark")).contains("band:reached_deeper_dark"));
+        assertFalse(PhotoSubjects.keys(where(Set.of(), "minecraft:overworld", "reached_deeper_dark")).contains("nether"));
         assertTrue(PhotoSubjects.keys(where(Set.of(), "minecraft:overworld", "reached_end_islands")).contains("end"));
         assertTrue(PhotoSubjects.keys(where(Set.of(), "minecraft:overworld", "reached_better_end")).contains("end"));
         assertTrue(PhotoSubjects.keys(where(Set.of(), "minecraft:the_end", null)).contains("end"));
