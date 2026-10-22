@@ -6,6 +6,7 @@
   ],
   "included": [
     "enemies_box",
-    "enemies_group"
+    "enemies_group",
+    "passanger"
   ]
 }
