@@ -188,4 +188,28 @@ final class WorldGenCycleMirrorTest {
         assertEquals(0.0, C.stacksVoidRampAt((int) (START - BUFFER)));
         assertEquals(1.0, C.chuncksKeepDensityAt((int) (START - BUFFER)));
     }
+
+    @Test
+    @DisplayName("28 bands a lap; backward band N plays forward band N + shift, entered where each is entered")
+    void reverseWindTwin() {
+        assertEquals(28, C.bandsPerLap());
+        long stacksEntry = START - BUFFER - 1;                       // first reversed column, Stacks' +X edge
+        // shift 6: backward Stacks (1st) -> forward 7th band, Overworld BoP, entered at its start
+        int owBop = -1;
+        for (int i = 0; i < LAYOUT.count(); i++) {
+            if (LAYOUT.slot(i).type() == CycleLayout.Type.OVERWORLD && LAYOUT.slot(i).style() == CycleLayout.Style.BOP) owBop = i;
+        }
+        assertEquals(fx(LAYOUT.start(owBop), 0), C.reverseWindTwinX(stacksEntry + 0.999, 6), 2.0);
+        // shift 7: backward lap-1 Overworld (28th) -> forward 35th = lap-2 Overworld BoP, entered at its start
+        long owEntry = START - BUFFER - P + LAYOUT.length(0) - 1;
+        assertEquals(fx(LAYOUT.start(owBop), 1), C.reverseWindTwinX(owEntry + 0.999, 7), 4.0);
+        assertTrue(Double.isNaN(C.reverseWindTwinX(START - 1, 7)));
+        assertTrue(Double.isNaN(C.reverseWindTwinX(START + 5, 7)));
+        double prev = Double.NEGATIVE_INFINITY;
+        for (long x = START - BUFFER - 1; x >= START - BUFFER - 3 * P; x -= 37) {
+            double tw = C.reverseWindTwinX(x + 0.5, 7);
+            assertTrue(tw >= prev - 1e-6, "twin never moves back at " + x);
+            prev = tw;
+        }
+    }
 }

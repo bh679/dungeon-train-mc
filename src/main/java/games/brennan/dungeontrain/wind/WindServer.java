@@ -71,7 +71,7 @@ public final class WindServer {
 
         public WindSample sampleAt(double worldX, long tick) {
             if (!active()) return WindSample.CALM;
-            return WindField.sample(profile, worldX - startX, tick, seed, WindZones.styleAt(worldX))
+            return WindField.sample(profile, WindDistance.at(profile, worldX, startX), tick, seed, WindZones.styleAt(worldX))
                     .scaled(WindZones.bandFactor(worldX));
         }
 
@@ -251,7 +251,7 @@ public final class WindServer {
                                 Map<Entity, List<Trains.Carriage>> candidates) {
         ManagedShip ship = carriage.ship();
         AABBdc bb = ship.worldAABB();
-        if (bb.maxX() < s.startX()) return; // whole carriage still before the wind
+        if (WindDistance.at(s.profile(), bb.maxX(), s.startX()) < 0 && WindDistance.at(s.profile(), bb.minX(), s.startX()) < 0) return; // whole carriage before the wind
         if (!(ship instanceof SableManagedShip sable) || sable.subLevel() == null) return;
         AABB box = new AABB(bb.minX() - SIDE_REACH, bb.minY(), bb.minZ() - SIDE_REACH,
                 bb.maxX() + SIDE_REACH, bb.maxY() + ABOVE_REACH, bb.maxZ() + SIDE_REACH);

@@ -144,7 +144,8 @@ public final class EndFrostbite {
         hurtIfVanillaWont(player);
         int x = (int) Math.floor(player.getX());
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
-        double rate = frostRate(WindZones.endSkyAt(x), cycle.cycleIndex(x), blocksIn(cycle, x), halfLife(cycle),
+        int fx = frostX(cycle, x);
+        double rate = frostRate(WindZones.endSkyAt(x), cycle.cycleIndex(fx), blocksIn(cycle, fx), halfLife(cycle),
                 player.getTicksRequiredToFreeze(), leatherPieces(player));
         int frost = frostThisTick(rate, level.getGameTime());
         if (frost == 0 || !inTheCold(level, player)) return;
@@ -160,6 +161,19 @@ public final class EndFrostbite {
     static void hurtIfVanillaWont(ServerPlayer player) {
         if (player.canFreeze() || player.tickCount % FREEZE_HURT_PERIOD != 0 || !player.isFullyFrozen()) return;
         player.hurt(player.damageSources().freeze(), FREEZE_HURT_AMOUNT);
+    }
+
+    /**
+     * The X whose lap and distance set the frost pace at {@code x}: {@code x} itself, except behind spawn, where
+     * the train counts as already on lap 2 ({@link #FIRST_FREEZING_CYCLE}) with every block travelled -X past the
+     * buffer added on, so the first backward End freezes and the pace tightens the further back it goes. The
+     * End-sky check still uses the real {@code x}.
+     */
+    public static int frostX(WorldGenCycle cycle, int x) {
+        long back = cycle.reverseDistance(x);
+        long lapTwo = cycle.lapStartX((int) FIRST_FREEZING_CYCLE);
+        if (back < 0L || lapTwo < 0L) return x;
+        return (int) Math.min(Integer.MAX_VALUE, lapTwo + back);
     }
 
     /** Blocks past the start of the first freezing cycle (0 before it, or when the cycle cannot say). */

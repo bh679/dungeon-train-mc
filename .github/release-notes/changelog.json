@@ -29590,6 +29590,24 @@
       "released_at": "2026-10-22T11:32:26Z"
     },
     {
+      "id": "wind-reaches-more-of-the-line",
+      "version": "0.1457.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "balance"
+      ],
+      "title": "Wind reaches more of the line",
+      "summary": "The wind now reaches stretches of the line that used to stay still, and it keeps building the further you go. The End's cold bites there too.",
+      "highlights": [],
+      "pr": 2240,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "editor-placeholder-walk-through",
       "version": "0.1458.0",
       "type": "feat",
