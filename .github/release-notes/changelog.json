@@ -29603,9 +29603,9 @@
       "highlights": [],
       "pr": 2240,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1458.0",
+      "released_at": "2026-10-22T12:24:24Z"
     },
     {
       "id": "advancement-requirements-tweak",
@@ -29620,13 +29620,13 @@
       "highlights": [],
       "pr": 2241,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1458.0",
+      "released_at": "2026-10-22T12:24:24Z"
     },
     {
       "id": "editor-placeholder-walk-through",
-      "version": "0.1458.0",
+      "version": "0.1459.0",
       "type": "feat",
       "tags": [
         "feature",
