@@ -43,8 +43,8 @@
     "4,0,0": { "lockId": 7, "states": ["minecraft:black_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
     "4,1,0": { "lockId": 7, "states": ["minecraft:black_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
     "4,2,0": { "lockId": 7, "states": ["minecraft:black_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
-    "4,0,2": ["dungeontrain:variant_placeholder", {"entity": "betterend:shadow_walker", "difficulty": {"min": 7, "max": "all"}}],
-    "3,0,1": ["dungeontrain:variant_placeholder", {"entity": "betterend:shadow_walker", "difficulty": {"min": 18, "max": "all"}}],
+    "4,0,2": ["dungeontrain:variant_placeholder", {"entity": "betterend:shadow_walker", "difficulty": {"min": 13, "max": "all"}}],
+    "3,0,1": ["dungeontrain:variant_placeholder", {"entity": "betterend:shadow_walker", "difficulty": {"min": 20, "max": "all"}}],
     "4,0,3": ["dungeontrain:variant_placeholder", {"entity": "betterend:shadow_walker", "difficulty": {"min": 38, "max": "all"}}],
     "4,3,4": { "lockId": 8, "states": ["minecraft:black_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
     "5,3,4": { "lockId": 8, "states": ["minecraft:black_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
@@ -55,7 +55,6 @@
     "2,3,4": { "lockId": 8, "states": ["minecraft:black_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
     "2,3,3": { "lockId": 8, "states": ["minecraft:black_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
     "5,3,2": { "lockId": 8, "states": ["minecraft:black_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
-    "4,3,2": { "lockId": 8, "states": ["minecraft:black_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
     "2,3,2": { "lockId": 8, "states": ["minecraft:black_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
     "5,3,1": { "lockId": 8, "states": ["minecraft:black_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
     "4,3,1": { "lockId": 8, "states": ["minecraft:black_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
@@ -104,6 +103,7 @@
     "6,3,4": { "lockId": 12, "states": ["minecraft:black_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
     "6,2,4": { "lockId": 12, "states": ["minecraft:black_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
     "3,3,2": { "lockId": 8, "states": ["minecraft:black_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 3}] },
-    "3,0,3": [{"state": "minecraft:black_concrete", "weight": 2}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "weight": 4, "lootPrefab": "pot"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "weight": 5, "lootPrefab": "loot_irongold"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "lootPrefab": "loot"}]
+    "3,0,3": [{"state": "minecraft:black_concrete", "weight": 2}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "weight": 4, "lootPrefab": "pot"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "weight": 5, "lootPrefab": "loot_irongold"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "lootPrefab": "loot"}],
+    "4,3,2": { "lockId": 8, "states": ["minecraft:black_concrete", {"state": "dungeontrain:variant_placeholder", "weight": 3}] }
   }
 }

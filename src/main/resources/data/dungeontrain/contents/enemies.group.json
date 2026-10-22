@@ -226,7 +226,7 @@
         "NETHER",
         "SPHERES",
         "STACKS",
-        "FLOATING"
+        "FAR_LANDS"
       ]
     },
     {
@@ -237,7 +237,7 @@
         "NETHER",
         "SPHERES",
         "STACKS",
-        "FLOATING",
+        "FAR_LANDS",
         "LOST_CITY"
       ]
     },
@@ -247,7 +247,8 @@
       "phases": [
         "NETHER",
         "SPHERES",
-        "STACKS"
+        "STACKS",
+        "FAR_LANDS"
       ]
     },
     {
@@ -354,6 +355,19 @@
         "FLOATING",
         "FAR_LANDS",
         "DEEPER_DARK"
+      ]
+    },
+    {
+      "id": "pinglings2",
+      "weight": 4,
+      "minLevel": 3,
+      "phases": [
+        "VOID",
+        "END",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "FAR_LANDS"
       ]
     }
   ]
