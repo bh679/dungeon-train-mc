@@ -140,7 +140,7 @@ const SEED=[
  {n:"Builder",c:"#b0b8c8",p:[["Drift Chance","More drifting carriages roll into your train each band","1 x 3"],["Own Carriage Return","Carriages you built come back around to you more often","1 x 2"],["Build Materials","A chest of building blocks in every drifting carriage you enter, refilled each tier","1"],["Drift Gift","Things you leave in a drifting carriage count double toward a friendlier echo","1"],["Drift Reach","Your builds travel to more players' trains","1 x 2"],["Keep Carriage","One drifting carriage you have edited is pinned and follows you into your next run","3"]]},
  {n:"Hoarder",c:"#8fc97a",p:[["Storage","+1 inventory row per rank. Everyone starts a run with a reduced inventory; Hoarder earns it back and more","1 x 3"],["Magnet","Items within 4 blocks drift to you; XP orbs within 8","1"],["Chest Sense","The next chest within 32 blocks glints through walls for 5 s when you enter a new chunk row","1 x 2"],["Luck","1 in 20 containers rolls with Luck per rank (2 in 20, 3 in 20, ...)","1 x 3"],["Extra Drops","Mobs drop 1 extra item 25% of the time","1"],["Death Chest","Items dropped on death stay in a locked chest at the death spot for your next life","3"]]},
  {n:"Crafter",c:"#c7b08a",p:[["Craft Level Stats","Items you craft get the stats of the level you are in, as if looted there","1 x 2"],["Enchant Cost","Enchanting costs 1 level less per rank, lapis halved","1 x 2"],["Re-enchant","Already-enchanted items can go back on the table and keep what they have","2"],["Enchant Max","Enchantments can roll one level past their normal max; rank 2 two","2 x 2"],["Enchant Bonus","Worn armour and held weapons act one enchantment level higher on everything they already have","3"]]},
- {n:"Beefcake",c:"#e8956a",p:[["Health","+2 hearts per rank","1 x 2"],["Armour","+2 armour per rank, ignores the diamond-over-leather penalty","1 x 2"],["Totem","Totem of Undying effect without the item, 10 min cooldown; rank 2 5 min","2 x 2"],["Hunger","Hunger drains 30% slower; food poison halved","1"],["Death Save","Once per tier, lethal damage leaves half a heart and 3 s of Resistance V","3"]]},
+ {n:"Tank",c:"#e8956a",p:[["Health","+2 hearts per rank","1 x 2"],["Armour","+2 armour per rank, ignores the diamond-over-leather penalty","1 x 2"],["Totem","Totem of Undying effect without the item, 10 min cooldown; rank 2 5 min","2 x 2"],["Hunger","Hunger drains 30% slower; food poison halved","1"],["Death Save","Once per tier, lethal damage leaves half a heart and 3 s of Resistance V","3"]]},
  {n:"Speedster",c:"#7fb4f0",p:[["Speed","+6% base speed per rank","1 x 3"],["Sprint Speed","Sprinting is 15% faster per rank","1 x 2"],["Sprint Jump","Sprint-jumps carry 1 block further per rank","1 x 2"],["Sprint Hunger","Sprinting costs 50% less hunger; rank 2 none","1 x 2"],["Wind Resistance","Wind push halved; rank 2 immune","1 x 2"],["Haste","Permanent Haste II; moving carriages give Speed II","3"]]},
  {n:"Knight",c:"#d9534f",p:[["Damage","+1 attack damage per rank","1 x 2"],["Debuff Aura","Hostiles within 8 blocks get Weakness I; rank 2 adds Slowness I","1 x 2"],["Execute","Hits on mobs under 25% health deal double damage","1"],["Kill Buff","Kills grant 2 s of Strength I and heal half a heart","1"],["Aura Range","Debuff Aura reaches 16 blocks and affects bosses","3"]]},
 ];
@@ -210,7 +210,7 @@ const reknit=(m,order)=>{const ids=order.map(n=>clsByName(m,n)?.id);const adj=(a
 const respace=m=>{const cs=m.classes.map(c=>{const ps=m.perks.filter(p=>p.cls===c.id);if(!ps.length)return null;const sx=ps.reduce((t,p)=>t+(p.x-CX),0),sy=ps.reduce((t,p)=>t+(p.y-CY),0);return {c,a:Math.atan2(sy,sx)}}).filter(Boolean);
   if(!cs.length)return;cs.sort((u,v)=>((u.a+Math.PI/2+2*Math.PI)%(2*Math.PI))-((v.a+Math.PI/2+2*Math.PI)%(2*Math.PI)));cs.forEach((o,i)=>rotateClusterTo(m,o.c.name,i,cs.length));
   reknit(m,cs.map(o=>o.c.name))};
-const ORDER=["Archivist","Lover","Ranger","Speedster","Knight","Beefcake","Crafter","Builder","Hoarder","Trader"];
+const ORDER=["Archivist","Lover","Ranger","Speedster","Knight","Tank","Crafter","Builder","Hoarder","Trader"];
 const BUILDER={n:"Builder",c:"#b0b8c8",p:[["Drift Chance","More drifting carriages roll into your train each band","1 x 3"],["Own Carriage Return","Carriages you built come back around to you more often","1 x 2"],["Build Materials","A chest of building blocks in every drifting carriage you enter, refilled each tier","1"],["Drift Gift","Things you leave in a drifting carriage count double toward a friendlier echo","1"],["Drift Reach","Your builds travel to more players' trains","1 x 2"],["Keep Carriage","One drifting carriage you have edited is pinned and follows you into your next run","3"]]};
 const MIGRATIONS=[
   m=>swapContent(m,"Heal Friends","Befriend Faster"),
@@ -233,6 +233,7 @@ const MIGRATIONS=[
     ORDER.forEach((n,i,arr)=>rotateClusterTo(m,n,i,arr.length));reknit(m,ORDER)},
   m=>respace(m),
   m=>{const set=(n,c)=>{const k=clsByName(m,n);if(k)k.color=c};set("Crafter","#c7b08a");set("Builder","#b0b8c8");set("Hoarder","#8fc97a")},
+  m=>{const c=clsByName(m,"Beefcake");if(c)c.name="Tank"},
 ];
 let M;try{const s=localStorage.getItem(KEY);M=s?JSON.parse(s):null}catch(e){M=null}
 if(!M||!M.perks){M=defaultModel();M.v=0}
@@ -323,7 +324,7 @@ function curve(A,B){const mx=(A.x+B.x)/2,my=(A.y+B.y)/2,dx=mx-CX,dy=my-CY;return
 function select(id){if(mode){if(!pick){pick=id;status("Now click the second star");render();return}
   if(pick!==id&&!M.links.some(l=>(l.a===pick&&l.b===id)||(l.a===id&&l.b===pick))){M.links.push({a:pick,b:id,kind:mode,oneWay:mode==="req"});save()}
   pick=null;mode=null;hoverId=null;mouse=null;setModeButtons();status("");sel=id;selLink=null;render();return}
-  sel=id;selLink=null;selCls=null;render()}
+  sel=(sel===id)?null:id;selLink=null;selCls=null;render()}
 function startDrag(ev,p,g){if(ev.button!==0||ev.altKey||ev.ctrlKey)return;ev.preventDefault();if(mode&&pick){select(p.id);return}const pt=svg.createSVGPoint();const toSvg=e=>{pt.x=e.clientX;pt.y=e.clientY;return pt.matrixTransform(svg.getScreenCTM().inverse())};
   const s=toSvg(ev);const ox=p.x-s.x,oy=p.y-s.y;let moved=false;
   let done=false;

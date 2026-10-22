@@ -34,17 +34,17 @@ The tree is framed as **classes**, nine active, Explorer and Ranger parked. Each
                       [THE ENGINE: start, no effect]
    ______________________/ | | | | | | \______________________
   /       /       /       /  |   |  \       \        \        \
-Archivist Lover Explorer Speedster Beefcake Hoarder Ranger Knight Trader Crafter Builder
+Archivist Lover Explorer Speedster Tank Hoarder Ranger Knight Trader Crafter Builder
 ```
 
-Order around the sky, clockwise from the top: Archivist, Lover, Speedster, Knight, Beefcake, Crafter, Builder, Hoarder, Trader (Explorer and Ranger parked). Knight sits between the two movement and toughness classes, well away from Archivist.
+Order around the sky, clockwise from the top: Archivist, Lover, Speedster, Knight, Tank, Crafter, Builder, Hoarder, Trader (Explorer and Ranger parked). Knight sits between the two movement and toughness classes, well away from Archivist.
 
 Cross-links (dashed). Two-way unless marked:
 - Lover 4 <-> Trader 3 (Spare Enemies <-> Neutral Truce)
 - Trader 4 <-> Hoarder 2 (Bartering <-> Magnet)
 - Hoarder 3 <-> Crafter 2 (Luck <-> Enchant Cost)
-- Crafter 4 <-> Beefcake 2 (Enchant Max <-> Armour)
-- Beefcake 3 -> Speedster 2 (Totem -> Sprint Speed), **one-way**
+- Crafter 4 <-> Tank 2 (Enchant Max <-> Armour)
+- Tank 3 -> Speedster 2 (Totem -> Sprint Speed), **one-way**
 - Speedster 6 <-> Knight 3 (Haste <-> Execute)
 
 UI impact: ten lanes instead of seven. The lane layout in `perks-tree-ui.md` still works but pans vertically at GUI scale 2 as well as 4; the UI doc needs a pass once the class list is final.
@@ -53,7 +53,7 @@ UI impact: ten lanes instead of seven. The lane layout in `perks-tree-ui.md` sti
 
 | Working name | Options | Lean |
 |---|---|---|
-| Beefcake | Beefcake, Tank, Bruiser, Ironside, Stalwart, Wall | **Beefcake**. It is funny, and DT's tone can carry it. Tank is the safe fallback. |
+| Tank | Tank, Tank, Bruiser, Ironside, Stalwart, Wall | **Tank**. It is funny, and DT's tone can carry it. Tank is the safe fallback. |
 | Fighter | Knight (chosen) | **Knight.** |
 | Trader | Trader, Merchant, Haggler, Diplomat, Peddler, Broker | **Haggler**. Says what the perks do (prices and truces) and has personality. Diplomat if the class leans more on truces than prices. |
 
@@ -104,7 +104,7 @@ Parked for now. Its perks (Biome XP, Night Vision, No Fall Damage, Preview Next 
 | 5 | Wind Resistance | Wind push halved; rank 2 immune | 1 x 2 | `wind/WindPush`, `wind/TrainExposure` |
 | 6 | **Haste** (capstone) | Permanent Haste II; moving carriages give Speed II | 3 | permanent `MobEffect`, carriage deck |
 
-### 3.5 Beefcake (take hits)
+### 3.5 Tank (take hits)
 
 | # | Perk | Effect | Cost x ranks | Hook |
 |---|---|---|---|---|
@@ -179,15 +179,15 @@ Drifting carriages are the rooms players build by hand that travel the relay int
 | Brennan's idea | Where it landed |
 |---|---|
 | Permanent enemy debuff in radius by X level | Knight 2 Debuff Aura, capstone widens it |
-| Totem effect with X cooldown | Beefcake 3 Totem, one-way link into Speedster |
+| Totem effect with X cooldown | Tank 3 Totem, one-way link into Speedster |
 | Wind resistance | Speedster 2 Wind Resistance; Ranger 1 for arrows |
 | Speed | Speedster 1, 5 |
-| Health | Beefcake 1 |
+| Health | Tank 1 |
 | Storage | Hoarder 1 (everyone starts reduced) |
-| Armour | Beefcake 2 |
+| Armour | Tank 2 |
 | Damage | Knight 1 |
 | Friendliness | Lover (care), Trader (truces, deals), Ranger (animals) |
-| Hunger | Beefcake 4, Speedster 4, Ranger 3 |
+| Hunger | Tank 4, Speedster 4, Ranger 3 |
 | Mining speed | Speedster 3 Haste |
 | Permanent enchantment effects | Crafter 2 to 5 |
 
@@ -207,4 +207,4 @@ Drifting carriages are the rooms players build by hand that travel the relay int
 
 ## 6. Suggested first slice
 
-Ship the tree with the Engine plus three classes: Beefcake and Speedster for the stat-rank nodes, Totem and Wind Resistance, and Lover for Heal Friends and Befriend Faster so the compassionate path is there from day one. That exercises the full loop (points, purchase packet, attachment, reset, UI) with hooks that already exist, and leaves the remaining mechanics perks and the mercy-tier point source for a second PR.
+Ship the tree with the Engine plus three classes: Tank and Speedster for the stat-rank nodes, Totem and Wind Resistance, and Lover for Heal Friends and Befriend Faster so the compassionate path is there from day one. That exercises the full loop (points, purchase packet, attachment, reset, UI) with hooks that already exist, and leaves the remaining mechanics perks and the mercy-tier point source for a second PR.

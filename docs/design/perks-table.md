@@ -27,11 +27,11 @@ Generated from the constellation editor seed on 2026-10-23. The Engine is the st
 | Knight | Execute | Hits on mobs under 25% health deal double damage |
 | Knight | Kill Buff | Kills grant 2 s of Strength I and heal half a heart |
 | Knight | **Aura Range** (capstone) | Debuff Aura reaches 16 blocks and affects bosses |
-| Beefcake | Health | +2 hearts per rank |
-| Beefcake | Armour | +2 armour per rank, ignores the diamond-over-leather penalty |
-| Beefcake | Totem | Totem of Undying effect without the item, 10 min cooldown; rank 2 5 min |
-| Beefcake | Hunger | Hunger drains 30% slower; food poison halved |
-| Beefcake | **Death Save** (capstone) | Once per tier, lethal damage leaves half a heart and 3 s of Resistance V |
+| Tank | Health | +2 hearts per rank |
+| Tank | Armour | +2 armour per rank, ignores the diamond-over-leather penalty |
+| Tank | Totem | Totem of Undying effect without the item, 10 min cooldown; rank 2 5 min |
+| Tank | Hunger | Hunger drains 30% slower; food poison halved |
+| Tank | **Death Save** (capstone) | Once per tier, lethal damage leaves half a heart and 3 s of Resistance V |
 | Crafter | Craft Level Stats | Items you craft get the stats of the level you are in, as if looted there |
 | Crafter | Enchant Cost | Enchanting costs 1 level less per rank, lapis halved |
 | Crafter | Re-enchant | Already-enchanted items can go back on the table and keep what they have |
