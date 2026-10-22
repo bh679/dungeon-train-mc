@@ -351,7 +351,7 @@ function inspector(){const box=document.getElementById("inspector");box.onclick=
   if(!p){box.innerHTML="";return}
   const root=p.id==="root";
   box.innerHTML=`<h2 style="color:${color(p)};display:none"></h2>
-  <div class="line" style="gap:6px"><input type="checkbox" id="prev" title="reviewed" style="width:auto;margin:0"${p.reviewed?" checked":""}><input id="pname" value="${esc(p.name)}" placeholder="name" style="font-family:var(--display);font-size:14px;color:${color(p)};flex:1"><button class="lnk ptable" title="see in table">☰</button><button class="lnk xclose" title="close">×</button></div>
+  <div class="line" style="gap:6px"><button class="lnk xclose" title="close">×</button><input id="pname" value="${esc(p.name)}" placeholder="name" style="font-family:var(--display);font-size:14px;color:${color(p)};flex:1"><button class="lnk ptable" title="see in table">☰</button><input type="checkbox" id="prev" title="reviewed" style="width:auto;margin:0"${p.reviewed?" checked":""}></div>
   <textarea id="pdesc" placeholder="effect">${esc(p.desc||"")}</textarea>
   <div class="line"><input id="pcost" value="${esc(p.cost||"")}" placeholder="cost" title="cost x ranks" style="width:48px">
   <select id="picon" title="icon" style="width:auto;flex:1">${ICON_NAMES.map(n=>`<option value="${n}"${(p.icon||defaultIcon(p))===n?" selected":""}>${label(n)}</option>`).join("")}</select>
