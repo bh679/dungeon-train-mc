@@ -146,6 +146,10 @@
     "weight": 1,
     "name": "corners"
   },
+  "passanger": {
+    "weight": 1,
+    "optIn": true
+  },
   "portal": 0,
   "portal_short": 0,
   "prison_broken": {
