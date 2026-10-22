@@ -44,7 +44,7 @@ import java.util.stream.Stream;
  * {@code <gameDir>/dungeontrain/achievements/<uuid>[.<partition>].criteria.json}.
  *
  * <p><b>Why.</b> {@link GlobalAchievementStore} banks only <em>finished</em> advancements, so a
- * collection like "Most Wanted" (photograph 34 hostile mobs) kept its progress only in the world it
+ * collection like "Most Wanted" (photograph every hostile mob) kept its progress only in the world it
  * was earned in. Every new world — a new run, a pack update followed by a fresh world, a difficulty
  * swap — started it from zero. This store carries those criteria across, and
  * {@link AdvancementProfiles} replays them on login.</p>

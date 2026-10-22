@@ -7,6 +7,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Final Moments' one-second window, and which photo tallies a shot counts towards. */
@@ -28,5 +29,14 @@ final class PhotoMomentsAndCountsTest {
         assertEquals(List.of("animal", "hostile", "passenger"),
                 PhotoCounts.categories(new PhotoSubjectTally.Subjects(true, true, true)));
         assertEquals(List.of("passenger"), PhotoCounts.categories(new PhotoSubjectTally.Subjects(true, false, false)));
+    }
+
+    @Test
+    @DisplayName("each counted photo up to the top tier's 50 gets its own numbered album entry")
+    void albumEntries() {
+        assertEquals("dungeontrain:photo_001", PhotoCounts.albumEntry(1));
+        assertEquals("dungeontrain:photo_050", PhotoCounts.albumEntry(50));
+        assertNull(PhotoCounts.albumEntry(51));
+        assertNull(PhotoCounts.albumEntry(0));
     }
 }

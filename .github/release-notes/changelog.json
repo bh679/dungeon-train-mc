@@ -29388,6 +29388,58 @@
       "released": true,
       "released_in": "v0.1445.0",
       "released_at": "2026-10-21T14:21:35Z"
+    },
+    {
+      "id": "photo-collections-every-creature",
+      "version": "0.1446.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Bigger photo collections",
+      "summary": "The two creature photo collections now ask for every creature you can meet on the train, and they grow by themselves as new ones arrive. Already finished one? It stays finished.",
+      "highlights": [],
+      "pr": 2229,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "photo-albums-keep-more",
+      "version": "0.1447.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Photo albums",
+      "summary": "More of your photos are now kept with the camera advancements they count toward. Click one of those advancements to look back through every photo that counted.",
+      "highlights": [],
+      "pr": 2231,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "variant-mirror-condition-group",
+      "version": "0.1448.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Mirrored variant conditions",
+      "summary": "In the editor, a conditional variant cell copied by the mirror now reads the lock group beside it on the mirrored side, not the group on the side you pasted it.",
+      "highlights": [],
+      "pr": 2228,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
