@@ -336,6 +336,10 @@ public final class EditorScreenLang {
     public static final String SKYBOX = PREFIX + "skybox";
     public static final String SKYBOX_ON = PREFIX + "skybox.on";
     public static final String SKYBOX_OFF = PREFIX + "skybox.off";
+    public static final String EMPTY_BLOCKS = PREFIX + "empty_blocks";
+    public static final String EMPTY_BLOCKS_HALF_SOLID = PREFIX + "empty_blocks.half_solid";
+    public static final String EMPTY_BLOCKS_SOLID = PREFIX + "empty_blocks.solid";
+    public static final String EMPTY_BLOCKS_AIR = PREFIX + "empty_blocks.air";
     public static final String RELAY = PREFIX + "relay";
     public static final String RELAY_LIVE = PREFIX + "relay.live";
     public static final String RELAY_DEV = PREFIX + "relay.dev";
