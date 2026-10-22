@@ -566,12 +566,32 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
-     * Forward world X of the column {@code worldX} is a reversed copy of (same run, same base coordinate), or
-     * {@link Long#MIN_VALUE} when {@code worldX} is not in the reversed cycle. Layout only.
+     * Travel-order index of the reversed band at {@code worldX}: 0 for the first non-empty slot met walking
+     * -X past the buffer, counting on through later reversed runs; {@code -1} outside the reversed cycle.
      */
-    public long forwardTwinX(long worldX) {
-        if (!isMirroredAt(worldX)) return Long.MIN_VALUE;
-        return worldXOfBase(runAt(worldX), baseAt(worldX));
+    public long reverseBandIndex(long worldX) {
+        if (!isMirroredAt(worldX)) return -1L;
+        int i = slotAt(worldX);
+        if (i < 0) return -1L;
+        int nonEmpty = 0;
+        int rank = 0;
+        for (int j = 0; j < layout.count(); j++) {
+            if (layout.length(j) <= 0L) continue;
+            nonEmpty++;
+            if (j > i) rank++;
+        }
+        return (long) runAt(worldX) * nonEmpty + rank;
+    }
+
+    /** How far through its reversed band {@code worldX} is walking -X: 0 at the +X edge, towards 1 at the -X edge; {@code -1} outside. */
+    public double reverseBandProgress(double worldX) {
+        long column = (long) Math.floor(worldX);
+        if (!isMirroredAt(column)) return -1.0;
+        int i = slotAt(column);
+        if (i < 0) return -1.0;
+        long low = worldOf(column, layout.start(i));
+        double span = (double) (layout.length(i) << runAt(column));
+        return Math.max(0.0, Math.min(1.0, 1.0 - (worldX - low) / span));
     }
 
     /** Doubling run index at {@code worldX} (0 inside the buffer). Layout only. */

@@ -77,7 +77,7 @@ final class WindDebug {
         String state = s.forcedOff() ? "OFF (debug)" : (s.profile().enabled() ? "on" : "disabled in profile");
         boolean mirrored = games.brennan.dungeontrain.worldgen.WorldGenCycle.fromConfig().isMirroredAt((long) Math.floor(x));
         send(source, String.format("[DungeonTrain] wind %s: start X %d, you are %.0f blocks past it%s",
-                state, s.startX(), games.brennan.dungeontrain.wind.WindDistance.at(x, s.startX()),
+                state, s.startX(), games.brennan.dungeontrain.wind.WindDistance.at(s.profile(), x, s.startX()),
                 mirrored ? " (mirrored)" : ""), ChatFormatting.AQUA);
         send(source, String.format("  push %.4f (gust %.0f%%) toward %.0f° (0=+X, 90=+Z)",
                 w.strength(), w.gust01() * 100.0, Math.toDegrees(w.headingRad())), ChatFormatting.WHITE);

@@ -31,7 +31,60 @@ import com.google.gson.JsonParser;
  * @param curves           how each quantity grows with distance; {@code null} = no wind
  */
 public record WindProfile(boolean enabled, double headingDeg, double sneakFactor, double airFactor,
-                          int visualLeadTicks, Multipliers multipliers, Weight weight, Curves curves) {
+                          int visualLeadTicks, Multipliers multipliers, Weight weight, Curves curves,
+                          double[] reverseTargets) {
+
+    /**
+     * Default wind distance at the start of each reversed band (travel order, walking -X behind spawn): 0 at
+     * the first, then 4000 more per band.
+     */
+    public static final double[] DEFAULT_REVERSE_TARGETS = {0.0, 4000.0};
+
+    public WindProfile(boolean enabled, double headingDeg, double sneakFactor, double airFactor,
+                       int visualLeadTicks, Multipliers multipliers, Weight weight, Curves curves) {
+        this(enabled, headingDeg, sneakFactor, airFactor, visualLeadTicks, multipliers, weight, curves,
+                DEFAULT_REVERSE_TARGETS);
+    }
+
+    /** Records compare arrays by reference; compare the target table by content. */
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof WindProfile p && enabled == p.enabled
+                && Double.compare(headingDeg, p.headingDeg) == 0 && Double.compare(sneakFactor, p.sneakFactor) == 0
+                && Double.compare(airFactor, p.airFactor) == 0 && visualLeadTicks == p.visualLeadTicks
+                && java.util.Objects.equals(multipliers, p.multipliers) && java.util.Objects.equals(weight, p.weight)
+                && java.util.Objects.equals(curves, p.curves) && java.util.Arrays.equals(reverseTargets, p.reverseTargets);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(enabled, headingDeg, sneakFactor, airFactor, visualLeadTicks, multipliers, weight,
+                curves, java.util.Arrays.hashCode(reverseTargets));
+    }
+
+    @Override
+    public String toString() {
+        return "WindProfile[enabled=" + enabled + ", curves=" + curves + ", reverseTargets="
+                + java.util.Arrays.toString(reverseTargets) + "]";
+    }
+
+    /** Target wind distance at the start of reversed band {@code n}; past the table, the last step repeats. */
+    public double reverseTarget(long n) {
+        double[] t = reverseTargets;
+        int last = t.length - 1;
+        if (n <= last) return t[(int) n];
+        double step = last >= 1 ? t[last] - t[last - 1] : 0.0;
+        return t[last] + (n - last) * step;
+    }
+
+    /**
+     * Wind distance {@code progress} (0..1) of the way through reversed band {@code n}: it climbs linearly from
+     * that band's target to the next band's, so walking -X the wind only ever builds.
+     */
+    public double reverseDistance(long n, double progress) {
+        double from = reverseTarget(n);
+        return from + progress * (reverseTarget(n + 1) - from);
+    }
 
     /** Bundled resource path (classpath) of the default profile. */
     public static final String RESOURCE_PATH = "/data/dungeontrain/wind/profile.json";
@@ -40,7 +93,8 @@ public record WindProfile(boolean enabled, double headingDeg, double sneakFactor
     public static final double MAX_GUSTS_PER_MIN = 60.0;
 
     /** A profile that never blows — used when the file is missing or malformed. */
-    public static final WindProfile CALM = new WindProfile(false, 90.0, 1.0, 1.0, 20, Multipliers.UNIT, Weight.NONE, null);
+    public static final WindProfile CALM = new WindProfile(false, 90.0, 1.0, 1.0, 20, Multipliers.UNIT, Weight.NONE, null,
+            new double[] {0.0, 4000.0});
 
     /**
      * The curves, one per quantity. Strengths are horizontal accelerations in blocks/tick² at multiplier 1.
@@ -168,7 +222,31 @@ public record WindProfile(boolean enabled, double headingDeg, double sneakFactor
                 num(o, "sneakFactor", 0.35),
                 Math.max(0, num(o, "airFactor", 1.0)),
                 (int) Math.max(0, num(o, "visualLeadTicks", 20)),
-                mult, weight, curves);
+                mult, weight, curves, reverseTargets(o));
+    }
+
+    private static double[] reverseTargets(JsonObject o) {
+        if (!o.has("reverseTargets") || o.get("reverseTargets").isJsonNull()) return DEFAULT_REVERSE_TARGETS;
+        if (!o.get("reverseTargets").isJsonArray()) {
+            throw new IllegalArgumentException("wind profile 'reverseTargets' must be an array of numbers");
+        }
+        var arr = o.getAsJsonArray("reverseTargets");
+        if (arr.isEmpty()) throw new IllegalArgumentException("wind profile 'reverseTargets' must not be empty");
+        double[] t = new double[arr.size()];
+        for (int i = 0; i < t.length; i++) {
+            try {
+                t[i] = arr.get(i).getAsDouble();
+            } catch (ClassCastException | IllegalStateException | NumberFormatException e) {
+                throw new IllegalArgumentException("wind profile 'reverseTargets' entry " + i + " must be a number", e);
+            }
+            if (!Double.isFinite(t[i])) {
+                throw new IllegalArgumentException("wind profile 'reverseTargets' entry " + i + " is not finite");
+            }
+            if (i > 0 && t[i] < t[i - 1]) {
+                throw new IllegalArgumentException("wind profile 'reverseTargets' must never decrease (entry " + i + ")");
+            }
+        }
+        return t;
     }
 
     /** Serialise back to the same shape {@link #parse} reads (used by the sync packet). */
@@ -199,6 +277,9 @@ public record WindProfile(boolean enabled, double headingDeg, double sneakFactor
             for (int i = 0; i < all.length; i++) c.add(Curves.NAMES[i], all[i].toJson());
             o.add("curves", c);
         }
+        com.google.gson.JsonArray rt = new com.google.gson.JsonArray();
+        for (double v : reverseTargets) rt.add(v);
+        o.add("reverseTargets", rt);
         return o.toString();
     }
 

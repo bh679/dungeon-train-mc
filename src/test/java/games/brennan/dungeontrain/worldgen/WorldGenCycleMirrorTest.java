@@ -190,15 +190,27 @@ final class WorldGenCycleMirrorTest {
     }
 
     @Test
-    @DisplayName("forwardTwinX maps a reversed column to its forward twin; MIN_VALUE in the buffer and ahead")
-    void forwardTwin() {
-        for (int k = 0; k <= 2; k++) {
-            for (long u : new long[] {0L, 1L, P / 3, P / 2, P - 1}) {
-                assertEquals(fx(u, k), C.forwardTwinX(bx(u, k)), "u=" + u + " k=" + k);
-            }
+    @DisplayName("reversed bands count up in travel order (-X) across runs; progress runs 0 to 1 within each")
+    void reverseBands() {
+        int nonEmpty = 0;
+        for (int i = 0; i < LAYOUT.count(); i++) if (LAYOUT.length(i) > 0L) nonEmpty++;
+        assertEquals(0L, C.reverseBandIndex(START - BUFFER - 1));
+        assertEquals(0.0, C.reverseBandProgress(START - BUFFER - 0.5), 1e-3);
+        assertEquals(nonEmpty - 1, C.reverseBandIndex(START - BUFFER - P));
+        assertEquals(nonEmpty, C.reverseBandIndex(START - BUFFER - P - 1));
+        long prev = -1L;
+        double prevP = -1.0;
+        for (long x = START - BUFFER - 1; x >= START - BUFFER - 3 * P; x -= 37) {
+            long n = C.reverseBandIndex(x);
+            double p = C.reverseBandProgress(x);
+            assertTrue(n >= prev, "index never drops at " + x);
+            if (n == prev) assertTrue(p >= prevP, "progress never drops at " + x);
+            assertTrue(p >= 0.0 && p <= 1.0);
+            prev = n;
+            prevP = p;
         }
-        assertEquals(Long.MIN_VALUE, C.forwardTwinX(START - 1));
-        assertEquals(Long.MIN_VALUE, C.forwardTwinX(START - BUFFER));
-        assertEquals(Long.MIN_VALUE, C.forwardTwinX(START + 123));
+        assertEquals(-1L, C.reverseBandIndex(START - 1));
+        assertEquals(-1L, C.reverseBandIndex(START + 123));
+        assertEquals(-1.0, C.reverseBandProgress(START - BUFFER));
     }
 }

@@ -1,13 +1,18 @@
 package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.wind.WindDistance;
+import games.brennan.dungeontrain.wind.WindProfile;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Wind distance mirrors onto the reversed cycle behind spawn: a reversed column reads its forward twin's. */
+/** Behind spawn the wind builds band by band walking -X, hitting each band's target at its +X edge. */
 final class WindDistanceTest {
 
     private static final long START = 10_000L;
@@ -20,51 +25,82 @@ final class WindDistanceTest {
             CycleLayoutTest.eraDefaults(), LAYOUT, 0);
 
     private static final long WIND = C.upsideDownEndX();
+    private static final WindProfile PROFILE = shipped();
 
-    private static long fx(long u, int k) {
-        return START + CycleLayout.runStart(k, P) + (u << k);
+    private static WindProfile shipped() {
+        try (InputStream in = WindProfile.class.getResourceAsStream(WindProfile.RESOURCE_PATH)) {
+            return WindProfile.parse(new String(in.readAllBytes(), StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
-    private static long bx(long u, int k) {
-        return START - BUFFER - CycleLayout.runStart(k + 1, P) + (u << k);
+    /** World X of the +X edge of the reversed copy of slot {@code i} on backward run {@code k}. */
+    private static long bandTopX(int i, int k) {
+        return START - BUFFER - CycleLayout.runStart(k + 1, P) + ((LAYOUT.start(i) + LAYOUT.length(i)) << k) - 1;
     }
 
     @Test
     @DisplayName("forward of spawn the distance is unchanged")
     void forward() {
-        assertTrue(WIND != Long.MIN_VALUE);
         for (double x : new double[] {START, WIND - 10.5, WIND, WIND + 1234.25}) {
-            assertEquals(x - WIND, WindDistance.at(C, x, WIND), 1e-9);
+            assertEquals(x - WIND, WindDistance.at(PROFILE, C, x, WIND), 1e-9);
         }
-        assertEquals(-1.0, WindDistance.at(C, WIND + 50, Long.MIN_VALUE));
+        assertEquals(-1.0, WindDistance.at(PROFILE, C, WIND + 50, Long.MIN_VALUE));
     }
 
     @Test
-    @DisplayName("a reversed column reads its forward twin's distance")
-    void reversedReadsTwin() {
-        for (int k = 0; k <= 2; k++) {
-            for (long u : new long[] {0L, P / 3, P / 2, P - 1}) {
-                assertEquals(WindDistance.at(C, fx(u, k), WIND), WindDistance.at(C, bx(u, k), WIND), 1e-9);
-            }
+    @DisplayName("the overworld buffer behind spawn is calm")
+    void bufferCalm() {
+        for (long x = START - BUFFER; x < START; x += 97) assertTrue(WindDistance.at(PROFILE, C, x, WIND) < 0);
+    }
+
+    @Test
+    @DisplayName("each reversed band starts at its target")
+    void hitsTargets() {
+        int last = LAYOUT.count() - 1;
+        assertEquals(PROFILE.reverseTarget(0), WindDistance.at(PROFILE, C, bandTopX(last, 0), WIND), 1.0);
+        long n = 0;
+        for (int i = last; i >= 0; i--) {
+            if (LAYOUT.length(i) <= 0L) continue;
+            assertEquals(PROFILE.reverseTarget(n), WindDistance.at(PROFILE, C, bandTopX(i, 0), WIND),
+                    PROFILE.reverseTarget(n + 1) - PROFILE.reverseTarget(n) > 0 ? 25.0 : 1e-9, "band " + n);
+            n++;
         }
-        long uWindy = WIND - START + 100; // a run-0 base coordinate past the wind start
-        assertTrue(WindDistance.at(C, bx(uWindy, 0), WIND) > 0);
     }
 
     @Test
-    @DisplayName("the buffer and twins of bands before the wind start read negative")
-    void calmBehind() {
-        for (long x = START - BUFFER; x < START; x += 97) assertTrue(WindDistance.at(C, x, WIND) < 0);
-        assertTrue(WindDistance.at(C, bx(0, 0), WIND) < 0);
-        assertTrue(WindDistance.at(C, bx(WIND - START - 1, 0), WIND) < 0);
+    @DisplayName("walking -X over three reversed runs the wind distance never drops")
+    void monotonic() {
+        double prev = -1.0;
+        for (long x = START - BUFFER - 1; x >= START - BUFFER - 3 * P; x -= 41) {
+            double d = WindDistance.at(PROFILE, C, x, WIND);
+            assertTrue(d >= prev - 1e-9, "dropped at " + x);
+            prev = d;
+        }
+        assertTrue(prev > PROFILE.reverseTarget(20), "keeps climbing past the table");
     }
 
     @Test
-    @DisplayName("fractional X stays continuous inside a reversed column")
-    void fractional() {
-        long x = bx(WIND - START + 100, 0);
-        double base = WindDistance.at(C, x, WIND);
-        assertEquals(base + 0.25, WindDistance.at(C, x + 0.25, WIND), 1e-9);
-        assertEquals(base + 0.75, WindDistance.at(C, x + 0.75, WIND), 1e-9);
+    @DisplayName("past the table the last step repeats; a decreasing table is rejected")
+    void table() {
+        WindProfile p = WindProfile.parse("{\"curves\":" + curves() + ",\"reverseTargets\":[0,1000,3000]}");
+        assertEquals(3000.0, p.reverseTarget(2));
+        assertEquals(7000.0, p.reverseTarget(4));
+        assertEquals(2000.0, p.reverseDistance(1, 0.5));
+        assertThrows(IllegalArgumentException.class,
+                () -> WindProfile.parse("{\"curves\":" + curves() + ",\"reverseTargets\":[0,5,4]}"));
+        WindProfile none = WindProfile.parse("{\"curves\":" + curves() + "}");
+        assertEquals(8000.0, none.reverseTarget(2));
+    }
+
+    private static String curves() {
+        String c = "{\"kind\":\"log\",\"scale\":1,\"ref\":1}";
+        StringBuilder b = new StringBuilder("{");
+        for (String n : new String[] {"base", "flutter", "gustsPerMin", "gustStrength", "gustSeconds", "gustVeer", "wander", "wanderSeconds"}) {
+            if (b.length() > 1) b.append(',');
+            b.append('"').append(n).append("\":").append(c);
+        }
+        return b.append('}').toString();
     }
 }

@@ -107,7 +107,7 @@ public final class WindClientEvents {
             fallbackStreaks(level, player, visual, carriageVel);
         }
 
-        double windD = games.brennan.dungeontrain.wind.WindDistance.at(player.getX(), ClientWind.startX());
+        double windD = games.brennan.dungeontrain.wind.WindDistance.at(profile, player.getX(), ClientWind.startX());
         WindDebugState.record(new WindDebugState.Frame(
                 tick, windD, ClientWind.startX(), profile.stageAt(windD),
                 now, ahead, profile.visualLeadTicks(), sub != null, exposure, skip,

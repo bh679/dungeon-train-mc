@@ -6,6 +6,7 @@
   "visualLeadTicks": 40,
   "multipliers": {"player": 1.0, "mob": 1.0, "item": 1.0, "projectile": 0.5, "xp": 1.0, "other": 1.0},
   "weight": {"refMass": 0.65, "exponent": 0.5, "maxBoost": 4.0, "grip": 0.006},
+  "reverseTargets": [0, 4000, 8000, 12000, 16000, 20000, 24000, 28000, 32000, 36000, 40000, 44000, 48000, 52000, 56000, 60000, 64000, 68000, 72000],
   "curves": {
     "base": {"kind": "log", "scale": 0.0036, "ref": 4000.0},
     "flutter": {"kind": "approach", "start": 0.0, "max": 0.5, "halfLife": 40000.0},
