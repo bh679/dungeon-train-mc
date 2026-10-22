@@ -1,13 +1,17 @@
 {
   "schemaVersion": 3,
-  "selfWeight": 1,
+  "selfWeight": 15,
   "variants": [
     {
       "id": "passanger2",
-      "weight": 1
+      "weight": 15
     },
     {
       "id": "library_long",
+      "weight": 0
+    },
+    {
+      "id": "gallery",
       "weight": 1
     }
   ]
