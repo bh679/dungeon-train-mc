@@ -428,7 +428,7 @@
   },
   "slime": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic/off/on/off/day/repeated/0/1"
+    "mode": "endless_repetition/dynamic/off/on:30/off/day/repeated/0/1"
   },
   "sloped": {
     "weight": 1,

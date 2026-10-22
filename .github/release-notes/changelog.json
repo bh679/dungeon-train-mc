@@ -29557,6 +29557,22 @@
       "released_at": null
     },
     {
+      "id": "something-slimey",
+      "version": "0.1455.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Something slimey, knockbacky and rare got added",
+      "summary": "Something slimey, knockbacky and rare got added.",
+      "highlights": [],
+      "pr": 2237,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "new-hidden-advancements",
       "version": "0.1455.0",
       "type": "feat",
