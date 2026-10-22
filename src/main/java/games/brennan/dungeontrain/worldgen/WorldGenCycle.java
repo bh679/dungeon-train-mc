@@ -565,6 +565,15 @@ public record WorldGenCycle(long startX, int owGap,
         return layout != null && backDist(worldX) >= 0L;
     }
 
+    /**
+     * Forward world X of the column {@code worldX} is a reversed copy of (same run, same base coordinate), or
+     * {@link Long#MIN_VALUE} when {@code worldX} is not in the reversed cycle. Layout only.
+     */
+    public long forwardTwinX(long worldX) {
+        if (!isMirroredAt(worldX)) return Long.MIN_VALUE;
+        return worldXOfBase(runAt(worldX), baseAt(worldX));
+    }
+
     /** Doubling run index at {@code worldX} (0 inside the buffer). Layout only. */
     private int runAt(long worldX) {
         long off = anchored(worldX);

@@ -188,4 +188,17 @@ final class WorldGenCycleMirrorTest {
         assertEquals(0.0, C.stacksVoidRampAt((int) (START - BUFFER)));
         assertEquals(1.0, C.chuncksKeepDensityAt((int) (START - BUFFER)));
     }
+
+    @Test
+    @DisplayName("forwardTwinX maps a reversed column to its forward twin; MIN_VALUE in the buffer and ahead")
+    void forwardTwin() {
+        for (int k = 0; k <= 2; k++) {
+            for (long u : new long[] {0L, 1L, P / 3, P / 2, P - 1}) {
+                assertEquals(fx(u, k), C.forwardTwinX(bx(u, k)), "u=" + u + " k=" + k);
+            }
+        }
+        assertEquals(Long.MIN_VALUE, C.forwardTwinX(START - 1));
+        assertEquals(Long.MIN_VALUE, C.forwardTwinX(START - BUFFER));
+        assertEquals(Long.MIN_VALUE, C.forwardTwinX(START + 123));
+    }
 }
