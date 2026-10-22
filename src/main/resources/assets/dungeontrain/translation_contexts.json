@@ -6898,6 +6898,17 @@
  "advancements.dungeontrain.dungeon_train.reached_better_nether.hint": [
   "advancement_screen"
  ],
+ "advancements.dungeontrain.dungeon_train.reached_deeper_dark.title": [
+  "advancement",
+  "advancement_screen",
+  "chat"
+ ],
+ "advancements.dungeontrain.dungeon_train.reached_deeper_dark.description": [
+  "advancement_screen"
+ ],
+ "advancements.dungeontrain.dungeon_train.reached_deeper_dark.hint": [
+  "advancement_screen"
+ ],
  "advancements.dungeontrain.dungeon_train.reached_bop.title": [
   "advancement",
   "advancement_screen",

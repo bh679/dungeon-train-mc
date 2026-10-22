@@ -67,6 +67,7 @@ dungeontrain:dungeon_train/reached_bop
 dungeontrain:dungeon_train/reached_caves_of_chaos
 dungeontrain:dungeon_train/reached_chuncks
 dungeontrain:dungeon_train/reached_classic
+dungeontrain:dungeon_train/reached_deeper_dark
 dungeontrain:dungeon_train/reached_end_islands
 dungeontrain:dungeon_train/reached_far_lands
 dungeontrain:dungeon_train/reached_floating
@@ -165,6 +166,7 @@ dungeontrain:enchiridion/photo_bop
 dungeontrain:enchiridion/photo_caves_of_chaos
 dungeontrain:enchiridion/photo_chuncks
 dungeontrain:enchiridion/photo_classic
+dungeontrain:enchiridion/photo_deeper_dark
 dungeontrain:enchiridion/photo_far_lands
 dungeontrain:enchiridion/photo_floating
 dungeontrain:enchiridion/photo_infdev
