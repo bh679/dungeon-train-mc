@@ -1217,7 +1217,24 @@ idea {
     }
 }
 
+// Most Wanted / Nature Documentary take a photo criterion for every mob the train can spawn. This
+// adds any new mob from the bundled sidecars/templates to the committed JSON before it is packaged,
+// and fails the build on a mob with no category in scripts/advancements/mob-photos/categories.json.
+// CI runs the same script with --check, so main never drifts.
+def mobPhotoData = 'src/main/resources/data/dungeontrain'
+tasks.register('generateMobPhotoCollections', Exec) {
+    group = 'build'
+    description = 'Adds every train-spawnable mob to the Most Wanted / Nature Documentary photo collections.'
+    inputs.file('scripts/advancements/generate-mob-photo-collections.py')
+    inputs.file('scripts/advancements/mob-photos/categories.json')
+    ['contents', 'portals/room', 'prefabs/block_variants'].each { inputs.dir("${mobPhotoData}/${it}") }
+    outputs.files("${mobPhotoData}/advancement/enchiridion/most_wanted.json",
+            "${mobPhotoData}/advancement/enchiridion/nature_documentary.json")
+    commandLine 'python3', 'scripts/advancements/generate-mob-photo-collections.py'
+}
+
 // The legacy world-gen bands adapt MIT-licensed code from Moderner Beta; its notice must ship in the jar.
 tasks.named('processResources', ProcessResources) {
+    dependsOn 'generateMobPhotoCollections'
     from(rootProject.file('THIRD_PARTY_NOTICES.md')) { into 'META-INF' }
 }

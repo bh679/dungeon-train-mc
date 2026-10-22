@@ -575,7 +575,19 @@ public final class LiveFeedClient {
      * A TV viewer who has never streamed joined the chat (the relay's {@code joins[]}, streamer only):
      * {@code joinId} is what the streamer gifts. {@code uuid} is dashes-stripped, lower-case.
      */
-    public record GiftJoin(long seq, String joinId, String uuid, String name) {}
+    public record GiftJoin(long seq, String joinId, String uuid, String name, String reason, int etaMinutes) {
+        /** {@code reason} the relay puts on a close-call join ({@code POST /live/closecall}). */
+        public static final String CLOSE_CALL = "close_call";
+
+        public GiftJoin(long seq, String joinId, String uuid, String name) {
+            this(seq, joinId, uuid, name, "", 0);
+        }
+
+        /** A player a few minutes from a rare challenge, not a TV viewer who joined the chat. */
+        public boolean closeCall() {
+            return CLOSE_CALL.equals(reason);
+        }
+    }
 
     /** The streamer {@code from} offered the viewer {@code target} a Live Eye (the relay's {@code gifts[]}). */
     public record GiftOffer(long seq, String giftId, String target, String from) {}
@@ -606,7 +618,11 @@ public final class LiveFeedClient {
                     String id = str(o, "joinId");
                     if (!isGiftId(id) || !o.has("seq")) continue;
                     String name = LiveChatRules.clean(str(o, "name"), LiveChatRules.MAX_AUTHOR);
-                    joins.add(new GiftJoin(o.get("seq").getAsLong(), id, str(o, "uuid"), name.isBlank() ? "Someone" : name));
+                    String reason = GiftJoin.CLOSE_CALL.equals(str(o, "reason")) ? GiftJoin.CLOSE_CALL : "";
+                    int eta = o.has("etaMinutes") && o.get("etaMinutes").isJsonPrimitive()
+                        ? Math.max(0, Math.min(60, o.get("etaMinutes").getAsInt())) : 0;
+                    joins.add(new GiftJoin(o.get("seq").getAsLong(), id, str(o, "uuid"), name.isBlank() ? "Someone" : name,
+                        reason, eta));
                 }
             }
             List<GiftOffer> gifts = new ArrayList<>();
@@ -637,6 +653,19 @@ public final class LiveFeedClient {
         body.addProperty("name", name);
         body.addProperty("eligible", eligible);
         return post(base, "/live/chat/join", body);
+    }
+
+    /**
+     * The server tells the relay {@code uuid} is about {@code etaMinutes} from a rare challenge; the streamer
+     * on air then sees it as a close-call join and may gift them the Live Eye. Always 200 for a well-formed
+     * call ({@code notified} says whether the streamer was told); 409 not_live; 404 from an older relay.
+     */
+    public static CompletableFuture<Result> closeCall(String base, UUID uuid, String name, int etaMinutes) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid.toString());
+        body.addProperty("name", name);
+        body.addProperty("etaMinutes", etaMinutes);
+        return post(base, "/live/closecall", body);
     }
 
     /** The streamer (proved by its stream {@code token}) offers the viewer of {@code joinId} a Live Eye. */

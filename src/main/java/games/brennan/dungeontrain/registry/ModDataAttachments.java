@@ -341,6 +341,18 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Per-life list of the rare advancements ({@code id@early} / {@code id@final}) this player has already been reported "close" to on the
+     * Live Eye stream. See {@code event.LiveCloseCallEvents}. Cleared on respawn by
+     * {@code LifeChallengeAdvancements#resetForNewLife}; serialized only while non-empty.
+     */
+    public static final Supplier<AttachmentType<List<String>>> CLOSE_CALLS_SENT_THIS_LIFE =
+        TYPES.register("close_calls_sent_this_life",
+            () -> AttachmentType.<List<String>>builder(() -> List.of())
+                .serialize(Codec.STRING.listOf(), list -> !list.isEmpty())
+                .build()
+        );
+
+    /**
      * Per-life flag: has this player worn armor (an elytra aside) this life? Rules out the naked challenges. See
      * {@link games.brennan.dungeontrain.advancement.LifeChallengeAdvancements}. Same shape as
      * {@link #OPENED_ENDER_CHEST_THIS_LIFE}: serialized, no {@code copyOnDeath}.

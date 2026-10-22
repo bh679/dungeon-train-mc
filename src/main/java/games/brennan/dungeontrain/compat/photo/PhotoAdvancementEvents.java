@@ -165,7 +165,7 @@ public final class PhotoAdvancementEvents {
         ListTag seen = player.getPersistentData().getList(PHOTO_BIOMES_KEY, Tag.TAG_STRING);
         List<String> biomes = new java.util.ArrayList<>(seen.size());
         for (Tag t : seen) biomes.add(t.getAsString());
-        DungeonTrainNet.sendTo(player, new PhotoBiomesPacket(biomes));
+        DungeonTrainNet.sendTo(player, new PhotoBiomesPacket(biomes, worldTally(player).counts()));
     }
 
     /** Each animal or mob a collection gains keeps its own photo (when a photo is behind it). */

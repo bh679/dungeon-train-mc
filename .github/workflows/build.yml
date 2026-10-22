@@ -118,6 +118,11 @@ jobs:
           python3 scripts/lost-city/build-templates.py --check
           python3 scripts/lost-city/generate-variants.py --check
 
+      - name: Mob photo collections hold every train mob
+        # Most Wanted / Nature Documentary get a criterion per mob the bundled content can spawn
+        # (scripts/advancements). Fails when a mob was added without regenerating, or has no category.
+        run: python3 scripts/advancements/generate-mob-photo-collections.py --check
+
       - name: Credits house rows match the bundled builds + books
         # The team's own Builders/Writers rows (mod + website) are counted from the bundled templates
         # and books (scripts/credits). Fails when content changed and the counts were not regenerated.
