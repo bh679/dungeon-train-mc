@@ -49,12 +49,13 @@ public final class BuilderRelayStage {
                                                                        String ownerName, boolean live) {
         return BuilderRelayDownload.fetch(player, level, relayId, ownerUuid, live).thenCompose(fetched -> fetched.failed()
                 ? CompletableFuture.completedFuture(BuilderRelayDownload.Result.of(fetched.failure()))
-                : BuilderRelayDownload.onServer(level, () -> stageFetched(player, level, fetched, ownerName)));
+                : BuilderRelayDownload.onServer(level, () -> stageFetched(player, level, fetched, ownerName, live)));
     }
 
     /** Decode, fold and shelve — on the server thread. */
     static BuilderRelayDownload.Result stageFetched(ServerPlayer player, ServerLevel level,
-                                                    BuilderRelayDownload.Fetched fetched, String ownerName) {
+                                                    BuilderRelayDownload.Fetched fetched, String ownerName,
+                                                    boolean live) {
         SharedCarriageClient.BuildFetch build = fetched.build();
         BuilderPhotoPaths.Kind kind = BuilderRelayKinds.kindOf(build.kind());
         if (kind == null || build.buildName().isEmpty()) {
@@ -83,7 +84,7 @@ public final class BuilderRelayStage {
         String stagedId = WorkbenchStagingStore.freeId(build.buildName(), build.id());
         WorkbenchStagedBuild staged = new WorkbenchStagedBuild(stagedId, build.id(), build.kind(), build.subKind(),
                 build.buildName(), build.stage(), fetched.owner(), ownerName == null ? "" : ownerName, fetched.mine(),
-                size, build.sidecars(), build.lootPrefabs(), System.currentTimeMillis());
+                size, build.sidecars(), build.lootPrefabs(), System.currentTimeMillis(), live);
         try {
             WorkbenchStagingStore.write(staged, snapshot);
         } catch (Exception e) {

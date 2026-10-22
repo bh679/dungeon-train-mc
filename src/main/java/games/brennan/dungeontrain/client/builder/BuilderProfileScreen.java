@@ -147,6 +147,9 @@ public final class BuilderProfileScreen extends Screen {
             new BuilderProfileFilterButton.Option(BuilderReviewState.RESUBMIT,
                     "gui.dungeontrain.builder.profile.status.resubmit",
                     BuilderReviewState.BORDER_RESUBMIT),
+            new BuilderProfileFilterButton.Option(BuilderReviewState.EDITED,
+                    "gui.dungeontrain.builder.profile.status.edited",
+                    BuilderReviewState.BORDER_EDITED),
             new BuilderProfileFilterButton.Option(BuilderReviewState.DECLINED,
                     "gui.dungeontrain.builder.profile.status.declined",
                     BuilderReviewState.BORDER_DECLINED));
@@ -512,14 +515,26 @@ public final class BuilderProfileScreen extends Screen {
         BuilderProfilePacket.Entry entry = selectedBuild();
         if (viewingOther()) return Component.translatable("gui.dungeontrain.builder.profile.not_yours_short");
         if (entry == null) return Component.translatable("gui.dungeontrain.builder.profile.submit_for_review");
+        if (hasSuggestion(entry)) return Component.translatable("gui.dungeontrain.builder.profile.suggestion.open");
         return Component.translatable(entry.published()
                 ? "gui.dungeontrain.builder.profile.withdraw_submission"
                 : "gui.dungeontrain.builder.profile.submit_for_review");
     }
 
+    /** Whether {@code entry} carries an edit the developer sent back, waiting on its owner's answer. */
+    private static boolean hasSuggestion(BuilderProfilePacket.Entry entry) {
+        return BuilderReviewState.EDITED.equals(BuilderReviewState.of(entry.review()));
+    }
+
     private void submitSelected() {
         BuilderProfilePacket.Entry entry = selectedBuild();
         if (entry == null || viewingOther() || !BuilderRelayKinds.canSubmitForReview(entry.kind())) return;
+        if (hasSuggestion(entry)) {
+            // An edit waiting on the owner comes first: the button answers it rather than submitting.
+            this.minecraft.setScreen(new BuilderSuggestionScreen(this, entry.relayId(), entry.buildName(),
+                    entry.reviewComment()));
+            return;
+        }
         if (entry.published()) {
             sendAction(new BuilderProfileActionPacket(entry.relayId(), false));
             return;
@@ -1119,7 +1134,8 @@ public final class BuilderProfileScreen extends Screen {
         // A declined build is a decision about this build and outranks everything below: fixing its
         // stage would not put it on the train, and saying "waiting" of it would be untrue.
         String verdict = BuilderReviewState.of(entry.review());
-        if (BuilderReviewState.DECLINED.equals(verdict) || BuilderReviewState.FEEDBACK.equals(verdict)) {
+        if (BuilderReviewState.DECLINED.equals(verdict) || BuilderReviewState.FEEDBACK.equals(verdict)
+                || BuilderReviewState.EDITED.equals(verdict)) {
             return withComment(Component.translatable(BuilderReviewState.noteKeyFor(verdict)), entry);
         }
         if (BuilderReviewState.RESUBMIT.equals(verdict)) {

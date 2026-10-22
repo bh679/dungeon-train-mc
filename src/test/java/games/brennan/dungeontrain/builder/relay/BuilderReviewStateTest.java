@@ -92,4 +92,16 @@ final class BuilderReviewStateTest {
                 "an accepted build is doing what its author asked; there is nothing to explain");
         assertNull(BuilderReviewState.noteKeyFor(BuilderReviewState.NONE));
     }
+
+    @Test
+    @DisplayName("an edit sent back is its own state: kept, coloured apart, explained, never pending")
+    void edited() {
+        assertEquals(BuilderReviewState.EDITED, BuilderReviewState.of("edited"));
+        assertEquals(BuilderReviewState.BORDER_EDITED, BuilderReviewState.borderColourFor(BuilderReviewState.EDITED));
+        assertEquals("gui.dungeontrain.builder.profile.review.edited_note",
+                BuilderReviewState.noteKeyFor(BuilderReviewState.EDITED));
+        assertEquals(false, BuilderReviewState.isPending(BuilderReviewState.EDITED));
+        assertEquals(false, BuilderReviewEdits.isVerdict(BuilderReviewState.EDITED),
+                "an edit is sent from the Workbench, never set as a verdict");
+    }
 }

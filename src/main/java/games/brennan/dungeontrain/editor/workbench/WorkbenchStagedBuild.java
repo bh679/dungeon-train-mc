@@ -29,11 +29,13 @@ import java.util.Objects;
  * @param sidecars   the relay's sidecar document verbatim, or blank
  * @param lootPrefabs the loot prefabs it carried, id → document
  * @param stagedAt   epoch millis of the staging
+ * @param live       whether the row came from the live relay (else the dev one) — where edits sent
+ *                   back to its owner must go
  */
 public record WorkbenchStagedBuild(String stagedId, int relayId, String relayKind, String subKind,
                                    String buildName, String stage, String ownerUuid, String ownerName,
                                    boolean mine, Vec3i size, String sidecars,
-                                   Map<String, String> lootPrefabs, long stagedAt) {
+                                   Map<String, String> lootPrefabs, long stagedAt, boolean live) {
 
     /** The longest a staged id may be — bounded so it fits every packet field it travels in. */
     public static final int MAX_ID_LENGTH = 48;
@@ -51,16 +53,25 @@ public record WorkbenchStagedBuild(String stagedId, int relayId, String relayKin
         lootPrefabs = lootPrefabs == null ? Map.of() : Map.copyOf(lootPrefabs);
     }
 
+    /** A build staged before the relay was recorded: those were all staged from the live relay. */
+    public WorkbenchStagedBuild(String stagedId, int relayId, String relayKind, String subKind,
+                                String buildName, String stage, String ownerUuid, String ownerName,
+                                boolean mine, Vec3i size, String sidecars,
+                                Map<String, String> lootPrefabs, long stagedAt) {
+        this(stagedId, relayId, relayKind, subKind, buildName, stage, ownerUuid, ownerName, mine, size,
+                sidecars, lootPrefabs, stagedAt, true);
+    }
+
     /** This build with a different footprint — after a resize nothing else about it changes. */
     public WorkbenchStagedBuild withSize(Vec3i newSize) {
         return new WorkbenchStagedBuild(stagedId, relayId, relayKind, subKind, buildName, stage,
-                ownerUuid, ownerName, mine, newSize, sidecars, lootPrefabs, stagedAt);
+                ownerUuid, ownerName, mine, newSize, sidecars, lootPrefabs, stagedAt, live);
     }
 
     /** This build carrying a different sidecar document — after an edit made with its type's tools. */
     public WorkbenchStagedBuild withSidecars(String newSidecars) {
         return new WorkbenchStagedBuild(stagedId, relayId, relayKind, subKind, buildName, stage,
-                ownerUuid, ownerName, mine, size, newSidecars, lootPrefabs, stagedAt);
+                ownerUuid, ownerName, mine, size, newSidecars, lootPrefabs, stagedAt, live);
     }
 
     /**

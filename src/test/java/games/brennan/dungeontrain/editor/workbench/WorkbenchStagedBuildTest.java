@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The staged build record: its id rule and the JSON the shelf writes for it. */
@@ -58,5 +59,17 @@ final class WorkbenchStagedBuildTest {
         assertEquals(build.stagedId(), resized.stagedId());
         assertEquals(build.relayKind(), resized.relayKind());
         assertEquals(build.stagedAt(), resized.stagedAt());
+    }
+
+    @Test
+    @DisplayName("the relay a build came from survives the metadata; an old file reads as the live relay")
+    void liveRoundTrip() {
+        WorkbenchStagedBuild dev = new WorkbenchStagedBuild("a-1", 1, "building", "", "A", "", "u", "n", false,
+            new Vec3i(1, 1, 1), "", Map.of(), 5L, false);
+        assertFalse(WorkbenchStagingStore.metaJson(dev).get("live").getAsBoolean());
+        assertFalse(dev.withSize(new Vec3i(2, 2, 2)).live());
+        assertFalse(dev.withSidecars("{}").live());
+        assertTrue(new WorkbenchStagedBuild("a-1", 1, "building", "", "A", "", "u", "n", false,
+            new Vec3i(1, 1, 1), "", Map.of(), 5L).live());
     }
 }

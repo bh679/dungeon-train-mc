@@ -29388,6 +29388,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-edits-sent-back",
+      "version": "0.1446.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Edits to your builds",
+      "summary": "When the developer reviews one of your builds they can now edit it and send the edit back to you. You'll see it in My Builds with a note on what changed, and you choose whether to take the edit into your build or keep yours.",
+      "highlights": [],
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

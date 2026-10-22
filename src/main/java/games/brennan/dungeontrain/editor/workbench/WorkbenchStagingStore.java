@@ -225,7 +225,8 @@ public final class WorkbenchStagingStore {
                     str(o, "ownerUuid", ""), str(o, "ownerName", ""),
                     o.has("mine") && o.get("mine").getAsBoolean(),
                     new Vec3i(o.get("l").getAsInt(), o.get("h").getAsInt(), o.get("w").getAsInt()),
-                    sidecars, prefabs, o.has("stagedAt") ? o.get("stagedAt").getAsLong() : 0L);
+                    sidecars, prefabs, o.has("stagedAt") ? o.get("stagedAt").getAsLong() : 0L,
+                    !o.has("live") || o.get("live").getAsBoolean());
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Workbench: skipping unreadable staged build at {}: {}", folder, e.toString());
             return null;
@@ -251,6 +252,7 @@ public final class WorkbenchStagingStore {
         o.addProperty("h", b.size().getY());
         o.addProperty("w", b.size().getZ());
         o.addProperty("stagedAt", b.stagedAt());
+        o.addProperty("live", b.live());
         return o;
     }
 
