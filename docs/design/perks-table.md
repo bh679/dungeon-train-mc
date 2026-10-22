@@ -1,6 +1,6 @@
 # Perks table
 
-Generated from the constellation editor seed on 2026-10-23. The Engine is the start point, not a perk. Names are literal placeholders. Costs and rank counts are not shown; they are unreviewed.
+Generated from the constellation editor seed on 2026-10-23. The Engine is the start point, not a perk. Names are literal placeholders. Costs and rank counts are not shown; they are unreviewed. Parked classes (Explorer, Ranger) are left out.
 
 | Class | Perk | Description |
 |---|---|---|
@@ -54,5 +54,3 @@ Generated from the constellation editor seed on 2026-10-23. The Engine is the st
 | Trader | Neutral Truce | Neutral mobs (piglins, endermen, zombie piglins) ignore you unless attacked |
 | Trader | Bartering | Piglin bartering yields rarer results; Echoes offer a trade instead of attacking |
 | Trader | **Recruit Villager** (capstone) | One villager per carriage can be recruited; recruits restock and stay aboard |
-| Parked (Explorer) | Biome XP, Night Vision, No Fall Damage, Preview Next Band | held back |
-| Parked (Ranger) | Arrow Accuracy, Pet Health, Forage Drops, Animals Follow, Wolf Pack | held back |
