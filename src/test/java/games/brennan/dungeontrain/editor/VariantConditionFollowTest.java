@@ -157,6 +157,9 @@ final class VariantConditionFollowTest {
         assertTrue(sides.withAll(true).negate());
         assertTrue(sides.toKindMode().negate());
         assertTrue(sides.withGroup(2).negate());
+        // The lock-change retarget moves a condition with withGroup, so Is not survives it.
+        assertTrue(c.withGroup(5).negate());
+        assertEquals("!group5=minecraft:stone", c.withGroup(5).id());
         assertFalse(sides.withNegate(false).negate());
         assertEquals("down+north=minecraft:stone", sides.withNegate(false).id());
     }
