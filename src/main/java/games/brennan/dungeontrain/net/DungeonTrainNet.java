@@ -48,6 +48,7 @@ public final class DungeonTrainNet {
         registrar.playToClient(ActivityStatePacket.TYPE, ActivityStatePacket.STREAM_CODEC, ActivityStatePacket::handle);
         registrar.playToClient(LiveStreamPacket.TYPE, LiveStreamPacket.STREAM_CODEC, LiveStreamPacket::handle);
         registrar.playToClient(LiveMomentPacket.TYPE, LiveMomentPacket.STREAM_CODEC, LiveMomentPacket::handle);
+        registrar.playToClient(LiveCloseCallPacket.TYPE, LiveCloseCallPacket.STREAM_CODEC, LiveCloseCallPacket::handle);
         registrar.playToClient(LiveLifePacket.TYPE, LiveLifePacket.STREAM_CODEC, LiveLifePacket::handle);
         registrar.playToServer(LiveWatchedPacket.TYPE, LiveWatchedPacket.STREAM_CODEC, LiveWatchedPacket::handle);
         registrar.playToServer(LiveStreamEndedPacket.TYPE, LiveStreamEndedPacket.STREAM_CODEC, LiveStreamEndedPacket::handle);

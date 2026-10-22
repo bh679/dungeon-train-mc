@@ -485,6 +485,7 @@ public final class AchievementEvents {
      */
     public static void notifyRunDistance(ServerPlayer player, double runMeters) {
         ModAdvancementTriggers.RUN_DISTANCE.get().trigger(player, runMeters);
+        LiveCloseCallEvents.onProgress(player, runMeters);
     }
 
     /**

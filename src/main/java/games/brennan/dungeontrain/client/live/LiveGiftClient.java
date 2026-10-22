@@ -51,6 +51,7 @@ public final class LiveGiftClient {
     /** The buttons' action ({@link ChatClick}): {@code live-gift/give|accept|decline/<id>}. */
     static final String CLICK_ACTION = "live-gift";
     private static final String KEY = "chat.dungeontrain.live_gift.";
+    private static final String CLOSE_KEY = "chat.dungeontrain.live.close_call.";
     private static final int CAP = 32;
 
     /** Client thread only. */
@@ -85,8 +86,12 @@ public final class LiveGiftClient {
         return lastMs < 0 || now < lastMs || now - lastMs >= PROMPT_GAP_MS;
     }
 
-    /** Streamer: a never-streamed TV viewer joined. Client thread. */
+    /** Streamer: a never-streamed TV viewer joined, or a player is close to a rare challenge. Client thread. */
     public static void onJoin(GiftJoin join) {
+        if (join.closeCall()) {
+            onCloseCall(join);
+            return;
+        }
         long now = System.currentTimeMillis();
         if (!shouldPrompt(lastPromptMs, now)) return;
         lastPromptMs = now;
@@ -97,6 +102,22 @@ public final class LiveGiftClient {
         Minecraft.getInstance().gui.getChat().addMessage(line);
     }
 
+    /**
+     * Streamer: {@code join} is a few minutes from a rare challenge ({@code event/LiveCloseCallEvents}). Rare
+     * (once per advancement per life, 30 minutes apart per player), so not held to {@link #PROMPT_GAP_MS}.
+     * Never names the advancement: they are hidden ones.
+     */
+    private static void onCloseCall(GiftJoin join) {
+        put(PROMPTED_JOINS, join.joinId(), join.name());
+        Component when = join.etaMinutes() > 0
+            ? Component.translatable(CLOSE_KEY + "prompt", join.name(), join.etaMinutes())
+            : Component.translatable(CLOSE_KEY + "prompt_soon", join.name());
+        MutableComponent line = when.copy().withStyle(ChatFormatting.LIGHT_PURPLE)
+            .append(Component.literal(" "))
+            .append(button(CLOSE_KEY + "give", ChatClick.event(CLICK_ACTION, "give", join.joinId()), ChatFormatting.GOLD, true));
+        Minecraft.getInstance().gui.getChat().addMessage(line);
+    }
+
     /** Viewer: the streamer offered this player a Live Eye on {@code channel}. Deduped by id. Client thread. */
     public static void onOffer(GiftOffer offer, Channel channel) {
         if (!SEEN_GIFTS.add(offer.giftId())) return;
@@ -104,7 +125,8 @@ public final class LiveGiftClient {
         // Joined as eligible, but no longer (found a Live Eye, switched Livestreaming off): never offered.
         if (!canReceive(Minecraft.getInstance())) return;
         put(OFFERS, offer.giftId(), new Offer(offer.from(), channel));
-        MutableComponent line = Component.translatable(KEY + "offer", offer.from()).withStyle(ChatFormatting.LIGHT_PURPLE)
+        String offerKey = LiveCloseCallWatch.watching() ? CLOSE_KEY + "offer" : KEY + "offer";
+        MutableComponent line = Component.translatable(offerKey, offer.from()).withStyle(ChatFormatting.LIGHT_PURPLE)
             .append(Component.literal(" "))
             .append(button(KEY + "accept", ChatClick.event(CLICK_ACTION, "accept", offer.giftId()), ChatFormatting.GREEN, true))
             .append(Component.literal(" "))
