@@ -1969,6 +1969,8 @@
   "item.dungeontrain.live_headpiece.tooltip": "머리에 쓰면 라이브 피드에 당신이 보는 것이 나온다.",
   "item.dungeontrain.live_headpiece.tooltip.warning": "벗는 순간, 또는 다른 사람이 피드를 가져가면 타 버린다.",
   "item.dungeontrain.random_live_headpiece": "무작위 방송 캠코더 (전리품 자리표시자)",
+  "item.dungeontrain.knockback_slime": "밀치기 슬라임",
+  "item.dungeontrain.knockback_slime.tooltip": "적중 시 소모됨",
   "item.dungeontrain.random_book": "무작위 책",
   "item.dungeontrain.random_playerbook": "무작위 플레이어 책",
   "gui.dungeontrain.prefab_tab.variants": "블록 변형",

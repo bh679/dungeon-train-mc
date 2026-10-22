@@ -2014,6 +2014,8 @@
   "item.dungeontrain.live_headpiece.tooltip": "Use na cabeça e o Sinal ao Vivo mostra o que você vê.",
   "item.dungeontrain.live_headpiece.tooltip.warning": "Ela queima até sumir assim que é tirada, ou quando outra pessoa toma o sinal.",
   "item.dungeontrain.random_live_headpiece": "Filmadora de transmissão aleatória (marcador de saque)",
+  "item.dungeontrain.knockback_slime": "Slime de repulsão",
+  "item.dungeontrain.knockback_slime.tooltip": "Gasto ao acertar",
   "item.dungeontrain.random_book": "Livro Aleatório",
   "item.dungeontrain.random_playerbook": "Livro de Jogador Aleatório",
   "gui.dungeontrain.prefab_tab.variants": "Variantes de Bloco",

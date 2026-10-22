@@ -1969,6 +1969,8 @@
   "item.dungeontrain.live_headpiece.tooltip": "頭に着けると、ライブフィードにあなたの視界が映る。",
   "item.dungeontrain.live_headpiece.tooltip.warning": "外した瞬間、または他の誰かがフィードを奪うと燃え尽きる。",
   "item.dungeontrain.random_live_headpiece": "ランダム放送カムコーダー（戦利品プレースホルダー）",
+  "item.dungeontrain.knockback_slime": "ノックバックスライム",
+  "item.dungeontrain.knockback_slime.tooltip": "命中すると消費される",
   "item.dungeontrain.random_book": "ランダムな本",
   "item.dungeontrain.random_playerbook": "ランダムなプレイヤーの本",
   "gui.dungeontrain.prefab_tab.variants": "ブロックバリアント",

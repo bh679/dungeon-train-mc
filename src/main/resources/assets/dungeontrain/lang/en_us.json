@@ -2526,6 +2526,8 @@
   "item.dungeontrain.live_headpiece.tooltip": "Livestream the wearer's perspective.",
   "item.dungeontrain.live_headpiece.tooltip.warning": "Destroyed when removed, or next person equips.",
   "item.dungeontrain.random_live_headpiece": "Random Live Eye (loot placeholder)",
+  "item.dungeontrain.knockback_slime": "Knockback Slime",
+  "item.dungeontrain.knockback_slime.tooltip": "Used up on hit",
   "item.dungeontrain.random_book": "Random Book",
   "item.dungeontrain.random_playerbook": "Random Player Book",
   "item.dungeontrain.random_leaderboard_book": "Random Leaderboard Book",

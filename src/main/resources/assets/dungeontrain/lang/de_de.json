@@ -2014,6 +2014,8 @@
   "item.dungeontrain.live_headpiece.tooltip": "Trag ihn auf dem Kopf, und der Live-Feed zeigt, was du siehst.",
   "item.dungeontrain.live_headpiece.tooltip.warning": "Er verbrennt, sobald er abgenommen wird oder jemand anderes den Feed übernimmt.",
   "item.dungeontrain.random_live_headpiece": "Zufälliger Sende-Camcorder (Beute-Platzhalter)",
+  "item.dungeontrain.knockback_slime": "Rückstoß-Schleim",
+  "item.dungeontrain.knockback_slime.tooltip": "Wird beim Treffer verbraucht",
   "item.dungeontrain.random_book": "Zufälliges Buch",
   "item.dungeontrain.random_playerbook": "Zufälliges Spielerbuch",
   "gui.dungeontrain.prefab_tab.variants": "Blockvarianten",

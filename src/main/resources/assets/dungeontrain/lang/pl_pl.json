@@ -2059,6 +2059,8 @@
   "item.dungeontrain.live_headpiece.tooltip": "Załóż ją na głowę, a Transmisja na żywo pokaże to, co widzisz.",
   "item.dungeontrain.live_headpiece.tooltip.warning": "Płonie w chwili zdjęcia albo gdy ktoś inny przejmie transmisję.",
   "item.dungeontrain.random_live_headpiece": "Losowa kamera transmisyjna (zastępnik łupu)",
+  "item.dungeontrain.knockback_slime": "Szlam odrzutu",
+  "item.dungeontrain.knockback_slime.tooltip": "Zużywa się przy trafieniu",
   "item.dungeontrain.random_book": "Losowa książka",
   "item.dungeontrain.random_playerbook": "Losowa książka gracza",
   "gui.dungeontrain.prefab_tab.variants": "Warianty bloków",

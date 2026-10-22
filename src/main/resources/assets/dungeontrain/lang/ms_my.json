@@ -1969,6 +1969,8 @@
   "item.dungeontrain.live_headpiece.tooltip": "Pakai di kepala dan Suapan Langsung memaparkan apa yang anda lihat.",
   "item.dungeontrain.live_headpiece.tooltip.warning": "Ia terbakar habis sebaik sahaja ditanggalkan, atau apabila orang lain mengambil suapan.",
   "item.dungeontrain.random_live_headpiece": "Camcorder Siaran Rawak (pemegang tempat rampasan)",
+  "item.dungeontrain.knockback_slime": "Slime Tolakan",
+  "item.dungeontrain.knockback_slime.tooltip": "Habis apabila mengena",
   "item.dungeontrain.random_book": "Buku Rawak",
   "item.dungeontrain.random_playerbook": "Buku Pemain Rawak",
   "gui.dungeontrain.prefab_tab.variants": "Varian Blok",

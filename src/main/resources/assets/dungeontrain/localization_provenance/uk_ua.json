@@ -2468,6 +2468,8 @@
       "item.dungeontrain.live_headpiece.tooltip",
       "item.dungeontrain.live_headpiece.tooltip.warning",
       "item.dungeontrain.random_live_headpiece",
+      "item.dungeontrain.knockback_slime",
+      "item.dungeontrain.knockback_slime.tooltip",
       "item.dungeontrain.random_book",
       "item.dungeontrain.random_playerbook",
       "item.dungeontrain.random_leaderboard_book",

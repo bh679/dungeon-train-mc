@@ -2014,6 +2014,8 @@
   "item.dungeontrain.live_headpiece.tooltip": "Indossala sulla testa e il Feed dal vivo mostra ciò che vedi.",
   "item.dungeontrain.live_headpiece.tooltip.warning": "Brucia via appena viene tolta, o quando qualcun altro prende il feed.",
   "item.dungeontrain.random_live_headpiece": "Videocamera da trasmissione casuale (segnaposto bottino)",
+  "item.dungeontrain.knockback_slime": "Slime di contraccolpo",
+  "item.dungeontrain.knockback_slime.tooltip": "Si consuma al colpo",
   "item.dungeontrain.random_book": "Libro casuale",
   "item.dungeontrain.random_playerbook": "Libro di giocatore casuale",
   "gui.dungeontrain.prefab_tab.variants": "Varianti di blocco",

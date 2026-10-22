@@ -1969,6 +1969,8 @@
   "item.dungeontrain.live_headpiece.tooltip": "Pakai di kepala dan Siaran Langsung menampilkan apa yang kaulihat.",
   "item.dungeontrain.live_headpiece.tooltip.warning": "Ia terbakar habis begitu dilepas, atau saat orang lain mengambil siarannya.",
   "item.dungeontrain.random_live_headpiece": "Camcorder Siaran Acak (penanda jarahan)",
+  "item.dungeontrain.knockback_slime": "Slime Pukulan Mundur",
+  "item.dungeontrain.knockback_slime.tooltip": "Habis saat mengenai",
   "item.dungeontrain.random_book": "Buku Acak",
   "item.dungeontrain.random_playerbook": "Buku Pemain Acak",
   "gui.dungeontrain.prefab_tab.variants": "Varian Blok",

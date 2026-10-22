@@ -1298,6 +1298,8 @@
       "item.dungeontrain.live_headpiece.tooltip",
       "item.dungeontrain.live_headpiece.tooltip.warning",
       "item.dungeontrain.random_live_headpiece",
+      "item.dungeontrain.knockback_slime",
+      "item.dungeontrain.knockback_slime.tooltip",
       "gui.dungeontrain.creative_tab.stage_blocks",
       "gui.dungeontrain.prefab_delete.title.variant",
       "gui.dungeontrain.prefab_delete.title.loot",

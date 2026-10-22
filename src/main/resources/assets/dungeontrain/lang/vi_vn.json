@@ -1969,6 +1969,8 @@
   "item.dungeontrain.live_headpiece.tooltip": "Đội lên đầu và Nguồn trực tiếp sẽ hiện những gì bạn thấy.",
   "item.dungeontrain.live_headpiece.tooltip.warning": "Nó cháy rụi ngay khi được tháo ra, hoặc khi người khác giành lấy nguồn.",
   "item.dungeontrain.random_live_headpiece": "Máy quay phát sóng ngẫu nhiên (chỗ giữ cho chiến lợi phẩm)",
+  "item.dungeontrain.knockback_slime": "Chất nhờn Đẩy lùi",
+  "item.dungeontrain.knockback_slime.tooltip": "Mất đi khi đánh trúng",
   "item.dungeontrain.random_book": "Sách Ngẫu nhiên",
   "item.dungeontrain.random_playerbook": "Sách Người chơi Ngẫu nhiên",
   "gui.dungeontrain.prefab_tab.variants": "Biến Thể Khối",
