@@ -334,8 +334,8 @@
     },
     {
       "id": "deeper2",
-      "weight": 10,
-      "minLevel": 9,
+      "weight": 7,
+      "minLevel": 5,
       "phases": [
         "FLOATING",
         "FAR_LANDS",
@@ -368,6 +368,16 @@
         "SPHERES",
         "STACKS",
         "FAR_LANDS"
+      ]
+    },
+    {
+      "id": "deeper3",
+      "weight": 4,
+      "minLevel": 10,
+      "phases": [
+        "VOID",
+        "FAR_LANDS",
+        "DEEPER_DARK"
       ]
     }
   ]
