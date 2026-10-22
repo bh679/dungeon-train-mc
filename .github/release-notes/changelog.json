@@ -29657,6 +29657,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "narrative-tab-shelves-frames",
+      "version": "0.1461.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "More in the Narrative tab",
+      "summary": "The Narrative creative tab now has bookshelves, chiseled bookshelves and both photo frames, so you can decorate your story spots without leaving the tab.",
+      "highlights": [],
+      "pr": 2246,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
