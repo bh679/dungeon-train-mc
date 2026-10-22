@@ -266,7 +266,7 @@
         "UPSIDE_DOWN",
         "SPHERES",
         "STACKS",
-        "FLOATING"
+        "FAR_LANDS"
       ]
     },
     {
@@ -279,7 +279,9 @@
         "CHUNCKS",
         "SPHERES",
         "STACKS",
-        "FLOATING"
+        "FLOATING",
+        "FAR_LANDS",
+        "DEEPER_DARK"
       ]
     },
     {
@@ -302,7 +304,8 @@
         "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY"
+        "LOST_CITY",
+        "DEEPER_DARK"
       ]
     },
     {
@@ -333,6 +336,22 @@
       "weight": 10,
       "minLevel": 9,
       "phases": [
+        "FLOATING",
+        "FAR_LANDS",
+        "DEEPER_DARK"
+      ]
+    },
+    {
+      "id": "shadowwalker2",
+      "weight": 1,
+      "minLevel": 8,
+      "phases": [
+        "VOID",
+        "END",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "FLOATING",
         "FAR_LANDS",
         "DEEPER_DARK"
       ]
