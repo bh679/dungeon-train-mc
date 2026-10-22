@@ -29423,6 +29423,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "variant-mirror-condition-group",
+      "version": "0.1448.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Mirrored variant conditions",
+      "summary": "In the editor, a conditional variant cell copied by the mirror now reads the lock group beside it on the mirrored side, not the group on the side you pasted it.",
+      "highlights": [],
+      "pr": 2228,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
