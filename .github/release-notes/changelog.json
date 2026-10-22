@@ -29522,8 +29522,25 @@
       "released_at": null
     },
     {
-      "id": "advancement-name-tweak",
+      "id": "piglin-calm-strange-places",
       "version": "0.1453.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Piglin fix",
+      "summary": "Piglins and hoglins you meet in the train's stranger stretches, and in dimensional rooms, no longer shake and turn into their zombified forms.",
+      "highlights": [],
+      "pr": 2235,
+      "date": "2026-10-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "advancement-name-tweak",
+      "version": "0.1454.0",
       "type": "feat",
       "tags": [
         "feature",
