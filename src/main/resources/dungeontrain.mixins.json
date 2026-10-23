@@ -23,6 +23,7 @@
     "AdvancementTreeOrderMixin",
     "PlayerAdvancementsRehomeMixin",
     "PlayerAdvancementsAfkGateMixin",
+    "PlayerAdvancementsMultiplayerGateMixin",
     "ServerAdvancementManagerRequirementsMixin",
     "BedBlockMixin",
     "EnderChestBlockLabelMixin",
