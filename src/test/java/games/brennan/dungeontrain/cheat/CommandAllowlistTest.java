@@ -137,6 +137,8 @@ class CommandAllowlistTest {
     void bugCommandAllowed() {
         assertFalse(CommandAllowlist.taints("bug"));
         assertFalse(CommandAllowlist.taints("/bug"));
+        assertFalse(CommandAllowlist.taints("log"));
+        assertFalse(CommandAllowlist.taints("/log"));
     }
 
     @Test

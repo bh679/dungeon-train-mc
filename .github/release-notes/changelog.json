@@ -29814,6 +29814,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "slash-log-command",
+      "version": "0.1470.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "/log sends a bug report",
+      "summary": "Typing /log now opens the bug report, the same as /bug, so you can send your logs whichever one you remember. Using it never puts your run into Free Play.",
+      "highlights": [],
+      "pr": 2257,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
