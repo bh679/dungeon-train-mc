@@ -29744,6 +29744,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "photo-keep-off-thread",
+      "version": "0.1466.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Photo fix",
+      "summary": "Taking a picture no longer stutters the game. The copy the train keeps of each photo is now made in the background instead of freezing a frame.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2252,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
