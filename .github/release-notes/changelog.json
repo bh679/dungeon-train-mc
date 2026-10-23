@@ -29848,6 +29848,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "challenges-single-player-only",
+      "version": "0.1471.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "multiplayer",
+        "advancements"
+      ],
+      "title": "Challenges are single-player only",
+      "summary": "Challenges can now only be earned when playing alone. In multiplayer, or once your world is shared with friends, they can't be unlocked.",
+      "highlights": [
+        "In multiplayer the Challenges tab fades the challenges you haven't earned, and hovering one tells you why.",
+        "Challenges you already earned are kept and stay lit."
+      ],
+      "pr": 2259,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
