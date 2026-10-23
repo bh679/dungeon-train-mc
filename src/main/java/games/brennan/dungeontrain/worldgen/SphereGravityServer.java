@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.SpheresGravityConfig;
 import games.brennan.dungeontrain.mixin.ServerGamePacketListenerFloatAccessor;
+import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.core.SectionPos;
@@ -28,7 +29,8 @@ import java.util.Set;
  * near each player in the spheres band toward the spheres around them ({@link SphereGravityPush}).
  * Players are skipped — each client pulls its own ({@code client.SphereGravityClient}), since player
  * movement is client-authoritative. Only entities within one sphere-reach of a player are looked at, and
- * only where the chunk is entity-ticking (a non-ticking entity would just pile up velocity).
+ * only where the chunk is entity-ticking (a non-ticking entity would just pile up velocity). Nothing in a
+ * dimensional carriage (portal twin space) is pulled: it is somewhere else entirely.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class SphereGravityServer {
@@ -80,6 +82,7 @@ public final class SphereGravityServer {
                     bySection = new Long2ObjectOpenHashMap<>();
                 }
                 if (!seen.add(e) || !level.isPositionEntityTicking(e.blockPosition())) continue;
+                if (PortalTwinSpace.isInside(level, e.getBlockX(), e.getY())) continue;
                 pull(level, e, reach, bySection);
             }
         }
@@ -122,6 +125,7 @@ public final class SphereGravityServer {
      * which vanilla's flight check reads as flying and kicks. Clear the count while any sphere pulls them.
      */
     private static void keepAloft(ServerLevel level, ServerPlayer player, double reach) {
+        if (PortalTwinSpace.isInside(level, player.getBlockX(), player.getY())) return;
         double midY = player.getY() + player.getBbHeight() * 0.5;
         List<SphereField.Sphere> spheres = SpheresBand.spheresNear(level, player.getX(), midY, player.getZ(), reach);
         if (spheres.isEmpty()) return;
