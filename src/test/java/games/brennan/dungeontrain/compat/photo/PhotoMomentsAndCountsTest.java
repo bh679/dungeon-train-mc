@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -20,6 +21,16 @@ final class PhotoMomentsAndCountsTest {
         assertTrue(PhotoFinalMoments.inWindow(100, 120));
         assertFalse(PhotoFinalMoments.inWindow(100, 121));
         assertFalse(PhotoFinalMoments.inWindow(100, 99));
+    }
+
+    @Test
+    @DisplayName("a Wither photo more than a second but under ten before its death is a near miss, in whole seconds")
+    void beaconTooEarly() {
+        assertEquals(Optional.empty(), BeaconPhotoHints.tooEarlySeconds(100, 120));
+        assertEquals(Optional.of(2), BeaconPhotoHints.tooEarlySeconds(100, 121));
+        assertEquals(Optional.of(3), BeaconPhotoHints.tooEarlySeconds(100, 160));
+        assertEquals(Optional.of(10), BeaconPhotoHints.tooEarlySeconds(100, 300));
+        assertEquals(Optional.empty(), BeaconPhotoHints.tooEarlySeconds(100, 301));
     }
 
     @Test

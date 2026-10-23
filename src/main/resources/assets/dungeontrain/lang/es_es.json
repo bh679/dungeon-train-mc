@@ -806,6 +806,8 @@
   "chat.dungeontrain.selfie_hint.wither_too_far": "El Wither estaba demasiado lejos para contar. Acércate más.",
   "chat.dungeontrain.selfie_hint.warden_eyes": "El Warden sale en la foto, pero sus ojos no. Mete sus ojos en el encuadre.",
   "chat.dungeontrain.selfie_hint.wither_eyes": "El Wither sale en la foto, pero sus ojos no. Mete sus ojos en el encuadre.",
+  "chat.dungeontrain.beacon_hint.too_late": "Demasiado tarde. El Wither ya había caído cuando hiciste la foto. Píllalo en el segundo antes de que muera.",
+  "chat.dungeontrain.beacon_hint.too_early": "Demasiado pronto. Tu foto del Wither fue %s segundos antes de que muriera. Píllalo en el último segundo.",
   "chat.dungeontrain.familiar_photo.tributed.1": "Tu propia foto, de vuelta a ti: %s le pagó tributo.",
   "chat.dungeontrain.familiar_photo.tributed.2": "Una foto familiar. %s pagó para que siguiera viajando.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s pagó tributo a esta. La tomaste tú.",

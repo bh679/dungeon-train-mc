@@ -773,6 +773,8 @@
   "chat.dungeontrain.selfie_hint.wither_too_far": "Wither ở quá xa nên không được tính. Lại gần hơn.",
   "chat.dungeontrain.selfie_hint.warden_eyes": "Warden có trong ảnh, nhưng mắt của nó thì không. Hãy đưa mắt nó vào khung.",
   "chat.dungeontrain.selfie_hint.wither_eyes": "Wither có trong ảnh, nhưng mắt của nó thì không. Hãy đưa mắt nó vào khung.",
+  "chat.dungeontrain.beacon_hint.too_late": "Quá muộn. Wither đã gục ngã khi bạn chụp. Hãy chụp nó trong giây trước khi nó chết.",
+  "chat.dungeontrain.beacon_hint.too_early": "Quá sớm. Ảnh Wither của bạn được chụp %s giây trước khi nó chết. Hãy chụp nó trong giây cuối cùng.",
   "chat.dungeontrain.familiar_photo.tributed.1": "Bức ảnh của chính bạn, lại vòng về. %s đã dâng cống phẩm cho nó.",
   "chat.dungeontrain.familiar_photo.tributed.2": "Một bức ảnh quen thuộc. %s đã trả giá để nó tiếp tục hành trình.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s đã dâng cống phẩm cho bức này. Chính bạn đã chụp nó.",

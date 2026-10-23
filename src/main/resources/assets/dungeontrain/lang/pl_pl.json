@@ -839,6 +839,8 @@
   "chat.dungeontrain.selfie_hint.wither_too_far": "Wither był za daleko, żeby się liczyć. Podejdź bliżej.",
   "chat.dungeontrain.selfie_hint.warden_eyes": "Strażnik jest na zdjęciu, ale jego oczu nie widać. Złap jego oczy w kadrze.",
   "chat.dungeontrain.selfie_hint.wither_eyes": "Wither jest na zdjęciu, ale jego oczu nie widać. Złap jego oczy w kadrze.",
+  "chat.dungeontrain.beacon_hint.too_late": "Za późno. Wither już padł, gdy robiłeś to zdjęcie. Złap go w sekundzie przed śmiercią.",
+  "chat.dungeontrain.beacon_hint.too_early": "Za wcześnie. Twoje zdjęcie Withera powstało %s s przed jego śmiercią. Złap go w ostatniej sekundzie.",
   "chat.dungeontrain.familiar_photo.tributed.1": "Twoje własne zdjęcie, które zatoczyło koło. %s złożył za nie daninę.",
   "chat.dungeontrain.familiar_photo.tributed.2": "Znajome zdjęcie. %s zapłacił, by podróżowało dalej.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s złożył daninę za to zdjęcie. To ty je zrobiłeś.",
