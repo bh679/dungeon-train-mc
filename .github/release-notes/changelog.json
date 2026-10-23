@@ -29886,6 +29886,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "camera-hints",
+      "version": "0.1473.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Camera hints",
+      "summary": "Some photos now let you know when your timing was a little off.",
+      "highlights": [],
+      "pr": 2263,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
