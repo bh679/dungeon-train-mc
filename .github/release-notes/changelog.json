@@ -29883,9 +29883,9 @@
       "highlights": [],
       "pr": 2255,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "photo-keep-off-thread",
@@ -29902,9 +29902,9 @@
       ],
       "pr": 2252,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "photo-wildlife-count-fix",
@@ -29919,9 +29919,9 @@
       "summary": "More of the creatures you photograph now count toward your wildlife photos.",
       "highlights": [],
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "camera-hints",
@@ -29935,9 +29935,9 @@
       "highlights": [],
       "pr": 2263,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "allay-room-cows-update",
@@ -29955,9 +29955,9 @@
       ],
       "pr": 2260,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "advancement-photos-keep-pause",
@@ -29973,9 +29973,9 @@
       "highlights": [],
       "pr": 2261,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "freeplay-confirm-world-settings",
@@ -29991,9 +29991,25 @@
       "highlights": [],
       "pr": 2265,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1481.0",
+      "released_at": "2026-10-23T10:21:36Z"
+    },
+    {
+      "id": "support-tooling-2268",
+      "version": "0.1481.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Support tooling",
+      "summary": "Better tools behind the scenes for helping players when something goes wrong on our end.",
+      "highlights": [],
+      "pr": 2268,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1481.0",
+      "released_at": "2026-10-23T10:21:36Z"
     }
   ]
 }
