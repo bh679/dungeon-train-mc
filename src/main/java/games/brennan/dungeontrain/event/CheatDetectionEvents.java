@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.cheat.CommandAllowlist;
 import games.brennan.dungeontrain.cheat.DtConfigIntegrity;
 import games.brennan.dungeontrain.cheat.KeepInventoryIntegrity;
 import games.brennan.dungeontrain.cheat.OperatorIntegrity;
+import games.brennan.dungeontrain.cheat.PlayerFreePlayIntegrity;
 import games.brennan.dungeontrain.cheat.PortalTuningIntegrity;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.cheat.UnapprovedModIntegrity;
@@ -304,6 +305,17 @@ public final class CheatDetectionEvents {
                 Component.translatable("chat.dungeontrain.free_play.cause.keep_inventory"));
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.keep_inventory_on")
                 .withStyle(ChatFormatting.GRAY));
+        }
+        // A player already Free Play on a world that doesn't know it yet marks the world first, so
+        // the block below and everyone already online follow.
+        RunIntegrity.spreadToWorld(player);
+        if (PlayerFreePlayIntegrity.isWorldFreePlay() && !RunIntegrity.isPermanentlyCheated(player)) {
+            // World-wide Free Play from another player. Permanent and world-owned like the two
+            // blocks above, and it reaches players who did nothing themselves, so it explains itself
+            // on every join, naming who and why. The player who caused it has their own recorded
+            // cause and is skipped.
+            RunIntegrity.applyFreePlayEffect(player);
+            RunIntegrity.sendFreePlayNotice(player, PlayerFreePlayIntegrity.cause());
         }
         if (RunIntegrity.isPermanentlyCheated(player)) {
             RunIntegrity.applyFreePlayEffect(player); // re-apply across relog

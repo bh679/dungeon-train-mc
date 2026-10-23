@@ -38,6 +38,10 @@ import java.util.List;
  * world-wide and do <em>not</em> clear: {@link PortalTuningIntegrity} (a retuned
  * portal rate) and {@link KeepInventoryIntegrity} ({@code keepInventory} on).</p>
  *
+ * <p>The first permanent taint on any player also marks the <b>world</b>
+ * ({@link PlayerFreePlayIntegrity}): one player in Free Play puts everyone on the world in Free Play,
+ * for good, since items move between players.</p>
+ *
  * <p>{@link OperatorIntegrity} (someone online has cheats) is session-wide too,
  * but it is the one source that also stamps the player: each operator's own run
  * is marked permanently, so {@code /op} → cheat → {@code /deop} can't launder
@@ -86,8 +90,9 @@ public final class RunIntegrity {
      * or someone online has cheats ({@link OperatorIntegrity#isSessionFreePlay}),
      * OR the world's portal rate has been retuned
      * ({@link PortalTuningIntegrity#isWorldFreePlay}) or the world has run with
-     * {@code keepInventory} on ({@link KeepInventoryIntegrity#isWorldFreePlay}) —
-     * those last two per-world and permanent rather than per-session and derived,
+     * {@code keepInventory} on ({@link KeepInventoryIntegrity#isWorldFreePlay}), or any
+     * player on this world has gone Free Play ({@link PlayerFreePlayIntegrity#isWorldFreePlay}) —
+     * those last three per-world and permanent rather than per-session and derived,
      * see those classes.
      * Every persistence gate keys off this, so the session taints inherit all
      * Free Play behaviour.
@@ -101,6 +106,7 @@ public final class RunIntegrity {
             || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
             || KeepInventoryIntegrity.isWorldFreePlay()
+            || PlayerFreePlayIntegrity.isWorldFreePlay()
             || isPermanentlyCheated(player);
     }
 
@@ -146,6 +152,7 @@ public final class RunIntegrity {
             || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
             || KeepInventoryIntegrity.isWorldFreePlay()
+            || PlayerFreePlayIntegrity.isWorldFreePlay()
             || isPermanentlyCheated(player);
     }
 
@@ -156,7 +163,8 @@ public final class RunIntegrity {
      * quietly instead of notifying twice.
      *
      * <p>Covers the AIS-config, DT-config, custom-editor-content, operator-present,
-     * retuned-portal-rate and {@code keepInventory} taints. Deliberately
+     * retuned-portal-rate and {@code keepInventory} taints, and another player on this world having
+     * gone Free Play ({@link PlayerFreePlayIntegrity}). Deliberately
      * <b>not</b> {@link CheatModIntegrity} — that source predates this helper and still takes the
      * prompt / notify path; folding it in would change its Discord reporting, which is a separate
      * call.</p>
@@ -167,7 +175,8 @@ public final class RunIntegrity {
             || EditorContentIntegrity.isSessionFreePlay()
             || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
-            || KeepInventoryIntegrity.isWorldFreePlay();
+            || KeepInventoryIntegrity.isWorldFreePlay()
+            || PlayerFreePlayIntegrity.isWorldFreePlay();
     }
 
     public static void markCheated(ServerPlayer player, Component cause) {
@@ -175,15 +184,21 @@ public final class RunIntegrity {
         // a session-only config taint a tainting action must still be recorded
         // permanently, or restoring the config would forget it.
         if (isPermanentlyCheated(player)) return;
+        // Read before anything is written: marking the world below makes the session visibly Free
+        // Play, and this player still needs telling if it wasn't before.
+        boolean wasVisible = isVisiblySessionFreePlay();
         player.setData(ModDataAttachments.RUN_CHEATED.get(), Boolean.TRUE);
         // Record WHY, next to the flag and before the effect goes on: the badge's hover tooltip is
         // the only surface that can still answer that once the chat line below has scrolled away,
         // and applyFreePlayEffect syncs the answer to the client as it applies.
         player.setData(ModDataAttachments.FREE_PLAY_CAUSE.get(), cause);
+        // One player in Free Play puts everyone on the world in Free Play: mark the world and bring
+        // everyone else online into line (badge, Ender Chest, a chat line naming who and why).
+        PlayerFreePlayIntegrity.markWorld(player, cause, wasVisible);
         applyFreePlayEffect(player);
         LOGGER.info("[DungeonTrain] Run is now Free Play for {} — {}",
             player.getName().getString(), cause.getString());
-        if (isVisiblySessionFreePlay()) {
+        if (wasVisible) {
             // Already visibly in Free Play this session (the AIS, DT-config or custom-content
             // notice on join) — record the permanent taint quietly, no second chat line /
             // Discord post.
@@ -192,6 +207,16 @@ public final class RunIntegrity {
         sendFreePlayNotice(player, cause);
         // Mirror the transition to Discord (best-effort; never disrupts the run state above).
         FreePlayReport.post(player, cause);
+    }
+
+    /**
+     * A player whose own run is already permanently Free Play, on a world that doesn't know it yet
+     * (their player file was copied in, or the one-time load backfill couldn't read it): mark the
+     * world now, so everyone else follows. No-op otherwise. Called at login.
+     */
+    public static void spreadToWorld(ServerPlayer player) {
+        if (!isPermanentlyCheated(player) || PlayerFreePlayIntegrity.isWorldFreePlay()) return;
+        PlayerFreePlayIntegrity.markWorld(player, recordedCause(player), isVisiblySessionFreePlay());
     }
 
     /**
@@ -256,9 +281,10 @@ public final class RunIntegrity {
      * Why is this run Free Play right now — every currently-active reason, in the order the login
      * notices announce them ({@code CheatDetectionEvents.onLogin}): changed AIS data, changed DT
      * config, a cheat mod, an unapproved mod, custom editor content, a retuned portal rate,
-     * {@code keepInventory}, then the player's own recorded action.
+     * {@code keepInventory}, another player's Free Play on this world, then the player's own
+     * recorded action.
      *
-     * <p>Built from the same nine terms as {@link #isCheated}, so an empty list means exactly "not
+     * <p>Built from the same ten terms as {@link #isCheated}, so an empty list means exactly "not
      * Free Play" and the tooltip can never disagree with the badge it explains. Usually one entry;
      * a creative switch made <em>inside</em> an already-tainted session genuinely has two reasons
      * and lists both.</p>
@@ -293,6 +319,11 @@ public final class RunIntegrity {
         }
         if (KeepInventoryIntegrity.isWorldFreePlay()) {
             causes.add(sessionCause("keep_inventory", List.of()));
+        }
+        if (PlayerFreePlayIntegrity.isWorldFreePlay() && !PlayerFreePlayIntegrity.isSource(player)) {
+            // Somebody else on this world went Free Play. Named, like the operator cause, because
+            // a badge that arrived through another player's action reads as arbitrary otherwise.
+            causes.add(new FreePlayCause(PlayerFreePlayIntegrity.cause(), null));
         }
         if (isPermanentlyCheated(player)) {
             causes.add(new FreePlayCause(recordedCause(player), null));

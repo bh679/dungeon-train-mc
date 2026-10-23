@@ -171,6 +171,7 @@
       "effect.dungeontrain.free_play",
       "effect.dungeontrain.free_play.desc.1",
       "gui.dungeontrain.free_play.confirm.title",
+      "gui.dungeontrain.free_play.confirm.everyone",
       "gui.dungeontrain.free_play.confirm.trigger",
       "gui.dungeontrain.free_play.confirm.continue",
       "gui.dungeontrain.free_play.confirm.cancel",
@@ -4428,6 +4429,10 @@
       "gui.dungeontrain.low_memory.how",
       "gui.dungeontrain.low_memory.ok",
       "gui.dungeontrain.low_memory.dont_show",
+      "chat.dungeontrain.free_play.cause.player",
+      "chat.dungeontrain.free_play.cause.player_used",
+      "chat.dungeontrain.free_play.cause.player_switched",
+      "chat.dungeontrain.free_play.cause.player_unknown",
       "item.dungeontrain.live_cassette",
       "item.dungeontrain.live_cassette.tooltip"
     ],

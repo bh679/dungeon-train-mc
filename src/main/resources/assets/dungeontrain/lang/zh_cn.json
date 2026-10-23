@@ -213,6 +213,7 @@
   "effect.dungeontrain.free_play": "自由模式",
   "effect.dungeontrain.free_play.desc.1": "在这里获得的进度不会保存到你的个人档案。",
   "gui.dungeontrain.free_play.confirm.title": "进入自由模式？",
+  "gui.dungeontrain.free_play.confirm.everyone": "这会改变本世界所有人的旅程，包括之后加入的玩家。",
   "gui.dungeontrain.free_play.confirm.body": "自由模式会持续到本轮旅程结束。不会丢失任何物品，但从现在开始：",
   "gui.dungeontrain.free_play.confirm.trigger": "触发原因：%s",
   "gui.dungeontrain.free_play.confirm.continue": "继续",
@@ -5303,6 +5304,10 @@
   "gui.dungeontrain.low_memory.ok": "知道了",
   "gui.dungeontrain.low_memory.dont_show": "不再显示",
   "chat.dungeontrain.free_play.cause.keep_inventory": "本世界开启了「保留物品栏」。",
+  "chat.dungeontrain.free_play.cause.player": "%s 进入了自由模式，因此本世界的所有人现在都处于自由模式。",
+  "chat.dungeontrain.free_play.cause.player_used": "%s 使用了 %s，因此本世界的所有人现在都处于自由模式。",
+  "chat.dungeontrain.free_play.cause.player_switched": "%s 切换到了 %s，因此本世界的所有人现在都处于自由模式。",
+  "chat.dungeontrain.free_play.cause.player_unknown": "本世界有人进入了自由模式，因此这里的所有人现在都处于自由模式。",
   "chat.dungeontrain.free_play.keep_inventory_on": "《地牢列车》是以死亡要付出代价为前提来平衡的，因此从现在起本世界的统计只留在自己这里。把游戏规则再关掉也无济于事——你带着穿过一次死亡的装备，已经是你的了。",
   "item.dungeontrain.live_cassette": "直播信号磁带",
   "item.dungeontrain.live_cassette.tooltip": "已调到直播信号。放进任何电视，就能看到正在直播的人。"

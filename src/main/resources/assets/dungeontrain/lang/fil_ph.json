@@ -213,6 +213,7 @@
   "effect.dungeontrain.free_play": "Malayang Paglalaro",
   "effect.dungeontrain.free_play.desc.1": "Hindi mase-save ang mga advancement at stat.",
   "gui.dungeontrain.free_play.confirm.title": "Pumasok sa Malayang Paglalaro?",
+  "gui.dungeontrain.free_play.confirm.everyone": "Mababago nito ang takbo para sa lahat sa mundong ito, pati sa mga sasali mamaya.",
   "gui.dungeontrain.free_play.confirm.body": "Mananatiling naka-on ang Malayang Paglalaro sa natitirang takbo na ito. Walang mawawala — ngunit mula ngayon:",
   "gui.dungeontrain.free_play.confirm.trigger": "Na-trigger ng: %s",
   "gui.dungeontrain.free_play.confirm.continue": "Magpatuloy",
@@ -5289,6 +5290,10 @@
   "gui.dungeontrain.low_memory.ok": "Sige",
   "gui.dungeontrain.low_memory.dont_show": "Huwag nang ipakita",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Naka-on ang \"Keep Inventory\" sa mundong ito.",
+  "chat.dungeontrain.free_play.cause.player": "Pumasok si %s sa Malayang Paglalaro, kaya nasa Malayang Paglalaro na rin ang lahat sa mundong ito.",
+  "chat.dungeontrain.free_play.cause.player_used": "Gumamit si %s ng %s, kaya nasa Malayang Paglalaro na rin ang lahat sa mundong ito.",
+  "chat.dungeontrain.free_play.cause.player_switched": "Lumipat si %s sa %s, kaya nasa Malayang Paglalaro na rin ang lahat sa mundong ito.",
+  "chat.dungeontrain.free_play.cause.player_unknown": "May pumasok sa Malayang Paglalaro sa mundong ito, kaya nasa Malayang Paglalaro na rin ang lahat dito.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Nakabalanse ang Dungeon Train sa palagay na may kapalit ang pagkamatay, kaya mula ngayon ay sa mundong ito na lang mananatili ang sarili nitong estadistika. Hindi mababago iyon ng pag-off muli sa game rule — ang gamit na dala mo sa kabila ng isang kamatayan ay sa iyo na.",
   "item.dungeontrain.live_cassette": "Cassette ng Live Feed",
   "item.dungeontrain.live_cassette.tooltip": "Nakatutok sa Live Feed. Ilagay sa kahit anong TV para panoorin kung sino ang nagbo-brodkast."

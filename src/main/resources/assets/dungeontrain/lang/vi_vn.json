@@ -213,6 +213,7 @@
   "effect.dungeontrain.free_play": "Chơi Tự do",
   "effect.dungeontrain.free_play.desc.1": "Thành tựu và thống kê sẽ không được lưu.",
   "gui.dungeontrain.free_play.confirm.title": "Vào chế độ Chơi Tự do?",
+  "gui.dungeontrain.free_play.confirm.everyone": "Điều này thay đổi hành trình cho mọi người trong thế giới này, kể cả người tham gia sau.",
   "gui.dungeontrain.free_play.confirm.body": "Chơi Tự do sẽ bật trong suốt phần còn lại của hành trình này. Không mất gì cả — nhưng kể từ đây:",
   "gui.dungeontrain.free_play.confirm.trigger": "Kích hoạt bởi: %s",
   "gui.dungeontrain.free_play.confirm.continue": "Tiếp tục",
@@ -5289,6 +5290,10 @@
   "gui.dungeontrain.low_memory.ok": "Đã hiểu",
   "gui.dungeontrain.low_memory.dont_show": "Không hiện lại",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Thế giới này đang bật \"Giữ hành trang\".",
+  "chat.dungeontrain.free_play.cause.player": "%s đã vào Chơi Tự do, nên mọi người trong thế giới này cũng đang Chơi Tự do.",
+  "chat.dungeontrain.free_play.cause.player_used": "%s đã dùng %s, nên mọi người trong thế giới này cũng đang Chơi Tự do.",
+  "chat.dungeontrain.free_play.cause.player_switched": "%s đã chuyển sang %s, nên mọi người trong thế giới này cũng đang Chơi Tự do.",
+  "chat.dungeontrain.free_play.cause.player_unknown": "Có người trong thế giới này đã vào Chơi Tự do, nên mọi người ở đây cũng đang Chơi Tự do.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train được cân bằng quanh việc cái chết phải lấy đi của bạn thứ gì đó, nên từ đây thế giới này giữ thống kê của riêng nó. Tắt lại luật chơi cũng không đổi được điều đó — số đồ bạn mang qua một lần chết thì đã là của bạn rồi.",
   "item.dungeontrain.live_cassette": "Băng Phát trực tiếp",
   "item.dungeontrain.live_cassette.tooltip": "Đã dò sẵn Phát trực tiếp. Cho vào bất kỳ TV nào để xem ai đang phát sóng."

@@ -236,6 +236,7 @@
   "effect.dungeontrain.free_play": "Juego Libre",
   "effect.dungeontrain.free_play.desc.1": "Los progresos y las estadísticas no se guardarán.",
   "gui.dungeontrain.free_play.confirm.title": "¿Entrar en Juego Libre?",
+  "gui.dungeontrain.free_play.confirm.everyone": "Esto cambia la partida para todos en este mundo, incluido quien se una después.",
   "gui.dungeontrain.free_play.confirm.body": "El Juego Libre permanece activo durante el resto de esta partida. No se pierde nada, pero a partir de ahora:",
   "gui.dungeontrain.free_play.confirm.trigger": "Provocado por: %s",
   "gui.dungeontrain.free_play.confirm.continue": "Continuar",
@@ -5352,6 +5353,10 @@
   "gui.dungeontrain.low_memory.ok": "Entendido",
   "gui.dungeontrain.low_memory.dont_show": "No volver a mostrar",
   "chat.dungeontrain.free_play.cause.keep_inventory": "En este mundo está activado «Conservar inventario».",
+  "chat.dungeontrain.free_play.cause.player": "%s pasó al Juego Libre, así que todos en este mundo están ahora en Juego Libre.",
+  "chat.dungeontrain.free_play.cause.player_used": "%s usó %s, así que todos en este mundo están ahora en Juego Libre.",
+  "chat.dungeontrain.free_play.cause.player_switched": "%s cambió a %s, así que todos en este mundo están ahora en Juego Libre.",
+  "chat.dungeontrain.free_play.cause.player_unknown": "Alguien en este mundo pasó al Juego Libre, así que todos aquí están ahora en Juego Libre.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train está balanceado para que morir te cueste algo, así que de aquí en adelante este mundo se queda con sus propias estadísticas. Volver a desactivar la regla de juego no va a cambiar eso: el equipo que llevaste contigo a través de una muerte ya es tuyo.",
   "item.dungeontrain.live_cassette": "Casete de Señal en vivo",
   "item.dungeontrain.live_cassette.tooltip": "Sintonizado a la Señal en vivo. Ponlo en cualquier televisor para ver a quien esté transmitiendo."

@@ -236,6 +236,7 @@
   "effect.dungeontrain.free_play": "Vrij Spel",
   "effect.dungeontrain.free_play.desc.1": "Prestaties & statistieken worden niet opgeslagen.",
   "gui.dungeontrain.free_play.confirm.title": "Vrij Spel starten?",
+  "gui.dungeontrain.free_play.confirm.everyone": "Dit verandert de run voor iedereen in deze wereld, ook voor wie later meedoet.",
   "gui.dungeontrain.free_play.confirm.body": "Vrij Spel blijft de rest van deze run actief. Er gaat niets verloren — maar vanaf nu:",
   "gui.dungeontrain.free_play.confirm.trigger": "Veroorzaakt door: %s",
   "gui.dungeontrain.free_play.confirm.continue": "Doorgaan",
@@ -5352,6 +5353,10 @@
   "gui.dungeontrain.low_memory.ok": "Begrepen",
   "gui.dungeontrain.low_memory.dont_show": "Niet meer tonen",
   "chat.dungeontrain.free_play.cause.keep_inventory": "In deze wereld staat \"Inventaris behouden\" aan.",
+  "chat.dungeontrain.free_play.cause.player": "%s is naar Vrij Spel gegaan, dus iedereen in deze wereld speelt nu ook Vrij Spel.",
+  "chat.dungeontrain.free_play.cause.player_used": "%s heeft %s gebruikt, dus iedereen in deze wereld speelt nu ook Vrij Spel.",
+  "chat.dungeontrain.free_play.cause.player_switched": "%s is overgeschakeld naar %s, dus iedereen in deze wereld speelt nu ook Vrij Spel.",
+  "chat.dungeontrain.free_play.cause.player_unknown": "Iemand in deze wereld is naar Vrij Spel gegaan, dus iedereen hier speelt nu ook Vrij Spel.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train is erop afgestemd dat doodgaan je iets kost, dus vanaf hier houdt deze wereld haar statistieken voor zichzelf. De spelregel weer uitzetten verandert daar niets aan — de spullen die je door een dood heen meedroeg zijn al van jou.",
   "item.dungeontrain.live_cassette": "Live Feed-cassette",
   "item.dungeontrain.live_cassette.tooltip": "Afgestemd op de Live Feed. Stop hem in een willekeurige tv om te zien wie er uitzendt."

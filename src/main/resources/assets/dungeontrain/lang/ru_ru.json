@@ -259,6 +259,7 @@
   "effect.dungeontrain.free_play": "Свободная игра",
   "effect.dungeontrain.free_play.desc.1": "Достижения и статистика не сохранятся.",
   "gui.dungeontrain.free_play.confirm.title": "Войти в свободную игру?",
+  "gui.dungeontrain.free_play.confirm.everyone": "Это изменит забег для всех в этом мире, включая тех, кто присоединится позже.",
   "gui.dungeontrain.free_play.confirm.body": "Свободная игра останется включённой до конца этого забега. Ничего не потеряется — но с этого момента:",
   "gui.dungeontrain.free_play.confirm.trigger": "Вызвано: %s",
   "gui.dungeontrain.free_play.confirm.continue": "Продолжить",
@@ -5415,6 +5416,10 @@
   "gui.dungeontrain.low_memory.ok": "Понятно",
   "gui.dungeontrain.low_memory.dont_show": "Больше не показывать",
   "chat.dungeontrain.free_play.cause.keep_inventory": "В мире включено сохранение инвентаря.",
+  "chat.dungeontrain.free_play.cause.player": "%s перешёл в свободную игру, поэтому теперь все в этом мире в свободной игре.",
+  "chat.dungeontrain.free_play.cause.player_used": "%s использовал %s, поэтому теперь все в этом мире в свободной игре.",
+  "chat.dungeontrain.free_play.cause.player_switched": "%s переключился на %s, поэтому теперь все в этом мире в свободной игре.",
+  "chat.dungeontrain.free_play.cause.player_unknown": "Кто-то в этом мире перешёл в свободную игру, поэтому теперь все здесь в свободной игре.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train сбалансирован вокруг того, что смерть чего-то стоит, поэтому теперь этот мир хранит свою статистику отдельно. Выключение ничего не изменит — снаряжение, которое вы пронесли через смерть, уже ваше.",
   "item.dungeontrain.live_cassette": "Кассета Прямого эфира",
   "item.dungeontrain.live_cassette.tooltip": "Настроена на Прямой эфир. Вставь в любой телевизор, чтобы смотреть того, кто сейчас в эфире."

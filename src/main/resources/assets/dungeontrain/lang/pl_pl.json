@@ -259,6 +259,7 @@
   "effect.dungeontrain.free_play": "Swobodna Gra",
   "effect.dungeontrain.free_play.desc.1": "Osiągnięcia i statystyki nie zostaną zapisane.",
   "gui.dungeontrain.free_play.confirm.title": "Wejść w Swobodną Grę?",
+  "gui.dungeontrain.free_play.confirm.everyone": "To zmienia rozgrywkę dla wszystkich w tym świecie, także dla tych, którzy dołączą później.",
   "gui.dungeontrain.free_play.confirm.body": "Swobodna Gra pozostaje włączona przez resztę tej rozgrywki. Nic nie przepada — ale odtąd:",
   "gui.dungeontrain.free_play.confirm.trigger": "Wywołane przez: %s",
   "gui.dungeontrain.free_play.confirm.continue": "Kontynuuj",
@@ -5415,6 +5416,10 @@
   "gui.dungeontrain.low_memory.ok": "Rozumiem",
   "gui.dungeontrain.low_memory.dont_show": "Nie pokazuj więcej",
   "chat.dungeontrain.free_play.cause.keep_inventory": "W tym świecie włączone jest „Zachowaj ekwipunek”.",
+  "chat.dungeontrain.free_play.cause.player": "%s przeszedł w Swobodną Grę, więc wszyscy w tym świecie są teraz w Swobodnej Grze.",
+  "chat.dungeontrain.free_play.cause.player_used": "%s użył %s, więc wszyscy w tym świecie są teraz w Swobodnej Grze.",
+  "chat.dungeontrain.free_play.cause.player_switched": "%s przełączył się na %s, więc wszyscy w tym świecie są teraz w Swobodnej Grze.",
+  "chat.dungeontrain.free_play.cause.player_unknown": "Ktoś w tym świecie przeszedł w Swobodną Grę, więc wszyscy tutaj są teraz w Swobodnej Grze.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train jest wyważony wokół tego, że śmierć coś cię kosztuje, więc od tej chwili ten świat zatrzymuje swoje statystyki dla siebie. Ponowne wyłączenie reguły gry tego nie zmieni — sprzęt, który przeniosłeś przez śmierć, już jest twój.",
   "item.dungeontrain.live_cassette": "Kaseta Przekazu na żywo",
   "item.dungeontrain.live_cassette.tooltip": "Nastrojona na Przekaz na żywo. Włóż ją do dowolnego telewizora, by zobaczyć, kto transmituje."

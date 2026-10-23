@@ -213,6 +213,7 @@
   "effect.dungeontrain.free_play": "โหมดเล่นอิสระ",
   "effect.dungeontrain.free_play.desc.1": "ความคืบหน้าและสถิติจะไม่ถูกบันทึก",
   "gui.dungeontrain.free_play.confirm.title": "เข้าสู่โหมดเล่นอิสระ?",
+  "gui.dungeontrain.free_play.confirm.everyone": "การเปลี่ยนนี้มีผลกับทุกคนในโลกนี้ รวมถึงผู้ที่เข้าร่วมภายหลัง",
   "gui.dungeontrain.free_play.confirm.body": "โหมดเล่นอิสระจะเปิดตลอดการเดินทางครั้งนี้ ไม่มีสิ่งใดสูญหาย — แต่จากนี้ไป:",
   "gui.dungeontrain.free_play.confirm.trigger": "เกิดจาก: %s",
   "gui.dungeontrain.free_play.confirm.continue": "ดำเนินต่อ",
@@ -5289,6 +5290,10 @@
   "gui.dungeontrain.low_memory.ok": "เข้าใจแล้ว",
   "gui.dungeontrain.low_memory.dont_show": "ไม่ต้องแสดงอีก",
   "chat.dungeontrain.free_play.cause.keep_inventory": "โลกนี้เปิด \"เก็บของในกระเป๋าไว้\" อยู่",
+  "chat.dungeontrain.free_play.cause.player": "%s เข้าสู่โหมดเล่นอิสระ ทุกคนในโลกนี้จึงอยู่ในโหมดเล่นอิสระด้วย",
+  "chat.dungeontrain.free_play.cause.player_used": "%s ใช้ %s ทุกคนในโลกนี้จึงอยู่ในโหมดเล่นอิสระด้วย",
+  "chat.dungeontrain.free_play.cause.player_switched": "%s เปลี่ยนเป็น %s ทุกคนในโลกนี้จึงอยู่ในโหมดเล่นอิสระด้วย",
+  "chat.dungeontrain.free_play.cause.player_unknown": "มีคนในโลกนี้เข้าสู่โหมดเล่นอิสระ ทุกคนที่นี่จึงอยู่ในโหมดเล่นอิสระด้วย",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train ปรับสมดุลไว้บนพื้นฐานที่ว่าการตายต้องแลกด้วยอะไรบางอย่าง โลกนี้จึงเก็บสถิติของตัวเองไว้นับจากนี้ไป การปิดกฎของเกมกลับไม่ได้เปลี่ยนเรื่องนั้น — ของที่คุณถือข้ามความตายมาแล้วนั้นเป็นของคุณไปแล้ว",
   "item.dungeontrain.live_cassette": "เทปฟีดสด",
   "item.dungeontrain.live_cassette.tooltip": "ปรับจูนกับฟีดสดแล้ว ใส่ในทีวีเครื่องไหนก็ได้เพื่อดูว่าใครกำลังถ่ายทอด"

@@ -213,6 +213,7 @@
   "effect.dungeontrain.free_play": "자유 플레이",
   "effect.dungeontrain.free_play.desc.1": "발전 과제와 통계가 저장되지 않습니다.",
   "gui.dungeontrain.free_play.confirm.title": "자유 플레이로 들어갈까요?",
+  "gui.dungeontrain.free_play.confirm.everyone": "이 세계의 모든 플레이어에게 적용되며, 나중에 참여하는 플레이어도 포함됩니다.",
   "gui.dungeontrain.free_play.confirm.body": "자유 플레이는 이번 플레이가 끝날 때까지 유지됩니다. 잃는 것은 없지만 — 지금부터는:",
   "gui.dungeontrain.free_play.confirm.trigger": "발동 원인: %s",
   "gui.dungeontrain.free_play.confirm.continue": "계속",
@@ -5289,6 +5290,10 @@
   "gui.dungeontrain.low_memory.ok": "확인",
   "gui.dungeontrain.low_memory.dont_show": "다시 표시 안 함",
   "chat.dungeontrain.free_play.cause.keep_inventory": "이 세계에서는 '인벤토리 유지'가 켜져 있습니다.",
+  "chat.dungeontrain.free_play.cause.player": "%s 님이 자유 플레이로 전환해서 이 세계의 모두가 자유 플레이가 되었습니다.",
+  "chat.dungeontrain.free_play.cause.player_used": "%s 님이 %s 을(를) 사용해서 이 세계의 모두가 자유 플레이가 되었습니다.",
+  "chat.dungeontrain.free_play.cause.player_switched": "%s 님이 %s(으)로 전환해서 이 세계의 모두가 자유 플레이가 되었습니다.",
+  "chat.dungeontrain.free_play.cause.player_unknown": "이 세계의 누군가가 자유 플레이로 전환해서 이곳의 모두가 자유 플레이가 되었습니다.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train은 죽음이 무언가를 앗아간다는 전제로 맞춰져 있습니다. 그래서 이 세계는 지금부터의 통계를 자기 안에만 남깁니다. 게임 규칙을 다시 끈다고 달라지지 않습니다 — 죽음을 지나 들고 온 장비는 이미 당신의 것입니다.",
   "item.dungeontrain.live_cassette": "라이브 피드 카세트",
   "item.dungeontrain.live_cassette.tooltip": "라이브 피드에 맞춰져 있습니다. 아무 TV에나 넣으면 지금 방송 중인 사람을 볼 수 있습니다."

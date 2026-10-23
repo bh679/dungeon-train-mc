@@ -213,6 +213,7 @@
   "effect.dungeontrain.free_play": "Main Bebas",
   "effect.dungeontrain.free_play.desc.1": "Pencapaian & statistik tidak akan disimpan.",
   "gui.dungeontrain.free_play.confirm.title": "Masuk Main Bebas?",
+  "gui.dungeontrain.free_play.confirm.everyone": "Ini mengubah larian untuk semua orang dalam dunia ini, termasuk sesiapa yang menyertai kemudian.",
   "gui.dungeontrain.free_play.confirm.body": "Main Bebas kekal aktif sepanjang baki larian ini. Tiada apa yang hilang — tetapi mulai sekarang:",
   "gui.dungeontrain.free_play.confirm.trigger": "Dicetuskan oleh: %s",
   "gui.dungeontrain.free_play.confirm.continue": "Teruskan",
@@ -5289,6 +5290,10 @@
   "gui.dungeontrain.low_memory.ok": "Faham",
   "gui.dungeontrain.low_memory.dont_show": "Jangan tunjuk lagi",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Dalam dunia ini \"Simpan Inventori\" sedang dihidupkan.",
+  "chat.dungeontrain.free_play.cause.player": "%s telah masuk ke Main Bebas, jadi semua orang dalam dunia ini kini dalam Main Bebas juga.",
+  "chat.dungeontrain.free_play.cause.player_used": "%s telah menggunakan %s, jadi semua orang dalam dunia ini kini dalam Main Bebas juga.",
+  "chat.dungeontrain.free_play.cause.player_switched": "%s telah bertukar ke %s, jadi semua orang dalam dunia ini kini dalam Main Bebas juga.",
+  "chat.dungeontrain.free_play.cause.player_unknown": "Seseorang dalam dunia ini telah masuk ke Main Bebas, jadi semua orang di sini kini dalam Main Bebas juga.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train diimbangi atas dasar bahawa kematian merugikan anda sesuatu, jadi mulai sekarang dunia ini menyimpan statistiknya sendiri. Mematikan semula peraturan permainan itu tidak akan mengubahnya — kelengkapan yang anda bawa merentasi satu kematian sudah pun menjadi milik anda.",
   "item.dungeontrain.live_cassette": "Kaset Suapan Langsung",
   "item.dungeontrain.live_cassette.tooltip": "Ditala ke Suapan Langsung. Masukkan ke mana-mana TV untuk menonton siapa yang sedang bersiaran."

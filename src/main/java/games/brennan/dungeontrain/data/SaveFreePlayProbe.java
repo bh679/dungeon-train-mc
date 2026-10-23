@@ -7,6 +7,7 @@ import net.minecraft.nbt.NbtIo;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
@@ -73,12 +74,46 @@ public final class SaveFreePlayProbe {
         return data.contains(TAG_PLAYER, CompoundTag.TAG_COMPOUND) && tainted(data.getCompound(TAG_PLAYER));
     }
 
+    /**
+     * Has <em>any</em> player saved in this world been permanently Free Play (the
+     * {@code dungeontrain:run_cheated} attachment)? Reads every {@code playerdata/*.dat} plus the
+     * singleplayer owner embedded in {@code level.dat}.
+     *
+     * <p>Used once per world by {@code PlayerFreePlayIntegrity} to backfill the world-wide Free Play
+     * flag on saves made before one player's Free Play reached everyone. Deliberately the attachment
+     * only, not the game mode: a creative player on a live server is stamped at login anyway, and a
+     * crash-time guess has no place in a permanent world flag.</p>
+     */
+    public static boolean anyPlayerRunCheated(Path levelDir) {
+        CompoundTag level = read(levelDir.resolve(LEVEL_DAT));
+        if (level != null && level.contains(TAG_DATA, CompoundTag.TAG_COMPOUND)) {
+            CompoundTag data = level.getCompound(TAG_DATA);
+            if (data.contains(TAG_PLAYER, CompoundTag.TAG_COMPOUND) && runCheated(data.getCompound(TAG_PLAYER))) {
+                return true;
+            }
+        }
+        Path dir = levelDir.resolve(PLAYERDATA_DIR);
+        if (!Files.isDirectory(dir)) return false;
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(dir, "*.dat")) {
+            for (Path file : files) {
+                CompoundTag player = read(file);
+                if (player != null && runCheated(player)) return true;
+            }
+        } catch (IOException | RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Free Play backfill: couldn't list {}: {}", dir, e.toString());
+        }
+        return false;
+    }
+
+    /** One copy of a player's NBT: only the cheated attachment. */
+    static boolean runCheated(CompoundTag playerTag) {
+        return playerTag.contains(TAG_ATTACHMENTS, CompoundTag.TAG_COMPOUND)
+            && playerTag.getCompound(TAG_ATTACHMENTS).getBoolean(TAG_RUN_CHEATED);
+    }
+
     /** One copy of a player's NBT: cheated attachment set, or a creative/spectator game mode. */
     static boolean tainted(CompoundTag playerTag) {
-        if (playerTag.contains(TAG_ATTACHMENTS, CompoundTag.TAG_COMPOUND)
-                && playerTag.getCompound(TAG_ATTACHMENTS).getBoolean(TAG_RUN_CHEATED)) {
-            return true;
-        }
+        if (runCheated(playerTag)) return true;
         int mode = playerTag.getInt(TAG_GAME_TYPE);
         return mode == GAME_TYPE_CREATIVE || mode == GAME_TYPE_SPECTATOR;
     }

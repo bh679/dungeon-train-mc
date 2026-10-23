@@ -67,7 +67,11 @@ public final class FreePlayConfirmScreen extends Screen {
         int innerW = panelW - 2 * PADDING;
         int lh = this.font.lineHeight;
 
-        bodyLines = this.font.split(Component.translatable("gui.dungeontrain.free_play.confirm.body"), innerW);
+        // Free Play belongs to the whole world (PlayerFreePlayIntegrity), so say so first: confirming
+        // changes the run for every player on it, not just this one.
+        bodyLines = this.font.split(Component.translatable("gui.dungeontrain.free_play.confirm.everyone")
+                .append("\n")
+                .append(Component.translatable("gui.dungeontrain.free_play.confirm.body")), innerW);
         conseqLines = this.font.split(FreePlayText.consequence(), innerW);
         triggerLine = Component.translatable("gui.dungeontrain.free_play.confirm.trigger", triggerLabel)
                 .getVisualOrderText();

@@ -152,6 +152,7 @@
       "gui.dungeontrain.options.difficulty.hint",
       "gui.dungeontrain.options.difficulty.tip",
       "chat.dungeontrain.difficulty_profile.swapped",
+      "gui.dungeontrain.free_play.confirm.everyone",
       "gui.dungeontrain.free_play.safe_space",
       "gui.dungeontrain.free_play.explained",
       "gui.dungeontrain.soup_stacking.title",
@@ -4275,6 +4276,10 @@
       "gui.dungeontrain.low_memory.ok",
       "gui.dungeontrain.low_memory.dont_show",
       "chat.dungeontrain.free_play.cause.keep_inventory",
+      "chat.dungeontrain.free_play.cause.player",
+      "chat.dungeontrain.free_play.cause.player_used",
+      "chat.dungeontrain.free_play.cause.player_switched",
+      "chat.dungeontrain.free_play.cause.player_unknown",
       "chat.dungeontrain.free_play.keep_inventory_on",
       "item.dungeontrain.live_cassette",
       "item.dungeontrain.live_cassette.tooltip"

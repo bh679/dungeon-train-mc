@@ -236,6 +236,7 @@
   "effect.dungeontrain.free_play": "Freies Spiel",
   "effect.dungeontrain.free_play.desc.1": "Fortschritte & Statistiken werden nicht gespeichert.",
   "gui.dungeontrain.free_play.confirm.title": "Freies Spiel betreten?",
+  "gui.dungeontrain.free_play.confirm.everyone": "Das ändert die Partie für alle in dieser Welt, auch für alle, die später beitreten.",
   "gui.dungeontrain.free_play.confirm.body": "Freies Spiel bleibt für den Rest dieser Partie aktiv. Nichts geht verloren — aber von nun an:",
   "gui.dungeontrain.free_play.confirm.trigger": "Ausgelöst durch: %s",
   "gui.dungeontrain.free_play.confirm.continue": "Fortfahren",
@@ -5352,6 +5353,10 @@
   "gui.dungeontrain.low_memory.ok": "Verstanden",
   "gui.dungeontrain.low_memory.dont_show": "Nicht mehr anzeigen",
   "chat.dungeontrain.free_play.cause.keep_inventory": "In dieser Welt ist „Inventar behalten“ aktiviert.",
+  "chat.dungeontrain.free_play.cause.player": "%s ist ins Freie Spiel gewechselt, daher ist jetzt jeder in dieser Welt im Freien Spiel.",
+  "chat.dungeontrain.free_play.cause.player_used": "%s hat %s verwendet, daher ist jetzt jeder in dieser Welt im Freien Spiel.",
+  "chat.dungeontrain.free_play.cause.player_switched": "%s hat zu %s gewechselt, daher ist jetzt jeder in dieser Welt im Freien Spiel.",
+  "chat.dungeontrain.free_play.cause.player_unknown": "Jemand in dieser Welt ist ins Freie Spiel gewechselt, daher ist jetzt jeder hier im Freien Spiel.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train ist darauf abgestimmt, dass Sterben dich etwas kostet, deshalb behält diese Welt ihre Statistiken von hier an für sich. Die Spielregel wieder auszuschalten ändert daran nichts — die Ausrüstung, die du durch einen Tod getragen hast, gehört bereits dir.",
   "item.dungeontrain.live_cassette": "Live-Feed-Kassette",
   "item.dungeontrain.live_cassette.tooltip": "Auf den Live-Feed eingestellt. In einen beliebigen Fernseher einlegen, um zu sehen, wer gerade überträgt."
