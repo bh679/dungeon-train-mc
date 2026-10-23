@@ -29637,9 +29637,9 @@
       "highlights": [],
       "pr": 2242,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:41:48Z"
     },
     {
       "id": "editor-empty-blocks-setting",
@@ -29654,9 +29654,9 @@
       "highlights": [],
       "pr": 2244,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:41:48Z"
     },
     {
       "id": "narrative-tab-shelves-frames",
@@ -29671,9 +29671,9 @@
       "highlights": [],
       "pr": 2246,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:41:48Z"
     },
     {
       "id": "editor-markers-inside-view",
@@ -29688,9 +29688,9 @@
       "highlights": [],
       "pr": 2247,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:41:48Z"
     },
     {
       "id": "enderman-train-teleport",
@@ -29705,9 +29705,9 @@
       "highlights": [],
       "pr": 2248,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:41:48Z"
     },
     {
       "id": "own-book-boost-confirm",
@@ -29724,9 +29724,9 @@
       "highlights": [],
       "pr": 2249,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:41:48Z"
     },
     {
       "id": "dirt-carriage-variety",
@@ -29741,9 +29741,9 @@
       "highlights": [],
       "pr": 2250,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:41:48Z"
     },
     {
       "id": "photo-fix",
@@ -29757,9 +29757,9 @@
       "highlights": [],
       "pr": 2253,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:41:48Z"
     },
     {
       "id": "bug-fixing-2251",
@@ -29773,9 +29773,9 @@
       "highlights": [],
       "pr": 2251,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:41:48Z"
     },
     {
       "id": "mob-buff-offsets-rederive",
@@ -29791,9 +29791,9 @@
       "highlights": [],
       "pr": 2256,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:41:48Z"
     },
     {
       "id": "dt-only-advancement-cards",
@@ -29811,9 +29811,9 @@
       ],
       "pr": 2254,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:41:48Z"
     },
     {
       "id": "slash-log-command",
@@ -29828,9 +29828,9 @@
       "highlights": [],
       "pr": 2257,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:41:48Z"
     },
     {
       "id": "jei-missing-forge",
@@ -29845,9 +29845,9 @@
       "highlights": [],
       "pr": 2258,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:41:48Z"
     },
     {
       "id": "challenges-single-player-only",
@@ -29866,9 +29866,9 @@
       ],
       "pr": 2259,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:41:48Z"
     },
     {
       "id": "dimensional-carriage-shelter",
