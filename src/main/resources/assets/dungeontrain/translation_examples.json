@@ -167,6 +167,14 @@
       ]
     }
   },
+  "chat.dungeontrain.beacon_hint.too_early": {
+    "1": {
+      "label": "how many seconds before the Wither died the photo was taken (always 2 to 10)",
+      "examples": [
+        "3"
+      ]
+    }
+  },
   "chat.dungeontrain.selfie_hint.not_selfie": {
     "1": {
       "label": "the key the player has bound to Toggle Perspective, which flips the camera into selfie mode",

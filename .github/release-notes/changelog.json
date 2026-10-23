@@ -29888,8 +29888,80 @@
       "released_at": null
     },
     {
+      "id": "photo-keep-off-thread",
+      "version": "0.1473.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Photo fix",
+      "summary": "Taking a picture no longer stutters the game. The copy the train keeps of each photo is now made in the background instead of freezing a frame.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2252,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "photo-wildlife-count-fix",
+      "version": "0.1474.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "advancements"
+      ],
+      "title": "Photo fix",
+      "summary": "More of the creatures you photograph now count toward your wildlife photos.",
+      "highlights": [],
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "camera-hints",
+      "version": "0.1474.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Camera hints",
+      "summary": "Some photos now let you know when your timing was a little off.",
+      "highlights": [],
+      "pr": 2263,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "allay-room-cows-update",
+      "version": "0.1476.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "New carriages",
+      "summary": "A new carriage can now turn up on the train, and an old favourite has been rebuilt.",
+      "highlights": [
+        "New carriage",
+        "Rebuilt carriage"
+      ],
+      "pr": 2260,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "advancement-photos-keep-pause",
-      "version": "0.1472.0",
+      "version": "0.1477.0",
       "type": "fix",
       "tags": [
         "fix",

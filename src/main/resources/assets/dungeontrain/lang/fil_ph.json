@@ -773,6 +773,8 @@
   "chat.dungeontrain.selfie_hint.wither_too_far": "Masyadong malayo ang Wither para mabilang. Lumapit ka pa.",
   "chat.dungeontrain.selfie_hint.warden_eyes": "Nasa kuha ang Warden, pero wala ang mga mata nito. Isama ang mga mata nito sa frame.",
   "chat.dungeontrain.selfie_hint.wither_eyes": "Nasa kuha ang Wither, pero wala ang mga mata nito. Isama ang mga mata nito sa frame.",
+  "chat.dungeontrain.beacon_hint.too_late": "Huli na. Bumagsak na ang Wither nang kunan mo iyon. Kunan ito sa segundo bago ito mamatay.",
+  "chat.dungeontrain.beacon_hint.too_early": "Masyadong maaga. Ang litrato mo ng Wither ay %s segundo bago ito namatay. Kunan ito sa huling segundo.",
   "chat.dungeontrain.familiar_photo.tributed.1": "Ang sarili mong larawan, bumalik sa iyo. Nag-alay rito si %s.",
   "chat.dungeontrain.familiar_photo.tributed.2": "Isang pamilyar na larawan. Nagbayad si %s para patuloy itong maglakbay.",
   "chat.dungeontrain.familiar_photo.tributed.3": "Nag-alay si %s sa larawang ito. Ikaw ang kumuha nito.",

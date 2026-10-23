@@ -844,6 +844,8 @@
   "chat.dungeontrain.selfie_hint.wither_too_far": "Иссушитель был слишком далеко, чтобы засчитаться. Подойдите ближе.",
   "chat.dungeontrain.selfie_hint.warden_eyes": "Хранитель в кадре, но его глаз не видно. Поймайте его глаза в кадр.",
   "chat.dungeontrain.selfie_hint.wither_eyes": "Иссушитель в кадре, но его глаз не видно. Поймайте его глаза в кадр.",
+  "chat.dungeontrain.beacon_hint.too_late": "Слишком поздно. Иссушитель уже пал, когда вы сделали снимок. Поймайте его в последнюю секунду перед смертью.",
+  "chat.dungeontrain.beacon_hint.too_early": "Слишком рано. Ваш снимок Иссушителя сделан за %s с до его смерти. Поймайте его в последнюю секунду.",
   "chat.dungeontrain.familiar_photo.tributed.1": "Ваше собственное фото вернулось к вам. Подношение за него: %s.",
   "chat.dungeontrain.familiar_photo.tributed.2": "Знакомое фото. Чтобы оно продолжило путь, заплачено: %s.",
   "chat.dungeontrain.familiar_photo.tributed.3": "Подношение за этот снимок: %s. Его сделали вы.",

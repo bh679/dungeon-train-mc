@@ -26,6 +26,8 @@ class PhotoSubjectTallyTest {
         assertEquals(new Subjects(false, false, true), PhotoSubjectTally.classify(false, false, false, false, true));
         // A hoglin is an Animal and an Enemy: it is a monster, not wildlife.
         assertEquals(new Subjects(false, true, false), PhotoSubjectTally.classify(false, false, false, true, true));
+        // A villager is a mob too, but a passenger, never wildlife.
+        assertEquals(new Subjects(true, false, false), PhotoSubjectTally.classify(false, false, true, false, true));
         assertFalse(PhotoSubjectTally.classify(false, false, false, false, false).any());
     }
 

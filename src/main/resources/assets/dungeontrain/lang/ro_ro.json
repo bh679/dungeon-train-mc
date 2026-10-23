@@ -900,6 +900,8 @@
   "chat.dungeontrain.selfie_hint.wither_too_far": "Wither era prea departe ca să conteze. Apropie-te.",
   "chat.dungeontrain.selfie_hint.warden_eyes": "Warden e în poză, dar ochii lui nu. Prinde-i ochii în cadru.",
   "chat.dungeontrain.selfie_hint.wither_eyes": "Wither e în poză, dar ochii lui nu. Prinde-i ochii în cadru.",
+  "chat.dungeontrain.beacon_hint.too_late": "Prea târziu. Witherul căzuse deja când ai făcut poza. Prinde-l în secunda dinainte să moară.",
+  "chat.dungeontrain.beacon_hint.too_early": "Prea devreme. Poza ta cu Witherul a fost cu %s s înainte să moară. Prinde-l în ultima secundă.",
   "chat.dungeontrain.familiar_photo.tributed.1": "Propria ta fotografie, întoarsă la tine. %s a plătit tribut pentru ea.",
   "chat.dungeontrain.familiar_photo.tributed.2": "O fotografie cunoscută. %s a plătit ca ea să călătorească mai departe.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s a plătit tribut pentru aceasta. Tu ai făcut-o.",

@@ -773,6 +773,8 @@
   "chat.dungeontrain.selfie_hint.wither_too_far": "凋零怪離得太遠，不算入鏡。再靠近一點。",
   "chat.dungeontrain.selfie_hint.warden_eyes": "伏守者在畫面裡，但眼睛不在。把牠的眼睛拍進畫面。",
   "chat.dungeontrain.selfie_hint.wither_eyes": "凋零怪在畫面裡，但眼睛不在。把牠的眼睛拍進畫面。",
+  "chat.dungeontrain.beacon_hint.too_late": "太晚了。你拍的時候凋零怪已經倒下了。在牠死前的那一秒拍下牠。",
+  "chat.dungeontrain.beacon_hint.too_early": "太早了。你拍下凋零怪的照片比牠死亡早了 %s 秒。在最後一秒拍下牠。",
   "chat.dungeontrain.familiar_photo.tributed.1": "你自己的照片，又繞了回來。%s 為它獻上了供奉。",
   "chat.dungeontrain.familiar_photo.tributed.2": "一張熟悉的照片。%s 付出了代價，讓它繼續旅行。",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s 為這一張獻上了供奉。它是你拍的。",
