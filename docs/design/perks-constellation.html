@@ -168,8 +168,8 @@ function tile(kind,gold,icon){const key=kind+"|"+(gold?1:0)+"|"+icon;if(TILE[key
   const c=document.createElement("canvas");c.width=c.height=104;const x=c.getContext("2d");x.imageSmoothingEnabled=false;
   const f=IMG[`frame:${kind}_${gold?"obtained":"unobtained"}`],i=IMG[icon]||IMG["item:nether_star"];if(f)x.drawImage(f,0,0,104,104);if(i)x.drawImage(i,20,20,64,64);
   return TILE[key]=c.toDataURL("image/png")}
-function drawTile(g,p,cx,cy,size){const t=tile(frameKind(p),p.cap||p.id==="root",p.icon||defaultIcon(p));if(!t)return;const im=el("image",{x:(cx-size/2).toFixed(2),y:(cy-size/2).toFixed(2),width:size.toFixed(2),height:size.toFixed(2),preserveAspectRatio:"none"});im.setAttribute("href",t);im.style.imageRendering="pixelated";g.appendChild(im)}
-function frameKind(p){if(p.id==="root"||p.cap)return "challenge";if(/x\s*\d/.test(p.cost||""))return "goal";return "task"}
+function drawTile(g,p,cx,cy,size){const t=tile(frameKind(p),p.id==="root",p.icon||defaultIcon(p));if(!t)return;const im=el("image",{x:(cx-size/2).toFixed(2),y:(cy-size/2).toFixed(2),width:size.toFixed(2),height:size.toFixed(2),preserveAspectRatio:"none"});im.setAttribute("href",t);im.style.imageRendering="pixelated";g.appendChild(im)}
+function frameKind(p){if(p.id==="root")return "challenge";return ["task","task","goal","challenge"][tierOf(p)]}
 const SEEDX=[[0,2,1,2],[1,3,2,1],[2,3,3,2],[3,3,4,2],[4,3,5,1],[5,2,6,1],[6,3,7,1],[7,2,8,1,true],[8,5,9,2]];
 const CX=400,CY=400,R0=70,STEP=58,KEY="dt-perk-constellation-v4";
 // Rings: which perks sit near the engine (cheap stats), in the middle (mechanics) and far out (capstones and specialisms).
@@ -220,6 +220,8 @@ const respace=m=>{const cs=m.classes.map(c=>{const ps=m.perks.filter(p=>p.cls===
   reknit(m,cs.map(o=>o.c.name))};
 const ORDER=["Archivist","Lover","Ranger","Speedster","Knight","Tank","Crafter","Builder","Hoarder","Trader"];
 const BUILDER={n:"Builder",c:"#b0b8c8",p:[["Drift Chance","More drifting carriages roll into your train each band","1 x 3"],["Own Carriage Return","Carriages you built come back around to you more often","1 x 2"],["Build Materials","A chest of building blocks in every drifting carriage you enter, refilled each tier","1"],["Drift Gift","Things you leave in a drifting carriage count double toward a friendlier echo","1"],["Drift Reach","Your builds travel to more players' trains","1 x 2"],["Keep Carriage","One drifting carriage you have edited is pinned and follows you into your next run","3"]]};
+// Tiers: 1, 2 or 3, costing 1 / 5 / 10. Older data carried a capstone flag; that reads as tier 3.
+const TIER_COST={1:"1",2:"5",3:"10"};const tierOf=p=>p.tier||(p.cap?3:1);
 const MIGRATIONS=[
   m=>swapContent(m,"Heal Friends","Befriend Faster"),
   m=>ORDER.forEach((n,i,arr)=>rotateClusterTo(m,n,i,arr.length)),
@@ -242,6 +244,7 @@ const MIGRATIONS=[
   m=>respace(m),
   m=>{const set=(n,c)=>{const k=clsByName(m,n);if(k)k.color=c};set("Crafter","#c7b08a");set("Builder","#b0b8c8");set("Hoarder","#8fc97a")},
   m=>{const c=clsByName(m,"Beefcake");if(c)c.name="Tank"},
+  m=>m.perks.forEach(p=>{if(p.id==="root")return;p.tier=p.tier||(p.cap?3:1);p.cost=TIER_COST[p.tier];delete p.cap}),
 ];
 let M;try{const s=localStorage.getItem(KEY);M=s?JSON.parse(s):null}catch(e){M=null}
 if(!M||!M.perks){M=defaultModel();M.v=0}
@@ -279,7 +282,7 @@ let showRev=true;try{showRev=localStorage.getItem("dt-perk-showrev")!=="0"}catch
 const status=t=>document.getElementById("status").textContent=t||"";
 // Put the panel beside the selected thing (a star, a link's middle, a class label), flipping to stay on screen.
 function placePanel(){const a=document.getElementById("aside");let pt=null;
-  if(sel){const p=byId(sel);if(p)pt={x:p.x,y:p.y,pad:root(p)?34:26}}
+  if(sel){const p=byId(sel);if(p)pt={x:p.x,y:p.y,pad:root(p)?34:[0,22,26,30][tierOf(p)]}}
   else if(selLink!==null&&M.links[selLink]){const l=M.links[selLink],A=byId(l.a),B=byId(l.b);if(A&&B)pt={x:(A.x+B.x)/2,y:(A.y+B.y)/2,pad:10}}
   else if(selCls){const ps=M.perks.filter(p=>p.cls===selCls);if(ps.length){const sx=ps.reduce((t,p)=>t+(p.x-CX),0),sy=ps.reduce((t,p)=>t+(p.y-CY),0);const an=Math.atan2(sy,sx);const r=Math.max(...ps.map(p=>Math.hypot(p.x-CX,p.y-CY)))+40;pt={x:CX+r*Math.cos(an),y:CY+r*Math.sin(an),pad:14}}}
   if(!pt){a.style.left=a.style.top="";a.style.right="";return}
@@ -304,7 +307,7 @@ function renderSky(){
   if(mode&&pick){const A=byId(pick);const T=hoverId&&hoverId!==pick?byId(hoverId):null;const end=T?{x:T.x,y:T.y}:mouse;if(A&&end){const d=mode==="cross"?curve(A,end):`M${A.x},${A.y} L${end.x},${end.y}`;const e=el("path",{d,class:"edge "+mode+" ghost"});if(mode==="req")e.style.stroke=T?color(T):color(A);svg.appendChild(e)}}
   M.perks.forEach(p=>{const g=el("g",{class:"node"+(sel===p.id?" sel":"")+(pick===p.id?" pick":"")+(mode&&hoverId===p.id&&pick!==p.id?" tgt":""),tabindex:"0","data-id":p.id});const c=color(p);const root=p.id==="root";
     g.appendChild(el("circle",{cx:p.x,cy:p.y,r:root?30:20,fill:"transparent",class:"hitzone"}));
-    if(style==="mc"){const S=root?32:26;const x=p.x-S/2,y=p.y-S/2;const gold=p.cap||root;
+    if(style==="mc"){const S=root?32:[0,24,28,32][tierOf(p)];const x=p.x-S/2,y=p.y-S/2;const gold=p.cap||root;
       drawTile(g,p,p.x,p.y,S);
       g.appendChild(el("rect",{x:x-1,y:y-1,width:S+2,height:S+2,fill:"none",stroke:c,"stroke-width":0.9,"stroke-opacity":.7}));
       if(sel===p.id)g.appendChild(el("rect",{x:x-3,y:y-3,width:S+6,height:S+6,fill:"none",stroke:"#e4b95a","stroke-width":1.5}));
@@ -312,11 +315,11 @@ function renderSky(){
       if(p.reviewed&&showRev)g.appendChild(el("rect",{x:x-4.5,y:y-4.5,width:S+9,height:S+9,fill:"none",stroke:"#5fd38a","stroke-width":1.6,class:"rev"}));
       if(!root){const t=el("text",{x:p.x,y:p.y+S/2+9,class:"plbl","text-anchor":"middle","dominant-baseline":"middle"});t.textContent=p.name;g.appendChild(t)}
       g.addEventListener("pointerdown",ev=>startDrag(ev,p,g));g.addEventListener("pointerenter",()=>{if(mode&&pick){hoverId=p.id;renderSky()}});g.addEventListener("pointerleave",()=>{if(hoverId===p.id){hoverId=null;renderSky()}});svg.appendChild(g);return}
-    g.appendChild(el("circle",{cx:p.x,cy:p.y,r:root?26:p.cap?11:8,fill:"none",stroke:c,"stroke-opacity":.35,class:"halo"}));
-    if(p.reviewed&&showRev)g.appendChild(el("circle",{cx:p.x,cy:p.y,r:(p.cap?11:8)+3.5,fill:"none",stroke:"#5fd38a","stroke-width":1.6,class:"rev"}));
-    g.appendChild(el("circle",{cx:p.x,cy:p.y,r:root?14:p.cap?6:4.5,fill:c}));
-    if(p.cap||root)g.appendChild(el("circle",{cx:p.x,cy:p.y,r:root?5:2,fill:"#070b16"}));
-    if(!root){const ang=Math.atan2(p.y-CY,p.x-CX);const t=el("text",{x:p.x,y:p.y+(p.cap?20:16),class:"plbl","text-anchor":"middle","dominant-baseline":"middle"});t.textContent=p.name;g.appendChild(t)}
+    const T=tierOf(p);const rr=root?14:[0,4.5,6.5,9][T],hr=root?26:[0,8,11.5,15][T];g.appendChild(el("circle",{cx:p.x,cy:p.y,r:hr,fill:"none",stroke:c,"stroke-opacity":.35,class:"halo"}));
+    if(p.reviewed&&showRev)g.appendChild(el("circle",{cx:p.x,cy:p.y,r:hr+3.5,fill:"none",stroke:"#5fd38a","stroke-width":1.6,class:"rev"}));
+    g.appendChild(el("circle",{cx:p.x,cy:p.y,r:rr,fill:c}));
+    if(root)g.appendChild(el("circle",{cx:p.x,cy:p.y,r:5,fill:"#070b16"}));
+    if(!root){const ang=Math.atan2(p.y-CY,p.x-CX);const t=el("text",{x:p.x,y:p.y+hr+8,class:"plbl","text-anchor":"middle","dominant-baseline":"middle"});t.textContent=p.name;g.appendChild(t)}
     g.addEventListener("pointerdown",ev=>startDrag(ev,p,g));
     g.addEventListener("pointerenter",()=>{if(mode&&pick){hoverId=p.id;renderSky()}});g.addEventListener("pointerleave",()=>{if(hoverId===p.id){hoverId=null;renderSky()}});g.addEventListener("keydown",ev=>{if(ev.key==="Enter"){select(p.id)}});svg.appendChild(g)});
 }
@@ -379,19 +382,18 @@ function inspector(){const box=document.getElementById("inspector");box.onclick=
   box.innerHTML=`<h2 style="color:${color(p)};display:none"></h2>
   <div class="line" style="gap:6px"><button class="lnk xclose" title="close">×</button><input id="pname" value="${esc(p.name)}" placeholder="name" style="font-family:var(--display);font-size:14px;color:${color(p)};flex:1"><button class="lnk ptable" title="see in table">☰</button><input type="checkbox" id="prev" title="reviewed" style="width:auto;margin:0"${p.reviewed?" checked":""}></div>
   <textarea id="pdesc" placeholder="effect">${esc(p.desc||"")}</textarea>
-  <div class="line"><input id="pcost" value="${esc(p.cost||"")}" placeholder="cost" title="cost x ranks" style="width:48px">
+  <div class="line"><select id="ptier" title="tier (cost 1 / 5 / 10)" style="width:auto"${root?" disabled":""}>${[1,2,3].map(t=>`<option value="${t}"${tierOf(p)===t?" selected":""}>Tier ${t}</option>`).join("")}</select>
   <select id="picon" title="icon" style="width:auto;flex:1">${ICON_NAMES.map(n=>`<option value="${n}"${(p.icon||defaultIcon(p))===n?" selected":""}>${label(n)}</option>`).join("")}</select>
   <select id="pcls"${root?" disabled":""} title="class" style="width:auto;flex:1">${M.classes.map(c=>`<option value="${c.id}"${c.id===p.cls?" selected":""}>${esc(c.name)}</option>`).join("")}</select>
-  <label title="capstone" style="display:flex;align-items:center;gap:4px;text-transform:none;letter-spacing:0;font-size:11px"><input type="checkbox" id="pcap" style="width:auto"${p.cap?" checked":""}${root?" disabled":""}>cap</label>
   ${root?"":`<button id="pdel" class="danger" title="delete perk">×</button>`}</div>
   <p class="hint">${M.links.filter(l=>l.a===p.id||l.b===p.id).map(l=>byId(l.a===p.id?l.b:l.a)?.name).filter(Boolean).join(" · ")||"not linked"}</p>`;
   const grow=t=>{t.style.height="auto";t.style.height=Math.max(20,t.scrollHeight)+"px"};const ta=box.querySelector("#pdesc");document.getElementById("aside").classList.remove("empty");grow(ta);requestAnimationFrame(()=>grow(ta));ta.addEventListener("input",()=>grow(ta));
   const bind=(id,f)=>box.querySelector("#"+id).addEventListener("input",e=>{f(e.target);typingKey=p.id+":"+id;save();renderSky();const h=box.querySelector("h2");if(h&&id==="pname")h.textContent=e.target.value});
   box.querySelector("#picon").onchange=e=>{p.icon=e.target.value;save();renderSky()};
   box.querySelector("#prev").onchange=e=>{p.reviewed=e.target.checked;save();renderSky()};
-  bind("pname",t=>p.name=t.value);bind("pdesc",t=>p.desc=t.value);bind("pcost",t=>p.cost=t.value);
-  if(!root){box.querySelector("#pcls").onchange=e=>{p.cls=e.target.value;save();render()};box.querySelector("#pcap").onchange=e=>{p.cap=e.target.checked;save();render()};
-    box.querySelector("#pdel").onclick=()=>{M.perks=M.perks.filter(q=>q.id!==p.id);M.links=M.links.filter(l=>l.a!==p.id&&l.b!==p.id);sel=null;save();render()}}
+  bind("pname",t=>p.name=t.value);bind("pdesc",t=>p.desc=t.value);
+  if(!root)box.querySelector("#ptier").onchange=e=>{p.tier=+e.target.value;p.cost=TIER_COST[p.tier];delete p.cap;save();renderSky()};
+  if(!root){box.querySelector("#pcls").onchange=e=>{p.cls=e.target.value;save();render()};    box.querySelector("#pdel").onclick=()=>{M.perks=M.perks.filter(q=>q.id!==p.id);M.links=M.links.filter(l=>l.a!==p.id&&l.b!==p.id);sel=null;save();render()}}
 }
 function classList(){const box=document.getElementById("classes");box.innerHTML=M.classes.map(c=>`<div style="display:flex;gap:6px;align-items:center"><input type="color" value="${c.color}" data-c="${c.id}" style="width:34px;padding:1px;height:26px"><input value="${esc(c.name)}" data-n="${c.id}"><button data-x="${c.id}" class="danger" title="Delete class and its perks">x</button></div>`).join("");
   box.querySelectorAll("[data-c]").forEach(i=>i.oninput=e=>{cls(e.target.dataset.c).color=e.target.value;typingKey=e.target.dataset.c+":color";save();render()});
@@ -404,7 +406,7 @@ const uid=()=>"p"+Math.random().toString(36).slice(2,8);
 function setModeButtons(){document.getElementById("bLinkReq").classList.toggle("on",mode==="req");document.getElementById("bLinkX").classList.toggle("on",mode==="cross")}
 document.getElementById("bLinkReq").onclick=()=>{mode=mode==="req"?null:"req";pick=null;setModeButtons();status(mode?"Click the perk that is needed first, then the perk it unlocks":"");render()};
 document.getElementById("bLinkX").onclick=()=>{mode=mode==="cross"?null:"cross";pick=null;setModeButtons();status(mode?"Click two stars to cross-link them":"");render()};
-document.getElementById("bAddPerk").onclick=()=>{const base=sel?byId(sel):byId("root");const ang=Math.atan2(base.y-CY,base.x-CX)||-Math.PI/2;const p={id:uid(),cls:base.cls||M.classes[0]?.id||null,name:"New perk",desc:"",cost:"1",x:+(base.x+Math.cos(ang)*STEP).toFixed(1),y:+(base.y+Math.sin(ang)*STEP).toFixed(1)};
+document.getElementById("bAddPerk").onclick=()=>{const base=sel?byId(sel):byId("root");const ang=Math.atan2(base.y-CY,base.x-CX)||-Math.PI/2;const p={id:uid(),cls:base.cls||M.classes[0]?.id||null,name:"New perk",desc:"",cost:"1",tier:1,x:+(base.x+Math.cos(ang)*STEP).toFixed(1),y:+(base.y+Math.sin(ang)*STEP).toFixed(1)};
   M.perks.push(p);M.links.push({a:base.id,b:p.id,kind:"req",oneWay:true});sel=p.id;selLink=null;save();render();document.getElementById("pname")?.select()};
 document.getElementById("bAddClass").onclick=()=>{const hue=Math.floor(Math.random()*360);const c={id:"c"+uid(),name:"New class",color:hslHex(hue)};M.classes.push(c);const n=M.classes.length;const a=-Math.PI/2+(n-1)*2*Math.PI/n;
   const p={id:uid(),cls:c.id,name:"First perk",desc:"",cost:"1",x:+(CX+R0*Math.cos(a)).toFixed(1),y:+(CY+R0*Math.sin(a)).toFixed(1)};M.perks.push(p);M.links.push({a:"root",b:p.id,kind:"req",oneWay:true});sel=p.id;save();render();{const t=document.getElementById("classes");t.hidden=false;document.querySelector('[data-t="classes"]').classList.add("on")}};
@@ -439,7 +441,7 @@ function openMenu(e){const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY
   const g=e.target.closest(".node");const lbl=e.target.closest(".lbl");
   if(g){const p=M.perks.find(pp=>pp.id===g.dataset.id);if(!p)return;sel=p.id;selLink=null;selCls=null;render();
     const startLink=k=>{mode=k;pick=p.id;mouse={x:p.x,y:p.y};hoverId=null;setModeButtons();status(k==="req"?"Click the perk to link to":"Click the perk to chord to")};
-    const items=[["link from here",()=>startLink("req")],["chord from here",()=>startLink("cross")],["+ perk from here",()=>document.getElementById("bAddPerk").click()],["duplicate perk",()=>{const ang=Math.atan2(p.y-CY,p.x-CX);const np={id:uid(),cls:p.cls,name:p.name,desc:p.desc,cost:p.cost,cap:false,x:+(p.x+Math.cos(ang+Math.PI/2)*34).toFixed(1),y:+(p.y+Math.sin(ang+Math.PI/2)*34).toFixed(1)};M.perks.push(np);M.links.filter(l=>l.a===p.id||l.b===p.id).forEach(l=>M.links.push({a:l.a===p.id?np.id:l.a,b:l.b===p.id?np.id:l.b,kind:l.kind,oneWay:l.oneWay}));M.links.push({a:p.id,b:np.id,kind:"req",oneWay:false});sel=np.id;selLink=null;selCls=null;save();render();document.getElementById("pname")?.select()}]];
+    const items=[["link from here",()=>startLink("req")],["chord from here",()=>startLink("cross")],["+ perk from here",()=>document.getElementById("bAddPerk").click()],["duplicate perk",()=>{const ang=Math.atan2(p.y-CY,p.x-CX);const np={id:uid(),cls:p.cls,name:p.name,desc:p.desc,cost:p.cost,tier:tierOf(p),x:+(p.x+Math.cos(ang+Math.PI/2)*34).toFixed(1),y:+(p.y+Math.sin(ang+Math.PI/2)*34).toFixed(1)};M.perks.push(np);M.links.filter(l=>l.a===p.id||l.b===p.id).forEach(l=>M.links.push({a:l.a===p.id?np.id:l.a,b:l.b===p.id?np.id:l.b,kind:l.kind,oneWay:l.oneWay}));M.links.push({a:p.id,b:np.id,kind:"req",oneWay:false});sel=np.id;selLink=null;selCls=null;save();render();document.getElementById("pname")?.select()}]];
     if(p.id!=="root")items.push(["delete perk",()=>{M.perks=M.perks.filter(x=>x.id!==p.id);M.links=M.links.filter(l=>l.a!==p.id&&l.b!==p.id);sel=null;save();render()},"danger"]);
     showMenu(e.clientX,e.clientY,items);return}
   if(lbl){showMenu(e.clientX,e.clientY,[["+ class",()=>document.getElementById("bAddClass").click()]]);return}

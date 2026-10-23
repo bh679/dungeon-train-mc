@@ -77,7 +77,7 @@ Costs are in points. "Rank" perks can be bought up to the listed max. Hook colum
 | 4 | Free Live Eye | A free Live Eye each tier | 1 | Live Eye item grant |
 | 5 | Live Eye Duration | An untaken Live Eye stays open 10 min longer | 1 x 2 | Live Eye close-call timer |
 | 6 | Vote Weight | Your votes in Live Eyes count double; rank 2 triple | 1 x 2 | relay vote weight |
-| 7 | **Archive Carryover** (capstone) | Every book and photo you collect this life is kept in a bound album that appears in your next run's starter carriage (read-only, no items) | 3 | per-player store, starter prefab |
+| 7 | Archive Carryover (tier 3) | Every book and photo you collect this life is kept in a bound album that appears in your next run's starter carriage (read-only, no items) | 3 | per-player store, starter prefab |
 
 ### 3.2 Lover (care for others)
 
@@ -87,7 +87,7 @@ Costs are in points. "Rank" perks can be bought up to the listed max. Hook colum
 | 2 | Heal Friends | Right-click a player or tame with food to feed and heal them; rank 2 also gives Regeneration I for 5 s | 1 x 2 | interact event, `FoodData` |
 | 3 | Tame Animals | You can tame animals at all (untamable without this perk in a run) | 1 | tame gate, `RunTameTracker` |
 | 4 | Spare Enemies | Hostiles you drop under 20% health flee and pay the XP a kill would have; rank 2 raises it to 35% | 1 x 2 | damage event, target-selector mixin |
-| 5 | **Save Ally** (capstone) | Once per tier, a player who dies within 12 blocks of you is left at one heart beside you; in singleplayer your tames respawn at the starter carriage next tier | 3 | death event, `RunTameTracker` |
+| 5 | Save Ally (tier 3) | Once per tier, a player who dies within 12 blocks of you is left at one heart beside you; in singleplayer your tames respawn at the starter carriage next tier | 3 | death event, `RunTameTracker` |
 
 ### 3.3 Explorer
 
@@ -102,7 +102,7 @@ Parked for now. Its perks (Biome XP, Night Vision, No Fall Damage, Preview Next 
 | 3 | Sprint Jump | Sprint-jumps carry 1 block further per rank | 1 x 2 | jump velocity while sprinting |
 | 4 | Sprint Hunger | Sprinting costs 50% less hunger; rank 2 none | 1 x 2 | `FoodData` exhaustion |
 | 5 | Wind Resistance | Wind push halved; rank 2 immune | 1 x 2 | `wind/WindPush`, `wind/TrainExposure` |
-| 6 | **Haste** (capstone) | Permanent Haste II; moving carriages give Speed II | 3 | permanent `MobEffect`, carriage deck |
+| 6 | Haste (tier 3) | Permanent Haste II; moving carriages give Speed II | 3 | permanent `MobEffect`, carriage deck |
 
 ### 3.5 Tank (take hits)
 
@@ -112,7 +112,7 @@ Parked for now. Its perks (Biome XP, Night Vision, No Fall Damage, Preview Next 
 | 2 | Armour | +2 armour per rank, ignores the diamond-over-leather penalty | 1 x 2 | `combat/ArmorReductionCurve` |
 | 3 | Totem | Totem of Undying effect without the item, 10 min cooldown; rank 2 5 min | 2 x 2 | death event, vanilla totem animation |
 | 4 | Hunger | Hunger drains 30% slower; food poison halved | 1 | `FoodData` |
-| 5 | **Death Save** (capstone) | Once per tier, lethal damage leaves half a heart and 3 s of Resistance V | 3 | death event, `MobEffectOffsets` |
+| 5 | Death Save (tier 3) | Once per tier, lethal damage leaves half a heart and 3 s of Resistance V | 3 | death event, `MobEffectOffsets` |
 
 ### 3.6 Hoarder (carry everything)
 
@@ -123,7 +123,7 @@ Parked for now. Its perks (Biome XP, Night Vision, No Fall Damage, Preview Next 
 | 2b | Chest Sense | The next chest within 32 blocks glints through walls for 5 s when you enter a new chunk row | 1 x 2 | loot container scan on chunk cross |
 | 3 | Luck | 1 in 20 containers rolls with Luck per rank (2 in 20, 3 in 20, ...) | 1 x 3 | loot roller luck |
 | 4 | Extra Drops | Mobs drop 1 extra item 25% of the time | 1 | loot roller |
-| 5 | **Death Chest** (capstone) | Items dropped on death stay in a locked chest at the death spot for your next life | 3 | death drops, per-player store |
+| 5 | Death Chest (tier 3) | Items dropped on death stay in a locked chest at the death spot for your next life | 3 | death drops, per-player store |
 
 ### 3.7 Ranger
 
@@ -137,7 +137,7 @@ Parked for now. Held back: Arrow Accuracy, Pet Health, Forage Drops, Animals Fol
 | 2 | Debuff Aura | Hostiles within 8 blocks get Weakness I; rank 2 adds Slowness I | 1 x 2 | server tick, `MobEffectOffsets` |
 | 3 | Execute | Hits on mobs under 25% health deal double damage | 1 | damage event |
 | 4 | Kill Buff | Kills grant 2 s of Strength I and heal half a heart | 1 | kill event |
-| 5 | **Aura Range** (capstone) | Debuff Aura reaches 16 blocks and affects bosses | 3 | aura |
+| 5 | Aura Range (tier 3) | Debuff Aura reaches 16 blocks and affects bosses | 3 | aura |
 
 ### 3.9 Trader (deals and truces)
 
@@ -147,7 +147,7 @@ Parked for now. Held back: Arrow Accuracy, Pet Health, Forage Drops, Animals Fol
 | 2 | Trade Restock | Villagers never lock a trade; restock twice as fast | 1 | villager trade data |
 | 3 | Neutral Truce | Neutral mobs (piglins, endermen, zombie piglins) ignore you unless attacked | 2 | target-selector mixin |
 | 4 | Bartering | Piglin bartering yields rarer results; Echoes offer a trade instead of attacking | 1 x 2 | barter loot table, `echo/` |
-| 5 | **Recruit Villager** (capstone) | One villager per carriage can be recruited; recruits restock and stay aboard | 3 | villager AI, carriage save (Sable test) |
+| 5 | Recruit Villager (tier 3) | One villager per carriage can be recruited; recruits restock and stay aboard | 3 | villager AI, carriage save (Sable test) |
 
 ### 3.10 Crafter (make and mend)
 
@@ -157,7 +157,7 @@ Parked for now. Held back: Arrow Accuracy, Pet Health, Forage Drops, Animals Fol
 | 2 | Enchant Cost | Enchanting costs 1 level less per rank, lapis halved | 1 x 2 | enchant cost hook |
 | 3 | Re-enchant | Already-enchanted items can go back on the table and keep what they have | 2 | enchant table gate |
 | 4 | Enchant Max | Enchantments can roll one level past their normal max; rank 2 two | 2 x 2 | enchant level cap |
-| 5 | **Enchant Bonus** (capstone) | Worn armour and held weapons act one enchantment level higher on everything they already have | 3 | enchantment lookup mixin |
+| 5 | Enchant Bonus (tier 3) | Worn armour and held weapons act one enchantment level higher on everything they already have | 3 | enchantment lookup mixin |
 
 ### 3.11 Builder (drifting carriages)
 
@@ -170,7 +170,7 @@ Drifting carriages are the rooms players build by hand that travel the relay int
 | 3 | Build Materials | A chest of building blocks in every drifting carriage you enter, refilled each tier | 1 | shared carriage enter hook |
 | 4 | Drift Gift | Things you leave in a drifting carriage count double toward a friendlier echo | 1 | `event/DriftGenerosity` ledger |
 | 5 | Drift Reach | Your builds travel to more players' trains | 1 x 2 | relay pool weight |
-| 6 | **Keep Carriage** (capstone) | One drifting carriage you have edited is pinned and follows you into your next run | 3 | per-player store, `TrainAssembler.tryLeaseShared` |
+| 6 | Keep Carriage (tier 3) | One drifting carriage you have edited is pinned and follows you into your next run | 3 | per-player store, `TrainAssembler.tryLeaseShared` |
 
 ---
 
