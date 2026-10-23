@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "161";
+    public static final String PROTOCOL_VERSION = "162";
 
     private DungeonTrainNet() {}
 
@@ -263,6 +263,7 @@ public final class DungeonTrainNet {
         // "opened advancements" flag) and renders it with the live keybind.
         registrar.playToClient(AdvancementsHintPacket.TYPE, AdvancementsHintPacket.STREAM_CODEC, AdvancementsHintPacket::handle);
         registrar.playToClient(LifeDisqualifiedPacket.TYPE, LifeDisqualifiedPacket.STREAM_CODEC, LifeDisqualifiedPacket::handle);
+        registrar.playToClient(ChallengesLockedPacket.TYPE, ChallengesLockedPacket.STREAM_CODEC, ChallengesLockedPacket::handle);
         registrar.playToClient(EarnedPhotoPacket.TYPE, EarnedPhotoPacket.STREAM_CODEC, EarnedPhotoPacket::handle);
         registrar.playToClient(PhotoBiomesPacket.TYPE, PhotoBiomesPacket.STREAM_CODEC, PhotoBiomesPacket::handle);
 
