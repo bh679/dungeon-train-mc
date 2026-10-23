@@ -2809,7 +2809,7 @@
   "advancements.dungeontrain.dungeon_train.all_out_of_secrets.description": "Obtiens tous les progrès de l'onglet Le menu secret.",
   "advancements.dungeontrain.dungeon_train.train_explored.hint": "Progrès de Dungeon Train entièrement explorés",
   "advancements.dungeontrain.dungeon_train.tab_challenges.title": "Défis",
-  "advancements.dungeontrain.dungeon_train.tab_challenges.description": "Joue le train avec des règles plus dures.",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.description": "Joue le train avec des règles plus dures. Solo uniquement.",
   "advancements.dungeontrain.dungeon_train.apple_a_day.title": "« Une pomme par jour éloigne le médecin pour toujours. »",
   "advancements.dungeontrain.dungeon_train.apple_a_day.description": "Parcours %s wagons en une seule vie sans pomme ni sac à dos comestible dans ton inventaire.",
   "advancements.dungeontrain.dungeon_train.apple_a_day.hint": "Garde le verger à distance.",
