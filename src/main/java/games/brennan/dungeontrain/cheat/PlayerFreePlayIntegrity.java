@@ -115,7 +115,9 @@ public final class PlayerFreePlayIntegrity {
         ServerLevel overworld = server.overworld();
         if (overworld == null) return;
         String name = source.getGameProfile().getName();
-        // Write through to the save now, so a crash before the next autosave can't lose it.
+        // Marked dirty here; the next save (autosave or quit) writes it, together with the
+        // player's own RUN_CHEATED. Should both be lost to a crash, the login check re-marks the
+        // world from the player's flag if that survived (RunIntegrity.spreadToWorld).
         DungeonTrainWorldData.get(overworld).markPlayerFreePlay(name, toJson(cause, server.registryAccess()));
         sourceName = name;
         sourceCause = cause;
