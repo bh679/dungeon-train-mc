@@ -284,7 +284,7 @@ let showRev=true;try{showRev=localStorage.getItem("dt-perk-showrev")!=="0"}catch
 const status=t=>document.getElementById("status").textContent=t||"";
 // Put the panel beside the selected thing (a star, a link's middle, a class label), flipping to stay on screen.
 function placePanel(){const a=document.getElementById("aside");let pt=null;
-  if(sel){const p=byId(sel);if(p)pt={x:p.x,y:p.y,pad:root(p)?34:[0,22,24,26][tierOf(p)]}}
+  if(sel){const p=byId(sel);if(p)pt={x:p.x,y:p.y,pad:root(p)?34:[0,20,24,26][tierOf(p)]}}
   else if(selLink!==null&&M.links[selLink]){const l=M.links[selLink],A=byId(l.a),B=byId(l.b);if(A&&B)pt={x:(A.x+B.x)/2,y:(A.y+B.y)/2,pad:10}}
   else if(selCls){const ps=M.perks.filter(p=>p.cls===selCls);if(ps.length){const sx=ps.reduce((t,p)=>t+(p.x-CX),0),sy=ps.reduce((t,p)=>t+(p.y-CY),0);const an=Math.atan2(sy,sx);const r=Math.max(...ps.map(p=>Math.hypot(p.x-CX,p.y-CY)))+40;pt={x:CX+r*Math.cos(an),y:CY+r*Math.sin(an),pad:14}}}
   if(!pt){a.style.left=a.style.top="";a.style.right="";return}
@@ -309,7 +309,7 @@ function renderSky(){
   if(mode&&pick){const A=byId(pick);const T=hoverId&&hoverId!==pick?byId(hoverId):null;const end=T?{x:T.x,y:T.y}:mouse;if(A&&end){const d=mode==="cross"?curve(A,end):`M${A.x},${A.y} L${end.x},${end.y}`;const e=el("path",{d,class:"edge "+mode+" ghost"});if(mode==="req")e.style.stroke=T?color(T):color(A);svg.appendChild(e)}}
   M.perks.forEach(p=>{const g=el("g",{class:"node"+(sel===p.id?" sel":"")+(pick===p.id?" pick":"")+(mode&&hoverId===p.id&&pick!==p.id?" tgt":""),tabindex:"0","data-id":p.id});const c=color(p);const root=p.id==="root";
     g.appendChild(el("circle",{cx:p.x,cy:p.y,r:root?30:20,fill:"transparent",class:"hitzone"}));
-    if(style==="mc"){const S=root?32:[0,24,26,28][tierOf(p)];const x=p.x-S/2,y=p.y-S/2;const gold=p.cap||root;
+    if(style==="mc"){const S=root?32:[0,22,26,28][tierOf(p)];const x=p.x-S/2,y=p.y-S/2;const gold=p.cap||root;
       drawTile(g,p,p.x,p.y,S);
       g.appendChild(el("rect",{x:x-1,y:y-1,width:S+2,height:S+2,fill:"none",stroke:c,"stroke-width":0.9,"stroke-opacity":.7}));
       if(sel===p.id)g.appendChild(el("rect",{x:x-3,y:y-3,width:S+6,height:S+6,fill:"none",stroke:"#e4b95a","stroke-width":1.5}));
@@ -317,7 +317,7 @@ function renderSky(){
       if(p.reviewed&&showRev)g.appendChild(el("rect",{x:x-4.5,y:y-4.5,width:S+9,height:S+9,fill:"none",stroke:"#5fd38a","stroke-width":1.6,class:"rev"}));
       if(!root){const t=el("text",{x:p.x,y:p.y+S/2+9,class:"plbl","text-anchor":"middle","dominant-baseline":"middle"});t.textContent=p.name;g.appendChild(t)}
       g.addEventListener("pointerdown",ev=>startDrag(ev,p,g));g.addEventListener("pointerenter",()=>{if(mode&&pick){hoverId=p.id;renderSky()}});g.addEventListener("pointerleave",()=>{if(hoverId===p.id){hoverId=null;renderSky()}});svg.appendChild(g);return}
-    const T=tierOf(p);const rr=root?14:[0,4.5,5.5,6.5][T],hr=root?26:[0,8,9.5,11][T];g.appendChild(el("circle",{cx:p.x,cy:p.y,r:hr,fill:"none",stroke:c,"stroke-opacity":.35,class:"halo"}));
+    const T=tierOf(p);const rr=root?14:[0,3.8,5.5,6.5][T],hr=root?26:[0,7,9.5,11][T];g.appendChild(el("circle",{cx:p.x,cy:p.y,r:hr,fill:"none",stroke:c,"stroke-opacity":.35,class:"halo"}));
     if(p.reviewed&&showRev)g.appendChild(el("circle",{cx:p.x,cy:p.y,r:hr+3.5,fill:"none",stroke:"#5fd38a","stroke-width":1.6,class:"rev"}));
     g.appendChild(el("circle",{cx:p.x,cy:p.y,r:rr,fill:c}));
     if(root||T===3)g.appendChild(el("circle",{cx:p.x,cy:p.y,r:root?5:2,fill:"#070b16"}));
