@@ -205,8 +205,9 @@ public final class EarnedPhotoAlbumScreen extends Screen {
         minecraft.setScreen(parent);
     }
 
+    /** Pauses when the screen it opened over does (the advancements screen), so the train doesn't run on behind it. */
     @Override
     public boolean isPauseScreen() {
-        return false;
+        return parent != null && parent.isPauseScreen();
     }
 }
