@@ -649,6 +649,11 @@ dependencies {
     // (`coreapi/ModInfo.API_*_VERSION` in its jar).
     compileOnly "maven.modrinth:distanthorizonsapi:${distant_horizons_api_version}"
 
+    // Just Enough Items — COMPILE ONLY, never on any run classpath. JEI is an opt-in modpack
+    // companion; compat/jei/DungeonTrainJeiPlugin is the only DT class naming it, and JEI alone
+    // loads it (annotation scan), so it is never linked without JEI installed.
+    compileOnly "maven.modrinth:jei:${jei_version}"
+
     // Fast Paintings + Moonlight — REQUIRED third-party deps (see gradle.properties). Not bundled:
     // the launchers install them from the (required) relations like Sable and the siblings. On the
     // dev classpath so runClient/runServer stamp block paintings; DT references the block only by
