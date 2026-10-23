@@ -19,8 +19,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Five jobs on one set of seams: gates Effortless Building's creative features behind the Free
- * Play confirmation, records what they change into the editor's undo history, with a
+ * Six jobs on one set of seams: drops every Effortless Building action from a player who is not in
+ * Creative ({@link EffortlessBuildingGate#blockedOutsideCreative}, no prompt), gates the rest behind
+ * the Free Play confirmation, records what they change into the editor's undo history, with a
  * variant clipboard in hand turns a shape placement into a bulk clipboard paste
  * ({@link EffortlessBuildingVariants}), and clears the variant pools of the cells a shape break
  * empties ({@link EffortlessBuildingVariantBreaks}), as a hand break does, and carries the
@@ -64,7 +65,7 @@ public abstract class EffortlessBuildingPacketHandlerMixin {
     @Inject(method = "handlePlaceBuildMode", at = @At("HEAD"), cancellable = true, remap = false)
     private static void dungeontrain$beforePlaceBuildMode(
             @Coerce Object packet, ServerPlayer player, CallbackInfo ci) {
-        if (EffortlessBuildingGate.gate(player)) {
+        if (EffortlessBuildingGate.blockedOutsideCreative(player) || EffortlessBuildingGate.gate(player)) {
             ci.cancel();
             return;
         }
@@ -89,7 +90,7 @@ public abstract class EffortlessBuildingPacketHandlerMixin {
     @Inject(method = "handleBreakBuildMode", at = @At("HEAD"), cancellable = true, remap = false)
     private static void dungeontrain$beforeBreakBuildMode(
             @Coerce Object packet, ServerPlayer player, CallbackInfo ci) {
-        if (EffortlessBuildingGate.gate(player)) {
+        if (EffortlessBuildingGate.blockedOutsideCreative(player) || EffortlessBuildingGate.gate(player)) {
             ci.cancel();
             return;
         }
@@ -111,7 +112,7 @@ public abstract class EffortlessBuildingPacketHandlerMixin {
 
     @Inject(method = "handleUndo", at = @At("HEAD"), cancellable = true, remap = false)
     private static void dungeontrain$beforeUndo(ServerPlayer player, CallbackInfo ci) {
-        if (EffortlessBuildingGate.gate(player)) {
+        if (EffortlessBuildingGate.blockedOutsideCreative(player) || EffortlessBuildingGate.gate(player)) {
             ci.cancel();
             return;
         }
@@ -127,7 +128,7 @@ public abstract class EffortlessBuildingPacketHandlerMixin {
 
     @Inject(method = "handleRedo", at = @At("HEAD"), cancellable = true, remap = false)
     private static void dungeontrain$beforeRedo(ServerPlayer player, CallbackInfo ci) {
-        if (EffortlessBuildingGate.gate(player)) {
+        if (EffortlessBuildingGate.blockedOutsideCreative(player) || EffortlessBuildingGate.gate(player)) {
             ci.cancel();
             return;
         }
@@ -168,11 +169,16 @@ public abstract class EffortlessBuildingPacketHandlerMixin {
 
     /**
      * Cancelling here is what makes a declined prompt honest: the server never stores the modifier,
-     * so the player's next placement isn't multiplied.
+     * so the player's next placement isn't multiplied. Outside Creative every modifier packet is
+     * dropped, off as well as on: none of the mod's features answer to a Survival player.
      */
     @Inject(method = "handleUpdateModifiers", at = @At("HEAD"), cancellable = true, remap = false)
     private static void dungeontrain$gateUpdateModifiers(
             @Coerce Object packet, ServerPlayer player, CallbackInfo ci) {
+        if (EffortlessBuildingGate.blockedOutsideCreative(player)) {
+            ci.cancel();
+            return;
+        }
         if (!EffortlessBuildingGate.enablesModifier(packet)) return; // turning one off is free
         if (EffortlessBuildingGate.gate(player)) ci.cancel();
     }
