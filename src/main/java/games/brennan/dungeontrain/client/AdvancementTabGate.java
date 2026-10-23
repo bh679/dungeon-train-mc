@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.registry.ModMobEffects;
+import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.ResourceLocation;
@@ -41,6 +42,21 @@ public final class AdvancementTabGate {
     public static boolean shouldHideTab(ResourceLocation rootId) {
         return isHiddenOtherTab(rootId, ClientDisplayConfig.isHideOtherAdvancementTabs())
             || (isEditorAdvancement(rootId) && shouldHideEditorTab());
+    }
+
+    /**
+     * Should earning {@code node} skip its pop-up card? True for advancements whose tab (root) is outside
+     * the {@code dungeontrain} namespace while {@link ClientDisplayConfig#isHideOtherAdvancementCards()}
+     * is on. Only the card goes: the advancement is still earned, and the server still announces it in
+     * chat. Read by {@code ClientAdvancementsCardGateMixin} on every earn, so the option applies live.
+     */
+    public static boolean shouldSuppressCard(AdvancementNode node) {
+        return isHiddenOtherCard(node.root().holder().id(), ClientDisplayConfig.isHideOtherAdvancementCards());
+    }
+
+    /** The namespace test behind {@link #shouldSuppressCard} — pure, for tests. */
+    static boolean isHiddenOtherCard(ResourceLocation rootId, boolean hideOthers) {
+        return hideOthers && !DungeonTrain.MOD_ID.equals(rootId.getNamespace());
     }
 
     /** The namespace half of {@link #shouldHideTab} — pure, for tests. */
