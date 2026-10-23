@@ -247,6 +247,15 @@ const MIGRATIONS=[
   m=>m.perks.forEach(p=>{if(p.id==="root")return;p.tier=p.tier||(p.cap?3:1);p.cost=TIER_COST[p.tier];delete p.cap}),
   // Tiers by ring: the Engine's neighbours are tier 1, the outermost stars tier 3, the rest tier 2.
   m=>{const ring=new Set(m.links.filter(l=>l.a==="root"||l.b==="root").map(l=>l.a==="root"?l.b:l.a));m.perks.forEach(p=>{if(p.id==="root")return;const r=Math.hypot(p.x-CX,p.y-CY);p.tier=ring.has(p.id)?1:(r>=240?3:2);p.cost=TIER_COST[p.tier]})},
+  // Warlock joins between Lover and Knight; Speedster moves between Crafter and Builder. Clusters swing whole, nothing re-stitched.
+  m=>{const ORDER2=["Archivist","Lover","Warlock","Knight","Tank","Crafter","Speedster","Builder","Hoarder","Trader"];
+    if(!clsByName(m,"Warlock")){const c={id:"cwarlock",name:"Warlock",color:"#a07cff"};m.classes.push(c);const a=-Math.PI/2+2*2*Math.PI/ORDER2.length;const at=(r,da)=>({x:+(CX+r*Math.cos(a+da)).toFixed(1),y:+(CY+r*Math.sin(a+da)).toFixed(1)});
+      const P=[["cwarlock0","Throwables","Any throwable does damage or an effect: slimeballs slow and hurt, snowballs frostbite and hurt, fire charges work, wind charges hurt too",1,at(105,0)],
+        ["cwarlock1","Teleport Player","Teleport a player to you",2,at(200,-.2)],["cwarlock2","Standless Brewing","Brew potions without a brewing stand",2,at(200,.2)],
+        ["cwarlock3","Summon Lightning","Call down lightning",3,at(290,-.24)],["cwarlock4","Convert Mob","Turn a mob to your side",3,at(290,.24)]];
+      P.forEach(([id,name,desc,tier,pos])=>m.perks.push({id,cls:c.id,name,desc,tier,cost:TIER_COST[tier],x:pos.x,y:pos.y,reviewed:false}));
+      [["root","cwarlock0"],["cwarlock0","cwarlock1"],["cwarlock0","cwarlock2"],["cwarlock1","cwarlock3"],["cwarlock2","cwarlock4"]].forEach(([x,y])=>m.links.push({a:x,b:y,kind:"req",oneWay:false}))}
+    ORDER2.forEach((n,i,arr)=>rotateClusterTo(m,n,i,arr.length))},
 ];
 let M;try{const s=localStorage.getItem(KEY);M=s?JSON.parse(s):null}catch(e){M=null}
 if(!M||!M.perks){M=defaultModel();M.v=0}

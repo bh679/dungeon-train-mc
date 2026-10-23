@@ -37,7 +37,7 @@ The tree is framed as **classes**, nine active, Explorer and Ranger parked. Each
 Archivist Lover Explorer Speedster Tank Hoarder Ranger Knight Trader Crafter Builder
 ```
 
-Order around the sky, clockwise from the top: Archivist, Lover, Speedster, Knight, Tank, Crafter, Builder, Hoarder, Trader (Explorer and Ranger parked). Knight sits between the two movement and toughness classes, well away from Archivist.
+Order around the sky, clockwise from the top: Archivist, Lover, Warlock, Knight, Tank, Crafter, Speedster, Builder, Hoarder, Trader (Explorer and Ranger parked). Knight sits between the two movement and toughness classes, well away from Archivist.
 
 Cross-links (dashed). Two-way unless marked:
 - Lover 4 <-> Trader 3 (Spare Enemies <-> Neutral Truce)
@@ -171,6 +171,16 @@ Drifting carriages are the rooms players build by hand that travel the relay int
 | 4 | Drift Gift | Things you leave in a drifting carriage count double toward a friendlier echo | 1 | `event/DriftGenerosity` ledger |
 | 5 | Drift Reach | Your builds travel to more players' trains | 1 x 2 | relay pool weight |
 | 6 | Keep Carriage (tier 3) | One drifting carriage you have edited is pinned and follows you into your next run | 3 | per-player store, `TrainAssembler.tryLeaseShared` |
+
+### 3.12 Warlock (projectiles and magic)
+
+| # | Perk | Effect | Tier | Hook |
+|---|---|---|---|---|
+| 1 | Throwables | Any throwable does damage or an effect: slimeballs slow and hurt, snowballs frostbite and hurt, fire charges work, wind charges hurt too | 1 | projectile hit events |
+| 2 | Teleport Player | Teleport a player to you | 2 | teleport command path |
+| 3 | Standless Brewing | Brew potions without a brewing stand | 2 | brewing recipe hook |
+| 4 | Summon Lightning | Call down lightning | 3 | lightning bolt spawn |
+| 5 | Convert Mob | Turn a mob to your side | 3 | mob AI goal swap |
 
 ---
 
