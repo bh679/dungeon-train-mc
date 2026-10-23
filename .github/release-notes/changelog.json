@@ -29637,9 +29637,9 @@
       "highlights": [],
       "pr": 2242,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
     },
     {
       "id": "editor-empty-blocks-setting",
@@ -29654,9 +29654,9 @@
       "highlights": [],
       "pr": 2244,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
     },
     {
       "id": "narrative-tab-shelves-frames",
@@ -29671,9 +29671,9 @@
       "highlights": [],
       "pr": 2246,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
     },
     {
       "id": "editor-markers-inside-view",
@@ -29688,9 +29688,9 @@
       "highlights": [],
       "pr": 2247,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
     },
     {
       "id": "enderman-train-teleport",
@@ -29705,9 +29705,9 @@
       "highlights": [],
       "pr": 2248,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
     },
     {
       "id": "own-book-boost-confirm",
@@ -29724,9 +29724,9 @@
       "highlights": [],
       "pr": 2249,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
     },
     {
       "id": "dirt-carriage-variety",
@@ -29741,9 +29741,9 @@
       "highlights": [],
       "pr": 2250,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
     },
     {
       "id": "photo-fix",
@@ -29757,9 +29757,9 @@
       "highlights": [],
       "pr": 2253,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
     },
     {
       "id": "bug-fixing-2251",
@@ -29773,9 +29773,9 @@
       "highlights": [],
       "pr": 2251,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
     },
     {
       "id": "mob-buff-offsets-rederive",
@@ -29791,9 +29791,9 @@
       "highlights": [],
       "pr": 2256,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
     },
     {
       "id": "dt-only-advancement-cards",
@@ -29811,9 +29811,9 @@
       ],
       "pr": 2254,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
     },
     {
       "id": "slash-log-command",
@@ -29828,9 +29828,9 @@
       "highlights": [],
       "pr": 2257,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
     },
     {
       "id": "jei-missing-forge",
@@ -29845,9 +29845,9 @@
       "highlights": [],
       "pr": 2258,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
     },
     {
       "id": "challenges-single-player-only",
@@ -29866,9 +29866,9 @@
       ],
       "pr": 2259,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
     },
     {
       "id": "dimensional-carriage-shelter",
@@ -29883,9 +29883,9 @@
       "highlights": [],
       "pr": 2255,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "photo-keep-off-thread",
@@ -29902,9 +29902,9 @@
       ],
       "pr": 2252,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "photo-wildlife-count-fix",
@@ -29919,9 +29919,9 @@
       "summary": "More of the creatures you photograph now count toward your wildlife photos.",
       "highlights": [],
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "camera-hints",
@@ -29934,6 +29934,62 @@
       "summary": "Some photos now let you know when your timing was a little off.",
       "highlights": [],
       "pr": 2263,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
+    },
+    {
+      "id": "allay-room-cows-update",
+      "version": "0.1476.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "New carriages",
+      "summary": "A new carriage can now turn up on the train, and an old favourite has been rebuilt.",
+      "highlights": [
+        "New carriage",
+        "Rebuilt carriage"
+      ],
+      "pr": 2260,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
+    },
+    {
+      "id": "advancement-photos-keep-pause",
+      "version": "0.1477.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements",
+        "ui"
+      ],
+      "title": "Advancement photos keep the game paused",
+      "summary": "Opening an advancement's photos from the advancements screen no longer lets the train and music carry on behind them in single-player.",
+      "highlights": [],
+      "pr": 2261,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
+    },
+    {
+      "id": "freeplay-confirm-world-settings",
+      "version": "0.1479.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Free Play always asks first",
+      "summary": "Turning on cheats, switching the world to Creative or Spectator, or changing the difficulty from a world settings screen (like Open to LAN or Essential's world menu) now asks you first. Nothing changes until you confirm, so your run can't slip into Free Play by surprise.",
+      "highlights": [],
+      "pr": 2265,
       "date": "2026-10-23",
       "released": false,
       "released_in": null,
