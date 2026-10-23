@@ -29744,6 +29744,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dt-only-advancement-cards",
+      "version": "0.1466.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Quieter advancement pop-ups",
+      "summary": "Only Dungeon Train's own advancements pop up a card now. Minecraft's and other mods' advancements still count and still show in chat, just without the card.",
+      "highlights": [
+        "Want them back? Options > Dungeon Train > Other advancement cards"
+      ],
+      "pr": 2254,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
