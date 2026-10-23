@@ -29991,9 +29991,9 @@
       "highlights": [],
       "pr": 2265,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1481.0",
+      "released_at": "2026-10-23T10:21:36Z"
     },
     {
       "id": "support-tooling-2268",
@@ -30007,9 +30007,9 @@
       "highlights": [],
       "pr": 2268,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1481.0",
+      "released_at": "2026-10-23T10:21:36Z"
     }
   ]
 }
