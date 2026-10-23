@@ -30,8 +30,8 @@ import net.minecraft.world.level.biome.Biomes;
  *   <li><b>In the caves leaving the Nether</b> (deep dark, lush, dripstone and sulfur caves) — no wind
  *       ({@link #CAVE_FACTOR}); deep dark streaks would be dark blue if it is ever turned back on.</li>
  * </ul>
- * Dimensional carriages (portal twin space) have no wind at all; that check lives with each side's own twin
- * space test ({@code PortalTwinSpace#isInside} / {@code ClientUpsideDownBand#isInPortalTwinSpace}).
+ * Dimensional carriages (portal twin space) have no wind at all, and no sphere gravity or End frost either; each
+ * check lives with its own system, on each side's own twin space test ({@code PortalTwinSpace#isInside} / {@code ClientUpsideDownBand#isInPortalTwinSpace}).
  *
  * <p>The End-sky value is the same one the client sky renderer uses ({@code ClientVoidBand#endSkyIntensityAt}),
  * computed from config and the cycle alone so the server can use it too.</p>
