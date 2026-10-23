@@ -2946,6 +2946,7 @@
   "chat.dungeontrain.time.year.other": "%s de ani",
   "advancements.dungeontrain.hidden_description": "???",
   "advancements.dungeontrain.disqualified_this_life": "Pierdut pentru această viață.",
+  "advancements.dungeontrain.multiplayer_locked": "Doar în modul un jucător. Nu poate fi obținută cât joci cu alții.",
   "advancements.dungeontrain.track.click": "Dă clic pentru a urmări",
   "chat.dungeontrain.track.summary": "Urmărești %s — vei afla dacă este exclus.",
   "chat.dungeontrain.track.none": "Nu mai urmărești niciun progres.",

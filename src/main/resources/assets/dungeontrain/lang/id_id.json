@@ -2313,6 +2313,7 @@
   "chat.dungeontrain.time.year.other": "%s tahun",
   "advancements.dungeontrain.hidden_description": "???",
   "advancements.dungeontrain.disqualified_this_life": "Hilang untuk hidup ini.",
+  "advancements.dungeontrain.multiplayer_locked": "Hanya pemain tunggal. Tidak bisa didapat saat bermain bersama orang lain.",
   "advancements.dungeontrain.track.click": "Klik untuk melacak",
   "chat.dungeontrain.track.summary": "Melacak %s — kamu akan diberi tahu jika gugur.",
   "chat.dungeontrain.track.none": "Tidak ada lagi pencapaian yang dilacak.",

@@ -2313,6 +2313,7 @@
   "chat.dungeontrain.time.year.other": "%s 年",
   "advancements.dungeontrain.hidden_description": "？？？",
   "advancements.dungeontrain.disqualified_this_life": "这一世已经无缘了。",
+  "advancements.dungeontrain.multiplayer_locked": "仅限单人游戏。与他人一起游玩时无法获得。",
   "advancements.dungeontrain.track.click": "点击追踪",
   "chat.dungeontrain.track.summary": "正在追踪 %s — 若与之无缘会提醒你。",
   "chat.dungeontrain.track.none": "不再追踪任何进度。",

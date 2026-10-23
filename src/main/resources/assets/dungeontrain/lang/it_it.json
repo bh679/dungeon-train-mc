@@ -2365,6 +2365,7 @@
   "chat.dungeontrain.time.year.other": "%s anni",
   "advancements.dungeontrain.hidden_description": "???",
   "advancements.dungeontrain.disqualified_this_life": "Perso per questa vita.",
+  "advancements.dungeontrain.multiplayer_locked": "Solo in giocatore singolo. Non si può ottenere giocando con altri.",
   "advancements.dungeontrain.track.click": "Clicca per seguirlo",
   "chat.dungeontrain.track.summary": "Stai seguendo %s: verrai avvisato se viene escluso.",
   "chat.dungeontrain.track.none": "Non segui più alcun progresso.",

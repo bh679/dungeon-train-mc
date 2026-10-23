@@ -2313,6 +2313,7 @@
   "chat.dungeontrain.time.year.other": "%s ปี",
   "advancements.dungeontrain.hidden_description": "???",
   "advancements.dungeontrain.disqualified_this_life": "พลาดไปแล้วสำหรับชีวิตนี้",
+  "advancements.dungeontrain.multiplayer_locked": "เล่นคนเดียวเท่านั้น ไม่สามารถทำได้ขณะเล่นกับผู้อื่น",
   "advancements.dungeontrain.track.click": "คลิกเพื่อติดตาม",
   "chat.dungeontrain.track.summary": "กำลังติดตาม %s — คุณจะได้รับแจ้งหากถูกตัดโอกาส",
   "chat.dungeontrain.track.none": "ไม่ได้ติดตามความสำเร็จใดแล้ว",

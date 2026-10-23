@@ -2313,6 +2313,7 @@
   "chat.dungeontrain.time.year.other": "%s년",
   "advancements.dungeontrain.hidden_description": "???",
   "advancements.dungeontrain.disqualified_this_life": "이번 생에서는 놓쳤습니다.",
+  "advancements.dungeontrain.multiplayer_locked": "싱글플레이 전용. 다른 사람과 함께 플레이하는 동안에는 달성할 수 없습니다.",
   "advancements.dungeontrain.track.click": "클릭하여 추적",
   "chat.dungeontrain.track.summary": "%s 추적 중 — 불가능해지면 알려 드립니다.",
   "chat.dungeontrain.track.none": "더 이상 추적 중인 발전 과제가 없습니다.",

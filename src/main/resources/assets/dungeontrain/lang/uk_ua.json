@@ -2943,6 +2943,7 @@
   "chat.dungeontrain.time.year.many": "%s років",
   "advancements.dungeontrain.hidden_description": "???",
   "advancements.dungeontrain.disqualified_this_life": "Втрачено на це життя.",
+  "advancements.dungeontrain.multiplayer_locked": "Лише в одиночній грі. Не можна отримати, поки граєш з іншими.",
   "advancements.dungeontrain.track.click": "Натисни, щоб відстежувати",
   "chat.dungeontrain.track.summary": "Відстежується %s — тобі повідомлять, якщо його стане неможливо здобути.",
   "chat.dungeontrain.track.none": "Жодне досягнення більше не відстежується.",

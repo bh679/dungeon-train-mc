@@ -2365,6 +2365,7 @@
   "chat.dungeontrain.time.year.other": "%s anos",
   "advancements.dungeontrain.hidden_description": "???",
   "advancements.dungeontrain.disqualified_this_life": "Perdido nesta vida.",
+  "advancements.dungeontrain.multiplayer_locked": "Apenas em modo de um jogador. Não pode ser obtida a jogar com outras pessoas.",
   "advancements.dungeontrain.track.click": "Clica para acompanhar",
   "chat.dungeontrain.track.summary": "A acompanhar %s — serás avisado se for excluído.",
   "chat.dungeontrain.track.none": "Já não acompanhas nenhum progresso.",

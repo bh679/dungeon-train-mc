@@ -46,4 +46,12 @@ final class MultiplayerChallengeGateTest {
         assertFalse(MultiplayerChallengeGate.blocks(true, false, rl("dungeon_train/root"), rl("dungeon_train/carts_100")));
         assertFalse(MultiplayerChallengeGate.blocks(true, false, null, APPLE));
     }
+
+    @Test
+    @DisplayName("the faded set is the tab's members, never the root or another tab")
+    void membership() {
+        assertTrue(MultiplayerChallengeGate.isMember(ROOT, APPLE));
+        assertFalse(MultiplayerChallengeGate.isMember(ROOT, ROOT));
+        assertFalse(MultiplayerChallengeGate.isMember(rl("dungeon_train/root"), rl("dungeon_train/carts_100")));
+    }
 }

@@ -2313,6 +2313,7 @@
   "chat.dungeontrain.time.year.other": "%s年",
   "advancements.dungeontrain.hidden_description": "???",
   "advancements.dungeontrain.disqualified_this_life": "この人生では失われた。",
+  "advancements.dungeontrain.multiplayer_locked": "シングルプレイ限定。他のプレイヤーと遊んでいる間は達成できません。",
   "advancements.dungeontrain.track.click": "クリックで追跡",
   "chat.dungeontrain.track.summary": "%s を追跡中 — 不可能になったらお知らせします。",
   "chat.dungeontrain.track.none": "追跡中の進捗はありません。",

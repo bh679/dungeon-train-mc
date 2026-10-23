@@ -2417,6 +2417,7 @@
   "chat.dungeontrain.time.year.many": "%s lat",
   "advancements.dungeontrain.hidden_description": "???",
   "advancements.dungeontrain.disqualified_this_life": "Stracone w tym życiu.",
+  "advancements.dungeontrain.multiplayer_locked": "Tylko w trybie jednoosobowym. Nie można zdobyć podczas gry z innymi.",
   "advancements.dungeontrain.track.click": "Kliknij, aby śledzić",
   "chat.dungeontrain.track.summary": "Śledzisz %s — dowiesz się, jeśli zostanie wykluczone.",
   "chat.dungeontrain.track.none": "Nie śledzisz już żadnych postępów.",

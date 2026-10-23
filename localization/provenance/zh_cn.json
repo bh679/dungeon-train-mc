@@ -2313,6 +2313,7 @@
   "chat.dungeontrain.time.year.other": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "3ab7d6d1e40dd317"},
   "advancements.dungeontrain.hidden_description": {"author": "老本願", "reviewer": "老本願", "source_hash": "a03b221c6c6eae71"},
   "advancements.dungeontrain.disqualified_this_life": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "cf510c31b4eeb192"},
+  "advancements.dungeontrain.multiplayer_locked": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "e0c1c6d68e83676f"},
   "advancements.dungeontrain.track.click": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "24c96bde284196f8"},
   "chat.dungeontrain.track.summary": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "6de885a70cdd2a54"},
   "chat.dungeontrain.track.none": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "219a76603b49caef"},

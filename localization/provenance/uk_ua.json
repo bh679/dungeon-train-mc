@@ -2943,6 +2943,7 @@
   "chat.dungeontrain.time.year.many": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": ""},
   "advancements.dungeontrain.hidden_description": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "a03b221c6c6eae71"},
   "advancements.dungeontrain.disqualified_this_life": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "9191ff3217da87ac"},
+  "advancements.dungeontrain.multiplayer_locked": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "e0c1c6d68e83676f"},
   "advancements.dungeontrain.track.click": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "9df419ba2e91a642"},
   "chat.dungeontrain.track.summary": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "6de885a70cdd2a54"},
   "chat.dungeontrain.track.none": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "219a76603b49caef"},

@@ -2422,6 +2422,7 @@
   "chat.dungeontrain.time.year.many": "%s лет",
   "advancements.dungeontrain.hidden_description": "???",
   "advancements.dungeontrain.disqualified_this_life": "Потеряно для этой жизни.",
+  "advancements.dungeontrain.multiplayer_locked": "Только в одиночной игре. Нельзя получить, пока играете с другими.",
   "advancements.dungeontrain.track.click": "Нажмите, чтобы отслеживать",
   "chat.dungeontrain.track.summary": "Отслеживается %s — вы узнаете, если оно будет исключено.",
   "chat.dungeontrain.track.none": "Достижения больше не отслеживаются.",

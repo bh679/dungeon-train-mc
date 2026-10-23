@@ -11,6 +11,8 @@ import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The Challenges tab is single-player only. Consulted by {@code PlayerAdvancementsMultiplayerGateMixin}
@@ -46,7 +48,7 @@ public final class MultiplayerChallengeGate {
     /** Should this grant be refused? {@code player} is null before the tracker owner is attached. */
     public static boolean shouldBlock(@Nullable ServerPlayer player, AdvancementHolder holder, String criterion) {
         if (player == null || player.server == null) return false;
-        if (!blocks(isMultiplayer(player.server), AdvancementProfiles.isReplaying(),
+        if (!blocks(isLocked(player.server), AdvancementProfiles.isReplaying(),
                 rootOf(player, holder), holder.id())) {
             return false;
         }
@@ -58,12 +60,31 @@ public final class MultiplayerChallengeGate {
     /** The pure rule, for tests: a Challenges-tab member (not the root) awarded live in multiplayer. */
     static boolean blocks(boolean multiplayer, boolean replaying,
                           @Nullable ResourceLocation rootId, ResourceLocation id) {
-        return multiplayer && !replaying && TAB_ROOT.equals(rootId) && !TAB_ROOT.equals(id);
+        return multiplayer && !replaying && isMember(rootId, id);
     }
 
-    /** Multiplayer, or a world shared to others (LAN, Essential, e4mc) even before anyone joins. */
-    private static boolean isMultiplayer(MinecraftServer server) {
+    /** A Challenges-tab advancement the gate applies to: under {@link #TAB_ROOT}, not the root itself. */
+    static boolean isMember(@Nullable ResourceLocation rootId, ResourceLocation id) {
+        return TAB_ROOT.equals(rootId) && !TAB_ROOT.equals(id);
+    }
+
+    /**
+     * Are challenges locked on this server right now? Multiplayer, or a world shared to others (LAN,
+     * Essential, e4mc) even before anyone joins. Also what the advancements screen fades by
+     * ({@code MultiplayerChallengeSync}).
+     */
+    public static boolean isLocked(MinecraftServer server) {
         return MultiplayerState.isMultiplayer(server) || server.isPublished();
+    }
+
+    /** Every Challenges-tab member on this server — the ids the client fades while locked. */
+    public static List<ResourceLocation> memberIds(MinecraftServer server) {
+        List<ResourceLocation> out = new ArrayList<>();
+        for (AdvancementNode node : server.getAdvancements().tree().nodes()) {
+            ResourceLocation id = node.holder().id();
+            if (isMember(node.root().holder().id(), id)) out.add(id);
+        }
+        return List.copyOf(out);
     }
 
     @Nullable

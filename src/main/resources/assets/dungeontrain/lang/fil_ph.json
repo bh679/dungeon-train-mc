@@ -2313,6 +2313,7 @@
   "chat.dungeontrain.time.year.other": "%s taon",
   "advancements.dungeontrain.hidden_description": "???",
   "advancements.dungeontrain.disqualified_this_life": "Wala na para sa buhay na ito.",
+  "advancements.dungeontrain.multiplayer_locked": "Pang-single player lang. Hindi makukuha habang naglalaro kasama ang iba.",
   "advancements.dungeontrain.track.click": "I-click para subaybayan",
   "chat.dungeontrain.track.summary": "Sinusubaybayan ang %s — sasabihan ka kung maalis ito.",
   "chat.dungeontrain.track.none": "Wala nang sinusubaybayang advancement.",

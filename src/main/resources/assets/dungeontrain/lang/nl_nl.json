@@ -2365,6 +2365,7 @@
   "chat.dungeontrain.time.year.other": "%s jaar",
   "advancements.dungeontrain.hidden_description": "???",
   "advancements.dungeontrain.disqualified_this_life": "Verloren voor dit leven.",
+  "advancements.dungeontrain.multiplayer_locked": "Alleen in singleplayer. Niet te verdienen terwijl je met anderen speelt.",
   "advancements.dungeontrain.track.click": "Klik om te volgen",
   "chat.dungeontrain.track.summary": "%s wordt gevolgd — je hoort het als het wordt uitgesloten.",
   "chat.dungeontrain.track.none": "Er worden geen vorderingen meer gevolgd.",
