@@ -29994,6 +29994,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "support-tooling-2268",
+      "version": "0.1481.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Support tooling",
+      "summary": "Better tools behind the scenes for helping players when something goes wrong on our end.",
+      "highlights": [],
+      "pr": 2268,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
