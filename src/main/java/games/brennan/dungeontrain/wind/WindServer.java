@@ -5,6 +5,7 @@ import dev.ryanhcode.sable.sublevel.SubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.WindProfilePacket;
+import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.Trains;
@@ -258,6 +259,8 @@ public final class WindServer {
         for (Entity e : level.getEntities((Entity) null, box, WindServer::pushable)) {
             // Only entities that will actually move this tick: a non-ticking one would just bank velocity.
             if (!level.isPositionEntityTicking(e.blockPosition())) continue;
+            // A dimensional carriage is somewhere else entirely: no wind there.
+            if (PortalTwinSpace.isInside(level, e.getBlockX(), e.getY())) continue;
             candidates.computeIfAbsent(e, k -> new ArrayList<>(2)).add(carriage);
         }
     }
