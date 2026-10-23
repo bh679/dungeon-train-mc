@@ -2,7 +2,11 @@ package games.brennan.dungeontrain.data;
 
 import games.brennan.dungeonbackup.api.Registration;
 import games.brennan.dungeonbackup.api.Source;
+import games.brennan.dungeonbackup.core.BackupArchiver;
 import games.brennan.dungeonbackup.core.DataRecovery;
+import games.brennan.dungeontrain.compat.EnderChestResetBridge;
+import games.brennan.dungeontrain.compat.EnderChestResetBridge.EcpDirs;
+import games.brennan.enderchestpersistence.StoreMode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -10,9 +14,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
+import java.util.zip.ZipFile;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -35,10 +42,20 @@ class DungeonTrainBackupTest {
     private Path dataRoot() { return tmp.resolve("instance/dungeontrain"); }
     private Path dtpacks() { return tmp.resolve("instance/dtpacks"); }
     private Path configDir() { return tmp.resolve("instance/config"); }
+    private Path appData() { return tmp.resolve("home/Library/Application Support"); }
+
+    /** ECP's folders as a client in the default ({@code outside}) mode resolves them. */
+    private EcpDirs ecpOutside() {
+        return new EcpDirs(
+            EnderChestResetBridge.resolveStore(StoreMode.OUTSIDE, false, configDir(), appData()),
+            configDir().resolve("enderchestpersistence"));
+    }
 
     private Registration reg() {
-        return DungeonTrainBackup.describe(dataRoot(), dtpacks()).build();
+        return DungeonTrainBackup.describe(dataRoot(), dtpacks(), Optional.of(ecpOutside())).build();
     }
+
+    private static final String UUID = "7b7774bd-0000-0000-0000-000000000001";
 
     @Test
     void theRegistrationCarriesTheRelocationTableVerbatim() {
@@ -54,6 +71,8 @@ class DungeonTrainBackupTest {
         List<String> labels = reg().sources().stream().map(Source::label).toList();
         assertEquals("dungeontrain", labels.get(0));
         assertEquals("dtpacks", labels.get(1));
+        assertEquals("enderchestpersistence", labels.get(2), "every archive's instance-folder chest label");
+        assertEquals("enderchestpersistence-store", labels.get(3));
         assertTrue(reg().excludeTopLevel().contains(PlayerDataPaths.BACKUPS));
         assertEquals("DungeonTrain", reg().externalDirName(), "the mirror folder every player already has");
         assertEquals("dtbackup", reg().backupCommandAlias());
@@ -111,5 +130,80 @@ class DungeonTrainBackupTest {
         assertEquals("builds and progress", reg().dataHeldBy(tmp.resolve("old")).orElseThrow());
         assertEquals("builds", reg().dataHeldBy(tmp.resolve("new")).orElseThrow());
         assertTrue(reg().dataHeldBy(tmp.resolve("other")).isEmpty());
+    }
+
+    // ---- Ender Chest Persistence ----
+
+    @Test
+    void ecpStoreResolvesWhereEcpPutsIt() {
+        Path instance = configDir().resolve("enderchestpersistence");
+        assertEquals(appData().resolve("enderchestpersistence"),
+            EnderChestResetBridge.resolveStore(StoreMode.OUTSIDE, false, configDir(), appData()));
+        assertEquals(instance, EnderChestResetBridge.resolveStore(StoreMode.OUTSIDE, true, configDir(), appData()),
+            "a dedicated server always stores inside the instance");
+        assertEquals(instance, EnderChestResetBridge.resolveStore(StoreMode.INSIDE, false, configDir(), appData()));
+        assertEquals(instance, EnderChestResetBridge.resolveStore(StoreMode.OFF, false, configDir(), appData()));
+    }
+
+    @Test
+    void anInsideStoreIsArchivedOnceUnderTheExistingLabel() {
+        Path instance = configDir().resolve("enderchestpersistence");
+        Registration r = DungeonTrainBackup.describe(dataRoot(), dtpacks(),
+            Optional.of(new EcpDirs(instance, instance))).build();
+        List<String> labels = r.sources().stream().map(Source::label).toList();
+        assertEquals(List.of("dungeontrain", "dtpacks", "enderchestpersistence"), labels);
+    }
+
+    @Test
+    void aMissingEcpLeavesTheRestOfTheRegistrationIntact() {
+        Registration r = DungeonTrainBackup.describe(dataRoot(), dtpacks(), Optional.empty()).build();
+        assertEquals(List.of("dungeontrain", "dtpacks"), r.sources().stream().map(Source::label).toList());
+    }
+
+    @Test
+    void aBackupHoldsTheChestFromTheOutsideStoreAndItsBackup() throws IOException {
+        // The bug: every archive held config/enderchestpersistence/ (abandoned since ECP 0.3.0) and
+        // never the app-data store, so no restore point had the player's chest in it.
+        Path store = appData().resolve("enderchestpersistence");
+        write(store.resolve(UUID + ".dat"), "chest");
+        write(store.resolve(UUID + ".dat.bak"), "chest before last save");
+        write(configDir().resolve("enderchestpersistence/" + UUID + ".dat"), "stale");
+
+        Path archive = BackupArchiver.create(tmp.resolve("backups"), "dungeontrain", reg().sources(),
+            "test", "0.0.0").archive().orElseThrow();
+
+        try (ZipFile zip = new ZipFile(archive.toFile())) {
+            assertNotNull(zip.getEntry("enderchestpersistence-store/" + UUID + ".dat"));
+            assertNotNull(zip.getEntry("enderchestpersistence-store/" + UUID + ".dat.bak"));
+            assertNotNull(zip.getEntry("enderchestpersistence/" + UUID + ".dat"));
+        }
+
+        // Restore into a machine that lost both folders: each lands back where it came from.
+        deleteTree(store);
+        deleteTree(configDir().resolve("enderchestpersistence"));
+        BackupArchiver.restore(archive, reg().restoreTargets());
+        assertEquals("chest", Files.readString(store.resolve(UUID + ".dat")));
+        assertEquals("chest before last save", Files.readString(store.resolve(UUID + ".dat.bak")));
+        assertEquals("stale", Files.readString(configDir().resolve("enderchestpersistence/" + UUID + ".dat")));
+    }
+
+    @Test
+    void anOldArchiveNeverPutsItsInstanceCopyIntoTheLiveStore() throws IOException {
+        // Archives written before this fix carry only "enderchestpersistence/…" = the instance folder.
+        Path old = tmp.resolve("old-backup.zip");
+        try (var out = new java.util.zip.ZipOutputStream(Files.newOutputStream(old))) {
+            out.putNextEntry(new java.util.zip.ZipEntry("enderchestpersistence/" + UUID + ".dat"));
+            out.write("stale".getBytes());
+            out.closeEntry();
+        }
+        BackupArchiver.restore(old, reg().restoreTargets());
+        assertTrue(Files.isRegularFile(configDir().resolve("enderchestpersistence/" + UUID + ".dat")));
+        assertFalse(Files.exists(appData().resolve("enderchestpersistence/" + UUID + ".dat")));
+    }
+
+    private static void deleteTree(Path dir) throws IOException {
+        try (var walk = Files.walk(dir)) {
+            for (Path p : walk.sorted(java.util.Comparator.reverseOrder()).toList()) Files.delete(p);
+        }
     }
 }
