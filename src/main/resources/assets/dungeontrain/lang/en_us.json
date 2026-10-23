@@ -867,6 +867,8 @@
   "chat.dungeontrain.selfie_hint.wither_too_far": "The Wither was too far away to count. Get closer.",
   "chat.dungeontrain.selfie_hint.warden_eyes": "The Warden is in the shot, but its eyes aren't. Get its eyes in frame.",
   "chat.dungeontrain.selfie_hint.wither_eyes": "The Wither is in the shot, but its eyes aren't. Get its eyes in frame.",
+  "chat.dungeontrain.beacon_hint.too_late": "Too late. The Wither had already fallen when you took that. Catch it in the second before it dies.",
+  "chat.dungeontrain.beacon_hint.too_early": "Too early. Your photo of the Wither was %s seconds before it died. Catch it in the last second.",
   "chat.dungeontrain.familiar_photo.tributed.1": "Your own photo, come back around. %s paid Tribute to it.",
   "chat.dungeontrain.familiar_photo.tributed.2": "A familiar photo. %s paid to keep it travelling.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s paid Tribute to this one. You took it.",

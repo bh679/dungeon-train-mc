@@ -773,6 +773,8 @@
   "chat.dungeontrain.selfie_hint.wither_too_far": "위더가 너무 멀리 있어서 인정되지 않습니다. 더 가까이 가세요.",
   "chat.dungeontrain.selfie_hint.warden_eyes": "워든이 사진에 있지만 눈이 나오지 않았습니다. 눈이 화면에 들어오게 하세요.",
   "chat.dungeontrain.selfie_hint.wither_eyes": "위더가 사진에 있지만 눈이 나오지 않았습니다. 눈이 화면에 들어오게 하세요.",
+  "chat.dungeontrain.beacon_hint.too_late": "너무 늦었습니다. 사진을 찍었을 때 위더는 이미 쓰러져 있었습니다. 죽기 직전 1초 안에 찍으세요.",
+  "chat.dungeontrain.beacon_hint.too_early": "너무 일렀습니다. 위더 사진은 죽기 %s초 전에 찍혔습니다. 마지막 1초 안에 찍으세요.",
   "chat.dungeontrain.familiar_photo.tributed.1": "네 사진이 돌고 돌아 다시 왔다. %s 님이 공물을 바쳤다.",
   "chat.dungeontrain.familiar_photo.tributed.2": "낯익은 사진이다. %s 님이 값을 치러 여행을 잇게 했다.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s 님이 이 한 장에 공물을 바쳤다. 네가 찍은 것이다.",

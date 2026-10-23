@@ -844,6 +844,8 @@
   "chat.dungeontrain.selfie_hint.wither_too_far": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "1e35416a2bf4f91f"},
   "chat.dungeontrain.selfie_hint.warden_eyes": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "79562875051bd579"},
   "chat.dungeontrain.selfie_hint.wither_eyes": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "604c1dd88a75d6e0"},
+  "chat.dungeontrain.beacon_hint.too_late": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "f75fd27dbf5020dd"},
+  "chat.dungeontrain.beacon_hint.too_early": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "58686c160623c8b8"},
   "chat.dungeontrain.familiar_photo.tributed.1": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "b9ba697ae08d076a"},
   "chat.dungeontrain.familiar_photo.tributed.2": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "803fe7be953493eb"},
   "chat.dungeontrain.familiar_photo.tributed.3": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "a33618b95d1960bd"},

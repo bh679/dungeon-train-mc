@@ -900,6 +900,8 @@
   "chat.dungeontrain.selfie_hint.wither_too_far": "Візер був надто далеко, щоб зарахуватися. Підійди ближче.",
   "chat.dungeontrain.selfie_hint.warden_eyes": "Наглядач у кадрі, але його очей не видно. Злови його очі в кадр.",
   "chat.dungeontrain.selfie_hint.wither_eyes": "Візер у кадрі, але його очей не видно. Злови його очі в кадр.",
+  "chat.dungeontrain.beacon_hint.too_late": "Запізно. Візер уже впав, коли ти зробив знімок. Злови його в останню секунду перед смертю.",
+  "chat.dungeontrain.beacon_hint.too_early": "Зарано. Твій знімок Візера зроблено за %s с до його смерті. Злови його в останню секунду.",
   "chat.dungeontrain.familiar_photo.tributed.1": "Твоє власне фото повернулося по колу. %s сплатили за нього данину.",
   "chat.dungeontrain.familiar_photo.tributed.2": "Знайоме фото. %s заплатили, щоб воно їхало далі.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s сплатили данину за цей знімок. Його зробив ти.",

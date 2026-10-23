@@ -773,6 +773,8 @@
   "chat.dungeontrain.selfie_hint.wither_too_far": "ウィザーが遠すぎて写ったことにならない。もっと近づこう。",
   "chat.dungeontrain.selfie_hint.warden_eyes": "ウォーデンは写っているけど、目が写っていない。目をフレームに入れよう。",
   "chat.dungeontrain.selfie_hint.wither_eyes": "ウィザーは写っているけど、目が写っていない。目をフレームに入れよう。",
+  "chat.dungeontrain.beacon_hint.too_late": "遅すぎた。撮ったときにはウィザーはもう倒れていた。死ぬ直前の1秒で撮ろう。",
+  "chat.dungeontrain.beacon_hint.too_early": "早すぎた。ウィザーの写真は死ぬ%s秒前のものだった。最後の1秒で撮ろう。",
   "chat.dungeontrain.familiar_photo.tributed.1": "君自身の写真が、巡って戻ってきた。%s が貢ぎ物を捧げた。",
   "chat.dungeontrain.familiar_photo.tributed.2": "見覚えのある写真。%s が支払い、その旅を続けさせた。",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s がこの一枚に貢ぎ物を捧げた。君が撮ったものだ。",

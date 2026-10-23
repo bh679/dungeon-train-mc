@@ -773,6 +773,8 @@
   "chat.dungeontrain.selfie_hint.wither_too_far": "Wither terlalu jauh untuk dihitung. Mendekatlah.",
   "chat.dungeontrain.selfie_hint.warden_eyes": "Warden ada di foto, tapi matanya tidak. Masukkan matanya ke dalam bingkai.",
   "chat.dungeontrain.selfie_hint.wither_eyes": "Wither ada di foto, tapi matanya tidak. Masukkan matanya ke dalam bingkai.",
+  "chat.dungeontrain.beacon_hint.too_late": "Terlambat. Wither sudah tumbang saat kamu memotretnya. Tangkap dia di detik sebelum dia mati.",
+  "chat.dungeontrain.beacon_hint.too_early": "Terlalu cepat. Fotomu tentang Wither diambil %s detik sebelum dia mati. Tangkap dia di detik terakhir.",
   "chat.dungeontrain.familiar_photo.tributed.1": "Fotomu sendiri, kembali berputar. %s memberinya Persembahan.",
   "chat.dungeontrain.familiar_photo.tributed.2": "Sebuah foto yang familiar. %s membayar agar ia terus berkelana.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s memberi Persembahan untuk yang satu ini. Kau yang mengambilnya.",

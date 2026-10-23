@@ -806,6 +806,8 @@
   "chat.dungeontrain.selfie_hint.wither_too_far": "De Wither was te ver weg om mee te tellen. Kom dichterbij.",
   "chat.dungeontrain.selfie_hint.warden_eyes": "De Warden staat op de foto, maar zijn ogen niet. Zorg dat zijn ogen in beeld zijn.",
   "chat.dungeontrain.selfie_hint.wither_eyes": "De Wither staat op de foto, maar zijn ogen niet. Zorg dat zijn ogen in beeld zijn.",
+  "chat.dungeontrain.beacon_hint.too_late": "Te laat. De Wither was al gevallen toen je de foto nam. Leg hem vast in de seconde voordat hij sterft.",
+  "chat.dungeontrain.beacon_hint.too_early": "Te vroeg. Je foto van de Wither was %s seconden voordat hij stierf. Leg hem vast in de laatste seconde.",
   "chat.dungeontrain.familiar_photo.tributed.1": "Je eigen foto, weer bij je teruggekomen. %s heeft er tribuut voor betaald.",
   "chat.dungeontrain.familiar_photo.tributed.2": "Een vertrouwde foto. %s heeft betaald om hem te laten reizen.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s heeft tribuut betaald voor deze. Jij hebt hem genomen.",
