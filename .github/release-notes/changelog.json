@@ -29855,14 +29855,13 @@
       "type": "content",
       "tags": [
         "content",
-        "train",
-        "mobs"
+        "train"
       ],
-      "title": "New allay carriage",
-      "summary": "A new carriage full of allays can now turn up on the train, and the cow carriage has been rebuilt.",
+      "title": "New carriages",
+      "summary": "A new carriage can now turn up on the train, and an old favourite has been rebuilt.",
       "highlights": [
-        "New allay carriage",
-        "Rebuilt cow carriage"
+        "New carriage",
+        "Rebuilt carriage"
       ],
       "pr": 2260,
       "date": "2026-10-23",
