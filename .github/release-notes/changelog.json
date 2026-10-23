@@ -29778,8 +29778,80 @@
       "released_at": null
     },
     {
-      "id": "dimensional-carriage-shelter",
+      "id": "mob-buff-offsets-rederive",
       "version": "0.1468.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "balance"
+      ],
+      "title": "Mob buff timing fix",
+      "summary": "Some of the newer mobs were picking up difficulty buffs from the very start of the run. Every mob now waits until the point where it first starts showing up on the train before its buffs kick in.",
+      "highlights": [],
+      "pr": 2256,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dt-only-advancement-cards",
+      "version": "0.1468.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Quieter advancement pop-ups",
+      "summary": "Only Dungeon Train's own advancements pop up a card now. Minecraft's and other mods' advancements still count and still show in chat, just without the card.",
+      "highlights": [
+        "Want them back? Options > Dungeon Train > Other advancement cards"
+      ],
+      "pr": 2254,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "slash-log-command",
+      "version": "0.1470.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "/log sends a bug report",
+      "summary": "Typing /log now opens the bug report, the same as /bug, so you can send your logs whichever one you remember. Using it never puts your run into Free Play.",
+      "highlights": [],
+      "pr": 2257,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "jei-missing-forge",
+      "version": "0.1470.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Recipe viewer fix",
+      "summary": "A forge you can build was missing from JEI. It now shows up there with its recipe.",
+      "highlights": [],
+      "pr": 2258,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-shelter",
+      "version": "0.1471.0",
       "type": "fix",
       "tags": [
         "fix",

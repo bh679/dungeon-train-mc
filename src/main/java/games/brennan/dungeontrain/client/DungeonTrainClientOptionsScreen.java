@@ -819,6 +819,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case OTHER_ADVANCEMENT_TABS -> Setting.of(onOff(Component.translatable(key), !ClientDisplayConfig.isHideOtherAdvancementTabs(),
                     on -> ClientDisplayConfig.setHideOtherAdvancementTabs(!on)), key + ".tip");
 
+            // The earned card for Minecraft's and other mods' advancements (the chat line stays either
+            // way). ON shows it; the config stores the inverse (hideOtherCards), as for the tabs above.
+            case OTHER_ADVANCEMENT_CARDS -> Setting.of(onOff(Component.translatable(key), !ClientDisplayConfig.isHideOtherAdvancementCards(),
+                    on -> ClientDisplayConfig.setHideOtherAdvancementCards(!on)), key + ".tip");
+
             // How fast the train may re-extend once an end has fallen behind the carriages a nearby
             // player needs. One global value, not a per-world one — set it here or at the title
             // screen and every world follows. Applies live to the train already running: the
