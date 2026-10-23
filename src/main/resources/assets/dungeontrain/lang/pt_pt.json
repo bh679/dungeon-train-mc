@@ -745,6 +745,8 @@
   "chat.dungeontrain.live.close_call.prompt": "%s está a aproximar-se de um desafio raro.",
   "chat.dungeontrain.live.close_call.give": "Passar a câmara de filmar de emissão",
   "chat.dungeontrain.live.close_call.offer": "%s oferece-te a câmara de filmar de emissão. Ficas com ela?",
+  "chat.dungeontrain.live.train_offer.offer": "O comboio sente que te estás a aproximar de um desafio raro. Ficas com a câmara de filmar de emissão?",
+  "chat.dungeontrain.live.train_offer.received": "O comboio passou-te a emissão. Estás em direto!",
   "chat.dungeontrain.live_gift.accept": "Aceitar",
   "chat.dungeontrain.live_gift.accept.tip": "Põe a câmara de filmar de emissão e emite em direto.",
   "chat.dungeontrain.live_gift.decline": "Não",

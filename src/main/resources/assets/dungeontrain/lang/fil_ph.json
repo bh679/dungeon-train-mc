@@ -713,6 +713,8 @@
   "chat.dungeontrain.live.close_call.prompt": "Malapit na si %s sa isang bihirang hamon.",
   "chat.dungeontrain.live.close_call.give": "Ibigay ang Camcorder ng Broadcast",
   "chat.dungeontrain.live.close_call.offer": "Inaalok sa iyo ni %s ang Camcorder ng Broadcast niya. Kunin?",
+  "chat.dungeontrain.live.train_offer.offer": "Ramdam ng tren na malapit ka na sa isang bihirang hamon. Kunin ang Camcorder ng Broadcast?",
+  "chat.dungeontrain.live.train_offer.received": "Ibinigay sa iyo ng tren ang livestream. Live ka na!",
   "chat.dungeontrain.live_gift.accept": "Tanggapin",
   "chat.dungeontrain.live_gift.accept.tip": "Isuot ang Camcorder ng Broadcast at mag-live.",
   "chat.dungeontrain.live_gift.decline": "Hindi",

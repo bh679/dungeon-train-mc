@@ -777,6 +777,8 @@
   "chat.dungeontrain.live.close_call.prompt": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "37db59c4c66c56be"},
   "chat.dungeontrain.live.close_call.give": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "0500eb6036637944"},
   "chat.dungeontrain.live.close_call.offer": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "b7b0e6cf608ed1de"},
+  "chat.dungeontrain.live.train_offer.offer": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "56dc3fe4adb42dde"},
+  "chat.dungeontrain.live.train_offer.received": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "35f7fad02dd2c2e9"},
   "chat.dungeontrain.live_gift.accept": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "89713b9c9c1b8f65"},
   "chat.dungeontrain.live_gift.accept.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "f070d1e712dd4928"},
   "chat.dungeontrain.live_gift.decline": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "49780701dc2d7cc6"},

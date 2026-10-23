@@ -806,6 +806,8 @@
   "chat.dungeontrain.live.close_call.prompt": "%s is approaching a rare challenge.",
   "chat.dungeontrain.live.close_call.give": "Hand them the Live Eye",
   "chat.dungeontrain.live.close_call.offer": "%s offers you their Live Eye, take it?",
+  "chat.dungeontrain.live.train_offer.offer": "The train senses you are close to a rare challenge. Take the Live Eye?",
+  "chat.dungeontrain.live.train_offer.received": "The train gave you the livestream. You're live!",
   "chat.dungeontrain.live_gift.accept": "Accept",
   "chat.dungeontrain.live_gift.accept.tip": "Put on the Live Eye and go live.",
   "chat.dungeontrain.live_gift.decline": "No",

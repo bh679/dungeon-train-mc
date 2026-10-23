@@ -713,6 +713,8 @@
   "chat.dungeontrain.live.close_call.prompt": "%s 正在接近一項罕見挑戰。",
   "chat.dungeontrain.live.close_call.give": "把直播攝影機交給他們",
   "chat.dungeontrain.live.close_call.offer": "%s 想把直播攝影機交給你，要接過嗎？",
+  "chat.dungeontrain.live.train_offer.offer": "列車感覺到你正在接近一項罕見挑戰。要接過直播攝影機嗎？",
+  "chat.dungeontrain.live.train_offer.received": "列車把直播交給了你。你正在直播！",
   "chat.dungeontrain.live_gift.accept": "接受",
   "chat.dungeontrain.live_gift.accept.tip": "戴上直播攝影機，開始直播。",
   "chat.dungeontrain.live_gift.decline": "不要",

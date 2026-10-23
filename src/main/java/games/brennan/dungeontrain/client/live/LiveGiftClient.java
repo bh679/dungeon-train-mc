@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.event.LiveEyeLootResolver;
 import games.brennan.dungeontrain.net.ClientActionPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.LiveGiftAcceptPacket;
+import games.brennan.dungeontrain.net.LiveTrainAcceptPacket;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Channel;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.GiftJoin;
@@ -42,6 +43,9 @@ import java.util.Set;
  * <p><b>Viewer:</b> an offer made out to this player (a {@code gifts[]} notice) prints
  * <b>[Accept]</b> / <b>[No thanks]</b>; accepting asks this player's own server to redeem it
  * ({@link LiveGiftAcceptPacket}), which hands over the item.</p>
+ *
+ * <p><b>Train:</b> nobody is live, so the train itself offers a close-call player the Live Eye
+ * ({@code event/LiveTrainOffer}); the same buttons, answered with {@link LiveTrainAcceptPacket}.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveGiftClient {
@@ -52,6 +56,7 @@ public final class LiveGiftClient {
     static final String CLICK_ACTION = "live-gift";
     private static final String KEY = "chat.dungeontrain.live_gift.";
     private static final String CLOSE_KEY = "chat.dungeontrain.live.close_call.";
+    private static final String TRAIN_KEY = "chat.dungeontrain.live.train_offer.";
     private static final int CAP = 32;
 
     /** Client thread only. */
@@ -59,6 +64,7 @@ public final class LiveGiftClient {
     private static final Map<String, String> PROMPTED_JOINS = new LinkedHashMap<>(); // joinId → viewer name
     private static final Map<String, Offer> OFFERS = new LinkedHashMap<>();          // giftId → offer
     private static final Set<String> SEEN_GIFTS = new LinkedHashSet<>();
+    private static final Set<String> TRAIN_OFFERS = new LinkedHashSet<>();
 
     private record Offer(String from, Channel channel) {}
 
@@ -131,6 +137,19 @@ public final class LiveGiftClient {
         Minecraft.getInstance().gui.getChat().addMessage(line);
     }
 
+    /** Train: nobody is live, so the train offers this player the Live Eye. Client thread. */
+    public static void onTrainOffer(String offerId) {
+        if (!canReceive(Minecraft.getInstance())) return;
+        TRAIN_OFFERS.add(offerId);
+        while (TRAIN_OFFERS.size() > CAP) TRAIN_OFFERS.remove(TRAIN_OFFERS.iterator().next());
+        MutableComponent line = Component.translatable(TRAIN_KEY + "offer").withStyle(ChatFormatting.LIGHT_PURPLE)
+            .append(Component.literal(" "))
+            .append(button(KEY + "accept", ChatClick.event(CLICK_ACTION, "train-accept", offerId), ChatFormatting.GREEN, true))
+            .append(Component.literal(" "))
+            .append(button(KEY + "decline", ChatClick.event(CLICK_ACTION, "train-decline", offerId), ChatFormatting.GRAY, true));
+        Minecraft.getInstance().gui.getChat().addMessage(line);
+    }
+
     /** Wire the gift buttons ({@code DungeonTrainClient.clientSetup}). */
     public static void registerClicks() {
         ChatClickActions.register(CLICK_ACTION, args -> {
@@ -140,6 +159,8 @@ public final class LiveGiftClient {
                 case "give" -> give(id);
                 case "accept" -> answer(id, true);
                 case "decline" -> answer(id, false);
+                case "train-accept" -> answerTrain(id, true);
+                case "train-decline" -> answerTrain(id, false);
                 default -> { }
             }
         });
@@ -149,6 +170,7 @@ public final class LiveGiftClient {
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         PROMPTED_JOINS.clear();
         OFFERS.clear();
+        TRAIN_OFFERS.clear();
     }
 
     private static int give(String joinId) {
@@ -182,6 +204,20 @@ public final class LiveGiftClient {
             return 1;
         }
         DungeonTrainNet.sendToServer(new LiveGiftAcceptPacket(giftId, offer.channel() == Channel.DEV));
+        return 1;
+    }
+
+    private static int answerTrain(String offerId, boolean accept) {
+        Minecraft mc = Minecraft.getInstance();
+        if (!TRAIN_OFFERS.remove(offerId) || mc.getConnection() == null || (accept && !canReceive(mc))) {
+            say(mc, Component.translatable(KEY + "expired").withStyle(ChatFormatting.GRAY));
+            return 0;
+        }
+        if (!accept) {
+            say(mc, Component.translatable(KEY + "declined").withStyle(ChatFormatting.GRAY));
+            return 1;
+        }
+        DungeonTrainNet.sendToServer(new LiveTrainAcceptPacket(offerId));
         return 1;
     }
 

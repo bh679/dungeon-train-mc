@@ -782,6 +782,8 @@
   "chat.dungeontrain.live.close_call.prompt": "%s приближается к редкому испытанию.",
   "chat.dungeontrain.live.close_call.give": "Передать вещательную видеокамеру",
   "chat.dungeontrain.live.close_call.offer": "%s предлагает тебе свою вещательную видеокамеру. Взять?",
+  "chat.dungeontrain.live.train_offer.offer": "Поезд чувствует, что ты приближаешься к редкому испытанию. Взять вещательную видеокамеру?",
+  "chat.dungeontrain.live.train_offer.received": "Поезд передал тебе трансляцию. Ты в эфире!",
   "chat.dungeontrain.live_gift.accept": "Принять",
   "chat.dungeontrain.live_gift.accept.tip": "Надень вещательную видеокамеру и выходи в эфир.",
   "chat.dungeontrain.live_gift.decline": "Нет",

@@ -52,6 +52,22 @@ public final class ServerLiveStatus {
             relayStreamer, player.getGameProfile().getName());
     }
 
+    /**
+     * True only when it is known that nobody, in any world, is broadcasting: no streamer on this server and
+     * a fresh relay answer saying not live. A stale or failed relay answer is not knowledge, so it reads
+     * false here (unlike {@link #isAnyoneLive}, where it reads as not live).
+     */
+    public static boolean isNobodyLive(MinecraftServer server) {
+        UUID local = server == null ? null : LiveStreamers.get(server);
+        return nobodyLive(local, relayLive, relayAtMs, System.currentTimeMillis());
+    }
+
+    /** Pure form for the tests. */
+    static boolean nobodyLive(UUID localStreamer, boolean relayLive, long relayAtMs, long nowMs) {
+        if (localStreamer != null || relayLive) return false;
+        return relayAtMs > 0 && nowMs - relayAtMs < STALE_MS;
+    }
+
     /** Pure form for the tests. */
     static boolean someoneElseLive(UUID localStreamer, UUID self, boolean relayFresh, String relayName, String selfName) {
         if (localStreamer != null && !localStreamer.equals(self)) return true;

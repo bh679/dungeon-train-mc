@@ -351,6 +351,8 @@
       "chat.dungeontrain.live.close_call.prompt",
       "chat.dungeontrain.live.close_call.give",
       "chat.dungeontrain.live.close_call.offer",
+      "chat.dungeontrain.live.train_offer.offer",
+      "chat.dungeontrain.live.train_offer.received",
       "chat.dungeontrain.live_gift.accept",
       "chat.dungeontrain.live_gift.accept.tip",
       "chat.dungeontrain.live_gift.decline",

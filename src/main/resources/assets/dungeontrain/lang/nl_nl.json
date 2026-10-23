@@ -745,6 +745,8 @@
   "chat.dungeontrain.live.close_call.prompt": "%s nadert een zeldzame uitdaging.",
   "chat.dungeontrain.live.close_call.give": "Geef de uitzendcamcorder door",
   "chat.dungeontrain.live.close_call.offer": "%s biedt je hun uitzendcamcorder aan. Aannemen?",
+  "chat.dungeontrain.live.train_offer.offer": "De trein voelt dat je een zeldzame uitdaging nadert. De uitzendcamcorder aannemen?",
+  "chat.dungeontrain.live.train_offer.received": "De trein heeft je de livestream gegeven. Je bent live!",
   "chat.dungeontrain.live_gift.accept": "Accepteren",
   "chat.dungeontrain.live_gift.accept.tip": "Zet de uitzendcamcorder op en ga live.",
   "chat.dungeontrain.live_gift.decline": "Nee",

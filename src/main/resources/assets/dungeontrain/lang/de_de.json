@@ -745,6 +745,8 @@
   "chat.dungeontrain.live.close_call.prompt": "%s nähert sich einer seltenen Herausforderung.",
   "chat.dungeontrain.live.close_call.give": "Sende-Camcorder übergeben",
   "chat.dungeontrain.live.close_call.offer": "%s bietet dir den Sende-Camcorder an. Nehmen?",
+  "chat.dungeontrain.live.train_offer.offer": "Der Zug spürt, dass du dich einer seltenen Herausforderung näherst. Den Sende-Camcorder nehmen?",
+  "chat.dungeontrain.live.train_offer.received": "Der Zug hat dir den Livestream übergeben. Du bist live!",
   "chat.dungeontrain.live_gift.accept": "Annehmen",
   "chat.dungeontrain.live_gift.accept.tip": "Setz den Sende-Camcorder auf und geh live.",
   "chat.dungeontrain.live_gift.decline": "Nein",

@@ -745,6 +745,8 @@
   "chat.dungeontrain.live.close_call.prompt": "%s approche d'un défi rare.",
   "chat.dungeontrain.live.close_call.give": "Lui passer le caméscope de diffusion",
   "chat.dungeontrain.live.close_call.offer": "%s te propose son caméscope de diffusion. Le prendre ?",
+  "chat.dungeontrain.live.train_offer.offer": "Le train sent que tu approches d'un défi rare. Prendre le caméscope de diffusion ?",
+  "chat.dungeontrain.live.train_offer.received": "Le train t'a passé le direct. Tu es en direct !",
   "chat.dungeontrain.live_gift.accept": "Accepter",
   "chat.dungeontrain.live_gift.accept.tip": "Mets le caméscope de diffusion et passe en direct.",
   "chat.dungeontrain.live_gift.decline": "Non",

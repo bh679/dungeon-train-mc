@@ -777,6 +777,8 @@
   "chat.dungeontrain.live.close_call.prompt": "%s zbliża się do rzadkiego wyzwania.",
   "chat.dungeontrain.live.close_call.give": "Przekaż kamerę transmisyjną",
   "chat.dungeontrain.live.close_call.offer": "%s oddaje ci swoją kamerę transmisyjną. Bierzesz?",
+  "chat.dungeontrain.live.train_offer.offer": "Pociąg wyczuwa, że zbliżasz się do rzadkiego wyzwania. Bierzesz kamerę transmisyjną?",
+  "chat.dungeontrain.live.train_offer.received": "Pociąg oddał ci transmisję. Nadajesz na żywo!",
   "chat.dungeontrain.live_gift.accept": "Przyjmij",
   "chat.dungeontrain.live_gift.accept.tip": "Załóż kamerę transmisyjną i nadawaj na żywo.",
   "chat.dungeontrain.live_gift.decline": "Nie",

@@ -838,6 +838,8 @@
   "chat.dungeontrain.live.close_call.prompt": "%s наближається до рідкісного випробування.",
   "chat.dungeontrain.live.close_call.give": "Передати трансляційну відеокамеру",
   "chat.dungeontrain.live.close_call.offer": "%s пропонує тобі свою трансляційну відеокамеру. Взяти?",
+  "chat.dungeontrain.live.train_offer.offer": "Потяг відчуває, що ти наближаєшся до рідкісного випробування. Взяти трансляційну відеокамеру?",
+  "chat.dungeontrain.live.train_offer.received": "Потяг передав тобі трансляцію. Ти в ефірі!",
   "chat.dungeontrain.live_gift.accept": "Прийняти",
   "chat.dungeontrain.live_gift.accept.tip": "Надягни трансляційну відеокамеру й виходь в ефір.",
   "chat.dungeontrain.live_gift.decline": "Ні",
