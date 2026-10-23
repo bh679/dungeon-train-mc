@@ -45,6 +45,7 @@ import games.brennan.dungeontrain.portal.PortalStranding;
 import games.brennan.dungeontrain.portal.PortalSwapDiagnostics;
 import games.brennan.dungeontrain.portal.PortalSwapDrift;
 import games.brennan.dungeontrain.portal.PortalStructure;
+import games.brennan.dungeontrain.portal.PortalArrivalHold;
 import games.brennan.dungeontrain.portal.PortalTrainFreeze;
 import games.brennan.dungeontrain.portal.PortalTripTracker;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
@@ -665,6 +666,7 @@ public final class PortalCarriageEvents {
         ACTIVE_PAIRS.clear();
         PortalSwapDrift.clear();
         PortalTrainFreeze.clear();
+        PortalArrivalHold.clear();
         LAST_FOG.clear();
         games.brennan.dungeontrain.portal.PlayerSkyRegions.clearAll();
         LAST_CROSSING.clear();
@@ -2202,6 +2204,14 @@ public final class PortalCarriageEvents {
             // a player who deliberately walked back to it has asked for.
             if (move.toFrame() == PortalFrames.FRAME_CARRIAGE) {
                 PortalExitBindings.bind(player.getUUID(), pairKey, tile);
+                // Asked before anything below can thaw it: a train that is standing still for this
+                // room keeps standing until this player is aboard. From a far exit copy their client
+                // has neither the chunks nor the carriage yet, and a train that started this tick
+                // would slide out from under them. See PortalArrivalHold.
+                UUID trainId = PortalTrainFreeze.trainIdOf(pairKey);
+                if (TrainMotionFreeze.isFrozen(trainId)) {
+                    PortalArrivalHold.noteArrival(player, trainId, level.getGameTime());
+                }
                 // Back to being somebody who can see the train. While they were in the room their
                 // carriages may have been parked (PhysicsFreezeController counts a secluded tracker
                 // as nobody); wake the one they are stepping onto now rather than on the next
