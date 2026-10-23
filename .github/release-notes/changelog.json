@@ -29869,6 +29869,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "advancement-photos-keep-pause",
+      "version": "0.1472.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements",
+        "ui"
+      ],
+      "title": "Advancement photos keep the game paused",
+      "summary": "Opening an advancement's photos from the advancements screen no longer lets the train and music carry on behind them in single-player.",
+      "highlights": [],
+      "pr": 2261,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
