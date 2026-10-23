@@ -29938,6 +29938,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "allay-room-cows-update",
+      "version": "0.1476.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "New carriages",
+      "summary": "A new carriage can now turn up on the train, and an old favourite has been rebuilt.",
+      "highlights": [
+        "New carriage",
+        "Rebuilt carriage"
+      ],
+      "pr": 2260,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
