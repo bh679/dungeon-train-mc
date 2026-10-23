@@ -282,4 +282,34 @@ final class ServerStallWatchdogTest {
         assertFalse(ServerStallWatchdog.isChunkRequester(idleWorker));
         assertFalse(ServerStallWatchdog.isChunkRequester(null));
     }
+
+    // ---- mayDump: the short-stall budget ----
+
+    private static final long T = 1_000_000L;
+
+    @Test
+    @DisplayName("Under the first-dump threshold nothing is dumped")
+    void underThreshold_isNotDumped() {
+        assertFalse(ServerStallWatchdog.mayDump(ServerStallWatchdog.STALL_LOG_MS - 1, ServerStallWatchdog.NEVER, T));
+    }
+
+    @Test
+    @DisplayName("The first short stall is dumped")
+    void firstShortStall_isDumped() {
+        assertTrue(ServerStallWatchdog.mayDump(ServerStallWatchdog.STALL_LOG_MS, ServerStallWatchdog.NEVER, T));
+    }
+
+    @Test
+    @DisplayName("A second short stall inside the budget is held back, and allowed once it has passed")
+    void shortStallInsideBudget_isSuppressed() {
+        long last = T - ServerStallWatchdog.SHORT_DUMP_COOLDOWN_MS + 1;
+        assertFalse(ServerStallWatchdog.mayDump(2_600, last, T));
+        assertTrue(ServerStallWatchdog.mayDump(2_600, T - ServerStallWatchdog.SHORT_DUMP_COOLDOWN_MS, T));
+    }
+
+    @Test
+    @DisplayName("A long stall is dumped even inside the short-stall budget")
+    void longStall_ignoresBudget() {
+        assertTrue(ServerStallWatchdog.mayDump(ServerStallWatchdog.LONG_STALL_MS, T - 1, T));
+    }
 }
