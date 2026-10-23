@@ -86,10 +86,10 @@ textarea{min-height:0;resize:none;overflow:hidden;font-family:var(--body);line-h
 .tview{position:fixed;inset:0;z-index:1;overflow:auto;padding:70px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
 .tview[hidden]{display:none}
 .tinner{margin:0 auto}
-.tinner{max-width:1500px}
-.tables{column-gap:36px}
-@media (min-width:1100px){.tables{columns:2}}
-.ct{border-collapse:collapse;width:100%;font-size:13px;break-inside:avoid;margin-bottom:18px}
+.tinner{max-width:none;margin:0}
+.tables{display:flex;flex-wrap:nowrap;gap:28px;align-items:flex-start;overflow-x:auto;padding-bottom:16px}
+.ct{border-collapse:collapse;flex:0 0 380px;width:380px;font-size:13px}
+.ct td.ds{white-space:normal}
 #ptable th{text-align:left;color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:6px 8px;border-bottom:1px solid var(--line)}
 #ptable td{padding:6px 8px;border-bottom:1px solid rgba(42,51,80,.5);vertical-align:top}
 #ptable td.cls{font-family:var(--display);letter-spacing:.06em;white-space:nowrap}
