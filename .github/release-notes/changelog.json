@@ -29848,6 +29848,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "allay-room-cows-update",
+      "version": "0.1471.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "mobs"
+      ],
+      "title": "New allay carriage",
+      "summary": "A new carriage full of allays can now turn up on the train, and the cow carriage has been rebuilt.",
+      "highlights": [
+        "New allay carriage",
+        "Rebuilt cow carriage"
+      ],
+      "pr": 2260,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
