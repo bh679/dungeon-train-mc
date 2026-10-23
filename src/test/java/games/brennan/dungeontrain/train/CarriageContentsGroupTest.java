@@ -140,6 +140,30 @@ final class CarriageContentsGroupTest {
     }
 
     @Test
+    @DisplayName("bands: round-trips, survives with*/gate edits, omitted when empty, scalar reads as one")
+    void bands_roundTrip() {
+        JsonObject in = JsonParser.parseString("""
+            {"schemaVersion": 3, "selfWeight": 1, "variants": [
+              {"id": "veined_sand", "weight": 7, "phases": ["NETHER"], "bands": ["Better_Nether", "bop_nether"]},
+              {"id": "echo_soil", "weight": 7, "bands": "future_band"},
+              {"id": "dirt2", "weight": 1}
+            ]}""").getAsJsonObject();
+        CarriageContentsGroup g = CarriageContentsGroup.fromJson(in);
+        CarriageContentsGroup.Member sand = g.member("veined_sand").orElseThrow();
+        assertEquals(List.of("better_nether", "bop_nether"), sand.bands());
+        assertEquals(List.of("future_band"), g.member("echo_soil").orElseThrow().bands());
+        assertTrue(g.member("dirt2").orElseThrow().bands().isEmpty());
+
+        assertEquals(sand.bands(), sand.withWeight(3).withGate(TemplateGate.DEFAULT).withStages(List.of("x")).bands());
+        assertEquals(sand.bands(), sand.withStageToggled("x").bands());
+
+        JsonObject out = g.toJson();
+        assertEquals(g, CarriageContentsGroup.fromJson(out));
+        assertFalse(out.getAsJsonArray("variants").get(2).getAsJsonObject().has("bands"),
+            "an unbanded member writes no bands key");
+    }
+
+    @Test
     @DisplayName("fromJson tolerates missing 'variants' key")
     void fromJson_missingVariantsKey() {
         JsonObject root = new JsonObject();

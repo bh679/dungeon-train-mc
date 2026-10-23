@@ -2378,8 +2378,7 @@ public final class EditorCommand {
             String baseStage = m.stageIds().isEmpty() ? null : m.stageIds().get(0);
             TemplateGate current = games.brennan.dungeontrain.editor.StageStore.effectiveGate(m.gate(), baseStage);
             TemplateGate next = op.apply(current);
-            CarriageContentsGroup.Member updated = new CarriageContentsGroup.Member(
-                m.id(), m.weight(), next, java.util.List.of());
+            CarriageContentsGroup.Member updated = m.withGate(next).withStages(java.util.List.of());
             CarriageContentsGroupStore.save(parent.id(), existing.get().withMember(updated));
             // The member was just detached to Custom above (by design), so it is unlinked now.
             gateSuccess(source, parent.id() + ":" + member.id(), next,
@@ -2425,7 +2424,7 @@ public final class EditorCommand {
                 if (m.stageIds().size() == 1) {
                     inline = games.brennan.dungeontrain.editor.StageStore.effectiveGate(inline, m.stageIds().get(0));
                 }
-                updated = new CarriageContentsGroup.Member(m.id(), m.weight(), inline, java.util.List.of());
+                updated = m.withGate(inline).withStages(java.util.List.of());
             } else {
                 updated = m.withStageToggled(link);
             }
