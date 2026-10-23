@@ -62,6 +62,25 @@ public final class PriorityBookMessage {
         return Component.translatable(GUI + "is_priority");
     }
 
+    // ---- the confirmation before boosting your own book (client/BookBoostConfirm) ----
+
+    /** "Boosting your own book costs 10 boosts, boosting someone else's costs 1." */
+    public static Component ownConfirmBody() {
+        return Component.translatable(GUI + "own_confirm.body");
+    }
+
+    public static Component ownConfirmDoIt() {
+        return Component.translatable(GUI + "own_confirm.do_it");
+    }
+
+    public static Component ownConfirmCancel() {
+        return Component.translatable(GUI + "own_confirm.cancel");
+    }
+
+    public static Component ownConfirmDontShow() {
+        return Component.translatable(GUI + "own_confirm.dont_show");
+    }
+
     // ---- boosts: a tenth of a Priority Book, given to somebody else's book ----
 
     /** How many booster names the author's line spells out before "and N more". */

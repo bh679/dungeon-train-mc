@@ -172,6 +172,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue DEVELOPER_POPUP_SHOWN_BEFORE;
     public static final ModConfigSpec.BooleanValue DEVELOPER_POPUP_OPTED_OUT;
     public static final ModConfigSpec.BooleanValue FREE_PLAY_CONFIRM_OPTED_OUT;
+    public static final ModConfigSpec.BooleanValue OWN_BOOK_BOOST_CONFIRM_OPTED_OUT;
     public static final ModConfigSpec.BooleanValue DEV_CONSENT_GRANTED;
     public static final ModConfigSpec.DoubleValue DEV_CONSENT_GRANT_SESSION;
     public static final ModConfigSpec.DoubleValue DEV_CONSENT_LAST_MSG_TO_DEV;
@@ -401,6 +402,7 @@ public final class ClientDisplayConfig {
         DEVELOPER_POPUP_SHOWN_BEFORE = pair.getLeft().developerPopupShownBefore;
         DEVELOPER_POPUP_OPTED_OUT = pair.getLeft().developerPopupOptedOut;
         FREE_PLAY_CONFIRM_OPTED_OUT = pair.getLeft().freePlayConfirmOptedOut;
+        OWN_BOOK_BOOST_CONFIRM_OPTED_OUT = pair.getLeft().ownBookBoostConfirmOptedOut;
         DEV_CONSENT_GRANTED = pair.getLeft().devConsentGranted;
         DEV_CONSENT_GRANT_SESSION = pair.getLeft().devConsentGrantSession;
         DEV_CONSENT_LAST_MSG_TO_DEV = pair.getLeft().devConsentLastMsgToDev;
@@ -505,6 +507,12 @@ public final class ClientDisplayConfig {
         b.push("freePlayConfirm");
         ModConfigSpec.BooleanValue freePlayConfirmOptedOut = b
                 .comment("Whether the player has ticked \"Don't show this again\" on the Free Play confirmation. When true, switching to creative/spectator or running a cheat command starts Free Play immediately, with no confirm screen. Reset by editing this back to false.")
+                .define("optedOut", false);
+        b.pop();
+
+        b.push("ownBookBoostConfirm");
+        ModConfigSpec.BooleanValue ownBookBoostConfirmOptedOut = b
+                .comment("Whether the player has ticked \"Don't show this again\" on the confirmation shown before boosting their own book (which costs 10 Book Boosts). When true, the star spends at once. Reset by editing this back to false.")
                 .define("optedOut", false);
         b.pop();
 
@@ -945,7 +953,7 @@ public final class ClientDisplayConfig {
         b.pop();
 
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
-                devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
+                ownBookBoostConfirmOptedOut, devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
@@ -1081,6 +1089,19 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         FREE_PLAY_CONFIRM_OPTED_OUT.set(value);
         FREE_PLAY_CONFIRM_OPTED_OUT.save();
+    }
+
+    // ----- Own-book boost confirmation opt-out (see client/BookBoostConfirm) -----
+
+    /** Has the player ticked "Don't show this again" on the own-book boost confirmation? */
+    public static boolean isOwnBookBoostConfirmOptedOut() {
+        return isLoaded() && OWN_BOOK_BOOST_CONFIRM_OPTED_OUT.get();
+    }
+
+    public static void setOwnBookBoostConfirmOptedOut(boolean value) {
+        if (!isLoaded()) return;
+        OWN_BOOK_BOOST_CONFIRM_OPTED_OUT.set(value);
+        OWN_BOOK_BOOST_CONFIRM_OPTED_OUT.save();
     }
 
     // ----- Config deviation prompt (see client/ConfigDeviationPromptHandler) -----
@@ -2219,6 +2240,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue developerPopupShownBefore,
             ModConfigSpec.BooleanValue developerPopupOptedOut,
             ModConfigSpec.BooleanValue freePlayConfirmOptedOut,
+            ModConfigSpec.BooleanValue ownBookBoostConfirmOptedOut,
             ModConfigSpec.BooleanValue devConsentGranted,
             ModConfigSpec.DoubleValue devConsentGrantSession,
             ModConfigSpec.DoubleValue devConsentLastMsgToDev,
