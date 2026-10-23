@@ -29691,6 +29691,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "enderman-train-teleport",
+      "version": "0.1463.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Endermen can teleport onto the train",
+      "summary": "Endermen no longer drop to the ground under the train when they teleport over it. Look at one from the roof or from inside a carriage and it can now land right beside you.",
+      "highlights": [],
+      "pr": 2248,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
