@@ -29762,6 +29762,22 @@
       "released_at": null
     },
     {
+      "id": "bug-fixing-2251",
+      "version": "0.1467.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Bug fixing",
+      "summary": "Bug fixing.",
+      "highlights": [],
+      "pr": 2251,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "dimensional-carriage-shelter",
       "version": "0.1467.0",
       "type": "fix",
