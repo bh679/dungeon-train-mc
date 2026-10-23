@@ -12,10 +12,12 @@ import java.util.Map;
  * {@link ProceduralTiers} is read at {@code level - offset} for that mob (chance and amplifier cap
  * both shift); gear is not affected.
  *
- * <p>Hand-tuned, seeded from a one-off scan of the bundled carriage contents (weights, groups,
- * stage gates, variant {@code difficulty.min} and template-baked mobs): each value is the lowest
- * level at which any room can spawn that mob. Mobs missing here appear from level 0. Re-derive by
- * repeating that scan when rooms that gate a late mob change.</p>
+ * <p>Generated from the bundled carriage contents (weights, groups, stage gates, variant
+ * {@code difficulty.min}, template-baked mobs and the Gloomslate pot mobs) by
+ * {@code scripts/difficulty/derive-mob-offsets.py --write}: each value is the lowest level at which
+ * any room can spawn that mob. Mobs missing here appear from level 0. CI runs the script with
+ * {@code --check}, so a room that adds a mob or moves a gate fails the build until this is
+ * regenerated. Do not hand-edit the table.</p>
  */
 public final class MobEffectOffsets {
 
@@ -23,20 +25,33 @@ public final class MobEffectOffsets {
     public static final int BABY_OFFSET = 5;
 
     private static final Map<String, Integer> OFFSETS = Map.ofEntries(
-            Map.entry("minecraft:pillager", 1),
             Map.entry("minecraft:bogged", 2),
             Map.entry("minecraft:cave_spider", 2),
+            Map.entry("minecraft:pillager", 2),
+            Map.entry("betternether:skull", 3),
+            Map.entry("minecraft:vindicator", 3),
             Map.entry("minecraft:witch", 3),
+            Map.entry("betternether:jungle_skeleton", 4),
+            Map.entry("deeperdarker:sculk_centipede", 4),
+            Map.entry("deeperdarker:shattered", 4),
             Map.entry("minecraft:breeze", 4),
             Map.entry("minecraft:hoglin", 4),
-            Map.entry("betternether:jungle_skeleton", 4),
             Map.entry("betternether:naga", 5),
-            Map.entry("minecraft:vindicator", 5),
+            Map.entry("deeperdarker:anger_pot", 5),
+            Map.entry("deeperdarker:fear_pot", 5),
+            Map.entry("deeperdarker:sculk_leech", 5),
+            Map.entry("deeperdarker:sludge", 5),
+            Map.entry("deeperdarker:sorrow_pot", 5),
+            Map.entry("minecraft:creeper", 5),
+            Map.entry("deeperdarker:stalker", 6),
             Map.entry("minecraft:magma_cube", 6),
             Map.entry("minecraft:piglin_brute", 6),
             Map.entry("betterend:shadow_walker", 7),
+            Map.entry("minecraft:stray", 7),
             Map.entry("minecraft:guardian", 11),
+            Map.entry("minecraft:evoker", 20),
             Map.entry("minecraft:shulker", 20),
+            Map.entry("deeperdarker:shriek_worm", 21),
             Map.entry("minecraft:elder_guardian", 30),
             Map.entry("minecraft:ravager", 40),
             Map.entry("minecraft:warden", 60)
