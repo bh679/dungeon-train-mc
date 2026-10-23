@@ -26,8 +26,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Applies an admin-queued, one-time inventory restore to a player (server thread only).
@@ -50,8 +48,6 @@ public final class InventoryRestore {
 
     static final String APPLIED_FILE = "restores-applied.txt";
 
-    private static final Set<String> TOLD_WAITING = ConcurrentHashMap.newKeySet();
-
     private InventoryRestore() {}
 
     /** Apply {@code restore} to {@code player} if allowed, and ack the relay. */
@@ -59,11 +55,8 @@ public final class InventoryRestore {
         String name = player.getName().getString();
         if (RunIntegrity.isCheated(player)) {
             LOGGER.warn("[DungeonTrain] Inventory restore {} for {} held: this run is Free Play", restore.id(), name);
-            // Once per restore per server run, not on every 5-minute poll.
-            if (TOLD_WAITING.add(restore.id())) {
-                player.sendSystemMessage(Component.translatable("chat.dungeontrain.restore.waiting")
-                    .withStyle(ChatFormatting.GRAY));
-            }
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.restore.waiting")
+                .withStyle(ChatFormatting.GRAY));
             return;
         }
         Path dir = PlayerDataPaths.dir(PlayerDataPaths.OUTBOX);

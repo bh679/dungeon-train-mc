@@ -19,15 +19,14 @@ import java.util.UUID;
 /**
  * When to ask the relay about an admin inventory restore, and when to apply one.
  *
- * <p>Asks on login and every 5 minutes for everyone online, so a restore Brennan queues while the
- * player is in-game still arrives. An answer is parked here and applied once the player has been
- * in the world {@value #SETTLE_TICKS} ticks, after the login intro, starting book and loadout
- * handlers have finished writing to their inventory.</p>
+ * <p>Asks once per login only — a restore queued while the player is in-game arrives at their next
+ * login. An answer is parked here and applied once the player has been in the world
+ * {@value #SETTLE_TICKS} ticks, after the login intro, starting book and loadout handlers have
+ * finished writing to their inventory.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class InventoryRestoreEvents {
 
-    private static final int POLL_INTERVAL_TICKS = 20 * 60 * 5;
     /** 30 seconds in-world before anything is applied. */
     static final int SETTLE_TICKS = 20 * 30;
     private static final int CHECK_INTERVAL_TICKS = 20;
@@ -57,9 +56,6 @@ public final class InventoryRestoreEvents {
     public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
         tick++;
-        if (tick % POLL_INTERVAL_TICKS == 0) {
-            for (ServerPlayer player : server.getPlayerList().getPlayers()) ask(player);
-        }
         if (tick % CHECK_INTERVAL_TICKS == 0 && !PARKED.isEmpty()) applySettled(server);
     }
 

@@ -33,8 +33,8 @@ preview, and queue it (live pool, or dev for testing). Exactly one restore can b
 
 ## What the mod does
 
-`player/InventoryRestoreEvents` asks the relay on login and every 5 minutes, then applies a
-restore once the player has been in the world for 30 seconds:
+`player/InventoryRestoreEvents` asks the relay once per login (a restore queued while the player is
+online arrives at their next login), then applies it once they have been in the world 30 seconds:
 
 - **Free Play run:** nothing is applied, and the player sees one line saying items are waiting.
   The restore stays pending. `RUN_CHEATED` is never touched.
