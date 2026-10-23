@@ -1,5 +1,5 @@
 {
-  "_doc": "Which photo collection each entity type joins when the train can spawn it. hostile -> Most Wanted, animal -> Nature Documentary, skip -> neither (passengers have their own tally; non-living entities are not subjects). Same rule as the in-game tally (compat/photo/PhotoSubjectTally): an Enemy is hostile, any other creature is an animal. A spawnable id missing here fails the build (scripts/advancements/generate-mob-photo-collections.py). Setting an id to skip takes it out of a collection again.",
+  "_doc": "Which photo collection each entity type joins when the train can spawn it. hostile -> Most Wanted, animal -> Nature Documentary, skip -> neither (passengers have their own tally; non-living entities are not subjects). Same rule as the in-game tally (compat/photo/PhotoSubjectTally): an Enemy is hostile, any other mob that is not a passenger is an animal (golems and allays included); PhotoSubjectTallyCollectionsTest checks every collected entity against it. A spawnable id missing here fails the build (scripts/advancements/generate-mob-photo-collections.py). Setting an id to skip takes it out of a collection again.",
   "extra_spawns": {
     "_doc": "Spawns decided in Java, not in bundled templates. MobPhotoCollectionsTest pins these to the code.",
     "event/NetherMobSpawner": [
