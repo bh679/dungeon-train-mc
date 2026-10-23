@@ -29883,9 +29883,9 @@
       "highlights": [],
       "pr": 2255,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "photo-keep-off-thread",
@@ -29902,9 +29902,9 @@
       ],
       "pr": 2252,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "photo-wildlife-count-fix",
@@ -29919,9 +29919,9 @@
       "summary": "More of the creatures you photograph now count toward your wildlife photos.",
       "highlights": [],
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "camera-hints",
@@ -29935,9 +29935,9 @@
       "highlights": [],
       "pr": 2263,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "allay-room-cows-update",
@@ -29955,9 +29955,9 @@
       ],
       "pr": 2260,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "advancement-photos-keep-pause",
@@ -29973,9 +29973,9 @@
       "highlights": [],
       "pr": 2261,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "freeplay-confirm-world-settings",
