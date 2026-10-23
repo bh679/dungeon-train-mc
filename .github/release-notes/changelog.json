@@ -29746,15 +29746,14 @@
       "released_at": null
     },
     {
-      "id": "effortless-building-creative-only",
+      "id": "bug-fixing-2251",
       "version": "0.1466.0",
-      "type": "feat",
+      "type": "fix",
       "tags": [
-        "feature",
-        "compatibility"
+        "fix"
       ],
-      "title": "Effortless Building is Creative only",
-      "summary": "Effortless Building now only works in Creative mode. In Survival its build menu, shapes, mirrors and previews are switched off, and placing and breaking blocks works one block at a time as normal.",
+      "title": "Bug fixing",
+      "summary": "Bug fixing.",
       "highlights": [],
       "pr": 2251,
       "date": "2026-10-23",
