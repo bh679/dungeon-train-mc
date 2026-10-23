@@ -309,6 +309,12 @@
       "conditions": {
         "subject": "entity:deeperdarker:stalker"
       }
+    },
+    "minecraft:creaking": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:creaking"
+      }
     }
   },
   "requirements": [
@@ -458,6 +464,9 @@
     ],
     [
       "deeperdarker:stalker"
+    ],
+    [
+      "minecraft:creaking"
     ]
   ]
 }
