@@ -31,7 +31,8 @@ import javax.annotation.Nullable;
  *   <li><b>Not under cover</b>: nothing solid within {@link #COVER_SCAN} cells above the head, so anyone
  *       inside an enclosed carriage is sheltered.</li>
  *   <li><b>Not in a lee</b>: nothing solid within {@link #LEE_SCAN} blocks upwind at foot or eye height, so
- *       crouching behind a wall, a chest or a parapet shelters you from the direction the wind comes from.</li>
+ *       crouching behind a wall, a chest or a parapet shelters you from the direction the wind comes from.
+ *       One block in the wind's path to any part of you is enough ({@link GroundExposure#classify}).</li>
  * </ol>
  */
 public final class TrainExposure {
@@ -84,21 +85,11 @@ public final class TrainExposure {
         if (underTerrain(e)) return Result.IN_TUNNEL;
         Result cover = carriageCover(plot, feet, e);
         if (cover != Result.EXPOSED) return cover;
-        double eye = eyeRise(e);
-
-        // Upwind = against the wind, rotated into the carriage frame (trains only yaw, but don't assume it).
-        Vector3d up = pose.transformNormalInverse(new Vector3d(-dirX, 0.0, -dirZ));
-        double len = Math.sqrt(up.x * up.x + up.z * up.z);
-        if (len < 1e-6) return Result.EXPOSED;
-        double ux = up.x / len;
-        double uz = up.z / len;
-        for (int step = 1; step <= LEE_SCAN; step++) {
-            double x = feet.x + ux * step;
-            double z = feet.z + uz * step;
-            if (solid(plot, BlockPos.containing(x, feet.y + FOOT_PROBE, z))) return Result.IN_LEE;
-            if (solid(plot, BlockPos.containing(x, feet.y + eye, z))) return Result.IN_LEE;
-        }
-        return Result.EXPOSED;
+        // The wind turned into the carriage frame (trains only yaw, but don't assume it); the lee test is the
+        // ground's, reading carriage blocks.
+        Vector3d down = pose.transformNormalInverse(new Vector3d(dirX, 0.0, dirZ));
+        return GroundExposure.classify((x, y, z) -> solid(plot, BlockPos.containing(x, y, z)),
+                feet.x, feet.y, feet.z, eyeRise(e), e.getBbWidth() / 2.0, down.x, down.z);
     }
 
     /**
