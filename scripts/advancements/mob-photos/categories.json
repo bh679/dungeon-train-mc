@@ -10,11 +10,32 @@
       "deeperdarker:anger_pot", "deeperdarker:fear_pot", "deeperdarker:sorrow_pot"
     ]
   },
+  "block_spawns": {
+    "_doc": "Blocks that spawn mobs once placed. A bundled template holding one of these blocks (a sidecar state or a .nbt palette entry) can put its mobs on the train.",
+    "minecraft:creaking_heart": ["minecraft:creaking"],
+    "minecraft:bee_nest": ["minecraft:bee"],
+    "minecraft:beehive": ["minecraft:bee"],
+    "minecraft:turtle_egg": ["minecraft:turtle"],
+    "minecraft:frogspawn": ["minecraft:tadpole"],
+    "minecraft:sniffer_egg": ["minecraft:sniffer"],
+    "minecraft:infested_stone": ["minecraft:silverfish"],
+    "minecraft:infested_cobblestone": ["minecraft:silverfish"],
+    "minecraft:infested_stone_bricks": ["minecraft:silverfish"],
+    "minecraft:infested_mossy_stone_bricks": ["minecraft:silverfish"],
+    "minecraft:infested_cracked_stone_bricks": ["minecraft:silverfish"],
+    "minecraft:infested_chiseled_stone_bricks": ["minecraft:silverfish"],
+    "minecraft:infested_deepslate": ["minecraft:silverfish"]
+  },
+  "backported": {
+    "_doc": "Ids in the minecraft namespace that VanillaBackport adds; Minecraft 1.21.1 itself has no such entity, so MobPhotoCategoriesTest cannot check them against the vanilla registry.",
+    "ids": ["minecraft:creaking", "minecraft:happy_ghast", "minecraft:sulfur_cube"]
+  },
   "categories": {
     "minecraft:blaze": "hostile",
     "minecraft:bogged": "hostile",
     "minecraft:breeze": "hostile",
     "minecraft:cave_spider": "hostile",
+    "minecraft:creaking": "hostile",
     "minecraft:creeper": "hostile",
     "minecraft:drowned": "hostile",
     "minecraft:elder_guardian": "hostile",
