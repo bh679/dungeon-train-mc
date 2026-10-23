@@ -59,4 +59,10 @@ class HiddenCommandsTest {
         assertFalse(HiddenCommands.HIDDEN_ROOTS.contains("advancement"));
         assertFalse(HiddenCommands.HIDDEN_ROOTS.contains("dungeontrain"));
     }
+
+    @Test
+    @DisplayName("/log, the alias of /bug, runs but is kept out of tab completion")
+    void logAliasHidden() {
+        assertTrue(HiddenCommands.HIDDEN_ROOTS.contains("log"));
+    }
 }

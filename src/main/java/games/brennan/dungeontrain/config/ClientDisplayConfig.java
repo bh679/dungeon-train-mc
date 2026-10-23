@@ -323,6 +323,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue DEV_HUD;
     /** Only Dungeon Train's tabs show on the advancements screen — see {@link #isHideOtherAdvancementTabs()}. */
     public static final ModConfigSpec.BooleanValue HIDE_OTHER_ADVANCEMENT_TABS;
+    /** Only advancements in Dungeon Train's tabs pop a card — see {@link #isHideOtherAdvancementCards()}. */
+    public static final ModConfigSpec.BooleanValue HIDE_OTHER_ADVANCEMENT_CARDS;
 
     /**
      * Where each of the editor's three author-facing menus draws — see {@link EditorMenuSpace}.
@@ -472,6 +474,7 @@ public final class ClientDisplayConfig {
         LOW_MEMORY_NOTICE_CHAT = pair.getLeft().lowMemoryNoticeChat;
         DEV_HUD = pair.getLeft().devHud;
         HIDE_OTHER_ADVANCEMENT_TABS = pair.getLeft().hideOtherAdvancementTabs;
+        HIDE_OTHER_ADVANCEMENT_CARDS = pair.getLeft().hideOtherAdvancementCards;
         COMMAND_MENU_SPACE = pair.getLeft().commandMenuSpace;
         TEMPLATE_BLOCKS_MENU_SPACE = pair.getLeft().templateBlocksMenuSpace;
         CONTAINER_CONTENTS_MENU_SPACE = pair.getLeft().containerContentsMenuSpace;
@@ -938,6 +941,11 @@ public final class ClientDisplayConfig {
                          "every other mod's are hidden; their advancements are still earned and still pop up.",
                          "Toggle in-game via Options > Dungeon Train. On by default.")
                 .define("hideOtherTabs", true);
+        ModConfigSpec.BooleanValue hideOtherAdvancementCards = b
+                .comment("Only advancements in Dungeon Train's tabs pop up a card when earned. Minecraft's own and",
+                         "every other mod's are still earned and still announced in chat, just without the card.",
+                         "Toggle in-game via Options > Dungeon Train. On by default.")
+                .define("hideOtherCards", true);
         b.pop();
 
         b.push("run");
@@ -972,7 +980,7 @@ public final class ClientDisplayConfig {
                 politicalFilter, contentMode, devChatEnabled, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, bookCopyButton, protectOwnPets, updateNoticeChat,
-                lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs,
+                lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs, hideOtherAdvancementCards,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
                 editorScreenTheme, placeholderCollision,
@@ -1454,6 +1462,20 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         HIDE_OTHER_ADVANCEMENT_TABS.set(value);
         HIDE_OTHER_ADVANCEMENT_TABS.save();
+    }
+
+    /**
+     * Whether advancements outside Dungeon Train's tabs skip the earned card (the chat line stays). On
+     * by default, pre-load included. Read on every earn — see {@code AdvancementTabGate#shouldSuppressCard}.
+     */
+    public static boolean isHideOtherAdvancementCards() {
+        return !isLoaded() || HIDE_OTHER_ADVANCEMENT_CARDS.get();
+    }
+
+    public static void setHideOtherAdvancementCards(boolean value) {
+        if (!isLoaded()) return;
+        HIDE_OTHER_ADVANCEMENT_CARDS.set(value);
+        HIDE_OTHER_ADVANCEMENT_CARDS.save();
     }
 
     public static boolean isLowMemoryNoticeChatEnabled() {
@@ -2307,6 +2329,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue lowMemoryNoticeChat,
             ModConfigSpec.BooleanValue devHud,
             ModConfigSpec.BooleanValue hideOtherAdvancementTabs,
+            ModConfigSpec.BooleanValue hideOtherAdvancementCards,
             ModConfigSpec.EnumValue<EditorMenuSpace> commandMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,
