@@ -87,8 +87,11 @@ textarea{min-height:0;resize:none;overflow:hidden;font-family:var(--body);line-h
 .tview[hidden]{display:none}
 .tinner{margin:0 auto}
 .tinner{max-width:none;margin:0}
-.tables{display:flex;flex-wrap:nowrap;gap:28px;align-items:flex-start;overflow-x:auto;padding-bottom:16px}
-.ct{border-collapse:collapse;flex:0 0 380px;width:380px;font-size:13px}
+.tables{display:flex;flex-wrap:nowrap;gap:22px;align-items:flex-start;overflow-x:auto;padding-bottom:16px}
+.card{flex:0 0 400px;width:400px;border:1px solid color-mix(in srgb,var(--cc) 45%,transparent);border-radius:8px;background:color-mix(in srgb,var(--cc) 9%,rgba(17,26,48,.92));padding:12px 12px 6px}
+.ctitle{font-family:var(--display);font-weight:500;font-size:22px;letter-spacing:.08em;margin:0 0 8px;display:flex;align-items:baseline;gap:12px}
+.ctitle .cnt{font-family:var(--body);font-size:11px;letter-spacing:0;color:var(--muted);margin:0}
+.ct{border-collapse:collapse;width:100%;font-size:13px}
 .ct td.ds{white-space:normal}
 #ptable th{text-align:left;color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:6px 8px;border-bottom:1px solid var(--line)}
 #ptable td{padding:6px 8px;border-bottom:1px solid rgba(42,51,80,.5);vertical-align:top}
@@ -433,7 +436,7 @@ document.querySelectorAll(".lnk[data-t]").forEach(b=>b.onclick=()=>{const t=docu
 let showTable=false;const bTable=document.getElementById("bTable");
 function reachable(){const adj=new Map();M.links.forEach(l=>{if(!adj.has(l.a))adj.set(l.a,[]);if(!adj.has(l.b))adj.set(l.b,[]);adj.get(l.a).push(l.b);adj.get(l.b).push(l.a)});const seen=new Set(["root"]);const q=["root"];while(q.length){const x=q.pop();(adj.get(x)||[]).forEach(y=>{if(!seen.has(y)){seen.add(y);q.push(y)}})}return seen}
 function renderTable(){const t=document.getElementById("ptable");t.replaceWith(Object.assign(document.createElement("div"),{id:"ptable",className:"tables"}));const host=document.getElementById("ptable");const live=reachable();const order=M.classes.map(c=>{const ps=M.perks.filter(p=>p.cls===c.id&&live.has(p.id));if(!ps.length)return null;const sx=ps.reduce((a,p)=>a+(p.x-CX),0),sy=ps.reduce((a,p)=>a+(p.y-CY),0);return {c,a:(Math.atan2(sy,sx)+Math.PI/2+2*Math.PI)%(2*Math.PI),ps:ps.sort((u,v)=>Math.hypot(u.x-CX,u.y-CY)-Math.hypot(v.x-CX,v.y-CY))}}).filter(Boolean).sort((u,v)=>u.a-v.a);
-  let h="";order.forEach(o=>{h+=`<table class="ct"><tr><th></th>${showRev?"<th></th>":""}<th>class</th><th>perk</th><th>description</th></tr>`;o.ps.forEach((p,i)=>{h+=`<tr data-row="${p.id}"${sel===p.id?' class="hl"':""}><td class="go"><button class="lnk goto" data-id="${p.id}" title="show on the graph">◎</button></td>${showRev?`<td class="tick">${p.reviewed?"✓":""}</td>`:""}<td class="cls" style="color:${o.c.color}">${i===0?esc(o.c.name):""}${(i===1||(i===0&&o.ps.length===1))?`<div class="cnt">${o.ps.length} perk${o.ps.length===1?"":"s"}</div>`:""}</td><td class="nm" data-id="${p.id}">${esc(p.name)}</td><td class="ds">${esc(p.desc||"")}</td></tr>`});h+="</table>"});host.innerHTML=h;const t2=host;
+  let h="";order.forEach(o=>{h+=`<div class="card" style="--cc:${o.c.color}"><h3 class="ctitle" style="color:${o.c.color}">${esc(o.c.name)}<span class="cnt">${o.ps.length} perk${o.ps.length===1?"":"s"}</span></h3><table class="ct"><tr><th></th>${showRev?"<th></th>":""}<th>perk</th><th>description</th></tr>`;o.ps.forEach((p,i)=>{h+=`<tr data-row="${p.id}"${sel===p.id?' class="hl"':""}><td class="go"><button class="lnk goto" data-id="${p.id}" title="show on the graph">◎</button></td>${showRev?`<td class="tick">${p.reviewed?"✓":""}</td>`:""}<td class="nm" data-id="${p.id}">${esc(p.name)}</td><td class="ds">${esc(p.desc||"")}</td></tr>`});h+="</table></div>"});host.innerHTML=h;const t2=host;
   const go=id=>{sel=id;selLink=null;selCls=null;toggleTable(false);render()};t2.querySelectorAll("td.nm").forEach(td=>td.onclick=()=>go(td.dataset.id));t2.querySelectorAll("button.goto").forEach(b=>b.onclick=e=>{e.stopPropagation();go(b.dataset.id)});
   const hl=t2.querySelector("tr.hl");if(hl)hl.scrollIntoView({block:"center"})}
 function toggleTable(on){showTable=on??!showTable;document.getElementById("tableView").hidden=!showTable;document.querySelector(".sky").hidden=showTable;bTable.textContent=showTable?"✦ graph":"☰ table";bTable.classList.toggle("on",showTable);if(showTable)renderTable()}
