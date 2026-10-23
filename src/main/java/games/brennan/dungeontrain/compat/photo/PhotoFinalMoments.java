@@ -24,7 +24,8 @@ import java.util.UUID;
  * photographer, and the advancement keeps that photo ({@link AdvancementPhotoCapture}) even though
  * it is earned after the shot. When the creature is the Wither it also earns "Before The Beacon". A shot
  * taken during the death animation itself cannot count: Exposure leaves dead creatures out of a
- * frame. Server thread only.
+ * frame. A Wither shot that misses the window says so in chat ({@link BeaconPhotoHints}). Server thread
+ * only.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PhotoFinalMoments {
@@ -36,6 +37,9 @@ public final class PhotoFinalMoments {
 
     /** Creature UUID → the latest shot it was in. */
     private static final Map<UUID, Shot> RECENT = new HashMap<>();
+
+    /** Wither UUID → the latest shot it was in, kept longer for {@link BeaconPhotoHints}' too-early hint. */
+    private static final Map<UUID, Shot> RECENT_WITHER = new HashMap<>();
 
     private PhotoFinalMoments() {}
 
@@ -49,14 +53,18 @@ public final class PhotoFinalMoments {
         prune(now);
         for (LivingEntity e : inFrame) {
             if (e instanceof Player) continue;
-            RECENT.put(e.getUUID(), new Shot(photographer.getUUID(), frame, now));
+            Shot shot = new Shot(photographer.getUUID(), frame, now);
+            RECENT.put(e.getUUID(), shot);
+            if (e instanceof WitherBoss) RECENT_WITHER.put(e.getUUID(), shot);
         }
     }
 
     @SubscribeEvent
     public static void onDeath(LivingDeathEvent event) {
         LivingEntity dead = event.getEntity();
-        if (RECENT.isEmpty() || dead.level().isClientSide() || dead.getServer() == null) return;
+        if (dead.level().isClientSide() || dead.getServer() == null) return;
+        if (dead instanceof WitherBoss) witherNearMiss(dead);
+        if (RECENT.isEmpty()) return;
         Shot shot = RECENT.remove(dead.getUUID());
         if (shot == null || !inWindow(shot.gameTime(), dead.level().getGameTime())) return;
         ServerPlayer photographer = dead.getServer().getPlayerList().getPlayer(shot.photographer());
@@ -69,12 +77,24 @@ public final class PhotoFinalMoments {
         });
     }
 
+    /** The Wither's last shot came more than a second before it died: tell its photographer. */
+    private static void witherNearMiss(LivingEntity wither) {
+        Shot shot = RECENT_WITHER.remove(wither.getUUID());
+        if (shot == null) return;
+        ServerPlayer photographer = wither.getServer().getPlayerList().getPlayer(shot.photographer());
+        if (photographer != null) {
+            BeaconPhotoHints.onWitherDeath(photographer, shot.gameTime(), wither.level().getGameTime());
+        }
+    }
+
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         RECENT.clear();
+        RECENT_WITHER.clear();
     }
 
     private static void prune(long now) {
         RECENT.values().removeIf(shot -> !inWindow(shot.gameTime(), now));
+        RECENT_WITHER.values().removeIf(shot -> now - shot.gameTime() > BeaconPhotoHints.HORIZON_TICKS);
     }
 }
