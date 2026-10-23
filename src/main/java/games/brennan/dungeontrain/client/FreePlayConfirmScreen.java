@@ -8,6 +8,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 
@@ -73,7 +74,7 @@ public final class FreePlayConfirmScreen extends Screen {
                 .append("\n")
                 .append(Component.translatable("gui.dungeontrain.free_play.confirm.body")), innerW);
         conseqLines = this.font.split(FreePlayText.consequence(), innerW);
-        triggerLine = Component.translatable("gui.dungeontrain.free_play.confirm.trigger", triggerLabel)
+        triggerLine = Component.translatable("gui.dungeontrain.free_play.confirm.trigger", triggerText(triggerLabel))
                 .getVisualOrderText();
 
         int y = PADDING;
@@ -102,6 +103,15 @@ public final class FreePlayConfirmScreen extends Screen {
         addRenderableWidget(Button.builder(
                 Component.translatable("gui.dungeontrain.free_play.confirm.cancel"), b -> respond(false))
             .bounds(panelX + PADDING, panelY + cancelRelY, innerW, BUTTON_H).build());
+    }
+
+    /**
+     * The trigger as shown. A command or mod name ({@code "/give"}, {@code "Effortless Building"}) is
+     * shown as sent; a world setting arrives as a lang key ({@code WorldSettingGate}) and is
+     * translated here, on the client, into the player's own language.
+     */
+    private static Component triggerText(String label) {
+        return I18n.exists(label) ? Component.translatable(label) : Component.literal(label);
     }
 
     private void respond(boolean confirmed) {

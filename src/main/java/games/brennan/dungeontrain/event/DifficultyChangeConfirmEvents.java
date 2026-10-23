@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.cheat.WorldSettingGate;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.ShowDifficultyConfirmPacket;
@@ -128,7 +129,9 @@ public final class DifficultyChangeConfirmEvents {
         if (!confirmed) return; // backed out — the difficulty stayed as it was
         MinecraftServer server = player.getServer();
         if (server == null) return;
-        server.setDifficulty(pending.to(), pending.force());
+        // Applied with the world-setting gate open: MinecraftServerDifficultyMixin would otherwise hold
+        // this confirmed change and ask about it a second time.
+        WorldSettingGate.applying(() -> server.setDifficulty(pending.to(), pending.force()));
         if (pending.announce() && server.getWorldData().getDifficulty() == pending.to()) {
             player.createCommandSourceStack().sendSuccess(
                 () -> Component.translatable("commands.difficulty.success", pending.to().getDisplayName()), true);
