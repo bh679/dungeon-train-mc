@@ -29727,6 +29727,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dirt-carriage-variety",
+      "version": "0.1465.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "More dirt carriages",
+      "summary": "New dirt carriage variants.",
+      "highlights": [],
+      "pr": 2250,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

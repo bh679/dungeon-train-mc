@@ -2,8 +2,12 @@ package games.brennan.dungeontrain.template;
 
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.BandFlavor;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.server.level.ServerLevel;
+
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * The resolved spawn context at a template-selection site: the Diff-Level and worldgen
@@ -20,11 +24,45 @@ import net.minecraft.server.level.ServerLevel;
  * stage generated ahead; the {@link TrainPhase phase} axis is offset-free (dimension bands never
  * move). A {@code null} {@code GateContext} (passed by editor previews / tests) means "no gating".</p>
  */
-public record GateContext(int level, TrainPhase phase) {
+public record GateContext(int level, TrainPhase phase, Set<BandFlavor> bands) {
+
+    /**
+     * {@code bands} are the {@link BandFlavor styled bands} the column sits in (BetterNether, BoP
+     * overworld, …), resolved from the same world-X as {@link #phase}. Never {@code null}.
+     */
+    public GateContext {
+        bands = (bands == null || bands.isEmpty()) ? Collections.emptySet() : Set.copyOf(bands);
+    }
+
+    /** A context in no styled band — the editor / test call sites that only gate on level + phase. */
+    public GateContext(int level, TrainPhase phase) {
+        this(level, phase, Collections.emptySet());
+    }
 
     /** True iff {@code gate} admits this context's Diff-Level and phase. */
     public boolean allows(TemplateGate gate) {
         return gate.eligible(level, phase);
+    }
+
+    /**
+     * True iff a member restricted to {@code required} styled bands may spawn here: an empty set is no
+     * restriction, otherwise this column must sit in at least one of them. Unlike {@link #levelAllows}
+     * there is no relaxation — a band-only member never leaks outside its band.
+     */
+    public boolean allowsBands(Set<BandFlavor> required) {
+        if (required == null || required.isEmpty()) return true;
+        for (BandFlavor f : required) {
+            if (bands.contains(f)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * The styled bands at {@code worldX}, or none when a {@link TestGate} forced the phase to
+     * something other than the column's own (a forced phase has no real band to read a style from).
+     */
+    private static Set<BandFlavor> bandsAt(ServerLevel overworld, int worldX, TrainPhase computed, TrainPhase used) {
+        return computed == used ? BandFlavor.at(overworld, worldX) : Collections.emptySet();
     }
 
     /**
@@ -50,7 +88,9 @@ public record GateContext(int level, TrainPhase phase) {
     public static GateContext atWorldX(ServerLevel level, int worldX, int carriageLength) {
         ServerLevel overworld = level.getServer().overworld();
         int diffLevel = DifficultyProgression.levelAtWorldX(worldX, carriageLength);
-        return new GateContext(diffLevel, TestGate.phaseOr(TrainPhase.phaseAt(overworld, worldX)));
+        TrainPhase computed = TrainPhase.phaseAt(overworld, worldX);
+        TrainPhase phase = TestGate.phaseOr(computed);
+        return new GateContext(diffLevel, phase, bandsAt(overworld, worldX, computed, phase));
     }
 
     /**
@@ -117,9 +157,11 @@ public record GateContext(int level, TrainPhase phase) {
     public static GateContext forCarriage(ServerLevel level, int carriagePIdx, int carriageLength) {
         int groupSize = DungeonTrainWorldData.get(level.getServer().overworld()).getGenerationConfig().groupSize();
         int diffLevel = DifficultyProgression.positionTier(groupAnchorPIdx(carriagePIdx, groupSize));
-        TrainPhase phase = TrainPhase.phaseAt(level.getServer().overworld(),
-            groupRealStartX(carriagePIdx, groupSize, carriageLength));
-        return new GateContext(diffLevel, TestGate.phaseOr(phase));
+        ServerLevel overworld = level.getServer().overworld();
+        int worldX = groupRealStartX(carriagePIdx, groupSize, carriageLength);
+        TrainPhase computed = TrainPhase.phaseAt(overworld, worldX);
+        TrainPhase phase = TestGate.phaseOr(computed);
+        return new GateContext(diffLevel, phase, bandsAt(overworld, worldX, computed, phase));
     }
 
     /**
@@ -153,7 +195,9 @@ public record GateContext(int level, TrainPhase phase) {
         }
         int groupSize = DungeonTrainWorldData.get(level.getServer().overworld()).getGenerationConfig().groupSize();
         int diffLevel = DifficultyProgression.positionTier(groupAnchorPIdx(carriagePIdx, groupSize));
-        TrainPhase phase = TrainPhase.phaseAt(level.getServer().overworld(), groupAnchorWorldX);
-        return new GateContext(diffLevel, TestGate.phaseOr(phase));
+        ServerLevel overworld = level.getServer().overworld();
+        TrainPhase computed = TrainPhase.phaseAt(overworld, groupAnchorWorldX);
+        TrainPhase phase = TestGate.phaseOr(computed);
+        return new GateContext(diffLevel, phase, bandsAt(overworld, groupAnchorWorldX, computed, phase));
     }
 }

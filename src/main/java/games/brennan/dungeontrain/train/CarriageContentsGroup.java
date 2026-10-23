@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.template.TemplateWeightCodec;
+import games.brennan.dungeontrain.worldgen.BandFlavor;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,7 +34,8 @@ import java.util.Random;
  *     {"id": "container_wooden", "weight": 5},
  *     {"id": "piglin", "weight": 2, "minLevel": 4, "phases": ["NETHER"]},
  *     {"id": "cagedzombie", "weight": 2, "stage": "early"},
- *     {"id": "husk", "weight": 2, "stages": ["desert", "nether"]}
+ *     {"id": "husk", "weight": 2, "stages": ["desert", "nether"]},
+ *     {"id": "veined_sand", "weight": 7, "phases": ["NETHER"], "bands": ["better_nether"]}
  *   ]
  * }
  * </pre>
@@ -79,8 +81,14 @@ public record CarriageContentsGroup(int selfWeight, List<Member> members) {
      *
      * <p>{@code stageIds} is always a normalised (lowercased/trimmed, blanks dropped, de-duplicated),
      * order-preserving, immutable list — never {@code null}. Empty means Custom (no link).</p>
+     *
+     * <p>{@code bands} narrows the member further, to the {@link BandFlavor styled bands} a phase
+     * can't tell apart (e.g. BetterNether vs vanilla Nether): when non-empty the member spawns only
+     * where the column sits in one of them, on top of the gate / Stage check. Stored as the raw
+     * tokens (normalised like {@code stageIds}) so a token this build doesn't know survives an
+     * editor re-save; an unknown token simply never matches, so it fails closed.</p>
      */
-    public record Member(String id, int weight, TemplateGate gate, List<String> stageIds) {
+    public record Member(String id, int weight, TemplateGate gate, List<String> stageIds, List<String> bands) {
         public Member {
             if (id == null) throw new IllegalArgumentException("Member id must not be null");
             String norm = id.toLowerCase(Locale.ROOT);
@@ -92,6 +100,12 @@ public record CarriageContentsGroup(int selfWeight, List<Member> members) {
             weight = clampWeight(weight);
             if (gate == null) gate = TemplateGate.DEFAULT;
             stageIds = normalizeStages(stageIds);
+            bands = normalizeStages(bands);
+        }
+
+        /** A member in every styled band (no {@code bands} restriction). */
+        public Member(String id, int weight, TemplateGate gate, List<String> stageIds) {
+            this(id, weight, gate, stageIds, Collections.emptyList());
         }
 
         /** Back-compat: a member with the default (eligible-everywhere) gate and no Stage link. */
@@ -102,9 +116,19 @@ public record CarriageContentsGroup(int selfWeight, List<Member> members) {
         /** True when this member is linked to at least one Stage (the union gate applies). */
         public boolean isStageLinked() { return !stageIds.isEmpty(); }
 
-        public Member withWeight(int newWeight) { return new Member(id, newWeight, gate, stageIds); }
-        public Member withGate(TemplateGate newGate) { return new Member(id, weight, newGate, stageIds); }
-        public Member withStages(List<String> newStageIds) { return new Member(id, weight, gate, newStageIds); }
+        public Member withWeight(int newWeight) { return new Member(id, newWeight, gate, stageIds, bands); }
+        public Member withGate(TemplateGate newGate) { return new Member(id, weight, newGate, stageIds, bands); }
+        public Member withStages(List<String> newStageIds) { return new Member(id, weight, gate, newStageIds, bands); }
+
+        /** True when the styled bands of a column ({@code columnBands}) admit this member — see {@link #bands()}. */
+        public boolean bandsAllow(java.util.Set<BandFlavor> columnBands) {
+            if (bands.isEmpty()) return true;
+            for (String token : bands) {
+                Optional<BandFlavor> f = BandFlavor.byToken(token);
+                if (f.isPresent() && columnBands.contains(f.get())) return true;
+            }
+            return false;
+        }
 
         /**
          * New member with {@code stageId} toggled — added (appended) when absent, removed when
@@ -116,7 +140,7 @@ public record CarriageContentsGroup(int selfWeight, List<Member> members) {
             if (s.isEmpty()) return this;
             List<String> next = new ArrayList<>(stageIds);
             if (!next.remove(s)) next.add(s);
-            return new Member(id, weight, gate, next);
+            return new Member(id, weight, gate, next, bands);
         }
 
         private static List<String> normalizeStages(List<String> in) {
@@ -248,6 +272,11 @@ public record CarriageContentsGroup(int selfWeight, List<Member> members) {
             // link still serialises as the scalar "stage"; two or more become a "stages" array.
             TemplateWeightCodec.writeGateFields(entry, m.gate());
             TemplateWeightCodec.writeStages(entry, m.stageIds());
+            if (!m.bands().isEmpty()) {
+                JsonArray bands = new JsonArray();
+                m.bands().forEach(bands::add);
+                entry.add(BANDS_KEY, bands);
+            }
             arr.add(entry);
         }
         o.add("variants", arr);
@@ -295,9 +324,27 @@ public record CarriageContentsGroup(int selfWeight, List<Member> members) {
                 }
             }
             out.add(new Member(norm, weight,
-                TemplateWeightCodec.parseGate(entry), TemplateWeightCodec.parseStages(entry)));
+                TemplateWeightCodec.parseGate(entry), TemplateWeightCodec.parseStages(entry), parseBands(entry)));
         }
         return new CarriageContentsGroup(selfWeight, out);
+    }
+
+    /** Member JSON key for the {@link Member#bands() styled-band} restriction. */
+    public static final String BANDS_KEY = "bands";
+
+    /** The string entries of a member's {@code "bands"} array (a scalar string reads as one); none when absent. */
+    private static List<String> parseBands(JsonObject entry) {
+        JsonElement el = entry.get(BANDS_KEY);
+        if (el == null || el.isJsonNull()) return Collections.emptyList();
+        List<String> out = new ArrayList<>();
+        if (el.isJsonPrimitive() && el.getAsJsonPrimitive().isString()) {
+            out.add(el.getAsString());
+        } else if (el.isJsonArray()) {
+            for (JsonElement t : el.getAsJsonArray()) {
+                if (t.isJsonPrimitive() && t.getAsJsonPrimitive().isString()) out.add(t.getAsString());
+            }
+        }
+        return out;
     }
 
     public static int clampWeight(int value) {
