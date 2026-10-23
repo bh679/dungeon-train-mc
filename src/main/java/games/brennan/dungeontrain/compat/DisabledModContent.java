@@ -62,6 +62,13 @@ public final class DisabledModContent {
     private static final Set<String> HIDDEN_TAB_NAMESPACES =
         Set.of("betternether", "betterend", "biomesoplenty", "vanillabackport", "exposure", "exposure_polaroid");
 
+    /**
+     * Items from a {@link #HIDDEN_TAB_NAMESPACES} tab that recipe viewers still list. Hiding a mod's tab takes its
+     * contents out of JEI too (JEI builds its list from the tabs), so these are handed back to it as extra
+     * ingredients by {@code compat.jei.DungeonTrainJeiPlugin}: BetterNether's Cincinnasite Forge.
+     */
+    public static final Set<String> JEI_EXTRA_ITEMS = Set.of("betternether:cincinnasite_forge");
+
     /** Ore blocks and ore placed features: {@code cincinnasite_ore}, {@code nether_ruby_large_ore}, … */
     private static final Pattern ORE = Pattern.compile("(?:^|.*_)ore$");
 
