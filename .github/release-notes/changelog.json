@@ -30016,11 +30016,10 @@
       "version": "0.1482.0",
       "type": "fix",
       "tags": [
-        "fix",
-        "compatibility"
+        "fix"
       ],
-      "title": "Restore points now include your Ender Chest",
-      "summary": "Dungeon Train's automatic restore points now save your Ender Chest too, so restoring a backup brings it back along with your builds and progress.",
+      "title": "Backup fix",
+      "summary": "Fixed some of your data being left out of automatic backups.",
       "highlights": [],
       "pr": 2270,
       "date": "2026-10-23",
