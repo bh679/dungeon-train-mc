@@ -30010,6 +30010,26 @@
       "released": true,
       "released_in": "v0.1481.0",
       "released_at": "2026-10-23T10:21:36Z"
+    },
+    {
+      "id": "world-wide-free-play",
+      "version": "0.1482.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "multiplayer"
+      ],
+      "title": "Free Play is shared by the whole world",
+      "summary": "When one player on a world goes into Free Play, everyone on that world does too, since items can be passed between players. The Free Play prompt now says so before you confirm, and everyone else is told who started it and why.",
+      "highlights": [
+        "Players who join later are told why the world is in Free Play",
+        "Worlds where someone was already in Free Play become Free Play for everyone after this update"
+      ],
+      "pr": 2272,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
