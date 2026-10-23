@@ -79,6 +79,43 @@
       "phases": [
         "NETHER"
       ]
+    },
+    {
+      "id": "veined_sand",
+      "weight": 7,
+      "phases": [
+        "NETHER"
+      ],
+      "bands": [
+        "better_nether"
+      ]
+    },
+    {
+      "id": "dense_snow",
+      "weight": 7,
+      "phases": [
+        "END"
+      ],
+      "bands": [
+        "better_end"
+      ]
+    },
+    {
+      "id": "echo_soil",
+      "weight": 7,
+      "phases": [
+        "DEEPER_DARK"
+      ]
+    },
+    {
+      "id": "glowing_moss",
+      "weight": 7,
+      "phases": [
+        "OVERWORLD"
+      ],
+      "bands": [
+        "bop"
+      ]
     }
   ]
 }

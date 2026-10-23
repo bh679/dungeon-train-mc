@@ -491,9 +491,11 @@ public final class CarriageContentsRegistry {
      * Whether {@code gateCtx} admits {@code member}. When the member links to no Stage its inline
      * {@code gate} is tested directly. When it links to one or more Stages the member is admitted if
      * <b>any</b> linked Stage's effective gate allows the context (a union) — so a member linked to
-     * "desert" and "nether" spawns in either band.
+     * "desert" and "nether" spawns in either band. A member with {@code bands} must also sit in one
+     * of those styled bands ({@link CarriageContentsGroup.Member#bandsAllow}), whatever its gate says.
      */
     private static boolean memberAllows(GateContext gateCtx, CarriageContentsGroup.Member member) {
+        if (!member.bandsAllow(gateCtx.bands())) return false;
         List<String> stageIds = member.stageIds();
         if (stageIds.isEmpty()) {
             return gateCtx.allows(member.gate());
