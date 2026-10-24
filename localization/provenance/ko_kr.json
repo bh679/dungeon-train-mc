@@ -689,6 +689,7 @@
   "chat.dungeontrain.live.one_eye": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "8c1bc7a235361038"},
   "chat.dungeontrain.live.free_play": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "c2b86175edc469f9"},
   "chat.dungeontrain.live.took_over": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "c78dfb9243ebf35f"},
+  "chat.dungeontrain.live.second_stream": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "a454ecb30cd32f57"},
   "chat.dungeontrain.live.preparing": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "a7dd9cca6483d8ac"},
   "chat.dungeontrain.live.no_ffmpeg": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "f28cf5e9273f2d9f"},
   "chat.dungeontrain.live.ffmpeg_timeout": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "b7c3f22a1b7d9695"},
@@ -1302,6 +1303,8 @@
   "gui.dungeontrain.rewards.explain.copy": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "55a351ba1a5a59db"},
   "gui.dungeontrain.rewards.group.streams": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "a88ae391df6ced2f"},
   "gui.dungeontrain.rewards.group.extra": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "c8dc63dfcd922d67"},
+  "gui.dungeontrain.tv.channel.main": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "7efb509908676cb4"},
+  "gui.dungeontrain.tv.channel.second": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "a9244508ce97836a"},
   "gui.dungeontrain.rewards.quicker_streams.name": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "424e27d0fee9fed7"},
   "gui.dungeontrain.rewards.quicker_streams.line": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "a464e9e68f0be3be"},
   "gui.dungeontrain.rewards.quicker_streams.amount": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "9340c04dc35c62ff"},
@@ -5304,5 +5307,7 @@
   "chat.dungeontrain.free_play.cause.player_unknown": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "f423f850fc62209c"},
   "chat.dungeontrain.free_play.keep_inventory_on": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "c177d33aba2cfa3e"},
   "item.dungeontrain.live_cassette": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "2462ea58f8512b98"},
-  "item.dungeontrain.live_cassette.tooltip": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "359a4a07b85b72e0"}
+  "item.dungeontrain.live_cassette.tooltip": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "359a4a07b85b72e0"},
+  "item.dungeontrain.live_cassette_2": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "df10638a175df6d9"},
+  "item.dungeontrain.live_cassette_2.tooltip": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "ab5a99150ad90d53"}
 }
