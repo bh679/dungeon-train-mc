@@ -79,7 +79,7 @@ public final class DisintegrationBand {
      * Which repeat of the world-gen cycle (0-based) {@code worldX} falls in, or {@code -1} before the
      * anchor / when disintegration is disabled or this world has no train. Repeat {@code 0} is the first
      * pass through every band; {@code >= 1} means the whole first cycle (Nether, End, upside-down, chuncks)
-     * is behind the column. Drives the "Re-Over-World" advancement gate in
+     * is behind the column. Drives the "Re-Over-World" and "Nether Return Again" advancement gates in
      * {@link games.brennan.dungeontrain.event.ZoneProgressEvents}: positional (not advancement-based)
      * so a returning player's cross-world achievement sidecar — which re-grants {@code reached_void} on
      * login — can't satisfy it from the spawn overworld. Mirrors {@link NetherBand#netherPassIndex}.
