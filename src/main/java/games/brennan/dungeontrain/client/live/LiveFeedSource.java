@@ -92,13 +92,23 @@ public final class LiveFeedSource implements IVideoSource {
         static final Frame STATIC = new Frame(Kind.STATIC, null, false, -1, false);
     }
 
+    /**
+     * The source that actually decodes for this one: {@link #MAIN} while {@link #SECOND} has no second
+     * stream to show, so a TV left on the second cassette shares the first stream's decoder and texture
+     * instead of running a second one of the same stream (and never asks the relay for the second slot).
+     */
+    private LiveFeedSource delegate() {
+        return second && LiveStatusPoller.current().second() == null ? MAIN : this;
+    }
+
     @Override
     public @NotNull VertexConsumer getVideoFrameBuilder(TVBlockEntity tv, float partialTick, MultiBufferSource buffer,
                                                         boolean shouldUpdate, Vec2i screenSize, Vec2i pixelEffectRes,
                                                         int videoAnimationTick, boolean paused,
                                                         IntAnimationState switchAnim, IntAnimationState staticAnim,
                                                         boolean showsTime) {
-        return screenConsumer(frame(videoAnimationTick, partialTick, paused, true),
+        LiveFeedSource d = delegate();
+        return d.screenConsumer(d.frame(videoAnimationTick, partialTick, paused, true),
             buffer, pixelEffectRes, videoAnimationTick, switchAnim, staticAnim);
     }
 
@@ -109,7 +119,8 @@ public final class LiveFeedSource implements IVideoSource {
     public VertexConsumer screenConsumer(MultiBufferSource buffer, Vec2i pixelEffectRes, int videoAnimationTick,
                                          float partialTick, boolean paused,
                                          IntAnimationState switchAnim, IntAnimationState staticAnim) {
-        return screenConsumer(frame(videoAnimationTick, partialTick, paused),
+        LiveFeedSource d = delegate();
+        return d.screenConsumer(d.frame(videoAnimationTick, partialTick, paused),
             buffer, pixelEffectRes, videoAnimationTick, switchAnim, staticAnim);
     }
 
@@ -137,7 +148,12 @@ public final class LiveFeedSource implements IVideoSource {
      * its newest frame. TVs and the head viewer both call this; they share one session.
      */
     public Frame frame(int animationTick, float partialTick, boolean paused) {
-        return frame(animationTick, partialTick, paused, false);
+        return delegate().frame(animationTick, partialTick, paused, false);
+    }
+
+    /** The texture a caller must draw a {@link #frame} of this source with: the first stream's while this one borrows it. */
+    public ResourceLocation frameTexture() {
+        return delegate().texture;
     }
 
     /** {@code tvBlock}: a TV block is asking, which keeps the decode at full width for a streamer too. */
