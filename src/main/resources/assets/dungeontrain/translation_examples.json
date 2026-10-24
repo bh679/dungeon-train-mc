@@ -17374,5 +17374,141 @@
         "40"
       ]
     }
+  },
+  "gui.dungeontrain.perks.unlock_points": {
+    "1": {
+      "label": "how many unlock points are unspent",
+      "examples": [
+        "0",
+        "7"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.points": {
+    "1": {
+      "label": "how many active perk points are unspent",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.point_to_spend": {
+    "1": {
+      "label": "how many active perk points are waiting",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.tier_cost": {
+    "1": {
+      "label": "the perk's tier",
+      "examples": [
+        "1",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "unlock points the perk costs",
+      "examples": [
+        "1",
+        "10"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.per_point": {
+    "1": {
+      "label": "what one point in the perk does",
+      "examples": [
+        "+2 max health",
+        "one more shot"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.needs": {
+    "1": {
+      "label": "the name of the perk that must be unlocked first",
+      "examples": [
+        "Health",
+        "Trade Values"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.locked_points": {
+    "1": {
+      "label": "unlock points the player has",
+      "examples": [
+        "3",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.locked_short": {
+    "1": {
+      "label": "unlock points the player has",
+      "examples": [
+        "3",
+        "0"
+      ]
+    },
+    "2": {
+      "label": "unlock points the perk costs",
+      "examples": [
+        "5",
+        "10"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.unlocked_points": {
+    "1": {
+      "label": "active points in the perk",
+      "examples": [
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.active_points": {
+    "1": {
+      "label": "active points in the perk",
+      "examples": [
+        "1",
+        "10"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.links": {
+    "1": {
+      "label": "comma-separated names of the linked perks",
+      "examples": [
+        "Health, Armour",
+        "The Engine"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.hud_unlocked": {
+    "1": {
+      "label": "the perk's name",
+      "examples": [
+        "Health",
+        "Trade Values"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.hud_points": {
+    "1": {
+      "label": "the perk's name",
+      "examples": [
+        "Health"
+      ]
+    },
+    "2": {
+      "label": "active points in it now",
+      "examples": [
+        "3",
+        "10"
+      ]
+    }
   }
 }

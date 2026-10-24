@@ -446,10 +446,18 @@ cosmic debris., `.free_play` Free Play. Perks are off., `.links` Links: %s, `.th
 
 ---
 
-## 9. Open questions for Brennan
+## 9. Decisions (Brennan, 2026-10-24)
 
-1. Sky look in game, mc tile only on the card: agreed? (3.1)
-2. Hand-written perk ids before the first publish, or keep the editor's generated ids? (8.4)
-3. Per-point effect text: add a `point` field to the editor, or accept `desc` only on the card? (4)
-4. Free Play: tree viewable but inert, or hide the menu entirely? This doc says viewable. (7)
-5. Default key `P`, and a Perks button on the pause menu: fine? (8.1)
+1. **Sky look only.** The game copies the site's constellation; the Minecraft-textured draft is dropped
+   everywhere, card included (section 3.1's card icon is not built).
+2. **Hand-written perk ids.** `scripts/perks/tree-from-editor.py` gives every perk `id` = kebab of its
+   name (with an override map for the registry's spellings) and rewrites the links; the bundled
+   `tree.json` is what the game reads.
+3. **Per-point effect line.** The editor gets a `point` field per perk; the card shows it as
+   `Each point: ...` when present.
+4. **Free Play buys and spends like everyone else.** No gating, no banner; the server does not check
+   Free Play on unlock or spend (section 7's inert mode is withdrawn).
+5. **Key `P` and a Perks button on the pause menu**, singleplayer and multiplayer.
+
+Implementation: `client/perks/PerksScreen` and friends, `perks/PerkTree` + `PerkTreeLoader`,
+`net/PerkUnlockPacket`, `PerkSpendPacket`, `PerkBalancesPacket`, `PerkRefusedPacket`.

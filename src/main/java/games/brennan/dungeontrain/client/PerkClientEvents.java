@@ -15,5 +15,6 @@ public final class PerkClientEvents {
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         PerkClientState.clear();
+        PerkClientBalances.clear();
     }
 }
