@@ -30012,8 +30012,24 @@
       "released_at": "2026-10-23T10:21:36Z"
     },
     {
-      "id": "world-wide-free-play",
+      "id": "backup-includes-ender-chest",
       "version": "0.1482.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Backup fix",
+      "summary": "Fixed some of your data being left out of automatic backups.",
+      "highlights": [],
+      "pr": 2270,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "world-wide-free-play",
+      "version": "0.1483.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -30026,7 +30042,7 @@
         "Worlds where someone was already in Free Play become Free Play for everyone after this update"
       ],
       "pr": 2272,
-      "date": "2026-10-23",
+      "date": "2026-10-24",
       "released": false,
       "released_in": null,
       "released_at": null
