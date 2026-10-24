@@ -48,19 +48,14 @@ final class SpeedsterPerksTest {
     }
 
     @Test
-    @DisplayName("Sprint Jump: the impulse carries 0.1 block further per rank under air drag")
+    @DisplayName("Sprint Jump: the impulse carries 0.1 block further per rank at the measured carry rate")
     void sprintJump() {
         double impulse = SpeedsterPerks.sprintJumpImpulse(1);
         assertTrue(impulse > 0.0);
-        // Distance covered by a horizontal impulse over a 12-tick jump with 0.91 air drag per tick.
-        double carried = 0.0;
-        double v = impulse;
-        for (int tick = 0; tick < 12; tick++) {
-            v *= 0.91;
-            carried += v;
-        }
-        assertEquals(0.1, carried, 0.005);
+        assertEquals(0.1, impulse * SpeedsterPerks.BLOCKS_PER_IMPULSE, EPS);
         assertEquals(3 * impulse, SpeedsterPerks.sprintJumpImpulse(3), EPS);
+        // Rank 10 roughly doubles vanilla's own 0.2 b/t sprint impulse (a full extra block of carry).
+        assertEquals(1.0 / SpeedsterPerks.BLOCKS_PER_IMPULSE, SpeedsterPerks.sprintJumpImpulse(10), EPS);
     }
 
     @Test

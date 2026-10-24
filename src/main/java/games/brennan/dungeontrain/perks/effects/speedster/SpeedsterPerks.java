@@ -29,11 +29,11 @@ public final class SpeedsterPerks {
     /** Sprint Jump: extra distance per rank, in blocks. */
     public static final double SPRINT_JUMP_BLOCKS_PER_RANK = 0.1;
     /**
-     * Blocks a sprint-jump carries per block/tick of horizontal impulse: the sum of the 0.91 air drag over the
-     * roughly 12 airborne ticks of a jump, 0.91 x (1 - 0.91^12) / 0.09. Vanilla's own 0.2 sprint impulse gives
-     * about 1.4 extra blocks by this figure.
+     * Blocks a sprint-jump carries per block/tick of horizontal impulse. Measured in a dev client on flat stone:
+     * a rank-5 impulse of 0.073 b/t (the 6.85 drag-sum estimate) carried 0.359 blocks further, so the real
+     * figure is 4.9; a bare sprint-jump carried 3.84 blocks.
      */
-    public static final double BLOCKS_PER_IMPULSE = 6.85;
+    public static final double BLOCKS_PER_IMPULSE = 4.9;
     /** Wind Resistance: push removed per rank; rank 10 is immune. */
     public static final double WIND_RESISTANCE_PER_RANK = 0.10;
 
