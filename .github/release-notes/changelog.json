@@ -30380,8 +30380,8 @@
         "fix",
         "advancements"
       ],
-      "title": "Exploring off the train counts",
-      "summary": "Leaving the train to explore on foot no longer stops you earning advancements. Taking a photo, or earning something by your own hand, is treated as being on the move.",
+      "title": "Advancement fix",
+      "summary": "Some advancements that should have been earned were not. They are now.",
       "highlights": [],
       "date": "2026-10-24",
       "released": false,
