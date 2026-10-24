@@ -30129,6 +30129,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-finds",
+      "version": "0.1488.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Live Eye finds",
+      "summary": "Live Eye finds.",
+      "highlights": [],
+      "pr": 2278,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
