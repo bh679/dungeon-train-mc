@@ -5,6 +5,8 @@
   "discordpresence.consent.footnote": "Baguhin anumang oras sa config o gamit ang /chatconnect on.",
   "discordpresence.consent.enable": "Paganahin",
   "discordpresence.consent.not_now": "Hindi muna ngayon",
+  "discordpresence.consent.toggle_on": "Naka-on",
+  "discordpresence.consent.toggle_off": "Naka-off",
   "discordpresence.survey.give_feedback": "Magbigay ng Feedback",
   "discordpresence.survey.title": "Feedback",
   "discordpresence.survey.comment": "Komento",

@@ -147,6 +147,8 @@ public enum ClientOptionsTab {
         // --- Train ---
         TRAIN_VOLUME("gui.dungeontrain.options.train_volume"),
         WIND_VOLUME("gui.dungeontrain.options.wind_volume"),
+        /** How strongly the wind's on-screen streaks draw: OFF, then tiers 1 to 6. */
+        WIND_EFFECTS("gui.dungeontrain.options.wind_effects"),
         CUSTOM_CONTENT("gui.dungeontrain.options.custom_content"),
         SNAPSHOT_MAX_RES("gui.dungeontrain.options.snapshot_max_res"),
         SNAPSHOT_CHAT_LOG("gui.dungeontrain.options.snapshot_chat_log"),
@@ -184,6 +186,8 @@ public enum ClientOptionsTab {
         TWITCH_HINT("gui.dungeontrain.options.twitch_hint"),
         /** Whether this client decodes live feeds onto TVs and the pinned viewer. Also on Performance. */
         LIVE_FEED_VIEWING("gui.dungeontrain.options.live_feed_viewing"),
+        /** What a worn TV shows while two streams are live: both, or one of them. */
+        WORN_TV_STREAMS("gui.dungeontrain.options.worn_tv_streams"),
         /** The broadcast's picture size; the preview shows it. */
         STREAM_SIZE("gui.dungeontrain.options.stream_size"),
         /** Slower, smaller encoding: less upload for frame rate. Off by default; also on Performance. */
@@ -323,11 +327,12 @@ public enum ClientOptionsTab {
                 rows.add(Row.CONFIRM_BUILD_RESTORE);
             }
             case TRAIN -> {
-                // The short-captioned rows lead so they pair on one line (the two volumes, then the chat
-                // log); the two whose captions need a full-width row follow. Packing is sequential — it will
+                // The short-captioned rows lead so they pair on one line (the two volumes, then the wind
+                // effects and the chat log); the two whose captions need a full-width row follow. Packing is sequential — it will
                 // not reach past a wide row to find a partner — so adjacency here is what puts them side by side.
                 rows.add(Row.TRAIN_VOLUME);
                 rows.add(Row.WIND_VOLUME);
+                rows.add(Row.WIND_EFFECTS);
                 rows.add(Row.SNAPSHOT_CHAT_LOG);
                 rows.add(Row.CUSTOM_CONTENT);
                 rows.add(Row.SNAPSHOT_MAX_RES);
@@ -351,6 +356,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.LIVE_MOMENT_BOOKS);
                 rows.add(Row.TWITCH_HINT);
                 rows.add(Row.LIVE_FEED_VIEWING);
+                rows.add(Row.WORN_TV_STREAMS);
                 rows.add(Row.STREAM_SIZE);
                 rows.add(Row.STREAM_SAVE_BANDWIDTH);
                 rows.add(Row.HEAD_VIEWER_SIZE);

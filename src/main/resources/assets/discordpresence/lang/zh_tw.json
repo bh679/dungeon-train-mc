@@ -5,6 +5,8 @@
   "discordpresence.consent.footnote": "隨時可在設定中或使用 /chatconnect on 變更。",
   "discordpresence.consent.enable": "啟用",
   "discordpresence.consent.not_now": "暫時不要",
+  "discordpresence.consent.toggle_on": "開",
+  "discordpresence.consent.toggle_off": "關",
 
   "discordpresence.survey.give_feedback": "提供意見回饋",
   "discordpresence.survey.title": "意見回饋",

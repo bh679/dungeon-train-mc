@@ -30012,8 +30012,496 @@
       "released_at": "2026-10-23T10:21:36Z"
     },
     {
-      "id": "dimensional-carriage-far-exit-landing",
+      "id": "backup-includes-ender-chest",
       "version": "0.1482.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Backup fix",
+      "summary": "Fixed some of your data being left out of automatic backups.",
+      "highlights": [],
+      "pr": 2270,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1485.0",
+      "released_at": "2026-10-24T02:45:00Z"
+    },
+    {
+      "id": "release-notes-no-repeats",
+      "version": "0.1482.0",
+      "type": "ci",
+      "tags": [
+        "internal"
+      ],
+      "title": "Update notes stay accurate",
+      "summary": "Each update's notes now list only what's new in it, even when other changes land while the update is being published.",
+      "highlights": [],
+      "pr": 2271,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1485.0",
+      "released_at": "2026-10-24T02:45:00Z"
+    },
+    {
+      "id": "world-wide-free-play",
+      "version": "0.1484.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "multiplayer"
+      ],
+      "title": "Free Play tweak",
+      "summary": "Free Play works a little differently on shared worlds.",
+      "highlights": [],
+      "pr": 2272,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1485.0",
+      "released_at": "2026-10-24T02:45:00Z"
+    },
+    {
+      "id": "echest-kept-joining-cheats-world",
+      "version": "0.1486.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Ender Chest fix",
+      "summary": "Joining a world that has cheats on no longer empties your survival Ender Chest. Your legit chest stays safe and comes back the next time you play a run without cheats.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1486.0",
+      "released_at": "2026-10-24T03:07:42Z"
+    },
+    {
+      "id": "resume-hold-skips-server-stalls",
+      "version": "0.1487.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance"
+      ],
+      "title": "Smoother recovery from lag spikes",
+      "summary": "After a sudden lag spike, the game no longer wakes up a long stretch of the train at once, so the hitch passes quicker instead of getting worse. Pausing and resuming still keeps your train safe.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2277,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1490.0",
+      "released_at": "2026-10-24T04:26:07Z"
+    },
+    {
+      "id": "echo-fix-wider-band",
+      "version": "0.1487.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "mobs"
+      ],
+      "title": "Echo fix",
+      "summary": "Echoes of other players turn up more often again on quiet stretches of track.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1490.0",
+      "released_at": "2026-10-24T04:26:07Z"
+    },
+    {
+      "id": "stall-watchdog-short-stalls",
+      "version": "0.1487.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "internal"
+      ],
+      "title": "Better lag reports",
+      "summary": "Short lag spikes now leave a clue in the game log, so the ones you report can be tracked down and fixed.",
+      "highlights": [],
+      "pr": 2274,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1490.0",
+      "released_at": "2026-10-24T04:26:07Z"
+    },
+    {
+      "id": "live-eye-finds",
+      "version": "0.1488.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Live Eye finds",
+      "summary": "Live Eye finds.",
+      "highlights": [],
+      "pr": 2278,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1490.0",
+      "released_at": "2026-10-24T04:26:07Z"
+    },
+    {
+      "id": "advancement-fix-later-journey-timing",
+      "version": "0.1491.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "One of the later journey advancements no longer unlocks earlier than it should.",
+      "highlights": [],
+      "pr": 2280,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1494.0",
+      "released_at": "2026-10-24T05:27:50Z"
+    },
+    {
+      "id": "streamer-more-info",
+      "version": "0.1491.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Know your streamer",
+      "summary": "Type /streamer -more in Live chat to see when the streamer first played Dungeon Train, which version they started on, and how many hours they have played.",
+      "highlights": [
+        "Works from the game, the website and Discord (/streamer more:True)"
+      ],
+      "pr": 2279,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1494.0",
+      "released_at": "2026-10-24T05:27:50Z"
+    },
+    {
+      "id": "zh-cn-proofread-laobenyuan",
+      "version": "0.1493.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations"
+      ],
+      "title": "Chinese translation polish",
+      "summary": "\u8001\u672c\u9858 proofread the Simplified Chinese translation, rewording over 600 lines across menus, the death screen, advancements, options, the editor and several books so they read more naturally. Thank you, \u8001\u672c\u9858!",
+      "highlights": [
+        "Over 600 menu and message lines reworded",
+        "Smoother wording in 14 books"
+      ],
+      "pr": 2283,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1494.0",
+      "released_at": "2026-10-24T05:27:50Z"
+    },
+    {
+      "id": "dimensional-carriage-copies-remembered",
+      "version": "0.1494.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train",
+        "loot"
+      ],
+      "title": "Dimensional carriage fix",
+      "summary": "Every room inside a dimensional carriage now stays as you left it. Walk away or step back onto the train, and what you mined or looted is still gone when you return.",
+      "highlights": [],
+      "pr": 2282,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1494.0",
+      "released_at": "2026-10-24T05:27:50Z"
+    },
+    {
+      "id": "live-chat-tv-watcher-death",
+      "version": "0.1495.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "The stream hears when a watcher falls",
+      "summary": "Die while wearing a TV and watching someone's stream, and the stream's chat is told how it happened. Everyone in the room reads it, in their own language.",
+      "highlights": [
+        "Shows up in the stream's chat on Discord, Twitch, the website and in game"
+      ],
+      "pr": 2281,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "dp-consent-toggle-labels",
+      "version": "0.1496.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations"
+      ],
+      "title": "Consent screen switch labels translated",
+      "summary": "The ON and OFF labels on the connect-to-the-internet card now show in your language instead of English. Chinese wording by \u8001\u672c\u9858.",
+      "highlights": [],
+      "pr": 2284,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "player-mobs-proper-bridge-blocks",
+      "version": "0.1497.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Player Mobs build with proper blocks",
+      "summary": "Player Mobs climbing back onto the train no longer build their steps out of beds, doors, torches or chests, so you won't find half beds left beside the track. They now only use solid full blocks.",
+      "highlights": [],
+      "pr": 2285,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "sibling-zh-cn-text",
+      "version": "0.1498.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations"
+      ],
+      "title": "Chinese text for backpacks and backups",
+      "summary": "Edible Backpacks and Dungeon Backup now show in Simplified Chinese. Chinese by \u8001\u672c\u9858.",
+      "highlights": [],
+      "pr": 2287,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "nether-piglin-company",
+      "version": "0.1498.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "mobs"
+      ],
+      "title": "New Faces in the Nether",
+      "summary": "The Nether\u2019s piglins aren\u2019t travelling alone any more. New faces have joined them on the train, each with their own way of doing things. Some come prepared with more than a weapon. Some would rather trade. Some look after their own.",
+      "highlights": [
+        "New piglin carriages in the Nether",
+        "Some brutes hit much harder. Mind the edge.",
+        "Something new to photograph"
+      ],
+      "pr": 2288,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z",
+      "major": true,
+      "notable": true,
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-piglins-have-new-company.jpg",
+      "description": "The Nether\u2019s piglins aren\u2019t travelling alone any more. New faces have joined them on the train, each with their own way of doing things. Some come prepared with more than a weapon. Some would rather trade. Some look after their own."
+    },
+    {
+      "id": "nether-piglin-steady",
+      "version": "0.1500.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Piglin fix",
+      "summary": "Piglins on the train now keep their composure all the way through the Nether.",
+      "highlights": [],
+      "pr": 2289,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "offer-live-eye-command",
+      "version": "0.1500.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Pass the Live Eye to any viewer",
+      "summary": "While you're live with the Live Eye, type /offereye to see who is watching through a TV and hand the stream to any of them, or offer it to everyone at once and let the first to accept take it.",
+      "highlights": [
+        "/offereye lists the viewers who can take your Live Eye, each with an Offer button",
+        "Pick All to offer it to everyone watching. Whoever accepts first gets it",
+        "/offereye <name> offers it straight to one viewer",
+        "If someone beats you to it, you're told someone else accepted first"
+      ],
+      "pr": 2286,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "enchantment-fix-echoes",
+      "version": "0.1502.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "loot"
+      ],
+      "title": "Enchantment fix",
+      "summary": "Fixed an enchantment not behaving the same on echoes as it does on players.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1503.0",
+      "released_at": "2026-10-24T13:06:51Z"
+    },
+    {
+      "id": "gallery-carriage-variant-conditions",
+      "version": "0.1503.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Gallery carriage",
+      "summary": "A new passenger carriage, the Gallery, can now turn up on the train. Builders also get a few editor upgrades for block variants.",
+      "highlights": [
+        "New Gallery passenger carriage",
+        "Block variant conditions can be set to Is not",
+        "Variants that follow another group now match what that group placed",
+        "Pasting a copied variant keeps the conditions it was copied with",
+        "Player heads added to a build face into the room"
+      ],
+      "pr": 2294,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1503.0",
+      "released_at": "2026-10-24T13:06:51Z"
+    },
+    {
+      "id": "off-train-advancements",
+      "version": "0.1504.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "Some advancements that should have been earned were not. They are now. Vanilla and other mods' advancements are no longer held back by the AFK check.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1506.0",
+      "released_at": "2026-10-24T13:54:27Z"
+    },
+    {
+      "id": "live-chat-on-death-screens",
+      "version": "0.1505.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Talk to your stream after you die",
+      "summary": "If your stream is still running after you die, you can now read and answer its chat from the death screens. The newest message shows quietly at the bottom of the page. Press T to see the whole chat and type a reply.",
+      "highlights": [
+        "The latest chat message shows at the bottom of every death page",
+        "Press T to open the full chat and reply without leaving the page",
+        "What you type stays off the stream"
+      ],
+      "pr": 2295,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1506.0",
+      "released_at": "2026-10-24T13:54:27Z"
+    },
+    {
+      "id": "feel-the-wind",
+      "version": "0.1506.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "ui"
+      ],
+      "title": "Feel the wind",
+      "summary": "You can now tell when the wind is hitting you. Out in the open it sounds louder and closer, and faint streaks blow past the edges of your screen. You can turn the streaks down or off in the Dungeon Train options, on the Train tab.",
+      "highlights": [
+        "The wind gets louder and rumbles when it is on you, even before it starts to push you",
+        "You hear a gust while it shoves you, not just before",
+        "Streaks at the edges of the screen show which way the wind is blowing",
+        "New Wind effects setting: Off, or 1 to 6 (3 is the default)",
+        "No more wind streaks when the air is calm"
+      ],
+      "pr": 2296,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1506.0",
+      "released_at": "2026-10-24T13:54:27Z"
+    },
+    {
+      "id": "two-streams-second-channel",
+      "version": "0.1507.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "multiplayer",
+        "community"
+      ],
+      "title": "Two Streams: a second channel",
+      "summary": "When the Two Streams reward is on, a second player can go live without taking the Eye from whoever is already streaming. Right-click any TV to step it through off, Stream 1 and Stream 2, TV rooms come up showing a mix of both, and a TV worn on your head shows both streams, one above the other.",
+      "highlights": [
+        "Right-click a TV: off, Stream 1, Stream 2 (while a second stream is live), off",
+        "A TV on Stream 2 shows Stream 1 while nobody is on the second",
+        "Wearing a TV: both streams stacked (unless the box is at its largest size); in your inventory, click one to watch only it, click again for both. The TV remembers your pick, and TVs broken while tuned come back on that stream",
+        "Options / Dungeon Train / Stream: choose what a TV on your head shows by default"
+      ],
+      "pr": 2290,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "echoes-update-modpack",
+      "version": "0.1507.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "mobs"
+      ],
+      "title": "Echoes update",
+      "summary": "The modpacks now include the latest update for echoes.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 2297
+    },
+    {
+      "id": "dimensional-carriage-far-exit-landing",
+      "version": "0.1509.0",
       "type": "fix",
       "tags": [
         "fix",
@@ -30023,7 +30511,7 @@
       "summary": "Walking a long way through a dimensional carriage and leaving by a far exit now puts you back inside the right carriage. The train waits for you to land before it moves off.",
       "highlights": [],
       "pr": 2269,
-      "date": "2026-10-23",
+      "date": "2026-10-24",
       "released": false,
       "released_in": null,
       "released_at": null

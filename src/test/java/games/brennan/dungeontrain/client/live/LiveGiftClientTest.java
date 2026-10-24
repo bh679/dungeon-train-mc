@@ -31,4 +31,27 @@ class LiveGiftClientTest {
         assertFalse(LiveGiftClient.canReceive(false, true, false, true, true), "Free Play: it would burn on the way on");
         assertFalse(LiveGiftClient.canReceive(false, true, false, false, false), "no ffmpeg to stream with");
     }
+
+    @Test
+    @DisplayName("/offereye refusals: 409 already offered, 404 not watching, bare 404 = older relay")
+    void offerFailureKeys() {
+        String k = LiveGiftClient.OFFER_KEY;
+        assertEquals(k + "already_offered", LiveGiftClient.offerFailureKey(409, "already_offered"));
+        assertEquals(k + "not_watching", LiveGiftClient.offerFailureKey(404, "not_watching"));
+        assertEquals(k + "unavailable", LiveGiftClient.offerFailureKey(404, ""));
+        assertEquals(k + "not_live", LiveGiftClient.offerFailureKey(403, "forbidden"));
+        assertEquals("chat.dungeontrain.live_gift.give_failed", LiveGiftClient.offerFailureKey(0, ""));
+    }
+
+    @Test
+    @DisplayName("/offereye all refusals never name a viewer; already given wins over already offered")
+    void offerAllFailureKeys() {
+        String k = LiveGiftClient.OFFER_KEY;
+        assertEquals(k + "none", LiveGiftClient.offerAllFailureKey(404, "not_watching"));
+        assertEquals(k + "all_already_offered", LiveGiftClient.offerAllFailureKey(409, "already_offered"));
+        assertEquals(k + "already_given", LiveGiftClient.offerAllFailureKey(409, "already_given"));
+        assertEquals(k + "already_given", LiveGiftClient.offerFailureKey(409, "already_given"));
+        assertEquals(k + "unavailable", LiveGiftClient.offerAllFailureKey(404, ""));
+        assertEquals(k + "list_failed", LiveGiftClient.offerAllFailureKey(500, ""));
+    }
 }

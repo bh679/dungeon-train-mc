@@ -31,13 +31,12 @@ final class LiveFeedEventsTest {
     }
 
     @Test
-    @DisplayName("a second START for the player already live (login, then the first-tick equip event) is ignored")
-    void alreadyStreamingSkipsTheSecondStart() {
-        UUID me = UUID.randomUUID();
-        assertTrue(LiveFeedEvents.alreadyStreaming(me, me));
-        assertTrue(LiveFeedEvents.alreadyStreaming(me, UUID.fromString(me.toString())));
-        assertFalse(LiveFeedEvents.alreadyStreaming(me, UUID.randomUUID()));
-        assertFalse(LiveFeedEvents.alreadyStreaming(me, null));
+    @DisplayName("a claim that cut somebody off replaces the other streamer here; a second channel (Two Streams) replaces nobody")
+    void secondChannelDemotesNobody() {
+        UUID other = UUID.randomUUID();
+        assertEquals(java.util.Set.of(other), LiveFeedEvents.demoted(java.util.Set.of(other), true));
+        assertEquals(java.util.Set.of(), LiveFeedEvents.demoted(java.util.Set.of(other), false));
+        assertEquals(java.util.Set.of(), LiveFeedEvents.demoted(java.util.Set.of(), true));
     }
 
     @Test

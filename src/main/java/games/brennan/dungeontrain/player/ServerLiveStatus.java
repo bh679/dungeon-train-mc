@@ -8,6 +8,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,27 +30,61 @@ public final class ServerLiveStatus {
 
     private static final AtomicBoolean IN_FLIGHT = new AtomicBoolean();
     private static volatile boolean relayLive;
+    /** The relay's last answer carried a live second stream (Two Streams). */
+    private static volatile boolean relaySecondLive;
     private static volatile long relayAtMs;
     /** The relay's name for whoever is live, when it gave one. */
     private static volatile String relayStreamer;
 
     private ServerLiveStatus() {}
 
+    /**
+     * True while a second stream is live (the Two Streams reward): two streamers on this server, or a
+     * fresh relay answer carrying a second stream. A placed TV's right-click only steps to Stream 2
+     * while this holds ({@code compat/vista/TvChannelCycle}).
+     */
+    public static boolean isSecondStreamLive(MinecraftServer server) {
+        if (server != null && LiveStreamers.all(server).size() >= 2) return true;
+        return isFresh(relaySecondLive, relayAtMs, System.currentTimeMillis());
+    }
+
     /** True while the relay recently said someone is live, or someone on this server is streaming. */
     public static boolean isAnyoneLive(MinecraftServer server) {
-        if (server != null && LiveStreamers.get(server) != null) return true;
+        if (server != null && LiveStreamers.any(server) != null) return true;
         return isFresh(relayLive, relayAtMs, System.currentTimeMillis());
     }
 
     /**
      * True while someone other than {@code player} is broadcasting — what a TV on their head would be
-     * showing. A streamer on this server counts unless it is them; otherwise a fresh relay answer counts
-     * unless it names them (a nameless answer counts as someone else).
+     * showing. Another streamer on this server counts (with Two Streams on there may be two, so the
+     * player's own stream is set aside first); otherwise a fresh relay answer counts unless it names
+     * them (a nameless answer counts as someone else).
      */
     public static boolean isSomeoneElseLive(MinecraftServer server, ServerPlayer player) {
-        UUID local = server == null ? null : LiveStreamers.get(server);
+        UUID local = server == null ? null : firstOf(LiveStreamers.othersThan(server, player.getUUID()));
         return someoneElseLive(local, player.getUUID(), isFresh(relayLive, relayAtMs, System.currentTimeMillis()),
             relayStreamer, player.getGameProfile().getName());
+    }
+
+    /**
+     * True only when it is known that nobody, in any world, is broadcasting: no streamer on this server and
+     * a fresh relay answer saying not live. A stale or failed relay answer is not knowledge, so it reads
+     * false here (unlike {@link #isAnyoneLive}, where it reads as not live).
+     */
+    public static boolean isNobodyLive(MinecraftServer server) {
+        UUID local = server == null ? null : LiveStreamers.any(server);
+        return nobodyLive(local, relayLive, relayAtMs, System.currentTimeMillis());
+    }
+
+    @Nullable
+    private static UUID firstOf(java.util.Set<UUID> ids) {
+        return ids.isEmpty() ? null : ids.iterator().next();
+    }
+
+    /** Pure form for the tests. */
+    static boolean nobodyLive(UUID localStreamer, boolean relayLive, long relayAtMs, long nowMs) {
+        if (localStreamer != null || relayLive) return false;
+        return relayAtMs > 0 && nowMs - relayAtMs < STALE_MS;
     }
 
     /** Pure form for the tests. */
@@ -74,6 +109,7 @@ public final class ServerLiveStatus {
                 if (error == null && result != null && result.ok()) {
                     LiveFeedClient.Status status = LiveFeedClient.parseStatus(result);
                     relayLive = status.live();
+                    relaySecondLive = status.live() && status.second() != null;
                     relayStreamer = status.streamer();
                     relayAtMs = System.currentTimeMillis();
                 }
@@ -86,6 +122,7 @@ public final class ServerLiveStatus {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         relayLive = false;
+        relaySecondLive = false;
         relayAtMs = 0L;
         relayStreamer = null;
     }

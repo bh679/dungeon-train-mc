@@ -556,18 +556,7 @@ public final class BlockVariantMenuController {
                         actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.spawn_egg_no_id"), ChatFormatting.YELLOW);
                         return;
                     }
-                    CompoundTag mobNbt = null;
-                    net.minecraft.world.item.component.CustomData beData =
-                        held.get(net.minecraft.core.component.DataComponents.BLOCK_ENTITY_DATA);
-                    if (beData != null && !beData.isEmpty()) {
-                        CompoundTag raw = beData.copyTag();
-                        if (raw.contains("EntityTag", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
-                            mobNbt = raw.getCompound("EntityTag").copy();
-                        } else if (!raw.isEmpty()) {
-                            mobNbt = raw;
-                        }
-                        if (mobNbt != null) mobNbt.remove("id");
-                    }
+                    CompoundTag mobNbt = SpawnEggMobNbt.read(held);
                     if (wasEmpty) {
                         // Mob added to an empty cell — seed with the empty-
                         // placeholder sentinel so the picker can still roll
@@ -692,9 +681,9 @@ public final class BlockVariantMenuController {
                 // matching what's already there.
                 RotationApplier.OrientedState oriented =
                     RotationApplier.orientToPredecessors(capturedState, mutated);
-                VariantState newVariant = new VariantState(
+                VariantState newVariant = HeadAim.aim(new VariantState(
                     oriented.state(), itemBeNbt, 1, oriented.rotation(), linkedPrefabId)
-                    .withPainting(addedPainting);
+                    .withPainting(addedPainting), localPos, plot.footprint());
                 if (mutated.size() >= MAX_ENTRIES) {
                     actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.variant_cell_full", MAX_ENTRIES), ChatFormatting.YELLOW);
                     return;
@@ -1593,7 +1582,8 @@ public final class BlockVariantMenuController {
             mutated.add(standBase);
             return true;
         }
-        mutated.add(captureBaseVariant(level, worldPos, baseState));
+        // A player head seeding a cell looks into the room (HeadAim).
+        mutated.add(HeadAim.aim(captureBaseVariant(level, worldPos, baseState), localPos, plot.footprint()));
         return true;
     }
 

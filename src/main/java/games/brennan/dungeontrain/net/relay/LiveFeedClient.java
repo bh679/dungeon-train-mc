@@ -84,11 +84,28 @@ public final class LiveFeedClient {
      * encoder's defaults then decide). Fixed for the session: a change lands on the next claim.
      */
     public record Claim(String session, String token, String playlistUrl, @Nullable String prevName, @Nullable Twitch twitch,
-                        int segmentSeconds, int listSize, int keyframeSeconds) {
+                        int segmentSeconds, int listSize, int keyframeSeconds, String channel) {
         public Claim(String session, String token, String playlistUrl, @Nullable String prevName) {
-            this(session, token, playlistUrl, prevName, null, 0, 0, 0);
+            this(session, token, playlistUrl, prevName, null, 0, 0, 0, CHANNEL_MAIN);
+        }
+
+        public Claim(String session, String token, String playlistUrl, @Nullable String prevName, @Nullable Twitch twitch,
+                     int segmentSeconds, int listSize, int keyframeSeconds) {
+            this(session, token, playlistUrl, prevName, twitch, segmentSeconds, listSize, keyframeSeconds, CHANNEL_MAIN);
+        }
+
+        public Claim {
+            channel = CHANNEL_SECOND.equals(channel) ? CHANNEL_SECOND : CHANNEL_MAIN;
+        }
+
+        /** This stream went out on the second channel (the Two Streams reward), alongside another streamer. */
+        public boolean second() {
+            return CHANNEL_SECOND.equals(channel);
         }
     }
+
+    /** The relay's channel names: the first (main) stream, and the second one the Two Streams reward opens. */
+    public static final String CHANNEL_MAIN = "main", CHANNEL_SECOND = "second";
 
     /** The segment lengths a claim may set; anything outside reads as unset. Matches the config's own range. */
     static final int MIN_SEGMENT_SECONDS = 2, MAX_SEGMENT_SECONDS = 30;
@@ -137,7 +154,13 @@ public final class LiveFeedClient {
      */
     public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
                            @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
-                           @Nullable Moment moment, @Nullable RestartNotice restart) {
+                           @Nullable Moment moment, @Nullable RestartNotice restart, @Nullable Death death) {
+        public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
+                        @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
+                        @Nullable Moment moment, @Nullable RestartNotice restart) {
+            this(seq, ts, author, uuid, content, source, logRequest, via, poll, moment, restart, null);
+        }
+
         public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
                         @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
                         @Nullable Moment moment) {
@@ -211,6 +234,30 @@ public final class LiveFeedClient {
      * line saying they are back.
      */
     public record RestartNotice(long resumeBy, int countdown, boolean local, boolean resumed) {}
+
+    /**
+     * A TV watcher died while in the room ({@code POST /live/chat/died}): {@code name} who, {@code message}
+     * vanilla's death message as component JSON (null when the relay kept text only), for each reader to
+     * render in their own language. The line's {@code content} is the English fallback.
+     */
+    public record Death(String name, @Nullable String message) {}
+
+    /** Longest death-message JSON kept; the relay caps at the same size. */
+    public static final int MAX_DEATH_MESSAGE = 2048;
+
+    @Nullable
+    static Death parseDeath(JsonObject m) {
+        if (!m.has("death") || !m.get("death").isJsonObject()) return null;
+        JsonObject o = m.getAsJsonObject("death");
+        String name = LiveChatRules.clean(str(o, "name"), LiveChatRules.MAX_AUTHOR);
+        if (name.isBlank()) return null;
+        String message = null;
+        if (o.has("message") && o.get("message").isJsonObject()) {
+            String json = o.get("message").toString();
+            if (json.length() <= MAX_DEATH_MESSAGE) message = json;
+        }
+        return new Death(name, message);
+    }
 
     @Nullable
     static RestartNotice parseRestart(JsonObject m) {
@@ -338,12 +385,31 @@ public final class LiveFeedClient {
      */
     public record Status(boolean live, @Nullable String session, @Nullable String playlistUrl,
                          @Nullable String streamer, int viewers, int cap, boolean slot,
-                         @Nullable String replayUrl, boolean ended, List<Variant> variants, @Nullable String twitchLogin) {
-        public static final Status OFFLINE = new Status(false, null, null, null, 0, 0, true, null, false, List.of(), null);
+                         @Nullable String replayUrl, boolean ended, List<Variant> variants, @Nullable String twitchLogin,
+                         @Nullable Status second) {
+        public static final Status OFFLINE = new Status(false, null, null, null, 0, 0, true, null, false, List.of(), null, null);
 
         public Status(boolean live, @Nullable String session, @Nullable String playlistUrl, @Nullable String streamer, int viewers,
                       int cap, boolean slot, @Nullable String replayUrl, boolean ended, List<Variant> variants) {
-            this(live, session, playlistUrl, streamer, viewers, cap, slot, replayUrl, ended, variants, null);
+            this(live, session, playlistUrl, streamer, viewers, cap, slot, replayUrl, ended, variants, null, null);
+        }
+
+        public Status(boolean live, @Nullable String session, @Nullable String playlistUrl, @Nullable String streamer, int viewers,
+                      int cap, boolean slot, @Nullable String replayUrl, boolean ended, List<Variant> variants, @Nullable String twitchLogin) {
+            this(live, session, playlistUrl, streamer, viewers, cap, slot, replayUrl, ended, variants, twitchLogin, null);
+        }
+
+        /**
+         * The second stream (Two Streams reward) while both are on air: a status of its own, never
+         * carrying a {@code second} itself. Null from an older relay, or while only one player is live.
+         */
+        public @Nullable Status second() {
+            return second;
+        }
+
+        /** What a TV tuned to the second stream shows: the second stream while there is one, else this (the first). */
+        public Status secondOrThis() {
+            return second != null && second.live() ? second : this;
         }
 
         /**
@@ -437,7 +503,7 @@ public final class LiveFeedClient {
         int segment = intIn(r.body(), "segmentSeconds", MIN_SEGMENT_SECONDS, MAX_SEGMENT_SECONDS);
         int list = segment == 0 ? 0 : intIn(r.body(), "listSize", MIN_LIST_SIZE, MAX_LIST_SIZE);
         int keyframe = intIn(r.body(), "keyframeSeconds", MIN_KEYFRAME_SECONDS, MAX_KEYFRAME_SECONDS);
-        return new Claim(session, token, url, prev.isEmpty() ? null : prev, parseTwitch(r.body()), segment, list, keyframe);
+        return new Claim(session, token, url, prev.isEmpty() ? null : prev, parseTwitch(r.body()), segment, list, keyframe, r.str("channel"));
     }
 
     /** A whole number field within {@code [min, max]}, else 0 (absent, malformed or out of range). */
@@ -556,6 +622,21 @@ public final class LiveFeedClient {
     }
 
     /**
+     * This TV watcher died in the room: {@code text} vanilla's death message in English (for the website,
+     * Discord and Twitch), {@code message} the same message as component JSON (null to send text only).
+     * 200 {@code posted}; 409 not_live; 404 from an older relay.
+     */
+    public static CompletableFuture<Result> chatDied(String base, UUID uuid, String name, String text,
+                                                     @Nullable JsonObject message) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid.toString());
+        body.addProperty("name", name);
+        body.addProperty("text", text);
+        if (message != null) body.add("message", message);
+        return post(base, "/live/chat/died", body);
+    }
+
+    /**
      * Share one of the streamer's moments into the stream's chat. {@code token} (the stream's upload
      * token) proves the poster is on air; the relay names them from its claim. {@code png} may be null
      * (no image, or not a photo).
@@ -589,8 +670,15 @@ public final class LiveFeedClient {
         }
     }
 
-    /** The streamer {@code from} offered the viewer {@code target} a Live Eye (the relay's {@code gifts[]}). */
-    public record GiftOffer(long seq, String giftId, String target, String from) {}
+    /**
+     * The streamer {@code from} offered the viewer {@code target} a Live Eye (the relay's {@code gifts[]}).
+     * {@code all}: offered to everyone watching at once ({@code /offereye all}); the first to accept gets it.
+     */
+    public record GiftOffer(long seq, String giftId, String target, String from, boolean all) {
+        public GiftOffer(long seq, String giftId, String target, String from) {
+            this(seq, giftId, target, from, false);
+        }
+    }
 
     /** A chat poll's gift notices; both empty on any failure or from an older relay. */
     public record GiftNotices(List<GiftJoin> joins, List<GiftOffer> gifts) {
@@ -634,7 +722,8 @@ public final class LiveFeedClient {
                     String target = str(o, "target");
                     if (!isGiftId(id) || target.isBlank() || !o.has("seq")) continue;
                     String from = LiveChatRules.clean(str(o, "from"), LiveChatRules.MAX_AUTHOR);
-                    gifts.add(new GiftOffer(o.get("seq").getAsLong(), id, target, from.isBlank() ? "Someone" : from));
+                    boolean all = o.has("all") && o.get("all").isJsonPrimitive() && o.get("all").getAsBoolean();
+                    gifts.add(new GiftOffer(o.get("seq").getAsLong(), id, target, from.isBlank() ? "Someone" : from, all));
                 }
             }
             return new GiftNotices(List.copyOf(joins), List.copyOf(gifts));
@@ -676,6 +765,64 @@ public final class LiveFeedClient {
         return post(base, "/live/gift", body);
     }
 
+    /** A Minecraft player name: the only shape a viewer name may take before it reaches a button or command. */
+    private static final java.util.regex.Pattern PLAYER_NAME = java.util.regex.Pattern.compile("[A-Za-z0-9_]{1,16}");
+
+    /** The most viewer names {@link #parseGiftViewers} keeps. */
+    public static final int MAX_GIFT_VIEWERS = 20;
+
+    /**
+     * The streamer ({@code token}) asks who is watching through a TV and could take the Live Eye
+     * ({@code /offereye}): 200 {@code {viewers:[{name}]}} → {@link #parseGiftViewers}; 403 not on air; 404 from
+     * an older relay.
+     */
+    public static CompletableFuture<Result> giftViewers(String base, String token) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        return post(base, "/live/gift/viewers", body);
+    }
+
+    /**
+     * The streamer ({@code token}) offers the TV viewer {@code name} a Live Eye ({@code /offereye <name>}).
+     * 200 {@code {name}}; 404 {@code not_watching}; 409 {@code already_offered}; 404 with no error from an
+     * older relay. The viewer then sees the same offer as a prompted gift.
+     */
+    public static CompletableFuture<Result> giftOffer(String base, String token, String name) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        body.addProperty("name", name);
+        return post(base, "/live/gift/offer", body);
+    }
+
+    /**
+     * The streamer ({@code token}) offers the Live Eye to every TV viewer who could take it ({@code /offereye all}):
+     * the first to accept gets it. 200 {@code {count}}; 404 {@code not_watching}; 409 {@code already_offered} /
+     * {@code already_given}.
+     */
+    public static CompletableFuture<Result> giftOfferAll(String base, String token) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        body.addProperty("all", true);
+        return post(base, "/live/gift/offer", body);
+    }
+
+    /** A {@link #giftViewers} reply's names, cleaned and capped; empty on any failure. */
+    public static List<String> parseGiftViewers(Result r) {
+        if (!r.ok() || !r.body().has("viewers") || !r.body().get("viewers").isJsonArray()) return List.of();
+        try {
+            List<String> names = new ArrayList<>();
+            for (JsonElement el : r.body().getAsJsonArray("viewers")) {
+                if (!el.isJsonObject()) continue;
+                String name = LiveChatRules.clean(str(el.getAsJsonObject(), "name"), LiveChatRules.MAX_AUTHOR);
+                if (PLAYER_NAME.matcher(name).matches() && !names.contains(name)) names.add(name);
+                if (names.size() >= MAX_GIFT_VIEWERS) break;
+            }
+            return List.copyOf(names);
+        } catch (RuntimeException e) {
+            return List.of();
+        }
+    }
+
     /** The viewer's server redeems {@code giftId} for {@code uuid}: 200 once, only for the gift's viewer. */
     public static CompletableFuture<Result> giftClaim(String base, String giftId, UUID uuid) {
         JsonObject body = new JsonObject();
@@ -707,7 +854,7 @@ public final class LiveFeedClient {
                     Via via = Via.parse(m.has("via") && !m.get("via").isJsonNull() ? m.get("via").getAsString() : null);
                     lines.add(new ChatLine(m.get("seq").getAsLong(), m.has("ts") ? m.get("ts").getAsLong() : 0L,
                         author.isBlank() ? "Someone" : author, uuid, content, source, parseLogRequest(m), via,
-                        LiveTakeoverClient.parsePollLine(m), parseMoment(m), parseRestart(m)));
+                        LiveTakeoverClient.parsePollLine(m), parseMoment(m), parseRestart(m), parseDeath(m)));
                 }
             }
             List<Long> deleted = new ArrayList<>();
@@ -843,7 +990,13 @@ public final class LiveFeedClient {
     /** As above; {@code headTv}: the viewer wears a TV, so a named poll lists them on the Live page. */
     public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel, @Nullable Life ranked,
                                                    @Nullable String name, boolean headTv) {
-        String path = statusPath(viewer, ranked, name, headTv);
+        return status(viewer, channel, ranked, name, headTv, false);
+    }
+
+    /** As above; {@code secondSlot}: a TV here shows the second stream too, so the viewer counts on that slot as well. */
+    public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel, @Nullable Life ranked,
+                                                   @Nullable String name, boolean headTv, boolean secondSlot) {
+        String path = statusPath(viewer, ranked, name, headTv, secondSlot);
         HttpRequest req = HttpRequest.newBuilder(URI.create(viewerBase(channel) + path))
             .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
         return send(RELAY, req);
@@ -867,7 +1020,17 @@ public final class LiveFeedClient {
      * wearing a TV: the public Live page lists their name among the TV wearers.
      */
     static String statusPath(@Nullable UUID viewer, @Nullable Life ranked, @Nullable String name, boolean headTv) {
+        return statusPath(viewer, ranked, name, headTv, false);
+    }
+
+    /**
+     * {@link #statusPath(UUID, Life, String, boolean)}, plus {@code &slot=second} when a TV in this
+     * world shows the second stream (Two Streams): the relay counts the viewer on that slot too. Only
+     * with a viewer id, since an anonymous poll counts nowhere.
+     */
+    static String statusPath(@Nullable UUID viewer, @Nullable Life ranked, @Nullable String name, boolean headTv, boolean secondSlot) {
         String path = statusPathBase(viewer, ranked);
+        if (viewer != null && secondSlot) path += "&slot=" + CHANNEL_SECOND;
         if (viewer == null || ranked == null || name == null || name.isBlank()) return path;
         path += "&name=" + java.net.URLEncoder.encode(name, java.nio.charset.StandardCharsets.UTF_8);
         return headTv ? path + "&head=1" : path;
@@ -885,17 +1048,25 @@ public final class LiveFeedClient {
 
     public static Status parseStatus(Result r) {
         if (!r.ok()) return Status.OFFLINE;
-        JsonObject b = r.body();
+        return parseStatus(r, r.body(), true);
+    }
+
+    /**
+     * One status object; {@code withSecond} reads its {@code second} block too (one level: the second
+     * stream's own body never carries one). Shared viewer figures ({@code viewers}, {@code cap}, {@code slot})
+     * are read from whichever object they are on; the relay puts them on the outer body.
+     */
+    private static Status parseStatus(Result r, JsonObject b, boolean withSecond) {
         boolean live = b.has("live") && b.get("live").getAsBoolean();
         int viewers = b.has("viewers") ? b.get("viewers").getAsInt() : 0;
         int cap = b.has("cap") ? b.get("cap").getAsInt() : 0;
         boolean slot = !b.has("slot") || b.get("slot").getAsBoolean();
         // Relay-supplied URLs a viewer's ffmpeg will fetch: https (or loopback http) to an HLS playlist
         // or a .ts segment, or nothing. A live status with no usable playlist reads as off air.
-        String replayUrl = LiveUrls.orNull(r.str("replayUrl"), ".ts");
-        String playlistUrl = LiveUrls.orNull(r.str("playlistUrl"), ".m3u8");
+        String replayUrl = LiveUrls.orNull(str(b, "replayUrl"), ".ts");
+        String playlistUrl = LiveUrls.orNull(str(b, "playlistUrl"), ".m3u8");
         if (live && playlistUrl == null) {
-            LOGGER.debug("[DungeonTrain] live status: refusing playlistUrl {}", r.str("playlistUrl"));
+            LOGGER.debug("[DungeonTrain] live status: refusing playlistUrl {}", str(b, "playlistUrl"));
             live = false;
         }
         if (!live) return new Status(false, null, null, null, viewers, cap, slot, replayUrl, false, List.of());
@@ -903,9 +1074,29 @@ public final class LiveFeedClient {
         // tail; replayUrl is where a TV goes once it has reached the end.
         boolean ended = b.has("ended") && b.get("ended").getAsBoolean();
         Twitch tw = parseTwitch(b);
-        return new Status(true, r.str("session"), playlistUrl, r.str("streamer"), viewers, cap, slot,
-            ended ? replayUrl : null, ended, parseVariants(b, playlistUrl), tw == null ? null : tw.login());
+        Status second = withSecond ? parseSecond(r, b, viewers, cap, slot) : null;
+        return new Status(true, str(b, "session"), playlistUrl, str(b, "streamer"), viewers, cap, slot,
+            ended ? replayUrl : null, ended, parseVariants(b, playlistUrl), tw == null ? null : tw.login(), second);
     }
+
+    /** The {@code second} block of a live status: a live status of its own, or null when absent, malformed or dark. */
+    @Nullable
+    static Status parseSecond(Result r, JsonObject outer, int viewers, int cap, boolean slot) {
+        if (!outer.has("second") || !outer.get("second").isJsonObject()) return null;
+        JsonObject s = outer.getAsJsonObject("second");
+        try {
+            Status parsed = parseStatus(r, s, false);
+            if (!parsed.live()) return null;
+            // The viewer figures are the outer body's (one room per poll): carry them so a TV on the
+            // second stream reads the same cap and slot answer.
+            return new Status(true, parsed.session(), parsed.playlistUrl(), parsed.streamer(), viewers, cap, slot,
+                parsed.replayUrl(), parsed.ended(), parsed.variants(), parsed.twitchLogin(), null);
+        } catch (RuntimeException e) {
+            LOGGER.debug("[DungeonTrain] live status: ignoring malformed second block", e);
+            return null;
+        }
+    }
+
 
     /** PUT a local file to a signed URL with exactly the signed headers. */
     public static CompletableFuture<Result> upload(SignedPut target, Path file) {

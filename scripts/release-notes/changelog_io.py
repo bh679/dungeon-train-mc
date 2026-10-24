@@ -25,7 +25,7 @@ Public surface:
   find_entry / make_entry / append_entry — entry construction (immutable).
   normalise_tags(type, tags) — type-derived tag + topical tags, canonical order.
   TAG_GUIDE / render_tag_guide() — the per-tag question the agent answers when tagging.
-  unreleased_entries / mark_all_released — the released-flag boundary.
+  unreleased_entries / mark_all_released / mark_released — the released-flag boundary.
   render_markdown(entries) — player-facing Markdown: major releases first,
       then a tag-count line, then entries grouped by version desc.
   validate_major_fields / with_major — a major release's description + photo
@@ -300,10 +300,22 @@ def mark_all_released(
 
     Immutable: changed entries are fresh dicts; untouched entries are reused.
     """
+    return mark_released(entries, None, released_in, released_at)
+
+
+def mark_released(
+    entries: list[dict], ids: set[str] | None, released_in: str, released_at: str
+) -> tuple[list[dict], int]:
+    """Return (new entries, count) with the unreleased entries in `ids` flipped released.
+
+    `ids` None means every unreleased entry. Entries already released keep their
+    stamps, so re-running for the same release is a no-op. Immutable: changed
+    entries are fresh dicts; untouched entries are reused.
+    """
     new_entries: list[dict] = []
     count = 0
     for e in entries:
-        if not e.get("released", False):
+        if not e.get("released", False) and (ids is None or e.get("id") in ids):
             new_entries.append(
                 {
                     **e,

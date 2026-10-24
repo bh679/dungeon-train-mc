@@ -15,14 +15,24 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * <p>Putting a Live Eye on no longer makes its wearer the streamer at once. Their client claims the
  * channel first; when someone else holds it they are asked whether to take over (a vote inside the
  * holder's first ten minutes, their own call after). The server owns the item on their head, so it
- * hears the outcome: {@link Result#LIVE} makes them the streamer (and turns the previous one's Live Eye
- * into a TV), {@link Result#REJECTED} and {@link Result#STAYED_VIEWER} turn theirs into a TV. The
+ * hears the outcome: {@link Result#LIVE} makes them a streamer (and, when the relay cut another player on
+ * this server off for it, turns that player's Live Eye into a TV), {@link Result#REJECTED} and
+ * {@link Result#STAYED_VIEWER} turn theirs into a TV. The
  * server only acts if the sender is wearing a pending Live Eye.</p>
  */
-public record LiveClaimResultPacket(Result result) implements CustomPacketPayload {
+public record LiveClaimResultPacket(Result result, boolean tookOver) implements CustomPacketPayload {
+
+    /** A result that cut nobody off (a REJECTED / STAYED_VIEWER outcome, or a LIVE claim on a free channel). */
+    public LiveClaimResultPacket(Result result) {
+        this(result, false);
+    }
 
     public enum Result {
-        /** The relay gave this player the channel: they are live. */
+        /**
+         * The relay gave this player a channel: they are live. {@link #tookOver()} says whether the
+         * relay cut somebody off for it (its claim named a {@code prevName}); with the Two Streams reward
+         * on, a second player gets a second channel and nobody is cut off.
+         */
         LIVE,
         /** The audience voted the takeover down: the Live Eye becomes a TV. */
         REJECTED,
@@ -38,12 +48,14 @@ public record LiveClaimResultPacket(Result result) implements CustomPacketPayloa
 
     private static void encode(FriendlyByteBuf buf, LiveClaimResultPacket p) {
         buf.writeVarInt(p.result.ordinal());
+        buf.writeBoolean(p.tookOver);
     }
 
     private static LiveClaimResultPacket decode(FriendlyByteBuf buf) {
         int ord = buf.readVarInt();
         Result[] all = Result.values();
-        return new LiveClaimResultPacket(ord >= 0 && ord < all.length ? all[ord] : Result.STAYED_VIEWER);
+        boolean tookOver = buf.readBoolean();
+        return new LiveClaimResultPacket(ord >= 0 && ord < all.length ? all[ord] : Result.STAYED_VIEWER, tookOver);
     }
 
     @Override
@@ -54,7 +66,7 @@ public record LiveClaimResultPacket(Result result) implements CustomPacketPayloa
     public static void handle(LiveClaimResultPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (ctx.player() instanceof ServerPlayer sender) {
-                LiveFeedEvents.onTakeoverResult(sender, packet.result());
+                LiveFeedEvents.onTakeoverResult(sender, packet.result(), packet.tookOver());
             }
         });
     }

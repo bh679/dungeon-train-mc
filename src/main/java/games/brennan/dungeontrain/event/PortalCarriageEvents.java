@@ -1225,6 +1225,14 @@ public final class PortalCarriageEvents {
             // end with nowhere else to walk. Read here because the occupancy has just been measured
             // against the same box anyPlayerInStructure uses.
             if (!standingIn.isEmpty()) occupiedPairs.add(pair.getKey());
+            // A copy somebody stands in is one they can mine or loot, so it is captured before the
+            // tiler erases it and laid back as they left it (PortalRoomMemory). Real occupants only —
+            // not the approach ring below, which nobody has set foot in.
+            if (!games.brennan.dungeontrain.portal.PortalTestSession.isTestStamp(pair.getKey())) {
+                for (PortalRoomTiling.Tile tile : standingIn) {
+                    PortalRoomMemory.markTileTouched(pair.getKey(), tile);
+                }
+            }
             int radius = PortalRoomTiling.MAX_RADIUS;
             if (standingIn.isEmpty() && ACTIVE_PAIRS.contains(pair.getKey())) {
                 standingIn = Set.of(PortalRoomTiling.Tile.BASE);
@@ -2699,6 +2707,7 @@ public final class PortalCarriageEvents {
         // Remembered before the erase, so the stamp it gets when its carriage next wants a twin lays
         // the room as it was left. Before the mob reap too: a living mob is part of how it was left.
         rememberIfTouched(level, dims, pairKey, structure);
+        rememberTouchedCopies(level, dims, pairKey, structure);
         PortalRoomMobs.reapPair(level, PortalCarriageBuilder.footprintOf(level, structure, dims), pairKey);
         PortalCarriageBuilder.eraseTwin(level, structure, dims);
         EVICTED.put(pairKey, structure.withBlob(null));
@@ -2735,6 +2744,18 @@ public final class PortalCarriageEvents {
         return games.brennan.dungeontrain.portal.PortalRoomBlob.live(snapshot);
     }
 
+    /**
+     * Capture every copy of {@code structure}'s room a player has stood in that is still standing —
+     * for the erases that do not go through the tiler (an eviction, the server stopping), which would
+     * otherwise take those copies with them unremembered.
+     */
+    private static void rememberTouchedCopies(ServerLevel level, CarriageDims dims, int pairKey,
+                                              PortalStructure structure) {
+        for (PortalRoomTiling.Tile tile : structure.tiling().tiles()) {
+            games.brennan.dungeontrain.portal.PortalRoomTiler.rememberTile(level, dims, structure, tile, pairKey);
+        }
+    }
+
     /** Pair {@code pairKey}'s remembered room as a blob for {@code planned}, or null to use the template. */
     private static games.brennan.dungeontrain.portal.PortalRoomBlob recallRemembered(
             ServerLevel level, int pairKey, PortalStructure planned) {
@@ -2758,6 +2779,7 @@ public final class PortalCarriageEvents {
             if (touch == null) continue;
             try {
                 rememberIfTouched(touch.level(), touch.dims(), entry.getKey(), entry.getValue());
+                rememberTouchedCopies(touch.level(), touch.dims(), entry.getKey(), entry.getValue());
             } catch (Throwable t) {
                 LOGGER.warn("[DungeonTrain] Could not remember portal pair {} at shutdown: {}",
                     entry.getKey(), t.toString());

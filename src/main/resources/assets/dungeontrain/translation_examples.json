@@ -149,6 +149,47 @@
       ]
     }
   },
+  "chat.dungeontrain.free_play.cause.player": {
+    "1": {
+      "label": "the name of the player who went into Free Play",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.cause.player_used": {
+    "1": {
+      "label": "the name of the player who went into Free Play",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    },
+    "2": {
+      "label": "the command or mod they used",
+      "examples": [
+        "/give",
+        "Effortless Building"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.cause.player_switched": {
+    "1": {
+      "label": "the name of the player who went into Free Play",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    },
+    "2": {
+      "label": "the game mode they switched to",
+      "examples": [
+        "Creative Mode",
+        "Spectator Mode"
+      ]
+    }
+  },
   "chat.dungeontrain.free_play.unapproved_mods": {
     "1": {
       "label": "the installed mods that are not on the approved list, comma-separated",
@@ -15784,6 +15825,42 @@
       ]
     }
   },
+  "command.dungeontrain.offer_eye.not_watching": {
+    "1": {
+      "label": "the TV viewer's Minecraft player name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.offer_eye.already_offered": {
+    "1": {
+      "label": "the TV viewer's Minecraft player name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.offer_eye.offered_all": {
+    "1": {
+      "label": "how many TV viewers were offered the Live Eye",
+      "examples": [
+        "2",
+        "7"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_gift.offer_all": {
+    "1": {
+      "label": "the streamer's Minecraft player name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
   "chat.dungeontrain.live_gift.give_failed": {
     "1": {
       "label": "the TV viewer's Minecraft player name",
@@ -17252,6 +17329,15 @@
       "examples": [
         "6",
         "4"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.viewer_died": {
+    "1": {
+      "label": "the dead player's death message, as vanilla words it",
+      "examples": [
+        "Steve was slain by Zombie",
+        "Alex fell from a high place"
       ]
     }
   }
