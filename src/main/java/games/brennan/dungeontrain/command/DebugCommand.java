@@ -67,6 +67,7 @@ public final class DebugCommand {
 
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("debug")
+            .then(games.brennan.dungeontrain.perks.PerkShimCommand.build()) // TEMP shim; drop when perks foundation lands
             .then(Commands.literal("scan").executes(ctx -> runScan(ctx.getSource())))
             // /dungeontrain debug stage-placeholders — walks every live carriage's footprint and
             // counts stage placeholder blocks that survived generation (expected: none) plus the

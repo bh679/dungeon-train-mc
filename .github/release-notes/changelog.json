@@ -30498,6 +30498,21 @@
       "released_in": null,
       "released_at": null,
       "pr": 2297
+    },
+    {
+      "id": "knight-combat-perks",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Knight perks",
+      "summary": "Three new Knight perks: Crits lets your ground hits land critical strikes, Kill Buff gives you a short burst of Strength and a little health on each kill, and Vampirism heals you for every kill. All three grow stronger the more points you put into them.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
