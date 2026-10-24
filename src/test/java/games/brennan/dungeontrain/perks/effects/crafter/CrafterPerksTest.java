@@ -26,6 +26,14 @@ class CrafterPerksTest {
     }
 
     @Test
+    @DisplayName("Enchant Cost: any rank lifts the anvil's Too Expensive cap, rank 0 keeps it")
+    void ignoresAnvilCap() {
+        assertFalse(CrafterPerks.ignoresAnvilCap(0));
+        assertTrue(CrafterPerks.ignoresAnvilCap(1));
+        assertTrue(CrafterPerks.ignoresAnvilCap(3));
+    }
+
+    @Test
     @DisplayName("Cooking Time: 20% faster per rank, floor 25% of base, never below one tick")
     void cookTicks() {
         assertEquals(200, CrafterPerks.cookTicks(200, 0));

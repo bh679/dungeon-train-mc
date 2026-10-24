@@ -8,7 +8,9 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.EnchantmentMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
@@ -31,7 +33,9 @@ import java.util.List;
  * <ul>
  *   <li><b>Enchant Cost</b>: {@code slotsChanged} is bracketed so {@code CrafterEnchantCost} (on
  *       NeoForge's level-set event) can find this menu's player and stash each row's untouched roll
- *       power; {@code getEnchantmentList} then rolls with that power instead of the lowered cost.</li>
+ *       power; {@code getEnchantmentList} then rolls with that power instead of the lowered cost.
+ *       The same per-row numbers ride three extra {@link DataSlot}s to the client, where
+ *       {@code client.EnchantmentScreenCrafterCostMixin} shows them struck through beside the price.</li>
  *   <li><b>Re-enchant</b>: the "no enchantments yet" half of {@code ItemStack#isEnchantable} is
  *       skipped, and the rolled list loses anything that clashes with what the item already has.</li>
  *   <li><b>Enchant Max</b>: the roll runs with the player's bonus on {@link EnchantContext} so
@@ -39,7 +43,11 @@ import java.util.List;
  * </ul>
  */
 @Mixin(EnchantmentMenu.class)
-public abstract class EnchantmentMenuCrafterMixin implements CrafterEnchantMenu {
+public abstract class EnchantmentMenuCrafterMixin extends AbstractContainerMenu implements CrafterEnchantMenu {
+
+    private EnchantmentMenuCrafterMixin() {
+        super(null, 0);
+    }
 
     @Unique
     private Player dungeontrain$player;
@@ -61,11 +69,17 @@ public abstract class EnchantmentMenuCrafterMixin implements CrafterEnchantMenu 
             at = @At("RETURN"))
     private void dungeontrain$rememberPlayer(int containerId, Inventory inventory, ContainerLevelAccess access, CallbackInfo ci) {
         dungeontrain$player = inventory.player;
+        for (int row = 0; row < dungeontrain$rollPower.length; row++) {
+            this.addDataSlot(DataSlot.shared(dungeontrain$rollPower, row));
+        }
     }
 
     @Inject(method = "slotsChanged", at = @At("HEAD"))
     private void dungeontrain$enterSlotsChanged(CallbackInfo ci) {
-        java.util.Arrays.fill(dungeontrain$rollPower, 0);
+        // Client side the array holds the server's synced values; vanilla never rolls there.
+        if (dungeontrain$player != null && !dungeontrain$player.level().isClientSide()) {
+            java.util.Arrays.fill(dungeontrain$rollPower, 0);
+        }
         EnchantContext.pushEnchantMenu(this);
     }
 

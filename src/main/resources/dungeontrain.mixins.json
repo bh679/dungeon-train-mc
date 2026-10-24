@@ -156,6 +156,8 @@
     "BlockDropsEnchantOwnerMixin"
   ],
   "client": [
+    "client.EnchantmentScreenCrafterCostMixin",
+    "client.AnvilScreenCrafterCapMixin",
     "client.IntegratedServerPublishGameModeMixin",
     "client.LevelRendererWeatherSlantMixin",
     "client.ParticleEngineWindDriftMixin",

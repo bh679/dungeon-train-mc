@@ -47,6 +47,11 @@ public final class CrafterPerks {
         return Math.max(MIN_COST, cost - rank);
     }
 
+    /** Enchant Cost: any rank lifts the anvil's "Too Expensive!" cap at 40 levels. */
+    public static boolean ignoresAnvilCap(int rank) {
+        return rank > 0;
+    }
+
     /** Cooking Time: ticks a recipe takes at {@code rank}; at least 1 and at least the floor share. */
     public static int cookTicks(int baseTicks, int rank) {
         if (baseTicks <= 0 || rank <= 0) return baseTicks;
