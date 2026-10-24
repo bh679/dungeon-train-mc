@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.LuckyBonusRoller;
+import games.brennan.dungeontrain.perks.effects.hoarder.HoarderLuck;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -75,7 +76,9 @@ public final class LuckyLootEvents {
         if (!(be instanceof Container container) || !LuckyBonusRoller.hasBonus(be)) return;
 
         List<ItemStack> candidates = LuckyBonusRoller.takeBonus(be, level.registryAccess());
-        int wanted = LuckyBonusRoller.bonusCountFor(player.getLuck(), level.getRandom());
+        // Hoarder Luck perk: rank in 20 containers roll as if the opener had Luck I.
+        float luck = HoarderLuck.luckFor(player, level.getRandom());
+        int wanted = LuckyBonusRoller.bonusCountFor(luck, level.getRandom());
         if (wanted <= 0 || candidates.isEmpty()) return;
 
         List<String> existing = describeContents(container);
@@ -87,7 +90,7 @@ public final class LuckyLootEvents {
         LOGGER.debug("[lucky-loot] {} opened {} at {} with luck {} -> +{} bonus item(s) placed={} "
                 + "existing(before)={} nonEmpty(after)={}",
             player.getGameProfile().getName(), state.getBlock().getName().getString(), pos,
-            player.getLuck(), added, placed, existing, describeContents(container).size());
+            luck, added, placed, existing, describeContents(container).size());
     }
 
     /**
@@ -109,7 +112,8 @@ public final class LuckyLootEvents {
         ServerLevel level = event.getLevel();
 
         List<ItemStack> candidates = LuckyBonusRoller.takeBonus(be, level.registryAccess());
-        int wanted = LuckyBonusRoller.vaseBonusFor(player.getLuck(), level.getRandom());
+        float luck = HoarderLuck.luckFor(player, level.getRandom());
+        int wanted = LuckyBonusRoller.vaseBonusFor(luck, level.getRandom());
         if (wanted <= 0 || candidates.isEmpty()) return;
 
         BlockPos pos = event.getPos();
@@ -117,7 +121,7 @@ public final class LuckyLootEvents {
         event.getDrops().add(bonusDrop(level, pos, stack));
         player.displayClientMessage(Component.translatable(MSG_VASE_BONUS), true);
         LOGGER.debug("[lucky-loot] {} broke a vase at {} with luck {} -> +1 bonus item {}",
-            player.getGameProfile().getName(), pos, player.getLuck(), describe(0, stack));
+            player.getGameProfile().getName(), pos, luck, describe(0, stack));
     }
 
     /** The player credited with the break: the breaker itself, or the owner of the projectile that shattered it. */
