@@ -213,6 +213,15 @@ public final class DebugCommand {
             // /dungeontrain debug transition-flatbeds — each band transition's world X, timing and the
             // carriage(s) its flatbed claimed (or the lead rider's predicted carriage while pending).
             .then(Commands.literal("transition-flatbeds").executes(ctx -> TransitionFlatbedsDebug.report(ctx.getSource())))
+            // /dungeontrain debug perk set <id> <rank> — dev builds only: set your own active rank in a
+            // perk (temporary shim behind games.brennan.dungeontrain.perks.Perks until the perks
+            // foundation lands; see that class).
+            .then(Commands.literal("perk").requires(src -> games.brennan.dungeontrain.DungeonTrain.isDevBuild())
+                .then(Commands.literal("set")
+                    .then(Commands.argument("id", StringArgumentType.word())
+                        .then(Commands.argument("rank", IntegerArgumentType.integer(0, 20))
+                            .executes(ctx -> setPerkRank(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "id"), IntegerArgumentType.getInteger(ctx, "rank")))))))
             .then(Commands.literal("cycle-layout")
                 .executes(ctx -> CycleLayoutDebug.report(ctx.getSource(), 2))
                 .then(Commands.argument("runs", IntegerArgumentType.integer(1, 8))
@@ -1135,5 +1144,12 @@ public final class DebugCommand {
             ).withStyle(ChatFormatting.RED));
             return 0;
         }
+    }
+
+    private static int setPerkRank(CommandSourceStack source, String id, int rank) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        var player = source.getPlayerOrException();
+        int stored = games.brennan.dungeontrain.perks.Perks.devSet(player.getUUID(), id, rank);
+        source.sendSuccess(() -> Component.literal("Perk " + id + " rank " + stored + " for " + player.getGameProfile().getName()), false);
+        return stored;
     }
 }
