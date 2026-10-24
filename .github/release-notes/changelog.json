@@ -30028,8 +30028,24 @@
       "released_at": null
     },
     {
+      "id": "release-notes-no-repeats",
+      "version": "0.1482.0",
+      "type": "ci",
+      "tags": [
+        "internal"
+      ],
+      "title": "Update notes stay accurate",
+      "summary": "Each update's notes now list only what's new in it, even when other changes land while the update is being published.",
+      "highlights": [],
+      "pr": 2271,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "world-wide-free-play",
-      "version": "0.1483.0",
+      "version": "0.1484.0",
       "type": "feat",
       "tags": [
         "feature",
