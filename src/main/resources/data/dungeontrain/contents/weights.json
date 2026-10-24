@@ -150,6 +150,10 @@
     "weight": 1,
     "optIn": true
   },
+  "piglin2": {
+    "weight": 1,
+    "name": "zombiepigmen"
+  },
   "portal": 0,
   "portal_short": 0,
   "prison_broken": {
