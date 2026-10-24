@@ -17341,7 +17341,7 @@
       ]
     }
   },
-  "perk.dungeontrain.restock_villager.restocked": {
+  "perk.dungeontrain.restock_villager.button": {
     "1": {
       "label": "restocks the player still has left with this villager this life",
       "examples": [

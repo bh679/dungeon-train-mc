@@ -2,59 +2,81 @@ package games.brennan.dungeontrain.perks.effects.trader;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.perks.Perks;
-import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.npc.Villager;
-import net.minecraft.world.item.trading.MerchantOffer;
-import net.minecraft.world.item.trading.MerchantOffers;
+import net.minecraft.world.inventory.MerchantMenu;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+import java.util.Optional;
+
 /**
- * Trader perk hooks that live on events. Restock Villager: right-clicking a villager whose
- * trades have sold out resets every offer's uses before vanilla opens the screen, while the
- * player has charges left on that villager ({@link RestockVillager}). Vanilla's own
- * {@code Villager.restock()} is not used: it also raises demand prices and spends the villager's
- * daily restock, and this perk is meant to be a clean reset.
+ * Restock Villager, server side. Opening a villager's trade menu with the perk active sends the
+ * charges left on that villager ({@link RestockVillagerStatusPacket}); the menu's Restock button
+ * asks for one ({@link RestockVillagerRequestPacket}) and {@link #tryRestock} spends it on
+ * vanilla's own {@link Villager#restock()}, which also raises demand-based prices and counts as
+ * one of the villager's restocks for the day, exactly as a work-station restock would.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TraderPerkEvents {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TraderPerkEvents.class);
-    private static final String RESTOCKED_KEY = "perk.dungeontrain.restock_villager.restocked";
+
+    /** How far to look for the villager a player is trading with; trading range is 8 blocks. */
+    private static final double TRADER_SEARCH_RADIUS = 16.0;
 
     private TraderPerkEvents() {}
 
     @SubscribeEvent
-    public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-        if (event.getLevel().isClientSide() || event.getHand() != InteractionHand.MAIN_HAND) return;
+    public static void onMenuOpen(PlayerContainerEvent.Open event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!(event.getTarget() instanceof Villager villager) || !villager.isAlive()) return;
+        if (!(event.getContainer() instanceof MerchantMenu menu)) return;
         try {
-            restockIfEarned(player, villager);
+            int rank = Perks.rank(player, RestockVillager.ID);
+            if (rank <= 0) return;
+            tradingVillager(player).ifPresent(villager -> sendStatus(player, menu.containerId,
+                RestockVillager.remaining(rank, RestockVillager.used(player, villager.getUUID()))));
         } catch (RuntimeException e) {
-            // Never let a perk break the trade screen; vanilla trading carries on.
-            LOGGER.warn("[DungeonTrain] Restock Villager perk failed for {}", player.getName().getString(), e);
+            LOGGER.warn("[DungeonTrain] Restock Villager status failed for {}", player.getName().getString(), e);
         }
     }
 
-    private static void restockIfEarned(ServerPlayer player, Villager villager) {
-        int rank = Perks.rank(player, RestockVillager.ID);
-        if (rank <= 0) return;
-        MerchantOffers offers = villager.getOffers();
-        if (!RestockVillager.needsRestock(offers)) return;
-        int used = RestockVillager.used(player, villager.getUUID());
-        if (RestockVillager.remaining(rank, used) <= 0) return;
+    /** Restocks the villager behind the player's open trade menu if the perk and a charge allow it. */
+    static void tryRestock(ServerPlayer player, int containerId) {
+        try {
+            if (!(player.containerMenu instanceof MerchantMenu menu) || menu.containerId != containerId) return;
+            int rank = Perks.rank(player, RestockVillager.ID);
+            if (rank <= 0) return;
+            Optional<Villager> found = tradingVillager(player);
+            if (found.isEmpty()) return;
+            Villager villager = found.get();
+            int used = RestockVillager.used(player, villager.getUUID());
+            if (RestockVillager.remaining(rank, used) <= 0 || !RestockVillager.needsRestock(villager.getOffers())) return;
 
-        offers.forEach(MerchantOffer::resetUses);
-        int left = RestockVillager.remaining(rank, RestockVillager.recordUse(player, villager.getUUID()));
-        player.displayClientMessage(Component.translatable(RESTOCKED_KEY, left).withStyle(ChatFormatting.GREEN), true);
-        LOGGER.debug("[DungeonTrain] Restock Villager: {} restocked {} ({} left this life)",
-            player.getName().getString(), villager.getUUID(), left);
+            villager.restock();
+            int left = RestockVillager.remaining(rank, RestockVillager.recordUse(player, villager.getUUID()));
+            sendStatus(player, containerId, left);
+            LOGGER.debug("[DungeonTrain] Restock Villager: {} restocked {} ({} left this life)",
+                player.getName().getString(), villager.getUUID(), left);
+        } catch (RuntimeException e) {
+            // Never let a perk break the trade screen; vanilla trading carries on.
+            LOGGER.warn("[DungeonTrain] Restock Villager failed for {}", player.getName().getString(), e);
+        }
+    }
+
+    private static Optional<Villager> tradingVillager(ServerPlayer player) {
+        List<Villager> nearby = player.serverLevel().getEntitiesOfClass(Villager.class,
+            player.getBoundingBox().inflate(TRADER_SEARCH_RADIUS),
+            v -> v.isAlive() && v.getTradingPlayer() == player);
+        return nearby.stream().findFirst();
+    }
+
+    private static void sendStatus(ServerPlayer player, int containerId, int remaining) {
+        PacketDistributor.sendToPlayer(player, new RestockVillagerStatusPacket(containerId, remaining));
     }
 }

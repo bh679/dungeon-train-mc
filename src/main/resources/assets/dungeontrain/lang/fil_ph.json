@@ -4700,7 +4700,7 @@
   "advancements.dungeontrain.tab.train_explorer": "Explorer ng Tren",
   "advancements.dungeontrain.tab.others": "Iba pa",
   "advancements.dungeontrain.tab.secrete_menu": "Ang Lihim na Menu",
-  "perk.dungeontrain.restock_villager.restocked": "Na-restock ang mga kalakal (%s na lang sa villager na ito)",
+  "perk.dungeontrain.restock_villager.button": "I-restock (%s)",
   "chat.dungeontrain.free_play.cause.portal_rate": "Binago sa mundong ito kung gaano kadalas lumilitaw ang mga bagon na pandimensyon.",
   "chat.dungeontrain.free_play.portal_rate_changed": "Ang riles na nililikha ng mundong ito ay hindi na iyong pinagbatayan ng balanse ng Dungeon Train, kaya nananatili sa Malayang Paglalaro ang mundong ito.",
   "chat.dungeontrain.free_play.cause.dt_config": "Binago ang mga setting ng hirap ng Dungeon Train.",

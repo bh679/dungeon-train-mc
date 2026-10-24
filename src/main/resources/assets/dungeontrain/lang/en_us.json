@@ -5400,5 +5400,5 @@
   "advancements.dungeontrain.tab.others": "Others",
   "advancements.dungeontrain.tab.secrete_menu": "The Secret Menu",
 
-  "perk.dungeontrain.restock_villager.restocked": "Trades restocked (%s left with this villager)"
+  "perk.dungeontrain.restock_villager.button": "Restock (%s)"
 }
