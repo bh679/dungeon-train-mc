@@ -23,18 +23,25 @@ public final class ReducedReduction {
 
     public static final String ID = "reduced-reduction";
 
-    /** Per rank, the villager tires this much slower again: rank 1 = 1.5x slower, rank 2 = 2x. */
-    static final double SLOWDOWN_PER_RANK = 0.5;
+    /** The share of a sale the villager remembers approaches this but never reaches it: at most 4x slower. */
+    static final double MIN_WEIGHT = 0.25;
 
-    /** Ranks past this add nothing (rank 6 = 4x slower). Balancing knob. */
-    static final int MAX_EFFECTIVE_RANK = 6;
+    /** Rank at which the villager tires half as fast (weight 0.5). Balancing knob. */
+    static final int HALF_RATE_RANK = 5;
+
+    /** Decay per rank so that {@link #saleWeight} is exactly 0.5 at {@link #HALF_RATE_RANK}. */
+    private static final double DECAY =
+        Math.log((1.0 - MIN_WEIGHT) / (0.5 - MIN_WEIGHT)) / HALF_RATE_RANK;
 
     private ReducedReduction() {}
 
-    /** Share of a sale the villager remembers: 1.0 at rank 0, {@code 1 / (1 + 0.5 rank)} above. */
+    /**
+     * Share of a sale the villager remembers: 1.0 at rank 0, 0.5 at rank 5, approaching
+     * {@link #MIN_WEIGHT} as rank grows with no cap: {@code 0.25 + 0.75 e^(-k rank)}.
+     */
     public static double saleWeight(int rank) {
-        int effective = Math.clamp(rank, 0, MAX_EFFECTIVE_RANK);
-        return 1.0 / (1.0 + SLOWDOWN_PER_RANK * effective);
+        if (rank <= 0) return 1.0;
+        return MIN_WEIGHT + (1.0 - MIN_WEIGHT) * Math.exp(-DECAY * rank);
     }
 
     /** The tally after a sale that moved it from {@code prev} to {@code next}, with only {@code weight} of the gain kept. */

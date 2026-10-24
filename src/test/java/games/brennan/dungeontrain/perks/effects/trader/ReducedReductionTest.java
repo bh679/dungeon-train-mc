@@ -28,22 +28,21 @@ final class ReducedReductionTest {
     }
 
     @Test
-    @DisplayName("each rank slows tiring another half: 1.5x, 2x, 2.5x")
-    void weightsReadAsSlowdown() {
-        assertEquals(1.0 / 1.5, ReducedReduction.saleWeight(1), 1e-12);
-        assertEquals(0.5, ReducedReduction.saleWeight(2), 1e-12);
-        assertEquals(0.4, ReducedReduction.saleWeight(3), 1e-12);
+    @DisplayName("rank 5 tires the villager half as fast")
+    void halfRateAtRankFive() {
+        assertEquals(0.5, ReducedReduction.saleWeight(ReducedReduction.HALF_RATE_RANK), 1e-12);
+        assertEquals(0.5, ReducedReduction.saleWeight(5), 1e-12);
     }
 
     @Test
-    @DisplayName("weight falls with rank and stops at the cap")
-    void monotoneAndCapped() {
-        for (int rank = 1; rank <= ReducedReduction.MAX_EFFECTIVE_RANK; rank++) {
-            assertTrue(ReducedReduction.saleWeight(rank) < ReducedReduction.saleWeight(rank - 1), "rank " + rank);
+    @DisplayName("weight keeps falling with rank, never reaching 25%")
+    void monotoneTowardsFloor() {
+        for (int rank = 1; rank <= 100; rank++) {
+            double w = ReducedReduction.saleWeight(rank);
+            assertTrue(w < ReducedReduction.saleWeight(rank - 1), "rank " + rank);
+            assertTrue(w > ReducedReduction.MIN_WEIGHT, "rank " + rank);
         }
-        assertEquals(ReducedReduction.saleWeight(ReducedReduction.MAX_EFFECTIVE_RANK),
-            ReducedReduction.saleWeight(ReducedReduction.MAX_EFFECTIVE_RANK + 10));
-        assertTrue(ReducedReduction.saleWeight(99) > 0.0);
+        assertEquals(ReducedReduction.MIN_WEIGHT, ReducedReduction.saleWeight(Integer.MAX_VALUE), 1e-9);
     }
 
     @Test
@@ -63,10 +62,10 @@ final class ReducedReductionTest {
     }
 
     @Test
-    @DisplayName("a rank-2 villager prices N sales like an unperked villager prices N/2")
+    @DisplayName("a rank-5 villager prices N sales like an unperked villager prices N/2")
     void halfWeightHalvesTheTally() {
         DemandCurve curve = DemandCurve.defaults();
-        double weight = ReducedReduction.saleWeight(2);
+        double weight = ReducedReduction.saleWeight(5);
         DemandLedger perked = DemandLedger.EMPTY;
         DemandLedger plain = DemandLedger.EMPTY;
         int sales = 40;
