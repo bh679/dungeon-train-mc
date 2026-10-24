@@ -5,6 +5,7 @@
   "fillMin": 4,
   "fillMax": 10,
   "entries": [
+    { "id": "dungeontrain:cosmic_debris", "count": 1, "weight": 3, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:cooked_chicken", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:golden_axe", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 40 },
     { "id": "minecraft:chainmail_chestplate", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },

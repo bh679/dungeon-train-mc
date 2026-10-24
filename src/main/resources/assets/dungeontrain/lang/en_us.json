@@ -5398,5 +5398,10 @@
   "advancements.dungeontrain.enchiridion.darkroom.description": "Find a camera or a photo.",
   "advancements.dungeontrain.tab.train_explorer": "Train Explorer",
   "advancements.dungeontrain.tab.others": "Others",
-  "advancements.dungeontrain.tab.secrete_menu": "The Secret Menu"
+  "advancements.dungeontrain.tab.secrete_menu": "The Secret Menu",
+  "item.dungeontrain.cosmic_debris": "Cosmic Debris",
+  "item.dungeontrain.cosmic_debris.tooltip": "Eat it for a perk point. Spend it before you die.",
+  "chat.dungeontrain.perks.active_gained": "Cosmic Debris eaten: +1 perk point (%s to spend this life).",
+  "chat.dungeontrain.perks.ready_to_spend": "You have %s perk points ready to spend.",
+  "chat.dungeontrain.perks.unlock_gained": "+%s unlock points (%s unspent)."
 }

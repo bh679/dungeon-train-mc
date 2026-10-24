@@ -17340,5 +17340,39 @@
         "Alex fell from a high place"
       ]
     }
+  },
+  "chat.dungeontrain.perks.active_gained": {
+    "1": {
+      "label": "active perk points the player now has this life",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.perks.ready_to_spend": {
+    "1": {
+      "label": "active perk points ready to spend",
+      "examples": [
+        "1",
+        "4"
+      ]
+    }
+  },
+  "chat.dungeontrain.perks.unlock_gained": {
+    "1": {
+      "label": "unlock points just earned",
+      "examples": [
+        "1",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "unspent unlock points in total",
+      "examples": [
+        "12",
+        "40"
+      ]
+    }
   }
 }
