@@ -17,7 +17,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * Restock Villager's button on the villager trade menu, under the menu's bottom-right corner:
- * "Restock (N)" with the charges left on this villager. Hidden until the server says the perk is
+ * "Restock (N)" with the charges left on this villager. Draws nothing until the server says the perk is
  * active for this menu ({@link RestockVillagerClientState}), greyed out with no charges left or
  * nothing sold out. The server re-checks every press.
  */
@@ -49,14 +49,20 @@ public final class RestockVillagerButton {
                 b -> PacketDistributor.sendToServer(new RestockVillagerRequestPacket(menu.containerId)),
                 DEFAULT_NARRATION);
             this.menu = menu;
-            this.visible = false;
+            this.active = false;
         }
 
+        /**
+         * Refreshed every frame. The widget stays {@code visible} (vanilla would stop calling this
+         * otherwise) and simply draws nothing, inactive, until the server's status arrives.
+         */
         @Override
         public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
             int left = RestockVillagerClientState.remainingFor(menu.containerId);
-            visible = left >= 0;
-            if (!visible) return;
+            if (left < 0) {
+                active = false;
+                return;
+            }
             active = left > 0 && RestockVillager.needsRestock(menu.getOffers());
             setMessage(Component.translatable(LABEL_KEY, left));
             super.renderWidget(graphics, mouseX, mouseY, partialTick);
