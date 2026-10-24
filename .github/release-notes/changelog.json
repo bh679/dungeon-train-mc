@@ -30162,6 +30162,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-copies-remembered",
+      "version": "0.1492.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train",
+        "loot"
+      ],
+      "title": "Dimensional carriage fix",
+      "summary": "Every room inside a dimensional carriage now stays as you left it. Walk away or step back onto the train, and what you mined or looted is still gone when you return.",
+      "highlights": [],
+      "pr": 2282,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
