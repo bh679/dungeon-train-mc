@@ -28,12 +28,24 @@ import org.slf4j.Logger;
  * <em>wall-clock</em> gap <em>between</em> server ticks — from one tick's
  * {@link ServerTickEvent.Post} to the next tick's {@link ServerTickEvent.Pre}. While paused,
  * {@code IntegratedServer.tickServer} runs {@code tickPaused()} instead of the server tick, so
- * neither event fires and the idle gap grows. A server <em>stall</em> is different: it happens
- * inside a tick (between Pre and Post), and the catch-up ticks after it run back to back, so
- * the idle gap stays ~0. Measuring Post→Pre (not tick-to-tick) is what keeps this inert on
- * lag — a tick-to-tick gap read every multi-second stall as a resume, re-armed the whole-train
- * hold, whose chunk loads caused the next stall, and so on (player log 14 Oct 2026: 5–20 s
- * stalls chained after each autosave). On a detected resume, for every loaded train it:</p>
+ * neither event fires and the idle gap grows. A server <em>stall</em> inside a tick (between Pre
+ * and Post) leaves that gap at ~0, since the catch-up ticks after it run back to back. Measuring
+ * Post→Pre (not tick-to-tick) is what keeps this inert on in-tick lag — a tick-to-tick gap read
+ * every multi-second stall as a resume, re-armed the whole-train hold, whose chunk loads caused
+ * the next stall, and so on (player log 14 Oct 2026: 5–20 s stalls chained after each autosave).</p>
+ *
+ * <p><b>A gap alone is not a pause.</b> A stall can also land <em>between</em> ticks, in
+ * {@code waitUntilNextTick}'s task drain (a packet, an off-thread chunk-load marshal). The clock
+ * can't tell that from a pause: player log of 23 Oct 2026 carried two such stalls (2.6 s, 4.0 s),
+ * each with vanilla's "Can't keep up!" in the same millisecond, each read as a resume. The hold
+ * then woke ~8 and ~17 trailing groups out of Sable holding (carriages 11→66, MSPT ~48 ms) inside
+ * a lag spike. So a resume also needs evidence that the server actually <em>paused</em>: the
+ * integrated server runs {@code tickPaused()} on every loop iteration while paused
+ * ({@code IntegratedServerTickPausedMixin} → {@link #notePausedTick}), and a stalled loop never
+ * gets there. A gap without it is a stall ({@link GapKind#STALL}): logged, no hold — the client
+ * kept running through it, so there is no rider fling to protect against. (A laptop sleeping
+ * without the pause menu also reads as a stall: client and server froze together, no fling.)
+ * On a detected resume, for every loaded train it:</p>
  * <ul>
  *   <li>{@link TrainCarriageAppender#grantResumeGrace} — suppresses the walk-away
  *       force-load release for a short (renewing, capped) window while the flung-off rider
@@ -69,7 +81,28 @@ public final class ResumeWatchdog {
     /** nanoTime at the end of the previous server tick; {@code 0} before the first tick / after a stop. */
     private static long lastTickEndNanos = 0L;
 
+    /** Did the integrated server run {@code tickPaused()} since the previous tick ended? Server thread only. */
+    private static boolean pausedSinceTickEnd = false;
+
+    /** What an idle gap between two ticks was. */
+    enum GapKind {
+        /** Normal cadence (or no baseline yet). */
+        NONE,
+        /** The game was paused and has resumed — hold the train (#547). */
+        PAUSE,
+        /** The server thread was stuck between ticks without pausing — leave the train alone. */
+        STALL
+    }
+
     private ResumeWatchdog() {}
+
+    /**
+     * Called from {@code IntegratedServerTickPausedMixin} each time the paused integrated server runs
+     * its pause loop. Server thread only.
+     */
+    public static void notePausedTick() {
+        pausedSinceTickEnd = true;
+    }
 
     /**
      * Pure core: is the idle gap from the previous tick's end ({@code prevTickEndNanos}) to this
@@ -80,10 +113,20 @@ public final class ResumeWatchdog {
         return (tickStartNanos - prevTickEndNanos) / 1_000_000L >= RESUME_GAP_MS;
     }
 
+    /**
+     * Pure core: classify the idle gap before this tick. Long enough and the server ran its pause loop
+     * in between → {@link GapKind#PAUSE}; long enough without it → {@link GapKind#STALL}.
+     */
+    static GapKind classifyGap(long prevTickEndNanos, long tickStartNanos, boolean pausedTickSeen) {
+        if (!isResumeGap(prevTickEndNanos, tickStartNanos)) return GapKind.NONE;
+        return pausedTickSeen ? GapKind.PAUSE : GapKind.STALL;
+    }
+
     @SubscribeEvent
     public static void onServerTickPost(ServerTickEvent.Post event) {
         if (event.getServer().isDedicatedServer()) return; // only the integrated server pauses
         lastTickEndNanos = System.nanoTime();
+        pausedSinceTickEnd = false;
     }
 
     @SubscribeEvent
@@ -93,8 +136,16 @@ public final class ResumeWatchdog {
 
         long now = System.nanoTime();
         long prev = lastTickEndNanos;
-        if (!isResumeGap(prev, now)) return;          // normal cadence, or a stall's catch-up
+        GapKind gap = classifyGap(prev, now, pausedSinceTickEnd);
+        if (gap == GapKind.NONE) return;              // normal cadence, or an in-tick stall's catch-up
         long gapMs = (now - prev) / 1_000_000L;
+
+        // Stuck between ticks without ever pausing: the client kept running, nobody was flung, and
+        // the hold's force-loads would only wake the trail out of Sable holding mid-spike.
+        if (gap == GapKind.STALL) {
+            LOGGER.info("[DungeonTrain] Server stall of {}ms between ticks (not a pause) — train hold skipped", gapMs);
+            return;
+        }
 
         // Nobody near a train (e.g. reading books in a portal room's Stat Room): there is no rider to
         // fling, so skip the hold and the force-loads it would cost on every resume.
@@ -118,5 +169,6 @@ public final class ResumeWatchdog {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         lastTickEndNanos = 0L; // next world's first tick mustn't read a stale (huge) gap
+        pausedSinceTickEnd = false;
     }
 }
