@@ -30023,9 +30023,9 @@
       "highlights": [],
       "pr": 2270,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1485.0",
+      "released_at": "2026-10-24T02:45:00Z"
     },
     {
       "id": "release-notes-no-repeats",
@@ -30039,9 +30039,9 @@
       "highlights": [],
       "pr": 2271,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1485.0",
+      "released_at": "2026-10-24T02:45:00Z"
     },
     {
       "id": "world-wide-free-play",
@@ -30051,17 +30051,14 @@
         "feature",
         "multiplayer"
       ],
-      "title": "Free Play is shared by the whole world",
-      "summary": "When one player on a world goes into Free Play, everyone on that world does too, since items can be passed between players. The Free Play prompt now says so before you confirm, and everyone else is told who started it and why.",
-      "highlights": [
-        "Players who join later are told why the world is in Free Play",
-        "Worlds where someone was already in Free Play become Free Play for everyone after this update"
-      ],
+      "title": "Free Play tweak",
+      "summary": "Free Play works a little differently on shared worlds.",
+      "highlights": [],
       "pr": 2272,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1485.0",
+      "released_at": "2026-10-24T02:45:00Z"
     }
   ]
 }
