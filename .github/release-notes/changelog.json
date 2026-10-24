@@ -30023,9 +30023,9 @@
       "highlights": [],
       "pr": 2270,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1485.0",
+      "released_at": "2026-10-24T02:45:00Z"
     },
     {
       "id": "release-notes-no-repeats",
@@ -30039,9 +30039,9 @@
       "highlights": [],
       "pr": 2271,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1485.0",
+      "released_at": "2026-10-24T02:45:00Z"
     },
     {
       "id": "world-wide-free-play",
@@ -30055,6 +30055,22 @@
       "summary": "Free Play works a little differently on shared worlds.",
       "highlights": [],
       "pr": 2272,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1485.0",
+      "released_at": "2026-10-24T02:45:00Z"
+    },
+    {
+      "id": "echest-kept-joining-cheats-world",
+      "version": "0.1486.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Ender Chest fix",
+      "summary": "Joining a world that has cheats on no longer empties your survival Ender Chest. Your legit chest stays safe and comes back the next time you play a run without cheats.",
+      "highlights": [],
       "date": "2026-10-24",
       "released": false,
       "released_in": null,
