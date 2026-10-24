@@ -135,7 +135,7 @@ textarea.dev,.ct td.dev{opacity:.6;font-size:11px}
       <button hidden id="bAddClass" title="Add a class">+ class</button>
       <button hidden id="bLinkReq" title="Link two perks">link</button>
       <button hidden id="bLinkX" title="Cross-link two perks (dashed)">chord</button>
-      <select id="sWork" class="lnk" title="work left: show one level; lower levels fade to 35%, higher to 10%" style="width:auto;border:0;padding:0;font-size:12px"><option value="">all</option><option value="0">0 ready</option><option value="1">1 scaling</option><option value="2">2 balancing</option><option value="3">3 UI</option><option value="4">4 UX</option><option value="5">5 code</option></select>
+      <select id="sWork" class="lnk" title="work left: show one level; lower levels fade to 35%, higher to 10%" style="width:auto;border:0;padding:0;font-size:12px"><option value="">all</option><option value="0">0 ready</option><option value="1">1 balancing</option><option value="2">2 UI</option><option value="3">3 UX</option><option value="4">4 code</option></select>
       <button class="lnk" id="bRev" title="show reviewed rings">✓</button>
       <button class="lnk" id="bGuide" title="alignment guide: a circle through the furthest perk, and the centre ring">◯</button>
       <button class="lnk" data-t="classes" title="classes">⌘</button><button class="lnk" data-t="io" title="save / load">⇅</button>
@@ -244,8 +244,8 @@ const ORDER=["Archivist","Lover","Ranger","Speedster","Knight","Tank","Crafter",
 const BUILDER={n:"Builder",c:"#b0b8c8",p:[["Drift Chance","More drifting carriages roll into your train each band","1 x 3"],["Own Carriage Return","Carriages you built come back around to you more often","1 x 2"],["Build Materials","A chest of building blocks in every drifting carriage you enter, refilled each tier","1"],["Drift Gift","Things you leave in a drifting carriage count double toward a friendlier echo","1"],["Drift Reach","Your builds travel to more players' trains","1 x 2"],["Keep Carriage","One drifting carriage you have edited is pinned and follows you into your next run","3"]]};
 // Tiers: 1, 2 or 3, costing 1 / 5 / 10. Older data carried a capstone flag; that reads as tier 3.
 const READY_DEFAULT=new Set(["Health", "Armour", "Damage", "Speed", "Sprint Speed", "Haste", "Hunger", "Sprint Hunger", "Wind Resistance", "Enchant Cost", "Cooking Time", "Looting", "Luck", "Max Backpacks", "Craft Level Stats", "Live Eye Safe Duration", "Gift liveEye", "Extra Cam-Shots", "Vote Weight", "Fav Author", "Stackable BookQill", "Drift Chance", "Own Carriage Return", "Drift Reach", "Drift Gift Repaid", "See Trade Values", "Restock Villager", "Friendliness", "Good Gifter", "Pet Health", "Kill Buff", "Vampirism", "Healing", "Crits", "Teleport Player", "Summon Lightning", "Debuff Aura"]);
-const WORK=["ready","requires scaling","requires balancing","requires UI","requires UX","requires code"];
-const workOf=p=>p.id==="root"?0:p.work!==undefined?Math.min(5,Math.max(0,+p.work||0)):(p.ready===undefined?READY_DEFAULT.has(p.name):!!p.ready)?2:5;
+const WORK=["ready","requires balancing","requires UI","requires UX","requires code"];
+const workOf=p=>p.id==="root"?0:p.work!==undefined?Math.min(4,Math.max(0,+p.work||0)):(p.ready===undefined?READY_DEFAULT.has(p.name):!!p.ready)?1:4;
 const TIER_COST={1:"1",2:"5",3:"10"};const tierOf=p=>p.tier||(p.cap?3:1);
 const MIGRATIONS=[
   m=>swapContent(m,"Heal Friends","Befriend Faster"),
@@ -286,6 +286,8 @@ const MIGRATIONS=[
   m=>m.perks.forEach(p=>{if(p.id!=="root"&&p.work===undefined){p.work=workOf(p);delete p.ready}}),
   m=>m.perks.forEach(p=>{if(p.id!=="root"&&p.work>=1)p.work=Math.min(5,p.work+1)}),
   m=>m.perks.forEach(p=>{if(p.id!=="root"&&workOf(p)===0)p.work=2}),
+  // scaling tier dropped: 6 levels back to 5; ready (0) and scaling (1) both become balancing (1)
+  m=>m.perks.forEach(p=>{if(p.id!=="root"){const w=+p.work||0;p.work=w<=2?1:w-1}}),
 ];
 let M;try{const s=localStorage.getItem(KEY);M=s?JSON.parse(s):null}catch(e){M=null}
 if(!M||!M.perks){M=defaultModel();M.v=0}
