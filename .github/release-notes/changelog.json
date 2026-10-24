@@ -30274,8 +30274,25 @@
       "released_at": null
     },
     {
-      "id": "offer-live-eye-command",
+      "id": "sibling-zh-cn-text",
       "version": "0.1498.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations"
+      ],
+      "title": "Chinese text for backpacks and backups",
+      "summary": "Edible Backpacks and Dungeon Backup now show in Simplified Chinese. Chinese by \u8001\u672c\u9858.",
+      "highlights": [],
+      "pr": 2287,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "offer-live-eye-command",
+      "version": "0.1499.0",
       "type": "feat",
       "tags": [
         "feature",
