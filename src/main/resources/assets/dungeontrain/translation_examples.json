@@ -15825,6 +15825,24 @@
       ]
     }
   },
+  "command.dungeontrain.offer_eye.not_watching": {
+    "1": {
+      "label": "the TV viewer's Minecraft player name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.offer_eye.already_offered": {
+    "1": {
+      "label": "the TV viewer's Minecraft player name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
   "chat.dungeontrain.live_gift.give_failed": {
     "1": {
       "label": "the TV viewer's Minecraft player name",

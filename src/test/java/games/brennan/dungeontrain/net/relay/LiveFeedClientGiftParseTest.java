@@ -72,4 +72,20 @@ class LiveFeedClientGiftParseTest {
         assertFalse(LiveFeedClient.isGiftId("x-AbCdEfGh1234"));
         assertFalse(LiveFeedClient.isGiftId(null));
     }
+
+    @Test
+    @DisplayName("/offereye's viewer list keeps only player-shaped names, deduped and capped")
+    void giftViewers() {
+        var r = new LiveFeedClient.Result(200, JsonParser.parseString("""
+            {"ok":true,"viewers":[{"name":"Steve"},{"name":"Alex_42"},{"name":"Steve"},
+              {"name":"§cRed"},{"name":"a/b c"},{"name":""},{"nope":1},"x"]}""").getAsJsonObject(), null);
+        assertEquals(java.util.List.of("Steve", "Alex_42", "Red"), LiveFeedClient.parseGiftViewers(r));
+        StringBuilder many = new StringBuilder("{\"viewers\":[");
+        for (int i = 0; i < 30; i++) many.append(i == 0 ? "" : ",").append("{\"name\":\"v").append(i).append("\"}");
+        var big = new LiveFeedClient.Result(200, JsonParser.parseString(many + "]}").getAsJsonObject(), null);
+        assertEquals(LiveFeedClient.MAX_GIFT_VIEWERS, LiveFeedClient.parseGiftViewers(big).size());
+        assertTrue(LiveFeedClient.parseGiftViewers(new LiveFeedClient.Result(404, null, null)).isEmpty());
+        assertTrue(LiveFeedClient.parseGiftViewers(new LiveFeedClient.Result(200,
+            JsonParser.parseString("{\"viewers\":5}").getAsJsonObject(), null)).isEmpty());
+    }
 }

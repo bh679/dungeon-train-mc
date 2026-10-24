@@ -51,6 +51,7 @@ public final class LiveGiftClient {
     /** The buttons' action ({@link ChatClick}): {@code live-gift/give|accept|decline/<id>}. */
     static final String CLICK_ACTION = "live-gift";
     private static final String KEY = "chat.dungeontrain.live_gift.";
+    static final String OFFER_KEY = "command.dungeontrain.offer_eye.";
     private static final String CLOSE_KEY = "chat.dungeontrain.live.close_call.";
     private static final int CAP = 32;
 
@@ -138,6 +139,7 @@ public final class LiveGiftClient {
             String id = args.get(1);
             switch (args.get(0)) {
                 case "give" -> give(id);
+                case "offer" -> offerTo(id);
                 case "accept" -> answer(id, true);
                 case "decline" -> answer(id, false);
                 default -> { }
@@ -170,6 +172,42 @@ public final class LiveGiftClient {
         return 1;
     }
 
+    /**
+     * Streamer: {@code /offereye <name>} or its list's [Offer] button. Any eligible TV viewer, not only one the
+     * relay prompted for; the relay checks they are watching and can take it. Client thread.
+     */
+    static int offerTo(String name) {
+        Minecraft mc = Minecraft.getInstance();
+        String token = LiveStreamController.get().streamToken();
+        if (token == null) {
+            say(mc, Component.translatable(OFFER_KEY + "not_live").withStyle(ChatFormatting.GRAY));
+            return 0;
+        }
+        say(mc, Component.translatable(KEY + "offered", name).withStyle(ChatFormatting.GRAY));
+        LiveFeedClient.giftOffer(DungeonTrain.relayBaseUrl(), token, name).thenAcceptAsync(r -> {
+            if (r.ok()) {
+                if (mc.getConnection() != null) DungeonTrainNet.sendToServer(new ClientActionPacket("gifted_live_eye"));
+                return;
+            }
+            say(mc, Component.translatable(offerFailureKey(r.status(), r.str("error")), name).withStyle(ChatFormatting.GRAY));
+        }, mc);
+        return 1;
+    }
+
+    /** The line for a refused {@code /offereye}. An older relay 404s with no error: the command isn't there yet. Pure. */
+    static String offerFailureKey(int status, String error) {
+        if (status == 409) return OFFER_KEY + "already_offered";
+        if (status == 404 && "not_watching".equals(error)) return OFFER_KEY + "not_watching";
+        if (status == 404) return OFFER_KEY + "unavailable";
+        if (status == 403) return OFFER_KEY + "not_live";
+        return KEY + "give_failed";
+    }
+
+    /** A gold {@code [Offer]} button for {@code name} ({@link OfferEyeCommand}'s list). */
+    static Component offerButton(String name) {
+        return button(OFFER_KEY + "button", ChatClick.event(CLICK_ACTION, "offer", name), ChatFormatting.GOLD, true);
+    }
+
     private static int answer(String giftId, boolean accept) {
         Minecraft mc = Minecraft.getInstance();
         Offer offer = OFFERS.remove(giftId);
@@ -185,7 +223,7 @@ public final class LiveGiftClient {
         return 1;
     }
 
-    private static void say(Minecraft mc, Component line) {
+    static void say(Minecraft mc, Component line) {
         if (mc.player != null) mc.gui.getChat().addMessage(line);
     }
 
