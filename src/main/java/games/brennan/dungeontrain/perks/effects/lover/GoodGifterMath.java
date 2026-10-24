@@ -37,7 +37,7 @@ public final class GoodGifterMath {
     /** Strength an offering other than the right food starts at, as a share of the right food's start. */
     public static final double UNLOCK_STRENGTH = 0.5;
     /** Strength each rank past an offering's unlock adds, as a share of the right food's start. */
-    public static final double GROWTH_PER_RANK = 0.1;
+    public static final double GROWTH_PER_RANK = 0.5;
     /** Vanilla tame odds for a bone, fish or similar: 1 in 3. Parrots use {@link #PARROT_TAME_CHANCE}. */
     public static final double DEFAULT_TAME_CHANCE = 1.0 / 3.0;
     /** Vanilla parrot odds with seeds: 1 in 10. */

@@ -25,8 +25,8 @@ final class GoodGifterMathTest {
     @Test
     void rightFoodIsVanillaAtRankZeroAndGrowsEachRank() {
         assertEquals(1.0, GoodGifterMath.strength(Offering.RIGHT_FOOD, 0), EPS);
-        assertEquals(1.1, GoodGifterMath.strength(Offering.RIGHT_FOOD, 1), EPS);
-        assertEquals(4.0, GoodGifterMath.strength(Offering.RIGHT_FOOD, 30), EPS);
+        assertEquals(1.5, GoodGifterMath.strength(Offering.RIGHT_FOOD, 1), EPS);
+        assertEquals(16.0, GoodGifterMath.strength(Offering.RIGHT_FOOD, 30), EPS);
     }
 
     @Test
@@ -35,7 +35,7 @@ final class GoodGifterMathTest {
             if (o == Offering.RIGHT_FOOD) continue;
             assertEquals(0.0, GoodGifterMath.strength(o, o.unlockRank - 1), EPS);
             assertEquals(0.5, GoodGifterMath.strength(o, o.unlockRank), EPS);
-            assertEquals(0.6, GoodGifterMath.strength(o, o.unlockRank + 1), EPS);
+            assertEquals(1.0, GoodGifterMath.strength(o, o.unlockRank + 1), EPS);
         }
     }
 
