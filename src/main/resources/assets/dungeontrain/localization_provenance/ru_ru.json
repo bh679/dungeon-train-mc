@@ -4502,6 +4502,8 @@
       "discordpresence.consent.footnote",
       "discordpresence.consent.enable",
       "discordpresence.consent.not_now",
+      "discordpresence.consent.toggle_on",
+      "discordpresence.consent.toggle_off",
       "discordpresence.survey.give_feedback",
       "discordpresence.survey.title",
       "discordpresence.survey.comment",
