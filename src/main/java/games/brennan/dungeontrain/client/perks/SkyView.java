@@ -14,7 +14,7 @@ public record SkyView(double zoom, double centreX, double centreY) {
 
     /** Header strip above the sky, GUI px. */
     public static final int HEADER = 24;
-    public static final double MAX_ZOOM = 2.0;
+    public static final double MAX_ZOOM = 1.3;
     public static final double ZOOM_STEP = 1.25;
     /** A quarter of the sky must stay on screen. */
     private static final double PAN_SLACK = 0.25;
