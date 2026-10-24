@@ -30433,6 +30433,30 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "feel-the-wind",
+      "version": "0.1506.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "ui"
+      ],
+      "title": "Feel the wind",
+      "summary": "You can now tell when the wind is hitting you. Out in the open it sounds louder and closer, and faint streaks blow past the edges of your screen. You can turn the streaks down or off in the Dungeon Train options, on the Train tab.",
+      "highlights": [
+        "The wind gets louder and rumbles when it is on you, even before it starts to push you",
+        "You hear a gust while it shoves you, not just before",
+        "Streaks at the edges of the screen show which way the wind is blowing",
+        "New Wind effects setting: Off, or 1 to 6 (3 is the default)",
+        "No more wind streaks when the air is calm"
+      ],
+      "pr": 2296,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
