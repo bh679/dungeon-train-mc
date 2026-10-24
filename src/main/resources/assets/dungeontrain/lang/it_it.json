@@ -800,6 +800,7 @@
   "command.dungeontrain.offer_eye.already_given": "Qualcuno ha già preso la tua videocamera da trasmissione.",
   "chat.dungeontrain.live.ended_death": "La tua trasmissione è finita con te.",
   "chat.dungeontrain.live.encoder_died": "La trasmissione si è fermata: il codificatore video ha fallito. Vedi il registro di gioco.",
+  "chat.dungeontrain.live.quality_lowered": "Il tuo upload non riesce a stare al passo, quindi la qualità del tuo stream è stata abbassata per mantenerlo fluido per gli spettatori.",
   "chat.dungeontrain.live.censored": "La videocamera rifiuta quella parola. Avvertimento %s di %s.",
   "chat.dungeontrain.live.censored_book": "La videocamera rifiuta una parola del tuo libro. Avvertimento %s di %s.",
   "chat.dungeontrain.live.burns_moderated": "La videocamera non ha più avvertimenti e brucia via.",

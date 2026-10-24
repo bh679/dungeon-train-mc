@@ -832,6 +832,7 @@
   "command.dungeontrain.offer_eye.already_given": "Ktoś już wziął twoją kamerę transmisyjną.",
   "chat.dungeontrain.live.ended_death": "Twoja transmisja skończyła się razem z tobą.",
   "chat.dungeontrain.live.encoder_died": "Transmisja zatrzymana: enkoder wideo zawiódł. Sprawdź dziennik gry.",
+  "chat.dungeontrain.live.quality_lowered": "Twoje wysyłanie nie nadąża, więc jakość twojego streamu została obniżona, żeby widzowie oglądali go płynnie.",
   "chat.dungeontrain.live.censored": "Kamera odrzuca to słowo. Ostrzeżenie %s z %s.",
   "chat.dungeontrain.live.censored_book": "Kamera odrzuca słowo w twojej książce. Ostrzeżenie %s z %s.",
   "chat.dungeontrain.live.burns_moderated": "Kamera nie ma już ostrzeżeń i spala się.",

@@ -800,6 +800,7 @@
   "command.dungeontrain.offer_eye.already_given": "Quelqu'un a déjà pris ton caméscope de diffusion.",
   "chat.dungeontrain.live.ended_death": "Votre diffusion s'est achevée avec vous.",
   "chat.dungeontrain.live.encoder_died": "La diffusion s'est arrêtée : l'encodeur vidéo a échoué. Voir le journal du jeu.",
+  "chat.dungeontrain.live.quality_lowered": "Ton envoi ne suit pas, la qualité de ton stream a donc été baissée pour qu'il reste fluide pour les spectateurs.",
   "chat.dungeontrain.live.censored": "Le caméscope refuse ce mot. Avertissement %s sur %s.",
   "chat.dungeontrain.live.censored_book": "Le caméscope refuse un mot de ton livre. Avertissement %s sur %s.",
   "chat.dungeontrain.live.burns_moderated": "Le caméscope n'a plus d'avertissement et se consume.",

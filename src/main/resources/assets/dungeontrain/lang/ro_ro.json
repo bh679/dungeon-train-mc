@@ -897,6 +897,7 @@
   "command.dungeontrain.offer_eye.already_given": "Cineva a luat deja camera ta video de transmisie.",
   "chat.dungeontrain.live.ended_death": "Transmisiunea ta s-a încheiat odată cu tine.",
   "chat.dungeontrain.live.encoder_died": "Transmisiunea s-a oprit: codificatorul video a eșuat. Vezi jurnalul jocului.",
+  "chat.dungeontrain.live.quality_lowered": "Încărcarea ta nu ține pasul, așa că a fost redusă calitatea streamului tău ca să rămână fluent pentru spectatori.",
   "chat.dungeontrain.live.censored": "Camera video respinge acel cuvânt. Avertisment %s din %s.",
   "chat.dungeontrain.live.censored_book": "Camera video respinge un cuvânt din cartea ta. Avertisment %s din %s.",
   "chat.dungeontrain.live.burns_moderated": "Camera video nu mai are avertismente și arde complet.",

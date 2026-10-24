@@ -30498,6 +30498,61 @@
       "released_in": null,
       "released_at": null,
       "pr": 2297
+    },
+    {
+      "id": "dimensional-carriage-far-exit-landing",
+      "version": "0.1509.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage exit fix",
+      "summary": "Walking a long way through a dimensional carriage and leaving by a far exit now puts you back inside the right carriage. The train waits for you to land before it moves off.",
+      "highlights": [],
+      "pr": 2269,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "playermob-tv-hats",
+      "version": "0.1510.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "TV heads",
+      "summary": "Some of the players you meet on the train now turn up wearing a TV on their head.",
+      "highlights": [],
+      "pr": 2304,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-adaptive-stream-quality",
+      "version": "0.1510.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Smoother live streams",
+      "summary": "When your upload can't keep up with your Live Eye stream, the stream now lowers its own quality so viewers stop seeing it drop, then raises it again once your connection catches up. Your next stream starts at a quality your connection can carry.",
+      "highlights": [
+        "Live streams adjust their quality to your upload speed",
+        "A chat message tells you when your connection lowered the quality",
+        "Prefer a fixed quality? Turn off adaptiveQuality in the live client config"
+      ],
+      "pr": 2305,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

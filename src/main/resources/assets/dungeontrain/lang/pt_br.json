@@ -800,6 +800,7 @@
   "command.dungeontrain.offer_eye.already_given": "Alguém já ficou com sua filmadora de transmissão.",
   "chat.dungeontrain.live.ended_death": "Sua transmissão terminou com você.",
   "chat.dungeontrain.live.encoder_died": "A transmissão parou: o codificador de vídeo falhou. Veja o registro do jogo.",
+  "chat.dungeontrain.live.quality_lowered": "Seu upload não está dando conta, então a qualidade da sua transmissão foi reduzida para continuar fluida para quem assiste.",
   "chat.dungeontrain.live.censored": "A filmadora rejeita essa palavra. Aviso %s de %s.",
   "chat.dungeontrain.live.censored_book": "A filmadora rejeita uma palavra do seu livro. Aviso %s de %s.",
   "chat.dungeontrain.live.burns_moderated": "A filmadora não tem mais avisos e queima até sumir.",

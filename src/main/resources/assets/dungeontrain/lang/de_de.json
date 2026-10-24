@@ -800,6 +800,7 @@
   "command.dungeontrain.offer_eye.already_given": "Jemand hat deinen Sende-Camcorder schon genommen.",
   "chat.dungeontrain.live.ended_death": "Deine Übertragung endete mit dir.",
   "chat.dungeontrain.live.encoder_died": "Die Übertragung wurde beendet: Der Video-Encoder ist fehlgeschlagen. Siehe Spielprotokoll.",
+  "chat.dungeontrain.live.quality_lowered": "Dein Upload kommt nicht hinterher, daher wurde die Qualität deines Streams gesenkt, damit er für die Zuschauer flüssig bleibt.",
   "chat.dungeontrain.live.censored": "Der Camcorder weist dieses Wort zurück. Verwarnung %s von %s.",
   "chat.dungeontrain.live.censored_book": "Der Camcorder weist ein Wort in deinem Buch zurück. Verwarnung %s von %s.",
   "chat.dungeontrain.live.burns_moderated": "Der Camcorder hat keine Verwarnungen mehr übrig und verbrennt.",

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.live;
 
 import com.mojang.logging.LogUtils;
 import net.mehvahdjukaar.vista.client.web.ffmpeg.FFmpeg;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -12,6 +13,7 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -71,6 +73,7 @@ public final class LiveEncoder implements AutoCloseable {
     private final Thread writer;
     private final int fps;
     private final boolean saveBandwidth;
+    private final int videoKbps;
     private volatile boolean running = true;
     private volatile boolean died;
     private final AtomicLong framesWritten = new AtomicLong();
@@ -81,11 +84,21 @@ public final class LiveEncoder implements AutoCloseable {
      */
     public LiveEncoder(FFmpeg ffmpeg, LiveFrameGrabber grabber, Path dir, int fps, int bitrateKbps, Cadence cadence,
                        int audioPort, boolean saveBandwidth) throws IOException {
+        this(ffmpeg, grabber, dir, fps, effectiveBitrateKbps(bitrateKbps, saveBandwidth), cadence, audioPort, saveBandwidth, null);
+    }
+
+    /**
+     * {@code videoKbps} is sent as it is (the adaptive quality's pick, already below the player's
+     * setting). {@code resume} non-null = carry on the stream another encoder started in {@code dir}.
+     */
+    public LiveEncoder(FFmpeg ffmpeg, LiveFrameGrabber grabber, Path dir, int fps, int videoKbps, Cadence cadence,
+                       int audioPort, boolean saveBandwidth, @Nullable Resume resume) throws IOException {
         this.grabber = grabber;
         this.fps = fps;
         this.saveBandwidth = saveBandwidth;
-        this.process = ffmpeg.runFFmpeg(args(grabber.width(), grabber.height(), fps, bitrateKbps, cadence, dir,
-            audioPort, saveBandwidth));
+        this.videoKbps = videoKbps;
+        this.process = ffmpeg.runFFmpeg(encodeArgs(grabber.width(), grabber.height(), fps, videoKbps, cadence, dir,
+            audioPort, saveBandwidth, resume));
         FfmpegSupport.drain(process.getErrorStream(), "encoder");
         FfmpegSupport.drain(process.getInputStream(), "encoder-out");
         this.writer = new Thread(this::writeLoop, "dt-live-encoder");
@@ -146,7 +159,20 @@ public final class LiveEncoder implements AutoCloseable {
      */
     static String[] args(int w, int h, int fps, int bitrateKbps, Cadence cadence, Path dir, int audioPort,
                          boolean saveBandwidth) {
-        int kbps = effectiveBitrateKbps(bitrateKbps, saveBandwidth);
+        return encodeArgs(w, h, fps, effectiveBitrateKbps(bitrateKbps, saveBandwidth), cadence, dir, audioPort, saveBandwidth, null);
+    }
+
+    /**
+     * Picking up a stream another encoder was writing into the same directory, at a new bitrate: the
+     * playlist is appended to ({@code append_list} reads the old entries, carries on the segment numbers
+     * and marks the join {@code #EXT-X-DISCONTINUITY}), and timestamps start at {@code tsOffsetSeconds},
+     * where the previous encoder's left off, so players and Twitch's copy see one continuous clock.
+     */
+    public record Resume(double tsOffsetSeconds) {}
+
+    /** {@link #args} with the video bitrate {@code kbps} as given, and an optional {@link Resume}. */
+    static String[] encodeArgs(int w, int h, int fps, int kbps, Cadence cadence, Path dir, int audioPort,
+                               boolean saveBandwidth, @Nullable Resume resume) {
         int gop = fps * cadence.keyframeSeconds();
         boolean audio = audioPort > 0;
         List<String> a = new ArrayList<>(List.of("-hide_banner", "-loglevel", "error", "-nostdin"));
@@ -169,11 +195,14 @@ public final class LiveEncoder implements AutoCloseable {
             "-g", String.valueOf(gop), "-keyint_min", String.valueOf(gop), "-sc_threshold", "0",
             "-force_key_frames", "expr:gte(t,n_forced*" + cadence.keyframeSeconds() + ")"));
         if (audio) a.addAll(List.of("-c:a", "aac", "-b:a", AUDIO_KBPS + "k", "-ar", "48000", "-ac", "2"));
+        if (resume != null) {
+            a.addAll(List.of("-output_ts_offset", String.format(Locale.ROOT, "%.3f", Math.max(0, resume.tsOffsetSeconds()))));
+        }
         a.addAll(List.of(
             "-f", "hls", "-hls_time", String.valueOf(cadence.segmentSeconds()), "-hls_list_size", String.valueOf(cadence.listSize()),
             // program_date_time: each segment carries its wall-clock start, so a player can tell how far
             // behind the streamer it is (hls.js playingDate). Every reader ignores the tag otherwise.
-            "-hls_flags", "delete_segments+independent_segments+temp_file+program_date_time",
+            "-hls_flags", "delete_segments+independent_segments+temp_file+program_date_time" + (resume != null ? "+append_list" : ""),
             "-hls_segment_filename", dir.resolve("seg%05d.ts").toString(),
             dir.resolve(LivePlaylist.FILE_NAME).toString()));
         return a.toArray(new String[0]);
@@ -183,6 +212,16 @@ public final class LiveEncoder implements AutoCloseable {
     static int effectiveBitrateKbps(int bitrateKbps, boolean saveBandwidth) {
         if (!saveBandwidth) return bitrateKbps;
         return Math.max(MIN_BITRATE_KBPS, (int) Math.round(bitrateKbps * SAVE_BANDWIDTH_BITRATE_FACTOR));
+    }
+
+    /** The video bitrate this encoder sends, kbit/s. */
+    public int videoKbps() {
+        return videoKbps;
+    }
+
+    /** Seconds of stream this encoder has been fed: where a {@link Resume} after it starts. */
+    public double secondsWritten() {
+        return framesWritten.get() / (double) fps;
     }
 
     /** Whether this encoder runs in save-bandwidth mode; a restart keeps the mode it started in. */

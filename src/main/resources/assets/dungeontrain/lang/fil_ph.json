@@ -768,6 +768,7 @@
   "command.dungeontrain.offer_eye.already_given": "May nakakuha na ng iyong Camcorder ng Broadcast.",
   "chat.dungeontrain.live.ended_death": "Natapos ang brodkast mo kasama mo.",
   "chat.dungeontrain.live.encoder_died": "Huminto ang brodkast: nabigo ang video encoder. Tingnan ang game log.",
+  "chat.dungeontrain.live.quality_lowered": "Hindi makasabay ang upload mo, kaya ibinaba ang kalidad ng stream mo para manatili itong maayos para sa mga nanonood.",
   "chat.dungeontrain.live.censored": "Tinanggihan ng camcorder ang salitang iyon. Babala %s sa %s.",
   "chat.dungeontrain.live.censored_book": "Tinanggihan ng camcorder ang isang salita sa aklat mo. Babala %s sa %s.",
   "chat.dungeontrain.live.burns_moderated": "Wala nang natitirang babala ang camcorder at nasunog ito.",

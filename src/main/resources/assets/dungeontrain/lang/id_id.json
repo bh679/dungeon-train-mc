@@ -768,6 +768,7 @@
   "command.dungeontrain.offer_eye.already_given": "Seseorang sudah mengambil Camcorder Siaran-mu.",
   "chat.dungeontrain.live.ended_death": "Siaranmu berakhir bersamamu.",
   "chat.dungeontrain.live.encoder_died": "Siaran berhenti: encoder video gagal. Lihat log permainan.",
+  "chat.dungeontrain.live.quality_lowered": "Unggahanmu tidak bisa mengimbangi, jadi kualitas stream-mu diturunkan agar tetap lancar bagi penonton.",
   "chat.dungeontrain.live.censored": "Camcorder menolak kata itu. Peringatan %s dari %s.",
   "chat.dungeontrain.live.censored_book": "Camcorder menolak sebuah kata di bukumu. Peringatan %s dari %s.",
   "chat.dungeontrain.live.burns_moderated": "Camcorder sudah tidak punya peringatan lagi dan terbakar habis.",

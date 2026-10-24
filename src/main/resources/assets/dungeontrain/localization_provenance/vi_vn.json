@@ -742,6 +742,7 @@
       "command.dungeontrain.offer_eye.already_given",
       "chat.dungeontrain.live.ended_death",
       "chat.dungeontrain.live.encoder_died",
+      "chat.dungeontrain.live.quality_lowered",
       "chat.dungeontrain.live.censored",
       "chat.dungeontrain.live.censored_book",
       "chat.dungeontrain.live.burns_moderated",

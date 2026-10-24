@@ -768,6 +768,7 @@
   "command.dungeontrain.offer_eye.already_given": "放送カムコーダーはもう誰かが受け取りました。",
   "chat.dungeontrain.live.ended_death": "あなたの放送は、あなたと共に終わった。",
   "chat.dungeontrain.live.encoder_died": "放送が停止した：動画エンコーダーが失敗した。ゲームログを確認のこと。",
+  "chat.dungeontrain.live.quality_lowered": "アップロードが追いつかないため、視聴者にスムーズに届くよう配信の画質を下げました。",
   "chat.dungeontrain.live.censored": "カムコーダーがその言葉を拒みました。警告 %s/%s。",
   "chat.dungeontrain.live.censored_book": "カムコーダーが本の中の言葉を拒みました。警告 %s/%s。",
   "chat.dungeontrain.live.burns_moderated": "カムコーダーの警告はもう残っていない。燃え尽きた。",
