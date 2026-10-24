@@ -64,6 +64,7 @@ label{display:grid;gap:2px;color:var(--muted);font-size:10px;letter-spacing:.06e
 input,textarea,select{font:inherit;font-size:12px;background:transparent;color:var(--fg);border:0;border-bottom:1px solid var(--line);border-radius:0;padding:3px 0;width:100%;box-sizing:border-box}
 input:focus,textarea:focus,select:focus{outline:none;border-bottom-color:var(--gold)}
 textarea{min-height:0;resize:none;overflow:hidden;font-family:var(--body);line-height:1.35}
+textarea.dev,.ct td.dev{opacity:.6;font-size:11px}
 .hint{color:var(--muted);font-size:11px;line-height:1.4;margin:0}
 #inspector>.hint:last-child{white-space:normal}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -430,18 +431,19 @@ function inspector(){const box=document.getElementById("inspector");box.onclick=
   box.innerHTML=`<h2 style="color:${color(p)};display:none"></h2>
   <div class="line" style="gap:6px"><button class="lnk xclose" title="close">×</button><input id="pname" value="${esc(p.name)}" placeholder="name" style="font-family:var(--display);font-size:14px;color:${color(p)};flex:1"><button class="lnk ptable" title="see in table">☰</button><input type="checkbox" id="prev" title="reviewed" style="width:auto;margin:0"${p.reviewed?" checked":""}></div>
   <textarea id="pdesc" placeholder="effect">${esc(p.desc||"")}</textarea>
+  <textarea id="pdev" class="dev" placeholder="dev notes">${esc(p.dev||"")}</textarea>
   <div class="line"><select id="ptier" title="tier (cost 1 / 5 / 10)" style="width:auto"${root?" disabled":""}>${[1,2,3].map(t=>`<option value="${t}"${tierOf(p)===t?" selected":""}>Tier ${t}</option>`).join("")}</select>
   <select id="picon" title="icon" style="width:auto;flex:1">${ICON_NAMES.map(n=>`<option value="${n}"${(p.icon||defaultIcon(p))===n?" selected":""}>${label(n)}</option>`).join("")}</select>
   <select id="pcls"${root?" disabled":""} title="class" style="width:auto;flex:1">${M.classes.map(c=>`<option value="${c.id}"${c.id===p.cls?" selected":""}>${esc(c.name)}</option>`).join("")}</select>
   ${root?"":`<label title="the mod already has a system for this" style="display:flex;align-items:center;gap:4px;text-transform:none;letter-spacing:0;font-size:11px"><input type="checkbox" id="pready" style="width:auto"${isReady(p)?" checked":""}>code</label>`}
   ${root?"":`<button id="pdel" class="danger" title="delete perk">×</button>`}</div>
   <p class="hint">${M.links.filter(l=>l.a===p.id||l.b===p.id).map(l=>byId(l.a===p.id?l.b:l.a)?.name).filter(Boolean).join(" · ")||"not linked"}</p>`;
-  const grow=t=>{t.style.height="auto";t.style.height=Math.max(20,t.scrollHeight)+"px"};const ta=box.querySelector("#pdesc");document.getElementById("aside").classList.remove("empty");grow(ta);requestAnimationFrame(()=>grow(ta));ta.addEventListener("input",()=>grow(ta));
+  const grow=t=>{t.style.height="auto";t.style.height=Math.max(20,t.scrollHeight)+"px"};document.getElementById("aside").classList.remove("empty");box.querySelectorAll("textarea").forEach(ta=>{grow(ta);requestAnimationFrame(()=>grow(ta));ta.addEventListener("input",()=>grow(ta))});
   const bind=(id,f)=>box.querySelector("#"+id).addEventListener("input",e=>{f(e.target);typingKey=p.id+":"+id;save();renderSky();const h=box.querySelector("h2");if(h&&id==="pname")h.textContent=e.target.value});
   box.querySelector("#picon").onchange=e=>{p.icon=e.target.value;save();renderSky()};
   if(!root)box.querySelector("#pready").onchange=e=>{p.ready=e.target.checked;save();renderSky()};
   box.querySelector("#prev").onchange=e=>{p.reviewed=e.target.checked;save();renderSky()};
-  bind("pname",t=>p.name=t.value);bind("pdesc",t=>p.desc=t.value);
+  bind("pname",t=>p.name=t.value);bind("pdesc",t=>p.desc=t.value);bind("pdev",t=>p.dev=t.value);
   if(!root)box.querySelector("#ptier").onchange=e=>{p.tier=+e.target.value;p.cost=TIER_COST[p.tier];delete p.cap;save();renderSky()};
   if(!root){box.querySelector("#pcls").onchange=e=>{p.cls=e.target.value;save();render()};    box.querySelector("#pdel").onclick=()=>{M.perks=M.perks.filter(q=>q.id!==p.id);M.links=M.links.filter(l=>l.a!==p.id&&l.b!==p.id);sel=null;save();render()}}
 }
@@ -469,7 +471,7 @@ document.querySelectorAll(".lnk[data-t]").forEach(b=>b.onclick=()=>{const t=docu
 let showTable=false;const bTable=document.getElementById("bTable");
 function reachable(){const adj=new Map();M.links.forEach(l=>{if(!adj.has(l.a))adj.set(l.a,[]);if(!adj.has(l.b))adj.set(l.b,[]);adj.get(l.a).push(l.b);adj.get(l.b).push(l.a)});const seen=new Set(["root"]);const q=["root"];while(q.length){const x=q.pop();(adj.get(x)||[]).forEach(y=>{if(!seen.has(y)){seen.add(y);q.push(y)}})}return seen}
 function renderTable(){const t=document.getElementById("ptable");t.replaceWith(Object.assign(document.createElement("div"),{id:"ptable",className:"tables"}));const host=document.getElementById("ptable");const live=reachable();const order=M.classes.map(c=>{const ps=M.perks.filter(p=>p.cls===c.id&&live.has(p.id));if(!ps.length)return null;const sx=ps.reduce((a,p)=>a+(p.x-CX),0),sy=ps.reduce((a,p)=>a+(p.y-CY),0);return {c,a:(Math.atan2(sy,sx)+Math.PI/2+2*Math.PI)%(2*Math.PI),ps:ps.sort((u,v)=>Math.hypot(u.x-CX,u.y-CY)-Math.hypot(v.x-CX,v.y-CY))}}).filter(Boolean).sort((u,v)=>u.a-v.a);
-  let h="";order.forEach(o=>{h+=`<div class="card" style="--cc:${o.c.color}"><h3 class="ctitle" style="color:${o.c.color}">${esc(o.c.name)}<span class="cnt">${o.ps.length} perk${o.ps.length===1?"":"s"}</span></h3><table class="ct"><tr><th></th>${showRev?"<th></th>":""}<th>perk</th><th>description</th></tr>`;o.ps.forEach((p,i)=>{h+=`<tr data-row="${p.id}"${sel===p.id?' class="hl"':""}><td class="go"><button class="lnk goto" data-id="${p.id}" title="show on the graph">◎</button></td>${showRev?`<td class="tick">${p.reviewed?"✓":""}</td>`:""}<td class="nm" data-id="${p.id}">${esc(p.name)}</td><td class="ds">${esc(p.desc||"")}</td></tr>`});h+="</table></div>"});host.innerHTML=h;const t2=host;
+  let h="";order.forEach(o=>{h+=`<div class="card" style="--cc:${o.c.color}"><h3 class="ctitle" style="color:${o.c.color}">${esc(o.c.name)}<span class="cnt">${o.ps.length} perk${o.ps.length===1?"":"s"}</span></h3><table class="ct"><tr><th></th>${showRev?"<th></th>":""}<th>perk</th><th>description</th><th>dev notes</th></tr>`;o.ps.forEach((p,i)=>{h+=`<tr data-row="${p.id}"${sel===p.id?' class="hl"':""}><td class="go"><button class="lnk goto" data-id="${p.id}" title="show on the graph">◎</button></td>${showRev?`<td class="tick">${p.reviewed?"✓":""}</td>`:""}<td class="nm" data-id="${p.id}">${esc(p.name)}</td><td class="ds">${esc(p.desc||"")}</td><td class="dev">${esc(p.dev||"")}</td></tr>`});h+="</table></div>"});host.innerHTML=h;const t2=host;
   const go=id=>{sel=id;selLink=null;selCls=null;toggleTable(false);render()};t2.querySelectorAll("td.nm").forEach(td=>td.onclick=()=>go(td.dataset.id));t2.querySelectorAll("button.goto").forEach(b=>b.onclick=e=>{e.stopPropagation();go(b.dataset.id)});
   const hl=t2.querySelector("tr.hl");if(hl)hl.scrollIntoView({block:"center"})}
 function toggleTable(on){showTable=on??!showTable;document.getElementById("tableView").hidden=!showTable;document.querySelector(".sky").hidden=showTable;bTable.textContent=showTable?"✦ graph":"☰ table";bTable.classList.toggle("on",showTable);if(showTable)renderTable()}
