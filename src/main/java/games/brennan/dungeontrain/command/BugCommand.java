@@ -10,7 +10,8 @@ import net.minecraft.commands.Commands;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * The {@code /bug} command: opens the feedback survey jumped straight to the bug-report question
+ * The {@code /bug} command (and its alias {@code /log}, for players who go looking for a way to send
+ * their logs): opens the feedback survey jumped straight to the bug-report question
  * (skipping the emotional feedback questions), for the running player in any game mode. Not
  * op-gated ({@code requires(s -> true)}); player-only, since a screen can only open on a client
  * (the console gets the vanilla "player only" error).
@@ -33,6 +34,11 @@ public final class BugCommand {
         dispatcher.register(
                 Commands.literal("bug")
                         .requires(source -> true) // everyone, any game mode
+                        .executes(BugCommand::run));
+        // A second literal rather than a redirect: a redirect on a childless node never executes.
+        dispatcher.register(
+                Commands.literal("log")
+                        .requires(source -> true)
                         .executes(BugCommand::run));
     }
 

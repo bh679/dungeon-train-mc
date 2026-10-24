@@ -9,6 +9,8 @@ content can put on the train and adds any that are missing:
     sidecars
   * entities saved inside the contents/ and portals/room/ template .nbt files
   * the spawns decided in Java, listed under extra_spawns in mob-photos/categories.json
+  * mobs that blocks spawn (a creaking heart's Creaking, a bee nest's bees), listed under
+    block_spawns there, wherever a sidecar state or a .nbt palette holds that block
 
 Each id is sorted into a collection by mob-photos/categories.json (hostile / animal / skip). An id
 with no category stops the build: add one line there. Existing criteria are never dropped (banked
@@ -117,9 +119,37 @@ def _sidecar_entities(node, out: set[str]) -> None:
             _sidecar_entities(value, out)
 
 
+def _block_id(state: str) -> str:
+    return state.split("[", 1)[0].split("{", 1)[0].strip()
+
+
+def _sidecar_blocks(node, out: set[str]) -> None:
+    if isinstance(node, dict):
+        state = node.get("state")
+        if isinstance(state, str) and ":" in state:
+            out.add(_block_id(state))
+        for value in node.values():
+            _sidecar_blocks(value, out)
+    elif isinstance(node, list):
+        for value in node:
+            _sidecar_blocks(value, out)
+
+
+def _palette_blocks(root: dict) -> set[str]:
+    palettes = [root.get("palette") or []] + list(root.get("palettes") or [])
+    return {s["Name"] for palette in palettes for s in palette
+            if isinstance(s, dict) and isinstance(s.get("Name"), str)}
+
+
+def _block_mobs(blocks: set[str], block_spawns: dict) -> set[str]:
+    return {mob for block in blocks for mob in block_spawns.get(block, [])}
+
+
 def spawnable(categories_doc: dict) -> dict[str, str]:
     """Every entity id the bundled content can spawn -> the first file it was seen in."""
     seen: dict[str, str] = {}
+    block_spawns = {k: v for k, v in categories_doc.get("block_spawns", {}).items()
+                    if not k.startswith("_")}
 
     def note(ids, source: str) -> None:
         for entity in sorted(ids):
@@ -127,15 +157,18 @@ def spawnable(categories_doc: dict) -> dict[str, str]:
 
     for sub in SIDECAR_DIRS:
         for path in sorted((DATA / sub).glob("*.json")):
+            doc = json.loads(path.read_text(encoding="utf-8"))
             found: set[str] = set()
-            _sidecar_entities(json.loads(path.read_text(encoding="utf-8")), found)
-            note(found, str(path.relative_to(ROOT)))
+            _sidecar_entities(doc, found)
+            blocks: set[str] = set()
+            _sidecar_blocks(doc, blocks)
+            note(found | _block_mobs(blocks, block_spawns), str(path.relative_to(ROOT)))
     for sub in NBT_DIRS:
         for path in sorted((DATA / sub).glob("*.nbt")):
             root = read_nbt(path)
             found = {e["nbt"]["id"] for e in root.get("entities") or []
                      if isinstance(e, dict) and isinstance(e.get("nbt"), dict) and "id" in e["nbt"]}
-            note(found, str(path.relative_to(ROOT)))
+            note(found | _block_mobs(_palette_blocks(root), block_spawns), str(path.relative_to(ROOT)))
     for source, ids in categories_doc.get("extra_spawns", {}).items():
         if not source.startswith("_"):
             note(ids, f"{source}.java (extra_spawns)")

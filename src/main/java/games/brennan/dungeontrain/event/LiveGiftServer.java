@@ -68,7 +68,9 @@ public final class LiveGiftServer {
             if (t != null || r == null || !r.ok()) {
                 int status = r == null ? 0 : r.status();
                 LOGGER.info("[DungeonTrain] Live Eye gift {} not redeemed for {} (status {})", giftId, p.getGameProfile().getName(), status);
-                p.sendSystemMessage(Component.translatable(status == 404 || status == 409 ? KEY + "expired" : KEY + "failed")
+                String key = status == 409 && "taken".equals(r.str("error")) ? KEY + "taken"
+                    : status == 404 || status == 409 ? KEY + "expired" : KEY + "failed";
+                p.sendSystemMessage(Component.translatable(key)
                     .withStyle(ChatFormatting.GRAY));
                 return;
             }

@@ -38,6 +38,12 @@ public final class ModCreativeTabs {
     /** Vista's Television item, looked up by id like the rest of DT's Vista content. */
     static final ResourceLocation VISTA_TELEVISION = ResourceLocation.fromNamespaceAndPath("vista", "television");
 
+    /** Exposure's photo frames, looked up by id like {@link #VISTA_TELEVISION}. */
+    static final ResourceLocation EXPOSURE_PHOTOGRAPH_FRAME =
+        ResourceLocation.fromNamespaceAndPath("exposure", "photograph_frame");
+    static final ResourceLocation EXPOSURE_GLASS_PHOTOGRAPH_FRAME =
+        ResourceLocation.fromNamespaceAndPath("exposure", "glass_photograph_frame");
+
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> PREFAB_VARIANTS = TABS.register(
         "prefab_variants",
         () -> CreativeModeTab.builder()
@@ -120,10 +126,12 @@ public final class ModCreativeTabs {
      *   <li>{@link ModBlocks#NARRATIVE_LECTERN_ITEM} — progression-aware
      *       lectern variant (also remains in vanilla FUNCTIONAL_BLOCKS for
      *       discoverability).</li>
+     *   <li>Vanilla bookshelf and chiseled bookshelf.</li>
      *   <li>{@link ModItems#RANDOM_PLAYERPHOTO} — placeholder that substitutes
      *       a community photo from the relay pool when a container rolls.</li>
      *   <li>{@link ModItems#RANDOM_PLAYERPHOTOALBUM} / {@link ModItems#YOUR_PHOTOALBUM} — someone
      *       else's album (read-only, burns on close) and the holder's own album.</li>
+     *   <li>Exposure's photograph frame and glass photograph frame.</li>
      *   <li>Vista's Television ({@link #VISTA_TELEVISION}) — shows the Live Feed by itself.</li>
      * </ul>
      */
@@ -142,15 +150,18 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.RANDOM_GOOD_POTION.get());
                 output.accept(ModItems.RANDOM_BAD_POTION.get());
                 output.accept(ModBlocks.NARRATIVE_LECTERN_ITEM.get());
+                output.accept(Items.BOOKSHELF);
+                output.accept(Items.CHISELED_BOOKSHELF);
                 output.accept(ModItems.LIVE_HEADPIECE.get());
                 // Vista's Television — it tunes itself to the Live Feed (mixin.vista.TVBlockMixin).
-                Item television = BuiltInRegistries.ITEM.get(VISTA_TELEVISION);
-                if (television != Items.AIR) output.accept(television);
+                acceptIfPresent(output, VISTA_TELEVISION);
                 // No Live Feed Cassette or camcorder placeholder: TVs tune themselves, and neither is
                 // ever a player's item (event.UnobtainableLiveItems).
                 output.accept(ModItems.RANDOM_PLAYERPHOTO.get());
                 output.accept(ModItems.RANDOM_PLAYERPHOTOALBUM.get());
                 output.accept(ModItems.YOUR_PHOTOALBUM.get());
+                acceptIfPresent(output, EXPOSURE_PHOTOGRAPH_FRAME);
+                acceptIfPresent(output, EXPOSURE_GLASS_PHOTOGRAPH_FRAME);
                 // The one camera players get — Exposure's own tab is hidden (DisabledModContent).
                 output.accept(games.brennan.dungeontrain.compat.DisposableCamera.create());
             })
@@ -180,6 +191,12 @@ public final class ModCreativeTabs {
     );
 
     private ModCreativeTabs() {}
+
+    /** Add another mod's item by id, skipping it when that mod's item isn't registered. */
+    private static void acceptIfPresent(CreativeModeTab.Output output, ResourceLocation id) {
+        Item item = BuiltInRegistries.ITEM.get(id);
+        if (item != Items.AIR) output.accept(item);
+    }
 
     public static void register(IEventBus modBus) {
         TABS.register(modBus);

@@ -56,6 +56,17 @@ final class DisabledModContentTest {
     }
 
     @Test
+    @DisplayName("JEI extras come from a hidden tab's mod and are never disabled content")
+    void jeiExtraItemsAreHiddenTabItemsDtKeeps() {
+        assertTrue(DisabledModContent.JEI_EXTRA_ITEMS.contains("betternether:cincinnasite_forge"));
+        for (String extra : DisabledModContent.JEI_EXTRA_ITEMS) {
+            ResourceLocation rl = id(extra);
+            assertTrue(DisabledModContent.isBiomeModCreativeTab(id(rl.getNamespace() + ":tab")), extra);
+            assertFalse(DisabledModContent.isDisabledItem(rl, false), extra);
+        }
+    }
+
+    @Test
     @DisplayName("gear-class items in a covered namespace are disabled; vanilla gear is not")
     void gearByClass() {
         assertTrue(DisabledModContent.isDisabledItem(id("betternether:cincinnasite_excavator"), true));
@@ -283,5 +294,14 @@ final class DisabledModContentTest {
         assertFalse(DisabledModContent.isDisabledEnchantment(id("deeperdarker:catalysis")));
         assertFalse(DisabledModContent.isDisabledEnchantment(id("deeperdarker:reverberation")));
         assertTrue(DisabledModContent.isDisabledEnchantment(id("deeperdarker:volume")));
+    }
+
+    @Test
+    @DisplayName("Piglin Proliferation's Buckler is hidden from players but mob-only, so brutes keep it")
+    void bucklerIsMobOnly() {
+        assertTrue(DisabledModContent.isDisabledItem(id("piglinproliferation:buckler"), false));
+        assertTrue(DisabledModContent.isMobOnlyItem(id("piglinproliferation:buckler")));
+        assertFalse(DisabledModContent.isMobOnlyItem(id("exposure:camera")));
+        assertFalse(DisabledModContent.isDisabledItem(id("piglinproliferation:travelers_compass"), false));
     }
 }

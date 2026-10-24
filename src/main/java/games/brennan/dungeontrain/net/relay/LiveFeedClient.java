@@ -137,7 +137,13 @@ public final class LiveFeedClient {
      */
     public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
                            @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
-                           @Nullable Moment moment, @Nullable RestartNotice restart) {
+                           @Nullable Moment moment, @Nullable RestartNotice restart, @Nullable Death death) {
+        public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
+                        @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
+                        @Nullable Moment moment, @Nullable RestartNotice restart) {
+            this(seq, ts, author, uuid, content, source, logRequest, via, poll, moment, restart, null);
+        }
+
         public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
                         @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
                         @Nullable Moment moment) {
@@ -211,6 +217,30 @@ public final class LiveFeedClient {
      * line saying they are back.
      */
     public record RestartNotice(long resumeBy, int countdown, boolean local, boolean resumed) {}
+
+    /**
+     * A TV watcher died while in the room ({@code POST /live/chat/died}): {@code name} who, {@code message}
+     * vanilla's death message as component JSON (null when the relay kept text only), for each reader to
+     * render in their own language. The line's {@code content} is the English fallback.
+     */
+    public record Death(String name, @Nullable String message) {}
+
+    /** Longest death-message JSON kept; the relay caps at the same size. */
+    public static final int MAX_DEATH_MESSAGE = 2048;
+
+    @Nullable
+    static Death parseDeath(JsonObject m) {
+        if (!m.has("death") || !m.get("death").isJsonObject()) return null;
+        JsonObject o = m.getAsJsonObject("death");
+        String name = LiveChatRules.clean(str(o, "name"), LiveChatRules.MAX_AUTHOR);
+        if (name.isBlank()) return null;
+        String message = null;
+        if (o.has("message") && o.get("message").isJsonObject()) {
+            String json = o.get("message").toString();
+            if (json.length() <= MAX_DEATH_MESSAGE) message = json;
+        }
+        return new Death(name, message);
+    }
 
     @Nullable
     static RestartNotice parseRestart(JsonObject m) {
@@ -556,6 +586,21 @@ public final class LiveFeedClient {
     }
 
     /**
+     * This TV watcher died in the room: {@code text} vanilla's death message in English (for the website,
+     * Discord and Twitch), {@code message} the same message as component JSON (null to send text only).
+     * 200 {@code posted}; 409 not_live; 404 from an older relay.
+     */
+    public static CompletableFuture<Result> chatDied(String base, UUID uuid, String name, String text,
+                                                     @Nullable JsonObject message) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid.toString());
+        body.addProperty("name", name);
+        body.addProperty("text", text);
+        if (message != null) body.add("message", message);
+        return post(base, "/live/chat/died", body);
+    }
+
+    /**
      * Share one of the streamer's moments into the stream's chat. {@code token} (the stream's upload
      * token) proves the poster is on air; the relay names them from its claim. {@code png} may be null
      * (no image, or not a photo).
@@ -589,8 +634,15 @@ public final class LiveFeedClient {
         }
     }
 
-    /** The streamer {@code from} offered the viewer {@code target} a Live Eye (the relay's {@code gifts[]}). */
-    public record GiftOffer(long seq, String giftId, String target, String from) {}
+    /**
+     * The streamer {@code from} offered the viewer {@code target} a Live Eye (the relay's {@code gifts[]}).
+     * {@code all}: offered to everyone watching at once ({@code /offereye all}); the first to accept gets it.
+     */
+    public record GiftOffer(long seq, String giftId, String target, String from, boolean all) {
+        public GiftOffer(long seq, String giftId, String target, String from) {
+            this(seq, giftId, target, from, false);
+        }
+    }
 
     /** A chat poll's gift notices; both empty on any failure or from an older relay. */
     public record GiftNotices(List<GiftJoin> joins, List<GiftOffer> gifts) {
@@ -634,7 +686,8 @@ public final class LiveFeedClient {
                     String target = str(o, "target");
                     if (!isGiftId(id) || target.isBlank() || !o.has("seq")) continue;
                     String from = LiveChatRules.clean(str(o, "from"), LiveChatRules.MAX_AUTHOR);
-                    gifts.add(new GiftOffer(o.get("seq").getAsLong(), id, target, from.isBlank() ? "Someone" : from));
+                    boolean all = o.has("all") && o.get("all").isJsonPrimitive() && o.get("all").getAsBoolean();
+                    gifts.add(new GiftOffer(o.get("seq").getAsLong(), id, target, from.isBlank() ? "Someone" : from, all));
                 }
             }
             return new GiftNotices(List.copyOf(joins), List.copyOf(gifts));
@@ -676,6 +729,64 @@ public final class LiveFeedClient {
         return post(base, "/live/gift", body);
     }
 
+    /** A Minecraft player name: the only shape a viewer name may take before it reaches a button or command. */
+    private static final java.util.regex.Pattern PLAYER_NAME = java.util.regex.Pattern.compile("[A-Za-z0-9_]{1,16}");
+
+    /** The most viewer names {@link #parseGiftViewers} keeps. */
+    public static final int MAX_GIFT_VIEWERS = 20;
+
+    /**
+     * The streamer ({@code token}) asks who is watching through a TV and could take the Live Eye
+     * ({@code /offereye}): 200 {@code {viewers:[{name}]}} → {@link #parseGiftViewers}; 403 not on air; 404 from
+     * an older relay.
+     */
+    public static CompletableFuture<Result> giftViewers(String base, String token) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        return post(base, "/live/gift/viewers", body);
+    }
+
+    /**
+     * The streamer ({@code token}) offers the TV viewer {@code name} a Live Eye ({@code /offereye <name>}).
+     * 200 {@code {name}}; 404 {@code not_watching}; 409 {@code already_offered}; 404 with no error from an
+     * older relay. The viewer then sees the same offer as a prompted gift.
+     */
+    public static CompletableFuture<Result> giftOffer(String base, String token, String name) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        body.addProperty("name", name);
+        return post(base, "/live/gift/offer", body);
+    }
+
+    /**
+     * The streamer ({@code token}) offers the Live Eye to every TV viewer who could take it ({@code /offereye all}):
+     * the first to accept gets it. 200 {@code {count}}; 404 {@code not_watching}; 409 {@code already_offered} /
+     * {@code already_given}.
+     */
+    public static CompletableFuture<Result> giftOfferAll(String base, String token) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        body.addProperty("all", true);
+        return post(base, "/live/gift/offer", body);
+    }
+
+    /** A {@link #giftViewers} reply's names, cleaned and capped; empty on any failure. */
+    public static List<String> parseGiftViewers(Result r) {
+        if (!r.ok() || !r.body().has("viewers") || !r.body().get("viewers").isJsonArray()) return List.of();
+        try {
+            List<String> names = new ArrayList<>();
+            for (JsonElement el : r.body().getAsJsonArray("viewers")) {
+                if (!el.isJsonObject()) continue;
+                String name = LiveChatRules.clean(str(el.getAsJsonObject(), "name"), LiveChatRules.MAX_AUTHOR);
+                if (PLAYER_NAME.matcher(name).matches() && !names.contains(name)) names.add(name);
+                if (names.size() >= MAX_GIFT_VIEWERS) break;
+            }
+            return List.copyOf(names);
+        } catch (RuntimeException e) {
+            return List.of();
+        }
+    }
+
     /** The viewer's server redeems {@code giftId} for {@code uuid}: 200 once, only for the gift's viewer. */
     public static CompletableFuture<Result> giftClaim(String base, String giftId, UUID uuid) {
         JsonObject body = new JsonObject();
@@ -707,7 +818,7 @@ public final class LiveFeedClient {
                     Via via = Via.parse(m.has("via") && !m.get("via").isJsonNull() ? m.get("via").getAsString() : null);
                     lines.add(new ChatLine(m.get("seq").getAsLong(), m.has("ts") ? m.get("ts").getAsLong() : 0L,
                         author.isBlank() ? "Someone" : author, uuid, content, source, parseLogRequest(m), via,
-                        LiveTakeoverClient.parsePollLine(m), parseMoment(m), parseRestart(m)));
+                        LiveTakeoverClient.parsePollLine(m), parseMoment(m), parseRestart(m), parseDeath(m)));
                 }
             }
             List<Long> deleted = new ArrayList<>();

@@ -32,4 +32,15 @@ final class ServerLiveStatusTest {
         assertFalse(ServerLiveStatus.someoneElseLive(null, me, false, "Alex", "Dev"), "stale relay answer");
         assertFalse(ServerLiveStatus.someoneElseLive(null, me, false, null, "Dev"), "nobody live");
     }
+
+    @Test
+    @DisplayName("nobody live only when known: no local streamer and a fresh not-live relay answer")
+    void nobodyLive() {
+        long at = 1_000_000L;
+        assertTrue(ServerLiveStatus.nobodyLive(null, false, at, at + 1_000L));
+        assertFalse(ServerLiveStatus.nobodyLive(java.util.UUID.randomUUID(), false, at, at + 1_000L), "a streamer here");
+        assertFalse(ServerLiveStatus.nobodyLive(null, true, at, at + 1_000L), "relay says live");
+        assertFalse(ServerLiveStatus.nobodyLive(null, false, at, at + ServerLiveStatus.STALE_MS), "stale answer");
+        assertFalse(ServerLiveStatus.nobodyLive(null, false, 0L, 1_000L), "never asked");
+    }
 }

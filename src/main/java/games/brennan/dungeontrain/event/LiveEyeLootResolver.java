@@ -87,6 +87,23 @@ public final class LiveEyeLootResolver {
     }
 
     /**
+     * Whether {@code player} could be given a Live Eye right now (no roll: a hand-out, not a loot slot).
+     * Side-effect free, unlike {@link #resolve}; the caller starts the cooldown with {@link #markSeen}
+     * once the eye is actually handed out ({@code LiveEyeTrainHandout}).
+     */
+    public static boolean mayGrant(ServerPlayer player) {
+        return decide(ContentModeMirror.mayLootLiveHeadpiece(player), holdsLiveEye(player), onCooldown(player),
+            false, LiveModeration.isBanned(player.getUUID()), 0f) == Outcome.LIVE_EYE;
+    }
+
+    /** A fresh Live Eye no player has taken yet. */
+    public static ItemStack unclaimedEye() {
+        ItemStack eye = new ItemStack(ModItems.LIVE_HEADPIECE.get());
+        LiveHeadpiecePendingTag.markUnclaimed(eye);
+        return eye;
+    }
+
+    /**
      * {@code player} sees {@code container}: resolve its pending Live Eyes, turn its unclaimed ones into
      * TVs when the player already holds a Live Eye, and start the cooldown if a real one is left. Returns
      * true when a slot changed (the caller marks the block dirty).

@@ -11,7 +11,10 @@
     "effortlessbuilding.EffortlessBuildingUndoManagerMixin",
     "effortlessbuilding.EffortlessBuildingPreviewMirrorMixin"
   ],
-  "client": [],
+  "client": [
+    "effortlessbuilding.EffortlessBuildingClientTickMixin",
+    "effortlessbuilding.EffortlessBuildingClientInterceptMixin"
+  ],
   "server": [],
   "injectors": {
     "defaultRequire": 0

@@ -18,6 +18,15 @@ final class MobEffectOffsetsTest {
     }
 
     @Test
+    @DisplayName("Deeper Darker's room mobs and pot mobs have offsets")
+    void deeperDarkerMobsCovered() {
+        assertEquals(21, MobEffectOffsets.offsetFor("deeperdarker:shriek_worm", false));
+        for (String pot : new String[] {"anger_pot", "fear_pot", "sorrow_pot"}) {
+            assertTrue(MobEffectOffsets.offsetFor("deeperdarker:" + pot, false) > 0, pot + " has no offset");
+        }
+    }
+
+    @Test
     @DisplayName("a mob not in the table starts at level 0")
     void unknownMobIsZero() {
         assertEquals(0, MobEffectOffsets.offsetFor("minecraft:zombie", false));

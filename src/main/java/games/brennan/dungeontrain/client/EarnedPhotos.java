@@ -18,6 +18,7 @@ import games.brennan.dungeontrain.discord.PhotoPaperComposite;
 import java.io.InputStream;
 import java.util.Optional;
 import net.minecraft.advancements.AdvancementProgress;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
@@ -56,9 +57,9 @@ public final class EarnedPhotos {
     private static final int RETRY_TICKS = 20;
 
     /** Where a photo goes: an advancement's own photo ({@code entry} empty), or one entry of its album. */
-    private record Slot(ResourceLocation advancement, String entry) {}
+    record Slot(ResourceLocation advancement, String entry) {}
 
-    private record Pending(String exposureId, ResourceLocation type, int ticksLeft, int nextTry) {}
+    record Pending(String exposureId, ResourceLocation type, int ticksLeft, int nextTry) {}
 
     private static final Map<Slot, Pending> PENDING = new LinkedHashMap<>();
 
@@ -290,6 +291,7 @@ public final class EarnedPhotos {
     public static void onClientTick(ClientTickEvent.Post event) {
         if (PENDING.isEmpty()) return;
         List<Slot> done = new ArrayList<>();
+        Map<Photo, List<Slot>> ready = new LinkedHashMap<>();
         for (Map.Entry<Slot, Pending> e : new ArrayList<>(PENDING.entrySet())) {
             Pending p = e.getValue();
             if (p.ticksLeft() <= 1) {
@@ -301,64 +303,121 @@ public final class EarnedPhotos {
                 PENDING.put(e.getKey(), new Pending(p.exposureId(), p.type(), p.ticksLeft() - 1, p.nextTry() - 1));
                 continue;
             }
-            if (trySave(e.getKey(), p.exposureId(), p.type())) {
-                done.add(e.getKey());
-            } else {
-                PENDING.put(e.getKey(), new Pending(p.exposureId(), p.type(), p.ticksLeft() - 1, RETRY_TICKS));
+            ready.computeIfAbsent(photoOf(p), k -> new ArrayList<>()).add(e.getKey());
+        }
+        for (Map.Entry<Photo, List<Slot>> group : ready.entrySet()) {
+            // One photo may back several advancements at once: it is read and encoded once for all of them.
+            if (tryKeep(group.getKey(), group.getValue())) {
+                done.addAll(group.getValue());
+                continue;
+            }
+            for (Slot slot : group.getValue()) {
+                Pending p = PENDING.get(slot);
+                PENDING.put(slot, new Pending(p.exposureId(), p.type(), p.ticksLeft() - 1, RETRY_TICKS));
             }
         }
         done.forEach(PENDING::remove);
     }
 
+    /** One exposure on one paper: the unit of work, however many slots want it. */
+    record Photo(String exposureId, ResourceLocation type) {}
+
+    /** The photo a pending slot waits for; two slots earned by one shot share it. */
+    static Photo photoOf(Pending pending) {
+        return new Photo(pending.exposureId(), pending.type() == null ? PhotographType.REGULAR.id() : pending.type());
+    }
+
+    /** The pixels read off the render thread, ready to lay on paper and encode anywhere. */
+    private record Picture(int width, int height, int[] argb, Optional<int[]> paper) {}
+
     /**
-     * Try to fetch and keep the image; false while it isn't there yet. The shot reaches the server a
-     * moment after the advancement is earned, so an early ask comes back "not found" — Exposure caches
-     * that answer, so it is cleared before the next ask.
+     * Try to read the image and hand it off to be kept for every slot in {@code slots}; false while it
+     * isn't there yet. The shot reaches the server a moment after the advancement is earned, so an
+     * early ask comes back "not found" — Exposure caches that answer, so it is cleared before the next
+     * ask. Only the read touches Exposure's caches, so only the read runs here, on the render thread;
+     * laying the picture on its paper, encoding the PNG and writing it took a few hundred milliseconds a
+     * frame and now run in the background.
      */
-    private static boolean trySave(Slot slot, String exposureId, ResourceLocation type) {
-        ResourceLocation advancement = slot.advancement();
+    private static boolean tryKeep(Photo photo, List<Slot> slots) {
+        Picture picture;
         try {
-            RequestedPalettedExposure requested = ExposureClient.exposureStore().getOrRequest(exposureId);
-            if (requested.isError()) {
-                ExposureClient.exposureStore().refresh(exposureId);
-                ExposureClient.renderedExposures().clearCacheOf(exposureId);
-                return false;
-            }
-            if (requested.getData().isEmpty()) return false;
-            Frame frame = Frame.create().setIdentifier(ExposureIdentifier.id(exposureId)).toImmutable();
-            RenderableImage image = ExposureClient.renderedExposures().getOrCreate(frame);
-            if (image == RenderableImage.MISSING) {
-                ExposureClient.renderedExposures().clearCacheOf(exposureId);
-                return false;
-            }
-            if (image.isEmpty() || image.width() <= 0 || image.height() <= 0) return false;
-            PhotographStyle style = PhotographStyles.get(new PhotographType(type == null ? PhotographType.REGULAR.id() : type));
-            RenderableImage styled = style.process(image);
-            int w = styled.width(), h = styled.height();
-            int[] argb = new int[w * h];
-            for (int y = 0; y < h; y++) {
-                for (int x = 0; x < w; x++) argb[y * w + x] = styled.getPixelARGB(x, y) | 0xFF000000;
-            }
-            Optional<int[]> paper = paper(style.paperTexture());
-            if (paper.isPresent()) {
-                PhotoPaperComposite.Composite print = PhotoPaperComposite.compose(paper.get(), argb, w, h);
+            picture = read(photo);
+        } catch (RuntimeException ex) {
+            LOGGER.warn("[DungeonTrain] Couldn't read the photo {} yet: {}", photo.exposureId(), ex.toString());
+            return false;
+        }
+        if (picture == null) return false;
+        List<Slot> copy = List.copyOf(slots);
+        Util.backgroundExecutor().execute(() -> keepInBackground(photo, picture, copy));
+        return true;
+    }
+
+    /** The styled pixels and paper for {@code photo}, or {@code null} while Exposure has no image yet. */
+    private static Picture read(Photo photo) {
+        String exposureId = photo.exposureId();
+        RequestedPalettedExposure requested = ExposureClient.exposureStore().getOrRequest(exposureId);
+        if (requested.isError()) {
+            ExposureClient.exposureStore().refresh(exposureId);
+            ExposureClient.renderedExposures().clearCacheOf(exposureId);
+            return null;
+        }
+        if (requested.getData().isEmpty()) return null;
+        Frame frame = Frame.create().setIdentifier(ExposureIdentifier.id(exposureId)).toImmutable();
+        RenderableImage image = ExposureClient.renderedExposures().getOrCreate(frame);
+        if (image == RenderableImage.MISSING) {
+            ExposureClient.renderedExposures().clearCacheOf(exposureId);
+            return null;
+        }
+        if (image.isEmpty() || image.width() <= 0 || image.height() <= 0) return null;
+        ResourceLocation type = photo.type();
+        PhotographStyle style = PhotographStyles.get(new PhotographType(type == null ? PhotographType.REGULAR.id() : type));
+        RenderableImage styled = style.process(image);
+        int w = styled.width(), h = styled.height();
+        int[] argb = new int[w * h];
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) argb[y * w + x] = styled.getPixelARGB(x, y) | 0xFF000000;
+        }
+        return new Picture(w, h, argb, paper(style.paperTexture()));
+    }
+
+    /** Off the render thread: lay the picture on its paper, encode it once, write it for every slot. */
+    private static void keepInBackground(Photo photo, Picture picture, List<Slot> slots) {
+        Minecraft mc = Minecraft.getInstance();
+        try {
+            int w = picture.width(), h = picture.height();
+            int[] argb = picture.argb();
+            if (picture.paper().isPresent()) {
+                PhotoPaperComposite.Composite print = PhotoPaperComposite.compose(picture.paper().get(), argb, w, h);
                 w = print.width();
                 h = print.height();
                 argb = print.argb();
             }
+            byte[] png = PhotoPngCodec.encodeArgb(w, h, argb);
+            List<Slot> written = new ArrayList<>(slots.size());
+            for (Slot slot : slots) {
+                Path target = slot.entry().isEmpty() ? file(slot.advancement()) : entryFile(slot.advancement(), slot.entry());
+                if (target == null) continue;
+                Files.createDirectories(target.getParent());
+                Files.write(target, png);
+                written.add(slot);
+            }
+            int width = w, height = h;
+            mc.execute(() -> noteKept(photo.exposureId(), width, height, written));
+        } catch (IOException | RuntimeException ex) {
+            LOGGER.warn("[DungeonTrain] Couldn't keep the photo {} for {}: {}", photo.exposureId(), slots, ex.toString());
+        }
+    }
+
+    /** Back on the client thread: the listings and thumbnails learn about each file written. */
+    private static void noteKept(String exposureId, int w, int h, List<Slot> written) {
+        for (Slot slot : written) {
+            ResourceLocation advancement = slot.advancement();
             Path target = slot.entry().isEmpty() ? file(advancement) : entryFile(advancement, slot.entry());
-            if (target == null) return true;
-            Files.createDirectories(target.getParent());
-            Files.write(target, PhotoPngCodec.encodeArgb(w, h, argb));
             if (slot.entry().isEmpty()) kept().add(fileName(advancement));
             else ALBUMS.remove(albumOf(advancement));
             EarnedPhotoThumbnails.forget(target);
             LOGGER.info("[DungeonTrain] Kept photo {} ({}x{}) for {}{}", exposureId, w, h, advancement,
                     slot.entry().isEmpty() ? "" : " [" + slot.entry() + "]");
-            return true;
-        } catch (IOException | RuntimeException ex) {
-            LOGGER.warn("[DungeonTrain] Couldn't keep the photo for {} yet: {}", advancement, ex.toString());
-            return false;
         }
     }
 

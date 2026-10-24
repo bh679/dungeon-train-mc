@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.wind;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.Trains;
@@ -46,6 +47,9 @@ import org.joml.primitives.AABBdc;
  * carriage blocks on every side ({@link TrainExposure#enclosed}) saves you. A flatbed, a coupling pad, an open
  * roof or standing in a doorway all leave you freezing, and a tunnel does not help: the End has no wind to hide
  * from, and no warmth to find outside four walls.</p>
+ *
+ * <p>No frost in a dimensional carriage (portal twin space): it is somewhere else entirely, so a player there
+ * thaws at vanilla's pace.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class EndFrostbite {
@@ -142,6 +146,7 @@ public final class EndFrostbite {
         if (!(player.level() instanceof ServerLevel level) || level.dimension() != Level.OVERWORLD) return;
         if (player.isSpectator() || player.isCreative() || !player.isAlive()) return;
         hurtIfVanillaWont(player);
+        if (PortalTwinSpace.isInside(level, player.getBlockX(), player.getY())) return;
         int x = (int) Math.floor(player.getX());
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
         int fx = frostX(cycle, x);

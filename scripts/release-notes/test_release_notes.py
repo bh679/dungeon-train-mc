@@ -555,6 +555,185 @@ def test_mark_leaves_already_released_alone() -> None:
     assert entries["new"]["released_in"] == "v0.290.0"
 
 
+def _entry(entry_id: str, version: str = "0.291.0", released_in: str | None = None) -> dict:
+    return {"id": entry_id, "version": version, "type": "feat", "title": f"T {entry_id}",
+            "summary": "S.", "highlights": [], "date": "2026-06-10",
+            "released": released_in is not None, "released_in": released_in,
+            "released_at": "2026-06-01T00:00:00Z" if released_in else None}
+
+
+def write_release_ledger(ws: str, entries: list[dict]) -> str:
+    path = os.path.join(ws, "release-changelog.json")
+    with open(path, "w") as f:
+        json.dump({"entries": entries}, f)
+    return path
+
+
+def test_mark_release_ledger_skips_entries_merged_after_cut() -> None:
+    ws = make_workspace()
+    shipped = [_entry("old", "0.290.0", "v0.290.0"), _entry("a"), _entry("b")]
+    ledger = write_release_ledger(ws, shipped)
+    # main moved on: "late" merged after the cut and shares the same next-release version.
+    write_changelog(ws, {"entries": [*shipped, _entry("late")]})
+    r = run(MARK, ws, "--released-in", "v0.291.0", "--release-ledger", ledger)
+    assert r.returncode == 0, r.stderr
+    assert "count=2" in r.stdout
+    entries = {e["id"]: e for e in read_changelog(ws)["entries"]}
+    assert entries["a"]["released_in"] == entries["b"]["released_in"] == "v0.291.0"
+    assert entries["late"]["released"] is False and entries["late"]["released_in"] is None
+    assert entries["old"]["released_in"] == "v0.290.0"
+
+
+def test_mark_release_ledger_rerun_is_noop() -> None:
+    ws = make_workspace()
+    ledger = write_release_ledger(ws, [_entry("a")])
+    # Already marked by hand (e.g. a fix-up PR) with its own stamp.
+    write_changelog(ws, {"entries": [_entry("a", released_in="v0.291.0"), _entry("late")]})
+    before = read_changelog(ws)
+    r = run(MARK, ws, "--released-in", "v0.291.0", "--release-ledger", ledger)
+    assert r.returncode == 0, r.stderr
+    assert "changed=false" in r.stdout
+    assert read_changelog(ws) == before
+
+
+def test_mark_release_ledger_warns_on_missing_id() -> None:
+    ws = make_workspace()
+    ledger = write_release_ledger(ws, [_entry("a"), _entry("gone")])
+    write_changelog(ws, {"entries": [_entry("a")]})
+    r = run(MARK, ws, "--released-in", "v0.291.0", "--release-ledger", ledger)
+    assert r.returncode == 0, r.stderr
+    assert "count=1" in r.stdout
+    assert "'gone'" in r.stderr and "::warning::" in r.stderr
+
+
+def test_mark_release_ledger_unreadable_fails_without_writing() -> None:
+    ws = make_workspace()
+    write_changelog(ws, {"entries": [_entry("a")]})
+    before = read_changelog(ws)
+    missing = run(MARK, ws, "--released-in", "v0.291.0", "--release-ledger", os.path.join(ws, "nope.json"))
+    assert missing.returncode != 0 and "::error::" in missing.stderr
+    bad = os.path.join(ws, "bad.json")
+    with open(bad, "w") as f:
+        f.write("{not json")
+    broken = run(MARK, ws, "--released-in", "v0.291.0", "--release-ledger", bad)
+    assert broken.returncode != 0 and "::error::" in broken.stderr
+    assert read_changelog(ws) == before
+
+
+def test_mark_released_is_immutable_and_scoped() -> None:
+    entries = [_entry("a"), _entry("b"), _entry("c", released_in="v0.290.0")]
+    snapshot = json.loads(json.dumps(entries))
+    out, count = changelog_io.mark_released(entries, {"a", "c"}, "v0.291.0", "2026-06-11T00:00:00Z")
+    assert count == 1
+    assert entries == snapshot  # input untouched
+    assert out[0]["released_in"] == "v0.291.0" and out[0] is not entries[0]
+    assert out[1] is entries[1] and out[2] is entries[2]
+    all_out, all_count = changelog_io.mark_released(entries, None, "v0.291.0", "x")
+    assert all_count == 2 and all_out[1]["released"] is True
+
+
+# ---------------------------------------------------------------------------
+# mark-released-and-push.sh (git race, against a scratch bare repo)
+# ---------------------------------------------------------------------------
+
+MARK_PUSH = os.path.join(HERE, "mark-released-and-push.sh")
+
+# On the first push, a "parallel merge" lands on main (a new unreleased entry, which
+# edits the same changelog.json hunk) before receive-pack takes the ref lock, so the
+# push is rejected exactly like main moving mid-release.
+_RACE_HOOK = """#!/usr/bin/env bash
+set -e
+origin=$(cd "$GIT_DIR" && pwd)
+[ -e "$origin/raced" ] && exit 0
+touch "$origin/raced"
+unset GIT_DIR GIT_QUARANTINE_PATH GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+tmp=$(mktemp -d)
+git clone -q "$origin" "$tmp/c"
+cd "$tmp/c"
+python3 - <<'PY'
+import json
+p = ".github/release-notes/changelog.json"
+d = json.load(open(p))
+d["entries"].append({"id": "late", "version": "0.291.0", "type": "feat", "title": "Late",
+    "summary": "S.", "highlights": [], "date": "2026-06-10",
+    "released": False, "released_in": None, "released_at": None})
+json.dump(d, open(p, "w"), indent=2)
+PY
+git -c user.name=t -c user.email=t@t commit -qam "feat: late merge"
+git push -q origin HEAD:main
+"""
+
+
+def _git(cwd: str, *args: str) -> str:
+    return subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *args], cwd=cwd,
+                          check=True, capture_output=True, text=True).stdout.strip()
+
+
+def _race_repo(race: bool) -> tuple[str, str, str]:
+    """(bare origin, release checkout, release sha) with entries a, b unreleased."""
+    root = tempfile.mkdtemp(prefix="mark-push-test-")
+    origin = os.path.join(root, "origin.git")
+    _git(root, "init", "-q", "--bare", "-b", "main", origin)
+    seed = os.path.join(root, "seed")
+    _git(root, "clone", "-q", origin, seed)
+    os.makedirs(os.path.join(seed, "scripts/release-notes"))
+    os.makedirs(os.path.join(seed, ".github/release-notes"))
+    for name in ("mark-released.py", "changelog_io.py"):
+        with open(os.path.join(HERE, name)) as src, open(os.path.join(seed, "scripts/release-notes", name), "w") as dst:
+            dst.write(src.read())
+    write_changelog(seed, {"entries": [_entry("old", "0.290.0", "v0.290.0"), _entry("a"), _entry("b")]})
+    _git(seed, "add", ".")
+    _git(seed, "commit", "-qm", "seed")
+    _git(seed, "push", "-q", "origin", "HEAD:main")
+    if race:
+        hook = os.path.join(origin, "hooks", "pre-receive")
+        with open(hook, "w") as f:
+            f.write(_RACE_HOOK)
+        os.chmod(hook, 0o755)
+    work = os.path.join(root, "work")
+    _git(root, "clone", "-q", origin, work)
+    return origin, work, _git(work, "rev-parse", "HEAD")
+
+
+def _run_mark_push(work: str, sha: str) -> subprocess.CompletedProcess:
+    env = {**os.environ, "MARK_BACKOFF_BASE": "0", "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+           "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"}
+    env.pop("GITHUB_OUTPUT", None)
+    env.pop("CHANGELOG_FILE", None)
+    return subprocess.run(["bash", MARK_PUSH, "v0.291.0", sha], cwd=work, env=env,
+                          capture_output=True, text=True)
+
+
+def _origin_entries(origin: str) -> dict:
+    raw = _git(origin, "show", "main:.github/release-notes/changelog.json")
+    return {e["id"]: e for e in json.loads(raw)["entries"]}
+
+
+def test_mark_push_retries_from_fresh_main_after_race() -> None:
+    origin, work, sha = _race_repo(race=True)
+    r = _run_mark_push(work, sha)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "attempt 2" in r.stdout, r.stdout
+    entries = _origin_entries(origin)
+    assert entries["a"]["released_in"] == entries["b"]["released_in"] == "v0.291.0"
+    assert entries["late"]["released"] is False  # merged after the cut: still unreleased
+    assert entries["old"]["released_in"] == "v0.290.0"
+    log = _git(origin, "log", "--format=%s", "main")
+    assert log.splitlines()[:2] == ["chore(release-notes): mark v0.291.0 released [skip ci]", "feat: late merge"]
+    # Checkout is left on the pushed commit, with the stamps later steps read.
+    assert _git(work, "rev-parse", "HEAD") == _git(origin, "rev-parse", "main")
+
+
+def test_mark_push_noop_when_already_marked() -> None:
+    origin, work, sha = _race_repo(race=False)
+    assert _run_mark_push(work, sha).returncode == 0
+    head = _git(origin, "rev-parse", "main")
+    r = _run_mark_push(work, sha)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "nothing to commit" in r.stdout
+    assert _git(origin, "rev-parse", "main") == head
+
+
 # ---------------------------------------------------------------------------
 # End-to-end + schema
 # ---------------------------------------------------------------------------
@@ -833,6 +1012,13 @@ def main() -> int:
         test_mark_flips_and_stamps,
         test_mark_noop_when_nothing_unreleased,
         test_mark_leaves_already_released_alone,
+        test_mark_release_ledger_skips_entries_merged_after_cut,
+        test_mark_release_ledger_rerun_is_noop,
+        test_mark_release_ledger_warns_on_missing_id,
+        test_mark_release_ledger_unreadable_fails_without_writing,
+        test_mark_released_is_immutable_and_scoped,
+        test_mark_push_retries_from_fresh_main_after_race,
+        test_mark_push_noop_when_already_marked,
         test_end_to_end_append_render_mark_render,
         test_produced_and_shipped_changelog_match_schema,
     ]

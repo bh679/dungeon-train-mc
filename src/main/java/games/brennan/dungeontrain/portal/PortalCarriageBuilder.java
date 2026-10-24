@@ -2258,6 +2258,34 @@ public final class PortalCarriageBuilder {
     }
 
     /**
+     * Lay copy {@code tile} of a tiled room back as a player left it ({@link PortalRoomMemory}).
+     *
+     * <p>{@link #stampRoomFromBlob} for a copy, made through the copy's own masks: a copy on the
+     * corridor row stands around the twin corridors, and the snapshot captured their cells too, so an
+     * unclipped stamp would lay a stale corridor over the live one. Like that path it rolls no loot
+     * and spawns no mobs — what stands in the copy is what its last visitor left.</p>
+     */
+    public static void stampTileFromBlob(ServerLevel level, BlockPos origin, Vec3i size,
+                                         PortalRoomBlob blob, PortalCorridorMask clearMask,
+                                         PortalCorridorMask writeMask,
+                                         java.util.function.Predicate<BlockPos> keepFluid,
+                                         int pairKey, PortalRoomTiling.Tile tile) {
+        CarriageStampGuard.run(() -> {
+            clearRoomBox(level, origin, size, clearMask, /*relight*/ true);
+            clearIntruders(level, origin, size);
+            plugFluidsAround(level, origin, size, keepFluid);
+            StructureTemplate template = games.brennan.dungeontrain.train.CarriageSnapshotTemplate.toTemplate(
+                blob.snapshot(), level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BLOCK));
+            if (!template.getSize().equals(size)) {
+                warnSizeMismatch("<remembered copy>", size, template.getSize());
+            }
+            CarriagePlacer.stampTemplateAt(level, origin, template, clipTo(origin, size, writeMask),
+                /*relight*/ true, boxOf(origin, size), TemplateDecor.Rule.ROOM);
+            PortalRoomMobs.markDecor(level, origin, size, pairKey, tile, 0);
+        });
+    }
+
+    /**
      * Stamp a box from a template the caller already holds, rather than from the one on disk.
      *
      * <p>What the editor's resize uses. {@link #stampRoomAt} re-reads the <b>saved</b> room, which is

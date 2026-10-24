@@ -217,6 +217,7 @@ public final class BoardingProgressEvents {
                 }
                 accumulateBoardedDistance(p, !glidingOutside.contains(uuid));
                 ChallengeMelonSpawner.tick(level, carriages, p);
+                LiveEyeTrainHandout.tick(level, carriages, p);
                 sampleBoardedBiome(level, p);
             }
         }

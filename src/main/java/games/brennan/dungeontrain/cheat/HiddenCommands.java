@@ -35,13 +35,13 @@ public final class HiddenCommands {
 
     /**
      * Roots pruned from the suggestion tree. DT's player-facing server commands, Dungeon Backup's
-     * root and DT's aliases of it, Discord Presence's {@code /feedback} ({@code /bug} is the one
-     * door), and every client-only command DT registers. All stay runnable.
+     * root and DT's aliases of it, Discord Presence's {@code /feedback} and DT's {@code /log} alias
+     * ({@code /bug} is the one door), and every client-only command DT registers. All stay runnable.
      */
     public static final Set<String> HIDDEN_ROOTS = Set.of(
         // server, open to everyone
         "fixaisconfig", "fixconfig", "customcontent", "liveappeal", "reportcarriage", "dtrebuild",
-        "dtbackup", "dtrestore", "dungeonbackup", "feedback",
+        "dtbackup", "dtrestore", "dungeonbackup", "feedback", "log",
         // client-only
         "streamer", "twitch", "discord", "dungeontrain-options", "dungeontrain-rewards",
         "framerate-throttle", "new-world",

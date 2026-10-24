@@ -649,6 +649,11 @@ dependencies {
     // (`coreapi/ModInfo.API_*_VERSION` in its jar).
     compileOnly "maven.modrinth:distanthorizonsapi:${distant_horizons_api_version}"
 
+    // Just Enough Items — COMPILE ONLY, never on any run classpath. JEI is an opt-in modpack
+    // companion; compat/jei/DungeonTrainJeiPlugin is the only DT class naming it, and JEI alone
+    // loads it (annotation scan), so it is never linked without JEI installed.
+    compileOnly "maven.modrinth:jei:${jei_version}"
+
     // Fast Paintings + Moonlight — REQUIRED third-party deps (see gradle.properties). Not bundled:
     // the launchers install them from the (required) relations like Sable and the siblings. On the
     // dev classpath so runClient/runServer stamp block paintings; DT references the block only by
@@ -695,6 +700,10 @@ dependencies {
     // Deeper Darker — REQUIRED third-party dep (see gradle.properties). The Deeper Dark pass copies chunks from
     // its Otherside dimension; DT names its level, biomes and structures by registry id only.
     implementation "maven.modrinth:deeperdarker:${deeperdarker_version}"
+
+    // Piglin Proliferation — REQUIRED third-party dep (see gradle.properties). Its piglins stand in carriages;
+    // DT names its entities and items by registry id only.
+    implementation "maven.modrinth:piglin-proliferation:${piglinproliferation_version}"
 
     // Exposure + its Polaroid add-on — REQUIRED third-party deps (see gradle.properties). DT compiles
     // against both: compat/DisposableCamera* uses their camera, frame and photograph classes.
@@ -1046,6 +1055,8 @@ tasks.register('generateModMetadata', ProcessResources) {
         platform_min_version              : platform_min_version,
         // Deeper Darker — floor only.
         deeperdarker_min_version          : deeperdarker_min_version,
+        // Piglin Proliferation — floor only.
+        piglinproliferation_min_version   : piglinproliferation_min_version,
         // Exposure + its Polaroid add-on — floors only.
         exposure_min_version              : exposure_min_version,
         exposurepolaroid_min_version      : exposurepolaroid_min_version,

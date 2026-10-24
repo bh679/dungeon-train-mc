@@ -29637,9 +29637,9 @@
       "highlights": [],
       "pr": 2242,
       "date": "2026-10-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
     },
     {
       "id": "editor-empty-blocks-setting",
@@ -29654,6 +29654,720 @@
       "highlights": [],
       "pr": 2244,
       "date": "2026-10-22",
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
+    },
+    {
+      "id": "narrative-tab-shelves-frames",
+      "version": "0.1461.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "More in the Narrative tab",
+      "summary": "The Narrative creative tab now has bookshelves, chiseled bookshelves and both photo frames, so you can decorate your story spots without leaving the tab.",
+      "highlights": [],
+      "pr": 2246,
+      "date": "2026-10-22",
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
+    },
+    {
+      "id": "editor-markers-inside-view",
+      "version": "0.1462.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Stepping inside editor empty markers",
+      "summary": "Inside one of the editor's see-through empty markers you now see clearly instead of a dark screen, and jumping drops you back in rather than onto its top.",
+      "highlights": [],
+      "pr": 2247,
+      "date": "2026-10-22",
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
+    },
+    {
+      "id": "enderman-train-teleport",
+      "version": "0.1463.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Endermen can teleport onto the train",
+      "summary": "Endermen no longer drop to the ground under the train when they teleport over it. Look at one from the roof or from inside a carriage and it can now land right beside you.",
+      "highlights": [],
+      "pr": 2248,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
+    },
+    {
+      "id": "own-book-boost-confirm",
+      "version": "0.1464.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "books",
+        "ui"
+      ],
+      "title": "Boosting your own book asks first",
+      "summary": "Boosting your own book costs 10 Book Boosts, and someone else's costs 1. Clicking the star on your own book now asks before it spends them, so you can't use 10 by accident. Tick Don't show this again to skip the question next time.",
+      "highlights": [],
+      "pr": 2249,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
+    },
+    {
+      "id": "dirt-carriage-variety",
+      "version": "0.1465.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "More dirt carriages",
+      "summary": "New dirt carriage variants.",
+      "highlights": [],
+      "pr": 2250,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
+    },
+    {
+      "id": "photo-fix",
+      "version": "0.1466.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Photo fix",
+      "summary": "Photo fix.",
+      "highlights": [],
+      "pr": 2253,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
+    },
+    {
+      "id": "bug-fixing-2251",
+      "version": "0.1467.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Bug fixing",
+      "summary": "Bug fixing.",
+      "highlights": [],
+      "pr": 2251,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
+    },
+    {
+      "id": "mob-buff-offsets-rederive",
+      "version": "0.1468.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "balance"
+      ],
+      "title": "Mob buff timing fix",
+      "summary": "Some of the newer mobs were picking up difficulty buffs from the very start of the run. Every mob now waits until the point where it first starts showing up on the train before its buffs kick in.",
+      "highlights": [],
+      "pr": 2256,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
+    },
+    {
+      "id": "dt-only-advancement-cards",
+      "version": "0.1468.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Quieter advancement pop-ups",
+      "summary": "Only Dungeon Train's own advancements pop up a card now. Minecraft's and other mods' advancements still count and still show in chat, just without the card.",
+      "highlights": [
+        "Want them back? Options > Dungeon Train > Other advancement cards"
+      ],
+      "pr": 2254,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
+    },
+    {
+      "id": "slash-log-command",
+      "version": "0.1470.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "/log sends a bug report",
+      "summary": "Typing /log now opens the bug report, the same as /bug, so you can send your logs whichever one you remember. Using it never puts your run into Free Play.",
+      "highlights": [],
+      "pr": 2257,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
+    },
+    {
+      "id": "jei-missing-forge",
+      "version": "0.1470.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Recipe viewer fix",
+      "summary": "A forge you can build was missing from JEI. It now shows up there with its recipe.",
+      "highlights": [],
+      "pr": 2258,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
+    },
+    {
+      "id": "challenges-single-player-only",
+      "version": "0.1471.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "multiplayer",
+        "advancements"
+      ],
+      "title": "Challenges are single-player only",
+      "summary": "Challenges can now only be earned when playing alone. In multiplayer, or once your world is shared with friends, they can't be unlocked.",
+      "highlights": [
+        "In multiplayer the Challenges tab fades the challenges you haven't earned, and hovering one tells you why.",
+        "Challenges you already earned are kept and stay lit."
+      ],
+      "pr": 2259,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1471.0",
+      "released_at": "2026-10-23T07:39:17Z"
+    },
+    {
+      "id": "dimensional-carriage-shelter",
+      "version": "0.1472.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage fix",
+      "summary": "Dimensional carriages now properly shut out the world you left behind.",
+      "highlights": [],
+      "pr": 2255,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
+    },
+    {
+      "id": "photo-keep-off-thread",
+      "version": "0.1473.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Photo fix",
+      "summary": "Taking a picture no longer stutters the game. The copy the train keeps of each photo is now made in the background instead of freezing a frame.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2252,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
+    },
+    {
+      "id": "photo-wildlife-count-fix",
+      "version": "0.1474.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "advancements"
+      ],
+      "title": "Photo fix",
+      "summary": "More of the creatures you photograph now count toward your wildlife photos.",
+      "highlights": [],
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
+    },
+    {
+      "id": "camera-hints",
+      "version": "0.1474.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Camera hints",
+      "summary": "Some photos now let you know when your timing was a little off.",
+      "highlights": [],
+      "pr": 2263,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
+    },
+    {
+      "id": "allay-room-cows-update",
+      "version": "0.1476.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "New carriages",
+      "summary": "A new carriage can now turn up on the train, and an old favourite has been rebuilt.",
+      "highlights": [
+        "New carriage",
+        "Rebuilt carriage"
+      ],
+      "pr": 2260,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
+    },
+    {
+      "id": "advancement-photos-keep-pause",
+      "version": "0.1477.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements",
+        "ui"
+      ],
+      "title": "Advancement photos keep the game paused",
+      "summary": "Opening an advancement's photos from the advancements screen no longer lets the train and music carry on behind them in single-player.",
+      "highlights": [],
+      "pr": 2261,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
+    },
+    {
+      "id": "freeplay-confirm-world-settings",
+      "version": "0.1479.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Free Play always asks first",
+      "summary": "Turning on cheats, switching the world to Creative or Spectator, or changing the difficulty from a world settings screen (like Open to LAN or Essential's world menu) now asks you first. Nothing changes until you confirm, so your run can't slip into Free Play by surprise.",
+      "highlights": [],
+      "pr": 2265,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1481.0",
+      "released_at": "2026-10-23T10:21:36Z"
+    },
+    {
+      "id": "support-tooling-2268",
+      "version": "0.1481.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Support tooling",
+      "summary": "Better tools behind the scenes for helping players when something goes wrong on our end.",
+      "highlights": [],
+      "pr": 2268,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1481.0",
+      "released_at": "2026-10-23T10:21:36Z"
+    },
+    {
+      "id": "backup-includes-ender-chest",
+      "version": "0.1482.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Backup fix",
+      "summary": "Fixed some of your data being left out of automatic backups.",
+      "highlights": [],
+      "pr": 2270,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1485.0",
+      "released_at": "2026-10-24T02:45:00Z"
+    },
+    {
+      "id": "release-notes-no-repeats",
+      "version": "0.1482.0",
+      "type": "ci",
+      "tags": [
+        "internal"
+      ],
+      "title": "Update notes stay accurate",
+      "summary": "Each update's notes now list only what's new in it, even when other changes land while the update is being published.",
+      "highlights": [],
+      "pr": 2271,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1485.0",
+      "released_at": "2026-10-24T02:45:00Z"
+    },
+    {
+      "id": "world-wide-free-play",
+      "version": "0.1484.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "multiplayer"
+      ],
+      "title": "Free Play tweak",
+      "summary": "Free Play works a little differently on shared worlds.",
+      "highlights": [],
+      "pr": 2272,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1485.0",
+      "released_at": "2026-10-24T02:45:00Z"
+    },
+    {
+      "id": "echest-kept-joining-cheats-world",
+      "version": "0.1486.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Ender Chest fix",
+      "summary": "Joining a world that has cheats on no longer empties your survival Ender Chest. Your legit chest stays safe and comes back the next time you play a run without cheats.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1486.0",
+      "released_at": "2026-10-24T03:07:42Z"
+    },
+    {
+      "id": "resume-hold-skips-server-stalls",
+      "version": "0.1487.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance"
+      ],
+      "title": "Smoother recovery from lag spikes",
+      "summary": "After a sudden lag spike, the game no longer wakes up a long stretch of the train at once, so the hitch passes quicker instead of getting worse. Pausing and resuming still keeps your train safe.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2277,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1490.0",
+      "released_at": "2026-10-24T04:26:07Z"
+    },
+    {
+      "id": "echo-fix-wider-band",
+      "version": "0.1487.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "mobs"
+      ],
+      "title": "Echo fix",
+      "summary": "Echoes of other players turn up more often again on quiet stretches of track.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1490.0",
+      "released_at": "2026-10-24T04:26:07Z"
+    },
+    {
+      "id": "stall-watchdog-short-stalls",
+      "version": "0.1487.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "internal"
+      ],
+      "title": "Better lag reports",
+      "summary": "Short lag spikes now leave a clue in the game log, so the ones you report can be tracked down and fixed.",
+      "highlights": [],
+      "pr": 2274,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1490.0",
+      "released_at": "2026-10-24T04:26:07Z"
+    },
+    {
+      "id": "live-eye-finds",
+      "version": "0.1488.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Live Eye finds",
+      "summary": "Live Eye finds.",
+      "highlights": [],
+      "pr": 2278,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1490.0",
+      "released_at": "2026-10-24T04:26:07Z"
+    },
+    {
+      "id": "advancement-fix-later-journey-timing",
+      "version": "0.1491.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "One of the later journey advancements no longer unlocks earlier than it should.",
+      "highlights": [],
+      "pr": 2280,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1494.0",
+      "released_at": "2026-10-24T05:27:50Z"
+    },
+    {
+      "id": "streamer-more-info",
+      "version": "0.1491.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Know your streamer",
+      "summary": "Type /streamer -more in Live chat to see when the streamer first played Dungeon Train, which version they started on, and how many hours they have played.",
+      "highlights": [
+        "Works from the game, the website and Discord (/streamer more:True)"
+      ],
+      "pr": 2279,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1494.0",
+      "released_at": "2026-10-24T05:27:50Z"
+    },
+    {
+      "id": "zh-cn-proofread-laobenyuan",
+      "version": "0.1493.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations"
+      ],
+      "title": "Chinese translation polish",
+      "summary": "\u8001\u672c\u9858 proofread the Simplified Chinese translation, rewording over 600 lines across menus, the death screen, advancements, options, the editor and several books so they read more naturally. Thank you, \u8001\u672c\u9858!",
+      "highlights": [
+        "Over 600 menu and message lines reworded",
+        "Smoother wording in 14 books"
+      ],
+      "pr": 2283,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1494.0",
+      "released_at": "2026-10-24T05:27:50Z"
+    },
+    {
+      "id": "dimensional-carriage-copies-remembered",
+      "version": "0.1494.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train",
+        "loot"
+      ],
+      "title": "Dimensional carriage fix",
+      "summary": "Every room inside a dimensional carriage now stays as you left it. Walk away or step back onto the train, and what you mined or looted is still gone when you return.",
+      "highlights": [],
+      "pr": 2282,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1494.0",
+      "released_at": "2026-10-24T05:27:50Z"
+    },
+    {
+      "id": "live-chat-tv-watcher-death",
+      "version": "0.1495.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "The stream hears when a watcher falls",
+      "summary": "Die while wearing a TV and watching someone's stream, and the stream's chat is told how it happened. Everyone in the room reads it, in their own language.",
+      "highlights": [
+        "Shows up in the stream's chat on Discord, Twitch, the website and in game"
+      ],
+      "pr": 2281,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "dp-consent-toggle-labels",
+      "version": "0.1496.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations"
+      ],
+      "title": "Consent screen switch labels translated",
+      "summary": "The ON and OFF labels on the connect-to-the-internet card now show in your language instead of English. Chinese wording by \u8001\u672c\u9858.",
+      "highlights": [],
+      "pr": 2284,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "player-mobs-proper-bridge-blocks",
+      "version": "0.1497.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Player Mobs build with proper blocks",
+      "summary": "Player Mobs climbing back onto the train no longer build their steps out of beds, doors, torches or chests, so you won't find half beds left beside the track. They now only use solid full blocks.",
+      "highlights": [],
+      "pr": 2285,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "sibling-zh-cn-text",
+      "version": "0.1498.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations"
+      ],
+      "title": "Chinese text for backpacks and backups",
+      "summary": "Edible Backpacks and Dungeon Backup now show in Simplified Chinese. Chinese by \u8001\u672c\u9858.",
+      "highlights": [],
+      "pr": 2287,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "nether-piglin-company",
+      "version": "0.1498.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "mobs"
+      ],
+      "title": "New Faces in the Nether",
+      "summary": "The Nether\u2019s piglins aren\u2019t travelling alone any more. New faces have joined them on the train, each with their own way of doing things. Some come prepared with more than a weapon. Some would rather trade. Some look after their own.",
+      "highlights": [
+        "New piglin carriages in the Nether",
+        "Some brutes hit much harder. Mind the edge.",
+        "Something new to photograph"
+      ],
+      "pr": 2288,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z",
+      "major": true,
+      "notable": true,
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-piglins-have-new-company.jpg",
+      "description": "The Nether\u2019s piglins aren\u2019t travelling alone any more. New faces have joined them on the train, each with their own way of doing things. Some come prepared with more than a weapon. Some would rather trade. Some look after their own."
+    },
+    {
+      "id": "nether-piglin-steady",
+      "version": "0.1500.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Piglin fix",
+      "summary": "Piglins on the train now keep their composure all the way through the Nether.",
+      "highlights": [],
+      "pr": 2289,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "offer-live-eye-command",
+      "version": "0.1500.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Pass the Live Eye to any viewer",
+      "summary": "While you're live with the Live Eye, type /offereye to see who is watching through a TV and hand the stream to any of them, or offer it to everyone at once and let the first to accept take it.",
+      "highlights": [
+        "/offereye lists the viewers who can take your Live Eye, each with an Offer button",
+        "Pick All to offer it to everyone watching. Whoever accepts first gets it",
+        "/offereye <name> offers it straight to one viewer",
+        "If someone beats you to it, you're told someone else accepted first"
+      ],
+      "pr": 2286,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "enchantment-fix-echoes",
+      "version": "0.1502.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "loot"
+      ],
+      "title": "Enchantment fix",
+      "summary": "Fixed an enchantment not behaving the same on echoes as it does on players.",
+      "highlights": [],
+      "date": "2026-10-24",
       "released": false,
       "released_in": null,
       "released_at": null

@@ -309,6 +309,18 @@
       "conditions": {
         "subject": "entity:deeperdarker:stalker"
       }
+    },
+    "minecraft:creaking": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:creaking"
+      }
+    },
+    "piglinproliferation:piglin_alchemist": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:piglinproliferation:piglin_alchemist"
+      }
     }
   },
   "requirements": [
@@ -458,6 +470,12 @@
     ],
     [
       "deeperdarker:stalker"
+    ],
+    [
+      "minecraft:creaking"
+    ],
+    [
+      "piglinproliferation:piglin_alchemist"
     ]
   ]
 }

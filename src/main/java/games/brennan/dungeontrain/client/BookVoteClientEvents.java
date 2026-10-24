@@ -229,14 +229,17 @@ public final class BookVoteClientEvents {
         if (!onVotePage()) {
             reportArmed = false; // turning off the page abandons a half-made report
             BookBoostControl.beginFrame();
+            BookBoostConfirm.close();
             return;
         }
         adoptOwnStateIfItArrived();
         GuiGraphics gfx = event.getGuiGraphics();
         Font font = Minecraft.getInstance().font;
         int left = bookLeft();
-        int mouseX = event.getMouseX();
-        int mouseY = event.getMouseY();
+        // While the own-book confirmation is up nothing under it is live, so nothing under it lights.
+        boolean confirming = BookBoostConfirm.isOpen();
+        int mouseX = confirming ? Integer.MIN_VALUE : event.getMouseX();
+        int mouseY = confirming ? Integer.MIN_VALUE : event.getMouseY();
 
         // Warm leather dim over the page — visibly NOT the author's parchment.
         gfx.fill(left + DIM_X1, bookTop() + DIM_Y1, left + DIM_X2, bookTop() + DIM_Y2, DIM_COLOR);
@@ -289,6 +292,7 @@ public final class BookVoteClientEvents {
         renderStar(gfx, font, mouseX, mouseY);
 
         renderAction(gfx, font, centerX, mouseX, mouseY);
+        BookBoostConfirm.render(gfx, font, screen.width, screen.height, event.getMouseX(), event.getMouseY());
     }
 
     /**
@@ -494,6 +498,12 @@ public final class BookVoteClientEvents {
         if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
         int mx = (int) event.getMouseX();
         int my = (int) event.getMouseY();
+        // The own-book confirmation, while it is up, takes every click: nothing under it is live.
+        if (BookBoostConfirm.isOpen()) {
+            event.setCanceled(true);
+            if (BookBoostConfirm.click(Minecraft.getInstance().font, mx, my)) clickSound();
+            return;
+        }
         // The star: a boost on somebody else's book, a Priority Book on your own. The book stays open.
         if (BookBoostControl.click(mx, my, moderation.isOwn(), bookType, bookId)) {
             event.setCanceled(true);
@@ -531,6 +541,17 @@ public final class BookVoteClientEvents {
         } else {
             reportArmed = false;
         }
+    }
+
+    /**
+     * Keys while the own-book confirmation is up: all of them go to it, Esc included, which would
+     * otherwise close the book behind it. Pre, so the book never sees them.
+     */
+    @SubscribeEvent
+    public static void onKeyPressedPre(ScreenEvent.KeyPressed.Pre event) {
+        if (!active || event.getScreen() != screen || !BookBoostConfirm.isOpen()) return;
+        event.setCanceled(true);
+        BookBoostConfirm.key(event.getKeyCode());
     }
 
     /** Y/N from ANY page — instant commit, no need to visit the vote page first. */

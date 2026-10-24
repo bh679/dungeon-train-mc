@@ -172,6 +172,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue DEVELOPER_POPUP_SHOWN_BEFORE;
     public static final ModConfigSpec.BooleanValue DEVELOPER_POPUP_OPTED_OUT;
     public static final ModConfigSpec.BooleanValue FREE_PLAY_CONFIRM_OPTED_OUT;
+    public static final ModConfigSpec.BooleanValue OWN_BOOK_BOOST_CONFIRM_OPTED_OUT;
     public static final ModConfigSpec.BooleanValue DEV_CONSENT_GRANTED;
     public static final ModConfigSpec.DoubleValue DEV_CONSENT_GRANT_SESSION;
     public static final ModConfigSpec.DoubleValue DEV_CONSENT_LAST_MSG_TO_DEV;
@@ -322,6 +323,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue DEV_HUD;
     /** Only Dungeon Train's tabs show on the advancements screen — see {@link #isHideOtherAdvancementTabs()}. */
     public static final ModConfigSpec.BooleanValue HIDE_OTHER_ADVANCEMENT_TABS;
+    /** Only advancements in Dungeon Train's tabs pop a card — see {@link #isHideOtherAdvancementCards()}. */
+    public static final ModConfigSpec.BooleanValue HIDE_OTHER_ADVANCEMENT_CARDS;
 
     /**
      * Where each of the editor's three author-facing menus draws — see {@link EditorMenuSpace}.
@@ -401,6 +404,7 @@ public final class ClientDisplayConfig {
         DEVELOPER_POPUP_SHOWN_BEFORE = pair.getLeft().developerPopupShownBefore;
         DEVELOPER_POPUP_OPTED_OUT = pair.getLeft().developerPopupOptedOut;
         FREE_PLAY_CONFIRM_OPTED_OUT = pair.getLeft().freePlayConfirmOptedOut;
+        OWN_BOOK_BOOST_CONFIRM_OPTED_OUT = pair.getLeft().ownBookBoostConfirmOptedOut;
         DEV_CONSENT_GRANTED = pair.getLeft().devConsentGranted;
         DEV_CONSENT_GRANT_SESSION = pair.getLeft().devConsentGrantSession;
         DEV_CONSENT_LAST_MSG_TO_DEV = pair.getLeft().devConsentLastMsgToDev;
@@ -470,6 +474,7 @@ public final class ClientDisplayConfig {
         LOW_MEMORY_NOTICE_CHAT = pair.getLeft().lowMemoryNoticeChat;
         DEV_HUD = pair.getLeft().devHud;
         HIDE_OTHER_ADVANCEMENT_TABS = pair.getLeft().hideOtherAdvancementTabs;
+        HIDE_OTHER_ADVANCEMENT_CARDS = pair.getLeft().hideOtherAdvancementCards;
         COMMAND_MENU_SPACE = pair.getLeft().commandMenuSpace;
         TEMPLATE_BLOCKS_MENU_SPACE = pair.getLeft().templateBlocksMenuSpace;
         CONTAINER_CONTENTS_MENU_SPACE = pair.getLeft().containerContentsMenuSpace;
@@ -505,6 +510,12 @@ public final class ClientDisplayConfig {
         b.push("freePlayConfirm");
         ModConfigSpec.BooleanValue freePlayConfirmOptedOut = b
                 .comment("Whether the player has ticked \"Don't show this again\" on the Free Play confirmation. When true, switching to creative/spectator or running a cheat command starts Free Play immediately, with no confirm screen. Reset by editing this back to false.")
+                .define("optedOut", false);
+        b.pop();
+
+        b.push("ownBookBoostConfirm");
+        ModConfigSpec.BooleanValue ownBookBoostConfirmOptedOut = b
+                .comment("Whether the player has ticked \"Don't show this again\" on the confirmation shown before boosting their own book (which costs 10 Book Boosts). When true, the star spends at once. Reset by editing this back to false.")
                 .define("optedOut", false);
         b.pop();
 
@@ -930,6 +941,11 @@ public final class ClientDisplayConfig {
                          "every other mod's are hidden; their advancements are still earned and still pop up.",
                          "Toggle in-game via Options > Dungeon Train. On by default.")
                 .define("hideOtherTabs", true);
+        ModConfigSpec.BooleanValue hideOtherAdvancementCards = b
+                .comment("Only advancements in Dungeon Train's tabs pop up a card when earned. Minecraft's own and",
+                         "every other mod's are still earned and still announced in chat, just without the card.",
+                         "Toggle in-game via Options > Dungeon Train. On by default.")
+                .define("hideOtherCards", true);
         b.pop();
 
         b.push("run");
@@ -945,7 +961,7 @@ public final class ClientDisplayConfig {
         b.pop();
 
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
-                devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
+                ownBookBoostConfirmOptedOut, devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
@@ -964,7 +980,7 @@ public final class ClientDisplayConfig {
                 politicalFilter, contentMode, devChatEnabled, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, bookCopyButton, protectOwnPets, updateNoticeChat,
-                lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs,
+                lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs, hideOtherAdvancementCards,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
                 editorScreenTheme, placeholderCollision,
@@ -1081,6 +1097,19 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         FREE_PLAY_CONFIRM_OPTED_OUT.set(value);
         FREE_PLAY_CONFIRM_OPTED_OUT.save();
+    }
+
+    // ----- Own-book boost confirmation opt-out (see client/BookBoostConfirm) -----
+
+    /** Has the player ticked "Don't show this again" on the own-book boost confirmation? */
+    public static boolean isOwnBookBoostConfirmOptedOut() {
+        return isLoaded() && OWN_BOOK_BOOST_CONFIRM_OPTED_OUT.get();
+    }
+
+    public static void setOwnBookBoostConfirmOptedOut(boolean value) {
+        if (!isLoaded()) return;
+        OWN_BOOK_BOOST_CONFIRM_OPTED_OUT.set(value);
+        OWN_BOOK_BOOST_CONFIRM_OPTED_OUT.save();
     }
 
     // ----- Config deviation prompt (see client/ConfigDeviationPromptHandler) -----
@@ -1433,6 +1462,20 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         HIDE_OTHER_ADVANCEMENT_TABS.set(value);
         HIDE_OTHER_ADVANCEMENT_TABS.save();
+    }
+
+    /**
+     * Whether advancements outside Dungeon Train's tabs skip the earned card (the chat line stays). On
+     * by default, pre-load included. Read on every earn — see {@code AdvancementTabGate#shouldSuppressCard}.
+     */
+    public static boolean isHideOtherAdvancementCards() {
+        return !isLoaded() || HIDE_OTHER_ADVANCEMENT_CARDS.get();
+    }
+
+    public static void setHideOtherAdvancementCards(boolean value) {
+        if (!isLoaded()) return;
+        HIDE_OTHER_ADVANCEMENT_CARDS.set(value);
+        HIDE_OTHER_ADVANCEMENT_CARDS.save();
     }
 
     public static boolean isLowMemoryNoticeChatEnabled() {
@@ -2219,6 +2262,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue developerPopupShownBefore,
             ModConfigSpec.BooleanValue developerPopupOptedOut,
             ModConfigSpec.BooleanValue freePlayConfirmOptedOut,
+            ModConfigSpec.BooleanValue ownBookBoostConfirmOptedOut,
             ModConfigSpec.BooleanValue devConsentGranted,
             ModConfigSpec.DoubleValue devConsentGrantSession,
             ModConfigSpec.DoubleValue devConsentLastMsgToDev,
@@ -2285,6 +2329,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue lowMemoryNoticeChat,
             ModConfigSpec.BooleanValue devHud,
             ModConfigSpec.BooleanValue hideOtherAdvancementTabs,
+            ModConfigSpec.BooleanValue hideOtherAdvancementCards,
             ModConfigSpec.EnumValue<EditorMenuSpace> commandMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,

@@ -17,8 +17,10 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -44,19 +46,31 @@ class MobPhotoCategoriesTest {
         return JsonParser.parseString(Files.readString(path)).getAsJsonObject();
     }
 
+    private static JsonObject doc() throws IOException {
+        return json(RepoPaths.root().resolve("scripts/advancements/mob-photos/categories.json"));
+    }
+
     private static JsonObject categories() throws IOException {
-        return json(RepoPaths.root().resolve("scripts/advancements/mob-photos/categories.json"))
-                .getAsJsonObject("categories");
+        return doc().getAsJsonObject("categories");
+    }
+
+    /** Minecraft-namespace ids VanillaBackport adds: not in 1.21.1's registry, so not checkable here. */
+    private static Set<String> backported() throws IOException {
+        Set<String> out = new HashSet<>();
+        doc().getAsJsonObject("backported").getAsJsonArray("ids").forEach(e -> out.add(e.getAsString()));
+        return out;
     }
 
     @Test
     @DisplayName("vanilla hostile/animal calls match the game's mob category")
     void vanillaMatchesGame() throws IOException {
         List<String> wrong = new ArrayList<>();
+        Set<String> backported = backported();
         for (Map.Entry<String, JsonElement> e : categories().entrySet()) {
             ResourceLocation id = ResourceLocation.parse(e.getKey());
             String category = e.getValue().getAsString();
             if (!"minecraft".equals(id.getNamespace()) || "skip".equals(category)) continue;
+            if (backported.contains(e.getKey())) continue;
             EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getOptional(id).orElse(null);
             if (type == null) {
                 wrong.add(id + " is not a vanilla entity type");
@@ -83,5 +97,19 @@ class MobPhotoCategoriesTest {
                         .getAsJsonObject("conditions").get("subject").getAsString());
             }
         }
+    }
+
+    @Test
+    @DisplayName("every mob a block spawns has a category")
+    void blockSpawnsHaveCategories() throws IOException {
+        JsonObject categories = categories();
+        List<String> missing = new ArrayList<>();
+        for (Map.Entry<String, JsonElement> block : doc().getAsJsonObject("block_spawns").entrySet()) {
+            if (block.getKey().startsWith("_")) continue;
+            for (JsonElement mob : block.getValue().getAsJsonArray()) {
+                if (!categories.has(mob.getAsString())) missing.add(mob.getAsString() + " (from " + block.getKey() + ")");
+            }
+        }
+        assertTrue(missing.isEmpty(), "no category: " + String.join(", ", missing));
     }
 }

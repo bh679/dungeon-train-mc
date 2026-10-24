@@ -5,6 +5,8 @@
   "discordpresence.consent.footnote": "Измените в любой момент в настройках или командой /chatconnect on.",
   "discordpresence.consent.enable": "Включить",
   "discordpresence.consent.not_now": "Не сейчас",
+  "discordpresence.consent.toggle_on": "Вкл.",
+  "discordpresence.consent.toggle_off": "Выкл.",
 
   "discordpresence.survey.give_feedback": "Оставить отзыв",
   "discordpresence.survey.title": "Отзыв",

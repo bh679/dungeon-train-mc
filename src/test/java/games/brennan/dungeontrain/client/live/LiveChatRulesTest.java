@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.live;
 
+import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Source;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Via;
@@ -171,5 +172,33 @@ class LiveChatRulesTest {
         assertFalse(LiveChatRules.isVoidWhisper(Component.translatable(LiveChatRules.CONNECTED_KEY)));
         assertFalse(LiveChatRules.isVoidWhisper(Component.literal("Steve whispers into the void, will anyone answer?")));
         assertFalse(LiveChatRules.isVoidWhisper(null));
+    }
+
+    @Test
+    @DisplayName("showDeath: not on the dying player's own client, nor for a player in their world")
+    void showDeath() {
+        LiveFeedClient.Death steve = new LiveFeedClient.Death("Steve", null);
+        assertTrue(LiveChatRules.showDeath(steve, "Me", Set.of("Alex")));
+        assertFalse(LiveChatRules.showDeath(steve, "steve", Set.of()), "my own death");
+        assertFalse(LiveChatRules.showDeath(steve, "Me", Set.of("Alex", "STEVE")), "a world-mate saw vanilla's message");
+    }
+
+    @Test
+    @DisplayName("deathFallback: the relay's English suffix comes off so the line isn't doubled")
+    void deathFallback() {
+        assertEquals("Steve was slain by Zombie", LiveChatRules.deathFallback("Steve was slain by Zombie while watching the stream"));
+        assertEquals("Steve died", LiveChatRules.deathFallback("Steve died"));
+        assertEquals("", LiveChatRules.deathFallback(null));
+    }
+
+    @Test
+    @DisplayName("deathLine: [Live] then the key with the cause as a plain cleaned literal")
+    void deathLine() {
+        Component line = LiveChatRules.deathLine("chat.dungeontrain.live.viewer_died", "Steve \u00a7kwas slain");
+        Component body = line.getSiblings().get(1);
+        net.minecraft.network.chat.contents.TranslatableContents t =
+            (net.minecraft.network.chat.contents.TranslatableContents) body.getContents();
+        assertEquals("chat.dungeontrain.live.viewer_died", t.getKey());
+        assertEquals("Steve was slain", ((Component) t.getArgs()[0]).getString());
     }
 }

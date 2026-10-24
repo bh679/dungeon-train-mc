@@ -10,6 +10,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
@@ -51,19 +52,28 @@ public class VariantPlaceholderBlock extends Block {
      * The author's {@link PlaceholderCollision} setting. Half solid is solid only under an entity
      * whose feet are on or above the top face and that isn't sneaking to drop — the
      * {@code ScaffoldingBlock} test — so walking in from the side, or standing inside one, passes
-     * through. Client config, read the way {@code SkyboxBlock} reads its switch: in single player
-     * that is the server's answer too, and a dedicated server keeps the default. The outline
-     * ({@code getShape}) stays a full cube in every mode.
+     * through. Once an entity is inside one it stays air for that entity until it has stepped out
+     * sideways ({@link PlaceholderPassThrough}), so jumping inside a marker falls back into it
+     * rather than landing on top. Client config, read the way {@code SkyboxBlock} reads its
+     * switch: in single player that is the server's answer too, and a dedicated server keeps the
+     * default. The outline ({@code getShape}) stays a full cube in every mode.
      */
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return switch (ClientDisplayConfig.getPlaceholderCollision()) {
             case SOLID -> Shapes.block();
             case AIR -> Shapes.empty();
-            case HALF_SOLID -> context.isAbove(Shapes.block(), pos, true) && !context.isDescending()
-                ? Shapes.block()
-                : Shapes.empty();
+            case HALF_SOLID -> isHalfSolidFloor(pos, context) ? Shapes.block() : Shapes.empty();
         };
+    }
+
+    /** Half solid: a floor to whoever is on top and not sneaking, unless they are passing through it. */
+    private static boolean isHalfSolidFloor(BlockPos pos, CollisionContext context) {
+        if (context instanceof EntityCollisionContext entityContext && entityContext.getEntity() != null
+                && PlaceholderPassThrough.isPassingThrough(entityContext.getEntity(), pos)) {
+            return false;
+        }
+        return context.isAbove(Shapes.block(), pos, true) && !context.isDescending();
     }
 
     /** Adjacent placeholders share no inner faces — the glass rule — so a run of them reads as one slab of ghost. */

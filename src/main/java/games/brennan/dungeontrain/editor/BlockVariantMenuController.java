@@ -556,18 +556,7 @@ public final class BlockVariantMenuController {
                         actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.spawn_egg_no_id"), ChatFormatting.YELLOW);
                         return;
                     }
-                    CompoundTag mobNbt = null;
-                    net.minecraft.world.item.component.CustomData beData =
-                        held.get(net.minecraft.core.component.DataComponents.BLOCK_ENTITY_DATA);
-                    if (beData != null && !beData.isEmpty()) {
-                        CompoundTag raw = beData.copyTag();
-                        if (raw.contains("EntityTag", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
-                            mobNbt = raw.getCompound("EntityTag").copy();
-                        } else if (!raw.isEmpty()) {
-                            mobNbt = raw;
-                        }
-                        if (mobNbt != null) mobNbt.remove("id");
-                    }
+                    CompoundTag mobNbt = SpawnEggMobNbt.read(held);
                     if (wasEmpty) {
                         // Mob added to an empty cell — seed with the empty-
                         // placeholder sentinel so the picker can still roll
