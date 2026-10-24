@@ -5,6 +5,8 @@
   "discordpresence.consent.footnote": "随时可在设置中或使用 /chatconnect on 更改。",
   "discordpresence.consent.enable": "启用",
   "discordpresence.consent.not_now": "暂时不用",
+  "discordpresence.consent.toggle_on": "开",
+  "discordpresence.consent.toggle_off": "关",
   "discordpresence.survey.give_feedback": "提供反馈",
   "discordpresence.survey.title": "反馈",
   "discordpresence.survey.comment": "留言",

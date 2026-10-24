@@ -5,6 +5,8 @@
   "discordpresence.consent.footnote": "เปลี่ยนได้ทุกเมื่อในการตั้งค่าหรือด้วย /chatconnect on",
   "discordpresence.consent.enable": "เปิดใช้งาน",
   "discordpresence.consent.not_now": "ยังไม่ใช่ตอนนี้",
+  "discordpresence.consent.toggle_on": "เปิด",
+  "discordpresence.consent.toggle_off": "ปิด",
   "discordpresence.survey.give_feedback": "ให้ความคิดเห็น",
   "discordpresence.survey.title": "ความคิดเห็น",
   "discordpresence.survey.comment": "ความคิดเห็น",

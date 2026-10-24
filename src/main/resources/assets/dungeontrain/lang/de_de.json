@@ -724,6 +724,7 @@
   "chat.dungeontrain.live.preparing": "Die Übertragungsausrüstung wird vorbereitet...",
   "chat.dungeontrain.live.no_ffmpeg": "Keine Übertragung: Die Videowiedergabe von Vista ist auf diesem Client ausgeschaltet.",
   "chat.dungeontrain.live.ffmpeg_timeout": "Keine Übertragung: Die Videowerkzeuge werden noch heruntergeladen. Setze den Sende-Camcorder erneut auf, sobald die Fernseher von Vista etwas abspielen.",
+  "chat.dungeontrain.live.viewer_died": "%s, während er den Stream schaute",
   "chat.dungeontrain.live.sound_off_unapproved": "Stream-Sound ist aus: nicht zugelassene Mods sind geladen.",
   "chat.dungeontrain.live.unreachable": "Keine Übertragung: Der Feed war nicht erreichbar.",
   "chat.dungeontrain.live.disabled": "Livestreaming ist deaktiviert, schalte es ein unter %s",

@@ -692,6 +692,7 @@
   "chat.dungeontrain.live.preparing": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "a7dd9cca6483d8ac"},
   "chat.dungeontrain.live.no_ffmpeg": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "f28cf5e9273f2d9f"},
   "chat.dungeontrain.live.ffmpeg_timeout": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "b7c3f22a1b7d9695"},
+  "chat.dungeontrain.live.viewer_died": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "fc66147d35d0d78a"},
   "chat.dungeontrain.live.sound_off_unapproved": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "6615fc7d4765fa02"},
   "chat.dungeontrain.live.unreachable": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "291b82b75bc9d1be"},
   "chat.dungeontrain.live.disabled": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0c83c6ee83af4576"},

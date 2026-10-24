@@ -761,6 +761,7 @@
   "chat.dungeontrain.live.preparing": "Подготовка оборудования для трансляции...",
   "chat.dungeontrain.live.no_ffmpeg": "Нет трансляции: воспроизведение видео Vista отключено на этом клиенте.",
   "chat.dungeontrain.live.ffmpeg_timeout": "Нет трансляции: видеоинструменты ещё загружаются. Наденьте вещательную видеокамеру снова, когда телевизоры Vista начнут показывать.",
+  "chat.dungeontrain.live.viewer_died": "%s во время просмотра трансляции",
   "chat.dungeontrain.live.sound_off_unapproved": "Звук трансляции выключен: загружены неодобренные моды.",
   "chat.dungeontrain.live.unreachable": "Нет трансляции: не удалось связаться с потоком.",
   "chat.dungeontrain.live.disabled": "Прямая трансляция выключена, включи её в %s",

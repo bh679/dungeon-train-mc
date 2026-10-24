@@ -724,6 +724,7 @@
   "chat.dungeontrain.live.preparing": "Preparazione dell'attrezzatura di trasmissione...",
   "chat.dungeontrain.live.no_ffmpeg": "Nessuna trasmissione: la riproduzione video di Vista è disattivata su questo client.",
   "chat.dungeontrain.live.ffmpeg_timeout": "Nessuna trasmissione: gli strumenti video sono ancora in download. Rimetti la videocamera da trasmissione quando i televisori di Vista riproducono.",
+  "chat.dungeontrain.live.viewer_died": "%s mentre guardava la diretta",
   "chat.dungeontrain.live.sound_off_unapproved": "L'audio della diretta è disattivato: sono caricate mod non approvate.",
   "chat.dungeontrain.live.unreachable": "Nessuna trasmissione: impossibile raggiungere il flusso.",
   "chat.dungeontrain.live.disabled": "La diretta streaming è disattivata, attivala in %s",

@@ -692,6 +692,7 @@
   "chat.dungeontrain.live.preparing": "Menyiapkan peralatan siaran...",
   "chat.dungeontrain.live.no_ffmpeg": "Tidak ada siaran: pemutaran video Vista dimatikan di klien ini.",
   "chat.dungeontrain.live.ffmpeg_timeout": "Tidak ada siaran: alat video masih diunduh. Pakai lagi Camcorder Siaran setelah TV Vista bisa memutar video.",
+  "chat.dungeontrain.live.viewer_died": "%s saat menonton siaran",
   "chat.dungeontrain.live.sound_off_unapproved": "Suara siaran mati: ada mod yang belum disetujui dimuat.",
   "chat.dungeontrain.live.unreachable": "Tidak ada siaran: feed tidak dapat dijangkau.",
   "chat.dungeontrain.live.disabled": "Siaran langsung dimatikan, nyalakan di %s",
