@@ -313,7 +313,7 @@ let testMode=false,TS={};try{TS=JSON.parse(localStorage.getItem("dt-perk-test")|
 const tsOf=p=>p.id==="root"?{s:"active",pts:1}:(TS[p.id]||{s:"locked",pts:0});
 const tsSave=()=>{try{localStorage.setItem("dt-perk-test",JSON.stringify(TS))}catch(e){}};
 function testClick(p,right){if(p.id==="root")return;const t={...tsOf(p)};
-  if(!right){if(t.s==="locked")t.s="unlocked";else{t.s="active";t.pts=(t.pts||0)+1}}
+  if(!right){if(t.s==="locked")t.s="unlocked";else{t.s="active";t.pts=Math.min(10,(t.pts||0)+1)}}
   else{if(t.s==="active"){t.pts=Math.max(0,t.pts-1);if(t.pts===0)t.s="unlocked"}else if(t.s==="unlocked")t.s="locked"}
   TS[p.id]=t;tsSave();renderSky()}
 let showGuide=false;try{showGuide=localStorage.getItem("dt-perk-guide")==="1"}catch(e){}
@@ -358,7 +358,7 @@ function renderSky(){
     if(p.reviewed&&showRev)g.appendChild(el("circle",{cx:p.x,cy:p.y,r:hr+3.5,fill:"none",stroke:"#5fd38a","stroke-width":1.6,class:"rev"}));
     if(ts&&ts.s==="unlocked"){g.appendChild(el("circle",{cx:p.x,cy:p.y,r:rr,fill:"#070b16",stroke:c,"stroke-width":1.4}))}else{g.appendChild(el("circle",{cx:p.x,cy:p.y,r:rr,fill:T===3&&!root?strong(c):c}));
     if(root||T===3)g.appendChild(el("circle",{cx:p.x,cy:p.y,r:root?5:2,fill:"#070b16"}))}
-    if(ts&&ts.s==="active"&&!root&&ts.pts>0){const n=ts.pts,R=hr+1.5,gap=n>1?0.35:0;for(let i=0;i<n;i++){const a0=-Math.PI/2+i*2*Math.PI/n+gap/2,a1=-Math.PI/2+(i+1)*2*Math.PI/n-gap/2;const x0=p.x+R*Math.cos(a0),y0=p.y+R*Math.sin(a0),x1=p.x+R*Math.cos(a1),y1=p.y+R*Math.sin(a1);const large=(a1-a0)>Math.PI?1:0;g.appendChild(el("path",{d:n===1?`M${p.x+R},${p.y} A${R},${R} 0 1 1 ${p.x-R},${p.y} A${R},${R} 0 1 1 ${p.x+R},${p.y}`:`M${x0},${y0} A${R},${R} 0 ${large} 1 ${x1},${y1}`,fill:"none",stroke:c,"stroke-width":2.6,"stroke-linecap":"round"}))}}
+    if(ts&&ts.s==="active"&&!root&&ts.pts>0){const SLOTS=10,n=Math.min(SLOTS,ts.pts),R=hr+1.5,gap=0.22;for(let i=0;i<n;i++){const a0=-Math.PI/2+i*2*Math.PI/SLOTS+gap/2,a1=-Math.PI/2+(i+1)*2*Math.PI/SLOTS-gap/2;g.appendChild(el("path",{d:`M${p.x+R*Math.cos(a0)},${p.y+R*Math.sin(a0)} A${R},${R} 0 0 1 ${p.x+R*Math.cos(a1)},${p.y+R*Math.sin(a1)}`,fill:"none",stroke:c,"stroke-width":2.6,"stroke-linecap":"round"}))}}
     if(!root){const ang=Math.atan2(p.y-CY,p.x-CX);const t=el("text",{x:p.x,y:p.y+hr+8,class:"plbl","text-anchor":"middle","dominant-baseline":"middle"});t.textContent=p.name;g.appendChild(t)}
     g.addEventListener("pointerdown",ev=>startDrag(ev,p,g));
     g.addEventListener("pointerenter",()=>{if(mode&&pick){hoverId=p.id;renderSky()}});g.addEventListener("pointerleave",()=>{if(hoverId===p.id){hoverId=null;renderSky()}});g.addEventListener("keydown",ev=>{if(ev.key==="Enter"){select(p.id)}});svg.appendChild(g)});
