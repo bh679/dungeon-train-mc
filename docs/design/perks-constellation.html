@@ -114,6 +114,8 @@ textarea{min-height:0;resize:none;overflow:hidden;font-family:var(--body);line-h
 .node.locked{filter:grayscale(1);opacity:.35}
 .node.unlocked{opacity:.55}
 .edge.locked{stroke:#8e94a8!important;stroke-opacity:.18!important}
+.edge.active{stroke-width:2.8;stroke-opacity:.95}
+.edge.active.cross{stroke-width:2.2;stroke-opacity:.9}
 .status{color:var(--gold);font-size:11px}
 .status:empty{display:none}
 #inspector{display:grid;gap:4px}
@@ -334,7 +336,7 @@ function renderSky(){
   svg.replaceChildren(stars);
   if(showGuide){const far=Math.max(0,...M.perks.filter(p=>p.id!=="root").map(p=>Math.hypot(p.x-CX,p.y-CY)));svg.appendChild(el("circle",{cx:CX,cy:CY,r:far,fill:"none",stroke:"#e4b95a","stroke-opacity":.35,"stroke-dasharray":"4 6"}));svg.appendChild(el("circle",{cx:CX,cy:CY,r:105,fill:"none",stroke:"#e4b95a","stroke-opacity":.25,"stroke-dasharray":"2 6"}))}
   M.links.forEach((l,li)=>{const A=byId(l.a),B=byId(l.b);if(!A||!B)return;const d=l.kind==="cross"?curve(A,B):`M${A.x},${A.y} L${B.x},${B.y}`;
-    const hit=el("path",{d:trimmed(A,B,l.kind==="cross"),class:"edgehit","data-li":li});if(style==="mc"&&l.kind!=="cross"){svg.appendChild(el("path",{d,class:"edge mcunder"}))}const lockedEdge=testMode&&(tsOf(A).s==="locked"||tsOf(B).s==="locked");const e=el("path",{d,class:"edge "+l.kind+(selLink===li?" sel":"")+(style==="mc"?" mc":"")+(lockedEdge?" locked":"")});if(l.kind==="req"){const g=`url(#g${li})`;const d=document.createElementNS(NS,"defs");const lg=el("linearGradient",{id:"g"+li,gradientUnits:"userSpaceOnUse",x1:A.x,y1:A.y,x2:B.x,y2:B.y});lg.appendChild(el("stop",{offset:"0","stop-color":color(A)}));lg.appendChild(el("stop",{offset:"1","stop-color":color(B)}));d.appendChild(lg);svg.appendChild(d);e.style.stroke=g}
+    const hit=el("path",{d:trimmed(A,B,l.kind==="cross"),class:"edgehit","data-li":li});if(style==="mc"&&l.kind!=="cross"){svg.appendChild(el("path",{d,class:"edge mcunder"}))}const lockedEdge=testMode&&(tsOf(A).s==="locked"||tsOf(B).s==="locked");const activeEdge=testMode&&tsOf(A).s==="active"&&tsOf(B).s==="active";const e=el("path",{d,class:"edge "+l.kind+(selLink===li?" sel":"")+(style==="mc"?" mc":"")+(lockedEdge?" locked":"")+(activeEdge?" active":"")});if(l.kind==="req"){const g=`url(#g${li})`;const d=document.createElementNS(NS,"defs");const lg=el("linearGradient",{id:"g"+li,gradientUnits:"userSpaceOnUse",x1:A.x,y1:A.y,x2:B.x,y2:B.y});lg.appendChild(el("stop",{offset:"0","stop-color":color(A)}));lg.appendChild(el("stop",{offset:"1","stop-color":color(B)}));d.appendChild(lg);svg.appendChild(d);e.style.stroke=g}
     const on=()=>{selLink=li;sel=null;selCls=null;render()};hit.addEventListener("click",on);svg.appendChild(e);svg.appendChild(hit);
     if(l.oneWay&&l.kind==="cross")svg.appendChild(el("circle",{cx:B.x,cy:B.y,r:9,fill:"none",stroke:"#e4b95a","stroke-opacity":.6}))});
   const placed=[];M.classes.forEach(c=>{const ps=M.perks.filter(p=>p.cls===c.id);if(!ps.length)return;const first=ps.find(p=>M.links.some(l=>(l.a==="root"&&l.b===p.id)||(l.b==="root"&&l.a===p.id)));const sx=ps.reduce((t,p)=>t+(p.x-CX),0),sy=ps.reduce((t,p)=>t+(p.y-CY),0);const a=first?Math.atan2(first.y-CY,first.x-CX):Math.atan2(sy,sx);const lp=labelSpot(a,Math.max(...ps.map(p=>Math.hypot(p.x-CX,p.y-CY)))+40,c.name,placed);placed.push(lp);const t=el("text",{x:lp.x,y:lp.y,class:"lbl"+(selCls===c.id?" sel":""),"text-anchor":"middle","dominant-baseline":"middle",tabindex:"0"});t.textContent=c.name;t.style.fill=c.color;
