@@ -25,6 +25,20 @@ class LiveChatSignaturesTest {
     }
 
     @Test
+    @DisplayName("a line's translation part is its own signature, and goes with the line when all are taken")
+    void parts() {
+        LiveChatSignatures s = new LiveChatSignatures(5L);
+        MessageSignature line = s.sign(3);
+        MessageSignature under = s.signPart(3, 1);
+        assertNotEquals(line, under);
+        assertEquals(java.util.List.of(line, under), s.takeAll(3));
+        assertEquals(java.util.List.of(), s.takeAll(3), "taken once");
+        s.sign(4);
+        assertEquals(1, s.takeAll(4).size(), "a line without a part");
+        assertEquals(s.signPart(8, 0), s.sign(8), "part 0 is the line itself");
+    }
+
+    @Test
     @DisplayName("only the newest MAX lines are kept; clear forgets them all")
     void bounded() {
         LiveChatSignatures s = new LiveChatSignatures(7L);

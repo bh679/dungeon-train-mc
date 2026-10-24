@@ -174,6 +174,8 @@ public enum ClientOptionsTab {
         STREAM_POPUPS_OVER_TAG("gui.dungeontrain.options.stream_popups_over_tag"),
         /** The stream's Discord chat in your chat, and yours back to it. Locked off in Kid mode. */
         LIVE_CHAT("gui.dungeontrain.options.live_chat"),
+        /** Where a translated Live chat line goes (Live Translations reward). Greyed in Kid mode. */
+        LIVE_CHAT_TRANSLATION("gui.dungeontrain.options.live_chat_translation"),
         /** While streaming, say advancements earned in Live chat. Locked off in Kid mode. */
         LIVE_MOMENT_ADVANCEMENTS("gui.dungeontrain.options.live_moment_advancements"),
         /** While streaming, share photos taken into Live chat. Locked off in Kid mode. */
@@ -346,6 +348,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.STREAM_NAME_TAG);
                 rows.add(Row.STREAM_POPUPS_OVER_TAG);
                 rows.add(Row.LIVE_CHAT);
+                rows.add(Row.LIVE_CHAT_TRANSLATION);
                 rows.add(Row.LIVE_MOMENT_ADVANCEMENTS);
                 rows.add(Row.LIVE_MOMENT_PHOTOS);
                 rows.add(Row.LIVE_MOMENT_BOOKS);

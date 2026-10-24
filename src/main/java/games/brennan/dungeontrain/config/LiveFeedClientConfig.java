@@ -18,6 +18,10 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.BooleanValue STREAM_CHAT;
     public static final ModConfigSpec.BooleanValue STREAM_AUDIO;
     public static final ModConfigSpec.EnumValue<NameTag> STREAM_NAME_TAG;
+    public static final ModConfigSpec.EnumValue<LiveChatTranslation> LIVE_CHAT_TRANSLATION;
+
+    /** Where a Live chat line's translation goes while the Live Translations reward is on. */
+    public enum LiveChatTranslation { UNDER, REPLACE, FIRST }
     public static final ModConfigSpec.BooleanValue POPUPS_OVER_NAME_TAG;
     public static final ModConfigSpec.BooleanValue LIVE_CHAT;
     public static final ModConfigSpec.BooleanValue LIVE_MOMENT_ADVANCEMENTS;
@@ -73,6 +77,9 @@ public final class LiveFeedClientConfig {
         LIVE_CHAT = b
             .comment("Mirror the stream's Discord chat into your in-game chat while a stream is on air (as the streamer, or wearing a TV), and post what you type back to it. Always off in Kid mode, whatever this says.")
             .define("liveChat", true);
+        LIVE_CHAT_TRANSLATION = b
+            .comment("While the Live Translations community reward is on, how a Live chat line translated into your language shows: UNDER the original in grey, REPLACE it (the original on hover), or FIRST with the original under it.")
+            .defineEnum("liveChatTranslation", LiveChatTranslation.UNDER);
         LIVE_MOMENT_ADVANCEMENTS = b
             .comment("While you stream with the Live Eye, say in the stream's Live chat (Discord, Twitch, the website and TV wearers) when you earn an advancement. Always off in Kid mode.")
             .define("liveMomentAdvancements", true);
@@ -245,6 +252,15 @@ public final class LiveFeedClientConfig {
         if (!loaded() || LIVE_CHAT.get() == value) return;
         LIVE_CHAT.set(value);
         LIVE_CHAT.save();
+    }
+
+    /** Where a translated Live chat line goes; UNDER until the config loads. */
+    public static LiveChatTranslation liveChatTranslation() { return loaded() ? LIVE_CHAT_TRANSLATION.get() : LiveChatTranslation.UNDER; }
+
+    public static void setLiveChatTranslation(LiveChatTranslation value) {
+        if (!loaded() || LIVE_CHAT_TRANSLATION.get() == value) return;
+        LIVE_CHAT_TRANSLATION.set(value);
+        LIVE_CHAT_TRANSLATION.save();
     }
 
     /** Share advancements into Live chat while streaming; {@code LiveMoments} still forces it off in Kid mode. */

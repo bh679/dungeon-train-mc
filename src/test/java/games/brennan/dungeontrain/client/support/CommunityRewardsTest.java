@@ -42,7 +42,8 @@ class CommunityRewardsTest {
                 on(LiveRewards.TWO_STREAMS, 20 * DAY, "A"),
                 on(LiveRewards.VOICE_ON_STREAM, 25 * DAY, "B"),
                 on(LiveRewards.HD_STREAMS, 15 * DAY, "C"),
-                on(LiveRewards.REPLAYS_KEPT, 10 * DAY, "D")));
+                on(LiveRewards.REPLAYS_KEPT, 10 * DAY, "D"),
+                on(LiveRewards.LIVE_TRANSLATION, 12 * DAY, "E")));
         // Quicker Streams ends soonest, but a month is already queued behind it: free on day 32.
         assertEquals(CommunityRewards.Reward.REPLAYS_KEPT, CommunityRewards.featured(state, NOW));
     }
@@ -67,6 +68,8 @@ class CommunityRewardsTest {
     void analyticsTargetsMatchTheRelayAllowlist() {
         assertEquals("reward_quicker_streams", CommunityRewards.Reward.QUICKER_STREAMS.analyticsTarget());
         assertEquals("reward_replays_kept", CommunityRewards.Reward.REPLAYS_KEPT.analyticsTarget());
+        assertEquals(CommunityRewards.Reward.LIVE_TRANSLATION, CommunityRewards.Reward.byTarget("reward_live_translation"));
+        assertEquals(90, CommunityRewards.Reward.LIVE_TRANSLATION.costAud());
         assertEquals(CommunityRewards.Reward.HD_STREAMS, CommunityRewards.Reward.byTarget("reward_hd_streams"));
         assertNull(CommunityRewards.Reward.byTarget("donate_big_fan"));
     }

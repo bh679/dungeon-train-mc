@@ -10,7 +10,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 /**
- * The community rewards shelf: the five gifts that keep something on for everyone for a month,
+ * The community rewards shelf: the six gifts that keep something on for everyone for a month,
  * and the rules every screen showing them shares (which one the Contribute panel features, when
  * the next free month starts, what the status lines say).
  *
@@ -41,7 +41,8 @@ public final class CommunityRewards {
         TWO_STREAMS(LiveRewards.TWO_STREAMS, Group.STREAMS, 140),
         VOICE_ON_STREAM(LiveRewards.VOICE_ON_STREAM, Group.STREAMS, 160),
         HD_STREAMS(LiveRewards.HD_STREAMS, Group.EXTRA, 90),
-        REPLAYS_KEPT(LiveRewards.REPLAYS_KEPT, Group.EXTRA, 80);
+        REPLAYS_KEPT(LiveRewards.REPLAYS_KEPT, Group.EXTRA, 80),
+        LIVE_TRANSLATION(LiveRewards.LIVE_TRANSLATION, Group.EXTRA, 90);
 
         private final String id;
         private final Group group;
@@ -108,11 +109,11 @@ public final class CommunityRewards {
      */
     static final List<Reward> FEATURE_ORDER = List.of(
             Reward.QUICKER_STREAMS, Reward.VOICE_ON_STREAM, Reward.TWO_STREAMS,
-            Reward.HD_STREAMS, Reward.REPLAYS_KEPT);
+            Reward.HD_STREAMS, Reward.REPLAYS_KEPT, Reward.LIVE_TRANSLATION);
 
     /**
      * The reward the Contribute panel features: the first in {@link #FEATURE_ORDER} that is off now,
-     * so there is always something a giver can switch on today; when all five are on, the one whose
+     * so there is always something a giver can switch on today; when all six are on, the one whose
      * next free month comes soonest (ties in {@link #FEATURE_ORDER}).
      */
     static Reward featured(LiveRewards state, long now) {
@@ -121,7 +122,7 @@ public final class CommunityRewards {
 
     /**
      * {@link #featured(LiveRewards, long)} among the rewards {@code open} accepts gifts for, so the
-     * card leads with one a giver can actually give; all five when none are open yet.
+     * card leads with one a giver can actually give; all six when none are open yet.
      */
     static Reward featured(LiveRewards state, long now, java.util.function.Predicate<Reward> open) {
         List<Reward> order = FEATURE_ORDER.stream().filter(open).toList();
