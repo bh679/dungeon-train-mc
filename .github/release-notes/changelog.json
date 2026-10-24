@@ -30501,7 +30501,7 @@
     },
     {
       "id": "trader-perks-reduced-reduction-restock",
-      "version": "0.1508.0",
+      "version": "0.1509.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -30510,6 +30510,21 @@
       ],
       "title": "Trader perks: Reduced Reduction and Restock Villager",
       "summary": "Two new Trader perks. Reduced Reduction keeps a villager's prices from dropping as fast while you keep selling to it. Restock Villager lets you refresh a villager's sold-out trades a few times each life.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "knight-combat-perks",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Knight perks",
+      "summary": "Three new Knight perks. Crits gives your hits a chance to land critical strikes, and past a point they hit even harder. Kill Buff gives you a burst of Strength on every kill, getting stronger as it grows. Vampirism gives each kill a chance to heal you, and enough of it heals you more than once. None of them have a cap.",
       "highlights": [],
       "date": "2026-10-24",
       "released": false,
