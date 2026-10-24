@@ -17340,5 +17340,47 @@
         "Alex fell from a high place"
       ]
     }
+  },
+  "gui.dungeontrain.drift_gift.slot": {
+    "1": {
+      "label": "payout rate as a whole percentage",
+      "examples": [
+        "35",
+        "40"
+      ]
+    }
+  },
+  "message.dungeontrain.drift_gift.paid": {
+    "1": {
+      "label": "emeralds just paid",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "message.dungeontrain.drift_gift.banked": {
+    "1": {
+      "label": "sixteenths banked so far",
+      "examples": [
+        "6",
+        "15"
+      ]
+    },
+    "2": {
+      "label": "sixteenths in one emerald",
+      "examples": [
+        "16"
+      ]
+    }
+  },
+  "message.dungeontrain.drift_gift.charged": {
+    "1": {
+      "label": "emeralds taken back",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
   }
 }
