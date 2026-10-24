@@ -6,12 +6,9 @@ import games.brennan.dungeontrain.mixin.client.ChatComponentAccessor;
 import net.minecraft.client.GuiMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.ChatVisiblity;
 import net.minecraft.util.StringUtil;
 import net.neoforged.api.distmarker.Dist;
@@ -33,8 +30,8 @@ import java.util.List;
  *
  * <p>The death screens paint over the HUD, and vanilla opens chat only with no screen up, so a post-mortem
  * streamer could neither read the room nor answer it. While {@link LiveStreamController#postMortem} holds
- * and {@link LiveChatBridge} is connected, this draws the newest chat message over the death page (the whole
- * chat only while typing, so the page stays readable) and lets the chat key (or the command key) type a line
+ * and {@link LiveChatBridge} is connected, this shows the newest chat message as a dim ticker under the death
+ * page's footer (the whole chat only while typing, so the page stays readable) and lets the chat key (or the command key) type a line
  * without leaving the page: Enter sends it the way vanilla's chat box does (so {@link LiveChatBridge#onClientChat} and the text filter see it), Esc puts the box away.</p>
  *
  * <p>Everything here draws on {@link RenderFrameEvent.Post} after the stream grabs the frame, so neither the
@@ -44,7 +41,12 @@ import java.util.List;
 public final class LiveDeathChat {
 
     private static final int MAX_LENGTH = 256;
-    private static final int LATEST_MAX_LINES = 2;
+    /** The ticker: left margin, rise from the screen's bottom edge, the gap kept from the centre column. */
+    private static final int TICKER_LEFT = 4;
+    private static final int TICKER_BOTTOM = 10;
+    private static final int TICKER_CENTRE_GAP = 70;
+    private static final int TICKER_COLOUR = 0xFF808080;
+    private static final String ELLIPSIS = "\u2026";
 
     /** The line being typed, or null when the box is away. */
     @Nullable private static EditBox input;
@@ -160,29 +162,31 @@ public final class LiveDeathChat {
     }
 
     /**
-     * The newest chat message only, where vanilla's chat would start: the death page stays readable, and the
-     * whole room is one key away. A long message keeps at most {@link #LATEST_MAX_LINES} wrapped lines.
+     * The newest chat message as a dim one-line ticker in the strip under the death page's footer, left of
+     * its centre column: no backing, no {@code [Live]} prefix or source icon, cut short with an ellipsis.
+     * The whole chat is one key away.
      */
     private static void drawLatest(GuiGraphics g, Minecraft mc) {
         if (mc.options.chatVisibility().get() == ChatVisiblity.HIDDEN) return;
-        ChatComponent chat = mc.gui.getChat();
-        List<GuiMessage> all = ((ChatComponentAccessor) chat).dungeontrain$getAllMessages();
+        List<GuiMessage> all = ((ChatComponentAccessor) mc.gui.getChat()).dungeontrain$getAllMessages();
         if (all.isEmpty()) return;
-        float scale = (float) chat.getScale();
-        int width = Mth.ceil(chat.getWidth() / scale);
-        List<FormattedCharSequence> lines = mc.font.split(all.get(0).content(), width);
-        int shown = Math.min(lines.size(), LATEST_MAX_LINES);
-        int lineH = mc.font.lineHeight;
-        int bottom = Mth.floor((g.guiHeight() - 40) / scale);
-        int bg = (int) (255.0 * mc.options.textBackgroundOpacity().get()) << 24;
-        g.pose().pushPose();
-        g.pose().scale(scale, scale, 1f);
-        g.pose().translate(4f, 0f, 0f);
-        g.fill(-4, bottom - shown * lineH, width + 8, bottom, bg);
-        for (int i = 0; i < shown; i++) {
-            g.drawString(mc.font, lines.get(i), 0, bottom - (shown - i) * lineH + 1, 0xFFFFFFFF);
+        String text = tickerText(all.get(0).content().getString(),
+            Component.translatable(LiveChatRules.PREFIX_KEY).getString());
+        int maxWidth = g.guiWidth() / 2 - TICKER_CENTRE_GAP - TICKER_LEFT;
+        if (text.isEmpty() || maxWidth < mc.font.width(ELLIPSIS) * 4) return;
+        if (mc.font.width(text) > maxWidth) {
+            text = mc.font.plainSubstrByWidth(text, maxWidth - mc.font.width(ELLIPSIS)).stripTrailing() + ELLIPSIS;
         }
-        g.pose().popPose();
+        g.drawString(mc.font, text, TICKER_LEFT, g.guiHeight() - TICKER_BOTTOM, TICKER_COLOUR, false);
+    }
+
+    /** A chat line as the ticker shows it: the live prefix and its source icon taken off, plain text. */
+    static String tickerText(String line, String prefix) {
+        String s = line.strip();
+        if (!prefix.isEmpty() && s.startsWith(prefix)) s = s.substring(prefix.length()).strip();
+        int i = 0;
+        while (i < s.length() && (Character.getType(s.charAt(i)) == Character.PRIVATE_USE || s.charAt(i) == ' ')) i++;
+        return s.substring(i);
     }
 
     private static void open(Minecraft mc, String initial) {

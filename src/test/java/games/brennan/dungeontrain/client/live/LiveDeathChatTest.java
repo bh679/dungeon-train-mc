@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.live;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -21,5 +22,12 @@ class LiveDeathChatTest {
         assertFalse(LiveDeathChat.mayOpen(true, false, true), "the page's own text field has the keyboard");
         assertFalse(LiveDeathChat.mayOpen(true, true, false), "already typing");
         assertFalse(LiveDeathChat.mayOpen(false, false, false));
+    }
+
+    @Test
+    void tickerDropsThePrefixAndSourceIcon() {
+        assertEquals("Kestrel: go again!!", LiveDeathChat.tickerText("[Live]  Kestrel: go again!!", "[Live]"));
+        assertEquals("Kestrel: hi", LiveDeathChat.tickerText("[Live] Kestrel: hi", "[Live]"));
+        assertEquals("<Dev> gg", LiveDeathChat.tickerText("<Dev> gg", "[Live]"), "a plain chat line is left as it is");
     }
 }
