@@ -290,26 +290,41 @@ final class ServerStallWatchdogTest {
     @Test
     @DisplayName("Under the first-dump threshold nothing is dumped")
     void underThreshold_isNotDumped() {
-        assertFalse(ServerStallWatchdog.mayDump(ServerStallWatchdog.STALL_LOG_MS - 1, ServerStallWatchdog.NEVER, T));
+        assertFalse(ServerStallWatchdog.mayDump(ServerStallWatchdog.STALL_LOG_MS - 1, ServerStallWatchdog.NEVER, 0, T));
     }
 
     @Test
     @DisplayName("The first short stall is dumped")
     void firstShortStall_isDumped() {
-        assertTrue(ServerStallWatchdog.mayDump(ServerStallWatchdog.STALL_LOG_MS, ServerStallWatchdog.NEVER, T));
+        assertTrue(ServerStallWatchdog.mayDump(ServerStallWatchdog.STALL_LOG_MS, ServerStallWatchdog.NEVER, 0, T));
     }
 
     @Test
     @DisplayName("A second short stall inside the budget is held back, and allowed once it has passed")
     void shortStallInsideBudget_isSuppressed() {
         long last = T - ServerStallWatchdog.SHORT_DUMP_COOLDOWN_MS + 1;
-        assertFalse(ServerStallWatchdog.mayDump(2_600, last, T));
-        assertTrue(ServerStallWatchdog.mayDump(2_600, T - ServerStallWatchdog.SHORT_DUMP_COOLDOWN_MS, T));
+        assertFalse(ServerStallWatchdog.mayDump(2_600, last, 1, T));
+        assertTrue(ServerStallWatchdog.mayDump(2_600, T - ServerStallWatchdog.SHORT_DUMP_COOLDOWN_MS, 1, T));
     }
 
     @Test
     @DisplayName("A long stall is dumped even inside the short-stall budget")
     void longStall_ignoresBudget() {
-        assertTrue(ServerStallWatchdog.mayDump(ServerStallWatchdog.LONG_STALL_MS, T - 1, T));
+        assertTrue(ServerStallWatchdog.mayDump(ServerStallWatchdog.LONG_STALL_MS, T - 1, 1, T));
+    }
+
+    @Test
+    @DisplayName("Short stalls stop being dumped at the per-session cap; the last one under it still is")
+    void shortStalls_stopAtSessionCap() {
+        int cap = ServerStallWatchdog.MAX_SHORT_DUMPS;
+        assertTrue(ServerStallWatchdog.mayDump(2_600, ServerStallWatchdog.NEVER, cap - 1, T));
+        assertFalse(ServerStallWatchdog.mayDump(2_600, ServerStallWatchdog.NEVER, cap, T));
+    }
+
+    @Test
+    @DisplayName("A long stall is dumped even after the per-session cap is used up")
+    void longStall_ignoresSessionCap() {
+        assertTrue(ServerStallWatchdog.mayDump(ServerStallWatchdog.LONG_STALL_MS, ServerStallWatchdog.NEVER,
+            ServerStallWatchdog.MAX_SHORT_DUMPS, T));
     }
 }
