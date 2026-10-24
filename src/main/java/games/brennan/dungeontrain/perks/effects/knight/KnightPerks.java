@@ -14,7 +14,7 @@ public final class KnightPerks {
 
     /** Tier 2: rank% chance a melee hit crits; past 100, rank-100 % chance of a harder crit. */
     public static final String CRITS = "crits";
-    /** Tier 3: kills grant Strength; longer per rank, stronger (and shorter) every 5 ranks. */
+    /** Tier 3: kills grant Strength; 0.5 s longer per rank, one level stronger (time back to 2 s) every 10 ranks. */
     public static final String KILL_BUFF = "kill-buff";
     /** Tier 3: kills have a chance to heal half a heart; the chance overflows into extra halves. */
     public static final String VAMPIRISM = "vampirism";
@@ -27,7 +27,7 @@ public final class KnightPerks {
 
     static final int STRENGTH_BASE_TICKS = 40;
     static final int STRENGTH_TICKS_PER_RANK = 10;
-    static final int RANKS_PER_STRENGTH_LEVEL = 5;
+    static final int RANKS_PER_STRENGTH_LEVEL = 10;
 
     static final int VAMPIRISM_BASE_PERCENT = 25;
     static final int VAMPIRISM_PERCENT_PER_RANK = 5;
@@ -63,20 +63,19 @@ public final class KnightPerks {
         return critMultiplier(rollSteps(critPercent(rank), random));
     }
 
-    /** Strength level index (0 = Strength I) at {@code rank}: up one every 5 ranks. */
+    /** Strength level index (0 = Strength I) at {@code rank}: up one every 10 ranks. */
     public static int strengthAmplifier(int rank) {
         if (rank <= 0) return 0;
         return (rank - 1) / RANKS_PER_STRENGTH_LEVEL;
     }
 
     /**
-     * Strength duration per kill, in ticks: 2 s plus 0.5 s per rank past the first, halved for each
-     * Strength level gained.
+     * Strength duration per kill, in ticks: 2 s plus 0.5 s per rank past the first within the current
+     * Strength level; each new level starts back at 2 s.
      */
     public static int strengthDurationTicks(int rank) {
         if (rank <= 0) return 0;
-        int ticks = STRENGTH_BASE_TICKS + (rank - 1) * STRENGTH_TICKS_PER_RANK;
-        return Math.max(1, ticks >> Math.min(30, strengthAmplifier(rank)));
+        return STRENGTH_BASE_TICKS + (rank - 1) % RANKS_PER_STRENGTH_LEVEL * STRENGTH_TICKS_PER_RANK;
     }
 
     /**

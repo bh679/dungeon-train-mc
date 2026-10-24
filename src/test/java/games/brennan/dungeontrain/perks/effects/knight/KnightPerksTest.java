@@ -65,12 +65,13 @@ class KnightPerksTest {
         assertEquals(0, KnightPerks.strengthDurationTicks(0));
         assertEquals(40, KnightPerks.strengthDurationTicks(1));   // 2 s, Strength I
         assertEquals(50, KnightPerks.strengthDurationTicks(2));   // 2.5 s
-        assertEquals(80, KnightPerks.strengthDurationTicks(5));   // 4 s, last rank of Strength I
-        assertEquals(0, KnightPerks.strengthAmplifier(5));
-        assertEquals(1, KnightPerks.strengthAmplifier(6));        // Strength II
-        assertEquals(45, KnightPerks.strengthDurationTicks(6));   // 4.5 s halved
-        assertEquals(2, KnightPerks.strengthAmplifier(11));       // Strength III
-        assertEquals(35, KnightPerks.strengthDurationTicks(11));  // 7 s quartered
+        assertEquals(130, KnightPerks.strengthDurationTicks(10)); // 6.5 s, last rank of Strength I
+        assertEquals(0, KnightPerks.strengthAmplifier(10));
+        assertEquals(1, KnightPerks.strengthAmplifier(11));       // Strength II
+        assertEquals(40, KnightPerks.strengthDurationTicks(11));  // back to 2 s
+        assertEquals(50, KnightPerks.strengthDurationTicks(12));
+        assertEquals(2, KnightPerks.strengthAmplifier(21));       // Strength III
+        assertEquals(40, KnightPerks.strengthDurationTicks(21));
     }
 
     @Test
