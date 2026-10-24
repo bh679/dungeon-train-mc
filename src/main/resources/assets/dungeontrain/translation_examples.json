@@ -17295,5 +17295,14 @@
         "4"
       ]
     }
+  },
+  "chat.dungeontrain.live.viewer_died": {
+    "1": {
+      "label": "the dead player's death message, as vanilla words it",
+      "examples": [
+        "Steve was slain by Zombie",
+        "Alex fell from a high place"
+      ]
+    }
   }
 }
