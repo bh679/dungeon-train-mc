@@ -32,6 +32,8 @@ public final class CrafterPerks {
     public static final int COOK_FLOOR_PERCENT = 25;
     /** Lowest level requirement / price the Enchant Cost perk can reach. */
     public static final int MIN_COST = 1;
+    /** Vanilla's anvil "Too Expensive!" threshold: a price at or above this is refused outside creative. */
+    public static final int ANVIL_CAP = 40;
     /** Levels added by Enchant Bonus while the perk has any active points. */
     public static final int BONUS_LEVELS = 1;
 
@@ -47,9 +49,14 @@ public final class CrafterPerks {
         return Math.max(MIN_COST, cost - rank);
     }
 
-    /** Enchant Cost: any rank lifts the anvil's "Too Expensive!" cap at 40 levels. */
-    public static boolean ignoresAnvilCap(int rank) {
-        return rank > 0;
+    /**
+     * Enchant Cost: whether this combine gets past the anvil's "Too Expensive!" cap. Only a vanilla
+     * price at or above {@value #ANVIL_CAP} that the discount brings back under it is let through;
+     * a price still at the cap after the discount stays "Too Expensive!", and a price already under
+     * it is an ordinary combine (nothing to lift). Rank 0 never lifts it.
+     */
+    public static boolean liftsTooExpensive(int vanillaCost, int rank) {
+        return rank > 0 && vanillaCost >= ANVIL_CAP && reducedCost(vanillaCost, rank) < ANVIL_CAP;
     }
 
     /** Cooking Time: ticks a recipe takes at {@code rank}; at least 1 and at least the floor share. */
@@ -83,8 +90,22 @@ public final class CrafterPerks {
         return rank > 0 ? BONUS_LEVELS : 0;
     }
 
+    /**
+     * Re-enchant switch. While {@code true}, {@link #allowsReenchant} is false at every rank and the
+     * perk does nothing; the wiring and {@link #compatibleWithExisting} stay in place for when it
+     * comes back.
+     */
+    public static final boolean REENCHANT_ON_HOLD = true;
+
+    /**
+     * Re-enchant: whether an already enchanted item may go back on the table at {@code rank}.
+     *
+     * <p><b>On hold (incomplete):</b> switched off by {@link #REENCHANT_ON_HOLD}. Unfinished: a table
+     * row whose rolls are all filtered out by {@link #compatibleWithExisting} still shows and costs
+     * levels while adding nothing, and rank beyond 1 does nothing (there is no per-rank effect yet).
+     */
     public static boolean allowsReenchant(int rank) {
-        return rank > 0;
+        return !REENCHANT_ON_HOLD && rank > 0;
     }
 
     /**

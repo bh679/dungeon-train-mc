@@ -18,9 +18,10 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 /**
  * Crafter Enchant Cost on the anvil screen: vanilla labels any price of 40+ "Too Expensive!" unless
- * the player is in creative. For an anvil the server marked uncapped ({@code AnvilMenuCrafterMixin},
- * synced through a data slot) that creative check reads true, so the price shows instead, red when
- * the player lacks the levels as for any other unaffordable price.
+ * the player is in creative. For a combine the server let past the cap ({@code AnvilMenuCrafterMixin}:
+ * only when the discount brings a 40+ price under 40; synced through a data slot) that creative check
+ * reads true, so the price shows instead, red when the player lacks the levels as for any other
+ * unaffordable price. A combine still at 40+ after the discount shows "Too Expensive!" as vanilla.
  *
  * <p>When Enchant Cost lowered the price, the label reads "Enchantment Cost: <s>51</s> 49": the
  * pre-discount price (second synced data slot) struck through at half the label's brightness, then

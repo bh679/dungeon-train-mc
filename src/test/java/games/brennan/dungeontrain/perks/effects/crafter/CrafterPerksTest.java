@@ -26,11 +26,15 @@ class CrafterPerksTest {
     }
 
     @Test
-    @DisplayName("Enchant Cost: any rank lifts the anvil's Too Expensive cap, rank 0 keeps it")
-    void ignoresAnvilCap() {
-        assertFalse(CrafterPerks.ignoresAnvilCap(0));
-        assertTrue(CrafterPerks.ignoresAnvilCap(1));
-        assertTrue(CrafterPerks.ignoresAnvilCap(3));
+    @DisplayName("Enchant Cost: Too Expensive lifts only when the discount brings a 40+ price under 40")
+    void liftsTooExpensive() {
+        assertTrue(CrafterPerks.liftsTooExpensive(41, 2));    // 41 -> 39
+        assertTrue(CrafterPerks.liftsTooExpensive(40, 1));    // 40 -> 39
+        assertFalse(CrafterPerks.liftsTooExpensive(45, 2));   // 45 -> 43, still Too Expensive
+        assertFalse(CrafterPerks.liftsTooExpensive(41, 1));   // 41 -> 40, still at the cap
+        assertFalse(CrafterPerks.liftsTooExpensive(39, 2));   // under the cap: ordinary combine
+        assertFalse(CrafterPerks.liftsTooExpensive(41, 0));   // no perk
+        assertFalse(CrafterPerks.liftsTooExpensive(0, 3));    // no result
     }
 
     @Test
@@ -76,10 +80,17 @@ class CrafterPerksTest {
     }
 
     @Test
-    @DisplayName("Re-enchant: rolled candidates that clash with an existing enchantment are dropped")
-    void compatibleWithExisting() {
-        assertTrue(CrafterPerks.allowsReenchant(1));
+    @DisplayName("Re-enchant: on hold, so off at every rank")
+    void reenchantOnHold() {
+        assertTrue(CrafterPerks.REENCHANT_ON_HOLD);
         assertFalse(CrafterPerks.allowsReenchant(0));
+        assertFalse(CrafterPerks.allowsReenchant(1));
+        assertFalse(CrafterPerks.allowsReenchant(3));
+    }
+
+    @Test
+    @DisplayName("Re-enchant filter: rolled candidates that clash with an existing enchantment are dropped")
+    void compatibleWithExisting() {
 
         List<String> rolled = List.of("smite", "unbreaking", "sharpness");
         Set<String> existing = Set.of("sharpness");

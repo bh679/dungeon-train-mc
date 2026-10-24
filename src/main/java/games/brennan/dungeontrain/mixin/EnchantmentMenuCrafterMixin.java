@@ -37,7 +37,8 @@ import java.util.List;
  *       The same per-row numbers ride three extra {@link DataSlot}s to the client, where
  *       {@code client.EnchantmentScreenCrafterCostMixin} shows them struck through beside the price.</li>
  *   <li><b>Re-enchant</b>: the "no enchantments yet" half of {@code ItemStack#isEnchantable} is
- *       skipped, and the rolled list loses anything that clashes with what the item already has.</li>
+ *       skipped, and the rolled list loses anything that clashes with what the item already has. On hold: {@link CrafterPerks#allowsReenchant} is false at every rank while
+ *       {@link CrafterPerks#REENCHANT_ON_HOLD} is set, so both hooks stay vanilla.</li>
  *   <li><b>Enchant Max</b>: the roll runs with the player's bonus on {@link EnchantContext} so
  *       {@code EnchantmentHelperCrafterMixin} can lift max-level results.</li>
  * </ul>

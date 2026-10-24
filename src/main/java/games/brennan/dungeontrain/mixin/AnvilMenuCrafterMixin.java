@@ -30,14 +30,13 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
  * Crafter perks on the anvil:
  * <ul>
  *   <li><b>Enchant Cost</b>: once vanilla has priced the result, the price drops one level per rank
- *       (floor 1). A perk holder (rank 1+) also loses the "Too Expensive!" cap: vanilla empties the
- *       result once the price reaches 40 unless the player is in creative, and that creative check
- *       reads true for them, so any price can be paid by a player with the levels (survival
- *       included). The verdict rides an extra {@link DataSlot} to the client, where
- *       {@code client.AnvilScreenCrafterCapMixin} shows the price instead of "Too Expensive!".
- *       The pre-discount price rides a second data slot so the screen can show it struck through
- *       before the price paid.
- *       Rank 0 stays vanilla.</li>
+ *       (floor 1). Vanilla empties the result once the price reaches 40 unless the player is in
+ *       creative; that creative check reads true only when the discount brings this combine's
+ *       price back under 40 ({@link CrafterPerks#liftsTooExpensive}). A combine still at 40+ after
+ *       the discount stays "Too Expensive!". The per-combine verdict rides an extra
+ *       {@link DataSlot} to the client ({@code client.AnvilScreenCrafterCapMixin}). The
+ *       pre-discount price rides a second data slot so the screen can show it struck through
+ *       before the price paid. Rank 0 stays vanilla.</li>
  *   <li><b>Enchant Max</b>: vanilla clamps a combined level to {@code getMaxLevel()}, which would
  *       knock a table-rolled Sharpness VI back to V. The clamp becomes
  *       {@code max(vanillaMax + bonus, level already on either input)}: perk-rolled levels survive the
@@ -49,7 +48,7 @@ public abstract class AnvilMenuCrafterMixin extends ItemCombinerMenu implements 
 
     @Shadow @Final private DataSlot cost;
 
-    /** 1 when this anvil ignores the 40-level cap; set on the server, synced to the client. */
+    /** 1 when the current combine gets past the 40-level cap; set on the server per combine, synced to the client. */
     @Unique
     private final DataSlot dungeontrain$uncapped = DataSlot.standalone();
 
@@ -76,33 +75,38 @@ public abstract class AnvilMenuCrafterMixin extends ItemCombinerMenu implements 
     private void dungeontrain$addUncappedSlot(int containerId, Inventory inventory, ContainerLevelAccess access, CallbackInfo ci) {
         this.addDataSlot(dungeontrain$uncapped);
         this.addDataSlot(dungeontrain$originalCost);
-        dungeontrain$refreshUncapped();
     }
 
     @Inject(method = "createResult", at = @At("HEAD"))
     private void dungeontrain$enterCreateResult(CallbackInfo ci) {
-        // Early returns skip the TAIL hook, so clear the struck price here.
-        if (this.player != null && !this.player.level().isClientSide()) dungeontrain$originalCost.set(0);
-        dungeontrain$refreshUncapped();
+        // Early returns skip the later hooks, so clear the per-combine state here.
+        if (dungeontrain$isServer()) {
+            dungeontrain$originalCost.set(0);
+            dungeontrain$uncapped.set(0);
+        }
     }
 
-    /** Server only: the client keeps whatever the server last synced. */
     @Unique
-    private void dungeontrain$refreshUncapped() {
-        if (this.player == null || this.player.level().isClientSide()) return;
-        dungeontrain$uncapped.set(CrafterPerks.ignoresAnvilCap(CrafterRank.enchantCost(this.player)) ? 1 : 0);
+    private boolean dungeontrain$isServer() {
+        return this.player != null && !this.player.level().isClientSide();
     }
 
     /**
      * Enchant Cost: vanilla's {@code cost >= 40 && !instabuild} empties the result. Its creative
      * check (the second {@code instabuild} read in {@code createResult}; the first lets creative
-     * players add incompatible enchantments and stays vanilla) reads true for a perk holder.
+     * players add incompatible enchantments and stays vanilla) is only reached with the vanilla
+     * price at 40+, and reads true when the discount brings that price under 40. The server
+     * decides and records the verdict; the client reads the last synced one.
      */
     @Redirect(method = "createResult",
               at = @At(value = "FIELD", target = "Lnet/minecraft/world/entity/player/Abilities;instabuild:Z",
                        opcode = Opcodes.GETFIELD, ordinal = 1),
               require = 1)
     private boolean dungeontrain$skipTooExpensive(Abilities abilities) {
+        if (dungeontrain$isServer()) {
+            boolean lifted = CrafterPerks.liftsTooExpensive(this.cost.get(), CrafterRank.enchantCost(this.player));
+            dungeontrain$uncapped.set(lifted ? 1 : 0);
+        }
         return abilities.instabuild || dungeontrain$uncapped();
     }
 
