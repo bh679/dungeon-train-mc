@@ -30408,9 +30408,9 @@
       "summary": "Some advancements that should have been earned were not. They are now. Vanilla and other mods' advancements are no longer held back by the AFK check.",
       "highlights": [],
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1506.0",
+      "released_at": "2026-10-24T13:54:27Z"
     },
     {
       "id": "live-chat-on-death-screens",
@@ -30430,9 +30430,9 @@
       ],
       "pr": 2295,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1506.0",
+      "released_at": "2026-10-24T13:54:27Z"
     },
     {
       "id": "feel-the-wind",
@@ -30454,9 +30454,9 @@
       ],
       "pr": 2296,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1506.0",
+      "released_at": "2026-10-24T13:54:27Z"
     },
     {
       "id": "two-streams-second-channel",
