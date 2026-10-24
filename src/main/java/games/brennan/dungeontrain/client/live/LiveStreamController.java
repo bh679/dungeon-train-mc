@@ -211,6 +211,12 @@ public final class LiveStreamController {
         return segmentSecondsOf(claim);
     }
 
+    /** This stream went out on the relay's second channel (Two Streams), so its own picture is the second stream's. */
+    public boolean onSecondChannel() {
+        Claim c = claim;
+        return c != null && c.second();
+    }
+
     static int segmentSecondsOf(@Nullable Claim c) {
         return c != null && c.segmentSeconds() > 0 ? c.segmentSeconds() : LiveFeedClientConfig.segmentSeconds();
     }

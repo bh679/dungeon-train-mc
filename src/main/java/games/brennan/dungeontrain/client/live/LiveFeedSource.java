@@ -98,7 +98,10 @@ public final class LiveFeedSource implements IVideoSource {
      * instead of running a second one of the same stream (and never asks the relay for the second slot).
      */
     private LiveFeedSource delegate() {
-        return second && LiveStatusPoller.current().second() == null ? MAIN : this;
+        if (!second || LiveStatusPoller.current().second() != null) return this;
+        // Borrowing the first stream: let go of our own decoder and texture, so nothing idles behind the picture.
+        if (session != null || pending != null) dropAll();
+        return MAIN;
     }
 
     @Override

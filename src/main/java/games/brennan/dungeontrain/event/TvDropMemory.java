@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.vista.TvBlocks;
 import games.brennan.dungeontrain.compat.vista.TvItems;
+import net.mehvahdjukaar.vista.common.connection.IConnectedBlock;
 import net.mehvahdjukaar.vista.common.tv.TVBlock;
 import net.mehvahdjukaar.vista.common.tv.TVBlockEntity;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -38,7 +39,10 @@ public final class TvDropMemory {
     public static void onBlockDrops(BlockDropsEvent event) {
         BlockState state = event.getState();
         if (!TvBlocks.isTelevision(state) || !state.hasProperty(TVBlock.POWER_STATE)) return;
-        BlockEntity be = event.getBlockEntity();
+        // A joined screen keeps its tuner on the master cell: ask for it, and fall back to this cell's own entity.
+        BlockEntity be = state.getBlock() instanceof IConnectedBlock joined
+            ? joined.findMasterBlockEntity(event.getLevel(), event.getPos(), state) : null;
+        if (be == null) be = event.getBlockEntity();
         ItemStack cassette = be instanceof TVBlockEntity tv ? tv.getItem(0) : ItemStack.EMPTY;
         int stream = streamOf(state.getValue(TVBlock.POWER_STATE).isOn(), TvBlocks.isLiveCassette(cassette), TvBlocks.isSecondCassette(cassette));
         for (ItemEntity drop : event.getDrops()) {

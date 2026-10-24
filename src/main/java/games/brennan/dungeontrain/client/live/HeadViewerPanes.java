@@ -73,7 +73,7 @@ public final class HeadViewerPanes {
      * (the chosen stream, or the first) is shown.
      */
     public static List<Pane> current(int guiWidth, int boxWidth, boolean secondLive, boolean atMaxSize) {
-        if (!secondLive) choice = Choice.BOTH;
+        if (!secondLive) { choice = Choice.BOTH; wornMemory = -1; } // the worn TV's memory applies again when a second returns
         return panes(guiWidth, boxWidth, secondLive && !atMaxSize, choice);
     }
 

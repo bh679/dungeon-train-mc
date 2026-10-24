@@ -140,11 +140,13 @@ public final class LiveHeadViewer {
         Minecraft mc = Minecraft.getInstance();
         if (!shown(mc) || !LiveStreamController.get().streaming()) return;
         if (mc.screen == null && mc.options.hideGui) return;
-        LiveFeedSource.Frame frame = LiveFeedSource.MAIN.frame(mc.player.tickCount,
+        // The streamer's own picture: the second stream's while they hold the relay's second channel.
+        LiveFeedSource own = LiveStreamController.get().onSecondChannel() ? LiveFeedSource.SECOND : LiveFeedSource.MAIN;
+        LiveFeedSource.Frame frame = own.frame(mc.player.tickCount,
             event.getPartialTick().getGameTimeDeltaPartialTick(false), false);
         LiveRecOverlay.guiPass(g -> {
             Box b = layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth(true));
-            draw(g, LiveFeedSource.MAIN, frame, b, true);
+            draw(g, own, frame, b, true);
             LiveStreamSettingsButton.draw(g, b);
         });
     }
