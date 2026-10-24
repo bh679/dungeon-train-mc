@@ -30299,14 +30299,35 @@
         "train",
         "mobs"
       ],
-      "title": "The piglins have new company",
-      "summary": "The Nether's piglins aren't travelling alone any more. New faces have joined them on the train, and some of the brutes have come better prepared. Not every piglin wants a fight, either.",
+      "title": "New Faces in the Nether",
+      "summary": "The Nether\u2019s piglins aren\u2019t travelling alone any more. New faces have joined them on the train, each with their own way of doing things. Some come prepared with more than a weapon. Some would rather trade. Some look after their own.",
       "highlights": [
         "New piglin carriages in the Nether",
         "Some brutes hit much harder. Mind the edge.",
         "Something new to photograph"
       ],
       "pr": 2288,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "major": true,
+      "notable": true,
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-piglins-have-new-company.jpg",
+      "description": "The Nether\u2019s piglins aren\u2019t travelling alone any more. New faces have joined them on the train, each with their own way of doing things. Some come prepared with more than a weapon. Some would rather trade. Some look after their own."
+    },
+    {
+      "id": "nether-piglin-steady",
+      "version": "0.1500.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Piglin fix",
+      "summary": "Piglins on the train now keep their composure all the way through the Nether.",
+      "highlights": [],
+      "pr": 2289,
       "date": "2026-10-24",
       "released": false,
       "released_in": null,
