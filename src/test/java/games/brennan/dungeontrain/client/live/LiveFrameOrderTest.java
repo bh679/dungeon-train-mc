@@ -28,4 +28,11 @@ class LiveFrameOrderTest {
         assertTrue(viewer.ordinal() > grab.ordinal(), "the pinned live viewer must stay out of the stream");
         assertTrue(viewer.ordinal() > viewfinder.ordinal(), "the pinned viewer layers over the viewfinder");
     }
+
+    @Test
+    void deathScreenChatDrawsAfterTheStreamGrabsTheFrame() throws Exception {
+        EventPriority grab = priority(LiveStreamController.class, "onRenderFrameEnd");
+        EventPriority chat = priority(LiveDeathChat.class, "onFrameEnd");
+        assertTrue(chat.ordinal() > grab.ordinal(), "what the dead streamer types must stay out of the stream");
+    }
 }

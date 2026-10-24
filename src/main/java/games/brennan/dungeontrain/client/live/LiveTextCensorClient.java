@@ -100,8 +100,24 @@ public final class LiveTextCensorClient {
         }
     }
 
+    /** The death screens' chat box ({@link LiveDeathChat}): its keys never reach a screen event's Post. */
+    static void checkTyped(EditBox input) {
+        if (rewriting) return;
+        try {
+            rewriting = true;
+            if (chatActive()) checkInput(input);
+        } catch (Throwable t) {
+            // Fail open.
+        } finally {
+            rewriting = false;
+        }
+    }
+
     private static void checkChatBox(ChatScreen chat) {
-        EditBox input = ((ChatScreenAccessor) chat).dungeontrain$getInput();
+        checkInput(((ChatScreenAccessor) chat).dungeontrain$getInput());
+    }
+
+    private static void checkInput(EditBox input) {
         if (input == null) return;
         String typed = input.getValue();
         if (typed.isEmpty() || typed.startsWith("/")) return;

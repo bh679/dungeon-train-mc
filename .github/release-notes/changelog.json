@@ -30411,6 +30411,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-chat-on-death-screens",
+      "version": "0.1505.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Talk to your stream after you die",
+      "summary": "If your stream is still running after you die, you can now read and answer its chat from the death screens. The newest message shows quietly at the bottom of the page. Press T to see the whole chat and type a reply.",
+      "highlights": [
+        "The latest chat message shows at the bottom of every death page",
+        "Press T to open the full chat and reply without leaving the page",
+        "What you type stays off the stream"
+      ],
+      "pr": 2295,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
