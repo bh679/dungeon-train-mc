@@ -30354,6 +30354,22 @@
       "released": true,
       "released_in": "v0.1501.0",
       "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "off-train-advancements",
+      "version": "0.1502.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Exploring off the train counts",
+      "summary": "Leaving the train to explore on foot no longer stops you earning advancements. Taking a photo, or earning something by your own hand, is treated as being on the move.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

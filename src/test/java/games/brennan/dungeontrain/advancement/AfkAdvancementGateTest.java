@@ -1,6 +1,10 @@
 package games.brennan.dungeontrain.advancement;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import games.brennan.dungeontrain.RepoPaths;
+import games.brennan.dungeontrain.event.PlayerActivityTracker;
+import games.brennan.dungeontrain.event.PlayerActivityTracker.Reason;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,6 +49,26 @@ final class AfkAdvancementGateTest {
         assertFalse(AfkAdvancementGate.isExempt(rl("dungeon_train/the_enchiridion")));
         assertFalse(AfkAdvancementGate.isExempt(rl("dungeon_train/signed_shared_book")));
         assertFalse(AfkAdvancementGate.isExempt(rl("enchiridion/found_footage")));
+    }
+
+    @Test
+    @DisplayName("a photo_subject criterion reaches a player exploring off the train")
+    void photoSubjectReachesOffTrainPlayer() throws Exception {
+        // Nature Documentary is displayed and not exempt, so the AFK rule judges it ...
+        ResourceLocation id = rl("enchiridion/nature_documentary");
+        assertFalse(AfkAdvancementGate.isExempt(id));
+        JsonObject json = JsonParser.parseString(
+            Files.readString(RepoPaths.advancements().resolve(id.getPath() + ".json"))).getAsJsonObject();
+        assertTrue(json.has("display"));
+        for (var criterion : json.getAsJsonObject("criteria").entrySet()) {
+            assertEquals("dungeontrain:photo_subject",
+                criterion.getValue().getAsJsonObject().get("trigger").getAsString(), criterion.getKey());
+        }
+        // ... and that rule lets an off-train, present player (NO_PROGRESS) through, idle players not.
+        assertFalse(PlayerActivityTracker.isAfk(Reason.NO_PROGRESS));
+        assertTrue(PlayerActivityTracker.isAfk(Reason.MOUSE_IDLE));
+        assertTrue(PlayerActivityTracker.isAfk(Reason.INPUT_IDLE));
+        assertTrue(PlayerActivityTracker.isAfk(Reason.PAUSED));
     }
 
     @Test
