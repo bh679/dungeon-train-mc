@@ -6,8 +6,10 @@ package games.brennan.dungeontrain.perks.effects.archivist;
  * <ul>
  *   <li>ranks 1 to 5: 5, 4, 3, 2, 1.5 minutes (totals 5, 9, 12, 14, 15.5);</li>
  *   <li>ranks 6 to 20: 1.5 minutes less {@link #MID_DROP_MIN} per rank, reaching 35 minutes at rank 20;</li>
- *   <li>past rank 20: the step shrinks by {@link #TAIL_RATIO} each rank until it is
- *       {@link #FLOOR_STEP_MIN} (5 s, at about 45 minutes, rank 46), then stays there. No cap.</li>
+ *   <li>past rank 20: the step shrinks by {@link #TAIL_RATIO} each rank, down to about 5 s at
+ *       45 minutes (rank {@link #SLOW_FROM_RANK});</li>
+ *   <li>after that it keeps shrinking, slowly: {@code 5 s * sqrt(46 / rank)} (3.4 s at rank 100,
+ *       1 s at rank 1000). No cap: the total never stops growing.</li>
  * </ul>
  * The relay keeps two windows, the protected minutes a takeover needs a vote for
  * ({@code takeoverMinMs}) and the minutes the holder may still vote in ({@code holderVoteMs}); half
@@ -25,8 +27,10 @@ public final class LiveEyeSafeDuration {
     static final double MID_DROP_MIN = 0.025;
     /** Each rank past the middle adds this fraction of the one before. Balancing knob. */
     static final double TAIL_RATIO = 0.9057;
-    /** The least a rank ever adds: 5 seconds. Balancing knob. */
-    static final double FLOOR_STEP_MIN = 5.0 / 60.0;
+    /** Where the fast fall hands over to the slow one. Balancing knob. */
+    static final int SLOW_FROM_RANK = 46;
+    /** What a rank adds at {@link #SLOW_FROM_RANK}: 5 seconds. Balancing knob. */
+    static final double SLOW_STEP_MIN = 5.0 / 60.0;
 
     private LiveEyeSafeDuration() {}
 
@@ -38,7 +42,9 @@ public final class LiveEyeSafeDuration {
         double last = FIRST_STEPS_MIN[table - 1];
         if (rank <= MID_LAST_RANK) return last - MID_DROP_MIN * (rank - table);
         double midEnd = last - MID_DROP_MIN * (MID_LAST_RANK - table);
-        return Math.max(FLOOR_STEP_MIN, midEnd * Math.pow(TAIL_RATIO, rank - MID_LAST_RANK));
+        double fast = midEnd * Math.pow(TAIL_RATIO, rank - MID_LAST_RANK);
+        double slow = SLOW_STEP_MIN * Math.sqrt((double) SLOW_FROM_RANK / rank);
+        return Math.max(fast, slow);
     }
 
     /** The whole extra for {@code rank}; 0 for rank 0 or less. */

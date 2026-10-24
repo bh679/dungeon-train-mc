@@ -40,11 +40,13 @@ class LiveEyeSafeDurationTest {
     }
 
     @Test
-    void thirtyFiveMinutesAtRankTwentyThenFiveSecondsByFortyFive() {
+    void thirtyFiveMinutesAtRankTwentyThenFiveSecondsByFortyFiveThenSlower() {
         assertEquals(35 * MIN, LiveEyeSafeDuration.extraMs(20), 1_000L);
         int rank = 20;
         while (LiveEyeSafeDuration.extraMs(rank) < 45 * MIN) rank++;
         assertEquals(5_000L, Math.round(LiveEyeSafeDuration.stepMinutes(rank + 1) * MIN), 1_000L);
-        assertEquals(5_000L, Math.round(LiveEyeSafeDuration.stepMinutes(500) * MIN));
+        assertTrue(LiveEyeSafeDuration.stepMinutes(500) < LiveEyeSafeDuration.stepMinutes(rank + 1),
+            "keeps going down past 45 minutes");
+        assertTrue(LiveEyeSafeDuration.stepMinutes(1000) * MIN > 1_000L, "slowly: still a second at rank 1000");
     }
 }
