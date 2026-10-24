@@ -14,7 +14,7 @@ public final class KnightPerks {
 
     /** Tier 2: rank% chance a melee hit crits; past 100, rank-100 % chance of a harder crit. */
     public static final String CRITS = "crits";
-    /** Tier 3: kills grant Strength; 0.5 s longer per rank, one level stronger (time back to 2 s) every 10 ranks. */
+    /** Tier 3: kills grant Strength; 3 s, each rank adding half the time the last did, one level stronger (time back to 3 s) every 10 ranks. */
     public static final String KILL_BUFF = "kill-buff";
     /** Tier 3: kills have a chance to heal half a heart; the chance overflows into extra halves. */
     public static final String VAMPIRISM = "vampirism";
@@ -25,8 +25,7 @@ public final class KnightPerks {
     static final float CRIT_MULTIPLIER_PER_STEP = 0.5f;
     static final int CRIT_PERCENT_PER_RANK = 1;
 
-    static final int STRENGTH_BASE_TICKS = 40;
-    static final int STRENGTH_TICKS_PER_RANK = 10;
+    static final int STRENGTH_BASE_TICKS = 60;
     static final int RANKS_PER_STRENGTH_LEVEL = 10;
 
     static final int VAMPIRISM_BASE_PERCENT = 25;
@@ -70,12 +69,14 @@ public final class KnightPerks {
     }
 
     /**
-     * Strength duration per kill, in ticks: 2 s plus 0.5 s per rank past the first within the current
-     * Strength level; each new level starts back at 2 s.
+     * Strength duration per kill, in ticks: 3 s at the first rank of a Strength level, and each rank
+     * after adds half what the one before did (+1.5 s, +0.75 s ...), so a level approaches 6 s. Each
+     * new level starts back at 3 s.
      */
     public static int strengthDurationTicks(int rank) {
         if (rank <= 0) return 0;
-        return STRENGTH_BASE_TICKS + (rank - 1) % RANKS_PER_STRENGTH_LEVEL * STRENGTH_TICKS_PER_RANK;
+        int step = (rank - 1) % RANKS_PER_STRENGTH_LEVEL;
+        return (int) Math.round(STRENGTH_BASE_TICKS * (2.0 - Math.pow(0.5, step)));
     }
 
     /**

@@ -63,15 +63,16 @@ class KnightPerksTest {
     @Test
     void killBuffDurationAndLevel() {
         assertEquals(0, KnightPerks.strengthDurationTicks(0));
-        assertEquals(40, KnightPerks.strengthDurationTicks(1));   // 2 s, Strength I
-        assertEquals(50, KnightPerks.strengthDurationTicks(2));   // 2.5 s
-        assertEquals(130, KnightPerks.strengthDurationTicks(10)); // 6.5 s, last rank of Strength I
+        assertEquals(60, KnightPerks.strengthDurationTicks(1));   // 3 s, Strength I
+        assertEquals(90, KnightPerks.strengthDurationTicks(2));   // 4.5 s (+1.5)
+        assertEquals(105, KnightPerks.strengthDurationTicks(3));  // 5.25 s (+0.75)
+        assertEquals(120, KnightPerks.strengthDurationTicks(10)); // ~6 s, last rank of Strength I
         assertEquals(0, KnightPerks.strengthAmplifier(10));
         assertEquals(1, KnightPerks.strengthAmplifier(11));       // Strength II
-        assertEquals(40, KnightPerks.strengthDurationTicks(11));  // back to 2 s
-        assertEquals(50, KnightPerks.strengthDurationTicks(12));
+        assertEquals(60, KnightPerks.strengthDurationTicks(11));  // back to 3 s
+        assertEquals(90, KnightPerks.strengthDurationTicks(12));
         assertEquals(2, KnightPerks.strengthAmplifier(21));       // Strength III
-        assertEquals(40, KnightPerks.strengthDurationTicks(21));
+        assertEquals(60, KnightPerks.strengthDurationTicks(21));
     }
 
     @Test
