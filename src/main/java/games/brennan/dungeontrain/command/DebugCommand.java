@@ -68,6 +68,8 @@ public final class DebugCommand {
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("debug")
             .then(Commands.literal("scan").executes(ctx -> runScan(ctx.getSource())))
+            // SHIM: /dungeontrain debug perk set|get — dropped when the perks foundation lands.
+            .then(games.brennan.dungeontrain.perks.PerkShimCommand.build())
             // /dungeontrain debug stage-placeholders — walks every live carriage's footprint and
             // counts stage placeholder blocks that survived generation (expected: none) plus the
             // top real blocks, so a build's placeholders can be proven resolved without a client.
