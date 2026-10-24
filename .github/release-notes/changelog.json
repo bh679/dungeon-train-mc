@@ -30371,6 +30371,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "deep-room-mob-difficulty",
+      "version": "0.1502.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "mobs",
+        "balance"
+      ],
+      "title": "Tougher creatures arrive later",
+      "summary": "Two of the most dangerous creatures in one carriage room now only show up once your difficulty is much higher.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
