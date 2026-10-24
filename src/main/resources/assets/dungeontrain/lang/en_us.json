@@ -5399,5 +5399,7 @@
   "advancements.dungeontrain.enchiridion.darkroom.description": "Find a camera or a photo.",
   "advancements.dungeontrain.tab.train_explorer": "Train Explorer",
   "advancements.dungeontrain.tab.others": "Others",
-  "advancements.dungeontrain.tab.secrete_menu": "The Secret Menu"
+  "advancements.dungeontrain.tab.secrete_menu": "The Secret Menu",
+
+  "perk.dungeontrain.restock_villager.button": "Restock (%s)"
 }
