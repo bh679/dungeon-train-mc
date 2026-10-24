@@ -30310,7 +30310,10 @@
       "date": "2026-10-24",
       "released": false,
       "released_in": null,
-      "released_at": null
+      "released_at": null,
+      "major": true,
+      "notable": true,
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-piglins-have-new-company.jpg"
     }
   ]
 }
