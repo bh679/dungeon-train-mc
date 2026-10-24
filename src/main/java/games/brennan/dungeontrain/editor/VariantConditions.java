@@ -156,10 +156,18 @@ public final class VariantConditions {
 
     /**
      * Whether {@code c} holds for the cell at {@code localPos}: a group target when that group rolled
-     * a listed block, a touching target when <i>any</i> selected side holds one.
+     * a listed block, a touching target when <i>any</i> selected side holds one — or, negated, when
+     * that is not so.
      */
     static boolean passes(VariantCondition c, BlockPos localPos, VariantGroupResolver view,
                           long worldSeed, int index, Map<Object, BlockState> seen) {
+        // Is not: the same match, turned round.
+        return c.negate() != targetMatches(c, localPos, view, worldSeed, index, seen);
+    }
+
+    /** Whether {@code c}'s target holds one of its values, before {@link VariantCondition#negate} applies. */
+    private static boolean targetMatches(VariantCondition c, BlockPos localPos, VariantGroupResolver view,
+                                         long worldSeed, int index, Map<Object, BlockState> seen) {
         if (c.isGroupTarget()) {
             BlockState rolled = seen.computeIfAbsent(c.groupId(), k -> {
                 BlockPos anchor = view.anchorOf(c.groupId());

@@ -132,7 +132,9 @@ public final class LiveStatusPoller {
         LiveFeedClient.Life ranked = DiscordPresenceClientConfig.isGranted()
             ? new LiveFeedClient.Life(LiveLife.current(), freePlay, VersionInfo.VERSION) : null;
         String name = ranked != null && Minecraft.getInstance().getUser() != null ? Minecraft.getInstance().getUser().getName() : null;
-        return LiveFeedClient.status(viewer, channel, ranked, name, headTv)
+        // A TV here shows the second stream (Two Streams): count this viewer on that slot too.
+        boolean secondSlot = LiveFeedSource.SECOND.interested();
+        return LiveFeedClient.status(viewer, channel, ranked, name, headTv, secondSlot)
             .handle((r, t) -> {
                 if ((r == null || !r.ok()) && LiveRelayRestart.inWindow(System.currentTimeMillis())) return null;
                 if (r == null) return Status.OFFLINE;
