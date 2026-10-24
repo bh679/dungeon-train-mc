@@ -28,8 +28,10 @@ import java.util.stream.Stream;
  * while away are lost; threshold triggers (distance, train time, biomes visited, ...) fire again and
  * grant once the player is back.</p>
  *
- * <p>Three kinds of award always pass:</p>
+ * <p>Four kinds of award always pass:</p>
  * <ul>
+ *   <li>Any advancement that is not Dungeon Train's own ({@link #isDungeonTrains}) — vanilla's
+ *       adventuring_time, other mods' tabs. The AFK rule is about this mod's progression only.</li>
  *   <li>{@link AdvancementProfiles#isReplaying()} — the login / profile-swap replay of advancements
  *       the player already earned.</li>
  *   <li>Advancements with no display — recipe unlocks and technical nodes. They are not on the
@@ -64,12 +66,21 @@ public final class AfkAdvancementGate {
         if (player == null) return false;
         if (AdvancementProfiles.isReplaying()) return false;
         if (holder.value().display().isEmpty()) return false;
+        if (!isDungeonTrains(holder.id())) return false;
         if (isExempt(holder.id())) return false;
         if (!PlayerActivityTracker.isAfk(player)) return false;
         LOGGER.debug("[DungeonTrain] Refused {} / {} for {}: AFK ({})", holder.id(), criterion,
             player.getName().getString(), PlayerActivityTracker.reason(player));
         player.getData(ModDataAttachments.AFK_LIFE_STATS.get()).addRefused(holder.id());
         return true;
+    }
+
+    /**
+     * Is this one of Dungeon Train's own advancements? The AFK rule only ever judges those: vanilla
+     * and other mods' tabs are earned on their own terms, whatever the tracker thinks.
+     */
+    static boolean isDungeonTrains(ResourceLocation id) {
+        return DungeonTrain.MOD_ID.equals(id.getNamespace());
     }
 
     /** Is this advancement one the AFK rule leaves alone? */

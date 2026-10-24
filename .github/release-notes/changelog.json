@@ -30381,7 +30381,7 @@
         "advancements"
       ],
       "title": "Advancement fix",
-      "summary": "Some advancements that should have been earned were not. They are now.",
+      "summary": "Some advancements that should have been earned were not. They are now. Vanilla and other mods' advancements are no longer held back by the AFK check.",
       "highlights": [],
       "date": "2026-10-24",
       "released": false,

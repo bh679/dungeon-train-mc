@@ -72,6 +72,15 @@ final class AfkAdvancementGateTest {
     }
 
     @Test
+    @DisplayName("only Dungeon Train's own advancements are judged; vanilla and other mods' pass while AFK")
+    void onlyDungeonTrainAdvancementsAreJudged() {
+        assertFalse(AfkAdvancementGate.isDungeonTrains(ResourceLocation.parse("minecraft:adventure/adventuring_time")));
+        assertFalse(AfkAdvancementGate.isDungeonTrains(ResourceLocation.parse("exposure:take_photo")));
+        assertTrue(AfkAdvancementGate.isDungeonTrains(rl("enchiridion/nature_documentary")));
+        assertTrue(AfkAdvancementGate.isDungeonTrains(rl("dungeon_train/reached_nether")));
+    }
+
+    @Test
     @DisplayName("re-firing scan advancements stay gated")
     void scanAdvancementsAreNotExempt() {
         assertFalse(AfkAdvancementGate.isExempt(rl("dungeon_train/reached_nether")));
