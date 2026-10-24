@@ -30515,6 +30515,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "playermob-tv-hats",
+      "version": "0.1510.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "TV heads",
+      "summary": "Some of the players you meet on the train now turn up wearing a TV on their head.",
+      "highlights": [],
+      "pr": 2304,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
