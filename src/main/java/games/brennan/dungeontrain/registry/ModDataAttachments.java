@@ -159,6 +159,20 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Perks: the unlocked set (bought with unlock points) and this life's active points per perk.
+     * {@code copyOnDeath} keeps the unlocked set through the respawn clone; the active points are
+     * cleared explicitly by {@code perks/PerkLifecycle} on a death respawn. Immutable value, so
+     * every change is a {@code setData}. Read through {@code perks/Perks}, never directly.
+     */
+    public static final Supplier<AttachmentType<games.brennan.dungeontrain.perks.PerkState>> PERK_STATE =
+        TYPES.register("perk_state",
+            () -> AttachmentType.<games.brennan.dungeontrain.perks.PerkState>builder(games.brennan.dungeontrain.perks.PerkState::empty)
+                .serialize(games.brennan.dungeontrain.perks.PerkState.CODEC, st -> !st.isEmpty())
+                .copyOnDeath()
+                .build()
+        );
+
+    /**
      * Per-player flag: has this player already seen the fly-up spawn intro
      * cinematic in this world? Set once on first login and serialized so it
      * survives logout / world reload. {@code copyOnDeath} preserves it across
