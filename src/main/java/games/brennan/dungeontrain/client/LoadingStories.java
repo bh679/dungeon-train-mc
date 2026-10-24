@@ -20,7 +20,7 @@ import java.util.stream.IntStream;
  */
 public final class LoadingStories {
 
-    private static final int[] STORY_LINE_COUNTS = { 11, 12, 16, 35, 30, 25, 29, 26, 47, 31, 21, 27 };
+    private static final int[] STORY_LINE_COUNTS = { 11, 12, 16, 35, 30, 25, 29, 26, 47, 31, 21, 26 };
 
     private static final long MIN_LINE_MS = 1200;
     private static final long MAX_LINE_MS = 6000;
