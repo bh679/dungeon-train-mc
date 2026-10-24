@@ -30371,6 +30371,30 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "gallery-carriage-variant-conditions",
+      "version": "0.1503.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Gallery carriage",
+      "summary": "A new passenger carriage, the Gallery, can now turn up on the train. Builders also get a few editor upgrades for block variants.",
+      "highlights": [
+        "New Gallery passenger carriage",
+        "Block variant conditions can be set to Is not",
+        "Variants that follow another group now match what that group placed",
+        "Pasting a copied variant keeps the conditions it was copied with",
+        "Player heads added to a build face into the room"
+      ],
+      "pr": 2294,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
