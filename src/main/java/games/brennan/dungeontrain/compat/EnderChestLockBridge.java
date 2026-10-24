@@ -19,7 +19,9 @@ import org.slf4j.Logger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Decides which Ender Chest a player is looking at: it locks a Free Play (cheated) run onto the
@@ -43,6 +45,15 @@ import java.util.UUID;
  * {@link PlayerMobSocialBridge}: the caller gates on {@code ModList.isLoaded} and
  * catches {@link Throwable}, so a bundled ECP build predating the seam degrades to
  * "no Ender Chest lock" instead of crashing mod load.</p>
+ *
+ * <p><b>Only while ECP holds the player.</b> ECP learns which slot a player's live chest holds when it
+ * restores them at login, and forgets again when it evicts them at logout. Asked to swap outside that
+ * window, it guesses the outgoing slot from the game mode ({@code survival}) and snapshots whatever the
+ * live chest holds into it. On 2026-10-23 that wiped a player's survival chest (26 shulker boxes): he
+ * rejoined a world with cheats on, DT's HIGHEST-priority login check flipped the session into Free Play
+ * and called {@link #engage} before ECP had restored him, so the world's empty vanilla Ender Chest was
+ * saved over his survival slot. {@link EnderChestLockEvents} now marks when ECP holds a player;
+ * {@link #engage} before that is deferred to the end of login, and after logout begins it is dropped.</p>
  */
 public final class EnderChestLockBridge {
 
@@ -53,6 +64,12 @@ public final class EnderChestLockBridge {
 
     /** True once the provider is registered against a seam-capable ECP build. */
     private static volatile boolean active = false;
+
+    /**
+     * Players ECP currently holds: restored at login and not yet logging out. Only these may be swapped
+     * live — see the class comment. Maintained by {@link EnderChestLockEvents}.
+     */
+    private static final Set<UUID> SETTLED = ConcurrentHashMap.newKeySet();
 
     private EnderChestLockBridge() {}
 
@@ -94,8 +111,42 @@ public final class EnderChestLockBridge {
      * ECP's {@code refreshSlot} is a no-op when the effective slot is unchanged.
      */
     public static void engage(ServerPlayer player) {
-        if (!active) return;
+        if (!shouldEngage(active, SETTLED.contains(player.getUUID()))) {
+            // Before ECP's restore the slot is settled at the end of login (EnderChestLockEvents);
+            // after logout begins ECP's own save already writes the slot the live chest holds.
+            LOGGER.debug("[DungeonTrain] Ender Chest swap for {} left to ECP — not restored yet, or leaving",
+                player.getName().getString());
+            return;
+        }
         EnderChestStore.refreshSlot(player);
+    }
+
+    /**
+     * May the live chest be swapped right now? Only with the lock installed and only while ECP holds the
+     * player. Pure, for unit tests.
+     */
+    static boolean shouldEngage(boolean installed, boolean settled) {
+        return installed && settled;
+    }
+
+    /**
+     * ECP has restored {@code player} (end of login): from now on swaps go through, starting with one
+     * now, so a verdict that changed while the player was joining is applied. No-op when the slot ECP
+     * restored is already the right one.
+     */
+    static void settle(ServerPlayer player) {
+        SETTLED.add(player.getUUID());
+        engage(player);
+    }
+
+    /** {@code uuid} is logging out: ECP is about to save and evict them, so no more swaps. */
+    static void release(UUID uuid) {
+        SETTLED.remove(uuid);
+    }
+
+    /** The server stopped: nobody is held any more. */
+    static void releaseAll() {
+        SETTLED.clear();
     }
 
     /** Whether a seam-capable ECP is present and the slot provider is registered. */
