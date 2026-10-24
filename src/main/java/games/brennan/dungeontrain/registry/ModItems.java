@@ -7,16 +7,22 @@ import games.brennan.dungeontrain.item.KnockbackSlimeItem;
 import games.brennan.dungeontrain.item.LiveCassetteItem;
 import games.brennan.dungeontrain.item.LiveHeadpieceItem;
 import games.brennan.dungeontrain.item.VariantClipboardItem;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.mehvahdjukaar.vista.VistaMod;
 import net.minecraft.world.item.Rarity;
+import net.minecraft.world.item.component.CustomData;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.registries.DeferredItem;
+import net.neoforged.neoforge.common.DeferredSpawnEggItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
@@ -248,6 +254,36 @@ public final class ModItems {
         () -> new KnockbackSlimeItem(new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON))
     );
 
+    /**
+     * A Piglin Brute that spawns holding Piglin Proliferation's Buckler (golden axe in the main hand, as
+     * vanilla), so its charge attack runs. Ordinary brute eggs spawn without one
+     * ({@link games.brennan.dungeontrain.event.BruteBucklerSpawnRule}); this egg's {@code ENTITY_DATA} is
+     * applied after that rule, and the editor captures it into a carriage cell as the mob's NBT
+     * ({@link games.brennan.dungeontrain.editor.SpawnEggMobNbt}). Creative/editor only.
+     */
+    public static final DeferredItem<Item> BUCKLER_PIGLIN_BRUTE_SPAWN_EGG = ITEMS.register(
+        "buckler_piglin_brute_spawn_egg",
+        () -> new DeferredSpawnEggItem(() -> EntityType.PIGLIN_BRUTE, 0x592A10, 0xC9A46A,
+            new Item.Properties().component(DataComponents.ENTITY_DATA, CustomData.of(bucklerBruteNbt())))
+    );
+
+    private static CompoundTag bucklerBruteNbt() {
+        CompoundTag nbt = new CompoundTag();
+        nbt.putString("id", "minecraft:piglin_brute");
+        ListTag hands = new ListTag();
+        hands.add(itemNbt("minecraft:golden_axe"));
+        hands.add(itemNbt("piglinproliferation:buckler"));
+        nbt.put("HandItems", hands);
+        return nbt;
+    }
+
+    private static CompoundTag itemNbt(String id) {
+        CompoundTag item = new CompoundTag();
+        item.putString("id", id);
+        item.putInt("count", 1);
+        return item;
+    }
+
     private ModItems() {}
 
     /** Call from the mod constructor to attach the {@link DeferredRegister} to the mod-event bus. */
@@ -268,6 +304,8 @@ public final class ModItems {
             event.accept(VARIANT_CLIPBOARD.get());
         } else if (event.getTabKey() == CreativeModeTabs.COMBAT) {
             event.accept(KNOCKBACK_SLIME.get());
+        } else if (event.getTabKey() == CreativeModeTabs.SPAWN_EGGS) {
+            event.accept(BUCKLER_PIGLIN_BRUTE_SPAWN_EGG.get());
         }
     }
 }
