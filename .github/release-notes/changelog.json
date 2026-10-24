@@ -30498,6 +30498,23 @@
       "released_in": null,
       "released_at": null,
       "pr": 2297
+    },
+    {
+      "id": "dimensional-carriage-far-exit-landing",
+      "version": "0.1509.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage exit fix",
+      "summary": "Walking a long way through a dimensional carriage and leaving by a far exit now puts you back inside the right carriage. The train waits for you to land before it moves off.",
+      "highlights": [],
+      "pr": 2269,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
