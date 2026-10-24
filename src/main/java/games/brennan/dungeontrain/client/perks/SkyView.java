@@ -85,8 +85,6 @@ public record SkyView(double zoom, double centreX, double centreY) {
         double minY = -slackY + PerkTree.SIZE * PAN_SLACK, maxY = PerkTree.SIZE - PerkTree.SIZE * PAN_SLACK + slackY;
         double cx = Math.max(Math.min(minX, maxX), Math.min(maxX, centreX));
         double cy = Math.max(Math.min(minY, maxY), Math.min(maxY, centreY));
-        if (halfW >= PerkTree.SIZE / 2) cx = PerkTree.CENTRE;
-        if (halfH >= PerkTree.SIZE / 2) cy = PerkTree.CENTRE;
         return cx == centreX && cy == centreY ? this : new SkyView(zoom, cx, cy);
     }
 

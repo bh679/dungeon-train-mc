@@ -85,7 +85,9 @@ class PerkTreeTest {
     void validation() {
         assertThrows(IllegalArgumentException.class, () -> PerkTreeLoader.parse(new StringReader(FIXTURE.replace("\"x\":400,\"y\":400", "\"x\":10,\"y\":400"))));
         assertThrows(IllegalArgumentException.class, () -> PerkTreeLoader.parse(new StringReader(FIXTURE.replace("\"id\":\"haste\"", "\"id\":\"Haste\""))));
-        assertThrows(IllegalArgumentException.class, () -> PerkTreeLoader.parse(new StringReader(FIXTURE.replace("{\"a\":\"root\",\"b\":\"speed\",\"kind\":\"req\",\"oneWay\":false},", ""))));
+        String floating = FIXTURE.replace("{\"a\":\"root\",\"b\":\"speed\",\"kind\":\"req\",\"oneWay\":false},", "")
+            .replace("{\"a\":\"speed\",\"b\":\"haste\",\"kind\":\"req\",\"oneWay\":false},", "");
+        assertThrows(IllegalArgumentException.class, () -> PerkTreeLoader.parse(new StringReader(floating)));
     }
 
     @Test
@@ -96,6 +98,7 @@ class PerkTreeTest {
         assertEquals(PerkTree.CENTRE, t.root().x());
         PerkRegistry.bootstrap();
         for (String id : PerkRegistry.ids()) {
+            if (id.startsWith("perk-registry-test")) continue; // PerkRegistryTest's own fixtures
             assertTrue(t.perk(id).isPresent(), "registered perk missing from tree.json: " + id);
         }
         for (PerkTree.Perk p : t.perks()) {
