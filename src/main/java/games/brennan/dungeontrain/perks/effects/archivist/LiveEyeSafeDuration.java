@@ -2,9 +2,9 @@ package games.brennan.dungeontrain.perks.effects.archivist;
 
 /**
  * Live Eye Safe Duration: each rank adds some time a streamer cannot be forcibly taken off air, with
- * the step shrinking as ranks climb: 5, 4.5, 4, 3.7, 3.5 minutes for ranks 1 to 5, then
- * {@code 3.5 * sqrt(5 / rank)} minutes per rank after that. No cap: the total keeps growing, ever
- * more slowly (about 35 min at rank 10, 2 h 20 at rank 100). The relay keeps two windows, the
+ * the step shrinking as ranks climb: 5, 4, 3, 2, 1.5 minutes for ranks 1 to 5 (totals 5, 9, 12,
+ * 14, 15.5), then {@code 1.5 * sqrt(5 / rank)} minutes per rank after that. No cap: the total keeps
+ * growing, ever more slowly (about 21.5 min at rank 10, 67 min at rank 100). The relay keeps two windows, the
  * protected minutes a takeover needs a vote for ({@code takeoverMinMs}) and the minutes the holder
  * may still vote in ({@code holderVoteMs}); half of the extra goes to each. The claim carries both
  * halves and the relay adds them to its defaults, so an older relay simply ignores them. Pure.
@@ -13,9 +13,9 @@ public final class LiveEyeSafeDuration {
 
     private static final long MINUTE_MS = 60L * 1000L;
     /** Minutes added by ranks 1 to 5. Balancing knob. */
-    static final double[] FIRST_STEPS_MIN = {5.0, 4.5, 4.0, 3.7, 3.5};
+    static final double[] FIRST_STEPS_MIN = {5.0, 4.0, 3.0, 2.0, 1.5};
     /** Step after the table: {@code TAIL_STEP_MIN * sqrt(FIRST_STEPS_MIN.length / rank)}. Balancing knob. */
-    static final double TAIL_STEP_MIN = 3.5;
+    static final double TAIL_STEP_MIN = 1.5;
 
     private LiveEyeSafeDuration() {}
 

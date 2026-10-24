@@ -13,10 +13,10 @@ class LiveEyeSafeDurationTest {
     void stepsShrinkFromFiveMinutes() {
         assertEquals(0L, LiveEyeSafeDuration.extraMs(0));
         assertEquals(5 * MIN, LiveEyeSafeDuration.extraMs(1));
-        assertEquals(Math.round(9.5 * MIN), LiveEyeSafeDuration.extraMs(2));
-        assertEquals(Math.round(13.5 * MIN), LiveEyeSafeDuration.extraMs(3));
-        assertEquals(Math.round(17.2 * MIN), LiveEyeSafeDuration.extraMs(4));
-        assertEquals(Math.round(20.7 * MIN), LiveEyeSafeDuration.extraMs(5));
+        assertEquals(9 * MIN, LiveEyeSafeDuration.extraMs(2));
+        assertEquals(12 * MIN, LiveEyeSafeDuration.extraMs(3));
+        assertEquals(14 * MIN, LiveEyeSafeDuration.extraMs(4));
+        assertEquals(Math.round(15.5 * MIN), LiveEyeSafeDuration.extraMs(5));
     }
 
     @Test
@@ -32,7 +32,7 @@ class LiveEyeSafeDurationTest {
     @Test
     void negativeRankAddsNothingAndThereIsNoCap() {
         assertEquals(0L, LiveEyeSafeDuration.extraMs(-3));
-        assertTrue(LiveEyeSafeDuration.extraMs(100) > 2 * 60 * MIN, "past two hours at rank 100");
+        assertTrue(LiveEyeSafeDuration.extraMs(100) > 60 * MIN, "past an hour at rank 100");
         assertTrue(LiveEyeSafeDuration.extraMs(101) > LiveEyeSafeDuration.extraMs(100));
         for (int rank = 2; rank < 60; rank++) {
             assertTrue(LiveEyeSafeDuration.stepMinutes(rank) < LiveEyeSafeDuration.stepMinutes(rank - 1));
