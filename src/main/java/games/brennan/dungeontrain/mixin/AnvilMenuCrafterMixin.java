@@ -35,6 +35,8 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
  *       reads true for them, so any price can be paid by a player with the levels (survival
  *       included). The verdict rides an extra {@link DataSlot} to the client, where
  *       {@code client.AnvilScreenCrafterCapMixin} shows the price instead of "Too Expensive!".
+ *       The pre-discount price rides a second data slot so the screen can show it struck through
+ *       before the price paid.
  *       Rank 0 stays vanilla.</li>
  *   <li><b>Enchant Max</b>: vanilla clamps a combined level to {@code getMaxLevel()}, which would
  *       knock a table-rolled Sharpness VI back to V. The clamp becomes
@@ -51,6 +53,10 @@ public abstract class AnvilMenuCrafterMixin extends ItemCombinerMenu implements 
     @Unique
     private final DataSlot dungeontrain$uncapped = DataSlot.standalone();
 
+    /** Vanilla's price before Enchant Cost lowered it, 0 when nothing was taken off; synced to the client. */
+    @Unique
+    private final DataSlot dungeontrain$originalCost = DataSlot.standalone();
+
     private AnvilMenuCrafterMixin() {
         super(null, 0, null, null);
     }
@@ -60,15 +66,23 @@ public abstract class AnvilMenuCrafterMixin extends ItemCombinerMenu implements 
         return dungeontrain$uncapped.get() == 1;
     }
 
+    @Override
+    public int dungeontrain$originalCost() {
+        return dungeontrain$originalCost.get();
+    }
+
     @Inject(method = "<init>(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/inventory/ContainerLevelAccess;)V",
             at = @At("RETURN"))
     private void dungeontrain$addUncappedSlot(int containerId, Inventory inventory, ContainerLevelAccess access, CallbackInfo ci) {
         this.addDataSlot(dungeontrain$uncapped);
+        this.addDataSlot(dungeontrain$originalCost);
         dungeontrain$refreshUncapped();
     }
 
     @Inject(method = "createResult", at = @At("HEAD"))
     private void dungeontrain$enterCreateResult(CallbackInfo ci) {
+        // Early returns skip the TAIL hook, so clear the struck price here.
+        if (this.player != null && !this.player.level().isClientSide()) dungeontrain$originalCost.set(0);
         dungeontrain$refreshUncapped();
     }
 
@@ -97,7 +111,10 @@ public abstract class AnvilMenuCrafterMixin extends ItemCombinerMenu implements 
         if (this.resultSlots.getItem(0).isEmpty()) return;
         int priced = this.cost.get();
         int reduced = CrafterPerks.reducedCost(priced, CrafterRank.enchantCost(this.player));
-        if (reduced != priced) this.cost.set(reduced);
+        if (reduced != priced) {
+            this.cost.set(reduced);
+            if (!this.player.level().isClientSide()) dungeontrain$originalCost.set(priced);
+        }
     }
 
     @Redirect(method = "createResult",
