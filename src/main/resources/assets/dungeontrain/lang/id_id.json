@@ -740,6 +740,7 @@
   "command.dungeontrain.offer_eye.offered_all": "Menawarkan Camcorder Siaran-mu kepada %s penonton. Yang pertama menerima akan mendapatkannya.",
   "command.dungeontrain.offer_eye.all_already_offered": "Semua penonton sudah menerima tawaranmu.",
   "command.dungeontrain.offer_eye.already_given": "Seseorang sudah mengambil Camcorder Siaran-mu.",
+  "command.dungeontrain.offer_eye.needs_perk": "Menawarkan Live Eye kepada satu penonton membutuhkan perk Gift Live Eye. Menawarkannya kepada semua orang masih bisa.",
   "chat.dungeontrain.live.ended_death": "Siaranmu berakhir bersamamu.",
   "chat.dungeontrain.live.encoder_died": "Siaran berhenti: encoder video gagal. Lihat log permainan.",
   "chat.dungeontrain.live.censored": "Camcorder menolak kata itu. Peringatan %s dari %s.",

@@ -740,6 +740,7 @@
   "command.dungeontrain.offer_eye.offered_all": "กำลังมอบกล้องวิดีโอถ่ายทอดของคุณให้ผู้ชม %s คน คนแรกที่ตอบรับจะได้ไป",
   "command.dungeontrain.offer_eye.all_already_offered": "ผู้ชมทุกคนได้รับข้อเสนอของคุณแล้ว",
   "command.dungeontrain.offer_eye.already_given": "มีคนรับกล้องวิดีโอถ่ายทอดของคุณไปแล้ว",
+  "command.dungeontrain.offer_eye.needs_perk": "การเสนอ Live Eye ให้ผู้ชมคนเดียวต้องมีเพิร์ก Gift Live Eye ส่วนการเสนอให้ทุกคนยังใช้ได้ตามปกติ",
   "chat.dungeontrain.live.ended_death": "การถ่ายทอดของคุณจบลงพร้อมกับคุณ",
   "chat.dungeontrain.live.encoder_died": "การถ่ายทอดหยุดลง: ตัวเข้ารหัสวิดีโอล้มเหลว ดูบันทึกของเกม",
   "chat.dungeontrain.live.censored": "กล้องวิดีโอไม่รับคำนั้น คำเตือนที่ %s จาก %s",

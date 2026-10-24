@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.client.live;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.live.life.LiveLifeEvents;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.perks.effects.archivist.ArchivistPerks;
+import games.brennan.dungeontrain.perks.effects.archivist.LiveEyeSafeDuration;
 import games.brennan.dungeontrain.client.ClientLanguage;
 import games.brennan.dungeontrain.cheat.ApprovedModList;
 import games.brennan.dungeontrain.client.live.audio.AudioMirror;
@@ -516,7 +518,12 @@ public final class LiveStreamController {
         // Won a dead streamer's takeover: that ticket carries the claim past the relay's tenure check
         // (an approved takeover vote's ticket does the same).
         String deathTicket = LiveTakeoverOffer.takeTicket(System.currentTimeMillis());
-        LiveFeedClient.claim(uuid, name, eyeId, info, life, takeover, ticket, deathTicket).thenAcceptBothAsync(aac, (result, hasAac) -> {
+        // Live Eye Safe Duration perk: extra protected minutes, half per relay window.
+        int safeRank = games.brennan.dungeontrain.perks.Perks.rank(mc.player, ArchivistPerks.LIVE_EYE_SAFE_DURATION);
+        long takeoverExtraMs = LiveEyeSafeDuration.firstWindowExtraMs(safeRank);
+        long holderVoteExtraMs = LiveEyeSafeDuration.secondWindowExtraMs(safeRank);
+        LiveFeedClient.claim(uuid, name, eyeId, info, life, takeover, ticket, deathTicket, takeoverExtraMs, holderVoteExtraMs)
+            .thenAcceptBothAsync(aac, (result, hasAac) -> {
             if (gen != generation || state != State.CLAIMING) return;
             LiveTakeoverClient.Holder holder = LiveTakeoverClient.parseBlocked(result);
             if (holder != null) {
