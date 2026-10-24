@@ -39,8 +39,8 @@ aside.min > :not(.tools){display:none!important}
 .lbl.sel{text-decoration:underline;text-underline-offset:4px;filter:drop-shadow(0 0 6px currentColor)}
 .lbl:focus{outline:none}
 .rev{filter:drop-shadow(0 0 3px #5fd38a)}
-.node.unready{opacity:.1}.node.lower{opacity:.2}
-.edge.unready{stroke-opacity:.1!important}.edge.lower{stroke-opacity:.2!important}
+.node.unready{opacity:.1}.node.lower{opacity:.35}
+.edge.unready{stroke-opacity:.1!important}.edge.lower{stroke-opacity:.35!important}
 .plbl{font-family:var(--body);font-size:10.5px;font-weight:500;fill:var(--fg);pointer-events:auto;cursor:grab;paint-order:stroke;stroke:#070b16;stroke-width:3px}
 .edge{fill:none;stroke-width:1.2;stroke-opacity:.55;cursor:pointer}
 .edge.cross{stroke:var(--gold);stroke-opacity:.5;stroke-dasharray:3 4;stroke-width:1}
@@ -134,7 +134,7 @@ textarea.dev,.ct td.dev{opacity:.6;font-size:11px}
       <button hidden id="bAddClass" title="Add a class">+ class</button>
       <button hidden id="bLinkReq" title="Link two perks">link</button>
       <button hidden id="bLinkX" title="Cross-link two perks (dashed)">chord</button>
-      <select id="sWork" class="lnk" title="work left: show one level; lower levels fade to 20%, higher to 10%" style="width:auto;border:0;padding:0;font-size:12px"><option value="">all</option><option value="0">0 ready</option><option value="1">1 balancing</option><option value="2">2 UI</option><option value="3">3 UX</option><option value="4">4 code</option></select>
+      <select id="sWork" class="lnk" title="work left: show one level; lower levels fade to 35%, higher to 10%" style="width:auto;border:0;padding:0;font-size:12px"><option value="">all</option><option value="0">0 ready</option><option value="1">1 balancing</option><option value="2">2 UI</option><option value="3">3 UX</option><option value="4">4 code</option></select>
       <button class="lnk" id="bRev" title="show reviewed rings">✓</button>
       <button class="lnk" id="bGuide" title="alignment guide: a circle through the furthest perk, and the centre ring">◯</button>
       <button class="lnk" data-t="classes" title="classes">⌘</button><button class="lnk" data-t="io" title="save / load">⇅</button>
