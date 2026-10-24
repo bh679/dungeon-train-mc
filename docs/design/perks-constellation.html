@@ -39,6 +39,7 @@ aside.min > :not(.tools){display:none!important}
 .lbl.sel{text-decoration:underline;text-underline-offset:4px;filter:drop-shadow(0 0 6px currentColor)}
 .lbl:focus{outline:none}
 .rev{filter:drop-shadow(0 0 3px #5fd38a)}
+.plbl.noready{opacity:.5}
 .plbl{font-family:var(--body);font-size:10.5px;font-weight:500;fill:var(--fg);pointer-events:auto;cursor:grab;paint-order:stroke;stroke:#070b16;stroke-width:3px}
 .edge{fill:none;stroke-width:1.2;stroke-opacity:.55;cursor:pointer}
 .edge.cross{stroke:var(--gold);stroke-opacity:.5;stroke-dasharray:3 4;stroke-width:1}
@@ -273,6 +274,8 @@ const MIGRATIONS=[
       P.forEach(([id,name,desc,tier,pos])=>m.perks.push({id,cls:c.id,name,desc,tier,cost:TIER_COST[tier],x:pos.x,y:pos.y,reviewed:false}));
       [["root","cwarlock0"],["cwarlock0","cwarlock1"],["cwarlock0","cwarlock2"],["cwarlock1","cwarlock3"],["cwarlock2","cwarlock4"]].forEach(([x,y])=>m.links.push({a:x,b:y,kind:"req",oneWay:false}))}
     ORDER2.forEach((n,i,arr)=>rotateClusterTo(m,n,i,arr.length))},
+  // "ready": the mod already has a system this perk hooks into (stats, effects, loot, carriages, Live Eye...). Titles of the rest fade.
+  m=>{const R=new Set(["Health", "Armour", "Damage", "Speed", "Sprint Speed", "Haste", "Hunger", "Sprint Hunger", "Wind Resistance", "Enchant Cost", "Cooking Time", "Looting", "Luck", "Max Backpacks", "Craft Level Stats", "Live Eye Safe Duration", "Gift liveEye", "Extra Cam-Shots", "Vote Weight", "Fav Author", "Stackable BookQill", "Drift Chance", "Own Carriage Return", "Drift Reach", "Drift Gift Repaid", "See Trade Values", "Restock Villager", "Friendliness", "Good Gifter", "Pet Health", "Kill Buff", "Vampirism", "Healing", "Crits", "Teleport Player", "Summon Lightning", "Debuff Aura"]);m.perks.forEach(p=>{if(p.id!=="root"&&p.ready===undefined)p.ready=R.has(p.name)})},
 ];
 let M;try{const s=localStorage.getItem(KEY);M=s?JSON.parse(s):null}catch(e){M=null}
 if(!M||!M.perks){M=defaultModel();M.v=0}
@@ -359,7 +362,7 @@ function renderSky(){
     if(ts&&ts.s==="unlocked"){g.appendChild(el("circle",{cx:p.x,cy:p.y,r:rr,fill:"#070b16",stroke:c,"stroke-width":1.4}))}else{g.appendChild(el("circle",{cx:p.x,cy:p.y,r:rr,fill:T===3&&!root?strong(c):c}));
     if(root||T===3)g.appendChild(el("circle",{cx:p.x,cy:p.y,r:root?5:2,fill:"#070b16"}))}
     if(ts&&ts.s==="active"&&!root&&ts.pts>0){const SLOTS=10,n=Math.min(SLOTS,ts.pts),R=hr+1.5,gap=0.3;for(let i=0;i<n;i++){const a0=-Math.PI/2+i*2*Math.PI/SLOTS+gap/2,a1=-Math.PI/2+(i+1)*2*Math.PI/SLOTS-gap/2;g.appendChild(el("path",{d:`M${p.x+R*Math.cos(a0)},${p.y+R*Math.sin(a0)} A${R},${R} 0 0 1 ${p.x+R*Math.cos(a1)},${p.y+R*Math.sin(a1)}`,fill:"none",stroke:c,"stroke-width":2.6,"stroke-linecap":"butt"}))}}
-    if(!root){const ang=Math.atan2(p.y-CY,p.x-CX);const t=el("text",{x:p.x,y:p.y+hr+8,class:"plbl","text-anchor":"middle","dominant-baseline":"middle"});t.textContent=p.name;g.appendChild(t)}
+    if(!root){const ang=Math.atan2(p.y-CY,p.x-CX);const t=el("text",{x:p.x,y:p.y+hr+8,class:"plbl"+(p.ready?"":" noready"),"text-anchor":"middle","dominant-baseline":"middle"});t.textContent=p.name;g.appendChild(t)}
     g.addEventListener("pointerdown",ev=>startDrag(ev,p,g));
     g.addEventListener("pointerenter",()=>{if(mode&&pick){hoverId=p.id;renderSky()}});g.addEventListener("pointerleave",()=>{if(hoverId===p.id){hoverId=null;renderSky()}});g.addEventListener("keydown",ev=>{if(ev.key==="Enter"){select(p.id)}});svg.appendChild(g)});
 }
@@ -425,11 +428,13 @@ function inspector(){const box=document.getElementById("inspector");box.onclick=
   <div class="line"><select id="ptier" title="tier (cost 1 / 5 / 10)" style="width:auto"${root?" disabled":""}>${[1,2,3].map(t=>`<option value="${t}"${tierOf(p)===t?" selected":""}>Tier ${t}</option>`).join("")}</select>
   <select id="picon" title="icon" style="width:auto;flex:1">${ICON_NAMES.map(n=>`<option value="${n}"${(p.icon||defaultIcon(p))===n?" selected":""}>${label(n)}</option>`).join("")}</select>
   <select id="pcls"${root?" disabled":""} title="class" style="width:auto;flex:1">${M.classes.map(c=>`<option value="${c.id}"${c.id===p.cls?" selected":""}>${esc(c.name)}</option>`).join("")}</select>
+  ${root?"":`<label title="the mod already has a system for this" style="display:flex;align-items:center;gap:4px;text-transform:none;letter-spacing:0;font-size:11px"><input type="checkbox" id="pready" style="width:auto"${p.ready?" checked":""}>code</label>`}
   ${root?"":`<button id="pdel" class="danger" title="delete perk">×</button>`}</div>
   <p class="hint">${M.links.filter(l=>l.a===p.id||l.b===p.id).map(l=>byId(l.a===p.id?l.b:l.a)?.name).filter(Boolean).join(" · ")||"not linked"}</p>`;
   const grow=t=>{t.style.height="auto";t.style.height=Math.max(20,t.scrollHeight)+"px"};const ta=box.querySelector("#pdesc");document.getElementById("aside").classList.remove("empty");grow(ta);requestAnimationFrame(()=>grow(ta));ta.addEventListener("input",()=>grow(ta));
   const bind=(id,f)=>box.querySelector("#"+id).addEventListener("input",e=>{f(e.target);typingKey=p.id+":"+id;save();renderSky();const h=box.querySelector("h2");if(h&&id==="pname")h.textContent=e.target.value});
   box.querySelector("#picon").onchange=e=>{p.icon=e.target.value;save();renderSky()};
+  if(!root)box.querySelector("#pready").onchange=e=>{p.ready=e.target.checked;save();renderSky()};
   box.querySelector("#prev").onchange=e=>{p.reviewed=e.target.checked;save();renderSky()};
   bind("pname",t=>p.name=t.value);bind("pdesc",t=>p.desc=t.value);
   if(!root)box.querySelector("#ptier").onchange=e=>{p.tier=+e.target.value;p.cost=TIER_COST[p.tier];delete p.cap;save();renderSky()};
