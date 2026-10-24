@@ -692,9 +692,9 @@ public final class BlockVariantMenuController {
                 // matching what's already there.
                 RotationApplier.OrientedState oriented =
                     RotationApplier.orientToPredecessors(capturedState, mutated);
-                VariantState newVariant = new VariantState(
+                VariantState newVariant = HeadAim.aim(new VariantState(
                     oriented.state(), itemBeNbt, 1, oriented.rotation(), linkedPrefabId)
-                    .withPainting(addedPainting);
+                    .withPainting(addedPainting), localPos, plot.footprint());
                 if (mutated.size() >= MAX_ENTRIES) {
                     actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.variant_cell_full", MAX_ENTRIES), ChatFormatting.YELLOW);
                     return;
@@ -1593,7 +1593,8 @@ public final class BlockVariantMenuController {
             mutated.add(standBase);
             return true;
         }
-        mutated.add(captureBaseVariant(level, worldPos, baseState));
+        // A player head seeding a cell looks into the room (HeadAim).
+        mutated.add(HeadAim.aim(captureBaseVariant(level, worldPos, baseState), localPos, plot.footprint()));
         return true;
     }
 
