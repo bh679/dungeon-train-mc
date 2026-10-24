@@ -30,11 +30,23 @@ public final class ServerLiveStatus {
 
     private static final AtomicBoolean IN_FLIGHT = new AtomicBoolean();
     private static volatile boolean relayLive;
+    /** The relay's last answer carried a live second stream (Two Streams). */
+    private static volatile boolean relaySecondLive;
     private static volatile long relayAtMs;
     /** The relay's name for whoever is live, when it gave one. */
     private static volatile String relayStreamer;
 
     private ServerLiveStatus() {}
+
+    /**
+     * True while a second stream is live (the Two Streams reward): two streamers on this server, or a
+     * fresh relay answer carrying a second stream. A placed TV's right-click only steps to Stream 2
+     * while this holds ({@code compat/vista/TvChannelCycle}).
+     */
+    public static boolean isSecondStreamLive(MinecraftServer server) {
+        if (server != null && LiveStreamers.all(server).size() >= 2) return true;
+        return isFresh(relaySecondLive, relayAtMs, System.currentTimeMillis());
+    }
 
     /** True while the relay recently said someone is live, or someone on this server is streaming. */
     public static boolean isAnyoneLive(MinecraftServer server) {
@@ -97,6 +109,7 @@ public final class ServerLiveStatus {
                 if (error == null && result != null && result.ok()) {
                     LiveFeedClient.Status status = LiveFeedClient.parseStatus(result);
                     relayLive = status.live();
+                    relaySecondLive = status.live() && status.second() != null;
                     relayStreamer = status.streamer();
                     relayAtMs = System.currentTimeMillis();
                 }
@@ -109,6 +122,7 @@ public final class ServerLiveStatus {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         relayLive = false;
+        relaySecondLive = false;
         relayAtMs = 0L;
         relayStreamer = null;
     }

@@ -30365,9 +30365,9 @@
         "community"
       ],
       "title": "Two Streams: a second channel",
-      "summary": "When the Two Streams reward is on, a second player can go live without taking the Eye from whoever is already streaming. Any switched-on TV can be flipped between the two streams, and TV rooms come up showing a mix of both.",
+      "summary": "When the Two Streams reward is on, a second player can go live without taking the Eye from whoever is already streaming. Right-click any TV to step it through off, Stream 1 and Stream 2, and TV rooms come up showing a mix of both.",
       "highlights": [
-        "Sneak + empty hand on a switched-on TV switches it between Stream 1 and Stream 2",
+        "Right-click a TV: off, Stream 1, Stream 2 (while a second stream is live), off",
         "A TV on Stream 2 shows Stream 1 while nobody is on the second"
       ],
       "pr": 2290,

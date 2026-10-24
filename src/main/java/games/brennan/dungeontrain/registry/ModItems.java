@@ -107,8 +107,8 @@ public final class ModItems {
 
     /**
      * The same cassette tuned to the Live Feed's second stream (the Two Streams reward): a TV holding it
-     * shows the second player who is live, or the first stream while there is no second. Sneak-clicking a
-     * TV swaps one for the other ({@code mixin.vista.TVBlockMixin}). Never a player's item either.
+     * shows the second player who is live, or the first stream while there is no second. A right-click on
+     * a TV cycles off / Stream 1 / Stream 2 ({@code mixin.vista.TVBlockMixin}). Never a player's item either.
      */
     public static final DeferredItem<Item> LIVE_CASSETTE_2 = ITEMS.register(
         "live_cassette_2",

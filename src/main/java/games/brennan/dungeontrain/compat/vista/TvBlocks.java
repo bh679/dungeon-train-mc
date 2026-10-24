@@ -45,8 +45,4 @@ public final class TvBlocks {
         return new ItemStack(second ? ModItems.LIVE_CASSETTE_2.get() : ModItems.LIVE_CASSETTE.get());
     }
 
-    /** The cassette the TV switches to from {@code held}: a second-stream cassette goes back to the first, anything else to the second. */
-    public static ItemStack otherCassette(ItemStack held) {
-        return liveCassette(!isSecondCassette(held));
-    }
 }

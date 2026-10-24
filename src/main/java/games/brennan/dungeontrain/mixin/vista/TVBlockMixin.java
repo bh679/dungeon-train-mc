@@ -4,7 +4,9 @@ import net.minecraft.server.level.ServerPlayer;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.compat.DisabledModContent;
 import games.brennan.dungeontrain.compat.vista.TvBlocks;
+import games.brennan.dungeontrain.compat.vista.TvChannelCycle;
 import games.brennan.dungeontrain.compat.vista.TvItems;
+import games.brennan.dungeontrain.player.ServerLiveStatus;
 import games.brennan.dungeontrain.compat.vista.TvPowerToggle;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -36,13 +38,14 @@ import net.minecraft.world.level.block.Block;
  * untouched; only the one {@code hasNeighborSignal} read its neighbour handler makes is answered by
  * the latch instead of the wire.
  *
- * <p>Click rules: right-click → toggle power, whatever is in hand (the held item is not used or
+ * <p>Click rules: right-click → cycle power / stream, whatever is in hand (the held item is not used or
  * placed). Sneak + item uses the item as normal (vanilla skips the block then), which is how a block
- * — or another TV — is placed against one. Sneak + empty hand on a TV that is on and tuned to the Live Feed
- * switches it between the first and the second stream (the Two Streams reward; the second cassette
- * shows the first stream while there is no second, so the switch is always safe to make). Sneak +
- * empty hand otherwise keeps Vista's behaviour (pause while playing, eject the cassette while off)
- * — except that a Live Feed Cassette never ejects.</p>
+ * — or another TV — is placed against one. Sneak + empty hand keeps Vista's behaviour (pause while
+ * playing, eject the cassette while off) — except that a Live Feed Cassette never ejects.</p>
+ *
+ * <p>The right-click is a cycle, not a toggle, while the Two Streams reward has a second stream live:
+ * off → Stream 1 → Stream 2 → off ({@link TvChannelCycle}; the server's {@link ServerLiveStatus} says
+ * whether a second stream is live). With one stream, or none, it is the plain on/off it always was.</p>
  *
  * <p>A TV that comes on with an empty slot tunes itself: the server puts a Live Feed Cassette in, so
  * switching any TV on shows the broadcast (or the replay) with no setup at all. That cassette is never
@@ -71,11 +74,9 @@ public abstract class TVBlockMixin {
                                            InteractionHand hand, BlockHitResult hit,
                                            CallbackInfoReturnable<ItemInteractionResult> cir) {
         if (!player.isSecondaryUseActive()) {
-            // Any right-click toggles, held item or not; returning success keeps the item from being used.
-            TvPowerToggle.toggle(level, pos);
-            if (player instanceof ServerPlayer serverPlayer) {
-                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(serverPlayer, "toggled_placed_tv");
-            }
+            // Any right-click cycles off → Stream 1 → Stream 2 (while a second stream is live) → off, held
+            // item or not; returning success keeps the item from being used.
+            if (!level.isClientSide) dungeontrain$cycle(level, pos, state, player);
             cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
             return;
         }
@@ -84,29 +85,49 @@ public abstract class TVBlockMixin {
             cir.setReturnValue(ItemInteractionResult.FAIL);
             return;
         }
-        if (!stack.isEmpty()) return;
+        if (stack.isEmpty() && !state.getValue(TVBlock.POWER_STATE).isOn()
+                && dungeontrain$liveTunedTv(level, pos, state) != null) {
+            // Vista would eject the cassette of a TV that is off; the Live Feed one stays put.
+            cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
+        }
+    }
+
+    /** Server side: one step of the right-click cycle ({@link TvChannelCycle}) for the screen at {@code pos}. */
+    private void dungeontrain$cycle(Level level, BlockPos pos, BlockState state, Player player) {
+        boolean on = state.getValue(TVBlock.POWER_STATE).isOn();
         TVBlockEntity tv = dungeontrain$liveTunedTv(level, pos, state);
-        if (tv == null) return;
-        if (state.getValue(TVBlock.POWER_STATE).isOn()) {
-            // Switch between the first and the second stream (Two Streams). Server side; the slot change
-            // syncs to every client like any cassette change.
-            if (!level.isClientSide) {
-                ItemStack next = TvBlocks.otherCassette(tv.getItem(0));
-                tv.setItem(0, next);
-                tv.setChanged();
-                level.sendBlockUpdated(tv.getBlockPos(), tv.getBlockState(), tv.getBlockState(), Block.UPDATE_CLIENTS);
+        boolean onSecond = tv != null && TvBlocks.isSecondCassette(tv.getItem(0));
+        boolean secondLive = level.getServer() != null && ServerLiveStatus.isSecondStreamLive(level.getServer());
+        TvChannelCycle.Step step = TvChannelCycle.next(on, tv != null, onSecond, secondLive);
+        ServerPlayer serverPlayer = player instanceof ServerPlayer sp ? sp : null;
+        switch (step) {
+            case TO_SECOND -> {
+                dungeontrain$retune(level, tv, TvBlocks.liveCassette(true));
                 level.playSound(null, tv.getBlockPos(), SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.BLOCKS, 0.6f, 1.2f);
-                if (player instanceof ServerPlayer serverPlayer) {
-                    serverPlayer.displayClientMessage(Component.translatable(TvBlocks.isSecondCassette(next)
-                        ? "gui.dungeontrain.tv.channel.second" : "gui.dungeontrain.tv.channel.main"), true);
+                if (serverPlayer != null) {
+                    serverPlayer.displayClientMessage(Component.translatable("gui.dungeontrain.tv.channel.second"), true);
                     ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(serverPlayer, "switched_tv_channel");
                 }
             }
-            cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
-            return;
+            case TURN_ON, TURN_OFF -> {
+                // Off from Stream 2 goes back to Stream 1, so the next cycle starts where it should.
+                if (step == TvChannelCycle.Step.TURN_OFF && onSecond) dungeontrain$retune(level, tv, TvBlocks.liveCassette(false));
+                TvPowerToggle.toggle(level, pos);
+                if (serverPlayer != null) {
+                    if (step == TvChannelCycle.Step.TURN_ON && secondLive) {
+                        serverPlayer.displayClientMessage(Component.translatable("gui.dungeontrain.tv.channel.main"), true);
+                    }
+                    ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(serverPlayer, "toggled_placed_tv");
+                }
+            }
         }
-        // Vista would eject the cassette of a TV that is off; the Live Feed one stays put.
-        cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
+    }
+
+    /** Put {@code cassette} in the screen's tuner; the slot change syncs to every client like any cassette change. */
+    private static void dungeontrain$retune(Level level, TVBlockEntity tv, ItemStack cassette) {
+        tv.setItem(0, cassette);
+        tv.setChanged();
+        level.sendBlockUpdated(tv.getBlockPos(), tv.getBlockState(), tv.getBlockState(), Block.UPDATE_CLIENTS);
     }
 
     /** The screen's master block entity when it holds either Live Feed Cassette, else null. */
