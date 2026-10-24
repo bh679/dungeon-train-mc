@@ -1,10 +1,10 @@
 package games.brennan.dungeontrain.perks.effects.lover;
 
-/** Pure numbers for Pet Health: +1 heart (2 health) per active rank. */
+/** Pure numbers for Pet Health: +half a heart (1 health) per active rank, no cap. */
 public final class PetHealthMath {
 
-    /** One heart per rank. Balancing knob. */
-    public static final double HEALTH_PER_RANK = 2.0;
+    /** Half a heart per rank. Balancing knob. */
+    public static final double HEALTH_PER_RANK = 1.0;
 
     private PetHealthMath() {}
 
