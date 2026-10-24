@@ -37,12 +37,15 @@ public final class KnightCombatEvents {
     @SubscribeEvent
     public static void onCriticalHit(CriticalHitEvent event) {
         Player player = event.getEntity();
-        if (player.level().isClientSide || event.isCriticalHit()) return;
+        if (player.level().isClientSide) return;
         int rank = Perks.rank(player, KnightPerks.CRITS);
-        if (!KnightPerks.rollCrit(rank, player.getRandom())) return;
+        float multiplier = KnightPerks.rollCritMultiplier(rank, player.getRandom());
+        // A jump crit keeps its 1.5x; the perk only ever raises the multiplier.
+        if (multiplier <= 1f) return;
+        if (event.isCriticalHit() && multiplier <= event.getDamageMultiplier()) return;
         event.setCriticalHit(true);
-        event.setDamageMultiplier(KnightPerks.CRIT_DAMAGE_MULTIPLIER);
-        LOGGER.debug("[DT-Perks] crits rank {}: perk crit by {} on {}", rank,
+        event.setDamageMultiplier(multiplier);
+        LOGGER.debug("[DT-Perks] crits rank {}: perk crit x{} by {} on {}", rank, multiplier,
             player.getScoreboardName(), event.getTarget().getName().getString());
     }
 
@@ -54,27 +57,25 @@ public final class KnightCombatEvents {
                 instanceof ServerPlayer killer)) return;
         if (victim == killer || !killer.isAlive()) return;
 
-        float heal = 0f;
         int killBuff = Perks.rank(killer, KnightPerks.KILL_BUFF);
-        if (killBuff > 0) {
-            grantStrength(killer, KnightPerks.strengthDurationTicks(killBuff));
-            heal += KnightPerks.killBuffHeal(killBuff);
-        }
-        heal += KnightPerks.vampirismHeal(Perks.rank(killer, KnightPerks.VAMPIRISM));
+        if (killBuff > 0) grantStrength(killer, killBuff);
+        int vampirism = Perks.rank(killer, KnightPerks.VAMPIRISM);
+        float heal = KnightPerks.rollVampirismHeal(vampirism, killer.getRandom());
         if (heal > 0f) killer.heal(heal);
-        if (killBuff > 0 || heal > 0f) {
-            LOGGER.debug("[DT-Perks] kill by {}: kill-buff rank {} (strength {} t), heal {}",
-                killer.getScoreboardName(), killBuff, KnightPerks.strengthDurationTicks(killBuff), heal);
+        if (killBuff > 0 || vampirism > 0) {
+            LOGGER.debug("[DT-Perks] kill by {}: kill-buff rank {} (strength {} for {} t), vampirism rank {} heal {}",
+                killer.getScoreboardName(), killBuff, KnightPerks.strengthAmplifier(killBuff) + 1,
+                KnightPerks.strengthDurationTicks(killBuff), vampirism, heal);
         }
     }
 
-    private static void grantStrength(ServerPlayer player, int ticks) {
+    private static void grantStrength(ServerPlayer player, int rank) {
+        int amplifier = KnightPerks.strengthAmplifier(rank);
+        int ticks = KnightPerks.strengthDurationTicks(rank);
         MobEffectInstance current = player.getEffect(MobEffects.DAMAGE_BOOST);
+        int currentAmplifier = current == null ? -1 : current.getAmplifier();
         int remaining = current == null ? 0 : current.getDuration();
-        // A stronger Strength from a potion stands; only Strength I (or nothing) is refreshed.
-        if (current != null && current.getAmplifier() > KnightPerks.STRENGTH_AMPLIFIER) return;
-        if (!KnightPerks.shouldRefreshStrength(remaining, ticks)) return;
-        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, ticks,
-            KnightPerks.STRENGTH_AMPLIFIER, false, true, true));
+        if (!KnightPerks.shouldRefreshStrength(currentAmplifier, remaining, amplifier, ticks)) return;
+        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, ticks, amplifier, false, true, true));
     }
 }

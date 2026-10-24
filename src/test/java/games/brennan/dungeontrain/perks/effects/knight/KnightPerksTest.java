@@ -10,63 +10,90 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** The Knight perks' pure maths: {@link KnightPerks}. */
 class KnightPerksTest {
 
-    @Test
-    void critChanceIsOnePercentPerRankCappedAtCertain() {
-        assertEquals(0f, KnightPerks.critChance(0));
-        assertEquals(0.01f, KnightPerks.critChance(1), 1e-6);
-        assertEquals(0.5f, KnightPerks.critChance(50), 1e-6);
-        assertEquals(1f, KnightPerks.critChance(100));
-        assertEquals(1f, KnightPerks.critChance(250));
-        assertEquals(0f, KnightPerks.critChance(-3));
+    private static final int N = 200_000;
+
+    private static double meanSteps(int percent, long seed) {
+        RandomSource random = RandomSource.create(seed);
+        long total = 0;
+        for (int i = 0; i < N; i++) total += KnightPerks.rollSteps(percent, random);
+        return total / (double) N;
     }
 
     @Test
-    void rollNeverCritsAtRankZeroAndAlwaysAtHundred() {
+    void overflowStepsAreGuaranteedPlusRemainderChance() {
+        RandomSource random = RandomSource.create(1L);
+        for (int i = 0; i < 1000; i++) {
+            assertEquals(0, KnightPerks.rollSteps(0, random));
+            assertEquals(1, KnightPerks.rollSteps(100, random));
+            assertEquals(2, KnightPerks.rollSteps(200, random));
+            int s = KnightPerks.rollSteps(150, random);
+            assertTrue(s == 1 || s == 2);
+        }
+        assertEquals(0.25, meanSteps(25, 7L), 0.01);
+        assertEquals(1.05, meanSteps(105, 8L), 0.01);
+    }
+
+    @Test
+    void critsClimbOnePercentPerRankUncapped() {
+        assertEquals(0, KnightPerks.critPercent(0));
+        assertEquals(25, KnightPerks.critPercent(25));
+        assertEquals(101, KnightPerks.critPercent(101));
+        assertEquals(0, KnightPerks.critPercent(-3));
+    }
+
+    @Test
+    void critMultiplierSteps() {
+        assertEquals(1f, KnightPerks.critMultiplier(0));
+        assertEquals(1.5f, KnightPerks.critMultiplier(1));
+        assertEquals(2f, KnightPerks.critMultiplier(2));
+        assertEquals(2.5f, KnightPerks.critMultiplier(3));
+    }
+
+    @Test
+    void critRollAtKeyRanks() {
         RandomSource random = RandomSource.create(42L);
         for (int i = 0; i < 1000; i++) {
-            assertFalse(KnightPerks.rollCrit(0, random));
-            assertTrue(KnightPerks.rollCrit(100, random));
+            assertEquals(1f, KnightPerks.rollCritMultiplier(0, random));
+            assertEquals(1.5f, KnightPerks.rollCritMultiplier(100, random));
+            float m = KnightPerks.rollCritMultiplier(101, random);
+            assertTrue(m == 1.5f || m == 2f);
         }
     }
 
     @Test
-    void rollLandsNearRankPercent() {
-        RandomSource random = RandomSource.create(7L);
-        int rank = 25;
-        int n = 200_000;
-        int hits = 0;
-        for (int i = 0; i < n; i++) if (KnightPerks.rollCrit(rank, random)) hits++;
-        assertEquals(0.25, hits / (double) n, 0.01);
-    }
-
-    @Test
-    void strengthLastsTwoSecondsPerRank() {
+    void killBuffDurationAndLevel() {
         assertEquals(0, KnightPerks.strengthDurationTicks(0));
-        assertEquals(40, KnightPerks.strengthDurationTicks(1));
-        assertEquals(200, KnightPerks.strengthDurationTicks(5));
-        assertEquals(0, KnightPerks.strengthDurationTicks(-1));
+        assertEquals(40, KnightPerks.strengthDurationTicks(1));   // 2 s, Strength I
+        assertEquals(50, KnightPerks.strengthDurationTicks(2));   // 2.5 s
+        assertEquals(80, KnightPerks.strengthDurationTicks(5));   // 4 s, last rank of Strength I
+        assertEquals(0, KnightPerks.strengthAmplifier(5));
+        assertEquals(1, KnightPerks.strengthAmplifier(6));        // Strength II
+        assertEquals(45, KnightPerks.strengthDurationTicks(6));   // 4.5 s halved
+        assertEquals(2, KnightPerks.strengthAmplifier(11));       // Strength III
+        assertEquals(35, KnightPerks.strengthDurationTicks(11));  // 7 s quartered
     }
 
     @Test
-    void killBuffHealsHalfAHeartFlat() {
-        assertEquals(0f, KnightPerks.killBuffHeal(0));
-        assertEquals(1f, KnightPerks.killBuffHeal(1));
-        assertEquals(1f, KnightPerks.killBuffHeal(9));
+    void strengthRefreshRules() {
+        assertTrue(KnightPerks.shouldRefreshStrength(-1, 0, 0, 40));
+        assertTrue(KnightPerks.shouldRefreshStrength(0, 30, 0, 40));
+        assertFalse(KnightPerks.shouldRefreshStrength(0, 100, 0, 40));
+        assertTrue(KnightPerks.shouldRefreshStrength(0, 100, 1, 20));
+        assertFalse(KnightPerks.shouldRefreshStrength(2, 10, 1, 200));
+        assertFalse(KnightPerks.shouldRefreshStrength(-1, 0, 0, 0));
     }
 
     @Test
-    void vampirismHealsHalfAHeartPerRank() {
-        assertEquals(0f, KnightPerks.vampirismHeal(0));
-        assertEquals(1f, KnightPerks.vampirismHeal(1));
-        assertEquals(4f, KnightPerks.vampirismHeal(4));
-    }
-
-    @Test
-    void strengthRefreshOnlyExtends() {
-        assertTrue(KnightPerks.shouldRefreshStrength(0, 40));
-        assertTrue(KnightPerks.shouldRefreshStrength(30, 40));
-        assertFalse(KnightPerks.shouldRefreshStrength(100, 40));
-        assertFalse(KnightPerks.shouldRefreshStrength(40, 40));
-        assertFalse(KnightPerks.shouldRefreshStrength(0, 0));
+    void vampirismChanceClimbsAndOverflows() {
+        assertEquals(0, KnightPerks.vampirismPercent(0));
+        assertEquals(25, KnightPerks.vampirismPercent(1));
+        assertEquals(30, KnightPerks.vampirismPercent(2));
+        assertEquals(100, KnightPerks.vampirismPercent(16));
+        assertEquals(105, KnightPerks.vampirismPercent(17));
+        RandomSource random = RandomSource.create(3L);
+        for (int i = 0; i < 1000; i++) {
+            assertEquals(1f, KnightPerks.rollVampirismHeal(16, random));
+            assertFalse(KnightPerks.rollVampirismHeal(0, random) > 0f);
+        }
     }
 }

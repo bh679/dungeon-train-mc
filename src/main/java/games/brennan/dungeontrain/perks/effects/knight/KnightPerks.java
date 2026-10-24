@@ -1,64 +1,103 @@
 package games.brennan.dungeontrain.perks.effects.knight;
 
-import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 
 /**
  * The Knight's tier 2/3 combat perks: ids and the pure maths behind them. Rank is the perk's active
  * points this life (see {@code Perks.rank}); every method returns the "off" value at rank 0.
+ *
+ * <p>Crits and Vampirism share an "overflow" curve: a percentage that grows with rank, where every
+ * full 100% is a guaranteed step and the remainder is the chance of one step more. So there is no
+ * cap: past 100% the perk keeps climbing towards the next step.
  */
 public final class KnightPerks {
 
-    /** Tier 2: 1% chance per rank of a critical hit on every melee hit, on top of vanilla's jump crit. */
+    /** Tier 2: rank% chance a melee hit crits; past 100, rank-100 % chance of a harder crit. */
     public static final String CRITS = "crits";
-    /** Tier 3: kills grant Strength I for 2 s per rank and heal half a heart. */
+    /** Tier 3: kills grant Strength; longer per rank, stronger (and shorter) every 5 ranks. */
     public static final String KILL_BUFF = "kill-buff";
-    /** Tier 3: kills heal half a heart per rank. */
+    /** Tier 3: kills have a chance to heal half a heart; the chance overflows into extra halves. */
     public static final String VAMPIRISM = "vampirism";
 
-    /** Vanilla's critical-hit multiplier; a perk crit hits exactly as hard as a jump crit. */
-    public static final float CRIT_DAMAGE_MULTIPLIER = 1.5f;
-    /** Strength I. */
-    public static final int STRENGTH_AMPLIFIER = 0;
-
+    /** Vanilla's critical-hit multiplier: a jump crit, and the first crit step. */
+    public static final float VANILLA_CRIT_MULTIPLIER = 1.5f;
+    /** Each crit step past the first adds this much to the multiplier (1.5x, 2x, 2.5x ...). */
+    static final float CRIT_MULTIPLIER_PER_STEP = 0.5f;
     static final int CRIT_PERCENT_PER_RANK = 1;
-    static final int STRENGTH_TICKS_PER_RANK = 40;
+
+    static final int STRENGTH_BASE_TICKS = 40;
+    static final int STRENGTH_TICKS_PER_RANK = 10;
+    static final int RANKS_PER_STRENGTH_LEVEL = 5;
+
+    static final int VAMPIRISM_BASE_PERCENT = 25;
+    static final int VAMPIRISM_PERCENT_PER_RANK = 5;
     static final float HALF_HEART = 1.0f;
 
     private KnightPerks() {}
 
-    /** Chance in [0, 1] of a perk crit at {@code rank}. */
-    public static float critChance(int rank) {
-        return Mth.clamp(rank * CRIT_PERCENT_PER_RANK, 0, 100) / 100f;
+    /**
+     * Rolls an overflow percentage: {@code percent / 100} guaranteed steps plus a
+     * {@code percent % 100} chance of one more.
+     */
+    static int rollSteps(int percent, RandomSource random) {
+        if (percent <= 0) return 0;
+        int steps = percent / 100;
+        int remainder = percent % 100;
+        if (remainder > 0 && random.nextInt(100) < remainder) steps++;
+        return steps;
     }
 
-    /** One roll for a perk crit. Never true at rank 0, always true at rank 100. */
-    public static boolean rollCrit(int rank, RandomSource random) {
-        if (rank <= 0) return false;
-        float chance = critChance(rank);
-        return chance >= 1f || random.nextFloat() < chance;
+    /** Crit percentage at {@code rank}: 1% per rank, uncapped. */
+    public static int critPercent(int rank) {
+        return Math.max(0, rank) * CRIT_PERCENT_PER_RANK;
     }
 
-    /** Strength I duration granted per kill, in ticks. */
-    public static int strengthDurationTicks(int rank) {
-        return Math.max(0, rank) * STRENGTH_TICKS_PER_RANK;
+    /** Damage multiplier for {@code steps} crit steps; 1 (no crit) at 0 steps. */
+    public static float critMultiplier(int steps) {
+        if (steps <= 0) return 1f;
+        return VANILLA_CRIT_MULTIPLIER + (steps - 1) * CRIT_MULTIPLIER_PER_STEP;
     }
 
-    /** Kill Buff's flat heal: half a heart when active. */
-    public static float killBuffHeal(int rank) {
-        return rank > 0 ? HALF_HEART : 0f;
+    /** One crit roll at {@code rank}: the multiplier to apply, 1 for no perk crit. */
+    public static float rollCritMultiplier(int rank, RandomSource random) {
+        return critMultiplier(rollSteps(critPercent(rank), random));
     }
 
-    /** Vampirism's heal: half a heart per rank. */
-    public static float vampirismHeal(int rank) {
-        return Math.max(0, rank) * HALF_HEART;
+    /** Strength level index (0 = Strength I) at {@code rank}: up one every 5 ranks. */
+    public static int strengthAmplifier(int rank) {
+        if (rank <= 0) return 0;
+        return (rank - 1) / RANKS_PER_STRENGTH_LEVEL;
     }
 
     /**
-     * Whether a fresh Strength grant of {@code newTicks} should replace one with {@code remainingTicks}
-     * left: a kill only ever extends the buff, never shortens it.
+     * Strength duration per kill, in ticks: 2 s plus 0.5 s per rank past the first, halved for each
+     * Strength level gained.
      */
-    public static boolean shouldRefreshStrength(int remainingTicks, int newTicks) {
-        return newTicks > 0 && newTicks > remainingTicks;
+    public static int strengthDurationTicks(int rank) {
+        if (rank <= 0) return 0;
+        int ticks = STRENGTH_BASE_TICKS + (rank - 1) * STRENGTH_TICKS_PER_RANK;
+        return Math.max(1, ticks >> Math.min(30, strengthAmplifier(rank)));
+    }
+
+    /**
+     * Whether a fresh Strength grant should replace the one running: a stronger level always wins,
+     * the same level only ever extends, and a weaker grant never touches a stronger buff.
+     */
+    public static boolean shouldRefreshStrength(int currentAmplifier, int remainingTicks,
+                                                int newAmplifier, int newTicks) {
+        if (newTicks <= 0) return false;
+        if (remainingTicks <= 0 || newAmplifier > currentAmplifier) return true;
+        return newAmplifier == currentAmplifier && newTicks > remainingTicks;
+    }
+
+    /** Vampirism percentage at {@code rank}: 25%, +5% per rank past the first, uncapped. */
+    public static int vampirismPercent(int rank) {
+        if (rank <= 0) return 0;
+        return VAMPIRISM_BASE_PERCENT + (rank - 1) * VAMPIRISM_PERCENT_PER_RANK;
+    }
+
+    /** One Vampirism roll at {@code rank}: health to heal (half a heart per step). */
+    public static float rollVampirismHeal(int rank, RandomSource random) {
+        return rollSteps(vampirismPercent(rank), random) * HALF_HEART;
     }
 }
