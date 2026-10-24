@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.wind;
 
 import com.mojang.math.Axis;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -19,13 +20,18 @@ import java.util.Random;
 /**
  * Edge streaks: while the wind is on the player out in the open ({@link WindFeel}), a few wisps blow past the
  * screen edges so the push reads even before it moves you. Drawn under the crosshair, never more than a third of
- * the way in: a side wind blows them in from the upwind edge; wind in your face sends them out past both edges,
+ * the way in, at the strength the player set (Options, Train tab: OFF or tiers 1 to 6, {@link WindEffectsOption}): a
+ * side wind blows them in from the upwind edge; wind in your face sends them out past both edges,
  * wind at your back in from both; and the more the wind runs along the view, the more they follow perspective.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class WindFeelOverlay {
 
-    private static final int STREAKS = 12;
+    /** Streaks at the default tier ({@link ClientDisplayConfig#DEFAULT_WIND_SCREEN_EFFECTS}); the pool holds twice. */
+    private static final int BASE_STREAKS = 12;
+    private static final int STREAKS = BASE_STREAKS * 2;
+    /** Brightest a streak may draw at any tier. */
+    private static final float MAX_ALPHA = 0.9f;
     /** Streak thickness, GUI pixels. */
     private static final float STREAK_THICK = 2f;
     /**
@@ -70,13 +76,16 @@ public final class WindFeelOverlay {
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.options.hideGui || mc.screen != null) return;
+        int tier = ClientDisplayConfig.getWindScreenEffects();
+        if (tier <= 0) return;
         float pt = delta.getGameTimeDeltaPartialTick(false);
         float felt = (float) WindFeel.felt(pt);
         if (felt < 0.01f) return;
         float yaw = mc.player.getViewYRot(pt);
         float lateral = (float) WindFeelMath.lateral(WindFeel.dirX(), WindFeel.dirZ(), yaw);
         float facing = (float) WindFeelMath.facing(WindFeel.dirX(), WindFeel.dirZ(), yaw);
-        drawStreaks(g, felt, lateral, facing, dt);
+        drawStreaks(g, felt, lateral, facing, dt,
+                tier / (float) ClientDisplayConfig.DEFAULT_WIND_SCREEN_EFFECTS);
     }
 
     /**
@@ -88,7 +97,12 @@ public final class WindFeelOverlay {
      * wind runs along the view, the more they follow perspective: each one runs on a line toward the middle of
      * the screen, bigger and faster near the edge (close to you), smaller toward the middle (far away).
      */
-    private static void drawStreaks(GuiGraphics g, float felt, float lateral, float facing, float dt) {
+    /**
+     * {@code tierScale} is the player's setting over the default tier (1 = the default look): it scales how many
+     * streaks show, how bright and how thick they draw.
+     */
+    private static void drawStreaks(GuiGraphics g, float felt, float lateral, float facing, float dt,
+                                    float tierScale) {
         int w = g.guiWidth();
         int h = g.guiHeight();
         float half = w / 2f;
@@ -103,7 +117,9 @@ public final class WindFeelOverlay {
             for (int i = 0; i < STREAKS; i++) respawn(i, h, band, left, right, outLeft, outRight, true);
             seeded = true;
         }
-        int count = Math.round(STREAKS * felt);
+        int count = Math.min(STREAKS, Math.round(BASE_STREAKS * tierScale * felt));
+        float alphaScale = 0.5f + 0.5f * tierScale;
+        float thickScale = 0.75f + 0.25f * tierScale;
         float speed = STREAK_SPEED_BASE + STREAK_SPEED_PER_PUSH * (float) WindFeel.strength();
         for (int i = 0; i < STREAKS; i++) {
             // SX = how far in from its edge the streak's head is. Close to the edge (close to you) it moves faster.
@@ -125,8 +141,8 @@ public final class WindFeelOverlay {
             if (hi <= lo) continue;
             // Brightest at the screen edge, gone by the band's inner edge.
             float fade = 1f - (lo + hi) / (2f * band);
-            float a = STREAK_ALPHA * felt * Math.min(1f, weight) * Math.max(0f, fade);
-            float thick = STREAK_THICK * scaleAt((lo + hi) / 2f, half, depthMix);
+            float a = Math.min(MAX_ALPHA, STREAK_ALPHA * alphaScale * felt * Math.min(1f, weight) * Math.max(0f, fade));
+            float thick = STREAK_THICK * thickScale * scaleAt((lo + hi) / 2f, half, depthMix);
             drawStreak(g, fromLeft, w, h, SY[i], lo, hi, half, depthMix, thick, a);
         }
     }
