@@ -742,6 +742,7 @@
   "command.dungeontrain.offer_eye.already_given": "已经有人接手了你的直播摄像机。",
   "chat.dungeontrain.live.ended_death": "你的直播随你一同结束。",
   "chat.dungeontrain.live.encoder_died": "直播已停止：视频编码器出错。请查看游戏日志。",
+  "chat.dungeontrain.live.quality_lowered": "你的上传速度跟不上，已降低直播画质，让观众看得更流畅。",
   "chat.dungeontrain.live.censored": "直播摄像机不允许使用这个词。第 %s 次警告，上限 %s 次。",
   "chat.dungeontrain.live.censored_book": "你的书中有一个词未通过直播摄像机的检查。第 %s 次警告，上限 %s 次。",
   "chat.dungeontrain.live.burns_moderated": "警告次数已达上限，直播摄像机燃烧殆尽。",
