@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.AdvancementProfiles;
+import games.brennan.dungeontrain.advancement.ProgressCreditingGrants;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.net.ActivityStatePacket;
 import games.brennan.dungeontrain.net.ClientInputPacket;
@@ -12,6 +14,7 @@ import net.minecraft.util.Mth;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.ServerChatEvent;
+import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -65,10 +68,13 @@ import java.util.UUID;
  * turning, so sampled yaw sits still however much the mouse moves. The client reports that case
  * directly — see {@link games.brennan.dungeontrain.net.ClientInputPacket}.</p>
  *
- * <p>The same rule is the AFK rule: {@link #isAfk} — any reason but {@link Reason#TRACKING} — makes
- * {@link games.brennan.dungeontrain.advancement.AfkAdvancementGate} refuse every criterion, and the
- * client's {@code AfkAutoPause} keeps its own, slower clock for opening the pause menu (2 min idle,
- * 5 min with a screen open). One difference from the clocks:
+ * <p>The first three are also the AFK rule: {@link #isAfk} — paused, mouse idle or input idle —
+ * makes {@link games.brennan.dungeontrain.advancement.AfkAdvancementGate} refuse every criterion,
+ * and the client's {@code AfkAutoPause} keeps its own, slower clock for opening the pause menu
+ * (2 min idle, 5 min with a screen open). {@link Reason#NO_PROGRESS} is <em>not</em> AFK: it is
+ * only ever reached once both idle clocks have found the player present, so it describes someone
+ * who is playing but off the train or not moving through it — exploring on foot, photographing
+ * wildlife — and such a player still earns advancements. One difference from the clocks:
  * a paused player who clicked or typed on their screen in the last {@link #MENU_PRESENCE_MS} is not
  * AFK, provided they are still getting somewhere. Nearly every screen is a pause screen — books,
  * the photo viewer, the pause menu's sliders and Abandon button — and the packet a click there
@@ -76,6 +82,11 @@ import java.util.UUID;
  * {@link #MENU_PRESENCE_CAP_GAME_MENU_MS} into the pause menu, or
  * {@link #MENU_PRESENCE_CAP_SCREEN_MS} into any other screen, no longer counts, so a macro on an
  * open screen cannot keep a player present. Train time stops while paused regardless.</p>
+ *
+ * <p>Two things besides carriages count as getting somewhere ({@link #creditProgress}): earning a
+ * displayed advancement criterion and taking a photo with a camera. Either opens a fresh progress
+ * window from that tick and refreshes both idle clocks, exactly as walking into the next carriage
+ * would — a player doing those is playing, wherever they stand.</p>
  *
  * <p>All state is transient and keyed by UUID — dropped on logout, seeded on login and respawn. A
  * player the tracker has never seen counts as active, so a missed login can only over-count, never
@@ -129,7 +140,10 @@ public final class PlayerActivityTracker {
         MOUSE_IDLE,
         /** No non-look input for {@link #INPUT_IDLE_TICKS}. */
         INPUT_IDLE,
-        /** Aboard, but not getting anywhere — train time only. */
+        /**
+         * Present, but not getting anywhere — off the train or standing in one carriage. Stops train
+         * time only: not AFK, since the idle clocks above have already found the player at the keyboard.
+         */
         NO_PROGRESS
     }
 
@@ -173,6 +187,13 @@ public final class PlayerActivityTracker {
      */
     private static final Map<UUID, Long> LAST_ROOM_TICK = new HashMap<>();
 
+    /**
+     * Player → the last tick they did something that counts as getting somewhere without a carriage
+     * index: earned a hand-driven advancement criterion, or took a photo. Judged on the same window
+     * as the carriage samples — see {@link #creditProgress}.
+     */
+    private static final Map<UUID, Long> LAST_CREDIT_TICK = new HashMap<>();
+
     /** What last counted as input for a player — named in the resume log line. */
     private static final Map<UUID, String> LAST_TRIGGER = new HashMap<>();
 
@@ -192,11 +213,12 @@ public final class PlayerActivityTracker {
     }
 
     /**
-     * Is a player with this reason AFK? Every reason that stops the train clock does — paused, mouse
-     * idle, input idle and not getting anywhere are one rule.
+     * Is a player with this reason AFK? Paused, mouse idle and input idle are. Not getting anywhere
+     * is not: {@link #reason} only reaches {@link Reason#NO_PROGRESS} once both idle clocks have
+     * found the player present, so it stops train time without calling anyone away.
      */
     public static boolean isAfk(Reason reason) {
-        return reason != Reason.TRACKING;
+        return reason != Reason.TRACKING && reason != Reason.NO_PROGRESS;
     }
 
     /**
@@ -205,11 +227,14 @@ public final class PlayerActivityTracker {
      * the pause outranks in {@link #reason}.
      */
     public static boolean isAfk(ServerPlayer player) {
-        Reason reason = reason(player);
-        UUID uuid = player.getUUID();
-        if (reason == Reason.PAUSED
-                && menuPresent(LAST_MENU_INPUT_MS.get(uuid), System.currentTimeMillis())) {
-            return !hasCarriageProgress(uuid, player.level().getGameTime());
+        return isAfk(player.getUUID(), player.level().getGameTime(), System.currentTimeMillis());
+    }
+
+    /** {@link #isAfk(ServerPlayer)} over the recorded state alone, for the tests. */
+    static boolean isAfk(UUID uuid, long nowTick, long nowMs) {
+        Reason reason = reason(uuid, nowTick);
+        if (reason == Reason.PAUSED && menuPresent(LAST_MENU_INPUT_MS.get(uuid), nowMs)) {
+            return !hasCarriageProgress(uuid, nowTick);
         }
         return isAfk(reason);
     }
@@ -225,9 +250,12 @@ public final class PlayerActivityTracker {
 
     /** Why this player's clock is or is not running, in precedence order. */
     public static Reason reason(ServerPlayer player) {
-        UUID uuid = player.getUUID();
+        return reason(player.getUUID(), player.level().getGameTime());
+    }
+
+    /** {@link #reason(ServerPlayer)} over the recorded state alone, for the tests. */
+    static Reason reason(UUID uuid, long now) {
         if (PAUSED.contains(uuid)) return Reason.PAUSED;
-        long now = player.level().getGameTime();
         Long lastLook = LAST_LOOK_TICK.get(uuid);
         // Never seen (login handler missed, or a fake player): count rather than freeze silently.
         if (lastLook != null && isIdle(lastLook, now, LOOK_IDLE_TICKS)) return Reason.MOUSE_IDLE;
@@ -251,6 +279,8 @@ public final class PlayerActivityTracker {
         // the carriage samples, so walking back out to the train does not freeze the clock on the
         // spot either.
         if (roomPresenceInWindow(LAST_ROOM_TICK.get(uuid), now)) return true;
+        // Likewise a hand-driven advancement or a camera shot: proof of play, wherever they stand.
+        if (roomPresenceInWindow(LAST_CREDIT_TICK.get(uuid), now)) return true;
         Deque<long[]> history = CARRIAGE_HISTORY.get(uuid);
         prune(history, now);
         // No sample in the last window means they are not aboard a carriage at all — off the train
@@ -387,6 +417,25 @@ public final class PlayerActivityTracker {
         if (previous == null || nowTick - previous > SAMPLE_PERIOD_TICKS) {
             markInput(uuid, nowTick, "entered dimensional carriage");
         }
+    }
+
+    /**
+     * The player did something that proves play without a carriage index — earned a hand-driven
+     * advancement criterion ({@link #onAdvancementProgress}) or took a photo with a camera
+     * ({@code PhotoAdvancementEvents}). Opens a fresh progress window from this tick, as walking
+     * into the next carriage would, and refreshes both idle clocks. Not for passive grants: a
+     * train-time, distance or band threshold firing proves nothing about who is at the keyboard —
+     * {@link games.brennan.dungeontrain.advancement.ProgressCreditingGrants} draws that line.
+     */
+    public static void creditProgress(UUID uuid, long nowTick, String trigger) {
+        LAST_CREDIT_TICK.put(uuid, nowTick);
+        markLook(uuid, nowTick);
+        markInput(uuid, nowTick, trigger);
+    }
+
+    /** {@link #creditProgress(UUID, long, String)} for a server player, at the current tick. */
+    public static void creditProgress(ServerPlayer player, String trigger) {
+        creditProgress(player.getUUID(), player.level().getGameTime(), trigger);
     }
 
     /**
@@ -539,6 +588,19 @@ public final class PlayerActivityTracker {
         mark(event.getPlayer(), "chat");
     }
 
+    /**
+     * A criterion was granted. One the player's own hands earned counts as getting somewhere; the
+     * login replay and passive thresholds do not — see {@link ProgressCreditingGrants}.
+     */
+    @SubscribeEvent
+    public static void onAdvancementProgress(AdvancementEvent.AdvancementProgressEvent event) {
+        if (event.getProgressType() != AdvancementEvent.AdvancementProgressEvent.ProgressType.GRANT) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (AdvancementProfiles.isReplaying()) return;
+        if (!ProgressCreditingGrants.proves(event.getAdvancement(), event.getCriterionName())) return;
+        creditProgress(player, "earned " + event.getAdvancement().id().getPath());
+    }
+
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         seed(event.getEntity(), "login");
@@ -559,6 +621,7 @@ public final class PlayerActivityTracker {
         CARRIAGE_HISTORY.remove(uuid);
         FIRST_BOARDED_TICK.remove(uuid);
         LAST_ROOM_TICK.remove(uuid);
+        LAST_CREDIT_TICK.remove(uuid);
         LAST_TRIGGER.remove(uuid);
         LAST_MENU_INPUT_MS.remove(uuid);
         REPORTED_REASON.remove(uuid);
