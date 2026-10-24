@@ -30235,9 +30235,9 @@
       ],
       "pr": 2281,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
     },
     {
       "id": "dp-consent-toggle-labels",
@@ -30252,9 +30252,108 @@
       "highlights": [],
       "pr": 2284,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "player-mobs-proper-bridge-blocks",
+      "version": "0.1497.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Player Mobs build with proper blocks",
+      "summary": "Player Mobs climbing back onto the train no longer build their steps out of beds, doors, torches or chests, so you won't find half beds left beside the track. They now only use solid full blocks.",
+      "highlights": [],
+      "pr": 2285,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "sibling-zh-cn-text",
+      "version": "0.1498.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations"
+      ],
+      "title": "Chinese text for backpacks and backups",
+      "summary": "Edible Backpacks and Dungeon Backup now show in Simplified Chinese. Chinese by \u8001\u672c\u9858.",
+      "highlights": [],
+      "pr": 2287,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "nether-piglin-company",
+      "version": "0.1498.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "mobs"
+      ],
+      "title": "New Faces in the Nether",
+      "summary": "The Nether\u2019s piglins aren\u2019t travelling alone any more. New faces have joined them on the train, each with their own way of doing things. Some come prepared with more than a weapon. Some would rather trade. Some look after their own.",
+      "highlights": [
+        "New piglin carriages in the Nether",
+        "Some brutes hit much harder. Mind the edge.",
+        "Something new to photograph"
+      ],
+      "pr": 2288,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z",
+      "major": true,
+      "notable": true,
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-piglins-have-new-company.jpg",
+      "description": "The Nether\u2019s piglins aren\u2019t travelling alone any more. New faces have joined them on the train, each with their own way of doing things. Some come prepared with more than a weapon. Some would rather trade. Some look after their own."
+    },
+    {
+      "id": "nether-piglin-steady",
+      "version": "0.1500.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Piglin fix",
+      "summary": "Piglins on the train now keep their composure all the way through the Nether.",
+      "highlights": [],
+      "pr": 2289,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "offer-live-eye-command",
+      "version": "0.1500.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Pass the Live Eye to any viewer",
+      "summary": "While you're live with the Live Eye, type /offereye to see who is watching through a TV and hand the stream to any of them, or offer it to everyone at once and let the first to accept take it.",
+      "highlights": [
+        "/offereye lists the viewers who can take your Live Eye, each with an Offer button",
+        "Pick All to offer it to everyone watching. Whoever accepts first gets it",
+        "/offereye <name> offers it straight to one viewer",
+        "If someone beats you to it, you're told someone else accepted first"
+      ],
+      "pr": 2286,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
     }
   ]
 }

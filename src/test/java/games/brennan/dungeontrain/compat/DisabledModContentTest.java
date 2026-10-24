@@ -295,4 +295,13 @@ final class DisabledModContentTest {
         assertFalse(DisabledModContent.isDisabledEnchantment(id("deeperdarker:reverberation")));
         assertTrue(DisabledModContent.isDisabledEnchantment(id("deeperdarker:volume")));
     }
+
+    @Test
+    @DisplayName("Piglin Proliferation's Buckler is hidden from players but mob-only, so brutes keep it")
+    void bucklerIsMobOnly() {
+        assertTrue(DisabledModContent.isDisabledItem(id("piglinproliferation:buckler"), false));
+        assertTrue(DisabledModContent.isMobOnlyItem(id("piglinproliferation:buckler")));
+        assertFalse(DisabledModContent.isMobOnlyItem(id("exposure:camera")));
+        assertFalse(DisabledModContent.isDisabledItem(id("piglinproliferation:travelers_compass"), false));
+    }
 }

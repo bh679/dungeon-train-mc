@@ -53,6 +53,8 @@ class PhotoSubjectTallyCollectionsTest {
             Map.entry("deeperdarker:sculk_centipede", "com.kyanite.deeperdarker.content.entities.SculkCentipede"),
             Map.entry("deeperdarker:sculk_leech", "com.kyanite.deeperdarker.content.entities.SculkLeech"),
             Map.entry("deeperdarker:sculk_snapper", "com.kyanite.deeperdarker.content.entities.SculkSnapper"),
+            Map.entry("piglinproliferation:piglin_alchemist", "tallestred.piglinproliferation.common.entities.PiglinAlchemist"),
+            Map.entry("piglinproliferation:piglin_traveler", "tallestred.piglinproliferation.common.entities.PiglinTraveler"),
             Map.entry("deeperdarker:shattered", "com.kyanite.deeperdarker.content.entities.Shattered"),
             Map.entry("deeperdarker:shriek_worm", "com.kyanite.deeperdarker.content.entities.ShriekWorm"),
             Map.entry("deeperdarker:sludge", "com.kyanite.deeperdarker.content.entities.Sludge"),

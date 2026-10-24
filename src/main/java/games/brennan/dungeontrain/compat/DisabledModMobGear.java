@@ -40,7 +40,7 @@ public final class DisabledModMobGear {
         }
         for (EquipmentSlot slot : EquipmentSlot.values()) {
             ItemStack worn = mob.getItemBySlot(slot);
-            if (DisabledModContent.isDisabledItem(worn)) {
+            if (DisabledModContent.isDisabledItem(worn) && !DisabledModContent.isMobOnlyItem(worn)) {
                 mob.setItemSlot(slot, replacementFor(worn));
             }
         }

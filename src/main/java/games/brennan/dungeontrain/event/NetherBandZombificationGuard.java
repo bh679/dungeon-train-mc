@@ -20,7 +20,9 @@ import net.neoforged.neoforge.event.tick.EntityTickEvent;
 
 /**
  * Makes piglins, piglin brutes and hoglins behave like they're in the real Nether while they
- * stand inside the Nether transition band's core ({@link NetherBand#isInNetherBiome}) — no
+ * stand anywhere in a Nether band's netherrack stretch ({@link NetherBand#isInNetherBand}: both crossfades and
+ * the core, the span NETHER-phase carriages spawn in, so a carriage's piglins never shake; the strict
+ * {@link NetherBand#isInNetherBiome} core left the outer half of each crossfade converting them) — no
  * zombification, no trembling/shaking. The same holds in the other bands the "piglings" carriage
  * room rides through (Far Lands, Chuncks and its mix zone, Stacks, Spheres) and inside dimensional
  * (portal) rooms, which are stamped into the overworld's basement/attic — see {@link #isPiglinSafeAt}.
@@ -71,14 +73,14 @@ public final class NetherBandZombificationGuard {
     }
 
     /**
-     * True where piglins/hoglins should act as if in the Nether: the Nether band's core, the Far Lands,
+     * True where piglins/hoglins should act as if in the Nether: a Nether band's netherrack stretch, the Far Lands,
      * Chuncks (mix zone included, as {@code TrainPhase#phaseAt} reads it), Stacks and Spheres band cores,
      * and any portal room copy or its corridors.
      */
     private static boolean isPiglinSafeAt(ServerLevel level, double x, double y, double z) {
         int bx = (int) Math.floor(x);
         int bz = (int) Math.floor(z);
-        if (NetherBand.isInNetherBiome(level, bx, bz)) return true;
+        if (NetherBand.isInNetherBand(level, bx, bz)) return true;
         if (LegacyBands.isInBand(level, LegacyBandKind.FAR_LANDS, bx)) return true;
         if (ChuncksBand.isInBand(level, bx)) return true;
         if (StacksBand.isInBand(level, bx)) return true;
