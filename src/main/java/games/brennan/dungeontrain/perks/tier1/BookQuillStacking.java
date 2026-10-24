@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.WritableBookContent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
@@ -34,8 +35,11 @@ public final class BookQuillStacking implements PerkEffect {
         return Math.max(1, Math.min(MAX_STACK, 1 + rank));
     }
 
+    /** A book-and-quill with nothing written: the item's default content component is empty, not absent. */
     public static boolean isBlankBookAndQuill(ItemStack stack) {
-        return !stack.isEmpty() && stack.is(Items.WRITABLE_BOOK) && !stack.has(DataComponents.WRITABLE_BOOK_CONTENT);
+        if (stack.isEmpty() || !stack.is(Items.WRITABLE_BOOK)) return false;
+        WritableBookContent content = stack.get(DataComponents.WRITABLE_BOOK_CONTENT);
+        return content == null || content.pages().isEmpty();
     }
 
     /** Stamp or strip one stack to match {@code rank}. Returns true when it changed. */
@@ -45,7 +49,8 @@ public final class BookQuillStacking implements PerkEffect {
         Integer have = stack.get(DataComponents.MAX_STACK_SIZE);
         if (want <= 1) {
             if (have == null) return false;
-            stack.remove(DataComponents.MAX_STACK_SIZE);
+            // Setting the prototype's own value clears the patch entry instead of recording a removal.
+            stack.set(DataComponents.MAX_STACK_SIZE, 1);
             return true;
         }
         if (have != null && have == want) return false;
@@ -55,8 +60,8 @@ public final class BookQuillStacking implements PerkEffect {
 
     /** Strip the stamp so a book that left the player is a plain book again. */
     public static void strip(ItemStack stack) {
-        if (stack.is(Items.WRITABLE_BOOK) && stack.has(DataComponents.MAX_STACK_SIZE)) {
-            stack.remove(DataComponents.MAX_STACK_SIZE);
+        if (stack.is(Items.WRITABLE_BOOK) && stack.getMaxStackSize() > 1) {
+            stack.set(DataComponents.MAX_STACK_SIZE, 1);
         }
     }
 
@@ -103,7 +108,7 @@ public final class BookQuillStacking implements PerkEffect {
         Inventory inv = player.getInventory();
         for (int i = 0; i < inv.getContainerSize(); i++) {
             ItemStack s = inv.getItem(i);
-            if (s.is(Items.WRITABLE_BOOK) && s.has(DataComponents.MAX_STACK_SIZE)) return true;
+            if (s.is(Items.WRITABLE_BOOK) && s.getMaxStackSize() > 1) return true;
         }
         return false;
     }
