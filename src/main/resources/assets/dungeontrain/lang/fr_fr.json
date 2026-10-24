@@ -772,6 +772,7 @@
   "command.dungeontrain.offer_eye.offered_all": "Proposition de ton caméscope de diffusion à %s spectateurs. Le premier qui accepte le prend.",
   "command.dungeontrain.offer_eye.all_already_offered": "Tous les spectateurs ont déjà ta proposition.",
   "command.dungeontrain.offer_eye.already_given": "Quelqu'un a déjà pris ton caméscope de diffusion.",
+  "command.dungeontrain.offer_eye.needs_perk": "Offrir le Live Eye à un seul spectateur demande l'atout Gift Live Eye. L'offrir à tout le monde fonctionne toujours.",
   "chat.dungeontrain.live.ended_death": "Votre diffusion s'est achevée avec vous.",
   "chat.dungeontrain.live.encoder_died": "La diffusion s'est arrêtée : l'encodeur vidéo a échoué. Voir le journal du jeu.",
   "chat.dungeontrain.live.censored": "Le caméscope refuse ce mot. Avertissement %s sur %s.",

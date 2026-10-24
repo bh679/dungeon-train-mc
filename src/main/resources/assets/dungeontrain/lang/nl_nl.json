@@ -772,6 +772,7 @@
   "command.dungeontrain.offer_eye.offered_all": "Jouw uitzendcamcorder wordt aan %s kijkers aangeboden. Wie het eerst aanneemt, krijgt hem.",
   "command.dungeontrain.offer_eye.all_already_offered": "Alle kijkers hebben je aanbod al.",
   "command.dungeontrain.offer_eye.already_given": "Iemand heeft je uitzendcamcorder al aangenomen.",
+  "command.dungeontrain.offer_eye.needs_perk": "Het Live Eye aan één kijker aanbieden vereist de perk Gift Live Eye. Het aan iedereen aanbieden werkt nog steeds.",
   "chat.dungeontrain.live.ended_death": "Je uitzending eindigde met jou.",
   "chat.dungeontrain.live.encoder_died": "De uitzending is gestopt: de video-encoder is mislukt. Zie het spellogboek.",
   "chat.dungeontrain.live.censored": "De camcorder weigert dat woord. Waarschuwing %s van %s.",

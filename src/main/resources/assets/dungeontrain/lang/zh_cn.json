@@ -740,6 +740,7 @@
   "command.dungeontrain.offer_eye.offered_all": "正在向 %s 位观众发出直播摄像机的赠送邀请，先接受的人得到它。",
   "command.dungeontrain.offer_eye.all_already_offered": "所有观众都已收到你的邀请。",
   "command.dungeontrain.offer_eye.already_given": "已经有人接手了你的直播摄像机。",
+  "command.dungeontrain.offer_eye.needs_perk": "向单个观众提供 Live Eye 需要 Gift Live Eye 天赋。向所有人提供仍然可用。",
   "chat.dungeontrain.live.ended_death": "你的直播随你一同结束。",
   "chat.dungeontrain.live.encoder_died": "直播已停止：视频编码器出错。请查看游戏日志。",
   "chat.dungeontrain.live.censored": "直播摄像机不允许使用这个词。第 %s 次警告，上限 %s 次。",

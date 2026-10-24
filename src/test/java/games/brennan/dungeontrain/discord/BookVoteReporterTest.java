@@ -67,4 +67,13 @@ class BookVoteReporterTest {
             new BookVotePacket("starting", "welcome", 1, -1), 5L);
         assertFalse(out.has("player"));
     }
+
+    @Test
+    @DisplayName("Vote Weight perk: weight rides along only above 1")
+    void weightOnlyAboveOne() {
+        JsonObject plain = BookVoteReporter.buildPayload("u", null, new BookVotePacket("shared", "1", 1, -1), 5L, 1);
+        assertFalse(plain.has("weight"));
+        JsonObject perked = BookVoteReporter.buildPayload("u", null, new BookVotePacket("shared", "1", 1, -1), 5L, 4);
+        assertEquals(4, perked.get("weight").getAsInt());
+    }
 }

@@ -28,10 +28,15 @@ public final class BookVoteReporter {
 
     /** Build and fire the vote report. No-op on any error. */
     public static void report(UUID playerId, String playerName, BookVotePacket p) {
+        report(playerId, playerName, p, 1);
+    }
+
+    /** {@link #report(UUID, String, BookVotePacket)} with the Vote Weight perk's {@code weight} (1 = none). */
+    public static void report(UUID playerId, String playerName, BookVotePacket p, int weight) {
         try {
             if (playerId == null || p == null) return;
             String uuid = playerId.toString().replace("-", "");
-            String json = buildPayload(uuid, playerName, p, System.currentTimeMillis()).toString();
+            String json = buildPayload(uuid, playerName, p, System.currentTimeMillis(), weight).toString();
             RelayOutbox.get().enqueue("/books/vote", json);
             LOGGER.debug("[DungeonTrain] book vote ({} on {}:{}) queued to the relay outbox.",
                 p.vote(), p.bookType(), p.bookId());
@@ -42,6 +47,11 @@ public final class BookVoteReporter {
 
     /** Pure JSON assembly — package-private so the shape can be unit-tested without a running server. */
     static JsonObject buildPayload(String uuid, String playerName, BookVotePacket p, long clientTsMs) {
+        return buildPayload(uuid, playerName, p, clientTsMs, 1);
+    }
+
+    /** As above; {@code weight} above 1 (the Vote Weight perk) rides along for the relay's tally. */
+    static JsonObject buildPayload(String uuid, String playerName, BookVotePacket p, long clientTsMs, int weight) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
         if (playerName != null && !playerName.isEmpty()) body.addProperty("player", playerName);
@@ -52,6 +62,7 @@ public final class BookVoteReporter {
             body.addProperty("variantIndex", p.variantIndex());
         }
         body.addProperty("clientTsMs", clientTsMs);
+        if (weight > 1) body.addProperty("weight", weight);
         return body;
     }
 }

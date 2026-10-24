@@ -772,6 +772,7 @@
   "command.dungeontrain.offer_eye.offered_all": "Dein Sende-Camcorder wird %s Zuschauern angeboten. Wer zuerst annimmt, bekommt ihn.",
   "command.dungeontrain.offer_eye.all_already_offered": "Alle Zuschauer haben dein Angebot schon.",
   "command.dungeontrain.offer_eye.already_given": "Jemand hat deinen Sende-Camcorder schon genommen.",
+  "command.dungeontrain.offer_eye.needs_perk": "Das Live Eye einem einzelnen Zuschauer anzubieten braucht den Perk Gift Live Eye. Es allen anzubieten geht weiterhin.",
   "chat.dungeontrain.live.ended_death": "Deine Übertragung endete mit dir.",
   "chat.dungeontrain.live.encoder_died": "Die Übertragung wurde beendet: Der Video-Encoder ist fehlgeschlagen. Siehe Spielprotokoll.",
   "chat.dungeontrain.live.censored": "Der Camcorder weist dieses Wort zurück. Verwarnung %s von %s.",
