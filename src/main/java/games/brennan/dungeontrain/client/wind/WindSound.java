@@ -19,14 +19,9 @@ import net.minecraft.util.RandomSource;
  *       each gust, while the breeze itself also gets louder.</li>
  * </ul>
  * It follows the wind arriving ({@code ahead}, so you hear a gust coming). While the wind is on the player out
- * in the open ({@link WindFeel}, even if grip keeps them from sliding) two more things happen:
- * <ul>
- *   <li><b>Louder when pushed</b> — the breeze holds at least {@link #PUSHED_FLOOR}, rising with the push, the
- *       gust copy also follows the wind <em>now</em> so it overlaps the shove instead of fading before it, and
- *       rising volume eases in faster.</li>
- *   <li><b>Ear buffet</b> — a low, fluttering copy of the loop that only plays
- *       while you are being moved.</li>
- * </ul>
+ * in the open ({@link WindFeel}, even if grip keeps them from sliding) it is <b>louder</b>: the breeze holds at
+ * least {@link #PUSHED_FLOOR}, rising with the wind, the gust copy also follows the wind <em>now</em> so it
+ * overlaps the shove instead of fading before it, and rising volume eases in faster.
  * Inside a carriage or under cover, and in a tunnel, it is silent; in a lee it is quieter.
  */
 final class WindSound {
@@ -44,17 +39,11 @@ final class WindSound {
     /** Least breeze volume while the wind is on the player, and how much more a full wind adds. */
     private static final float PUSHED_FLOOR = 0.2f;
     private static final float PUSHED_SPAN = 0.6f;
-    /** The ear buffet: volume at a full push, pitch, and its flutter. */
-    private static final float BUFFET_MAX_VOLUME = 0.7f;
-    private static final float BUFFET_PITCH = 0.5f;
-    private static final float BUFFET_TREMOLO_HZ = 4.0f;
-    private static final float BUFFET_TREMOLO_DEPTH = 0.6f;
     /** Far below the world, so Sable's per-sub-level sound remapping never touches a listener-relative loop. */
     private static final double SABLE_BYPASS_Z = -1.0e7;
 
     private static Loop breeze;
     private static Loop gust;
-    private static Loop buffet;
 
     private WindSound() {}
 
@@ -86,23 +75,12 @@ final class WindSound {
         float rise = pushed ? EASE_PUSHED : EASE;
         breeze.target((float) breezeVol, pitch, rise);
         gust.target((float) gustVol, pitch, rise);
-
-        boolean buffetOn = pushed;
-        if (buffetOn || buffet != null) {
-            if (buffetOn) buffet = ensure(buffet, BUFFET_PITCH);
-            if (buffet != null) {
-                buffet.tremolo(BUFFET_TREMOLO_HZ, BUFFET_TREMOLO_DEPTH);
-                buffet.target(buffetOn ? (float) (BUFFET_MAX_VOLUME * Math.sqrt(felt) * muffle * volume) : 0.0f,
-                        BUFFET_PITCH, EASE_PUSHED);
-            }
-        }
     }
 
     /** Fade everything out (wind off, left the Overworld, logged out). */
     static void silence() {
         if (breeze != null) breeze.target(0.0f, breeze.pitchTarget);
         if (gust != null) gust.target(0.0f, gust.pitchTarget);
-        if (buffet != null) buffet.target(0.0f, buffet.pitchTarget);
     }
 
     private static double muffle(TrainExposure.Result exposure, boolean underTerrain) {
@@ -122,18 +100,11 @@ final class WindSound {
         return fresh;
     }
 
-    /**
-     * A listener-relative looping wind layer that eases toward a target volume and pitch, optionally with a
-     * tremolo (its volume fluttering at a set rate).
-     */
+    /** A listener-relative looping wind layer that eases toward a target volume and pitch. */
     private static final class Loop extends AbstractTickableSoundInstance {
         private float volumeTarget = 0.0f;
         private float pitchTarget;
         private float rise = EASE;
-        private float level = 0.001f;
-        private float tremoloHz = 0.0f;
-        private float tremoloDepth = 0.0f;
-        private float phase = 0.0f;
 
         Loop(SoundEvent event, float pitch) {
             super(event, SoundSource.AMBIENT, RandomSource.create());
@@ -160,10 +131,6 @@ final class WindSound {
             this.rise = rise;
         }
 
-        void tremolo(float hz, float depth) {
-            this.tremoloHz = hz;
-            this.tremoloDepth = depth;
-        }
 
         @Override
         public boolean canStartSilent() {
@@ -177,14 +144,8 @@ final class WindSound {
                 return;
             }
             // Keep a whisper of volume so the instance stays alive between gusts.
-            float ease = volumeTarget > level ? rise : EASE;
-            this.level = Math.max(0.001f, level + (volumeTarget - level) * ease);
-            float flutter = 1.0f;
-            if (tremoloHz > 0.0f) {
-                phase = (phase + tremoloHz / 20.0f) % 1.0f;
-                flutter = 1.0f - tremoloDepth * (0.5f + 0.5f * (float) Math.sin(phase * 2.0 * Math.PI));
-            }
-            this.volume = Math.max(0.001f, level * flutter);
+            float ease = volumeTarget > this.volume ? rise : EASE;
+            this.volume = Math.max(0.001f, this.volume + (volumeTarget - this.volume) * ease);
             this.pitch = this.pitch + (pitchTarget - this.pitch) * EASE;
         }
     }
