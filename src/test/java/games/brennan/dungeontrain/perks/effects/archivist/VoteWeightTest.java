@@ -14,8 +14,8 @@ class VoteWeightTest {
     }
 
     @Test
-    void negativeIsOneAndHugeIsCapped() {
+    void negativeIsOneAndThereIsNoCap() {
         assertEquals(1, VoteWeight.weight(-5));
-        assertEquals(VoteWeight.MAX_WEIGHT, VoteWeight.weight(500));
+        assertEquals(501, VoteWeight.weight(500));
     }
 }
