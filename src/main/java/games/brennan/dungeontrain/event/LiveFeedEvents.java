@@ -170,25 +170,19 @@ public final class LiveFeedEvents {
     public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
         if (server.getTickCount() % FREE_PLAY_CHECK_TICKS != 0) return;
-        UUID streamer = LiveStreamers.get(server);
-        if (streamer == null) return;
-        ServerPlayer player = server.getPlayerList().getPlayer(streamer);
-        if (player != null && streamBlocked(player)) endStream(player, Exit.FREE_PLAY);
-    }
-
-    /**
-     * {@code player} already holds the stream. Logging in with the camcorder on starts it, and
-     * vanilla's first-tick equipment sync (EMPTY → camcorder) then reaches the equip path too —
-     * without this the client got two STARTs: two claims, two advancement triggers, two beacons.
-     */
-    static boolean alreadyStreaming(UUID player, @Nullable UUID current) {
-        return player.equals(current);
+        for (UUID streamer : LiveStreamers.all(server)) {
+            ServerPlayer player = server.getPlayerList().getPlayer(streamer);
+            if (player != null && streamBlocked(player)) endStream(player, Exit.FREE_PLAY);
+        }
     }
 
     private static void startStreaming(ServerPlayer player, boolean fromWatching) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
-        if (alreadyStreaming(player.getUUID(), LiveStreamers.get(server))) return;
+        // Already streaming: logging in with the camcorder on starts it, and vanilla's first-tick equipment
+        // sync (EMPTY → camcorder) then reaches the equip path too — without this the client got two
+        // STARTs: two claims, two advancement triggers, two beacons.
+        if (LiveStreamers.isStreamer(server, player.getUUID())) return;
         if (LiveStreamers.isPending(server, player.getUUID())) return;
         if (streamBlocked(player)) {
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.live.free_play").withStyle(ChatFormatting.GRAY));
@@ -220,22 +214,29 @@ public final class LiveFeedEvents {
      * The client heard back from the relay about its claim ({@link LiveClaimResultPacket}). Only a pending
      * wearer is listened to: anyone else's packet is stale or forged.
      */
-    public static void onTakeoverResult(ServerPlayer player, LiveClaimResultPacket.Result result) {
+    public static void onTakeoverResult(ServerPlayer player, LiveClaimResultPacket.Result result, boolean tookOver) {
         MinecraftServer server = player.getServer();
         if (server == null || !isCamcorder(player.getItemBySlot(EquipmentSlot.HEAD))) return;
         Boolean fromWatching = LiveStreamers.takePending(server, player.getUUID());
         if (fromWatching == null) return;
         switch (result) {
-            case LIVE -> goLive(server, player, fromWatching);
+            case LIVE -> goLive(server, player, fromWatching, tookOver);
             case REJECTED -> toTv(player, "chat.dungeontrain.live.takeover_rejected_tv");
             case STAYED_VIEWER -> toTv(player, "chat.dungeontrain.live.stayed_viewer_tv");
         }
     }
 
-    /** {@code player} holds the channel now: they are this server's streamer, and the previous one's Live Eye becomes a TV. */
-    private static void goLive(MinecraftServer server, ServerPlayer player, boolean fromWatching) {
-        UUID previous = LiveStreamers.setStreamer(server, player.getUUID());
-        if (previous != null && !previous.equals(player.getUUID())) {
+    /**
+     * {@code player} holds a channel now: they are one of this server's streamers. When the relay cut
+     * somebody off for it ({@code tookOver}) and that player is on this server, their Live Eye becomes a
+     * TV; with the Two Streams reward on, a second channel is handed out and nobody is cut off, so an
+     * earlier streamer here keeps streaming ({@link #demoted}).
+     */
+    private static void goLive(MinecraftServer server, ServerPlayer player, boolean fromWatching, boolean tookOver) {
+        java.util.Set<UUID> others = LiveStreamers.othersThan(server, player.getUUID());
+        LiveStreamers.add(server, player.getUUID());
+        for (UUID previous : demoted(others, tookOver)) {
+            LiveStreamers.clearIf(server, previous);
             ServerPlayer old = server.getPlayerList().getPlayer(previous);
             if (old != null) {
                 toTv(old, burnLineKey(Exit.REPLACED));
@@ -248,6 +249,16 @@ public final class LiveFeedEvents {
         ServerLevel level = player.serverLevel();
         level.playSound(null, player.blockPosition(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.5f, 1.6f);
         // No chat line here: the client says "You are now live" once the relay has a viewer count.
+    }
+
+    /**
+     * Which earlier streamers on this server a new claim replaces: the one it cut off when the relay said
+     * so, none otherwise. The relay only ever cuts off the streamer whose channel was taken, and a
+     * server never has more streamers than channels, so when the claim took over, the other streamer
+     * here is the one who lost it. Pure, for the tests.
+     */
+    static java.util.Set<UUID> demoted(java.util.Set<UUID> others, boolean tookOver) {
+        return tookOver ? others : java.util.Set.of();
     }
 
     /**

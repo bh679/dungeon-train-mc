@@ -186,6 +186,8 @@ public enum ClientOptionsTab {
         TWITCH_HINT("gui.dungeontrain.options.twitch_hint"),
         /** Whether this client decodes live feeds onto TVs and the pinned viewer. Also on Performance. */
         LIVE_FEED_VIEWING("gui.dungeontrain.options.live_feed_viewing"),
+        /** What a worn TV shows while two streams are live: both, or one of them. */
+        WORN_TV_STREAMS("gui.dungeontrain.options.worn_tv_streams"),
         /** The broadcast's picture size; the preview shows it. */
         STREAM_SIZE("gui.dungeontrain.options.stream_size"),
         /** Slower, smaller encoding: less upload for frame rate. Off by default; also on Performance. */
@@ -354,6 +356,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.LIVE_MOMENT_BOOKS);
                 rows.add(Row.TWITCH_HINT);
                 rows.add(Row.LIVE_FEED_VIEWING);
+                rows.add(Row.WORN_TV_STREAMS);
                 rows.add(Row.STREAM_SIZE);
                 rows.add(Row.STREAM_SAVE_BANDWIDTH);
                 rows.add(Row.HEAD_VIEWER_SIZE);

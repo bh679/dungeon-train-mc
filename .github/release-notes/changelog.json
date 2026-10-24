@@ -30457,6 +30457,29 @@
       "released": true,
       "released_in": "v0.1506.0",
       "released_at": "2026-10-24T13:54:27Z"
+    },
+    {
+      "id": "two-streams-second-channel",
+      "version": "0.1507.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "multiplayer",
+        "community"
+      ],
+      "title": "Two Streams: a second channel",
+      "summary": "When the Two Streams reward is on, a second player can go live without taking the Eye from whoever is already streaming. Right-click any TV to step it through off, Stream 1 and Stream 2, TV rooms come up showing a mix of both, and a TV worn on your head shows both streams, one above the other.",
+      "highlights": [
+        "Right-click a TV: off, Stream 1, Stream 2 (while a second stream is live), off",
+        "A TV on Stream 2 shows Stream 1 while nobody is on the second",
+        "Wearing a TV: both streams stacked (unless the box is at its largest size); in your inventory, click one to watch only it, click again for both. The TV remembers your pick, and TVs broken while tuned come back on that stream",
+        "Options / Dungeon Train / Stream: choose what a TV on your head shows by default"
+      ],
+      "pr": 2290,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

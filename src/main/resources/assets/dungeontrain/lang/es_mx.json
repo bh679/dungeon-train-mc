@@ -721,6 +721,7 @@
   "chat.dungeontrain.live.one_eye": "Solo puedes llevar una videocámara de transmisión. La de sobra se convirtió en una tele.",
   "chat.dungeontrain.live.free_play": "Las partidas de Juego Libre no pueden transmitir en vivo.",
   "chat.dungeontrain.live.took_over": "%s fue cortado.",
+  "chat.dungeontrain.live.second_stream": "Dos streams está activo: estás en vivo en el segundo stream, junto al primero.",
   "chat.dungeontrain.live.preparing": "Preparando el equipo de transmisión...",
   "chat.dungeontrain.live.no_ffmpeg": "Sin transmisión: la reproducción de video de Vista está apagada en este cliente.",
   "chat.dungeontrain.live.ffmpeg_timeout": "Sin transmisión: las herramientas de video todavía se están descargando. Vuelve a ponerte la videocámara de transmisión cuando las teles de Vista reproduzcan.",
@@ -1363,6 +1364,8 @@
   "gui.dungeontrain.rewards.explain.copy": "Para quien haya aportado $30 o más: activa el botón Copiar en Opciones para copiar el texto de cualquier libro que leas.",
   "gui.dungeontrain.rewards.group.streams": "STREAMS",
   "gui.dungeontrain.rewards.group.extra": "EXTRA",
+  "gui.dungeontrain.tv.channel.main": "Stream 1",
+  "gui.dungeontrain.tv.channel.second": "Stream 2",
   "gui.dungeontrain.rewards.quicker_streams.name": "Streams más rápidos",
   "gui.dungeontrain.rewards.quicker_streams.line": "Reduce el retraso de %1$ss a %2$ss durante 1 mes",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
@@ -2960,6 +2963,12 @@
   "gui.dungeontrain.options.live_feed_viewing": "Ver transmisiones en vivo",
   "gui.dungeontrain.options.live_feed_viewing.hint": "Reproduce en vivo en las teles",
   "gui.dungeontrain.options.live_feed_viewing.tip": "Reproduce las transmisiones en vivo en las teles de Live Feed y en el visor fijado. Apagado = muestran estática y no se descarga ni decodifica nada, lo que ahorra FPS.",
+  "gui.dungeontrain.options.worn_tv_streams": "La tele en tu cabeza muestra",
+  "gui.dungeontrain.options.worn_tv_streams.hint": "Cuando hay dos jugadores en vivo",
+  "gui.dungeontrain.options.worn_tv_streams.tip": "Mientras dos jugadores están en vivo, una tele puesta en la cabeza muestra ambos streams, uno encima del otro, o solo uno. Una tele que quedó en un stream (clic en tu inventario, o rota estando sintonizada) conserva ese stream.",
+  "gui.dungeontrain.options.worn_tv_streams.both": "Ambos",
+  "gui.dungeontrain.options.worn_tv_streams.stream_1": "Stream 1",
+  "gui.dungeontrain.options.worn_tv_streams.stream_2": "Stream 2",
   "gui.dungeontrain.options.live_feed_viewing.on": "Sí",
   "gui.dungeontrain.options.live_feed_viewing.spawn_off": "Teles apagadas al inicio",
   "gui.dungeontrain.options.live_feed_viewing.off": "No",
@@ -5390,5 +5399,7 @@
   "chat.dungeontrain.free_play.cause.player_unknown": "Alguien en este mundo pasó al Juego Libre, así que todos aquí están ahora en Juego Libre.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train está balanceado para que morir te cueste algo, así que de aquí en adelante este mundo se queda con sus propias estadísticas. Volver a desactivar la regla de juego no va a cambiar eso: el equipo que llevaste contigo a través de una muerte ya es tuyo.",
   "item.dungeontrain.live_cassette": "Casete de Señal en vivo",
-  "item.dungeontrain.live_cassette.tooltip": "Sintonizado a la Señal en vivo. Ponlo en cualquier televisor para ver a quien esté transmitiendo."
+  "item.dungeontrain.live_cassette.tooltip": "Sintonizado a la Señal en vivo. Ponlo en cualquier televisor para ver a quien esté transmitiendo.",
+  "item.dungeontrain.live_cassette_2": "Casete de Señal en vivo 2",
+  "item.dungeontrain.live_cassette_2.tooltip": "Sintonizado al segundo stream. Muestra al segundo jugador que esté en vivo, o el primer stream mientras no haya un segundo."
 }

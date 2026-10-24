@@ -753,6 +753,7 @@
   "chat.dungeontrain.live.one_eye": "Możesz mieć przy sobie tylko jedną kamerę transmisyjną. Dodatkowa zamieniła się w telewizor.",
   "chat.dungeontrain.live.free_play": "Rozgrywki w Trybie Swobodnym nie mogą nadawać na żywo.",
   "chat.dungeontrain.live.took_over": "%s został odcięty.",
+  "chat.dungeontrain.live.second_stream": "Dwie transmisje są włączone: nadajesz na drugiej transmisji, obok pierwszej.",
   "chat.dungeontrain.live.preparing": "Przygotowywanie sprzętu do transmisji...",
   "chat.dungeontrain.live.no_ffmpeg": "Brak transmisji: odtwarzanie wideo Vista jest wyłączone na tym kliencie.",
   "chat.dungeontrain.live.ffmpeg_timeout": "Brak transmisji: narzędzia wideo wciąż się pobierają. Załóż kamerę transmisyjną ponownie, gdy telewizory Vista zaczną odtwarzać.",
@@ -1408,6 +1409,8 @@
   "gui.dungeontrain.rewards.explain.copy": "Dla każdego, kto dał $30 lub więcej: włącz przycisk Kopiuj w Opcjach, aby kopiować tekst każdej czytanej książki.",
   "gui.dungeontrain.rewards.group.streams": "TRANSMISJE",
   "gui.dungeontrain.rewards.group.extra": "DODATKI",
+  "gui.dungeontrain.tv.channel.main": "Transmisja 1",
+  "gui.dungeontrain.tv.channel.second": "Transmisja 2",
   "gui.dungeontrain.rewards.quicker_streams.name": "Szybsze transmisje",
   "gui.dungeontrain.rewards.quicker_streams.line": "Opóźnienie z %1$ss do %2$ss na 1 miesiąc",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
@@ -3012,6 +3015,12 @@
   "gui.dungeontrain.options.live_feed_viewing": "Oglądaj transmisje na żywo",
   "gui.dungeontrain.options.live_feed_viewing.hint": "Odtwarza transmisje na telewizorach",
   "gui.dungeontrain.options.live_feed_viewing.tip": "Odtwarza transmisje na żywo na telewizorach Live Feed i w przypiętym podglądzie. Wył. = pokazują szum i nic nie jest pobierane ani dekodowane, co oszczędza FPS.",
+  "gui.dungeontrain.options.worn_tv_streams": "Telewizor na głowie pokazuje",
+  "gui.dungeontrain.options.worn_tv_streams.hint": "Gdy nadaje dwóch graczy",
+  "gui.dungeontrain.options.worn_tv_streams.tip": "Gdy nadaje dwóch graczy, telewizor na głowie pokazuje obie transmisje, jedną nad drugą, albo tylko jedną. Telewizor ustawiony na transmisję (kliknięty w ekwipunku lub zniszczony, gdy był nastrojony) zachowuje tę transmisję.",
+  "gui.dungeontrain.options.worn_tv_streams.both": "Obie",
+  "gui.dungeontrain.options.worn_tv_streams.stream_1": "Transmisja 1",
+  "gui.dungeontrain.options.worn_tv_streams.stream_2": "Transmisja 2",
   "gui.dungeontrain.options.live_feed_viewing.on": "Wł.",
   "gui.dungeontrain.options.live_feed_viewing.spawn_off": "Telewizory wyłączone",
   "gui.dungeontrain.options.live_feed_viewing.off": "Wył.",
@@ -5453,5 +5462,7 @@
   "chat.dungeontrain.free_play.cause.player_unknown": "Ktoś w tym świecie przeszedł w Swobodną Grę, więc wszyscy tutaj są teraz w Swobodnej Grze.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train jest wyważony wokół tego, że śmierć coś cię kosztuje, więc od tej chwili ten świat zatrzymuje swoje statystyki dla siebie. Ponowne wyłączenie reguły gry tego nie zmieni — sprzęt, który przeniosłeś przez śmierć, już jest twój.",
   "item.dungeontrain.live_cassette": "Kaseta Przekazu na żywo",
-  "item.dungeontrain.live_cassette.tooltip": "Nastrojona na Przekaz na żywo. Włóż ją do dowolnego telewizora, by zobaczyć, kto transmituje."
+  "item.dungeontrain.live_cassette.tooltip": "Nastrojona na Przekaz na żywo. Włóż ją do dowolnego telewizora, by zobaczyć, kto transmituje.",
+  "item.dungeontrain.live_cassette_2": "Kaseta Przekazu na żywo 2",
+  "item.dungeontrain.live_cassette_2.tooltip": "Nastrojona na drugą transmisję. Pokazuje drugiego gracza, który nadaje, albo pierwszą transmisję, dopóki nie ma drugiej."
 }

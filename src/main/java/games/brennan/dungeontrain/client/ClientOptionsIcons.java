@@ -94,6 +94,7 @@ final class ClientOptionsIcons {
             case LIVE_MOMENT_BOOKS -> Icon.item(Items.WRITABLE_BOOK);
             case TWITCH_HINT -> TWITCH;
             case LIVE_FEED_VIEWING -> Icon.item(Items.ENDER_EYE);
+            case WORN_TV_STREAMS -> Icon.item(Items.SPYGLASS);
             case STREAM_SIZE -> Icon.item(Items.MAP);
             case STREAM_SAVE_BANDWIDTH -> Icon.item(Items.PISTON);
             case HEAD_VIEWER_SIZE -> Icon.item(Items.GLASS);

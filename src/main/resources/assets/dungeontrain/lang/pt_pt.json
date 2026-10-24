@@ -721,6 +721,7 @@
   "chat.dungeontrain.live.one_eye": "Só podes levar uma câmara de filmar de emissão. A que sobrava passou a ser uma TV.",
   "chat.dungeontrain.live.free_play": "Partidas em Jogo Livre não podem transmitir em direto.",
   "chat.dungeontrain.live.took_over": "%s foi cortado.",
+  "chat.dungeontrain.live.second_stream": "Duas transmissões está ativo: estás em direto na segunda transmissão, ao lado da primeira.",
   "chat.dungeontrain.live.preparing": "A preparar o equipamento de emissão...",
   "chat.dungeontrain.live.no_ffmpeg": "Sem emissão: a reprodução de vídeo do Vista está desligada neste cliente.",
   "chat.dungeontrain.live.ffmpeg_timeout": "Sem emissão: as ferramentas de vídeo ainda estão a ser transferidas. Volta a colocar a câmara de filmar de emissão quando as televisões da Vista reproduzirem.",
@@ -1363,6 +1364,8 @@
   "gui.dungeontrain.rewards.explain.copy": "Para quem deu $30 ou mais: ativa o botão Copiar nas Opções para copiar o texto de qualquer livro que leias.",
   "gui.dungeontrain.rewards.group.streams": "TRANSMISSÕES",
   "gui.dungeontrain.rewards.group.extra": "EXTRAS",
+  "gui.dungeontrain.tv.channel.main": "Emissão 1",
+  "gui.dungeontrain.tv.channel.second": "Emissão 2",
   "gui.dungeontrain.rewards.quicker_streams.name": "Transmissões mais rápidas",
   "gui.dungeontrain.rewards.quicker_streams.line": "Reduz o atraso de %1$ss para %2$ss durante 1 mês",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
@@ -2960,6 +2963,12 @@
   "gui.dungeontrain.options.live_feed_viewing": "Ver emissões em direto",
   "gui.dungeontrain.options.live_feed_viewing.hint": "Reproduz diretos nas televisões",
   "gui.dungeontrain.options.live_feed_viewing.tip": "Reproduz os diretos nas televisões Live Feed e no visor fixado. Desligado = mostram estática e nada é transferido nem descodificado, o que poupa FPS.",
+  "gui.dungeontrain.options.worn_tv_streams": "A televisão na cabeça mostra",
+  "gui.dungeontrain.options.worn_tv_streams.hint": "Quando dois jogadores estão em direto",
+  "gui.dungeontrain.options.worn_tv_streams.tip": "Enquanto dois jogadores estão em direto, uma televisão usada na cabeça mostra as duas emissões, uma sobre a outra, ou só uma. Uma televisão deixada numa emissão (clicada no inventário, ou partida enquanto sintonizada) mantém essa emissão.",
+  "gui.dungeontrain.options.worn_tv_streams.both": "Ambas",
+  "gui.dungeontrain.options.worn_tv_streams.stream_1": "Emissão 1",
+  "gui.dungeontrain.options.worn_tv_streams.stream_2": "Emissão 2",
   "gui.dungeontrain.options.live_feed_viewing.on": "Ligado",
   "gui.dungeontrain.options.live_feed_viewing.spawn_off": "TVs começam desligadas",
   "gui.dungeontrain.options.live_feed_viewing.off": "Desligado",
@@ -5390,5 +5399,7 @@
   "chat.dungeontrain.free_play.cause.player_unknown": "Alguém neste mundo entrou no Jogo Livre, por isso todos aqui estão agora no Jogo Livre.",
   "chat.dungeontrain.free_play.keep_inventory_on": "O Dungeon Train está equilibrado em torno de morrer custar-te alguma coisa, por isso deste ponto em diante este mundo guarda as suas próprias estatísticas. Voltar a desligar a regra de jogo não muda isso — o equipamento que levaste contigo através de uma morte já é teu.",
   "item.dungeontrain.live_cassette": "Cassete da Emissão em direto",
-  "item.dungeontrain.live_cassette.tooltip": "Sintonizada na Emissão em direto. Põe-na em qualquer televisão para veres quem está a emitir."
+  "item.dungeontrain.live_cassette.tooltip": "Sintonizada na Emissão em direto. Põe-na em qualquer televisão para veres quem está a emitir.",
+  "item.dungeontrain.live_cassette_2": "Cassete da Emissão em direto 2",
+  "item.dungeontrain.live_cassette_2.tooltip": "Sintonizada na segunda emissão. Mostra o segundo jogador em direto, ou a primeira emissão enquanto não houver uma segunda."
 }

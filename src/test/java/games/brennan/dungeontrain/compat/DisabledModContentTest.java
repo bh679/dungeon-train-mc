@@ -130,7 +130,7 @@ final class DisabledModContentTest {
             assertTrue(DisabledModContent.isDisabledItem(id("vista:" + hidden), false), hidden);
         }
         for (String kept : new String[] {"vista:television", "vista:mirror", "vista:picture_tape",
-                "vista:music_disc_sojourn", "vista:crystalline", "dungeontrain:live_cassette"}) {
+                "vista:music_disc_sojourn", "vista:crystalline", "dungeontrain:live_cassette", "dungeontrain:live_cassette_2"}) {
             assertFalse(DisabledModContent.isDisabledItem(id(kept), false), kept);
         }
     }

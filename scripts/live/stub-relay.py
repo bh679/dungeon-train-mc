@@ -9,7 +9,12 @@ max-age it was uploaded with (2 s, or 1 s for a Quicker Streams session), segmen
     python3 -I scripts/live/stub-relay.py --port 8787 --out <dir> [--quick] [--relay-public <dp-relay>/public/dungeontrain]
 
 --quick makes every claim a Quicker Streams one (--quick-seconds, default 3: segmentSeconds 3,
-listSize 20, keyframeSeconds 3), as the relay does while the reward is on. Measurements:
+listSize 20, keyframeSeconds 3), as the relay does while the reward is on.
+
+--second-streamer NAME plays the Two Streams reward: every status carries a `second` block (a second
+player NAME live on the relay's `second` slot, at a playlist nobody uploads to), and a claim made
+while the first session is live answers `channel: "second"` instead of taking it over. Each status
+GET logs its `slot=` query so the viewer's second-slot flag can be checked. Measurements:
 
 - Website: open http://127.0.0.1:<port>/harness.html (needs --relay-public). It plays the stream
   with the relay's own live-player.js hls.js settings and posts `now - hls.playingDate` once a second.
@@ -135,8 +140,10 @@ class Handler(BaseHTTPRequestHandler):
         if path.endswith("/live/claim"):
             session = "%x-stub" % int(time.time() * 1000)
             with LOCK:
-                STATE["session"] = session
-            out = {"ok": True, "channel": "main", "session": session, "token": "tok-" + session,
+                channel = "second" if ARGS.second_streamer and STATE["session"] else "main"
+                if channel == "main":
+                    STATE["session"] = session
+            out = {"ok": True, "channel": channel, "session": session, "token": "tok-" + session,
                    "playlistUrl": "http://127.0.0.1:%d/files/%s/live.m3u8" % (port, session)}
             if ARGS.quick:
                 seg = ARGS.quick_seconds
@@ -174,7 +181,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         parts = urlparse(self.path).path.strip("/").split("/")
-        if len(parts) != 3 or parts[0] != "files":
+        # /files/<session>/<name> is the stub's own layout; /main/<session>/<name> is the bucket's, so a
+        # relay pointed at this stub as its LIVE_PUBLIC_BASE finds the same files.
+        if len(parts) != 3 or parts[0] not in ("files", "main"):
             return self._send(404)
         _, session, name = parts
         if not (SEG_RE.match(name) or name == "live.m3u8"):
@@ -193,16 +202,34 @@ class Handler(BaseHTTPRequestHandler):
             fh.write(data)
         return self._send(200)
 
+    def do_HEAD(self):
+        # A relay's readiness check HEADs the first segment on the public base; _send drops the body.
+        self.do_GET()
+
     def do_GET(self):
         path = urlparse(self.path).path
         if path.endswith("/live/status") or path.endswith("/live/public-status"):
             s = STATE["session"]
-            if not s:
-                return self._send(200, {"ok": True, "live": False, "viewers": 0, "cap": 100, "slot": True})
+            query = urlparse(self.path).query
+            if ARGS.second_streamer:
+                print("[stub] status slot=%s (%s)" % ("second" if "slot=second" in query else "main", query[:120]), flush=True)
             port = self.server.server_address[1]
-            return self._send(200, {"ok": True, "live": True, "session": s, "streamer": "Dev",
-                                    "playlistUrl": "http://127.0.0.1:%d/files/%s/live.m3u8" % (port, s),
-                                    "segmentSeconds": STATE["segment_seconds"], "viewers": 1, "cap": 100, "slot": True})
+            second = None
+            if ARGS.second_streamer:
+                second = {"live": True, "session": "second-stub", "streamer": ARGS.second_streamer,
+                          "playlistUrl": "http://127.0.0.1:%d/files/second-stub/live.m3u8" % port,
+                          "segmentSeconds": STATE["segment_seconds"]}
+            if not s:
+                # Nobody on the first slot: the second streamer, if any, is the primary (as the relay promotes it).
+                if second:
+                    return self._send(200, {"ok": True, "channel": "second", "viewers": 1, "cap": 100, "slot": True, **second})
+                return self._send(200, {"ok": True, "live": False, "viewers": 0, "cap": 100, "slot": True})
+            out = {"ok": True, "channel": "main", "live": True, "session": s, "streamer": "Dev",
+                   "playlistUrl": "http://127.0.0.1:%d/files/%s/live.m3u8" % (port, s),
+                   "segmentSeconds": STATE["segment_seconds"], "viewers": 1, "cap": 100, "slot": True}
+            if second:
+                out["second"] = second
+            return self._send(200, out)
         if path == "/report":
             return self._send(200, report())
         if path == "/harness.html":
@@ -215,7 +242,7 @@ class Handler(BaseHTTPRequestHandler):
             with open(full, "rb") as fh:
                 return self._send(200, fh.read(), "application/javascript")
         parts = path.strip("/").split("/")
-        if len(parts) == 3 and parts[0] == "files":
+        if len(parts) == 3 and parts[0] in ("files", "main"):
             key = (parts[1], parts[2])
             now = time.time()
             with LOCK:
@@ -267,6 +294,7 @@ def main():
     p.add_argument("--quick", action="store_true")
     p.add_argument("--quick-seconds", type=int, default=3)
     p.add_argument("--relay-public", default="")
+    p.add_argument("--second-streamer", default="", help="Two Streams: a second player of this name is live on the second slot")
     ARGS = p.parse_args()
     STATE["segment_seconds"] = ARGS.quick_seconds if ARGS.quick else 10
     STATE["list_size"] = max(6, -(-60 // STATE["segment_seconds"]))
