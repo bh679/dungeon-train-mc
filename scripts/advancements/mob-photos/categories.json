@@ -139,6 +139,6 @@
     "deeperdarker:stalker": "hostile",
     "deeperdarker:sculk_snapper": "animal",
     "piglinproliferation:piglin_alchemist": "hostile",
-    "piglinproliferation:piglin_traveler": "hostile"
+    "piglinproliferation:piglin_traveler": "skip"
   }
 }
