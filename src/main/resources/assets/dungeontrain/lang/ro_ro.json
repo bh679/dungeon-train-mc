@@ -821,6 +821,7 @@
   "chat.dungeontrain.live.preparing": "Se pregătește echipamentul de transmisie...",
   "chat.dungeontrain.live.no_ffmpeg": "Fără transmisie: redarea video Vista este dezactivată pe acest client.",
   "chat.dungeontrain.live.ffmpeg_timeout": "Fără transmisie: uneltele video încă se descarcă. Pune din nou camera video de transmisie după ce televizoarele Vista redau.",
+  "chat.dungeontrain.live.viewer_died": "%s în timp ce urmărea transmisiunea",
   "chat.dungeontrain.live.sound_off_unapproved": "Sunetul transmisiei este oprit: sunt încărcate moduri neaprobate.",
   "chat.dungeontrain.live.unreachable": "Fără transmisie: fluxul nu a putut fi contactat.",
   "chat.dungeontrain.live.disabled": "Transmisia live este oprită, pornește-o în %s",

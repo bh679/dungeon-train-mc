@@ -696,6 +696,7 @@
       "chat.dungeontrain.live.preparing",
       "chat.dungeontrain.live.no_ffmpeg",
       "chat.dungeontrain.live.ffmpeg_timeout",
+      "chat.dungeontrain.live.viewer_died",
       "chat.dungeontrain.live.sound_off_unapproved",
       "chat.dungeontrain.live.unreachable",
       "chat.dungeontrain.live.disabled",
