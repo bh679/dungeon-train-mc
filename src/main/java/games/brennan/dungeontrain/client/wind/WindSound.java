@@ -24,7 +24,7 @@ import net.minecraft.util.RandomSource;
  *   <li><b>Louder when pushed</b> — the breeze holds at least {@link #PUSHED_FLOOR}, rising with the push, the
  *       gust copy also follows the wind <em>now</em> so it overlaps the shove instead of fading before it, and
  *       rising volume eases in faster.</li>
- *   <li><b>Ear buffet</b> ({@link WindFeelMode#buffet}) — a low, fluttering copy of the loop that only plays
+ *   <li><b>Ear buffet</b> — a low, fluttering copy of the loop that only plays
  *       while you are being moved.</li>
  * </ul>
  * Inside a carriage or under cover, and in a tunnel, it is silent; in a lee it is quieter.
@@ -87,7 +87,7 @@ final class WindSound {
         breeze.target((float) breezeVol, pitch, rise);
         gust.target((float) gustVol, pitch, rise);
 
-        boolean buffetOn = WindFeelMode.current().buffet && pushed;
+        boolean buffetOn = pushed;
         if (buffetOn || buffet != null) {
             if (buffetOn) buffet = ensure(buffet, BUFFET_PITCH);
             if (buffet != null) {

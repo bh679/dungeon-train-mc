@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.client.wind;
 
 import com.mojang.math.Axis;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.client.HudText;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -15,18 +14,13 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
-import java.util.Locale;
 import java.util.Random;
 
 /**
- * The on-screen "you are being pushed" effects ({@link WindFeelMode}), drawn under the crosshair:
- * <ul>
- *   <li><b>C</b> near streaks — wisps at the screen edges: blowing in from the upwind edge, or out past both
- *       edges when the wind is in your face; never more than a third of the way in;</li>
- *   <li><b>D</b> upwind edge chill — a pale glow on the side of the screen the wind comes from;</li>
- *   <li><b>F</b> push chevrons — three faint arrows beside the crosshair pointing downwind.</li>
- * </ul>
- * Plus, on dev builds, the label naming the combo in force (a small line, and a big one just after K).
+ * Edge streaks: while the wind is on the player out in the open ({@link WindFeel}), a few wisps blow past the
+ * screen edges so the push reads even before it moves you. Drawn under the crosshair, never more than a third of
+ * the way in: a side wind blows them in from the upwind edge; wind in your face sends them out past both edges,
+ * wind at your back in from both; and the more the wind runs along the view, the more they follow perspective.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class WindFeelOverlay {
@@ -47,22 +41,11 @@ public final class WindFeelOverlay {
     private static final float STREAK_SPEED_PER_PUSH = 9000f;
     private static final int STREAK_RGB = 0xFFFFFF;
     private static final float STREAK_ALPHA = 0.55f;
-
-    private static final int CHILL_STRIPS = 24;
-    /** Width of the chill, as a fraction of the screen width. */
-    private static final float CHILL_WIDTH = 0.33f;
-    private static final int CHILL_RGB = 0xE1EEFF;
-    private static final float CHILL_ALPHA = 0.38f;
-    /** The faint chill on both edges when the wind is head-on or from behind. */
-    private static final float CHILL_ALONG = 0.4f;
-
-    private static final int CHEVRON_RGB = 0xFFFFFF;
-    private static final float CHEVRON_ALPHA = 0.75f;
-    private static final int CHEVRON_GAP = 6;
-    private static final int CHEVRON_SIZE = 4;
-    private static final int CHEVRON_START = 12;
-
-    private static final int LABEL_COLOR = 0xFFFFD27F;
+    /** {@code facing} below which the streaks switch to flying outward, and above which they switch back. */
+    private static final float OUTWARD_ENTER = -0.45f;
+    private static final float OUTWARD_EXIT = -0.25f;
+    /** Width of the band at each edge the streaks stay in, as a fraction of the screen width. */
+    private static final float BAND_WIDTH = 0.33f;
 
     private static final float[] SX = new float[STREAKS];
     private static final float[] SY = new float[STREAKS];
@@ -70,10 +53,12 @@ public final class WindFeelOverlay {
     private static final float[] SS = new float[STREAKS];
     /** -1 = blows in from the left edge, +1 = from the right. */
     private static final int[] SIDE = new int[STREAKS];
-    /** True = flies outward off its edge (wind in your face), false = blows in from its edge. */
+    /** True = flies outward off its edge, false = blows in from it (always the current {@link #outward}). */
     private static final boolean[] OUT = new boolean[STREAKS];
     private static final Random RANDOM = new Random();
     private static boolean seeded = false;
+    /** The flow in force: true = out past both edges (wind in your face), false = in from the edges. */
+    private static boolean outward = false;
     private static long lastNanos = 0L;
 
     private WindFeelOverlay() {}
@@ -83,9 +68,6 @@ public final class WindFeelOverlay {
         event.registerBelow(VanillaGuiLayers.CROSSHAIR,
                 ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "wind_feel"),
                 (LayeredDraw.Layer) WindFeelOverlay::render);
-        event.registerAboveAll(
-                ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "wind_feel_label"),
-                (LayeredDraw.Layer) (g, delta) -> renderLabel(g));
     }
 
     private static void render(GuiGraphics g, DeltaTracker delta) {
@@ -95,49 +77,20 @@ public final class WindFeelOverlay {
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.options.hideGui || mc.screen != null) return;
-        WindFeelMode mode = WindFeelMode.current();
-        if (!mode.streaks && !mode.chill && !mode.chevrons) return;
         float pt = delta.getGameTimeDeltaPartialTick(false);
         float felt = (float) WindFeel.felt(pt);
         if (felt < 0.01f) return;
         float yaw = mc.player.getViewYRot(pt);
         float lateral = (float) WindFeelMath.lateral(WindFeel.dirX(), WindFeel.dirZ(), yaw);
         float facing = (float) WindFeelMath.facing(WindFeel.dirX(), WindFeel.dirZ(), yaw);
-        float t = WindFeel.ticks() + pt;
-
-        if (mode.chill) drawChill(g, felt, lateral, t);
-        if (mode.streaks) drawStreaks(g, felt, lateral, facing, dt);
-        if (mode.chevrons) drawChevrons(g, felt, lateral, facing, t);
+        drawStreaks(g, felt, lateral, facing, dt);
     }
-
-    // ---- D: upwind edge chill ----------------------------------------------------------------
-
-    private static void drawChill(GuiGraphics g, float felt, float lateral, float t) {
-        float pulse = 0.75f + 0.25f * Mth.sin(t * 0.25f);
-        float a = CHILL_ALPHA * felt * pulse + 0.15f * (float) WindFeel.shudder();
-        float along = (1f - Math.abs(lateral)) * CHILL_ALONG;
-        // Blowing toward the right of the screen means it comes from the left.
-        float left = Math.max(0f, lateral) + along;
-        float right = Math.max(0f, -lateral) + along;
-        int w = g.guiWidth();
-        int h = g.guiHeight();
-        int band = Math.max(1, (int) (w * CHILL_WIDTH));
-        for (int i = 0; i < CHILL_STRIPS; i++) {
-            int x0 = band * i / CHILL_STRIPS;
-            int x1 = band * (i + 1) / CHILL_STRIPS;
-            float fall = 1f - (float) i / CHILL_STRIPS;
-            fall *= fall;
-            if (left > 0f) g.fill(x0, 0, x1, h, argb(a * left * fall, CHILL_RGB));
-            if (right > 0f) g.fill(w - x1, 0, w - x0, h, argb(a * right * fall, CHILL_RGB));
-        }
-    }
-
-    // ---- C: near streaks ---------------------------------------------------------------------
 
     /**
-     * Wisps at the screen edges only, inside the chill's band ({@link #CHILL_WIDTH}); nothing crosses the middle.
-     * A side wind blows them in from the upwind edge (sides weighted like the chill), flat across the screen. Wind
-     * in your face sends them outward instead, off both edges; wind at your back sends them inward. The more the
+     * Wisps at the screen edges only, inside the edge band ({@link #BAND_WIDTH}); nothing crosses the middle.
+     * A side wind blows them in from the upwind edge, flat across the screen. Wind
+     * mostly in your face sends them all outward instead, off both edges; wind at your back sends them inward.
+     * Every streak follows the same flow, so a side never has streaks going both ways. The more the
      * wind runs along the view, the more they follow perspective: each one runs on a line toward the middle of
      * the screen, bigger and faster near the edge (close to you), smaller toward the middle (far away).
      */
@@ -145,14 +98,18 @@ public final class WindFeelOverlay {
         int w = g.guiWidth();
         int h = g.guiHeight();
         float half = w / 2f;
-        float band = Math.max(8f, w * CHILL_WIDTH);
+        float band = Math.max(8f, w * BAND_WIDTH);
         float along = (1f - Math.abs(lateral)) * STREAK_ALONG;
         float left = Math.max(0f, lateral) + along;
         float right = Math.max(0f, -lateral) + along;
-        float headOn = Math.max(0f, -facing);
         float depthMix = Math.min(1f, Math.abs(facing));
-        if (!seeded) {
-            for (int i = 0; i < STREAKS; i++) respawn(i, h, band, left, right, headOn, true);
+        // One flow for the whole screen, so a side never has streaks going both ways: outward while the wind is
+        // in your face, inward otherwise. Hysteresis keeps it from flickering at the turn; on a change every
+        // streak starts again from where the new flow begins.
+        boolean flow = outward ? facing < OUTWARD_EXIT : facing < OUTWARD_ENTER;
+        if (!seeded || flow != outward) {
+            outward = flow;
+            for (int i = 0; i < STREAKS; i++) respawn(i, h, band, left, right, !seeded);
             seeded = true;
         }
         int count = Math.round(STREAKS * felt);
@@ -164,7 +121,7 @@ public final class WindFeelOverlay {
             SX[i] += (OUT[i] ? -1f : 1f) * speed * SS[i] * pace * dt;
             float len = SL[i] * scaleAt(SX[i], half, depthMix);
             boolean gone = OUT[i] ? SX[i] + len < 0f : SX[i] - len > band;
-            if (gone) respawn(i, h, band, left, right, headOn, false);
+            if (gone) respawn(i, h, band, left, right, false);
             if (i >= count) continue;
             boolean fromLeft = SIDE[i] < 0;
             float weight = OUT[i] ? 1f : (fromLeft ? left : right);
@@ -217,9 +174,8 @@ public final class WindFeelOverlay {
         g.pose().popPose();
     }
 
-    private static void respawn(int i, int h, float band, float left, float right, float headOn,
-                                boolean anywhere) {
-        OUT[i] = RANDOM.nextFloat() < headOn;
+    private static void respawn(int i, int h, float band, float left, float right, boolean anywhere) {
+        OUT[i] = outward;
         float total = left + right;
         if (OUT[i]) {
             SIDE[i] = RANDOM.nextBoolean() ? -1 : 1;
@@ -235,54 +191,6 @@ public final class WindFeelOverlay {
             SX[i] = band + RANDOM.nextFloat() * band * 0.5f; // starts past the band's inner edge, fades in
         } else {
             SX[i] = -RANDOM.nextFloat() * band * 0.5f; // starts off-screen
-        }
-    }
-
-    // ---- F: push chevrons --------------------------------------------------------------------
-
-    private static void drawChevrons(GuiGraphics g, float felt, float lateral, float facing, float t) {
-        if (felt < 0.05f) return;
-        // Screen direction of the push: sideways is sideways, from behind points up (into the view).
-        float angle = (float) Math.atan2(-facing, lateral);
-        g.pose().pushPose();
-        g.pose().translate(g.guiWidth() / 2f, g.guiHeight() / 2f, 0f);
-        g.pose().mulPose(Axis.ZP.rotation(angle));
-        for (int i = 0; i < 3; i++) {
-            float ph = (t * 0.08f + i / 3f) % 1f;
-            float a = CHEVRON_ALPHA * felt * (1f - Math.abs(ph - 0.5f) * 0.8f);
-            int tip = CHEVRON_START + i * CHEVRON_GAP + Math.round(ph * 2f);
-            int color = argb(a, CHEVRON_RGB);
-            for (int k = 0; k <= CHEVRON_SIZE; k++) {
-                g.fill(tip - k, -k, tip - k + 1, -k + 1, color);
-                if (k > 0) g.fill(tip - k, k, tip - k + 1, k + 1, color);
-            }
-        }
-        g.pose().popPose();
-    }
-
-    // ---- Dev label ---------------------------------------------------------------------------
-
-    private static void renderLabel(GuiGraphics g) {
-        if (!DungeonTrain.isDevBuild()) return;
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.options.hideGui || mc.font == null) return;
-        boolean flash = WindFeelHotkey.flashing();
-        if (!flash && !ClientWind.active()) return;
-        WindFeelMode mode = WindFeelMode.current();
-        String small = mode.shortLabel() + String.format(Locale.ROOT, "  felt %.2f", WindFeel.felt());
-        int sw = HudText.scaledWidth(mc.font, small);
-        int sx = (g.guiWidth() - sw) / 2;
-        g.fill(sx - 3, 2, sx + sw + 3, 4 + HudText.scaledLineHeight(mc.font) + 1, 0x80000000);
-        HudText.drawScaled(g, mc.font, small, sx, 4, LABEL_COLOR, true);
-        if (flash) {
-            String big = mode.label();
-            g.pose().pushPose();
-            g.pose().translate(g.guiWidth() / 2f, g.guiHeight() / 2f - 40f, 0f);
-            g.pose().scale(2f, 2f, 1f);
-            int bw = mc.font.width(big);
-            g.fill(-bw / 2 - 4, -3, bw / 2 + 4, mc.font.lineHeight + 2, 0xA0000000);
-            g.drawString(mc.font, big, -bw / 2, 0, LABEL_COLOR, true);
-            g.pose().popPose();
         }
     }
 
