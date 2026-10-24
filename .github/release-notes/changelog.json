@@ -30498,6 +30498,22 @@
       "released_in": null,
       "released_at": null,
       "pr": 2297
+    },
+    {
+      "id": "perks-lover-pet-health-good-gifter",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Lover perks: Pet Health and Good Gifter",
+      "summary": "Two new Lover perks. Pet Health gives your tamed pets an extra heart for each rank. Good Gifter makes animals easier to win over: first any food will do, then any item, and at the top rank a friendly hand is enough to tame. Player mobs also warm to your gifts faster.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
