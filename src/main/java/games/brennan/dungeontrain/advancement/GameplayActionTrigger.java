@@ -55,6 +55,7 @@ import java.util.Optional;
  *   <li>{@code livestream_15_min} — streamed without a break for {@code threshold} minutes</li>
  *   <li>{@code livestream_total} — streamed for {@code thresholdTicks} in total, across every stream</li>
  *   <li>{@code toggled_placed_tv} — switched a placed TV on or off with an empty-hand click</li>
+ *   <li>{@code switched_tv_channel} — sneak-clicked a placed TV between the first and the second stream</li>
  *   <li>{@code toggled_held_tv} — switched a held TV on or off ({@code TvHeldTogglePacket})</li>
  *   <li>{@code held_tv_while_live} — switched a held TV on while livestreaming with the Live Eye</li>
  *   <li>{@code tv_to_live_eye} — swapped a worn TV for a Live Eye while someone else was live, and went live</li>

@@ -689,6 +689,7 @@
   "chat.dungeontrain.live.one_eye": "Bạn chỉ có thể mang một máy quay phát sóng. Chiếc thừa đã biến thành TV.",
   "chat.dungeontrain.live.free_play": "Lượt chơi Tự Do không thể phát trực tiếp.",
   "chat.dungeontrain.live.took_over": "%s đã bị cắt sóng.",
+  "chat.dungeontrain.live.second_stream": "Hai stream đang bật: bạn đang phát trực tiếp trên stream thứ hai, song song với stream thứ nhất.",
   "chat.dungeontrain.live.preparing": "Đang chuẩn bị thiết bị phát sóng...",
   "chat.dungeontrain.live.no_ffmpeg": "Không phát sóng: phát video của Vista đang tắt trên máy khách này.",
   "chat.dungeontrain.live.ffmpeg_timeout": "Không phát sóng: công cụ video vẫn đang tải xuống. Đội lại máy quay phát sóng khi các TV của Vista phát được.",
@@ -1302,6 +1303,8 @@
   "gui.dungeontrain.rewards.explain.copy": "Dành cho ai đã đóng góp $30 trở lên: bật nút Sao chép trong Tùy chọn để sao chép nội dung của bất kỳ cuốn sách nào bạn đọc.",
   "gui.dungeontrain.rewards.group.streams": "STREAM",
   "gui.dungeontrain.rewards.group.extra": "THÊM",
+  "gui.dungeontrain.tv.channel.main": "Stream 1",
+  "gui.dungeontrain.tv.channel.second": "Stream 2",
   "gui.dungeontrain.rewards.quicker_streams.name": "Stream nhanh hơn",
   "gui.dungeontrain.rewards.quicker_streams.line": "Giảm độ trễ từ %1$ss xuống %2$ss trong 1 tháng",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
@@ -5304,5 +5307,7 @@
   "chat.dungeontrain.free_play.cause.player_unknown": "Có người trong thế giới này đã vào Chơi Tự do, nên mọi người ở đây cũng đang Chơi Tự do.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train được cân bằng quanh việc cái chết phải lấy đi của bạn thứ gì đó, nên từ đây thế giới này giữ thống kê của riêng nó. Tắt lại luật chơi cũng không đổi được điều đó — số đồ bạn mang qua một lần chết thì đã là của bạn rồi.",
   "item.dungeontrain.live_cassette": "Băng Phát trực tiếp",
-  "item.dungeontrain.live_cassette.tooltip": "Đã dò sẵn Phát trực tiếp. Cho vào bất kỳ TV nào để xem ai đang phát sóng."
+  "item.dungeontrain.live_cassette.tooltip": "Đã dò sẵn Phát trực tiếp. Cho vào bất kỳ TV nào để xem ai đang phát sóng.",
+  "item.dungeontrain.live_cassette_2": "Băng Phát trực tiếp 2",
+  "item.dungeontrain.live_cassette_2.tooltip": "Đã dò sẵn stream thứ hai. Hiển thị người chơi thứ hai đang phát sóng, hoặc stream thứ nhất khi chưa có stream thứ hai."
 }

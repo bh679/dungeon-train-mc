@@ -8,6 +8,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,17 +38,18 @@ public final class ServerLiveStatus {
 
     /** True while the relay recently said someone is live, or someone on this server is streaming. */
     public static boolean isAnyoneLive(MinecraftServer server) {
-        if (server != null && LiveStreamers.get(server) != null) return true;
+        if (server != null && LiveStreamers.any(server) != null) return true;
         return isFresh(relayLive, relayAtMs, System.currentTimeMillis());
     }
 
     /**
      * True while someone other than {@code player} is broadcasting — what a TV on their head would be
-     * showing. A streamer on this server counts unless it is them; otherwise a fresh relay answer counts
-     * unless it names them (a nameless answer counts as someone else).
+     * showing. Another streamer on this server counts (with Two Streams on there may be two, so the
+     * player's own stream is set aside first); otherwise a fresh relay answer counts unless it names
+     * them (a nameless answer counts as someone else).
      */
     public static boolean isSomeoneElseLive(MinecraftServer server, ServerPlayer player) {
-        UUID local = server == null ? null : LiveStreamers.get(server);
+        UUID local = server == null ? null : firstOf(LiveStreamers.othersThan(server, player.getUUID()));
         return someoneElseLive(local, player.getUUID(), isFresh(relayLive, relayAtMs, System.currentTimeMillis()),
             relayStreamer, player.getGameProfile().getName());
     }
@@ -58,8 +60,13 @@ public final class ServerLiveStatus {
      * false here (unlike {@link #isAnyoneLive}, where it reads as not live).
      */
     public static boolean isNobodyLive(MinecraftServer server) {
-        UUID local = server == null ? null : LiveStreamers.get(server);
+        UUID local = server == null ? null : LiveStreamers.any(server);
         return nobodyLive(local, relayLive, relayAtMs, System.currentTimeMillis());
+    }
+
+    @Nullable
+    private static UUID firstOf(java.util.Set<UUID> ids) {
+        return ids.isEmpty() ? null : ids.iterator().next();
     }
 
     /** Pure form for the tests. */

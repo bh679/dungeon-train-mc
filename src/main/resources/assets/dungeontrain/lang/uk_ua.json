@@ -818,6 +818,7 @@
   "chat.dungeontrain.live.one_eye": "Можна мати лише одну трансляційну відеокамеру. Зайва перетворилася на телевізор.",
   "chat.dungeontrain.live.free_play": "У вільній грі не можна вийти в прямий ефір.",
   "chat.dungeontrain.live.took_over": "Трансляцію %s перервано.",
+  "chat.dungeontrain.live.second_stream": "Дві трансляції увімкнено: ти в ефірі на другій трансляції, поруч із першою.",
   "chat.dungeontrain.live.preparing": "Підготовка обладнання для трансляції...",
   "chat.dungeontrain.live.no_ffmpeg": "Немає трансляції: відтворення відео Vista вимкнено на цьому клієнті.",
   "chat.dungeontrain.live.ffmpeg_timeout": "Немає трансляції: відеоінструменти ще завантажуються. Надягніть трансляційну відеокамеру знову, коли телевізори Vista почнуть показувати.",
@@ -1574,6 +1575,8 @@
   "gui.dungeontrain.rewards.explain.copy": "Для всіх, хто подарував $30 або більше: увімкніть кнопку Копіювати в Опціях, щоб копіювати текст будь-якої прочитаної книги.",
   "gui.dungeontrain.rewards.group.streams": "ТРАНСЛЯЦІЇ",
   "gui.dungeontrain.rewards.group.extra": "ДОДАТКОВО",
+  "gui.dungeontrain.tv.channel.main": "Трансляція 1",
+  "gui.dungeontrain.tv.channel.second": "Трансляція 2",
   "gui.dungeontrain.rewards.quicker_streams.name": "Швидші трансляції",
   "gui.dungeontrain.rewards.quicker_streams.line": "Затримка з %1$s с до %2$s с на 1 місяць",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
@@ -5427,5 +5430,7 @@
   "advancements.dungeontrain.tab.others": "Інші",
   "advancements.dungeontrain.tab.secrete_menu": "Секретне меню",
   "item.dungeontrain.live_cassette": "Касета Прямого ефіру",
-  "item.dungeontrain.live_cassette.tooltip": "Налаштована на Прямий ефір. Встав у будь-який телевізор, щоб дивитися того, хто зараз в ефірі."
+  "item.dungeontrain.live_cassette.tooltip": "Налаштована на Прямий ефір. Встав у будь-який телевізор, щоб дивитися того, хто зараз в ефірі.",
+  "item.dungeontrain.live_cassette_2": "Касета Прямого ефіру 2",
+  "item.dungeontrain.live_cassette_2.tooltip": "Налаштована на другу трансляцію. Показує другого гравця в ефірі, а поки другого немає, першу трансляцію."
 }

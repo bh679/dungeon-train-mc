@@ -693,6 +693,7 @@
       "chat.dungeontrain.live.one_eye",
       "chat.dungeontrain.live.free_play",
       "chat.dungeontrain.live.took_over",
+      "chat.dungeontrain.live.second_stream",
       "chat.dungeontrain.live.preparing",
       "chat.dungeontrain.live.no_ffmpeg",
       "chat.dungeontrain.live.ffmpeg_timeout",
@@ -1299,6 +1300,8 @@
       "gui.dungeontrain.rewards.explain.copy",
       "gui.dungeontrain.rewards.group.streams",
       "gui.dungeontrain.rewards.group.extra",
+      "gui.dungeontrain.tv.channel.main",
+      "gui.dungeontrain.tv.channel.second",
       "gui.dungeontrain.rewards.quicker_streams.name",
       "gui.dungeontrain.rewards.quicker_streams.line",
       "gui.dungeontrain.rewards.quicker_streams.amount",
@@ -5308,7 +5311,9 @@
       "chat.dungeontrain.free_play.cause.player_unknown",
       "chat.dungeontrain.free_play.keep_inventory_on",
       "item.dungeontrain.live_cassette",
-      "item.dungeontrain.live_cassette.tooltip"
+      "item.dungeontrain.live_cassette.tooltip",
+      "item.dungeontrain.live_cassette_2",
+      "item.dungeontrain.live_cassette_2.tooltip"
     ],
     "adventureitemnames": "*",
     "playermob": "*",

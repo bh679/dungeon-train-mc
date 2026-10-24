@@ -758,6 +758,7 @@
   "chat.dungeontrain.live.one_eye": "Можно носить только одну вещательную видеокамеру. Лишняя превратилась в телевизор.",
   "chat.dungeontrain.live.free_play": "В свободной игре нельзя выйти в прямой эфир.",
   "chat.dungeontrain.live.took_over": "Трансляция %s прервана.",
+  "chat.dungeontrain.live.second_stream": "Две трансляции включены: ты в эфире на второй трансляции, рядом с первой.",
   "chat.dungeontrain.live.preparing": "Подготовка оборудования для трансляции...",
   "chat.dungeontrain.live.no_ffmpeg": "Нет трансляции: воспроизведение видео Vista отключено на этом клиенте.",
   "chat.dungeontrain.live.ffmpeg_timeout": "Нет трансляции: видеоинструменты ещё загружаются. Наденьте вещательную видеокамеру снова, когда телевизоры Vista начнут показывать.",
@@ -1397,6 +1398,8 @@
   "gui.dungeontrain.rewards.explain.copy": "Для всех, кто подарил $30 или больше: включите кнопку Копировать в Настройках, чтобы копировать текст любой прочитанной книги.",
   "gui.dungeontrain.rewards.group.streams": "ТРАНСЛЯЦИИ",
   "gui.dungeontrain.rewards.group.extra": "ДОПОЛНИТЕЛЬНО",
+  "gui.dungeontrain.tv.channel.main": "Трансляция 1",
+  "gui.dungeontrain.tv.channel.second": "Трансляция 2",
   "gui.dungeontrain.rewards.quicker_streams.name": "Быстрые трансляции",
   "gui.dungeontrain.rewards.quicker_streams.line": "Задержка с %1$s с до %2$s с на 1 месяц",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
@@ -5430,5 +5433,7 @@
   "chat.dungeontrain.free_play.cause.player_unknown": "Кто-то в этом мире перешёл в свободную игру, поэтому теперь все здесь в свободной игре.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train сбалансирован вокруг того, что смерть чего-то стоит, поэтому теперь этот мир хранит свою статистику отдельно. Выключение ничего не изменит — снаряжение, которое вы пронесли через смерть, уже ваше.",
   "item.dungeontrain.live_cassette": "Кассета Прямого эфира",
-  "item.dungeontrain.live_cassette.tooltip": "Настроена на Прямой эфир. Вставь в любой телевизор, чтобы смотреть того, кто сейчас в эфире."
+  "item.dungeontrain.live_cassette.tooltip": "Настроена на Прямой эфир. Вставь в любой телевизор, чтобы смотреть того, кто сейчас в эфире.",
+  "item.dungeontrain.live_cassette_2": "Кассета Прямого эфира 2",
+  "item.dungeontrain.live_cassette_2.tooltip": "Настроена на вторую трансляцию. Показывает второго игрока в эфире, а пока второго нет, первую трансляцию."
 }

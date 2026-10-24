@@ -721,6 +721,7 @@
   "chat.dungeontrain.live.one_eye": "Tu ne peux porter qu'un seul caméscope de diffusion. Celui en trop est devenu une télé.",
   "chat.dungeontrain.live.free_play": "Les parties en Jeu Libre ne peuvent pas passer en direct.",
   "chat.dungeontrain.live.took_over": "%s a été coupé.",
+  "chat.dungeontrain.live.second_stream": "Deux streams est actif : tu es en direct sur le second stream, aux côtés du premier.",
   "chat.dungeontrain.live.preparing": "Préparation du matériel de diffusion...",
   "chat.dungeontrain.live.no_ffmpeg": "Pas de diffusion : la lecture vidéo de Vista est désactivée sur ce client.",
   "chat.dungeontrain.live.ffmpeg_timeout": "Pas de diffusion : les outils vidéo sont encore en cours de téléchargement. Remets le caméscope de diffusion une fois que les téléviseurs de Vista fonctionnent.",
@@ -1347,6 +1348,8 @@
   "gui.dungeontrain.rewards.explain.copy": "Pour toute personne ayant donné $30 ou plus : activez le bouton Copier dans les Options pour copier le texte de n'importe quel livre que vous lisez.",
   "gui.dungeontrain.rewards.group.streams": "STREAMS",
   "gui.dungeontrain.rewards.group.extra": "EXTRA",
+  "gui.dungeontrain.tv.channel.main": "Stream 1",
+  "gui.dungeontrain.tv.channel.second": "Stream 2",
   "gui.dungeontrain.rewards.quicker_streams.name": "Streams plus rapides",
   "gui.dungeontrain.rewards.quicker_streams.line": "Réduit le délai de %1$ss à %2$ss pendant 1 mois",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
@@ -5367,5 +5370,7 @@
   "chat.dungeontrain.free_play.cause.player_unknown": "Quelqu'un dans ce monde est passé en Jeu Libre, donc tout le monde ici est maintenant en Jeu Libre.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train est équilibré autour de l'idée que mourir te coûte quelque chose, alors à partir d'ici ce monde garde ses statistiques pour lui. Redésactiver la règle de jeu n'y changera rien — l'équipement que tu as emporté à travers une mort est déjà à toi.",
   "item.dungeontrain.live_cassette": "Cassette du Flux en direct",
-  "item.dungeontrain.live_cassette.tooltip": "Réglée sur le Flux en direct. Insérez-la dans n'importe quelle télé pour regarder qui diffuse."
+  "item.dungeontrain.live_cassette.tooltip": "Réglée sur le Flux en direct. Insérez-la dans n'importe quelle télé pour regarder qui diffuse.",
+  "item.dungeontrain.live_cassette_2": "Cassette du Flux en direct 2",
+  "item.dungeontrain.live_cassette_2.tooltip": "Réglée sur le second stream. Montre le second joueur en direct, ou le premier stream tant qu'il n'y en a pas de second."
 }

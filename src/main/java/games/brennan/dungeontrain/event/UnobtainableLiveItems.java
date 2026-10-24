@@ -32,7 +32,7 @@ public final class UnobtainableLiveItems {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    static final Set<String> IDS = Set.of("dungeontrain:live_cassette", "dungeontrain:random_live_headpiece");
+    static final Set<String> IDS = Set.of("dungeontrain:live_cassette", "dungeontrain:live_cassette_2", "dungeontrain:random_live_headpiece");
 
     private static final int SWEEP_INTERVAL_TICKS = 20;
 

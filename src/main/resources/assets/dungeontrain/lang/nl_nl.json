@@ -721,6 +721,7 @@
   "chat.dungeontrain.live.one_eye": "Je kunt maar één uitzendcamcorder bij je hebben. De extra is een tv geworden.",
   "chat.dungeontrain.live.free_play": "Vrij Spel-runs kunnen niet live gaan.",
   "chat.dungeontrain.live.took_over": "%s is afgesneden.",
+  "chat.dungeontrain.live.second_stream": "Twee streams staat aan: je bent live op de tweede stream, naast de eerste.",
   "chat.dungeontrain.live.preparing": "De uitzendapparatuur wordt klaargezet...",
   "chat.dungeontrain.live.no_ffmpeg": "Geen uitzending: videoweergave van Vista staat uit op deze client.",
   "chat.dungeontrain.live.ffmpeg_timeout": "Geen uitzending: de videotools worden nog gedownload. Zet de uitzendcamcorder opnieuw op zodra de tv's van Vista afspelen.",
@@ -1347,6 +1348,8 @@
   "gui.dungeontrain.rewards.explain.copy": "Voor iedereen die $30 of meer heeft gegeven: zet de knop Kopiëren aan in Opties om de tekst van elk boek dat je leest te kopiëren.",
   "gui.dungeontrain.rewards.group.streams": "STREAMS",
   "gui.dungeontrain.rewards.group.extra": "EXTRA",
+  "gui.dungeontrain.tv.channel.main": "Stream 1",
+  "gui.dungeontrain.tv.channel.second": "Stream 2",
   "gui.dungeontrain.rewards.quicker_streams.name": "Snellere streams",
   "gui.dungeontrain.rewards.quicker_streams.line": "Vertraging van %1$ss naar %2$ss, 1 maand lang",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
@@ -5367,5 +5370,7 @@
   "chat.dungeontrain.free_play.cause.player_unknown": "Iemand in deze wereld is naar Vrij Spel gegaan, dus iedereen hier speelt nu ook Vrij Spel.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train is erop afgestemd dat doodgaan je iets kost, dus vanaf hier houdt deze wereld haar statistieken voor zichzelf. De spelregel weer uitzetten verandert daar niets aan — de spullen die je door een dood heen meedroeg zijn al van jou.",
   "item.dungeontrain.live_cassette": "Live Feed-cassette",
-  "item.dungeontrain.live_cassette.tooltip": "Afgestemd op de Live Feed. Stop hem in een willekeurige tv om te zien wie er uitzendt."
+  "item.dungeontrain.live_cassette.tooltip": "Afgestemd op de Live Feed. Stop hem in een willekeurige tv om te zien wie er uitzendt.",
+  "item.dungeontrain.live_cassette_2": "Live Feed-cassette 2",
+  "item.dungeontrain.live_cassette_2.tooltip": "Afgestemd op de tweede stream. Toont de tweede speler die live is, of de eerste stream zolang er geen tweede is."
 }

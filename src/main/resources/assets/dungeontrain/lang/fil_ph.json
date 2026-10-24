@@ -689,6 +689,7 @@
   "chat.dungeontrain.live.one_eye": "Isang Camcorder ng Broadcast lang ang puwede mong dalhin. Naging TV ang sobra.",
   "chat.dungeontrain.live.free_play": "Hindi maaaring mag-live ang mga Free Play na run.",
   "chat.dungeontrain.live.took_over": "Naputol si %s.",
+  "chat.dungeontrain.live.second_stream": "Naka-on ang Dalawang Stream: live ka sa ikalawang stream, kasabay ng una.",
   "chat.dungeontrain.live.preparing": "Inihahanda ang kagamitan sa brodkast...",
   "chat.dungeontrain.live.no_ffmpeg": "Walang brodkast: naka-off ang video playback ng Vista sa client na ito.",
   "chat.dungeontrain.live.ffmpeg_timeout": "Walang broadcast: dina-download pa ang mga video tool. Isuot muli ang Camcorder ng Broadcast kapag nagpe-play na ang mga TV ng Vista.",
@@ -1302,6 +1303,8 @@
   "gui.dungeontrain.rewards.explain.copy": "Para sa sinumang nagbigay ng $30 o higit pa: buksan ang Kopyahin na button sa Mga Opsyon para makopya ang teksto ng anumang aklat na binabasa mo.",
   "gui.dungeontrain.rewards.group.streams": "STREAMS",
   "gui.dungeontrain.rewards.group.extra": "EXTRA",
+  "gui.dungeontrain.tv.channel.main": "Stream 1",
+  "gui.dungeontrain.tv.channel.second": "Stream 2",
   "gui.dungeontrain.rewards.quicker_streams.name": "Mas Mabilis na Stream",
   "gui.dungeontrain.rewards.quicker_streams.line": "Bawasan ang delay mula %1$ss hanggang %2$ss nang 1 buwan",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
@@ -5304,5 +5307,7 @@
   "chat.dungeontrain.free_play.cause.player_unknown": "May pumasok sa Malayang Paglalaro sa mundong ito, kaya nasa Malayang Paglalaro na rin ang lahat dito.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Nakabalanse ang Dungeon Train sa palagay na may kapalit ang pagkamatay, kaya mula ngayon ay sa mundong ito na lang mananatili ang sarili nitong estadistika. Hindi mababago iyon ng pag-off muli sa game rule — ang gamit na dala mo sa kabila ng isang kamatayan ay sa iyo na.",
   "item.dungeontrain.live_cassette": "Cassette ng Live Feed",
-  "item.dungeontrain.live_cassette.tooltip": "Nakatutok sa Live Feed. Ilagay sa kahit anong TV para panoorin kung sino ang nagbo-brodkast."
+  "item.dungeontrain.live_cassette.tooltip": "Nakatutok sa Live Feed. Ilagay sa kahit anong TV para panoorin kung sino ang nagbo-brodkast.",
+  "item.dungeontrain.live_cassette_2": "Cassette ng Live Feed 2",
+  "item.dungeontrain.live_cassette_2.tooltip": "Nakatutok sa ikalawang stream. Ipinapakita ang ikalawang manlalarong live, o ang unang stream habang wala pang ikalawa."
 }

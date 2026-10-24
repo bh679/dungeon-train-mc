@@ -721,6 +721,7 @@
   "chat.dungeontrain.live.one_eye": "Você só pode carregar uma filmadora de transmissão. A extra virou uma TV.",
   "chat.dungeontrain.live.free_play": "Partidas em Jogo Livre não podem transmitir ao vivo.",
   "chat.dungeontrain.live.took_over": "%s foi cortado.",
+  "chat.dungeontrain.live.second_stream": "Duas transmissões está ativo: você está ao vivo na segunda transmissão, junto com a primeira.",
   "chat.dungeontrain.live.preparing": "Preparando o equipamento de transmissão...",
   "chat.dungeontrain.live.no_ffmpeg": "Sem transmissão: a reprodução de vídeo do Vista está desligada neste cliente.",
   "chat.dungeontrain.live.ffmpeg_timeout": "Sem transmissão: as ferramentas de vídeo ainda estão sendo baixadas. Coloque a filmadora de transmissão de novo quando as TVs da Vista estiverem reproduzindo.",
@@ -1347,6 +1348,8 @@
   "gui.dungeontrain.rewards.explain.copy": "Para quem deu $30 ou mais: ative o botão Copiar em Opções para copiar o texto de qualquer livro que você ler.",
   "gui.dungeontrain.rewards.group.streams": "TRANSMISSÕES",
   "gui.dungeontrain.rewards.group.extra": "EXTRAS",
+  "gui.dungeontrain.tv.channel.main": "Transmissão 1",
+  "gui.dungeontrain.tv.channel.second": "Transmissão 2",
   "gui.dungeontrain.rewards.quicker_streams.name": "Transmissões mais rápidas",
   "gui.dungeontrain.rewards.quicker_streams.line": "Reduz o atraso de %1$ss para %2$ss por 1 mês",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
@@ -5367,5 +5370,7 @@
   "chat.dungeontrain.free_play.cause.player_unknown": "Alguém neste mundo entrou no Jogo Livre, então todos aqui agora estão no Jogo Livre.",
   "chat.dungeontrain.free_play.keep_inventory_on": "O Dungeon Train é balanceado em torno de morrer custar algo a você, então daqui em diante este mundo guarda as próprias estatísticas. Desligar a regra de jogo de novo não muda isso — o equipamento que você carregou através de uma morte já é seu.",
   "item.dungeontrain.live_cassette": "Fita da Transmissão ao vivo",
-  "item.dungeontrain.live_cassette.tooltip": "Sintonizada na Transmissão ao vivo. Coloque em qualquer TV para ver quem está transmitindo."
+  "item.dungeontrain.live_cassette.tooltip": "Sintonizada na Transmissão ao vivo. Coloque em qualquer TV para ver quem está transmitindo.",
+  "item.dungeontrain.live_cassette_2": "Fita da Transmissão ao vivo 2",
+  "item.dungeontrain.live_cassette_2.tooltip": "Sintonizada na segunda transmissão. Mostra o segundo jogador ao vivo, ou a primeira transmissão enquanto não houver uma segunda."
 }

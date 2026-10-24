@@ -99,6 +99,17 @@ public final class ModItems {
     );
 
     /**
+     * The same cassette tuned to the Live Feed's second stream (the Two Streams reward): a TV holding it
+     * shows the second player who is live, or the first stream while there is no second. Sneak-clicking a
+     * TV swaps one for the other ({@code mixin.vista.TVBlockMixin}). Never a player's item either.
+     */
+    public static final DeferredItem<Item> LIVE_CASSETTE_2 = ITEMS.register(
+        "live_cassette_2",
+        () -> new LiveCassetteItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)
+            .component(VistaMod.LINKED_FEED_COMPONENT.get(), LiveBroadcastSource.SECOND_FEED_UUID), true)
+    );
+
+    /**
      * Editor-only placeholder: at chest spawn time {@code ContainerContentsRoller.rollItemStack}
      * rolls it into a {@link #LIVE_HEADPIECE} a few times per thousand and a player book otherwise,
      * so a slot that names it is never empty. Not in any creative tab, and never a player's item —

@@ -689,6 +689,7 @@
   "chat.dungeontrain.live.one_eye": "你只能携带一台直播摄像机。多出的那台变成了电视。",
   "chat.dungeontrain.live.free_play": "自由模式的游戏无法直播。",
   "chat.dungeontrain.live.took_over": "%s 的直播被切断了。",
+  "chat.dungeontrain.live.second_stream": "双路直播已开启：你正在第二路直播中，与第一路同时进行。",
   "chat.dungeontrain.live.preparing": "正在准备直播设备……",
   "chat.dungeontrain.live.no_ffmpeg": "无法直播：此客户端已关闭 Vista 的视频播放。",
   "chat.dungeontrain.live.ffmpeg_timeout": "无法直播：视频工具仍在下载中。等 Vista 的电视能播放后，再戴上直播摄像机。",
@@ -1302,6 +1303,8 @@
   "gui.dungeontrain.rewards.explain.copy": "赞助满 30 澳元的玩家，可在选项中开启「复制」按钮，复制所读书籍的文字。",
   "gui.dungeontrain.rewards.group.streams": "直播",
   "gui.dungeontrain.rewards.group.extra": "其他",
+  "gui.dungeontrain.tv.channel.main": "直播 1",
+  "gui.dungeontrain.tv.channel.second": "直播 2",
   "gui.dungeontrain.rewards.quicker_streams.name": "低延迟直播",
   "gui.dungeontrain.rewards.quicker_streams.line": "直播延迟从 %1$s 秒降至 %2$s 秒，持续 1 个月",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
@@ -5318,5 +5321,7 @@
   "chat.dungeontrain.free_play.cause.player_unknown": "本世界有人进入了自由模式，因此这里的所有人现在都处于自由模式。",
   "chat.dungeontrain.free_play.keep_inventory_on": "《地牢列车》的平衡以死亡会造成损失为前提。因此，从现在起，此世界的统计将单独记录。即使再次关闭这条游戏规则，也无法恢复原状——你已从死亡中保住了原本会失去的装备。",
   "item.dungeontrain.live_cassette": "直播信号磁带",
-  "item.dungeontrain.live_cassette.tooltip": "已调到直播信号。放进任何电视，就能看到正在直播的人。"
+  "item.dungeontrain.live_cassette.tooltip": "已调到直播信号。放进任何电视，就能看到正在直播的人。",
+  "item.dungeontrain.live_cassette_2": "直播信号磁带 2",
+  "item.dungeontrain.live_cassette_2.tooltip": "已调到第二路直播。显示第二位正在直播的玩家；没有第二路时，显示第一路直播。"
 }

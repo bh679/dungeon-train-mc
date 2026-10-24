@@ -689,6 +689,7 @@
   "chat.dungeontrain.live.one_eye": "Anda hanya boleh membawa satu Camcorder Siaran. Yang lebih telah menjadi TV.",
   "chat.dungeontrain.live.free_play": "Larian Main Bebas tidak boleh bersiaran langsung.",
   "chat.dungeontrain.live.took_over": "%s telah diputuskan.",
+  "chat.dungeontrain.live.second_stream": "Dua Strim sedang aktif: anda bersiaran langsung di strim kedua, bersama yang pertama.",
   "chat.dungeontrain.live.preparing": "Menyediakan peralatan siaran...",
   "chat.dungeontrain.live.no_ffmpeg": "Tiada siaran: main balik video Vista dimatikan pada klien ini.",
   "chat.dungeontrain.live.ffmpeg_timeout": "Tiada siaran: alat video masih dimuat turun. Pakai semula Camcorder Siaran setelah TV Vista boleh memainkan video.",
@@ -1302,6 +1303,8 @@
   "gui.dungeontrain.rewards.explain.copy": "Untuk sesiapa yang telah memberi $30 atau lebih: hidupkan butang Salin dalam Pilihan untuk menyalin teks mana-mana buku yang anda baca.",
   "gui.dungeontrain.rewards.group.streams": "STRIM",
   "gui.dungeontrain.rewards.group.extra": "TAMBAHAN",
+  "gui.dungeontrain.tv.channel.main": "Strim 1",
+  "gui.dungeontrain.tv.channel.second": "Strim 2",
   "gui.dungeontrain.rewards.quicker_streams.name": "Strim Lebih Pantas",
   "gui.dungeontrain.rewards.quicker_streams.line": "Kurangkan kelewatan dari %1$ss ke %2$ss selama 1 bulan",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
@@ -5304,5 +5307,7 @@
   "chat.dungeontrain.free_play.cause.player_unknown": "Seseorang dalam dunia ini telah masuk ke Main Bebas, jadi semua orang di sini kini dalam Main Bebas juga.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train diimbangi atas dasar bahawa kematian merugikan anda sesuatu, jadi mulai sekarang dunia ini menyimpan statistiknya sendiri. Mematikan semula peraturan permainan itu tidak akan mengubahnya — kelengkapan yang anda bawa merentasi satu kematian sudah pun menjadi milik anda.",
   "item.dungeontrain.live_cassette": "Kaset Suapan Langsung",
-  "item.dungeontrain.live_cassette.tooltip": "Ditala ke Suapan Langsung. Masukkan ke mana-mana TV untuk menonton siapa yang sedang bersiaran."
+  "item.dungeontrain.live_cassette.tooltip": "Ditala ke Suapan Langsung. Masukkan ke mana-mana TV untuk menonton siapa yang sedang bersiaran.",
+  "item.dungeontrain.live_cassette_2": "Kaset Suapan Langsung 2",
+  "item.dungeontrain.live_cassette_2.tooltip": "Ditala ke strim kedua. Memaparkan pemain kedua yang sedang bersiaran, atau strim pertama selagi tiada yang kedua."
 }

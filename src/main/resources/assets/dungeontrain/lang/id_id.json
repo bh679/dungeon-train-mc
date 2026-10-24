@@ -689,6 +689,7 @@
   "chat.dungeontrain.live.one_eye": "Kamu hanya bisa membawa satu Camcorder Siaran. Yang lebih berubah menjadi TV.",
   "chat.dungeontrain.live.free_play": "Permainan Free Play tidak bisa siaran langsung.",
   "chat.dungeontrain.live.took_over": "%s terputus.",
+  "chat.dungeontrain.live.second_stream": "Dua Stream aktif: kamu siaran langsung di stream kedua, berdampingan dengan yang pertama.",
   "chat.dungeontrain.live.preparing": "Menyiapkan peralatan siaran...",
   "chat.dungeontrain.live.no_ffmpeg": "Tidak ada siaran: pemutaran video Vista dimatikan di klien ini.",
   "chat.dungeontrain.live.ffmpeg_timeout": "Tidak ada siaran: alat video masih diunduh. Pakai lagi Camcorder Siaran setelah TV Vista bisa memutar video.",
@@ -1302,6 +1303,8 @@
   "gui.dungeontrain.rewards.explain.copy": "Untuk siapa pun yang sudah memberi $30 atau lebih: nyalakan tombol Salin di Opsi untuk menyalin teks buku apa pun yang kamu baca.",
   "gui.dungeontrain.rewards.group.streams": "STREAMS",
   "gui.dungeontrain.rewards.group.extra": "EXTRA",
+  "gui.dungeontrain.tv.channel.main": "Stream 1",
+  "gui.dungeontrain.tv.channel.second": "Stream 2",
   "gui.dungeontrain.rewards.quicker_streams.name": "Stream Lebih Cepat",
   "gui.dungeontrain.rewards.quicker_streams.line": "Kurangi delay dari %1$ss ke %2$ss selama 1 bulan",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
@@ -5304,5 +5307,7 @@
   "chat.dungeontrain.free_play.cause.player_unknown": "Seseorang di dunia ini masuk ke Main Bebas, jadi semua orang di sini sekarang juga dalam Main Bebas.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train diseimbangkan dengan anggapan bahwa mati itu memakan sesuatu darimu, jadi mulai sekarang dunia ini menyimpan statistiknya sendiri. Mematikan kembali aturan permainannya tidak akan mengubah itu — perlengkapan yang kamu bawa melewati sebuah kematian sudah jadi milikmu.",
   "item.dungeontrain.live_cassette": "Kaset Siaran Langsung",
-  "item.dungeontrain.live_cassette.tooltip": "Disetel ke Siaran Langsung. Masukkan ke TV mana pun untuk menonton siapa yang sedang siaran."
+  "item.dungeontrain.live_cassette.tooltip": "Disetel ke Siaran Langsung. Masukkan ke TV mana pun untuk menonton siapa yang sedang siaran.",
+  "item.dungeontrain.live_cassette_2": "Kaset Siaran Langsung 2",
+  "item.dungeontrain.live_cassette_2.tooltip": "Disetel ke stream kedua. Menampilkan pemain kedua yang sedang siaran, atau stream pertama selama belum ada yang kedua."
 }

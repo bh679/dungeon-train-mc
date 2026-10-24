@@ -84,11 +84,28 @@ public final class LiveFeedClient {
      * encoder's defaults then decide). Fixed for the session: a change lands on the next claim.
      */
     public record Claim(String session, String token, String playlistUrl, @Nullable String prevName, @Nullable Twitch twitch,
-                        int segmentSeconds, int listSize, int keyframeSeconds) {
+                        int segmentSeconds, int listSize, int keyframeSeconds, String channel) {
         public Claim(String session, String token, String playlistUrl, @Nullable String prevName) {
-            this(session, token, playlistUrl, prevName, null, 0, 0, 0);
+            this(session, token, playlistUrl, prevName, null, 0, 0, 0, CHANNEL_MAIN);
+        }
+
+        public Claim(String session, String token, String playlistUrl, @Nullable String prevName, @Nullable Twitch twitch,
+                     int segmentSeconds, int listSize, int keyframeSeconds) {
+            this(session, token, playlistUrl, prevName, twitch, segmentSeconds, listSize, keyframeSeconds, CHANNEL_MAIN);
+        }
+
+        public Claim {
+            channel = CHANNEL_SECOND.equals(channel) ? CHANNEL_SECOND : CHANNEL_MAIN;
+        }
+
+        /** This stream went out on the second channel (the Two Streams reward), alongside another streamer. */
+        public boolean second() {
+            return CHANNEL_SECOND.equals(channel);
         }
     }
+
+    /** The relay's channel names: the first (main) stream, and the second one the Two Streams reward opens. */
+    public static final String CHANNEL_MAIN = "main", CHANNEL_SECOND = "second";
 
     /** The segment lengths a claim may set; anything outside reads as unset. Matches the config's own range. */
     static final int MIN_SEGMENT_SECONDS = 2, MAX_SEGMENT_SECONDS = 30;
@@ -368,12 +385,31 @@ public final class LiveFeedClient {
      */
     public record Status(boolean live, @Nullable String session, @Nullable String playlistUrl,
                          @Nullable String streamer, int viewers, int cap, boolean slot,
-                         @Nullable String replayUrl, boolean ended, List<Variant> variants, @Nullable String twitchLogin) {
-        public static final Status OFFLINE = new Status(false, null, null, null, 0, 0, true, null, false, List.of(), null);
+                         @Nullable String replayUrl, boolean ended, List<Variant> variants, @Nullable String twitchLogin,
+                         @Nullable Status second) {
+        public static final Status OFFLINE = new Status(false, null, null, null, 0, 0, true, null, false, List.of(), null, null);
 
         public Status(boolean live, @Nullable String session, @Nullable String playlistUrl, @Nullable String streamer, int viewers,
                       int cap, boolean slot, @Nullable String replayUrl, boolean ended, List<Variant> variants) {
-            this(live, session, playlistUrl, streamer, viewers, cap, slot, replayUrl, ended, variants, null);
+            this(live, session, playlistUrl, streamer, viewers, cap, slot, replayUrl, ended, variants, null, null);
+        }
+
+        public Status(boolean live, @Nullable String session, @Nullable String playlistUrl, @Nullable String streamer, int viewers,
+                      int cap, boolean slot, @Nullable String replayUrl, boolean ended, List<Variant> variants, @Nullable String twitchLogin) {
+            this(live, session, playlistUrl, streamer, viewers, cap, slot, replayUrl, ended, variants, twitchLogin, null);
+        }
+
+        /**
+         * The second stream (Two Streams reward) while both are on air: a status of its own, never
+         * carrying a {@code second} itself. Null from an older relay, or while only one player is live.
+         */
+        public @Nullable Status second() {
+            return second;
+        }
+
+        /** What a TV tuned to the second stream shows: the second stream while there is one, else this (the first). */
+        public Status secondOrThis() {
+            return second != null && second.live() ? second : this;
         }
 
         /**
@@ -467,7 +503,7 @@ public final class LiveFeedClient {
         int segment = intIn(r.body(), "segmentSeconds", MIN_SEGMENT_SECONDS, MAX_SEGMENT_SECONDS);
         int list = segment == 0 ? 0 : intIn(r.body(), "listSize", MIN_LIST_SIZE, MAX_LIST_SIZE);
         int keyframe = intIn(r.body(), "keyframeSeconds", MIN_KEYFRAME_SECONDS, MAX_KEYFRAME_SECONDS);
-        return new Claim(session, token, url, prev.isEmpty() ? null : prev, parseTwitch(r.body()), segment, list, keyframe);
+        return new Claim(session, token, url, prev.isEmpty() ? null : prev, parseTwitch(r.body()), segment, list, keyframe, r.str("channel"));
     }
 
     /** A whole number field within {@code [min, max]}, else 0 (absent, malformed or out of range). */
@@ -888,7 +924,13 @@ public final class LiveFeedClient {
     /** As above; {@code headTv}: the viewer wears a TV, so a named poll lists them on the Live page. */
     public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel, @Nullable Life ranked,
                                                    @Nullable String name, boolean headTv) {
-        String path = statusPath(viewer, ranked, name, headTv);
+        return status(viewer, channel, ranked, name, headTv, false);
+    }
+
+    /** As above; {@code secondSlot}: a TV here shows the second stream too, so the viewer counts on that slot as well. */
+    public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel, @Nullable Life ranked,
+                                                   @Nullable String name, boolean headTv, boolean secondSlot) {
+        String path = statusPath(viewer, ranked, name, headTv, secondSlot);
         HttpRequest req = HttpRequest.newBuilder(URI.create(viewerBase(channel) + path))
             .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
         return send(RELAY, req);
@@ -912,7 +954,17 @@ public final class LiveFeedClient {
      * wearing a TV: the public Live page lists their name among the TV wearers.
      */
     static String statusPath(@Nullable UUID viewer, @Nullable Life ranked, @Nullable String name, boolean headTv) {
+        return statusPath(viewer, ranked, name, headTv, false);
+    }
+
+    /**
+     * {@link #statusPath(UUID, Life, String, boolean)}, plus {@code &slot=second} when a TV in this
+     * world shows the second stream (Two Streams): the relay counts the viewer on that slot too. Only
+     * with a viewer id, since an anonymous poll counts nowhere.
+     */
+    static String statusPath(@Nullable UUID viewer, @Nullable Life ranked, @Nullable String name, boolean headTv, boolean secondSlot) {
         String path = statusPathBase(viewer, ranked);
+        if (viewer != null && secondSlot) path += "&slot=" + CHANNEL_SECOND;
         if (viewer == null || ranked == null || name == null || name.isBlank()) return path;
         path += "&name=" + java.net.URLEncoder.encode(name, java.nio.charset.StandardCharsets.UTF_8);
         return headTv ? path + "&head=1" : path;
@@ -930,17 +982,25 @@ public final class LiveFeedClient {
 
     public static Status parseStatus(Result r) {
         if (!r.ok()) return Status.OFFLINE;
-        JsonObject b = r.body();
+        return parseStatus(r, r.body(), true);
+    }
+
+    /**
+     * One status object; {@code withSecond} reads its {@code second} block too (one level: the second
+     * stream's own body never carries one). Shared viewer figures ({@code viewers}, {@code cap}, {@code slot})
+     * are read from whichever object they are on; the relay puts them on the outer body.
+     */
+    private static Status parseStatus(Result r, JsonObject b, boolean withSecond) {
         boolean live = b.has("live") && b.get("live").getAsBoolean();
         int viewers = b.has("viewers") ? b.get("viewers").getAsInt() : 0;
         int cap = b.has("cap") ? b.get("cap").getAsInt() : 0;
         boolean slot = !b.has("slot") || b.get("slot").getAsBoolean();
         // Relay-supplied URLs a viewer's ffmpeg will fetch: https (or loopback http) to an HLS playlist
         // or a .ts segment, or nothing. A live status with no usable playlist reads as off air.
-        String replayUrl = LiveUrls.orNull(r.str("replayUrl"), ".ts");
-        String playlistUrl = LiveUrls.orNull(r.str("playlistUrl"), ".m3u8");
+        String replayUrl = LiveUrls.orNull(str(b, "replayUrl"), ".ts");
+        String playlistUrl = LiveUrls.orNull(str(b, "playlistUrl"), ".m3u8");
         if (live && playlistUrl == null) {
-            LOGGER.debug("[DungeonTrain] live status: refusing playlistUrl {}", r.str("playlistUrl"));
+            LOGGER.debug("[DungeonTrain] live status: refusing playlistUrl {}", str(b, "playlistUrl"));
             live = false;
         }
         if (!live) return new Status(false, null, null, null, viewers, cap, slot, replayUrl, false, List.of());
@@ -948,9 +1008,29 @@ public final class LiveFeedClient {
         // tail; replayUrl is where a TV goes once it has reached the end.
         boolean ended = b.has("ended") && b.get("ended").getAsBoolean();
         Twitch tw = parseTwitch(b);
-        return new Status(true, r.str("session"), playlistUrl, r.str("streamer"), viewers, cap, slot,
-            ended ? replayUrl : null, ended, parseVariants(b, playlistUrl), tw == null ? null : tw.login());
+        Status second = withSecond ? parseSecond(r, b, viewers, cap, slot) : null;
+        return new Status(true, str(b, "session"), playlistUrl, str(b, "streamer"), viewers, cap, slot,
+            ended ? replayUrl : null, ended, parseVariants(b, playlistUrl), tw == null ? null : tw.login(), second);
     }
+
+    /** The {@code second} block of a live status: a live status of its own, or null when absent, malformed or dark. */
+    @Nullable
+    static Status parseSecond(Result r, JsonObject outer, int viewers, int cap, boolean slot) {
+        if (!outer.has("second") || !outer.get("second").isJsonObject()) return null;
+        JsonObject s = outer.getAsJsonObject("second");
+        try {
+            Status parsed = parseStatus(r, s, false);
+            if (!parsed.live()) return null;
+            // The viewer figures are the outer body's (one room per poll): carry them so a TV on the
+            // second stream reads the same cap and slot answer.
+            return new Status(true, parsed.session(), parsed.playlistUrl(), parsed.streamer(), viewers, cap, slot,
+                parsed.replayUrl(), parsed.ended(), parsed.variants(), parsed.twitchLogin(), null);
+        } catch (RuntimeException e) {
+            LOGGER.debug("[DungeonTrain] live status: ignoring malformed second block", e);
+            return null;
+        }
+    }
+
 
     /** PUT a local file to a signed URL with exactly the signed headers. */
     public static CompletableFuture<Result> upload(SignedPut target, Path file) {

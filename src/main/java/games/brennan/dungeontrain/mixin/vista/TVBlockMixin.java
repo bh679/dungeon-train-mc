@@ -3,8 +3,11 @@ package games.brennan.dungeontrain.mixin.vista;
 import net.minecraft.server.level.ServerPlayer;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.compat.DisabledModContent;
+import games.brennan.dungeontrain.compat.vista.TvBlocks;
 import games.brennan.dungeontrain.compat.vista.TvItems;
 import games.brennan.dungeontrain.compat.vista.TvPowerToggle;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.mehvahdjukaar.vista.common.tv.TVBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
@@ -14,14 +17,15 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.BlockHitResult;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import games.brennan.dungeontrain.registry.ModItems;
 import net.mehvahdjukaar.vista.common.connection.IConnectedBlock;
 import net.mehvahdjukaar.vista.common.tv.TVBlockEntity;
 import net.minecraft.world.level.block.Block;
@@ -34,8 +38,11 @@ import net.minecraft.world.level.block.Block;
  *
  * <p>Click rules: right-click → toggle power, whatever is in hand (the held item is not used or
  * placed). Sneak + item uses the item as normal (vanilla skips the block then), which is how a block
- * — or another TV — is placed against one. Sneak + empty hand keeps Vista's behaviour (pause while
- * playing, eject the cassette while off) — except that a Live Feed Cassette never ejects.</p>
+ * — or another TV — is placed against one. Sneak + empty hand on a TV that is on and tuned to the Live Feed
+ * switches it between the first and the second stream (the Two Streams reward; the second cassette
+ * shows the first stream while there is no second, so the switch is always safe to make). Sneak +
+ * empty hand otherwise keeps Vista's behaviour (pause while playing, eject the cassette while off)
+ * — except that a Live Feed Cassette never ejects.</p>
  *
  * <p>A TV that comes on with an empty slot tunes itself: the server puts a Live Feed Cassette in, so
  * switching any TV on shows the broadcast (or the replay) with no setup at all. That cassette is never
@@ -77,16 +84,36 @@ public abstract class TVBlockMixin {
             cir.setReturnValue(ItemInteractionResult.FAIL);
             return;
         }
-        if (stack.isEmpty() && !state.getValue(TVBlock.POWER_STATE).isOn()
-                && dungeontrain$holdsLiveCassette(level, pos, state)) {
-            // Vista would eject the cassette of a TV that is off; the Live Feed one stays put.
+        if (!stack.isEmpty()) return;
+        TVBlockEntity tv = dungeontrain$liveTunedTv(level, pos, state);
+        if (tv == null) return;
+        if (state.getValue(TVBlock.POWER_STATE).isOn()) {
+            // Switch between the first and the second stream (Two Streams). Server side; the slot change
+            // syncs to every client like any cassette change.
+            if (!level.isClientSide) {
+                ItemStack next = TvBlocks.otherCassette(tv.getItem(0));
+                tv.setItem(0, next);
+                tv.setChanged();
+                level.sendBlockUpdated(tv.getBlockPos(), tv.getBlockState(), tv.getBlockState(), Block.UPDATE_CLIENTS);
+                level.playSound(null, tv.getBlockPos(), SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.BLOCKS, 0.6f, 1.2f);
+                if (player instanceof ServerPlayer serverPlayer) {
+                    serverPlayer.displayClientMessage(Component.translatable(TvBlocks.isSecondCassette(next)
+                        ? "gui.dungeontrain.tv.channel.second" : "gui.dungeontrain.tv.channel.main"), true);
+                    ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(serverPlayer, "switched_tv_channel");
+                }
+            }
             cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
+            return;
         }
+        // Vista would eject the cassette of a TV that is off; the Live Feed one stays put.
+        cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
     }
 
-    private boolean dungeontrain$holdsLiveCassette(Level level, BlockPos pos, BlockState state) {
+    /** The screen's master block entity when it holds either Live Feed Cassette, else null. */
+    @Nullable
+    private TVBlockEntity dungeontrain$liveTunedTv(Level level, BlockPos pos, BlockState state) {
         return ((IConnectedBlock) (Object) this).findMasterBlockEntity(level, pos, state) instanceof TVBlockEntity tv
-            && tv.getItem(0).is(ModItems.LIVE_CASSETTE.get());
+            && TvBlocks.isLiveCassette(tv.getItem(0)) ? tv : null;
     }
 
     @Inject(method = "neighborChanged", at = @At("TAIL"))
@@ -97,7 +124,7 @@ public abstract class TVBlockMixin {
         if (!now.is(state.getBlock()) || !now.getValue(TVBlock.POWER_STATE).isOn()) return;
         if (((IConnectedBlock) (Object) this).findMasterBlockEntity(level, pos, now) instanceof TVBlockEntity tv
                 && tv.getItem(0).isEmpty()) {
-            tv.setItem(0, new ItemStack(ModItems.LIVE_CASSETTE.get()));
+            tv.setItem(0, TvBlocks.liveCassette(false));
             tv.setChanged();
             level.sendBlockUpdated(tv.getBlockPos(), tv.getBlockState(), tv.getBlockState(), Block.UPDATE_CLIENTS);
         }

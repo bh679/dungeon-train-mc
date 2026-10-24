@@ -185,7 +185,7 @@ public final class LiveHeadViewer {
 
         g.fill(b.x() - BORDER, b.y() - BORDER, b.x() + b.w() + BORDER, b.y() + b.h() + BORDER, BORDER_COLOR);
         switch (frame.kind()) {
-            case PICTURE -> g.blit(LiveFeedSource.texture(), b.x(), b.y(), b.w(), b.h(), 0f, 0f, 1, 1, 1, 1);
+            case PICTURE -> g.blit(LiveFeedSource.MAIN.texture(), b.x(), b.y(), b.w(), b.h(), 0f, 0f, 1, 1, 1, 1);
             case STATIC -> noise(g, b);
             case DOWNLOADING -> {
                 g.fill(b.x(), b.y(), b.x() + b.w(), b.y() + b.h(), DARK);

@@ -535,7 +535,7 @@ public final class LiveStreamController {
             }
             // The channel is ours: the server makes this player its streamer (and turns the previous
             // one's Live Eye into a TV).
-            tellServerTakeover(LiveClaimResultPacket.Result.LIVE);
+            tellServerTakeover(LiveClaimResultPacket.Result.LIVE, c.prevName() != null);
             beginStreaming(c, hasAac);
         }, mc);
     }
@@ -578,8 +578,13 @@ public final class LiveStreamController {
     }
 
     private static void tellServerTakeover(LiveClaimResultPacket.Result result) {
+        tellServerTakeover(result, false);
+    }
+
+    /** {@code tookOver}: the relay cut somebody off for this claim (the server then turns their Live Eye into a TV). */
+    private static void tellServerTakeover(LiveClaimResultPacket.Result result, boolean tookOver) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.getConnection() != null) PacketDistributor.sendToServer(new LiveClaimResultPacket(result));
+        if (mc.getConnection() != null) PacketDistributor.sendToServer(new LiveClaimResultPacket(result, tookOver));
     }
 
     /**
@@ -647,6 +652,8 @@ public final class LiveStreamController {
             cadence.segmentSeconds(), cadence.listSize(), cadence.keyframeSeconds(), c.playlistUrl());
         announcedLive = false;
         if (c.prevName() != null) say(Component.translatable("chat.dungeontrain.live.took_over", c.prevName()).withStyle(ChatFormatting.GRAY));
+        // Two Streams: the relay gave this player the second channel instead of the takeover prompt.
+        if (c.second()) say(Component.translatable("chat.dungeontrain.live.second_stream").withStyle(ChatFormatting.GRAY));
     }
 
     /** Render thread: the stream could not start — say so, free what was set up, hand the headpiece back. */

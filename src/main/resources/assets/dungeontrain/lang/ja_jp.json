@@ -689,6 +689,7 @@
   "chat.dungeontrain.live.one_eye": "放送カムコーダーは1つしか持てません。余分なものはテレビになりました。",
   "chat.dungeontrain.live.free_play": "フリープレイのランではライブ配信できません。",
   "chat.dungeontrain.live.took_over": "%s の放送は打ち切られた。",
+  "chat.dungeontrain.live.second_stream": "2人同時配信が有効です。あなたは1つ目と並んで、2つ目の配信で放送中です。",
   "chat.dungeontrain.live.preparing": "放送機材を準備中...",
   "chat.dungeontrain.live.no_ffmpeg": "放送できない：このクライアントでは Vista の動画再生がオフになっている。",
   "chat.dungeontrain.live.ffmpeg_timeout": "放送できない：動画ツールをまだダウンロード中。Vista のテレビが再生できるようになったら、放送カムコーダーをもう一度かぶること。",
@@ -1302,6 +1303,8 @@
   "gui.dungeontrain.rewards.explain.copy": "$30以上を贈った方向け：オプションでコピーボタンをオンにすると、読んだ本の文章をコピーできます。",
   "gui.dungeontrain.rewards.group.streams": "配信",
   "gui.dungeontrain.rewards.group.extra": "その他",
+  "gui.dungeontrain.tv.channel.main": "配信 1",
+  "gui.dungeontrain.tv.channel.second": "配信 2",
   "gui.dungeontrain.rewards.quicker_streams.name": "配信の高速化",
   "gui.dungeontrain.rewards.quicker_streams.line": "遅延を%1$s秒から%2$s秒に短縮、1か月間",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
@@ -5304,5 +5307,7 @@
   "chat.dungeontrain.free_play.cause.player_unknown": "このワールドの誰かがフリープレイになったため、ここにいる全員がフリープレイになりました。",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train は、死ぬことに代償があることを前提に調整されています。そのため、このワールドはここから先の統計を自分の中だけに留めます。ゲームルールを戻しても変わりません — 死をくぐり抜けて持ち越した装備は、もうあなたのものです。",
   "item.dungeontrain.live_cassette": "ライブ配信カセット",
-  "item.dungeontrain.live_cassette.tooltip": "ライブ配信に合わせてある。どのテレビに入れても、今放送している人の映像が見られる。"
+  "item.dungeontrain.live_cassette.tooltip": "ライブ配信に合わせてある。どのテレビに入れても、今放送している人の映像が見られる。",
+  "item.dungeontrain.live_cassette_2": "ライブ配信カセット 2",
+  "item.dungeontrain.live_cassette_2.tooltip": "2つ目の配信に合わせてある。2人目の放送中のプレイヤーを映し、2つ目がないときは1つ目の配信を映す。"
 }
