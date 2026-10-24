@@ -30354,6 +30354,27 @@
       "released": true,
       "released_in": "v0.1501.0",
       "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "two-streams-second-channel",
+      "version": "0.1502.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "multiplayer",
+        "community"
+      ],
+      "title": "Two Streams: a second channel",
+      "summary": "When the Two Streams reward is on, a second player can go live without taking the Eye from whoever is already streaming. Any switched-on TV can be flipped between the two streams, and TV rooms come up showing a mix of both.",
+      "highlights": [
+        "Sneak + empty hand on a switched-on TV switches it between Stream 1 and Stream 2",
+        "A TV on Stream 2 shows Stream 1 while nobody is on the second"
+      ],
+      "pr": 2290,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
