@@ -30,8 +30,8 @@ final class HeadViewerPanesTest {
     }
 
     @Test
-    @DisplayName("two streams: the second stream sits to the left of the first, same size and row")
-    void twoStreamsSideBySide() {
+    @DisplayName("two streams: the second stream sits under the first, same size and column")
+    void twoStreamsStacked() {
         List<HeadViewerPanes.Pane> panes = HeadViewerPanes.panes(480, 160, true, BOTH);
         assertEquals(2, panes.size());
         LiveHeadViewer.Box first = panes.get(0).box();
@@ -39,10 +39,18 @@ final class HeadViewerPanesTest {
         assertFalse(panes.get(0).second());
         assertTrue(panes.get(1).second());
         assertEquals(LiveHeadViewer.layout(480, 160), first);
-        assertEquals(first.x() - HeadViewerPanes.GAP - 160, second.x());
-        assertEquals(first.y(), second.y());
+        assertEquals(first.x(), second.x());
+        assertEquals(first.y() + first.h() + 2 * LiveHeadViewer.BORDER + HeadViewerPanes.GAP, second.y());
         assertEquals(first.w(), second.w());
         assertEquals(first.h(), second.h());
+    }
+
+    @Test
+    @DisplayName("at the largest box size only one pane shows, the chosen stream or the first")
+    void maxSizeShowsOnePane() {
+        assertEquals(1, HeadViewerPanes.current(480, 240, true, true).size());
+        assertFalse(HeadViewerPanes.current(480, 240, true, true).get(0).second());
+        assertEquals(2, HeadViewerPanes.current(480, 160, true, false).size());
     }
 
     @Test
@@ -72,14 +80,14 @@ final class HeadViewerPanesTest {
     @Test
     @DisplayName("the session choice is applied by clicks and forgotten when the second stream goes dark")
     void sessionChoiceFollowsClicksAndResets() {
-        List<HeadViewerPanes.Pane> both = HeadViewerPanes.current(480, 160, true);
+        List<HeadViewerPanes.Pane> both = HeadViewerPanes.current(480, 160, true, false);
         assertEquals(2, both.size());
         LiveHeadViewer.Box second = both.get(1).box();
         assertTrue(HeadViewerPanes.apply(both, second.x() + 5, second.y() + 5));
         assertEquals(SECOND_ONLY, HeadViewerPanes.choice());
-        assertEquals(1, HeadViewerPanes.current(480, 160, true).size());
-        assertFalse(HeadViewerPanes.apply(HeadViewerPanes.current(480, 160, true), 2, 2), "a miss changes nothing");
-        HeadViewerPanes.current(480, 160, false);
+        assertEquals(1, HeadViewerPanes.current(480, 160, true, false).size());
+        assertFalse(HeadViewerPanes.apply(HeadViewerPanes.current(480, 160, true, false), 2, 2), "a miss changes nothing");
+        HeadViewerPanes.current(480, 160, false, false);
         assertEquals(BOTH, HeadViewerPanes.choice(), "one stream: back to both for the next pair");
     }
 }

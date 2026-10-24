@@ -310,6 +310,11 @@ public final class LiveFeedClientConfig {
         return (streaming ? HEAD_VIEWER_SIZE_STREAMING : HEAD_VIEWER_SIZE_WATCHING).get();
     }
 
+    /** The pinned feed is at its largest size: too big for two panes, so a second stream is not shown beside it. */
+    public static boolean headViewerAtMaxSize(boolean streaming) {
+        return headViewerSize(streaming) >= HEAD_VIEWER_SIZES.length - 1;
+    }
+
     /** The pinned feed's width now, in GUI pixels. */
     public static int headViewerWidth(boolean streaming) {
         return sizeWidth(headViewerWidth(), headViewerSize(streaming));

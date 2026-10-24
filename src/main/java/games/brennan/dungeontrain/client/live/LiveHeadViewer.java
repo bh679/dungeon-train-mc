@@ -50,10 +50,10 @@ import java.util.Random;
  * <p>Clicking the box in the inventory or chat cycles its size ({@link LiveFeedClientConfig#cycleHeadViewerSize});
  * the streamer and the viewer each keep their own size, the streamer's smaller by default.</p>
  *
- * <p>While two streams are live (the Two Streams reward) a viewer's box becomes two panes side by
- * side, the second stream to the left ({@link HeadViewerPanes}); in the inventory a click on a pane
- * makes that stream the only one and a click on the lone pane brings both back. The streamer's own
- * preview stays a single box.</p>
+ * <p>While two streams are live (the Two Streams reward) a viewer's box becomes two panes, the
+ * second stream under the first ({@link HeadViewerPanes}), unless the box is at its largest size;
+ * in the inventory a click on a pane makes that stream the only one and a click on the lone pane
+ * brings both back. The streamer's own preview stays a single box.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveHeadViewer {
@@ -119,11 +119,13 @@ public final class LiveHeadViewer {
             if (shown(mc)) {
                 float partial = delta.getGameTimeDeltaPartialTick(false);
                 int width = LiveFeedClientConfig.headViewerWidth(false);
-                for (HeadViewerPanes.Pane pane : HeadViewerPanes.current(g.guiWidth(), width, secondLive())) {
+                var panes = HeadViewerPanes.current(g.guiWidth(), width, secondLive(), LiveFeedClientConfig.headViewerAtMaxSize(false));
+                for (HeadViewerPanes.Pane pane : panes) {
                     LiveFeedSource source = pane.second() ? LiveFeedSource.SECOND : LiveFeedSource.MAIN;
                     draw(g, source, source.frame(mc.player.tickCount, partial, false), pane.box(), !pane.second());
                 }
-                LiveTakeoverButton.draw(g, layout(g.guiWidth(), width));
+                // The takeover button hangs under the lowest pane, so a second pane never covers it.
+                LiveTakeoverButton.draw(g, panes.get(panes.size() - 1).box());
             } else {
                 // Box switched off: a running takeover vote's countdown still shows where it would be.
                 voteBanner(g, layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth(false)), mc.font);
@@ -144,6 +146,13 @@ public final class LiveHeadViewer {
             draw(g, LiveFeedSource.MAIN, frame, b, true);
             LiveStreamSettingsButton.draw(g, b);
         });
+    }
+
+    /** The lowest pane's box (the first stream's box {@code b} unless a second pane sits under it). */
+    private static Box lowestPane(Minecraft mc, Box b) {
+        var panes = HeadViewerPanes.current(mc.getWindow().getGuiScaledWidth(), b.w(), secondLive(),
+            LiveFeedClientConfig.headViewerAtMaxSize(false));
+        return panes.get(panes.size() - 1).box();
     }
 
     /** A second stream is live for this viewer (the relay's status carries it). */
@@ -167,13 +176,15 @@ public final class LiveHeadViewer {
             event.setCanceled(true);
             return;
         }
-        if (!streaming && LiveTakeoverButton.click(b, event.getMouseX(), event.getMouseY())) {
+        Box lowest = streaming ? b : lowestPane(mc, b);
+        if (!streaming && LiveTakeoverButton.click(lowest, event.getMouseX(), event.getMouseY())) {
             event.setCanceled(true);
             return;
         }
         // Two streams, in the inventory: a pane click solos that stream or brings both back (HeadViewerPanes).
-        if (!streaming && secondLive() && LiveStreamSettingsButton.showsOn(event.getScreen())) {
-            var panes = HeadViewerPanes.current(mc.getWindow().getGuiScaledWidth(), b.w(), true);
+        if (!streaming && secondLive() && !LiveFeedClientConfig.headViewerAtMaxSize(false)
+                && LiveStreamSettingsButton.showsOn(event.getScreen())) {
+            var panes = HeadViewerPanes.current(mc.getWindow().getGuiScaledWidth(), b.w(), true, false);
             if (HeadViewerPanes.apply(panes, event.getMouseX(), event.getMouseY())) {
                 event.setCanceled(true);
                 mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1f));

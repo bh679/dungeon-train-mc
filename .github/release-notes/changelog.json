@@ -30365,11 +30365,11 @@
         "community"
       ],
       "title": "Two Streams: a second channel",
-      "summary": "When the Two Streams reward is on, a second player can go live without taking the Eye from whoever is already streaming. Right-click any TV to step it through off, Stream 1 and Stream 2, TV rooms come up showing a mix of both, and a TV worn on your head shows both streams side by side.",
+      "summary": "When the Two Streams reward is on, a second player can go live without taking the Eye from whoever is already streaming. Right-click any TV to step it through off, Stream 1 and Stream 2, TV rooms come up showing a mix of both, and a TV worn on your head shows both streams, one above the other.",
       "highlights": [
         "Right-click a TV: off, Stream 1, Stream 2 (while a second stream is live), off",
         "A TV on Stream 2 shows Stream 1 while nobody is on the second",
-        "Wearing a TV: both streams side by side; in your inventory, click one to watch only it, click again for both"
+        "Wearing a TV: both streams stacked (unless the box is at its largest size); in your inventory, click one to watch only it, click again for both"
       ],
       "pr": 2290,
       "date": "2026-10-24",
