@@ -32,6 +32,16 @@ class PhotoSubjectTallyTest {
     }
 
     @Test
+    @DisplayName("a Piglin Traveler is a passenger, never hostile; a Piglin Alchemist stays hostile")
+    void piglinTravelerIsPassenger() throws Exception {
+        ClassLoader loader = getClass().getClassLoader();
+        Class<?> traveler = Class.forName("tallestred.piglinproliferation.common.entities.PiglinTraveler", false, loader);
+        Class<?> alchemist = Class.forName("tallestred.piglinproliferation.common.entities.PiglinAlchemist", false, loader);
+        assertEquals(new Subjects(true, false, false), PhotoSubjectTally.classifyType(traveler, true));
+        assertEquals(new Subjects(false, true, false), PhotoSubjectTally.classifyType(alchemist, false));
+    }
+
+    @Test
     @DisplayName("subjects wait for their print and are taken once")
     void recordAndTake() {
         Subjects s = new Subjects(true, false, true);
