@@ -30238,6 +30238,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dp-consent-toggle-labels",
+      "version": "0.1496.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations"
+      ],
+      "title": "Consent screen switch labels translated",
+      "summary": "The ON and OFF labels on the connect-to-the-internet card now show in your language instead of English. Chinese wording by \u8001\u672c\u9858.",
+      "highlights": [],
+      "pr": 2284,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
