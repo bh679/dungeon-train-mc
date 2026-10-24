@@ -423,6 +423,7 @@ public final class DungeonTrainNet {
         registrar.playToClient(AdvancementGapsPacket.TYPE, AdvancementGapsPacket.STREAM_CODEC, AdvancementGapsPacket::handle);
         // Train wind: profile + seed + start X, so the client computes the wind itself. See wind/WindServer.
         registrar.playToClient(WindProfilePacket.TYPE, WindProfilePacket.STREAM_CODEC, WindProfilePacket::handle);
+        registrar.playToClient(PerkStatePacket.TYPE, PerkStatePacket.STREAM_CODEC, PerkStatePacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

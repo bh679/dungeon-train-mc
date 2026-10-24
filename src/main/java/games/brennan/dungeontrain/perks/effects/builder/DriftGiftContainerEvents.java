@@ -38,6 +38,10 @@ import net.neoforged.neoforge.common.util.TriState;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DriftGiftContainerEvents {
 
+    static {
+        BuilderPerks.ensureRegistered();
+    }
+
     private DriftGiftContainerEvents() {}
 
     @SubscribeEvent(priority = EventPriority.LOWEST)

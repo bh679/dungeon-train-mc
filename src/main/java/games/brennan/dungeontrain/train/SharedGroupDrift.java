@@ -40,10 +40,16 @@ public final class SharedGroupDrift {
      * leases one without, so a stageless group is the plain template by definition.
      */
     public static boolean drifts(int anchorPIdx, int groupSize, long seed, String stageId) {
+        return drifts(anchorPIdx, groupSize, seed, stageId, 1.0);
+    }
+
+    /** As above with the Drift Chance perk multiplier ({@code perks/tier1/DriftChance}) applied to the group chance. */
+    public static boolean drifts(int anchorPIdx, int groupSize, long seed, String stageId, double driftBoost) {
         if (!SharedCarriageGate.canDiscover()) return false;
         if (stageId == null || stageId.isEmpty()) return false;
         long groupIndex = Math.floorDiv((long) anchorPIdx, Math.max(1, groupSize));
-        return SharedCarriageRolls.groupDrifts(seed, groupIndex, DungeonTrainConfig.getSharedGroupChance());
+        return SharedCarriageRolls.groupDrifts(seed, groupIndex,
+            games.brennan.dungeontrain.perks.tier1.DriftChance.boosted(DungeonTrainConfig.getSharedGroupChance(), driftBoost));
     }
 
     /**

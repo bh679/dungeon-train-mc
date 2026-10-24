@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.perks.effects.builder;
 
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.perks.Perks;
+import games.brennan.dungeontrain.perks.tier1.DriftChance;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -50,10 +51,14 @@ public final class OwnCarriageReturn {
         return new Split(pool - moved, own + moved);
     }
 
-    /** The configured split, widened by the best rank aboard {@code level}. */
+    /**
+     * The configured split after the tier 1 Drift Chance perk has scaled it (more drifting slots at
+     * all), widened toward OWN by the best Own Carriage Return rank aboard {@code level}.
+     */
     public static Split split(ServerLevel level) {
-        return split(DungeonTrainConfig.getSharedCarriagePoolChance(),
-                DungeonTrainConfig.getSharedCarriageOwnChance(), rankIn(level));
+        double driftBoost = DriftChance.multiplierFor(level);
+        return split(DriftChance.boosted(DungeonTrainConfig.getSharedCarriagePoolChance(), driftBoost),
+                DriftChance.boosted(DungeonTrainConfig.getSharedCarriageOwnChance(), driftBoost), rankIn(level));
     }
 
     /** The highest active rank among the players in {@code level}; 0 when nobody holds the perk. */

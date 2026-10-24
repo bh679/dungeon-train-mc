@@ -558,7 +558,8 @@ public final class TrainAssembler {
         final CarriageDims groupBox = fullGroup
             ? ContentsSize.FULL.shellDims(dims, groupSize).orElse(null) : null;
         final boolean groupDrifts = groupBox != null && transitionGroup == null
-            && SharedGroupDrift.drifts(anchorPIdx, groupSize, genCfg.seed(), fullStage);
+            && SharedGroupDrift.drifts(anchorPIdx, groupSize, genCfg.seed(), fullStage,
+                games.brennan.dungeontrain.perks.tier1.DriftChance.multiplierFor(level));
         SharedGroupDrift.Pick groupLease = null;
         net.minecraft.nbt.ListTag groupLeaseEnts = null;
         if (fullGroup) {
