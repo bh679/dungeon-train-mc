@@ -201,7 +201,9 @@ public final class PerksScreen extends Screen {
         }
 
         renderHeader(g, snap, now, fade);
+        g.flush(); // titles and names are batched: push them out so the card paints over them
         card.render(g, snap, now);
+        g.flush();
         super.render(g, mouseX, mouseY, partialTick);
 
         if (hovered != null && !hovered.equals(selected)) {
