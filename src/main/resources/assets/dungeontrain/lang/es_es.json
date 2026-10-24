@@ -772,6 +772,7 @@
   "command.dungeontrain.offer_eye.offered_all": "Ofreciendo tu videocámara de emisión a %s espectadores. Quien acepte primero se la queda.",
   "command.dungeontrain.offer_eye.all_already_offered": "Todos los espectadores ya tienen tu oferta.",
   "command.dungeontrain.offer_eye.already_given": "Alguien ya se ha quedado tu videocámara de emisión.",
+  "command.dungeontrain.offer_eye.needs_perk": "Ofrecer el Live Eye a un solo espectador requiere la ventaja Gift Live Eye. Ofrecerlo a todos sigue funcionando.",
   "chat.dungeontrain.live.ended_death": "Tu emisión terminó contigo.",
   "chat.dungeontrain.live.encoder_died": "La emisión se detuvo: falló el codificador de vídeo. Consulta el registro del juego.",
   "chat.dungeontrain.live.censored": "La videocámara rechaza esa palabra. Aviso %s de %s.",

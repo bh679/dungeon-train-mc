@@ -30498,6 +30498,24 @@
       "released_in": null,
       "released_at": null,
       "pr": 2297
+    },
+    {
+      "id": "perks-archivist",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "balance"
+      ],
+      "title": "Archivist perks",
+      "summary": "New Archivist perks for the perks tree: keep the Live Eye safe for longer, offer the Live Eye to a chosen viewer, give your votes more weight, and get extra shots from a disposable camera.",
+      "highlights": [],
+      "pr": 2299,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

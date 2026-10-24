@@ -744,6 +744,7 @@
       "command.dungeontrain.offer_eye.offered_all",
       "command.dungeontrain.offer_eye.all_already_offered",
       "command.dungeontrain.offer_eye.already_given",
+      "command.dungeontrain.offer_eye.needs_perk",
       "chat.dungeontrain.live.ended_death",
       "chat.dungeontrain.live.encoder_died",
       "chat.dungeontrain.live.censored",

@@ -740,6 +740,7 @@
   "command.dungeontrain.offer_eye.offered_all": "%s人の視聴者に放送カムコーダーを譲ろうとしています。最初に受け取った人のものになります。",
   "command.dungeontrain.offer_eye.all_already_offered": "視聴者全員にもう譲ろうとしています。",
   "command.dungeontrain.offer_eye.already_given": "放送カムコーダーはもう誰かが受け取りました。",
+  "command.dungeontrain.offer_eye.needs_perk": "特定の視聴者1人にLive Eyeを譲るにはパーク「Gift Live Eye」が必要です。全員に譲ることは引き続きできます。",
   "chat.dungeontrain.live.ended_death": "あなたの放送は、あなたと共に終わった。",
   "chat.dungeontrain.live.encoder_died": "放送が停止した：動画エンコーダーが失敗した。ゲームログを確認のこと。",
   "chat.dungeontrain.live.censored": "カムコーダーがその言葉を拒みました。警告 %s/%s。",
