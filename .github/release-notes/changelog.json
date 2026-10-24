@@ -30164,8 +30164,27 @@
       "released_at": null
     },
     {
+      "id": "streamer-more-info",
+      "version": "0.1491.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Know your streamer",
+      "summary": "Type /streamer -more in Live chat to see when the streamer first played Dungeon Train, which version they started on, and how many hours they have played.",
+      "highlights": [
+        "Works from the game, the website and Discord (/streamer more:True)"
+      ],
+      "pr": 2279,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "dimensional-carriage-copies-remembered",
-      "version": "0.1492.0",
+      "version": "0.1493.0",
       "type": "fix",
       "tags": [
         "fix",
