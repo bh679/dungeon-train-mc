@@ -25,8 +25,37 @@ public final class HeadViewerPanes {
     static final int GAP = LiveHeadViewer.EDGE;
 
     private static volatile Choice choice = Choice.BOTH;
+    /** The remembered stream (0 / 1 / 2) of the TV last seen on the head; -1 before any. */
+    private static volatile int wornMemory = -1;
 
     private HeadViewerPanes() {}
+
+    /** The choice a worn TV's memory ({@code memory} 1 or 2) asks for, else the settings default. Pure. */
+    static Choice choiceFor(int memory, games.brennan.dungeontrain.config.LiveFeedClientConfig.WornTvStreams option) {
+        if (memory == 1) return Choice.MAIN_ONLY;
+        if (memory == 2) return Choice.SECOND_ONLY;
+        return switch (option) {
+            case STREAM_1 -> Choice.MAIN_ONLY;
+            case STREAM_2 -> Choice.SECOND_ONLY;
+            case BOTH -> Choice.BOTH;
+        };
+    }
+
+    /** What a choice writes onto the worn TV ({@code TV_STREAM}): 1, 2, or 0 for both. Pure. */
+    static int memoryOf(Choice c) {
+        return switch (c) { case MAIN_ONLY -> 1; case SECOND_ONLY -> 2; case BOTH -> 0; };
+    }
+
+    /**
+     * The TV on the head now remembers {@code memory} (0 none, 1, 2): when that differs from the TV
+     * last seen (a different TV put on, or the server echoing a solo), the choice follows it, so a
+     * TV comes back on the stream it was set to and an unset one on the settings default.
+     */
+    public static void wearing(int memory, games.brennan.dungeontrain.config.LiveFeedClientConfig.WornTvStreams option) {
+        if (memory == wornMemory) return;
+        wornMemory = memory;
+        choice = choiceFor(memory, option);
+    }
 
     public static Choice choice() {
         return choice;
@@ -35,6 +64,7 @@ public final class HeadViewerPanes {
     /** World left, or the second stream went dark: back to both. */
     public static void reset() {
         choice = Choice.BOTH;
+        wornMemory = -1;
     }
 
     /**
@@ -80,6 +110,7 @@ public final class HeadViewerPanes {
         Choice next = click(panes, choice, x, y);
         if (next == choice) return false;
         choice = next;
+        wornMemory = memoryOf(next); // the server writes the same onto the TV; its echo must not undo the click
         return true;
     }
 }

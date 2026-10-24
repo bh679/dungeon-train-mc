@@ -18,6 +18,7 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.BooleanValue STREAM_CHAT;
     public static final ModConfigSpec.BooleanValue STREAM_AUDIO;
     public static final ModConfigSpec.EnumValue<NameTag> STREAM_NAME_TAG;
+    public static final ModConfigSpec.EnumValue<WornTvStreams> WORN_TV_STREAMS;
     public static final ModConfigSpec.BooleanValue POPUPS_OVER_NAME_TAG;
     public static final ModConfigSpec.BooleanValue LIVE_CHAT;
     public static final ModConfigSpec.BooleanValue LIVE_MOMENT_ADVANCEMENTS;
@@ -39,6 +40,9 @@ public final class LiveFeedClientConfig {
 
     /** Which of the streamer's names viewers see above the hotbar. */
     public enum NameTag { MINECRAFT, DISCORD, NONE }
+
+    /** What a TV worn on the head shows while two streams are live, when the TV itself remembers no stream. */
+    public enum WornTvStreams { BOTH, STREAM_1, STREAM_2 }
 
     /** The pinned feed's sizes, as fractions of {@code headViewerWidth}: two smaller, normal, one bigger. */
     static final float[] HEAD_VIEWER_SIZES = {0.5f, 0.75f, 1f, 1.5f};
@@ -70,6 +74,9 @@ public final class LiveFeedClientConfig {
         POPUPS_OVER_NAME_TAG = b
             .comment("Advancement and other pop-ups show on top of your name tag on the stream. Off = your name tag stays on top, and the stream skips copying the pop-ups back over it.")
             .define("popupsOverNameTag", true);
+        WORN_TV_STREAMS = b
+            .comment("While two players are live, what a TV on your head shows: BOTH (one above the other), STREAM_1 or STREAM_2. A TV that remembers a stream (soloed in your inventory, or broken while tuned) shows that instead.")
+            .defineEnum("wornTvStreams", WornTvStreams.BOTH);
         LIVE_CHAT = b
             .comment("Mirror the stream's Discord chat into your in-game chat while a stream is on air (as the streamer, or wearing a TV), and post what you type back to it. Always off in Kid mode, whatever this says.")
             .define("liveChat", true);
@@ -206,6 +213,15 @@ public final class LiveFeedClientConfig {
         if (!loaded() || STREAM_NAME_TAG.get() == value) return;
         STREAM_NAME_TAG.set(value);
         STREAM_NAME_TAG.save();
+    }
+
+    /** What a worn TV with no remembered stream shows while two streams are live. */
+    public static WornTvStreams wornTvStreams() { return loaded() ? WORN_TV_STREAMS.get() : WornTvStreams.BOTH; }
+
+    public static void setWornTvStreams(WornTvStreams value) {
+        if (!loaded() || WORN_TV_STREAMS.get() == value) return;
+        WORN_TV_STREAMS.set(value);
+        WORN_TV_STREAMS.save();
     }
 
     /** Pop-ups are copied back over the stream's name tag ({@code LiveToastRects}). On unless turned off. */

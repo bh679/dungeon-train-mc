@@ -29,6 +29,20 @@ public final class TvItems {
         return isTv(stack) && Boolean.TRUE.equals(stack.get(ModDataComponents.TV_ON.get()));
     }
 
+    /** The stream this TV remembers: 1 or 2, or 0 for none ({@link ModDataComponents#TV_STREAM}). */
+    public static int stream(ItemStack stack) {
+        Integer v = isTv(stack) ? stack.get(ModDataComponents.TV_STREAM.get()) : null;
+        return v == null ? 0 : v;
+    }
+
+    /** A copy of {@code stack} remembering {@code stream} (1 or 2); 0 forgets. The given stack is never changed. */
+    public static ItemStack withStream(ItemStack stack, int stream) {
+        ItemStack copy = stack.copy();
+        if (stream == 1 || stream == 2) copy.set(ModDataComponents.TV_STREAM.get(), stream);
+        else copy.remove(ModDataComponents.TV_STREAM.get());
+        return copy;
+    }
+
     /** A copy of {@code stack} switched {@code on}; off is the absence of the component. */
     public static ItemStack withOn(ItemStack stack, boolean on) {
         ItemStack copy = stack.copy();

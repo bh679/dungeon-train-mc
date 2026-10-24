@@ -119,6 +119,7 @@ public final class LiveHeadViewer {
             if (shown(mc)) {
                 float partial = delta.getGameTimeDeltaPartialTick(false);
                 int width = LiveFeedClientConfig.headViewerWidth(false);
+                HeadViewerPanes.wearing(TvItems.stream(mc.player.getItemBySlot(EquipmentSlot.HEAD)), LiveFeedClientConfig.wornTvStreams());
                 var panes = HeadViewerPanes.current(g.guiWidth(), width, secondLive(), LiveFeedClientConfig.headViewerAtMaxSize(false));
                 for (HeadViewerPanes.Pane pane : panes) {
                     LiveFeedSource source = pane.second() ? LiveFeedSource.SECOND : LiveFeedSource.MAIN;
@@ -188,6 +189,9 @@ public final class LiveHeadViewer {
             if (HeadViewerPanes.apply(panes, event.getMouseX(), event.getMouseY())) {
                 event.setCanceled(true);
                 mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1f));
+                // The TV on the head remembers the choice (TvStreamChoicePacket → TV_STREAM).
+                games.brennan.dungeontrain.net.DungeonTrainNet.sendToServer(
+                    new games.brennan.dungeontrain.net.TvStreamChoicePacket(HeadViewerPanes.memoryOf(HeadViewerPanes.choice())));
                 return;
             }
         }

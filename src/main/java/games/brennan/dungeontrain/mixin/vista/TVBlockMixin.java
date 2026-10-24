@@ -160,6 +160,13 @@ public abstract class TVBlockMixin {
     @Inject(method = "setPlacedBy", at = @At("TAIL"))
     private void dungeontrain$placeOn(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack,
                                       CallbackInfo ci) {
-        if (TvItems.isOn(stack)) TvPowerToggle.toggle(level, pos);
+        if (!TvItems.isOn(stack)) return;
+        // A TV that remembers Stream 2 (TvDropMemory) comes back on it: tune before switching on, since a
+        // TV that comes on with an empty slot takes the first stream's cassette.
+        if (!level.isClientSide && TvItems.stream(stack) == 2 && level.getBlockEntity(pos) instanceof TVBlockEntity tv && tv.getItem(0).isEmpty()) {
+            tv.setItem(0, TvBlocks.liveCassette(true));
+            tv.setChanged();
+        }
+        TvPowerToggle.toggle(level, pos);
     }
 }

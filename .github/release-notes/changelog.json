@@ -30369,7 +30369,8 @@
       "highlights": [
         "Right-click a TV: off, Stream 1, Stream 2 (while a second stream is live), off",
         "A TV on Stream 2 shows Stream 1 while nobody is on the second",
-        "Wearing a TV: both streams stacked (unless the box is at its largest size); in your inventory, click one to watch only it, click again for both"
+        "Wearing a TV: both streams stacked (unless the box is at its largest size); in your inventory, click one to watch only it, click again for both. The TV remembers your pick, and TVs broken while tuned come back on that stream",
+        "Options / Dungeon Train / Stream: choose what a TV on your head shows by default"
       ],
       "pr": 2290,
       "date": "2026-10-24",

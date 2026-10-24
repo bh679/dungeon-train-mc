@@ -90,4 +90,28 @@ final class HeadViewerPanesTest {
         HeadViewerPanes.current(480, 160, false, false);
         assertEquals(BOTH, HeadViewerPanes.choice(), "one stream: back to both for the next pair");
     }
+
+    @Test
+    @DisplayName("a worn TV's memory picks the choice; without one the settings default does; clicks write memory back")
+    void memoryAndOptionPickTheChoice() {
+        var cfg = games.brennan.dungeontrain.config.LiveFeedClientConfig.WornTvStreams.class;
+        assertEquals(MAIN_ONLY, HeadViewerPanes.choiceFor(1, Enum.valueOf(cfg, "BOTH")));
+        assertEquals(SECOND_ONLY, HeadViewerPanes.choiceFor(2, Enum.valueOf(cfg, "STREAM_1")), "memory wins over the option");
+        assertEquals(BOTH, HeadViewerPanes.choiceFor(0, Enum.valueOf(cfg, "BOTH")));
+        assertEquals(MAIN_ONLY, HeadViewerPanes.choiceFor(0, Enum.valueOf(cfg, "STREAM_1")));
+        assertEquals(SECOND_ONLY, HeadViewerPanes.choiceFor(0, Enum.valueOf(cfg, "STREAM_2")));
+        assertEquals(0, HeadViewerPanes.memoryOf(BOTH));
+        assertEquals(1, HeadViewerPanes.memoryOf(MAIN_ONLY));
+        assertEquals(2, HeadViewerPanes.memoryOf(SECOND_ONLY));
+        // Put on a TV remembering Stream 2: second only. The same TV again (same memory): unchanged by a frame.
+        HeadViewerPanes.wearing(2, Enum.valueOf(cfg, "BOTH"));
+        assertEquals(SECOND_ONLY, HeadViewerPanes.choice());
+        List<HeadViewerPanes.Pane> solo = HeadViewerPanes.current(480, 160, true, false);
+        assertTrue(HeadViewerPanes.apply(solo, solo.get(0).box().x() + 5, solo.get(0).box().y() + 5), "click the lone pane: both");
+        assertEquals(BOTH, HeadViewerPanes.choice());
+        HeadViewerPanes.wearing(0, Enum.valueOf(cfg, "STREAM_2"));
+        assertEquals(BOTH, HeadViewerPanes.choice(), "the server echo of the click (memory 0) does not undo it");
+        HeadViewerPanes.wearing(1, Enum.valueOf(cfg, "BOTH"));
+        assertEquals(MAIN_ONLY, HeadViewerPanes.choice(), "a different TV put on follows its memory");
+    }
 }
