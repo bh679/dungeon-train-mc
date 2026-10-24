@@ -30332,6 +30332,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "offer-live-eye-command",
+      "version": "0.1500.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Pass the Live Eye to any viewer",
+      "summary": "While you're live with the Live Eye, type /offereye to see who is watching through a TV and hand the stream to any of them, or offer it to everyone at once and let the first to accept take it.",
+      "highlights": [
+        "/offereye lists the viewers who can take your Live Eye, each with an Offer button",
+        "Pick All to offer it to everyone watching. Whoever accepts first gets it",
+        "/offereye <name> offers it straight to one viewer",
+        "If someone beats you to it, you're told someone else accepted first"
+      ],
+      "pr": 2286,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
