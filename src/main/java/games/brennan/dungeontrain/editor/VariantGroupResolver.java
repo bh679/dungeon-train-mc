@@ -255,6 +255,30 @@ public final class VariantGroupResolver implements VariantGroupRefs.LockGroupVie
         return best;
     }
 
+    /** Groups whose anchor this thread is resolving through a reference — a loop falls back to a plain roll. */
+    private static final ThreadLocal<Set<Integer>> FOLLOWING = ThreadLocal.withInitial(HashSet::new);
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The group's {@link #anchorOf anchor} resolved like any placed cell (and so remembered for
+     * the rest of the pass). {@code null} for a group with no cell here, or one already being
+     * followed further up this thread's stack.</p>
+     */
+    @Override
+    @Nullable
+    public VariantState placedByGroup(int lockId, long worldSeed, int index) {
+        BlockPos anchor = anchorOf(lockId);
+        if (anchor == null) return null;
+        Set<Integer> following = FOLLOWING.get();
+        if (!following.add(lockId)) return null;
+        try {
+            return resolve(anchor, lockId, entries.get(anchor), worldSeed, index);
+        } finally {
+            following.remove(lockId);
+        }
+    }
+
     /**
      * Where {@code localPos} sits in this sidecar's roll order, for {@link VariantConditions}: plain
      * cells first, then conditional cells in dependency order (a cell after everything its

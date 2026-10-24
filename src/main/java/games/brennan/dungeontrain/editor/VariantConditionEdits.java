@@ -23,6 +23,8 @@ public final class VariantConditionEdits {
     public static final String OTHERS_PREFIX = "others:";
     /** {@code match:all} / {@code match:any}: every listed side, or any one of them. */
     public static final String MATCH_PREFIX = "match:";
+    /** {@code not:on} / {@code not:off}: the target must not be (on) or must be (off) one of the values. */
+    public static final String NOT_PREFIX = "not:";
     /** Mode tokens: Touching (specific blocks on the sides) and Kind (Solid / Empty / Any on the sides). */
     public static final String MODE_TOUCHING = "mode:touching";
     public static final String MODE_KIND = "mode:kind";
@@ -69,6 +71,9 @@ public final class VariantConditionEdits {
                 : null;
             if (step == null) step = next ? groups.first() : groups.last();
             return Result.ok(current.withoutKinds().withGroup(step));
+        }
+        if (token.startsWith(NOT_PREFIX)) {
+            return Result.ok(current.withNegate("on".equals(token.substring(NOT_PREFIX.length()))));
         }
         if (token.startsWith(MATCH_PREFIX)) {
             if (current.isGroupTarget()) return Result.refused(null);
