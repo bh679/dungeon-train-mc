@@ -197,7 +197,11 @@ public final class PortalRoomTiler {
             Tile farthest = current.tiling().farthestFrom(Tile.BASE,
                 candidate -> !standingIn.contains(candidate));
             if (farthest == null) break;
+            // A copy a player was in is captured before it goes (rememberTile), and a capture is a
+            // few milliseconds — so it ends the tick's draining rather than being paid four times over.
+            boolean captures = PortalRoomMemory.isTileTouched(pairKey, farthest);
             current = eraseTile(level, dims, current, farthest, pairKey);
+            if (captures) break;
         }
         return current;
     }
@@ -255,6 +259,23 @@ public final class PortalRoomTiler {
         PortalRoomCopiesVariant single = singlePalette(structure);
         PortalCorridorMask writeMask =
             writeMaskFor(structure, clearMask, origin, size, !single.isEmpty());
+
+        // A copy a player has already been in comes back as they left it, not from the template —
+        // otherwise walking out of the window (or the carriage) and back re-lays every block they
+        // mined and refills every chest. See PortalRoomMemory.
+        net.minecraft.nbt.CompoundTag remembered = PortalTestSession.isTestStamp(pairKey) ? null
+            : PortalRoomMemory.recallTile(level, pairKey, tile, structure.roomName(), size);
+        if (remembered != null) {
+            PortalCarriageBuilder.stampTileFromBlob(level, origin, size, PortalRoomBlob.live(remembered),
+                clearMask, writeMask, liquidPlaneKeep(single, origin, size), pairKey, tile);
+            PortalRoomMemory.markTileTouched(pairKey, tile);
+            LOGGER.debug("[DungeonTrain] Portal pair {} copy {},{} restored as it was left",
+                pairKey, tile.x(), tile.z());
+            PortalStructure grown = structure.withTiling(structure.tiling().with(tile));
+            refreshFacesAround(level, dims, grown, tile);
+            return grown;
+        }
+
         PortalCarriageBuilder.stampRoomAt(level, origin, dims, structure.roomName(), size,
             /*relight*/ true, clearMask, writeMask, structure.variantIndexFor(tile, pairKey),
             // The base tile's index, which every copy computes the same — what a cell that
@@ -417,6 +438,10 @@ public final class PortalRoomTiler {
             origin.getY() + size.getY() - 1,
             origin.getZ() + size.getZ() - 1);
 
+        // While its blocks are still there to read, and before the mob sweep: the next stamp of this
+        // tile lays the copy as it was left (stampTile).
+        rememberTile(level, dims, structure, tile, pairKey);
+
         // Before the blocks go, and separately from PortalClear: `isLoose` spares mobs on purpose,
         // because a structure that RELOCATES should carry its occupants. A copy falling out of the
         // window is the other case — it should leave nothing behind. Without this the floor
@@ -438,6 +463,28 @@ public final class PortalRoomTiler {
             if (shrunk.tiling().has(neighbour)) refreshFace(level, dims, shrunk, neighbour, -d[0], -d[1]);
         }
         return shrunk;
+    }
+
+    /**
+     * Capture copy {@code tile} into {@link PortalRoomMemory} when a player has stood in it, returning
+     * whether it was captured. Not for an untouched copy (its template is what it still is) nor one
+     * whose chunks are unloaded — reading those would load them on the server tick.
+     */
+    public static boolean rememberTile(ServerLevel level, CarriageDims dims, PortalStructure structure,
+                                       Tile tile, int pairKey) {
+        if (Tile.BASE.equals(tile) || !PortalRoomMemory.isTileTouched(pairKey, tile)) return false;
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+        BlockPos origin = structure.tileOrigin(dims, layout, tile);
+        Vec3i size = structure.roomSize();
+        BlockPos far = origin.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1);
+        if (!level.hasChunksAt(origin, far)) return false;
+        long started = System.nanoTime();
+        net.minecraft.nbt.CompoundTag snapshot = PortalRoomMemory.capture(level, origin, size);
+        if (snapshot == null) return false;
+        PortalRoomMemory.rememberTile(level, pairKey, tile, structure.roomName(), snapshot);
+        LOGGER.debug("[DungeonTrain] Portal pair {} copy {},{} remembered as it was left ({} ms)",
+            pairKey, tile.x(), tile.z(), String.format("%.2f", (System.nanoTime() - started) / 1_000_000.0));
+        return true;
     }
 
     // ---------- faces ----------
