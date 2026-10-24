@@ -4714,6 +4714,7 @@
   "advancements.dungeontrain.tab.train_explorer": "列车探索者",
   "advancements.dungeontrain.tab.others": "其他",
   "advancements.dungeontrain.tab.secrete_menu": "隐藏菜单",
+  "perk.dungeontrain.restock_villager.button": "补货 (%s)",
   "chat.dungeontrain.free_play.cause.portal_rate": "本世界中维度车厢出现的频率已被更改。",
   "chat.dungeontrain.free_play.portal_rate_changed": "本世界生成的列车路线已偏离《地牢列车》的默认平衡设定，因此将始终处于自由模式。",
   "chat.dungeontrain.free_play.cause.dt_config": "《地牢列车》的难度设置已被更改。",

@@ -5458,6 +5458,7 @@
   "advancements.dungeontrain.tab.train_explorer": "Дослідник потяга",
   "advancements.dungeontrain.tab.others": "Інші",
   "advancements.dungeontrain.tab.secrete_menu": "Секретне меню",
+  "perk.dungeontrain.restock_villager.button": "Поповнити (%s)",
   "item.dungeontrain.live_cassette": "Касета Прямого ефіру",
   "item.dungeontrain.live_cassette.tooltip": "Налаштована на Прямий ефір. Встав у будь-який телевізор, щоб дивитися того, хто зараз в ефірі.",
   "item.dungeontrain.live_cassette_2": "Касета Прямого ефіру 2",
