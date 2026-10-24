@@ -2030,6 +2030,7 @@
   "item.dungeontrain.live_headpiece.tooltip.warning": "Il se consume dès qu'on le retire, ou quand quelqu'un d'autre prend le flux.",
   "item.dungeontrain.random_live_headpiece": "Caméscope de diffusion aléatoire (substitut de butin)",
   "item.dungeontrain.knockback_slime": "Slime de recul",
+  "item.dungeontrain.buckler_piglin_brute_spawn_egg": "Œuf d'apparition de piglin barbare avec bouclier rond",
   "item.dungeontrain.knockback_slime.tooltip": "Consommé à l'impact",
   "item.dungeontrain.random_book": "Livre aléatoire",
   "item.dungeontrain.random_playerbook": "Livre de joueur aléatoire",

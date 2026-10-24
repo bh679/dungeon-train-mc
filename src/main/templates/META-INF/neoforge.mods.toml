@@ -105,6 +105,15 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Piglin Proliferation — REQUIRED. Its Piglin Alchemist and Piglin Traveler stand in carriages; its entities,
+# items and blocks have to exist on both sides.
+[[dependencies.${mod_id}]]
+    modId="piglinproliferation"
+    type="required"
+    versionRange="[${piglinproliferation_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # VanillaBackport (+ its Platform library) — REQUIRED. Its sulfur caves join the caves on the way out of
 # every Nether pass; its blocks and network channels have to exist on both sides.
 [[dependencies.${mod_id}]]

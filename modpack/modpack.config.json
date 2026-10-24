@@ -479,6 +479,25 @@
       "modrinth_version": "TuD0Zvi3"
     },
     {
+      "name": "Piglin Proliferation",
+      "slug": "piglin-proliferation",
+      "mod_ids": [
+        "piglinproliferation"
+      ],
+      "sha1": "796da3c70e43c5fec367059f3bd898cea18afd63",
+      "packages": [
+        "tallestred.piglinproliferation"
+      ],
+      "project_id": 657831,
+      "file_id": 9104126,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "piglinproliferation_min_version",
+      "version": "2.0.16",
+      "modrinth_project": "piglin-proliferation",
+      "modrinth_version": "ErOncGme"
+    },
+    {
       "name": "Exposure",
       "slug": "exposure",
       "mod_ids": [

@@ -1985,6 +1985,7 @@
   "item.dungeontrain.live_headpiece.tooltip.warning": {"author": "老本願", "reviewer": "老本願", "source_hash": "e205f99beffa6f82"},
   "item.dungeontrain.random_live_headpiece": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "56043e7973106518"},
   "item.dungeontrain.knockback_slime": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "1bf75beb3ec27c91"},
+  "item.dungeontrain.buckler_piglin_brute_spawn_egg": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "9e341f70d2d8ccc0"},
   "item.dungeontrain.knockback_slime.tooltip": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "8e452b714e8d74d1"},
   "item.dungeontrain.random_book": {"author": "老本願", "reviewer": "老本願", "source_hash": "1cdd72cd89155c37"},
   "item.dungeontrain.random_playerbook": {"author": "老本願", "reviewer": "老本願", "source_hash": "8b47553fed5df08c"},

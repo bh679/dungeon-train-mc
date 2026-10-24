@@ -420,24 +420,8 @@ public final class VariantBlockInteractions {
                     .withStyle(ChatFormatting.YELLOW), true);
             return null;
         }
-        // Optional entity NBT — preserves anvil-renamed / NBT-tagged eggs.
-        // Vanilla stores the spawn payload in BLOCK_ENTITY_DATA on the egg
-        // (ID:"<entity>" + extra fields like CustomName / Tags / ArmorItems);
-        // we strip the ID since the entity type is the authoritative source
-        // and avoid stamping a redundant id mismatch onto the spawned mob.
-        net.minecraft.nbt.CompoundTag mobNbt = null;
-        net.minecraft.world.item.component.CustomData beData =
-            held.get(net.minecraft.core.component.DataComponents.BLOCK_ENTITY_DATA);
-        if (beData != null && !beData.isEmpty()) {
-            net.minecraft.nbt.CompoundTag raw = beData.copyTag();
-            if (raw.contains("EntityTag", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
-                mobNbt = raw.getCompound("EntityTag").copy();
-            } else if (!raw.isEmpty()) {
-                mobNbt = raw;
-            }
-            if (mobNbt != null) mobNbt.remove("id"); // EntityType.create writes its own
-        }
-        return VariantState.ofMob(eid, mobNbt, 1, VariantRotation.NONE);
+        // Optional entity NBT — preserves anvil-renamed / NBT-tagged eggs and eggs that ship a payload.
+        return VariantState.ofMob(eid, SpawnEggMobNbt.read(held), 1, VariantRotation.NONE);
     }
 
     /**
