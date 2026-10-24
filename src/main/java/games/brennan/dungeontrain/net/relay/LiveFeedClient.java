@@ -634,8 +634,15 @@ public final class LiveFeedClient {
         }
     }
 
-    /** The streamer {@code from} offered the viewer {@code target} a Live Eye (the relay's {@code gifts[]}). */
-    public record GiftOffer(long seq, String giftId, String target, String from) {}
+    /**
+     * The streamer {@code from} offered the viewer {@code target} a Live Eye (the relay's {@code gifts[]}).
+     * {@code all}: offered to everyone watching at once ({@code /offereye all}); the first to accept gets it.
+     */
+    public record GiftOffer(long seq, String giftId, String target, String from, boolean all) {
+        public GiftOffer(long seq, String giftId, String target, String from) {
+            this(seq, giftId, target, from, false);
+        }
+    }
 
     /** A chat poll's gift notices; both empty on any failure or from an older relay. */
     public record GiftNotices(List<GiftJoin> joins, List<GiftOffer> gifts) {
@@ -679,7 +686,8 @@ public final class LiveFeedClient {
                     String target = str(o, "target");
                     if (!isGiftId(id) || target.isBlank() || !o.has("seq")) continue;
                     String from = LiveChatRules.clean(str(o, "from"), LiveChatRules.MAX_AUTHOR);
-                    gifts.add(new GiftOffer(o.get("seq").getAsLong(), id, target, from.isBlank() ? "Someone" : from));
+                    boolean all = o.has("all") && o.get("all").isJsonPrimitive() && o.get("all").getAsBoolean();
+                    gifts.add(new GiftOffer(o.get("seq").getAsLong(), id, target, from.isBlank() ? "Someone" : from, all));
                 }
             }
             return new GiftNotices(List.copyOf(joins), List.copyOf(gifts));
@@ -747,6 +755,18 @@ public final class LiveFeedClient {
         JsonObject body = new JsonObject();
         body.addProperty("token", token);
         body.addProperty("name", name);
+        return post(base, "/live/gift/offer", body);
+    }
+
+    /**
+     * The streamer ({@code token}) offers the Live Eye to every TV viewer who could take it ({@code /offereye all}):
+     * the first to accept gets it. 200 {@code {count}}; 404 {@code not_watching}; 409 {@code already_offered} /
+     * {@code already_given}.
+     */
+    public static CompletableFuture<Result> giftOfferAll(String base, String token) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        body.addProperty("all", true);
         return post(base, "/live/gift/offer", body);
     }
 

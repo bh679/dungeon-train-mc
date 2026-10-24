@@ -22,7 +22,8 @@ import java.util.List;
  *
  * <ul>
  *   <li>{@code /offereye} lists them (relay {@code /live/gift/viewers}), each with an [Offer] button;</li>
- *   <li>{@code /offereye <viewer>} offers it straight away (relay {@code /live/gift/offer}).</li>
+ *   <li>{@code /offereye <viewer>} offers it straight away (relay {@code /live/gift/offer});</li>
+ *   <li>{@code /offereye all} (the list's All row) offers it to all of them: the first to accept gets it.</li>
  * </ul>
  *
  * <p>The viewer then sees the usual [Accept] / [No], and the hand-over is the gift's. Client side, because
@@ -47,6 +48,7 @@ public final class OfferEyeCommand {
     public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
         event.getDispatcher().register(Commands.literal(COMMAND)
             .executes(ctx -> list())
+            .then(Commands.literal("all").executes(ctx -> LiveGiftClient.offerAll()))
             .then(Commands.argument("viewer", StringArgumentType.word())
                 .suggests((ctx, b) -> SharedSuggestionProvider.suggest(lastViewers, b))
                 .executes(ctx -> LiveGiftClient.offerTo(StringArgumentType.getString(ctx, "viewer")))));
@@ -72,6 +74,10 @@ public final class OfferEyeCommand {
                 return;
             }
             LiveGiftClient.say(mc, Component.translatable(KEY + "header").withStyle(ChatFormatting.LIGHT_PURPLE));
+            if (viewers.size() > 1) {
+                LiveGiftClient.say(mc, Component.literal(" ").append(Component.translatable(KEY + "all"))
+                    .append(" ").withStyle(ChatFormatting.WHITE).append(LiveGiftClient.offerAllButton()));
+            }
             for (String name : viewers) {
                 MutableComponent line = Component.literal(" " + name + " ").withStyle(ChatFormatting.WHITE)
                     .append(LiveGiftClient.offerButton(name));

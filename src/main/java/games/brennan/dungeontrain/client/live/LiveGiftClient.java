@@ -123,7 +123,8 @@ public final class LiveGiftClient {
         // Joined as eligible, but no longer (found a Live Eye, switched Livestreaming off): never offered.
         if (!canReceive(Minecraft.getInstance())) return;
         put(OFFERS, offer.giftId(), new Offer(offer.from(), channel));
-        String offerKey = LiveCloseCallWatch.watching() ? CLOSE_KEY + "offer" : KEY + "offer";
+        String offerKey = offer.all() ? KEY + "offer_all"
+            : LiveCloseCallWatch.watching() ? CLOSE_KEY + "offer" : KEY + "offer";
         MutableComponent line = Component.translatable(offerKey, offer.from()).withStyle(ChatFormatting.LIGHT_PURPLE)
             .append(Component.literal(" "))
             .append(button(KEY + "accept", ChatClick.event(CLICK_ACTION, "accept", offer.giftId()), ChatFormatting.GREEN, true))
@@ -140,6 +141,7 @@ public final class LiveGiftClient {
             switch (args.get(0)) {
                 case "give" -> give(id);
                 case "offer" -> offerTo(id);
+                case "offer-all" -> offerAll();
                 case "accept" -> answer(id, true);
                 case "decline" -> answer(id, false);
                 default -> { }
@@ -195,13 +197,49 @@ public final class LiveGiftClient {
         return 1;
     }
 
+    /** Streamer: {@code /offereye all} or the list's All [Offer]: everyone who can take it; the first to accept wins. */
+    static int offerAll() {
+        Minecraft mc = Minecraft.getInstance();
+        String token = LiveStreamController.get().streamToken();
+        if (token == null) {
+            say(mc, Component.translatable(OFFER_KEY + "not_live").withStyle(ChatFormatting.GRAY));
+            return 0;
+        }
+        LiveFeedClient.giftOfferAll(DungeonTrain.relayBaseUrl(), token).thenAcceptAsync(r -> {
+            if (r.ok()) {
+                say(mc, Component.translatable(OFFER_KEY + "offered_all", r.str("count")).withStyle(ChatFormatting.GRAY));
+                if (mc.getConnection() != null) DungeonTrainNet.sendToServer(new ClientActionPacket("gifted_live_eye"));
+                return;
+            }
+            say(mc, Component.translatable(offerAllFailureKey(r.status(), r.str("error"))).withStyle(ChatFormatting.GRAY));
+        }, mc);
+        return 1;
+    }
+
+    /** The line for a refused {@code /offereye all}. None of these name a viewer. Pure. */
+    static String offerAllFailureKey(int status, String error) {
+        if (status == 404 && "not_watching".equals(error)) return OFFER_KEY + "none";
+        if (status == 409 && "already_offered".equals(error)) return OFFER_KEY + "all_already_offered";
+        String key = offerFailureKey(status, error);
+        return key.endsWith("give_failed") ? OFFER_KEY + "list_failed" : key;
+    }
+
     /** The line for a refused {@code /offereye}. An older relay 404s with no error: the command isn't there yet. Pure. */
     static String offerFailureKey(int status, String error) {
+        if (status == 409 && "already_given".equals(error)) return OFFER_KEY + "already_given";
         if (status == 409) return OFFER_KEY + "already_offered";
         if (status == 404 && "not_watching".equals(error)) return OFFER_KEY + "not_watching";
         if (status == 404) return OFFER_KEY + "unavailable";
         if (status == 403) return OFFER_KEY + "not_live";
         return KEY + "give_failed";
+    }
+
+    /** The list's {@code All [Offer]} button: offer it to everyone, first to accept gets it. */
+    static Component offerAllButton() {
+        return Component.literal("[").append(Component.translatable(OFFER_KEY + "button")).append("]")
+            .withStyle(s -> s.withColor(ChatFormatting.GOLD).withBold(true)
+                .withClickEvent(ChatClick.event(CLICK_ACTION, "offer-all", "all"))
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable(OFFER_KEY + "all_tip"))));
     }
 
     /** A gold {@code [Offer]} button for {@code name} ({@link OfferEyeCommand}'s list). */

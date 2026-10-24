@@ -88,4 +88,18 @@ class LiveFeedClientGiftParseTest {
         assertTrue(LiveFeedClient.parseGiftViewers(new LiveFeedClient.Result(200,
             JsonParser.parseString("{\"viewers\":5}").getAsJsonObject(), null)).isEmpty());
     }
+
+    @Test
+    @DisplayName("a gift notice offered to everyone carries all=true; older notices read false")
+    void giftOfferAll() {
+        GiftNotices n = parse("""
+            {"gifts":[
+               {"seq":1,"giftId":"g-AbCdEfGh1234","target":"aaaaaaaabbbbccccddddeeeeeeeeeeee","from":"S","all":true},
+               {"seq":2,"giftId":"g-AbCdEfGh5678","target":"aaaaaaaabbbbccccddddeeeeeeeeeeee","from":"S"},
+               {"seq":3,"giftId":"g-AbCdEfGh9999","target":"aaaaaaaabbbbccccddddeeeeeeeeeeee","from":"S","all":"x"}
+             ]}""");
+        assertTrue(n.gifts().get(0).all());
+        assertFalse(n.gifts().get(1).all());
+        assertFalse(n.gifts().get(2).all(), "a non-boolean all is not an offer to everyone");
+    }
 }

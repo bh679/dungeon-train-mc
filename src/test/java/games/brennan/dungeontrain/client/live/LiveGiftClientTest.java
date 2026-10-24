@@ -42,4 +42,16 @@ class LiveGiftClientTest {
         assertEquals(k + "not_live", LiveGiftClient.offerFailureKey(403, "forbidden"));
         assertEquals("chat.dungeontrain.live_gift.give_failed", LiveGiftClient.offerFailureKey(0, ""));
     }
+
+    @Test
+    @DisplayName("/offereye all refusals never name a viewer; already given wins over already offered")
+    void offerAllFailureKeys() {
+        String k = LiveGiftClient.OFFER_KEY;
+        assertEquals(k + "none", LiveGiftClient.offerAllFailureKey(404, "not_watching"));
+        assertEquals(k + "all_already_offered", LiveGiftClient.offerAllFailureKey(409, "already_offered"));
+        assertEquals(k + "already_given", LiveGiftClient.offerAllFailureKey(409, "already_given"));
+        assertEquals(k + "already_given", LiveGiftClient.offerFailureKey(409, "already_given"));
+        assertEquals(k + "unavailable", LiveGiftClient.offerAllFailureKey(404, ""));
+        assertEquals(k + "list_failed", LiveGiftClient.offerAllFailureKey(500, ""));
+    }
 }
