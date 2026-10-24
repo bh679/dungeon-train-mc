@@ -30255,6 +30255,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "player-mobs-proper-bridge-blocks",
+      "version": "0.1497.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Player Mobs build with proper blocks",
+      "summary": "Player Mobs climbing back onto the train no longer build their steps out of beds, doors, torches or chests, so you won't find half beds left beside the track. They now only use solid full blocks.",
+      "highlights": [],
+      "pr": 2285,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
