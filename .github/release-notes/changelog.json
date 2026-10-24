@@ -30314,6 +30314,23 @@
       "major": true,
       "notable": true,
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-piglins-have-new-company.jpg"
+    },
+    {
+      "id": "nether-piglin-steady",
+      "version": "0.1500.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Piglin fix",
+      "summary": "Piglins on the train now keep their composure all the way through the Nether.",
+      "highlights": [],
+      "pr": 2289,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
