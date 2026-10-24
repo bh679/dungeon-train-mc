@@ -153,7 +153,7 @@ textarea{min-height:0;resize:none;overflow:hidden;font-family:var(--body);line-h
   </aside>
 </div>
 <div id="ctx" class="ctx" hidden></div>
-<div class="testbar"><button class="btn" id="bMode" type="button" title="view: edit the tree. test: click perks to unlock and spend points">view</button><button class="btn" id="bResetTest" type="button" title="lock every perk again">reset</button></div>
+<div class="testbar"><button class="btn" id="bMode" type="button" title="view: edit the tree. test: click perks to unlock and spend points">view</button><button class="btn" id="bResetTest" type="button" title="lock every perk again" hidden>reset</button></div>
 <div id="tableView" class="tview" hidden><div class="tinner"><div id="ptable" class="tables"></div></div></div>
 
 <script>
@@ -464,7 +464,7 @@ function renderTable(){const t=document.getElementById("ptable");t.replaceWith(O
   const hl=t2.querySelector("tr.hl");if(hl)hl.scrollIntoView({block:"center"})}
 function toggleTable(on){showTable=on??!showTable;document.getElementById("tableView").hidden=!showTable;document.querySelector(".sky").hidden=showTable;bTable.textContent=showTable?"✦ graph":"☰ table";bTable.classList.toggle("on",showTable);if(showTable)renderTable()}
 bTable.onclick=()=>toggleTable();
-const bMode=document.getElementById("bMode");bMode.onclick=()=>{testMode=!testMode;bMode.textContent=testMode?"test":"view";bMode.classList.toggle("on",testMode);sel=null;selLink=null;selCls=null;render()};
+const bMode=document.getElementById("bMode");bMode.onclick=()=>{testMode=!testMode;bMode.textContent=testMode?"test":"view";bMode.classList.toggle("on",testMode);document.getElementById("bResetTest").hidden=!testMode;sel=null;selLink=null;selCls=null;render()};
 document.getElementById("bResetTest").onclick=()=>{TS={};tsSave();renderSky()};
 const bGuide=document.getElementById("bGuide");bGuide.classList.toggle("on",showGuide);bGuide.onclick=()=>{showGuide=!showGuide;bGuide.classList.toggle("on",showGuide);try{localStorage.setItem("dt-perk-guide",showGuide?"1":"0")}catch(e){}renderSky()};
 const bRev=document.getElementById("bRev");bRev.classList.toggle("on",showRev);bRev.onclick=()=>{showRev=!showRev;bRev.classList.toggle("on",showRev);try{localStorage.setItem("dt-perk-showrev",showRev?"1":"0")}catch(e){}renderSky();if(showTable)renderTable()};
