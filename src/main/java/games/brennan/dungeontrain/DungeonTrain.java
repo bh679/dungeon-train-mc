@@ -674,6 +674,8 @@ public class DungeonTrain {
         // and tolerant of a playermob build that predates the seam (e.g. the
         // bundled published version) — then the install no-ops and these
         // advancements simply won't fire, rather than crashing mod load.
+        // Perks: register the tier-1 effect handlers (perks/PerkEffects) before any player logs in.
+        games.brennan.dungeontrain.perks.tier1.TierOneEffects.install();
         if (ModList.get().isLoaded("playermob")) {
             try {
                 PlayerMobSocialBridge.install();

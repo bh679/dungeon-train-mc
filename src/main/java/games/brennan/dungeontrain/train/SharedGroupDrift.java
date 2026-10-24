@@ -39,10 +39,16 @@ public final class SharedGroupDrift {
      * leases one without, so a stageless group is the plain template by definition.
      */
     public static boolean drifts(int anchorPIdx, int groupSize, long seed, String stageId) {
+        return drifts(anchorPIdx, groupSize, seed, stageId, 1.0);
+    }
+
+    /** As above with the Drift Chance perk multiplier ({@code perks/tier1/DriftChance}) applied to the group chance. */
+    public static boolean drifts(int anchorPIdx, int groupSize, long seed, String stageId, double driftBoost) {
         if (!SharedCarriageGate.canDiscover()) return false;
         if (stageId == null || stageId.isEmpty()) return false;
         long groupIndex = Math.floorDiv((long) anchorPIdx, Math.max(1, groupSize));
-        return SharedCarriageRolls.groupDrifts(seed, groupIndex, DungeonTrainConfig.getSharedGroupChance());
+        return SharedCarriageRolls.groupDrifts(seed, groupIndex,
+            games.brennan.dungeontrain.perks.tier1.DriftChance.boosted(DungeonTrainConfig.getSharedGroupChance(), driftBoost));
     }
 
     /**
@@ -57,9 +63,10 @@ public final class SharedGroupDrift {
             log(anchorPIdx, "LEASING_OFF", null);
             return null;
         }
+        double driftBoost = games.brennan.dungeontrain.perks.tier1.DriftChance.multiplierFor(level);
         SharedCarriageRolls.Bucket bucket = SharedCarriageRolls.bucket(seed, anchorPIdx,
-                DungeonTrainConfig.getSharedCarriagePoolChance(),
-                DungeonTrainConfig.getSharedCarriageOwnChance());
+                games.brennan.dungeontrain.perks.tier1.DriftChance.boosted(DungeonTrainConfig.getSharedCarriagePoolChance(), driftBoost),
+                games.brennan.dungeontrain.perks.tier1.DriftChance.boosted(DungeonTrainConfig.getSharedCarriageOwnChance(), driftBoost));
         if (bucket == SharedCarriageRolls.Bucket.FRESH) {
             log(anchorPIdx, "ROLLED_FRESH", null);
             return null;
