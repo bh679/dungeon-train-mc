@@ -68,4 +68,35 @@ class WindFeelMathTest {
         assertEquals(-1.0, WindFeelMath.facing(0, -1, 0), EPS);
         assertEquals(0.0, WindFeelMath.facing(1, 0, 0), EPS);
     }
+
+    @Test
+    void sideWindBlowsInFromTheUpwindEdgeOnly() {
+        // Blowing toward screen right: in from the left edge, nothing on the right.
+        assertTrue(WindFeelMath.edgeFlow(1, 0, true) < 0, "left edge should flow inward");
+        assertEquals(1.0, WindFeelMath.edgeWeight(1, 0, true), EPS);
+        assertEquals(0.0, WindFeelMath.edgeWeight(1, 0, false), EPS);
+    }
+
+    @Test
+    void headOnFlowsOutBothEdgesAndTailwindInBoth() {
+        assertTrue(WindFeelMath.edgeFlow(0, -1, true) > 0 && WindFeelMath.edgeFlow(0, -1, false) > 0);
+        assertTrue(WindFeelMath.edgeWeight(0, -1, true) > 0.9 && WindFeelMath.edgeWeight(0, -1, false) > 0.9);
+        assertTrue(WindFeelMath.edgeFlow(0, 1, true) < 0 && WindFeelMath.edgeFlow(0, 1, false) < 0);
+        assertTrue(WindFeelMath.edgeWeight(0, 1, true) > 0.5);
+    }
+
+    @Test
+    void anEdgeFadesOutBeforeItTurnsAroundWhileTheOtherStays() {
+        // Turning from a side wind toward a head wind: the left edge flips from inward to outward. Right at the
+        // flip it is empty and the right edge still shows.
+        double lat = Math.cos(Math.toRadians(45));
+        double face = -Math.sin(Math.toRadians(45));
+        assertEquals(0.0, WindFeelMath.edgeFlow(lat, face, true), 1e-9);
+        assertEquals(0.0, WindFeelMath.edgeWeight(lat, face, true), EPS);
+        assertTrue(WindFeelMath.edgeWeight(lat, face, false) > 0.5);
+        // Sweeping through the turn, the left edge's weight dips to nothing and comes back.
+        double before = WindFeelMath.edgeWeight(Math.cos(Math.toRadians(30)), -Math.sin(Math.toRadians(30)), true);
+        double after = WindFeelMath.edgeWeight(Math.cos(Math.toRadians(60)), -Math.sin(Math.toRadians(60)), true);
+        assertTrue(before > 0.05 && after > 0.05, "before " + before + " after " + after);
+    }
 }

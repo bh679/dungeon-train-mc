@@ -34,16 +34,11 @@ public final class WindFeelOverlay {
      */
     private static final float STREAK_NEAR_SCALE = 1.5f;
     private static final float STREAK_FAR_SCALE = 0.3f;
-    /** How strongly wind along the view (head-on or behind) fills both edges with streaks. */
-    private static final float STREAK_ALONG = 0.8f;
     /** Streak speed, GUI pixels per second: base plus per unit of wind strength. */
     private static final float STREAK_SPEED_BASE = 220f;
     private static final float STREAK_SPEED_PER_PUSH = 9000f;
     private static final int STREAK_RGB = 0xFFFFFF;
     private static final float STREAK_ALPHA = 0.55f;
-    /** {@code facing} below which the streaks switch to flying outward, and above which they switch back. */
-    private static final float OUTWARD_ENTER = -0.45f;
-    private static final float OUTWARD_EXIT = -0.25f;
     /** Width of the band at each edge the streaks stay in, as a fraction of the screen width. */
     private static final float BAND_WIDTH = 0.33f;
 
@@ -53,12 +48,10 @@ public final class WindFeelOverlay {
     private static final float[] SS = new float[STREAKS];
     /** -1 = blows in from the left edge, +1 = from the right. */
     private static final int[] SIDE = new int[STREAKS];
-    /** True = flies outward off its edge, false = blows in from it (always the current {@link #outward}). */
+    /** True = flies outward off its edge, false = blows in from it (always its edge's current flow). */
     private static final boolean[] OUT = new boolean[STREAKS];
     private static final Random RANDOM = new Random();
     private static boolean seeded = false;
-    /** The flow in force: true = out past both edges (wind in your face), false = in from the edges. */
-    private static boolean outward = false;
     private static long lastNanos = 0L;
 
     private WindFeelOverlay() {}
@@ -89,8 +82,9 @@ public final class WindFeelOverlay {
     /**
      * Wisps at the screen edges only, inside the edge band ({@link #BAND_WIDTH}); nothing crosses the middle.
      * A side wind blows them in from the upwind edge, flat across the screen. Wind
-     * mostly in your face sends them all outward instead, off both edges; wind at your back sends them inward.
-     * Every streak follows the same flow, so a side never has streaks going both ways. The more the
+     * in your face sends them outward instead, off both edges; wind at your back sends them inward. Each edge
+     * flows one way at a time and fades out just before it turns around ({@link WindFeelMath#edgeWeight}), so
+     * an edge never has streaks going both ways. The more the
      * wind runs along the view, the more they follow perspective: each one runs on a line toward the middle of
      * the screen, bigger and faster near the edge (close to you), smaller toward the middle (far away).
      */
@@ -99,17 +93,14 @@ public final class WindFeelOverlay {
         int h = g.guiHeight();
         float half = w / 2f;
         float band = Math.max(8f, w * BAND_WIDTH);
-        float along = (1f - Math.abs(lateral)) * STREAK_ALONG;
-        float left = Math.max(0f, lateral) + along;
-        float right = Math.max(0f, -lateral) + along;
+        // Each edge has one direction at a time, and fades out just before it flips (WindFeelMath#edgeWeight).
+        float left = (float) WindFeelMath.edgeWeight(lateral, facing, true);
+        float right = (float) WindFeelMath.edgeWeight(lateral, facing, false);
+        boolean outLeft = WindFeelMath.edgeFlow(lateral, facing, true) > 0.0;
+        boolean outRight = WindFeelMath.edgeFlow(lateral, facing, false) > 0.0;
         float depthMix = Math.min(1f, Math.abs(facing));
-        // One flow for the whole screen, so a side never has streaks going both ways: outward while the wind is
-        // in your face, inward otherwise. Hysteresis keeps it from flickering at the turn; on a change every
-        // streak starts again from where the new flow begins.
-        boolean flow = outward ? facing < OUTWARD_EXIT : facing < OUTWARD_ENTER;
-        if (!seeded || flow != outward) {
-            outward = flow;
-            for (int i = 0; i < STREAKS; i++) respawn(i, h, band, left, right, !seeded);
+        if (!seeded) {
+            for (int i = 0; i < STREAKS; i++) respawn(i, h, band, left, right, outLeft, outRight, true);
             seeded = true;
         }
         int count = Math.round(STREAKS * felt);
@@ -121,10 +112,12 @@ public final class WindFeelOverlay {
             SX[i] += (OUT[i] ? -1f : 1f) * speed * SS[i] * pace * dt;
             float len = SL[i] * scaleAt(SX[i], half, depthMix);
             boolean gone = OUT[i] ? SX[i] + len < 0f : SX[i] - len > band;
-            if (gone) respawn(i, h, band, left, right, false);
+            // Its edge has turned around: it was already faded out, so start it again the new way.
+            boolean turned = OUT[i] != (SIDE[i] < 0 ? outLeft : outRight);
+            if (gone || turned) respawn(i, h, band, left, right, outLeft, outRight, false);
             if (i >= count) continue;
             boolean fromLeft = SIDE[i] < 0;
-            float weight = OUT[i] ? 1f : (fromLeft ? left : right);
+            float weight = fromLeft ? left : right;
             if (weight <= 0f) continue;
             // Inward: head leads, tail trails toward the edge. Outward: the tail trails back into the band.
             float lo = Math.max(0f, OUT[i] ? SX[i] : SX[i] - len);
@@ -174,14 +167,11 @@ public final class WindFeelOverlay {
         g.pose().popPose();
     }
 
-    private static void respawn(int i, int h, float band, float left, float right, boolean anywhere) {
-        OUT[i] = outward;
+    private static void respawn(int i, int h, float band, float left, float right, boolean outLeft,
+                                boolean outRight, boolean anywhere) {
         float total = left + right;
-        if (OUT[i]) {
-            SIDE[i] = RANDOM.nextBoolean() ? -1 : 1;
-        } else {
-            SIDE[i] = total <= 0f || RANDOM.nextFloat() * total < left ? -1 : 1;
-        }
+        SIDE[i] = (total <= 0f ? RANDOM.nextBoolean() : RANDOM.nextFloat() * total < left) ? -1 : 1;
+        OUT[i] = SIDE[i] < 0 ? outLeft : outRight;
         SY[i] = RANDOM.nextFloat() * h;
         SL[i] = 20f + RANDOM.nextFloat() * 35f;
         SS[i] = 0.7f + RANDOM.nextFloat() * 0.6f;

@@ -63,4 +63,31 @@ public final class WindFeelMath {
         double yaw = Math.toRadians(yawDeg);
         return dirX * -Math.sin(yaw) + dirZ * Math.cos(yaw);
     }
+
+    /** How strongly wind along the view (head-on or behind) fills an edge with streaks. */
+    static final double EDGE_ALONG = 0.8;
+    /** An edge's streaks fade out over this much {@link #edgeFlow} on either side of where its direction flips. */
+    static final double EDGE_SWITCH_FADE = 0.35;
+
+    /**
+     * Which way the wind carries streaks at one screen edge: positive = outward off that edge, negative = inward
+     * from it. A wind blowing toward screen right runs in from the left edge and out past the right; wind in your
+     * face runs out past both; at your back, in from both. Each edge gets its own, so at an angle one edge can be
+     * flowing out while the other flows in, but an edge never has both.
+     */
+    public static double edgeFlow(double lateral, double facing, boolean leftEdge) {
+        return (leftEdge ? -lateral : lateral) - facing;
+    }
+
+    /**
+     * How strongly streaks show at one edge, 0..1: the upwind edge, and both edges with the wind along the view,
+     * faded to nothing as that edge's {@link #edgeFlow} nears the angle where it flips, so just before the turn
+     * only the other edge has any.
+     */
+    public static double edgeWeight(double lateral, double facing, boolean leftEdge) {
+        double upwind = Math.max(0.0, leftEdge ? lateral : -lateral);
+        double presence = Math.min(1.0, upwind + Math.max(0.0, -facing) + (1.0 - Math.abs(lateral)) * EDGE_ALONG);
+        double x = Math.min(1.0, Math.abs(edgeFlow(lateral, facing, leftEdge)) / EDGE_SWITCH_FADE);
+        return presence * x * x * (3.0 - 2.0 * x);
+    }
 }
