@@ -30159,9 +30159,9 @@
       "highlights": [],
       "pr": 2280,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1494.0",
+      "released_at": "2026-10-24T05:27:50Z"
     },
     {
       "id": "streamer-more-info",
@@ -30178,9 +30178,9 @@
       ],
       "pr": 2279,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1494.0",
+      "released_at": "2026-10-24T05:27:50Z"
     },
     {
       "id": "zh-cn-proofread-laobenyuan",
@@ -30198,9 +30198,9 @@
       ],
       "pr": 2283,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1494.0",
+      "released_at": "2026-10-24T05:27:50Z"
     },
     {
       "id": "dimensional-carriage-copies-remembered",
@@ -30216,9 +30216,9 @@
       "highlights": [],
       "pr": 2282,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1494.0",
+      "released_at": "2026-10-24T05:27:50Z"
     },
     {
       "id": "live-chat-tv-watcher-death",
