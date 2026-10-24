@@ -713,8 +713,6 @@
   "chat.dungeontrain.live.close_call.prompt": "%s đang tiến gần một thử thách hiếm.",
   "chat.dungeontrain.live.close_call.give": "Trao máy quay phát sóng",
   "chat.dungeontrain.live.close_call.offer": "%s muốn trao máy quay phát sóng cho bạn. Nhận không?",
-  "chat.dungeontrain.live.train_offer.offer": "Đoàn tàu cảm thấy bạn đang tiến gần một thử thách hiếm. Nhận máy quay phát sóng không?",
-  "chat.dungeontrain.live.train_offer.received": "Đoàn tàu đã trao buổi phát trực tiếp cho bạn. Bạn đang phát trực tiếp!",
   "chat.dungeontrain.live_gift.accept": "Nhận",
   "chat.dungeontrain.live_gift.accept.tip": "Đội máy quay phát sóng lên và phát trực tiếp.",
   "chat.dungeontrain.live_gift.decline": "Không",

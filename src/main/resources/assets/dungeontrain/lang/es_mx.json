@@ -745,8 +745,6 @@
   "chat.dungeontrain.live.close_call.prompt": "%s se acerca a un reto poco común.",
   "chat.dungeontrain.live.close_call.give": "Pasarle la videocámara de transmisión",
   "chat.dungeontrain.live.close_call.offer": "%s te ofrece su videocámara de transmisión. ¿La aceptas?",
-  "chat.dungeontrain.live.train_offer.offer": "El tren siente que te acercas a un reto poco común. ¿Aceptas la videocámara de transmisión?",
-  "chat.dungeontrain.live.train_offer.received": "El tren te pasó la transmisión. ¡Estás en vivo!",
   "chat.dungeontrain.live_gift.accept": "Aceptar",
   "chat.dungeontrain.live_gift.accept.tip": "Ponte la videocámara de transmisión y transmite en vivo.",
   "chat.dungeontrain.live_gift.decline": "No",

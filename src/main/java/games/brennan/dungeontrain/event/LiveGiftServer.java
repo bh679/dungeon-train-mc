@@ -73,10 +73,7 @@ public final class LiveGiftServer {
                 return;
             }
             if (refused(p)) return;
-            String from = r.str("from");
-            String giver = from == null || from.isBlank() ? "Someone" : from;
-            grant(p, Component.translatable(KEY + "received", giver));
-            LOGGER.info("[DungeonTrain] {} received a Live Eye gifted by {}", p.getGameProfile().getName(), giver);
+            grant(p, r.str("from"));
         }));
     }
 
@@ -93,7 +90,7 @@ public final class LiveGiftServer {
      * The backstop: true (logged, and told to the player) when {@code player} couldn't go live with a Live
      * Eye — the same blockers {@code LiveFeedEvents#startStreaming} applies once it is on.
      */
-    static boolean refused(ServerPlayer player) {
+    private static boolean refused(ServerPlayer player) {
         Refusal why = refusalFor(player);
         if (why == null) return false;
         LOGGER.info("[DungeonTrain] Live Eye gift accept from {} refused ({}); the gift stays unspent",
@@ -109,14 +106,15 @@ public final class LiveGiftServer {
     /**
      * Put the Live Eye straight on {@code player}'s head — wearing it is what starts the stream
      * ({@link LiveFeedEvents#onEquipmentChange}). Whatever was worn there, normally the TV they were
-     * watching on, goes to the inventory, or at their feet when it is full. {@code received} is told to them.
-     * Also the train's own offer ({@link LiveTrainOffer}).
+     * watching on, goes to the inventory, or at their feet when it is full.
      */
-    static void grant(ServerPlayer player, Component received) {
+    private static void grant(ServerPlayer player, String from) {
         ItemStack worn = player.getItemBySlot(EquipmentSlot.HEAD).copy();
         player.setItemSlot(EquipmentSlot.HEAD, new ItemStack(ModItems.LIVE_HEADPIECE.get()));
         if (!worn.isEmpty() && !player.getInventory().add(worn)) player.drop(worn, false);
         LiveEyeLootResolver.markSeen(player);
-        player.sendSystemMessage(received.copy().withStyle(ChatFormatting.GOLD));
+        String giver = from == null || from.isBlank() ? "Someone" : from;
+        player.sendSystemMessage(Component.translatable(KEY + "received", giver).withStyle(ChatFormatting.GOLD));
+        LOGGER.info("[DungeonTrain] {} received a Live Eye gifted by {}", player.getGameProfile().getName(), giver);
     }
 }

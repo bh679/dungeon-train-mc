@@ -745,8 +745,6 @@
   "chat.dungeontrain.live.close_call.prompt": "%s está chegando perto de um desafio raro.",
   "chat.dungeontrain.live.close_call.give": "Passar a filmadora de transmissão",
   "chat.dungeontrain.live.close_call.offer": "%s está te oferecendo a filmadora de transmissão. Pegar?",
-  "chat.dungeontrain.live.train_offer.offer": "O trem sente que você está chegando perto de um desafio raro. Pegar a filmadora de transmissão?",
-  "chat.dungeontrain.live.train_offer.received": "O trem te passou a transmissão. Você está ao vivo!",
   "chat.dungeontrain.live_gift.accept": "Aceitar",
   "chat.dungeontrain.live_gift.accept.tip": "Coloque a filmadora de transmissão e entre ao vivo.",
   "chat.dungeontrain.live_gift.decline": "Não",

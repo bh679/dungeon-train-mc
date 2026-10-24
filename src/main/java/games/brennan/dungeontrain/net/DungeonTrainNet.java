@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "163";
+    public static final String PROTOCOL_VERSION = "162";
 
     private DungeonTrainNet() {}
 
@@ -246,9 +246,6 @@ public final class DungeonTrainNet {
         registrar.playToServer(LogRequestAnswerPacket.TYPE, LogRequestAnswerPacket.STREAM_CODEC, LogRequestAnswerPacket::handle);
         registrar.playToServer(LogRequestFromLivePacket.TYPE, LogRequestFromLivePacket.STREAM_CODEC, LogRequestFromLivePacket::handle);
         registrar.playToServer(LiveGiftAcceptPacket.TYPE, LiveGiftAcceptPacket.STREAM_CODEC, LiveGiftAcceptPacket::handle);
-        // Nobody live: the train itself offers a close-call player the Live Eye (event/LiveTrainOffer).
-        registrar.playToClient(LiveTrainOfferPacket.TYPE, LiveTrainOfferPacket.STREAM_CODEC, LiveTrainOfferPacket::handle);
-        registrar.playToServer(LiveTrainAcceptPacket.TYPE, LiveTrainAcceptPacket.STREAM_CODEC, LiveTrainAcceptPacket::handle);
 
         // Spawn intro cinematic: server → joining player to start it; client → server when it ends.
         registrar.playToClient(CinematicIntroPacket.TYPE, CinematicIntroPacket.STREAM_CODEC, CinematicIntroPacket::handle);

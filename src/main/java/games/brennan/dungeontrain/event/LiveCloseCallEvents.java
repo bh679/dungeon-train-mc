@@ -39,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * keeps one reading a minute. Nothing is sent while the player is AFK, is the one streaming, could
  * not take a Live Eye anyway, or whether anyone is on air can't be told. When nobody at all is on air
  * ({@link ServerLiveStatus#isNobodyLive}) there is no streamer to ask, so the train offers the Live Eye
- * itself ({@link LiveTrainOffer}). Each advancement alerts at most twice a life,
+ * itself ({@link LiveEyeTrainHandout}). Each advancement alerts at most twice a life,
  * at 20 and at 5 minutes ({@link CloseCallRules.Stage}, recorded in
  * {@link ModDataAttachments#CLOSE_CALLS_SENT_THIS_LIFE}).</p>
  */
@@ -95,9 +95,9 @@ public final class LiveCloseCallEvents {
         int minutes = CloseCallRules.minutes(found.etaMs());
         String name = player.getGameProfile().getName();
         if (route == Route.TRAIN) {
-            LOGGER.info("[DungeonTrain] Close call ({}): {} is ~{} min from {}; nobody is live, the train offers the Live Eye",
+            LOGGER.info("[DungeonTrain] Close call ({}): {} is ~{} min from {}; nobody is live, the train hands out the Live Eye",
                 found.stage(), name, minutes, found.close().get(0).id());
-            LiveTrainOffer.offer(player);
+            LiveEyeTrainHandout.onCloseCall(player, found.close());
             return;
         }
         LOGGER.info("[DungeonTrain] Close call ({}): {} is ~{} min from {}; telling the stream",

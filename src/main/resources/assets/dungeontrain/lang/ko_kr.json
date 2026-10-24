@@ -713,8 +713,6 @@
   "chat.dungeontrain.live.close_call.prompt": "%s 님이 희귀한 도전에 다가가고 있어요.",
   "chat.dungeontrain.live.close_call.give": "방송 캠코더 넘겨주기",
   "chat.dungeontrain.live.close_call.offer": "%s 님이 방송 캠코더를 넘겨주려 해요. 받을까요?",
-  "chat.dungeontrain.live.train_offer.offer": "열차가 당신이 희귀한 도전에 다가가고 있음을 느껴요. 방송 캠코더를 받을까요?",
-  "chat.dungeontrain.live.train_offer.received": "열차가 라이브 방송을 넘겨줬어요. 지금 방송 중이에요!",
   "chat.dungeontrain.live_gift.accept": "받기",
   "chat.dungeontrain.live_gift.accept.tip": "방송 캠코더를 쓰고 라이브를 시작해요.",
   "chat.dungeontrain.live_gift.decline": "아니요",

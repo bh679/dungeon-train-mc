@@ -66,33 +66,53 @@ public final class ChallengeMelonSpawner {
     /** Called every boarding scan for each boarded player. Cheap when the player is not eligible. */
     public static void tick(ServerLevel level, List<Trains.Carriage> carriages, ServerPlayer player) {
         if (!isEligible(player)) return;
+        List<Integer> done = player.getData(ModDataAttachments.CHALLENGE_MELON_FLATBEDS_THIS_LIFE.get());
+        Dropped dropped = dropOnAdjacentFlatbed(level, carriages, player,
+            (flatbed, groupSize) -> isMelonFlatbed(flatbed, groupSize) && !done.contains(flatbed),
+            new ItemStack(Items.MELON_SLICE));
+        if (dropped == null) return;
 
+        List<Integer> updated = new ArrayList<>(done);
+        updated.add(dropped.flatbed());
+        player.setData(ModDataAttachments.CHALLENGE_MELON_FLATBEDS_THIS_LIFE.get(), List.copyOf(updated));
+        LOGGER.info("[DungeonTrain] Challenge melon for {} on flatbed before group {} at {}",
+            player.getName().getString(), dropped.flatbed(), dropped.pos());
+    }
+
+    /** Which flatbeds may take a drop: keyed by the anchor of the group after it, and that group's size. */
+    @FunctionalInterface
+    public interface FlatbedFilter {
+        boolean accepts(int flatbed, int groupSize);
+    }
+
+    /** A drop that landed: the flatbed's key and the shipyard cell it landed in. */
+    public record Dropped(int flatbed, BlockPos pos) {}
+
+    /**
+     * Drop {@code stack} on the flatbed next to the room {@code player} is in, when there is one, it is not
+     * a portal group's and {@code filter} accepts it. Spawned at shipyard coordinates with unlimited
+     * lifetime, so Sable carries it with the carriage. Returns where it landed, or null when nothing dropped.
+     * Also the train's Live Eye for a close call on The Challenge ({@code event/LiveEyeTrainHandout}).
+     */
+    public static Dropped dropOnAdjacentFlatbed(ServerLevel level, List<Trains.Carriage> carriages,
+                                                ServerPlayer player, FlatbedFilter filter, ItemStack stack) {
         Trains.Carriage group = PlayerMobBehindSpawner.groupContaining(
             carriages, player.getX(), player.getY(), player.getZ());
-        if (group == null) return;
+        if (group == null) return null;
         TrainTransformProvider provider = group.provider();
         int anchor = provider.getPIdx();
         int groupSize = provider.getGroupSize();
-        if (groupSize <= 1) return; // no half-pads, so no flatbeds
+        if (groupSize <= 1) return null; // no half-pads, so no flatbeds
 
         Integer flatbed = adjacentFlatbed(pIdxWithinGroup(group, player), anchor, groupSize);
-        if (flatbed == null || !isMelonFlatbed(flatbed, groupSize)) return;
-        if (PortalCarriageSelection.isPortalGroup(level, anchor)) return;
-
-        List<Integer> done = player.getData(ModDataAttachments.CHALLENGE_MELON_FLATBEDS_THIS_LIFE.get());
-        if (done.contains(flatbed)) return;
+        if (flatbed == null || !filter.accepts(flatbed, groupSize)) return null;
+        if (PortalCarriageSelection.isPortalGroup(level, anchor)) return null;
 
         BlockPos pos = padFloorCentre(provider, flatbed == anchor);
-        ItemEntity melon = new ItemEntity(level, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
-            new ItemStack(Items.MELON_SLICE), 0.0, 0.0, 0.0);
-        melon.setUnlimitedLifetime();
-        if (!level.addFreshEntity(melon)) return;
-
-        List<Integer> updated = new ArrayList<>(done);
-        updated.add(flatbed);
-        player.setData(ModDataAttachments.CHALLENGE_MELON_FLATBEDS_THIS_LIFE.get(), List.copyOf(updated));
-        LOGGER.info("[DungeonTrain] Challenge melon for {} on flatbed before group {} at {}",
-            player.getName().getString(), flatbed, pos);
+        ItemEntity item = new ItemEntity(level, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, stack, 0.0, 0.0, 0.0);
+        item.setUnlimitedLifetime();
+        if (!level.addFreshEntity(item)) return null;
+        return new Dropped(flatbed, pos);
     }
 
     private static boolean isEligible(ServerPlayer player) {

@@ -838,8 +838,6 @@
   "chat.dungeontrain.live.close_call.prompt": "%s se apropie de o provocare rară.",
   "chat.dungeontrain.live.close_call.give": "Dă-i camera video de transmisie",
   "chat.dungeontrain.live.close_call.offer": "%s îți oferă camera video de transmisie. O iei?",
-  "chat.dungeontrain.live.train_offer.offer": "Trenul simte că te apropii de o provocare rară. Iei camera video de transmisie?",
-  "chat.dungeontrain.live.train_offer.received": "Trenul ți-a dat transmisiunea live. Ești live!",
   "chat.dungeontrain.live_gift.accept": "Acceptă",
   "chat.dungeontrain.live_gift.accept.tip": "Pune-ți camera video de transmisie și intră live.",
   "chat.dungeontrain.live_gift.decline": "Nu",

@@ -713,8 +713,6 @@
   "chat.dungeontrain.live.close_call.prompt": "%s semakin hampir dengan cabaran yang jarang.",
   "chat.dungeontrain.live.close_call.give": "Serahkan Camcorder Siaran",
   "chat.dungeontrain.live.close_call.offer": "%s menawarkan Camcorder Siaran miliknya kepada anda. Ambil?",
-  "chat.dungeontrain.live.train_offer.offer": "Kereta api merasakan anda semakin hampir dengan cabaran yang jarang. Ambil Camcorder Siaran?",
-  "chat.dungeontrain.live.train_offer.received": "Kereta api memberi anda siaran langsung. Anda sedang live!",
   "chat.dungeontrain.live_gift.accept": "Terima",
   "chat.dungeontrain.live_gift.accept.tip": "Pakai Camcorder Siaran dan mulakan siaran langsung.",
   "chat.dungeontrain.live_gift.decline": "Tidak",
