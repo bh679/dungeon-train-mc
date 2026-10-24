@@ -73,6 +73,8 @@
     "TagLoaderWwooFilterMixin",
     "ServerGamePacketListenerImplSignBookMixin",
     "ServerGamePacketListenerImplDifficultyMixin",
+    "PlayerListCheatsMixin",
+    "MinecraftServerWorldSettingsMixin",
     "ChiseledBookShelfBlockUnsignedBookMixin",
     "ContainersSpillMixin",
     "SpreadingSnowyDirtBlockUpsideDownMixin",
@@ -145,6 +147,7 @@
     "PlayerEnderChestContainerSizeMixin"
   ],
   "client": [
+    "client.IntegratedServerPublishGameModeMixin",
     "client.LevelRendererWeatherSlantMixin",
     "client.ParticleEngineWindDriftMixin",
     "client.ParticleWindDriftMixin",

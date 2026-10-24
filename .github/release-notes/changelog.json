@@ -29883,9 +29883,9 @@
       "highlights": [],
       "pr": 2255,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "photo-keep-off-thread",
@@ -29902,9 +29902,9 @@
       ],
       "pr": 2252,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "photo-wildlife-count-fix",
@@ -29919,9 +29919,9 @@
       "summary": "More of the creatures you photograph now count toward your wildlife photos.",
       "highlights": [],
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "camera-hints",
@@ -29935,9 +29935,9 @@
       "highlights": [],
       "pr": 2263,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "allay-room-cows-update",
@@ -29955,9 +29955,9 @@
       ],
       "pr": 2260,
       "date": "2026-10-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
     },
     {
       "id": "advancement-photos-keep-pause",
@@ -29973,6 +29973,89 @@
       "highlights": [],
       "pr": 2261,
       "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1478.0",
+      "released_at": "2026-10-23T09:26:54Z"
+    },
+    {
+      "id": "freeplay-confirm-world-settings",
+      "version": "0.1479.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Free Play always asks first",
+      "summary": "Turning on cheats, switching the world to Creative or Spectator, or changing the difficulty from a world settings screen (like Open to LAN or Essential's world menu) now asks you first. Nothing changes until you confirm, so your run can't slip into Free Play by surprise.",
+      "highlights": [],
+      "pr": 2265,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1481.0",
+      "released_at": "2026-10-23T10:21:36Z"
+    },
+    {
+      "id": "support-tooling-2268",
+      "version": "0.1481.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Support tooling",
+      "summary": "Better tools behind the scenes for helping players when something goes wrong on our end.",
+      "highlights": [],
+      "pr": 2268,
+      "date": "2026-10-23",
+      "released": true,
+      "released_in": "v0.1481.0",
+      "released_at": "2026-10-23T10:21:36Z"
+    },
+    {
+      "id": "backup-includes-ender-chest",
+      "version": "0.1482.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Backup fix",
+      "summary": "Fixed some of your data being left out of automatic backups.",
+      "highlights": [],
+      "pr": 2270,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "release-notes-no-repeats",
+      "version": "0.1482.0",
+      "type": "ci",
+      "tags": [
+        "internal"
+      ],
+      "title": "Update notes stay accurate",
+      "summary": "Each update's notes now list only what's new in it, even when other changes land while the update is being published.",
+      "highlights": [],
+      "pr": 2271,
+      "date": "2026-10-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "world-wide-free-play",
+      "version": "0.1484.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "multiplayer"
+      ],
+      "title": "Free Play tweak",
+      "summary": "Free Play works a little differently on shared worlds.",
+      "highlights": [],
+      "pr": 2272,
+      "date": "2026-10-24",
       "released": false,
       "released_in": null,
       "released_at": null
