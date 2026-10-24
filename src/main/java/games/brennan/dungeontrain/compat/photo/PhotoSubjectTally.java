@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.compat.photo;
 import com.google.gson.JsonObject;
 import games.brennan.pigmanvillagers.api.PigmanVillagersApi;
 import games.brennan.playermob.entity.PlayerMobEntity;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.Enemy;
@@ -42,7 +44,7 @@ public final class PhotoSubjectTally {
 
     /**
      * Whether the frame held a passenger (another player, a PlayerMob — echoes included — or a
-     * villager, pigmen too), a hostile mob (an {@link Enemy}), or an animal (any other mob). A photo
+     * villager, pigmen and Piglin Travelers too), a hostile mob (an {@link Enemy}), or an animal (any other mob). A photo
      * counts once per board.
      */
     public record Subjects(boolean passengers, boolean hostile, boolean animals) {
@@ -81,14 +83,27 @@ public final class PhotoSubjectTally {
         return new Subjects(passenger, enemy, creature && !enemy && !passenger);
     }
 
-    /** One entity's kind from its class; {@code pigman} is the one fact a class cannot tell. */
-    static Subjects classifyType(Class<?> type, boolean pigman) {
+    /**
+     * Piglin Proliferation's Piglin Traveler: a trader that never attacks unless hit, so a passenger like the
+     * wandering trader, though its class is a piglin (an {@link Enemy}).
+     */
+    static final ResourceLocation PIGLIN_TRAVELER = ResourceLocation.fromNamespaceAndPath("piglinproliferation", "piglin_traveler");
+
+    /**
+     * One entity's kind from its class; {@code passengerMob} is the one fact a class cannot tell: a pigman
+     * villager, or a {@link #PIGLIN_TRAVELER}. Such a mob is a passenger and never hostile.
+     */
+    static Subjects classifyType(Class<?> type, boolean passengerMob) {
         return classify(
                 Player.class.isAssignableFrom(type),
                 PlayerMobEntity.class.isAssignableFrom(type),
-                AbstractVillager.class.isAssignableFrom(type) || pigman,
-                Enemy.class.isAssignableFrom(type),
+                AbstractVillager.class.isAssignableFrom(type) || passengerMob,
+                Enemy.class.isAssignableFrom(type) && !passengerMob,
                 Mob.class.isAssignableFrom(type));
+    }
+
+    private static boolean isPassengerMob(LivingEntity e) {
+        return PigmanVillagersApi.isPigman(e) || PIGLIN_TRAVELER.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()));
     }
 
     /** The subjects of a shot: everything in frame except the photographer. */
@@ -96,7 +111,7 @@ public final class PhotoSubjectTally {
         Subjects out = Subjects.NONE;
         for (LivingEntity e : inFrame) {
             if (e == photographer) continue;
-            out = out.or(classifyType(e.getClass(), PigmanVillagersApi.isPigman(e)));
+            out = out.or(classifyType(e.getClass(), isPassengerMob(e)));
         }
         return out;
     }

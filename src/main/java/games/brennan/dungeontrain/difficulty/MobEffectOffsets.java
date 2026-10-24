@@ -48,6 +48,7 @@ public final class MobEffectOffsets {
             Map.entry("minecraft:piglin_brute", 6),
             Map.entry("betterend:shadow_walker", 7),
             Map.entry("minecraft:stray", 7),
+            Map.entry("piglinproliferation:piglin_alchemist", 9),
             Map.entry("minecraft:guardian", 11),
             Map.entry("minecraft:evoker", 20),
             Map.entry("minecraft:shulker", 20),
