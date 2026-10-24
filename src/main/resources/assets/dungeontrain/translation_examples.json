@@ -149,6 +149,47 @@
       ]
     }
   },
+  "chat.dungeontrain.free_play.cause.player": {
+    "1": {
+      "label": "the name of the player who went into Free Play",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.cause.player_used": {
+    "1": {
+      "label": "the name of the player who went into Free Play",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    },
+    "2": {
+      "label": "the command or mod they used",
+      "examples": [
+        "/give",
+        "Effortless Building"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.cause.player_switched": {
+    "1": {
+      "label": "the name of the player who went into Free Play",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    },
+    "2": {
+      "label": "the game mode they switched to",
+      "examples": [
+        "Creative Mode",
+        "Spectator Mode"
+      ]
+    }
+  },
   "chat.dungeontrain.free_play.unapproved_mods": {
     "1": {
       "label": "the installed mods that are not on the approved list, comma-separated",
