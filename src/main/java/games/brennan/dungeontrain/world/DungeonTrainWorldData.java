@@ -82,6 +82,10 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_CUSTOM_CONTENT_CHOICE = "customContentChoice";
     private static final String TAG_PORTAL_RATE_TUNED = "portalRateTuned";
     private static final String TAG_KEEP_INVENTORY_USED = "keepInventoryUsed";
+    private static final String TAG_PLAYER_FREE_PLAY = "playerFreePlay";
+    private static final String TAG_PLAYER_FREE_PLAY_NAME = "playerFreePlayName";
+    private static final String TAG_PLAYER_FREE_PLAY_CAUSE = "playerFreePlayCause";
+    private static final String TAG_FREE_PLAY_BACKFILL_DONE = "freePlayBackfillDone";
     private static final String TAG_HELP_PANEL_DISMISSED = "editorHelpPanelDismissed";
     private static final String TAG_PORTAL_TEST_RESEED = "portalTestReseed";
     private static final String TAG_EDITOR_OBSERVERS_ON = "editorObserversOn";
@@ -306,6 +310,27 @@ public final class DungeonTrainWorldData extends SavedData {
      * back off does not give the world its stats back.</p>
      */
     private boolean keepInventoryUsed = false;
+
+    /**
+     * True once any player on this world has gone Free Play for good (their {@code RUN_CHEATED}
+     * attachment). Brennan's rule: one player in Free Play puts everyone on the world in Free Play,
+     * since items move between players. A property of the <b>world</b> for the same reason
+     * {@link #keepInventoryUsed} is, and read through {@code PlayerFreePlayIntegrity} for the same
+     * hot-path reason. <b>One-way.</b>
+     */
+    private boolean playerFreePlay = false;
+
+    /** Who first put this world into Free Play ({@link #playerFreePlay}); empty when unknown. */
+    private String playerFreePlayName = "";
+
+    /**
+     * What they did, as the cause {@code Component}'s JSON, so it is shown to other players in their
+     * own language. Empty when unknown (a world backfilled from saves made before this existed).
+     */
+    private String playerFreePlayCauseJson = "";
+
+    /** True once the one-time scan of saved players for an existing Free Play taint has run. */
+    private boolean freePlayBackfillDone = false;
 
     /**
      * Players who have closed the editor's world-space Welcome panel in this world, by UUID.
@@ -577,6 +602,12 @@ public final class DungeonTrainWorldData extends SavedData {
         // Absent on every world saved before this was tracked → false. Those worlds latch on the
         // next tick anyway if the rule is still on, so nothing is missed.
         data.keepInventoryUsed = tag.getBoolean(TAG_KEEP_INVENTORY_USED);
+        // Absent on every world saved before Free Play went world-wide → false, and the backfill
+        // flag false too, so PlayerFreePlayIntegrity scans that world's players once on load.
+        data.playerFreePlay = tag.getBoolean(TAG_PLAYER_FREE_PLAY);
+        data.playerFreePlayName = tag.getString(TAG_PLAYER_FREE_PLAY_NAME);
+        data.playerFreePlayCauseJson = tag.getString(TAG_PLAYER_FREE_PLAY_CAUSE);
+        data.freePlayBackfillDone = tag.getBoolean(TAG_FREE_PLAY_BACKFILL_DONE);
         // getIntArray returns an empty array for an absent key, so worlds saved before shared carriages
         // simply start having placed nothing.
         data.usedCarriageIds.loadFrom(tag.getIntArray(TAG_USED_CARRIAGE_IDS));
@@ -725,6 +756,10 @@ public final class DungeonTrainWorldData extends SavedData {
         tag.putString(TAG_CUSTOM_CONTENT_CHOICE, customContentChoice.nbtId());
         tag.putBoolean(TAG_PORTAL_RATE_TUNED, portalRateTuned);
         tag.putBoolean(TAG_KEEP_INVENTORY_USED, keepInventoryUsed);
+        tag.putBoolean(TAG_PLAYER_FREE_PLAY, playerFreePlay);
+        tag.putString(TAG_PLAYER_FREE_PLAY_NAME, playerFreePlayName);
+        tag.putString(TAG_PLAYER_FREE_PLAY_CAUSE, playerFreePlayCauseJson);
+        tag.putBoolean(TAG_FREE_PLAY_BACKFILL_DONE, freePlayBackfillDone);
         tag.putIntArray(TAG_USED_CARRIAGE_IDS, usedCarriageIds.toIntArray());
         if (!ownShelfPairs.isEmpty()) {
             tag.putIntArray(TAG_OWN_SHELF_PAIRS,
@@ -1196,6 +1231,45 @@ public final class DungeonTrainWorldData extends SavedData {
     public void markKeepInventoryUsed() {
         if (keepInventoryUsed) return;
         keepInventoryUsed = true;
+        setDirty();
+    }
+
+    /** True once a player put this world into Free Play — see {@link #playerFreePlay}. */
+    public boolean isPlayerFreePlay() {
+        return playerFreePlay;
+    }
+
+    /** Who first put this world into Free Play; empty when unknown. */
+    public String playerFreePlayName() {
+        return playerFreePlayName;
+    }
+
+    /** The cause's JSON; empty when unknown. */
+    public String playerFreePlayCauseJson() {
+        return playerFreePlayCauseJson;
+    }
+
+    /**
+     * Record that a player put this world into Free Play. One-way, and the first answer is kept: a
+     * later player going Free Play on an already Free Play world doesn't rename the cause.
+     */
+    public void markPlayerFreePlay(String name, String causeJson) {
+        if (playerFreePlay) return;
+        playerFreePlay = true;
+        playerFreePlayName = name == null ? "" : name;
+        playerFreePlayCauseJson = causeJson == null ? "" : causeJson;
+        setDirty();
+    }
+
+    /** True once the saved players have been scanned for an earlier Free Play taint. */
+    public boolean isFreePlayBackfillDone() {
+        return freePlayBackfillDone;
+    }
+
+    /** Record that the one-time scan has run. */
+    public void markFreePlayBackfillDone() {
+        if (freePlayBackfillDone) return;
+        freePlayBackfillDone = true;
         setDirty();
     }
 
