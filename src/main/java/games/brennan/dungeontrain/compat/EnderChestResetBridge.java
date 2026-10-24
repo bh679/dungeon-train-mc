@@ -1,7 +1,13 @@
 package games.brennan.dungeontrain.compat;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.enderchestpersistence.AppDataDir;
+import games.brennan.enderchestpersistence.ConfigDir;
+import games.brennan.enderchestpersistence.EcpConfig;
 import games.brennan.enderchestpersistence.EnderChestStore;
+import games.brennan.enderchestpersistence.StoreLocation;
+import games.brennan.enderchestpersistence.StoreMode;
+import net.neoforged.fml.loading.FMLEnvironment;
 import org.slf4j.Logger;
 
 import java.nio.file.Files;
@@ -30,19 +36,53 @@ public final class EnderChestResetBridge {
     private EnderChestResetBridge() {}
 
     /**
-     * The folder ECP keeps every player's stash in — {@code config/enderchestpersistence/}, which
-     * is inside the folder launchers wipe on a pack update. {@code DungeonTrainBackup} registers
-     * it as an extra tree to archive. Empty on any ECP-side failure, so a moved seam degrades to
-     * "stash not backed up" rather than a failed registration.
+     * The two folders a stash can be in.
+     *
+     * @param store    where ECP keeps every player's stash this launch: outside the instance (the OS's
+     *                 app-data folder) on a client by default since ECP 0.3.0, else {@code instance}
+     * @param instance {@code config/enderchestpersistence/}, where ECP stored before 0.3.0 and still
+     *                 does under {@code inside}, on a dedicated server, or when the outside folder
+     *                 can't be written
      */
-    public static Optional<Path> stashDir() {
+    public record EcpDirs(Path store, Path instance) {
+        /** Whether the store is somewhere other than the instance folder. */
+        public boolean storesOutside() {
+            return !store.toAbsolutePath().normalize().equals(instance.toAbsolutePath().normalize());
+        }
+    }
+
+    /**
+     * ECP's store folders, for {@code DungeonTrainBackup} to archive. Empty on any ECP-side failure,
+     * so a moved seam degrades to "stash not backed up" rather than a failed registration.
+     *
+     * <p>Works out the store from ECP's own inputs instead of asking {@code StoreLocation.dir()}: that
+     * only answers correctly after ECP's server-start {@code init}, but this is read from DT's mod
+     * constructor (and the title-screen restore runs before any server starts). Before init it
+     * answers the instance folder, which is how every backup came to hold the abandoned folder and
+     * not the player's chest.</p>
+     */
+    public static Optional<EcpDirs> storeDirs() {
         try {
-            Path parent = EnderChestStore.file(new UUID(0L, 0L)).getParent();
-            return Optional.ofNullable(parent);
+            Path configDir = ConfigDir.get();
+            boolean dedicated = FMLEnvironment.dist.isDedicatedServer();
+            Path store = resolveStore(EcpConfig.readStoreMode(configDir), dedicated, configDir, AppDataDir.resolve());
+            return Optional.of(new EcpDirs(store, configDir.resolve(StoreLocation.DIR_NAME)));
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] EnderChestResetBridge: could not resolve ECP stash folder", t);
             return Optional.empty();
         }
+    }
+
+    /**
+     * Where ECP's {@code StoreLocation.resolve} puts the store, minus its "outside isn't writable"
+     * fallback (which needs to create the folder; a backup must not). That fallback lands in the
+     * instance folder, which is archived too.
+     */
+    public static Path resolveStore(StoreMode mode, boolean dedicatedServer, Path configDir, Path appDataRoot) {
+        if (mode == StoreMode.OUTSIDE && !dedicatedServer) {
+            return appDataRoot.resolve(StoreLocation.DIR_NAME);
+        }
+        return configDir.resolve(StoreLocation.DIR_NAME);
     }
 
     /** True when this player has a stash file on disk. False on any ECP-side failure. */
