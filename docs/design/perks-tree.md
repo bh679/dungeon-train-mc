@@ -203,6 +203,10 @@ Drifting carriages are the rooms players build by hand that travel the relay int
 
 ---
 
+## 4b. Perk states (per player)
+
+Every perk is **locked** at the start of a save. A perk is **unlocked** once, for life, and stays unlocked. An unlocked perk becomes **active** by putting points into it; `active` is an integer, and those points reset each life. Visually: locked perks and the paths to them are colourless and faded; unlocked perks keep their colour but sit faded with a hollow dot; active perks render in full, with a ring around them that gains a thick segment per point. The constellation editor's test mode (bottom-right: view / test, reset) plays this out: click a locked perk to unlock it, click an unlocked or active perk to add a point, right-click to take a point away, right-click an unlocked perk with no points to lock it again.
+
 ## 5. Risks and constraints
 
 - **Leaderboard fairness.** Perks are part of a normal run, so they must not flip `run_cheated` or the Free Play partition. Points come only from in-run progress, never from commands.
