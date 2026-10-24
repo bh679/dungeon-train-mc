@@ -181,7 +181,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         parts = urlparse(self.path).path.strip("/").split("/")
-        if len(parts) != 3 or parts[0] != "files":
+        # /files/<session>/<name> is the stub's own layout; /main/<session>/<name> is the bucket's, so a
+        # relay pointed at this stub as its LIVE_PUBLIC_BASE finds the same files.
+        if len(parts) != 3 or parts[0] not in ("files", "main"):
             return self._send(404)
         _, session, name = parts
         if not (SEG_RE.match(name) or name == "live.m3u8"):
@@ -199,6 +201,10 @@ class Handler(BaseHTTPRequestHandler):
         with open(os.path.join(ARGS.out, session, name), "wb") as fh:
             fh.write(data)
         return self._send(200)
+
+    def do_HEAD(self):
+        # A relay's readiness check HEADs the first segment on the public base; _send drops the body.
+        self.do_GET()
 
     def do_GET(self):
         path = urlparse(self.path).path
@@ -236,7 +242,7 @@ class Handler(BaseHTTPRequestHandler):
             with open(full, "rb") as fh:
                 return self._send(200, fh.read(), "application/javascript")
         parts = path.strip("/").split("/")
-        if len(parts) == 3 and parts[0] == "files":
+        if len(parts) == 3 and parts[0] in ("files", "main"):
             key = (parts[1], parts[2])
             now = time.time()
             with LOCK:
