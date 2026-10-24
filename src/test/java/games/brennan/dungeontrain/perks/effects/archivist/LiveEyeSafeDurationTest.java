@@ -32,10 +32,19 @@ class LiveEyeSafeDurationTest {
     @Test
     void negativeRankAddsNothingAndThereIsNoCap() {
         assertEquals(0L, LiveEyeSafeDuration.extraMs(-3));
-        assertTrue(LiveEyeSafeDuration.extraMs(100) > 30 * MIN, "past half an hour at rank 100");
-        assertTrue(LiveEyeSafeDuration.extraMs(101) > LiveEyeSafeDuration.extraMs(100));
-        for (int rank = 2; rank < 60; rank++) {
-            assertTrue(LiveEyeSafeDuration.stepMinutes(rank) < LiveEyeSafeDuration.stepMinutes(rank - 1));
+        assertTrue(LiveEyeSafeDuration.extraMs(1001) > LiveEyeSafeDuration.extraMs(1000));
+        for (int rank = 2; rank < 2000; rank++) {
+            assertTrue(LiveEyeSafeDuration.stepMinutes(rank) <= LiveEyeSafeDuration.stepMinutes(rank - 1),
+                "rank " + rank + " never adds more than the one before");
         }
+    }
+
+    @Test
+    void thirtyFiveMinutesAtRankTwentyThenFiveSecondsByFortyFive() {
+        assertEquals(35 * MIN, LiveEyeSafeDuration.extraMs(20), 1_000L);
+        int rank = 20;
+        while (LiveEyeSafeDuration.extraMs(rank) < 45 * MIN) rank++;
+        assertEquals(5_000L, Math.round(LiveEyeSafeDuration.stepMinutes(rank + 1) * MIN), 1_000L);
+        assertEquals(5_000L, Math.round(LiveEyeSafeDuration.stepMinutes(500) * MIN));
     }
 }
