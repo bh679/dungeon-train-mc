@@ -183,9 +183,10 @@ public final class LiveGiftClient {
             say(mc, Component.translatable(OFFER_KEY + "not_live").withStyle(ChatFormatting.GRAY));
             return 0;
         }
-        say(mc, Component.translatable(KEY + "offered", name).withStyle(ChatFormatting.GRAY));
         LiveFeedClient.giftOffer(DungeonTrain.relayBaseUrl(), token, name).thenAcceptAsync(r -> {
             if (r.ok()) {
+                say(mc, Component.translatable(KEY + "offered", r.str("name").isEmpty() ? name : r.str("name"))
+                    .withStyle(ChatFormatting.GRAY));
                 if (mc.getConnection() != null) DungeonTrainNet.sendToServer(new ClientActionPacket("gifted_live_eye"));
                 return;
             }

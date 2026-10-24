@@ -3,14 +3,12 @@ package games.brennan.dungeontrain.client.live;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
-import games.brennan.dungeontrain.registry.ModItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -19,7 +17,7 @@ import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import java.util.List;
 
 /**
- * {@code /offereye} while wearing the Live Eye: offer it to any viewer watching through a TV who could take it,
+ * {@code /offereye} while live with the Live Eye: offer it to any viewer watching through a TV who could take it,
  * not only the never-streamed viewers the relay prompts for ({@link LiveGiftClient}).
  *
  * <ul>
@@ -28,9 +26,11 @@ import java.util.List;
  * </ul>
  *
  * <p>The viewer then sees the usual [Accept] / [No], and the hand-over is the gift's. Client side, because
- * the stream token that proves this player is on air lives here. Only offered while the Live Eye is worn
- * ({@code requires}); typed otherwise, NeoForge hands it to the server, where {@code CommandAllowlist} keeps
- * it from offering Free Play. Not hidden from tab completion (Brennan's call).</p>
+ * the stream token that proves this player is on air lives here. Always in tab completion (Brennan's call):
+ * NeoForge judges a client command's {@code requires} once, when it merges the tree at login, so gating it
+ * on the worn Live Eye would hide it from anyone who put the eye on later. Off air it says to go live first.
+ * An incomplete form NeoForge hands to the server, where {@code CommandAllowlist} keeps it from offering
+ * Free Play.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class OfferEyeCommand {
@@ -46,17 +46,10 @@ public final class OfferEyeCommand {
     @SubscribeEvent
     public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
         event.getDispatcher().register(Commands.literal(COMMAND)
-            .requires(s -> wearingLiveEye())
             .executes(ctx -> list())
             .then(Commands.argument("viewer", StringArgumentType.word())
                 .suggests((ctx, b) -> SharedSuggestionProvider.suggest(lastViewers, b))
                 .executes(ctx -> LiveGiftClient.offerTo(StringArgumentType.getString(ctx, "viewer")))));
-    }
-
-    /** The Live Eye is on this client's own head. */
-    static boolean wearingLiveEye() {
-        Minecraft mc = Minecraft.getInstance();
-        return mc.player != null && mc.player.getItemBySlot(EquipmentSlot.HEAD).is(ModItems.LIVE_HEADPIECE.get());
     }
 
     private static int list() {
