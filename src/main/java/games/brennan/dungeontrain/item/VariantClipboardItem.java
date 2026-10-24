@@ -305,14 +305,14 @@ public final class VariantClipboardItem extends Item {
             }
         }
 
-        // A pasted conditional cell reads the group it now touches, not the one it was copied beside.
-        games.brennan.dungeontrain.editor.VariantConditionRetarget.around(plot, localPos);
+        // A pasted cell keeps the condition targets it was copied with: a group prefab means what
+        // it said where it was made, so nothing here retargets it (or its neighbours).
 
         // Mirror the pasted variant pool (+ reflected base block) to the
         // symmetric cells when the plot's "V" toggle is on — parity with the
         // shift-click add and break paths, which otherwise leaves a paste
         // looking like a plain mirrored block on the far side.
-        EditorVariantMirror.mirrorEditLive(serverLevel, plot, localPos, states);
+        EditorVariantMirror.mirrorEditLive(serverLevel, plot, localPos, states, false);
 
         // Refresh the all-faces lock-id overlay so the new badge shows
         // immediately without waiting for the next overlay tick.
