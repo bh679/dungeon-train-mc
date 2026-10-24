@@ -30162,6 +30162,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-chat-tv-watcher-death",
+      "version": "0.1492.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "The stream hears when a watcher falls",
+      "summary": "Die while wearing a TV and watching someone's stream, and the stream's chat is told how it happened. Everyone in the room reads it, in their own language.",
+      "highlights": [
+        "Shows up in the stream's chat on Discord, Twitch, the website and in game"
+      ],
+      "pr": 2281,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
