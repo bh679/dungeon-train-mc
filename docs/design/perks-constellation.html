@@ -39,7 +39,8 @@ aside.min > :not(.tools){display:none!important}
 .lbl.sel{text-decoration:underline;text-underline-offset:4px;filter:drop-shadow(0 0 6px currentColor)}
 .lbl:focus{outline:none}
 .rev{filter:drop-shadow(0 0 3px #5fd38a)}
-.plbl.noready{opacity:.5}
+.node.unready{opacity:.1}
+.edge.unready{stroke-opacity:.1!important}
 .plbl{font-family:var(--body);font-size:10.5px;font-weight:500;fill:var(--fg);pointer-events:auto;cursor:grab;paint-order:stroke;stroke:#070b16;stroke-width:3px}
 .edge{fill:none;stroke-width:1.2;stroke-opacity:.55;cursor:pointer}
 .edge.cross{stroke:var(--gold);stroke-opacity:.5;stroke-dasharray:3 4;stroke-width:1}
@@ -132,6 +133,7 @@ textarea{min-height:0;resize:none;overflow:hidden;font-family:var(--body);line-h
       <button hidden id="bAddClass" title="Add a class">+ class</button>
       <button hidden id="bLinkReq" title="Link two perks">link</button>
       <button hidden id="bLinkX" title="Cross-link two perks (dashed)">chord</button>
+      <button class="lnk" id="bReady" title="ready only: perks the mod already has code for; the rest go to 10%">⚙ ready</button>
       <button class="lnk" id="bRev" title="show reviewed rings">✓</button>
       <button class="lnk" id="bGuide" title="alignment guide: a circle through the furthest perk, and the centre ring">◯</button>
       <button class="lnk" data-t="classes" title="classes">⌘</button><button class="lnk" data-t="io" title="save / load">⇅</button>
@@ -320,6 +322,7 @@ function testClick(p,right){if(p.id==="root")return;const t={...tsOf(p)};
   else{if(t.s==="active"){t.pts=Math.max(0,t.pts-1);if(t.pts===0)t.s="unlocked"}else if(t.s==="unlocked")t.s="locked"}
   TS[p.id]=t;tsSave();renderSky()}
 let showGuide=false;try{showGuide=localStorage.getItem("dt-perk-guide")==="1"}catch(e){}
+let readyOnly=false;try{readyOnly=localStorage.getItem("dt-perk-readyonly")==="1"}catch(e){}
 let showRev=true;try{showRev=localStorage.getItem("dt-perk-showrev")!=="0"}catch(e){}
 const status=t=>document.getElementById("status").textContent=t||"";
 // Put the panel beside the selected thing (a star, a link's middle, a class label), flipping to stay on screen.
@@ -341,13 +344,13 @@ function renderSky(){
   svg.replaceChildren(stars);
   if(showGuide){const far=Math.max(0,...M.perks.filter(p=>p.id!=="root").map(p=>Math.hypot(p.x-CX,p.y-CY)));svg.appendChild(el("circle",{cx:CX,cy:CY,r:far,fill:"none",stroke:"#e4b95a","stroke-opacity":.35,"stroke-dasharray":"4 6"}));svg.appendChild(el("circle",{cx:CX,cy:CY,r:105,fill:"none",stroke:"#e4b95a","stroke-opacity":.25,"stroke-dasharray":"2 6"}))}
   M.links.forEach((l,li)=>{const A=byId(l.a),B=byId(l.b);if(!A||!B)return;const d=l.kind==="cross"?curve(A,B):`M${A.x},${A.y} L${B.x},${B.y}`;
-    const hit=el("path",{d:trimmed(A,B,l.kind==="cross"),class:"edgehit","data-li":li});if(style==="mc"&&l.kind!=="cross"){svg.appendChild(el("path",{d,class:"edge mcunder"}))}const lockedEdge=testMode&&(tsOf(A).s==="locked"||tsOf(B).s==="locked");const activeEdge=testMode&&tsOf(A).s==="active"&&tsOf(B).s==="active";const e=el("path",{d,class:"edge "+l.kind+(selLink===li?" sel":"")+(style==="mc"?" mc":"")+(lockedEdge?" locked":"")+(activeEdge?" active":"")+(testMode&&!lockedEdge&&!activeEdge?" dim":"")});if(l.kind==="req"){const g=`url(#g${li})`;const d=document.createElementNS(NS,"defs");const lg=el("linearGradient",{id:"g"+li,gradientUnits:"userSpaceOnUse",x1:A.x,y1:A.y,x2:B.x,y2:B.y});lg.appendChild(el("stop",{offset:"0","stop-color":color(A)}));lg.appendChild(el("stop",{offset:"1","stop-color":color(B)}));d.appendChild(lg);svg.appendChild(d);e.style.stroke=g}
+    const hit=el("path",{d:trimmed(A,B,l.kind==="cross"),class:"edgehit","data-li":li});if(style==="mc"&&l.kind!=="cross"){svg.appendChild(el("path",{d,class:"edge mcunder"}))}const unreadyEdge=readyOnly&&((A.id!=="root"&&!A.ready)||(B.id!=="root"&&!B.ready));const lockedEdge=testMode&&(tsOf(A).s==="locked"||tsOf(B).s==="locked");const activeEdge=testMode&&tsOf(A).s==="active"&&tsOf(B).s==="active";const e=el("path",{d,class:"edge "+l.kind+(selLink===li?" sel":"")+(style==="mc"?" mc":"")+(lockedEdge?" locked":"")+(activeEdge?" active":"")+(testMode&&!lockedEdge&&!activeEdge?" dim":"")+(unreadyEdge?" unready":"")});if(l.kind==="req"){const g=`url(#g${li})`;const d=document.createElementNS(NS,"defs");const lg=el("linearGradient",{id:"g"+li,gradientUnits:"userSpaceOnUse",x1:A.x,y1:A.y,x2:B.x,y2:B.y});lg.appendChild(el("stop",{offset:"0","stop-color":color(A)}));lg.appendChild(el("stop",{offset:"1","stop-color":color(B)}));d.appendChild(lg);svg.appendChild(d);e.style.stroke=g}
     const on=()=>{selLink=li;sel=null;selCls=null;render()};hit.addEventListener("click",on);svg.appendChild(e);svg.appendChild(hit);
     if(l.oneWay&&l.kind==="cross")svg.appendChild(el("circle",{cx:B.x,cy:B.y,r:9,fill:"none",stroke:"#e4b95a","stroke-opacity":.6}))});
   const placed=[];M.classes.forEach(c=>{const ps=M.perks.filter(p=>p.cls===c.id);if(!ps.length)return;const first=ps.find(p=>M.links.some(l=>(l.a==="root"&&l.b===p.id)||(l.b==="root"&&l.a===p.id)));const sx=ps.reduce((t,p)=>t+(p.x-CX),0),sy=ps.reduce((t,p)=>t+(p.y-CY),0);const a=first?Math.atan2(first.y-CY,first.x-CX):Math.atan2(sy,sx);const lp=labelSpot(a,Math.max(...ps.map(p=>Math.hypot(p.x-CX,p.y-CY)))+40,c.name,placed);placed.push(lp);const t=el("text",{x:lp.x,y:lp.y,class:"lbl"+(selCls===c.id?" sel":""),"text-anchor":"middle","dominant-baseline":"middle",tabindex:"0"});t.textContent=c.name;t.style.fill=c.color;
     t.addEventListener("pointerdown",ev=>startArmDrag(ev,c,t));t.addEventListener("keydown",ev=>{if(ev.key==="ArrowLeft"||ev.key==="ArrowRight"){ev.preventDefault();rotateArm(c.id,(ev.key==="ArrowLeft"?-1:1)*Math.PI/36);save();render()}});svg.appendChild(t)});
   if(mode&&pick){const A=byId(pick);const T=hoverId&&hoverId!==pick?byId(hoverId):null;const end=T?{x:T.x,y:T.y}:mouse;if(A&&end){const d=mode==="cross"?curve(A,end):`M${A.x},${A.y} L${end.x},${end.y}`;const e=el("path",{d,class:"edge "+mode+" ghost"});if(mode==="req")e.style.stroke=T?color(T):color(A);svg.appendChild(e)}}
-  M.perks.forEach(p=>{const ts=testMode?tsOf(p):null;const g=el("g",{class:"node"+(sel===p.id?" sel":"")+(pick===p.id?" pick":"")+(mode&&hoverId===p.id&&pick!==p.id?" tgt":"")+(ts?" "+ts.s:""),tabindex:"0","data-id":p.id});const c=color(p);const root=p.id==="root";
+  M.perks.forEach(p=>{const ts=testMode?tsOf(p):null;const g=el("g",{class:"node"+(sel===p.id?" sel":"")+(pick===p.id?" pick":"")+(mode&&hoverId===p.id&&pick!==p.id?" tgt":"")+(ts?" "+ts.s:"")+(readyOnly&&!root&&!p.ready?" unready":""),tabindex:"0","data-id":p.id});const c=color(p);const root=p.id==="root";
     g.appendChild(el("circle",{cx:p.x,cy:p.y,r:root?30:20,fill:"transparent",class:"hitzone"}));
     if(style==="mc"){const S=root?32:[0,22,26,28][tierOf(p)];const x=p.x-S/2,y=p.y-S/2;const gold=p.cap||root;
       drawTile(g,p,p.x,p.y,S);
@@ -362,7 +365,7 @@ function renderSky(){
     if(ts&&ts.s==="unlocked"){g.appendChild(el("circle",{cx:p.x,cy:p.y,r:rr,fill:"#070b16",stroke:c,"stroke-width":1.4}))}else{g.appendChild(el("circle",{cx:p.x,cy:p.y,r:rr,fill:T===3&&!root?strong(c):c}));
     if(root||T===3)g.appendChild(el("circle",{cx:p.x,cy:p.y,r:root?5:2,fill:"#070b16"}))}
     if(ts&&ts.s==="active"&&!root&&ts.pts>0){const SLOTS=10,n=Math.min(SLOTS,ts.pts),R=hr+1.5,gap=0.3;for(let i=0;i<n;i++){const a0=-Math.PI/2+i*2*Math.PI/SLOTS+gap/2,a1=-Math.PI/2+(i+1)*2*Math.PI/SLOTS-gap/2;g.appendChild(el("path",{d:`M${p.x+R*Math.cos(a0)},${p.y+R*Math.sin(a0)} A${R},${R} 0 0 1 ${p.x+R*Math.cos(a1)},${p.y+R*Math.sin(a1)}`,fill:"none",stroke:c,"stroke-width":2.6,"stroke-linecap":"butt"}))}}
-    if(!root){const ang=Math.atan2(p.y-CY,p.x-CX);const t=el("text",{x:p.x,y:p.y+hr+8,class:"plbl"+(p.ready?"":" noready"),"text-anchor":"middle","dominant-baseline":"middle"});t.textContent=p.name;g.appendChild(t)}
+    if(!root){const ang=Math.atan2(p.y-CY,p.x-CX);const t=el("text",{x:p.x,y:p.y+hr+8,class:"plbl","text-anchor":"middle","dominant-baseline":"middle"});t.textContent=p.name;g.appendChild(t)}
     g.addEventListener("pointerdown",ev=>startDrag(ev,p,g));
     g.addEventListener("pointerenter",()=>{if(mode&&pick){hoverId=p.id;renderSky()}});g.addEventListener("pointerleave",()=>{if(hoverId===p.id){hoverId=null;renderSky()}});g.addEventListener("keydown",ev=>{if(ev.key==="Enter"){select(p.id)}});svg.appendChild(g)});
 }
@@ -472,6 +475,7 @@ bTable.onclick=()=>toggleTable();
 const bMode=document.getElementById("bMode");bMode.onclick=()=>{testMode=!testMode;bMode.textContent=testMode?"test":"view";bMode.classList.toggle("on",testMode);document.getElementById("bResetTest").hidden=!testMode;sel=null;selLink=null;selCls=null;render()};
 document.getElementById("bResetTest").onclick=()=>{TS={};tsSave();renderSky()};
 const bGuide=document.getElementById("bGuide");bGuide.classList.toggle("on",showGuide);bGuide.onclick=()=>{showGuide=!showGuide;bGuide.classList.toggle("on",showGuide);try{localStorage.setItem("dt-perk-guide",showGuide?"1":"0")}catch(e){}renderSky()};
+const bReady=document.getElementById("bReady");bReady.classList.toggle("on",readyOnly);bReady.onclick=()=>{readyOnly=!readyOnly;bReady.classList.toggle("on",readyOnly);try{localStorage.setItem("dt-perk-readyonly",readyOnly?"1":"0")}catch(e){}renderSky()};
 const bRev=document.getElementById("bRev");bRev.classList.toggle("on",showRev);bRev.onclick=()=>{showRev=!showRev;bRev.classList.toggle("on",showRev);try{localStorage.setItem("dt-perk-showrev",showRev?"1":"0")}catch(e){}renderSky();if(showTable)renderTable()};
 svg.addEventListener("pointerdown",e=>{if(e.button!==0||e.altKey||e.ctrlKey)return;if(e.target===svg||e.target.parentNode===stars){if(mode){mode=null;pick=null;setModeButtons();status("")}sel=null;selLink=null;selCls=null;render()}});
 
