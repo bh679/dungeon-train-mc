@@ -44,6 +44,12 @@ import java.util.function.BiPredicate;
  * it stop dead. Both are cases where the freeze would be a visible fault rather than an invisible
  * saving.</p>
  *
+ * <h2>...and it waits for whoever walks back out</h2>
+ * <p>Releasing on the footprint test alone starts the train on the very tick a player swaps back
+ * onto it — before a client that walked out of a far exit copy has even received the carriage. The
+ * train slid out from under exactly such a player (log of 23 Oct 2026), so a frozen train now stays
+ * frozen until that player is carried; see {@link PortalArrivalHold}.</p>
+ *
  * <h2>Why a player in a room is not "near" their train</h2>
  * <p>A pocket room is stamped in its carriage's <b>own chunk columns</b>, in the basement below the
  * world — that is what makes the crossing seamless. So a player standing at the base tile is directly
@@ -117,10 +123,15 @@ public final class PortalTrainFreeze {
         Map<UUID, List<Trains.Carriage>> trains = Trains.byTrainId(level);
         SECLUDED.put(level.dimension(), secludedPlayers(trains, players, dims, inStructure));
 
+        // And a train somebody has just walked back onto stays put until they are aboard: see
+        // PortalArrivalHold. Asked every tick, because asking is what releases a hold.
+        Set<UUID> heldForArrival = PortalArrivalHold.heldTrains(level, players, level.getGameTime());
+
         for (Map.Entry<UUID, List<Trains.Carriage>> train : trains.entrySet()) {
             UUID trainId = train.getKey();
-            boolean freeze = trainsWithOccupiedRooms.contains(trainId)
-                && !anyoneWatching(train.getValue(), players, dims, inStructure);
+            boolean freeze = (trainsWithOccupiedRooms.contains(trainId)
+                && !anyoneWatching(train.getValue(), players, dims, inStructure))
+                || heldForArrival.contains(trainId);
             TrainMotionFreeze.setFrozen(trainId, freeze);
         }
 
