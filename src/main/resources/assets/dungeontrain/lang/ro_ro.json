@@ -809,6 +809,8 @@
   "chat.dungeontrain.live.watch_link": "Acum ești în direct pe %s",
   "chat.dungeontrain.live.link.twitch": "Twitch",
   "chat.dungeontrain.live.link.tv": "DungeonTrain TV",
+  "chat.dungeontrain.live.also_on": "De asemenea în direct pe %s",
+  "chat.dungeontrain.live.link.tiktok": "TikTok",
   "chat.dungeontrain.live.watching.one": "%s persoană urmărește",
   "chat.dungeontrain.live.watching.few": "%s persoane urmăresc",
   "chat.dungeontrain.live.watching.other": "%s de persoane urmăresc",

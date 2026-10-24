@@ -684,6 +684,8 @@
   "chat.dungeontrain.live.watch_link": "Bạn đã bắt đầu phát trực tiếp trên %s",
   "chat.dungeontrain.live.link.twitch": "Twitch",
   "chat.dungeontrain.live.link.tv": "DungeonTrain TV",
+  "chat.dungeontrain.live.also_on": "Cũng đang phát trực tiếp trên %s",
+  "chat.dungeontrain.live.link.tiktok": "TikTok",
   "chat.dungeontrain.live.watching.other": "%s người đang xem",
   "chat.dungeontrain.live.viewers.other": "Bạn có %s người xem",
   "chat.dungeontrain.live.one_eye": "Bạn chỉ có thể mang một máy quay phát sóng. Chiếc thừa đã biến thành TV.",

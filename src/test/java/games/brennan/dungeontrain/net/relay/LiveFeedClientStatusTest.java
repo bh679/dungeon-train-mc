@@ -127,6 +127,26 @@ class LiveFeedClientStatusTest {
         assertEquals(0, claim(base + ",\"keyframeSeconds\":5}").keyframeSeconds(), "over Twitch's 4 s reads as unset");
     }
 
+    @Test
+    void theTikTokMirrorRidesOnStatusAndClaimOnlyAsAnOfficialTikTokLink() {
+        String live = "{\"ok\":true,\"live\":true,\"session\":\"s1\",\"playlistUrl\":\"https://x/main/s1/live.m3u8\"";
+        assertEquals("https://www.tiktok.com/@dungeontrain/live",
+            parse(live + ",\"tiktokUrl\":\"https://www.tiktok.com/@dungeontrain/live\"}").tiktokUrl());
+        assertNull(parse(live + "}").tiktokUrl(), "an older relay never sends it");
+        for (String bad : new String[] {"null", "true", "7", "\"\"", "\"https://www.tiktok.com/\"",
+            "\"http://www.tiktok.com/@dungeontrain/live\"", "\"https://tiktok.com/@dungeontrain/live\"",
+            "\"https://evil.example/www.tiktok.com/\"", "{\"url\":\"https://www.tiktok.com/@x\"}"}) {
+            assertNull(parse(live + ",\"tiktokUrl\":" + bad + "}").tiktokUrl(), bad);
+        }
+        assertNull(LiveFeedClient.parseTikTokUrl(null));
+
+        String base = "{\"ok\":true,\"session\":\"s1\",\"token\":\"t\",\"playlistUrl\":\"https://x/l.m3u8\"";
+        assertEquals("https://www.tiktok.com/@dungeontrain/live",
+            claim(base + ",\"tiktokUrl\":\"https://www.tiktok.com/@dungeontrain/live\"}").tiktokUrl());
+        assertNull(claim(base + "}").tiktokUrl());
+        assertNull(claim(base + ",\"tiktokUrl\":\"https://twitch.tv/x\"}").tiktokUrl());
+    }
+
     private static LiveFeedClient.Claim claim(String json) {
         return LiveFeedClient.parseClaim(new LiveFeedClient.Result(200, JsonParser.parseString(json).getAsJsonObject(), null));
     }

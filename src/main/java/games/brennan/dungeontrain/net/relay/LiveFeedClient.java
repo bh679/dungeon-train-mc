@@ -82,12 +82,35 @@ public final class LiveFeedClient {
      * relay sets one (3 s segments, a 20-entry window and 3 s keyframes while the server's Quicker Streams
      * reward is on, by default; the relay's env decides), 0 when it does not (the client config and the
      * encoder's defaults then decide). Fixed for the session: a change lands on the next claim.
+     * {@code tiktokUrl}: the official TikTok mirror's live page while it is on air ({@link #parseTikTokUrl}),
+     * else null.
      */
     public record Claim(String session, String token, String playlistUrl, @Nullable String prevName, @Nullable Twitch twitch,
-                        int segmentSeconds, int listSize, int keyframeSeconds) {
+                        int segmentSeconds, int listSize, int keyframeSeconds, @Nullable String tiktokUrl) {
         public Claim(String session, String token, String playlistUrl, @Nullable String prevName) {
-            this(session, token, playlistUrl, prevName, null, 0, 0, 0);
+            this(session, token, playlistUrl, prevName, null, 0, 0, 0, null);
         }
+
+        public Claim(String session, String token, String playlistUrl, @Nullable String prevName, @Nullable Twitch twitch,
+                     int segmentSeconds, int listSize, int keyframeSeconds) {
+            this(session, token, playlistUrl, prevName, twitch, segmentSeconds, listSize, keyframeSeconds, null);
+        }
+    }
+
+    /** The only place the official TikTok mirror may point: a relay-sent URL anywhere else is dropped. */
+    public static final String TIKTOK_URL_PREFIX = "https://www.tiktok.com/";
+
+    /**
+     * The {@code tiktokUrl} of a status or claim body: the official TikTok mirror's live page, which the
+     * relay sends only while that mirror is actually on air. Accepted only as a string under
+     * {@link #TIKTOK_URL_PREFIX}; absent (an older relay), null, malformed or elsewhere reads as null.
+     */
+    @Nullable
+    public static String parseTikTokUrl(@Nullable JsonObject body) {
+        if (body == null || !body.has("tiktokUrl") || !body.get("tiktokUrl").isJsonPrimitive()
+            || !body.getAsJsonPrimitive("tiktokUrl").isString()) return null;
+        String url = body.get("tiktokUrl").getAsString();
+        return url.startsWith(TIKTOK_URL_PREFIX) && url.length() > TIKTOK_URL_PREFIX.length() ? url : null;
     }
 
     /** The segment lengths a claim may set; anything outside reads as unset. Matches the config's own range. */
@@ -334,16 +357,24 @@ public final class LiveFeedClient {
 
     /**
      * What a viewer sees. {@code variants} are the ready renditions, smallest first — empty from an
-     * older relay or while the worker is off, stale or warming up.
+     * older relay or while the worker is off, stale or warming up. {@code tiktokUrl}: the official TikTok
+     * mirror's live page while that mirror is on air ({@link #parseTikTokUrl}), else null.
      */
     public record Status(boolean live, @Nullable String session, @Nullable String playlistUrl,
                          @Nullable String streamer, int viewers, int cap, boolean slot,
-                         @Nullable String replayUrl, boolean ended, List<Variant> variants, @Nullable String twitchLogin) {
-        public static final Status OFFLINE = new Status(false, null, null, null, 0, 0, true, null, false, List.of(), null);
+                         @Nullable String replayUrl, boolean ended, List<Variant> variants, @Nullable String twitchLogin,
+                         @Nullable String tiktokUrl) {
+        public static final Status OFFLINE = new Status(false, null, null, null, 0, 0, true, null, false, List.of(), null, null);
 
         public Status(boolean live, @Nullable String session, @Nullable String playlistUrl, @Nullable String streamer, int viewers,
                       int cap, boolean slot, @Nullable String replayUrl, boolean ended, List<Variant> variants) {
-            this(live, session, playlistUrl, streamer, viewers, cap, slot, replayUrl, ended, variants, null);
+            this(live, session, playlistUrl, streamer, viewers, cap, slot, replayUrl, ended, variants, null, null);
+        }
+
+        public Status(boolean live, @Nullable String session, @Nullable String playlistUrl, @Nullable String streamer, int viewers,
+                      int cap, boolean slot, @Nullable String replayUrl, boolean ended, List<Variant> variants,
+                      @Nullable String twitchLogin) {
+            this(live, session, playlistUrl, streamer, viewers, cap, slot, replayUrl, ended, variants, twitchLogin, null);
         }
 
         /**
@@ -437,7 +468,8 @@ public final class LiveFeedClient {
         int segment = intIn(r.body(), "segmentSeconds", MIN_SEGMENT_SECONDS, MAX_SEGMENT_SECONDS);
         int list = segment == 0 ? 0 : intIn(r.body(), "listSize", MIN_LIST_SIZE, MAX_LIST_SIZE);
         int keyframe = intIn(r.body(), "keyframeSeconds", MIN_KEYFRAME_SECONDS, MAX_KEYFRAME_SECONDS);
-        return new Claim(session, token, url, prev.isEmpty() ? null : prev, parseTwitch(r.body()), segment, list, keyframe);
+        return new Claim(session, token, url, prev.isEmpty() ? null : prev, parseTwitch(r.body()), segment, list, keyframe,
+            parseTikTokUrl(r.body()));
     }
 
     /** A whole number field within {@code [min, max]}, else 0 (absent, malformed or out of range). */
@@ -904,7 +936,7 @@ public final class LiveFeedClient {
         boolean ended = b.has("ended") && b.get("ended").getAsBoolean();
         Twitch tw = parseTwitch(b);
         return new Status(true, r.str("session"), playlistUrl, r.str("streamer"), viewers, cap, slot,
-            ended ? replayUrl : null, ended, parseVariants(b, playlistUrl), tw == null ? null : tw.login());
+            ended ? replayUrl : null, ended, parseVariants(b, playlistUrl), tw == null ? null : tw.login(), parseTikTokUrl(b));
     }
 
     /** PUT a local file to a signed URL with exactly the signed headers. */

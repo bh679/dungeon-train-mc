@@ -714,6 +714,8 @@
   "chat.dungeontrain.live.watch_link": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "ebb0e9b4e0f050b9"},
   "chat.dungeontrain.live.link.twitch": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "a731a58c4cf35c01"},
   "chat.dungeontrain.live.link.tv": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "c992ee29b80211bd"},
+  "chat.dungeontrain.live.also_on": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "183c81fc69991308"},
+  "chat.dungeontrain.live.link.tiktok": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "1bb6fcfbf1368a7b"},
   "chat.dungeontrain.live.watching.one": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "f5c2f3fbb0c78098"},
   "chat.dungeontrain.live.watching.other": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "e80f3f2a02437f26"},
   "chat.dungeontrain.live.viewers.one": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "bf377d0d20fb8e26"},

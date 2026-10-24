@@ -809,6 +809,8 @@
   "chat.dungeontrain.live.watch_link": "Тепер ти в ефірі на %s",
   "chat.dungeontrain.live.link.twitch": "Twitch",
   "chat.dungeontrain.live.link.tv": "DungeonTrain TV",
+  "chat.dungeontrain.live.also_on": "Також в ефірі на %s",
+  "chat.dungeontrain.live.link.tiktok": "TikTok",
   "chat.dungeontrain.live.watching.one": "Дивиться %s людина",
   "chat.dungeontrain.live.watching.few": "Дивляться %s людини",
   "chat.dungeontrain.live.watching.many": "Дивляться %s людей",

@@ -714,6 +714,8 @@
   "chat.dungeontrain.live.watch_link": "Je bent nu live op %s",
   "chat.dungeontrain.live.link.twitch": "Twitch",
   "chat.dungeontrain.live.link.tv": "DungeonTrain TV",
+  "chat.dungeontrain.live.also_on": "Ook live op %s",
+  "chat.dungeontrain.live.link.tiktok": "TikTok",
   "chat.dungeontrain.live.watching.one": "%s persoon kijkt",
   "chat.dungeontrain.live.watching.other": "%s mensen kijken",
   "chat.dungeontrain.live.viewers.one": "Je hebt %s kijker",

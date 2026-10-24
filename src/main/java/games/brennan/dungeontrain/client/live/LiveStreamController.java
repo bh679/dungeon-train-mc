@@ -140,6 +140,13 @@ public final class LiveStreamController {
     private static final long LIVE_LINE_FALLBACK_MS = 10_000L;
     private final LiveViewerBands bands = new LiveViewerBands();
     private boolean announcedLive; // render thread: this stream's going-live line has been said
+    /** How often the streamer asks the relay (uncounted) whether the official TikTok mirror is on air. */
+    private static final long TIKTOK_POLL_MS = 20_000L;
+    /** Render thread: "Also live on [TikTok]" has been said for this stream; the field flapping later changes nothing. */
+    private boolean saidTikTok;
+    private long lastTikTokPollMs;
+    /** The last TikTok mirror URL the relay reported for this stream (claim or status poll), set from the poll's thread. */
+    @Nullable private volatile String tiktokUrl;
     /**
      * Render thread: the "Livestream ended" pop-up of a stream that ended by leaving the world, held
      * until the world is gone — vanilla's {@code Gui.onDisconnected} clears every toast after
@@ -471,6 +478,33 @@ public final class LiveStreamController {
             say(PluralRules.clause(ClientLanguage.selected(), "chat.dungeontrain.live.viewers", viewers)
                 .withStyle(ChatFormatting.GRAY));
         }
+        announceTikTok(nowMs);
+    }
+
+    /**
+     * "Also live on [TikTok]" ({@link LiveWatchLinks#alsoOnLine}), once per stream, the first time the
+     * relay reports the official TikTok mirror on air: on the claim, or on an uncounted status poll of
+     * the stream's own channel every {@link #TIKTOK_POLL_MS} after the going-live line. The relay sends
+     * {@code tiktokUrl} only while the mirror is actually live, and never from an older relay; polling
+     * stops once the line is said, so the field flapping off and on again is never repeated.
+     */
+    private void announceTikTok(long nowMs) {
+        if (saidTikTok) return;
+        Component line = LiveWatchLinks.alsoOnLine(tiktokUrl);
+        if (line != null) {
+            saidTikTok = true;
+            say(line);
+            return;
+        }
+        if (nowMs - lastTikTokPollMs < TIKTOK_POLL_MS) return;
+        lastTikTokPollMs = nowMs;
+        int gen = generation;
+        LiveFeedClient.Channel channel = "main".equals(VersionInfo.BRANCH) ? LiveFeedClient.Channel.LIVE : LiveFeedClient.Channel.DEV;
+        LiveFeedClient.status(null, channel).whenComplete((r, t) -> {
+            if (t != null || r == null || !r.ok()) return;
+            String url = LiveFeedClient.parseStatus(r).tiktokUrl();
+            if (url != null && gen == generation && state == State.STREAMING) tiktokUrl = url;
+        });
     }
 
     /**
@@ -646,6 +680,9 @@ public final class LiveStreamController {
             fps, audio != null ? " with sound" : "", enc.saveBandwidth() ? ", saving bandwidth" : "",
             cadence.segmentSeconds(), cadence.listSize(), cadence.keyframeSeconds(), c.playlistUrl());
         announcedLive = false;
+        saidTikTok = false;
+        lastTikTokPollMs = streamStartedMs;
+        tiktokUrl = c.tiktokUrl();
         if (c.prevName() != null) say(Component.translatable("chat.dungeontrain.live.took_over", c.prevName()).withStyle(ChatFormatting.GRAY));
     }
 

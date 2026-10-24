@@ -684,6 +684,8 @@
   "chat.dungeontrain.live.watch_link": "你已在 %s 開播",
   "chat.dungeontrain.live.link.twitch": "Twitch",
   "chat.dungeontrain.live.link.tv": "DungeonTrain TV",
+  "chat.dungeontrain.live.also_on": "也在 %s 直播中",
+  "chat.dungeontrain.live.link.tiktok": "TikTok",
   "chat.dungeontrain.live.watching.other": "%s 人正在觀看",
   "chat.dungeontrain.live.viewers.other": "你有 %s 名觀眾",
   "chat.dungeontrain.live.one_eye": "你只能攜帶一台直播攝影機。多出的那台變成了電視。",
