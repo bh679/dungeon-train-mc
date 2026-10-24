@@ -6,18 +6,39 @@ package games.brennan.dungeontrain.client.wind;
  */
 public final class WindFeelMath {
 
-    /** Push (blocks/tick², as applied by {@code WindPush}) at which the player feels the wind fully. */
-    static final double FELT_FULL = 0.006;
+    /**
+     * Wind on the player (blocks/tick², before grip) below which nothing wind-driven shows or plays: the calm
+     * floor shared by the felt effects and the streak density ({@link #calmFade}).
+     */
+    public static final double CALM_FLOOR = 0.0002;
+    /** Wind on the player at which the felt effects are full. */
+    static final double FELT_FULL = 0.005;
+    /** Push past which streak density is no longer faded ({@link #calmFade}). */
+    static final double FADE_FULL = 0.002;
     /** Per-tick easing of {@link #felt} toward its target while rising / falling. */
     static final double FELT_RISE = 0.4;
     static final double FELT_FALL = 0.08;
 
     private WindFeelMath() {}
 
-    /** How strongly a push of {@code applied} is felt, 0..1 (unsmoothed). */
-    public static double feltTarget(double applied) {
-        if (!(applied > 0.0)) return 0.0;
-        return Math.min(1.0, applied / FELT_FULL);
+    /**
+     * How strongly the player feels {@code windOnYou} (the wind hitting them while exposed, sneak and air factors in,
+     * grip NOT taken off), 0..1, unsmoothed: 0 up to {@link #CALM_FLOOR}, then a square-root rise so faint early
+     * wind already reads (Windy 0.04 ≈ 0.36, 0.08 ≈ 0.55), full at {@link #FELT_FULL}.
+     */
+    public static double feltTarget(double windOnYou) {
+        if (!(windOnYou > CALM_FLOOR)) return 0.0;
+        return Math.min(1.0, Math.sqrt((windOnYou - CALM_FLOOR) / (FELT_FULL - CALM_FLOOR)));
+    }
+
+    /**
+     * Multiplier on how many wind visuals spawn for a push: 0 at or below {@link #CALM_FLOOR}, easing up to 1 at
+     * {@link #FADE_FULL}, so a near-calm wind spawns nothing instead of a trickle.
+     */
+    public static double calmFade(double push) {
+        if (!(push > CALM_FLOOR)) return 0.0;
+        double x = Math.min(1.0, (push - CALM_FLOOR) / (FADE_FULL - CALM_FLOOR));
+        return x * x * (3.0 - 2.0 * x);
     }
 
     /** One tick of easing from {@code current} toward {@code target}: quick to rise, slow to fall. */

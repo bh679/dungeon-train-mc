@@ -3,8 +3,9 @@ package games.brennan.dungeontrain.client.wind;
 import games.brennan.dungeontrain.wind.WindSample;
 
 /**
- * How hard the wind is pushing the local player right now, for the "you are being pushed" effects
- * ({@link WindFeelMode}). Fed once per client tick by {@link WindClientEvents} with the push it actually applied;
+ * How hard the wind is hitting the local player right now, for the "you are being pushed" effects
+ * ({@link WindFeelMode}). Fed once per client tick by {@link WindClientEvents} with the wind on the player while
+ * exposed, before grip (so it is felt even when a standing player isn't sliding yet);
  * read by the sound ({@link WindSound}), the screen overlay ({@link WindFeelOverlay}) and the camera
  * ({@link WindFeelCamera}).
  */
@@ -23,15 +24,20 @@ public final class WindFeel {
     private static double dirX = 1.0;
     private static double dirZ = 0.0;
     private static double strength = 0.0;
+    private static double windOn = 0.0;
     private static long ticks = 0L;
 
     private WindFeel() {}
 
-    /** One client tick: {@code applied} is the push given to the player this tick (0 when sheltered). */
-    static void update(double applied, WindSample now) {
+    /**
+     * One client tick: {@code windOnYou} is the wind hitting the player this tick (0 when sheltered or not
+     * pushable), with the sneak and air factors but before grip, so it is felt even while standing firm.
+     */
+    static void update(double windOnYou, WindSample now) {
         ticks++;
         prevFelt = felt;
-        target = WindFeelMath.feltTarget(applied);
+        windOn = windOnYou;
+        target = WindFeelMath.feltTarget(windOnYou);
         felt = WindFeelMath.easeFelt(felt, target);
         boolean gusting = now.gust01() > SHUDDER_GUST && target > SHUDDER_FELT;
         shudder = Math.max(shudder * SHUDDER_DECAY, gusting ? now.gust01() : 0.0);
@@ -49,7 +55,7 @@ public final class WindFeel {
     }
 
     static void reset() {
-        felt = prevFelt = target = shudder = strength = 0.0;
+        felt = prevFelt = target = shudder = strength = windOn = 0.0;
     }
 
     /** Felt push 0..1, eased. */
@@ -69,6 +75,11 @@ public final class WindFeel {
 
     public static double shudder() {
         return shudder;
+    }
+
+    /** Wind hitting the player this tick, before grip (blocks/tick²). */
+    public static double windOnYou() {
+        return windOn;
     }
 
     /** Wind strength at the player now (blocks/tick²). */

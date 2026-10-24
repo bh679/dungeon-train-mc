@@ -18,8 +18,8 @@ import net.minecraft.util.RandomSource;
  *   <li><b>Gust</b> — the same wind doubled: a second copy of the loop at the same pitch that swells in with
  *       each gust, while the breeze itself also gets louder.</li>
  * </ul>
- * It follows the wind arriving ({@code ahead}, so you hear a gust coming). While the wind is actually pushing
- * the player ({@link WindFeel}) two more things happen:
+ * It follows the wind arriving ({@code ahead}, so you hear a gust coming). While the wind is on the player out
+ * in the open ({@link WindFeel}, even if grip keeps them from sliding) two more things happen:
  * <ul>
  *   <li><b>Louder when pushed</b> — the breeze holds at least {@link #PUSHED_FLOOR}, rising with the push, the
  *       gust copy also follows the wind <em>now</em> so it overlaps the shove instead of fading before it, and
@@ -41,9 +41,9 @@ final class WindSound {
     private static final float EASE = 0.12f;
     /** Per-tick easing while the volume rises and the wind is pushing the player: a shove swells in quickly. */
     private static final float EASE_PUSHED = 0.35f;
-    /** Least breeze volume while the wind is moving the player, and how much more a full push adds. */
-    private static final float PUSHED_FLOOR = 0.35f;
-    private static final float PUSHED_SPAN = 0.45f;
+    /** Least breeze volume while the wind is on the player, and how much more a full wind adds. */
+    private static final float PUSHED_FLOOR = 0.2f;
+    private static final float PUSHED_SPAN = 0.6f;
     /** The ear buffet: volume at a full push, pitch, and its flutter. */
     private static final float BUFFET_MAX_VOLUME = 0.7f;
     private static final float BUFFET_PITCH = 0.5f;
@@ -77,9 +77,9 @@ final class WindSound {
         double gustVol = loud * GUST_MAX_VOLUME * gustShare;
 
         double felt = WindFeel.target();
-        boolean pushed = felt > 0.0;
+        boolean pushed = felt > 0.0; // the wind is on the player (not necessarily sliding them)
         if (pushed) {
-            breezeVol = Math.max(breezeVol, (PUSHED_FLOOR + PUSHED_SPAN * Math.sqrt(felt)) * muffle * volume);
+            breezeVol = Math.max(breezeVol, (PUSHED_FLOOR + PUSHED_SPAN * felt) * muffle * volume);
             double loudNow = Math.sqrt(Math.min(1.0, now.strength() / FULL_PUSH)) * muffle * volume;
             gustVol = Math.max(gustVol, loudNow * GUST_MAX_VOLUME * now.gust01());
         }

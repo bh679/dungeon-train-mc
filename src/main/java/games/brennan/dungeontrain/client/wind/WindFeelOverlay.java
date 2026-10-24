@@ -21,7 +21,7 @@ import java.util.Random;
 /**
  * The on-screen "you are being pushed" effects ({@link WindFeelMode}), drawn under the crosshair:
  * <ul>
- *   <li><b>C</b> near streaks — wisps across the top and bottom of the screen, flying downwind;</li>
+ *   <li><b>C</b> near streaks — wisps blowing in from the upwind screen edge, gone a third of the way in;</li>
  *   <li><b>D</b> upwind edge chill — a pale glow on the side of the screen the wind comes from;</li>
  *   <li><b>F</b> push chevrons — three faint arrows beside the crosshair pointing downwind.</li>
  * </ul>
@@ -31,8 +31,6 @@ import java.util.Random;
 public final class WindFeelOverlay {
 
     private static final int STREAKS = 30;
-    /** Fraction of the screen height, at the top and at the bottom, the streaks fly in. */
-    private static final float STREAK_BAND = 0.22f;
     /** Streak speed, GUI pixels per second: base plus per unit of wind strength. */
     private static final float STREAK_SPEED_BASE = 220f;
     private static final float STREAK_SPEED_PER_PUSH = 9000f;
@@ -59,6 +57,8 @@ public final class WindFeelOverlay {
     private static final float[] SY = new float[STREAKS];
     private static final float[] SL = new float[STREAKS];
     private static final float[] SS = new float[STREAKS];
+    /** -1 = blows in from the left edge, +1 = from the right. */
+    private static final int[] SIDE = new int[STREAKS];
     private static final Random RANDOM = new Random();
     private static boolean seeded = false;
     private static long lastNanos = 0L;
@@ -121,50 +121,54 @@ public final class WindFeelOverlay {
 
     // ---- C: near streaks ---------------------------------------------------------------------
 
+    /**
+     * Wisps that blow in from the upwind screen edge and fade out by the inner edge of the chill's band
+     * ({@link #CHILL_WIDTH}): nothing crosses the middle of the screen. Sides are weighted like the chill.
+     */
     private static void drawStreaks(GuiGraphics g, float felt, float lateral, float dt) {
         int w = g.guiWidth();
         int h = g.guiHeight();
+        float band = Math.max(8f, w * CHILL_WIDTH);
+        float along = (1f - Math.abs(lateral)) * CHILL_ALONG;
+        float left = Math.max(0f, lateral) + along;
+        float right = Math.max(0f, -lateral) + along;
         if (!seeded) {
-            for (int i = 0; i < STREAKS; i++) respawn(i, w, h, lateral, true);
+            for (int i = 0; i < STREAKS; i++) respawn(i, h, band, left, right, true);
             seeded = true;
         }
         int count = Math.round(STREAKS * felt);
         float speed = STREAK_SPEED_BASE + STREAK_SPEED_PER_PUSH * (float) WindFeel.strength();
-        float along = 1f - Math.abs(lateral);
-        float cx = w / 2f;
         for (int i = 0; i < STREAKS; i++) {
-            // Sideways wind carries them across; wind along the view fans them out from the middle.
-            float side = SX[i] < cx ? -1f : 1f;
-            float vx = (lateral + along * side) * speed * SS[i];
-            SX[i] += vx * dt;
-            if (SX[i] < -SL[i] - 4 || SX[i] > w + SL[i] + 4) respawn(i, w, h, lateral, false);
+            SX[i] += speed * SS[i] * dt; // distance in from its edge
+            if (SX[i] - SL[i] > band) respawn(i, h, band, left, right, false);
             if (i >= count) continue;
-            float edge = Math.min(1f, Math.min(SX[i] + SL[i], w - SX[i] + SL[i]) / (w * 0.2f));
-            float a = STREAK_ALPHA * felt * Math.max(0f, edge);
-            int x = Math.round(SX[i]);
+            boolean fromLeft = SIDE[i] < 0;
+            float weight = fromLeft ? left : right;
+            if (weight <= 0f) continue;
+            float head = Math.min(band, SX[i]);
+            float tail = Math.max(0f, SX[i] - SL[i]);
+            if (head <= tail) continue;
+            // Brightest at the screen edge, gone by the band's inner edge.
+            float fade = 1f - (head + tail) / (2f * band);
+            float a = STREAK_ALPHA * felt * Math.min(1f, weight) * Math.max(0f, fade);
             int y = Math.round(SY[i]);
-            int len = Math.round(SL[i]);
-            // Faded tails, brighter middle.
-            int third = Math.max(1, len / 3);
-            g.fill(x - len / 2, y, x - len / 2 + third, y + 1, argb(a * 0.4f, STREAK_RGB));
-            g.fill(x - len / 2 + third, y, x + len / 2 - third, y + 1, argb(a, STREAK_RGB));
-            g.fill(x + len / 2 - third, y, x + len / 2, y + 1, argb(a * 0.4f, STREAK_RGB));
+            int x0 = Math.round(fromLeft ? tail : w - head);
+            int x1 = Math.round(fromLeft ? head : w - tail);
+            int third = Math.max(1, (x1 - x0) / 3);
+            // Faded ends, brighter middle.
+            g.fill(x0, y, x0 + third, y + 1, argb(a * 0.4f, STREAK_RGB));
+            g.fill(x0 + third, y, x1 - third, y + 1, argb(a, STREAK_RGB));
+            g.fill(x1 - third, y, x1, y + 1, argb(a * 0.4f, STREAK_RGB));
         }
     }
 
-    private static void respawn(int i, int w, int h, float lateral, boolean anywhere) {
-        float band = h * STREAK_BAND;
-        boolean top = RANDOM.nextBoolean();
-        SY[i] = top ? RANDOM.nextFloat() * band : h - RANDOM.nextFloat() * band;
-        SL[i] = 20f + RANDOM.nextFloat() * 45f;
+    private static void respawn(int i, int h, float band, float left, float right, boolean anywhere) {
+        float total = left + right;
+        SIDE[i] = total <= 0f || RANDOM.nextFloat() * total < left ? -1 : 1;
+        SY[i] = RANDOM.nextFloat() * h;
+        SL[i] = 12f + RANDOM.nextFloat() * 30f;
         SS[i] = 0.7f + RANDOM.nextFloat() * 0.6f;
-        if (anywhere || Math.abs(lateral) < 0.3f) {
-            SX[i] = Math.abs(lateral) < 0.3f && !anywhere
-                    ? w / 2f + (RANDOM.nextFloat() - 0.5f) * w * 0.3f
-                    : RANDOM.nextFloat() * w;
-        } else {
-            SX[i] = lateral > 0f ? -SL[i] - RANDOM.nextFloat() * w * 0.5f : w + SL[i] + RANDOM.nextFloat() * w * 0.5f;
-        }
+        SX[i] = anywhere ? RANDOM.nextFloat() * (band + SL[i]) : -RANDOM.nextFloat() * band * 0.5f;
     }
 
     // ---- F: push chevrons --------------------------------------------------------------------

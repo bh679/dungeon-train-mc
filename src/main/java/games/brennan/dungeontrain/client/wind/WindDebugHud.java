@@ -146,8 +146,9 @@ public final class WindDebugHud {
         out.add(new Line(String.format(Locale.ROOT, "Push: %.4f applied (%.4f if exposed)   vel %.3f, %.3f  (%.2f b/s)",
                 f.applied(), f.wouldBe(), f.velX(), f.velZ(),
                 Math.sqrt(f.velX() * f.velX() + f.velZ() * f.velZ()) * 20), COLOR_APPLIED));
-        out.add(new Line(String.format(Locale.ROOT, "fx: %s   felt %.2f (now %.2f)  shudder %.2f",
-                WindFeelMode.current().label(), WindFeel.felt(), WindFeel.target(), WindFeel.shudder()),
+        out.add(new Line(String.format(Locale.ROOT, "fx: %s   wind on you %.4f  felt %.2f (now %.2f)  shudder %.2f",
+                WindFeelMode.current().label(), WindFeel.windOnYou(), WindFeel.felt(), WindFeel.target(),
+                WindFeel.shudder()),
                 COLOR_TEXT));
         return out;
     }

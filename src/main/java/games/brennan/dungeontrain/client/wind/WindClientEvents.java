@@ -92,7 +92,9 @@ public final class WindClientEvents {
             applied = WindPush.apply(player, now, profile, extra);
         }
 
-        WindFeel.update(applied, now);
+        double windOnYou = skip == null && exposure.exposed()
+                ? now.strength() * extra * (player.onGround() ? 1.0 : profile.airFactor()) : 0.0;
+        WindFeel.update(windOnYou, now);
 
         WindSample ahead = ClientWind.sampleAt(player.getX(), tick + profile.visualLeadTicks()).scaled(deepDark);
         // Timing of a gust: sound and streaks both start visualLeadTicks early (you hear and see it coming before
@@ -194,7 +196,8 @@ public final class WindClientEvents {
     /** DT's own wind streaks for installs without Windy: Configurable's direction hook. */
     private static void fallbackStreaks(ClientLevel level, LocalPlayer player, WindSample w, double[] carriageVel) {
         RandomSource r = level.random;
-        double expected = Math.min(FALLBACK_MAX_PER_TICK, w.strength() * FALLBACK_RATE);
+        double expected = Math.min(FALLBACK_MAX_PER_TICK, w.strength() * FALLBACK_RATE)
+                * WindFeelMath.calmFade(w.strength());
         int n = (int) expected + (r.nextDouble() < expected - Math.floor(expected) ? 1 : 0);
         double dx = w.dirX();
         double dz = w.dirZ();
