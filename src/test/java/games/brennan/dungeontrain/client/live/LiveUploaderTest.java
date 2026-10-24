@@ -35,25 +35,70 @@ class LiveUploaderTest {
         final List<String> segmentPuts = new ArrayList<>();
         final Set<String> onStorage = new HashSet<>();
         int presignStatus = 200;
+        /** Answer presigns at all; false = a stalled relay (the call fails with no status, as a timeout does). */
+        boolean answering = true;
+        /** Sign ahead when asked (a relay with dp-relay #945); false = an older relay. */
+        boolean signsAhead;
+        /** How many segments one sign-ahead covers. */
+        int aheadCount = 20;
+        /** The relay's clock, for the signed URLs' expiry. */
+        java.util.function.LongSupplier relayNow = () -> 5_000_000L;
+        long aheadExpiresMs = 240_000;
+        /** Files the relay refuses to sign, and why. */
+        final java.util.Map<String, String> refuse = new java.util.HashMap<>();
+        final List<Boolean> askedAhead = new ArrayList<>();
+        /** Every PUT target used, by URL: a segment URL used twice would show up here twice. */
+        final List<String> putUrls = new ArrayList<>();
+        long highest = -1;
 
         @Override
-        public CompletableFuture<Result> presign(String token, List<String> files) {
+        public CompletableFuture<Result> presign(String token, List<String> files, boolean ahead) {
+            askedAhead.add(ahead);
+            if (!answering) return CompletableFuture.completedFuture(new Result(0, null, new java.util.concurrent.TimeoutException("stalled")));
             JsonObject urls = new JsonObject();
+            JsonObject refused = new JsonObject();
             for (String f : files) {
+                if (refuse.containsKey(f)) { refused.addProperty(f, refuse.get(f)); continue; }
                 JsonObject o = new JsonObject();
                 o.addProperty("url", "https://r2.invalid/" + f);
                 urls.add(f, o);
+                long n = LiveUploader.segmentIndex(f);
+                highest = Math.max(highest, n);
             }
             JsonObject body = new JsonObject();
             body.add("urls", urls);
+            if (refused.size() > 0) body.add("refused", refused);
+            if (ahead && signsAhead && presignStatus == 200) body.add("ahead", aheadBlock());
             if (presignStatus == 403) body.addProperty("takenBy", "Someone");
             return CompletableFuture.completedFuture(new Result(presignStatus, body, null));
+        }
+
+        private JsonObject aheadBlock() {
+            long exp = relayNow.getAsLong() + aheadExpiresMs;
+            JsonObject urls = new JsonObject();
+            for (long n = highest + 1; n <= highest + aheadCount; n++) {
+                String name = String.format("seg%05d.ts", n);
+                JsonObject o = new JsonObject();
+                o.addProperty("url", "https://r2.invalid/ahead/" + name);
+                o.addProperty("expiresAt", exp);
+                urls.add(name, o);
+            }
+            JsonObject pl = new JsonObject();
+            pl.addProperty("url", "https://r2.invalid/ahead/" + LivePlaylist.FILE_NAME);
+            pl.addProperty("expiresAt", exp);
+            urls.add(LivePlaylist.FILE_NAME, pl);
+            JsonObject a = new JsonObject();
+            a.addProperty("from", highest + 1);
+            a.addProperty("expiresAt", exp);
+            a.add("urls", urls);
+            return a;
         }
 
         @Override
         public CompletableFuture<Result> upload(SignedPut target, Path file) {
             String name = file.getFileName().toString();
             segmentPuts.add(name);
+            putUrls.add(target.url());
             if (failing.contains(name)) return CompletableFuture.completedFuture(new Result(0, null, new IOException("header parser received no bytes")));
             onStorage.add(name);
             return CompletableFuture.completedFuture(new Result(200, null, null));
@@ -62,6 +107,7 @@ class LiveUploaderTest {
         @Override
         public CompletableFuture<Result> upload(SignedPut target, String body) {
             published.add(body);
+            putUrls.add(target.url());
             return CompletableFuture.completedFuture(new Result(200, null, null));
         }
 
@@ -335,7 +381,7 @@ class LiveUploaderTest {
         }
 
         @Override
-        public CompletableFuture<Result> presign(String token, List<String> files) {
+        public CompletableFuture<Result> presign(String token, List<String> files, boolean ahead) {
             // Every pass opens with a presign, held for presignDelayMs: two passes at once overlap here.
             maxConcurrent.accumulateAndGet(inFlight.incrementAndGet(), Math::max);
             threads.add(Thread.currentThread().getName());
@@ -343,7 +389,7 @@ class LiveUploaderTest {
             try {
                 if (hang) return new CompletableFuture<>();
                 if (presignDelayMs > 0) Thread.sleep(presignDelayMs);
-                return inner.presign(token, files);
+                return inner.presign(token, files, ahead);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return CompletableFuture.completedFuture(new Result(0, null, e));
@@ -404,5 +450,160 @@ class LiveUploaderTest {
         encoderWrites(0, 3, false);
         u.pass(false);
         assertEquals(3, health.snapshot().samples());
+    }
+
+    // ---- sign-ahead: riding out a stalled relay (dp-relay #945) ---------------------------------
+
+    private FakeStorage signingAhead() {
+        FakeStorage s = new FakeStorage();
+        s.signsAhead = true;
+        s.relayNow = now::get;
+        return s;
+    }
+
+    /** The relay stalls for 70 s ({@code status} 0 = no answer, as a timeout; or a 5xx or 429). */
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {0, 503, 429})
+    void aStalledRelayIsRiddenOutOnSignedAheadUrls(int status) throws Exception {
+        FakeStorage s = signingAhead();
+        LiveUploadHealth health = new LiveUploadHealth(10);
+        LiveUploader u = new LiveUploader(dir, "tok", by -> { }, s, now::get, health, false);
+        encoderWrites(0, 3, false);
+        u.pass(false);
+        assertEquals(20, u.stockUsable(), "the first presign signs the next 20 segments ahead");
+
+        if (status == 0) s.answering = false; else s.presignStatus = status;
+        int presignsBefore = s.askedAhead.size();
+        long first = 0;
+        for (int poll = 1; poll <= 140; poll++) { // 70 s of 500 ms polls; a 10 s segment every 20
+            now.addAndGet(500);
+            if (poll % 20 == 0) encoderWrites(++first, 3, false);
+            u.pass(false);
+            for (String body : s.published) {
+                for (String seg : LivePlaylist.parse(body).segments()) {
+                    assertTrue(s.onStorage.contains(seg), seg + " published before it was on storage");
+                }
+            }
+        }
+
+        assertEquals(10, u.segmentsUploaded(), "every segment the encoder cut went up");
+        assertEquals(0, u.segmentsSkipped());
+        assertEquals(List.of("seg00007.ts", "seg00008.ts", "seg00009.ts"), s.last().segments());
+        for (int n = 3; n <= 9; n++) {
+            assertTrue(s.putUrls.contains(String.format("https://r2.invalid/ahead/seg%05d.ts", n)), "seg " + n + " not on its ahead URL");
+        }
+        long playlistPuts = s.putUrls.stream().filter(("https://r2.invalid/ahead/" + LivePlaylist.FILE_NAME)::equals).count();
+        assertEquals(7, playlistPuts, "the one ahead playlist URL is PUT for every new playlist");
+        // Back-off 1, 2, 4, 8, 10, 10 … s: the stalled relay is not asked every poll.
+        int stalledPresigns = s.askedAhead.size() - presignsBefore;
+        assertTrue(stalledPresigns <= 11, stalledPresigns + " presigns during the stall");
+        // Presign failures never read as a slow upload.
+        assertEquals(10, health.snapshot().samples());
+
+        // The relay wakes: the next presign after the back-off is answered and refills the stock.
+        s.answering = true;
+        s.presignStatus = 200;
+        now.addAndGet(LiveUploader.PRESIGN_BACKOFF_MAX_MS);
+        encoderWrites(++first, 3, false);
+        u.pass(false);
+        assertEquals(0L, u.presignBackoffMs());
+        assertEquals(List.of("seg00008.ts", "seg00009.ts", "seg00010.ts"), s.last().segments());
+        assertTrue(u.stockUsable() >= 10);
+    }
+
+    @Test
+    void expiredStockIsNotUsed() throws Exception {
+        FakeStorage s = signingAhead();
+        s.aheadExpiresMs = 60_000;
+        LiveUploader u = clocked(s);
+        encoderWrites(0, 1, false);
+        u.pass(false);
+        int published = s.published.size();
+
+        s.answering = false;
+        now.addAndGet(60_000 - LiveAheadStock.EXPIRY_MARGIN_MS);
+        encoderWrites(0, 2, false);
+        u.pass(false);
+        assertEquals(1, u.segmentsUploaded(), "an expired ahead URL was used");
+        assertEquals(published, s.published.size());
+        assertEquals(LiveUploader.PRESIGN_BACKOFF_MIN_MS, u.notBeforeMs() - now.get(), "no stock: today's back-off");
+    }
+
+    @Test
+    void anOlderRelayWithoutSignAheadBehavesAsBefore() throws Exception {
+        FakeStorage s = new FakeStorage(); // never sends `ahead`
+        LiveUploader u = clocked(s);
+        encoderWrites(0, 1, false);
+        u.pass(false);
+        assertEquals(0, u.stockUsable());
+        s.answering = false;
+        encoderWrites(0, 2, false);
+        now.addAndGet(500);
+        u.pass(false);
+        assertEquals(1, u.segmentsUploaded());
+        assertEquals(LiveUploader.PRESIGN_BACKOFF_MIN_MS, u.notBeforeMs() - now.get());
+        now.addAndGet(500);
+        u.pass(false);
+        assertEquals(2, s.askedAhead.size(), "presigned again inside the back-off");
+    }
+
+    @Test
+    void aSegmentTheRelayRefusesIsSkippedNotWaitedOn() throws Exception {
+        FakeStorage s = new FakeStorage();
+        LiveUploader u = uploader(s, new AtomicReference<>());
+        s.refuse.put("seg00001.ts", "stale");
+        encoderWrites(0, 3, false);
+        u.pass(false);
+        assertEquals(1, u.segmentsSkipped());
+        assertEquals(List.of("seg00000.ts", "seg00002.ts"), s.last().segments());
+        assertFalse(s.segmentPuts.contains("seg00001.ts"));
+    }
+
+    @Test
+    void aStaleSegmentStillInTheStockGoesUpOnItsAheadUrl() throws Exception {
+        FakeStorage s = signingAhead();
+        LiveUploader u = clocked(s);
+        encoderWrites(0, 1, false);
+        u.pass(false);
+        s.refuse.put("seg00001.ts", "stale"); // a zombie presign from the stall already signed it
+        encoderWrites(0, 2, false);
+        now.addAndGet(500);
+        u.pass(false);
+        assertEquals(0, u.segmentsSkipped());
+        assertTrue(s.putUrls.contains("https://r2.invalid/ahead/seg00001.ts"));
+        assertEquals(List.of("seg00000.ts", "seg00001.ts"), s.last().segments());
+    }
+
+    @Test
+    void asksToSignAheadOnlyWhenUnderHalfTheStockIsLeft() throws Exception {
+        FakeStorage s = signingAhead();
+        s.aheadCount = 4;
+        LiveUploader u = clocked(s);
+        for (int first = 0; first < 5; first++) {
+            encoderWrites(first, 1, false);
+            now.addAndGet(500);
+            u.pass(false);
+        }
+        // Batch of 4 from the first presign (seg 1-4); each segment that goes up spends its URL. Two of
+        // four left is still half; asked again once only seg 4's URL is left.
+        assertEquals(List.of(true, false, false, false, true), s.askedAhead);
+    }
+
+    @Test
+    void aSegmentWithNoAheadUrlDuringAStallIsSkippedSoThePlaylistMovesOn() throws Exception {
+        FakeStorage s = signingAhead();
+        LiveUploader u = clocked(s);
+        encoderWrites(0, 2, false);
+        s.failing.add("seg00001.ts"); // signed, but its PUT fails: not in the ahead batch (that starts at 2)
+        u.pass(false);
+        s.failing.clear();
+        s.answering = false;
+        encoderWrites(0, 3, false);
+        for (int i = 0; i < 8; i++) {
+            now.addAndGet(LiveUploader.FAIL_BACKOFF_MS);
+            u.pass(false);
+        }
+        assertEquals(1, u.segmentsSkipped());
+        assertEquals(List.of("seg00000.ts", "seg00002.ts"), s.last().segments());
     }
 }

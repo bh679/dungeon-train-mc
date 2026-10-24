@@ -526,19 +526,66 @@ public final class LiveFeedClient {
     }
 
     public static CompletableFuture<Result> presign(String token, List<String> files) {
+        return presign(token, files, false);
+    }
+
+    /**
+     * {@code ahead} asks the relay to also sign the next segments and the playlist in advance
+     * ({@link #parseAhead}), so the streamer keeps uploading while the relay is stalled. An older relay
+     * ignores the field.
+     */
+    public static CompletableFuture<Result> presign(String token, List<String> files, boolean ahead) {
         JsonObject body = new JsonObject();
         body.addProperty("token", token);
         JsonArray arr = new JsonArray();
         files.forEach(arr::add);
         body.add("files", arr);
+        if (ahead) body.addProperty("ahead", true);
         return post("/live/presign", body);
     }
 
     /** file name → signed PUT, in request order; empty on a malformed reply. */
     public static Map<String, SignedPut> parsePresign(Result r) {
+        if (!r.ok() || !r.body().has("urls") || !r.body().get("urls").isJsonObject()) return new LinkedHashMap<>();
+        return parseUrlMap(r.body().getAsJsonObject("urls"), 0L);
+    }
+
+    /** URLs signed in advance: the next segments from {@code from}, and the playlist (reusable until it expires). */
+    public record Ahead(long from, long expiresAt, Map<String, SignedPut> urls) {}
+
+    /**
+     * A presign reply's {@code ahead} block (asked for with {@code ahead: true}); null against an older
+     * relay or a malformed reply. Entries without their own {@code expiresAt} take the block's.
+     */
+    @Nullable
+    public static Ahead parseAhead(Result r) {
+        if (!r.ok() || !r.body().has("ahead") || !r.body().get("ahead").isJsonObject()) return null;
+        JsonObject a = r.body().getAsJsonObject("ahead");
+        if (!a.has("urls") || !a.get("urls").isJsonObject()) return null;
+        try {
+            long from = a.has("from") ? a.get("from").getAsLong() : -1L;
+            long exp = a.has("expiresAt") ? a.get("expiresAt").getAsLong() : 0L;
+            Map<String, SignedPut> urls = parseUrlMap(a.getAsJsonObject("urls"), exp);
+            return urls.isEmpty() ? null : new Ahead(from, exp, urls);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /** file name → why the relay would not sign it ({@code stale}, {@code too_large}); empty when none. */
+    public static Map<String, String> parseRefused(Result r) {
+        Map<String, String> out = new LinkedHashMap<>();
+        if (!r.ok() || !r.body().has("refused") || !r.body().get("refused").isJsonObject()) return out;
+        for (Map.Entry<String, JsonElement> e : r.body().getAsJsonObject("refused").entrySet()) {
+            if (e.getValue().isJsonPrimitive()) out.put(e.getKey(), e.getValue().getAsString());
+        }
+        return out;
+    }
+
+    /** {@code {file: {url, headers, expiresAt}}} → signed PUTs, skipping any URL that is not allowed. */
+    private static Map<String, SignedPut> parseUrlMap(JsonObject urls, long defaultExpiresAt) {
         Map<String, SignedPut> out = new LinkedHashMap<>();
-        if (!r.ok() || !r.body().has("urls") || !r.body().get("urls").isJsonObject()) return out;
-        for (Map.Entry<String, JsonElement> e : r.body().getAsJsonObject("urls").entrySet()) {
+        for (Map.Entry<String, JsonElement> e : urls.entrySet()) {
             if (!e.getValue().isJsonObject()) continue;
             JsonObject o = e.getValue().getAsJsonObject();
             if (!o.has("url")) continue;
@@ -550,7 +597,7 @@ public final class LiveFeedClient {
                     headers.put(h.getKey(), h.getValue().getAsString());
                 }
             }
-            long exp = o.has("expiresAt") ? o.get("expiresAt").getAsLong() : 0L;
+            long exp = o.has("expiresAt") ? o.get("expiresAt").getAsLong() : defaultExpiresAt;
             out.put(e.getKey(), new SignedPut(o.get("url").getAsString(), headers, exp));
         }
         return out;

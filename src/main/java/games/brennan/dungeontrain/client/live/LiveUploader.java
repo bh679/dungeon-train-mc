@@ -42,7 +42,16 @@ import java.util.regex.Pattern;
  * skipped — viewers see a jump, not a crash. An unanswered presign (relay down, 5xx) backs off
  * 1 s, 2 s, 4 s … up to 10 s instead of asking again every poll.</p>
  *
- * <p>Every segment PUT is timed into a {@link LiveUploadHealth} (presign calls never are), which the
+ * <p>Riding out a relay stall: each presign asks the relay to also sign the next ~2 minutes of segments
+ * and a reusable playlist URL in advance ({@link LiveAheadStock}) whenever under half of the last batch
+ * is left. When a presign then fails (5xx, 429, or no answer — a stalled relay), segments and the
+ * playlist go up on those URLs, every poll, while the presign itself backs off as above; with URLs in
+ * hand a presign is given only {@value #STOCK_CALL_TIMEOUT_S} s. An older relay sends none, and all of
+ * this stays off. A segment the relay refuses to sign ({@code refused}, e.g. {@code stale}) is skipped
+ * rather than waited on.</p>
+ *
+ * <p>Every segment PUT is timed into a {@link LiveUploadHealth} (presign calls never are, so a stalled
+ * relay never reads as a slow upload), which the
  * adaptive quality reads. While the encoder is swapped for another at a new bitrate the uploader is
  * {@link #hold held}: no playlist goes out, so the old encoder's ENDLIST never reaches viewers.</p>
  *
@@ -56,6 +65,9 @@ public final class LiveUploader implements AutoCloseable {
     private static final long POLL_MS = 500;
     private static final long ERROR_PAUSE_MS = 2000;
     private static final long CALL_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(20);
+    static final long STOCK_CALL_TIMEOUT_S = 5;
+    /** A presign's timeout while signed-ahead URLs are in hand: no need to wait out a stalled relay. */
+    private static final long STOCK_CALL_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(STOCK_CALL_TIMEOUT_S);
     /** How often a waiting call re-checks a deadline {@link #close(boolean, long)} may have pulled in. */
     private static final long AWAIT_SLICE_NS = TimeUnit.MILLISECONDS.toNanos(250);
     private static final long JOIN_MARGIN_MS = 100;
@@ -69,13 +81,13 @@ public final class LiveUploader implements AutoCloseable {
 
     /** The relay and storage calls, so tests can stand in for them. */
     interface Storage {
-        CompletableFuture<Result> presign(String token, List<String> files);
+        CompletableFuture<Result> presign(String token, List<String> files, boolean ahead);
         CompletableFuture<Result> upload(SignedPut target, Path file);
         CompletableFuture<Result> upload(SignedPut target, String body);
     }
 
     private static final Storage LIVE = new Storage() {
-        @Override public CompletableFuture<Result> presign(String token, List<String> files) { return LiveFeedClient.presign(token, files); }
+        @Override public CompletableFuture<Result> presign(String token, List<String> files, boolean ahead) { return LiveFeedClient.presign(token, files, ahead); }
         @Override public CompletableFuture<Result> upload(SignedPut target, Path file) { return LiveFeedClient.upload(target, file); }
         @Override public CompletableFuture<Result> upload(SignedPut target, String body) { return LiveFeedClient.upload(target, body); }
     };
@@ -97,6 +109,12 @@ public final class LiveUploader implements AutoCloseable {
     private volatile boolean held;
     private String lastPublished;
     private long presignBackoffMs; // uploader thread only
+    /** URLs signed in advance, spent while the relay does not answer. Uploader thread only. */
+    private final LiveAheadStock stock = new LiveAheadStock();
+    /** No presign before this while riding the stock (the passes themselves keep running). */
+    private long presignNotBeforeMs; // uploader thread only
+    /** The last presign went unanswered (5xx, 429, timeout) — the relay, not the request, is the problem. */
+    private boolean relayDown; // uploader thread only
     private volatile boolean running = true;
     private volatile boolean flushRequested;
     private volatile long deadlineNs = Long.MAX_VALUE;
@@ -172,6 +190,10 @@ public final class LiveUploader implements AutoCloseable {
         return presignBackoffMs;
     }
 
+    int stockUsable() {
+        return stock.usable(clock.getAsLong());
+    }
+
     /** True once the uploader thread has finished, or was never started (tests). */
     boolean finished() {
         return !thread.isAlive();
@@ -225,12 +247,48 @@ public final class LiveUploader implements AutoCloseable {
      * ignores a failure backoff.
      */
     void pass(boolean last) throws IOException, CutOff {
-        if (!last && clock.getAsLong() < notBeforeMs) return;
+        long now = clock.getAsLong();
+        if (!last && now < notBeforeMs) return;
         Path playlist = dir.resolve(LivePlaylist.FILE_NAME);
         if (!Files.exists(playlist)) return;
         long mtime = Files.getLastModifiedTime(playlist).toMillis();
         if (mtime == lastPlaylistMtime) return;
         String text = Files.readString(playlist, StandardCharsets.UTF_8);
+        Map<String, Long> pending = pendingSegments(text);
+        stock.prune(uploaded, now);
+        boolean holding = stock.holding(now);
+        // Riding out a stalled relay: keep shipping on the signed-ahead URLs between presign retries.
+        if (!last && relayDown && holding && now < presignNotBeforeMs) {
+            ship(text, mtime, pending, last, Map.of(), Map.of(), true);
+            return;
+        }
+        List<String> ask = new ArrayList<>(pending.keySet());
+        ask.add(LivePlaylist.FILE_NAME);
+        Result r = await(storage.presign(token, ask, stock.wantsMore(now)), holding ? STOCK_CALL_TIMEOUT_NS : CALL_TIMEOUT_NS);
+        if (r.forbidden()) throw new CutOff(r.str("takenBy"));
+        Map<String, SignedPut> urls = LiveFeedClient.parsePresign(r);
+        int count = LiveFeedClient.parseViewerCount(r);
+        if (count >= 0) viewers = count;
+        if (r.ok()) {
+            LiveLifeEvents.heartbeat(count);
+            LiveLifeEvents.crowd(LiveFeedClient.parseCrowd(r));
+        }
+        if (urls.isEmpty()) {
+            presignFailed(r);
+            if (relayDown && stock.holding(clock.getAsLong())) ship(text, mtime, pending, last, Map.of(), Map.of(), true);
+            return;
+        }
+        LiveFeedClient.Ahead ahead = LiveFeedClient.parseAhead(r);
+        if (ahead != null) stock.add(ahead);
+        if (relayDown) LOGGER.info("[DungeonTrain] live relay answering again");
+        relayDown = false;
+        presignBackoffMs = 0;
+        presignNotBeforeMs = 0;
+        ship(text, mtime, pending, last, urls, LiveFeedClient.parseRefused(r), false);
+    }
+
+    /** The playlist's segments not yet up (name → sequence number); one whose file is gone is skipped. */
+    private Map<String, Long> pendingSegments(String text) {
         LivePlaylist parsed = LivePlaylist.parse(text);
         encoderBreaks.addAll(LivePlaylist.discontinuities(text));
         Map<String, Long> pending = new LinkedHashMap<>();
@@ -244,68 +302,90 @@ public final class LiveUploader implements AutoCloseable {
                 skip(seg, sn, "its file is gone");
             }
         }
-        List<String> ask = new ArrayList<>(pending.keySet());
-        ask.add(LivePlaylist.FILE_NAME);
-        Result r = await(storage.presign(token, ask));
-        if (r.forbidden()) throw new CutOff(r.str("takenBy"));
-        Map<String, SignedPut> urls = LiveFeedClient.parsePresign(r);
-        int count = LiveFeedClient.parseViewerCount(r);
-        if (count >= 0) viewers = count;
-        if (r.ok()) {
-            LiveLifeEvents.heartbeat(count);
-            LiveLifeEvents.crowd(LiveFeedClient.parseCrowd(r));
-        }
-        if (urls.isEmpty()) {
-            presignFailed(r);
-            return;
-        }
-        presignBackoffMs = 0;
+        return pending;
+    }
+
+    /**
+     * PUTs the pending segments, then the publishable playlist, each on the URL the relay just signed
+     * or else an unexpired signed-ahead one. {@code outage}: the relay did not answer, so {@code urls}
+     * is empty and a segment from before the stock's batch cannot be signed until it is back.
+     */
+    private void ship(String text, long mtime, Map<String, Long> pending, boolean last,
+                      Map<String, SignedPut> urls, Map<String, String> refused, boolean outage) {
+        long now = clock.getAsLong();
         boolean allDone = true;
         for (Map.Entry<String, Long> e : pending.entrySet()) {
             String seg = e.getKey();
-            SignedPut target = urls.get(seg);
-            if (target == null) { allDone = false; continue; }
-            Path file = dir.resolve(seg);
-            long bytes = sizeOf(file);
-            long t0 = System.nanoTime();
-            Result put = await(storage.upload(target, file));
-            long putMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t0);
-            if (put.status() >= 200 && put.status() < 300) {
-                uploaded.add(seg);
-                segmentsUploaded++;
-                health.uploaded(bytes, putMs);
-                continue;
-            }
-            health.failed(putMs);
-            int failed = failures.merge(seg, 1, Integer::sum);
-            LOGGER.warn("[DungeonTrain] live segment {} upload → {} {}", seg, put.status(), put.error() == null ? "" : put.error().toString());
-            // The last pass has no later pass to retry in: give up now so the ENDLIST playlist still goes out.
-            if (last || failed >= MAX_FAILED_PASSES) {
-                skip(seg, e.getValue(), "gave up after " + failed + " failed uploads");
+            long sn = e.getValue();
+            SignedPut target = urls.containsKey(seg) ? urls.get(seg) : stock.segment(seg, now);
+            if (target != null) {
+                if (!putSegment(seg, sn, target, last)) allDone = false;
+            } else if (refused.containsKey(seg)) {
+                skip(seg, sn, "the relay refused to sign it (" + refused.get(seg) + ")");
+            } else if (outage && segmentIndex(seg) < stock.from()) {
+                // Not in the stock and the relay is down: count it as a failed pass so the playlist is not held forever.
+                int failed = failures.merge(seg, 1, Integer::sum);
+                if (last || failed >= MAX_FAILED_PASSES) skip(seg, sn, "no signed URL while the relay was down");
+                else allDone = false;
             } else {
                 allDone = false;
-                notBeforeMs = clock.getAsLong() + FAIL_BACKOFF_MS;
             }
         }
-        Optional<String> publish = LivePlaylist.publishable(text, uploaded, skippedSeqs, encoderBreaks);
-        boolean published = publish.isEmpty() || publish.get().equals(lastPublished);
-        SignedPut pl = urls.get(LivePlaylist.FILE_NAME);
-        // Held (encoder swap): the text may carry the old encoder's ENDLIST. Not published, so a later pass comes back.
-        if (!published && pl != null && !(held && !last)) {
-            Result put = await(storage.upload(pl, publish.get()));
-            if (put.status() >= 200 && put.status() < 300) {
-                lastPublished = publish.get();
-                published = true;
-                publishedThrough = Math.max(publishedThrough, newestSegment(LivePlaylist.parse(lastPublished)));
-            } else {
-                // Storage said no (or the network did): wait before asking the relay to sign again,
-                // or a dead bucket turns into two presign calls a second.
-                notBeforeMs = clock.getAsLong() + FAIL_BACKOFF_MS;
-                LOGGER.warn("[DungeonTrain] live playlist upload → {} (retry in {} s)", put.status(), FAIL_BACKOFF_MS / 1000);
-            }
-        }
+        SignedPut pl = urls.containsKey(LivePlaylist.FILE_NAME) ? urls.get(LivePlaylist.FILE_NAME) : stock.playlist(now);
+        boolean published = putPlaylist(text, pl, last);
         // Only once nothing is left to retry: until then every poll comes back for the pending segments.
         if (allDone && published) lastPlaylistMtime = mtime;
+    }
+
+    /** One segment PUT, timed into the health; true once it is up (or given up on for good). */
+    private boolean putSegment(String seg, long sn, SignedPut target, boolean last) {
+        Path file = dir.resolve(seg);
+        long bytes = sizeOf(file);
+        long t0 = System.nanoTime();
+        Result put = await(storage.upload(target, file), CALL_TIMEOUT_NS);
+        long putMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t0);
+        if (put.status() >= 200 && put.status() < 300) {
+            uploaded.add(seg);
+            stock.take(seg);
+            segmentsUploaded++;
+            health.uploaded(bytes, putMs);
+            return true;
+        }
+        health.failed(putMs);
+        int failed = failures.merge(seg, 1, Integer::sum);
+        LOGGER.warn("[DungeonTrain] live segment {} upload → {} {}", seg, put.status(), put.error() == null ? "" : put.error().toString());
+        // The last pass has no later pass to retry in: give up now so the ENDLIST playlist still goes out.
+        if (last || failed >= MAX_FAILED_PASSES) {
+            skip(seg, sn, "gave up after " + failed + " failed uploads");
+            return true;
+        }
+        notBeforeMs = clock.getAsLong() + FAIL_BACKOFF_MS;
+        return false;
+    }
+
+    /** PUTs the publishable playlist if it changed; true when nothing is left to publish. */
+    private boolean putPlaylist(String text, SignedPut pl, boolean last) {
+        Optional<String> publish = LivePlaylist.publishable(text, uploaded, skippedSeqs, encoderBreaks);
+        if (publish.isEmpty() || publish.get().equals(lastPublished)) return true;
+        // Held (encoder swap): the text may carry the old encoder's ENDLIST. Not published, so a later pass comes back.
+        if (pl == null || (held && !last)) return false;
+        Result put = await(storage.upload(pl, publish.get()), CALL_TIMEOUT_NS);
+        if (put.status() >= 200 && put.status() < 300) {
+            lastPublished = publish.get();
+            publishedThrough = Math.max(publishedThrough, newestSegment(LivePlaylist.parse(lastPublished)));
+            return true;
+        }
+        // Storage said no (or the network did): wait before asking the relay to sign again,
+        // or a dead bucket turns into two presign calls a second.
+        notBeforeMs = clock.getAsLong() + FAIL_BACKOFF_MS;
+        LOGGER.warn("[DungeonTrain] live playlist upload → {} (retry in {} s)", put.status(), FAIL_BACKOFF_MS / 1000);
+        return false;
+    }
+
+    /** {@code segNNNNN.ts} → NNNNN (the relay numbers its signed-ahead batch this way); −1 if not one. */
+    static long segmentIndex(String seg) {
+        Matcher m = SEGMENT_INDEX.matcher(seg);
+        return m.matches() ? Long.parseLong(m.group(1)) : -1;
     }
 
     /** The highest {@code segNNNNN.ts} index a playlist names, by name (a skipped one leaves a gap); −1 if none. */
@@ -337,20 +417,36 @@ public final class LiveUploader implements AutoCloseable {
         return skippedSeqs.size();
     }
 
-    /** The relay did not sign (down, 5xx, garbled): back off 1 s, 2 s, 4 s … 10 s, not every poll. */
+    /**
+     * The relay did not sign (down, 5xx, garbled): back off 1 s, 2 s, 4 s … 10 s, not every poll. With
+     * signed-ahead URLs in hand and the relay down, only the presign backs off; passes keep shipping.
+     */
     private void presignFailed(Result r) {
+        long now = clock.getAsLong();
+        boolean wasDown = relayDown;
+        relayDown = isRelayDown(r);
         presignBackoffMs = presignBackoffMs == 0 ? PRESIGN_BACKOFF_MIN_MS
             : Math.min(PRESIGN_BACKOFF_MAX_MS, presignBackoffMs * 2);
-        notBeforeMs = clock.getAsLong() + presignBackoffMs;
+        presignNotBeforeMs = now + presignBackoffMs;
+        boolean riding = relayDown && stock.holding(now);
+        if (!riding) notBeforeMs = presignNotBeforeMs;
         if (running) {
             LOGGER.info("[DungeonTrain] live presign failed (status {}{}); retrying in {} s", r.status(),
                 r.error() == null ? "" : ": " + r.error(), presignBackoffMs / 1000);
+            if (riding && !wasDown) {
+                LOGGER.info("[DungeonTrain] live relay not answering; uploading on {} signed-ahead URLs", stock.usable(now));
+            }
         }
     }
 
+    /** No answer, a 5xx or a 429: the relay is stalled or swamped, not refusing this request. */
+    static boolean isRelayDown(Result r) {
+        return r.status() == 0 || r.status() == 429 || r.status() >= 500;
+    }
+
     /** Waits for a call until its own timeout or the close deadline, whichever comes first. */
-    private Result await(CompletableFuture<Result> f) {
-        long callEnd = System.nanoTime() + CALL_TIMEOUT_NS;
+    private Result await(CompletableFuture<Result> f, long timeoutNs) {
+        long callEnd = System.nanoTime() + timeoutNs;
         try {
             while (true) {
                 long left = Math.min(callEnd, deadlineNs) - System.nanoTime();
