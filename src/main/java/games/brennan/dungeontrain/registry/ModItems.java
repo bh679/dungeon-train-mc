@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.item.VariantClipboardItem;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.FloatTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -274,6 +275,11 @@ public final class ModItems {
         hands.add(itemNbt("minecraft:golden_axe"));
         hands.add(itemNbt("piglinproliferation:buckler"));
         nbt.put("HandItems", hands);
+        // The Buckler is mob-only (DisabledModContent#MOB_ONLY_ITEMS): the axe drops as vanilla, the Buckler never.
+        ListTag dropChances = new ListTag();
+        dropChances.add(FloatTag.valueOf(0.085F));
+        dropChances.add(FloatTag.valueOf(0.0F));
+        nbt.put("HandDropChances", dropChances);
         return nbt;
     }
 
