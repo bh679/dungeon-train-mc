@@ -9,18 +9,18 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
 /**
- * The three flat attribute perks: Health (Tank, +1 heart per rank), Speed (Speedster, +1% base
- * movement speed per rank) and Damage (Knight, +0.5 attack damage per rank). Pure amounts live
- * in the static helpers so the numbers are unit-tested and easy to retune.
+ * The three flat attribute perks: Health (Tank, +half a heart per rank), Speed (Speedster, +1%
+ * base movement speed per rank) and Damage (Knight, +0.1 attack damage per rank). Uncapped. Pure
+ * amounts live in the static helpers so the numbers are unit-tested and easy to retune.
  */
 public final class AttributePerks implements PerkEffect {
 
-    /** One heart per rank. */
-    public static final double HEALTH_PER_RANK = 2.0;
+    /** Half a heart per rank. */
+    public static final double HEALTH_PER_RANK = 1.0;
     /** 1% of base movement speed per rank. */
     public static final double SPEED_PER_RANK = 0.01;
-    /** Half a point of attack damage per rank. */
-    public static final double DAMAGE_PER_RANK = 0.5;
+    /** A tenth of a point of attack damage per rank. */
+    public static final double DAMAGE_PER_RANK = 0.1;
 
     public static double healthBonus(int rank) {
         return Math.max(0, rank) * HEALTH_PER_RANK;

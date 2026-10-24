@@ -104,14 +104,10 @@ public final class TrainAssembler {
             return null;
         }
         SharedCarriagePool.noteStageDemand(stageId); // steer the prefetch tick at the stage we're spawning into
-        // Drift Chance perk (Builder): the best rank aboard raises both chances before the roll.
-        double driftBoost = games.brennan.dungeontrain.perks.tier1.DriftChance.multiplierFor(level);
         SharedCarriageRolls.Bucket bucket = SharedCarriageRolls.bucket(
                 genCfg.seed(), carriagePIdx,
-                games.brennan.dungeontrain.perks.tier1.DriftChance.boosted(
-                    games.brennan.dungeontrain.config.DungeonTrainConfig.getSharedCarriagePoolChance(), driftBoost),
-                games.brennan.dungeontrain.perks.tier1.DriftChance.boosted(
-                    games.brennan.dungeontrain.config.DungeonTrainConfig.getSharedCarriageOwnChance(), driftBoost));
+                games.brennan.dungeontrain.config.DungeonTrainConfig.getSharedCarriagePoolChance(),
+                games.brennan.dungeontrain.config.DungeonTrainConfig.getSharedCarriageOwnChance());
         if (bucket == SharedCarriageRolls.Bucket.FRESH) {
             logLeaseOutcome(carriagePIdx, "ROLLED_FRESH", null);
             return null;
@@ -563,7 +559,7 @@ public final class TrainAssembler {
             ? ContentsSize.FULL.shellDims(dims, groupSize).orElse(null) : null;
         final boolean groupDrifts = groupBox != null && transitionGroup == null
             && SharedGroupDrift.drifts(anchorPIdx, groupSize, genCfg.seed(), fullStage,
-                games.brennan.dungeontrain.perks.tier1.DriftChance.multiplierFor(level));
+                games.brennan.dungeontrain.perks.tier1.DriftChance.bestRank(level));
         SharedGroupDrift.Pick groupLease = null;
         net.minecraft.nbt.ListTag groupLeaseEnts = null;
         if (fullGroup) {

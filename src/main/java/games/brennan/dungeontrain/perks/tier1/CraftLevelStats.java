@@ -5,7 +5,6 @@ import games.brennan.adventureitemstats.api.StatsModifier;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.difficulty.ItemStatLevelScaling;
-import games.brennan.dungeontrain.difficulty.ProceduralTiers;
 import games.brennan.dungeontrain.perks.Perks;
 import games.brennan.dungeontrain.perks.TierOnePerks;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
@@ -23,61 +22,46 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import org.slf4j.Logger;
 
 /**
- * Craft Level Stats (Crafter): gear you craft gets the stats of the level you are in, as if it
- * had been looted there. The loot roller stamps chest gear with
- * {@code StatsModifier.applyStats(stack, rng, primaryStatBonus(stack, levelTier))}; this does the
- * same on {@code ItemCraftedEvent}, but at a <em>rolled</em> tier:
- * <pre>rolledTier = round(levelTier * q),  q = max of (1 + rank) uniforms * 0.5^materialGap</pre>
- * so more rank pushes the roll toward the level's full tier, and crafting below the level's
- * dominant material (an iron sword where mobs carry diamond) halves the roll per material step.
+ * Craft Level Stats (Crafter): gear you craft gets stats measured against the chest loot of the
+ * level you are in. The loot roller stamps chest gear at the full level tier with
+ * {@code StatsModifier.applyStats(stack, rng, primaryStatBonus(stack, levelTier))}, whatever its
+ * material; this does the same on {@code ItemCraftedEvent}, at a lower <em>rolled</em> tier:
+ * <pre>rolledTier = floor(levelTier * q * ceiling(rank)),  q = best of (1 + rank) uniforms
+ * ceiling(rank) = 1 - 0.5 * 0.9^(rank - 1)</pre>
+ * The ceiling starts at half the chest tier and each rank closes a tenth of the remaining gap, so
+ * a crafted item never reaches the level's chest-loot tier but every rank gets closer.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class CraftLevelStats {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    /** Roll factor per material step the crafted item sits below the level's dominant material. */
-    public static final double MATERIAL_STEP_FACTOR = 0.5;
+    /** Ceiling at rank 1, as a share of the chest-loot tier. */
+    public static final double CEILING_AT_RANK_ONE = 0.5;
+    /** Share of the remaining gap to chest loot each further rank leaves open. */
+    public static final double CEILING_GAP_KEPT_PER_RANK = 0.9;
 
     private CraftLevelStats() {}
 
     // ---------------- pure maths ----------------
 
-    /** Best of {@code 1 + rank} uniform draws: the "chance of the max" rises with rank. */
+    /** Best of {@code 1 + rank} uniform draws: rises toward 1 with rank. */
     public static double qualityRoll(int rank, RandomSource rng) {
         double best = 0;
         for (int i = 0; i <= Math.max(0, rank); i++) best = Math.max(best, rng.nextDouble());
         return best;
     }
 
-    public static double materialFactor(int materialGap) {
-        return Math.pow(MATERIAL_STEP_FACTOR, Math.max(0, materialGap));
+    /** Highest share of the chest-loot tier reachable at {@code rank}; 0 at rank 0, always below 1. */
+    public static double ceiling(int rank) {
+        if (rank <= 0) return 0;
+        return 1.0 - (1.0 - CEILING_AT_RANK_ONE) * Math.pow(CEILING_GAP_KEPT_PER_RANK, rank - 1);
     }
 
-    /** The tier the crafted item is stamped at. {@code quality} is {@link #qualityRoll}. */
-    public static int rolledTier(int levelTier, double quality, int materialGap) {
+    /** The tier the crafted item is stamped at; always below {@code levelTier}. */
+    public static int rolledTier(int levelTier, double quality, int rank) {
         if (levelTier <= 0) return 0;
-        double q = Math.max(0, Math.min(1, quality)) * materialFactor(materialGap);
-        return (int) Math.round(levelTier * q);
-    }
-
-    /**
-     * Material stage of an item by its id, on the mob-weapon scale ({@code ProceduralTiers
-     * .dominantWeaponStage}): 1 wood/leather/gold, 2 stone/turtle, 3 iron/chainmail, 4 diamond,
-     * 5 netherite; anything unrecognised counts as iron so modded gear is neither punished nor
-     * favoured.
-     */
-    public static int materialStage(String itemPath) {
-        String p = itemPath == null ? "" : itemPath;
-        if (p.contains("netherite")) return 5;
-        if (p.contains("diamond")) return 4;
-        if (p.contains("iron") || p.contains("chainmail")) return 3;
-        if (p.contains("stone") || p.contains("turtle")) return 2;
-        if (p.contains("wooden") || p.contains("leather") || p.contains("golden")) return 1;
-        return 3;
-    }
-
-    public static int materialGap(int levelTier, String itemPath) {
-        return Math.max(0, ProceduralTiers.dominantWeaponStage(levelTier) - materialStage(itemPath));
+        double q = Math.max(0, Math.min(1, quality)) * ceiling(rank);
+        return Math.min(levelTier - 1, (int) Math.floor(levelTier * q));
     }
 
     /** Gear the loot roller would give stats to: tools, weapons and armour. */
@@ -114,11 +98,11 @@ public final class CraftLevelStats {
         if (rank <= 0) return;
         int levelTier = levelTierFor(player);
         if (levelTier <= 0) return;
-        String path = BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath();
         RandomSource rng = player.getRandom();
-        int tier = rolledTier(levelTier, qualityRoll(rank, rng), materialGap(levelTier, path));
+        int tier = rolledTier(levelTier, qualityRoll(rank, rng), rank);
         int applied = stamp(stack, tier, rng);
         LOGGER.debug("[DungeonTrain] Craft Level Stats rank {}: {} at level tier {} -> stamped tier {} for {}",
-            rank, path, levelTier, applied, player.getScoreboardName());
+            rank, BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath(), levelTier, applied,
+            player.getScoreboardName());
     }
 }

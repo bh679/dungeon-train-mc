@@ -39,16 +39,16 @@ public final class SharedGroupDrift {
      * leases one without, so a stageless group is the plain template by definition.
      */
     public static boolean drifts(int anchorPIdx, int groupSize, long seed, String stageId) {
-        return drifts(anchorPIdx, groupSize, seed, stageId, 1.0);
+        return drifts(anchorPIdx, groupSize, seed, stageId, 0);
     }
 
-    /** As above with the Drift Chance perk multiplier ({@code perks/tier1/DriftChance}) applied to the group chance. */
-    public static boolean drifts(int anchorPIdx, int groupSize, long seed, String stageId, double driftBoost) {
+    /** As above with the Drift Chance perk rank ({@code perks/tier1/DriftChance}) raising the group chance. */
+    public static boolean drifts(int anchorPIdx, int groupSize, long seed, String stageId, int driftRank) {
         if (!SharedCarriageGate.canDiscover()) return false;
         if (stageId == null || stageId.isEmpty()) return false;
         long groupIndex = Math.floorDiv((long) anchorPIdx, Math.max(1, groupSize));
         return SharedCarriageRolls.groupDrifts(seed, groupIndex,
-            games.brennan.dungeontrain.perks.tier1.DriftChance.boosted(DungeonTrainConfig.getSharedGroupChance(), driftBoost));
+            games.brennan.dungeontrain.perks.tier1.DriftChance.boosted(DungeonTrainConfig.getSharedGroupChance(), driftRank));
     }
 
     /**
@@ -63,10 +63,9 @@ public final class SharedGroupDrift {
             log(anchorPIdx, "LEASING_OFF", null);
             return null;
         }
-        double driftBoost = games.brennan.dungeontrain.perks.tier1.DriftChance.multiplierFor(level);
         SharedCarriageRolls.Bucket bucket = SharedCarriageRolls.bucket(seed, anchorPIdx,
-                games.brennan.dungeontrain.perks.tier1.DriftChance.boosted(DungeonTrainConfig.getSharedCarriagePoolChance(), driftBoost),
-                games.brennan.dungeontrain.perks.tier1.DriftChance.boosted(DungeonTrainConfig.getSharedCarriageOwnChance(), driftBoost));
+                DungeonTrainConfig.getSharedCarriagePoolChance(),
+                DungeonTrainConfig.getSharedCarriageOwnChance());
         if (bucket == SharedCarriageRolls.Bucket.FRESH) {
             log(anchorPIdx, "ROLLED_FRESH", null);
             return null;

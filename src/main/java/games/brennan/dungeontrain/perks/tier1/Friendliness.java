@@ -9,28 +9,35 @@ import net.minecraft.world.entity.player.Player;
 /**
  * Friendliness (Lover): PlayerMobs like you more and animals are easier to tame.
  * <ul>
- *   <li>PlayerMob feeling: {@link #feelingBonus(int)} is added to what a PlayerMob feels toward
- *       the player ({@code mixin/PlayerMobFeelingMixin}), clamped by the caller to the ledger range.</li>
+ *   <li>PlayerMob feeling: each rank closes {@link #FEELING_GAP_CLOSED_PER_RANK} of the remaining
+ *       gap between what the mob recorded and the ledger's top ({@link #feelingFor}), so the
+ *       feeling climbs toward full love without ever reaching it ({@code mixin/PlayerMobFeelingMixin}).</li>
  *   <li>Taming: every vanilla tame roll ({@code random.nextInt(bound) == 0} in Wolf, Cat, Ocelot,
  *       Parrot) gets {@code rank} extra independent rolls ({@link #tameRoll}), so the chance per
- *       feed goes from 1/bound to 1 - (1 - 1/bound)^(1 + rank).</li>
+ *       feed goes from 1/bound to 1 - (1 - 1/bound)^(1 + rank), never 100%.</li>
  * </ul>
  */
 public final class Friendliness {
 
-    /** Feeling units per rank; the PlayerMob ledger runs {@code FeelingLedger.MIN..MAX}. */
-    public static final float FEELING_PER_RANK = 0.1f;
+    /** Share of the gap to the ledger's top that one rank closes. */
+    public static final double FEELING_GAP_CLOSED_PER_RANK = 0.06;
 
     private Friendliness() {}
 
-    public static float feelingBonus(int rank) {
-        return Math.max(0, rank) * FEELING_PER_RANK;
+    /** Fraction of the gap closed at {@code rank}: {@code 1 - 0.94^rank}. */
+    public static double gapClosed(int rank) {
+        return 1.0 - Math.pow(1.0 - FEELING_GAP_CLOSED_PER_RANK, Math.max(0, rank));
     }
 
-    /** Feeling bonus for {@code target} as seen by a PlayerMob: 0 unless it is a player with rank. */
-    public static float feelingBonusFor(LivingEntity target) {
-        if (!(target instanceof Player player)) return 0f;
-        return feelingBonus(Perks.rank(player, TierOnePerks.FRIENDLINESS));
+    /** The feeling a mob shows toward a player at {@code rank}, from what it recorded and the ledger's top. */
+    public static float feelingFor(float recorded, int rank, float max) {
+        if (rank <= 0 || recorded >= max) return recorded;
+        return (float) (recorded + (max - recorded) * gapClosed(rank));
+    }
+
+    /** Friendliness rank of {@code target} as seen by a PlayerMob: 0 unless it is a player. */
+    public static int rankOf(LivingEntity target) {
+        return target instanceof Player player ? Perks.rank(player, TierOnePerks.FRIENDLINESS) : 0;
     }
 
     /**

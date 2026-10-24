@@ -26,11 +26,11 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class BookQuillStacking implements PerkEffect {
 
-    /** Vanilla stack limit; the perk never goes past it. */
-    public static final int MAX_STACK = 16;
+    /** The game's own ceiling: the max-stack-size component only encodes 1..99. Not a design cap. */
+    public static final int MAX_STACK = 99;
     private static final int SWEEP_PERIOD_TICKS = 20;
 
-    /** Stack size a blank book-and-quill gets at {@code rank}: vanilla 1 at rank 0, capped at 16. */
+    /** Stack size a blank book-and-quill gets at {@code rank}: vanilla 1 at rank 0, up to the game's 99. */
     public static int stackSizeFor(int rank) {
         return Math.max(1, Math.min(MAX_STACK, 1 + rank));
     }

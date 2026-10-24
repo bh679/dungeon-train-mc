@@ -6,27 +6,26 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Drift Chance (Builder): more drifting (shared / community) carriages roll into the train. The
- * train is one object shared by everyone aboard, so the best rank among the level's online
- * players counts; both the per-slot pool/own chances and the group chance are multiplied by
- * {@link #multiplier(int)} right before the seeded roll ({@code TrainAssembler.tryLeaseShared},
- * {@code SharedGroupDrift}). Pure functions so the numbers are unit-tested.
+ * Drift Chance (Builder): drifting (shared / community) builds turn up more often in the two places
+ * where drift is still rare: whole-group carriages ({@code SharedGroupDrift}, 10% by default) and
+ * dimensional rooms ({@code PortalRoomDriftPlanner}, one in fifteen). Single carriage slots are
+ * left alone: by default 95% of them already lease a drifting build. Each rank closes
+ * {@link #GAP_CLOSED_PER_RANK} of the gap between the configured chance and certainty
+ * ({@link #boosted}), so the chance climbs slowly and never reaches 100%. The train is shared by
+ * everyone aboard, so the best rank among the level's players counts.
  */
 public final class DriftChance {
 
-    /** +15% of the configured chance per rank. */
-    public static final double PER_RANK = 0.15;
+    /** Share of the gap to 100% that one rank closes. */
+    public static final double GAP_CLOSED_PER_RANK = 0.02;
 
     private DriftChance() {}
 
-    public static double multiplier(int rank) {
-        return 1.0 + Math.max(0, rank) * PER_RANK;
-    }
-
-    /** A chance scaled by the multiplier, never above 1. */
-    public static double boosted(double chance, double multiplier) {
+    /** {@code 1 - (1 - chance) * 0.98^rank}: the configured chance at rank 0, never 1. */
+    public static double boosted(double chance, int rank) {
         if (chance <= 0) return 0;
-        return Math.min(1.0, chance * Math.max(1.0, multiplier));
+        if (chance >= 1 || rank <= 0) return Math.min(1.0, chance);
+        return 1.0 - (1.0 - chance) * Math.pow(1.0 - GAP_CLOSED_PER_RANK, rank);
     }
 
     /** Best Drift Chance rank among the level's players, 0 with nobody online. */
@@ -39,7 +38,8 @@ public final class DriftChance {
         return best;
     }
 
-    public static double multiplierFor(ServerLevel level) {
-        return multiplier(bestRank(level));
+    /** {@code chance} boosted by the best rank on {@code level}. */
+    public static double boostedFor(ServerLevel level, double chance) {
+        return boosted(chance, bestRank(level));
     }
 }

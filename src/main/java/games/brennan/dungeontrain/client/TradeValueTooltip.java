@@ -7,36 +7,41 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.npc.AbstractVillager;
-import net.minecraft.world.entity.npc.Villager;
-import net.minecraft.world.entity.npc.VillagerProfession;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.phys.AABB;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 
-import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
 
 /**
- * See Trade Values (Trader): hovering any item shows what it trades for (Trade Everything's
- * value for the stack, in emeralds and sixteenths). Rank 2 adds the nearest buyer: the closest
- * villager with a trade within {@link #BUYER_RANGE} blocks, with its profession and distance.
- * The client cannot see villagers' offers, so "best" is the nearest that trades at all.
+ * See Trade Values (Trader): hovering an item shows what it trades for (Trade Everything's value,
+ * in emeralds and sixteenths), but only while that value is at most the rank's ceiling
+ * ({@link #ceilingEmeralds}). The ceiling starts at 1 emerald and each rank adds
+ * {@link #CEILING_STEP_GROWTH} more than the last (+1.8, +2.6, +3.4 ...): rank 10 sees up to
+ * 46 emeralds, about five emerald blocks. Uncapped.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class TradeValueTooltip {
 
-    /** Blocks around the player scanned for a buyer at rank 2. */
-    public static final int BUYER_RANGE = 32;
-    public static final int BUYER_RANK = 2;
+    /** Extra emeralds each rank's step adds over the previous step. */
+    public static final double CEILING_STEP_GROWTH = 0.8;
     private static final Boolean[] TE_LOADED = new Boolean[1];
 
     private TradeValueTooltip() {}
+
+    /** Highest value (emeralds) visible at {@code rank}: {@code r + 0.4 r(r-1)}; 0 at rank 0. */
+    public static double ceilingEmeralds(int rank) {
+        int r = Math.max(0, rank);
+        return r + CEILING_STEP_GROWTH * r * (r - 1) / 2.0;
+    }
+
+    /** Whether a value in sixteenths is visible at {@code rank}. */
+    public static boolean visibleAt(int sixteenths, int rank) {
+        return sixteenths > 0 && sixteenths <= ceilingEmeralds(rank) * 16.0;
+    }
 
     /** "1 emerald", "2 emeralds 3/16" or "5/16 of an emerald" from a value in sixteenths. */
     public static String formatSixteenths(int sixteenths) {
@@ -57,13 +62,9 @@ public final class TradeValueTooltip {
         ItemStack stack = event.getItemStack();
         if (stack.isEmpty()) return;
         Optional<Integer> value = valueOf(stack);
-        if (value.isEmpty()) return;
-        List<Component> lines = event.getToolTip();
-        lines.add(Component.literal("Trades for " + formatSixteenths(value.get()))
+        if (value.isEmpty() || !visibleAt(value.get(), rank)) return;
+        event.getToolTip().add(Component.literal("Trades for " + formatSixteenths(value.get()))
             .withStyle(ChatFormatting.GREEN));
-        if (rank >= BUYER_RANK) {
-            nearestBuyer(player).ifPresent(line -> lines.add(line.withStyle(ChatFormatting.DARK_GREEN)));
-        }
     }
 
     private static Optional<Integer> valueOf(ItemStack stack) {
@@ -79,27 +80,5 @@ public final class TradeValueTooltip {
     private static boolean teLoaded() {
         if (TE_LOADED[0] == null) TE_LOADED[0] = ModList.get().isLoaded("tradeeverything");
         return TE_LOADED[0];
-    }
-
-    private static Optional<net.minecraft.network.chat.MutableComponent> nearestBuyer(LocalPlayer player) {
-        AABB box = player.getBoundingBox().inflate(BUYER_RANGE);
-        List<AbstractVillager> near = player.level().getEntitiesOfClass(AbstractVillager.class, box,
-            v -> v.isAlive() && trades(v));
-        return near.stream().min(Comparator.comparingDouble(player::distanceToSqr)).map(v -> {
-            int dist = (int) Math.round(player.distanceTo(v));
-            String who = v instanceof Villager vil
-                ? vil.getVillagerData().getProfession().name().replace('_', ' ')
-                : "wandering trader";
-            return Component.literal("Nearest buyer: " + who + ", " + dist + " blocks away");
-        });
-    }
-
-    private static boolean trades(AbstractVillager v) {
-        if (v.isBaby()) return false;
-        if (v instanceof Villager vil) {
-            VillagerProfession p = vil.getVillagerData().getProfession();
-            return p != VillagerProfession.NONE && p != VillagerProfession.NITWIT;
-        }
-        return true;
     }
 }
