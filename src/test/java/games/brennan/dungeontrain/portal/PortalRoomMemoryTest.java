@@ -83,4 +83,31 @@ final class PortalRoomMemoryTest {
         assertEquals(List.of(Path.of("b.nbt"), Path.of("c.nbt")), PortalRoomMemory.toPrune(writtenAt, 2));
         assertEquals(List.of(), PortalRoomMemory.toPrune(writtenAt, 4));
     }
+    @Test
+    @DisplayName("each copy of a pair's room has its own file, negative tiles included")
+    void tileFilesAreDistinctPerCopy() {
+        assertEquals("42_-3_7.nbt", PortalRoomMemory.tileFileName(42, new PortalRoomTiling.Tile(-3, 7)));
+        assertFalse(PortalRoomMemory.tileFileName(4, new PortalRoomTiling.Tile(2, 1))
+            .equals(PortalRoomMemory.tileFileName(42, new PortalRoomTiling.Tile(-1, 1))));
+    }
+
+    @Test
+    @DisplayName("a copy a player stood in is remembered; the base room is left to the pair's own memory")
+    void tileTouchesAreTrackedPerPairAndSkipTheBase() {
+        PortalRoomMemory.clearSession();
+        try {
+            PortalRoomTiling.Tile copy = new PortalRoomTiling.Tile(-3, -7);
+            PortalRoomMemory.markTileTouched(75, copy);
+            PortalRoomMemory.markTileTouched(75, PortalRoomTiling.Tile.BASE);
+
+            assertTrue(PortalRoomMemory.isTileTouched(75, copy));
+            assertFalse(PortalRoomMemory.isTileTouched(75, PortalRoomTiling.Tile.BASE));
+            assertFalse(PortalRoomMemory.isTileTouched(76, copy));
+
+            PortalRoomMemory.clearSession();
+            assertFalse(PortalRoomMemory.isTileTouched(75, copy));
+        } finally {
+            PortalRoomMemory.clearSession();
+        }
+    }
 }
