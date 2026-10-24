@@ -7,7 +7,7 @@
       "languages": [
         {
           "locale": "zh_cn",
-          "contributed": 1015,
+          "contributed": 1539,
           "total": 3441
         }
       ]
@@ -56,13 +56,13 @@
       "name": "阿世xAsh",
       "languages": [
         {
-          "locale": "zh_cn",
+          "locale": "zh_tw",
           "contributed": 14,
           "total": 3441
         },
         {
-          "locale": "zh_tw",
-          "contributed": 14,
+          "locale": "zh_cn",
+          "contributed": 12,
           "total": 3441
         }
       ]
@@ -78,16 +78,6 @@
       ]
     },
     {
-      "name": "Run_xu",
-      "languages": [
-        {
-          "locale": "zh_cn",
-          "contributed": 2,
-          "total": 3441
-        }
-      ]
-    },
-    {
       "name": "gogogockj",
       "languages": [
         {
@@ -99,6 +89,16 @@
     },
     {
       "name": "DyingDol",
+      "languages": [
+        {
+          "locale": "zh_cn",
+          "contributed": 1,
+          "total": 3441
+        }
+      ]
+    },
+    {
+      "name": "Run_xu",
       "languages": [
         {
           "locale": "zh_cn",

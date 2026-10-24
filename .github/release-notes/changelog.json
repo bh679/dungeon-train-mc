@@ -30164,8 +30164,47 @@
       "released_at": null
     },
     {
+      "id": "streamer-more-info",
+      "version": "0.1491.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Know your streamer",
+      "summary": "Type /streamer -more in Live chat to see when the streamer first played Dungeon Train, which version they started on, and how many hours they have played.",
+      "highlights": [
+        "Works from the game, the website and Discord (/streamer more:True)"
+      ],
+      "pr": 2279,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "zh-cn-proofread-laobenyuan",
+      "version": "0.1493.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations"
+      ],
+      "title": "Chinese translation polish",
+      "summary": "\u8001\u672c\u9858 proofread the Simplified Chinese translation, rewording over 600 lines across menus, the death screen, advancements, options, the editor and several books so they read more naturally. Thank you, \u8001\u672c\u9858!",
+      "highlights": [
+        "Over 600 menu and message lines reworded",
+        "Smoother wording in 14 books"
+      ],
+      "pr": 2283,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "live-chat-tv-watcher-death",
-      "version": "0.1492.0",
+      "version": "0.1494.0",
       "type": "feat",
       "tags": [
         "feature",

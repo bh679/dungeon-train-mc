@@ -12,17 +12,23 @@ import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
  * (website, Discord, Twitch and every connected game) as {@code [Live] Dungeon Train: Streamer: …}, and
  * throttles it itself. Typed anywhere else it is a vanilla command, so it is registered client side and
  * sent through {@link LiveChatBridge#sendCommand}. Out of Live chat it does nothing.
+ *
+ * <p>{@code /streamer -more} adds the streamer's all-time record to that answer: when they first played,
+ * on which version, and their total hours.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class StreamerCommand {
 
     static final String COMMAND = "streamer";
+    static final String MORE = "-more";
 
     private StreamerCommand() {}
 
     @SubscribeEvent
     public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
         event.getDispatcher().register(Commands.literal(COMMAND)
-            .executes(ctx -> LiveChatBridge.sendCommand("/" + COMMAND) ? 1 : 0));
+            .executes(ctx -> LiveChatBridge.sendCommand("/" + COMMAND) ? 1 : 0)
+            .then(Commands.literal(MORE)
+                .executes(ctx -> LiveChatBridge.sendCommand("/" + COMMAND + " " + MORE) ? 1 : 0)));
     }
 }
