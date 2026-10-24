@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import games.brennan.dungeontrain.perks.effects.builder.OwnCarriageReturn;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -174,8 +175,9 @@ public final class SharedCarriageEvents {
         // unusable here while locking that carriage against every other world.
         SharedCarriagePool.refreshAsync(dims, stage, hostUuid, hostName, exclude, mode);
         if (!players.isEmpty()) {
-            int idx = Math.floorMod(ownPrefetchCursor++, players.size());
-            String owner = players.get(idx).getUUID().toString().replace("-", "");
+            // Own Carriage Return perk holders take every other tick; the rest round-robin as before.
+            ServerPlayer ownPick = OwnCarriageReturn.prefetchOwner(players, ownPrefetchCursor++);
+            String owner = ownPick.getUUID().toString().replace("-", "");
             SharedCarriagePool.refreshOwnAsync(dims, stage, owner, exclude, mode);
         }
         // Drifting Group carriages: only once one has drifted here (demand is null until then), so a
@@ -184,7 +186,7 @@ public final class SharedCarriageEvents {
         if (groupDemand != null) {
             SharedGroupPool.refreshAsync(groupDemand, hostUuid, hostName, exclude, mode);
             if (!players.isEmpty()) {
-                String owner = players.get(Math.floorMod(ownPrefetchCursor, players.size()))
+                String owner = OwnCarriageReturn.prefetchOwner(players, ownPrefetchCursor)
                         .getUUID().toString().replace("-", "");
                 SharedGroupPool.refreshOwnAsync(groupDemand, owner, exclude, mode);
             }

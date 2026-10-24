@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.perks.effects.builder.OwnCarriageReturn;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.event.SharedCarriageGate;
@@ -57,9 +58,8 @@ public final class SharedGroupDrift {
             log(anchorPIdx, "LEASING_OFF", null);
             return null;
         }
-        SharedCarriageRolls.Bucket bucket = SharedCarriageRolls.bucket(seed, anchorPIdx,
-                DungeonTrainConfig.getSharedCarriagePoolChance(),
-                DungeonTrainConfig.getSharedCarriageOwnChance());
+        OwnCarriageReturn.Split split = OwnCarriageReturn.split(level); // widened by the Own Carriage Return perk
+        SharedCarriageRolls.Bucket bucket = SharedCarriageRolls.bucket(seed, anchorPIdx, split.pool(), split.own());
         if (bucket == SharedCarriageRolls.Bucket.FRESH) {
             log(anchorPIdx, "ROLLED_FRESH", null);
             return null;

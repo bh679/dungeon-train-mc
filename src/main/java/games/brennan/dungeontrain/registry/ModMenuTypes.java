@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.perks.effects.builder.DriftGiftMenu;
 import games.brennan.dungeontrain.player.FreePlayEnderChestMenu;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
@@ -23,6 +24,13 @@ public final class ModMenuTypes {
 
     public static final DeferredHolder<MenuType<?>, MenuType<FreePlayEnderChestMenu>> FREE_PLAY_ENDER_CHEST =
         MENU_TYPES.register("ender_chest", () -> IMenuTypeExtension.create(FreePlayEnderChestMenu::fromNetwork));
+
+    /**
+     * Drift Gift Repaid's chest-plus-gift-slot menu over a drifting carriage's storage. Its own type
+     * because the extra slot sits outside vanilla's window; rows and payout rank ride the open packet.
+     */
+    public static final DeferredHolder<MenuType<?>, MenuType<DriftGiftMenu>> DRIFT_GIFT =
+        MENU_TYPES.register("drift_gift", () -> IMenuTypeExtension.create(DriftGiftMenu::fromNetwork));
 
     private ModMenuTypes() {}
 

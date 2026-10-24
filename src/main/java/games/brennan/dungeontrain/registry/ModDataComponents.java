@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.registry;
 
 import com.mojang.serialization.Codec;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.perks.effects.builder.DriftGiftTag;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -34,6 +35,15 @@ public final class ModDataComponents {
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> TV_STREAM =
         COMPONENTS.registerComponentType("tv_stream",
             b -> b.persistent(Codec.intRange(1, 2)).networkSynchronized(ByteBufCodecs.VAR_INT));
+
+    /**
+     * Drift Gift Repaid's "already paid for" mark on a stack left in a drifting carriage's container:
+     * who was paid, and how much per item, so a take-back can be charged. Persistent (it travels with
+     * the carriage to the next world), not synced. See {@code perks/effects/builder/DriftGiftTag}.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<DriftGiftTag>> DRIFT_GIFT_PAID =
+        COMPONENTS.registerComponentType("drift_gift_paid",
+            b -> b.persistent(DriftGiftTag.CODEC));
 
     private ModDataComponents() {}
 

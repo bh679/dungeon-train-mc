@@ -104,10 +104,11 @@ public final class TrainAssembler {
             return null;
         }
         SharedCarriagePool.noteStageDemand(stageId); // steer the prefetch tick at the stage we're spawning into
+        // Config split, widened toward OWN by the Own Carriage Return perk (Builder tier 2) if anyone aboard holds it.
+        games.brennan.dungeontrain.perks.effects.builder.OwnCarriageReturn.Split split =
+                games.brennan.dungeontrain.perks.effects.builder.OwnCarriageReturn.split(level);
         SharedCarriageRolls.Bucket bucket = SharedCarriageRolls.bucket(
-                genCfg.seed(), carriagePIdx,
-                games.brennan.dungeontrain.config.DungeonTrainConfig.getSharedCarriagePoolChance(),
-                games.brennan.dungeontrain.config.DungeonTrainConfig.getSharedCarriageOwnChance());
+                genCfg.seed(), carriagePIdx, split.pool(), split.own());
         if (bucket == SharedCarriageRolls.Bucket.FRESH) {
             logLeaseOutcome(carriagePIdx, "ROLLED_FRESH", null);
             return null;
@@ -165,13 +166,12 @@ public final class TrainAssembler {
         return first != null ? first : b.get();
     }
 
-    /** Uuids (dashless, as the relay stores them) of the players currently in this level. */
+    /**
+     * Uuids (dashless, as the relay stores them) of the players currently in this level, Own Carriage
+     * Return perk holders first so the own buffer serves their builds before anyone else's.
+     */
     private static List<String> onlinePlayerUuids(ServerLevel level) {
-        List<String> out = new java.util.ArrayList<>();
-        for (net.minecraft.server.level.ServerPlayer p : level.players()) {
-            out.add(p.getUUID().toString().replace("-", ""));
-        }
-        return out;
+        return games.brennan.dungeontrain.perks.effects.builder.OwnCarriageReturn.orderedOnlineUuids(level);
     }
 
     /**

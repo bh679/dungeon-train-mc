@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.portal;
 
+import games.brennan.dungeontrain.perks.effects.builder.OwnCarriageReturn;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.event.SharedCarriageGate;
@@ -54,10 +55,9 @@ public final class PortalRoomDriftPlanner {
             return null;
         }
         SharedRoomPool.noteDemand(stageId, roomName, size);
+        OwnCarriageReturn.Split split = OwnCarriageReturn.split(level); // widened by the Own Carriage Return perk
         SharedCarriageRolls.Bucket bucket = SharedCarriageRolls.bucket(
-            level.getSeed(), pairKey,
-            DungeonTrainConfig.getSharedCarriagePoolChance(),
-            DungeonTrainConfig.getSharedCarriageOwnChance());
+            level.getSeed(), pairKey, split.pool(), split.own());
         if (bucket == SharedCarriageRolls.Bucket.FRESH) {
             log(pairKey, roomName, "ROLLED_FRESH", null);
             return null;
@@ -135,11 +135,9 @@ public final class PortalRoomDriftPlanner {
         }
     }
 
-    /** Uuids (dashless, as the relay stores them) of the players currently in this level. */
+    /** Uuids (dashless, as the relay stores them) of the players currently in this level, perk holders first. */
     static List<String> onlinePlayerUuids(ServerLevel level) {
-        List<String> out = new ArrayList<>();
-        for (ServerPlayer p : level.players()) out.add(p.getUUID().toString().replace("-", ""));
-        return out;
+        return OwnCarriageReturn.orderedOnlineUuids(level);
     }
 
     /** One line per drifting room planned — the same audit the carriage slots leave. */

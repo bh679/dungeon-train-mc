@@ -177,6 +177,16 @@ public final class DebugCommand {
             // /dungeontrain debug mixin-guards — the guarded WorldWeaver/BCLib/BetterEnd/TerraBlender mixins
             // that are off this boot and what each falls back to. Also logged at INFO for RCON runs.
             .then(Commands.literal("mixin-guards").executes(ctx -> MixinGuardsDebug.report(ctx.getSource())))
+            // /dungeontrain debug perk set <id> <rank> — TEMPORARY SHIM for the perks foundation's command of the
+            // same shape (dev builds only): sets a perk's active rank for the calling player in memory. Goes
+            // away with perks/PerkRankShim when the foundation PR lands.
+            .then(Commands.literal("perk")
+                .requires(src -> games.brennan.dungeontrain.DungeonTrain.isDevBuild())
+                .then(Commands.literal("set")
+                    .then(Commands.argument("id", StringArgumentType.word())
+                        .then(Commands.argument("rank", IntegerArgumentType.integer(0, 99))
+                            .executes(ctx -> setPerkRank(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "id"), IntegerArgumentType.getInteger(ctx, "rank")))))))
             // /dungeontrain debug lost-city-templates [status|reset|reach|legacy] — the Big Lost City template
             // cache: pre-loads, evictions and cold lookups by thread kind. `legacy` = the pre-change rule
             // (player's own X, no demand signal) for a same-seed A/B against `reach` (default).
@@ -1135,5 +1145,18 @@ public final class DebugCommand {
             ).withStyle(ChatFormatting.RED));
             return 0;
         }
+    }
+
+    /** TEMPORARY SHIM handler for {@code /dungeontrain debug perk set}; see {@code perks/PerkRankShim}. */
+    private static int setPerkRank(CommandSourceStack src, String perkId, int rank) {
+        net.minecraft.server.level.ServerPlayer player = src.getPlayer();
+        if (player == null) {
+            src.sendFailure(net.minecraft.network.chat.Component.literal("perk set needs a player"));
+            return 0;
+        }
+        games.brennan.dungeontrain.perks.PerkRankShim.set(player.getUUID(), perkId, rank);
+        src.sendSuccess(() -> net.minecraft.network.chat.Component.literal(
+            "[shim] perk " + perkId + " rank " + rank + " for " + player.getGameProfile().getName()), false);
+        return 1;
     }
 }
