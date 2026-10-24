@@ -33,6 +33,14 @@ import java.util.UUID;
  * carrying them, they are gone, or {@link #HOLD_TICKS} pass. Nobody else was watching — that is why
  * it was frozen — so holding it a moment longer is as invisible as the freeze itself. For the
  * original exit the player is carried within a tick or two and the hold is over before it shows.</p>
+ *
+ * <p><b>Half of the fix.</b> A still train is not enough on its own: until the carriage reaches
+ * the client the player falls straight through its deck and lands on the track bed under it, where
+ * Sable never picks them up, so the hold only ever times out. The swap therefore also sends a
+ * {@code SpawnDeckHoldPacket} that keeps the client at deck height until it is carried. Repro of
+ * 24 Oct 2026, exit copy 383 blocks out: no holds, under the deck by tick 4 and left behind; train
+ * hold alone, under the deck and released on timeout; both, carried on tick 3 and still aboard 8 s
+ * later.</p>
  */
 public final class PortalArrivalHold {
 

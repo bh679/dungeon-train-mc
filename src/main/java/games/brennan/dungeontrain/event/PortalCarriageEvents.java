@@ -55,7 +55,9 @@ import games.brennan.dungeontrain.net.PortalRoomDepthPacket;
 import games.brennan.dungeontrain.net.PortalRoomFogPacket;
 import games.brennan.dungeontrain.net.PortalCrossingPacket;
 import games.brennan.dungeontrain.net.PortalRoomSkyPacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalSwapPacket;
+import games.brennan.dungeontrain.net.SpawnDeckHoldPacket;
 import games.brennan.dungeontrain.net.PortalTrainAudioPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.ShipAabbs;
@@ -2265,6 +2267,16 @@ public final class PortalCarriageEvents {
             // client/portal/ClientPortalSwap) — and so the client sheds the carry after
             // handleMovePlayer has kept the momentum the relative teleport preserved.
             PacketDistributor.sendToPlayer(player, new PortalSwapPacket(leftCarrier));
+            // Back onto the train: the client may not have this carriage yet. Out of a far exit
+            // copy it arrives four or five ticks after the player does, and until then they fall
+            // through the deck they were put on and land on the track bed under it, where nothing
+            // ever carries them (repro, 24 Oct 2026). Hold them at the deck surface until Sable
+            // picks them up; for a carriage the client already has, that is a tick or two.
+            if (!leftCarrier) {
+                DungeonTrainNet.sendTo(player, new SpawnDeckHoldPacket(
+                    frames.floorSurfaceY(PortalFrames.FRAME_CARRIAGE, boundTwin),
+                    SpawnDeckHoldPacket.DEFAULT_HOLD_TICKS));
+            }
             COOLDOWNS.put(player.getUUID(), level.getGameTime() + SWAP_COOLDOWN_TICKS);
             LAST_SWAP.put(player.getUUID(), level.getGameTime());
 
