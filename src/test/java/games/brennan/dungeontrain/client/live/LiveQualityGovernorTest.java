@@ -20,7 +20,7 @@ class LiveQualityGovernorTest {
 
     @Test
     void ladderStepsDownFromTheCeilingAndStopsAtTheFloor() {
-        assertArrayEquals(new int[]{2500, 2000, 1550, 1200, 900}, LiveQualityGovernor.ladder(2500));
+        assertArrayEquals(new int[]{2500, 2000, 1550, 1200, 900, 650, 500}, LiveQualityGovernor.ladder(2500));
         assertArrayEquals(new int[]{800, 640, 500}, LiveQualityGovernor.ladder(800));
         assertArrayEquals(new int[]{500}, LiveQualityGovernor.ladder(300));
     }
@@ -44,7 +44,7 @@ class LiveQualityGovernorTest {
     @Test
     void aVerySlowUploadGoesToTheBottomRung() {
         LiveQualityGovernor g = new LiveQualityGovernor(2500, 2500, 96, T0);
-        assertEquals(OptionalInt.of(900), g.decide(health(3, 2.4, 700), AFTER_COOLDOWN));
+        assertEquals(OptionalInt.of(500), g.decide(health(3, 2.4, 700), AFTER_COOLDOWN));
     }
 
     @Test
@@ -86,7 +86,7 @@ class LiveQualityGovernorTest {
     void neverAboveTheCeilingNorBelowTheBottom() {
         LiveQualityGovernor top = new LiveQualityGovernor(2500, 2500, 0, T0);
         assertEquals(OptionalInt.empty(), top.decide(health(50, 0.01, 99_000), T0 + 10 * LiveQualityGovernor.UP_AFTER_MS));
-        LiveQualityGovernor bottom = new LiveQualityGovernor(2500, 900, 0, T0);
+        LiveQualityGovernor bottom = new LiveQualityGovernor(2500, 500, 0, T0);
         assertEquals(OptionalInt.empty(), bottom.decide(health(5, 3.0, 100), AFTER_COOLDOWN));
     }
 
@@ -95,7 +95,8 @@ class LiveQualityGovernorTest {
         assertEquals(2500, LiveQualityGovernor.startKbps(2500, 0, 96), "nothing remembered");
         assertEquals(2500, LiveQualityGovernor.startKbps(2500, 20_000, 96));
         assertEquals(1550, LiveQualityGovernor.startKbps(2500, 2650, 96));
-        assertEquals(900, LiveQualityGovernor.startKbps(2500, 600, 96));
+        assertEquals(650, LiveQualityGovernor.startKbps(2500, 1000, 96));
+        assertEquals(500, LiveQualityGovernor.startKbps(2500, 600, 96));
     }
 
     @Test

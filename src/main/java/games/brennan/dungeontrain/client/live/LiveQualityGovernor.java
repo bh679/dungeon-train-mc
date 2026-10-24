@@ -19,7 +19,7 @@ import java.util.OptionalInt;
 public final class LiveQualityGovernor {
 
     /** Rungs as shares of the ceiling. */
-    static final double[] LADDER = {1.0, 0.8, 0.62, 0.48, 0.36};
+    static final double[] LADDER = {1.0, 0.8, 0.62, 0.48, 0.36, 0.26, 0.2};
     /** Step down when uploads take this share of real time (1 = falling behind). */
     static final double DOWN_UTILISATION = 0.9;
     static final int DOWN_MIN_SAMPLES = 2;
