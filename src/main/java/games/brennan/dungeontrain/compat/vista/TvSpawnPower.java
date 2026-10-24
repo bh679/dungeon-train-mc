@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.compat.vista;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.player.ServerLiveStatus;
 import net.mehvahdjukaar.vista.common.connection.IConnectedBlock;
 import net.mehvahdjukaar.vista.common.tv.TVBlock;
 import net.mehvahdjukaar.vista.common.tv.TVBlockEntity;
@@ -34,9 +35,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * Cassette. The roll is seeded by {@code (seed, carriageIndex, screen position in the carriage)}, so a
  * carriage built again comes back with the same screens on.</p>
  *
- * <p>Half of the screens that come on are tuned to the second stream ({@link #rollSecond}, the Two
- * Streams reward): they show the second player who is live, or the first stream while there is no
- * second, so a TV room shows both streams with no setup. Same seeding, a different salt.</p>
+ * <p>While two Live Eyes are running (the Two Streams reward), half of the screens that come on are
+ * tuned to the second stream ({@link #rollSecond}), so a TV room shows both streams with no setup;
+ * with one stream or none, every screen takes the first cassette and shows whoever is live. Same
+ * seeding, a different salt.</p>
  *
  * <p>Players can stop it from the Live feed row on the Performance tab
  * ({@code LiveFeedClientConfig#tvsSpawnOn}, synced by {@code net.TvSpawnPrefPacket}). The power state
@@ -104,6 +106,9 @@ public final class TvSpawnPower {
         if (tvs.isEmpty() || !allowed(level.getServer())) return;
         try {
             Set<BlockPos> screens = masters(level, tvs);
+            // The random pick only while two Live Eyes are running; otherwise every screen takes the
+            // first cassette, which follows whoever is live.
+            boolean twoLive = ServerLiveStatus.isSecondStreamLive(level.getServer());
             int switchedOn = 0;
             for (BlockPos master : screens) {
                 BlockState state = level.getBlockState(master);
@@ -112,7 +117,7 @@ public final class TvSpawnPower {
                 if (rollOn(seed, carriageIndex, rel)) {
                     // Tune before switching on: a TV that comes on with an empty slot takes the first
                     // stream's cassette (TVBlockMixin auto-tune), so the second's has to be in already.
-                    if (rollSecond(seed, carriageIndex, rel)) tuneSecond(level, master);
+                    if (twoLive && rollSecond(seed, carriageIndex, rel)) tuneSecond(level, master);
                     TvPowerToggle.toggle(level, master);
                     switchedOn++;
                 }
