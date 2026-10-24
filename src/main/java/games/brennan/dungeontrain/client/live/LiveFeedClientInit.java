@@ -34,6 +34,7 @@ public final class LiveFeedClientInit {
             Minecraft.getInstance().execute(() -> {
                 LiveFeedSource.MAIN.dropAll();
                 LiveFeedSource.SECOND.dropAll();
+                HeadViewerPanes.reset();
                 LiveStatusPoller.reset();
                 LiveChatBridge.reset();
                 LiveHeadpieceAntenna.reset();
