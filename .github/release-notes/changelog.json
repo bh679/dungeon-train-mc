@@ -30356,8 +30356,111 @@
       "released_at": "2026-10-24T07:42:39Z"
     },
     {
-      "id": "two-streams-second-channel",
+      "id": "enchantment-fix-echoes",
       "version": "0.1502.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "loot"
+      ],
+      "title": "Enchantment fix",
+      "summary": "Fixed an enchantment not behaving the same on echoes as it does on players.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1503.0",
+      "released_at": "2026-10-24T13:06:51Z"
+    },
+    {
+      "id": "gallery-carriage-variant-conditions",
+      "version": "0.1503.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Gallery carriage",
+      "summary": "A new passenger carriage, the Gallery, can now turn up on the train. Builders also get a few editor upgrades for block variants.",
+      "highlights": [
+        "New Gallery passenger carriage",
+        "Block variant conditions can be set to Is not",
+        "Variants that follow another group now match what that group placed",
+        "Pasting a copied variant keeps the conditions it was copied with",
+        "Player heads added to a build face into the room"
+      ],
+      "pr": 2294,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1503.0",
+      "released_at": "2026-10-24T13:06:51Z"
+    },
+    {
+      "id": "off-train-advancements",
+      "version": "0.1504.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "Some advancements that should have been earned were not. They are now. Vanilla and other mods' advancements are no longer held back by the AFK check.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-chat-on-death-screens",
+      "version": "0.1505.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Talk to your stream after you die",
+      "summary": "If your stream is still running after you die, you can now read and answer its chat from the death screens. The newest message shows quietly at the bottom of the page. Press T to see the whole chat and type a reply.",
+      "highlights": [
+        "The latest chat message shows at the bottom of every death page",
+        "Press T to open the full chat and reply without leaving the page",
+        "What you type stays off the stream"
+      ],
+      "pr": 2295,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "feel-the-wind",
+      "version": "0.1506.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "ui"
+      ],
+      "title": "Feel the wind",
+      "summary": "You can now tell when the wind is hitting you. Out in the open it sounds louder and closer, and faint streaks blow past the edges of your screen. You can turn the streaks down or off in the Dungeon Train options, on the Train tab.",
+      "highlights": [
+        "The wind gets louder and rumbles when it is on you, even before it starts to push you",
+        "You hear a gust while it shoves you, not just before",
+        "Streaks at the edges of the screen show which way the wind is blowing",
+        "New Wind effects setting: Off, or 1 to 6 (3 is the default)",
+        "No more wind streaks when the air is calm"
+      ],
+      "pr": 2296,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "two-streams-second-channel",
+      "version": "0.1507.0",
       "type": "feat",
       "tags": [
         "feature",

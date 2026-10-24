@@ -901,6 +901,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case TRAIN_VOLUME -> Setting.of(slider(TrainVolumeOption.valueOnly()), key + ".tip");
             case WIND_VOLUME -> Setting.of(slider(games.brennan.dungeontrain.client.wind.WindVolumeOption.valueOnly()),
                     key + ".tip");
+            // OFF, then six tiers of the edge streaks (3 = the default look).
+            case WIND_EFFECTS -> Setting.of(slider(games.brennan.dungeontrain.client.wind.WindEffectsOption.valueOnly()),
+                    key + ".tip");
 
             // The standing answer to the start-of-world prompt shown when the player has Train Editor
             // edits or an imported dtpack. This is the "can be changed in options" half of that

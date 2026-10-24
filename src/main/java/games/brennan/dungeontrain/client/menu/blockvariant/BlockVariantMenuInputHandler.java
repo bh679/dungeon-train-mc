@@ -525,6 +525,11 @@ public final class BlockVariantMenuInputHandler {
             packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
                 games.brennan.dungeontrain.editor.VariantConditionEdits.MATCH_PREFIX
                     + (option == ConditionPopupLayout.MATCH_ALL ? "all" : "any"), 0);
+        } else if (section == ConditionPopupLayout.SECTION_NEGATE) {
+            // Is | Is not: place the entry when the target is one of the values, or when it is not.
+            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
+                games.brennan.dungeontrain.editor.VariantConditionEdits.NOT_PREFIX
+                    + (option == ConditionPopupLayout.NEGATE_NOT ? "on" : "off"), 0);
         } else if (section == ConditionPopupLayout.SECTION_GROUP) {
             packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
                 ConditionPopupLayout.groupToken(option), 0);
