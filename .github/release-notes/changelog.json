@@ -30072,9 +30072,9 @@
       "summary": "Joining a world that has cheats on no longer empties your survival Ender Chest. Your legit chest stays safe and comes back the next time you play a run without cheats.",
       "highlights": [],
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1486.0",
+      "released_at": "2026-10-24T03:07:42Z"
     }
   ]
 }
