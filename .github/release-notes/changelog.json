@@ -30097,6 +30097,40 @@
       "released_at": null
     },
     {
+      "id": "echo-fix-wider-band",
+      "version": "0.1487.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "mobs"
+      ],
+      "title": "Echo fix",
+      "summary": "Echoes of other players turn up more often again on quiet stretches of track.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stall-watchdog-short-stalls",
+      "version": "0.1487.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "internal"
+      ],
+      "title": "Better lag reports",
+      "summary": "Short lag spikes now leave a clue in the game log, so the ones you report can be tracked down and fixed.",
+      "highlights": [],
+      "pr": 2274,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "live-eye-finds",
       "version": "0.1488.0",
       "type": "feat",

@@ -63,6 +63,22 @@ import java.util.concurrent.atomic.AtomicReference;
  * bug-report corpus: every one of the 84 genuine stalls (Sable's {@code inhabitChunk} chunk load,
  * the synchronous log flush, {@code saveAll}, the fluid post-process) carries one of those frames,
  * and none of the 88 pause dumps does.</p>
+ *
+ * <h2>Short stalls</h2>
+ * <p>The first dump used to wait 5 s. What players report as "lag spikes" are mostly shorter than
+ * that: a log of October 2026 (jumping off the train) held two real stalls of 2.6 s and 4.0 s with
+ * the client at 100 fps, and the watchdog said nothing about either. So the first dump now comes at
+ * {@link #STALL_LOG_MS} = 1.5 s, and the counter is sampled every 250 ms so a stall that short is
+ * seen while it is still happening rather than on the tick after it.</p>
+ *
+ * <p>Short stalls are far more common than long ones (0 to 21 tick-lag warnings in the 1.5-5 s
+ * band per session across 36 player logs, pause resumes included), so a stall that has not yet
+ * reached {@link #LONG_STALL_MS} is dumped at most once per {@link #SHORT_DUMP_COOLDOWN_MS}, and at
+ * most {@link #MAX_SHORT_DUMPS} times per server run. The rate limit alone was not enough: a server
+ * stalling for two seconds every minute would still write ~600 KB in an hour, more than the 512 KB
+ * log tail a bug report attaches, and push out the lines that matter. Ten dumps is ~100 KB and
+ * plenty to name a recurring cause. A stall past {@link #LONG_STALL_MS} is always dumped, exactly as
+ * before: the budget only ever drops short reports. See {@link #mayDump}.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class ServerStallWatchdog {
@@ -70,10 +86,18 @@ public final class ServerStallWatchdog {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /** A tick stuck longer than this gets its first stack dump. */
-    private static final long STALL_LOG_MS = 5_000;
+    static final long STALL_LOG_MS = 1_500;
+    /** A stall this long is always dumped; shorter ones share {@link #SHORT_DUMP_COOLDOWN_MS}. */
+    static final long LONG_STALL_MS = 5_000;
+    /** At most one short-stall dump this often, so a laggy session cannot fill the log tail. */
+    static final long SHORT_DUMP_COOLDOWN_MS = 60_000;
+    /** At most this many short-stall dumps per server run; long stalls are not counted or capped. */
+    static final int MAX_SHORT_DUMPS = 10;
+    /** {@code lastShortDumpAt} before the first short dump. */
+    static final long NEVER = -1;
     /** Repeat dumps at most this often while the same stall persists. */
     private static final long REDUMP_COOLDOWN_MS = 10_000;
-    private static final long SAMPLE_INTERVAL_MS = 1_000;
+    private static final long SAMPLE_INTERVAL_MS = 250;
 
     /** The class whose frames say the tick loop is between ticks rather than inside one. */
     private static final String SERVER_CLASS = "net.minecraft.server.MinecraftServer";
@@ -162,6 +186,8 @@ public final class ServerStallWatchdog {
         // afterwards for an episode that was never announced.
         long lastProbeAt = 0;
         boolean reported = false;
+        long lastShortDumpAt = NEVER;
+        int shortDumps = 0;
         try {
             while (server.isRunning() && !Thread.currentThread().isInterrupted()) {
                 Thread.sleep(SAMPLE_INTERVAL_MS);
@@ -180,7 +206,10 @@ public final class ServerStallWatchdog {
                     continue;
                 }
                 long stalled = now - tickChangedAt;
-                if (stalled < STALL_LOG_MS || now - lastProbeAt < REDUMP_COOLDOWN_MS) continue;
+                if (now - lastProbeAt < REDUMP_COOLDOWN_MS) continue;
+                // Checked before the probe is stamped, so a short stall held back by the budget is
+                // looked at again the moment it crosses LONG_STALL_MS rather than ten seconds on.
+                if (!mayDump(stalled, lastShortDumpAt, shortDumps, now)) continue;
                 lastProbeAt = now;
 
                 Thread serverThread = server.getRunningThread();
@@ -192,11 +221,32 @@ public final class ServerStallWatchdog {
                 if (!isInsideTick(stack)) continue;
 
                 dumpServerThread(server, serverThread, stack, stalled);
+                if (stalled < LONG_STALL_MS) {
+                    lastShortDumpAt = now;
+                    shortDumps++;
+                    if (shortDumps == MAX_SHORT_DUMPS) {
+                        LOGGER.warn("[DT-StallWatchdog] {} short-stall dumps written; stalls under {} ms are no longer dumped this session",
+                            MAX_SHORT_DUMPS, LONG_STALL_MS);
+                    }
+                }
                 reported = true;
             }
         } catch (InterruptedException ignored) {
             // server stopping — exit quietly
         }
+    }
+
+    /**
+     * Whether a stall this long may be dumped now: never under {@link #STALL_LOG_MS}, always from
+     * {@link #LONG_STALL_MS}, and in between only once per {@link #SHORT_DUMP_COOLDOWN_MS} and while
+     * fewer than {@link #MAX_SHORT_DUMPS} short dumps have been written ({@code lastShortDumpAt} is
+     * when the last one was written, or {@link #NEVER}). Package-private and pure, unit-tested.
+     */
+    static boolean mayDump(long stalledMs, long lastShortDumpAt, int shortDumps, long now) {
+        if (stalledMs < STALL_LOG_MS) return false;
+        if (stalledMs >= LONG_STALL_MS) return true;
+        if (shortDumps >= MAX_SHORT_DUMPS) return false;
+        return lastShortDumpAt == NEVER || now - lastShortDumpAt >= SHORT_DUMP_COOLDOWN_MS;
     }
 
     /**
