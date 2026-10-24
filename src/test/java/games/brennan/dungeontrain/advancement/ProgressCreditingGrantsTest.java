@@ -52,22 +52,26 @@ final class ProgressCreditingGrantsTest {
     }
 
     @Test
-    @DisplayName("time, distance, band and code grants never restart the progress window")
+    @DisplayName("time, distance, band, code and stand-still grants never restart the progress window")
     void passiveGrantsDoNotCount() {
         for (String id : new String[] {"dungeontrain:train_time", "dungeontrain:run_train_time",
                 "dungeontrain:run_distance", "dungeontrain:lifetime_distance", "dungeontrain:biomes_visited",
                 "dungeontrain:carts_in_run", "dungeontrain:code_granted", "dungeontrain:gameplay_action",
-                "minecraft:impossible", "minecraft:location", "minecraft:tick"}) {
+                "minecraft:impossible", "minecraft:location", "minecraft:tick",
+                // Doable standing in one spot: not movement.
+                "minecraft:placed_block", "minecraft:item_used_on_block", "minecraft:consume_item",
+                "dungeontrain:editor_action", "dungeontrain:random_books_read", "dungeontrain:books_burned_unread",
+                "dungeontrain:gave_playermob_unrequited", "dungeontrain:pushed_playermob_off_train"}) {
             assertFalse(ProgressCreditingGrants.proves(rl(id), true, false), id);
         }
     }
 
     @Test
-    @DisplayName("a kill, a befriended PlayerMob or an editor action counts; recipes and exempt one-shots do not")
+    @DisplayName("a kill, a new chest or a befriended PlayerMob counts; recipes and exempt one-shots do not")
     void handDrivenGrantsCount() {
         assertTrue(ProgressCreditingGrants.proves(rl("minecraft:player_killed_entity"), true, false));
         assertTrue(ProgressCreditingGrants.proves(rl("dungeontrain:befriended_playermob"), true, false));
-        assertTrue(ProgressCreditingGrants.proves(rl("dungeontrain:editor_action"), true, false));
+        assertTrue(ProgressCreditingGrants.proves(rl("dungeontrain:unique_chests_opened"), true, false));
         // Display-less (recipe) and exempt advancements never count, whatever the trigger.
         assertFalse(ProgressCreditingGrants.proves(rl("minecraft:player_killed_entity"), false, false));
         assertFalse(ProgressCreditingGrants.proves(rl("minecraft:player_killed_entity"), true, true));

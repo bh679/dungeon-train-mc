@@ -16,15 +16,16 @@ import java.util.stream.Stream;
  *
  * <p>Earning an advancement counts as movement — but only one the player's own hands earned. A
  * grant is judged by its criterion's <em>trigger type</em>, against an allowlist of triggers that
- * fire from a deliberate act: a kill, a placed block, a befriended PlayerMob, a chest opened, an
- * editor action, a read or burned book. Everything else is denied by default, which covers the
+ * mean the player went and did something out in the world: a kill, a new chest opened, a PlayerMob
+ * or Echo befriended, named or defended. Everything else is denied by default, which covers the
  * triggers that fire on their own while the train carries a still player along — train time, run
  * and lifetime distance, biomes visited, carriages counted, players and Echoes encountered, roof
  * runs, code grants, {@code minecraft:impossible} and vanilla's location scans — and
  * {@code dungeontrain:gameplay_action}, which mixes hand-driven actions with 15-minute timers,
- * carriage counts and band arrivals and so cannot be told apart by type. Those hand-driven actions
- * already stamp the idle clocks through the click or screen input that caused them; what they do
- * not do is restart the progress window, and that is the conservative side to err on.</p>
+ * carriage counts and band arrivals and so cannot be told apart by type. Placing blocks, using
+ * items, reading or burning books and editor actions are denied too: they can all be done standing
+ * in one spot. They still stamp the idle clocks through the click that caused them; what they do
+ * not do is restart the progress window.</p>
  *
  * <p>Photo triggers are not listed either: the camera shot itself credits progress directly
  * ({@code PhotoAdvancementEvents.onFrameAdded}), before any of them run. Display-less advancements
@@ -37,42 +38,29 @@ public final class ProgressCreditingGrants {
 
     /** Trigger types that fire from a deliberate act of the player's. */
     static final Set<ResourceLocation> PLAYER_ACTION_TRIGGERS = Stream.of(
-        "dungeontrain:editor_action",
         "dungeontrain:unique_chests_opened",
+        "dungeontrain:befriended_playermob",
+        "dungeontrain:named_playermob",
+        "dungeontrain:defended_playermob",
+        "dungeontrain:befriended_echo",
+        "dungeontrain:killed_echo",
+        "minecraft:player_killed_entity"
+    ).map(ResourceLocation::parse).collect(Collectors.toUnmodifiableSet());
+
+    /**
+     * Trigger types the shipped Dungeon Train advancements use that do not count: they fire on their
+     * own, mix passive and hand-driven grants, or can be earned standing still. Named so the test can
+     * insist every used trigger is decided.
+     */
+    static final Set<ResourceLocation> PASSIVE_OR_MIXED_TRIGGERS = Stream.of(
+        "dungeontrain:gameplay_action",
+        "dungeontrain:editor_action",
         "dungeontrain:story_set_completed",
         "dungeontrain:random_books_read",
         "dungeontrain:starting_books_read",
         "dungeontrain:books_burned_unread",
         "dungeontrain:gave_playermob_unrequited",
-        "dungeontrain:befriended_playermob",
-        "dungeontrain:named_playermob",
         "dungeontrain:pushed_playermob_off_train",
-        "dungeontrain:defended_playermob",
-        "dungeontrain:befriended_echo",
-        "dungeontrain:killed_echo",
-        "minecraft:player_killed_entity",
-        "minecraft:player_hurt_entity",
-        "minecraft:placed_block",
-        "minecraft:item_used_on_block",
-        "minecraft:consume_item",
-        "minecraft:enchanted_item",
-        "minecraft:brewed_potion",
-        "minecraft:bred_animals",
-        "minecraft:tame_animal",
-        "minecraft:fishing_rod_hooked",
-        "minecraft:shot_crossbow",
-        "minecraft:villager_trade",
-        "minecraft:cured_zombie_villager",
-        "minecraft:construct_beacon",
-        "minecraft:filled_bucket"
-    ).map(ResourceLocation::parse).collect(Collectors.toUnmodifiableSet());
-
-    /**
-     * Trigger types the shipped Dungeon Train advancements use that fire on their own, or that mix
-     * passive and hand-driven grants. Named so the test can insist every used trigger is decided.
-     */
-    static final Set<ResourceLocation> PASSIVE_OR_MIXED_TRIGGERS = Stream.of(
-        "dungeontrain:gameplay_action",
         "dungeontrain:code_granted",
         "dungeontrain:train_time",
         "dungeontrain:run_train_time",
