@@ -54,6 +54,8 @@ public final class LifeChallengeEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         ItemStack eaten = event.getItem();
         if (eaten.getFoodProperties(player) == null) return; // drinks without food, bows, shields…
+        // Cosmic Debris is a perk point, not a meal: it never breaks the melon diet.
+        if (eaten.is(games.brennan.dungeontrain.registry.ModItems.COSMIC_DEBRIS.get())) return;
         if (!LifeChallengeAdvancements.breaksMelonDiet(id(eaten))) return;
         LifeChallengeAdvancements.markLost(player, ModDataAttachments.ATE_NON_MELON_THIS_LIFE,
             LifeChallengeAdvancements.MELON_TIERS);
