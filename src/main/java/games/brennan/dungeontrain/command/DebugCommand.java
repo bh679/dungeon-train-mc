@@ -174,6 +174,8 @@ public final class DebugCommand {
             // /dungeontrain debug wind [reload|export|on|off] — the train wind at your feet; reload the tuned
             // profile (scripts/wind/); export band edges for the tuner; a temporary on/off. See wind/WindServer.
             .then(WindDebug.build())
+            // /dungeontrain debug perk set <id> <rank> | clear | list — TEMPORARY perks-foundation shim (PerkShimDebug).
+            .then(PerkShimDebug.build())
             // /dungeontrain debug mixin-guards — the guarded WorldWeaver/BCLib/BetterEnd/TerraBlender mixins
             // that are off this boot and what each falls back to. Also logged at INFO for RCON runs.
             .then(Commands.literal("mixin-guards").executes(ctx -> MixinGuardsDebug.report(ctx.getSource())))
