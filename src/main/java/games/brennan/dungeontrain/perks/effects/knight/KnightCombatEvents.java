@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.perks.effects.knight;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.event.KillCredit;
 import games.brennan.dungeontrain.perks.Perks;
@@ -12,6 +13,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.CriticalHitEvent;
+import org.slf4j.Logger;
 
 /**
  * Applies the Knight's combat perks ({@link KnightPerks}).
@@ -28,6 +30,8 @@ import net.neoforged.neoforge.event.entity.player.CriticalHitEvent;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class KnightCombatEvents {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private KnightCombatEvents() {}
 
     @SubscribeEvent
@@ -38,6 +42,8 @@ public final class KnightCombatEvents {
         if (!KnightPerks.rollCrit(rank, player.getRandom())) return;
         event.setCriticalHit(true);
         event.setDamageMultiplier(KnightPerks.CRIT_DAMAGE_MULTIPLIER);
+        LOGGER.debug("[DT-Perks] crits rank {}: perk crit by {} on {}", rank,
+            player.getScoreboardName(), event.getTarget().getName().getString());
     }
 
     @SubscribeEvent
@@ -56,6 +62,10 @@ public final class KnightCombatEvents {
         }
         heal += KnightPerks.vampirismHeal(Perks.rank(killer, KnightPerks.VAMPIRISM));
         if (heal > 0f) killer.heal(heal);
+        if (killBuff > 0 || heal > 0f) {
+            LOGGER.debug("[DT-Perks] kill by {}: kill-buff rank {} (strength {} t), heal {}",
+                killer.getScoreboardName(), killBuff, KnightPerks.strengthDurationTicks(killBuff), heal);
+        }
     }
 
     private static void grantStrength(ServerPlayer player, int ticks) {
