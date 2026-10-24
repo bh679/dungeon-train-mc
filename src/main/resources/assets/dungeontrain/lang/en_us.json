@@ -789,6 +789,7 @@
   "chat.dungeontrain.live.preparing": "Preparing the broadcast equipment...",
   "chat.dungeontrain.live.no_ffmpeg": "No broadcast: Vista's video playback is turned off on this client.",
   "chat.dungeontrain.live.ffmpeg_timeout": "No broadcast: the video tools are still downloading. Put the Live Eye on again once Vista's TVs play.",
+  "chat.dungeontrain.live.viewer_died": "%s while watching the stream",
   "chat.dungeontrain.live.sound_off_unapproved": "Stream sound is off: unapproved mods are loaded.",
   "chat.dungeontrain.live.unreachable": "No broadcast: the feed could not be reached.",
   "chat.dungeontrain.live.disabled": "Live-streaming is disabled, turn it on in %s",

@@ -137,7 +137,13 @@ public final class LiveFeedClient {
      */
     public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
                            @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
-                           @Nullable Moment moment, @Nullable RestartNotice restart) {
+                           @Nullable Moment moment, @Nullable RestartNotice restart, @Nullable Death death) {
+        public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
+                        @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
+                        @Nullable Moment moment, @Nullable RestartNotice restart) {
+            this(seq, ts, author, uuid, content, source, logRequest, via, poll, moment, restart, null);
+        }
+
         public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
                         @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
                         @Nullable Moment moment) {
@@ -211,6 +217,30 @@ public final class LiveFeedClient {
      * line saying they are back.
      */
     public record RestartNotice(long resumeBy, int countdown, boolean local, boolean resumed) {}
+
+    /**
+     * A TV watcher died while in the room ({@code POST /live/chat/died}): {@code name} who, {@code message}
+     * vanilla's death message as component JSON (null when the relay kept text only), for each reader to
+     * render in their own language. The line's {@code content} is the English fallback.
+     */
+    public record Death(String name, @Nullable String message) {}
+
+    /** Longest death-message JSON kept; the relay caps at the same size. */
+    public static final int MAX_DEATH_MESSAGE = 2048;
+
+    @Nullable
+    static Death parseDeath(JsonObject m) {
+        if (!m.has("death") || !m.get("death").isJsonObject()) return null;
+        JsonObject o = m.getAsJsonObject("death");
+        String name = LiveChatRules.clean(str(o, "name"), LiveChatRules.MAX_AUTHOR);
+        if (name.isBlank()) return null;
+        String message = null;
+        if (o.has("message") && o.get("message").isJsonObject()) {
+            String json = o.get("message").toString();
+            if (json.length() <= MAX_DEATH_MESSAGE) message = json;
+        }
+        return new Death(name, message);
+    }
 
     @Nullable
     static RestartNotice parseRestart(JsonObject m) {
@@ -556,6 +586,21 @@ public final class LiveFeedClient {
     }
 
     /**
+     * This TV watcher died in the room: {@code text} vanilla's death message in English (for the website,
+     * Discord and Twitch), {@code message} the same message as component JSON (null to send text only).
+     * 200 {@code posted}; 409 not_live; 404 from an older relay.
+     */
+    public static CompletableFuture<Result> chatDied(String base, UUID uuid, String name, String text,
+                                                     @Nullable JsonObject message) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid.toString());
+        body.addProperty("name", name);
+        body.addProperty("text", text);
+        if (message != null) body.add("message", message);
+        return post(base, "/live/chat/died", body);
+    }
+
+    /**
      * Share one of the streamer's moments into the stream's chat. {@code token} (the stream's upload
      * token) proves the poster is on air; the relay names them from its claim. {@code png} may be null
      * (no image, or not a photo).
@@ -707,7 +752,7 @@ public final class LiveFeedClient {
                     Via via = Via.parse(m.has("via") && !m.get("via").isJsonNull() ? m.get("via").getAsString() : null);
                     lines.add(new ChatLine(m.get("seq").getAsLong(), m.has("ts") ? m.get("ts").getAsLong() : 0L,
                         author.isBlank() ? "Someone" : author, uuid, content, source, parseLogRequest(m), via,
-                        LiveTakeoverClient.parsePollLine(m), parseMoment(m), parseRestart(m)));
+                        LiveTakeoverClient.parsePollLine(m), parseMoment(m), parseRestart(m), parseDeath(m)));
                 }
             }
             List<Long> deleted = new ArrayList<>();

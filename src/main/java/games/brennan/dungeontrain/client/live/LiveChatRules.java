@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.live;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Source;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Via;
@@ -127,6 +128,33 @@ public final class LiveChatRules {
             .append(Component.literal(" " + clean(line.author(), MAX_AUTHOR)).withStyle(nameColour(line.source())))
             .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
             .append(Component.literal(clean(line.content(), MAX_CONTENT)).withStyle(ChatFormatting.WHITE));
+    }
+
+    /** The English the relay adds after a death message ({@code POST /live/chat/died}). */
+    static final String DEATH_SUFFIX = " while watching the stream";
+
+    /**
+     * Whether a TV watcher's death line belongs in this client's chat: not on the dying player's own client
+     * (the death screen says it) and not for anyone in that same world, who saw vanilla's death message.
+     */
+    public static boolean showDeath(LiveFeedClient.Death death, String myName, Set<String> namesHere) {
+        if (death.name().equalsIgnoreCase(myName)) return false;
+        for (String n : namesHere) {
+            if (n.equalsIgnoreCase(death.name())) return false;
+        }
+        return true;
+    }
+
+    /** The cause out of a death line's English content, when its message JSON won't read: the relay's suffix dropped. */
+    public static String deathFallback(@Nullable String content) {
+        String t = clean(content, MAX_CONTENT);
+        return t.endsWith(DEATH_SUFFIX) ? t.substring(0, t.length() - DEATH_SUFFIX.length()).strip() : t;
+    }
+
+    /** {@code [Live] Steve was slain by Zombie while watching the stream}, the cause a plain literal. */
+    public static MutableComponent deathLine(String key, String cause) {
+        return systemLine(Component.translatable(key, Component.literal(clean(cause, MAX_CONTENT)))
+            .withStyle(ChatFormatting.GRAY));
     }
 
     /** {@code [Live] text} — a line from the room itself (a takeover vote), no name or icon. */

@@ -293,6 +293,13 @@ public final class LiveChatBridge {
                 if (shown != null) chat.addMessage(shown, signatures.sign(line.seq()), tag);
                 continue;
             }
+            if (line.death() != null) {
+                // A TV watcher died (LiveDeathAnnounce): printed in this reader's language.
+                if (LiveChatRules.showDeath(line.death(), myName, names)) {
+                    chat.addMessage(LiveDeathAnnounce.line(mc, line), signatures.sign(line.seq()), tag);
+                }
+                continue;
+            }
             if (LiveChatRules.shouldShow(line, me, here, names)) {
                 boolean mine = me != null && line.uuid() != null && line.uuid().equalsIgnoreCase(me.toString().replace("-", ""));
                 Component shown = ChatReactionTracker.printLive(line.seq(), LiveChatRules.line(line), mine, line.content());
