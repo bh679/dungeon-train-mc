@@ -35,8 +35,9 @@ import java.util.List;
  * <p>Two markers stay positional in a different way, keyed on the <em>pass</em> rather than the band:</p>
  * <ul>
  *   <li>{@code nether_return_again} ("Nether Return Again") — deep in a Nether band on the SECOND or
- *       later Nether pass (via {@link NetherBand#netherPassIndex} ≥ 1): the player has looped all the
- *       way out and come back to the Nether.</li>
+ *       later cycle repeat (via {@link DisintegrationBand#cyclePassIndex} ≥ 1): the player has looped the
+ *       whole cycle and come back to the Nether. Not the Nether pass index — Lap 2 of the first cycle
+ *       has Nether bands of its own, which must not count.</li>
  *   <li>{@code reached_overworld_again} ("Re-Over-World") — on plain overworld once the player is on
  *       the second or later cycle repeat ({@link DisintegrationBand#cyclePassIndex} ≥ 1) AND outside
  *       every band's approach-or-band window, so it lands on the overworld that follows the whole
@@ -79,11 +80,11 @@ public final class ZoneProgressEvents {
                 }
             }
 
-            // "Nether Return Again" — deep inside a Nether band on the SECOND (or later) Nether pass.
-            // The first Nether band is pass 0, so index >= 1 is the second band onward.
+            // "Nether Return Again" — deep inside a Nether band on the SECOND (or later) cycle repeat.
+            // Keyed on the cycle, not the Nether pass: Lap 2 of the first cycle has Nethers of its own.
             if (NetherBand.isInRealNetherBiome(level, px)
                 && NetherBand.isInRealNetherBiome(level, px - BandAdvancements.ENTRY_DEPTH_BLOCKS)
-                && NetherBand.netherPassIndex(level, px) >= 1) {
+                && DisintegrationBand.cyclePassIndex(level, px) >= 1) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "nether_return_again");
             }
 

@@ -30092,9 +30092,9 @@
       ],
       "pr": 2277,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1490.0",
+      "released_at": "2026-10-24T04:26:07Z"
     },
     {
       "id": "echo-fix-wider-band",
@@ -30109,9 +30109,9 @@
       "summary": "Echoes of other players turn up more often again on quiet stretches of track.",
       "highlights": [],
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1490.0",
+      "released_at": "2026-10-24T04:26:07Z"
     },
     {
       "id": "stall-watchdog-short-stalls",
@@ -30126,9 +30126,9 @@
       "highlights": [],
       "pr": 2274,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1490.0",
+      "released_at": "2026-10-24T04:26:07Z"
     },
     {
       "id": "live-eye-finds",
@@ -30141,6 +30141,23 @@
       "summary": "Live Eye finds.",
       "highlights": [],
       "pr": 2278,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1490.0",
+      "released_at": "2026-10-24T04:26:07Z"
+    },
+    {
+      "id": "advancement-fix-later-journey-timing",
+      "version": "0.1491.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "One of the later journey advancements no longer unlocks earlier than it should.",
+      "highlights": [],
+      "pr": 2280,
       "date": "2026-10-24",
       "released": false,
       "released_in": null,
