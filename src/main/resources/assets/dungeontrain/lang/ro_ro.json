@@ -5461,6 +5461,7 @@
   "advancements.dungeontrain.tab.train_explorer": "Explorator de tren",
   "advancements.dungeontrain.tab.others": "Alții",
   "advancements.dungeontrain.tab.secrete_menu": "Meniul secret",
+  "perk.dungeontrain.restock_villager.restocked": "Schimburi reaprovizionate (%s rămase cu acest sătean)",
   "item.dungeontrain.live_cassette": "Casetă pentru Fluxul în direct",
   "item.dungeontrain.live_cassette.tooltip": "Acordată pe Fluxul în direct. Pune-o în orice televizor ca să vezi cine transmite.",
   "item.dungeontrain.live_cassette_2": "Casetă pentru Fluxul în direct 2",
