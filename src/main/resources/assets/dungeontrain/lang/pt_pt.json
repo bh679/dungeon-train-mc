@@ -774,6 +774,7 @@
   "command.dungeontrain.offer_eye.already_given": "Alguém já ficou com a tua câmara de filmar de emissão.",
   "chat.dungeontrain.live.ended_death": "A tua emissão terminou contigo.",
   "chat.dungeontrain.live.encoder_died": "A emissão parou: o codificador de vídeo falhou. Vê o registo do jogo.",
+  "chat.dungeontrain.live.quality_lowered": "O teu upload não está a acompanhar, por isso a qualidade da tua transmissão foi reduzida para continuar fluida para quem vê.",
   "chat.dungeontrain.live.censored": "A câmara de filmar rejeita essa palavra. Aviso %s de %s.",
   "chat.dungeontrain.live.censored_book": "A câmara de filmar rejeita uma palavra do teu livro. Aviso %s de %s.",
   "chat.dungeontrain.live.burns_moderated": "A câmara de filmar não tem mais avisos e arde até desaparecer.",

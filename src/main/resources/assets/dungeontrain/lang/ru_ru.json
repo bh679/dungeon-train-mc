@@ -811,6 +811,7 @@
   "command.dungeontrain.offer_eye.already_given": "Кто-то уже забрал твою вещательную видеокамеру.",
   "chat.dungeontrain.live.ended_death": "Твоя трансляция закончилась вместе с тобой.",
   "chat.dungeontrain.live.encoder_died": "Трансляция остановлена: сбой видеокодировщика. Смотри журнал игры.",
+  "chat.dungeontrain.live.quality_lowered": "Твоя отдача не успевает, поэтому качество трансляции снижено, чтобы у зрителей она шла плавно.",
   "chat.dungeontrain.live.censored": "Видеокамера не принимает это слово. Предупреждение %s из %s.",
   "chat.dungeontrain.live.censored_book": "Видеокамера не принимает слово в вашей книге. Предупреждение %s из %s.",
   "chat.dungeontrain.live.burns_moderated": "У видеокамеры не осталось предупреждений, и она сгорает.",

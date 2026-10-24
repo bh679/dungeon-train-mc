@@ -839,6 +839,7 @@
   "command.dungeontrain.offer_eye.already_given": "Someone has already taken your Live Eye.",
   "chat.dungeontrain.live.ended_death": "Your broadcast ended with you.",
   "chat.dungeontrain.live.encoder_died": "The broadcast stopped: the video encoder failed. See the game log.",
+  "chat.dungeontrain.live.quality_lowered": "Your upload can't keep up, so your stream's quality was lowered to keep it smooth for viewers.",
   "chat.dungeontrain.live.censored": "The Live Eye rejects that word. Warning %s of %s.",
   "chat.dungeontrain.live.censored_book": "The Live Eye rejects a word in your book. Warning %s of %s.",
   "chat.dungeontrain.live.burns_moderated": "The Live Eye has no warnings left and burns away.",

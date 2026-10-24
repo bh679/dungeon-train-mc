@@ -742,6 +742,7 @@
   "command.dungeontrain.offer_eye.already_given": "Đã có người nhận máy quay phát sóng của bạn.",
   "chat.dungeontrain.live.ended_death": "Buổi phát sóng của bạn kết thúc cùng với bạn.",
   "chat.dungeontrain.live.encoder_died": "Phát sóng đã dừng: bộ mã hóa video gặp lỗi. Xem nhật ký trò chơi.",
+  "chat.dungeontrain.live.quality_lowered": "Tốc độ tải lên của bạn không theo kịp, nên chất lượng stream đã được giảm để người xem vẫn xem mượt mà.",
   "chat.dungeontrain.live.censored": "Chiếc máy quay từ chối từ đó. Cảnh báo %s trên %s.",
   "chat.dungeontrain.live.censored_book": "Chiếc máy quay từ chối một từ trong sách của bạn. Cảnh báo %s trên %s.",
   "chat.dungeontrain.live.burns_moderated": "Chiếc máy quay đã hết cảnh báo và cháy rụi.",

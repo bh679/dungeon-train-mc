@@ -774,6 +774,7 @@
   "command.dungeontrain.offer_eye.already_given": "Alguien ya se quedó con tu videocámara de transmisión.",
   "chat.dungeontrain.live.ended_death": "Tu transmisión terminó contigo.",
   "chat.dungeontrain.live.encoder_died": "La transmisión se detuvo: falló el codificador de video. Revisa el registro del juego.",
+  "chat.dungeontrain.live.quality_lowered": "Tu subida no alcanza, así que se bajó la calidad de tu stream para que siga fluido para los espectadores.",
   "chat.dungeontrain.live.censored": "La videocámara rechaza esa palabra. Aviso %s de %s.",
   "chat.dungeontrain.live.censored_book": "La videocámara rechaza una palabra de tu libro. Aviso %s de %s.",
   "chat.dungeontrain.live.burns_moderated": "A la videocámara ya no le quedan avisos y se consume.",

@@ -742,6 +742,7 @@
   "command.dungeontrain.offer_eye.already_given": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "7aedf58801031c31"},
   "chat.dungeontrain.live.ended_death": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "0ae5bb2e2375fb00"},
   "chat.dungeontrain.live.encoder_died": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "99db6c23d7b237a7"},
+  "chat.dungeontrain.live.quality_lowered": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "27d8ba1994467a46"},
   "chat.dungeontrain.live.censored": {"author": "老本願", "reviewer": "老本願", "source_hash": "b78a8e2c66ef54c9"},
   "chat.dungeontrain.live.censored_book": {"author": "老本願", "reviewer": "老本願", "source_hash": "f5f1390014b91859"},
   "chat.dungeontrain.live.burns_moderated": {"author": "老本願", "reviewer": "老本願", "source_hash": "284975bbe107d556"},
