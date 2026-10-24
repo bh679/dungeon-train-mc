@@ -38,8 +38,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>Fed by {@code AchievementEvents#notifyRunDistance} on every boarded scan; {@link CloseCallPace}
  * keeps one reading a minute. Nothing is sent while the player is AFK, is the one streaming, could
  * not take a Live Eye anyway, or whether anyone is on air can't be told. When nobody at all is on air
- * ({@link ServerLiveStatus#isNobodyLive}) there is no streamer to ask, so the train offers the Live Eye
- * itself ({@link LiveEyeTrainHandout}). Each advancement alerts at most twice a life,
+ * ({@link ServerLiveStatus#isNobodyLive}) there is no streamer to ask, so for The Challenge the train
+ * drops the Live Eye itself ({@link LiveEyeTrainHandout}); the other targets wait for a streamer. Each advancement alerts at most twice a life,
  * at 20 and at 5 minutes ({@link CloseCallRules.Stage}, recorded in
  * {@link ModDataAttachments#CLOSE_CALLS_SENT_THIS_LIFE}).</p>
  */
@@ -87,7 +87,9 @@ public final class LiveCloseCallEvents {
 
     private static void evaluate(ServerPlayer player, CloseCallPace pace, CloseCallPace.Sample reading, Route route) {
         List<String> sent = player.getData(ModDataAttachments.CLOSE_CALLS_SENT_THIS_LIFE.get());
-        Found found = CloseCallRules.find(pace, reading, t -> eligible(player, t), new HashSet<>(sent));
+        // The train only helps with The Challenge: the other targets stay unsent for a streamer later this life.
+        Found found = CloseCallRules.find(pace, reading,
+            t -> eligible(player, t) && (route != Route.TRAIN || LiveEyeTrainHandout.owesEye(t)), new HashSet<>(sent));
         if (!found.any()) return;
         List<String> marked = new ArrayList<>(sent);
         marked.addAll(found.keys());
@@ -97,7 +99,7 @@ public final class LiveCloseCallEvents {
         if (route == Route.TRAIN) {
             LOGGER.info("[DungeonTrain] Close call ({}): {} is ~{} min from {}; nobody is live, the train hands out the Live Eye",
                 found.stage(), name, minutes, found.close().get(0).id());
-            LiveEyeTrainHandout.onCloseCall(player, found.close());
+            LiveEyeTrainHandout.onCloseCall(player);
             return;
         }
         LOGGER.info("[DungeonTrain] Close call ({}): {} is ~{} min from {}; telling the stream",

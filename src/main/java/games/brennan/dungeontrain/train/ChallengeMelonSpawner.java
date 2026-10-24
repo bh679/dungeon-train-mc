@@ -45,7 +45,7 @@ public final class ChallengeMelonSpawner {
     // ---- pure rules (unit-tested) ----
 
     /** Does the flatbed in front of the group anchored at {@code anchor} carry a melon? */
-    static boolean isMelonFlatbed(int anchor, int groupSize) {
+    public static boolean isMelonFlatbed(int anchor, int groupSize) {
         if (anchor == 0) return false; // the spawn group's back pad is the train's tail
         long groupIndex = Math.floorDiv((long) anchor, Math.max(1, groupSize));
         return Math.floorMod(groupIndex, GROUP_INTERVAL) == 0;

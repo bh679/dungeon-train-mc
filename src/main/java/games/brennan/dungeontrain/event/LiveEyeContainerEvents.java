@@ -56,11 +56,8 @@ public final class LiveEyeContainerEvents {
     /** Resolve the container at {@code pos} for {@code player}. Shared by the Jade plugin. */
     public static void see(ServerPlayer player, ServerLevel level, BlockPos pos) {
         Container container = containerAt(level, pos);
-        if (container == null) return;
+        if (container == null || !LiveEyeLootResolver.holdsAnyLiveEye(container)) return;
         if (SharedCarriageLookup.byBlockPos(level, pos) != null) return;
-        // A close call while nobody is live may add one first (LiveEyeTrainHandout's chest boost).
-        if (LiveEyeTrainHandout.maybeAddEye(player, container, pos)) container.setChanged();
-        if (!LiveEyeLootResolver.holdsAnyLiveEye(container)) return;
         if (LiveEyeLootResolver.resolveContainer(player, container)) container.setChanged();
     }
 
