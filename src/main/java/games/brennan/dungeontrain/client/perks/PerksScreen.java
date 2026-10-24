@@ -195,7 +195,7 @@ public final class PerksScreen extends Screen {
         boolean spendable = fromDebris && snap.activePoints() > 0 && spentAt == 0;
         for (PerkTree.Perk p : tree.perks()) {
             boolean sel = p.id().equals(selected), hov = p.id().equals(hovered);
-            boolean name = allNames || sel || hov || (selected != null && linked(selected, p.id()));
+            boolean name = allNames || sel || hov || (selected != null && view.zoom() >= 0.7 && linked(selected, p.id()));
             StarPainter.render(g, font, tree, p, snap, view, width, height, hov, sel, name, spendable || (snap.activePoints() > 0 && fromDebris),
                 unlockedAt, pointAt, now, fade);
         }

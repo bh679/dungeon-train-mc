@@ -29,11 +29,13 @@ final class SkyDraw {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableDepthTest();
+        RenderSystem.disableCull(); // fans and quads wind either way as the maths falls out
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
     }
 
     private static void end() {
+        RenderSystem.enableCull();
         RenderSystem.enableDepthTest();
         RenderSystem.disableBlend();
     }
