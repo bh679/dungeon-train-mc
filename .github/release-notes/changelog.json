@@ -30553,6 +30553,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "loading-screen-story-12",
+      "version": "0.1512.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "ui"
+      ],
+      "title": "A new loading-screen story",
+      "summary": "Another verse joins the loading screen's rotating stories. This one wonders whether the train ever watches the view, and what becomes of the riders who lean too close to the glass.",
+      "highlights": [
+        "New story: \"Does the train watch the view?\"",
+        "Translated into every supported language"
+      ],
+      "pr": 2306,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
