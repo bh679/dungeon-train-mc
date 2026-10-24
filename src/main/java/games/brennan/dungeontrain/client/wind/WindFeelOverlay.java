@@ -21,7 +21,8 @@ import java.util.Random;
 /**
  * The on-screen "you are being pushed" effects ({@link WindFeelMode}), drawn under the crosshair:
  * <ul>
- *   <li><b>C</b> near streaks — wisps blowing in from the upwind screen edge, gone a third of the way in;</li>
+ *   <li><b>C</b> near streaks — wisps at the screen edges: blowing in from the upwind edge, or out past both
+ *       edges when the wind is in your face; never more than a third of the way in;</li>
  *   <li><b>D</b> upwind edge chill — a pale glow on the side of the screen the wind comes from;</li>
  *   <li><b>F</b> push chevrons — three faint arrows beside the crosshair pointing downwind.</li>
  * </ul>
@@ -30,7 +31,9 @@ import java.util.Random;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class WindFeelOverlay {
 
-    private static final int STREAKS = 30;
+    private static final int STREAKS = 12;
+    /** Streak thickness, GUI pixels. */
+    private static final int STREAK_THICK = 2;
     /** Streak speed, GUI pixels per second: base plus per unit of wind strength. */
     private static final float STREAK_SPEED_BASE = 220f;
     private static final float STREAK_SPEED_PER_PUSH = 9000f;
@@ -59,6 +62,8 @@ public final class WindFeelOverlay {
     private static final float[] SS = new float[STREAKS];
     /** -1 = blows in from the left edge, +1 = from the right. */
     private static final int[] SIDE = new int[STREAKS];
+    /** True = flies outward off its edge (wind in your face), false = blows in from its edge. */
+    private static final boolean[] OUT = new boolean[STREAKS];
     private static final Random RANDOM = new Random();
     private static boolean seeded = false;
     private static long lastNanos = 0L;
@@ -93,7 +98,7 @@ public final class WindFeelOverlay {
         float t = WindFeel.ticks() + pt;
 
         if (mode.chill) drawChill(g, felt, lateral, t);
-        if (mode.streaks) drawStreaks(g, felt, lateral, dt);
+        if (mode.streaks) drawStreaks(g, felt, lateral, facing, dt);
         if (mode.chevrons) drawChevrons(g, felt, lateral, facing, t);
     }
 
@@ -122,53 +127,72 @@ public final class WindFeelOverlay {
     // ---- C: near streaks ---------------------------------------------------------------------
 
     /**
-     * Wisps that blow in from the upwind screen edge and fade out by the inner edge of the chill's band
-     * ({@link #CHILL_WIDTH}): nothing crosses the middle of the screen. Sides are weighted like the chill.
+     * Wisps at the screen edges only, inside the chill's band ({@link #CHILL_WIDTH}); nothing crosses the middle.
+     * A side wind blows them in from the upwind edge (sides weighted like the chill). Wind in your face sends them
+     * outward instead, off both edges, as if it is streaming past either side of you; in between, a mix.
      */
-    private static void drawStreaks(GuiGraphics g, float felt, float lateral, float dt) {
+    private static void drawStreaks(GuiGraphics g, float felt, float lateral, float facing, float dt) {
         int w = g.guiWidth();
         int h = g.guiHeight();
         float band = Math.max(8f, w * CHILL_WIDTH);
         float along = (1f - Math.abs(lateral)) * CHILL_ALONG;
         float left = Math.max(0f, lateral) + along;
         float right = Math.max(0f, -lateral) + along;
+        float headOn = Math.max(0f, -facing);
         if (!seeded) {
-            for (int i = 0; i < STREAKS; i++) respawn(i, h, band, left, right, true);
+            for (int i = 0; i < STREAKS; i++) respawn(i, h, band, left, right, headOn, true);
             seeded = true;
         }
         int count = Math.round(STREAKS * felt);
         float speed = STREAK_SPEED_BASE + STREAK_SPEED_PER_PUSH * (float) WindFeel.strength();
         for (int i = 0; i < STREAKS; i++) {
-            SX[i] += speed * SS[i] * dt; // distance in from its edge
-            if (SX[i] - SL[i] > band) respawn(i, h, band, left, right, false);
+            // SX = how far in from its edge the streak's head is.
+            SX[i] += (OUT[i] ? -1f : 1f) * speed * SS[i] * dt;
+            boolean gone = OUT[i] ? SX[i] + SL[i] < 0f : SX[i] - SL[i] > band;
+            if (gone) respawn(i, h, band, left, right, headOn, false);
             if (i >= count) continue;
             boolean fromLeft = SIDE[i] < 0;
-            float weight = fromLeft ? left : right;
+            float weight = OUT[i] ? 1f : (fromLeft ? left : right);
             if (weight <= 0f) continue;
-            float head = Math.min(band, SX[i]);
-            float tail = Math.max(0f, SX[i] - SL[i]);
-            if (head <= tail) continue;
+            // Inward: head leads, tail trails toward the edge. Outward: the tail trails back into the band.
+            float near = OUT[i] ? SX[i] : SX[i] - SL[i];
+            float far = OUT[i] ? SX[i] + SL[i] : SX[i];
+            float lo = Math.max(0f, near);
+            float hi = Math.min(band, far);
+            if (hi <= lo) continue;
             // Brightest at the screen edge, gone by the band's inner edge.
-            float fade = 1f - (head + tail) / (2f * band);
+            float fade = 1f - (lo + hi) / (2f * band);
             float a = STREAK_ALPHA * felt * Math.min(1f, weight) * Math.max(0f, fade);
             int y = Math.round(SY[i]);
-            int x0 = Math.round(fromLeft ? tail : w - head);
-            int x1 = Math.round(fromLeft ? head : w - tail);
+            int x0 = Math.round(fromLeft ? lo : w - hi);
+            int x1 = Math.round(fromLeft ? hi : w - lo);
             int third = Math.max(1, (x1 - x0) / 3);
             // Faded ends, brighter middle.
-            g.fill(x0, y, x0 + third, y + 1, argb(a * 0.4f, STREAK_RGB));
-            g.fill(x0 + third, y, x1 - third, y + 1, argb(a, STREAK_RGB));
-            g.fill(x1 - third, y, x1, y + 1, argb(a * 0.4f, STREAK_RGB));
+            g.fill(x0, y, x0 + third, y + STREAK_THICK, argb(a * 0.4f, STREAK_RGB));
+            g.fill(x0 + third, y, x1 - third, y + STREAK_THICK, argb(a, STREAK_RGB));
+            g.fill(x1 - third, y, x1, y + STREAK_THICK, argb(a * 0.4f, STREAK_RGB));
         }
     }
 
-    private static void respawn(int i, int h, float band, float left, float right, boolean anywhere) {
+    private static void respawn(int i, int h, float band, float left, float right, float headOn,
+                                boolean anywhere) {
+        OUT[i] = RANDOM.nextFloat() < headOn;
         float total = left + right;
-        SIDE[i] = total <= 0f || RANDOM.nextFloat() * total < left ? -1 : 1;
-        SY[i] = RANDOM.nextFloat() * h;
-        SL[i] = 12f + RANDOM.nextFloat() * 30f;
+        if (OUT[i]) {
+            SIDE[i] = RANDOM.nextBoolean() ? -1 : 1;
+        } else {
+            SIDE[i] = total <= 0f || RANDOM.nextFloat() * total < left ? -1 : 1;
+        }
+        SY[i] = RANDOM.nextFloat() * (h - STREAK_THICK);
+        SL[i] = 20f + RANDOM.nextFloat() * 35f;
         SS[i] = 0.7f + RANDOM.nextFloat() * 0.6f;
-        SX[i] = anywhere ? RANDOM.nextFloat() * (band + SL[i]) : -RANDOM.nextFloat() * band * 0.5f;
+        if (anywhere) {
+            SX[i] = RANDOM.nextFloat() * band;
+        } else if (OUT[i]) {
+            SX[i] = band + RANDOM.nextFloat() * band * 0.5f; // starts past the band's inner edge, fades in
+        } else {
+            SX[i] = -RANDOM.nextFloat() * band * 0.5f; // starts off-screen
+        }
     }
 
     // ---- F: push chevrons --------------------------------------------------------------------
