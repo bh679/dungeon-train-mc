@@ -33,7 +33,15 @@ public final class WindFeelOverlay {
 
     private static final int STREAKS = 12;
     /** Streak thickness, GUI pixels. */
-    private static final int STREAK_THICK = 2;
+    private static final float STREAK_THICK = 2f;
+    /**
+     * With the wind along the view, a streak's size at the screen edge (close to you) and at the middle (far away),
+     * relative to its flat size.
+     */
+    private static final float STREAK_NEAR_SCALE = 1.5f;
+    private static final float STREAK_FAR_SCALE = 0.3f;
+    /** How strongly wind along the view (head-on or behind) fills both edges with streaks. */
+    private static final float STREAK_ALONG = 0.8f;
     /** Streak speed, GUI pixels per second: base plus per unit of wind strength. */
     private static final float STREAK_SPEED_BASE = 220f;
     private static final float STREAK_SPEED_PER_PUSH = 9000f;
@@ -128,17 +136,21 @@ public final class WindFeelOverlay {
 
     /**
      * Wisps at the screen edges only, inside the chill's band ({@link #CHILL_WIDTH}); nothing crosses the middle.
-     * A side wind blows them in from the upwind edge (sides weighted like the chill). Wind in your face sends them
-     * outward instead, off both edges, as if it is streaming past either side of you; in between, a mix.
+     * A side wind blows them in from the upwind edge (sides weighted like the chill), flat across the screen. Wind
+     * in your face sends them outward instead, off both edges; wind at your back sends them inward. The more the
+     * wind runs along the view, the more they follow perspective: each one runs on a line toward the middle of
+     * the screen, bigger and faster near the edge (close to you), smaller toward the middle (far away).
      */
     private static void drawStreaks(GuiGraphics g, float felt, float lateral, float facing, float dt) {
         int w = g.guiWidth();
         int h = g.guiHeight();
+        float half = w / 2f;
         float band = Math.max(8f, w * CHILL_WIDTH);
-        float along = (1f - Math.abs(lateral)) * CHILL_ALONG;
+        float along = (1f - Math.abs(lateral)) * STREAK_ALONG;
         float left = Math.max(0f, lateral) + along;
         float right = Math.max(0f, -lateral) + along;
         float headOn = Math.max(0f, -facing);
+        float depthMix = Math.min(1f, Math.abs(facing));
         if (!seeded) {
             for (int i = 0; i < STREAKS; i++) respawn(i, h, band, left, right, headOn, true);
             seeded = true;
@@ -146,32 +158,63 @@ public final class WindFeelOverlay {
         int count = Math.round(STREAKS * felt);
         float speed = STREAK_SPEED_BASE + STREAK_SPEED_PER_PUSH * (float) WindFeel.strength();
         for (int i = 0; i < STREAKS; i++) {
-            // SX = how far in from its edge the streak's head is.
-            SX[i] += (OUT[i] ? -1f : 1f) * speed * SS[i] * dt;
-            boolean gone = OUT[i] ? SX[i] + SL[i] < 0f : SX[i] - SL[i] > band;
+            // SX = how far in from its edge the streak's head is. Close to the edge (close to you) it moves faster.
+            float near0 = 1f - Math.max(0f, SX[i]) / half;
+            float pace = 1f + depthMix * (near0 - 0.5f);
+            SX[i] += (OUT[i] ? -1f : 1f) * speed * SS[i] * pace * dt;
+            float len = SL[i] * scaleAt(SX[i], half, depthMix);
+            boolean gone = OUT[i] ? SX[i] + len < 0f : SX[i] - len > band;
             if (gone) respawn(i, h, band, left, right, headOn, false);
             if (i >= count) continue;
             boolean fromLeft = SIDE[i] < 0;
             float weight = OUT[i] ? 1f : (fromLeft ? left : right);
             if (weight <= 0f) continue;
             // Inward: head leads, tail trails toward the edge. Outward: the tail trails back into the band.
-            float near = OUT[i] ? SX[i] : SX[i] - SL[i];
-            float far = OUT[i] ? SX[i] + SL[i] : SX[i];
-            float lo = Math.max(0f, near);
-            float hi = Math.min(band, far);
+            float lo = Math.max(0f, OUT[i] ? SX[i] : SX[i] - len);
+            float hi = Math.min(band, OUT[i] ? SX[i] + len : SX[i]);
             if (hi <= lo) continue;
             // Brightest at the screen edge, gone by the band's inner edge.
             float fade = 1f - (lo + hi) / (2f * band);
             float a = STREAK_ALPHA * felt * Math.min(1f, weight) * Math.max(0f, fade);
-            int y = Math.round(SY[i]);
-            int x0 = Math.round(fromLeft ? lo : w - hi);
-            int x1 = Math.round(fromLeft ? hi : w - lo);
-            int third = Math.max(1, (x1 - x0) / 3);
-            // Faded ends, brighter middle.
-            g.fill(x0, y, x0 + third, y + STREAK_THICK, argb(a * 0.4f, STREAK_RGB));
-            g.fill(x0 + third, y, x1 - third, y + STREAK_THICK, argb(a, STREAK_RGB));
-            g.fill(x1 - third, y, x1, y + STREAK_THICK, argb(a * 0.4f, STREAK_RGB));
+            float thick = STREAK_THICK * scaleAt((lo + hi) / 2f, half, depthMix);
+            drawStreak(g, fromLeft, w, h, SY[i], lo, hi, half, depthMix, thick, a);
         }
+    }
+
+    /** Perspective size at {@code u} in from the edge: 1 for a flat side wind, bigger at the edge along the view. */
+    private static float scaleAt(float u, float half, float depthMix) {
+        float near = 1f - Math.max(0f, Math.min(half, u)) / half;
+        return 1f + depthMix * (STREAK_FAR_SCALE + (STREAK_NEAR_SCALE - STREAK_FAR_SCALE) * near - 1f);
+    }
+
+    /** Screen point {@code u} in from the edge on a streak meeting the edge at height {@code yEdge}. */
+    private static float yAt(float yEdge, float u, float h, float half, float depthMix) {
+        return yEdge + (h / 2f - yEdge) * (u / half) * depthMix;
+    }
+
+    private static void drawStreak(GuiGraphics g, boolean fromLeft, int w, int h, float yEdge, float lo, float hi,
+                                   float half, float depthMix, float thick, float alpha) {
+        float xa = fromLeft ? lo : w - lo;
+        float xb = fromLeft ? hi : w - hi;
+        float ya = yAt(yEdge, lo, h, half, depthMix);
+        float yb = yAt(yEdge, hi, h, half, depthMix);
+        float dx = xb - xa;
+        float dy = yb - ya;
+        int len = Math.round((float) Math.sqrt(dx * dx + dy * dy));
+        if (len < 2) return;
+        g.pose().pushPose();
+        g.pose().translate((xa + xb) / 2f, (ya + yb) / 2f, 0f);
+        g.pose().mulPose(Axis.ZP.rotation((float) Math.atan2(dy, dx)));
+        g.pose().scale(1f, Math.max(1f, thick), 1f);
+        g.pose().translate(0f, -0.5f, 0f);
+        int x0 = -len / 2;
+        int x1 = x0 + len;
+        int third = Math.max(1, len / 3);
+        // Faded ends, brighter middle.
+        g.fill(x0, 0, x0 + third, 1, argb(alpha * 0.4f, STREAK_RGB));
+        g.fill(x0 + third, 0, x1 - third, 1, argb(alpha, STREAK_RGB));
+        g.fill(x1 - third, 0, x1, 1, argb(alpha * 0.4f, STREAK_RGB));
+        g.pose().popPose();
     }
 
     private static void respawn(int i, int h, float band, float left, float right, float headOn,
@@ -183,7 +226,7 @@ public final class WindFeelOverlay {
         } else {
             SIDE[i] = total <= 0f || RANDOM.nextFloat() * total < left ? -1 : 1;
         }
-        SY[i] = RANDOM.nextFloat() * (h - STREAK_THICK);
+        SY[i] = RANDOM.nextFloat() * h;
         SL[i] = 20f + RANDOM.nextFloat() * 35f;
         SS[i] = 0.7f + RANDOM.nextFloat() * 0.6f;
         if (anywhere) {
