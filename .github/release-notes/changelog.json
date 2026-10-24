@@ -30235,9 +30235,9 @@
       ],
       "pr": 2281,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
     },
     {
       "id": "dp-consent-toggle-labels",
@@ -30252,9 +30252,9 @@
       "highlights": [],
       "pr": 2284,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
     },
     {
       "id": "player-mobs-proper-bridge-blocks",
@@ -30269,9 +30269,9 @@
       "highlights": [],
       "pr": 2285,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
     },
     {
       "id": "sibling-zh-cn-text",
@@ -30286,9 +30286,9 @@
       "highlights": [],
       "pr": 2287,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
     },
     {
       "id": "nether-piglin-company",
@@ -30308,9 +30308,9 @@
       ],
       "pr": 2288,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z",
       "major": true,
       "notable": true,
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-piglins-have-new-company.jpg",
@@ -30329,9 +30329,9 @@
       "highlights": [],
       "pr": 2289,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
     },
     {
       "id": "offer-live-eye-command",
@@ -30351,9 +30351,9 @@
       ],
       "pr": 2286,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1501.0",
+      "released_at": "2026-10-24T07:42:39Z"
     }
   ]
 }
