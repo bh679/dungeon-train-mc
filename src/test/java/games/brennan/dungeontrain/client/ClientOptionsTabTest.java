@@ -95,11 +95,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: fifty-eight rows (five repeated on Performance), none of the conditional rows present")
+    @DisplayName("Plain client: fifty-nine rows (five repeated on Performance), none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(58, rows.size());
+        assertEquals(59, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -218,8 +218,8 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        // 56 rows, five of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
-        assertEquals(62, rows.size());
+        // 58 rows, five of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
+        assertEquals(63, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
@@ -280,6 +280,7 @@ final class ClientOptionsTabTest {
         // The two volumes lead, adjacent, so the width-aware packing pairs them on one line; Chat Log follows.
         List<ClientOptionsTab.Row> train = List.of(ClientOptionsTab.Row.TRAIN_VOLUME,
                 ClientOptionsTab.Row.WIND_VOLUME,
+                ClientOptionsTab.Row.WIND_EFFECTS,
                 ClientOptionsTab.Row.SNAPSHOT_CHAT_LOG,
                 ClientOptionsTab.Row.CUSTOM_CONTENT,
                 ClientOptionsTab.Row.SNAPSHOT_MAX_RES,
