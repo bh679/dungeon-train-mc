@@ -30272,6 +30272,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-piglin-company",
+      "version": "0.1498.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "mobs"
+      ],
+      "title": "The piglins have new company",
+      "summary": "The Nether's piglins aren't travelling alone any more. New faces have joined them on the train, and some of the brutes have come better prepared. Not every piglin wants a fight, either.",
+      "highlights": [
+        "New piglin carriages in the Nether",
+        "Some brutes hit much harder. Mind the edge.",
+        "Something new to photograph"
+      ],
+      "pr": 2288,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
