@@ -30092,9 +30092,9 @@
       ],
       "pr": 2277,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1490.0",
+      "released_at": "2026-10-24T04:26:07Z"
     },
     {
       "id": "echo-fix-wider-band",
@@ -30109,9 +30109,9 @@
       "summary": "Echoes of other players turn up more often again on quiet stretches of track.",
       "highlights": [],
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1490.0",
+      "released_at": "2026-10-24T04:26:07Z"
     },
     {
       "id": "stall-watchdog-short-stalls",
@@ -30126,9 +30126,9 @@
       "highlights": [],
       "pr": 2274,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1490.0",
+      "released_at": "2026-10-24T04:26:07Z"
     },
     {
       "id": "live-eye-finds",
@@ -30142,9 +30142,9 @@
       "highlights": [],
       "pr": 2278,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1490.0",
+      "released_at": "2026-10-24T04:26:07Z"
     }
   ]
 }
