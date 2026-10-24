@@ -417,6 +417,11 @@ public final class DungeonTrainNet {
         // Hand-held Vista TV: left-click switches the set on or off (compat/vista/TvItems).
         registrar.playToServer(TvHeldTogglePacket.TYPE, TvHeldTogglePacket.STREAM_CODEC, TvHeldTogglePacket::handle);
         registrar.playToServer(TvStreamChoicePacket.TYPE, TvStreamChoicePacket.STREAM_CODEC, TvStreamChoicePacket::handle);
+        // Perks menu: unlock a perk / put a point in; the server judges and re-syncs (client/perks/PerksScreen).
+        registrar.playToServer(PerkUnlockPacket.TYPE, PerkUnlockPacket.STREAM_CODEC, PerkUnlockPacket::handle);
+        registrar.playToServer(PerkSpendPacket.TYPE, PerkSpendPacket.STREAM_CODEC, PerkSpendPacket::handle);
+        registrar.playToClient(PerkBalancesPacket.TYPE, PerkBalancesPacket.STREAM_CODEC, PerkBalancesPacket::handle);
+        registrar.playToClient(PerkRefusedPacket.TYPE, PerkRefusedPacket.STREAM_CODEC, PerkRefusedPacket::handle);
         // /dt flyspeed: the local player's creative sprint-fly multiplier. See player/SprintFlyBoost.
         registrar.playToClient(SprintFlyBoostPacket.TYPE, SprintFlyBoostPacket.STREAM_CODEC, SprintFlyBoostPacket::handle);
         // How many hidden advancements sit between two linked ones, for the "…" on the advancements
