@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.train.MobBreakContext;
 import games.brennan.dungeontrain.train.PlayerBlockBreakOff;
 import games.brennan.dungeontrain.train.PlayerPlacedTrainBlocks;
 import games.brennan.dungeontrain.train.Trains;
+import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
@@ -49,6 +50,9 @@ import java.util.List;
  * blocks it may break: {@link ToolTiers#mayBreak} at its break tier, never below its feet. With no
  * path the navigator leaves a mob standing where it gave up, so when the way ahead is open ground
  * the goal first walks it straight at the target until there is something to dig.
+ *
+ * <p>PlayerMobs always have this goal at {@link ToolTiers#MAX_TIER} (anything but floors), tool or
+ * not: with no digging tool they mine at the speed of what is in their main hand, as a player would.</p>
  *
  * <p>Breaks one block at a time, taking as long as a player would with the same tool (tool speed,
  * Efficiency, Haste / Mining Fatigue, water and airborne penalties, right-tool 1/30 vs 1/100). A
@@ -101,6 +105,8 @@ public final class MobDigGoal extends Goal {
 
     private final Mob mob;
     private final int tier;
+    /** Digs with whatever is in the main hand when it holds no digging tool, at that item's speed. */
+    private final boolean bareHanded;
 
     private int lastSeenTick = -SEEN_MEMORY_TICKS * 2;
     private LivingEntity trackedTarget;
@@ -115,9 +121,10 @@ public final class MobDigGoal extends Goal {
     private int progressTicks;
     private int lastStage;
 
-    private MobDigGoal(Mob mob, int tier) {
+    private MobDigGoal(Mob mob, int tier, boolean bareHanded) {
         this.mob = mob;
         this.tier = tier;
+        this.bareHanded = bareHanded;
         setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
     }
 
@@ -127,12 +134,14 @@ public final class MobDigGoal extends Goal {
      */
     public static void attach(Mob mob) {
         if (mob.level().isClientSide()) return;
-        int tier = mob.getPersistentData().getInt(DifficultyApplier.DIG_TIER_KEY);
+        // PlayerMobs dig like players: always at the top tier, with whatever they hold.
+        boolean playerMob = mob instanceof PlayerMobEntity;
+        int tier = playerMob ? ToolTiers.MAX_TIER : mob.getPersistentData().getInt(DifficultyApplier.DIG_TIER_KEY);
         if (tier <= ToolTiers.NO_TIER) return;
         for (WrappedGoal wrapped : mob.goalSelector.getAvailableGoals()) {
             if (wrapped.getGoal() instanceof MobDigGoal) return;
         }
-        mob.goalSelector.addGoal(PRIORITY, new MobDigGoal(mob, tier));
+        mob.goalSelector.addGoal(PRIORITY, new MobDigGoal(mob, tier, playerMob));
     }
 
     @Override
@@ -188,7 +197,7 @@ public final class MobDigGoal extends Goal {
         if (approaching) return approachTicks < APPROACH_TICKS;
         if (cell == null) return false;
         if (!currentState(level, cell).equals(cell.state)) return false;
-        if (!(mob.getItemInHand(cell.hand).getItem() instanceof DiggerItem)) return false;
+        if (!bareHanded && !(mob.getItemInHand(cell.hand).getItem() instanceof DiggerItem)) return false;
         return mob.getEyePosition().distanceTo(cell.worldCentre()) <= REACH;
     }
 
@@ -294,7 +303,8 @@ public final class MobDigGoal extends Goal {
                 mob.getUUID(), target.state, target.worldPos, target.onCarriage(), broke);
         if (broke) {
             EquipmentSlot slot = target.hand == InteractionHand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND;
-            mob.getItemInHand(target.hand).hurtAndBreak(1, mob, slot);
+            ItemStack used = mob.getItemInHand(target.hand);
+            if (used.getItem() instanceof DiggerItem) used.hurtAndBreak(1, mob, slot);
             chainUntilTick = mob.tickCount + CHAIN_TICKS;
         }
         cell = null;
@@ -369,7 +379,10 @@ public final class MobDigGoal extends Goal {
         return new DigCell(pos, ship, subLevel, plotPos, state, hand, ticks);
     }
 
-    /** The held digging tool that breaks {@code state} best: a right tool first, then the faster. */
+    /**
+     * The held digging tool that breaks {@code state} best: a right tool first, then the faster. With
+     * none, a bare-handed digger uses its main hand; anyone else has nothing to dig with.
+     */
     private InteractionHand bestHand(BlockState state) {
         InteractionHand best = null;
         float bestScore = -1;
@@ -382,7 +395,7 @@ public final class MobDigGoal extends Goal {
                 best = hand;
             }
         }
-        return best;
+        return best == null && bareHanded ? InteractionHand.MAIN_HAND : best;
     }
 
     /** Ticks a player holding {@code tool} under the mob's conditions would take to break {@code state}. */

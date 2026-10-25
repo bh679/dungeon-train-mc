@@ -107,6 +107,15 @@ final class ToolTiersTest {
     }
 
     @Test
+    @DisplayName("the top tier (PlayerMobs) breaks anything but floors, no tool or player block needed")
+    void maxTierIsAnythingButFloors() {
+        assertEquals(4, ToolTiers.MAX_TIER);
+        assertEquals(ToolTiers.MAX_TIER, ToolTiers.breakTier(Integer.MAX_VALUE));
+        assertTrue(ToolTiers.mayBreak(ToolTiers.MAX_TIER, false, false, false));
+        assertFalse(ToolTiers.mayBreak(ToolTiers.MAX_TIER, false, false, true));
+    }
+
+    @Test
     @DisplayName("floors are never breakable at any tier")
     void neverFloors() {
         for (int tier = 0; tier <= 4; tier++) {
