@@ -64,6 +64,7 @@ public final class WindClientEvents {
         if (level.dimension() != Level.OVERWORLD || !ClientWind.active()) {
             stillWindy(level);
             AmbientWind.release();
+            WindFeel.calm();
             WindSound.silence();
             WindDebugState.clear(level.dimension() == Level.OVERWORLD ? "wind off" : "not in the Overworld");
             return;
@@ -72,6 +73,7 @@ public final class WindClientEvents {
         if (ClientUpsideDownBand.isInPortalTwinSpace((int) Math.floor(player.getX()), (int) Math.floor(player.getY()))) {
             stillWindy(level);
             AmbientWind.release();
+            WindFeel.calm();
             WindSound.silence();
             WindDebugState.clear("in a dimensional carriage: no wind");
             return;
@@ -90,10 +92,14 @@ public final class WindClientEvents {
             applied = WindPush.apply(player, now, profile, extra);
         }
 
+        double windOnYou = skip == null && exposure.exposed()
+                ? now.strength() * extra * (player.onGround() ? 1.0 : profile.airFactor()) : 0.0;
+        WindFeel.update(windOnYou, now);
+
         WindSample ahead = ClientWind.sampleAt(player.getX(), tick + profile.visualLeadTicks()).scaled(deepDark);
         // Timing of a gust: sound and streaks both start visualLeadTicks early (you hear and see it coming before
-        // it shoves); the sound ends that early too, but the streaks hold until the shove itself is over.
-        WindSound.update(player, ahead, exposure, TrainExposure.underTerrain(player));
+        // it shoves); while it is pushing you the sound also follows the wind now, so it lasts through the shove.
+        WindSound.update(player, now, ahead, exposure, TrainExposure.underTerrain(player));
         WindSample visual = visualSample(now, ahead);
         double[] carriageVel = carriageVelocity(sub);
         // Visuals follow the wind, not the player: they keep blowing outside while you shelter, and each streak
@@ -190,7 +196,8 @@ public final class WindClientEvents {
     /** DT's own wind streaks for installs without Windy: Configurable's direction hook. */
     private static void fallbackStreaks(ClientLevel level, LocalPlayer player, WindSample w, double[] carriageVel) {
         RandomSource r = level.random;
-        double expected = Math.min(FALLBACK_MAX_PER_TICK, w.strength() * FALLBACK_RATE);
+        double expected = Math.min(FALLBACK_MAX_PER_TICK, w.strength() * FALLBACK_RATE)
+                * WindFeelMath.calmFade(w.strength());
         int n = (int) expected + (r.nextDouble() < expected - Math.floor(expected) ? 1 : 0);
         double dx = w.dirX();
         double dz = w.dirZ();
@@ -212,6 +219,7 @@ public final class WindClientEvents {
         ClientWind.reset();
         WindyDrive.release();
         AmbientWind.reset();
+        WindFeel.reset();
         WindSound.silence();
     }
 }

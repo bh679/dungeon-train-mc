@@ -21,8 +21,9 @@ import org.jetbrains.annotations.Nullable;
  * <p>Vista's item renderer draws the TV as its block model and, for a TV worn on the head, paints a
  * smile where the screen is. {@code mixin/vista/TvItemRendererMixin} calls {@link #pose} before that
  * and {@link #draw} after it, in the hand contexts only. The screen quad sits exactly where Vista's
- * smile does, on the north face; the picture is the same shared decode every TV in the world shows
- * ({@link LiveFeedSource#MAIN}).</p>
+ * smile does, on the north face; the picture is the same shared decode every TV in the world shows:
+ * {@link LiveFeedSource#SECOND} for a set that remembers Stream 2 ({@link TvItems#stream}), else
+ * {@link LiveFeedSource#MAIN}.</p>
  *
  * <p>The item model shows the set edge-on (yaw 45° right hand, 225° left hand), which is why a plain
  * block item never showed its screen. {@link #poseFor} spins the set about its centre so the front
@@ -99,17 +100,33 @@ public final class HeldTvScreen {
         poseStack.mulPose(Axis.XP.rotationDegrees(p.pitch()));
     }
 
+    /** The held set shows the second stream: it remembers Stream 2. */
+    static boolean showsSecond(ItemStack stack) {
+        return showsSecond(TvItems.stream(stack));
+    }
+
     /**
-     * Draw the feed on the front face. {@code poseStack}'s origin is the block centre, as Vista
-     * leaves it after its own render; {@code light} is the item's packed light, whose sky half is
-     * kept and whose block half is forced to full — a screen glows.
+     * The rule of {@link #showsSecond(ItemStack)} on the remembered stream: 2 shows the second stream;
+     * 1 and none (0) the first, as a placed TV comes on. One screen, so "both" is the first.
      */
-    public static void draw(PoseStack poseStack, MultiBufferSource buffer, int light) {
+    static boolean showsSecond(int stream) {
+        return stream == 2;
+    }
+
+    /**
+     * Draw {@code stack}'s stream on the front face. {@code poseStack}'s origin is the block centre, as
+     * Vista leaves it after its own render; {@code light} is the item's packed light, whose sky half is
+     * kept and whose block half is forced to full — a screen glows. The second stream's source shows
+     * the first while nobody is on the second, so the screen never goes dark over it.
+     */
+    public static void draw(ItemStack stack, PoseStack poseStack, MultiBufferSource buffer, int light) {
         Minecraft mc = Minecraft.getInstance();
         int tick = mc.player != null ? mc.player.tickCount : 0;
         float partial = mc.getTimer().getGameTimeDeltaPartialTick(false);
-        VertexConsumer vc = LiveFeedSource.MAIN.screenConsumer(buffer, TVBlockEntity.MIN_SCREEN_PIXEL_SIZE_VEC,
-            tick, partial, false, IntAnimationState.MAX_ANIM, IntAnimationState.MAX_ANIM);
+        LiveFeedSource source = showsSecond(stack) ? LiveFeedSource.SECOND : LiveFeedSource.MAIN;
+        // Fully faded on, no snow: Vista's staticAnim is the CRT shader's NoiseIntensity, and 1 is pure static.
+        VertexConsumer vc = source.screenConsumer(buffer, TVBlockEntity.MIN_SCREEN_PIXEL_SIZE_VEC,
+            tick, partial, false, IntAnimationState.MAX_ANIM, IntAnimationState.NO_ANIM);
         poseStack.pushPose();
         poseStack.translate(0, 0, FACE_Z);
         int glow = LightTexture.pack(15, LightTexture.sky(light));

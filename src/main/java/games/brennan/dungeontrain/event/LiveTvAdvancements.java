@@ -51,9 +51,8 @@ public final class LiveTvAdvancements {
 
     /** Server tick each player put a TV on their head, while it stays there. */
     private static final Map<UUID, Long> WORN_SINCE = new HashMap<>();
-    /** The streamer being timed and the server tick their stream started; null while nobody is. */
-    private static UUID timedStreamer;
-    private static long streamSince;
+    /** Server tick each streamer's current stream started, while it runs (two with Two Streams on). */
+    private static final Map<UUID, Long> STREAM_SINCE = new HashMap<>();
 
     private LiveTvAdvancements() {}
 
@@ -64,8 +63,7 @@ public final class LiveTvAdvancements {
     /** A stream has started on this server ({@link LiveFeedEvents}): earn the first tier, start its timer. */
     static void onStreamStarted(ServerPlayer player) {
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "started_livestream");
-        timedStreamer = player.getUUID();
-        streamSince = player.server.getTickCount();
+        STREAM_SINCE.put(player.getUUID(), (long) player.server.getTickCount());
     }
 
     /** Swapped the TV on their head for a Live Eye while someone else was live, and went live ({@link LiveFeedEvents}). */
@@ -79,7 +77,8 @@ public final class LiveTvAdvancements {
      */
     public static void onHeldTvToggled(ServerPlayer player, boolean on) {
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "toggled_held_tv");
-        if (watchingOwnStream(on, LiveStreamers.get(player.server), player.getUUID())) {
+        UUID self = player.getUUID();
+        if (watchingOwnStream(on, LiveStreamers.isStreamer(player.server, self) ? self : null, self)) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "held_tv_while_live");
         }
     }
@@ -117,13 +116,15 @@ public final class LiveTvAdvancements {
     }
 
     private static void checkStream(MinecraftServer server, long now) {
-        UUID streamer = LiveStreamers.get(server);
-        if (streamer == null || !streamer.equals(timedStreamer)) {
-            timedStreamer = null;
-            return;
+        if (STREAM_SINCE.isEmpty()) return;
+        STREAM_SINCE.keySet().removeIf(id -> !LiveStreamers.isStreamer(server, id));
+        for (Map.Entry<UUID, Long> e : java.util.List.copyOf(STREAM_SINCE.entrySet())) {
+            ServerPlayer player = server.getPlayerList().getPlayer(e.getKey());
+            if (player != null) tickStream(player, e.getValue(), now);
         }
-        ServerPlayer player = server.getPlayerList().getPlayer(streamer);
-        if (player == null) return;
+    }
+
+    private static void tickStream(ServerPlayer player, long streamSince, long now) {
         if (reached(now, streamSince, STREAM_15_ID)) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "livestream_15_min");
         }
@@ -173,6 +174,6 @@ public final class LiveTvAdvancements {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         WORN_SINCE.clear();
-        timedStreamer = null;
+        STREAM_SINCE.clear();
     }
 }

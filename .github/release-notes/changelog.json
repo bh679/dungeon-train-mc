@@ -30354,6 +30354,256 @@
       "released": true,
       "released_in": "v0.1501.0",
       "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "enchantment-fix-echoes",
+      "version": "0.1502.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "loot"
+      ],
+      "title": "Enchantment fix",
+      "summary": "Fixed an enchantment not behaving the same on echoes as it does on players.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1503.0",
+      "released_at": "2026-10-24T13:06:51Z"
+    },
+    {
+      "id": "gallery-carriage-variant-conditions",
+      "version": "0.1503.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Gallery carriage",
+      "summary": "A new passenger carriage, the Gallery, can now turn up on the train. Builders also get a few editor upgrades for block variants.",
+      "highlights": [
+        "New Gallery passenger carriage",
+        "Block variant conditions can be set to Is not",
+        "Variants that follow another group now match what that group placed",
+        "Pasting a copied variant keeps the conditions it was copied with",
+        "Player heads added to a build face into the room"
+      ],
+      "pr": 2294,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1503.0",
+      "released_at": "2026-10-24T13:06:51Z"
+    },
+    {
+      "id": "off-train-advancements",
+      "version": "0.1504.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "Some advancements that should have been earned were not. They are now. Vanilla and other mods' advancements are no longer held back by the AFK check.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1506.0",
+      "released_at": "2026-10-24T13:54:27Z"
+    },
+    {
+      "id": "live-chat-on-death-screens",
+      "version": "0.1505.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Talk to your stream after you die",
+      "summary": "If your stream is still running after you die, you can now read and answer its chat from the death screens. The newest message shows quietly at the bottom of the page. Press T to see the whole chat and type a reply.",
+      "highlights": [
+        "The latest chat message shows at the bottom of every death page",
+        "Press T to open the full chat and reply without leaving the page",
+        "What you type stays off the stream"
+      ],
+      "pr": 2295,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1506.0",
+      "released_at": "2026-10-24T13:54:27Z"
+    },
+    {
+      "id": "feel-the-wind",
+      "version": "0.1506.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "ui"
+      ],
+      "title": "Feel the wind",
+      "summary": "You can now tell when the wind is hitting you. Out in the open it sounds louder and closer, and faint streaks blow past the edges of your screen. You can turn the streaks down or off in the Dungeon Train options, on the Train tab.",
+      "highlights": [
+        "The wind gets louder and rumbles when it is on you, even before it starts to push you",
+        "You hear a gust while it shoves you, not just before",
+        "Streaks at the edges of the screen show which way the wind is blowing",
+        "New Wind effects setting: Off, or 1 to 6 (3 is the default)",
+        "No more wind streaks when the air is calm"
+      ],
+      "pr": 2296,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1506.0",
+      "released_at": "2026-10-24T13:54:27Z"
+    },
+    {
+      "id": "two-streams-second-channel",
+      "version": "0.1507.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "multiplayer",
+        "community"
+      ],
+      "title": "Two Streams: a second channel",
+      "summary": "When the Two Streams reward is on, a second player can go live without taking the Eye from whoever is already streaming. Right-click any TV to step it through off, Stream 1 and Stream 2, TV rooms come up showing a mix of both, and a TV worn on your head shows both streams, one above the other.",
+      "highlights": [
+        "Right-click a TV: off, Stream 1, Stream 2 (while a second stream is live), off",
+        "A TV on Stream 2 shows Stream 1 while nobody is on the second",
+        "Wearing a TV: both streams stacked (unless the box is at its largest size); in your inventory, click one to watch only it, click again for both. The TV remembers your pick, and TVs broken while tuned come back on that stream",
+        "Options / Dungeon Train / Stream: choose what a TV on your head shows by default"
+      ],
+      "pr": 2290,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "echoes-update-modpack",
+      "version": "0.1507.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "mobs"
+      ],
+      "title": "Echoes update",
+      "summary": "The modpacks now include the latest update for echoes.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 2297
+    },
+    {
+      "id": "dimensional-carriage-far-exit-landing",
+      "version": "0.1509.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage exit fix",
+      "summary": "Walking a long way through a dimensional carriage and leaving by a far exit now puts you back inside the right carriage. The train waits for you to land before it moves off.",
+      "highlights": [],
+      "pr": 2269,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "playermob-tv-hats",
+      "version": "0.1510.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "TV heads",
+      "summary": "Some of the players you meet on the train now turn up wearing a TV on their head.",
+      "highlights": [],
+      "pr": 2304,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-adaptive-stream-quality",
+      "version": "0.1510.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Smoother live streams",
+      "summary": "When your upload can't keep up with your Live Eye stream, the stream now lowers its own quality so viewers stop seeing it drop, then raises it again once your connection catches up. Your next stream starts at a quality your connection can carry.",
+      "highlights": [
+        "Live streams adjust their quality to your upload speed",
+        "A chat message tells you when your connection lowered the quality",
+        "Prefer a fixed quality? Turn off adaptiveQuality in the live client config"
+      ],
+      "pr": 2305,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "loading-screen-story-12",
+      "version": "0.1512.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "ui"
+      ],
+      "title": "New loading story",
+      "summary": "A new story for the loading screen.",
+      "highlights": [],
+      "pr": 2306,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "held-tv-live-feed-static",
+      "version": "0.1513.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Hand-held TV fix",
+      "summary": "A TV switched on in your hand now shows the live feed instead of static.",
+      "highlights": [],
+      "pr": 2308,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "held-tv-remembered-stream",
+      "version": "0.1515.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Hand-held TV channel fix",
+      "summary": "A TV you pick up off the second stream keeps showing the second stream while you hold it, instead of jumping back to the first.",
+      "highlights": [],
+      "pr": 2310,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

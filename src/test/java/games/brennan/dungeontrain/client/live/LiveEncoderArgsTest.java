@@ -120,4 +120,28 @@ class LiveEncoderArgsTest {
         assertEquals(500, LiveEncoder.effectiveBitrateKbps(600, true));
         assertEquals(4400, LiveEncoder.effectiveBitrateKbps(8000, true));
     }
+
+    @Test
+    void aResumeAppendsToThePlaylistOnTheSameClock() {
+        Path dir = Path.of("/tmp/live/abc");
+        List<String> fresh = Arrays.asList(LiveEncoder.encodeArgs(1280, 720, 20, 1550, LiveEncoder.Cadence.of(10), dir, 0, false, null));
+        List<String> resumed = Arrays.asList(LiveEncoder.encodeArgs(1280, 720, 20, 1550, LiveEncoder.Cadence.of(10), dir, 0, false,
+            new LiveEncoder.Resume(123.45)));
+        assertTrue(fresh.contains("1550k"), "the bitrate is sent as given");
+        assertFalse(fresh.contains("-output_ts_offset"));
+        assertFalse(String.join(" ", fresh).contains("append_list"));
+        int offset = resumed.indexOf("-output_ts_offset");
+        assertTrue(offset > 0 && offset < resumed.lastIndexOf("-f"), "an output option, before the muxer");
+        assertEquals("123.450", resumed.get(offset + 1));
+        assertTrue(resumed.get(resumed.indexOf("-hls_flags") + 1).endsWith("+append_list"));
+        assertEquals(fresh.get(fresh.indexOf("-g") + 1), resumed.get(resumed.indexOf("-g") + 1), "keyframes unchanged");
+    }
+
+    @Test
+    void theOldEntryPointStillAppliesSaveBandwidth() {
+        Path dir = Path.of("/tmp/live/abc");
+        assertEquals(Arrays.asList(LiveEncoder.encodeArgs(1280, 720, 20, LiveEncoder.effectiveBitrateKbps(2500, true),
+                LiveEncoder.Cadence.of(10), dir, 0, true, null)),
+            Arrays.asList(LiveEncoder.args(1280, 720, 20, 2500, LiveEncoder.Cadence.of(10), dir, 0, true)));
+    }
 }

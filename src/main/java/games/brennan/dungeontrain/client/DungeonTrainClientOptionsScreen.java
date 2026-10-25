@@ -729,6 +729,16 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 yield Setting.of(nameTag, kid ? key + ".kid_tip" : key + ".tip");
             }
 
+            // Two streams live: what a worn TV shows by default (a TV that remembers a stream wins).
+            case WORN_TV_STREAMS -> Setting.of(
+                    CycleButton.<LiveFeedClientConfig.WornTvStreams>builder(DungeonTrainClientOptionsScreen::wornTvStreamsLabel)
+                            .withValues(LiveFeedClientConfig.WornTvStreams.values())
+                            .withInitialValue(LiveFeedClientConfig.wornTvStreams())
+                            .displayOnlyValue()
+                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
+                                    (btn, v) -> LiveFeedClientConfig.setWornTvStreams(v)),
+                    key + ".tip");
+
             // Pop-ups copied back over the stream's name tag (LiveToastRects). On the Performance tab too.
             case STREAM_POPUPS_OVER_TAG -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.popupsOverNameTag(),
                     LiveFeedClientConfig::setPopupsOverNameTag), key + ".tip");
@@ -890,6 +900,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // the same value. The slider carries the sound screen's long tooltip; the row has its own short one.
             case TRAIN_VOLUME -> Setting.of(slider(TrainVolumeOption.valueOnly()), key + ".tip");
             case WIND_VOLUME -> Setting.of(slider(games.brennan.dungeontrain.client.wind.WindVolumeOption.valueOnly()),
+                    key + ".tip");
+            // OFF, then six tiers of the edge streaks (3 = the default look).
+            case WIND_EFFECTS -> Setting.of(slider(games.brennan.dungeontrain.client.wind.WindEffectsOption.valueOnly()),
                     key + ".tip");
 
             // The standing answer to the start-of-world prompt shown when the player has Train Editor
@@ -1144,6 +1157,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
     private static Component liveFeedTvModeLabel(LiveFeedTvMode mode) {
         return Component.translatable("gui.dungeontrain.options.live_feed_viewing." + mode.name().toLowerCase(java.util.Locale.ROOT));
+    }
+
+    private static Component wornTvStreamsLabel(LiveFeedClientConfig.WornTvStreams v) {
+        return Component.translatable("gui.dungeontrain.options.worn_tv_streams." + v.name().toLowerCase(java.util.Locale.ROOT));
     }
 
     private static Component streamNameTagLabel(LiveFeedClientConfig.NameTag tag) {

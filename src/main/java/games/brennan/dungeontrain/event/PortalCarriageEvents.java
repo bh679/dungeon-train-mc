@@ -45,6 +45,7 @@ import games.brennan.dungeontrain.portal.PortalStranding;
 import games.brennan.dungeontrain.portal.PortalSwapDiagnostics;
 import games.brennan.dungeontrain.portal.PortalSwapDrift;
 import games.brennan.dungeontrain.portal.PortalStructure;
+import games.brennan.dungeontrain.portal.PortalArrivalHold;
 import games.brennan.dungeontrain.portal.PortalTrainFreeze;
 import games.brennan.dungeontrain.portal.PortalTripTracker;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
@@ -54,7 +55,9 @@ import games.brennan.dungeontrain.net.PortalRoomDepthPacket;
 import games.brennan.dungeontrain.net.PortalRoomFogPacket;
 import games.brennan.dungeontrain.net.PortalCrossingPacket;
 import games.brennan.dungeontrain.net.PortalRoomSkyPacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalSwapPacket;
+import games.brennan.dungeontrain.net.SpawnDeckHoldPacket;
 import games.brennan.dungeontrain.net.PortalTrainAudioPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.ShipAabbs;
@@ -665,6 +668,7 @@ public final class PortalCarriageEvents {
         ACTIVE_PAIRS.clear();
         PortalSwapDrift.clear();
         PortalTrainFreeze.clear();
+        PortalArrivalHold.clear();
         LAST_FOG.clear();
         games.brennan.dungeontrain.portal.PlayerSkyRegions.clearAll();
         LAST_CROSSING.clear();
@@ -2210,6 +2214,14 @@ public final class PortalCarriageEvents {
             // a player who deliberately walked back to it has asked for.
             if (move.toFrame() == PortalFrames.FRAME_CARRIAGE) {
                 PortalExitBindings.bind(player.getUUID(), pairKey, tile);
+                // Asked before anything below can thaw it: a train that is standing still for this
+                // room keeps standing until this player is aboard. From a far exit copy their client
+                // has neither the chunks nor the carriage yet, and a train that started this tick
+                // would slide out from under them. See PortalArrivalHold.
+                UUID trainId = PortalTrainFreeze.trainIdOf(pairKey);
+                if (TrainMotionFreeze.isFrozen(trainId)) {
+                    PortalArrivalHold.noteArrival(player, trainId, level.getGameTime());
+                }
                 // Back to being somebody who can see the train. While they were in the room their
                 // carriages may have been parked (PhysicsFreezeController counts a secluded tracker
                 // as nobody); wake the one they are stepping onto now rather than on the next
@@ -2263,6 +2275,16 @@ public final class PortalCarriageEvents {
             // client/portal/ClientPortalSwap) — and so the client sheds the carry after
             // handleMovePlayer has kept the momentum the relative teleport preserved.
             PacketDistributor.sendToPlayer(player, new PortalSwapPacket(leftCarrier));
+            // Back onto the train: the client may not have this carriage yet. Out of a far exit
+            // copy it arrives four or five ticks after the player does, and until then they fall
+            // through the deck they were put on and land on the track bed under it, where nothing
+            // ever carries them (repro, 24 Oct 2026). Hold them at the deck surface until Sable
+            // picks them up; for a carriage the client already has, that is a tick or two.
+            if (!leftCarrier) {
+                DungeonTrainNet.sendTo(player, new SpawnDeckHoldPacket(
+                    frames.floorSurfaceY(PortalFrames.FRAME_CARRIAGE, boundTwin),
+                    SpawnDeckHoldPacket.DEFAULT_HOLD_TICKS));
+            }
             COOLDOWNS.put(player.getUUID(), level.getGameTime() + SWAP_COOLDOWN_TICKS);
             LAST_SWAP.put(player.getUUID(), level.getGameTime());
 

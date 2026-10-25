@@ -170,4 +170,73 @@ class LivePlaylistTest {
         String out = pub(text, segs(6, 7), seqs(1, 4));
         assertTrue(out.contains("#EXT-X-MEDIA-SEQUENCE:4\n#EXT-X-DISCONTINUITY-SEQUENCE:4\n"));
     }
+
+    private static final String RESUMED = """
+        #EXTM3U
+        #EXT-X-VERSION:6
+        #EXT-X-TARGETDURATION:10
+        #EXT-X-MEDIA-SEQUENCE:4
+        #EXTINF:10.000000,
+        seg00004.ts
+        #EXT-X-DISCONTINUITY
+        #EXTINF:6.000000,
+        seg00005.ts
+        #EXTINF:10.000000,
+        seg00006.ts
+        """;
+
+    @Test
+    void findsWhereARestartedEncoderPickedTheStreamUp() {
+        assertEquals(List.of(5L), LivePlaylist.discontinuities(RESUMED));
+        assertEquals(List.of(), LivePlaylist.discontinuities("#EXTM3U\n#EXT-X-MEDIA-SEQUENCE:2\n#EXTINF:10,\nseg00002.ts\n"));
+    }
+
+    @Test
+    void anEncoderBreakIsPublishedInPlace() {
+        Set<String> up = Set.of("seg00004.ts", "seg00005.ts", "seg00006.ts");
+        String out = LivePlaylist.publishable(RESUMED, up, new TreeSet<>(), new TreeSet<>(List.of(5L))).orElseThrow();
+        assertTrue(out.contains("seg00004.ts\n#EXT-X-DISCONTINUITY\n#EXTINF:6.000000,\nseg00005.ts"), out);
+        assertFalse(out.contains("DISCONTINUITY-SEQUENCE"), out);
+    }
+
+    @Test
+    void anEncoderBreakThatSlidOutIsCountedInTheDiscontinuitySequence() {
+        // ffmpeg's window has moved past segment 5, where the encoder restarted.
+        String later = """
+            #EXTM3U
+            #EXT-X-TARGETDURATION:10
+            #EXT-X-MEDIA-SEQUENCE:6
+            #EXTINF:10.000000,
+            seg00006.ts
+            #EXTINF:10.000000,
+            seg00007.ts
+            """;
+        Set<String> up = Set.of("seg00006.ts", "seg00007.ts");
+        String out = LivePlaylist.publishable(later, up, new TreeSet<>(), new TreeSet<>(List.of(5L))).orElseThrow();
+        assertTrue(out.contains("#EXT-X-MEDIA-SEQUENCE:6\n#EXT-X-DISCONTINUITY-SEQUENCE:1\n"), out);
+    }
+
+    @Test
+    void aBreakAfterADroppedSegmentIsCountedOnce() {
+        // Segment 4 was given up on and 5 is where the encoder restarted: one discontinuity, not two.
+        String later = """
+            #EXTM3U
+            #EXT-X-TARGETDURATION:10
+            #EXT-X-MEDIA-SEQUENCE:6
+            #EXTINF:10.000000,
+            seg00006.ts
+            """;
+        String out = LivePlaylist.publishable(later, Set.of("seg00006.ts"), new TreeSet<>(List.of(4L)),
+            new TreeSet<>(List.of(5L))).orElseThrow();
+        assertTrue(out.contains("#EXT-X-DISCONTINUITY-SEQUENCE:1\n"), out);
+    }
+
+    @Test
+    void endlistIsTakenOutForAResume() {
+        String ended = RESUMED + "#EXT-X-ENDLIST\n";
+        String kept = LivePlaylist.withoutEndlist(ended);
+        assertFalse(LivePlaylist.parse(kept).ended());
+        assertEquals(LivePlaylist.parse(ended).segments(), LivePlaylist.parse(kept).segments());
+        assertEquals(RESUMED, LivePlaylist.withoutEndlist(RESUMED), "nothing to take out");
+    }
 }

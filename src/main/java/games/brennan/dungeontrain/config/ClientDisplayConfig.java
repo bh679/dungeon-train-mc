@@ -238,6 +238,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.DoubleValue TRAIN_ENGINE_VOLUME;
     /** How loud the train wind plays. See {@link #getWindVolume()}. */
     public static final ModConfigSpec.DoubleValue WIND_VOLUME;
+    /** How strongly the wind's on-screen effects draw, 0 (off) to 6. See {@link #getWindScreenEffects()}. */
+    public static final ModConfigSpec.IntValue WIND_SCREEN_EFFECTS;
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
     /** Tiles per row in the Train Builder's Open screen grid. See {@link #getBuilderTilesPerRow()}. */
     public static final ModConfigSpec.IntValue BUILDER_TILES_PER_ROW;
@@ -439,6 +441,7 @@ public final class ClientDisplayConfig {
         AFK_PAUSE_ENABLED = pair.getLeft().afkPauseEnabled;
         TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
         WIND_VOLUME = pair.getLeft().windVolume;
+        WIND_SCREEN_EFFECTS = pair.getLeft().windScreenEffects;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
         BUILDER_TILES_PER_ROW = pair.getLeft().builderTilesPerRow;
         MENU_RENDER_DISTANCE = pair.getLeft().menuRenderDistance;
@@ -634,6 +637,12 @@ public final class ClientDisplayConfig {
                 .comment("How loud the wind on the train plays, 0.0 (off) to 1.0 (unscaled). Scales the breeze and the gusts together. Separate from vanilla's Ambient slider. Also settable in Options -> Music & Sounds and in Options -> Dungeon Train...")
                 .defineInRange("windVolume", DEFAULT_TRAIN_ENGINE_VOLUME,
                         MIN_TRAIN_ENGINE_VOLUME, MAX_TRAIN_ENGINE_VOLUME);
+        b.pop();
+
+        b.push("wind");
+        ModConfigSpec.IntValue windScreenEffects = b
+                .comment("How strongly the wind's on-screen effects (streaks at the screen edges while the wind is on you) draw: 0 = off, 1 (faint) to 6 (strongest). 3 is the default. Also settable in Options -> Dungeon Train... -> Train.")
+                .defineInRange("screenEffects", DEFAULT_WIND_SCREEN_EFFECTS, 0, MAX_WIND_SCREEN_EFFECTS);
         b.pop();
 
         b.push("skybox");
@@ -981,7 +990,7 @@ public final class ClientDisplayConfig {
                 chuncksHideDistantHorizons, spheresHideDistantHorizons, stacksHideDistantHorizons,
                 sunkAtticHideDistantHorizons,
                 voidBandsDistantHorizonsMargin,
-                framerateThrottleEnabled, framerateThrottleFps, afkPauseEnabled, trainEngineVolume, windVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, scribbleFileButtonsVisible, scribbleInsertPageButtonVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
+                framerateThrottleEnabled, framerateThrottleFps, afkPauseEnabled, trainEngineVolume, windVolume, windScreenEffects, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, scribbleFileButtonsVisible, scribbleInsertPageButtonVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
                 creativeModBlockTabs, creativeModBlocksInSearch, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
@@ -1663,6 +1672,30 @@ public final class ClientDisplayConfig {
         WIND_VOLUME.save();
     }
 
+    // ----- Wind screen effects (see client/wind/WindFeelOverlay) -----
+
+    /** Default and top tier of {@link #getWindScreenEffects()}. */
+    public static final int DEFAULT_WIND_SCREEN_EFFECTS = 3;
+    public static final int MAX_WIND_SCREEN_EFFECTS = 6;
+
+    /**
+     * How strongly the wind's on-screen effects draw: {@code 0} off, {@code 1} (faint) to
+     * {@link #MAX_WIND_SCREEN_EFFECTS}; {@link #DEFAULT_WIND_SCREEN_EFFECTS} before the config loads.
+     */
+    public static int getWindScreenEffects() {
+        if (!isLoaded()) return DEFAULT_WIND_SCREEN_EFFECTS;
+        return Math.max(0, Math.min(MAX_WIND_SCREEN_EFFECTS, WIND_SCREEN_EFFECTS.get()));
+    }
+
+    /** Persist the wind screen-effects tier, clamped; skips unchanged writes (sliders call this live). */
+    public static void setWindScreenEffects(int tier) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(0, Math.min(MAX_WIND_SCREEN_EFFECTS, tier));
+        if (WIND_SCREEN_EFFECTS.get() == clamped) return;
+        WIND_SCREEN_EFFECTS.set(clamped);
+        WIND_SCREEN_EFFECTS.save();
+    }
+
     // ----- Delete old world on reboard (death-screen trash toggle) -----
 
     /**
@@ -2302,6 +2335,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue afkPauseEnabled,
             ModConfigSpec.DoubleValue trainEngineVolume,
             ModConfigSpec.DoubleValue windVolume,
+            ModConfigSpec.IntValue windScreenEffects,
             ModConfigSpec.BooleanValue skyboxPunchEnabled,
             ModConfigSpec.BooleanValue skyboxBlocksOn,
             ModConfigSpec.BooleanValue portalCrossingFade,

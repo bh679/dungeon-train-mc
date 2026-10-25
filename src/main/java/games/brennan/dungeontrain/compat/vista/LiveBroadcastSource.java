@@ -9,30 +9,47 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
- * The Live Feed as a Vista broadcast source with no block behind it. {@link LiveBroadcastLocation}
- * resolves to this on both sides; the client plugs its video source in at setup ({@link #setClientSource})
- * so no client class is ever touched on a dedicated server.
+ * The Live Feed as a Vista broadcast source with no block behind it, one per stream: {@link #INSTANCE}
+ * is the first (main) stream, {@link #SECOND} the second stream the Two Streams reward opens.
+ * {@link LiveBroadcastLocation} resolves to them on both sides; the client plugs its video sources in
+ * at setup ({@link #setClientSource}) so no client class is ever touched on a dedicated server.
  */
 public final class LiveBroadcastSource implements IBroadcastSource {
 
-    public static final LiveBroadcastSource INSTANCE = new LiveBroadcastSource();
-
-    /** One channel for now; a second feed would hash a different string. */
+    /** The first stream: what every TV showed before Two Streams. */
     public static final UUID MAIN_FEED_UUID =
         UUID.nameUUIDFromBytes("dungeontrain:live/main".getBytes(StandardCharsets.UTF_8));
+    /** The second stream (Two Streams reward). */
+    public static final UUID SECOND_FEED_UUID =
+        UUID.nameUUIDFromBytes("dungeontrain:live/second".getBytes(StandardCharsets.UTF_8));
 
+    public static final LiveBroadcastSource INSTANCE = new LiveBroadcastSource(MAIN_FEED_UUID, false);
+    public static final LiveBroadcastSource SECOND = new LiveBroadcastSource(SECOND_FEED_UUID, true);
+
+    private final UUID feed;
+    private final boolean second;
     @Nullable
-    private static volatile Supplier<IVideoSource> clientSource;
+    private volatile Supplier<IVideoSource> clientSource;
 
-    private LiveBroadcastSource() {}
+    private LiveBroadcastSource(UUID feed, boolean second) {
+        this.feed = feed;
+        this.second = second;
+    }
 
-    public static void setClientSource(Supplier<IVideoSource> source) {
-        clientSource = source;
+    /** The client's video source for each stream: {@code main} for {@link #INSTANCE}, {@code second} for {@link #SECOND}. */
+    public static void setClientSource(Supplier<IVideoSource> main, Supplier<IVideoSource> second) {
+        INSTANCE.clientSource = main;
+        SECOND.clientSource = second;
+    }
+
+    /** Whether this is the second stream's source. */
+    public boolean isSecond() {
+        return second;
     }
 
     @Override
     public UUID getBroadcastUUID() {
-        return MAIN_FEED_UUID;
+        return feed;
     }
 
     @Override
