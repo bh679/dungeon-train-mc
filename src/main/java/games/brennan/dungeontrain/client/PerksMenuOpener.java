@@ -4,7 +4,7 @@ import games.brennan.dungeontrain.client.perks.PerksScreen;
 import net.minecraft.client.Minecraft;
 
 /**
- * Client door into the perks menu, opened by the server after a Cosmic Debris is eaten
+ * Client door into the perks menu, opened by the server after a cosmic apple is eaten
  * ({@link games.brennan.dungeontrain.net.OpenPerksMenuPacket}). Another screen already up (a book,
  * a chest) wins: the point stays banked and the menu waits for the P key.
  */

@@ -15,7 +15,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 /**
  * The line above the hotbar after a perk changes ("Health unlocked", "Health 3"): held while the
  * menu is open, shown for three seconds once it closes (or at once when the change arrives with
- * no menu up, such as a debris eaten with auto-open blocked by another screen).
+ * no menu up, such as an apple eaten with auto-open blocked by another screen).
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class PerksHud {

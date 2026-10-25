@@ -123,7 +123,7 @@ final class PerkCard {
             b.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.perks.full")));
         } else if (!snap.canAffordRank()) {
             b.active = false;
-            b.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.perks.eat_debris")
+            b.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.perks.eat_apple")
                 .append("\n").append(Component.translatable("gui.dungeontrain.perks.rank_cost", snap.nextRankCost()))));
         } else if (!built) {
             b.active = false;

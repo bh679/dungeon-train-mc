@@ -129,7 +129,7 @@ public final class ModDataAttachments {
             () -> AttachmentType.<Integer>builder(() -> 0).build()
         );
 
-    /** Active perk points from Cosmic Debris. Per life: not {@code copyOnDeath}, cleared on respawn. */
+    /** Active perk points from cosmic apples. Per life: not {@code copyOnDeath}, cleared on respawn. */
     public static final Supplier<AttachmentType<Integer>> PERK_ACTIVE_POINTS =
         TYPES.register("perk_active_points",
             () -> AttachmentType.<Integer>builder(() -> 0)

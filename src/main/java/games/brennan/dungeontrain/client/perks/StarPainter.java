@@ -24,7 +24,7 @@ final class StarPainter {
      * @param unlockedAt perk id to the ms it was seen unlocked (fill animation)
      * @param pointAt    perk id to the ms its last point was seen (ring sweep)
      * @param showName   draw the name under the star
-     * @param spendable  debris mode: mark stars that can take a point
+     * @param spendable  apple mode: mark stars that can take a point
      */
     static void render(GuiGraphics g, Font font, PerkTree tree, PerkTree.Perk p, PerkMenuSnapshot snap, SkyView view,
                        int w, int h, boolean hovered, boolean selected, boolean showName, boolean spendable,

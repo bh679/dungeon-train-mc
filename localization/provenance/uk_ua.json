@@ -5458,8 +5458,12 @@
   "advancements.dungeontrain.tab.train_explorer": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "12298e7d4ea2455a"},
   "advancements.dungeontrain.tab.others": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "ebdad9ba4c5e3ce0"},
   "advancements.dungeontrain.tab.secrete_menu": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "ea458fa813625ca2"},
-  "item.dungeontrain.cosmic_debris": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "b3b909108e91982d"},
-  "item.dungeontrain.cosmic_debris.tooltip": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "fa77103d3a9ad92b"},
+  "item.dungeontrain.cosmic_apple": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "12687e1fb03e7019"},
+  "item.dungeontrain.cosmic_apple.tooltip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "4ed8c3d813e7ed58"},
+  "item.dungeontrain.celestial_bite": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "266ea31573398c78"},
+  "item.dungeontrain.celestial_bite.tooltip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "034f30f2b14c8aa7"},
+  "item.dungeontrain.violet_core": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "f50dfa30de285ea9"},
+  "item.dungeontrain.violet_core.tooltip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "8dc05493950bcf47"},
   "chat.dungeontrain.perks.active_gained": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "488a7f930b64cd67"},
   "chat.dungeontrain.perks.ready_to_spend": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "845bfc89e99b97eb"},
   "chat.dungeontrain.perks.unlock_gained": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "2c176b4c69bf08b3"},
@@ -5481,7 +5485,7 @@
   "gui.dungeontrain.perks.unlock": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "4ac709aa58bcfe5d"},
   "gui.dungeontrain.perks.add_point": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "71c21386f37fcf2c"},
   "gui.dungeontrain.perks.full": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "bf4f0df71685b1ca"},
-  "gui.dungeontrain.perks.eat_debris": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "742dc405cc14eb6a"},
+  "gui.dungeontrain.perks.eat_apple": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "4b59ff26b4e2dcde"},
   "gui.dungeontrain.perks.not_built": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "011805aafcf75936"},
   "gui.dungeontrain.perks.links": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "035ae493b20a647a"},
   "gui.dungeontrain.perks.not_linked": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "a292c61bf87910c1"},
@@ -5622,5 +5626,5 @@
   "item.dungeontrain.live_cassette_2.tooltip": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "ab5a99150ad90d53"},
   "command.dungeontrain.offer_eye.needs_perk": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "4808075b22144bb1"},
   "perk.dungeontrain.restock_villager.button": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "79c873f7f0fd50b2"},
-  "gui.dungeontrain.perks.rank_cost": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "b4afc79139fa5e91"}
+  "gui.dungeontrain.perks.rank_cost": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "bc60319b0a9a12ec"}
 }

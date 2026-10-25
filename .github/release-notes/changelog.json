@@ -30548,6 +30548,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "cosmic-apples",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot"
+      ],
+      "title": "Cosmic apples",
+      "summary": "Cosmic apples now turn up in carriage chests. Eat one for perk points to spend this life: a Cosmic Apple gives 1, a Celestial Bite gives 5 and a Violet Core gives 10. The rarer apples only appear further along the train.",
+      "highlights": [
+        "Three apples, each worth more perk points than the last",
+        "The deeper you ride, the better the apples you can find"
+      ],
+      "pr": 2316,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
