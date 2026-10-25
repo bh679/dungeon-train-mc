@@ -30604,6 +30604,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "held-tv-right-click",
+      "version": "0.1516.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Right-click to switch on a TV in your hand",
+      "summary": "Hold a TV and right-click the air to switch it on or off, the same click that works on a placed TV. Left-click is a normal swing again.",
+      "highlights": [],
+      "pr": 2312,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
