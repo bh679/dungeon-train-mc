@@ -30835,6 +30835,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "advancement-asks-a-little-more",
+      "version": "0.1531.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Advancement change",
+      "summary": "One hidden advancement now asks for a little more before it unlocks.",
+      "highlights": [],
+      "pr": 2329,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

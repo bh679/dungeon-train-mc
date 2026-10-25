@@ -142,7 +142,9 @@ class AdvancementTabsTest {
         Map<String, JsonObject> all = advancements();
         TabGateways.Layout layout = shippedLayout();
         Set<String> expected = new java.util.HashSet<>(Set.of("dungeontrain:" + TRAIN_EXPLORER, "dungeontrain:" + OTHERS,
-                "dungeontrain:" + DT + "gate_enchiridion", "dungeontrain:" + DT + "gate_darkroom"));
+                "dungeontrain:" + DT + "gate_enchiridion", "dungeontrain:" + DT + "gate_darkroom",
+                "dungeontrain:" + DT + "memory_lane_link", "dungeontrain:" + DT + "keepsake_link",
+                "dungeontrain:" + DT + "no_room_left_link")); // the photo album, linked into The Enchiridion
         layout.complete().keySet().forEach(self -> expected.add(self + "_tab")); // each tab-complete's in-tab copy
         assertEquals(expected, layout.copies().keySet());
         layout.copies().forEach((copyId, originalId) -> {
