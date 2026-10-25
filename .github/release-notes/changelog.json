@@ -30467,7 +30467,7 @@
         "multiplayer",
         "community"
       ],
-      "title": "Two Streams: a second channel",
+      "title": "Two Streams, Trial Vaults & Smarter Mobs",
       "summary": "When the Two Streams reward is on, a second player can go live without taking the Eye from whoever is already streaming. Right-click any TV to step it through off, Stream 1 and Stream 2, TV rooms come up showing a mix of both, and a TV worn on your head shows both streams, one above the other.",
       "highlights": [
         "Right-click a TV: off, Stream 1, Stream 2 (while a second stream is live), off",
@@ -30481,8 +30481,7 @@
       "released_in": null,
       "released_at": null,
       "major": true,
-      "notable": true,
-      "description": "The Two Streams reward is here. When it's on, a second player can go live without taking the Live Eye from whoever is already streaming.\n\nRight-click any TV to step it through off, Stream 1 and Stream 2. TV rooms come up showing a mix of both, and a TV worn on your head shows both streams, one above the other. Prefer just one? Click the TV in your inventory to pick, or set the default in Options / Dungeon Train / Stream.\n\n## Other significant updates\n\n- Live streams adjust their quality to the streamer's upload speed, so viewers stop seeing them drop\n- Live streams keep the streamer's real shape instead of looking stretched\n- Hold a TV and right-click to switch it on or off\n- Some of the players you meet on the train now turn up wearing a TV on their head\n- A new story for the loading screen\n- Leaving a dimensional carriage by a far exit puts you back in the right carriage\n- Bug fixes",
+      "description": "Three big additions ride the train at once.\n\n**Two Streams** is a new Community Reward on the donations page. If one person donates, everyone gets it for a month! When active, a second player can go live without taking the Live Eye from whoever is already streaming. Right-click any TV to step it through off, Stream 1 and Stream 2. TV rooms come up showing a mix of both, and a TV worn on your head shows both streams, one above the other. Prefer just one? Click the TV in your inventory to pick, or set the default in Options / Dungeon Train / Stream.\n\n**Trial vaults.** Vaults now turn up on the train. Find a trial key to claim your own reward from each one.\n\n**Smarter mobs.** Deeper down the line, in a place a good number of you reach, mobs reach for tools they previously ignored: a pickaxe, shovel or axe. Once they have seen you, a wall will not keep them out for long. The deeper you go, the more of them carry one and the smarter they get with them.\n\n## Other significant updates\n\n- Live streams adjust their quality to the streamer's upload speed, so viewers stop seeing them drop\n- Live streams keep the streamer's real shape instead of looking stretched\n- Hold a TV and right-click to switch it on or off\n- Some of the players you meet on the train now turn up wearing a TV on their head\n- Echoes no longer pick fights with piglin traders\n- Fairer chat moderation that steps up gradually\n- Smoother dimensional carriages, with less lag the further you go\n- Leaving a dimensional carriage by a far exit puts you back in the right carriage\n- A new story for the loading screen\n- Bug fixes",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/two-streams.jpg"
     },
     {
@@ -30814,8 +30813,31 @@
       "released_at": null
     },
     {
-      "id": "tv-needs-ffmpeg",
+      "id": "mobs-dig-with-tools",
       "version": "0.1529.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Mobs dig through to you",
+      "summary": "Deep into a run, some mobs now carry a pickaxe, shovel or axe, and once they have seen you they will dig through walls to reach you, as fast as that tool would let you. The deeper you go, the more of them carry one and the more they can break. They never dig through the floor.",
+      "highlights": [
+        "Mobs with tools dig through to you once they have seen you",
+        "A mob already holding a weapon carries its tool in the other hand",
+        "The deeper you go, the more mobs carry tools and the more they can break",
+        "The players you meet on the train can dig through almost anything"
+      ],
+      "pr": 2326,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "tv-needs-ffmpeg",
+      "version": "0.1530.0",
       "type": "fix",
       "tags": [
         "fix",
