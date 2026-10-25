@@ -30760,6 +30760,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-crossing-fix",
+      "version": "0.1526.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage fix",
+      "summary": "Dimensional carriages now only take you in once you are actually inside one. Stepping between the train and the room no longer drops you to the floor or sends you back along the train.",
+      "highlights": [],
+      "pr": 2323,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
