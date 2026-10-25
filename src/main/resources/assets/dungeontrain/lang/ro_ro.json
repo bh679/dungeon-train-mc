@@ -3569,7 +3569,7 @@
   "gui.dungeontrain.options.stream_name_tag.none": "Niciunul",
   "gui.dungeontrain.options.live_chat": "Chat live",
   "gui.dungeontrain.options.live_chat.hint": "Chatul Discord în chatul tău",
-  "gui.dungeontrain.options.live_chat.tip": "Afișează chatul Discord al streamului în chatul din joc cât timp un stream este în direct, și trimite înapoi ce scrii.",
+  "gui.dungeontrain.options.live_chat.tip": "Afișează chatul Discord al streamului în chatul din joc cât timp transmiți sau porți un televizor, chiar dacă nimeni nu e în direct, și trimite înapoi ce scrii.",
   "gui.dungeontrain.options.live_chat.kid_tip": "Mereu oprit în modul pentru copii: chatul Discord nu ajunge niciodată în chatul tău.",
   "gui.dungeontrain.options.live_moment_advancements": "Distribuie progresele",
   "gui.dungeontrain.options.live_moment_advancements.hint": "Progrese în chatul live",

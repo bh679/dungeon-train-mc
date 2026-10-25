@@ -2932,7 +2932,7 @@
   "gui.dungeontrain.options.stream_name_tag.none": "Wala",
   "gui.dungeontrain.options.live_chat": "Live chat",
   "gui.dungeontrain.options.live_chat.hint": "Discord chat sa iyong chat",
-  "gui.dungeontrain.options.live_chat.tip": "Ipinapakita ang Discord chat ng stream sa iyong in-game chat habang may stream na live, at ipinapadala pabalik ang tina-type mo.",
+  "gui.dungeontrain.options.live_chat.tip": "Ipinapakita ang Discord chat ng stream sa iyong in-game chat habang nag-i-stream ka o may suot kang TV, kahit walang naka-live, at ipinapadala pabalik ang tina-type mo.",
   "gui.dungeontrain.options.live_chat.kid_tip": "Laging naka-off sa Kid mode: hindi kailanman aabot ang Discord chat sa iyong chat.",
   "gui.dungeontrain.options.live_moment_advancements": "Ibahagi ang advancements",
   "gui.dungeontrain.options.live_moment_advancements.hint": "Advancements sa Live chat",

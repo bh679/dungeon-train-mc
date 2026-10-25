@@ -4005,6 +4005,7 @@
       "advancements.dungeontrain.dungeon_train.no_break_1000.description",
       "advancements.dungeontrain.dungeon_train.contained_loop.description",
       "gui.dungeontrain.options.stream_name_tag.hint",
+      "gui.dungeontrain.options.live_chat.tip",
       "gui.dungeontrain.options.dev_chat.tip",
       "gui.dungeontrain.options.content_mode.tip",
       "gui.dungeontrain.options.editor_settings.tip",

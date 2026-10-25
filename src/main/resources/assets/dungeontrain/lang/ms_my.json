@@ -2932,7 +2932,7 @@
   "gui.dungeontrain.options.stream_name_tag.none": "Tiada",
   "gui.dungeontrain.options.live_chat": "Sembang langsung",
   "gui.dungeontrain.options.live_chat.hint": "Sembang Discord dalam sembang anda",
-  "gui.dungeontrain.options.live_chat.tip": "Memaparkan sembang Discord strim dalam sembang permainan selagi ada strim bersiaran, dan menghantar balik apa yang anda taip.",
+  "gui.dungeontrain.options.live_chat.tip": "Memaparkan sembang Discord strim dalam sembang permainan semasa anda menstrim atau memakai TV, walaupun tiada sesiapa bersiaran, dan menghantar balik apa yang anda taip.",
   "gui.dungeontrain.options.live_chat.kid_tip": "Sentiasa dimatikan dalam mod Kanak-kanak: sembang Discord tidak akan sampai ke sembang anda.",
   "gui.dungeontrain.options.live_moment_advancements": "Kongsi kemajuan",
   "gui.dungeontrain.options.live_moment_advancements.hint": "Kemajuan dalam sembang langsung",

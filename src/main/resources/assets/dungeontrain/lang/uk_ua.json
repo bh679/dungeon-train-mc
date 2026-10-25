@@ -3566,7 +3566,7 @@
   "gui.dungeontrain.options.stream_name_tag.none": "Немає",
   "gui.dungeontrain.options.live_chat": "Чат ефіру",
   "gui.dungeontrain.options.live_chat.hint": "Чат Discord у вашому чаті",
-  "gui.dungeontrain.options.live_chat.tip": "Показує Discord-чат стріму в ігровому чаті, поки триває стрім, і надсилає туди те, що ви пишете.",
+  "gui.dungeontrain.options.live_chat.tip": "Показує Discord-чат стріму в ігровому чаті, поки ви стрімите або носите телевізор, навіть якщо ніхто не в ефірі, і надсилає туди те, що ви пишете.",
   "gui.dungeontrain.options.live_chat.kid_tip": "У дитячому режимі завжди вимкнено: чат Discord не потрапляє у ваш чат.",
   "gui.dungeontrain.options.live_moment_advancements": "Ділитися досягненнями",
   "gui.dungeontrain.options.live_moment_advancements.hint": "Досягнення в чаті ефіру",

@@ -3036,7 +3036,7 @@
   "gui.dungeontrain.options.stream_name_tag.none": "Brak",
   "gui.dungeontrain.options.live_chat": "Czat na żywo",
   "gui.dungeontrain.options.live_chat.hint": "Czat Discord w twoim czacie",
-  "gui.dungeontrain.options.live_chat.tip": "Pokazuje czat Discord streamu w twoim czacie w grze, dopóki trwa stream, i odsyła to, co piszesz.",
+  "gui.dungeontrain.options.live_chat.tip": "Pokazuje czat Discord streamu w twoim czacie w grze, gdy streamujesz lub nosisz telewizor, nawet gdy nikt nie nadaje, i odsyła to, co piszesz.",
   "gui.dungeontrain.options.live_chat.kid_tip": "Zawsze wyłączone w trybie dla dzieci: czat Discord nigdy nie trafia do twojego czatu.",
   "gui.dungeontrain.options.live_moment_advancements": "Udostępniaj postępy",
   "gui.dungeontrain.options.live_moment_advancements.hint": "Postępy na czacie na żywo",

@@ -2932,7 +2932,7 @@
   "gui.dungeontrain.options.stream_name_tag.none": "없음",
   "gui.dungeontrain.options.live_chat": "라이브 채팅",
   "gui.dungeontrain.options.live_chat.hint": "Discord 채팅을 게임 채팅에 표시",
-  "gui.dungeontrain.options.live_chat.tip": "스트림이 진행 중인 동안 스트림의 Discord 채팅을 게임 내 채팅에 표시하고, 입력한 내용을 다시 보냅니다.",
+  "gui.dungeontrain.options.live_chat.tip": "스트리밍하거나 TV를 쓰고 있는 동안, 아무도 방송하지 않아도 스트림의 Discord 채팅을 게임 내 채팅에 표시하고, 입력한 내용을 다시 보냅니다.",
   "gui.dungeontrain.options.live_chat.kid_tip": "키즈 모드에서는 항상 꺼짐: Discord 채팅이 게임 채팅에 표시되지 않습니다.",
   "gui.dungeontrain.options.live_moment_advancements": "발전 과제 공유",
   "gui.dungeontrain.options.live_moment_advancements.hint": "라이브 채팅에 발전 과제",

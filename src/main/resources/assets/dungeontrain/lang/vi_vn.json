@@ -2932,7 +2932,7 @@
   "gui.dungeontrain.options.stream_name_tag.none": "Không",
   "gui.dungeontrain.options.live_chat": "Trò chuyện trực tiếp",
   "gui.dungeontrain.options.live_chat.hint": "Chat Discord trong khung chat của bạn",
-  "gui.dungeontrain.options.live_chat.tip": "Hiển thị chat Discord của buổi phát trong khung chat trong game khi đang có buổi phát, và gửi lại những gì bạn gõ.",
+  "gui.dungeontrain.options.live_chat.tip": "Hiển thị chat Discord của buổi phát trong khung chat trong game khi bạn đang phát hoặc đội TV, kể cả khi không ai đang phát, và gửi lại những gì bạn gõ.",
   "gui.dungeontrain.options.live_chat.kid_tip": "Luôn tắt ở chế độ Trẻ em: chat Discord không bao giờ hiện trong khung chat của bạn.",
   "gui.dungeontrain.options.live_moment_advancements": "Chia sẻ tiến trình",
   "gui.dungeontrain.options.live_moment_advancements.hint": "Tiến trình trong trò chuyện trực tiếp",

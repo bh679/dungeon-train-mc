@@ -2932,7 +2932,7 @@
   "gui.dungeontrain.options.stream_name_tag.none": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "dc937b59892604f5"},
   "gui.dungeontrain.options.live_chat": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "1c7cc7287ca8090e"},
   "gui.dungeontrain.options.live_chat.hint": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "639537ca4e982604"},
-  "gui.dungeontrain.options.live_chat.tip": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "62c87a28718eae56"},
+  "gui.dungeontrain.options.live_chat.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "9ebed702521b667a"},
   "gui.dungeontrain.options.live_chat.kid_tip": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "e4478ecb1ae4f21e"},
   "gui.dungeontrain.options.live_moment_advancements": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "cc6e2441ab7df3d5"},
   "gui.dungeontrain.options.live_moment_advancements.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "980af2d315d192c9"},

@@ -3041,7 +3041,7 @@
   "gui.dungeontrain.options.stream_name_tag.none": "Нет",
   "gui.dungeontrain.options.live_chat": "Чат эфира",
   "gui.dungeontrain.options.live_chat.hint": "Чат Discord в вашем чате",
-  "gui.dungeontrain.options.live_chat.tip": "Показывает Discord-чат стрима в игровом чате, пока идёт стрим, и отправляет туда то, что вы пишете.",
+  "gui.dungeontrain.options.live_chat.tip": "Показывает Discord-чат стрима в игровом чате, пока вы стримите или носите телевизор, даже если никто не в эфире, и отправляет туда то, что вы пишете.",
   "gui.dungeontrain.options.live_chat.kid_tip": "В детском режиме всегда выключено: чат Discord не попадает в ваш чат.",
   "gui.dungeontrain.options.live_moment_advancements": "Делиться достижениями",
   "gui.dungeontrain.options.live_moment_advancements.hint": "Достижения в чате эфира",

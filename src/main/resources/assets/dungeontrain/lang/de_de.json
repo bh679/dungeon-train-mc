@@ -2984,7 +2984,7 @@
   "gui.dungeontrain.options.stream_name_tag.none": "Keiner",
   "gui.dungeontrain.options.live_chat": "Live-Chat",
   "gui.dungeontrain.options.live_chat.hint": "Discord-Chat in deinem Chat",
-  "gui.dungeontrain.options.live_chat.tip": "Spiegelt den Discord-Chat des Streams in deinen Spielchat, solange ein Stream läuft, und sendet zurück, was du tippst.",
+  "gui.dungeontrain.options.live_chat.tip": "Spiegelt den Discord-Chat des Streams in deinen Spielchat, während du streamst oder einen Fernseher trägst, auch wenn niemand live ist, und sendet zurück, was du tippst.",
   "gui.dungeontrain.options.live_chat.kid_tip": "In Kindermodus immer aus: Discord-Chat erreicht deinen Chat nie.",
   "gui.dungeontrain.options.live_moment_advancements": "Fortschritte teilen",
   "gui.dungeontrain.options.live_moment_advancements.hint": "Fortschritte im Live-Chat",

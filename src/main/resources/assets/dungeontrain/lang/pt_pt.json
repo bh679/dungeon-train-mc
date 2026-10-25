@@ -2984,7 +2984,7 @@
   "gui.dungeontrain.options.stream_name_tag.none": "Nenhum",
   "gui.dungeontrain.options.live_chat": "Chat em direto",
   "gui.dungeontrain.options.live_chat.hint": "Chat do Discord no teu chat",
-  "gui.dungeontrain.options.live_chat.tip": "Mostra o chat do Discord da stream no teu chat do jogo enquanto uma stream estiver no ar, e envia de volta o que escreves.",
+  "gui.dungeontrain.options.live_chat.tip": "Mostra o chat do Discord da stream no teu chat do jogo enquanto transmites ou usas uma TV, mesmo sem ninguém em direto, e envia de volta o que escreves.",
   "gui.dungeontrain.options.live_chat.kid_tip": "Sempre desligado no modo infantil: o chat do Discord nunca chega ao teu chat.",
   "gui.dungeontrain.options.live_moment_advancements": "Partilhar progressos",
   "gui.dungeontrain.options.live_moment_advancements.hint": "Progressos no chat em direto",

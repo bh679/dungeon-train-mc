@@ -2932,7 +2932,7 @@
   "gui.dungeontrain.options.stream_name_tag.none": "無",
   "gui.dungeontrain.options.live_chat": "直播聊天",
   "gui.dungeontrain.options.live_chat.hint": "在聊天欄顯示 Discord 聊天",
-  "gui.dungeontrain.options.live_chat.tip": "直播進行時，把直播的 Discord 聊天顯示在遊戲聊天欄，並把你輸入的內容送回去。",
+  "gui.dungeontrain.options.live_chat.tip": "直播時或頭戴電視時，即使沒有人在直播，也會把直播的 Discord 聊天顯示在遊戲聊天欄，並把你輸入的內容送回去。",
   "gui.dungeontrain.options.live_chat.kid_tip": "兒童模式下一律關閉：Discord 聊天不會進入你的聊天欄。",
   "gui.dungeontrain.options.live_moment_advancements": "分享進度",
   "gui.dungeontrain.options.live_moment_advancements.hint": "直播聊天中的進度",
