@@ -4709,6 +4709,7 @@
       "chat.dungeontrain.perks.active_gained",
       "chat.dungeontrain.perks.ready_to_spend",
       "chat.dungeontrain.perks.unlock_gained",
+      "gui.dungeontrain.advancements.points",
       "gui.dungeontrain.perks.title",
       "key.dungeontrain.perks",
       "gui.dungeontrain.perks.unlock_points",

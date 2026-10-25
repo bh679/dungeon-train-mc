@@ -433,6 +433,14 @@ public final class TrainAssembler {
      * The group's {@link CarriageLayout}: the session's forced Group cadence when one is set (a
      * testing aid — {@link FullCarriageSettings#force}), else the seeded draw on the layout weights.
      */
+    /** One Cosmic Debris into a container of the {@code carriages}-long box at {@code origin}. */
+    private static void placeDebris(ServerLevel level, BlockPos origin, CarriageDims dims, int carriages,
+                                    CarriageGenerationConfig genCfg, int pIdx) {
+        net.minecraft.world.level.levelgen.structure.BoundingBox box = net.minecraft.world.level.levelgen.structure.BoundingBox.fromCorners(
+            origin, origin.offset(dims.length() * carriages - 1, dims.height(), dims.width()));
+        games.brennan.dungeontrain.perks.CosmicDebrisDrops.place(level, box, genCfg.seed(), pIdx);
+    }
+
     private static CarriageLayout layoutFor(ServerLevel level, int anchorPIdx, int groupSize, long seed) {
         if (FullCarriageSettings.forced() > 0) {
             return FullCarriageSelection.isFullGroup(level, anchorPIdx, groupSize, seed)
@@ -761,6 +769,8 @@ public final class TrainAssembler {
         PendingContentsEntitySpawn[] pendingEntities = new PendingContentsEntitySpawn[groupSize];
         PendingRelayEntitySpawn[] pendingRelayEntities = new PendingRelayEntitySpawn[groupSize];
         PendingWholeDecorSpawn[] pendingWholeDecor = new PendingWholeDecorSpawn[groupSize];
+        // Cosmic Debris: about one group in five, in the drawn slot's containers (-1 = none here).
+        int debrisSlot = games.brennan.dungeontrain.perks.CosmicDebrisDrops.slotFor(genCfg.seed(), anchorPIdx, groupSize);
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
             BlockPos carriageShipyardOrigin = shipyardOrigin.offset(enclosedStartOffset + slot * length, 0, 0);
@@ -807,6 +817,7 @@ public final class TrainAssembler {
                 if (slot == 0) {
                     CarriagePlacer.applyContentsBlocksAt(level, carriageShipyardOrigin, fullPick.shell(), dims,
                         genCfg, carriagePIdx, groupAnchorWorldX);
+                    if (debrisSlot >= 0) placeDebris(level, carriageShipyardOrigin, dims, groupSize, genCfg, anchorPIdx);
                     pendingEntities[slot] = new PendingContentsEntitySpawn(
                         carriageShipyardOrigin, fullPick.shell(), dims, genCfg, carriagePIdx, groupAnchorWorldX);
                     pendingWholeDecor[slot] = new PendingWholeDecorSpawn(
@@ -833,6 +844,12 @@ public final class TrainAssembler {
                     HalfCarriageSelection.Half half = slot == 0 ? halfPick.first() : halfPick.second();
                     CarriagePlacer.applyContentsBlocksAt(level, halfShipyardOrigin, half.shell(), dims,
                         genCfg, carriagePIdx, groupAnchorWorldX);
+                    boolean firstHalf = debrisSlot >= 0 && debrisSlot < (groupSize + 1) / 2;
+                    if (debrisSlot >= 0 && (slot == 0) == firstHalf) {
+                        int halfLength = slot == 0 ? halfPick.secondOffset() : groupSize * length - halfPick.secondOffset();
+                        placeDebris(level, halfShipyardOrigin, new CarriageDims(halfLength, dims.width(), dims.height()),
+                            1, genCfg, anchorPIdx);
+                    }
                     pendingEntities[slot] = new PendingContentsEntitySpawn(
                         halfShipyardOrigin, half.shell(), dims, genCfg, carriagePIdx, groupAnchorWorldX);
                     pendingWholeDecor[slot] = new PendingWholeDecorSpawn(
@@ -862,6 +879,7 @@ public final class TrainAssembler {
                 continue;
             }
             CarriagePlacer.applyContentsBlocksAt(level, carriageShipyardOrigin, variant, dims, genCfg, carriagePIdx, groupAnchorWorldX);
+            if (slot == debrisSlot) placeDebris(level, carriageShipyardOrigin, dims, 1, genCfg, carriagePIdx);
             // Stash for the appender's tick handler to fire once the
             // placement-collision tracker confirms this group has settled.
             // FLATBEDs (variant.type == FLATBED) have null entries — the

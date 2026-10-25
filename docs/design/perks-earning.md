@@ -9,7 +9,7 @@ Two currencies feed the perks tree.
 | On death | kept | lost, with every rank they bought |
 | Unspent | kept forever | lost on death |
 
-## Unlock points
+## Unlock points (Advancement Points)
 
 Each advancement that shows in the advancements screen is worth:
 
@@ -35,11 +35,15 @@ right now (`perks/PerkPointEvents#recompute`), and `available = max(0, earned - 
 - each difficulty keeps its own advancement profile, so each shows its own total.
 
 Earns only mark the player dirty; the next player tick recomputes once, so a login replay of
-hundreds of earns costs one pass. A genuine earn prints `+N unlock points (M unspent)`.
+hundreds of earns costs one pass. A genuine earn prints `+N Advancement Points (M unspent)`.
+
+The advancements screen shows the unspent total in a small box under the window's bottom-right
+corner, the same on every tab; hovering it says "Advancement Points" (`client/AdvancementPointsBadge`;
+Better Advancements' window bounds come from `BetterAdvancementsScreenBoundsMixin`).
 
 ## Active points and Cosmic Debris
 
-`dungeontrain:cosmic_debris`: stacks to 16, always edible, eaten fast, 1 hunger. Eating one gives
+`dungeontrain:cosmic_debris`: stacks to 8, always edible, eaten fast, 1 hunger. Eating one gives
 one active point, prints the new count and calls `PerkMenu.openPerksMenu(player)`, which sends
 `OpenPerksMenuPacket`; the client's `PerksMenuOpener.open` is a chat-line stub until the menu
 screen lands. Eating it never breaks the melon-diet challenge.
@@ -49,19 +53,13 @@ return, not `copyOnDeath`, and cleared on respawn.
 
 ### Where it drops
 
-Plain weighted entries in the loot prefabs (`data/dungeontrain/prefabs/loot/`). The first band
-gets none: its `loot` containers are downgraded to `starter`
-(`DifficultyProgression.effectiveLootPrefabId`), which carries no debris.
+About one carriage group in five holds one Cosmic Debris, in one of its chests, barrels or shulker
+boxes (`perks/CosmicDebrisDrops`, called from `TrainAssembler.spawnGroup` right after the drawn
+carriage's contents pass, before a fresh shared carriage registers, so it never counts as an edit).
 
-| prefab | weight / pool | about per container |
-|---|---|---|
-| loot | 1 / 86 | 1 in 10 |
-| loot_irongold | 2 / 369 | 1 in 30 |
-| netherloot | 2 / 81 | 1 in 7 |
-| ancient_vase | 1 / 189 | 1 in 200 |
-| end (portal room) | 3 / 23 | most rooms |
-| upsidedown (portal room) | 3 / 22 | most rooms |
-
-Target: about one per band in the early bands, rising in the Nether and the portal rooms. The
-roller has no band input; the rise comes from which pools later bands use. All numbers are data;
-tune them in the prefabs (`CosmicDebrisLootTest` pins them).
+- The draw is a seeded hash of (world generation seed, group index), so a group rolls the same way
+  every time, like the rest of its loot. Held groups reload with their containers, so no second roll.
+- The first band (position tier 0) gets none.
+- A drawn group whose chosen carriage has no container with a free slot gets none (relay-leased and
+  whole-room carriages have no contents pass), so the real rate is a little under one in five.
+- No loot prefab carries it (`CosmicDebrisLootTest`).

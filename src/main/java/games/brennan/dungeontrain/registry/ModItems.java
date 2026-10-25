@@ -77,7 +77,7 @@ public final class ModItems {
     /** Edible loot find: one active perk point for this life ({@link games.brennan.dungeontrain.item.CosmicDebrisItem}). */
     public static final DeferredItem<Item> COSMIC_DEBRIS = ITEMS.register(
         "cosmic_debris",
-        () -> new games.brennan.dungeontrain.item.CosmicDebrisItem(new Item.Properties().stacksTo(16))
+        () -> new games.brennan.dungeontrain.item.CosmicDebrisItem(new Item.Properties().stacksTo(8))
     );
 
     public static final DeferredItem<Item> RANDOM_PLAYERBOOK = ITEMS.register(
