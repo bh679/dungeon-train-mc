@@ -17367,5 +17367,39 @@
         "Alex fell from a high place"
       ]
     }
+  },
+  "chat.dungeontrain.live_room.now": {
+    "1": {
+      "label": "which of the two live streams: 1 or 2",
+      "examples": [
+        "1",
+        "2"
+      ]
+    },
+    "2": {
+      "label": "the Minecraft player name of that stream's streamer",
+      "examples": [
+        "Alice",
+        "Bo"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_room.now_unnamed": {
+    "1": {
+      "label": "which of the two live streams: 1 or 2",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.live_room.stream": {
+    "1": {
+      "label": "which of the two live streams: 1 or 2",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
   }
 }
