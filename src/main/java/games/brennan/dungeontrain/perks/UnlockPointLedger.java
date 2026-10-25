@@ -16,19 +16,29 @@ public final class UnlockPointLedger {
     static final int TASK_POINTS = 1;
     static final int GOAL_POINTS = 2;
     static final int CHALLENGE_POINTS = 3;
-    /** Hidden advancements are found, not aimed at: one extra point. */
-    static final int HIDDEN_BONUS = 1;
+    /** A hidden advancement on The Secret Menu tab is found, not aimed at: one extra point. */
+    static final int SECRET_MENU_HIDDEN_BONUS = 1;
+    /** Everything Burrito, It's Not That Simple and every tab-complete advancement. */
+    static final int CAPSTONE_POINTS = 10;
 
     private UnlockPointLedger() {}
 
-    /** Points one done advancement is worth. */
-    public static int weight(AdvancementType frame, boolean hidden) {
+    /**
+     * Points one done advancement is worth.
+     *
+     * @param secretMenuHidden hidden and on The Secret Menu tab (Dungeon Train marks most of its
+     *                         advancements hidden so they reveal on earn; only the secret tab's count
+     *                         as genuinely hidden here)
+     * @param capstone         one of the 10-point capstones
+     */
+    public static int weight(AdvancementType frame, boolean secretMenuHidden, boolean capstone) {
+        if (capstone) return CAPSTONE_POINTS;
         int base = switch (frame) {
             case TASK -> TASK_POINTS;
             case GOAL -> GOAL_POINTS;
             case CHALLENGE -> CHALLENGE_POINTS;
         };
-        return hidden ? base + HIDDEN_BONUS : base;
+        return secretMenuHidden ? base + SECRET_MENU_HIDDEN_BONUS : base;
     }
 
     /** Unspent unlock points; never negative (a revoked advancement takes no perk back). */

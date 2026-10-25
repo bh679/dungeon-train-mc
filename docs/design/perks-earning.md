@@ -13,12 +13,18 @@ Two currencies feed the perks tree.
 
 Each advancement that shows in the advancements screen is worth:
 
-| frame | points |
+| advancement | points |
 |---|---|
 | task | 1 |
 | goal | 2 |
 | challenge | 3 |
-| hidden (any frame) | +1 |
+| hidden, on The Secret Menu tab only | +1 |
+| Everything Burrito, It's Not That Simple, every tab-complete advancement | 10 |
+
+Dungeon Train marks most of its advancements hidden so they reveal on earn, so only The Secret
+Menu's hidden ones get the bonus; vanilla and other tabs never do. Every advancement in the game
+adds up to about 742 (Dungeon Train 561 over 259 advancements, vanilla 181), against 122 to unlock
+the whole tree.
 
 `recipes/*`, `editor/*` and tab-head copies (`TabGateways.isLinked`) count for nothing.
 
