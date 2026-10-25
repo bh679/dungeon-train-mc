@@ -19,80 +19,47 @@ final class PortalSeverTest {
     /** The default carriage: 9 long, 7 wide, 7 high — so a 13-long corridor, midpoint at 6.5. */
     private static final PortalCarriageLayout ENTRY_LAYOUT = new PortalCarriageLayout(13, 7, 7);
 
-    private static boolean severs(PortalCarriageRole role, int dx, int dy, int dz) {
-        return PortalSever.isSeveringBreak(ENTRY_LAYOUT, role, new int[] {dx, dy, dz}, true);
+    private static boolean severs(int dx, int dy, int dz) {
+        return PortalSever.isSeveringBreak(ENTRY_LAYOUT, new int[] {dx, dy, dz}, true);
     }
 
     @Test
-    @DisplayName("a hole in the side wall past the midpoint severs an entry corridor")
-    void sideWallPastMidpointSevers() {
-        int pastMid = (int) Math.ceil(ENTRY_LAYOUT.midX()) + 2;
-        assertTrue(severs(PortalCarriageRole.ENTRY, pastMid, 3, 0), "wall at z=0");
-        assertTrue(severs(PortalCarriageRole.ENTRY, pastMid, 3, ENTRY_LAYOUT.width() - 1), "far wall");
-        assertTrue(severs(PortalCarriageRole.ENTRY, pastMid, ENTRY_LAYOUT.ceilingY(), 3), "ceiling");
-
-        // Floor, but clear of the crossing zone — the floor line there is lanterns, which are a
-        // fitting rather than shell and are covered by interiorFittingsAreExempt.
-        int beyondCrossing = ENTRY_LAYOUT.farBaffleX() + 1;
-        assertFalse(ENTRY_LAYOUT.isCrossingZone(beyondCrossing), "test picked a plain floor X");
-        assertTrue(severs(PortalCarriageRole.ENTRY, beyondCrossing, ENTRY_LAYOUT.floorY(), 1), "floor");
-    }
-
-    @Test
-    @DisplayName("the same hole before the midpoint does not sever — the illusion still holds there")
-    void beforeMidpointIsHarmless() {
-        int beforeMid = (int) ENTRY_LAYOUT.midX() - 2;
-        assertFalse(severs(PortalCarriageRole.ENTRY, beforeMid, 3, 0));
-        assertFalse(severs(PortalCarriageRole.ENTRY, beforeMid, ENTRY_LAYOUT.ceilingY(), 3));
-    }
-
-    @Test
-    @DisplayName("an exit corridor mirrors the rule: its twin side is the near half")
-    void exitRoleIsMirrored() {
+    @DisplayName("a hole in either side wall severs, in either half of the corridor")
+    void sideWallAnywhereSevers() {
         int nearHalf = (int) ENTRY_LAYOUT.midX() - 2;
         int farHalf = (int) Math.ceil(ENTRY_LAYOUT.midX()) + 2;
+        for (int dx : new int[] {nearHalf, farHalf}) {
+            assertTrue(severs(dx, 3, 0), "wall at z=0, x=" + dx);
+            assertTrue(severs(dx, 3, ENTRY_LAYOUT.width() - 1), "far wall, x=" + dx);
+        }
+    }
 
-        assertTrue(severs(PortalCarriageRole.EXIT, nearHalf, 3, 0),
-            "an EXIT corridor's near half is the room side");
-        assertFalse(severs(PortalCarriageRole.EXIT, farHalf, 3, 0),
-            "an EXIT corridor's far half is the train side");
-
-        // The two roles must disagree everywhere off the midpoint, which is the whole point of the
-        // mirror — a single shared rule would sever the wrong half of every exit corridor.
-        assertFalse(severs(PortalCarriageRole.ENTRY, nearHalf, 3, 0));
-        assertTrue(severs(PortalCarriageRole.ENTRY, farHalf, 3, 0));
+    @Test
+    @DisplayName("floor, ceiling and end planes do not sever — only the side walls do")
+    void onlySideWallsSever() {
+        int farHalf = (int) Math.ceil(ENTRY_LAYOUT.midX()) + 2;
+        assertFalse(severs(farHalf, ENTRY_LAYOUT.ceilingY(), 3), "ceiling");
+        int beyondCrossing = ENTRY_LAYOUT.farBaffleX() + 1;
+        assertFalse(severs(beyondCrossing, ENTRY_LAYOUT.floorY(), 1), "floor");
+        assertFalse(severs(ENTRY_LAYOUT.farDoorX(), ENTRY_LAYOUT.floorY() + 1, ENTRY_LAYOUT.doorZ() + 1),
+            "end plane beside the doorway");
     }
 
     @Test
     @DisplayName("placing a block never severs — only a break does")
     void placingIsNotABreak() {
-        int pastMid = (int) Math.ceil(ENTRY_LAYOUT.midX()) + 2;
         assertFalse(PortalSever.isSeveringBreak(
-            ENTRY_LAYOUT, PortalCarriageRole.ENTRY, new int[] {pastMid, 3, 0}, /*becameAir*/ false));
+            ENTRY_LAYOUT, new int[] {3, 3, 0}, /*becameAir*/ false));
     }
 
     @Test
-    @DisplayName("interior fittings are not the shell: baffles, lanterns and doorways are all harmless")
+    @DisplayName("interior fittings are not the side wall: baffles, lanterns and doorways are harmless")
     void interiorFittingsAreExempt() {
-        // The far baffle is past the midpoint, so only the shell test can be sparing it.
-        assertFalse(severs(PortalCarriageRole.ENTRY, ENTRY_LAYOUT.farBaffleX(), 3, ENTRY_LAYOUT.baffleZ()),
-            "baffle — a free-standing pillar, breaking it opens nothing");
-
-        // A crossing lantern sits on the floor line but reads as a fitting.
+        assertFalse(severs(ENTRY_LAYOUT.farBaffleX(), 3, ENTRY_LAYOUT.baffleZ()), "baffle");
         int crossing = (int) Math.ceil(ENTRY_LAYOUT.midX());
-        assertTrue(ENTRY_LAYOUT.isCrossingZone(crossing), "test picked a crossing-zone X");
-        assertFalse(severs(PortalCarriageRole.ENTRY, crossing, ENTRY_LAYOUT.floorY(), ENTRY_LAYOUT.doorZ()),
-            "crossing lantern");
-
-        // The far door is the dead dummy one; breaking it should behave like breaking any door.
-        assertFalse(severs(PortalCarriageRole.ENTRY, ENTRY_LAYOUT.farDoorX(),
-            ENTRY_LAYOUT.floorY() + 1, ENTRY_LAYOUT.doorZ()), "doorway lower half");
-        assertFalse(severs(PortalCarriageRole.ENTRY, ENTRY_LAYOUT.farDoorX(),
-            ENTRY_LAYOUT.floorY() + 2, ENTRY_LAYOUT.doorZ()), "doorway upper half");
-
-        // But the solid part of that same end plane is shell.
-        assertTrue(severs(PortalCarriageRole.ENTRY, ENTRY_LAYOUT.farDoorX(),
-            ENTRY_LAYOUT.floorY() + 1, ENTRY_LAYOUT.doorZ() + 1), "end plane beside the doorway");
+        assertFalse(severs(crossing, ENTRY_LAYOUT.floorY(), ENTRY_LAYOUT.doorZ()), "crossing lantern");
+        assertFalse(severs(ENTRY_LAYOUT.farDoorX(), ENTRY_LAYOUT.floorY() + 1, ENTRY_LAYOUT.doorZ()),
+            "doorway");
     }
 
     @Test
@@ -116,7 +83,7 @@ final class PortalSeverTest {
     @DisplayName("interior air is not the shell")
     void interiorAirIsExempt() {
         int pastMid = (int) Math.ceil(ENTRY_LAYOUT.midX()) + 2;
-        assertFalse(severs(PortalCarriageRole.ENTRY, pastMid, 3, ENTRY_LAYOUT.doorZ()));
+        assertFalse(severs(pastMid, 3, ENTRY_LAYOUT.doorZ()));
     }
 
     /**
