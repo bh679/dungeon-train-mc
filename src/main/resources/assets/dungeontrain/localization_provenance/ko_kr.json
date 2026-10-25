@@ -841,6 +841,8 @@
       "chat.dungeontrain.familiar_photo.tributed.1",
       "chat.dungeontrain.familiar_photo.tributed.2",
       "chat.dungeontrain.familiar_photo.tributed.3",
+      "jade.dungeontrain.photo_frame.photographer",
+      "config.jade.plugin_dungeontrain.photo_frame_photographer",
       "item.dungeontrain.shared_photo.by",
       "item.dungeontrain.random_playerphoto",
       "item.dungeontrain.found_photograph",

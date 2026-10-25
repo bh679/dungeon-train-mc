@@ -30478,9 +30478,9 @@
       ],
       "pr": 2290,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z",
       "major": true,
       "description": "Three big additions ride the train at once.\n\n**Two Streams** is a new Community Reward on the donations page. If one person donates, everyone gets it for a month! When active, a second player can go live without taking the Live Eye from whoever is already streaming. Right-click any TV to step it through off, Stream 1 and Stream 2. TV rooms come up showing a mix of both, and a TV worn on your head shows both streams, one above the other. Prefer just one? Click the TV in your inventory to pick, or set the default in Options / Dungeon Train / Stream. Each stream has its own Live chat too: watching both, pick Stream 1 or Stream 2 just above the chat box.\n\n**Trial vaults.** Vaults now turn up on the train. Find a trial key to claim your own reward from each one.\n\n**Smarter mobs.** Deeper down the line, in a place a good number of you reach, mobs reach for tools they previously ignored: a pickaxe, shovel or axe. Once they have seen you, a wall will not keep them out for long. The deeper you go, the more of them carry one and the smarter they get with them.\n\n## Other significant updates\n\n- Live streams adjust their quality to the streamer's upload speed, so viewers stop seeing them drop\n- Live streams keep the streamer's real shape instead of looking stretched\n- Hold a TV and right-click to switch it on or off\n- Some of the players you meet on the train now turn up wearing a TV on their head\n- Echoes no longer pick fights with piglin traders\n- Fairer chat moderation that steps up gradually\n- Smoother dimensional carriages, with less lag the further you go\n- Leaving a dimensional carriage by a far exit puts you back in the right carriage\n- A new story for the loading screen\n- Bug fixes",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/two-streams.jpg"
@@ -30498,9 +30498,9 @@
       "summary": "The modpacks now include the latest update for echoes.",
       "highlights": [],
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z",
       "pr": 2297
     },
     {
@@ -30516,9 +30516,9 @@
       "highlights": [],
       "pr": 2269,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
     },
     {
       "id": "playermob-tv-hats",
@@ -30533,9 +30533,9 @@
       "highlights": [],
       "pr": 2304,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
     },
     {
       "id": "live-adaptive-stream-quality",
@@ -30554,9 +30554,9 @@
       ],
       "pr": 2305,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
     },
     {
       "id": "loading-screen-story-12",
@@ -30571,9 +30571,9 @@
       "highlights": [],
       "pr": 2306,
       "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
     },
     {
       "id": "held-tv-live-feed-static",
@@ -30588,9 +30588,9 @@
       "highlights": [],
       "pr": 2308,
       "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
     },
     {
       "id": "held-tv-remembered-stream",
@@ -30605,9 +30605,9 @@
       "highlights": [],
       "pr": 2310,
       "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
     },
     {
       "id": "held-tv-right-click",
@@ -30622,9 +30622,9 @@
       "highlights": [],
       "pr": 2312,
       "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
     },
     {
       "id": "live-stream-real-shape",
@@ -30644,9 +30644,9 @@
       ],
       "pr": 2314,
       "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
     },
     {
       "id": "minimap-fix",
@@ -30661,9 +30661,9 @@
       "highlights": [],
       "pr": 2315,
       "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
     },
     {
       "id": "echoes-calmer-around-traders",
@@ -30678,9 +30678,9 @@
       "highlights": [],
       "pr": 2311,
       "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
     },
     {
       "id": "backpacks-narrative-tab",
@@ -30696,9 +30696,9 @@
       "highlights": [],
       "pr": 2318,
       "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
     },
     {
       "id": "live-eye-ban-message-fix",
@@ -30713,9 +30713,9 @@
       "highlights": [],
       "pr": 2319,
       "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
     },
     {
       "id": "trial-vault-carriages",
@@ -30736,9 +30736,9 @@
       ],
       "pr": 2320,
       "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
     },
     {
       "id": "live-chat-moderation-tiers",
@@ -30757,9 +30757,9 @@
       ],
       "pr": 2322,
       "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
     },
     {
       "id": "dimensional-carriage-crossing-fix",
@@ -30774,9 +30774,9 @@
       "highlights": [],
       "pr": 2323,
       "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
     },
     {
       "id": "dh-sky-fix",
@@ -30790,9 +30790,9 @@
       "highlights": [],
       "pr": 2313,
       "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
     },
     {
       "id": "dimensional-carriage-less-lag",
@@ -30809,9 +30809,9 @@
       ],
       "pr": 2325,
       "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
     },
     {
       "id": "mobs-dig-with-tools",
@@ -30831,6 +30831,93 @@
         "The players you meet on the train can dig through almost anything"
       ],
       "pr": 2326,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "advancement-asks-a-little-more",
+      "version": "0.1531.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Advancement change",
+      "summary": "One hidden advancement now asks for a little more before it unlocks.",
+      "highlights": [],
+      "pr": 2329,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "live-chat-release-names",
+      "version": "0.1532.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Update news in Live chat names the update",
+      "summary": "When a new version comes out, the Live chat on the website, the Discord live room and Twitch now name the update just like the message you see in game. Bigger updates also get a short description, and major ones stand out.",
+      "highlights": [
+        "Update messages in Live chat show the update's name and version",
+        "Notable and major updates add a one-line description"
+      ],
+      "pr": 2331,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "sky-fix-3",
+      "version": "0.1533.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Sky fix",
+      "summary": "Sky fix.",
+      "highlights": [],
+      "pr": 2334,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "jade-photo-frame-photographer",
+      "version": "0.1534.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "ui"
+      ],
+      "title": "See who took a framed photo",
+      "summary": "Look at a framed photo with Jade and it now tells you who took it.",
+      "highlights": [],
+      "pr": 2335,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "photo-frame-take-out-no-burn",
+      "version": "0.1534.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Photo frame fix",
+      "summary": "Taking a photo out of a frame no longer sets it alight before you can pick it up.",
+      "highlights": [],
+      "pr": 2336,
       "date": "2026-10-25",
       "released": false,
       "released_in": null,
