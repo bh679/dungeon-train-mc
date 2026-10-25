@@ -30568,6 +30568,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "perk-points",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Perk points",
+      "summary": "Advancements now earn Advancement Points, which unlock perks and are kept when you die. The advancements screen shows how many you have to spend. Points from cosmic apples buy perk ranks for this life, and each rank costs a little more the more you buy. A perk can be unlocked again to hold more points.",
+      "highlights": [
+        "Advancement Points from advancements unlock perks",
+        "Unlock a perk again to give it room for more points"
+      ],
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
