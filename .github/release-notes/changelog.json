@@ -30621,6 +30621,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "journeymap-dimensional-carriage-minimap",
+      "version": "0.1517.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "train"
+      ],
+      "title": "JourneyMap minimap fix",
+      "summary": "With JourneyMap installed, the minimap inside a dimensional carriage now shows only the carriage. The world around and above it no longer shows through.",
+      "highlights": [],
+      "pr": 2315,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
