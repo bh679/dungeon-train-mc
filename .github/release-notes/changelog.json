@@ -30587,6 +30587,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "echoes-calmer-around-traders",
+      "version": "0.1515.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Echoes are calmer around traders",
+      "summary": "Echoes no longer pick fights with piglin traders. Only the most aggressive echoes will still attack one, and the most timid just keep a wary eye on it instead of running away. A trader that attacks first still gets a fight.",
+      "highlights": [],
+      "pr": 2311,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
