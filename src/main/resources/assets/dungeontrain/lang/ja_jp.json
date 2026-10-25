@@ -5503,5 +5503,8 @@
   "item.dungeontrain.live_cassette_2.tooltip": "2つ目の配信に合わせてある。2人目の放送中のプレイヤーを映し、2つ目がないときは1つ目の配信を映す。",
   "command.dungeontrain.offer_eye.needs_perk": "特定の視聴者1人にLive Eyeを譲るにはパーク「Gift Live Eye」が必要です。全員に譲ることは引き続きできます。",
   "perk.dungeontrain.restock_villager.button": "補充 (%s)",
-  "gui.dungeontrain.perks.rank_cost": "次のポイントのコストは%s。"
+  "gui.dungeontrain.perks.rank_cost": "次のポイントのコストは%s。",
+  "gui.dungeontrain.perks.raise_limit": "上限を上げる (%s)",
+  "gui.dungeontrain.perks.points_of": "有効。%s / %s ポイント。",
+  "gui.dungeontrain.perks.refused.gate": "進捗ポイントを%s使うと、パークを%sより上げられます。"
 }

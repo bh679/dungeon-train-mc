@@ -15,7 +15,7 @@ public final class PerkBalances {
 
     /** Call once at mod construction. */
     public static void install() {
-        PerkSpend.setSpentFunction(player -> PerkTreeLoader.get().unlockCostOf(Perks.state(player).unlocked()));
+        PerkSpend.setSpentFunction(player -> PerkTreeLoader.get().unlockCostOf(Perks.state(player).unlocks()));
     }
 
     public static int unlockAvailable(ServerPlayer player) {

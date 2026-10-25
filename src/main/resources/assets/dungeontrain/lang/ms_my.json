@@ -5503,5 +5503,8 @@
   "item.dungeontrain.live_cassette_2.tooltip": "Ditala ke strim kedua. Memaparkan pemain kedua yang sedang bersiaran, atau strim pertama selagi tiada yang kedua.",
   "command.dungeontrain.offer_eye.needs_perk": "Menawarkan Live Eye kepada seorang penonton memerlukan perk Gift Live Eye. Menawarkannya kepada semua orang masih boleh.",
   "perk.dungeontrain.restock_villager.button": "Isi semula (%s)",
-  "gui.dungeontrain.perks.rank_cost": "Mata seterusnya berharga %s."
+  "gui.dungeontrain.perks.rank_cost": "Mata seterusnya berharga %s.",
+  "gui.dungeontrain.perks.raise_limit": "Naikkan had (%s)",
+  "gui.dungeontrain.perks.points_of": "Aktif. %s daripada %s mata.",
+  "gui.dungeontrain.perks.refused.gate": "Belanjakan %s Mata Kemajuan untuk menaikkan perk melepasi %s."
 }

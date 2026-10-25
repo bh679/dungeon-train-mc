@@ -7,7 +7,9 @@ import games.brennan.dungeontrain.perks.PerkPoints;
 import games.brennan.dungeontrain.perks.PerkRegistry;
 import games.brennan.dungeontrain.perks.PerkState;
 import games.brennan.dungeontrain.perks.PerkTree;
+import games.brennan.dungeontrain.perks.PerkSpend;
 import games.brennan.dungeontrain.perks.PerkTreeLoader;
+import games.brennan.dungeontrain.perks.PerkUnlocks;
 import games.brennan.dungeontrain.perks.Perks;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -18,7 +20,9 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * Client → server: unlock a perk with unlock points. The server is the judge: the id must be in the
- * tree and the registry, not yet unlocked, reachable under {@link PerkTree#reachable}, and affordable.
+ * tree and the registry, reachable under {@link PerkTree#reachable} (first unlock only), under the
+ * spent-gated level limit ({@link PerkUnlocks}), and affordable. An unlocked perk unlocks again to hold
+ * one more point.
  * A refusal answers with {@link PerkRefusedPacket} plus a fresh state and balance sync so a stale
  * client corrects itself. Free Play buys like everyone else.
  */
@@ -63,8 +67,10 @@ public record PerkUnlockPacket(String perkId) implements CustomPacketPayload {
         PerkRegistry.bootstrap();
         if (!PerkRegistry.isKnown(id)) return "gui.dungeontrain.perks.refused.not_built";
         PerkState state = Perks.state(player);
-        if (state.isUnlocked(id)) return "gui.dungeontrain.perks.refused.already";
-        if (!tree.reachable(id, state)) return "gui.dungeontrain.perks.refused.reach";
+        if (!state.isUnlocked(id) && !tree.reachable(id, state)) return "gui.dungeontrain.perks.refused.reach";
+        if (!PerkUnlocks.allowed(state.unlockLevel(id) + 1, PerkSpend.unlockSpent(player))) {
+            return "gui.dungeontrain.perks.refused.gate";
+        }
         if (PerkPoints.unlockAvailable(player) < perk.unlockCost()) return "gui.dungeontrain.perks.refused.points";
         return null;
     }

@@ -5566,5 +5566,8 @@
   "item.dungeontrain.live_cassette_2.tooltip": "Sintonizzata sul secondo stream. Mostra il secondo giocatore in diretta, o il primo stream finché non ce n'è un secondo.",
   "command.dungeontrain.offer_eye.needs_perk": "Offrire il Live Eye a un solo spettatore richiede il perk Gift Live Eye. Offrirlo a tutti funziona ancora.",
   "perk.dungeontrain.restock_villager.button": "Rifornisci (%s)",
-  "gui.dungeontrain.perks.rank_cost": "Il prossimo punto costa %s."
+  "gui.dungeontrain.perks.rank_cost": "Il prossimo punto costa %s.",
+  "gui.dungeontrain.perks.raise_limit": "Alza limite (%s)",
+  "gui.dungeontrain.perks.points_of": "Attivo. %s su %s punti.",
+  "gui.dungeontrain.perks.refused.gate": "Spendi %s punti progresso per portare un talento oltre %s."
 }

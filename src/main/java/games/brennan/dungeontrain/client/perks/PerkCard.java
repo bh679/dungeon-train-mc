@@ -116,12 +116,25 @@ final class PerkCard {
             if (!built) b.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.perks.not_built")));
             return b;
         }
-        int max = PerkRegistry.get(p.id()).map(d -> d.maxRank()).orElse(SkyPalette.RING_SLOTS);
-        Button b = new DarkTintedButton(bx, by, bw, BUTTON_H, Component.translatable("gui.dungeontrain.perks.add_point"), bb -> spend.accept(p.id()));
+        int max = snap.unlockLevel(p.id());
         if (snap.points(p.id()) >= max) {
-            b.active = false;
-            b.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.perks.full")));
-        } else if (!snap.canAffordRank()) {
+            // Full: the button unlocks the perk once more, raising its limit by one point.
+            Button raise = new DarkTintedButton(bx, by, bw, BUTTON_H,
+                Component.translatable("gui.dungeontrain.perks.raise_limit", p.unlockCost()), bb -> unlock.accept(p.id()));
+            raise.active = built && snap.canRaise(tree, p);
+            if (!built) {
+                raise.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.perks.not_built")));
+            } else if (snap.unlockPoints() < p.unlockCost()) {
+                raise.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.perks.refused.points")));
+            } else if (!raise.active) {
+                int next = max + 1;
+                raise.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.perks.refused.gate",
+                    games.brennan.dungeontrain.perks.PerkUnlocks.spentNeeded(next), next - 1)));
+            }
+            return raise;
+        }
+        Button b = new DarkTintedButton(bx, by, bw, BUTTON_H, Component.translatable("gui.dungeontrain.perks.add_point"), bb -> spend.accept(p.id()));
+        if (!snap.canAffordRank()) {
             b.active = false;
             b.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.perks.eat_apple")
                 .append("\n").append(Component.translatable("gui.dungeontrain.perks.rank_cost", snap.nextRankCost()))));
@@ -207,7 +220,7 @@ final class PerkCard {
                 ? Component.translatable("gui.dungeontrain.perks.locked_points", snap.unlockPoints()).getString()
                 : Component.translatable("gui.dungeontrain.perks.locked_short", snap.unlockPoints(), p.unlockCost()).getString();
             case UNLOCKED -> Component.translatable("gui.dungeontrain.perks.unlocked_points", 0).getString();
-            case ACTIVE -> Component.translatable("gui.dungeontrain.perks.active_points", snap.points(p.id())).getString();
+            case ACTIVE -> Component.translatable("gui.dungeontrain.perks.points_of", snap.points(p.id()), snap.unlockLevel(p.id())).getString();
         };
     }
 

@@ -5626,5 +5626,8 @@
   "item.dungeontrain.live_cassette_2.tooltip": "Налаштована на другу трансляцію. Показує другого гравця в ефірі, а поки другого немає, першу трансляцію.",
   "command.dungeontrain.offer_eye.needs_perk": "Щоб запропонувати Live Eye одному глядачеві, потрібен перк Gift Live Eye. Запропонувати його всім і далі можна.",
   "perk.dungeontrain.restock_villager.button": "Поповнити (%s)",
-  "gui.dungeontrain.perks.rank_cost": "Наступне очко коштує %s."
+  "gui.dungeontrain.perks.rank_cost": "Наступне очко коштує %s.",
+  "gui.dungeontrain.perks.raise_limit": "Підняти межу (%s)",
+  "gui.dungeontrain.perks.points_of": "Активно. %s з %s очок.",
+  "gui.dungeontrain.perks.refused.gate": "Витрать %s очок досягнень, щоб підняти навичку вище %s."
 }

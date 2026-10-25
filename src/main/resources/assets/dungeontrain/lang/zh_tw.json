@@ -5517,5 +5517,8 @@
   "item.dungeontrain.live_cassette_2.tooltip": "已調到第二路直播。顯示第二位正在直播的玩家；沒有第二路時，顯示第一路直播。",
   "command.dungeontrain.offer_eye.needs_perk": "向單一觀眾提供 Live Eye 需要 Gift Live Eye 天賦。向所有人提供仍然可用。",
   "perk.dungeontrain.restock_villager.button": "補貨 (%s)",
-  "gui.dungeontrain.perks.rank_cost": "下一點需要 %s。"
+  "gui.dungeontrain.perks.rank_cost": "下一點需要 %s。",
+  "gui.dungeontrain.perks.raise_limit": "提高上限 (%s)",
+  "gui.dungeontrain.perks.points_of": "已啟用。%s / %s 點。",
+  "gui.dungeontrain.perks.refused.gate": "花費 %s 進度點數才能讓天賦超過 %s。"
 }

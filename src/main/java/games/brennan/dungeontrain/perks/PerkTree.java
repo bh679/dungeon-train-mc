@@ -167,12 +167,22 @@ public final class PerkTree {
         return seen;
     }
 
-    /** Sum of the unlock costs of every unlocked perk the tree knows. */
+    /** Sum of the unlock costs of every unlocked perk the tree knows, once each. */
     public int unlockCostOf(Set<String> unlocked) {
         int total = 0;
         for (String id : unlocked) {
             Perk p = byId.get(id);
             if (p != null) total += p.unlockCost();
+        }
+        return total;
+    }
+
+    /** Advancement Points spent on these unlock levels: each level costs the perk's flat tier price. */
+    public int unlockCostOf(java.util.Map<String, Integer> unlocks) {
+        int total = 0;
+        for (java.util.Map.Entry<String, Integer> e : unlocks.entrySet()) {
+            Perk p = byId.get(e.getKey());
+            if (p != null) total += p.unlockCost() * Math.max(0, e.getValue());
         }
         return total;
     }

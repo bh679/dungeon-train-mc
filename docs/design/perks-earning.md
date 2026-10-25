@@ -26,6 +26,16 @@ Dungeon Train marks most of its advancements hidden so they reveal on earn, so o
 Menu's hidden ones get the bonus. Every Dungeon Train advancement adds up to about 561 (259
 advancements), against 122 to unlock the whole tree.
 
+### Repeat unlocks
+
+A perk can be unlocked again and again (`perks/PerkUnlocks`). Every unlock costs the same flat tier
+price (1 / 2 / 3, never growing) and raises the most points that perk can hold by one: the first
+unlock allows 1 point, the fifth allows 5. There is no hard cap, but a perk can only go past 10 once
+100 Advancement Points have been spent across the whole tree, past 20 once 200 have, and so on
+(limit = 10 x (1 + spent / 100)). Unlock levels keep across deaths; the points in them do not. In the
+menu, a perk at its limit shows "Raise limit" instead of "Add point". Saves from before repeat
+unlocks read each unlocked perk as level 1.
+
 `editor/*` and tab-head copies (`TabGateways.isLinked`) count for nothing.
 
 **Derived, not accumulated.** `earned` is recomputed from the advancements the player has done

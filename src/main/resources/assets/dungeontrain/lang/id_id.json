@@ -5503,5 +5503,8 @@
   "item.dungeontrain.live_cassette_2.tooltip": "Disetel ke stream kedua. Menampilkan pemain kedua yang sedang siaran, atau stream pertama selama belum ada yang kedua.",
   "command.dungeontrain.offer_eye.needs_perk": "Menawarkan Live Eye kepada satu penonton membutuhkan perk Gift Live Eye. Menawarkannya kepada semua orang masih bisa.",
   "perk.dungeontrain.restock_villager.button": "Isi ulang (%s)",
-  "gui.dungeontrain.perks.rank_cost": "Poin berikutnya butuh %s."
+  "gui.dungeontrain.perks.rank_cost": "Poin berikutnya butuh %s.",
+  "gui.dungeontrain.perks.raise_limit": "Naikkan batas (%s)",
+  "gui.dungeontrain.perks.points_of": "Aktif. %s dari %s poin.",
+  "gui.dungeontrain.perks.refused.gate": "Gunakan %s Poin Kemajuan untuk menaikkan perk melewati %s."
 }
