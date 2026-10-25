@@ -36,6 +36,21 @@ bump when PATCH==0), so a version-comparison boundary would wrongly treat a feat
 after a release as already-released. The flag is unambiguous. The `version` field is descriptive
 metadata and drives grouping in the rendered notes.
 
+## Integration branches (dev/perks and friends)
+
+A PR merged into a long-lived integration branch logs its entry exactly as a Gate 3 merge to main
+would. `append-entry.py` stamps a `version` from that branch's provisional `mod_version`.
+- **Leave it alone.** When the branch reaches main, `version-bump.yml` gives main one MINOR per
+  PR the branch carried (`scripts/version/merge_bump.py`). The commit for each PR re-stamps that
+  PR's unreleased entries with the version it really got. Entries are matched to PRs by the
+  ids each PR's squash commit added, so entries without `pr` still map.
+- **No entry may be lost on the way.** Never resolve a `changelog.json` conflict by taking one
+  side: run `python3 scripts/release-notes/merge-changelog.py --resolve` (union by id).
+- **Merge driver:** enable it once per clone and git does the union for you:
+  `git config merge.dt-changelog.driver "python3 scripts/release-notes/merge-changelog.py %O %A %B"`.
+- **CI backstop:** the `changelog-checks` job (`check-changelog-ids.py`) fails any PR whose merge
+  would lose an entry from either side.
+
 ## Cascade interaction
 
 The auto-release cascade dispatches `release.yml` with `auto=true`. The mark step is gated on

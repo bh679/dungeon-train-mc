@@ -105,6 +105,20 @@ Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
    happens **only when Brennan brings it up himself**. Do not set the flag, do not suggest it at merge or
    release time, and do not ask whether a release should reset the boards — not even for a balancing
    release. If he has not mentioned it, the answer is no.
+8. **Merges into integration branches get the same treatment.** An integration branch (e.g. `dev/perks`)
+   collects several PRs before going to main. Every PR merged into it is a Gate 3 merge: full gate,
+   its own changelog entry via `append-entry.py`, and a MINOR bump. `version-bump.yml` makes the
+   bump itself (`bump-integration-branch` job, one MINOR per PR the merge carried, numbered above
+   main's current version). **Don't bump by hand.** When the branch reaches main, main gains
+   **one MINOR per carried PR** (nested ones included), one commit each, counted from main's
+   version before the squash. Each commit re-stamps that PR's changelog entries
+   (`scripts/version/merge_bump.py`). Preview with `merge_bump.py plan --branch dev/<name>
+   --from-version <main's>`.
+   - **Keeping entries:** never resolve a `changelog.json` conflict by taking one side. Run
+     `python3 scripts/release-notes/merge-changelog.py --resolve`, or enable the merge driver
+     once (see `.gitattributes`). CI's `changelog-checks` fails any PR whose merge loses an entry.
+   - **Work committed straight onto an integration branch** counts only if it adds its own
+     changelog entry.
 
 ---
 

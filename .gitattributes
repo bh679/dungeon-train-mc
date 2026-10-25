@@ -1,0 +1,3 @@
+# changelog.json merges by entry id so no side's entries are dropped. Inert until enabled per clone:
+#   git config merge.dt-changelog.driver "python3 scripts/release-notes/merge-changelog.py %O %A %B"
+.github/release-notes/changelog.json merge=dt-changelog

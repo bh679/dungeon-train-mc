@@ -32,7 +32,9 @@ python3 scripts/version-history/collect.py --dry-run  # print the totals, write 
 ```
 
 `.github/workflows/version-bump.yml` runs it inside the auto-bump commit, so the index moves with
-every Gate 3 merge and no one has to remember. The collector counts the version sitting in
+every Gate 3 merge and no one has to remember. An integration branch (e.g. `dev/perks`) reaching main arrives as one
+bump commit **per PR it carried** (`scripts/version/merge_bump.py`), never a single multi-MINOR
+jump, so each carried PR counts as the update it is. The collector counts the version sitting in
 `gradle.properties` as well as the committed history, because during that commit the new version
 isn't in `git log` yet.
 

@@ -37,6 +37,21 @@
    - The modpack whitelist answer from step 3b, if it applied
 5. Wait for approval (which includes sign-off on the changelog notes), then merge.
 
+### Integration branches (PRs whose base is not `main`)
+A long-lived branch such as `dev/perks` collects several PRs before going to main. A PR merged into
+it is a Gate 3 merge like any other: same approval, its own changelog entry (`append-entry.py`),
+and a MINOR bump.
+- **Bump:** `version-bump.yml` (`bump-integration-branch`) adds it automatically, one MINOR per PR
+  the merge carried. Do not bump by hand; check the bot commit landed.
+- **The final merge to main:** main goes up one MINOR per carried PR, nested ones included, one
+  commit each, from main's version before the squash. Each commit re-stamps that PR's changelog
+  entries. Show the user the count before merging:
+  `python3 scripts/version/merge_bump.py plan --branch <branch> --from-version <main's mod_version>`.
+- **Changelog conflicts:** never resolve `changelog.json` by taking one side. Use
+  `python3 scripts/release-notes/merge-changelog.py --resolve` (or the merge driver in
+  `.gitattributes`). CI's `changelog-checks` job fails any PR whose merge would lose an entry.
+- Work committed straight onto an integration branch counts only if it adds its own changelog entry.
+
 **Gate requirement:** User clicks Approve, then agent merges the PR.
 
 **Never merge without Gate 3 approval.** Not even for hotfixes.
