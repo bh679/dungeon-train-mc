@@ -871,6 +871,7 @@
   "chat.dungeontrain.live.burns_moderated": "The Live Eye has no warnings left and burns away.",
   "chat.dungeontrain.live.burns_banned": "The Live Eye burns away. You can't wear another for %s.",
   "chat.dungeontrain.live.burns_banned_permanent": "The Live Eye burns away. You can no longer wear one.",
+  "chat.dungeontrain.live.burns_banned_unknown": "The Live Eye burns away. You are banned from wearing one.",
   "chat.dungeontrain.live.banned_for": "It was banned for these lines:",
   "chat.dungeontrain.live.appeal_link": "[Appeal]",
   "chat.dungeontrain.live.appeal_link_hover": "Appeal this line",

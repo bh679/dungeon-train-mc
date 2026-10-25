@@ -838,6 +838,7 @@
   "chat.dungeontrain.live.burns_moderated": "Kamera nie ma już ostrzeżeń i spala się.",
   "chat.dungeontrain.live.burns_banned": "Kamera spala się. Nie możesz nosić innej jeszcze przez %s.",
   "chat.dungeontrain.live.burns_banned_permanent": "Kamera spala się. Nie możesz już nosić żadnej.",
+  "chat.dungeontrain.live.burns_banned_unknown": "Kamera spala się. Masz zakaz noszenia jej.",
   "chat.dungeontrain.live.banned_for": "Ban za te linie:",
   "chat.dungeontrain.live.appeal_link": "[Odwołaj się]",
   "chat.dungeontrain.live.appeal_link_hover": "Odwołaj się od tej linii",

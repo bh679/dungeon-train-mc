@@ -806,6 +806,7 @@
   "chat.dungeontrain.live.burns_moderated": "Le caméscope n'a plus d'avertissement et se consume.",
   "chat.dungeontrain.live.burns_banned": "Le caméscope se consume. Tu ne peux pas en porter un autre pendant encore %s.",
   "chat.dungeontrain.live.burns_banned_permanent": "Le caméscope se consume. Tu ne peux plus en porter.",
+  "chat.dungeontrain.live.burns_banned_unknown": "Le caméscope se consume. Tu as l'interdiction d'en porter.",
   "chat.dungeontrain.live.banned_for": "Banni pour ces lignes :",
   "chat.dungeontrain.live.appeal_link": "[Faire appel]",
   "chat.dungeontrain.live.appeal_link_hover": "Faire appel pour cette ligne",

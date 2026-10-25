@@ -806,6 +806,7 @@
   "chat.dungeontrain.live.burns_moderated": "La videocamera non ha più avvertimenti e brucia via.",
   "chat.dungeontrain.live.burns_banned": "La videocamera brucia via. Non puoi indossarne un'altra per altri %s.",
   "chat.dungeontrain.live.burns_banned_permanent": "La videocamera brucia via. Non puoi più indossarne una.",
+  "chat.dungeontrain.live.burns_banned_unknown": "La videocamera brucia via. Ti è vietato indossarne una.",
   "chat.dungeontrain.live.banned_for": "Bannato per queste righe:",
   "chat.dungeontrain.live.appeal_link": "[Ricorso]",
   "chat.dungeontrain.live.appeal_link_hover": "Fai ricorso per questa riga",

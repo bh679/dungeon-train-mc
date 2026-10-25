@@ -774,6 +774,7 @@
   "chat.dungeontrain.live.burns_moderated": "攝影機的警告已用完，燒成了灰。",
   "chat.dungeontrain.live.burns_banned": "攝影機燒成了灰。接下來 %s 內你不能佩戴另一台。",
   "chat.dungeontrain.live.burns_banned_permanent": "攝影機燒成了灰。你再也不能佩戴了。",
+  "chat.dungeontrain.live.burns_banned_unknown": "攝影機燒成了灰。你被禁止佩戴。",
   "chat.dungeontrain.live.banned_for": "因以下內容被禁：",
   "chat.dungeontrain.live.appeal_link": "[申訴]",
   "chat.dungeontrain.live.appeal_link_hover": "申訴這一條",
