@@ -2888,6 +2888,7 @@
       "gui.dungeontrain.options.stream_chat.hint",
       "gui.dungeontrain.options.stream_chat.tip",
       "gui.dungeontrain.options.stream_chat.kid_tip",
+      "gui.dungeontrain.options.stream_chat.live_chat_off_tip",
       "gui.dungeontrain.options.stream_audio",
       "gui.dungeontrain.options.stream_audio.hint",
       "gui.dungeontrain.options.stream_audio.tip",

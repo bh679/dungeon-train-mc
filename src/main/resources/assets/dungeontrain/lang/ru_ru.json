@@ -3023,6 +3023,7 @@
   "gui.dungeontrain.options.stream_chat.hint": "Зрители видят чат",
   "gui.dungeontrain.options.stream_chat.tip": "Видят ли зрители строки чата на вашем экране, включая личные сообщения. То, что вы печатаете, никогда не показывается.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "В детском режиме всегда выключено: чат никогда не попадает в трансляцию.",
+  "gui.dungeontrain.options.stream_chat.live_chat_off_tip": "Выключено, пока выключен чат трансляции: ваш чат никогда не попадает в стрим.",
   "gui.dungeontrain.options.stream_audio": "Транслировать звук игры",
   "gui.dungeontrain.options.stream_audio.hint": "Зрители слышат игру. Без микрофона",
   "gui.dungeontrain.options.stream_audio.tip": "Передаёт звуки игры в трансляцию. Без голосового чата и других приложений. Действует со следующей трансляции.",

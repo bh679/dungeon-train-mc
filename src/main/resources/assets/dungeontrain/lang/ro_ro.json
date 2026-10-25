@@ -3551,6 +3551,7 @@
   "gui.dungeontrain.options.stream_chat.hint": "Spectatorii văd chatul",
   "gui.dungeontrain.options.stream_chat.tip": "Văd spectatorii rândurile de chat de pe ecranul tău, inclusiv mesajele private. Ce scrii nu e arătat niciodată.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "Mereu oprit în modul Copil: chatul nu ajunge niciodată în transmisiune.",
+  "gui.dungeontrain.options.stream_chat.live_chat_off_tip": "Dezactivat cât timp chatul live e oprit: chatul tău nu ajunge niciodată în stream.",
   "gui.dungeontrain.options.stream_audio": "Transmite sunetul jocului",
   "gui.dungeontrain.options.stream_audio.hint": "Spectatorii aud jocul. Fără microfon",
   "gui.dungeontrain.options.stream_audio.tip": "Trimite sunetele din joc în transmisie. Fără chat vocal sau alte aplicații. Se aplică de la următoarea transmisie.",

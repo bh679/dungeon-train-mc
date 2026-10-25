@@ -3018,6 +3018,7 @@
   "gui.dungeontrain.options.stream_chat.hint": "Widzowie widzą czat",
   "gui.dungeontrain.options.stream_chat.tip": "Czy widzowie widzą linie czatu na twoim ekranie, łącznie z szeptami. To, co piszesz, nigdy nie jest pokazywane.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "Zawsze wyłączone w trybie dziecka: czat nigdy nie trafia do transmisji.",
+  "gui.dungeontrain.options.stream_chat.live_chat_off_tip": "Wyłączone, dopóki czat na żywo jest wyłączony: twój czat nigdy nie trafia do streamu.",
   "gui.dungeontrain.options.stream_audio": "Transmituj dźwięk gry",
   "gui.dungeontrain.options.stream_audio.hint": "Widzowie słyszą grę. Bez mikrofonu",
   "gui.dungeontrain.options.stream_audio.tip": "Wysyła dźwięki z gry do transmisji. Bez czatu głosowego i innych aplikacji. Działa od następnej transmisji.",

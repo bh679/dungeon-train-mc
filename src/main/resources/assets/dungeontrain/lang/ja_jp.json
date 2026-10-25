@@ -2914,6 +2914,7 @@
   "gui.dungeontrain.options.stream_chat.hint": "視聴者にチャットを見せる",
   "gui.dungeontrain.options.stream_chat.tip": "画面のチャット行(ささやきを含む)が視聴者に見えるか。入力中の内容は表示されません。",
   "gui.dungeontrain.options.stream_chat.kid_tip": "キッズモードでは常にオフ:チャットは配信に一切映りません。",
+  "gui.dungeontrain.options.stream_chat.live_chat_off_tip": "ライブチャットがオフの間はオフ：あなたのチャットが配信に映ることはありません。",
   "gui.dungeontrain.options.stream_audio": "ゲーム音を配信",
   "gui.dungeontrain.options.stream_audio.hint": "視聴者にはゲーム音のみ。マイクなし",
   "gui.dungeontrain.options.stream_audio.tip": "ゲーム内の音を配信に送ります。ボイスチャットや他のアプリの音は含みません。次の配信から反映されます。",

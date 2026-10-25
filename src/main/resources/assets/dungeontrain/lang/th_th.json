@@ -2914,6 +2914,7 @@
   "gui.dungeontrain.options.stream_chat.hint": "ผู้ชมเห็นแชท",
   "gui.dungeontrain.options.stream_chat.tip": "ผู้ชมเห็นบรรทัดแชทบนหน้าจอของคุณหรือไม่ รวมถึงข้อความกระซิบ สิ่งที่คุณพิมพ์จะไม่แสดงเลย",
   "gui.dungeontrain.options.stream_chat.kid_tip": "ปิดเสมอในโหมดเด็ก: แชตจะไม่ขึ้นในสตรีมเลย",
+  "gui.dungeontrain.options.stream_chat.live_chat_off_tip": "ปิดอยู่ขณะที่แชทสดปิด: แชทของคุณจะไม่ไปถึงสตรีม",
   "gui.dungeontrain.options.stream_audio": "สตรีมเสียงเกม",
   "gui.dungeontrain.options.stream_audio.hint": "ผู้ชมได้ยินเสียงเกม ไม่มีไมค์",
   "gui.dungeontrain.options.stream_audio.tip": "ส่งเสียงในเกมไปยังสตรีม ไม่มีแชทเสียงหรือแอปอื่น มีผลตั้งแต่สตรีมครั้งถัดไป",

@@ -2966,6 +2966,7 @@
   "gui.dungeontrain.options.stream_chat.hint": "Kijkers zien de chat",
   "gui.dungeontrain.options.stream_chat.tip": "Zien kijkers de chatregels op je scherm, fluisterberichten inbegrepen. Wat je typt wordt nooit getoond.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "Altijd uit in kindermodus: de chat komt nooit in de stream.",
+  "gui.dungeontrain.options.stream_chat.live_chat_off_tip": "Uit zolang Livechat uit staat: je chat komt nooit in de stream.",
   "gui.dungeontrain.options.stream_audio": "Spelgeluid streamen",
   "gui.dungeontrain.options.stream_audio.hint": "Kijkers horen het spel. Geen micro",
   "gui.dungeontrain.options.stream_audio.tip": "Stuurt spelgeluid naar de stream. Geen voicechat of andere apps. Geldt vanaf je volgende stream.",

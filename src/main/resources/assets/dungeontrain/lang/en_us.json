@@ -3494,6 +3494,7 @@
   "gui.dungeontrain.options.stream_chat.hint": "Viewers see chat",
   "gui.dungeontrain.options.stream_chat.tip": "Do viewers see the chat lines on your screen, whispers included. What you type is never shown.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "Always off in Kid mode: chat never reaches the stream.",
+  "gui.dungeontrain.options.stream_chat.live_chat_off_tip": "Off while Live chat is off: your chat never reaches the stream.",
   "gui.dungeontrain.options.stream_audio": "Stream game sound",
   "gui.dungeontrain.options.stream_audio.hint": "Viewers hear the game. No mic",
   "gui.dungeontrain.options.stream_audio.tip": "Sends in-game sounds to the stream. No voice chat or other apps. Takes effect from your next stream.",

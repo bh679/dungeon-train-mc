@@ -2914,6 +2914,7 @@
   "gui.dungeontrain.options.stream_chat.hint": "Nakikita ng manonood ang chat",
   "gui.dungeontrain.options.stream_chat.tip": "Nakikita ba ng manonood ang mga linya ng chat sa screen mo, kasama ang mga whisper. Hindi kailanman ipinapakita ang tina-type mo.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "Laging off sa Kid mode: hindi kailanman aabot ang chat sa stream.",
+  "gui.dungeontrain.options.stream_chat.live_chat_off_tip": "Naka-off habang naka-off ang Live chat: hindi kailanman makakarating sa stream ang chat mo.",
   "gui.dungeontrain.options.stream_audio": "I-stream ang tunog ng laro",
   "gui.dungeontrain.options.stream_audio.hint": "Laro lang ang naririnig. Walang mic",
   "gui.dungeontrain.options.stream_audio.tip": "Ipinapadala ang tunog ng laro sa stream. Walang voice chat o ibang app. Magsisimula sa susunod mong stream.",

@@ -2966,6 +2966,7 @@
   "gui.dungeontrain.options.stream_chat.hint": "Zuschauer sehen den Chat",
   "gui.dungeontrain.options.stream_chat.tip": "Sehen Zuschauer die Chatzeilen auf deinem Bildschirm, Flüsternachrichten inklusive. Was du tippst, wird nie gezeigt.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "Im Kindermodus immer aus: der Chat kommt nie in den Stream.",
+  "gui.dungeontrain.options.stream_chat.live_chat_off_tip": "Aus, solange der Live-Chat aus ist: Dein Chat erreicht den Stream nie.",
   "gui.dungeontrain.options.stream_audio": "Spielsound streamen",
   "gui.dungeontrain.options.stream_audio.hint": "Zuschauer hören das Spiel. Kein Mikro",
   "gui.dungeontrain.options.stream_audio.tip": "Sendet Spielsounds an den Stream. Kein Sprachchat, keine anderen Apps. Gilt ab deinem nächsten Stream.",

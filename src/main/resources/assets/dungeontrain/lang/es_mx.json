@@ -2966,6 +2966,7 @@
   "gui.dungeontrain.options.stream_chat.hint": "Los espectadores ven el chat",
   "gui.dungeontrain.options.stream_chat.tip": "Si los espectadores ven las líneas de chat de tu pantalla, susurros incluidos. Lo que escribes nunca se muestra.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "Siempre desactivado en el modo Niño: el chat nunca llega a la transmisión.",
+  "gui.dungeontrain.options.stream_chat.live_chat_off_tip": "Desactivado mientras el chat en vivo esté desactivado: tu chat nunca llega al stream.",
   "gui.dungeontrain.options.stream_audio": "Transmitir sonido del juego",
   "gui.dungeontrain.options.stream_audio.hint": "Escuchan el juego. Sin micrófono",
   "gui.dungeontrain.options.stream_audio.tip": "Envía los sonidos del juego a la transmisión. Sin chat de voz ni otras apps. Se aplica desde tu próxima transmisión.",
