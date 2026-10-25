@@ -33,6 +33,8 @@ public final class ServerLiveStatus {
     /** The relay's last answer carried a live second stream (Two Streams). */
     private static volatile boolean relaySecondLive;
     private static volatile long relayAtMs;
+    /** When the poll behind the last answer was sent: an answer only knows of claims made before that. */
+    private static volatile long relayAskedAtMs;
     /** The relay's name for whoever is live, when it gave one. */
     private static volatile String relayStreamer;
     /** The relay's name for whoever holds the second stream, when it gave one. */
@@ -44,20 +46,26 @@ public final class ServerLiveStatus {
 
     /**
      * True while a second stream is live (the Two Streams reward): a fresh relay answer carrying a
-     * second stream, or two streamers on this server while a fresh relay answer says someone is live.
-     * Local streamers alone never count: their claims are only their clients' word, and a server that
-     * cannot reach the relay keeps the one-stream TV it always had. A placed TV's right-click only
-     * steps to Stream 2 while this holds ({@code compat/vista/TvChannelCycle}).
+     * second stream, or, for the short wait before the relay reports the second stream ready, two
+     * streamers on this server while a fresh relay answer says someone is live and that answer was asked
+     * for before the second of them started. Once the relay has answered since both started and still
+     * names no second stream, the local pair no longer counts (a lapsed claim, a cut-off streamer whose
+     * name did not match the relay's). Local streamers alone never count: their claims are only their
+     * clients' word, and a server that cannot reach the relay keeps the one-stream TV it always had. A
+     * placed TV's right-click only steps to Stream 2 while this holds ({@code compat/vista/TvChannelCycle}).
      */
     public static boolean isSecondStreamLive(MinecraftServer server) {
         int local = server == null ? 0 : LiveStreamers.all(server).size();
-        return secondStreamLive(local, relayLive, relaySecondLive, relayAtMs, System.currentTimeMillis());
+        long bothStarted = server == null ? 0L : LiveStreamers.bothStartedMs(server);
+        return secondStreamLive(local, bothStarted, relayLive, relaySecondLive, relayAtMs, relayAskedAtMs,
+            System.currentTimeMillis());
     }
 
     /** Pure form for the tests. */
-    static boolean secondStreamLive(int localStreamers, boolean relayLive, boolean relaySecondLive, long relayAtMs, long nowMs) {
+    static boolean secondStreamLive(int localStreamers, long bothStartedMs, boolean relayLive, boolean relaySecondLive,
+                                    long relayAtMs, long relayAskedAtMs, long nowMs) {
         if (isFresh(relaySecondLive, relayAtMs, nowMs)) return true;
-        return localStreamers >= 2 && isFresh(relayLive, relayAtMs, nowMs);
+        return localStreamers >= 2 && isFresh(relayLive, relayAtMs, nowMs) && relayAskedAtMs < bothStartedMs;
     }
 
     /**
@@ -134,6 +142,7 @@ public final class ServerLiveStatus {
         if (server.getPlayerCount() == 0) return;
         if (!IN_FLIGHT.compareAndSet(false, true)) return;
         pollRequested = false;
+        long askedAt = System.currentTimeMillis();
         LiveFeedClient.status(null, LiveFeedClient.Channel.LIVE).whenComplete((result, error) -> {
             try {
                 if (error == null && result != null && result.ok()) {
@@ -143,6 +152,7 @@ public final class ServerLiveStatus {
                     relayStreamer = status.streamer();
                     relaySecondStreamer = relaySecondLive ? status.second().streamer() : null;
                     relayAtMs = System.currentTimeMillis();
+                    relayAskedAtMs = askedAt;
                 }
             } finally {
                 IN_FLIGHT.set(false);
@@ -155,6 +165,7 @@ public final class ServerLiveStatus {
         relayLive = false;
         relaySecondLive = false;
         relayAtMs = 0L;
+        relayAskedAtMs = 0L;
         relayStreamer = null;
         relaySecondStreamer = null;
         pollRequested = false;
