@@ -233,12 +233,8 @@ public final class LiveFeedEvents {
      * Streams reward on, a second channel is handed out and nobody is cut off ({@link #demoted}).
      */
     private static void goLive(MinecraftServer server, ServerPlayer player, boolean fromWatching, String cutOff) {
-        java.util.Map<UUID, String> others = new java.util.LinkedHashMap<>();
-        for (UUID other : LiveStreamers.othersThan(server, player.getUUID())) {
-            ServerPlayer p = server.getPlayerList().getPlayer(other);
-            others.put(other, p == null ? "" : p.getGameProfile().getName());
-        }
-        LiveStreamers.add(server, player.getUUID());
+        java.util.Map<UUID, String> others = LiveStreamers.othersWithNames(server, player.getUUID());
+        LiveStreamers.add(server, player.getUUID(), player.getGameProfile().getName());
         for (UUID previous : demoted(others, cutOff)) {
             LiveStreamers.clearIf(server, previous);
             ServerLiveStatus.requestPoll();

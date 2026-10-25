@@ -23,6 +23,9 @@ GET logs its `slot=` query so the viewer's second-slot flag can be checked. Meas
 - GET /report: per-segment upload lateness (PUT time - PDT - segment length), TV and web delay stats,
   and the newest segments' sizes (an adaptive-quality step shows as smaller segments).
 
+--prev-name NAME makes every claim that lands on the main slot a takeover of NAME (`prevName`), so a
+server can be seen demoting exactly that streamer. Second-slot claims never carry it, as on the relay.
+
 --throttle-kbps N caps how fast PUT bodies are read, to play a streamer whose upload can't keep up;
 GET /ctl?throttle=N changes it while running (0 = no cap).
 
@@ -188,6 +191,8 @@ class Handler(BaseHTTPRequestHandler):
                     STATE["session"] = session
             out = {"ok": True, "channel": channel, "session": session, "token": "tok-" + session,
                    "playlistUrl": "http://127.0.0.1:%d/files/%s/live.m3u8" % (port, session)}
+            if ARGS.prev_name and channel == "main":
+                out["prevName"] = ARGS.prev_name
             if ARGS.quick:
                 seg = ARGS.quick_seconds
                 out.update(segmentSeconds=seg, listSize=max(6, -(-60 // seg)))
@@ -344,6 +349,7 @@ def main():
     p.add_argument("--quick-seconds", type=int, default=3)
     p.add_argument("--relay-public", default="")
     p.add_argument("--second-streamer", default="", help="Two Streams: a second player of this name is live on the second slot")
+    p.add_argument("--prev-name", default="", help="main-slot claims take over from this streamer (prevName)")
     p.add_argument("--throttle-kbps", type=int, default=0, help="cap PUT upload speed (kbit/s); /ctl?throttle=N changes it")
     ARGS = p.parse_args()
     STATE["throttle_kbps"] = max(0, ARGS.throttle_kbps)
