@@ -30786,7 +30786,7 @@
         "performance"
       ],
       "title": "Less lag in dimensional carriages",
-      "summary": "Exploring a dimensional carriage no longer builds the world overhead as you walk, so long walks through the rooms run smoother.",
+      "summary": "Exploring dimensional carriages is smoother, with less lag the further you go.",
       "highlights": [],
       "addresses": [
         "lag"
