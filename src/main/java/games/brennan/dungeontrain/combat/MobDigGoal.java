@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.combat;
 
+import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import games.brennan.dungeontrain.difficulty.DifficultyApplier;
 import games.brennan.dungeontrain.difficulty.ToolTiers;
@@ -35,6 +36,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.EventHooks;
 import org.joml.Vector3d;
 import org.joml.primitives.AABBdc;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -44,7 +46,9 @@ import java.util.List;
  * A tool-carrying mob ({@link DifficultyApplier#DIG_TIER_KEY}) digging through to a target it has
  * seen. Runs when the mob has seen its target recently, has stopped closing the distance, and the
  * cells in front of it (head height, then feet, plus overhead when the target is above) are all
- * blocks it may break: {@link ToolTiers#mayBreak} at its break tier, never below its feet.
+ * blocks it may break: {@link ToolTiers#mayBreak} at its break tier, never below its feet. With no
+ * path the navigator leaves a mob standing where it gave up, so when the way ahead is open ground
+ * the goal first walks it straight at the target until there is something to dig.
  *
  * <p>Breaks one block at a time, taking as long as a player would with the same tool (tool speed,
  * Efficiency, Haste / Mining Fatigue, water and airborne penalties, right-tool 1/30 vs 1/100). A
@@ -54,6 +58,8 @@ import java.util.List;
  */
 public final class MobDigGoal extends Goal {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     static final int PRIORITY = 1;
     /** How long after last seeing its target a mob still digs toward it. */
     private static final int SEEN_MEMORY_TICKS = 200;
@@ -61,7 +67,7 @@ public final class MobDigGoal extends Goal {
     private static final int STUCK_TICKS = 40;
     /** Getting this much closer resets the stuck clock. */
     private static final double PROGRESS_EPS = 0.5;
-    /** Within this the mob's own attack has it; no digging. */
+    /** Within this, and in sight, the mob's own attack has it; no digging. */
     private static final double MELEE_RANGE = 2.0;
     private static final double MAX_TARGET_RANGE = 24.0;
     /** Max distance from the mob's eyes to the block centre while digging. */
@@ -71,6 +77,9 @@ public final class MobDigGoal extends Goal {
     /** After a break, the next cell may start straight away for this long. */
     private static final int CHAIN_TICKS = 20;
     private static final int SWING_EVERY_TICKS = 5;
+    /** Longest straight-line walk toward the target looking for something to dig. */
+    private static final int APPROACH_TICKS = 100;
+    private static final int REPLAN_EVERY_TICKS = 5;
     private static final double CRACK_RANGE_SQR = 32.0 * 32.0;
     /** Padding around a carriage's box when looking for the carriage a cell belongs to. */
     private static final double CARRIAGE_PAD = 2.0;
@@ -100,6 +109,9 @@ public final class MobDigGoal extends Goal {
     private int chainUntilTick = Integer.MIN_VALUE;
 
     private DigCell cell;
+    /** No cell to dig yet: walking straight at the target until one is in front. */
+    private boolean approaching;
+    private int approachTicks;
     private int progressTicks;
     private int lastStage;
 
@@ -142,11 +154,14 @@ public final class MobDigGoal extends Goal {
             bestDistance = Double.MAX_VALUE;
             bestDistanceTick = now;
         }
-        if (mob.getSensing().hasLineOfSight(target)) lastSeenTick = now;
+        boolean seen = mob.getSensing().hasLineOfSight(target);
+        if (seen) lastSeenTick = now;
         if (now - lastSeenTick > SEEN_MEMORY_TICKS) return false;
 
         double distance = mob.distanceTo(target);
-        if (distance > MAX_TARGET_RANGE || distance <= MELEE_RANGE) return false;
+        if (distance > MAX_TARGET_RANGE) return false;
+        // In reach and in sight: its own attack has it. In reach behind a wall still digs.
+        if (seen && distance <= MELEE_RANGE) return false;
         if (distance < bestDistance - PROGRESS_EPS) {
             bestDistance = distance;
             bestDistanceTick = now;
@@ -155,7 +170,8 @@ public final class MobDigGoal extends Goal {
         if (!EventHooks.canEntityGrief(level, mob)) return false;
 
         cell = planDig(level, target);
-        if (cell == null) {
+        approaching = cell == null && canApproach(level, target);
+        if (cell == null && !approaching) {
             // Nothing breakable in the way: wait out another stuck window before looking again.
             bestDistanceTick = now;
             chainUntilTick = Integer.MIN_VALUE;
@@ -166,9 +182,11 @@ public final class MobDigGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        if (cell == null || !(mob.level() instanceof ServerLevel level)) return false;
+        if (!(mob.level() instanceof ServerLevel level)) return false;
         LivingEntity target = mob.getTarget();
         if (target == null || !target.isAlive()) return false;
+        if (approaching) return approachTicks < APPROACH_TICKS;
+        if (cell == null) return false;
         if (!currentState(level, cell).equals(cell.state)) return false;
         if (!(mob.getItemInHand(cell.hand).getItem() instanceof DiggerItem)) return false;
         return mob.getEyePosition().distanceTo(cell.worldCentre()) <= REACH;
@@ -177,13 +195,25 @@ public final class MobDigGoal extends Goal {
     @Override
     public void start() {
         mob.getNavigation().stop();
+        approachTicks = 0;
+        if (cell != null) beginDig();
+    }
+
+    private void beginDig() {
         progressTicks = 0;
         lastStage = -1;
+        LOGGER.debug("[DungeonTrain] MobDigGoal start: mob={} tier={} block={} at={} carriage={} ticks={}",
+                mob.getUUID(), tier, cell.state, cell.worldPos, cell.onCarriage(), cell.ticks);
     }
 
     @Override
     public void tick() {
-        if (cell == null || !(mob.level() instanceof ServerLevel level)) return;
+        if (!(mob.level() instanceof ServerLevel level)) return;
+        if (approaching) {
+            tickApproach(level);
+            return;
+        }
+        if (cell == null) return;
         Vec3 centre = cell.worldCentre();
         mob.getLookControl().setLookAt(centre.x, centre.y, centre.z);
         if (progressTicks % SWING_EVERY_TICKS == 0) mob.swing(cell.hand);
@@ -204,7 +234,49 @@ public final class MobDigGoal extends Goal {
             sendCrack(level, cell, -1);
         }
         cell = null;
+        approaching = false;
         lastStage = -1;
+    }
+
+    /**
+     * Walk straight at the target (no path exists, so the navigator would not move it) until a cell
+     * it can dig is in front of it, then dig. Gives up when the way ahead stops being open ground.
+     */
+    private void tickApproach(ServerLevel level) {
+        LivingEntity target = mob.getTarget();
+        if (target == null) return;
+        approachTicks++;
+        if (approachTicks % REPLAN_EVERY_TICKS == 0) {
+            DigCell next = planDig(level, target);
+            if (next != null) {
+                approaching = false;
+                cell = next;
+                mob.getNavigation().stop();
+                beginDig();
+                return;
+            }
+            if (!canApproach(level, target)) {
+                approaching = false;
+                return;
+            }
+        }
+        mob.getMoveControl().setWantedPosition(target.getX(), mob.getY(), target.getZ(), 1.0);
+        mob.getLookControl().setLookAt(target);
+    }
+
+    /** Whether the cells in front are open and stand on solid ground, so walking on is safe. */
+    private boolean canApproach(ServerLevel level, LivingEntity target) {
+        BlockPos feet = mob.blockPosition();
+        BlockPos front = frontOf(feet, target);
+        List<ManagedShip> ships = shipsNear(level);
+        return resolve(level, ships, front, feet.getY()) == null
+                && resolve(level, ships, front.above(), feet.getY()) == null
+                && resolve(level, ships, front.below(), feet.getY()) != null;
+    }
+
+    /** The cell beside {@code feet} in the target's direction. */
+    private BlockPos frontOf(BlockPos feet, LivingEntity target) {
+        return feet.relative(Direction.getNearest(target.getX() - mob.getX(), 0, target.getZ() - mob.getZ()));
     }
 
     private void finishBreak(ServerLevel level, DigCell target) {
@@ -218,6 +290,8 @@ public final class MobDigGoal extends Goal {
         } else {
             broke = level.destroyBlock(target.worldPos, canHarvest(mob.getItemInHand(target.hand), target.state), mob);
         }
+        LOGGER.debug("[DungeonTrain] MobDigGoal break: mob={} block={} at={} carriage={} broke={}",
+                mob.getUUID(), target.state, target.worldPos, target.onCarriage(), broke);
         if (broke) {
             EquipmentSlot slot = target.hand == InteractionHand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND;
             mob.getItemInHand(target.hand).hurtAndBreak(1, mob, slot);
@@ -232,10 +306,8 @@ public final class MobDigGoal extends Goal {
      */
     private DigCell planDig(ServerLevel level, LivingEntity target) {
         BlockPos feet = mob.blockPosition();
-        double dx = target.getX() - mob.getX();
-        double dz = target.getZ() - mob.getZ();
         boolean targetAbove = target.getY() - mob.getY() > 1.5;
-        BlockPos front = feet.relative(Direction.getNearest(dx, 0, dz));
+        BlockPos front = frontOf(feet, target);
 
         List<BlockPos> candidates = new ArrayList<>(3);
         if (targetAbove) candidates.add(feet.above(2));
