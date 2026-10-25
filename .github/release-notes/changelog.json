@@ -30681,6 +30681,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "backpacks-narrative-tab",
+      "version": "0.1521.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "loot"
+      ],
+      "title": "Backpacks in the editor",
+      "summary": "The Edible Backpack and Golden Edible Backpack now sit in the editor's Narrative tab, so builders can place them straight into carriages.",
+      "highlights": [],
+      "pr": 2318,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
