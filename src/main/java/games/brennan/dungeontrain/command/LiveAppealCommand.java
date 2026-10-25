@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * {@code /liveappeal} — a player banned from the Live Eye by the text filter appeals one of the lines
- * that earned the ban.
+ * {@code /liveappeal} — a player muted or banned from the Live Eye by the text filter appeals one of the lines
+ * that earned the penalty.
  *
  * <ul>
  *   <li>{@code /liveappeal} — lists the lines (masked, numbered), each with a clickable [Appeal];</li>
@@ -27,7 +27,7 @@ import java.util.function.Consumer;
  *   <li>{@code /liveappeal <why>} — a free-text appeal when no line is named.</li>
  * </ul>
  *
- * <p>One appeal per ban. It goes to the relay through the durable {@link RelayOutbox}; the relay keeps
+ * <p>One appeal per penalty. It goes to the relay through the durable {@link RelayOutbox}; the relay keeps
  * every logged strike as the evidence, tells Brennan, and he approves or denies it on the explorer's
  * Appeals page. The relay's answer comes back through {@link LiveModeration#onAppealResponse} and is
  * said in chat. Player-facing ({@code requires(s -> true)}), and on {@code CommandAllowlist} so running
@@ -73,14 +73,14 @@ public final class LiveAppealCommand {
             source.sendFailure(Component.translatable(KEY + "player_only"));
             return 0;
         }
-        if (!LiveModeration.isBanned(player.getUUID())) {
+        if (!LiveModeration.isPenalised(player.getUUID())) {
             // The server's copy of the ban comes from a login fetch that can miss; the relay may still
             // hold one. Ask it before saying "not banned" (no answer: "try again later"), then answer in chat.
             LiveModeration.refresh(player, p -> {
-                if (LiveModeration.isBanned(p.getUUID())) {
+                if (LiveModeration.isPenalised(p.getUUID())) {
                     appeal(p, arg, line -> p.sendSystemMessage(line.copy().withStyle(ChatFormatting.RED)), p::sendSystemMessage);
                 } else {
-                    p.sendSystemMessage(Component.translatable(KEY + "not_banned").withStyle(ChatFormatting.RED));
+                    p.sendSystemMessage(Component.translatable(KEY + "not_penalised").withStyle(ChatFormatting.RED));
                 }
             }, p -> p.sendSystemMessage(Component.translatable(KEY + "failed").withStyle(ChatFormatting.RED)));
             return 1;
@@ -88,7 +88,7 @@ public final class LiveAppealCommand {
         return appeal(player, arg, source::sendFailure, line -> source.sendSuccess(() -> line, false));
     }
 
-    /** The appeal itself, for a player known to be banned; {@code fail} and {@code ok} say how it went. */
+    /** The appeal itself, for a player known to be muted or banned; {@code fail} and {@code ok} say how it went. */
     private static int appeal(ServerPlayer player, String arg, Consumer<Component> fail, Consumer<Component> ok) {
         List<LiveModerationLadder.Evidence> evidence = LiveModeration.evidenceFor(player.getUUID());
         Integer n = lineNumber(arg);

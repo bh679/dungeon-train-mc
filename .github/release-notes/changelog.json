@@ -30739,6 +30739,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-chat-moderation-tiers",
+      "version": "0.1525.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Fairer chat moderation",
+      "summary": "Chat moderation now steps up gradually. Blocked words earn warnings first, then short chat mutes, and only repeated offences reach longer penalties. A penalty has to run out before the next one can be earned, so a burst of messages no longer jumps straight to the harshest outcome. Mutes can be appealed with /liveappeal, just like bans.",
+      "highlights": [
+        "First offences mute chat for a short time instead of removing streaming",
+        "Penalties no longer stack up while one is already running",
+        "Mutes can be appealed with /liveappeal"
+      ],
+      "pr": 2322,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
