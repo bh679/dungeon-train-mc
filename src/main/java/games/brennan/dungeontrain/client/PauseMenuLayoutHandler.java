@@ -88,6 +88,7 @@ public final class PauseMenuLayoutHandler {
     /** Salvage sessions only — see {@link #addFreshRunRow}. */
     private static final Component FRESH_RUN_LABEL = Component.translatable("gui.dungeontrain.crash_recovery.fresh_run");
 
+    private static final Component PERKS_LABEL = Component.translatable("gui.dungeontrain.perks.title");
     private static final Component MODS_KEY = Component.translatable("fml.menu.mods");
     private static final Component SHADERS_LABEL = Component.translatable("gui.dungeontrain.shaders.button");
 
@@ -156,6 +157,10 @@ public final class PauseMenuLayoutHandler {
         returnToMenu.visible = false;
         returnToMenu.active = false;
 
+        // Perks: the constellation, first of the things you can do from here (also on P).
+        addPerksRow(event, slotX, slotY, slotW, slotH);
+        slotY += slotH + GAP;
+
         // My Builds, for a creative player — see addMyBuildsRow. It takes the Save-and-Quit slot and
         // pushes the exits down a row, which puts it last among the things you can *do* and first
         // above the ways out: the same place it sits in the Train Builder's own pause menu.
@@ -211,9 +216,18 @@ public final class PauseMenuLayoutHandler {
                     DISCONNECT_KEY.getString());
             return;
         }
+        // Perks takes the Disconnect slot and pushes Disconnect (and the Shift pair) down a row.
+        addPerksRow(event, disconnect.getX(), disconnect.getY(), disconnect.getWidth(), disconnect.getHeight());
+        disconnect.setY(disconnect.getY() + disconnect.getHeight() + GAP);
         addShiftExitPair(event, disconnect.getX(), disconnect.getY(),
                 disconnect.getWidth(), disconnect.getHeight());
         disconnect.visible = !Screen.hasShiftDown();
+    }
+
+    /** The perks constellation ({@link games.brennan.dungeontrain.client.perks.PerksScreen}), a full-slot row. */
+    private static void addPerksRow(ScreenEvent.Init.Post event, int slotX, int slotY, int slotW, int slotH) {
+        event.addListener(new DarkTintedButton(slotX, slotY, slotW, slotH, PERKS_LABEL,
+                b -> games.brennan.dungeontrain.client.perks.PerksScreen.open(false)));
     }
 
     /** Shift-revealed pair, splitting the slot: Exit to Title (grey) | Quit Game (dark grey). */
