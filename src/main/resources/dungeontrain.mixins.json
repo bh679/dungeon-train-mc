@@ -79,6 +79,7 @@
     "MinecraftServerWorldSettingsMixin",
     "ChiseledBookShelfBlockUnsignedBookMixin",
     "ContainersSpillMixin",
+    "HangingFrameDropMixin",
     "SpreadingSnowyDirtBlockUpsideDownMixin",
     "SnowLayerBlockUpsideDownMixin",
     "BushBlockUpsideDownMixin",

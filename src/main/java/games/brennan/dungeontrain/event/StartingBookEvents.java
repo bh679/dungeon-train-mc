@@ -728,11 +728,15 @@ public final class StartingBookEvents {
             // Nor a broken chest / barrel / pot / bookshelf / chest minecart spilling a stashed photo — it
             // lands intact and burns only once a player views or drops it (ContainersSpillMixin).
             boolean containerSpill = games.brennan.dungeontrain.compat.ContainerSpill.inProgress();
+            // Nor a photo taken out of a frame (or dropped by breaking it): it lands so the player who took
+            // it down can pick it up, and burns as normal once viewed or dropped again (FramePhotoRemoval).
+            boolean frameRemoval = games.brennan.dungeontrain.compat.photo.FramePhotoRemoval.inProgress();
             // A found photo (the relay pool's) burns on a player's drop too — it was never theirs to keep.
             if ((games.brennan.dungeontrain.compat.DisposableCamera.holdsBurnAfterViewing(stack)
                         || stack.is(games.brennan.dungeontrain.registry.ModItems.FOUND_PHOTOGRAPH.get()))
                     && !mobDrop
                     && !containerSpill
+                    && !frameRemoval
                     && !BURN_ENTITIES.containsKey(item.getUUID())) {
                 igniteItem(item, FlameVariant.DEFAULT);
                 // Opt-in author credit, as for a book: the photographer is named as it catches fire.

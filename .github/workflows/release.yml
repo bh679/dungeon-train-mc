@@ -605,7 +605,9 @@ jobs:
 
       # The same release, told to the live chat (relay: live-chat.js#announceRelease) — the website's
       # chat panel, the Discord live room, and Twitch while someone is on air. Never the game: in-game
-      # players get the mod's own update notice (LiveUpdateNotice), so they see it once. Same gate as
+      # players get the mod's own update notice (LiveUpdateNotice), so they see it once. The line is
+      # shaped like that notice (named after the lead changelog entry; notable/major add the summary,
+      # major a banner), read from the ledger the mark step above stamped. Same gate as
       # #highlights. Never blocks a release; re-send by hand with
       #   python3 scripts/relay/announce-release-live-chat.py --tag vX   (--dry-run to preview)
       - name: Announce the release in the live chat

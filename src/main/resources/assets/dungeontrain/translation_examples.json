@@ -1147,6 +1147,16 @@
       ]
     }
   },
+  "jade.dungeontrain.photo_frame.photographer": {
+    "1": {
+      "label": "the player who took the photo in the frame",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    }
+  },
   "chat.dungeontrain.photo_viewed.more": {
     "1": {
       "label": "how many more people can view the photo",
@@ -17365,6 +17375,40 @@
       "examples": [
         "Steve was slain by Zombie",
         "Alex fell from a high place"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_room.now": {
+    "1": {
+      "label": "which of the two live streams: 1 or 2",
+      "examples": [
+        "1",
+        "2"
+      ]
+    },
+    "2": {
+      "label": "the Minecraft player name of that stream's streamer",
+      "examples": [
+        "Alice",
+        "Bo"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_room.now_unnamed": {
+    "1": {
+      "label": "which of the two live streams: 1 or 2",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.live_room.stream": {
+    "1": {
+      "label": "which of the two live streams: 1 or 2",
+      "examples": [
+        "1",
+        "2"
       ]
     }
   }

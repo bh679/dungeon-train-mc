@@ -64,7 +64,7 @@ public final class EnchiridionAdvancements {
     public static final String PHOTO_WITHER_DYING = "photo_wither_dying";
     /** Someone else's album, found on the train, is in your inventory — "Memory Lane". */
     public static final String FOUND_ALBUM = "found_album";
-    /** Your album was saved holding at least one photo — "Keepsake". */
+    /** Your album was saved with a photo and a note on the same page — "Keepsake". */
     public static final String ALBUM_PHOTO = "album_photo";
     /** Your album was saved with a photo on every page — "No Room Left". */
     public static final String ALBUM_FULL = "album_full";
