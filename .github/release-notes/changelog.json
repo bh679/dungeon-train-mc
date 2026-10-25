@@ -30793,6 +30793,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-less-lag",
+      "version": "0.1527.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Less lag in dimensional carriages",
+      "summary": "Exploring dimensional carriages is smoother, with less lag the further you go.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2325,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
