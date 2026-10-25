@@ -273,7 +273,7 @@ public final class DifficultyApplier {
     /**
      * Digging-tool roll ({@link ToolTiers}), after the weapon so it knows which hand is free: an empty
      * mainhand takes the tool, otherwise it goes in the offhand (a held weapon stays in the main hand).
-     * Hands-on mobs only. A mob given a tool carries its {@link ToolTiers#breakTier break tier} in
+     * Hands-on mobs only. A mob given a tool carries its {@link ToolTiers#rollTier rolled break tier} in
      * {@link #DIG_TIER_KEY} and gets its {@link MobDigGoal}.
      */
     private static void applyToolSlot(Mob mob,
@@ -283,8 +283,8 @@ public final class DifficultyApplier {
                                       int statScalingTier,
                                       int tierIndex) {
         if (!canHoldTools(mob)) return;
-        double chance = ToolTiers.toolChance(tierIndex);
-        if (chance <= 0.0 || rng.nextDouble() >= chance) return;
+        int digTier = ToolTiers.rollTier(tierIndex, rng::nextDouble);
+        if (digTier == ToolTiers.NO_TIER) return;
         EquipmentSlot slot = mob.getItemBySlot(EquipmentSlot.MAINHAND).isEmpty()
                 ? EquipmentSlot.MAINHAND
                 : EquipmentSlot.OFFHAND;
@@ -294,7 +294,7 @@ public final class DifficultyApplier {
         if (stack == null) return;
         mob.setItemSlot(slot, stack);
         mob.setDropChance(slot, DIFFICULTY_DROP_CHANCE);
-        mob.getPersistentData().putInt(DIG_TIER_KEY, ToolTiers.breakTier(tierIndex));
+        mob.getPersistentData().putInt(DIG_TIER_KEY, digTier);
         MobDigGoal.attach(mob);
     }
 
