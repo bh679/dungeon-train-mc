@@ -187,6 +187,10 @@
         "AMPLIFIED",
         "LOST_CITY"
       ]
+    },
+    {
+      "id": "trialvault",
+      "weight": 6
     }
   ]
 }
