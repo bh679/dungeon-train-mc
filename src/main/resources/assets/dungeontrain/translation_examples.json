@@ -17343,10 +17343,24 @@
   },
   "chat.dungeontrain.perks.active_gained": {
     "1": {
+      "label": "the name of the cosmic apple just eaten",
+      "examples": [
+        "Cosmic Apple",
+        "Violet Core"
+      ]
+    },
+    "2": {
+      "label": "perk points that apple gave",
+      "examples": [
+        "1",
+        "10"
+      ]
+    },
+    "3": {
       "label": "active perk points the player now has this life",
       "examples": [
         "1",
-        "3"
+        "11"
       ]
     }
   },

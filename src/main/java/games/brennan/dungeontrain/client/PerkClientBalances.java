@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.client;
 
 /**
  * Client mirror of the local player's two perk balances (unlock points from advancements, active
- * points from Cosmic Debris), fed by {@link games.brennan.dungeontrain.net.PerkBalancesPacket}.
+ * points from cosmic apples), fed by {@link games.brennan.dungeontrain.net.PerkBalancesPacket}.
  * Free of client-only imports, like {@link PerkClientState}; cleared with it on logout.
  */
 public final class PerkClientBalances {

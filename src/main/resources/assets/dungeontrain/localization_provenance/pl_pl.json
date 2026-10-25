@@ -192,6 +192,8 @@
       "advancements.dungeontrain.enchiridion.photo_deeper_dark.title",
       "advancements.dungeontrain.secrete_menu.knockback_slime_hit.title",
       "advancements.dungeontrain.secrete_menu.knockback_slime_hit.hint",
+      "chat.dungeontrain.perks.active_gained",
+      "gui.dungeontrain.perks.refused.no_active",
       "gui.dungeontrain.priority_book.waiting.one",
       "gui.dungeontrain.priority_book.sign.one",
       "gui.dungeontrain.priority_book.sign_note",

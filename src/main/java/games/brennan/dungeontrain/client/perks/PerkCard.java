@@ -123,7 +123,7 @@ final class PerkCard {
             b.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.perks.full")));
         } else if (snap.activePoints() < 1) {
             b.active = false;
-            b.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.perks.eat_debris")));
+            b.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.perks.eat_apple")));
         } else if (!built) {
             b.active = false;
             b.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.perks.not_built")));

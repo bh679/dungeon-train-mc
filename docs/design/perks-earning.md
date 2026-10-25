@@ -4,7 +4,7 @@ Two currencies feed the perks tree.
 
 | | Unlock points | Active points |
 |---|---|---|
-| Earned from | advancements | eating Cosmic Debris |
+| Earned from | advancements | eating cosmic apples |
 | Spent on | unlocking a perk (tier 1/2/3 cost 1/5/10) | ranks on unlocked perks |
 | On death | kept | lost, with every rank they bought |
 | Unspent | kept forever | lost on death |
@@ -41,20 +41,27 @@ The advancements screen shows the unspent total in a small box under the window'
 corner, the same on every tab; hovering it says "Advancement Points" (`client/AdvancementPointsBadge`;
 Better Advancements' window bounds come from `BetterAdvancementsScreenBoundsMixin`).
 
-## Active points and Cosmic Debris
+## Active points and cosmic apples
 
-`dungeontrain:cosmic_debris`: stacks to 8, always edible, eaten fast, 1 hunger. Eating one gives
-one active point, prints the new count and calls `PerkMenu.openPerksMenu(player)`, which sends
-`OpenPerksMenuPacket`; the client's `PerksMenuOpener.open` is a chat-line stub until the menu
-screen lands. Eating it never breaks the melon-diet challenge.
+Three tiers, one class (`item/CosmicAppleItem`), all stacking to 8, always edible, eaten fast, 1 hunger:
+
+| item | points | name colour |
+|---|---|---|
+| `dungeontrain:cosmic_apple` Cosmic Apple | 1 | white |
+| `dungeontrain:celestial_bite` Celestial Bite | 5 | aqua (rare) |
+| `dungeontrain:violet_core` Violet Core | 10 | purple (epic) |
+
+Eating one adds its points, prints the new count and calls `PerkMenu.openPerksMenu(player)`, which
+sends `OpenPerksMenuPacket` and opens the perks menu. Eating any of them never breaks the
+melon-diet challenge (`CosmicAppleItem.isCosmicApple`). They replaced Cosmic Debris before it shipped.
 
 Active points live in the `perk_active_points` attachment: saved with the player, copied on End
 return, not `copyOnDeath`, and cleared on respawn.
 
-### Where it drops
+### Where they drop
 
-About one carriage group in five holds one Cosmic Debris, in one of its chests, barrels or shulker
-boxes (`perks/CosmicDebrisDrops`, called from `TrainAssembler.spawnGroup` right after the drawn
+About one carriage group in five holds one cosmic apple, in one of its chests, barrels or shulker
+boxes (`perks/CosmicAppleDrops`, called from `TrainAssembler.spawnGroup` right after the drawn
 carriage's contents pass, before a fresh shared carriage registers, so it never counts as an edit).
 
 - The draw is a seeded hash of (world generation seed, group index), so a group rolls the same way
@@ -62,4 +69,13 @@ carriage's contents pass, before a fresh shared carriage registers, so it never 
 - The first band (position tier 0) gets none.
 - A drawn group whose chosen carriage has no container with a free slot gets none (relay-leased and
   whole-room carriages have no contents pass), so the real rate is a little under one in five.
-- No loot prefab carries it (`CosmicDebrisLootTest`).
+- No loot prefab carries any of them (`CosmicAppleLootTest`).
+- Which apple depends on the drop's Diff-Level (`CosmicAppleDrops.tierFor`, its own seeded roll), so
+  the rarer ones only turn up deeper. At the default 20 carriages per level, Celestial Bites start
+  about 100 carriages in and Violet Cores about 200:
+
+  | Diff-Level | Cosmic Apple | Celestial Bite | Violet Core |
+  |---|---|---|---|
+  | 1 to 4 | 100% | | |
+  | 5 to 9 | 80% | 20% | |
+  | 10 and up | 65% | 25% | 10% |
