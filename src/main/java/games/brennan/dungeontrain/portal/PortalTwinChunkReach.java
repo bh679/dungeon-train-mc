@@ -25,8 +25,9 @@ public final class PortalTwinChunkReach {
 
     /**
      * The least a twin-space player ever holds: their own chunk and enough around it that the floor
-     * under them is ticking. Also what a player who is in twin space but in no room gets (mid-crossing,
-     * or fallen into open basement), so their own chunk never unloads under them.
+     * under them is ticking. Also what a player in twin space gets before they have been in any room
+     * (mid-crossing), so their own chunk never unloads under them. One who steps out of a room's box
+     * keeps that room's radius instead ({@code PortalTwinChunkHold#radiusFor}).
      */
     public static final int MIN_RADIUS = 2;
 

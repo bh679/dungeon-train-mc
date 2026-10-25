@@ -131,7 +131,7 @@ public final class PortalTwinChunkHold {
             if (!PortalTwinSpace.isInside(level, player.getBlockX(), player.getY())) continue;
             UUID id = player.getUUID();
             seen.add(id);
-            hold(level, player, roomRadii.getOrDefault(id, PortalTwinChunkReach.MIN_RADIUS), now);
+            hold(level, player, radiusFor(id, roomRadii.get(id)), now);
         }
         releaseUnseen(level, dim, seen);
         // Only while somebody here is held: with nobody held, every copy is under some player's own
@@ -141,6 +141,19 @@ public final class PortalTwinChunkHold {
             holdResidents(level, dims, structures, occupied);
             RESIDENT_AT.put(dim, now);
         }
+    }
+
+    /**
+     * The radius for a twin-space player: their room's, or, while they are in no room's box, the one
+     * they last held. Sticky on purpose: a player who outwalks an open room's last copy steps out of
+     * its box while still in twin space, and shrinking them to {@link PortalTwinChunkReach#MIN_RADIUS}
+     * then unloaded the very chunks the tiler needed to catch up with them, so the room drained around
+     * them instead. Only a player who has never been in a room gets the floor.
+     */
+    private static int radiusFor(UUID id, Integer roomRadius) {
+        if (roomRadius != null) return roomRadius;
+        Placed last = PLACED.get(id);
+        return last != null ? last.radius() : PortalTwinChunkReach.MIN_RADIUS;
     }
 
     private static void hold(ServerLevel level, ServerPlayer player, int radius, long now) {
