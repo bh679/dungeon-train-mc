@@ -30468,12 +30468,13 @@
         "community"
       ],
       "title": "Two Streams: a second channel",
-      "summary": "When the Two Streams reward is on, a second player can go live without taking the Eye from whoever is already streaming. Right-click any TV to step it through off, Stream 1 and Stream 2, TV rooms come up showing a mix of both, and a TV worn on your head shows both streams, one above the other.",
+      "summary": "When the Two Streams reward is on, a second player can go live without taking the Eye from whoever is already streaming. Right-click any TV to step it through off, Stream 1 and Stream 2, TV rooms come up showing a mix of both, and a TV worn on your head shows both streams, one above the other. Each stream has its own Live chat; watching both, pick Stream 1 or Stream 2 just above the chat box.",
       "highlights": [
         "Right-click a TV: off, Stream 1, Stream 2 (while a second stream is live), off",
         "A TV on Stream 2 shows Stream 1 while nobody is on the second",
         "Wearing a TV: both streams stacked (unless the box is at its largest size or your window is too short); in your inventory, click one to watch only it, click again for both. The TV remembers your pick, and TVs broken while tuned come back on that stream",
-        "Options / Dungeon Train / Stream: choose what a TV on your head shows by default"
+        "Options / Dungeon Train / Stream: choose what a TV on your head shows by default",
+        "Each stream has its own Live chat: watching both, pick Stream 1 or Stream 2 just above the chat box (Stream 1 by default)"
       ],
       "pr": 2290,
       "date": "2026-10-24",
@@ -30482,7 +30483,7 @@
       "released_at": null,
       "major": true,
       "notable": true,
-      "description": "The Two Streams reward is here. When it's on, a second player can go live without taking the Live Eye from whoever is already streaming.\n\nRight-click any TV to step it through off, Stream 1 and Stream 2. TV rooms come up showing a mix of both, and a TV worn on your head shows both streams, one above the other. Prefer just one? Click the TV in your inventory to pick, or set the default in Options / Dungeon Train / Stream.\n\n## Other significant updates\n\n- Live streams adjust their quality to the streamer's upload speed, so viewers stop seeing them drop\n- Live streams keep the streamer's real shape instead of looking stretched\n- Hold a TV and right-click to switch it on or off\n- Some of the players you meet on the train now turn up wearing a TV on their head\n- A new story for the loading screen\n- Leaving a dimensional carriage by a far exit puts you back in the right carriage\n- Bug fixes",
+      "description": "The Two Streams reward is here. When it's on, a second player can go live without taking the Live Eye from whoever is already streaming.\n\nRight-click any TV to step it through off, Stream 1 and Stream 2. TV rooms come up showing a mix of both, and a TV worn on your head shows both streams, one above the other. Prefer just one? Click the TV in your inventory to pick, or set the default in Options / Dungeon Train / Stream.\n\nEach stream has its own Live chat too. Watching both? Pick Stream 1 or Stream 2 just above the chat box.\n\n## Other significant updates\n\n- Live streams adjust their quality to the streamer's upload speed, so viewers stop seeing them drop\n- Live streams keep the streamer's real shape instead of looking stretched\n- Hold a TV and right-click to switch it on or off\n- Some of the players you meet on the train now turn up wearing a TV on their head\n- A new story for the loading screen\n- Leaving a dimensional carriage by a far exit puts you back in the right carriage\n- Bug fixes",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/two-streams.jpg"
     },
     {
