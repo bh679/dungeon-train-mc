@@ -11,10 +11,12 @@ package games.brennan.dungeontrain.portal;
  * which is this figure.</p>
  *
  * <p><b>What it covers.</b> The tiler adds copies within {@link PortalRoomTiling#MAX_RADIUS} tiles of
- * the tile the player stands in, shrunk to what the block budget allows for the room's size, and an
- * extra corridor reaches {@link PortalExitSites#tileReach} tiles past the room it opens into. Copies
- * already standing further out are held separately, chunk by chunk, so that radius does not have to
- * reach them. A room that does not tile only needs its own span.</p>
+ * the tile the player stands in, shrunk to what the block budget allows for the room's size. Copies
+ * and extra corridors already standing further out are held separately, chunk by chunk, so this
+ * radius does not have to reach them. An extra corridor whose blocks would poke past it simply waits
+ * to be laid until the player is a tile nearer (the tiler never lays into an unloaded chunk), which
+ * the fog, clamped to what has been built, already hides. A room that does not tile only needs its
+ * own span.</p>
  *
  * <p>No Minecraft types, so it unit-tests without a NeoForge bootstrap, the same convention as
  * {@link PortalTwinLanes}.</p>
@@ -57,16 +59,14 @@ public final class PortalTwinChunkReach {
      * @param roomLength     the room's X size, one tile's pitch along X
      * @param roomWidth      the room's Z size, one tile's pitch along Z
      * @param budgetTiles    copies one occupant's window may hold
-     * @param exitReachTiles how far an extra corridor reaches past its room, in tiles
      * @param spanX          the base structure's length, corridors included
      */
-    public static int reachBlocks(boolean tiles, int roomLength, int roomWidth, int budgetTiles,
-                                  int exitReachTiles, int spanX) {
+    public static int reachBlocks(boolean tiles, int roomLength, int roomWidth, int budgetTiles, int spanX) {
         int pitch = Math.max(1, Math.max(roomLength, roomWidth));
         int base = Math.max(pitch, spanX);
         if (!tiles) return base;
         // +1 tile: the player can stand at the far edge of their own tile, away from the window centre.
-        int tilesOut = windowRadius(budgetTiles) + 1 + Math.max(0, exitReachTiles);
+        int tilesOut = windowRadius(budgetTiles) + 1;
         return Math.max(base, tilesOut * pitch);
     }
 

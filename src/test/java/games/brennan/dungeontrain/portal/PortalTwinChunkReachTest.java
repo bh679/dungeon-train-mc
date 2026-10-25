@@ -30,8 +30,8 @@ class PortalTwinChunkReachTest {
     @Test
     @DisplayName("a default endless room holds well under a 12-chunk view distance")
     void defaultEndlessRoom() {
-        int reach = PortalTwinChunkReach.reachBlocks(true, 11, 13, FULL_WINDOW, 2, 30);
-        assertEquals((PortalRoomTiling.MAX_RADIUS + 1 + 2) * 13, reach);
+        int reach = PortalTwinChunkReach.reachBlocks(true, 11, 13, FULL_WINDOW, 30);
+        assertEquals((PortalRoomTiling.MAX_RADIUS + 1) * 13, reach);
         int radius = PortalTwinChunkReach.chunkRadius(reach, VIEW);
         assertTrue(radius < VIEW, "radius " + radius);
         assertTrue(radius * 16 >= reach, "must cover the reach, radius " + radius);
@@ -40,14 +40,14 @@ class PortalTwinChunkReachTest {
     @Test
     @DisplayName("a room that does not tile only needs its own span")
     void singleRoom() {
-        assertEquals(30, PortalTwinChunkReach.reachBlocks(false, 11, 13, FULL_WINDOW, 2, 30));
+        assertEquals(30, PortalTwinChunkReach.reachBlocks(false, 11, 13, FULL_WINDOW, 30));
         assertEquals(4, PortalTwinChunkReach.chunkRadius(30, VIEW));
     }
 
     @Test
     @DisplayName("never more than view distance, never less than the floor")
     void clamped() {
-        int huge = PortalTwinChunkReach.reachBlocks(true, 64, 64, FULL_WINDOW, 3, 100);
+        int huge = PortalTwinChunkReach.reachBlocks(true, 64, 64, FULL_WINDOW, 100);
         assertEquals(VIEW, PortalTwinChunkReach.chunkRadius(huge, VIEW));
         assertEquals(PortalTwinChunkReach.MIN_RADIUS, PortalTwinChunkReach.chunkRadius(0, VIEW));
         // A tiny server view distance still keeps the floor under the player.
@@ -57,7 +57,7 @@ class PortalTwinChunkReachTest {
     @Test
     @DisplayName("a big room's smaller budget shrinks the window")
     void bigRoomSmallBudget() {
-        int reach = PortalTwinChunkReach.reachBlocks(true, 64, 64, 5, 1, 90);
-        assertEquals((1 + 1 + 1) * 64, reach);
+        int reach = PortalTwinChunkReach.reachBlocks(true, 64, 64, 5, 90);
+        assertEquals((1 + 1) * 64, reach);
     }
 }

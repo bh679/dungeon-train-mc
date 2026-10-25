@@ -103,11 +103,8 @@ public final class PortalTwinChunkHold {
 
     /** The ticket radius a player in {@code structure} needs, in chunks. */
     public static int roomRadius(ServerLevel level, CarriageDims dims, PortalStructure structure) {
-        int exitReach = PortalExitSites.tileReach(
-            PortalCorridorSize.corridorLength(dims, structure.kind()), structure.roomLength(),
-            PortalCarriageBuilder.plugDepth());
         int reach = PortalTwinChunkReach.reachBlocks(structure.mode().tiles(), structure.roomLength(),
-            structure.roomWidth(), structure.tileBudget(1), exitReach, structure.spanX(dims));
+            structure.roomWidth(), structure.tileBudget(1), structure.spanX(dims));
         return PortalTwinChunkReach.chunkRadius(reach, level.getServer().getPlayerList().getViewDistance());
     }
 
