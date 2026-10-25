@@ -2182,12 +2182,12 @@ public final class PortalCarriageEvents {
                 continue;
             }
 
-            // A player who was standing goes to the destination's floor surface rather than to the
-            // carried-across local Y — the two frames' block grids differ by the ship's fractional
-            // pose, and landing a fraction inside a twin that hangs in open air drops them through it.
-            double targetY = player.onGround()
-                ? frames.floorSurfaceY(move.toFrame(), boundTwin)
-                : move.y();
+            // Never below the destination's floor surface — the two frames' block grids differ by the
+            // ship's fractional pose, and landing a fraction inside a twin that hangs in open air
+            // drops them through it. Never pulled DOWN to it either: this used to snap anyone the
+            // server thought was on the ground, and for a rider on a Sable carriage that flag is
+            // wrong often enough that a player swapped mid-jump landed on the room's floor.
+            double targetY = Math.max(move.y(), frames.floorSurfaceY(move.toFrame(), boundTwin));
 
             // Last line of defence: never put anybody where there is nothing to stand on. The
             // guards above establish that the destination corridor is not severed and its chunks
