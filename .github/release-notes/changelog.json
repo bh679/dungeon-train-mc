@@ -30472,14 +30472,18 @@
       "highlights": [
         "Right-click a TV: off, Stream 1, Stream 2 (while a second stream is live), off",
         "A TV on Stream 2 shows Stream 1 while nobody is on the second",
-        "Wearing a TV: both streams stacked (unless the box is at its largest size); in your inventory, click one to watch only it, click again for both. The TV remembers your pick, and TVs broken while tuned come back on that stream",
+        "Wearing a TV: both streams stacked (unless the box is at its largest size or your window is too short); in your inventory, click one to watch only it, click again for both. The TV remembers your pick, and TVs broken while tuned come back on that stream",
         "Options / Dungeon Train / Stream: choose what a TV on your head shows by default"
       ],
       "pr": 2290,
       "date": "2026-10-24",
       "released": false,
       "released_in": null,
-      "released_at": null
+      "released_at": null,
+      "major": true,
+      "notable": true,
+      "description": "The Two Streams reward is here. When it's on, a second player can go live without taking the Live Eye from whoever is already streaming.\n\nRight-click any TV to step it through off, Stream 1 and Stream 2. TV rooms come up showing a mix of both, and a TV worn on your head shows both streams, one above the other. Prefer just one? Click the TV in your inventory to pick, or set the default in Options / Dungeon Train / Stream.\n\n## Other significant updates\n\n- Live streams adjust their quality to the streamer's upload speed, so viewers stop seeing them drop\n- Live streams keep the streamer's real shape instead of looking stretched\n- Hold a TV and right-click to switch it on or off\n- Some of the players you meet on the train now turn up wearing a TV on their head\n- A new story for the loading screen\n- Leaving a dimensional carriage by a far exit puts you back in the right carriage\n- Bug fixes",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/two-streams.jpg"
     },
     {
       "id": "echoes-update-modpack",
@@ -30606,8 +30610,177 @@
       "released_at": null
     },
     {
-      "id": "dh-sky-fix",
+      "id": "held-tv-right-click",
       "version": "0.1516.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Right-click to switch on a TV in your hand",
+      "summary": "Hold a TV and right-click the air to switch it on or off, the same click that works on a placed TV. Left-click is a normal swing again.",
+      "highlights": [],
+      "pr": 2312,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-stream-real-shape",
+      "version": "0.1517.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui"
+      ],
+      "title": "Live streams keep their real shape",
+      "summary": "Streams no longer look stretched when the streamer plays in a window that isn't widescreen. The picture now keeps the streamer's own shape everywhere it is shown.",
+      "highlights": [
+        "TVs fill their screen and trim the edges instead of stretching the picture",
+        "The pinned live feed resizes to fit the stream, so you see all of it",
+        "New setting: separate pinned feed sizes for watching and for streaming"
+      ],
+      "pr": 2314,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "minimap-fix",
+      "version": "0.1518.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Minimap fix",
+      "summary": "Minimap fix.",
+      "highlights": [],
+      "pr": 2315,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "echoes-calmer-around-traders",
+      "version": "0.1520.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Echoes are calmer around traders",
+      "summary": "Echoes no longer pick fights with piglin traders. Only the most aggressive echoes will still attack one, and the most timid just keep a wary eye on it instead of running away. A trader that attacks first still gets a fight.",
+      "highlights": [],
+      "pr": 2311,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "backpacks-narrative-tab",
+      "version": "0.1521.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "loot"
+      ],
+      "title": "Backpacks in the editor",
+      "summary": "The Edible Backpack and Golden Edible Backpack now sit in the editor's Narrative tab, so builders can place them straight into carriages.",
+      "highlights": [],
+      "pr": 2318,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-ban-message-fix",
+      "version": "0.1521.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Live Eye ban messages fixed",
+      "summary": "When a Live Eye burns away because you are banned from wearing one, the message now shows how long the ban really lasts and the lines that caused it. /liveappeal now finds your ban instead of saying you are not banned.",
+      "highlights": [],
+      "pr": 2319,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "trial-vault-carriages",
+      "version": "0.1523.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train",
+        "loot"
+      ],
+      "title": "Trial vault carriages",
+      "summary": "Vaults now turn up on the train. Bring a trial key to claim your own reward from each one, and every player gets their own. Ominous vaults take an ominous trial key and hold richer loot.",
+      "highlights": [
+        "New trial vault carriages",
+        "Every player gets their own reward from each vault",
+        "Builders can choose a vault's loot and the key that opens it"
+      ],
+      "pr": 2320,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-chat-moderation-tiers",
+      "version": "0.1525.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Fairer chat moderation",
+      "summary": "Chat moderation now steps up gradually. Blocked words earn warnings first, then short chat mutes, and only repeated offences reach longer penalties. A penalty has to run out before the next one can be earned, so a burst of messages no longer jumps straight to the harshest outcome. Mutes can be appealed with /liveappeal, just like bans.",
+      "highlights": [
+        "First offences mute chat for a short time instead of removing streaming",
+        "Penalties no longer stack up while one is already running",
+        "Mutes can be appealed with /liveappeal"
+      ],
+      "pr": 2322,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-crossing-fix",
+      "version": "0.1526.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage fix",
+      "summary": "Dimensional carriages now only take you in once you are actually inside one. Stepping between the train and the room no longer drops you to the floor or sends you back along the train.",
+      "highlights": [],
+      "pr": 2323,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dh-sky-fix",
+      "version": "0.1527.0",
       "type": "fix",
       "tags": [
         "fix"

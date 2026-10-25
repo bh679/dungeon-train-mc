@@ -27,6 +27,21 @@ public final class LiveChatCensorEvents {
 
     private LiveChatCensorEvents() {}
 
+    /**
+     * A player the relay has muted for their words says nothing: the line is cancelled before anything
+     * else sees it (HIGHEST, so the Discord Presence mirror never relays it), live or not.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onMutedChat(ServerChatEvent event) {
+        try {
+            if (!LiveModeration.isMuted(event.getPlayer().getUUID())) return;
+            event.setCanceled(true);
+            LiveModeration.remindMuted(event.getPlayer());
+        } catch (Throwable t) {
+            // Fail open: a fault here must never eat a chat line.
+        }
+    }
+
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onServerChat(ServerChatEvent event) {
         try {

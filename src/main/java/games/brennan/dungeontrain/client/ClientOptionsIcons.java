@@ -98,6 +98,7 @@ final class ClientOptionsIcons {
             case STREAM_SIZE -> Icon.item(Items.MAP);
             case STREAM_SAVE_BANDWIDTH -> Icon.item(Items.PISTON);
             case HEAD_VIEWER_SIZE -> Icon.item(Items.GLASS);
+            case HEAD_VIEWER_SIZE_STREAMING -> Icon.item(Items.TINTED_GLASS);
 
             case SCALE_ALL -> ACCESSIBILITY;
             case SCALE_WORLDSPACE -> Icon.item(Items.FILLED_MAP);
