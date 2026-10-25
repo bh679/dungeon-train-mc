@@ -65,4 +65,13 @@ final class LiveStreamersTest {
             LiveStreamers.clearIf(SERVER, b);
         }
     }
+
+    @Test
+    @DisplayName("both started = the second-earliest start; 0 with fewer than two")
+    void secondEarliestStart() {
+        assertEquals(0L, LiveStreamers.secondEarliest(java.util.List.of()));
+        assertEquals(0L, LiveStreamers.secondEarliest(java.util.List.of(5L)));
+        assertEquals(9L, LiveStreamers.secondEarliest(java.util.List.of(9L, 3L)));
+        assertEquals(7L, LiveStreamers.secondEarliest(java.util.List.of(12L, 3L, 7L)));
+    }
 }
