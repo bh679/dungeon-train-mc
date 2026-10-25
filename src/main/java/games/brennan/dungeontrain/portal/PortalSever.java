@@ -12,16 +12,16 @@ import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
 /**
- * Breaking a hole in a portal corridor's side wall kills the way in.
+ * Breaking a hole in a portal corridor's side wall, roof or floor kills the way in.
  *
  * <p><b>What the hole actually does.</b> The illusion rests on the two corridors being identical and
  * sealed — inside one there is no external reference that could contradict the claim that you are in
- * the other. A hole in a side wall is exactly such a reference: it shows open sky beside a moving
- * carriage on the train side, and the pocket room on the twin side. {@link PortalEditMirror} copies
+ * the other. A hole in a side wall, the roof or the floor is exactly such a reference: it shows open
+ * sky or track around a moving carriage on the train side, and the pocket room on the twin side. {@link PortalEditMirror} copies
  * the break faithfully to both copies, which is what puts the contradiction in front of the player
- * rather than hiding it. So the portal stops pretending. Any side-wall block counts, in either half
- * of the corridor, broken from either copy: from the train, or from the room by somebody standing
- * outside the twin corridor.</p>
+ * rather than hiding it. So the portal stops pretending. Any side-wall, roof or floor block counts,
+ * in either half of the corridor, broken from either copy: from the train, or from the room by
+ * somebody standing outside the twin corridor.</p>
  *
  * <p><b>Both ends of the pair, one direction each.</b> A hole in either corridor closes entry
  * through <i>both</i> — a portal is a pair sharing one room, and it is the pair that is broken.
@@ -62,17 +62,19 @@ public final class PortalSever {
      * <p>Split out from {@link #onCarriageBlockChanged} with no Minecraft level in sight so the rule
      * itself can be unit-tested — the geometry is where the subtlety is, not the plumbing.</p>
      *
-     * <p>Side walls only, along the whole corridor. The floor, the ceiling and the end planes are
-     * left alone: Brennan's rule is that the wall a player can bridge along or mine into from beside
-     * the train is the one that breaks the portal.</p>
+     * <p>Side walls, roof and floor, along the whole corridor. The floor includes the crossing
+     * lanterns: between the baffles they ARE the floor, so a hole through one is a hole to the
+     * outside like any other. The end planes, the baffles and the doorways are left alone — breaking
+     * one of those opens nothing to the outside.</p>
      *
      * @param local the corridor-local cell, as {@code PortalPairIndex.Entry.localOfPlot} or
      *              {@code localOfTwin} returns it
      */
     public static boolean isSeveringBreak(PortalCarriageLayout layout, int[] local, boolean becameAir) {
         if (!becameAir) return false;
-        int dz = local[2];
-        return dz < layout.interiorMinZ() || dz > layout.interiorMaxZ();
+        int dy = local[1], dz = local[2];
+        return dz < layout.interiorMinZ() || dz > layout.interiorMaxZ()
+            || dy == layout.floorY() || dy == layout.ceilingY();
     }
 
     /**
@@ -134,7 +136,7 @@ public final class PortalSever {
         openCentreWall(level, entry);
 
         LOGGER.info("[DungeonTrain] Portal connection severed: pair {} (broken at carriage {}, {}, "
-                + "{} side), side wall broken at local ({},{},{}) — world {}, twin {}. "
+                + "{} side), shell broken at local ({},{},{}) — world {}, twin {}. "
                 + "Both ends are closed to entry; both ways out stay open. Repaired when the "
                 + "rolling window re-stamps the group.",
             pairKey, broken, frames.role(), side, local[0], local[1], local[2], carriagePos, twinPos);

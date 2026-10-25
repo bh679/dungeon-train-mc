@@ -35,14 +35,27 @@ final class PortalSeverTest {
     }
 
     @Test
-    @DisplayName("floor, ceiling and end planes do not sever — only the side walls do")
-    void onlySideWallsSever() {
-        int farHalf = (int) Math.ceil(ENTRY_LAYOUT.midX()) + 2;
-        assertFalse(severs(farHalf, ENTRY_LAYOUT.ceilingY(), 3), "ceiling");
-        int beyondCrossing = ENTRY_LAYOUT.farBaffleX() + 1;
-        assertFalse(severs(beyondCrossing, ENTRY_LAYOUT.floorY(), 1), "floor");
+    @DisplayName("a hole in the roof or the floor severs too, in either half")
+    void roofAndFloorSever() {
+        int nearHalf = (int) ENTRY_LAYOUT.midX() - 2;
+        int farHalf = ENTRY_LAYOUT.farBaffleX() + 1;
+        for (int dx : new int[] {nearHalf, farHalf}) {
+            assertTrue(severs(dx, ENTRY_LAYOUT.ceilingY(), 3), "roof, x=" + dx);
+            assertTrue(severs(dx, ENTRY_LAYOUT.floorY(), 3), "floor, x=" + dx);
+        }
+        // Between the baffles the floor is crossing lanterns — still the floor.
+        int crossing = (int) Math.ceil(ENTRY_LAYOUT.midX());
+        assertTrue(ENTRY_LAYOUT.isCrossingZone(crossing), "test picked a crossing-zone X");
+        assertTrue(severs(crossing, ENTRY_LAYOUT.floorY(), ENTRY_LAYOUT.doorZ()), "crossing lantern floor");
+    }
+
+    @Test
+    @DisplayName("the end planes do not sever")
+    void endPlanesDoNotSever() {
         assertFalse(severs(ENTRY_LAYOUT.farDoorX(), ENTRY_LAYOUT.floorY() + 1, ENTRY_LAYOUT.doorZ() + 1),
-            "end plane beside the doorway");
+            "far end plane beside the doorway");
+        assertFalse(severs(ENTRY_LAYOUT.nearDoorX(), ENTRY_LAYOUT.floorY() + 2, ENTRY_LAYOUT.doorZ() - 1),
+            "near end plane beside the doorway");
     }
 
     @Test
@@ -53,11 +66,9 @@ final class PortalSeverTest {
     }
 
     @Test
-    @DisplayName("interior fittings are not the side wall: baffles, lanterns and doorways are harmless")
+    @DisplayName("interior fittings are not the shell: baffles and doorways are harmless")
     void interiorFittingsAreExempt() {
         assertFalse(severs(ENTRY_LAYOUT.farBaffleX(), 3, ENTRY_LAYOUT.baffleZ()), "baffle");
-        int crossing = (int) Math.ceil(ENTRY_LAYOUT.midX());
-        assertFalse(severs(crossing, ENTRY_LAYOUT.floorY(), ENTRY_LAYOUT.doorZ()), "crossing lantern");
         assertFalse(severs(ENTRY_LAYOUT.farDoorX(), ENTRY_LAYOUT.floorY() + 1, ENTRY_LAYOUT.doorZ()),
             "doorway");
     }
