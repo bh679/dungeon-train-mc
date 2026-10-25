@@ -323,6 +323,14 @@ public final class LiveFeedEvents {
         if (!endStream(player, exit)) burn(player, exit);
     }
 
+    /**
+     * Ends {@code player}'s stream for moderation if they are on air (the Live Eye burns as on a
+     * removal); does nothing to a player who is not streaming. A chat mute that also takes them off air.
+     */
+    public static void endStreamForModeration(ServerPlayer player) {
+        endStream(player, Exit.MODERATED);
+    }
+
     /** Ends {@code player}'s stream if they hold it: clear the streamer first so the slot change we cause is ignored. True when they did. */
     private static boolean endStream(ServerPlayer player, Exit exit) {
         return endStream(player, exit, true);

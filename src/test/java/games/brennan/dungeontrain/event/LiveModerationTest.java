@@ -41,7 +41,7 @@ final class LiveModerationTest {
     @DisplayName("the relay's answer to an appeal maps to one chat line each")
     void appealLines() {
         assertEquals("command.dungeontrain.live_appeal.received", LiveModeration.appealLineKey(200, "{\"ok\":true}"));
-        assertEquals("command.dungeontrain.live_appeal.not_banned", LiveModeration.appealLineKey(409, "{\"error\":\"not_banned\"}"));
+        assertEquals("command.dungeontrain.live_appeal.not_penalised", LiveModeration.appealLineKey(409, "{\"error\":\"not_banned\"}"));
         assertEquals("command.dungeontrain.live_appeal.pending", LiveModeration.appealLineKey(409, "{\"error\":\"appeal_pending\"}"));
         assertEquals("command.dungeontrain.live_appeal.denied", LiveModeration.appealLineKey(409, "{\"error\":\"appeal_denied\"}"));
         assertEquals("command.dungeontrain.live_appeal.failed", LiveModeration.appealLineKey(500, "nope"));
@@ -70,5 +70,27 @@ final class LiveModerationTest {
         // A clean cache is what the relay-refused path sees before its status fetch lands.
         assertEquals("chat.dungeontrain.live.burns_banned_unknown",
             LiveModeration.bannedBurnKey(LiveModeration.banRemainingSec(UUID.randomUUID())));
+    }
+
+    @Test
+    @DisplayName("a mute stops chat but not the Live Eye; either one is something to appeal")
+    void muteIsPenaltyButNotBan() {
+        UUID p = UUID.randomUUID();
+        LiveModerationLadder.Verdict v = LiveModerationLadder.parse(
+            "{\"ok\":true,\"strikes\":0,\"action\":\"mute\",\"muted\":true,\"muteRemainingSec\":900}");
+        LiveModeration.apply(p, v, System.currentTimeMillis());
+        assertTrue(LiveModeration.isMuted(p));
+        assertFalse(LiveModeration.isBanned(p));
+        assertTrue(LiveModeration.isPenalised(p));
+        assertTrue(LiveModeration.muteRemainingSec(p) <= 900);
+        assertFalse(LiveModeration.isPenalised(UUID.randomUUID()));
+    }
+
+    @Test
+    @DisplayName("Free Play reports no strikes, except on a dev build")
+    void freePlaySkipsStrikes() {
+        assertTrue(LiveModeration.skipsStrikes(false, true));
+        assertFalse(LiveModeration.skipsStrikes(false, false));
+        assertFalse(LiveModeration.skipsStrikes(true, true));
     }
 }

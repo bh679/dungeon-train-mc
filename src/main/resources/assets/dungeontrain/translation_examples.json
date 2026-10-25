@@ -1080,6 +1080,24 @@
       ]
     }
   },
+  "chat.dungeontrain.live.muted": {
+    "1": {
+      "label": "how long the chat mute still has to run",
+      "examples": [
+        "15 minutes",
+        "1 day"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.muted_reminder": {
+    "1": {
+      "label": "how long the chat mute still has to run",
+      "examples": [
+        "15 minutes",
+        "1 day"
+      ]
+    }
+  },
   "command.dungeontrain.live_appeal.no_such_line": {
     "1": {
       "label": "how many lines there are to pick from",
