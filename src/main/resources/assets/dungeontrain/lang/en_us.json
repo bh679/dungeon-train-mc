@@ -936,6 +936,8 @@
   "chat.dungeontrain.familiar_photo.tributed.1": "Your own photo, come back around. %s paid Tribute to it.",
   "chat.dungeontrain.familiar_photo.tributed.2": "A familiar photo. %s paid to keep it travelling.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s paid Tribute to this one. You took it.",
+  "jade.dungeontrain.photo_frame.photographer": "Photo by %s",
+  "config.jade.plugin_dungeontrain.photo_frame_photographer": "Photo Frame Photographer",
   "item.dungeontrain.shared_photo.by": "Photo by %s",
   "item.dungeontrain.random_playerphoto": "Random Player Photo",
   "item.dungeontrain.found_photograph": "Photograph",

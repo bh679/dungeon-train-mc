@@ -838,6 +838,8 @@
   "chat.dungeontrain.familiar_photo.tributed.1": "Fotomu sendiri, kembali berputar. %s memberinya Persembahan.",
   "chat.dungeontrain.familiar_photo.tributed.2": "Sebuah foto yang familiar. %s membayar agar ia terus berkelana.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s memberi Persembahan untuk yang satu ini. Kau yang mengambilnya.",
+  "jade.dungeontrain.photo_frame.photographer": "Foto oleh %s",
+  "config.jade.plugin_dungeontrain.photo_frame_photographer": "Fotografer Bingkai Foto",
   "item.dungeontrain.shared_photo.by": "Foto karya %s",
   "item.dungeontrain.random_playerphoto": "Foto Pemain Acak",
   "item.dungeontrain.found_photograph": "Foto",

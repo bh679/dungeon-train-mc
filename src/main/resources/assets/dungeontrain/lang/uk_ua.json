@@ -969,6 +969,8 @@
   "chat.dungeontrain.familiar_photo.tributed.1": "Твоє власне фото повернулося по колу. %s сплатили за нього данину.",
   "chat.dungeontrain.familiar_photo.tributed.2": "Знайоме фото. %s заплатили, щоб воно їхало далі.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s сплатили данину за цей знімок. Його зробив ти.",
+  "jade.dungeontrain.photo_frame.photographer": "Знімок: %s",
+  "config.jade.plugin_dungeontrain.photo_frame_photographer": "Автор фото в рамці",
   "item.dungeontrain.shared_photo.by": "Фото: %s",
   "item.dungeontrain.random_playerphoto": "Випадкове фото гравця",
   "item.dungeontrain.found_photograph": "Фотографія",
