@@ -909,6 +909,8 @@
   "chat.dungeontrain.familiar_photo.tributed.1": "Ваше собственное фото вернулось к вам. Подношение за него: %s.",
   "chat.dungeontrain.familiar_photo.tributed.2": "Знакомое фото. Чтобы оно продолжило путь, заплачено: %s.",
   "chat.dungeontrain.familiar_photo.tributed.3": "Подношение за этот снимок: %s. Его сделали вы.",
+  "jade.dungeontrain.photo_frame.photographer": "Снимок: %s",
+  "config.jade.plugin_dungeontrain.photo_frame_photographer": "Автор фото в рамке",
   "item.dungeontrain.shared_photo.by": "Фото игрока %s",
   "item.dungeontrain.random_playerphoto": "Фото случайного игрока",
   "item.dungeontrain.found_photograph": "Фотография",

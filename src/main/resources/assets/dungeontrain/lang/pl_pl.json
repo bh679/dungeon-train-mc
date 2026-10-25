@@ -904,6 +904,8 @@
   "chat.dungeontrain.familiar_photo.tributed.1": "Twoje własne zdjęcie, które zatoczyło koło. %s złożył za nie daninę.",
   "chat.dungeontrain.familiar_photo.tributed.2": "Znajome zdjęcie. %s zapłacił, by podróżowało dalej.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s złożył daninę za to zdjęcie. To ty je zrobiłeś.",
+  "jade.dungeontrain.photo_frame.photographer": "Zdjęcie: %s",
+  "config.jade.plugin_dungeontrain.photo_frame_photographer": "Autor zdjęcia w ramce",
   "item.dungeontrain.shared_photo.by": "Zdjęcie gracza %s",
   "item.dungeontrain.random_playerphoto": "Losowe zdjęcie gracza",
   "item.dungeontrain.found_photograph": "Zdjęcie",

@@ -871,6 +871,8 @@
   "chat.dungeontrain.familiar_photo.tributed.1": "A tua própria foto, de volta a ti. %s pagou tributo por ela.",
   "chat.dungeontrain.familiar_photo.tributed.2": "Uma foto familiar. %s pagou para a manter em viagem.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s pagou tributo por esta. Foste tu que a tiraste.",
+  "jade.dungeontrain.photo_frame.photographer": "Fotografia de %s",
+  "config.jade.plugin_dungeontrain.photo_frame_photographer": "Fotógrafo da moldura",
   "item.dungeontrain.shared_photo.by": "Foto de %s",
   "item.dungeontrain.random_playerphoto": "Foto de jogador aleatória",
   "item.dungeontrain.found_photograph": "Fotografia",

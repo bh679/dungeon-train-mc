@@ -30888,6 +30888,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "jade-photo-frame-photographer",
+      "version": "0.1534.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "ui"
+      ],
+      "title": "See who took a framed photo",
+      "summary": "Look at a framed photo with Jade and it now tells you who took it.",
+      "highlights": [],
+      "pr": 2335,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

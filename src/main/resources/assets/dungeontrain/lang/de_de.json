@@ -871,6 +871,8 @@
   "chat.dungeontrain.familiar_photo.tributed.1": "Dein eigenes Foto, wieder zu dir zurückgekehrt. %s hat ihm Tribut gezollt.",
   "chat.dungeontrain.familiar_photo.tributed.2": "Ein vertrautes Foto. %s hat bezahlt, damit es weiterreist.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s hat diesem hier Tribut gezollt. Du hast es aufgenommen.",
+  "jade.dungeontrain.photo_frame.photographer": "Foto von %s",
+  "config.jade.plugin_dungeontrain.photo_frame_photographer": "Fotograf des Bilderrahmens",
   "item.dungeontrain.shared_photo.by": "Foto von %s",
   "item.dungeontrain.random_playerphoto": "Zufälliges Spielerfoto",
   "item.dungeontrain.found_photograph": "Fotografie",

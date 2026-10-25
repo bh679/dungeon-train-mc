@@ -838,6 +838,8 @@
   "chat.dungeontrain.familiar_photo.tributed.1": "네 사진이 돌고 돌아 다시 왔다. %s 님이 공물을 바쳤다.",
   "chat.dungeontrain.familiar_photo.tributed.2": "낯익은 사진이다. %s 님이 값을 치러 여행을 잇게 했다.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s 님이 이 한 장에 공물을 바쳤다. 네가 찍은 것이다.",
+  "jade.dungeontrain.photo_frame.photographer": "촬영: %s",
+  "config.jade.plugin_dungeontrain.photo_frame_photographer": "사진 액자 촬영자",
   "item.dungeontrain.shared_photo.by": "%s 님의 사진",
   "item.dungeontrain.random_playerphoto": "무작위 플레이어 사진",
   "item.dungeontrain.found_photograph": "사진",
