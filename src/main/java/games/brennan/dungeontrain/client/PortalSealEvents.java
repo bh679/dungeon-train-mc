@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.portal.MapSealFilter;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -9,7 +10,8 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 
 /**
- * Keeps {@link ClientPortalSeal} current, and drops it on the way out.
+ * Keeps {@link ClientPortalSeal} (and the minimap's {@link MapSealFilter}) current, and drops them on
+ * the way out.
  *
  * <p>{@link ViewportEvent.ComputeCameraAngles} is where the cut is decided because of <i>when</i> it
  * fires: {@code GameRenderer} raises it the moment the camera is set up and before
@@ -28,6 +30,7 @@ public final class PortalSealEvents {
     public static void onComputeCameraAngles(ViewportEvent.ComputeCameraAngles event) {
         Vec3 camera = event.getCamera().getPosition();
         ClientPortalSeal.beginFrame(camera.x, camera.y, camera.z);
+        MapSealFilter.beginFrame(camera.x, camera.y, camera.z);
     }
 
     @SubscribeEvent
@@ -36,5 +39,6 @@ public final class PortalSealEvents {
         // cut afresh anyway, but a stale one is exactly the kind of cache that strands a client
         // looking at nothing, and the sibling portal caches are all cleared here for the same reason.
         ClientPortalSeal.reset();
+        MapSealFilter.reset();
     }
 }

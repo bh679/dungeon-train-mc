@@ -654,6 +654,16 @@ dependencies {
     // loads it (annotation scan), so it is never linked without JEI installed.
     compileOnly "maven.modrinth:jei:${jei_version}"
 
+    // JourneyMap — COMPILE ONLY (dev run opt-in below) and never shipped (All Rights Reserved).
+    // Players add it themselves; only the @Pseudo mixins in dungeontrain.journeymap.mixins.json name
+    // it, and JourneyMapMixinPlugin applies them only when it is installed.
+    compileOnly "maven.modrinth:journeymap:${journeymap_version}"
+    // `-PjourneyMap` puts it (and its required Common Networking) in runClient for testing that filter.
+    if (project.hasProperty('journeyMap')) {
+        localRuntime "maven.modrinth:journeymap:${journeymap_version}"
+        localRuntime "maven.modrinth:common-network:${journeymap_common_networking_version}"
+    }
+
     // Fast Paintings + Moonlight — REQUIRED third-party deps (see gradle.properties). Not bundled:
     // the launchers install them from the (required) relations like Sable and the siblings. On the
     // dev classpath so runClient/runServer stamp block paintings; DT references the block only by

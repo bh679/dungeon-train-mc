@@ -114,4 +114,16 @@ final class HeadViewerPanesTest {
         HeadViewerPanes.wearing(1, Enum.valueOf(cfg, "BOTH"));
         assertEquals(MAIN_ONLY, HeadViewerPanes.choice(), "a different TV put on follows its memory");
     }
+
+    @Test
+    void eachPaneIsAsTallAsItsOwnStream() {
+        // A 4:3 first stream and a 16:9 second, both 160 wide: 120 and 90 tall.
+        List<HeadViewerPanes.Pane> both = HeadViewerPanes.panes(480, 160, true, BOTH, 4f / 3f, 16f / 9f);
+        assertEquals(120, both.get(0).box().h());
+        assertEquals(90, both.get(1).box().h());
+        assertEquals(both.get(0).box().y() + 120 + 2 * LiveHeadViewer.BORDER + HeadViewerPanes.GAP, both.get(1).box().y(),
+            "the second sits under the taller first");
+        List<HeadViewerPanes.Pane> solo = HeadViewerPanes.panes(480, 160, true, SECOND_ONLY, 4f / 3f, 16f / 9f);
+        assertEquals(90, solo.get(0).box().h(), "a soloed second takes its own shape in the first spot");
+    }
 }
