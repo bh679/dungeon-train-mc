@@ -69,9 +69,9 @@ class PerkTreeTest {
     void costs() {
         PerkTree t = tree();
         assertEquals(1, t.perk("health").orElseThrow().unlockCost());
-        assertEquals(5, t.perk("armour").orElseThrow().unlockCost());
-        assertEquals(10, t.perk("totem").orElseThrow().unlockCost());
-        assertEquals(16, t.unlockCostOf(Set.of("health", "armour", "totem", "not-a-perk")));
+        assertEquals(2, t.perk("armour").orElseThrow().unlockCost());
+        assertEquals(3, t.perk("totem").orElseThrow().unlockCost());
+        assertEquals(6, t.unlockCostOf(Set.of("health", "armour", "totem", "not-a-perk")));
     }
 
     @Test

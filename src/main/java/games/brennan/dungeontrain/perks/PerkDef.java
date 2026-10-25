@@ -19,7 +19,7 @@ public record PerkDef(String id, PerkClass perkClass, int tier, int maxRank) {
     public static final int MAX_TIER = 3;
 
     private static final Pattern KEBAB = Pattern.compile("[a-z0-9]+(-[a-z0-9]+)*");
-    private static final int[] UNLOCK_COST = {0, 1, 5, 10};
+    private static final int[] UNLOCK_COST = {0, 1, 2, 3};
 
     public PerkDef {
         if (id == null || !KEBAB.matcher(id).matches()) {
@@ -35,7 +35,7 @@ public record PerkDef(String id, PerkClass perkClass, int tier, int maxRank) {
         this(id, perkClass, tier, DEFAULT_MAX_RANK);
     }
 
-    /** Unlock points a perk of this tier costs: 1 / 5 / 10. */
+    /** Unlock points a perk of this tier costs: 1 / 2 / 3. */
     public int unlockCost() {
         return unlockCostFor(tier);
     }

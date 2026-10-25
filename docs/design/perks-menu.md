@@ -39,7 +39,7 @@ below are lifted straight from `perks.js` and should be constants in the Screen,
 
 Class colours (editor seed, the published tree carries its own): Archivist `#c9a7e0`, Lover `#f08aa8`,
 Warlock (TBD in editor), Knight `#d9534f`, Tank `#e8956a`, Crafter `#c7b08a`, Speedster `#7fb4f0`,
-Builder `#b0b8c8`, Hoarder `#8fc97a`, Trader `#e0c070`. Costs by tier: 1, 5, 10 unlock points.
+Builder `#b0b8c8`, Hoarder `#8fc97a`, Trader `#e0c070`. Costs by tier: 1, 2, 3 unlock points.
 
 ---
 

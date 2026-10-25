@@ -5,7 +5,7 @@ Two currencies feed the perks tree.
 | | Unlock points | Active points |
 |---|---|---|
 | Earned from | advancements | eating cosmic apples |
-| Spent on | unlocking a perk (tier 1/2/3 cost 1/5/10) | ranks on unlocked perks |
+| Spent on | unlocking a perk (tier 1/2/3 cost 1/2/3) | ranks on unlocked perks |
 | On death | kept | lost, with every rank they bought |
 | Unspent | kept forever | lost on death |
 
