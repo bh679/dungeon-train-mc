@@ -3731,6 +3731,7 @@
   "gui.dungeontrain.editor_menu.container.title": "컨테이너 내용물",
   "gui.dungeontrain.editor_menu.container.title_at": "컨테이너 내용물 @ %s",
   "gui.dungeontrain.editor_menu.container.linked": "연결됨: %s",
+  "gui.dungeontrain.editor_menu.container.vault_key": "열쇠: %s",
   "gui.dungeontrain.editor_menu.container.add_title": "아이템 추가",
   "gui.dungeontrain.editor_menu.container.slot_in": "입력",
   "gui.dungeontrain.editor_menu.container.slot_fuel": "연료",

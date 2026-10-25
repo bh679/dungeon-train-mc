@@ -3787,6 +3787,7 @@
   "gui.dungeontrain.editor_menu.container.title": "Contenu du conteneur",
   "gui.dungeontrain.editor_menu.container.title_at": "Contenu du conteneur @ %s",
   "gui.dungeontrain.editor_menu.container.linked": "Lié : %s",
+  "gui.dungeontrain.editor_menu.container.vault_key": "Clé : %s",
   "gui.dungeontrain.editor_menu.container.add_title": "Ajouter un objet",
   "gui.dungeontrain.editor_menu.container.slot_in": "entrée",
   "gui.dungeontrain.editor_menu.container.slot_fuel": "carburant",

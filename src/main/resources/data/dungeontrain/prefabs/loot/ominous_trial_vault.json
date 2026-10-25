@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 4,
+  "block": "minecraft:vault",
+  "category": "loot",
+  "fillMin": 2,
+  "fillMax": 4,
+  "vaultKey": "minecraft:ominous_trial_key",
+  "entries": [
+    { "id": "minecraft:emerald", "count": 10, "weight": 10, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
+    { "id": "minecraft:wind_charge", "count": 12, "weight": 8, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
+    { "id": "minecraft:tipped_arrow", "count": 12, "weight": 6, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
+    { "id": "minecraft:diamond", "count": 3, "weight": 4, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
+    { "id": "minecraft:ominous_bottle", "count": 1, "weight": 2, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
+    { "id": "minecraft:emerald_block", "count": 1, "weight": 5, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
+    { "id": "minecraft:iron_block", "count": 1, "weight": 4, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
+    { "id": "minecraft:crossbow", "count": 1, "weight": 4, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 100 },
+    { "id": "minecraft:golden_apple", "count": 1, "weight": 3, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
+    { "id": "minecraft:diamond_axe", "count": 1, "weight": 3, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 100 },
+    { "id": "minecraft:diamond_chestplate", "count": 1, "weight": 3, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 100 },
+    { "id": "minecraft:book", "count": 1, "weight": 6, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 100 },
+    { "id": "minecraft:diamond_block", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
+    { "id": "minecraft:enchanted_golden_apple", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
+    { "id": "minecraft:flow_armor_trim_smithing_template", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
+    { "id": "minecraft:flow_banner_pattern", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
+    { "id": "minecraft:music_disc_creator", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
+    { "id": "minecraft:heavy_core", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 }
+  ]
+}

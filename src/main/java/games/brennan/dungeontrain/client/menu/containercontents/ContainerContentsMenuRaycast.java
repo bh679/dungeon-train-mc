@@ -86,7 +86,7 @@ public final class ContainerContentsMenuRaycast {
         ContainerContentsMenuRenderer.EntryLayout layout = ContainerContentsMenuRenderer.computeLayout(entries, colCount);
         double panelW = layout.panelWidth();
         double gridH = layout.gridHeight();
-        double linkH = ContainerContentsMenuRenderer.hasLinkRow() ? ContainerContentsMenuRenderer.LINK_ROW_HEIGHT : 0.0;
+        double linkH = ContainerContentsMenuRenderer.topRowsHeight();
         double panelH = ContainerContentsMenuRenderer.HEADER_HEIGHT + linkH + ContainerContentsMenuRenderer.TOOLBAR_HEIGHT + gridH;
         double halfW = panelW / 2.0;
         double halfH = panelH / 2.0;
@@ -102,12 +102,18 @@ public final class ContainerContentsMenuRaycast {
         if (hitY > headerBottom) return ContainerContentsMenu.Hit.NONE;
 
         // Link sub-row (only when linked) — main strip = LINK_INDICATOR, right cell = LINK_UNLINK.
-        if (linkH > 0 && hitY > linkBottom) {
+        double linkRowBottom = headerBottom
+            - (ContainerContentsMenuRenderer.hasLinkRow() ? ContainerContentsMenuRenderer.LINK_ROW_HEIGHT : 0.0);
+        if (ContainerContentsMenuRenderer.hasLinkRow() && hitY > linkRowBottom) {
             double unlinkL = halfW - ContainerContentsMenuRenderer.LINK_UNLINK_WIDTH;
             if (hitX >= unlinkL) {
                 return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.LINK_UNLINK, -1);
             }
             return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.LINK_INDICATOR, -1);
+        }
+        // Vault Key row (only on a vault), below the link row.
+        if (ContainerContentsMenuRenderer.hasVaultKeyRow() && hitY > linkBottom) {
+            return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.VAULT_KEY, -1);
         }
 
         // Toolbar — 6 cells: Add | Save | FillMin | FillMax | Clear | X

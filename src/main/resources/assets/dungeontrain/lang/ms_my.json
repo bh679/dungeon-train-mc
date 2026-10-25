@@ -3731,6 +3731,7 @@
   "gui.dungeontrain.editor_menu.container.title": "Kandungan Bekas",
   "gui.dungeontrain.editor_menu.container.title_at": "Kandungan Bekas @ %s",
   "gui.dungeontrain.editor_menu.container.linked": "Dipautkan: %s",
+  "gui.dungeontrain.editor_menu.container.vault_key": "Kunci: %s",
   "gui.dungeontrain.editor_menu.container.add_title": "Tambah Item",
   "gui.dungeontrain.editor_menu.container.slot_in": "masuk",
   "gui.dungeontrain.editor_menu.container.slot_fuel": "bahan api",

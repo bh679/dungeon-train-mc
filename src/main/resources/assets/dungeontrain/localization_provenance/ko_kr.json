@@ -3734,6 +3734,7 @@
       "gui.dungeontrain.editor_menu.container.title",
       "gui.dungeontrain.editor_menu.container.title_at",
       "gui.dungeontrain.editor_menu.container.linked",
+      "gui.dungeontrain.editor_menu.container.vault_key",
       "gui.dungeontrain.editor_menu.container.add_title",
       "gui.dungeontrain.editor_menu.container.slot_in",
       "gui.dungeontrain.editor_menu.container.slot_fuel",

@@ -3731,6 +3731,7 @@
   "gui.dungeontrain.editor_menu.container.title": "Isi Wadah",
   "gui.dungeontrain.editor_menu.container.title_at": "Isi Wadah @ %s",
   "gui.dungeontrain.editor_menu.container.linked": "Tertaut: %s",
+  "gui.dungeontrain.editor_menu.container.vault_key": "Kunci: %s",
   "gui.dungeontrain.editor_menu.container.add_title": "Tambah Item",
   "gui.dungeontrain.editor_menu.container.slot_in": "masuk",
   "gui.dungeontrain.editor_menu.container.slot_fuel": "bahan bakar",

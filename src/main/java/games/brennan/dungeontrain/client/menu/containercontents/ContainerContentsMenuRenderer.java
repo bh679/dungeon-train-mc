@@ -108,6 +108,23 @@ public final class ContainerContentsMenuRenderer {
         return ContainerContentsMenu.linkedPrefabId() != null;
     }
 
+    /** True when the target is a vault, which draws a Key row naming the item that unlocks it. */
+    static boolean hasVaultKeyRow() {
+        return ContainerContentsMenu.vaultKey() != null;
+    }
+
+    /** Height of the optional rows between the header and the toolbar: link, then vault key. */
+    static double topRowsHeight() {
+        return (hasLinkRow() ? LINK_ROW_HEIGHT : 0.0) + (hasVaultKeyRow() ? LINK_ROW_HEIGHT : 0.0);
+    }
+
+    /** The key's item name, from the item's own translation. */
+    static String vaultKeyName(String keyId) {
+        ResourceLocation rl = ResourceLocation.tryParse(keyId);
+        Item item = rl == null ? null : BuiltInRegistries.ITEM.get(rl);
+        return item == null ? keyId : new ItemStack(item).getHoverName().getString();
+    }
+
     private ContainerContentsMenuRenderer() {}
 
     @SubscribeEvent
@@ -181,7 +198,7 @@ public final class ContainerContentsMenuRenderer {
         int n = entries.size();
         int colCount = Math.max(1, (n + ContainerContentsMenu.ROWS_PER_COLUMN - 1) / ContainerContentsMenu.ROWS_PER_COLUMN);
         EntryLayout layout = computeLayout(entries, colCount);
-        double linkH = hasLinkRow() ? LINK_ROW_HEIGHT : 0.0;
+        double linkH = topRowsHeight();
         return new PanelSize(layout.panelWidth(),
             HEADER_HEIGHT + linkH + TOOLBAR_HEIGHT + layout.gridHeight());
     }
@@ -215,7 +232,7 @@ public final class ContainerContentsMenuRenderer {
         EntryLayout layout = computeLayout(entries, colCount);
         double panelW = layout.panelWidth();
         double gridH = layout.gridHeight();
-        double linkH = hasLinkRow() ? LINK_ROW_HEIGHT : 0.0;
+        double linkH = topRowsHeight();
         double panelH = HEADER_HEIGHT + linkH + TOOLBAR_HEIGHT + gridH;
         double halfW = panelW / 2.0;
         double halfH = panelH / 2.0;
@@ -258,6 +275,18 @@ public final class ContainerContentsMenuRenderer {
                 unlinkR - 0.005, linkTop - 0.005, unlinkTint);
             drawCenteredText(ps, buffer, font, "X",
                 (unlinkL + unlinkR) / 2.0, linkCY, 0xFFFFFFFF);
+        }
+
+        // Vault Key row (only on a vault) — the whole strip steps the key.
+        if (hasVaultKeyRow()) {
+            double keyTop = halfH - HEADER_HEIGHT - (hasLinkRow() ? LINK_ROW_HEIGHT : 0.0);
+            double keyBottom = keyTop - LINK_ROW_HEIGHT;
+            boolean keyHover = hovered.kind() == ContainerContentsMenu.CellKind.VAULT_KEY;
+            drawQuad(ps, buffer, -halfW + 0.01, keyBottom + 0.005,
+                halfW - 0.01, keyTop - 0.005, keyHover ? 0xC0FFCC55 : 0x4099AA33);
+            drawCenteredText(ps, buffer, font,
+                MenuLang.t("container.vault_key", vaultKeyName(ContainerContentsMenu.vaultKey())),
+                0, (keyTop + keyBottom) / 2.0, keyHover ? 0xFF000000 : 0xFFFFFFFF);
         }
 
         // Toolbar — 6 cells: Add | Save | FillMin | FillMax | Clear | X

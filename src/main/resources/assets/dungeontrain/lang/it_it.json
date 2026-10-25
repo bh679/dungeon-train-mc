@@ -3787,6 +3787,7 @@
   "gui.dungeontrain.editor_menu.container.title": "Contenuto contenitore",
   "gui.dungeontrain.editor_menu.container.title_at": "Contenuto contenitore @ %s",
   "gui.dungeontrain.editor_menu.container.linked": "Collegato: %s",
+  "gui.dungeontrain.editor_menu.container.vault_key": "Chiave: %s",
   "gui.dungeontrain.editor_menu.container.add_title": "Aggiungi oggetto",
   "gui.dungeontrain.editor_menu.container.slot_in": "in",
   "gui.dungeontrain.editor_menu.container.slot_fuel": "comb.",

@@ -3843,6 +3843,7 @@
   "gui.dungeontrain.editor_menu.container.title": "Zawartość pojemnika",
   "gui.dungeontrain.editor_menu.container.title_at": "Zawartość pojemnika @ %s",
   "gui.dungeontrain.editor_menu.container.linked": "Powiązany: %s",
+  "gui.dungeontrain.editor_menu.container.vault_key": "Klucz: %s",
   "gui.dungeontrain.editor_menu.container.add_title": "Dodaj przedmiot",
   "gui.dungeontrain.editor_menu.container.slot_in": "wej.",
   "gui.dungeontrain.editor_menu.container.slot_fuel": "paliwo",

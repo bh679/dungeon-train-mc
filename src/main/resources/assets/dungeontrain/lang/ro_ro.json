@@ -4490,6 +4490,7 @@
   "gui.dungeontrain.editor_menu.container.title": "Conținut container",
   "gui.dungeontrain.editor_menu.container.title_at": "Conținut container @ %s",
   "gui.dungeontrain.editor_menu.container.linked": "Legat: %s",
+  "gui.dungeontrain.editor_menu.container.vault_key": "Cheie: %s",
   "gui.dungeontrain.editor_menu.container.add_title": "Adaugă obiect",
   "gui.dungeontrain.editor_menu.container.slot_in": "intrare",
   "gui.dungeontrain.editor_menu.container.slot_fuel": "combustibil",

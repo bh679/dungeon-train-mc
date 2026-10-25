@@ -3787,6 +3787,7 @@
   "gui.dungeontrain.editor_menu.container.title": "Behälterinhalt",
   "gui.dungeontrain.editor_menu.container.title_at": "Behälterinhalt @ %s",
   "gui.dungeontrain.editor_menu.container.linked": "Verknüpft: %s",
+  "gui.dungeontrain.editor_menu.container.vault_key": "Schlüssel: %s",
   "gui.dungeontrain.editor_menu.container.add_title": "Gegenstand hinzufügen",
   "gui.dungeontrain.editor_menu.container.slot_in": "Eingang",
   "gui.dungeontrain.editor_menu.container.slot_fuel": "Brennstoff",

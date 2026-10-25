@@ -3731,6 +3731,7 @@
   "gui.dungeontrain.editor_menu.container.title": "Nội dung rương",
   "gui.dungeontrain.editor_menu.container.title_at": "Nội dung rương @ %s",
   "gui.dungeontrain.editor_menu.container.linked": "Liên kết: %s",
+  "gui.dungeontrain.editor_menu.container.vault_key": "Chìa khóa: %s",
   "gui.dungeontrain.editor_menu.container.add_title": "Thêm vật phẩm",
   "gui.dungeontrain.editor_menu.container.slot_in": "vào",
   "gui.dungeontrain.editor_menu.container.slot_fuel": "nhiên liệu",
