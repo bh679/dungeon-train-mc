@@ -774,6 +774,7 @@
   "chat.dungeontrain.live.burns_moderated": "カムコーダーの警告はもう残っていない。燃え尽きた。",
   "chat.dungeontrain.live.burns_banned": "カムコーダーが燃え尽きた。あと%sのあいだ、別のものも着けられません。",
   "chat.dungeontrain.live.burns_banned_permanent": "カムコーダーが燃え尽きた。もう着けることはできません。",
+  "chat.dungeontrain.live.burns_banned_unknown": "カムコーダーが燃え尽きた。着けることは禁止されています。",
   "chat.dungeontrain.live.banned_for": "バンの原因となった行:",
   "chat.dungeontrain.live.appeal_link": "[異議]",
   "chat.dungeontrain.live.appeal_link_hover": "この行に異議を申し立てる",

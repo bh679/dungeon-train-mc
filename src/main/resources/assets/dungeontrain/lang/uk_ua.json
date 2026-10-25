@@ -903,6 +903,7 @@
   "chat.dungeontrain.live.burns_moderated": "У відеокамери не лишилося попереджень, і вона згоряє.",
   "chat.dungeontrain.live.burns_banned": "Відеокамера згоряє. Ще %s ти не зможеш носити іншу.",
   "chat.dungeontrain.live.burns_banned_permanent": "Відеокамера згоряє. Ти більше не зможеш її носити.",
+  "chat.dungeontrain.live.burns_banned_unknown": "Відеокамера згоряє. Тобі заборонено її носити.",
   "chat.dungeontrain.live.banned_for": "Бан за ці рядки:",
   "chat.dungeontrain.live.appeal_link": "[Апеляція]",
   "chat.dungeontrain.live.appeal_link_hover": "Оскаржити цей рядок",

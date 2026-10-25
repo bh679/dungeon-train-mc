@@ -806,6 +806,7 @@
   "chat.dungeontrain.live.burns_moderated": "Der Camcorder hat keine Verwarnungen mehr übrig und verbrennt.",
   "chat.dungeontrain.live.burns_banned": "Der Camcorder verbrennt. Du darfst für weitere %s keinen tragen.",
   "chat.dungeontrain.live.burns_banned_permanent": "Der Camcorder verbrennt. Du darfst keinen mehr tragen.",
+  "chat.dungeontrain.live.burns_banned_unknown": "Der Camcorder verbrennt. Du darfst derzeit keinen tragen.",
   "chat.dungeontrain.live.banned_for": "Gebannt wegen dieser Zeilen:",
   "chat.dungeontrain.live.appeal_link": "[Einspruch]",
   "chat.dungeontrain.live.appeal_link_hover": "Gegen diese Zeile Einspruch einlegen",

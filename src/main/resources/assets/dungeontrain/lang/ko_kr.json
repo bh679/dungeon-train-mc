@@ -774,6 +774,7 @@
   "chat.dungeontrain.live.burns_moderated": "캠코더에 남은 경고가 없어 타 버렸다.",
   "chat.dungeontrain.live.burns_banned": "캠코더가 타 버렸다. 앞으로 %s 동안 다른 것도 쓸 수 없습니다.",
   "chat.dungeontrain.live.burns_banned_permanent": "캠코더가 타 버렸다. 더는 쓸 수 없습니다.",
+  "chat.dungeontrain.live.burns_banned_unknown": "캠코더가 타 버렸다. 착용이 금지되어 있습니다.",
   "chat.dungeontrain.live.banned_for": "차단 사유가 된 문장:",
   "chat.dungeontrain.live.appeal_link": "[이의 제기]",
   "chat.dungeontrain.live.appeal_link_hover": "이 문장에 이의 제기",
