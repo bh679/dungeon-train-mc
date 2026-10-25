@@ -655,6 +655,7 @@ public final class PortalCarriageEvents {
         STRUCTURES.clear();
         STAMPED_AT.clear();
         EVICTED.clear();
+        games.brennan.dungeontrain.portal.PortalTwinChunkHold.clear();
         OVERLAP_WARNED_AT.clear();
         PortalRoomMemory.clearSession();
         games.brennan.dungeontrain.portal.PortalCorridorResync.clear();
@@ -769,6 +770,9 @@ public final class PortalCarriageEvents {
             PortalPairResidency.syncTo(level, Set.of());
             // No walk this tick means no pairing is live; the entries hold carriage plots.
             games.brennan.dungeontrain.portal.PortalPairIndex.clear();
+            // Nothing below will restate a held player's room ticket, so hand them back to vanilla
+            // loading before it lapses under them.
+            games.brennan.dungeontrain.portal.PortalTwinChunkHold.releaseLevel(level);
             return;
         }
 
@@ -1192,6 +1196,8 @@ public final class PortalCarriageEvents {
             // Still called with nothing occupied: this is what un-freezes a train whose last
             // structure has just gone, and the tick that advances a frozen train's counter.
             PortalTrainFreeze.tick(level, players, dims, Set.of(), PortalCarriageEvents::isInRoom);
+            games.brennan.dungeontrain.portal.PortalTwinChunkHold.tick(
+                level, dims, players, Map.of(), List.of(), List.of());
             return;
         }
 
@@ -1207,6 +1213,10 @@ public final class PortalCarriageEvents {
         Set<UUID> inStructure = new HashSet<>();
         Set<UUID> depthed = new HashSet<>();
         Set<Integer> occupiedPairs = new HashSet<>();
+        // What PortalTwinChunkHold needs: how far each occupant's room reaches, and which rooms have
+        // somebody in them (as they stand after this tick's tiling).
+        Map<UUID, Integer> roomRadii = new HashMap<>();
+        List<PortalStructure> occupiedStructures = new ArrayList<>();
 
         for (Map.Entry<Integer, PortalStructure> pair : pairs) {
             PortalStructure structure = pair.getValue();
@@ -1231,7 +1241,10 @@ public final class PortalCarriageEvents {
             // them — that is what turns every corridor in the room, copies included, into a dead
             // end with nowhere else to walk. Read here because the occupancy has just been measured
             // against the same box anyPlayerInStructure uses.
-            if (!standingIn.isEmpty()) occupiedPairs.add(pair.getKey());
+            if (!standingIn.isEmpty()) {
+                occupiedPairs.add(pair.getKey());
+                recordRoomRadii(level, dims, structure, players, roomRadii);
+            }
             // A copy somebody stands in is one they can mine or loot, so it is captured before the
             // tiler erases it and laid back as they left it (PortalRoomMemory). Real occupants only —
             // not the approach ring below, which nobody has set foot in.
@@ -1249,6 +1262,7 @@ public final class PortalCarriageEvents {
             PortalStructure next =
                 PortalRoomTiler.tick(level, dims, structure, standingIn, radius, others, pair.getKey());
             if (next != structure) STRUCTURES.put(pair.getKey(), next);
+            if (occupiedPairs.contains(pair.getKey())) occupiedStructures.add(next);
 
             sendFogFor(players, dims, layout, next, fogged);
             sendSkyFor(players, dims, layout, next, skied);
@@ -1265,6 +1279,10 @@ public final class PortalCarriageEvents {
         // And stop the trains whose rooms those are, when nobody is left outside to see it. The
         // ticket above keeps the group loaded; this is what stops it going anywhere.
         PortalTrainFreeze.tick(level, players, dims, occupiedPairs, PortalCarriageEvents::isInRoom);
+        // Players in twin space stop loading the overworld above them; the room's own chunks are held
+        // instead. After the tiling, so the copies it holds are the ones now standing.
+        games.brennan.dungeontrain.portal.PortalTwinChunkHold.tick(
+            level, dims, players, roomRadii, STRUCTURES.values(), occupiedStructures);
         // Stock any library room still waiting on its author. Costs one map check on a world where
         // every library has been filled, which is every world after the first few seconds: a room
         // leaves the pending set the moment its shelves are dealt.
@@ -1736,6 +1754,20 @@ public final class PortalCarriageEvents {
      * into a doorway is already enough to open the window, and it opens centred on where they are
      * rather than on the room they have not reached yet.</p>
      */
+    /** Each player inside {@code structure}'s box gets its chunk-hold radius, the widest if two rooms claim them. */
+    private static void recordRoomRadii(ServerLevel level, CarriageDims dims, PortalStructure structure,
+                                        List<ServerPlayer> players, Map<UUID, Integer> radii) {
+        AABB box = structureBox(dims, structure);
+        int radius = -1;
+        for (ServerPlayer player : players) {
+            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
+            if (radius < 0) {
+                radius = games.brennan.dungeontrain.portal.PortalTwinChunkHold.roomRadius(level, dims, structure);
+            }
+            radii.merge(player.getUUID(), radius, Math::max);
+        }
+    }
+
     private static Set<PortalRoomTiling.Tile> occupiedTiles(List<ServerPlayer> players,
                                                             CarriageDims dims,
                                                             PortalCarriageLayout layout,
