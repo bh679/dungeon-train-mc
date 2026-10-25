@@ -90,7 +90,7 @@ public final class PerkPointEvents {
             if (display == null || !counts(holder.id())) continue;
             if (!player.getAdvancements().getOrStartProgress(holder).isDone()) continue;
             ResourceLocation id = holder.id();
-            boolean secretMenuHidden = display.isHidden() && DungeonTrain.MOD_ID.equals(id.getNamespace())
+            boolean secretMenuHidden = display.isHidden()
                 && id.getPath().startsWith(BandAdvancements.SECRETE_MENU_PREFIX);
             total += UnlockPointLedger.weight(display.getType(), secretMenuHidden, isCapstone(id));
         }
@@ -103,10 +103,14 @@ public final class PerkPointEvents {
             || TabCompleteAdvancements.isTabComplete(id);
     }
 
-    /** Editor authoring and tab-head copies are not achievements. */
+    /**
+     * Only Dungeon Train's own tabs earn points: vanilla and other mods' advancements count for
+     * nothing, and nor do editor authoring and tab-head copies.
+     */
     static boolean counts(ResourceLocation id) {
+        if (!DungeonTrain.MOD_ID.equals(id.getNamespace())) return false;
         String path = id.getPath();
-        if (path.startsWith("recipes/") || path.startsWith("editor/")) return false;
+        if (path.startsWith("editor/")) return false;
         return !TabGateways.isLinked(id);
     }
 }

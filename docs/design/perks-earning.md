@@ -11,7 +11,8 @@ Two currencies feed the perks tree.
 
 ## Unlock points (Advancement Points)
 
-Each advancement that shows in the advancements screen is worth:
+Only advancements on Dungeon Train's own tabs earn points (vanilla and other mods' count for
+nothing). Each is worth:
 
 | advancement | points |
 |---|---|
@@ -22,11 +23,10 @@ Each advancement that shows in the advancements screen is worth:
 | Everything Burrito, It's Not That Simple, every tab-complete advancement | 10 |
 
 Dungeon Train marks most of its advancements hidden so they reveal on earn, so only The Secret
-Menu's hidden ones get the bonus; vanilla and other tabs never do. Every advancement in the game
-adds up to about 742 (Dungeon Train 561 over 259 advancements, vanilla 181), against 122 to unlock
-the whole tree.
+Menu's hidden ones get the bonus. Every Dungeon Train advancement adds up to about 561 (259
+advancements), against 122 to unlock the whole tree.
 
-`recipes/*`, `editor/*` and tab-head copies (`TabGateways.isLinked`) count for nothing.
+`editor/*` and tab-head copies (`TabGateways.isLinked`) count for nothing.
 
 **Derived, not accumulated.** `earned` is recomputed from the advancements the player has done
 right now (`perks/PerkPointEvents#recompute`), and `available = max(0, earned - spent)`, where
