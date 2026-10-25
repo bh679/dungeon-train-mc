@@ -129,8 +129,10 @@ public final class LiveHeadViewer {
             if (shown(mc)) {
                 float partial = delta.getGameTimeDeltaPartialTick(false);
                 int width = LiveFeedClientConfig.headViewerWidth(false);
-                HeadViewerPanes.wearing(TvItems.stream(mc.player.getItemBySlot(EquipmentSlot.HEAD)), LiveFeedClientConfig.wornTvStreams());
-                var panes = panes(g.guiWidth(), width, secondLive(), LiveFeedClientConfig.headViewerAtMaxSize(false));
+                ItemStack head = mc.player.getItemBySlot(EquipmentSlot.HEAD);
+                HeadViewerPanes.wearing(TvItems.isTv(head), TvItems.stream(head), LiveFeedClientConfig.wornTvStreams(),
+                    System.currentTimeMillis());
+                var panes = panes(g.guiWidth(), g.guiHeight(), width, secondLive(), LiveFeedClientConfig.headViewerAtMaxSize(false));
                 for (HeadViewerPanes.Pane pane : panes) {
                     LiveFeedSource source = pane.second() ? LiveFeedSource.SECOND : LiveFeedSource.MAIN;
                     draw(g, source, source.frame(mc.player.tickCount, partial, false), pane.box(), !pane.second(),
@@ -164,14 +166,14 @@ public final class LiveHeadViewer {
 
     /** The lowest pane's box (the first stream's box {@code b} unless a second pane sits under it). */
     private static Box lowestPane(Minecraft mc, Box b) {
-        var panes = panes(mc.getWindow().getGuiScaledWidth(), b.w(), secondLive(),
+        var panes = panes(mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight(), b.w(), secondLive(),
             LiveFeedClientConfig.headViewerAtMaxSize(false));
         return panes.get(panes.size() - 1).box();
     }
 
     /** The watching panes, each as tall as its own stream's shape needs. */
-    private static java.util.List<HeadViewerPanes.Pane> panes(int guiWidth, int boxWidth, boolean secondLive, boolean atMaxSize) {
-        return HeadViewerPanes.current(guiWidth, boxWidth, secondLive, atMaxSize,
+    private static java.util.List<HeadViewerPanes.Pane> panes(int guiWidth, int guiHeight, int boxWidth, boolean secondLive, boolean atMaxSize) {
+        return HeadViewerPanes.current(guiWidth, guiHeight, boxWidth, secondLive, atMaxSize,
             LiveFeedSource.MAIN.ratio(), LiveFeedSource.SECOND.ratio());
     }
 
@@ -208,10 +210,13 @@ public final class LiveHeadViewer {
             return;
         }
         // Two streams, in the inventory: a pane click solos that stream or brings both back (HeadViewerPanes).
-        if (!streaming && secondLive() && !LiveFeedClientConfig.headViewerAtMaxSize(false)
-                && LiveStreamSettingsButton.showsOn(event.getScreen())) {
-            var panes = panes(mc.getWindow().getGuiScaledWidth(), b.w(), true, false);
-            if (HeadViewerPanes.apply(panes, event.getMouseX(), event.getMouseY())) {
+        // Where two panes cannot fit (largest size, short window) the click resizes the box as ever.
+        int guiWidth = mc.getWindow().getGuiScaledWidth(), guiHeight = mc.getWindow().getGuiScaledHeight();
+        if (!streaming && secondLive() && LiveStreamSettingsButton.showsOn(event.getScreen())
+                && HeadViewerPanes.twoFit(guiWidth, guiHeight, b.w(), LiveFeedClientConfig.headViewerAtMaxSize(false),
+                    LiveFeedSource.MAIN.ratio(), LiveFeedSource.SECOND.ratio())) {
+            var panes = panes(guiWidth, guiHeight, b.w(), true, false);
+            if (HeadViewerPanes.apply(panes, event.getMouseX(), event.getMouseY(), System.currentTimeMillis())) {
                 event.setCanceled(true);
                 mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1f));
                 // The TV on the head remembers the choice (TvStreamChoicePacket → TV_STREAM).
