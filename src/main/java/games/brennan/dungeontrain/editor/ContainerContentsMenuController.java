@@ -629,7 +629,28 @@ public final class ContainerContentsMenuController {
                 dirty = true;
             }
             case CYCLE_VAULT_KEY -> {
-                next = VaultLoot.withKey(current, VaultLoot.nextKey(current.vaultKey()));
+                String nextKey = VaultLoot.nextKey(current.vaultKey());
+                String linkedId = store.linkAt(localPos);
+                // Linked to one of the two default vault prefabs: link the other one. Writing the
+                // other default's loot into the linked prefab would overwrite that prefab's loot.
+                String relink = linkedId == null ? null : VaultLoot.otherDefaultPrefab(linkedId);
+                if (relink != null) {
+                    store.setLink(localPos, relink);
+                    try {
+                        store.save();
+                    } catch (IOException e) {
+                        LOGGER.error("[DungeonTrain] Vault relink save failed for {}: {}", plot.key(), e.toString());
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed",
+                            e.getClass().getSimpleName()), ChatFormatting.RED);
+                        return;
+                    }
+                    rerollLocalContainer(level, plot, localPos, store.poolAt(localPos));
+                    resyncSameFace(player, plot, localPos);
+                    return;
+                }
+                // Any other linked prefab only changes its key; a local pool that is still its
+                // key's default loot follows the vault type to the other default.
+                next = linkedId == null ? VaultLoot.withKey(current, nextKey) : current.withVaultKey(nextKey);
                 dirty = true;
             }
             case UNLINK -> {

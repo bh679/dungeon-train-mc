@@ -101,6 +101,14 @@ public final class VaultLoot {
         return isOminousKey(key) ? OMINOUS_PREFAB : DEFAULT_PREFAB;
     }
 
+    /** The other default vault prefab for one of the two, or null for any other prefab id. */
+    @Nullable
+    public static String otherDefaultPrefab(String prefabId) {
+        if (DEFAULT_PREFAB.equals(prefabId)) return OMINOUS_PREFAB;
+        if (OMINOUS_PREFAB.equals(prefabId)) return DEFAULT_PREFAB;
+        return null;
+    }
+
     /** The bundled vanilla-loot pool for a vault taking {@code key}. */
     public static ContainerContentsPool defaultPool(String key) {
         return LootPrefabStore.load(defaultPrefabFor(key))

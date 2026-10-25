@@ -127,6 +127,14 @@ final class VaultLootTest {
     }
 
     @Test
+    @DisplayName("a vault linked to a default prefab relinks to the other default; other prefabs never swap")
+    void linkedDefaultsRelink() {
+        assertEquals(VaultLoot.OMINOUS_PREFAB, VaultLoot.otherDefaultPrefab(VaultLoot.DEFAULT_PREFAB));
+        assertEquals(VaultLoot.DEFAULT_PREFAB, VaultLoot.otherDefaultPrefab(VaultLoot.OMINOUS_PREFAB));
+        assertEquals(null, VaultLoot.otherDefaultPrefab("pot"));
+    }
+
+    @Test
     @DisplayName("each player gets their own reward salt, stable across calls")
     void playerSaltPerPlayer() {
         UUID a = UUID.fromString("00000000-0000-0000-0000-000000000001");
