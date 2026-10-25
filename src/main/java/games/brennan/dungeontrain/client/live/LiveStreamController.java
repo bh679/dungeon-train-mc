@@ -552,7 +552,7 @@ public final class LiveStreamController {
             }
             // The channel is ours: the server makes this player its streamer (and turns the previous
             // one's Live Eye into a TV).
-            tellServerTakeover(LiveClaimResultPacket.Result.LIVE, c.prevName() != null);
+            tellServerTakeover(LiveClaimResultPacket.Result.LIVE, c.prevName() == null ? "" : c.prevName());
             beginStreaming(c, hasAac);
         }, mc);
     }
@@ -595,13 +595,13 @@ public final class LiveStreamController {
     }
 
     private static void tellServerTakeover(LiveClaimResultPacket.Result result) {
-        tellServerTakeover(result, false);
+        tellServerTakeover(result, "");
     }
 
-    /** {@code tookOver}: the relay cut somebody off for this claim (the server then turns their Live Eye into a TV). */
-    private static void tellServerTakeover(LiveClaimResultPacket.Result result, boolean tookOver) {
+    /** {@code cutOff}: who the relay cut off for this claim, or empty (the server turns their Live Eye into a TV). */
+    private static void tellServerTakeover(LiveClaimResultPacket.Result result, String cutOff) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.getConnection() != null) PacketDistributor.sendToServer(new LiveClaimResultPacket(result, tookOver));
+        if (mc.getConnection() != null) PacketDistributor.sendToServer(new LiveClaimResultPacket(result, cutOff));
     }
 
     /**
