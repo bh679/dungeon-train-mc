@@ -30888,6 +30888,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "photo-frame-take-out-no-burn",
+      "version": "0.1534.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Photo frame fix",
+      "summary": "Taking a photo out of a frame no longer sets it alight before you can pick it up.",
+      "highlights": [],
+      "pr": 2336,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
