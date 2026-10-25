@@ -71,14 +71,15 @@ public final class StreamPreviewWidget extends AbstractWidget {
     }
 
     /**
-     * Where the live feed pinned top-right sits on your screen, at its chosen size, scaled into the
+     * Where the live feed pinned top-right sits on your screen while you stream, at that size, scaled into the
      * preview, through the same crop as the broadcast. An outline only: the real box is never in the broadcast.
      */
     private static void headViewerOutline(GuiGraphics g, RenderTarget main, int[] size, int x0, int y0, int w) {
         int guiW = g.guiWidth();
         double guiScale = Minecraft.getInstance().getWindow().getGuiScale();
         if (guiW <= 0 || guiScale <= 0) return;
-        LiveHeadViewer.Box b = LiveHeadViewer.layout(guiW, LiveFeedClientConfig.headViewerWidth(false));
+        // While you stream: your streaming size, as tall as your own broadcast's shape.
+        LiveHeadViewer.Box b = LiveHeadViewer.layout(guiW, LiveFeedClientConfig.headViewerWidth(true), (float) size[0] / size[1]);
         int[] crop = LiveAspect.cropRect(main.width, main.height, size[0], size[1]);
         float s = (float) (w * guiScale / (crop[2] - crop[0])); // preview px per GUI px
         float left = (float) (crop[0] / guiScale);

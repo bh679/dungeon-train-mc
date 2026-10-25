@@ -13,6 +13,7 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -36,7 +37,8 @@ import java.util.regex.Pattern;
  * <p>ffmpeg reads the HLS directly ({@code -live_start_index -1} joins at the newest segment,
  * {@code -readrate 1} plays it at real speed instead of bursting a whole segment, and {@code
  * -readrate_catchup} lets it catch back up after a stall — {@code -re} on an ffmpeg too old for that),
- * scales to the viewer width, and pipes raw RGBA frames. The playlist is streamer-authored: ffmpeg may
+ * scales it to cover the viewer size at the stream's own shape, and pipes RGBA frames as PAM, each
+ * naming its real size ({@link LiveFrameShape}). The playlist is streamer-authored: ffmpeg may
  * only speak https (plain http just for a loopback test relay), every read times out, and before each
  * run the reader fetches the playlist itself and refuses one listing anything but our own relative
  * {@code segNNNNN.ts} names ({@link #safePlaylist}) — a refused session shows static for good. When the streamer stops, their last playlist carries ENDLIST:
@@ -80,7 +82,10 @@ public final class LiveHlsSession implements IMediaSession {
     private final boolean replay;
     /** A clip on this computer ({@link #localLoop}), looped in colour; never a URL anyone else chose. */
     private final boolean local;
+    /** The size asked for; frames come at least this big, in the stream's own shape. */
     private final int width, height;
+    /** The newest frame's real size ({@code width×height} until one arrives); changes only under {@code lock}. */
+    private volatile LiveFrameShape.Size shape;
     /** Guarded by {@code lock}: the newest whole frame. */
     private NativeImage back;
     /** Guarded by {@code fillLock}: the frame being decoded. */
@@ -130,6 +135,7 @@ public final class LiveHlsSession implements IMediaSession {
         this.local = local;
         this.width = width;
         this.height = height;
+        this.shape = new LiveFrameShape.Size(width, height);
         this.back = new NativeImage(NativeImage.Format.RGBA, width, height, false);
         this.staging = new NativeImage(NativeImage.Format.RGBA, width, height, false);
     }
@@ -152,6 +158,8 @@ public final class LiveHlsSession implements IMediaSession {
 
     /** The decode width, in pixels. */
     public int width() { return width; }
+    /** The newest frame's real size: the stream's own shape once a frame is in, {@code width×height} before. */
+    public LiveFrameShape.Size shape() { return shape; }
     public long frameSequence() { return frameSeq; }
     public MediaStatus status() { return status; }
 
@@ -314,16 +322,26 @@ public final class LiveHlsSession implements IMediaSession {
         return System.currentTimeMillis() - lastWantedMs >= IDLE_KILL_MS;
     }
 
-    private void readLoop(FFmpeg ffmpeg) {
-        ByteBuffer frame = MemoryUtil.memAlloc(width * height * 4);
-        try {
-            readLoop(ffmpeg, frame);
-        } finally {
-            MemoryUtil.memFree(frame);
+    /** The reader's frame buffer, grown when a frame is bigger than any before it. */
+    private static final class FrameBuffer {
+        ByteBuffer buf;
+        FrameBuffer(int bytes) { buf = MemoryUtil.memAlloc(bytes); }
+        ByteBuffer fit(int bytes) {
+            if (buf.capacity() < bytes) buf = MemoryUtil.memRealloc(buf, bytes);
+            return buf;
         }
     }
 
-    private void readLoop(FFmpeg ffmpeg, ByteBuffer frame) {
+    private void readLoop(FFmpeg ffmpeg) {
+        FrameBuffer frame = new FrameBuffer(width * height * 4);
+        try {
+            readLoop(ffmpeg, frame);
+        } finally {
+            MemoryUtil.memFree(frame.buf);
+        }
+    }
+
+    private void readLoop(FFmpeg ffmpeg, FrameBuffer frame) {
         boolean catchup = !replay && FfmpegSupport.hasReadrateCatchup(ffmpeg);
         long backoffMs = 2000;
         while (!closed && !idle()) {
@@ -343,11 +361,15 @@ public final class LiveHlsSession implements IMediaSession {
                 if (closed) break;
                 FfmpegSupport.drain(p.getErrorStream(), "decoder");
                 long framesThisRun = 0;
-                try (InputStream in = p.getInputStream(); ReadableByteChannel ch = Channels.newChannel(in)) {
+                try (InputStream in = new BufferedInputStream(p.getInputStream(), 1 << 16);
+                     ReadableByteChannel ch = Channels.newChannel(in)) {
                     while (!closed) {
                         if (idle()) break;
-                        if (!readFully(ch, frame)) break;
-                        if (!publish(frame)) break;
+                        LiveFrameShape.Size size = LiveFrameShape.read(in);
+                        if (size == null) break;
+                        ByteBuffer buf = frame.fit(size.width() * size.height() * 4);
+                        if (!readFully(ch, buf, size.width() * size.height() * 4)) break;
+                        if (!publish(buf, size)) break;
                         framesThisRun++;
                         status = MediaStatus.READY;
                         backoffMs = 2000;
@@ -379,17 +401,25 @@ public final class LiveHlsSession implements IMediaSession {
         status = frameSeq == 0 ? MediaStatus.LOADING : MediaStatus.BUFFERING;
     }
 
-    /** Copies one whole RGBA frame into the staging image and swaps it in; false once the session is closed. */
-    private boolean publish(ByteBuffer frame) {
+    /**
+     * Copies one whole RGBA frame of {@code size} into the staging image (made anew when the size
+     * changed) and swaps it in; false once the session is closed.
+     */
+    private boolean publish(ByteBuffer frame, LiveFrameShape.Size size) {
         long startNs = System.nanoTime();
         synchronized (fillLock) {
             if (closed) return false;
+            if (staging.getWidth() != size.width() || staging.getHeight() != size.height()) {
+                staging.close();
+                staging = new NativeImage(NativeImage.Format.RGBA, size.width(), size.height(), false);
+            }
             NativeImage fill = staging;
             MemoryUtil.memCopy(MemoryUtil.memAddress(frame), ((NativeImageAccessor) (Object) fill).dungeontrain$pixels(),
-                (long) width * height * 4);
+                (long) size.width() * size.height() * 4);
             synchronized (lock) {
                 staging = back;
                 back = fill;
+                shape = size;
                 frameSeq++;
             }
             lastProgressMs = System.currentTimeMillis();
@@ -411,30 +441,34 @@ public final class LiveHlsSession implements IMediaSession {
         else a.addAll(List.of("-readrate", "1", "-readrate_catchup", "2"));
         if (replay) {
             a.addAll(List.of("-stream_loop", "-1", "-i", playlistUrl, "-an",
-                "-vf", fill(width, height) + ",format=gray,noise=alls=18:allf=t+u,format=rgba"));
+                "-vf", cover(width, height) + ",format=gray,noise=alls=18:allf=t+u,format=rgba"));
         } else {
             a.addAll(List.of("-live_start_index", "-1",
                 "-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5",
-                "-i", playlistUrl, "-an", "-vf", fill(width, height)));
+                "-i", playlistUrl, "-an", "-vf", cover(width, height)));
         }
-        a.addAll(List.of("-f", "image2pipe", "-vcodec", "rawvideo", "-pix_fmt", "rgba", "-"));
+        a.addAll(List.of(PAM_OUT));
         return a.toArray(new String[0]);
     }
 
+    /** Every decoder's output: RGBA frames as PAM, each with its own size ({@link LiveFrameShape}). */
+    private static final String[] PAM_OUT = {"-f", "image2pipe", "-c:v", "pam", "-pix_fmt", "rgba", "-"};
+
     /**
-     * The video filter that fits a stream of any shape onto the {@code width×height} screen: scaled to
-     * cover it, the overflow cropped off centred. Never stretched; a 4:3 stream on a 16:9 TV loses its
-     * top and bottom.
+     * The video filter for a {@code width×height} viewer: the stream scaled, in its own shape, until it
+     * covers that size. Never stretched and not cropped here: each view crops or fits it as it needs
+     * ({@link #copyLatestInto}).
      */
-    static String fill(int width, int height) {
-        return "scale=" + width + ":" + height + ":force_original_aspect_ratio=increase,crop=" + width + ":" + height;
+    static String cover(int width, int height) {
+        return "scale=" + width + ":" + height + ":force_original_aspect_ratio=increase";
     }
 
     /** {@link #localLoop}'s ffmpeg: a file on this computer and nothing else, looped at real time, in colour. */
     static String[] localArgs(String path, int width, int height) {
-        return new String[] {"-hide_banner", "-loglevel", "error", "-nostdin", "-protocol_whitelist", "file",
-            "-re", "-stream_loop", "-1", "-i", path, "-an", "-vf", fill(width, height),
-            "-f", "image2pipe", "-vcodec", "rawvideo", "-pix_fmt", "rgba", "-"};
+        List<String> a = new ArrayList<>(List.of("-hide_banner", "-loglevel", "error", "-nostdin", "-protocol_whitelist", "file",
+            "-re", "-stream_loop", "-1", "-i", path, "-an", "-vf", cover(width, height)));
+        a.addAll(List.of(PAM_OUT));
+        return a.toArray(new String[0]);
     }
 
     public boolean isReplay() {
@@ -447,7 +481,12 @@ public final class LiveHlsSession implements IMediaSession {
      * False at end of stream.
      */
     static boolean readFully(ReadableByteChannel ch, ByteBuffer frame) throws IOException {
-        frame.clear();
+        return readFully(ch, frame, frame.capacity());
+    }
+
+    /** {@link #readFully(ReadableByteChannel, ByteBuffer)} for the first {@code bytes} of {@code frame}. */
+    static boolean readFully(ReadableByteChannel ch, ByteBuffer frame, int bytes) throws IOException {
+        frame.clear().limit(bytes);
         while (frame.hasRemaining()) {
             if (ch.read(frame) < 0) return false;
         }
@@ -455,20 +494,56 @@ public final class LiveHlsSession implements IMediaSession {
         return true;
     }
 
-    /** Render thread: copy the newest frame into {@code dst}; false if nothing decoded yet. */
+    /**
+     * Render thread: copy the newest frame into {@code dst}; false if nothing decoded yet. A {@code dst}
+     * of the frame's own size gets all of it; any other size gets its centred middle, cropped, never
+     * scaled (so a TV's fixed screen fills, whatever the stream's shape).
+     */
     public boolean copyLatestInto(NativeImage dst) {
         if (frameSeq == 0) return false;
         synchronized (lock) {
-            dst.copyFrom(back);
+            if (dst.getWidth() == back.getWidth() && dst.getHeight() == back.getHeight()) {
+                dst.copyFrom(back);
+            } else {
+                copyCentre(back, dst);
+            }
         }
         return true;
     }
 
+    private static void copyCentre(NativeImage src, NativeImage dst) {
+        int[] o = centreOffsets(src.getWidth(), src.getHeight(), dst.getWidth(), dst.getHeight());
+        long from = ((NativeImageAccessor) (Object) src).dungeontrain$pixels();
+        long to = ((NativeImageAccessor) (Object) dst).dungeontrain$pixels();
+        long srcRow = (long) src.getWidth() * 4;
+        long dstRow = (long) dst.getWidth() * 4;
+        for (int r = 0; r < o[5]; r++) {
+            MemoryUtil.memCopy(from + (o[1] + r) * srcRow + o[0] * 4L, to + (o[3] + r) * dstRow + o[2] * 4L, o[4] * 4L);
+        }
+    }
+
+    /**
+     * Where {@link #copyLatestInto} crops: {@code {srcX, srcY, dstX, dstY, cols, rows}} for the centred
+     * overlap of a {@code srcW×srcH} frame and a {@code dstW×dstH} image.
+     */
+    static int[] centreOffsets(int srcW, int srcH, int dstW, int dstH) {
+        int cols = Math.min(srcW, dstW);
+        int rows = Math.min(srcH, dstH);
+        return new int[] {(srcW - cols) / 2, (srcH - rows) / 2, (dstW - cols) / 2, (dstH - rows) / 2, cols, rows};
+    }
+
     // ---- IMediaSession ---------------------------------------------------------------------------
 
+    /** A view of fixed {@code width×height}: the frame's centred middle (TVs). */
     @Override
     public IWebTexture createTextureView(ResourceLocation resourceLocation) {
         return new LiveFeedTexture(resourceLocation, this, width, height);
+    }
+
+    /** A view of the whole frame at its real size now ({@link #shape}); make a new one if the shape changes. */
+    public LiveFeedTexture createFullView(ResourceLocation resourceLocation) {
+        LiveFrameShape.Size s = shape;
+        return new LiveFeedTexture(resourceLocation, this, s.width(), s.height());
     }
 
     @Override

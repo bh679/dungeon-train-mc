@@ -91,6 +91,16 @@ public final class LiveHeadViewer {
         return new Box(guiWidth - EDGE - boxWidth, EDGE, boxWidth, LiveFeedClientConfig.heightFor(boxWidth));
     }
 
+    /**
+     * The box for a stream {@code ratio} (width over height) wide: as wide as the size setting says, as
+     * tall as the stream's own shape needs, so the whole picture shows, never cropped or stretched.
+     */
+    static Box layout(int guiWidth, int boxWidth, float ratio) {
+        float r = LiveAspect.clampRatio(ratio);
+        if (Math.abs(r - 16f / 9f) < 1e-3f) return layout(guiWidth, boxWidth);
+        return new Box(guiWidth - EDGE - boxWidth, EDGE, boxWidth, Math.max(1, Math.round(boxWidth / r)));
+    }
+
     /** Whole seconds until this client's broadcast should be on the channel; never below 1. */
     static int countdownSeconds(long startedMs, int segmentSeconds, long nowMs) {
         long due = startedMs + SEGMENTS_BEHIND * segmentSeconds * 1000L + UPLOAD_SLACK_MS;
@@ -120,16 +130,17 @@ public final class LiveHeadViewer {
                 float partial = delta.getGameTimeDeltaPartialTick(false);
                 int width = LiveFeedClientConfig.headViewerWidth(false);
                 HeadViewerPanes.wearing(TvItems.stream(mc.player.getItemBySlot(EquipmentSlot.HEAD)), LiveFeedClientConfig.wornTvStreams());
-                var panes = HeadViewerPanes.current(g.guiWidth(), width, secondLive(), LiveFeedClientConfig.headViewerAtMaxSize(false));
+                var panes = panes(g.guiWidth(), width, secondLive(), LiveFeedClientConfig.headViewerAtMaxSize(false));
                 for (HeadViewerPanes.Pane pane : panes) {
                     LiveFeedSource source = pane.second() ? LiveFeedSource.SECOND : LiveFeedSource.MAIN;
-                    draw(g, source, source.frame(mc.player.tickCount, partial, false), pane.box(), !pane.second());
+                    draw(g, source, source.frame(mc.player.tickCount, partial, false), pane.box(), !pane.second(),
+                        mc.player.tickCount, partial);
                 }
                 // The takeover button hangs under the lowest pane, so a second pane never covers it.
                 LiveTakeoverButton.draw(g, panes.get(panes.size() - 1).box());
             } else {
                 // Box switched off: a running takeover vote's countdown still shows where it would be.
-                voteBanner(g, layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth(false)), mc.font);
+                voteBanner(g, layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth(false), LiveFeedSource.MAIN.ratio()), mc.font);
             }
         });
     }
@@ -141,21 +152,32 @@ public final class LiveHeadViewer {
         if (!shown(mc) || !LiveStreamController.get().streaming()) return;
         if (mc.screen == null && mc.options.hideGui) return;
         // The streamer's own picture: the second stream's while they hold the relay's second channel.
-        LiveFeedSource own = LiveStreamController.get().onSecondChannel() ? LiveFeedSource.SECOND : LiveFeedSource.MAIN;
-        LiveFeedSource.Frame frame = own.frame(mc.player.tickCount,
-            event.getPartialTick().getGameTimeDeltaPartialTick(false), false);
+        LiveFeedSource own = ownSource();
+        float partial = event.getPartialTick().getGameTimeDeltaPartialTick(false);
+        LiveFeedSource.Frame frame = own.frame(mc.player.tickCount, partial, false);
         LiveRecOverlay.guiPass(g -> {
-            Box b = layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth(true));
-            draw(g, own, frame, b, true);
+            Box b = layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth(true), own.ratio());
+            draw(g, own, frame, b, true, mc.player.tickCount, partial);
             LiveStreamSettingsButton.draw(g, b);
         });
     }
 
     /** The lowest pane's box (the first stream's box {@code b} unless a second pane sits under it). */
     private static Box lowestPane(Minecraft mc, Box b) {
-        var panes = HeadViewerPanes.current(mc.getWindow().getGuiScaledWidth(), b.w(), secondLive(),
+        var panes = panes(mc.getWindow().getGuiScaledWidth(), b.w(), secondLive(),
             LiveFeedClientConfig.headViewerAtMaxSize(false));
         return panes.get(panes.size() - 1).box();
+    }
+
+    /** The watching panes, each as tall as its own stream's shape needs. */
+    private static java.util.List<HeadViewerPanes.Pane> panes(int guiWidth, int boxWidth, boolean secondLive, boolean atMaxSize) {
+        return HeadViewerPanes.current(guiWidth, boxWidth, secondLive, atMaxSize,
+            LiveFeedSource.MAIN.ratio(), LiveFeedSource.SECOND.ratio());
+    }
+
+    /** The streamer's own picture: the second stream's while they hold the relay's second channel. */
+    private static LiveFeedSource ownSource() {
+        return LiveStreamController.get().onSecondChannel() ? LiveFeedSource.SECOND : LiveFeedSource.MAIN;
     }
 
     /** A second stream is live for this viewer (the relay's status carries it). */
@@ -174,7 +196,8 @@ public final class LiveHeadViewer {
         Minecraft mc = Minecraft.getInstance();
         if (!shown(mc)) return;
         boolean streaming = LiveStreamController.get().streaming();
-        Box b = layout(mc.getWindow().getGuiScaledWidth(), LiveFeedClientConfig.headViewerWidth(streaming));
+        Box b = layout(mc.getWindow().getGuiScaledWidth(), LiveFeedClientConfig.headViewerWidth(streaming),
+            (streaming ? ownSource() : LiveFeedSource.MAIN).ratio());
         if (streaming && LiveStreamSettingsButton.click(event.getScreen(), b, event.getMouseX(), event.getMouseY())) {
             event.setCanceled(true);
             return;
@@ -187,7 +210,7 @@ public final class LiveHeadViewer {
         // Two streams, in the inventory: a pane click solos that stream or brings both back (HeadViewerPanes).
         if (!streaming && secondLive() && !LiveFeedClientConfig.headViewerAtMaxSize(false)
                 && LiveStreamSettingsButton.showsOn(event.getScreen())) {
-            var panes = HeadViewerPanes.current(mc.getWindow().getGuiScaledWidth(), b.w(), true, false);
+            var panes = panes(mc.getWindow().getGuiScaledWidth(), b.w(), true, false);
             if (HeadViewerPanes.apply(panes, event.getMouseX(), event.getMouseY())) {
                 event.setCanceled(true);
                 mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1f));
@@ -222,15 +245,21 @@ public final class LiveHeadViewer {
     /**
      * One pane: {@code source}'s {@code frame} in box {@code b}. {@code primary} panes (the first stream's,
      * or the streamer's own preview) also carry the "Live in" countdown and the takeover vote banner.
+     * The picture is the whole frame at its own shape ({@link LiveFeedSource#fullPicture}), which the box
+     * was laid out to match.
      */
-    private static void draw(GuiGraphics g, LiveFeedSource source, LiveFeedSource.Frame frame, Box b, boolean primary) {
+    private static void draw(GuiGraphics g, LiveFeedSource source, LiveFeedSource.Frame frame, Box b, boolean primary,
+                             int tick, float partial) {
         LiveStreamController streamer = LiveStreamController.get();
         boolean streaming = streamer.streaming();
         Font font = Minecraft.getInstance().font;
 
         g.fill(b.x() - BORDER, b.y() - BORDER, b.x() + b.w() + BORDER, b.y() + b.h() + BORDER, BORDER_COLOR);
         switch (frame.kind()) {
-            case PICTURE -> g.blit(source.frameTexture(), b.x(), b.y(), b.w(), b.h(), 0f, 0f, 1, 1, 1, 1);
+            case PICTURE -> {
+                LiveFeedSource.Picture whole = source.fullPicture(tick, partial);
+                g.blit(whole != null ? whole.texture() : source.frameTexture(), b.x(), b.y(), b.w(), b.h(), 0f, 0f, 1, 1, 1, 1);
+            }
             case STATIC -> noise(g, b);
             case DOWNLOADING -> {
                 g.fill(b.x(), b.y(), b.x() + b.w(), b.y() + b.h(), DARK);

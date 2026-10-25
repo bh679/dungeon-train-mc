@@ -51,6 +51,12 @@ public final class LiveAspect {
         return new int[] {0, 0, winW, winH};
     }
 
+    /** {@code ratio} kept within {@link #MIN_RATIO}..{@link #MAX_RATIO}: the shapes a stream can have. */
+    public static float clampRatio(float ratio) {
+        if (!(ratio > 0)) return 16f / 9f;
+        return (float) Math.max(MIN_RATIO, Math.min(MAX_RATIO, ratio));
+    }
+
     private static int even(double v) {
         return Math.max(2, (int) Math.round(v / 2) * 2);
     }
