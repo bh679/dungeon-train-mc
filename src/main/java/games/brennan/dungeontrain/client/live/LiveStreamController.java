@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.live;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.live.life.LiveLifeEvents;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -550,7 +551,7 @@ public final class LiveStreamController {
             }
             // The channel is ours: the server makes this player its streamer (and turns the previous
             // one's Live Eye into a TV).
-            tellServerTakeover(LiveClaimResultPacket.Result.LIVE, c.prevName() != null);
+            tellServerTakeover(LiveClaimResultPacket.Result.LIVE, c.prevName() == null ? "" : c.prevName());
             beginStreaming(c, hasAac);
         }, mc);
     }
@@ -593,13 +594,13 @@ public final class LiveStreamController {
     }
 
     private static void tellServerTakeover(LiveClaimResultPacket.Result result) {
-        tellServerTakeover(result, false);
+        tellServerTakeover(result, "");
     }
 
-    /** {@code tookOver}: the relay cut somebody off for this claim (the server then turns their Live Eye into a TV). */
-    private static void tellServerTakeover(LiveClaimResultPacket.Result result, boolean tookOver) {
+    /** {@code cutOff}: who the relay cut off for this claim, or empty (the server turns their Live Eye into a TV). */
+    private static void tellServerTakeover(LiveClaimResultPacket.Result result, String cutOff) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.getConnection() != null) PacketDistributor.sendToServer(new LiveClaimResultPacket(result, tookOver));
+        if (mc.getConnection() != null) PacketDistributor.sendToServer(new LiveClaimResultPacket(result, cutOff));
     }
 
     /**
@@ -618,8 +619,12 @@ public final class LiveStreamController {
             Files.createDirectories(d);
             boolean adaptive = LiveFeedClientConfig.adaptiveQuality();
             int learned = adaptive ? LiveFeedClientConfig.learnedUploadKbps() : 0;
-            int w = LiveQualityGovernor.startWidth(LiveFeedClientConfig.captureWidth(), learned);
-            int h = LiveFeedClientConfig.heightFor(w);
+            int boxW = LiveQualityGovernor.startWidth(LiveFeedClientConfig.captureWidth(), learned);
+            // The streamer's own window shape inside that size, fixed for the stream (LiveAspect).
+            RenderTarget main = mc.getMainRenderTarget();
+            int[] size = LiveAspect.frameSize(boxW, LiveFeedClientConfig.heightFor(boxW), main.width, main.height);
+            int w = size[0];
+            int h = size[1];
             var ffmpeg = FfmpegSupport.get();
             if (ffmpeg == null) throw new IOException("ffmpeg vanished");
             StreamNameTag.prepare();
@@ -644,7 +649,7 @@ public final class LiveStreamController {
             switching = false;
             tsOffsetSeconds = 0;
             toldLowered = false;
-            if (kbps < ceiling || w < LiveFeedClientConfig.captureWidth()) {
+            if (kbps < ceiling || boxW < LiveFeedClientConfig.captureWidth()) {
                 LOGGER.info("[DungeonTrain] live quality: starting at {}x{} {} kbit/s (set {} kbit/s) for the {} kbit/s upload measured last stream",
                     w, h, kbps, ceiling, learned);
             }

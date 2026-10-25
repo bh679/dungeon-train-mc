@@ -49,12 +49,16 @@ public final class LiveFeedSource implements IVideoSource {
 
     private final ResourceLocation texture;
     private final ResourceLocation pendingTextureId;
+    /** The whole picture at its real shape, for the pinned box ({@link #fullPicture}). */
+    private final ResourceLocation fullTextureId;
     /** This source shows the second stream (falling back to the first). */
     private final boolean second;
     private volatile long lastInterestMs;
 
     @Nullable private LiveHlsSession session;
     @Nullable private LiveFeedTexture view;
+    /** {@link #session}'s whole frame at its real size; made on first ask, again when the shape changes. */
+    @Nullable private LiveFeedTexture fullView;
     /** The next session, decoding in the background; it replaces {@link #session} at its first frame. */
     @Nullable private LiveHlsSession pending;
     @Nullable private LiveFeedTexture pendingTexture;
@@ -64,6 +68,7 @@ public final class LiveFeedSource implements IVideoSource {
     private LiveFeedSource(String textureName, boolean second) {
         this.texture = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, textureName);
         this.pendingTextureId = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, textureName + "_next");
+        this.fullTextureId = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, textureName + "_full");
         this.second = second;
     }
 
@@ -82,7 +87,38 @@ public final class LiveFeedSource implements IVideoSource {
      * one, else the first (the poll's own body). Pure, for the tests.
      */
     static Status statusFor(Status polled, boolean second) {
-        return second ? polled.secondOrThis() : polled;
+        return statusFor(polled, second, null, null);
+    }
+
+    /**
+     * {@link #statusFor(Status, boolean)}, knowing this client streams on the relay's second channel at
+     * {@code ownSecondUrl} (null when it does not): until a poll names the second stream, {@link #SECOND}
+     * shows our own playlist rather than falling back to the first stream, so a streamer just handed the
+     * second channel sees their own picture in the pinned box, not someone else's. Pure, for the tests.
+     */
+    static Status statusFor(Status polled, boolean second, @Nullable String ownSecondUrl, @Nullable String ownName) {
+        if (!second) return polled;
+        if (ownSecondUrl != null && !hasLiveSecond(polled)) {
+            return new Status(true, null, ownSecondUrl, ownName, 0, 0, true, null, false, java.util.List.of());
+        }
+        return polled.secondOrThis();
+    }
+
+    private static boolean hasLiveSecond(Status polled) {
+        return polled.second() != null && polled.second().live();
+    }
+
+    /** Our own broadcast's playlist while it went out on the relay's second channel, else null. */
+    @Nullable
+    private static String ownSecondUrl() {
+        LiveStreamController c = LiveStreamController.get();
+        return c.onSecondChannel() ? c.playlistUrl() : null;
+    }
+
+    @Nullable
+    private static String ownName() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.getUser() != null ? mc.getUser().getName() : null;
     }
 
     /** What the feed has to show this frame, for a TV screen or the pinned head viewer. */
@@ -115,9 +151,10 @@ public final class LiveFeedSource implements IVideoSource {
      * The source that actually decodes for this one: {@link #MAIN} while {@link #SECOND} has no second
      * stream to show, so a TV left on the second cassette shares the first stream's decoder and texture
      * instead of running a second one of the same stream (and never asks the relay for the second slot).
+     * While this client holds the second channel it keeps its own: there is a second stream, ours.
      */
     private LiveFeedSource delegate() {
-        if (!second || LiveStatusPoller.current().second() != null) return this;
+        if (!second || LiveStatusPoller.current().second() != null || ownSecondUrl() != null) return this;
         // Borrowing the first stream: let go of our own decoder and texture, so nothing idles behind the picture.
         if (session != null || pending != null) dropAll();
         return MAIN;
@@ -181,11 +218,54 @@ public final class LiveFeedSource implements IVideoSource {
         return delegate().texture;
     }
 
+    /** The whole picture, uncropped: its texture and real size. */
+    public record Picture(ResourceLocation texture, LiveFrameShape.Size size) {}
+
+    /**
+     * Render thread, after {@link #frame}: the picture on screen whole, at the stream's own shape, for a
+     * view that resizes to fit it (the pinned box) rather than cropping like a TV. Null until a frame is in.
+     */
+    @Nullable
+    public Picture fullPicture(int animationTick, float partialTick) {
+        return delegate().ownFullPicture(animationTick, partialTick);
+    }
+
+    @Nullable
+    private Picture ownFullPicture(int animationTick, float partialTick) {
+        LiveHlsSession s = session;
+        if (s == null || s.frameSequence() == 0) return null;
+        LiveFrameShape.Size size = s.shape();
+        LiveFeedTexture f = fullView;
+        if (f == null || f.getSession() != s || f.getPixels() == null
+                || f.getPixels().getWidth() != size.width() || f.getPixels().getHeight() != size.height()) {
+            dropFullView();
+            f = s.createFullView(fullTextureId);
+            f.register();
+            fullView = f;
+        }
+        f.uploadFrameAtTime(animationTick, partialTick, false);
+        return f.hasPicture() ? new Picture(fullTextureId, size) : null;
+    }
+
+    /** Width over height of the picture on screen, kept within what a stream may be ({@link LiveAspect}); 16:9 until known. */
+    public float ratio() {
+        LiveHlsSession s = delegate().session;
+        float r = s == null || s.frameSequence() == 0 ? 16f / 9f : s.shape().ratio();
+        return LiveAspect.clampRatio(r);
+    }
+
+    private void dropFullView() {
+        LiveFeedTexture f = fullView;
+        if (f != null) { f.unregister(); f.close(); fullView = null; }
+    }
+
     /** {@code tvBlock}: a TV block is asking, which keeps the decode at full width for a streamer too. */
     private Frame frame(int animationTick, float partialTick, boolean paused, boolean tvBlock) {
         if (!LiveFeedClientConfig.viewingEnabled()) return Frame.STATIC;
         lastInterestMs = System.currentTimeMillis();
-        Status status = statusFor(tvBlock ? LiveStatusPoller.tvWanted() : LiveStatusPoller.wanted(), second);
+        Status polled = tvBlock ? LiveStatusPoller.tvWanted() : LiveStatusPoller.wanted();
+        String own = second ? ownSecondUrl() : null;
+        Status status = statusFor(polled, second, own, own != null ? ownName() : null);
         boolean replay = false;
         String url;
         if (status.live() && status.slot() && status.playlistUrl() != null && !playedToEnd(status.playlistUrl())) {
@@ -318,6 +398,7 @@ public final class LiveFeedSource implements IVideoSource {
 
     /** Render thread: forget the current session and its texture (world unload, takeover). */
     public void dropSession() {
+        dropFullView();
         LiveFeedTexture t = view;
         if (t != null) { t.unregister(); t.close(); view = null; }
         LiveHlsSession s = session;

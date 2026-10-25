@@ -87,6 +87,13 @@ public final class DungeonTrainClient {
             DistantHorizonsSuppression.register();
             // DH keeps generating LODs behind the pause menu; hold it while singleplayer is paused.
             DistantHorizonsPauseHold.register();
+            // The sunk-zone attic filter is registered on the common side; the client supplies the
+            // player's toggle and answers for client-side levels (DH on a server without DH).
+            games.brennan.dungeontrain.compat.DistantHorizonsSunkAttic.setEnabled(
+                () -> !games.brennan.dungeontrain.config.ClientDisplayConfig.isLoaded()
+                    || games.brennan.dungeontrain.config.ClientDisplayConfig.SUNK_ATTIC_HIDE_DISTANT_HORIZONS.get());
+            games.brennan.dungeontrain.compat.DistantHorizonsSunkAttic.setClientResolver(
+                ClientUpsideDownBand::sunkAtticFor);
         }
 
         // Skybox blocks mask each variant's sky with the stencil buffer, which Minecraft's

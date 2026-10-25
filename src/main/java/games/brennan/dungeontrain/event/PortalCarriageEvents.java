@@ -22,6 +22,7 @@ import games.brennan.dungeontrain.portal.PortalExitBindings;
 import games.brennan.dungeontrain.portal.PortalExitTransit;
 import games.brennan.dungeontrain.portal.PortalFacing;
 import games.brennan.dungeontrain.portal.PortalFrames;
+import games.brennan.dungeontrain.portal.PortalGroupOrigin;
 import games.brennan.dungeontrain.portal.PortalPrewarmHints;
 import games.brennan.dungeontrain.portal.PortalCorridorEntities;
 import games.brennan.dungeontrain.portal.PortalEntityTransit;
@@ -90,6 +91,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import org.joml.Vector3d;
 import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
 
@@ -854,8 +856,11 @@ public final class PortalCarriageEvents {
                     if (!anyPlayerWithin(players, bb.minX(), bb.minY(), bb.minZ(), CONFIRM_RANGE)) {
                         continue;
                     }
+                    // The shell corner, not the box's: see PortalGroupOrigin — a block built onto
+                    // the outside of the train grows the box and would slide every frame with it.
+                    Vector3d shell = PortalGroupOrigin.of(ship, bb);
                     PortalStampRecord.Proof proof = PortalStampRecord.confirmGroup(
-                        level, ship, dims, anchorPIdx, groupSize, bb.minX(), bb.minY(), bb.minZ());
+                        level, ship, dims, anchorPIdx, groupSize, shell.x, shell.y, shell.z);
                     // REFUTED is the disagreement worth reporting. UNREADABLE is "ask again in a
                     // moment" — the plot has not loaded — and saying so would be the same line at
                     // the same rate for a state that resolves itself.
@@ -865,8 +870,9 @@ public final class PortalCarriageEvents {
                     if (proof != PortalStampRecord.Proof.CONFIRMED) continue;
                 }
 
+                Vector3d origin = PortalGroupOrigin.of(ship, bb);
                 handleGroup(level, players, dims, anchorPIdx, ship,
-                    bb.minX(), bb.minY(), bb.minZ(), groupSize, padLen, puppets);
+                    origin.x, origin.y, origin.z, groupSize, padLen, puppets);
             }
         }
 
@@ -1050,8 +1056,9 @@ public final class PortalCarriageEvents {
                     warnSkippedGroup(level, pairKey, PortalSwapDiagnostics.Reason.DEGENERATE_AABB);
                     continue;
                 }
+                Vector3d origin = PortalGroupOrigin.of(ship, bb);
                 handleGroup(level, players, dims, pairKey, ship,
-                    bb.minX(), bb.minY(), bb.minZ(), groupSize, padLen, puppets);
+                    origin.x, origin.y, origin.z, groupSize, padLen, puppets);
                 continue;
             }
 
@@ -2175,12 +2182,12 @@ public final class PortalCarriageEvents {
                 continue;
             }
 
-            // A player who was standing goes to the destination's floor surface rather than to the
-            // carried-across local Y — the two frames' block grids differ by the ship's fractional
-            // pose, and landing a fraction inside a twin that hangs in open air drops them through it.
-            double targetY = player.onGround()
-                ? frames.floorSurfaceY(move.toFrame(), boundTwin)
-                : move.y();
+            // Never below the destination's floor surface — the two frames' block grids differ by the
+            // ship's fractional pose, and landing a fraction inside a twin that hangs in open air
+            // drops them through it. Never pulled DOWN to it either: this used to snap anyone the
+            // server thought was on the ground, and for a rider on a Sable carriage that flag is
+            // wrong often enough that a player swapped mid-jump landed on the room's floor.
+            double targetY = Math.max(move.y(), frames.floorSurfaceY(move.toFrame(), boundTwin));
 
             // Last line of defence: never put anybody where there is nothing to stand on. The
             // guards above establish that the destination corridor is not severed and its chunks
@@ -3088,6 +3095,9 @@ public final class PortalCarriageEvents {
         }
         out.add("  sub-level: resident, AABB minX=" + fmt(bb.minX()) + " minY=" + fmt(bb.minY())
             + " minZ=" + fmt(bb.minZ()));
+        // The corner the tick builds its frames from — PortalGroupOrigin, not the box above.
+        Vector3d shell = PortalGroupOrigin.of(ship, bb);
+        out.add("  shell corner: (" + fmt(shell.x) + ", " + fmt(shell.y) + ", " + fmt(shell.z) + ")");
 
         int pairKey = PortalCarriageRole.entryIndexOf(anchor, groupSize);
         PortalStructure structure = STRUCTURES.get(pairKey);
@@ -3146,9 +3156,9 @@ public final class PortalCarriageEvents {
             // The same helper the tick uses, not a second copy of the arithmetic: a diagnosis that
             // derived the origin itself would agree with working code and disagree with broken code,
             // which is the wrong way round.
-            double originX = corridorOriginX(bb.minX(), padLen, slot, dims, role, kind);
-            double originY = bb.minY();
-            double originZ = bb.minZ();
+            double originX = corridorOriginX(shell.x, padLen, slot, dims, role, kind);
+            double originY = shell.y;
+            double originZ = shell.z;
 
             out.add("  carriage " + carriageIndex + " (" + role + ", slot " + slot + "): origin ("
                 + fmt(originX) + ", " + fmt(originY) + ", " + fmt(originZ) + ")");
