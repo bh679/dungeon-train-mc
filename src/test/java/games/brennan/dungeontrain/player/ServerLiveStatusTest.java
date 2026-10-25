@@ -57,12 +57,27 @@ final class ServerLiveStatusTest {
     @Test
     void secondStreamLiveNeedsAFreshRelayAnswer() {
         long at = 1_000_000L, now = at + 1_000L, stale = at + ServerLiveStatus.STALE_MS;
-        assertTrue(ServerLiveStatus.secondStreamLive(0, true, true, at, now), "relay says second");
-        assertFalse(ServerLiveStatus.secondStreamLive(0, true, false, at, now), "relay says no second");
-        assertTrue(ServerLiveStatus.secondStreamLive(2, true, false, at, now), "two here, relay live");
-        assertFalse(ServerLiveStatus.secondStreamLive(2, false, false, 0L, now), "two here, relay never answered");
-        assertFalse(ServerLiveStatus.secondStreamLive(2, true, false, at, stale), "two here, relay answer stale");
-        assertFalse(ServerLiveStatus.secondStreamLive(2, false, false, at, now), "two here, relay says nobody live");
-        assertFalse(ServerLiveStatus.secondStreamLive(1, true, true, at, stale), "failed polls: stale after STALE_MS");
+        long asked = at - 200L, both = at - 5_000L;
+        assertTrue(ServerLiveStatus.secondStreamLive(0, 0L, true, true, at, asked, now), "relay says second");
+        assertFalse(ServerLiveStatus.secondStreamLive(0, 0L, true, false, at, asked, now), "relay says no second");
+        assertFalse(ServerLiveStatus.secondStreamLive(2, both, false, false, 0L, 0L, now), "two here, relay never answered");
+        assertFalse(ServerLiveStatus.secondStreamLive(2, at + 500L, true, false, at, asked, stale), "two here, relay answer stale");
+        assertFalse(ServerLiveStatus.secondStreamLive(2, at + 500L, false, false, at, asked, now), "two here, relay says nobody live");
+        assertFalse(ServerLiveStatus.secondStreamLive(1, 0L, true, true, at, asked, stale), "failed polls: stale after STALE_MS");
+    }
+
+    @Test
+    @DisplayName("two local streamers bridge only until the relay answers without a second stream")
+    void localPairBridgesOnlyUntilTheRelayAnswers() {
+        long at = 1_000_000L, now = at + 1_000L;
+        // The second claim landed after the poll behind the last answer was sent: the relay cannot know yet.
+        assertTrue(ServerLiveStatus.secondStreamLive(2, at - 100L, true, false, at, at - 200L, now), "poll sent before the claim");
+        // A poll sent after both started came back with no second: the pair is stale, Stream 2 goes.
+        assertFalse(ServerLiveStatus.secondStreamLive(2, at - 5_000L, true, false, at, at - 200L, now), "answered since, no second");
+        assertFalse(ServerLiveStatus.secondStreamLive(2, at - 200L, true, false, at, at - 200L, now), "asked the same instant");
+        // Fewer than two streamers here: no start time for a pair, never bridged.
+        assertFalse(ServerLiveStatus.secondStreamLive(1, 0L, true, false, at, at - 200L, now), "one streamer");
+        // The relay's own second always counts, whatever the local pair.
+        assertTrue(ServerLiveStatus.secondStreamLive(2, at - 5_000L, true, true, at, at - 200L, now), "relay names the second");
     }
 }

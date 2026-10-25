@@ -33,6 +33,7 @@
     "ChunkAccessAccessor",
     "ServerGamePacketListenerFloatAccessor",
     "ChunkMapMixin",
+    "ChunkMapTwinSpaceSkipMixin",
     "MinecraftServerSaveMixin",
     "MultiNoiseBiomeSourceMixin",
     "MultiNoiseBiomeSourceAccessor",

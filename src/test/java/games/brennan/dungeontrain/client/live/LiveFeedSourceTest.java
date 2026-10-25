@@ -6,7 +6,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Which stream each source shows for a poll: the second source falls back to the first while there is no second. */
 final class LiveFeedSourceTest {
@@ -33,5 +35,24 @@ final class LiveFeedSourceTest {
         Status one = live("s1", null);
         assertSame(one, LiveFeedSource.statusFor(one, true));
         assertSame(Status.OFFLINE, LiveFeedSource.statusFor(Status.OFFLINE, true));
+    }
+
+    @Test
+    @DisplayName("holding the second channel, the second source shows our own stream until a poll names the second")
+    void ownSecondChannelShowsOwnStream() {
+        String mine = "https://x/second/me/live.m3u8";
+        Status one = live("s1", null);
+        Status own = LiveFeedSource.statusFor(one, true, mine, "Bob");
+        assertTrue(own.live());
+        assertTrue(own.slot());
+        assertEquals(mine, own.playlistUrl());
+        assertEquals("Bob", own.streamer());
+        assertEquals(mine, LiveFeedSource.statusFor(Status.OFFLINE, true, mine, "Bob").playlistUrl());
+        // Once the relay reports the second stream, its status (variants and all) wins.
+        Status second = live("s2", null);
+        assertSame(second, LiveFeedSource.statusFor(live("s1", second), true, mine, "Bob"));
+        // The first source never borrows it; not holding the second channel falls back as before.
+        assertSame(one, LiveFeedSource.statusFor(one, false, mine, "Bob"));
+        assertSame(one, LiveFeedSource.statusFor(one, true, null, null));
     }
 }
