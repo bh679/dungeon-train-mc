@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 3,
+  "pools": {
+  },
+  "links": {
+    "4,0,1": "ominous_trial_vault",
+    "4,0,2": "trial_vault"
+  }
+}

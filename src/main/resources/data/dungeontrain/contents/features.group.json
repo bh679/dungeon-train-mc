@@ -191,6 +191,10 @@
     {
       "id": "trialvault",
       "weight": 6
+    },
+    {
+      "id": "testspace",
+      "weight": 1
     }
   ]
 }
