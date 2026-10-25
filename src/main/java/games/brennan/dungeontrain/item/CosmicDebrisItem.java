@@ -30,6 +30,7 @@ public class CosmicDebrisItem extends Item {
     public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entity) {
         if (entity instanceof ServerPlayer player) {
             PerkPoints.addActive(player, 1);
+            games.brennan.dungeontrain.perks.PerkBalances.sync(player);
             player.sendSystemMessage(Component.translatable(KEY_GAINED, PerkPoints.active(player))
                 .withStyle(ChatFormatting.LIGHT_PURPLE));
             PerkMenu.openPerksMenu(player);

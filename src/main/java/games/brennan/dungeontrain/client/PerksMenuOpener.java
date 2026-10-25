@@ -1,12 +1,12 @@
 package games.brennan.dungeontrain.client;
 
-import net.minecraft.ChatFormatting;
+import games.brennan.dungeontrain.client.perks.PerksScreen;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
 
 /**
- * Client door into the perks menu. Until the menu screen lands this is a stub that says a point is
- * ready; the menu work replaces the body with {@code Minecraft.getInstance().setScreen(...)}.
+ * Client door into the perks menu, opened by the server after a Cosmic Debris is eaten
+ * ({@link games.brennan.dungeontrain.net.OpenPerksMenuPacket}). Another screen already up (a book,
+ * a chest) wins: the point stays banked and the menu waits for the P key.
  */
 public final class PerksMenuOpener {
 
@@ -15,7 +15,7 @@ public final class PerksMenuOpener {
     public static void open(int activePoints) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        mc.player.displayClientMessage(Component.translatable("chat.dungeontrain.perks.ready_to_spend", activePoints)
-            .withStyle(ChatFormatting.LIGHT_PURPLE), false);
+        if (mc.screen != null && !(mc.screen instanceof PerksScreen)) return;
+        PerksScreen.open(true);
     }
 }

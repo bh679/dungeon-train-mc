@@ -71,6 +71,7 @@ public final class PerkPointEvents {
         int before = PerkPoints.unlockEarned(player);
         int after = recompute(player);
         player.setData(ModDataAttachments.PERK_UNLOCK_EARNED.get(), after);
+        PerkBalances.sync(player);
         if (!silent && after > before) {
             player.sendSystemMessage(Component.translatable(KEY_GAINED, after - before,
                 PerkPoints.unlockAvailable(player)).withStyle(ChatFormatting.LIGHT_PURPLE));
