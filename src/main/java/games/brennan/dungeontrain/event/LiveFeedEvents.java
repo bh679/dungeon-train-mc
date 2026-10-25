@@ -147,6 +147,12 @@ public final class LiveFeedEvents {
             case FAILED -> Exit.FAILED;
             case BANNED -> Exit.BANNED;
         };
+        if (exit == Exit.BANNED && !LiveModeration.isBanned(player.getUUID())) {
+            // The relay refused the claim on a ban the server didn't hold (its login fetch missed). Burn
+            // now, but ask the relay before saying anything: it knows how long, and the lines behind it.
+            if (endStream(player, exit, false)) LiveModeration.refresh(player, p -> p.sendSystemMessage(LiveModeration.bannedBurnLine(p)));
+            return;
+        }
         endStream(player, exit);
     }
 
@@ -319,6 +325,11 @@ public final class LiveFeedEvents {
 
     /** Ends {@code player}'s stream if they hold it: clear the streamer first so the slot change we cause is ignored. True when they did. */
     private static boolean endStream(ServerPlayer player, Exit exit) {
+        return endStream(player, exit, true);
+    }
+
+    /** {@link #endStream(ServerPlayer, Exit)}; {@code say} false leaves the burn's chat line to the caller. */
+    private static boolean endStream(ServerPlayer player, Exit exit, boolean say) {
         MinecraftServer server = player.getServer();
         if (server == null) return false;
         // A pending wearer (still claiming, or watching while deciding on a takeover) ends the same way:
@@ -329,7 +340,7 @@ public final class LiveFeedEvents {
         if (becomesTv(exit)) {
             toTv(player, burnLineKey(exit));
         } else if (burnsOn(exit)) {
-            burn(player, exit);
+            burn(player, exit, say);
         } else if (exit == Exit.FAILED) {
             handBack(player);
         }
@@ -351,6 +362,10 @@ public final class LiveFeedEvents {
      * ended" pop-up itself, so it shows on every end — save &amp; quit included.
      */
     private static void burn(ServerPlayer player, Exit why) {
+        burn(player, why, true);
+    }
+
+    private static void burn(ServerPlayer player, Exit why, boolean say) {
         if (isCamcorder(player.getItemBySlot(EquipmentSlot.HEAD))) {
             player.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
         } else if (isCamcorder(player.containerMenu.getCarried())) {
@@ -362,7 +377,7 @@ public final class LiveFeedEvents {
         level.sendParticles(ParticleTypes.FLAME, player.getX(), player.getEyeY() + 0.3, player.getZ(), 24, 0.3, 0.2, 0.3, 0.02);
         level.sendParticles(ParticleTypes.LARGE_SMOKE, player.getX(), player.getEyeY() + 0.4, player.getZ(), 8, 0.2, 0.1, 0.2, 0.01);
         level.playSound(null, player.blockPosition(), SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.8f, 0.9f);
-        player.sendSystemMessage(why == Exit.BANNED ? LiveModeration.bannedBurnLine(player) : Component.translatable(burnLineKey(why)));
+        if (say) player.sendSystemMessage(why == Exit.BANNED ? LiveModeration.bannedBurnLine(player) : Component.translatable(burnLineKey(why)));
     }
 
     /**

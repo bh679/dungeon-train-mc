@@ -781,10 +781,15 @@ public final class CarriageContentsPlacer {
                         brushBe.setChanged();
                         continue;
                     }
-                    if (!games.brennan.dungeontrain.editor.ContainerContentsRoller.isContainerState(state)
+                    boolean vault = games.brennan.dungeontrain.editor.VaultLoot.isVault(state);
+                    if (!vault
+                        && !games.brennan.dungeontrain.editor.ContainerContentsRoller.isContainerState(state)
                         && !games.brennan.dungeontrain.editor.ContainerContentsRoller.isDecoratedPot(state)) continue;
-                    java.util.Optional<games.brennan.dungeontrain.editor.ContainerContentsPool> defaultPool =
-                        games.brennan.dungeontrain.editor.BlockLootDefaults.resolveDefaultPool(
+                    // A vault baked into a content .nbt takes vanilla's trial reward, always.
+                    java.util.Optional<games.brennan.dungeontrain.editor.ContainerContentsPool> defaultPool = vault
+                        ? java.util.Optional.of(games.brennan.dungeontrain.editor.VaultLoot.defaultPool(
+                            games.brennan.dungeontrain.editor.ContainerContentsPool.DEFAULT_VAULT_KEY))
+                        : games.brennan.dungeontrain.editor.BlockLootDefaults.resolveDefaultPool(
                             state, localPos, seed, carriageIndex);
                     if (defaultPool.isEmpty()) continue;
                     rollAndApplyPool(level, worldPos, localPos, defaultPool.get(), seed, carriageIndex);
@@ -816,6 +821,7 @@ public final class CarriageContentsPlacer {
         be.loadCustomOnly(rolled, level.registryAccess());
         be.setChanged();
         games.brennan.dungeontrain.editor.ChiseledBookshelfSync.syncIfNeeded(level, worldPos);
+        games.brennan.dungeontrain.editor.VaultLoot.syncState(level, worldPos);
     }
 
     /**
