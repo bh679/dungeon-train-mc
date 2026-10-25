@@ -21,7 +21,7 @@ import java.util.List;
 
 /**
  * A cosmic apple turns up in about one carriage group in {@link #EVERY}: one stack of one, in one chest,
- * barrel or shulker box of that group, never in the first band. Which apple depends on depth
+ * barrel or shulker box of that group, never at Diff-Level 0 (the first 40 carriages). Which apple depends on depth
  * ({@link #tierFor}): only Cosmic Apples until Diff-Level {@link #BITE_FROM}, Celestial Bites from there,
  * Violet Cores from {@link #CORE_FROM}. Deterministic per world seed and group, so a regenerated group
  * rolls the same way the rest of its loot does. Called from {@code TrainAssembler.spawnGroup} right after

@@ -106,7 +106,7 @@ carriage's contents pass, before a fresh shared carriage registers, so it never 
 
 - The draw is a seeded hash of (world generation seed, group index), so a group rolls the same way
   every time, like the rest of its loot. Held groups reload with their containers, so no second roll.
-- The first band (position tier 0) gets none.
+- The first 40 carriages (Diff-Level 0, either direction: 20 carriages per level, one level of delay) get none.
 - A drawn group whose chosen carriage has no container with a free slot gets none (relay-leased and
   whole-room carriages have no contents pass), so the real rate is a little under one in five.
 - No loot prefab carries any of them (`CosmicAppleLootTest`).
