@@ -30838,7 +30838,7 @@
     },
     {
       "id": "advancement-asks-a-little-more",
-      "version": "0.1530.0",
+      "version": "0.1531.0",
       "type": "feat",
       "tags": [
         "feature",
