@@ -3732,6 +3732,7 @@
   "gui.dungeontrain.editor_menu.container.title": "เนื้อหาภาชนะ",
   "gui.dungeontrain.editor_menu.container.title_at": "เนื้อหาภาชนะ @ %s",
   "gui.dungeontrain.editor_menu.container.linked": "เชื่อมกับ: %s",
+  "gui.dungeontrain.editor_menu.container.vault_key": "กุญแจ: %s",
   "gui.dungeontrain.editor_menu.container.add_title": "เพิ่มไอเทม",
   "gui.dungeontrain.editor_menu.container.slot_in": "เข้า",
   "gui.dungeontrain.editor_menu.container.slot_fuel": "เชื้อเพลิง",

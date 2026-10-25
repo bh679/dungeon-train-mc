@@ -3746,6 +3746,7 @@
   "gui.dungeontrain.editor_menu.container.title": "容器內容",
   "gui.dungeontrain.editor_menu.container.title_at": "容器內容 @ %s",
   "gui.dungeontrain.editor_menu.container.linked": "已連結：%s",
+  "gui.dungeontrain.editor_menu.container.vault_key": "鑰匙：%s",
   "gui.dungeontrain.editor_menu.container.add_title": "新增物品",
   "gui.dungeontrain.editor_menu.container.slot_in": "輸入",
   "gui.dungeontrain.editor_menu.container.slot_fuel": "燃料",

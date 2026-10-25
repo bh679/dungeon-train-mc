@@ -21,7 +21,9 @@ import java.util.List;
  * {@code anchorPos} with axes {@code anchorRight}/{@code anchorUp},
  * showing {@code entries} as the pool for the targeted container. When
  * {@code linkedPrefabId != null}, the menu also draws a link sub-row that
- * names the linked loot prefab and offers an unlink action.</p>
+ * names the linked loot prefab and offers an unlink action. When
+ * {@code vaultKey != null} the target is a vault, and the menu draws a Key row
+ * naming the item that unlocks it.</p>
  *
  * <p>Inactive packet ({@code localPos == null}): close the menu.</p>
  */
@@ -35,8 +37,18 @@ public record ContainerContentsSyncPacket(
     Vec3 anchorPos,
     Vec3 anchorRight,
     Vec3 anchorUp,
-    @Nullable String linkedPrefabId
+    @Nullable String linkedPrefabId,
+    @Nullable String vaultKey
 ) implements CustomPacketPayload {
+
+    /** Not a vault: no Key row. */
+    public ContainerContentsSyncPacket(String plotKey, @Nullable BlockPos localPos, List<Entry> entries,
+                                       int fillMin, int fillMax, int containerSize,
+                                       Vec3 anchorPos, Vec3 anchorRight, Vec3 anchorUp,
+                                       @Nullable String linkedPrefabId) {
+        this(plotKey, localPos, entries, fillMin, fillMax, containerSize, anchorPos, anchorRight, anchorUp,
+            linkedPrefabId, null);
+    }
 
     /**
      * Single pool entry on the wire — item registry id, max stack count, weight,
@@ -136,6 +148,12 @@ public record ContainerContentsSyncPacket(
             buf.writeBoolean(true);
             buf.writeUtf(linkedPrefabId, 64);
         }
+        if (vaultKey == null) {
+            buf.writeBoolean(false);
+        } else {
+            buf.writeBoolean(true);
+            buf.writeUtf(vaultKey, 256);
+        }
     }
 
     public static ContainerContentsSyncPacket decode(FriendlyByteBuf buf) {
@@ -171,7 +189,9 @@ public record ContainerContentsSyncPacket(
             entries.add(new Entry(id, count, weight, randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, bookTitle));
         }
         String link = buf.readBoolean() ? buf.readUtf(64) : null;
-        return new ContainerContentsSyncPacket(key, local, entries, fillMin, fillMax, containerSize, anchor, right, up, link);
+        String vaultKey = buf.readBoolean() ? buf.readUtf(256) : null;
+        return new ContainerContentsSyncPacket(key, local, entries, fillMin, fillMax, containerSize, anchor, right, up, link,
+            vaultKey);
     }
 
     @Override

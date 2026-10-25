@@ -3732,6 +3732,7 @@
   "gui.dungeontrain.editor_menu.container.title": "Laman ng Lalagyan",
   "gui.dungeontrain.editor_menu.container.title_at": "Laman ng Lalagyan @ %s",
   "gui.dungeontrain.editor_menu.container.linked": "Naka-link: %s",
+  "gui.dungeontrain.editor_menu.container.vault_key": "Susi: %s",
   "gui.dungeontrain.editor_menu.container.add_title": "Magdagdag ng Item",
   "gui.dungeontrain.editor_menu.container.slot_in": "pasok",
   "gui.dungeontrain.editor_menu.container.slot_fuel": "gatong",

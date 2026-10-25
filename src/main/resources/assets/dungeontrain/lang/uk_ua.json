@@ -4488,6 +4488,7 @@
   "gui.dungeontrain.editor_menu.container.title": "Вміст контейнера",
   "gui.dungeontrain.editor_menu.container.title_at": "Вміст контейнера @ %s",
   "gui.dungeontrain.editor_menu.container.linked": "Прив’язано: %s",
+  "gui.dungeontrain.editor_menu.container.vault_key": "Ключ: %s",
   "gui.dungeontrain.editor_menu.container.add_title": "Додати предмет",
   "gui.dungeontrain.editor_menu.container.slot_in": "вхід",
   "gui.dungeontrain.editor_menu.container.slot_fuel": "паливо",

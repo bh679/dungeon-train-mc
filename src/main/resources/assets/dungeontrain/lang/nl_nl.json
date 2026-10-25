@@ -3788,6 +3788,7 @@
   "gui.dungeontrain.editor_menu.container.title": "Containerinhoud",
   "gui.dungeontrain.editor_menu.container.title_at": "Containerinhoud @ %s",
   "gui.dungeontrain.editor_menu.container.linked": "Gekoppeld: %s",
+  "gui.dungeontrain.editor_menu.container.vault_key": "Sleutel: %s",
   "gui.dungeontrain.editor_menu.container.add_title": "Item toevoegen",
   "gui.dungeontrain.editor_menu.container.slot_in": "in",
   "gui.dungeontrain.editor_menu.container.slot_fuel": "brandstof",

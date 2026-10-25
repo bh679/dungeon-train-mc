@@ -30716,6 +30716,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "trial-vault-carriages",
+      "version": "0.1523.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train",
+        "loot"
+      ],
+      "title": "Trial vault carriages",
+      "summary": "Vaults now turn up on the train. Bring a trial key to claim your own reward from each one, and every player gets their own. Ominous vaults take an ominous trial key and hold richer loot.",
+      "highlights": [
+        "New trial vault carriages",
+        "Every player gets their own reward from each vault",
+        "Builders can choose a vault's loot and the key that opens it"
+      ],
+      "pr": 2320,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -3732,6 +3732,7 @@
   "gui.dungeontrain.editor_menu.container.title": "コンテナの中身",
   "gui.dungeontrain.editor_menu.container.title_at": "コンテナの中身 @ %s",
   "gui.dungeontrain.editor_menu.container.linked": "リンク: %s",
+  "gui.dungeontrain.editor_menu.container.vault_key": "鍵: %s",
   "gui.dungeontrain.editor_menu.container.add_title": "アイテムを追加",
   "gui.dungeontrain.editor_menu.container.slot_in": "入力",
   "gui.dungeontrain.editor_menu.container.slot_fuel": "燃料",

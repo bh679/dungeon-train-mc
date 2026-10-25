@@ -3849,6 +3849,7 @@
   "gui.dungeontrain.editor_menu.container.title": "Содержимое контейнера",
   "gui.dungeontrain.editor_menu.container.title_at": "Содержимое контейнера @ %s",
   "gui.dungeontrain.editor_menu.container.linked": "Связь: %s",
+  "gui.dungeontrain.editor_menu.container.vault_key": "Ключ: %s",
   "gui.dungeontrain.editor_menu.container.add_title": "Добавить предмет",
   "gui.dungeontrain.editor_menu.container.slot_in": "вход",
   "gui.dungeontrain.editor_menu.container.slot_fuel": "топливо",

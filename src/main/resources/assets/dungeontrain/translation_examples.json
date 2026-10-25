@@ -7081,6 +7081,15 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.container.vault_key": {
+    "1": {
+      "label": "the name of the key item that unlocks the vault",
+      "examples": [
+        "Trial Key",
+        "Ominous Trial Key"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.container.form": {
     "1": {
       "label": "the potion form, already translated",

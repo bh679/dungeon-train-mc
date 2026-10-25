@@ -4430,6 +4430,7 @@
   "gui.dungeontrain.editor_menu.container.title": "Container Contents",
   "gui.dungeontrain.editor_menu.container.title_at": "Container Contents @ %s",
   "gui.dungeontrain.editor_menu.container.linked": "Linked: %s",
+  "gui.dungeontrain.editor_menu.container.vault_key": "Key: %s",
   "gui.dungeontrain.editor_menu.container.add_title": "Add Item",
   "gui.dungeontrain.editor_menu.container.slot_in": "in",
   "gui.dungeontrain.editor_menu.container.slot_fuel": "fuel",
