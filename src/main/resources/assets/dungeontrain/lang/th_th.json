@@ -838,6 +838,8 @@
   "chat.dungeontrain.familiar_photo.tributed.1": "ภาพถ่ายของคุณเอง วนกลับมาอีกครั้ง %s ถวายเครื่องบรรณาการให้มัน",
   "chat.dungeontrain.familiar_photo.tributed.2": "ภาพถ่ายที่คุ้นเคย %s จ่ายเพื่อให้มันเดินทางต่อไป",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s ถวายเครื่องบรรณาการให้ภาพนี้ คุณเป็นคนถ่ายมัน",
+  "jade.dungeontrain.photo_frame.photographer": "ถ่ายโดย %s",
+  "config.jade.plugin_dungeontrain.photo_frame_photographer": "ผู้ถ่ายภาพในกรอบรูป",
   "item.dungeontrain.shared_photo.by": "ภาพถ่ายโดย %s",
   "item.dungeontrain.random_playerphoto": "ภาพถ่ายผู้เล่นแบบสุ่ม",
   "item.dungeontrain.found_photograph": "ภาพถ่าย",

@@ -969,6 +969,8 @@
   "chat.dungeontrain.familiar_photo.tributed.1": "Propria ta fotografie, întoarsă la tine. %s a plătit tribut pentru ea.",
   "chat.dungeontrain.familiar_photo.tributed.2": "O fotografie cunoscută. %s a plătit ca ea să călătorească mai departe.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s a plătit tribut pentru aceasta. Tu ai făcut-o.",
+  "jade.dungeontrain.photo_frame.photographer": "Fotografie de %s",
+  "config.jade.plugin_dungeontrain.photo_frame_photographer": "Fotograful ramei foto",
   "item.dungeontrain.shared_photo.by": "Fotografie de %s",
   "item.dungeontrain.random_playerphoto": "Fotografie aleatorie de jucător",
   "item.dungeontrain.found_photograph": "Fotografie",

@@ -871,6 +871,8 @@
   "chat.dungeontrain.familiar_photo.tributed.1": "Je eigen foto, weer bij je teruggekomen. %s heeft er tribuut voor betaald.",
   "chat.dungeontrain.familiar_photo.tributed.2": "Een vertrouwde foto. %s heeft betaald om hem te laten reizen.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s heeft tribuut betaald voor deze. Jij hebt hem genomen.",
+  "jade.dungeontrain.photo_frame.photographer": "Foto door %s",
+  "config.jade.plugin_dungeontrain.photo_frame_photographer": "Fotograaf van fotolijst",
   "item.dungeontrain.shared_photo.by": "Foto van %s",
   "item.dungeontrain.random_playerphoto": "Willekeurige spelersfoto",
   "item.dungeontrain.found_photograph": "Foto",

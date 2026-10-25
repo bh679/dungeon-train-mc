@@ -838,6 +838,8 @@
   "chat.dungeontrain.familiar_photo.tributed.1": "Ang sarili mong larawan, bumalik sa iyo. Nag-alay rito si %s.",
   "chat.dungeontrain.familiar_photo.tributed.2": "Isang pamilyar na larawan. Nagbayad si %s para patuloy itong maglakbay.",
   "chat.dungeontrain.familiar_photo.tributed.3": "Nag-alay si %s sa larawang ito. Ikaw ang kumuha nito.",
+  "jade.dungeontrain.photo_frame.photographer": "Kuha ni %s",
+  "config.jade.plugin_dungeontrain.photo_frame_photographer": "Kumuha ng Litrato sa Frame",
   "item.dungeontrain.shared_photo.by": "Larawan ni %s",
   "item.dungeontrain.random_playerphoto": "Random na Larawan ng Manlalaro",
   "item.dungeontrain.found_photograph": "Larawan",

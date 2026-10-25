@@ -838,6 +838,8 @@
   "chat.dungeontrain.familiar_photo.tributed.1": "你自己的照片，又繞了回來。%s 為它獻上了供奉。",
   "chat.dungeontrain.familiar_photo.tributed.2": "一張熟悉的照片。%s 付出了代價，讓它繼續旅行。",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s 為這一張獻上了供奉。它是你拍的。",
+  "jade.dungeontrain.photo_frame.photographer": "拍攝者：%s",
+  "config.jade.plugin_dungeontrain.photo_frame_photographer": "相框照片拍攝者",
   "item.dungeontrain.shared_photo.by": "%s 拍攝的照片",
   "item.dungeontrain.random_playerphoto": "隨機玩家照片",
   "item.dungeontrain.found_photograph": "照片",

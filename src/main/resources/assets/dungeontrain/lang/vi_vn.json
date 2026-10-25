@@ -838,6 +838,8 @@
   "chat.dungeontrain.familiar_photo.tributed.1": "Bức ảnh của chính bạn, lại vòng về. %s đã dâng cống phẩm cho nó.",
   "chat.dungeontrain.familiar_photo.tributed.2": "Một bức ảnh quen thuộc. %s đã trả giá để nó tiếp tục hành trình.",
   "chat.dungeontrain.familiar_photo.tributed.3": "%s đã dâng cống phẩm cho bức này. Chính bạn đã chụp nó.",
+  "jade.dungeontrain.photo_frame.photographer": "Ảnh của %s",
+  "config.jade.plugin_dungeontrain.photo_frame_photographer": "Người chụp ảnh trong khung",
   "item.dungeontrain.shared_photo.by": "Ảnh của %s",
   "item.dungeontrain.random_playerphoto": "Ảnh người chơi ngẫu nhiên",
   "item.dungeontrain.found_photograph": "Bức ảnh",
