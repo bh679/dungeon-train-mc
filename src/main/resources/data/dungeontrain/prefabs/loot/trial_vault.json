@@ -20,12 +20,23 @@
     { "id": "minecraft:iron_chestplate", "count": 1, "weight": 2, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 100 },
     { "id": "minecraft:golden_carrot", "count": 2, "weight": 2, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:book", "count": 1, "weight": 4, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 100 },
-    { "id": "minecraft:diamond_chestplate", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 100 },
-    { "id": "minecraft:diamond_axe", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 100 },
+    { "id": "minecraft:diamond_chestplate", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 35 },
+    { "id": "minecraft:diamond_axe", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 35 },
     { "id": "minecraft:golden_apple", "count": 1, "weight": 2, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:bolt_armor_trim_smithing_template", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:guster_banner_pattern", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:music_disc_precipice", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
-    { "id": "minecraft:trident", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 }
+    { "id": "minecraft:trident", "count": 1, "weight": 1, "randDur": true, "durChance": 5, "randEnch": false, "enchChance": 0 },
+    { "id": "exposure_polaroid:instant_camera", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "ediblebackpacks:edible_backpack", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "dungeontrain:live_headpiece", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:ominous_trial_key", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "dungeontrain:random_playerphoto", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:iron_leggings", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:diamond_leggings", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 35 },
+    { "id": "minecraft:diamond_boots", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 30 },
+    { "id": "minecraft:iron_boots", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:diamond_horse_armor", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:diamond_pickaxe", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 25 }
   ]
 }
