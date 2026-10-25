@@ -30852,6 +30852,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-chat-release-names",
+      "version": "0.1532.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Update news in Live chat names the update",
+      "summary": "When a new version comes out, the Live chat on the website, the Discord live room and Twitch now name the update just like the message you see in game. Bigger updates also get a short description, and major ones stand out.",
+      "highlights": [
+        "Update messages in Live chat show the update's name and version",
+        "Notable and major updates add a one-line description"
+      ],
+      "pr": 2331,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
