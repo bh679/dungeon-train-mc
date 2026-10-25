@@ -82,7 +82,38 @@ public final class LiveFeedSource implements IVideoSource {
      * one, else the first (the poll's own body). Pure, for the tests.
      */
     static Status statusFor(Status polled, boolean second) {
-        return second ? polled.secondOrThis() : polled;
+        return statusFor(polled, second, null, null);
+    }
+
+    /**
+     * {@link #statusFor(Status, boolean)}, knowing this client streams on the relay's second channel at
+     * {@code ownSecondUrl} (null when it does not): until a poll names the second stream, {@link #SECOND}
+     * shows our own playlist rather than falling back to the first stream, so a streamer just handed the
+     * second channel sees their own picture in the pinned box, not someone else's. Pure, for the tests.
+     */
+    static Status statusFor(Status polled, boolean second, @Nullable String ownSecondUrl, @Nullable String ownName) {
+        if (!second) return polled;
+        if (ownSecondUrl != null && !hasLiveSecond(polled)) {
+            return new Status(true, null, ownSecondUrl, ownName, 0, 0, true, null, false, java.util.List.of());
+        }
+        return polled.secondOrThis();
+    }
+
+    private static boolean hasLiveSecond(Status polled) {
+        return polled.second() != null && polled.second().live();
+    }
+
+    /** Our own broadcast's playlist while it went out on the relay's second channel, else null. */
+    @Nullable
+    private static String ownSecondUrl() {
+        LiveStreamController c = LiveStreamController.get();
+        return c.onSecondChannel() ? c.playlistUrl() : null;
+    }
+
+    @Nullable
+    private static String ownName() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.getUser() != null ? mc.getUser().getName() : null;
     }
 
     /** What the feed has to show this frame, for a TV screen or the pinned head viewer. */
@@ -101,9 +132,10 @@ public final class LiveFeedSource implements IVideoSource {
      * The source that actually decodes for this one: {@link #MAIN} while {@link #SECOND} has no second
      * stream to show, so a TV left on the second cassette shares the first stream's decoder and texture
      * instead of running a second one of the same stream (and never asks the relay for the second slot).
+     * While this client holds the second channel it keeps its own: there is a second stream, ours.
      */
     private LiveFeedSource delegate() {
-        if (!second || LiveStatusPoller.current().second() != null) return this;
+        if (!second || LiveStatusPoller.current().second() != null || ownSecondUrl() != null) return this;
         // Borrowing the first stream: let go of our own decoder and texture, so nothing idles behind the picture.
         if (session != null || pending != null) dropAll();
         return MAIN;
@@ -209,7 +241,9 @@ public final class LiveFeedSource implements IVideoSource {
     private Frame frame(int animationTick, float partialTick, boolean paused, boolean tvBlock) {
         if (!LiveFeedClientConfig.viewingEnabled()) return Frame.STATIC;
         lastInterestMs = System.currentTimeMillis();
-        Status status = statusFor(tvBlock ? LiveStatusPoller.tvWanted() : LiveStatusPoller.wanted(), second);
+        Status polled = tvBlock ? LiveStatusPoller.tvWanted() : LiveStatusPoller.wanted();
+        String own = second ? ownSecondUrl() : null;
+        Status status = statusFor(polled, second, own, own != null ? ownName() : null);
         boolean replay = false;
         String url;
         if (status.live() && status.slot() && status.playlistUrl() != null && !playedToEnd(status.playlistUrl())) {
