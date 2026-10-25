@@ -60,4 +60,15 @@ final class LiveModerationTest {
         assertTrue(LiveModeration.isBanned(p));
         assertEquals(Long.MAX_VALUE, LiveModeration.banRemainingSec(p));
     }
+
+    @Test
+    @DisplayName("the burn line never makes up a length: no cached ban (the relay refused anyway) names none")
+    void bannedBurnKeys() {
+        assertEquals("chat.dungeontrain.live.burns_banned_unknown", LiveModeration.bannedBurnKey(0));
+        assertEquals("chat.dungeontrain.live.burns_banned_permanent", LiveModeration.bannedBurnKey(Long.MAX_VALUE));
+        assertEquals("chat.dungeontrain.live.burns_banned", LiveModeration.bannedBurnKey(3600));
+        // A clean cache is what the relay-refused path sees before its status fetch lands.
+        assertEquals("chat.dungeontrain.live.burns_banned_unknown",
+            LiveModeration.bannedBurnKey(LiveModeration.banRemainingSec(UUID.randomUUID())));
+    }
 }

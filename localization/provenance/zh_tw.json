@@ -774,6 +774,7 @@
   "chat.dungeontrain.live.burns_moderated": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "61d0f478c68a4c3f"},
   "chat.dungeontrain.live.burns_banned": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "64715109cd174c07"},
   "chat.dungeontrain.live.burns_banned_permanent": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "9259e44ee8d9b075"},
+  "chat.dungeontrain.live.burns_banned_unknown": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "c7f841d4e8032a58"},
   "chat.dungeontrain.live.banned_for": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "e7aaaec5118408b7"},
   "chat.dungeontrain.live.appeal_link": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "d3f3699aed053773"},
   "chat.dungeontrain.live.appeal_link_hover": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "798d025d56f598bc"},

@@ -806,6 +806,7 @@
   "chat.dungeontrain.live.burns_moderated": "De camcorder heeft geen waarschuwingen meer en brandt weg.",
   "chat.dungeontrain.live.burns_banned": "De camcorder brandt weg. Je mag nog %s geen andere dragen.",
   "chat.dungeontrain.live.burns_banned_permanent": "De camcorder brandt weg. Je mag er geen meer dragen.",
+  "chat.dungeontrain.live.burns_banned_unknown": "De camcorder brandt weg. Je mag er momenteel geen dragen.",
   "chat.dungeontrain.live.banned_for": "Verbannen vanwege deze regels:",
   "chat.dungeontrain.live.appeal_link": "[Beroep]",
   "chat.dungeontrain.live.appeal_link_hover": "Ga in beroep tegen deze regel",

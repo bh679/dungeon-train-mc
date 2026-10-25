@@ -774,6 +774,7 @@
   "chat.dungeontrain.live.burns_moderated": "警告次数已达上限，直播摄像机燃烧殆尽。",
   "chat.dungeontrain.live.burns_banned": "直播摄像机燃烧殆尽。接下来 %s 内，你无法再佩戴直播摄像机。",
   "chat.dungeontrain.live.burns_banned_permanent": "直播摄像机燃烧殆尽。你已被永久禁止佩戴直播摄像机。",
+  "chat.dungeontrain.live.burns_banned_unknown": "直播摄像机燃烧殆尽。你已被禁止佩戴直播摄像机。",
   "chat.dungeontrain.live.banned_for": "因以下内容被禁：",
   "chat.dungeontrain.live.appeal_link": "[申诉]",
   "chat.dungeontrain.live.appeal_link_hover": "申诉这一条",

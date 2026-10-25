@@ -30699,6 +30699,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-ban-message-fix",
+      "version": "0.1521.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Live Eye ban messages fixed",
+      "summary": "When a Live Eye burns away because you are banned from wearing one, the message now shows how long the ban really lasts and the lines that caused it. /liveappeal now finds your ban instead of saying you are not banned.",
+      "highlights": [],
+      "pr": 2319,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -809,6 +809,7 @@
       "chat.dungeontrain.live.burns_moderated",
       "chat.dungeontrain.live.burns_banned",
       "chat.dungeontrain.live.burns_banned_permanent",
+      "chat.dungeontrain.live.burns_banned_unknown",
       "chat.dungeontrain.live.banned_for",
       "chat.dungeontrain.live.appeal_link",
       "chat.dungeontrain.live.appeal_link_hover",

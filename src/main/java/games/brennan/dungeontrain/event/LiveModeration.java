@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 /**
  * Server half of the Live Eye text filter: who has struck out, and what it costs them.
@@ -106,10 +108,35 @@ public final class LiveModeration {
 
     /** Ask the relay for {@code player}'s verdict again (login, and each refused Live Eye while banned). */
     public static void refresh(ServerPlayer player) {
+        refresh(player, p -> { });
+    }
+
+    /**
+     * {@link #refresh(ServerPlayer)}, then {@code then} on the server thread once the relay has answered
+     * or failed to — only if the player is still online. Used where the relay knows of a ban the server
+     * may not (its login fetch can miss): the Live Eye's burn line asks first.
+     */
+    public static void refresh(ServerPlayer player, Consumer<ServerPlayer> then) {
+        refresh(player, then, then);
+    }
+
+    /** {@link #refresh(ServerPlayer, Consumer)}, with {@code missed} instead when the relay gave no good answer. */
+    public static void refresh(ServerPlayer player, Consumer<ServerPlayer> answered, Consumer<ServerPlayer> missed) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         UUID uuid = player.getUUID();
-        LiveModerationClient.fetchStatus(uuid, v -> server.execute(() -> apply(uuid, v, System.currentTimeMillis())));
+        AtomicBoolean done = new AtomicBoolean();
+        Consumer<Consumer<ServerPlayer>> finish = next -> {
+            if (!done.compareAndSet(false, true)) return;
+            ServerPlayer online = server.getPlayerList().getPlayer(uuid);
+            if (online != null) next.accept(online);
+        };
+        LiveModerationClient.fetchStatus(uuid,
+            v -> server.execute(() -> {
+                apply(uuid, v, System.currentTimeMillis());
+                finish.accept(answered);
+            }),
+            () -> server.execute(() -> finish.accept(missed)));
     }
 
     @SubscribeEvent
@@ -230,14 +257,15 @@ public final class LiveModeration {
      */
     public static Component bannedBurnLine(ServerPlayer player) {
         long left = banRemainingSec(player.getUUID());
+        String key = bannedBurnKey(left);
         MutableComponent out;
-        if (left == Long.MAX_VALUE) {
-            out = Component.translatable(KEY + "burns_banned_permanent").withStyle(ChatFormatting.RED);
-        } else {
+        if (key.endsWith("burns_banned")) {
             String locale = WorldInfoReporter.clientLanguage(player);
             // Rounded up to the next hour: "7 days" a minute into a week-long ban, not "6 days".
-            out = Component.translatable(KEY + "burns_banned",
-                PresenceLine.agoComponent(locale, Duration.ofSeconds(Math.max(1L, left) + 3599L))).withStyle(ChatFormatting.RED);
+            out = Component.translatable(key,
+                PresenceLine.agoComponent(locale, Duration.ofSeconds(left + 3599L))).withStyle(ChatFormatting.RED);
+        } else {
+            out = Component.translatable(key).withStyle(ChatFormatting.RED);
         }
         List<LiveModerationLadder.Evidence> evidence = evidenceFor(player.getUUID());
         if (!evidence.isEmpty()) {
@@ -245,6 +273,17 @@ public final class LiveModeration {
             out.append(evidenceLines(evidence));
         }
         return out.append("\n").append(Component.translatable(KEY + "appeal_hint").withStyle(ChatFormatting.GRAY));
+    }
+
+    /**
+     * The burn line's key for {@code left} seconds of ban. 0 means the relay refused the Live Eye but
+     * the server holds no ban for them (its status fetch missed): that line names no length, rather
+     * than making one up. Pure.
+     */
+    static String bannedBurnKey(long left) {
+        if (left <= 0) return KEY + "burns_banned_unknown";
+        if (left == Long.MAX_VALUE) return KEY + "burns_banned_permanent";
+        return KEY + "burns_banned";
     }
 
     /**
