@@ -30467,12 +30467,12 @@
         "multiplayer",
         "community"
       ],
-      "title": "Two Streams: a second channel",
+      "title": "Two Streams, Trial Vaults & Smarter Mobs",
       "summary": "When the Two Streams reward is on, a second player can go live without taking the Eye from whoever is already streaming. Right-click any TV to step it through off, Stream 1 and Stream 2, TV rooms come up showing a mix of both, and a TV worn on your head shows both streams, one above the other.",
       "highlights": [
         "Right-click a TV: off, Stream 1, Stream 2 (while a second stream is live), off",
         "A TV on Stream 2 shows Stream 1 while nobody is on the second",
-        "Wearing a TV: both streams stacked (unless the box is at its largest size); in your inventory, click one to watch only it, click again for both. The TV remembers your pick, and TVs broken while tuned come back on that stream",
+        "Wearing a TV: both streams stacked (unless the box is at its largest size or your window is too short); in your inventory, click one to watch only it, click again for both. The TV remembers your pick, and TVs broken while tuned come back on that stream",
         "Options / Dungeon Train / Stream: choose what a TV on your head shows by default"
       ],
       "pr": 2290,
@@ -30481,8 +30481,7 @@
       "released_in": null,
       "released_at": null,
       "major": true,
-      "notable": true,
-      "description": "The Two Streams reward is here. When it's on, a second player can go live without taking the Live Eye from whoever is already streaming.\n\nRight-click any TV to step it through off, Stream 1 and Stream 2. TV rooms come up showing a mix of both, and a TV worn on your head shows both streams, one above the other. Prefer just one? Click the TV in your inventory to pick, or set the default in Options / Dungeon Train / Stream.\n\n## Other significant updates\n\n- Live streams adjust their quality to the streamer's upload speed, so viewers stop seeing them drop\n- Live streams keep the streamer's real shape instead of looking stretched\n- Hold a TV and right-click to switch it on or off\n- Some of the players you meet on the train now turn up wearing a TV on their head\n- A new story for the loading screen\n- Leaving a dimensional carriage by a far exit puts you back in the right carriage\n- Bug fixes",
+      "description": "Three big additions ride the train at once.\n\n**Two Streams** is a new Community Reward on the donations page. If one person donates, everyone gets it for a month! When active, a second player can go live without taking the Live Eye from whoever is already streaming. Right-click any TV to step it through off, Stream 1 and Stream 2. TV rooms come up showing a mix of both, and a TV worn on your head shows both streams, one above the other. Prefer just one? Click the TV in your inventory to pick, or set the default in Options / Dungeon Train / Stream.\n\n**Trial vaults.** Vaults now turn up on the train. Find a trial key to claim your own reward from each one.\n\n**Smarter mobs.** Deeper down the line, in a place a good number of you reach, mobs reach for tools they previously ignored: a pickaxe, shovel or axe. Once they have seen you, a wall will not keep them out for long. The deeper you go, the more of them carry one and the smarter they get with them.\n\n## Other significant updates\n\n- Live streams adjust their quality to the streamer's upload speed, so viewers stop seeing them drop\n- Live streams keep the streamer's real shape instead of looking stretched\n- Hold a TV and right-click to switch it on or off\n- Some of the players you meet on the train now turn up wearing a TV on their head\n- Echoes no longer pick fights with piglin traders\n- Fairer chat moderation that steps up gradually\n- Smoother dimensional carriages, with less lag the further you go\n- Leaving a dimensional carriage by a far exit puts you back in the right carriage\n- A new story for the loading screen\n- Bug fixes",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/two-streams.jpg"
     },
     {
@@ -30677,6 +30676,160 @@
       "summary": "Echoes no longer pick fights with piglin traders. Only the most aggressive echoes will still attack one, and the most timid just keep a wary eye on it instead of running away. A trader that attacks first still gets a fight.",
       "highlights": [],
       "pr": 2311,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "backpacks-narrative-tab",
+      "version": "0.1521.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "loot"
+      ],
+      "title": "Backpacks in the editor",
+      "summary": "The Edible Backpack and Golden Edible Backpack now sit in the editor's Narrative tab, so builders can place them straight into carriages.",
+      "highlights": [],
+      "pr": 2318,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-ban-message-fix",
+      "version": "0.1521.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Live Eye ban messages fixed",
+      "summary": "When a Live Eye burns away because you are banned from wearing one, the message now shows how long the ban really lasts and the lines that caused it. /liveappeal now finds your ban instead of saying you are not banned.",
+      "highlights": [],
+      "pr": 2319,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "trial-vault-carriages",
+      "version": "0.1523.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train",
+        "loot"
+      ],
+      "title": "Trial vault carriages",
+      "summary": "Vaults now turn up on the train. Bring a trial key to claim your own reward from each one, and every player gets their own. Ominous vaults take an ominous trial key and hold richer loot.",
+      "highlights": [
+        "New trial vault carriages",
+        "Every player gets their own reward from each vault",
+        "Builders can choose a vault's loot and the key that opens it"
+      ],
+      "pr": 2320,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-chat-moderation-tiers",
+      "version": "0.1525.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Fairer chat moderation",
+      "summary": "Chat moderation now steps up gradually. Blocked words earn warnings first, then short chat mutes, and only repeated offences reach longer penalties. A penalty has to run out before the next one can be earned, so a burst of messages no longer jumps straight to the harshest outcome. Mutes can be appealed with /liveappeal, just like bans.",
+      "highlights": [
+        "First offences mute chat for a short time instead of removing streaming",
+        "Penalties no longer stack up while one is already running",
+        "Mutes can be appealed with /liveappeal"
+      ],
+      "pr": 2322,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-crossing-fix",
+      "version": "0.1526.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage fix",
+      "summary": "Dimensional carriages now only take you in once you are actually inside one. Stepping between the train and the room no longer drops you to the floor or sends you back along the train.",
+      "highlights": [],
+      "pr": 2323,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dh-sky-fix",
+      "version": "0.1527.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Sky fix",
+      "summary": "Sky fix.",
+      "highlights": [],
+      "pr": 2313,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-less-lag",
+      "version": "0.1527.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Less lag in dimensional carriages",
+      "summary": "Exploring dimensional carriages is smoother, with less lag the further you go.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2325,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "mobs-dig-with-tools",
+      "version": "0.1529.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Mobs dig through to you",
+      "summary": "Deep into a run, some mobs now carry a pickaxe, shovel or axe, and once they have seen you they will dig through walls to reach you, as fast as that tool would let you. The deeper you go, the more of them carry one and the more they can break. They never dig through the floor.",
+      "highlights": [
+        "Mobs with tools dig through to you once they have seen you",
+        "A mob already holding a weapon carries its tool in the other hand",
+        "The deeper you go, the more mobs carry tools and the more they can break",
+        "The players you meet on the train can dig through almost anything"
+      ],
+      "pr": 2326,
       "date": "2026-10-25",
       "released": false,
       "released_in": null,

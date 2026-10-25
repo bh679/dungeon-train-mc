@@ -47,7 +47,8 @@ public final class SharedCarriageChangeFilter {
             "disarmed",   // tripwire
             "lit",        // redstone lamps/ore/torch, furnaces, campfires
             "power",      // redstone wire, weighted pressure plates, daylight detectors
-            "locked"      // repeaters
+            "locked",     // repeaters
+            "vault_state" // vaults: inactive / active / unlocking / ejecting as players come and go
     );
 
     private SharedCarriageChangeFilter() {}
@@ -81,6 +82,7 @@ public final class SharedCarriageChangeFilter {
         return ContainerContentsRoller.isContainerState(state)
                 || ContainerContentsRoller.isDecoratedPot(state)
                 || ContainerContentsRoller.isBrushable(state)
+                || games.brennan.dungeontrain.editor.VaultLoot.isVault(state)
                 // Not a container to the roller (its slot is a tuner), but breaking one is still
                 // taking an item off the train, not building.
                 || games.brennan.dungeontrain.compat.vista.TvBlocks.isTelevision(state);

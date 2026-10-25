@@ -147,6 +147,12 @@ public final class LiveFeedEvents {
             case FAILED -> Exit.FAILED;
             case BANNED -> Exit.BANNED;
         };
+        if (exit == Exit.BANNED && !LiveModeration.isBanned(player.getUUID())) {
+            // The relay refused the claim on a ban the server didn't hold (its login fetch missed). Burn
+            // now, but ask the relay before saying anything: it knows how long, and the lines behind it.
+            if (endStream(player, exit, false)) LiveModeration.refresh(player, p -> p.sendSystemMessage(LiveModeration.bannedBurnLine(p)));
+            return;
+        }
         endStream(player, exit);
     }
 
@@ -214,13 +220,13 @@ public final class LiveFeedEvents {
      * The client heard back from the relay about its claim ({@link LiveClaimResultPacket}). Only a pending
      * wearer is listened to: anyone else's packet is stale or forged.
      */
-    public static void onTakeoverResult(ServerPlayer player, LiveClaimResultPacket.Result result, boolean tookOver) {
+    public static void onTakeoverResult(ServerPlayer player, LiveClaimResultPacket.Result result, String cutOff) {
         MinecraftServer server = player.getServer();
         if (server == null || !isCamcorder(player.getItemBySlot(EquipmentSlot.HEAD))) return;
         Boolean fromWatching = LiveStreamers.takePending(server, player.getUUID());
         if (fromWatching == null) return;
         switch (result) {
-            case LIVE -> goLive(server, player, fromWatching, tookOver);
+            case LIVE -> goLive(server, player, fromWatching, cutOff);
             case REJECTED -> toTv(player, "chat.dungeontrain.live.takeover_rejected_tv");
             case STAYED_VIEWER -> toTv(player, "chat.dungeontrain.live.stayed_viewer_tv");
         }
@@ -228,15 +234,16 @@ public final class LiveFeedEvents {
 
     /**
      * {@code player} holds a channel now: they are one of this server's streamers. When the relay cut
-     * somebody off for it ({@code tookOver}) and that player is on this server, their Live Eye becomes a
-     * TV; with the Two Streams reward on, a second channel is handed out and nobody is cut off, so an
-     * earlier streamer here keeps streaming ({@link #demoted}).
+     * somebody off for it ({@code cutOff}, its claim's {@code prevName}) and that player is streaming on
+     * this server, their Live Eye becomes a TV. Anyone else streaming here keeps going: with the Two
+     * Streams reward on, a second channel is handed out and nobody is cut off ({@link #demoted}).
      */
-    private static void goLive(MinecraftServer server, ServerPlayer player, boolean fromWatching, boolean tookOver) {
-        java.util.Set<UUID> others = LiveStreamers.othersThan(server, player.getUUID());
-        LiveStreamers.add(server, player.getUUID());
-        for (UUID previous : demoted(others, tookOver)) {
+    private static void goLive(MinecraftServer server, ServerPlayer player, boolean fromWatching, String cutOff) {
+        java.util.Map<UUID, String> others = LiveStreamers.othersWithNames(server, player.getUUID());
+        LiveStreamers.add(server, player.getUUID(), player.getGameProfile().getName());
+        for (UUID previous : demoted(others, cutOff)) {
             LiveStreamers.clearIf(server, previous);
+            ServerLiveStatus.requestPoll();
             ServerPlayer old = server.getPlayerList().getPlayer(previous);
             if (old != null) {
                 toTv(old, burnLineKey(Exit.REPLACED));
@@ -252,13 +259,16 @@ public final class LiveFeedEvents {
     }
 
     /**
-     * Which earlier streamers on this server a new claim replaces: the one it cut off when the relay said
-     * so, none otherwise. The relay only ever cuts off the streamer whose channel was taken, and a
-     * server never has more streamers than channels, so when the claim took over, the other streamer
-     * here is the one who lost it. Pure, for the tests.
+     * Which earlier streamers on this server ({@code others}: id → name) a new claim replaces: the one
+     * the relay named as cut off ({@code cutOff}, case ignored), none when it named nobody or a name
+     * that is not streaming here. Pure, for the tests.
      */
-    static java.util.Set<UUID> demoted(java.util.Set<UUID> others, boolean tookOver) {
-        return tookOver ? others : java.util.Set.of();
+    static java.util.Set<UUID> demoted(java.util.Map<UUID, String> others, @Nullable String cutOff) {
+        if (cutOff == null || cutOff.isEmpty()) return java.util.Set.of();
+        for (var e : others.entrySet()) {
+            if (cutOff.equalsIgnoreCase(e.getValue())) return java.util.Set.of(e.getKey());
+        }
+        return java.util.Set.of();
     }
 
     /**
@@ -313,18 +323,32 @@ public final class LiveFeedEvents {
         if (!endStream(player, exit)) burn(player, exit);
     }
 
+    /**
+     * Ends {@code player}'s stream for moderation if they are on air (the Live Eye burns as on a
+     * removal); does nothing to a player who is not streaming. A chat mute that also takes them off air.
+     */
+    public static void endStreamForModeration(ServerPlayer player) {
+        endStream(player, Exit.MODERATED);
+    }
+
     /** Ends {@code player}'s stream if they hold it: clear the streamer first so the slot change we cause is ignored. True when they did. */
     private static boolean endStream(ServerPlayer player, Exit exit) {
+        return endStream(player, exit, true);
+    }
+
+    /** {@link #endStream(ServerPlayer, Exit)}; {@code say} false leaves the burn's chat line to the caller. */
+    private static boolean endStream(ServerPlayer player, Exit exit, boolean say) {
         MinecraftServer server = player.getServer();
         if (server == null) return false;
         // A pending wearer (still claiming, or watching while deciding on a takeover) ends the same way:
         // taking the Live Eye off burns it.
         boolean held = LiveStreamers.clearIf(server, player.getUUID());
+        if (held) ServerLiveStatus.requestPoll(); // a second stream may have just ended: don't keep Stream 2 up on a stale answer
         if (!held && LiveStreamers.takePending(server, player.getUUID()) == null) return false;
         if (becomesTv(exit)) {
             toTv(player, burnLineKey(exit));
         } else if (burnsOn(exit)) {
-            burn(player, exit);
+            burn(player, exit, say);
         } else if (exit == Exit.FAILED) {
             handBack(player);
         }
@@ -346,6 +370,10 @@ public final class LiveFeedEvents {
      * ended" pop-up itself, so it shows on every end — save &amp; quit included.
      */
     private static void burn(ServerPlayer player, Exit why) {
+        burn(player, why, true);
+    }
+
+    private static void burn(ServerPlayer player, Exit why, boolean say) {
         if (isCamcorder(player.getItemBySlot(EquipmentSlot.HEAD))) {
             player.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
         } else if (isCamcorder(player.containerMenu.getCarried())) {
@@ -357,7 +385,7 @@ public final class LiveFeedEvents {
         level.sendParticles(ParticleTypes.FLAME, player.getX(), player.getEyeY() + 0.3, player.getZ(), 24, 0.3, 0.2, 0.3, 0.02);
         level.sendParticles(ParticleTypes.LARGE_SMOKE, player.getX(), player.getEyeY() + 0.4, player.getZ(), 8, 0.2, 0.1, 0.2, 0.01);
         level.playSound(null, player.blockPosition(), SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.8f, 0.9f);
-        player.sendSystemMessage(why == Exit.BANNED ? LiveModeration.bannedBurnLine(player) : Component.translatable(burnLineKey(why)));
+        if (say) player.sendSystemMessage(why == Exit.BANNED ? LiveModeration.bannedBurnLine(player) : Component.translatable(burnLineKey(why)));
     }
 
     /**

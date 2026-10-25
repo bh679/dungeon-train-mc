@@ -54,6 +54,11 @@ public final class LiveModerationClient {
 
     /** Fetch {@code player}'s verdict off-thread; {@code callback} runs on the HTTP thread, only on a good answer. */
     public static void fetchStatus(UUID player, Consumer<Verdict> callback) {
+        fetchStatus(player, callback, () -> { });
+    }
+
+    /** {@link #fetchStatus(UUID, Consumer)}, with {@code onMiss} run (on the HTTP thread) when no good answer comes. */
+    public static void fetchStatus(UUID player, Consumer<Verdict> callback, Runnable onMiss) {
         try {
             String url = DungeonTrain.relayBaseUrl() + "/live/moderation/status?uuid="
                 + URLEncoder.encode(player.toString(), StandardCharsets.UTF_8);
@@ -67,20 +72,25 @@ public final class LiveModerationClient {
                         try {
                             if (err != null) {
                                 LOGGER.debug("[DungeonTrain] live moderation status fetch failed: {}", err.toString());
+                                onMiss.run();
                                 return;
                             }
                             if (resp.statusCode() / 100 != 2) {
                                 LOGGER.debug("[DungeonTrain] live moderation status -> HTTP {}", resp.statusCode());
+                                onMiss.run();
                                 return;
                             }
                             Verdict v = LiveModerationLadder.parse(resp.body());
                             if (v != null) callback.accept(v);
+                            else onMiss.run();
                         } catch (Throwable t) {
                             LOGGER.debug("[DungeonTrain] live moderation status parse failed: {}", t.toString());
+                            onMiss.run();
                         }
                     });
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] live moderation status request failed to start: {}", t.toString());
+            onMiss.run();
         }
     }
 
