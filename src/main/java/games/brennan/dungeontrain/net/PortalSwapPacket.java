@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.SpawnDeckHold;
 import games.brennan.dungeontrain.client.portal.ClientPortalSwap;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -56,6 +57,10 @@ public record PortalSwapPacket(boolean leftCarrier) implements CustomPacketPaylo
         ctx.enqueueWork(() -> {
             ClientPortalSwap.arm();
             if (!packet.leftCarrier) return;
+
+            // Leaving the train on purpose: a deck-hold still armed from walking out a moment
+            // ago would snap the player straight back up onto the deck.
+            SpawnDeckHold.cancel();
 
             // ctx.player() is this client's own player here, which is the one being carried — and
             // asking for it this way keeps every Minecraft-client type out of this common-side

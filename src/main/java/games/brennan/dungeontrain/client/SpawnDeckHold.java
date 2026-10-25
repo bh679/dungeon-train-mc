@@ -79,6 +79,22 @@ public final class SpawnDeckHold {
     }
 
     /**
+     * Drop the hold without the post-release check: the player is leaving the
+     * train on purpose, so being under the deck is intended. Stepping back into a
+     * dimensional carriage before the hold released put the player 140 blocks
+     * under the deck while the clamp was still armed, and the next tick snapped
+     * them straight back up onto the train. Called from
+     * {@link games.brennan.dungeontrain.net.PortalSwapPacket#handle}.
+     */
+    public static void cancel() {
+        verifyRemaining = 0;
+        if (!active) return;
+        active = false;
+        LOGGER.debug("[DungeonTrain] Spawn deck-hold cancelled: portal swap off the train ({} corrections, {}t cap left)",
+            clampsFired, remaining);
+    }
+
+    /**
      * Clamp at {@code Post} — after the player's own movement for the tick has
      * run, so we undo any fall it produced rather than racing it. After the hold
      * ends, run the post-release verification sample.
