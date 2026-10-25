@@ -33,20 +33,19 @@ and checks its pinned upstream SHA-256. It keeps only the two binaries, the lice
 
 ## Deploy
 
-The zip is served by Apache on the brennan.games box from a folder outside the dp-relay git tree.
-That way no binary is committed and relay deploys don't touch it:
+Apache on the brennan.games box serves `/dungeontrain/` straight from htdocs (no proxy), so the zip
+just goes there. dp-relay's `deploy-public-pages.sh` only adds or overwrites files and never deletes,
+so relay deploys leave it alone. No Apache config change is needed.
 
-- File: `/opt/bitnami/dt-tools/ffmpeg/windows-x64.zip`
-- Apache, in the brennan.games vhost, ahead of the dp-relay `ProxyPass` lines:
+```bash
+unset SSH_AUTH_SOCK
+D=/opt/bitnami/apache/htdocs/dungeontrain/tools/ffmpeg
+ssh -i ~/.ssh/claude-lightsail bitnami@brennan.games "mkdir -p $D"
+scp -i ~/.ssh/claude-lightsail build/ffmpeg-mirror/windows-x64.zip bitnami@brennan.games:$D/windows-x64.zip.part
+ssh -i ~/.ssh/claude-lightsail bitnami@brennan.games "cd $D && sha256sum windows-x64.zip.part && mv windows-x64.zip.part windows-x64.zip"
+```
 
-  ```apache
-  ProxyPass /dungeontrain/tools/ !
-  Alias /dungeontrain/tools/ /opt/bitnami/dt-tools/
-  <Directory /opt/bitnami/dt-tools/>
-      Require all granted
-      Options -Indexes
-  </Directory>
-  ```
+Empty `index.html` files in `tools/` and `tools/ffmpeg/` hide Apache's folder listing.
 
 Check it from anywhere:
 
@@ -55,3 +54,5 @@ curl -sI https://brennan.games/dungeontrain/tools/ffmpeg/windows-x64.zip
 ```
 
 The response should be `200` with `Content-Length` equal to the pinned size.
+
+First deployed 2026-10-25: FFmpeg 9.0.2, sha256 `519a4130…6fab`, 77,388,220 bytes, verified over HTTPS.
