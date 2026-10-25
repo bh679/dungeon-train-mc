@@ -30872,6 +30872,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sky-fix-3",
+      "version": "0.1533.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Sky fix",
+      "summary": "Sky fix.",
+      "highlights": [],
+      "pr": 2334,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
