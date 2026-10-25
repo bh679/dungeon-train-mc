@@ -5496,5 +5496,8 @@
   "item.dungeontrain.live_cassette": "เทปฟีดสด",
   "item.dungeontrain.live_cassette.tooltip": "ปรับจูนกับฟีดสดแล้ว ใส่ในทีวีเครื่องไหนก็ได้เพื่อดูว่าใครกำลังถ่ายทอด",
   "item.dungeontrain.live_cassette_2": "เทปฟีดสด 2",
-  "item.dungeontrain.live_cassette_2.tooltip": "ปรับจูนกับสตรีมที่สองแล้ว แสดงผู้เล่นคนที่สองที่กำลังถ่ายทอด หรือสตรีมแรกเมื่อยังไม่มีสตรีมที่สอง"
+  "item.dungeontrain.live_cassette_2.tooltip": "ปรับจูนกับสตรีมที่สองแล้ว แสดงผู้เล่นคนที่สองที่กำลังถ่ายทอด หรือสตรีมแรกเมื่อยังไม่มีสตรีมที่สอง",
+  "command.dungeontrain.offer_eye.needs_perk": "การเสนอ Live Eye ให้ผู้ชมคนเดียวต้องมีเพิร์ก Gift Live Eye ส่วนการเสนอให้ทุกคนยังใช้ได้ตามปกติ",
+  "perk.dungeontrain.restock_villager.button": "เติมสินค้า (%s)",
+  "gui.dungeontrain.perks.rank_cost": "แต้มถัดไปใช้แต้มเศษซากจักรวาล %s แต้ม"
 }

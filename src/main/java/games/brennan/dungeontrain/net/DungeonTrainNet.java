@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.perks.effects.trader.RestockVillagerRequestPacket;
+import games.brennan.dungeontrain.perks.effects.trader.RestockVillagerStatusPacket;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -195,6 +197,15 @@ public final class DungeonTrainNet {
         // Book vote: client casts 👍/👎 from the virtual vote page (buttons or Y/N hotkeys); server
         // re-validates the held stack's identity, stamps dt_book_vote (offline burn color), and
         // consent-gates the relay POST.
+        // Restock Villager perk: server tells the trade menu how many restocks are left on this
+        // villager; the menu's Restock button asks for one (server re-validates).
+        registrar.playToClient(RestockVillagerStatusPacket.TYPE,
+            RestockVillagerStatusPacket.STREAM_CODEC,
+            RestockVillagerStatusPacket::handle);
+        registrar.playToServer(RestockVillagerRequestPacket.TYPE,
+            RestockVillagerRequestPacket.STREAM_CODEC,
+            RestockVillagerRequestPacket::handle);
+
         registrar.playToServer(BookVotePacket.TYPE, BookVotePacket.STREAM_CODEC, BookVotePacket::handle);
 
         // Book report: client asks for a community book to be pulled from the shared pool (the ⚠

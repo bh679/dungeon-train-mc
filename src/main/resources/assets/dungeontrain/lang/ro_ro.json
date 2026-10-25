@@ -5622,5 +5622,8 @@
   "item.dungeontrain.live_cassette": "Casetă pentru Fluxul în direct",
   "item.dungeontrain.live_cassette.tooltip": "Acordată pe Fluxul în direct. Pune-o în orice televizor ca să vezi cine transmite.",
   "item.dungeontrain.live_cassette_2": "Casetă pentru Fluxul în direct 2",
-  "item.dungeontrain.live_cassette_2.tooltip": "Acordată pe al doilea stream. Arată al doilea jucător care transmite, sau primul stream cât timp nu există un al doilea."
+  "item.dungeontrain.live_cassette_2.tooltip": "Acordată pe al doilea stream. Arată al doilea jucător care transmite, sau primul stream cât timp nu există un al doilea.",
+  "command.dungeontrain.offer_eye.needs_perk": "Oferirea Live Eye unui singur spectator necesită avantajul Gift Live Eye. Oferirea lui tuturor funcționează în continuare.",
+  "perk.dungeontrain.restock_villager.button": "Reaprovizionează (%s)",
+  "gui.dungeontrain.perks.rank_cost": "Următorul punct costă %s puncte de resturi cosmice."
 }

@@ -5559,5 +5559,8 @@
   "item.dungeontrain.live_cassette": "Casete de Señal en vivo",
   "item.dungeontrain.live_cassette.tooltip": "Sintonizado a la Señal en vivo. Ponlo en cualquier televisor para ver a quien esté transmitiendo.",
   "item.dungeontrain.live_cassette_2": "Casete de Señal en vivo 2",
-  "item.dungeontrain.live_cassette_2.tooltip": "Sintonizado al segundo stream. Muestra al segundo jugador que esté en vivo, o el primer stream mientras no haya un segundo."
+  "item.dungeontrain.live_cassette_2.tooltip": "Sintonizado al segundo stream. Muestra al segundo jugador que esté en vivo, o el primer stream mientras no haya un segundo.",
+  "command.dungeontrain.offer_eye.needs_perk": "Ofrecer el Live Eye a un solo espectador requiere la ventaja Gift Live Eye. Ofrecerlo a todos sigue funcionando.",
+  "perk.dungeontrain.restock_villager.button": "Reabastecer (%s)",
+  "gui.dungeontrain.perks.rank_cost": "El siguiente punto cuesta %s puntos de escombros cósmicos."
 }

@@ -5556,5 +5556,8 @@
   "perk.dungeontrain.class.c8": "Speedster",
   "perk.dungeontrain.class.c9": "Knight",
   "perk.dungeontrain.class.cbuilder": "Builder",
-  "perk.dungeontrain.class.cwarlock": "Warlock"
+  "perk.dungeontrain.class.cwarlock": "Warlock",
+  "command.dungeontrain.offer_eye.needs_perk": "Offering the Live Eye to one viewer takes the Gift Live Eye perk. Offering it to everyone still works.",
+  "perk.dungeontrain.restock_villager.button": "Restock (%s)",
+  "gui.dungeontrain.perks.rank_cost": "Next point costs %s Cosmic Debris points."
 }

@@ -30,6 +30,18 @@ public record PerkMenuSnapshot(Set<String> unlocked, Map<String, Integer> active
         return PerkTree.ROOT.equals(id) || unlocked.contains(id);
     }
 
+    /** Active points the next rank costs (rises with every rank bought this life). */
+    public int nextRankCost() {
+        int sum = 0;
+        for (int r : active.values()) sum += Math.max(0, r);
+        return games.brennan.dungeontrain.perks.PerkRankCost.nextCost(sum);
+    }
+
+    /** Enough active points for the next rank. */
+    public boolean canAffordRank() {
+        return activePoints > 0 && activePoints >= nextRankCost();
+    }
+
     public int points(String id) {
         return active.getOrDefault(id, 0);
     }

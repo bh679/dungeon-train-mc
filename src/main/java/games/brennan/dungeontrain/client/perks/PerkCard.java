@@ -121,12 +121,15 @@ final class PerkCard {
         if (snap.points(p.id()) >= max) {
             b.active = false;
             b.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.perks.full")));
-        } else if (snap.activePoints() < 1) {
+        } else if (!snap.canAffordRank()) {
             b.active = false;
-            b.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.perks.eat_debris")));
+            b.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.perks.eat_debris")
+                .append("\n").append(Component.translatable("gui.dungeontrain.perks.rank_cost", snap.nextRankCost()))));
         } else if (!built) {
             b.active = false;
             b.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.perks.not_built")));
+        } else if (snap.nextRankCost() > 1) {
+            b.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.perks.rank_cost", snap.nextRankCost())));
         }
         return b;
     }

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.compat;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.perks.effects.archivist.ArchivistCamera;
 import games.brennan.dungeontrain.compat.photo.OwnPhotoTribute;
 import games.brennan.dungeontrain.compat.photo.SharedPhotos;
 import games.brennan.dungeontrain.event.StartingBookEvents;
@@ -136,6 +137,8 @@ public final class DisposableCameraEvents {
      * Also takes a frame left on a camera mid-print by an older DT.
      */
     private static void takeFrame(ServerPlayer player, ItemStack camera, Frame frame, long now) {
+        // Extra Cam-Shots: how many reloads this camera gets, decided once at its first shot.
+        ArchivistCamera.rollIfNew(player, camera);
         DisposableCamera.markShot(camera);
         if (!DisposableCamera.setPendingFrame(camera, frame, player.registryAccess())) {
             LOGGER.warn("[DisposableCamera] Could not store frame {}; leaving it to Polaroid to print",
@@ -161,14 +164,23 @@ public final class DisposableCameraEvents {
         DisposableCamera.setTick(camera, DisposableCamera.NBT_PRINT_START, now);
     }
 
-    /** The print animation is done: in one tick the photograph takes the camera's slot and the camera drops and burns. */
+    /**
+     * The print animation is done: in one tick the photograph takes the camera's slot and the camera drops
+     * and burns. With an Extra Cam-Shots reload left, the camera stays, reloaded, and the photograph goes
+     * to the inventory instead (dropped at the player's feet when it is full).
+     */
     private static void printAndBurn(ServerPlayer player, Inventory inventory, int slot, ItemStack camera) {
         Optional<Frame> pending = DisposableCamera.pendingFrame(camera, player.registryAccess());
         DisposableCamera.clearPendingFrame(camera);
-        inventory.setItem(slot, ItemStack.EMPTY);
-        StartingBookEvents.dropAndBurn(player, camera);
+        boolean reloaded = ArchivistCamera.reload(camera,
+            DisposableCamera.NBT_SHOT, DisposableCamera.NBT_SHOT_TICK, DisposableCamera.NBT_PRINT_START);
+        if (!reloaded) {
+            inventory.setItem(slot, ItemStack.EMPTY);
+            StartingBookEvents.dropAndBurn(player, camera);
+        }
         if (pending.isEmpty()) {
-            LOGGER.warn("[DisposableCamera] Stored frame did not decode; the camera burned without a photo");
+            LOGGER.warn("[DisposableCamera] Stored frame did not decode; the camera {} without a photo",
+                reloaded ? "reloaded" : "burned");
             return;
         }
         Frame frame = pending.get();
@@ -176,7 +188,11 @@ public final class DisposableCameraEvents {
         photograph.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame);
         photograph.set(Exposure.DataComponents.PHOTOGRAPH_TYPE, frame.type());
         photograph.setPopTime(Inventory.POP_TIME_DURATION);
-        inventory.setItem(slot, photograph);
+        if (reloaded) {
+            if (!inventory.add(photograph.copy())) player.drop(photograph.copy(), false);
+        } else {
+            inventory.setItem(slot, photograph);
+        }
         SharedPhotos.queueUpload(player, photograph);
         OwnPhotoTribute.sync(player);
         player.level().playSound(null, player, Exposure.SoundEvents.PHOTOGRAPH_RUSTLE.get(), SoundSource.PLAYERS,

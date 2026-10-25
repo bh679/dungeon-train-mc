@@ -5496,5 +5496,8 @@
   "item.dungeontrain.live_cassette": "라이브 피드 카세트",
   "item.dungeontrain.live_cassette.tooltip": "라이브 피드에 맞춰져 있습니다. 아무 TV에나 넣으면 지금 방송 중인 사람을 볼 수 있습니다.",
   "item.dungeontrain.live_cassette_2": "라이브 피드 카세트 2",
-  "item.dungeontrain.live_cassette_2.tooltip": "두 번째 방송에 맞춰져 있습니다. 두 번째로 방송 중인 플레이어를 보여 주고, 두 번째 방송이 없을 때는 첫 번째 방송을 보여 줍니다."
+  "item.dungeontrain.live_cassette_2.tooltip": "두 번째 방송에 맞춰져 있습니다. 두 번째로 방송 중인 플레이어를 보여 주고, 두 번째 방송이 없을 때는 첫 번째 방송을 보여 줍니다.",
+  "command.dungeontrain.offer_eye.needs_perk": "특정 시청자 한 명에게 Live Eye를 제안하려면 Gift Live Eye 퍽이 필요합니다. 모두에게 제안하는 것은 여전히 가능합니다.",
+  "perk.dungeontrain.restock_villager.button": "보충 (%s)",
+  "gui.dungeontrain.perks.rank_cost": "다음 포인트에는 우주 잔해 포인트 %s점이 필요합니다."
 }

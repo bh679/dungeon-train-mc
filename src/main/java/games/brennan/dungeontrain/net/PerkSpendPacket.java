@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.perks.PerkActionGuard;
 import games.brennan.dungeontrain.perks.PerkBalances;
 import games.brennan.dungeontrain.perks.PerkDef;
 import games.brennan.dungeontrain.perks.PerkPoints;
+import games.brennan.dungeontrain.perks.PerkRankCost;
 import games.brennan.dungeontrain.perks.PerkRegistry;
 import games.brennan.dungeontrain.perks.PerkState;
 import games.brennan.dungeontrain.perks.PerkTreeLoader;
@@ -46,7 +47,7 @@ public record PerkSpendPacket(String perkId) implements CustomPacketPayload {
                 PerkBalances.sync(player);
                 return;
             }
-            if (!PerkPoints.spendActive(player, 1)) return;
+            if (!PerkPoints.spendActive(player, PerkRankCost.nextCost(Perks.state(player)))) return;
             Perks.addActive(player, id, 1);
             PerkBalances.sync(player);
         });
@@ -60,7 +61,7 @@ public record PerkSpendPacket(String perkId) implements CustomPacketPayload {
         PerkState state = Perks.state(player);
         if (!state.isUnlocked(id)) return "gui.dungeontrain.perks.refused.locked";
         if (state.activePoints(id) >= def.maxRank()) return "gui.dungeontrain.perks.refused.full";
-        if (PerkPoints.active(player) < 1) return "gui.dungeontrain.perks.refused.no_active";
+        if (PerkPoints.active(player) < PerkRankCost.nextCost(state)) return "gui.dungeontrain.perks.refused.no_active";
         return null;
     }
 }

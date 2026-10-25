@@ -17510,5 +17510,23 @@
         "10"
       ]
     }
+  },
+  "perk.dungeontrain.restock_villager.button": {
+    "1": {
+      "label": "restocks the player still has left with this villager this life",
+      "examples": [
+        "0",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.rank_cost": {
+    "1": {
+      "label": "Cosmic Debris points the next perk rank costs",
+      "examples": [
+        "2",
+        "9"
+      ]
+    }
   }
 }

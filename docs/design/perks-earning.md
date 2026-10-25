@@ -51,6 +51,30 @@ screen lands. Eating it never breaks the melon-diet challenge.
 Active points live in the `perk_active_points` attachment: saved with the player, copied on End
 return, not `copyOnDeath`, and cleared on respawn.
 
+### What a rank costs
+
+Every rank on any perk costs active points, and the price rises with the ranks bought this life,
+counted across all perks (`perks/PerkRankCost`). Tier does not change it; tier is paid once, in
+Advancement Points, to unlock.
+
+| price | ranks at that price | rank numbers | running total |
+|---|---|---|---|
+| 1 | 10 | 1 to 10 | 10 |
+| 2 | 9 | 11 to 19 | 28 |
+| 3 | 8 | 20 to 27 | 52 |
+| 4 | 7 | 28 to 34 | 80 |
+| 5 | 6 | 35 to 40 | 110 |
+| 6 | 5 | 41 to 45 | 140 |
+| 7 | 4 | 46 to 49 | 168 |
+| 8 | 3 | 50 to 52 | 192 |
+| 9 | 2 | 53 to 54 | 210 |
+| 10 | 1 | 55 | 220 |
+
+After rank 55 each rank costs more than the last by a jump one bigger each time: 11, 13, 16, 20 …
+The run at each price shrinks so each price rise still bites (1 to 2 doubles, 9 to 10 would not
+if it lasted as long). Death clears every rank, so the next life starts at 1 again. Active points
+too few for the next rank stay in the balance until more debris is eaten, or are lost on death.
+
 ### Where it drops
 
 About one carriage group in five holds one Cosmic Debris, in one of its chests, barrels or shulker

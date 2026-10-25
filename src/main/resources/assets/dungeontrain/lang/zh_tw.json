@@ -5510,5 +5510,8 @@
   "item.dungeontrain.live_cassette": "直播訊號磁帶",
   "item.dungeontrain.live_cassette.tooltip": "已調到直播訊號。放進任何電視，就能看到正在直播的人。",
   "item.dungeontrain.live_cassette_2": "直播訊號磁帶 2",
-  "item.dungeontrain.live_cassette_2.tooltip": "已調到第二路直播。顯示第二位正在直播的玩家；沒有第二路時，顯示第一路直播。"
+  "item.dungeontrain.live_cassette_2.tooltip": "已調到第二路直播。顯示第二位正在直播的玩家；沒有第二路時，顯示第一路直播。",
+  "command.dungeontrain.offer_eye.needs_perk": "向單一觀眾提供 Live Eye 需要 Gift Live Eye 天賦。向所有人提供仍然可用。",
+  "perk.dungeontrain.restock_villager.button": "補貨 (%s)",
+  "gui.dungeontrain.perks.rank_cost": "下一點需要 %s 個宇宙碎片點數。"
 }

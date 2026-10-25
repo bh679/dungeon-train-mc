@@ -5559,5 +5559,8 @@
   "item.dungeontrain.live_cassette": "Live-Feed-Kassette",
   "item.dungeontrain.live_cassette.tooltip": "Auf den Live-Feed eingestellt. In einen beliebigen Fernseher einlegen, um zu sehen, wer gerade überträgt.",
   "item.dungeontrain.live_cassette_2": "Live-Feed-Kassette 2",
-  "item.dungeontrain.live_cassette_2.tooltip": "Auf den zweiten Stream eingestellt. Zeigt den zweiten Spieler, der gerade live ist, oder den ersten Stream, solange es keinen zweiten gibt."
+  "item.dungeontrain.live_cassette_2.tooltip": "Auf den zweiten Stream eingestellt. Zeigt den zweiten Spieler, der gerade live ist, oder den ersten Stream, solange es keinen zweiten gibt.",
+  "command.dungeontrain.offer_eye.needs_perk": "Das Live Eye einem einzelnen Zuschauer anzubieten braucht den Perk Gift Live Eye. Es allen anzubieten geht weiterhin.",
+  "perk.dungeontrain.restock_villager.button": "Auffüllen (%s)",
+  "gui.dungeontrain.perks.rank_cost": "Der nächste Punkt kostet %s Punkte aus Kosmischen Trümmern."
 }

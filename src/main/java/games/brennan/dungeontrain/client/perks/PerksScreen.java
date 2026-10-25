@@ -192,11 +192,11 @@ public final class PerksScreen extends Screen {
         ClassTitlePainter.render(g, font, tree, view, width, height, fade);
 
         boolean allNames = view.showsAllNames();
-        boolean spendable = fromDebris && snap.activePoints() > 0 && spentAt == 0;
+        boolean spendable = fromDebris && snap.canAffordRank() && spentAt == 0;
         for (PerkTree.Perk p : tree.perks()) {
             boolean sel = p.id().equals(selected), hov = p.id().equals(hovered);
             boolean name = allNames || sel || hov || (selected != null && view.zoom() >= 0.7 && linked(selected, p.id()));
-            StarPainter.render(g, font, tree, p, snap, view, width, height, hov, sel, name, spendable || (snap.activePoints() > 0 && fromDebris),
+            StarPainter.render(g, font, tree, p, snap, view, width, height, hov, sel, name, spendable || (snap.canAffordRank() && fromDebris),
                 unlockedAt, pointAt, now, fade);
         }
 
@@ -223,7 +223,7 @@ public final class PerksScreen extends Screen {
         x += font.width(title) + 16;
         boolean flash = now - balanceFlashAt < 500;
         int balanceColour = (flash ? SkyPalette.GOLD : SkyPalette.FG) & 0xFFFFFF | alpha;
-        if (fromDebris && snap.activePoints() > 0 && spentAt == 0) {
+        if (fromDebris && snap.canAffordRank() && spentAt == 0) {
             boolean none = snap.unlocked().isEmpty();
             Component line = none ? Component.translatable("gui.dungeontrain.perks.unlock_first")
                 : Component.translatable("gui.dungeontrain.perks.point_to_spend", snap.activePoints());
