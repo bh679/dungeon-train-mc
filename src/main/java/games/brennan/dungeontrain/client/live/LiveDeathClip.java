@@ -46,7 +46,7 @@ public final class LiveDeathClip {
     private static final Logger LOGGER = LogUtils.getLogger();
     static final double BEFORE_S = 5.0;
     static final double AFTER_S = 0.5;
-    /** The clip's width; height follows (16:9). */
+    /** The clip's width; height follows the broadcast's own shape (never stretched). */
     static final int WIDTH = 640;
     /**
      * The segments carry the broadcast's own "Name is live" pill top-middle ({@link StreamNameTag});

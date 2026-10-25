@@ -8,7 +8,7 @@ import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A Vista TV as an item in the hand: a portable set. Left-click switches it on and off
+ * A Vista TV as an item in the hand: a portable set. Right-click switches it on and off
  * ({@code client/live/HeldTvToggleClient} → {@code net/TvHeldTogglePacket}); while on, the live feed
  * plays on its screen face ({@code mixin/vista/TvItemRendererMixin} → {@code client/live/HeldTvScreen}),
  * and placing it puts the block down switched on ({@code mixin/vista/TVBlockMixin}).
@@ -52,9 +52,9 @@ public final class TvItems {
     }
 
     /**
-     * Which hand a left-click toggles, or null when the click is an ordinary attack: the main hand
+     * Which hand a right-click toggles, or null when the click is an ordinary use: the main hand
      * when it holds a TV; the offhand when the main hand is empty and the offhand holds one. A sword
-     * in the main hand with a TV in the offhand still swings the sword.
+     * in the main hand with a TV in the offhand still does what the sword does.
      */
     @Nullable
     public static InteractionHand toggleHand(ItemStack main, ItemStack off) {

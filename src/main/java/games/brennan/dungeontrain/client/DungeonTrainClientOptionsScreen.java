@@ -782,15 +782,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                         key + ".tip");
             }
 
-            // The pinned top-right feed; the preview outlines it at the chosen size.
-            case HEAD_VIEWER_SIZE -> Setting.of(
-                    CycleButton.<Integer>builder(DungeonTrainClientOptionsScreen::headViewerSizeLabel)
-                            .withValues(LiveFeedClientConfig.headViewerSizeIndexes())
-                            .withInitialValue(LiveFeedClientConfig.headViewerSize(false))
-                            .displayOnlyValue()
-                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
-                                    (btn, i) -> LiveFeedClientConfig.setHeadViewerSize(i)),
-                    key + ".tip");
+            // The pinned top-right feed, one size while you watch and one while you stream (the
+            // preview outlines the streaming one).
+            case HEAD_VIEWER_SIZE -> headViewerSize(key, false);
+            case HEAD_VIEWER_SIZE_STREAMING -> headViewerSize(key, true);
 
             // The consent card's Developer chat switch. Inert (greyed) in Kid mode, where the Kid rule
             // keeps developer chat off whatever this says; flipping it re-syncs the inbound gate.
@@ -1135,6 +1130,18 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     }
 
     /** A pinned-feed size index as a percentage of its normal width: "150%". */
+    /** One of the two pinned-feed size rows: {@code streaming} picks which size it sets. */
+    private static Setting headViewerSize(String key, boolean streaming) {
+        return Setting.of(
+                CycleButton.<Integer>builder(DungeonTrainClientOptionsScreen::headViewerSizeLabel)
+                        .withValues(LiveFeedClientConfig.headViewerSizeIndexes())
+                        .withInitialValue(LiveFeedClientConfig.headViewerSize(streaming))
+                        .displayOnlyValue()
+                        .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
+                                (btn, i) -> LiveFeedClientConfig.setHeadViewerSize(streaming, i)),
+                key + ".tip");
+    }
+
     private static Component headViewerSizeLabel(int index) {
         return Component.literal(LiveFeedClientConfig.headViewerSizePercent(index) + "%");
     }

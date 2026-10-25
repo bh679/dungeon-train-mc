@@ -20,7 +20,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * Copies the finished frame out of the main render target into a small buffer for the encoder.
  *
  * <p>Render thread only. Each grab blits the main target (what the player sees, HUD included —
- * whatever Iris/Sodium/Veil drew into it) down to a {@code width×height} target and starts an
+ * whatever Iris/Sodium/Veil drew into it) down to a {@code width×height} target, cropped to that
+ * shape when the window isn't ({@link LiveAspect#cropRect}), and starts an
  * asynchronous read of it into one of a ring of pixel-pack buffers, guarded by a fence. The next
  * grab copies the newest finished read into a pooled direct buffer with {@code glGetBufferSubData},
  * so a frame reaches the encoder one grab late (~50 ms at 20 fps) and the render thread never waits
@@ -72,10 +73,12 @@ public final class LiveFrameGrabber implements AutoCloseable {
             collectFinished();
             GlStateManager._glBindFramebuffer(GL30C.GL_READ_FRAMEBUFFER, main.frameBufferId);
             GlStateManager._glBindFramebuffer(GL30C.GL_DRAW_FRAMEBUFFER, target.frameBufferId);
-            GL30C.glBlitFramebuffer(0, 0, main.width, main.height, 0, 0, width, height,
+            // The window's middle at the stream's ratio: cropped, never stretched (LiveAspect).
+            int[] crop = LiveAspect.cropRect(main.width, main.height, width, height);
+            GL30C.glBlitFramebuffer(crop[0], crop[1], crop[2], crop[3], 0, 0, width, height,
                 GL11C.GL_COLOR_BUFFER_BIT, GL11C.GL_LINEAR);
             StreamNameTag.drawInto(target); // viewers' copy only — the main target is untouched
-            LiveToastRects.copyOver(main, target); // popups back over the name tag
+            LiveToastRects.copyOver(main, target, crop); // popups back over the name tag
             int slot = ring.issue();
             if (slot >= 0) {
                 // Into the bound pack buffer at offset 0: queued on the GPU, returns at once.

@@ -18,7 +18,7 @@ final class TvItemsTest {
     }
 
     @Test
-    @DisplayName("an offhand TV toggles only with an empty main hand; a sword still swings")
+    @DisplayName("an offhand TV toggles only with an empty main hand; a sword in the main hand keeps the click")
     void offhandNeedsEmptyMain() {
         assertEquals(InteractionHand.OFF_HAND, TvItems.toggleHand(false, true, true));
         assertNull(TvItems.toggleHand(false, false, true));

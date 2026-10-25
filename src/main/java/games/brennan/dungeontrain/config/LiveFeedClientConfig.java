@@ -368,17 +368,16 @@ public final class LiveFeedClientConfig {
     }
 
     /**
-     * Options → Stream → Live viewer size: one size for the pinned feed whether you watch or stream.
-     * Clicking the feed still steps each mode on its own afterwards. Persisted; no-op pre-load.
+     * Options → Stream → Live viewer size (watching, or while streaming): the pinned feed's size in
+     * that mode only. Clicking the feed in the inventory steps the same value. Persisted; no-op pre-load.
      */
-    public static void setHeadViewerSize(int index) {
+    public static void setHeadViewerSize(boolean streaming, int index) {
         int i = clampSize(index);
         if (!loaded()) return;
-        for (ModConfigSpec.IntValue v : List.of(HEAD_VIEWER_SIZE_WATCHING, HEAD_VIEWER_SIZE_STREAMING)) {
-            if (v.get() != i) {
-                v.set(i);
-                v.save();
-            }
+        ModConfigSpec.IntValue v = streaming ? HEAD_VIEWER_SIZE_STREAMING : HEAD_VIEWER_SIZE_WATCHING;
+        if (v.get() != i) {
+            v.set(i);
+            v.save();
         }
     }
 
