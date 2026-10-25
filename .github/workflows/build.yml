@@ -159,6 +159,30 @@ jobs:
       - name: Protocol-version check tests (codec fixtures + #1449 regression)
         run: python3 scripts/net/test_check_protocol_version.py
 
+  # Every changelog entry on either side of a PR must survive its merge: resolving a
+  # changelog.json conflict by taking one side drops the other side's entries silently, and an
+  # integration branch (dev/perks) reaching main must keep every entry its PRs logged. Runs on
+  # the PR merge ref. Fix: scripts/release-notes/merge-changelog.py --resolve.
+  changelog-checks:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # needs the merge-base with the target branch
+
+      - name: No changelog entry lost by this merge
+        run: |
+          python3 scripts/release-notes/check-changelog-ids.py \
+            --base origin/${{ github.base_ref }} --head ${{ github.event.pull_request.head.sha }}
+
+      - name: Changelog merge + integration bump tests
+        run: |
+          python3 scripts/release-notes/test_changelog_merge.py
+          python3 scripts/version/test_merge_bump.py
+
   # Stdlib-only Python guard for the translation provenance sidecars (who translated / who
   # human-reviewed each string). Two flavours, both under localization/ and both repo-side
   # only (the sidecars never ship — but the generated manifests derived from them, at
