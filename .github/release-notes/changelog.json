@@ -30623,8 +30623,30 @@
       "released_at": null
     },
     {
-      "id": "minimap-fix",
+      "id": "live-stream-real-shape",
       "version": "0.1517.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui"
+      ],
+      "title": "Live streams keep their real shape",
+      "summary": "Streams no longer look stretched when the streamer plays in a window that isn't widescreen. The picture now keeps the streamer's own shape everywhere it is shown.",
+      "highlights": [
+        "TVs fill their screen and trim the edges instead of stretching the picture",
+        "The pinned live feed resizes to fit the stream, so you see all of it",
+        "New setting: separate pinned feed sizes for watching and for streaming"
+      ],
+      "pr": 2314,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "minimap-fix",
+      "version": "0.1518.0",
       "type": "fix",
       "tags": [
         "fix",

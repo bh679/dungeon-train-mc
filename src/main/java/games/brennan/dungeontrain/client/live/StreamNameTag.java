@@ -203,7 +203,8 @@ public final class StreamNameTag {
         if (main == null || main.width <= 0) return;
         int w = target.width;
         int h = target.height;
-        float scale = (float) (mc.getWindow().getGuiScale() * w / main.width);
+        int[] crop = LiveAspect.cropRect(main.width, main.height, w, h); // the part of the window streamed
+        float scale = (float) (mc.getWindow().getGuiScale() * w / (crop[2] - crop[0]));
         if (scale <= 0f) return;
 
         Matrix4f savedProjection = SAVED_PROJECTION.set(RenderSystem.getProjectionMatrix());

@@ -73,8 +73,14 @@ public final class HeadViewerPanes {
      * (the chosen stream, or the first) is shown.
      */
     public static List<Pane> current(int guiWidth, int boxWidth, boolean secondLive, boolean atMaxSize) {
+        return current(guiWidth, boxWidth, secondLive, atMaxSize, 16f / 9f, 16f / 9f);
+    }
+
+    /** {@link #current(int, int, boolean, boolean)} with each stream's own shape (width over height). */
+    public static List<Pane> current(int guiWidth, int boxWidth, boolean secondLive, boolean atMaxSize,
+                                     float mainRatio, float secondRatio) {
         if (!secondLive) { choice = Choice.BOTH; wornMemory = -1; } // the worn TV's memory applies again when a second returns
-        return panes(guiWidth, boxWidth, secondLive && !atMaxSize, choice);
+        return panes(guiWidth, boxWidth, secondLive && !atMaxSize, choice, mainRatio, secondRatio);
     }
 
     /**
@@ -82,13 +88,20 @@ public final class HeadViewerPanes {
      * under the first) or the chosen one alone in the first pane's spot.
      */
     static List<Pane> panes(int guiWidth, int boxWidth, boolean twoAllowed, Choice choice) {
-        LiveHeadViewer.Box first = LiveHeadViewer.layout(guiWidth, boxWidth);
+        return panes(guiWidth, boxWidth, twoAllowed, choice, 16f / 9f, 16f / 9f);
+    }
+
+    /** {@link #panes(int, int, boolean, Choice)} with each pane as tall as its own stream's shape needs. */
+    static List<Pane> panes(int guiWidth, int boxWidth, boolean twoAllowed, Choice choice, float mainRatio, float secondRatio) {
+        LiveHeadViewer.Box first = LiveHeadViewer.layout(guiWidth, boxWidth, mainRatio);
         if (!twoAllowed) return List.of(new Pane(false, first));
+        LiveHeadViewer.Box secondAlone = LiveHeadViewer.layout(guiWidth, boxWidth, secondRatio);
         return switch (choice) {
             case MAIN_ONLY -> List.of(new Pane(false, first));
-            case SECOND_ONLY -> List.of(new Pane(true, first));
+            case SECOND_ONLY -> List.of(new Pane(true, secondAlone));
             case BOTH -> List.of(new Pane(false, first),
-                new Pane(true, new LiveHeadViewer.Box(first.x(), first.y() + first.h() + 2 * LiveHeadViewer.BORDER + GAP, boxWidth, first.h())));
+                new Pane(true, new LiveHeadViewer.Box(first.x(), first.y() + first.h() + 2 * LiveHeadViewer.BORDER + GAP,
+                    boxWidth, secondAlone.h())));
         };
     }
 
