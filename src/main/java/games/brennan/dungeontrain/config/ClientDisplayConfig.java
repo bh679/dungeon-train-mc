@@ -604,7 +604,7 @@ public final class ClientDisplayConfig {
                 .comment("Stop Distant Horizons drawing while you are in, or approaching, the stacks section of the track - the void standing with towers of terrain. Set false to let DH draw there anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
                 .define("hideInStacks", true);
         ModConfigSpec.BooleanValue sunkAtticHideDistantHorizons = b
-                .comment("Keep dimensional carriages out of Distant Horizons' distant terrain over the high stretch after the spheres, where the train rides over deep valleys. Their rooms sit in the sky there, and without this DH draws them floating in the distance. DH still draws the valleys. Chunks DH stored before this was on keep the rooms until DH processes them again. Does nothing if Distant Horizons is not installed, and never touches DH's own settings.")
+                .comment("Fixes a Distant Horizons sky glitch on one stretch of the track. Leave this on; set false only to troubleshoot. Chunks DH stored before this was on keep the glitch until DH processes them again. Does nothing if Distant Horizons is not installed, and never touches DH's own settings.")
                 .define("hideSunkAttic", true);
         ModConfigSpec.IntValue voidBandsDistantHorizonsMargin = b
                 .comment("How many blocks either side of the chunks, spheres and stacks sections DH stays hidden. A section comes into DH's draw distance well before you reach it, so this covers the way in (and the same distance past its far end). Raise it if you run a very large DH render distance; 0 cuts DH out exactly at the sections' edges.")
