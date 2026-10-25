@@ -30587,6 +30587,40 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "held-tv-remembered-stream",
+      "version": "0.1515.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Hand-held TV channel fix",
+      "summary": "A TV you pick up off the second stream keeps showing the second stream while you hold it, instead of jumping back to the first.",
+      "highlights": [],
+      "pr": 2310,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "held-tv-right-click",
+      "version": "0.1516.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Right-click to switch on a TV in your hand",
+      "summary": "Hold a TV and right-click the air to switch it on or off, the same click that works on a placed TV. Left-click is a normal swing again.",
+      "highlights": [],
+      "pr": 2312,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
