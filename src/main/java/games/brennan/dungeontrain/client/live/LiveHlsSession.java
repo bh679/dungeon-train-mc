@@ -411,20 +411,29 @@ public final class LiveHlsSession implements IMediaSession {
         else a.addAll(List.of("-readrate", "1", "-readrate_catchup", "2"));
         if (replay) {
             a.addAll(List.of("-stream_loop", "-1", "-i", playlistUrl, "-an",
-                "-vf", "scale=" + width + ":" + height + ",format=gray,noise=alls=18:allf=t+u,format=rgba"));
+                "-vf", fill(width, height) + ",format=gray,noise=alls=18:allf=t+u,format=rgba"));
         } else {
             a.addAll(List.of("-live_start_index", "-1",
                 "-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5",
-                "-i", playlistUrl, "-an", "-vf", "scale=" + width + ":" + height));
+                "-i", playlistUrl, "-an", "-vf", fill(width, height)));
         }
         a.addAll(List.of("-f", "image2pipe", "-vcodec", "rawvideo", "-pix_fmt", "rgba", "-"));
         return a.toArray(new String[0]);
     }
 
+    /**
+     * The video filter that fits a stream of any shape onto the {@code width×height} screen: scaled to
+     * cover it, the overflow cropped off centred. Never stretched; a 4:3 stream on a 16:9 TV loses its
+     * top and bottom.
+     */
+    static String fill(int width, int height) {
+        return "scale=" + width + ":" + height + ":force_original_aspect_ratio=increase,crop=" + width + ":" + height;
+    }
+
     /** {@link #localLoop}'s ffmpeg: a file on this computer and nothing else, looped at real time, in colour. */
     static String[] localArgs(String path, int width, int height) {
         return new String[] {"-hide_banner", "-loglevel", "error", "-nostdin", "-protocol_whitelist", "file",
-            "-re", "-stream_loop", "-1", "-i", path, "-an", "-vf", "scale=" + width + ":" + height,
+            "-re", "-stream_loop", "-1", "-i", path, "-an", "-vf", fill(width, height),
             "-f", "image2pipe", "-vcodec", "rawvideo", "-pix_fmt", "rgba", "-"};
     }
 

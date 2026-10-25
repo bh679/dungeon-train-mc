@@ -195,4 +195,16 @@ class LiveHlsSessionTest {
         for (int i = 0; i < 50 && session.decoding(); i++) Thread.sleep(10);
         assertFalse(session.decoding(), "the interrupt ends the reader instead of leaving it asleep");
     }
+
+    @Test
+    void everyDecoderCropsToFillAndNeverStretches() {
+        String fill = "scale=640:360:force_original_aspect_ratio=increase,crop=640:360";
+        assertEquals(fill, LiveHlsSession.fill(640, 360));
+        List<String> live = List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, true));
+        assertEquals(fill, live.get(live.indexOf("-vf") + 1), "a 4:3 stream fills a 16:9 TV, cropped: " + live);
+        List<String> replay = List.of(LiveHlsSession.args("https://x/seg.ts", 640, 360, true, true));
+        assertTrue(replay.get(replay.indexOf("-vf") + 1).startsWith(fill + ","), "replay too: " + replay);
+        List<String> local = List.of(LiveHlsSession.localArgs("/tmp/clip.mp4", 640, 360));
+        assertEquals(fill, local.get(local.indexOf("-vf") + 1), "the local loop too: " + local);
+    }
 }
