@@ -195,6 +195,11 @@
     {
       "id": "testspace",
       "weight": 1
+    },
+    {
+      "id": "trailvault2",
+      "weight": 5,
+      "stage": "copper"
     }
   ]
 }
