@@ -154,11 +154,34 @@ public final class ContainerContentsMenuController {
         BlockPos clampedLocal = clampToFootprint(localPos, plot);
         BlockPos clampedWorld = plot.origin().offset(clampedLocal);
 
+        prefillVault(level, plot, clampedLocal, clampedWorld);
+
         Direction face = bhit.getDirection();
         Vec3 up = computeUp(face, player);
         OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clampedLocal, face, up,
             LootPrefabStore.CATEGORY_LOOT));
         sendSync(player, plot, clampedLocal, clampedWorld, face, up);
+    }
+
+    /**
+     * A vault with no loot of its own opens with vanilla's trial reward already in it, as an
+     * ordinary local pool the author can edit: that is what it rolls at spawn anyway, so the menu
+     * shows it instead of an empty list. A linked vault keeps its prefab.
+     */
+    private static void prefillVault(ServerLevel level, BlockVariantPlot plot, BlockPos localPos, BlockPos worldPos) {
+        if (!VaultLoot.isVault(level.getBlockState(worldPos))) return;
+        ContainerContentsStore store = ContainerContentsStore.loadFor(plot.key());
+        if (store.linkAt(localPos) != null || !store.poolAt(localPos).isEmpty()) return;
+        ContainerContentsPool pool = VaultLoot.defaultPool(ContainerContentsPool.DEFAULT_VAULT_KEY);
+        if (pool.isEmpty()) return;
+        store.putPool(localPos, pool);
+        try {
+            store.save();
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] Vault prefill save failed for {}: {}", plot.key(), e.toString());
+            return;
+        }
+        rerollLocalContainer(level, plot, localPos, pool);
     }
 
     /**
@@ -258,14 +281,15 @@ public final class ContainerContentsMenuController {
         String link = store.linkAt(localPos);
         BlockState state = player.serverLevel().getBlockState(worldPos);
         int containerSize = ContainerContentsRoller.slotsForContainer(state);
+        String vaultKey = VaultLoot.isVault(state) ? pool.vaultKey() : null;
         DungeonTrainNet.sendTo(player,
-            buildSyncPacket(plot, localPos, worldPos, face, up, pool, containerSize, link));
+            buildSyncPacket(plot, localPos, worldPos, face, up, pool, containerSize, link, vaultKey));
     }
 
     private static ContainerContentsSyncPacket buildSyncPacket(
         BlockVariantPlot plot, BlockPos localPos, BlockPos worldPos,
         Direction face, Vec3 up, ContainerContentsPool pool, int containerSize,
-        String link
+        String link, String vaultKey
     ) {
         Vec3 normal = new Vec3(face.getStepX(), face.getStepY(), face.getStepZ());
         Vec3 faceCentre = new Vec3(
@@ -288,7 +312,7 @@ public final class ContainerContentsMenuController {
                 e.book() == null ? "" : e.book().title()));
         }
         return new ContainerContentsSyncPacket(plot.key(), localPos, entries,
-            pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link);
+            pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link, vaultKey);
     }
 
     /**
@@ -604,6 +628,31 @@ public final class ContainerContentsMenuController {
                 next = current.replaced(idx, e.cyclePotionForm());
                 dirty = true;
             }
+            case CYCLE_VAULT_KEY -> {
+                String nextKey = VaultLoot.nextKey(current.vaultKey());
+                String linkedId = store.linkAt(localPos);
+                // Linked to one of the two default vault prefabs: link the other one. Writing the
+                // other default's loot into the linked prefab would overwrite that prefab's loot.
+                String relink = linkedId == null ? null : VaultLoot.otherDefaultPrefab(linkedId);
+                if (relink != null) {
+                    store.setLink(localPos, relink);
+                    try {
+                        store.save();
+                    } catch (IOException e) {
+                        LOGGER.error("[DungeonTrain] Vault relink save failed for {}: {}", plot.key(), e.toString());
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed",
+                            e.getClass().getSimpleName()), ChatFormatting.RED);
+                        return;
+                    }
+                    rerollLocalContainer(level, plot, localPos, store.poolAt(localPos));
+                    resyncSameFace(player, plot, localPos);
+                    return;
+                }
+                // Any other linked prefab only changes its key; a local pool that is still its
+                // key's default loot follows the vault type to the other default.
+                next = linkedId == null ? VaultLoot.withKey(current, nextKey) : current.withVaultKey(nextKey);
+                dirty = true;
+            }
             case UNLINK -> {
                 String prev = store.linkAt(localPos);
                 if (prev == null) return;
@@ -716,6 +765,7 @@ public final class ContainerContentsMenuController {
         be.loadCustomOnly(rolled, level.registryAccess());
         be.setChanged();
         ChiseledBookshelfSync.syncIfNeeded(level, worldPos);
+        VaultLoot.syncState(level, worldPos);
     }
 
     private static void resyncSameFace(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
