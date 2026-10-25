@@ -16,7 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
- * Client → server: the player left-clicked with a Vista TV in {@code hand} and wants it switched
+ * Client → server: the player right-clicked with a Vista TV in {@code hand} and wants it switched
  * on or off ({@code client/live/HeldTvToggleClient}).
  *
  * <p>The hand is a claim: the server looks at what that hand really holds and does nothing unless it
