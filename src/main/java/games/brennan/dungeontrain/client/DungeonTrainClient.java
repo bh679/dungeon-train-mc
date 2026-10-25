@@ -10,6 +10,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import games.brennan.dungeontrain.client.skybox.SkyboxStencil;
+import games.brennan.dungeontrain.client.live.FfmpegHint;
 import games.brennan.dungeontrain.client.live.LiveTakeoverOffer;
 import games.brennan.dungeontrain.client.live.LiveTakeoverChat;
 import games.brennan.dungeontrain.client.live.LiveGiftClient;
@@ -46,6 +47,7 @@ public final class DungeonTrainClient {
         LogRequestClient.registerClicks();
         BugResponseChatNotifier.registerClicks();
         LowMemoryNotice.registerClicks();
+        FfmpegHint.registerClicks();
 
         // Falling blocks rise in the upside-down band on the client too (FallingBlockEntityUpsideDownMixin).
         UpsideDownGravity.setClientBand(ClientUpsideDownBand::isInBand);

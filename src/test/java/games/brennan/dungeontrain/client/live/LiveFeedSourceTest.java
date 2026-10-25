@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 /** Which stream each source shows for a poll: the second source falls back to the first while there is no second. */
@@ -33,5 +35,14 @@ final class LiveFeedSourceTest {
         Status one = live("s1", null);
         assertSame(one, LiveFeedSource.statusFor(one, true));
         assertSame(Status.OFFLINE, LiveFeedSource.statusFor(Status.OFFLINE, true));
+    }
+
+    @Test
+    @DisplayName("with something to play, a client without ffmpeg shows the needs-FFmpeg card, never snow")
+    void noFfmpegIsNotStatic() {
+        assertEquals(LiveFeedSource.Kind.NO_FFMPEG, LiveFeedSource.kindBeforeDecode(FfmpegSupport.State.OFF));
+        assertEquals(LiveFeedSource.Kind.NO_FFMPEG, LiveFeedSource.kindBeforeDecode(FfmpegSupport.State.FAILED));
+        assertEquals(LiveFeedSource.Kind.DOWNLOADING, LiveFeedSource.kindBeforeDecode(FfmpegSupport.State.DOWNLOADING));
+        assertNull(LiveFeedSource.kindBeforeDecode(FfmpegSupport.State.READY));
     }
 }

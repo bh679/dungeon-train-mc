@@ -5,7 +5,6 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Status;
 import net.mehvahdjukaar.moonlight.api.util.math.Vec2i;
-import net.mehvahdjukaar.vista.VistaModClient;
 import net.mehvahdjukaar.vista.client.CrtOverlay;
 import net.mehvahdjukaar.vista.client.textures.TvScreenVertexConsumers;
 import net.mehvahdjukaar.vista.client.video_source.IVideoSource;
@@ -29,8 +28,8 @@ import org.jetbrains.annotations.Nullable;
  * falls back to the first stream while there is no second, so no TV goes dark over which cassette it
  * holds.</p>
  *
- * <p>Static when nobody is live (or the viewer cap is full), Vista's "downloading" bars while its
- * ffmpeg is fetched, the waiting pattern while the first frames decode, then the stream. One
+ * <p>Static when nobody is live (or the viewer cap is full), the "needs FFmpeg" card when there is a
+ * broadcast but this client has no ffmpeg, Vista's "downloading" bars while its ffmpeg is fetched, the waiting pattern while the first frames decode, then the stream. One
  * {@link LiveHlsSession} per playlist URL is shared by every TV of a source; a new session id in the
  * relay's status (a takeover) swaps to a fresh session, which is how viewers follow the new streamer.</p>
  */
@@ -41,6 +40,12 @@ public final class LiveFeedSource implements IVideoSource {
 
     /** How long after a TV asked this source for a frame it still counts as shown ({@link #interested}). */
     private static final long INTEREST_MS = 15_000;
+    /** The card a TV shows when there is something to play but no ffmpeg ({@link Kind#NO_FFMPEG}). */
+    public static final ResourceLocation NO_FFMPEG_SCREEN =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "no_ffmpeg");
+    /** The same card as a plain texture, for GUI blits ({@code LiveHeadViewer}). */
+    public static final ResourceLocation NO_FFMPEG_TEXTURE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "textures/cassette_tape/no_ffmpeg.png");
 
     private final ResourceLocation texture;
     private final ResourceLocation pendingTextureId;
@@ -81,7 +86,21 @@ public final class LiveFeedSource implements IVideoSource {
     }
 
     /** What the feed has to show this frame, for a TV screen or the pinned head viewer. */
-    public enum Kind { STATIC, DOWNLOADING, WAITING, PICTURE }
+    public enum Kind { STATIC, NO_FFMPEG, DOWNLOADING, WAITING, PICTURE }
+
+    /**
+     * What a feed with something to play shows before decoding, by ffmpeg state: the "needs FFmpeg"
+     * card when it is off or failed (never snow, which reads as "nobody is live"), the download bars
+     * while it is fetched, null once it is ready. Pure, for the tests.
+     */
+    @Nullable
+    static Kind kindBeforeDecode(FfmpegSupport.State ffmpeg) {
+        return switch (ffmpeg) {
+            case OFF, FAILED -> Kind.NO_FFMPEG;
+            case DOWNLOADING -> Kind.DOWNLOADING;
+            case READY -> null;
+        };
+    }
 
     /**
      * One frame's answer. {@code url} is the playlist being shown (null for static); {@code progress}
@@ -111,8 +130,9 @@ public final class LiveFeedSource implements IVideoSource {
                                                         IntAnimationState switchAnim, IntAnimationState staticAnim,
                                                         boolean showsTime) {
         LiveFeedSource d = delegate();
-        return d.screenConsumer(d.frame(videoAnimationTick, partialTick, paused, true),
-            buffer, pixelEffectRes, videoAnimationTick, switchAnim, staticAnim);
+        Frame f = d.frame(videoAnimationTick, partialTick, paused, true);
+        if (f.kind() == Kind.NO_FFMPEG) FfmpegHint.shown(tv.getBlockPos());
+        return d.screenConsumer(f, buffer, pixelEffectRes, videoAnimationTick, switchAnim, staticAnim);
     }
 
     /**
@@ -123,8 +143,9 @@ public final class LiveFeedSource implements IVideoSource {
                                          float partialTick, boolean paused,
                                          IntAnimationState switchAnim, IntAnimationState staticAnim) {
         LiveFeedSource d = delegate();
-        return d.screenConsumer(d.frame(videoAnimationTick, partialTick, paused),
-            buffer, pixelEffectRes, videoAnimationTick, switchAnim, staticAnim);
+        Frame f = d.frame(videoAnimationTick, partialTick, paused);
+        if (f.kind() == Kind.NO_FFMPEG) FfmpegHint.shown(null);
+        return d.screenConsumer(f, buffer, pixelEffectRes, videoAnimationTick, switchAnim, staticAnim);
     }
 
     private VertexConsumer screenConsumer(Frame f, MultiBufferSource buffer, Vec2i pixelEffectRes,
@@ -132,6 +153,7 @@ public final class LiveFeedSource implements IVideoSource {
                                           IntAnimationState switchAnim, IntAnimationState staticAnim) {
         return switch (f.kind()) {
             case STATIC -> TvScreenVertexConsumers.getNoiseVC(buffer, pixelEffectRes, switchAnim);
+            case NO_FFMPEG -> TvScreenVertexConsumers.getErrorVc(buffer, pixelEffectRes, NO_FFMPEG_SCREEN, switchAnim);
             case DOWNLOADING -> f.progress() >= 0
                 ? TvScreenVertexConsumers.getDownloadingVc(buffer, pixelEffectRes, f.progress(), switchAnim)
                 : TvScreenVertexConsumers.getWaitingVc(buffer, pixelEffectRes, videoAnimationTick, switchAnim);
@@ -180,16 +202,12 @@ public final class LiveFeedSource implements IVideoSource {
         } else {
             return Frame.STATIC;
         }
-        switch (FfmpegSupport.state()) {
-            case DOWNLOADING -> {
-                FfmpegSupport.watch();
-                return new Frame(Kind.DOWNLOADING, url, replay, VistaModClient.getFFmpegDownloadProgress(), false);
-            }
-            case OFF, FAILED -> {
-                return Frame.STATIC;
-            }
-            default -> { /* ready */ }
+        Kind early = kindBeforeDecode(FfmpegSupport.state());
+        if (early == Kind.DOWNLOADING) {
+            FfmpegSupport.watch();
+            return new Frame(Kind.DOWNLOADING, url, replay, FfmpegSupport.downloadProgress(), false);
         }
+        if (early == Kind.NO_FFMPEG) return new Frame(Kind.NO_FFMPEG, url, replay, -1, false);
         FFmpeg ffmpeg = FfmpegSupport.get();
         if (ffmpeg == null) return Frame.STATIC;
         LiveHlsSession s = sessionFor(url, replay, status, ffmpeg);
