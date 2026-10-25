@@ -30570,6 +30570,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "held-tv-live-feed-static",
+      "version": "0.1513.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Hand-held TV fix",
+      "summary": "A TV switched on in your hand now shows the live feed instead of static.",
+      "highlights": [],
+      "pr": 2308,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

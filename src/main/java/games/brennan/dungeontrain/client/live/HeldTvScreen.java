@@ -108,8 +108,9 @@ public final class HeldTvScreen {
         Minecraft mc = Minecraft.getInstance();
         int tick = mc.player != null ? mc.player.tickCount : 0;
         float partial = mc.getTimer().getGameTimeDeltaPartialTick(false);
+        // Fully faded on, no snow: Vista's staticAnim is the CRT shader's NoiseIntensity, and 1 is pure static.
         VertexConsumer vc = LiveFeedSource.MAIN.screenConsumer(buffer, TVBlockEntity.MIN_SCREEN_PIXEL_SIZE_VEC,
-            tick, partial, false, IntAnimationState.MAX_ANIM, IntAnimationState.MAX_ANIM);
+            tick, partial, false, IntAnimationState.MAX_ANIM, IntAnimationState.NO_ANIM);
         poseStack.pushPose();
         poseStack.translate(0, 0, FACE_Z);
         int glow = LightTexture.pack(15, LightTexture.sky(light));
