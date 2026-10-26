@@ -102,7 +102,11 @@ final class StarPainter {
         if (look.namePos() != null) {
             int text = state == PerkMenuSnapshot.StarState.LOCKED && !look.glow() ? SkyPalette.MUTED : SkyPalette.FG;
             int alpha = (int) (Math.max(0.35, opacity) * 255);
-            g.drawString(font, p.name(), look.namePos()[0], look.namePos()[1], (alpha << 24) | (text & 0xFFFFFF), true);
+            g.pose().pushPose();
+            g.pose().translate(look.namePos()[0], look.namePos()[1], 0);
+            g.pose().scale(SkyPalette.NAME_SCALE, SkyPalette.NAME_SCALE, 1F);
+            g.drawString(font, p.name(), 0, 0, (alpha << 24) | (text & 0xFFFFFF), true);
+            g.pose().popPose();
         }
     }
 
