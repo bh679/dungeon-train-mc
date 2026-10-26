@@ -18,15 +18,19 @@ Approved Gate 1 plan (full detail, both repos):
 | Piece | State |
 |---|---|
 | Mod (Part B) | **Built, Gate 2 tested against a stub relay, NOT yet approved by Brennan.** No PR opened yet. |
-| Relay (Part A) | **Not started.** Must ship and deploy before the mod is useful. |
+| Relay (Part A) | **Built and pushed** on dp-relay branch `dev/live-translations` (commit 0b522a56, worktree `~/Projects/dp-relay-worktrees/live-translations`, version 0.282.1). Full relay suite 7,491/7,491 pass. No PR yet; the local end-to-end run (real relay + mock Anthropic, script in the session scratchpad) was not run because it was blocked by permissions. Must ship and deploy before the mod is useful. |
 | Reward on sale | Not open. `REWARDS_OPEN` on the box gains `live_translation` only after the mod release. |
 | Changelog entry | Not written yet (Gate 3 step, via `scripts/release-notes/append-entry.py`). |
 
 ### Next steps, in order
 
 1. Brennan approves Gate 2 for the mod (screenshots, gitignored so local only: `.claude/worktrees/blissful-benz-4307f1/test-results/gate2-live-translations-*-2026-10.png`; re-create with the stub steps below).
-2. Build Part A in a dp-relay worktree off `origin/main` (the local `~/Projects/dp-relay` checkout is a
-   stale detached HEAD). Wire contract below must match exactly.
+2. Relay Part A is built on dp-relay `dev/live-translations`: `live-chat-translate.js` (+ test), the `trans` ring
+   step in `live-chat.js`, `rewards.js` (`live_translation`, A$90, `TERM_MONTHS` = 3), `lang=` noting in
+   `server.js` / `live-chat-web.js`, `rewards` on the public status (`live.js`), the Live page using relay
+   translations first (`public/dungeontrain/live/chat-*.js`, `live-translate.js`), shelf/thanks pages, env keys
+   in `config-schema.js` + `.env.example`, README section. Remaining: its Gate 2 (a local relay with a mock
+   Anthropic endpoint via `LIVE_TRANSLATE_ENDPOINT`, or a real key), PR, Gate 3, deploy.
 3. Mod PR (Gate 3): changelog entry + tags, CI green, Brennan approves, squash-merge.
 4. Relay PR + deploy; then set `LIVE_TRANSLATE_API_KEY` (Brennan creates it in its own Anthropic console
    workspace with a monthly spend limit) and `LIVE_TRANSLATE_ENABLED=true` on the box.
