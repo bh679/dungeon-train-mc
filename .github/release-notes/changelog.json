@@ -31049,6 +31049,24 @@
       "released_in": null,
       "released_at": null,
       "pr": 2344
+    },
+    {
+      "id": "live-pill-shows-once",
+      "version": "0.1544.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui"
+      ],
+      "title": "Live stream name tag shows once",
+      "summary": "Viewers of a live stream sometimes saw the streamer's name tag twice, one just under the other. It now shows once.",
+      "highlights": [],
+      "pr": 2346,
+      "date": "2026-10-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
