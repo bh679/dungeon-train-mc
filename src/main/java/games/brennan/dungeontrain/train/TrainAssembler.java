@@ -919,6 +919,9 @@ public final class TrainAssembler {
         // can't trust Trains.byTrainId for "what anchors does this train
         // already own." The registry is the authoritative answer.
         Trains.registerSpawned(trainId, anchorPIdx, ship);
+        // Template-baked chest contents were never rolled: fingerprint them as placed, so a difficulty
+        // swap leaves them alone until someone touches them.
+        games.brennan.dungeontrain.event.DifficultyWorldLootEvents.fingerprintCarriage(level, ship);
 
         long tEnd = System.nanoTime();
         // stages=[...] and gateX are the only in-log view of the worldgen stage this group resolved.

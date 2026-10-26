@@ -1875,6 +1875,8 @@ public final class PortalCarriageBuilder {
         PortalRoomPools.apply(level, roomOrigin, roomName, size, writeMask, variantIndex, pairKey);
         applyRoomVariants(level, roomOrigin, roomName, size, writeMask, variantIndex, exactIndex,
             pairKey, tile, liveMobCount);
+        // Template-baked chest contents were never rolled: fingerprint them as stamped (difficulty swap).
+        games.brennan.dungeontrain.event.DifficultyWorldLootEvents.fingerprintRoom(level, roomOrigin, size);
         // Last, and only a registration: the shelves are stocked by PortalRoomLibrarian on a later
         // tick, because the relay has not said who has written what by the time a room is stamped.
         PortalRoomLibrarian.register(pairKey, roomOrigin, size, books);
