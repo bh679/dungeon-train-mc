@@ -5707,6 +5707,7 @@
   "gui.dungeontrain.perks.bar.unlock": "Deblochează",
   "gui.dungeontrain.perks.bar.activate": "Activează",
   "gui.dungeontrain.perks.bar.tier": "Nivelul %s",
+  "gui.dungeontrain.perks.bar.class_count": "Avantaje: %s, deblocate: %s",
   "gui.dungeontrain.perks.bar.full": "Plin. Deblochează-l din nou pentru loc pentru încă un punct.",
   "gui.dungeontrain.perks.bar.fill_first": "Umple mai întâi punctele lui.",
   "gui.dungeontrain.perks.bar.hint": "Treci peste un avantaj ca să-l vezi aici. Dă clic ca să-l păstrezi.",

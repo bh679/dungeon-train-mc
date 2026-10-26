@@ -5643,6 +5643,7 @@
   "gui.dungeontrain.perks.bar.unlock": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "4ac709aa58bcfe5d"},
   "gui.dungeontrain.perks.bar.activate": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "24433c70eba5b153"},
   "gui.dungeontrain.perks.bar.tier": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "6e8235b8e57e2291"},
+  "gui.dungeontrain.perks.bar.class_count": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "6c2780db224a4aae"},
   "gui.dungeontrain.perks.bar.full": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "7279d95a12417bfc"},
   "gui.dungeontrain.perks.bar.fill_first": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0f3c824d825f7443"},
   "gui.dungeontrain.perks.bar.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0dc26fad5284ead3"},

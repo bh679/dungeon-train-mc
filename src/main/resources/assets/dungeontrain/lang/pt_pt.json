@@ -5643,6 +5643,7 @@
   "gui.dungeontrain.perks.bar.unlock": "Desbloquear",
   "gui.dungeontrain.perks.bar.activate": "Ativar",
   "gui.dungeontrain.perks.bar.tier": "Nível %s",
+  "gui.dungeontrain.perks.bar.class_count": "%s vantagens, %s desbloqueadas",
   "gui.dungeontrain.perks.bar.full": "Cheio. Desbloqueia de novo para teres espaço para mais um ponto.",
   "gui.dungeontrain.perks.bar.fill_first": "Preenche primeiro os pontos dela.",
   "gui.dungeontrain.perks.bar.hint": "Passa o rato por uma vantagem para a veres aqui. Clica para a fixar.",

@@ -5582,6 +5582,7 @@
       "gui.dungeontrain.perks.bar.unlock",
       "gui.dungeontrain.perks.bar.activate",
       "gui.dungeontrain.perks.bar.tier",
+      "gui.dungeontrain.perks.bar.class_count",
       "gui.dungeontrain.perks.bar.full",
       "gui.dungeontrain.perks.bar.fill_first",
       "gui.dungeontrain.perks.bar.hint",

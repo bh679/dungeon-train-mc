@@ -5707,6 +5707,7 @@
   "gui.dungeontrain.perks.bar.unlock": "Odblokuj",
   "gui.dungeontrain.perks.bar.activate": "Aktywuj",
   "gui.dungeontrain.perks.bar.tier": "Poziom %s",
+  "gui.dungeontrain.perks.bar.class_count": "Atuty: %s, odblokowane: %s",
   "gui.dungeontrain.perks.bar.full": "Pełny. Odblokuj ponownie, aby zrobić miejsce na kolejny punkt.",
   "gui.dungeontrain.perks.bar.fill_first": "Najpierw wypełnij jego punkty.",
   "gui.dungeontrain.perks.bar.hint": "Najedź na atut, aby zobaczyć go tutaj. Kliknij, aby go zatrzymać.",

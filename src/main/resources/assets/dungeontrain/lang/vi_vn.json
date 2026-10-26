@@ -5579,6 +5579,7 @@
   "gui.dungeontrain.perks.bar.unlock": "Mở khóa",
   "gui.dungeontrain.perks.bar.activate": "Kích hoạt",
   "gui.dungeontrain.perks.bar.tier": "Bậc %s",
+  "gui.dungeontrain.perks.bar.class_count": "%s đặc quyền, đã mở khóa %s",
   "gui.dungeontrain.perks.bar.full": "Đầy. Mở khóa lại để có chỗ cho thêm một điểm.",
   "gui.dungeontrain.perks.bar.fill_first": "Hãy lấp đầy điểm của nó trước.",
   "gui.dungeontrain.perks.bar.hint": "Di chuột lên một đặc quyền để xem ở đây. Nhấp để ghim.",

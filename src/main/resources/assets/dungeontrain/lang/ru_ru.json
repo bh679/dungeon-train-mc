@@ -5707,6 +5707,7 @@
   "gui.dungeontrain.perks.bar.unlock": "Разблокировать",
   "gui.dungeontrain.perks.bar.activate": "Активировать",
   "gui.dungeontrain.perks.bar.tier": "Уровень %s",
+  "gui.dungeontrain.perks.bar.class_count": "Перков: %s, разблокировано: %s",
   "gui.dungeontrain.perks.bar.full": "Заполнено. Разблокируйте снова, чтобы освободить место для ещё одного очка.",
   "gui.dungeontrain.perks.bar.fill_first": "Сначала заполните его очки.",
   "gui.dungeontrain.perks.bar.hint": "Наведите на перк, чтобы увидеть его здесь. Нажмите, чтобы закрепить.",

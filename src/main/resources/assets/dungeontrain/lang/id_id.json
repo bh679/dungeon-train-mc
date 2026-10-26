@@ -5579,6 +5579,7 @@
   "gui.dungeontrain.perks.bar.unlock": "Buka",
   "gui.dungeontrain.perks.bar.activate": "Aktifkan",
   "gui.dungeontrain.perks.bar.tier": "Tingkat %s",
+  "gui.dungeontrain.perks.bar.class_count": "%s perk, %s terbuka",
   "gui.dungeontrain.perks.bar.full": "Penuh. Buka lagi untuk ruang satu poin lagi.",
   "gui.dungeontrain.perks.bar.fill_first": "Isi poinnya dulu.",
   "gui.dungeontrain.perks.bar.hint": "Arahkan ke perk untuk melihatnya di sini. Klik untuk menyematkannya.",

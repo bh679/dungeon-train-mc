@@ -5643,6 +5643,7 @@
   "gui.dungeontrain.perks.bar.unlock": "Freischalten",
   "gui.dungeontrain.perks.bar.activate": "Aktivieren",
   "gui.dungeontrain.perks.bar.tier": "Stufe %s",
+  "gui.dungeontrain.perks.bar.class_count": "%s Perks, %s freigeschaltet",
   "gui.dungeontrain.perks.bar.full": "Voll. Schalte ihn erneut frei für Platz für einen weiteren Punkt.",
   "gui.dungeontrain.perks.bar.fill_first": "Fülle zuerst seine Punkte.",
   "gui.dungeontrain.perks.bar.hint": "Fahre über einen Perk, um ihn hier zu sehen. Klicke, um ihn festzuhalten.",

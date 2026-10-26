@@ -5579,6 +5579,7 @@
   "gui.dungeontrain.perks.bar.unlock": "解放",
   "gui.dungeontrain.perks.bar.activate": "有効化",
   "gui.dungeontrain.perks.bar.tier": "ティア%s",
+  "gui.dungeontrain.perks.bar.class_count": "パーク%s個、解放済み%s個",
   "gui.dungeontrain.perks.bar.full": "満タン。もう一度解放するとポイントをもう1つ入れられます。",
   "gui.dungeontrain.perks.bar.fill_first": "先にポイントを満たしてください。",
   "gui.dungeontrain.perks.bar.hint": "パークにカーソルを合わせるとここに表示。クリックで固定。",

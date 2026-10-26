@@ -121,6 +121,22 @@ class PerkMenuRulesTest {
     }
 
     @Test
+    @DisplayName("a class previewed at the fully zoomed-out view spreads over far more of the circle")
+    void previewBoostSpreads() {
+        PerkTree t = tree();
+        ClassVisibility v = vis(Set.of("speed", "lover"), "speed", Map.of(), Map.of(), 0);
+        double plain = span(SkyLayout.target(t, v, false), "speed", "haste");
+        double boosted = span(SkyLayout.target(t, v, true), "speed", "haste");
+        assertTrue(boosted > plain * 3, "boosted " + boosted + " vs " + plain);
+        assertTrue(boosted >= 0.38 * Math.PI * 2, "a large share of the circle: " + boosted);
+    }
+
+    private static double span(Map<String, double[]> pos, String a, String b) {
+        double x = Math.atan2(pos.get(a)[1] - 400, pos.get(a)[0] - 400), y = Math.atan2(pos.get(b)[1] - 400, pos.get(b)[0] - 400);
+        return Math.abs(SkyLayout.wrap(x - y));
+    }
+
+    @Test
     @DisplayName("a new layout swings stars over the move time, then lands exactly")
     void layoutAnimates() {
         SkyLayout layout = new SkyLayout();

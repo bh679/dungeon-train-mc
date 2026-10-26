@@ -5579,6 +5579,7 @@
   "gui.dungeontrain.perks.bar.unlock": "Buka kunci",
   "gui.dungeontrain.perks.bar.activate": "Aktifkan",
   "gui.dungeontrain.perks.bar.tier": "Peringkat %s",
+  "gui.dungeontrain.perks.bar.class_count": "%s perk, %s dibuka",
   "gui.dungeontrain.perks.bar.full": "Penuh. Buka kunci sekali lagi untuk ruang satu mata lagi.",
   "gui.dungeontrain.perks.bar.fill_first": "Isi matanya dahulu.",
   "gui.dungeontrain.perks.bar.hint": "Tuding pada perk untuk melihatnya di sini. Klik untuk menyematkannya.",

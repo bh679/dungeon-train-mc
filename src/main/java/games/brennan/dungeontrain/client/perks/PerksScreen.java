@@ -269,9 +269,10 @@ public final class PerksScreen extends Screen {
         preview = listHover != null && off.contains(listHover) ? listHover : null;
 
         vis = new ClassVisibility(tree, off, preview, snap.unlocks(), snap.active(), snap.unlockPoints());
-        drawn = tree.withPositions(layout.positions(tree, vis, now));
+        boolean zoomedOut = view.zoom() <= SkyView.fitZoom(width, skyH()) + 1e-6;
+        drawn = tree.withPositions(layout.positions(tree, vis, now, zoomedOut));
         hovered = card.contains(mouseX, mouseY) || listHover != null ? null : starAt(mouseX, mouseY);
-        if (DETAILS == DetailsMode.BAR) updateBar(snap);
+        if (DETAILS == DetailsMode.BAR) updateBar(snap, listHover);
         else updateCard(snap, now, mouseX, mouseY, listLeft, countersTop);
 
         g.fill(0, 0, width, height, SkyPalette.BG);
@@ -308,12 +309,12 @@ public final class PerksScreen extends Screen {
     }
 
     /** The bar shows the hovered star, else the one clicked to stay; its buttons follow it. */
-    private void updateBar(PerkMenuSnapshot snap) {
+    private void updateBar(PerkMenuSnapshot snap, String hoveredClass) {
         String id = hovered != null ? hovered : selected;
         PerkTree.Perk p = id == null ? null : tree.perk(id).orElse(null);
         if (p != null && vis.hidden(p)) p = null;
         List<net.minecraft.client.gui.components.Button> before = bar.buttons();
-        if (bar.update(width, height, p, p != null && p.id().equals(selected), snap)) {
+        if (bar.update(width, height, hoveredClass == null ? p : null, p != null && p.id().equals(selected), hoveredClass, snap)) {
             before.forEach(this::removeWidget);
             bar.buttons().forEach(this::addRenderableWidget);
         }
@@ -457,8 +458,25 @@ public final class PerksScreen extends Screen {
     @Override
     public boolean mouseScrolled(double mx, double my, double scrollX, double scrollY) {
         if (scrollY == 0) return false;
-        view = view.zoomedAt(scrollY > 0 ? SkyView.ZOOM_STEP : 1 / SkyView.ZOOM_STEP, mx, my, width, skyH());
+        // zoom around the mouse only while it is over the drawn stars; elsewhere (or on the bar) the
+        // view keeps its centre
+        double ax = width / 2.0, ay = SkyView.HEADER + (skyH() - SkyView.HEADER) / 2.0;
+        if (overStars(mx, my)) { ax = mx; ay = my; }
+        view = view.zoomedAt(scrollY > 0 ? SkyView.ZOOM_STEP : 1 / SkyView.ZOOM_STEP, ax, ay, width, skyH());
         return true;
+    }
+
+    /** Inside the screen box around the drawn, visible stars (a star's hit radius of margin), above the bar. */
+    private boolean overStars(double mx, double my) {
+        if (vis == null || my >= skyH() || my < SkyView.HEADER) return false;
+        double minX = Double.MAX_VALUE, minY = Double.MAX_VALUE, maxX = -Double.MAX_VALUE, maxY = -Double.MAX_VALUE;
+        for (PerkTree.Perk p : drawn.perks()) {
+            if (vis.hidden(p)) continue;
+            double x = view.toScreenX(p.x(), width), y = view.toScreenY(p.y(), skyH()), r = SkyPalette.hitRadius(p, view.zoom());
+            minX = Math.min(minX, x - r); maxX = Math.max(maxX, x + r);
+            minY = Math.min(minY, y - r); maxY = Math.max(maxY, y + r);
+        }
+        return mx >= minX && mx <= maxX && my >= minY && my <= maxY;
     }
 
     @Override

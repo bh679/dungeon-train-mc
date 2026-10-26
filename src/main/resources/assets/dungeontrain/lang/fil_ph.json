@@ -5579,6 +5579,7 @@
   "gui.dungeontrain.perks.bar.unlock": "I-unlock",
   "gui.dungeontrain.perks.bar.activate": "I-activate",
   "gui.dungeontrain.perks.bar.tier": "Tier %s",
+  "gui.dungeontrain.perks.bar.class_count": "%s perk, %s naka-unlock",
   "gui.dungeontrain.perks.bar.full": "Puno na. I-unlock ulit para may puwang sa isa pang point.",
   "gui.dungeontrain.perks.bar.fill_first": "Punuin muna ang mga point nito.",
   "gui.dungeontrain.perks.bar.hint": "I-hover ang isang perk para makita ito rito. I-click para manatili ito.",

@@ -42,6 +42,7 @@ final class PerkDetailsBar {
     private int top, width;
     private PerkTree.Perk perk;
     private boolean locked;
+    private String classShown;
     private Button unlockButton;
     private Button activateButton;
     private String builtFor = "";
@@ -75,11 +76,12 @@ final class PerkDetailsBar {
     /**
      * Lay out for this frame. Returns true when the buttons were rebuilt (the screen swaps its widgets).
      */
-    boolean update(int screenW, int screenH, PerkTree.Perk shown, boolean isLocked, PerkMenuSnapshot snap) {
+    boolean update(int screenW, int screenH, PerkTree.Perk shown, boolean isLocked, String hoveredClass, PerkMenuSnapshot snap) {
         width = screenW;
         top = screenH - HEIGHT;
         perk = shown;
         locked = isLocked;
+        classShown = shown == null ? hoveredClass : null;
         String key = shown == null ? "" : shown.id() + "|" + snap.unlockLevel(shown.id()) + "|" + snap.points(shown.id())
             + "|" + snap.unlockPoints() + "|" + snap.activePoints() + "|" + screenW + "x" + screenH;
         if (key.equals(builtFor)) return false;
@@ -129,10 +131,51 @@ final class PerkDetailsBar {
         return null;
     }
 
+    /**
+     * A class hovered in the Classes list: its name, how many perks it has and how many are unlocked,
+     * then every perk by name, unlocked ones bright with their points, locked ones muted.
+     */
+    private void renderClass(GuiGraphics g, PerkMenuSnapshot snap, int a) {
+        PerkTree.PerkClass c = tree.perkClass(classShown).orElse(null);
+        if (c == null) return;
+        List<PerkTree.Perk> perks = tree.perksOf(c.id());
+        g.fill(0, top + 1, STRIPE, top + HEIGHT, (a << 24) | (c.colour() & 0xFFFFFF));
+        int x = PAD + STRIPE, y = top + PAD;
+        g.drawString(font, c.name(), x, y, (a << 24) | (c.colour() & 0xFFFFFF), true);
+        long unlocked = perks.stream().filter(p -> snap.unlockLevel(p.id()) > 0).count();
+        g.drawString(font, Component.translatable(KEY + "class_count", perks.size(), unlocked), x, y + LINE + 2,
+            ((int) (a * 0.8) << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
+        int mx = x + Math.max(90, font.width(c.name()) + 12), right = width - PAD;
+        int cx = mx, cy = y, max = (HEIGHT - PAD * 2) / LINE;
+        int row = 0;
+        String sep = "  \u00b7  ";
+        for (int i = 0; i < perks.size(); i++) {
+            PerkTree.Perk p = perks.get(i);
+            int level = snap.unlockLevel(p.id());
+            String label = text.name(p) + (level > 0 ? " " + snap.points(p.id()) + "/" + level : "");
+            String piece = (i == 0 ? "" : sep) + label;
+            int w = font.width(piece);
+            if (cx + w > right && cx > mx) {
+                if (++row >= max) break;
+                cx = mx;
+                cy += LINE;
+                piece = label;
+                w = font.width(piece);
+            }
+            int colour = level > 0 ? SkyPalette.FG : SkyPalette.MUTED;
+            g.drawString(font, piece, cx, cy, (a << 24) | (colour & 0xFFFFFF), false);
+            cx += w;
+        }
+    }
+
     void render(GuiGraphics g, PerkMenuSnapshot snap, double fade) {
         int a = (int) (fade * 255);
         g.fill(0, top, width, top + HEIGHT, (Math.min(a, BG >>> 24) << 24) | (BG & 0xFFFFFF));
         g.fill(0, top, width, top + 1, (a << 24) | (EDGE & 0xFFFFFF));
+        if (perk == null && classShown != null) {
+            renderClass(g, snap, a);
+            return;
+        }
         if (perk == null) {
             Component hint = Component.translatable(KEY + "hint");
             g.drawString(font, hint, (width - font.width(hint)) / 2, top + (HEIGHT - font.lineHeight) / 2 + 1,
