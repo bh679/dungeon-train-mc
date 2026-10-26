@@ -27,13 +27,35 @@ final class ClassTitlePainter {
 
     private record Spot(double x, double y, double hw, double hh) {}
 
+    /** A drawn title: its class, its screen box, and where its hide icon goes (right of it, centred). */
+    record Title(String cls, NameLayout.Box box) {
+        int eyeX() {
+            return (int) Math.round(box.x1()) + EYE_GAP;
+        }
+
+        int eyeY() {
+            return (int) Math.round((box.y0() + box.y1()) / 2 - ClassesList.EYE_H / 2.0);
+        }
+
+        boolean hits(double mx, double my) {
+            return mx >= box.x0() && mx < box.x1() && my >= box.y0() && my < box.y1();
+        }
+
+        boolean eyeHits(double mx, double my) {
+            return mx >= eyeX() - 2 && mx < eyeX() + ClassesList.EYE_W + 2 && my >= box.y0() && my < box.y1();
+        }
+    }
+
+    private static final int EYE_GAP = 3;
+
     /**
      * Draws the titles, placed after the perk names: a title moves around the names' screen boxes
-     * ({@code names}) as it does around other titles. Returns the titles' screen boxes.
+     * ({@code names}) as it does around other titles. The title of {@code eyeFor} (hovered) gets a hide
+     * icon right of it, bright when {@code eyeHot}. Returns the drawn titles.
      */
-    static List<NameLayout.Box> render(GuiGraphics g, Font font, PerkTree tree, ClassVisibility vis, String glow, SkyView view, int w, int h,
-                                       double fade, List<NameLayout.Box> names) {
-        List<NameLayout.Box> boxes = new ArrayList<>();
+    static List<Title> render(GuiGraphics g, Font font, PerkTree tree, ClassVisibility vis, String glow, SkyView view, int w, int h,
+                              double fade, List<NameLayout.Box> names, String eyeFor, boolean eyeHot) {
+        List<Title> boxes = new ArrayList<>();
         float scale = w < NARROW_WIDTH ? 0.75F : 1F;
         double z = view.zoom();
         List<Spot> placed = new ArrayList<>();
@@ -72,7 +94,11 @@ final class ClassTitlePainter {
             GlowText.draw(g, font, title, -font.width(title) / 2, -font.lineHeight / 2, colour);
             g.pose().popPose();
             double tw = font.width(title) * scale / 2.0 + 2, th = font.lineHeight * scale / 2.0 + 1;
-            boxes.add(new NameLayout.Box(sx - tw, sy - th, sx + tw, sy + th));
+            Title t = new Title(c.id(), new NameLayout.Box(sx - tw, sy - th, sx + tw, sy + th));
+            boxes.add(t);
+            if (c.id().equals(eyeFor) && !vis.off().contains(c.id())) {
+                ClassesList.renderEye(g, t.eyeX(), t.eyeY(), eyeHot, SkyPalette.MUTED, fade);
+            }
         }
         return boxes;
     }

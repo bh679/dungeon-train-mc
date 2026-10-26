@@ -96,6 +96,10 @@ public final class PerksScreen extends Screen {
     private long lastStarClickAt;
     private String eyeHover;
     private boolean headEyeHover;
+    /** The class titles drawn on the sky last frame, for hovering and clicking them. */
+    private List<ClassTitlePainter.Title> titles = List.of();
+    private String titleHover;
+    private boolean titleEyeHover;
     private long spentAt;
     private boolean firstSnapshot = true;
 
@@ -285,22 +289,25 @@ public final class PerksScreen extends Screen {
         long now = Util.getMillis();
         double fade = Math.min(1.0, (now - openedAt) / (double) FADE_MS);
 
-        classesList.layout(width);
-        int cardRight = width - 8;
+        int cardRight = classesList.layout(width);
         int countersTop = counters.layout(width, skyH(), snap.unlockPoints(), snap.activePoints());
         String listHover = classesList.classAt(mouseX, mouseY);
         eyeHover = classesList.eyeAt(mouseX, mouseY, off);
         headEyeHover = classesList.headEyeAt(mouseX, mouseY, off);
+        ClassTitlePainter.Title onTitle = titleAt(mouseX, mouseY);
+        titleHover = onTitle == null ? null : onTitle.cls();
+        titleEyeHover = onTitle != null && onTitle.eyeHits(mouseX, mouseY) && !off.contains(onTitle.cls());
         if (selectedClass != null && off.contains(selectedClass)) selectedClass = null;
         zoomHover = zoomControl.at(mouseX, mouseY);
-        preview = listHover != null && off.contains(listHover) ? listHover : null;
+        String classHover = listHover != null ? listHover : titleHover;
+        preview = classHover != null && off.contains(classHover) ? classHover : null;
 
         vis = new ClassVisibility(tree, off, preview, snap.unlocks(), snap.active(), snap.unlockPoints());
         drawn = tree.withPositions(layout.positions(tree, vis, now));
         hovered = card.contains(mouseX, mouseY) || classesList.rowHover(mouseX, mouseY) != null || headEyeHover
-            ? null : starAt(mouseX, mouseY);
-        // a hovered class shows, else a hovered star, else the class clicked to stay
-        String classShown = listHover != null ? listHover : hovered == null ? selectedClass : null;
+            || titleHover != null ? null : starAt(mouseX, mouseY);
+        // a hovered class (in the list or its title) shows, else a hovered star, else the class clicked to stay
+        String classShown = classHover != null ? classHover : hovered == null ? selectedClass : null;
         glow = classShown;
         if (DETAILS == DetailsMode.BAR) updateBar(snap, classShown);
         else updateCard(snap, now, mouseX, mouseY, cardRight, countersTop);
@@ -324,8 +331,10 @@ public final class PerksScreen extends Screen {
         else if (labelsSettledAt < 0) labelsSettledAt = now;
         double labelFade = labelsSettledAt < 0 ? 0 : Math.min(1.0, (now - labelsSettledAt) / (double) LABEL_FADE_MS) * fade;
         boolean labels = labelFade > 0.03; // Minecraft draws near-zero alpha text fully opaque, so skip it
+        if (!labels) titles = List.of();
         if (labels) {
-            ClassTitlePainter.render(g, font, drawn, vis, glow, view, width, skyH(), labelFade, nameBoxes);
+            titles = ClassTitlePainter.render(g, font, drawn, vis, glow, view, width, skyH(), labelFade, nameBoxes,
+                titleHover, titleEyeHover);
             renderLeaders(g, names, labelFade);
         }
 
@@ -345,7 +354,8 @@ public final class PerksScreen extends Screen {
 
         renderHeader(g, snap, now, fade);
         String marked = selected == null ? null : tree.perk(selected).map(PerkTree.Perk::cls).orElse(null);
-        String hoverMarked = hovered == null ? null : tree.perk(hovered).map(PerkTree.Perk::cls).orElse(null);
+        String hoverMarked = titleHover != null ? titleHover
+            : hovered == null ? null : tree.perk(hovered).map(PerkTree.Perk::cls).orElse(null);
         int head = headEyeHover ? 2 : classesList.headingAt(mouseX, mouseY) ? 1 : 0;
         classesList.render(g, snap, off, listHover, selectedClass != null ? selectedClass : marked, hoverMarked,
             classesList.rowHover(mouseX, mouseY), selectedClass, eyeHover, head, fade);
@@ -360,7 +370,7 @@ public final class PerksScreen extends Screen {
         super.render(g, mouseX, mouseY, partialTick);
 
         if (zoomHover >= 0) g.renderTooltip(font, ZoomControl.tooltip(zoomHover), mouseX, mouseY);
-        if (eyeHover != null) g.renderTooltip(font, ClassesList.hideTooltip(), mouseX, mouseY);
+        if (eyeHover != null || titleEyeHover) g.renderTooltip(font, ClassesList.hideTooltip(), mouseX, mouseY);
         if (headEyeHover) g.renderTooltip(font, ClassesList.hideAllTooltip(), mouseX, mouseY);
         PerkCounters.Kind counter = counters.at(mouseX, mouseY);
         if (counter != null) g.renderComponentTooltip(font, PerkCounters.tooltip(counter), mouseX, mouseY);
@@ -528,7 +538,7 @@ public final class PerksScreen extends Screen {
             return true;
         }
         if (DETAILS == DetailsMode.BAR && bar.contains(mx, my)) return true;
-        if (card.contains(mx, my) || classesList.rowHover(mx, my) != null || classesList.headingAt(mx, my)
+        if (card.contains(mx, my) || classesList.rowHover(mx, my) != null || classesList.headingAt(mx, my) || titleAt(mx, my) != null
             || counters.at(mx, my) != null) return true;
         if (button == 0 || button == 2) {
             dragging = true;
@@ -555,7 +565,9 @@ public final class PerksScreen extends Screen {
             play(SoundEvents.UI_BUTTON_CLICK.value(), 0.3F, 1.0F);
             return true;
         }
+        ClassTitlePainter.Title title = titleAt(mx, my);
         String eye = classesList.eyeAt(mx, my, off);
+        if (eye == null && title != null && title.eyeHits(mx, my) && !off.contains(title.cls())) eye = title.cls();
         if (eye != null) {
             setOff(with(off, eye));
             if (eye.equals(selectedClass)) selectedClass = null;
@@ -564,6 +576,7 @@ public final class PerksScreen extends Screen {
         }
         // a hidden class: show it; a shown one: keep it in the bar (click again to let go)
         String cls = classesList.classAt(mx, my);
+        if (cls == null && title != null) cls = title.cls();
         if (cls != null) {
             if (off.contains(cls)) setOff(without(off, cls));
             selectedClass = cls.equals(selectedClass) && !off.contains(cls) ? null : cls;
@@ -599,6 +612,14 @@ public final class PerksScreen extends Screen {
             selectedClass = null;
         }
         return true;
+    }
+
+    /** The class title (or its hide icon) under the mouse, from the last frame drawn; null when none. */
+    private ClassTitlePainter.Title titleAt(double mx, double my) {
+        for (ClassTitlePainter.Title t : titles) {
+            if (t.hits(mx, my) || t.cls().equals(titleHover) && t.eyeHits(mx, my)) return t;
+        }
+        return null;
     }
 
     /** The Advancement Points counter opens the advancements screen; closing it comes back here. */

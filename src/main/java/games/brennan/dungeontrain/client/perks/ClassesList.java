@@ -13,24 +13,25 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * The Classes list down the left edge (the web page's {@code renderLockedList}): every class in circle
- * order, in its colour when shown and muted when hidden, with a dot per perk after its name (filled once
+ * The Classes list down the right edge (the web page's {@code renderLockedList}): every class in circle
+ * order, in its colour when shown and muted when hidden, with a dot per perk before its name (filled once
  * a point is in it, a ring once unlocked, dim while locked). Hovering a hidden class previews it on the
  * sky; hovering any class makes its perks glow. A click on a hidden class shows it; on a shown one it
  * selects it (the bar keeps showing it).
  *
  * <p>The selected class (or the class of the perk kept in the bar) sits in a pill of its colour with dark
  * text; the hovered one gets a grey outline. A shown class, while hovered or selected, gets an eye with a
- * slash before its name that hides it; the heading gets one while hovered that hides them all. Every row
+ * slash after its name that hides it; the heading gets one while hovered that hides them all. Every row
  * leaves room for it so the names never shift.
  */
 @OnlyIn(Dist.CLIENT)
 final class ClassesList {
 
-    private static final int LEFT = 10, TOP_GAP = 8, ROW = 12, HEAD = 12;
+    private static final int RIGHT = 10, TOP_GAP = 8, ROW = 12, HEAD = 12;
     private static final float HEAD_SCALE = 0.75F;
-    /** The hide icon's column before the names. */
-    private static final int EYE_W = 7, EYE_H = 5, EYE_GAP = 5;
+    /** The hide icon's column after the names. */
+    static final int EYE_W = 7, EYE_H = 5;
+    private static final int EYE_GAP = 5;
     private static final int DOT_GAP = 5, DOT_PITCH = 6, PILL_PAD = 3;
     private static final double DARK_TEXT = 0.72, DARK_LOCKED = 0.4;
 
@@ -38,7 +39,8 @@ final class ClassesList {
     private final List<PerkTree.PerkClass> order;
     private final Font font;
     private int top;
-    private int right;
+    private int left;
+    private int screenW;
 
     ClassesList(PerkTree tree, Font font) {
         this.tree = tree;
@@ -46,22 +48,32 @@ final class ClassesList {
         this.font = font;
     }
 
-    /** Lay out for this screen; returns the list's right edge. */
+    /** Lay out for this screen; returns the list's left edge (the card keeps clear of it). */
     int layout(int screenW) {
+        this.screenW = screenW;
         this.top = SkyView.HEADER + TOP_GAP;
         int widest = (int) (font.width(heading()) * HEAD_SCALE);
         for (PerkTree.PerkClass c : order) widest = Math.max(widest, rowWidth(c));
-        right = nameX() + widest;
-        return right + PILL_PAD;
+        left = nameRight() - widest;
+        return left - PILL_PAD - 4;
     }
 
     private int rowWidth(PerkTree.PerkClass c) {
-        int n = tree.perksOf(c.id()).size();
-        return font.width(c.name()) + (n > 0 ? DOT_GAP + n * DOT_PITCH - 2 : 0);
+        int dots = dotsWidth(c);
+        return font.width(c.name()) + (dots > 0 ? DOT_GAP + dots : 0);
     }
 
-    private static int nameX() {
-        return LEFT + EYE_W + EYE_GAP;
+    private int dotsWidth(PerkTree.PerkClass c) {
+        int n = tree.perksOf(c.id()).size();
+        return n > 0 ? n * DOT_PITCH - 2 : 0;
+    }
+
+    private int eyeX() {
+        return screenW - RIGHT - EYE_W;
+    }
+
+    private int nameRight() {
+        return eyeX() - EYE_GAP;
     }
 
     private static Component heading() {
@@ -70,31 +82,31 @@ final class ClassesList {
 
     /** The class whose name or dots are under the mouse, or null. */
     String classAt(double mx, double my) {
-        if (mx < nameX() - 2 || mx > right + PILL_PAD) return null;
+        if (mx < left - PILL_PAD || mx > nameRight() + 2) return null;
         return rowAt(my);
     }
 
     /** The shown class whose hide icon is under the mouse, or null. */
     String eyeAt(double mx, double my, Set<String> off) {
-        if (mx < LEFT - 2 || mx >= nameX() - 2) return null;
+        if (mx <= nameRight() + 2 || mx > eyeX() + EYE_W + 2) return null;
         String id = rowAt(my);
         return id != null && !off.contains(id) ? id : null;
     }
 
     /** The class on the row under the mouse, icon, name or dots, or null. */
     String rowHover(double mx, double my) {
-        if (mx < LEFT - PILL_PAD - 1 || mx > right + PILL_PAD) return null;
+        if (mx < left - PILL_PAD - 1 || mx > eyeX() + EYE_W + PILL_PAD) return null;
         return rowAt(my);
     }
 
     /** The mouse is on the heading row. */
     boolean headingAt(double mx, double my) {
-        return my >= top - 2 && my < top + HEAD - 2 && mx >= LEFT - PILL_PAD - 1 && mx <= right + PILL_PAD;
+        return my >= top - 2 && my < top + HEAD - 2 && mx >= left - PILL_PAD - 1 && mx <= eyeX() + EYE_W + PILL_PAD;
     }
 
     /** The heading's hide-all icon is under the mouse (and some class is shown to hide). */
     boolean headEyeAt(double mx, double my, Set<String> off) {
-        return headingAt(mx, my) && mx < nameX() - 2 && off.size() < order.size();
+        return headingAt(mx, my) && mx > nameRight() + 2 && off.size() < order.size();
     }
 
     /** Every class id in the list. */
@@ -126,11 +138,11 @@ final class ClassesList {
         int a = (int) (fade * 255);
         String title = heading().getString().toUpperCase(Locale.ROOT);
         g.pose().pushPose();
-        g.pose().translate(nameX(), top, 0);
+        g.pose().translate(nameRight() - font.width(title) * HEAD_SCALE, top, 0);
         g.pose().scale(HEAD_SCALE, HEAD_SCALE, 1F);
         g.drawString(font, title, 0, 0, ((int) (a * 0.7) << 24) | (SkyPalette.MUTED & 0xFFFFFF), true);
         g.pose().popPose();
-        if (head > 0 && off.size() < order.size()) renderEye(g, LEFT, top + 1, head == 2, SkyPalette.MUTED, fade);
+        if (head > 0 && off.size() < order.size()) renderEye(g, eyeX(), top + 1, head == 2, SkyPalette.MUTED, fade);
         int y = top + HEAD;
         for (PerkTree.PerkClass c : order) {
             renderRow(g, snap, c, y, !off.contains(c.id()), c.id().equals(hovered), c.id().equals(marked),
@@ -142,7 +154,8 @@ final class ClassesList {
 
     private void renderRow(GuiGraphics g, PerkMenuSnapshot snap, PerkTree.PerkClass c, int y, boolean shown, boolean hov,
                            boolean pill, boolean outline, boolean eye, boolean eyeHot, double fade) {
-        int x0 = LEFT - PILL_PAD, x1 = nameX() + rowWidth(c) + PILL_PAD, y0 = y - 1, y1 = y + ROW - 2;
+        int x0 = nameRight() - rowWidth(c) - PILL_PAD, x1 = eyeX() + EYE_W + PILL_PAD, y0 = y - 1, y1 = y + ROW - 2;
+        int nameX = nameRight() - font.width(c.name());
         int dark = SkyDraw.mix(c.colour(), 0xFF000000, DARK_TEXT);
         if (pill) {
             int fill = SkyDraw.withAlpha(c.colour(), fade);
@@ -158,9 +171,9 @@ final class ClassesList {
         }
         int colour = pill ? dark : shown ? c.colour() : SkyPalette.MUTED;
         double alpha = pill || shown ? 1.0 : hov ? 0.9 : 0.55;
-        g.drawString(font, c.name(), nameX(), y + 1, SkyDraw.withAlpha(colour, alpha * fade), !pill);
-        if (shown && eye) renderEye(g, LEFT, y + 1 + (font.lineHeight - EYE_H) / 2 - 1, eyeHot, pill ? dark : SkyPalette.MUTED, fade);
-        renderDots(g, snap, c, nameX() + font.width(c.name()) + DOT_GAP, y + 1 + font.lineHeight / 2.0 - 1,
+        g.drawString(font, c.name(), nameX, y + 1, SkyDraw.withAlpha(colour, alpha * fade), !pill);
+        if (shown && eye) renderEye(g, eyeX(), y + 1 + (font.lineHeight - EYE_H) / 2 - 1, eyeHot, pill ? dark : SkyPalette.MUTED, fade);
+        renderDots(g, snap, c, nameX - DOT_GAP - dotsWidth(c), y + 1 + font.lineHeight / 2.0 - 1,
             pill ? dark : c.colour(), pill, shown ? 1.0 : 0.55, fade);
     }
 
@@ -179,7 +192,7 @@ final class ClassesList {
     }
 
     /** An eye with a slash through it: "hide". */
-    private static void renderEye(GuiGraphics g, int x, int y, boolean hot, int idle, double fade) {
+    static void renderEye(GuiGraphics g, int x, int y, boolean hot, int idle, double fade) {
         int c = SkyDraw.withAlpha(hot ? SkyPalette.FG : idle, (hot ? 1.0 : 0.8) * fade);
         g.fill(x + 2, y, x + 5, y + 1, c);
         g.fill(x + 1, y + 1, x + 2, y + 2, c);
