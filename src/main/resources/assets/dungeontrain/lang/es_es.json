@@ -1395,7 +1395,7 @@
   "gui.dungeontrain.currency.name.pln": "Złotys polacos",
   "gui.dungeontrain.currency.name.inr": "Rupias indias",
   "gui.dungeontrain.rewards.title": "Recompensas de la comunidad",
-  "gui.dungeontrain.rewards.subtitle": "Regalos que llegan a todos en todo el mundo. Apoya a toda la comunidad.",
+  "gui.dungeontrain.rewards.subtitle": "Regalos que llegan a todos. Apoya a toda la comunidad con una sola donación.",
   "gui.dungeontrain.rewards.personal.title": "Recompensas personales",
   "gui.dungeontrain.rewards.personal.summary.help_dev": "Tu nombre y 10 impulsos de libro",
   "gui.dungeontrain.rewards.personal.summary.big_fan": "Tu nombre y 30 impulsos de libro",
