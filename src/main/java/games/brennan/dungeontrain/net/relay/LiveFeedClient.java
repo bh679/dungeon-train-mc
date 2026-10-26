@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 
 /**
  * The Live Feed's relay calls, and the direct-to-R2 upload the relay signs for.
@@ -154,7 +155,19 @@ public final class LiveFeedClient {
      */
     public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
                            @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
-                           @Nullable Moment moment, @Nullable RestartNotice restart, @Nullable Death death) {
+                           @Nullable Moment moment, @Nullable RestartNotice restart, @Nullable Death death,
+                           @Nullable Map<String, String> tr) {
+        /** {@code tr}: the relay's translations of this line already known when it was read (locale → text), else null. */
+        public ChatLine {
+            tr = tr == null || tr.isEmpty() ? null : Map.copyOf(tr);
+        }
+
+        public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
+                        @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
+                        @Nullable Moment moment, @Nullable RestartNotice restart, @Nullable Death death) {
+            this(seq, ts, author, uuid, content, source, logRequest, via, poll, moment, restart, death, null);
+        }
+
         public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
                         @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
                         @Nullable Moment moment, @Nullable RestartNotice restart) {
@@ -317,8 +330,13 @@ public final class LiveFeedClient {
      * A chat poll: whether anyone is on air, the ring's head seq, the lines after {@code since}, and the
      * seqs of earlier lines removed since then ({@code deleted} — a Twitch mod deleted them).
      */
-    public record ChatPage(boolean live, long seq, List<ChatLine> lines, List<Long> deleted, List<LineReactions> reactions) {
-        public static final ChatPage EMPTY = new ChatPage(false, -1, List.of(), List.of(), List.of());
+    public record ChatPage(boolean live, long seq, List<ChatLine> lines, List<Long> deleted, List<LineReactions> reactions,
+                           List<LineTranslations> translations) {
+        public static final ChatPage EMPTY = new ChatPage(false, -1, List.of(), List.of(), List.of(), List.of());
+
+        public ChatPage(boolean live, long seq, List<ChatLine> lines, List<Long> deleted, List<LineReactions> reactions) {
+            this(live, seq, lines, deleted, reactions, List.of());
+        }
 
         public ChatPage(boolean live, long seq, List<ChatLine> lines) {
             this(live, seq, lines, List.of(), List.of());
@@ -331,6 +349,56 @@ public final class LiveFeedClient {
 
     /** The current Discord reactions on an earlier chat line ({@code line} = its seq), and what changed. */
     public record LineReactions(long line, List<ChatReaction> list, @Nullable ChatReactionEvent event) {}
+
+    /**
+     * The relay's translations of an earlier chat line ({@code line} = its seq): locale → text, for the
+     * languages the room's readers asked for. Arrives a poll or two after the line, while the Live
+     * Translations reward is on.
+     */
+    public record LineTranslations(long line, Map<String, String> tr) {
+        public LineTranslations {
+            tr = Map.copyOf(tr);
+        }
+    }
+
+    /** A translation map's keys: the mod's locale codes ({@code zh_cn}); anything else is dropped. */
+    private static final Pattern LOCALE_KEY = Pattern.compile("[a-z]{2,3}_[a-z0-9]{2,4}");
+    /** Most languages a line is read in at once; a longer map is cut, not refused. */
+    static final int MAX_TRANSLATIONS = 32;
+
+    /** The {@code translations} array of a chat page; malformed entries are skipped. Package-private for tests. */
+    static List<LineTranslations> parseTranslations(JsonObject b) {
+        if (!b.has("translations") || !b.get("translations").isJsonArray()) return List.of();
+        List<LineTranslations> out = new ArrayList<>();
+        for (JsonElement el : b.getAsJsonArray("translations")) {
+            if (!el.isJsonObject()) continue;
+            JsonObject o = el.getAsJsonObject();
+            if (!o.has("line") || !o.get("line").isJsonPrimitive() || !o.get("line").getAsJsonPrimitive().isNumber()) continue;
+            Map<String, String> tr = parseTr(o);
+            if (tr != null) out.add(new LineTranslations(o.get("line").getAsLong(), tr));
+        }
+        return List.copyOf(out);
+    }
+
+    /**
+     * The {@code tr} object of a message or a translations entry: cleaned the same way as content (no
+     * § codes, control chars or line breaks, capped), bad keys and blank values dropped. Null when
+     * nothing usable is left. Package-private for tests.
+     */
+    @Nullable
+    static Map<String, String> parseTr(JsonObject o) {
+        if (!o.has("tr") || !o.get("tr").isJsonObject()) return null;
+        Map<String, String> tr = new LinkedHashMap<>();
+        for (Map.Entry<String, JsonElement> e : o.getAsJsonObject("tr").entrySet()) {
+            if (tr.size() >= MAX_TRANSLATIONS) break;
+            if (!LOCALE_KEY.matcher(e.getKey()).matches()) continue;
+            JsonElement v = e.getValue();
+            if (!v.isJsonPrimitive() || !v.getAsJsonPrimitive().isString()) continue;
+            String text = LiveChatRules.clean(v.getAsString(), LiveChatRules.MAX_CONTENT);
+            if (!text.isBlank()) tr.put(e.getKey(), text);
+        }
+        return tr.isEmpty() ? null : Map.copyOf(tr);
+    }
 
     /** The {@code reactions} array of a chat page; malformed entries are skipped. Package-private for tests. */
     static List<LineReactions> parseReactions(JsonObject b) {
@@ -629,7 +697,16 @@ public final class LiveFeedClient {
      * the primary stream's room, the one room there always was.
      */
     public static CompletableFuture<Result> chat(String base, long since, @Nullable String room) {
-        String path = chatPath(since, room);
+        return chat(base, since, room, null);
+    }
+
+    /**
+     * As {@link #chat(String, long, String)}, naming the language this reader reads ({@code lang}, a Minecraft
+     * locale code such as {@code zh_cn}) so the relay knows which languages the room is read in (Live
+     * Translations); null, or anything not a locale code, sends none.
+     */
+    public static CompletableFuture<Result> chat(String base, long since, @Nullable String room, @Nullable String lang) {
+        String path = chatPath(since, room, lang);
         HttpRequest req = HttpRequest.newBuilder(URI.create(base + path))
             .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
         return send(RELAY, req);
@@ -637,6 +714,11 @@ public final class LiveFeedClient {
 
     /** The chat read path: {@code since} when known, {@code room} when one stream's room is named. Pure. */
     static String chatPath(long since, @Nullable String room) {
+        return chatPath(since, room, null);
+    }
+
+    /** {@link #chatPath(long, String)} plus {@code lang=} when {@code lang} is a locale code. Pure. */
+    static String chatPath(long since, @Nullable String room, @Nullable String lang) {
         StringBuilder path = new StringBuilder("/live/chat");
         char sep = '?';
         if (since >= 0) {
@@ -645,6 +727,10 @@ public final class LiveFeedClient {
         }
         if (room != null) {
             path.append(sep).append("room=").append(java.net.URLEncoder.encode(room, java.nio.charset.StandardCharsets.UTF_8));
+            sep = '&';
+        }
+        if (lang != null && LOCALE_KEY.matcher(lang).matches()) {
+            path.append(sep).append("lang=").append(lang);
         }
         return path.toString();
     }
@@ -909,7 +995,7 @@ public final class LiveFeedClient {
                     Via via = Via.parse(m.has("via") && !m.get("via").isJsonNull() ? m.get("via").getAsString() : null);
                     lines.add(new ChatLine(m.get("seq").getAsLong(), m.has("ts") ? m.get("ts").getAsLong() : 0L,
                         author.isBlank() ? "Someone" : author, uuid, content, source, parseLogRequest(m), via,
-                        LiveTakeoverClient.parsePollLine(m), parseMoment(m), parseRestart(m), parseDeath(m)));
+                        LiveTakeoverClient.parsePollLine(m), parseMoment(m), parseRestart(m), parseDeath(m), parseTr(m)));
                 }
             }
             List<Long> deleted = new ArrayList<>();
@@ -918,7 +1004,7 @@ public final class LiveFeedClient {
                     if (el.isJsonPrimitive() && el.getAsJsonPrimitive().isNumber()) deleted.add(el.getAsLong());
                 }
             }
-            return new ChatPage(live, seq, List.copyOf(lines), List.copyOf(deleted), parseReactions(b));
+            return new ChatPage(live, seq, List.copyOf(lines), List.copyOf(deleted), parseReactions(b), parseTranslations(b));
         } catch (RuntimeException e) {
             return ChatPage.EMPTY;
         }

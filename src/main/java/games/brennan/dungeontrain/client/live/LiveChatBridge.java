@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.compat.vista.TvItems;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.logrequest.LogRequestClient;
+import games.brennan.dungeontrain.mixin.client.ChatComponentAccessor;
 import games.brennan.dungeontrain.net.ClientActionPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
@@ -16,7 +17,9 @@ import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatPage;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.GiftJoin;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.GiftNotices;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.GiftOffer;
+import games.brennan.dungeontrain.net.relay.LiveFeedClient.LineTranslations;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.GuiMessage;
 import net.minecraft.client.GuiMessageTag;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.ChatComponent;
@@ -31,10 +34,14 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientChatEvent;
 import net.neoforged.neoforge.client.event.ClientChatReceivedEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.util.ArrayDeque;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -56,6 +63,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * <p>A line the relay later lists as {@code deleted} (a Twitch mod removed it) becomes vanilla's grey
  * "deleted" marker, through {@link LiveChatSignatures}.</p>
+ *
+ * <p>While the Live Translations community reward is on, each poll names this reader's language and the
+ * relay answers with {@code translations} for earlier lines (or {@code tr} on a line read in the same
+ * poll); {@link LiveChatTranslations} renders them where {@code LiveFeedClientConfig.liveChatTranslation()}
+ * says: under the original (a second line of the same seq), in its place (redrawn through
+ * {@link ChatReactionTracker}, so its reaction chips stay), or first with the original under it.</p>
  *
  * <p>Joining through a TV also tells the relay ({@code POST /live/chat/join}), so a viewer who has never
  * streamed can be offered a Live Eye by the streamer; each poll's gift notices go to {@link LiveGiftClient}.</p>
@@ -91,6 +104,18 @@ public final class LiveChatBridge {
     private static long lastRestartTs;
     private static long lastRestartPrintedMs;
     private static final LiveChatSignatures signatures = new LiveChatSignatures();
+    /** Lines printed this session, by seq, waiting on a translation; bounded like the signatures. */
+    private static final Map<Long, Printed> printed = new LinkedHashMap<>(16, 0.75f, false) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<Long, Printed> eldest) {
+            return size() > LiveChatSignatures.MAX;
+        }
+    };
+    /** The one-time "being translated into …" notice went out this session. */
+    private static boolean translationNoticeShown;
+
+    /** A printed live line, whether its translation has been shown, and whether the reader wrote it (never translated). */
+    private record Printed(ChatLine line, boolean translated, boolean mine) {}
 
     private LiveChatBridge() {}
 
@@ -147,7 +172,7 @@ public final class LiveChatBridge {
         if (now - lastPollMs < LiveRelayRestart.chatPollMs(now, POLL_MS) || !inFlight.compareAndSet(false, true)) return;
         lastPollMs = now;
         String asked = room;
-        LiveFeedClient.chat(base(streaming), cursor, asked).thenAcceptAsync(r -> {
+        LiveFeedClient.chat(base(streaming), cursor, asked, LiveChatTranslations.readerLang(mc.options.languageCode)).thenAcceptAsync(r -> {
             inFlight.set(false);
             // A page from the room this client just left would move the new room's cursor: dropped.
             if (connected && Objects.equals(asked, room)) {
@@ -245,6 +270,7 @@ public final class LiveChatBridge {
         restartLines.clear();
         LiveTakeoverChat.reset();
         signatures.clear();
+        printed.clear();
         ChatReactionTracker.forgetLive();
         if (pick != null) mc.gui.getChat().addMessage(roomLine(pick));
         if (joinedViaTv) join(mc);
@@ -292,6 +318,7 @@ public final class LiveChatBridge {
         LiveTakeoverChat.reset();
         cursor = -1;
         signatures.clear();
+        printed.clear();
         ChatReactionTracker.forgetLive();
     }
 
@@ -302,6 +329,7 @@ public final class LiveChatBridge {
         sendFailureLogged = false;
         tvChatReported = false;
         joinedViaTv = false;
+        translationNoticeShown = false;
         LiveChatRoom.reset();
         lastRestartTs = 0L;
         lastRestartPrintedMs = 0L;
@@ -318,6 +346,7 @@ public final class LiveChatBridge {
             // The relay was redeployed: its ring starts again at 1 while the stream carries on. Follow
             // the new head or every later poll asks for seqs that will never come and chat goes silent.
             signatures.clear();
+            printed.clear();
             ChatReactionTracker.forgetLive();
             if (joinedViaTv) join(mc); // the restart forgot this viewer was in the room
             if (LiveRelayRestart.inWindow(System.currentTimeMillis())) {
@@ -343,6 +372,7 @@ public final class LiveChatBridge {
         // The tag plain addMessage(Component) would pick, so a printed line looks exactly as before.
         GuiMessageTag tag = mc.isSingleplayer() ? GuiMessageTag.systemSinglePlayer() : GuiMessageTag.system();
         String myName = mc.getUser() != null ? mc.getUser().getName() : "";
+        String readerLang = LiveChatTranslations.readerLang(mc.options.languageCode);
         boolean streaming = LiveStreamController.get().streaming();
         // This life's "the crowd" death page: who said what in the room while this player was on air.
         if (streaming) LiveLifeChat.onLines(page.lines(), me != null ? me.toString().replace("-", "") : null);
@@ -365,8 +395,8 @@ public final class LiveChatBridge {
             }
             if (LiveChatRules.shouldShow(line, me, here, names)) {
                 boolean mine = me != null && line.uuid() != null && line.uuid().equalsIgnoreCase(me.toString().replace("-", ""));
-                Component shown = ChatReactionTracker.printLive(line.seq(), LiveChatRules.line(line), mine, line.content());
-                chat.addMessage(shown, signatures.sign(line.seq()), tag);
+                // The reader's own words are shown as typed, never translated back at them.
+                printLine(mc, chat, tag, line, mine, mine ? null : LiveChatTranslations.pick(line.tr(), readerLang));
             }
             if (line.logRequest() != null && line.logRequest().isFor(myName, streaming)) {
                 LogRequestClient.onLiveRequest(line.logRequest().id());
@@ -380,14 +410,93 @@ public final class LiveChatBridge {
             if (myId != null && offer.target().equalsIgnoreCase(myId)) LiveGiftClient.onOffer(offer, LiveStatusPoller.channel());
         }
         for (long seq : page.deleted()) {
-            MessageSignature sig = signatures.take(seq);
-            if (sig != null) chat.deleteMessage(sig);
+            for (MessageSignature sig : signatures.takeAll(seq)) chat.deleteMessage(sig);
+            printed.remove(seq);
+        }
+        for (LineTranslations t : page.translations()) {
+            Printed p = printed.get(t.line());
+            if (p == null || p.translated() || p.mine()) continue;
+            String mine = LiveChatTranslations.pick(t.tr(), readerLang);
+            if (mine == null) continue;
+            applyLate(mc, chat, tag, p.line(), mine);
         }
         for (LiveFeedClient.LineReactions r : page.reactions()) {
             ChatReactionTracker.applyLive(r.line(), r.list(), r.event());
         }
         if (streaming) LiveLifeChat.onReactions(page.reactions());
         cursor = LiveChatRules.nextCursor(cursor, page.seq());
+    }
+
+    /**
+     * A line into chat, with its translation when one came with it: under it, in its place, or first with
+     * the original under it. Without one, the line as before, remembered for a later translation.
+     */
+    private static void printLine(Minecraft mc, ChatComponent chat, GuiMessageTag tag, ChatLine line, boolean mine,
+                                  @Nullable String translation) {
+        long seq = line.seq();
+        if (translation == null) {
+            chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatRules.line(line), mine, line.content()), signatures.sign(seq), tag);
+            printed.put(seq, new Printed(line, false, mine));
+            return;
+        }
+        switch (LiveFeedClientConfig.liveChatTranslation()) {
+            case UNDER -> {
+                chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatRules.line(line), mine, line.content()), signatures.sign(seq), tag);
+                chat.addMessage(ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, translation, true)),
+                    signatures.signPart(seq, 1), tag);
+            }
+            case REPLACE -> chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatTranslations.replacedLine(line, translation), mine, line.content()),
+                signatures.sign(seq), tag);
+            case FIRST -> {
+                chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatTranslations.replacedLine(line, translation), mine, line.content()),
+                    signatures.sign(seq), tag);
+                chat.addMessage(ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, line.content(), true)),
+                    signatures.signPart(seq, 1), tag);
+            }
+        }
+        printed.put(seq, new Printed(line, true, mine));
+        noteTranslating(mc, chat);
+    }
+
+    /**
+     * A translation that arrived after its line was printed: added under it, or swapped in where the line stands.
+     * A line added under it reads {@code ↳ text} only while the original is still the newest line in chat;
+     * after anything else, live or not, it carries the author's name.
+     */
+    private static void applyLate(Minecraft mc, ChatComponent chat, GuiMessageTag tag, ChatLine line, String translation) {
+        long seq = line.seq();
+        boolean adjacent = signatures.isNewest(seq, newestSignature(chat));
+        switch (LiveFeedClientConfig.liveChatTranslation()) {
+            case UNDER -> chat.addMessage(ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, translation, adjacent)),
+                signatures.signPart(seq, 1), tag);
+            case REPLACE -> {
+                if (!ChatReactionTracker.replaceLive(seq, LiveChatTranslations.replacedLine(line, translation))) return;
+            }
+            case FIRST -> {
+                if (!ChatReactionTracker.replaceLive(seq, LiveChatTranslations.replacedLine(line, translation))) return;
+                chat.addMessage(ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, line.content(), adjacent)),
+                    signatures.signPart(seq, 1), tag);
+            }
+        }
+        printed.put(seq, new Printed(line, true, false));
+        noteTranslating(mc, chat);
+    }
+
+    /** The signature of the newest line in chat (null when it has none, or chat is empty). */
+    @Nullable
+    private static MessageSignature newestSignature(ChatComponent chat) {
+        List<GuiMessage> all = ((ChatComponentAccessor) chat).dungeontrain$getAllMessages();
+        return all.isEmpty() ? null : all.get(0).signature();
+    }
+
+    /** Once a session, the first time a translation shows: what is happening, and where to change how it looks. */
+    private static void noteTranslating(Minecraft mc, ChatComponent chat) {
+        if (translationNoticeShown) return;
+        translationNoticeShown = true;
+        String lang = LiveChatTranslations.readerLang(mc.options.languageCode);
+        chat.addMessage(Component.translatable(LiveChatTranslations.ON_KEY,
+            LiveChatTranslations.langName(lang == null ? "en_us" : lang),
+            LiveOptionsCommand.pathLink(LiveChatTranslations.PATH_KEY)).withStyle(ChatFormatting.GRAY));
     }
 
     static String base(boolean streaming) {

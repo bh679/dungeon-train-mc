@@ -31004,6 +31004,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-translations-reward",
+      "version": "0.1537.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live Eye Chat Translations",
+      "summary": "A new Community Reward: while it is on, Live chat is translated into each viewer's own language. Anyone who gives it keeps it on for everyone for a month.",
+      "highlights": [
+        "Chat from the stream, Discord, Twitch and the website shows in your game language, right under the original",
+        "Choose how it shows in Options: under the original, translation only, or translation first",
+        "Live Translations joins the Community Rewards shelf at $90 AUD for a month"
+      ],
+      "pr": 2339,
+      "date": "2026-10-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
