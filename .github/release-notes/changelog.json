@@ -31101,6 +31101,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "advancement-tweaks-reset",
+      "version": "0.1547.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Advancement tweaks",
+      "summary": "One hidden advancement has a new hint, another hidden one has been retired, and one hidden advancement earned under its old, easier rule has been reset so it can be earned the new way.",
+      "highlights": [],
+      "pr": 2349,
+      "date": "2026-10-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
