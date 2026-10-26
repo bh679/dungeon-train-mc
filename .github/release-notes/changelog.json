@@ -30885,9 +30885,9 @@
       "highlights": [],
       "pr": 2334,
       "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1536.0",
+      "released_at": "2026-10-26T10:16:46Z"
     },
     {
       "id": "jade-photo-frame-photographer",
@@ -30903,9 +30903,9 @@
       "highlights": [],
       "pr": 2335,
       "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1536.0",
+      "released_at": "2026-10-26T10:16:46Z"
     },
     {
       "id": "photo-frame-take-out-no-burn",
@@ -30919,9 +30919,9 @@
       "highlights": [],
       "pr": 2336,
       "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1536.0",
+      "released_at": "2026-10-26T10:16:46Z"
     },
     {
       "id": "tv-needs-ffmpeg",
@@ -30940,9 +30940,9 @@
       ],
       "pr": 2327,
       "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1536.0",
+      "released_at": "2026-10-26T10:16:46Z"
     }
   ]
 }
