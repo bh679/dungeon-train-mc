@@ -7,7 +7,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 /**
  * The two zoom steps as clickable cells beside the "Perks" title: whole sky and close. Each
- * cell holds a dot that grows with the zoom; the current step is outlined in gold.
+ * cell is just a dot that grows with the zoom, no box; the current step is bright, the others faded.
  */
 @OnlyIn(Dist.CLIENT)
 final class ZoomControl {
@@ -37,15 +37,10 @@ final class ZoomControl {
     }
 
     void render(GuiGraphics g, int current, int hovered, double fade) {
-        int a = (int) (fade * 255);
         for (int i = 0; i < STEPS; i++) {
             int cx = x + i * (CELL + GAP);
-            boolean on = i == current, hov = i == hovered;
-            g.fill(cx, y, cx + CELL, y + CELL, (Math.min(a, 0xE6) << 24) | (SkyPalette.PANEL & 0xFFFFFF));
-            int edge = on ? SkyPalette.GOLD : hov ? SkyPalette.MUTED : SkyPalette.LINE;
-            g.renderOutline(cx, y, CELL, CELL, (a << 24) | (edge & 0xFFFFFF));
-            int dot = on ? SkyPalette.GOLD : hov ? SkyPalette.FG : SkyPalette.MUTED;
-            SkyDraw.disc(g, cx + CELL / 2.0, y + CELL / 2.0, DOT[i], SkyDraw.withAlpha(dot, fade));
+            double alpha = i == current ? 1.0 : i == hovered ? 0.6 : 0.3;
+            SkyDraw.disc(g, cx + CELL / 2.0, y + CELL / 2.0, DOT[i], SkyDraw.withAlpha(SkyPalette.FG, alpha * fade));
         }
     }
 
