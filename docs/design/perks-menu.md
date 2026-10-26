@@ -14,6 +14,43 @@ Mockups: `perks-menu-mockup/` (SVGs drawn by `generate.py` at GUI-scale-2 propor
 
 ---
 
+## 0. Update 2026-10-26: the menu works like the web page's test mode
+
+Brennan's direction: the in-game menu behaves the way the web page's **test mode** does
+(dp-relay `public/dungeontrain/perks/perks.js`, PRs #949, #954, #956, #957). Where this section and
+the older sections below disagree, this section wins.
+
+- **Hover shows, click acts.** Hovering a star shows its card (it lingers 250 ms after the mouse
+  leaves the star and card). Clicking a star unlocks it when locked and reachable, adds a point while
+  it holds fewer than its unlock level, and unlocks it again when full. Enter or Space does the same
+  for the keyboard selection. The card has no buttons; its last lines say what a click does.
+- **Solid lines only.** A perk unlocks only along a solid (requirement) line from the Engine or an
+  unlocked perk, either way round. Dashed lines open nothing (`PerkTree#reachable`, server and menu).
+- **Classes by progress, plus a list.** Every class starts hidden. Unlocking a tier 1 perk shows its
+  class. A hidden class still draws its unlocked perks and, while Advancement Points are held, the
+  perks any line joins to the Engine or an unlocked perk. A class title shows once a perk in it is
+  unlocked, grey until a point is in it. The **Classes list** down the right edge shows and hides
+  classes; hovering one previews it faintly and makes its perks glow. The choice is kept per player
+  on this computer (`config/dungeontrain/perks-classes.json`).
+- **The classes on the circle share it.** Each gets an equal sector in its authored order (a class
+  shown only because points are held gets half a share), spread to 85 % of its share and at most 35 %
+  of the circle. A layout change swings every star round the Engine over 0.75 s (`SkyLayout`); labels hide while
+  stars move and fade in once they settle.
+- **Looks.** Locked stars are grey at 35 %; a locked star a solid line reaches is at 75 %. Each star
+  carries one ring segment per unlock level, filled per point. The Engine is a clock: points spent on
+  ranks in the middle and a gold sweep through the current price run (`EngineClock`).
+- **Counters** at the bottom right replace the header balances: the advancement frame with Unlock
+  (Advancement) Points, the cosmic apple with Active Points. A shortfall shakes the matching counter.
+- **Zoom** has three steps: whole sky, halfway, close.
+- **Details modes** (`PerksScreen.DETAILS`). **On: the bottom bar.** A permanent bar shows the hovered
+  perk, or the one clicked to keep it there (click empty sky to let go): name, class and tier on the
+  left with a class-colour stripe, the description in the middle, and on the right where the perk
+  stands with **Unlock** and **Activate** buttons (disabled ones say why). Clicking a star keeps it in
+  the bar instead of acting. **Built, off: the strict card**, the floating card that closes the moment
+  the mouse leaves the star. The web-style lingering card is the third mode.
+- **The Unlock Points counter** carries the web page's advancement icon; clicking it opens the
+  advancements screen, and closing that comes back to the menu.
+
 ## 1. What the game copies from the web page
 
 The web page is the look. The game menu is the same picture drawn with `GuiGraphics`, so the numbers

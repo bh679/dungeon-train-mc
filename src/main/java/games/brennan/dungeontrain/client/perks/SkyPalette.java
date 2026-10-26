@@ -13,6 +13,8 @@ final class SkyPalette {
     static final int LINE = 0xFF2A3350;
     static final int GOLD = 0xFFE4B95A;
     static final int PANEL = 0xF0111A30;
+    /** Perk names on the sky are drawn at this scale so more of them fit. */
+    static final float NAME_SCALE = 0.6F;
     static final int LOCKED_GREY = 0xFF8E94A8;
 
     /** Core radius by tier (index 1..3), editor units. */

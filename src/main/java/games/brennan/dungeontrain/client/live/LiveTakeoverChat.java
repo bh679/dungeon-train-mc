@@ -160,7 +160,8 @@ public final class LiveTakeoverChat {
         String pollId = poll == null ? null : poll.id();
         // Vote Weight perk: the line counts 1 + rank times (the relay tallies it).
         int weight = VoteWeight.weight(games.brennan.dungeontrain.perks.Perks.rank(mc.player, ArchivistPerks.VOTE_WEIGHT));
-        LiveFeedClient.chatSend(LiveChatBridge.base(LiveStreamController.get().streaming()), me, mc.getUser().getName(), choice, weight)
+        LiveFeedClient.chatSend(LiveChatBridge.base(LiveStreamController.get().streaming()), me, mc.getUser().getName(), choice, weight,
+                LiveChatBridge.room())
             .thenAcceptAsync(r -> {
                 if (mc.player == null) return;
                 String counted = r.ok() ? r.str("vote") : "";

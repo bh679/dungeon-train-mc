@@ -61,5 +61,33 @@ public final class PerkRegistry {
     /** Make sure the built-in perks are registered before a read (class init is lazy). */
     public static void bootstrap() {
         TierOnePerks.ensureRegistered();
+        registerTree();
+    }
+
+    private static volatile boolean treeRegistered;
+
+    /**
+     * Every perk in the bundled tree is buyable: an id no code has registered is registered from the
+     * tree (its class by name, its tier). Ids code registers itself keep code's definition; a tree perk
+     * whose class is not a {@link PerkClass} is skipped. Runs once.
+     */
+    private static void registerTree() {
+        if (treeRegistered) return;
+        synchronized (PERKS) {
+            if (treeRegistered) return;
+            treeRegistered = true;
+        }
+        PerkTree tree = PerkTreeLoader.get();
+        for (PerkTree.Perk p : tree.perks()) {
+            if (p.isRoot() || isKnown(p.id())) continue;
+            String className = tree.perkClass(p.cls()).map(PerkTree.PerkClass::name).orElse("");
+            PerkClass cls;
+            try {
+                cls = PerkClass.valueOf(className.toUpperCase(java.util.Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                continue;
+            }
+            register(new PerkDef(p.id(), cls, p.tier()));
+        }
     }
 }

@@ -27,17 +27,52 @@ final class ClassTitlePainter {
 
     private record Spot(double x, double y, double hw, double hh) {}
 
-    static void render(GuiGraphics g, Font font, PerkTree tree, SkyView view, int w, int h, double fade) {
+    /** A drawn title: its class, its screen box, and where its hide icon goes (right of it, centred). */
+    record Title(String cls, NameLayout.Box box) {
+        int eyeX() {
+            return (int) Math.round(box.x1()) + EYE_GAP;
+        }
+
+        int eyeY() {
+            return (int) Math.round((box.y0() + box.y1()) / 2 - ClassesList.EYE_H / 2.0);
+        }
+
+        boolean hits(double mx, double my) {
+            return mx >= box.x0() && mx < box.x1() && my >= box.y0() && my < box.y1();
+        }
+
+        boolean eyeHits(double mx, double my) {
+            return mx >= eyeX() - 2 && mx < eyeX() + ClassesList.EYE_W + 2 && my >= box.y0() && my < box.y1();
+        }
+    }
+
+    private static final int EYE_GAP = 3;
+
+    /**
+     * Draws the titles, placed after the perk names: a title moves around the names' screen boxes
+     * ({@code names}) as it does around other titles. The title of {@code eyeFor} (hovered) gets a hide
+     * icon right of it, bright when {@code eyeHot}. Returns the drawn titles.
+     */
+    static List<Title> render(GuiGraphics g, Font font, PerkTree tree, ClassVisibility vis, String glow, SkyView view, int w, int h,
+                              double fade, List<NameLayout.Box> names, String eyeFor, boolean eyeHot) {
+        List<Title> boxes = new ArrayList<>();
         float scale = w < NARROW_WIDTH ? 0.75F : 1F;
         double z = view.zoom();
         List<Spot> placed = new ArrayList<>();
+        // the perk names, in sky units, count as already placed: titles keep clear of them
+        for (NameLayout.Box b : names) {
+            double cx = view.toSkyX((b.x0() + b.x1()) / 2, w), cy = view.toSkyY((b.y0() + b.y1()) / 2, h);
+            placed.add(new Spot(cx, cy, (b.x1() - b.x0()) / 2 / z, (b.y1() - b.y0()) / 2 / z));
+        }
         for (PerkTree.PerkClass c : tree.classes()) {
-            List<PerkTree.Perk> ps = tree.perksOf(c.id());
+            // only the drawn perks place the title; a hidden class is named once one of its perks is unlocked
+            if (!vis.titleShown(c.id())) continue;
+            List<PerkTree.Perk> ps = tree.perksOf(c.id()).stream().filter(p -> !vis.hidden(p)).toList();
             if (ps.isEmpty()) continue;
             String title = c.name().toUpperCase(Locale.ROOT);
             double hwPx = font.width(title) * scale / 2.0 + 4, hhPx = font.lineHeight * scale / 2.0 + 1;
             double hw = hwPx / z, hh = hhPx / z;
-            PerkTree.Perk first = tree.firstPerkOf(c.id()).orElse(null);
+            PerkTree.Perk first = tree.firstPerkOf(c.id()).filter(p -> !vis.hidden(p)).orElse(null);
             double a;
             if (first != null) a = Math.atan2(first.y() - PerkTree.CENTRE, first.x() - PerkTree.CENTRE);
             else {
@@ -49,40 +84,72 @@ final class ClassTitlePainter {
             Spot spot = place(tree, a, r0, hw, hh, placed);
             placed.add(spot);
             double sx = view.toScreenX(spot.x(), w), sy = view.toScreenY(spot.y(), h);
-            int colour = SkyDraw.withAlpha(c.colour(), fade);
+            // the title takes its colour once a point is in one of its perks (or while it glows in the list)
+            boolean lit = vis.titleLit(c.id(), glow);
+            double alpha = (lit ? 1.0 : 0.55) * (c.id().equals(vis.preview()) ? 0.4 : 1.0) * fade;
+            int colour = SkyDraw.withAlpha(lit ? c.colour() : SkyPalette.MUTED, alpha);
             g.pose().pushPose();
             g.pose().translate(sx, sy, 0);
             g.pose().scale(scale, scale, 1F);
-            g.drawString(font, title, -font.width(title) / 2, -font.lineHeight / 2, colour, true);
+            GlowText.draw(g, font, title, -font.width(title) / 2, -font.lineHeight / 2, colour);
             g.pose().popPose();
+            double tw = font.width(title) * scale / 2.0 + 2, th = font.lineHeight * scale / 2.0 + 1;
+            Title t = new Title(c.id(), new NameLayout.Box(sx - tw, sy - th, sx + tw, sy + th));
+            boxes.add(t);
+            if (c.id().equals(eyeFor) && !vis.off().contains(c.id())) {
+                ClassesList.renderEye(g, t.eyeX(), t.eyeY(), eyeHot, SkyPalette.MUTED, fade);
+            }
         }
+        return boxes;
     }
 
+    /**
+     * Where a title goes: on its class's line out from the Engine, slid outward (then inward) until it
+     * clears the stars and the titles already placed. Failing that, nudged a little either side of the
+     * line. Other titles are a hard rule: if no spot clears the stars too, the first spot clear of every
+     * title wins, so titles never overlap each other.
+     */
     private static Spot place(PerkTree tree, double a, double r0, double hw, double hh, List<Spot> placed) {
-        Spot first = at(a, r0, hw, hh);
-        if (ok(tree, first, placed)) return first;
-        for (double dr = 8; dr <= 160; dr += 8) {
-            Spot s = at(a, r0 + dr, hw, hh);
-            if (ok(tree, s, placed)) return s;
+        double[] nudges = {0, 0.06, -0.06, 0.12, -0.12, 0.2, -0.2, 0.3, -0.3};
+        Spot titlesOnly = null;
+        for (double da : nudges) {
+            for (double dr = 0; dr <= 240; dr += 8) {
+                Spot s = at(a + da, r0 + dr, hw, hh);
+                if (!clearOfTitles(s, placed)) continue;
+                if (clearOfStars(tree, s)) return s;
+                if (titlesOnly == null) titlesOnly = s;
+            }
+            for (double dr = -8; dr >= -80; dr -= 8) {
+                Spot s = at(a + da, r0 + dr, hw, hh);
+                if (!clearOfTitles(s, placed)) continue;
+                if (clearOfStars(tree, s)) return s;
+                if (titlesOnly == null) titlesOnly = s;
+            }
         }
-        for (double dr = -8; dr >= -80; dr -= 8) {
+        if (titlesOnly != null) return titlesOnly;
+        // crowded beyond reach: keep pushing outward until clear of every title
+        for (double dr = 248; ; dr += 8) {
             Spot s = at(a, r0 + dr, hw, hh);
-            if (ok(tree, s, placed)) return s;
+            if (clearOfTitles(s, placed) || dr > 2000) return s;
         }
-        return first;
     }
 
     private static Spot at(double a, double r, double hw, double hh) {
         return new Spot(PerkTree.CENTRE + r * Math.cos(a), PerkTree.CENTRE + r * Math.sin(a), hw, hh);
     }
 
-    private static boolean ok(PerkTree tree, Spot s, List<Spot> placed) {
+    private static boolean clearOfStars(PerkTree tree, Spot s) {
         for (PerkTree.Perk p : tree.perks()) {
             double pw = p.name().length() * 3 + 8;
             if (Math.abs(p.x() - s.x()) < s.hw() + pw - 8 && Math.abs(p.y() - s.y()) < s.hh() + 18) return false;
         }
+        return true;
+    }
+
+    /** Clear of every placed title, with a small margin. */
+    private static boolean clearOfTitles(Spot s, List<Spot> placed) {
         for (Spot q : placed) {
-            if (Math.abs(q.x() - s.x()) < s.hw() + q.hw() && Math.abs(q.y() - s.y()) < s.hh() * 2 + 2) return false;
+            if (Math.abs(q.x() - s.x()) < s.hw() + q.hw() + 2 && Math.abs(q.y() - s.y()) < s.hh() + q.hh() + 2) return false;
         }
         return true;
     }

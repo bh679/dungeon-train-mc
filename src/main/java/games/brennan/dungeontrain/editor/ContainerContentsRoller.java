@@ -373,6 +373,10 @@ public final class ContainerContentsRoller {
         if (isBrushable(state)) {
             return rollBrushable(pool, totalWeight, localPos, worldSeed, carriageIndex, diffIndex, baseNbt, registries);
         }
+        // A vault rolls nothing now: it carries the pool and rolls each player's reward on unlock.
+        if (VaultLoot.isVault(state)) {
+            return VaultLoot.writeVault(pool, localPos, worldSeed, carriageIndex, diffIndex, baseNbt, registries);
+        }
         int slots = containerSlotsFor(state);
         if (slots <= 0) return baseNbt;
 
@@ -557,6 +561,7 @@ public final class ContainerContentsRoller {
      */
     public static int slotsForContainer(BlockState state) {
         if (isBrushable(state)) return 1;
+        if (VaultLoot.isVault(state)) return VaultLoot.VAULT_SLOTS;
         return containerSlotsFor(state);
     }
 
@@ -696,10 +701,11 @@ public final class ContainerContentsRoller {
 
     /**
      * True for any block the loot (C) menu can author a pool for: a vanilla {@link Container}, or a
-     * brushable block, whose single dig item rolls from the pool like a vase's.
+     * brushable block, whose single dig item rolls from the pool like a vase's, or a vault, which
+     * rolls each player's reward from it on unlock ({@link VaultLoot}).
      */
     public static boolean isLootAuthorable(BlockState state) {
-        return isContainerState(state) || isBrushable(state);
+        return isContainerState(state) || isBrushable(state) || VaultLoot.isVault(state);
     }
 
     /**

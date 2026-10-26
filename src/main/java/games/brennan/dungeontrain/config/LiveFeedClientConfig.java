@@ -29,6 +29,8 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.IntValue CAPTURE_FPS;
     public static final ModConfigSpec.IntValue BITRATE_KBPS;
     public static final ModConfigSpec.BooleanValue SAVE_BANDWIDTH;
+    public static final ModConfigSpec.BooleanValue ADAPTIVE_QUALITY;
+    public static final ModConfigSpec.IntValue LEARNED_UPLOAD_KBPS;
     public static final ModConfigSpec.IntValue SEGMENT_SECONDS;
     public static final ModConfigSpec.BooleanValue VIEWING_ENABLED;
     public static final ModConfigSpec.BooleanValue TVS_SPAWN_ON;
@@ -104,6 +106,12 @@ public final class LiveFeedClientConfig {
         SAVE_BANDWIDTH = b
             .comment("Compress the stream harder on your own computer: a slower x264 preset at about half of bitrateKbps, for roughly the same picture with less upload. Costs CPU and so frame rate. Off by default; takes effect from your next stream.")
             .define("saveBandwidth", false);
+        ADAPTIVE_QUALITY = b
+            .comment("Lower the stream's bitrate while your upload can't keep up, and raise it again when it can, so viewers don't see it stall. Never goes above bitrateKbps. Off = always send bitrateKbps.")
+            .define("adaptiveQuality", true);
+        LEARNED_UPLOAD_KBPS = b
+            .comment("Your upload speed as measured on your last stream, kbit/s (0 = not measured yet). Written by the game: the next stream starts at a bitrate it can carry. Set to 0 to forget it.")
+            .defineInRange("learnedUploadKbps", 0, 0, 1_000_000);
         SEGMENT_SECONDS = b
             .comment("Seconds of video per uploaded segment. Viewers run 1-2 segments behind. Longer = fewer uploads (cheaper), more delay.")
             .defineInRange("segmentSeconds", 10, 2, 30);
@@ -193,6 +201,18 @@ public final class LiveFeedClientConfig {
 
     /** Whether the encoder trades CPU for upload (slower preset, lower bitrate). Off unless the player turns it on. */
     public static boolean saveBandwidth() { return loaded() && SAVE_BANDWIDTH.get(); }
+
+    public static boolean adaptiveQuality() { return !loaded() || ADAPTIVE_QUALITY.get(); }
+
+    /** The upload speed remembered from the last stream, kbit/s; 0 when none. */
+    public static int learnedUploadKbps() { return loaded() ? LEARNED_UPLOAD_KBPS.get() : 0; }
+
+    /** Remembers the upload speed {@code kbps} a stream measured (ignored when not positive). */
+    public static void setLearnedUploadKbps(int kbps) {
+        if (!loaded() || kbps <= 0 || LEARNED_UPLOAD_KBPS.get() == kbps) return;
+        LEARNED_UPLOAD_KBPS.set(Math.min(1_000_000, kbps));
+        LEARNED_UPLOAD_KBPS.save();
+    }
 
     public static void setSaveBandwidth(boolean value) {
         if (!loaded() || SAVE_BANDWIDTH.get() == value) return;
@@ -348,17 +368,16 @@ public final class LiveFeedClientConfig {
     }
 
     /**
-     * Options → Stream → Live viewer size: one size for the pinned feed whether you watch or stream.
-     * Clicking the feed still steps each mode on its own afterwards. Persisted; no-op pre-load.
+     * Options → Stream → Live viewer size (watching, or while streaming): the pinned feed's size in
+     * that mode only. Clicking the feed in the inventory steps the same value. Persisted; no-op pre-load.
      */
-    public static void setHeadViewerSize(int index) {
+    public static void setHeadViewerSize(boolean streaming, int index) {
         int i = clampSize(index);
         if (!loaded()) return;
-        for (ModConfigSpec.IntValue v : List.of(HEAD_VIEWER_SIZE_WATCHING, HEAD_VIEWER_SIZE_STREAMING)) {
-            if (v.get() != i) {
-                v.set(i);
-                v.save();
-            }
+        ModConfigSpec.IntValue v = streaming ? HEAD_VIEWER_SIZE_STREAMING : HEAD_VIEWER_SIZE_WATCHING;
+        if (v.get() != i) {
+            v.set(i);
+            v.save();
         }
     }
 

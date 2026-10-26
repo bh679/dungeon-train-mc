@@ -44,6 +44,12 @@ public final class ModCreativeTabs {
     static final ResourceLocation EXPOSURE_GLASS_PHOTOGRAPH_FRAME =
         ResourceLocation.fromNamespaceAndPath("exposure", "glass_photograph_frame");
 
+    /** Edible Backpacks' two items, looked up by id like {@link #VISTA_TELEVISION}. */
+    static final ResourceLocation EDIBLE_BACKPACK =
+        ResourceLocation.fromNamespaceAndPath("ediblebackpacks", "edible_backpack");
+    static final ResourceLocation GOLDEN_EDIBLE_BACKPACK =
+        ResourceLocation.fromNamespaceAndPath("ediblebackpacks", "golden_edible_backpack");
+
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> PREFAB_VARIANTS = TABS.register(
         "prefab_variants",
         () -> CreativeModeTab.builder()
@@ -123,6 +129,8 @@ public final class ModCreativeTabs {
      *       the reader's current run.</li>
      *   <li>{@link ModItems#STATS_BOOK} — the loot-facing coin-flip between
      *       the two above, and the one ordinary loot tables place.</li>
+     *   <li>Edible Backpacks' backpack and golden backpack ({@link #EDIBLE_BACKPACK},
+     *       {@link #GOLDEN_EDIBLE_BACKPACK}).</li>
      *   <li>{@link ModBlocks#NARRATIVE_LECTERN_ITEM} — progression-aware
      *       lectern variant (also remains in vanilla FUNCTIONAL_BLOCKS for
      *       discoverability).</li>
@@ -152,6 +160,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.VIOLET_CORE.get());
                 output.accept(ModItems.RANDOM_GOOD_POTION.get());
                 output.accept(ModItems.RANDOM_BAD_POTION.get());
+                acceptIfPresent(output, EDIBLE_BACKPACK);
+                acceptIfPresent(output, GOLDEN_EDIBLE_BACKPACK);
                 output.accept(ModBlocks.NARRATIVE_LECTERN_ITEM.get());
                 output.accept(Items.BOOKSHELF);
                 output.accept(Items.CHISELED_BOOKSHELF);

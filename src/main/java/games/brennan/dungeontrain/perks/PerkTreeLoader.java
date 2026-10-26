@@ -120,7 +120,7 @@ public final class PerkTreeLoader {
     }
 
     private static void warnUnregistered(PerkTree tree) {
-        PerkRegistry.bootstrap();
+        TierOnePerks.ensureRegistered(); // not bootstrap(): that reads this tree, which is still loading
         for (String id : PerkRegistry.ids()) {
             if (tree.perk(id).isEmpty()) LOGGER.warn("[DungeonTrain] registered perk {} is not in tree.json", id);
         }

@@ -1,0 +1,7 @@
+{
+ "_comment": "Key stats per perk id: each stat is worth per_point for every point in the perk. Labels are gui.dungeontrain.perks.stat.<stat>; unit is '' or 'seconds'. Hand-edited: tree-from-editor.py does not touch this file.",
+ "throwables": [
+  {"stat": "damage", "per_point": 1},
+  {"stat": "effect", "per_point": 2, "unit": "seconds"}
+ ]
+}

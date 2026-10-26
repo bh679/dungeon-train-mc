@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.compat.vista;
 
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.mehvahdjukaar.vista.VistaMod;
@@ -11,6 +12,7 @@ import net.mehvahdjukaar.vista.common.cassette.IBroadcastSource;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.TickTask;
@@ -33,8 +35,17 @@ public final class LiveBroadcastLocation implements IBroadcastLocation {
     public static final LiveBroadcastLocation INSTANCE = new LiveBroadcastLocation(LiveBroadcastSource.INSTANCE);
     public static final LiveBroadcastLocation SECOND = new LiveBroadcastLocation(LiveBroadcastSource.SECOND);
 
+    /**
+     * Both streams' type ({@code dungeontrain:live}): the second stream is the same type with
+     * {@code second: true}. Saved that way, a world opened by an older Dungeon Train (which only knows
+     * {@code live}, as a unit) reads the second link as the first instead of failing Vista's whole
+     * broadcast file, which would drop every link in the dimension, players' own included. The first
+     * stream's saved form is unchanged.
+     */
     public static final BroadcastLocationType TYPE = new BroadcastLocationType(
-        MapCodec.unit(INSTANCE), StreamCodec.unit(INSTANCE));
+        Codec.BOOL.optionalFieldOf("second", false).xmap(LiveBroadcastLocation::of, LiveBroadcastLocation::isSecond),
+        ByteBufCodecs.BOOL.map(LiveBroadcastLocation::of, LiveBroadcastLocation::isSecond));
+    /** Read-only: unreleased dev builds saved the second link under its own type. Nothing is written as it now. */
     public static final BroadcastLocationType SECOND_TYPE = new BroadcastLocationType(
         MapCodec.unit(SECOND), StreamCodec.unit(SECOND));
 
@@ -68,6 +79,9 @@ public final class LiveBroadcastLocation implements IBroadcastLocation {
             BroadcastManager manager = BroadcastManager.getInstance(level);
             manager.linkFeed(LiveBroadcastSource.MAIN_FEED_UUID, INSTANCE);
             manager.linkFeed(LiveBroadcastSource.SECOND_FEED_UUID, SECOND);
+            // An unchanged link is not saved again; this rewrites a save that still holds the old
+            // second-stream type, so an older Dungeon Train can read the file.
+            manager.setDirty();
         };
         if (server.overworld() == null) server.tell(new TickTask(server.getTickCount(), task));
         else task.run();
@@ -80,7 +94,15 @@ public final class LiveBroadcastLocation implements IBroadcastLocation {
 
     @Override
     public BroadcastLocationType type() {
-        return source.isSecond() ? SECOND_TYPE : TYPE;
+        return TYPE;
+    }
+
+    private static LiveBroadcastLocation of(boolean second) {
+        return second ? SECOND : INSTANCE;
+    }
+
+    private boolean isSecond() {
+        return source.isSecond();
     }
 
     @Override

@@ -31,12 +31,25 @@ final class LiveFeedEventsTest {
     }
 
     @Test
-    @DisplayName("a claim that cut somebody off replaces the other streamer here; a second channel (Two Streams) replaces nobody")
-    void secondChannelDemotesNobody() {
-        UUID other = UUID.randomUUID();
-        assertEquals(java.util.Set.of(other), LiveFeedEvents.demoted(java.util.Set.of(other), true));
-        assertEquals(java.util.Set.of(), LiveFeedEvents.demoted(java.util.Set.of(other), false));
-        assertEquals(java.util.Set.of(), LiveFeedEvents.demoted(java.util.Set.of(), true));
+    @DisplayName("a takeover demotes only the streamer the relay named; the other streamer here keeps going")
+    void takeoverDemotesOnlyTheNamedStreamer() {
+        UUID alice = UUID.randomUUID(), bob = UUID.randomUUID();
+        java.util.Map<UUID, String> two = new java.util.LinkedHashMap<>();
+        two.put(alice, "Alice");
+        two.put(bob, "Bob");
+        assertEquals(java.util.Set.of(bob), LiveFeedEvents.demoted(two, "Bob"));
+        assertEquals(java.util.Set.of(alice), LiveFeedEvents.demoted(two, "aLiCe"));
+    }
+
+    @Test
+    @DisplayName("no name (a free or second channel) or a name not streaming here demotes nobody")
+    void noNameDemotesNobody() {
+        UUID alice = UUID.randomUUID(), bob = UUID.randomUUID();
+        java.util.Map<UUID, String> two = java.util.Map.of(alice, "Alice", bob, "Bob");
+        assertEquals(java.util.Set.of(), LiveFeedEvents.demoted(two, ""));
+        assertEquals(java.util.Set.of(), LiveFeedEvents.demoted(two, null));
+        assertEquals(java.util.Set.of(), LiveFeedEvents.demoted(two, "Carol"));
+        assertEquals(java.util.Set.of(), LiveFeedEvents.demoted(java.util.Map.of(), "Bob"));
     }
 
     @Test
