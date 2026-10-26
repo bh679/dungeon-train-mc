@@ -686,13 +686,14 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case STREAM_GUI -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.streamGui(), LiveFeedClientConfig::setStreamGui),
                     key + ".tip");
 
-            // Kid mode never streams chat: the switch shows Off and is greyed, whatever is stored.
+            // Kid mode and Live chat off never stream chat: the switch shows Off and is greyed, whatever is stored.
             case STREAM_CHAT -> {
                 boolean kid = ClientDisplayConfig.isKidMode();
-                CycleButton<Boolean> streamChat = onOff(Component.translatable(key), !kid && LiveFeedClientConfig.streamChat(),
-                        LiveFeedClientConfig::setStreamChat);
-                streamChat.active = !kid;
-                yield Setting.of(streamChat, kid ? key + ".kid_tip" : key + ".tip");
+                boolean liveChatOff = !LiveFeedClientConfig.liveChat();
+                CycleButton<Boolean> streamChat = onOff(Component.translatable(key),
+                        !kid && !liveChatOff && LiveFeedClientConfig.streamChat(), LiveFeedClientConfig::setStreamChat);
+                streamChat.active = !kid && !liveChatOff;
+                yield Setting.of(streamChat, kid ? key + ".kid_tip" : liveChatOff ? key + ".live_chat_off_tip" : key + ".tip");
             }
 
             // The game's sound on the stream; read when the next stream starts.
@@ -746,8 +747,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // The Discord live chat bridge (LiveChatBridge); Kid mode keeps it off and greyed.
             case LIVE_CHAT -> {
                 boolean kid = ClientDisplayConfig.isKidMode();
+                // Show chat to viewers follows this switch (greyed while it is off), so the rows are rebuilt.
                 CycleButton<Boolean> liveChat = onOff(Component.translatable(key), !kid && LiveFeedClientConfig.liveChat(),
-                        LiveFeedClientConfig::setLiveChat);
+                        on -> { LiveFeedClientConfig.setLiveChat(on); rebuildIfShown(); });
                 liveChat.active = !kid;
                 yield Setting.of(liveChat, kid ? key + ".kid_tip" : key + ".tip");
             }

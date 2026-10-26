@@ -22,6 +22,14 @@ public final class LiveModerationScope {
     }
 
     /**
+     * A client's own strike report counts while anyone is live, or while its player wears a TV: a worn
+     * TV is in the Live chat room on air or not, so its words reach Discord and the website either way.
+     */
+    public static boolean clientStrikeActive(boolean anyoneLive, boolean wearingTv) {
+        return anyoneLive || wearingTv || devForce;
+    }
+
+    /**
      * The client checks its own outgoing chat while it is streaming, or while it is in the stream's chat
      * room (a TV wearer whose lines go to Twitch too).
      */
