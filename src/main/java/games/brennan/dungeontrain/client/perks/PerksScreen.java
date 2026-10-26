@@ -511,6 +511,12 @@ public final class PerksScreen extends Screen {
         if (super.mouseReleased(mx, my, button)) return true;
         boolean wasDrag = dragging && dragMoved > 3;
         dragging = false;
+        // right-click a star: put a point in it, or unlock it when locked or full
+        if (button == 1 && !(DETAILS == DetailsMode.BAR && bar.contains(mx, my))) {
+            String id = starAt(mx, my);
+            if (id != null) tree.perk(id).ifPresent(this::act);
+            return true;
+        }
         if (button != 0 || wasDrag || my < SkyView.HEADER) return true;
         String cls = classesList.classAt(mx, my);
         if (cls != null) {
