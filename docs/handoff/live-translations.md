@@ -47,8 +47,13 @@ Approved Gate 1 plan (full detail, both repos):
 - Website Live page also prefers relay translations while the reward is on (browser engine stays as
   fallback).
 - Price A$90, **3 months per gift**.
-- Injection posture: nonce-tagged `<chat_line_xxxx>` data block, fixed JSON schema over the 22 mod
-  locales, then post-validate each translation (cleanContent, length ratio, liveModWords.censor +
+- **Lean Haiku call (2026-10-26, for margin):** ~250-token system prompt (no big glossary, no prompt
+  caching) and a strict JSON schema listing **only the requested locales**; monthly cap 1.5M chars.
+  At today's volume that is ≈ A$45 of Haiku per 3-month gift (3 reader languages), so ≈ A$43 profit
+  on A$90. A ~2k-token cached glossary + fixed 22-locale schema was costed at a loss and rejected.
+  Full figures in the plan's Risks / Cost section.
+- Injection posture: nonce-tagged `<chat_line_xxxx>` data block, strict per-request JSON schema, then
+  post-validate each translation (cleanContent, length ratio, liveModWords.censor +
   censorPatterns + hookGuard.inspectChat); drop on doubt, the original always shows.
 
 ## Wire contract (relay must produce exactly this)
@@ -106,4 +111,7 @@ are forwarded by `build.gradle`.
 ## Cost reference
 
 Prod `live_msgs` (14 to 24 Oct 2026): 4,671 lines in ~9.8 days, about 14k lines/month, ~76% from game.
-At ~40 chars/line, Haiku one call per line is roughly A$7 to 12/month for 1 to 5 reader languages.
+On the lean call: ≈ US$7/10/12 a month for 1/3/5 reader languages, so ≈ A$32/45/54 per 3-month gift
+and ≈ A$57/43/34 profit on A$90 after Stripe. Break-even ≈ US$19/month (about twice today's volume);
+the 1.5M-char monthly cap stops translating before that. Prices from memory: recheck Haiku pricing
+and FX before launch.
