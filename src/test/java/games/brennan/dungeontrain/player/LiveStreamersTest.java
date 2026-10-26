@@ -47,4 +47,31 @@ final class LiveStreamersTest {
         assertNull(LiveStreamers.any(SERVER));
         assertEquals(Set.of(), LiveStreamers.all(SERVER));
     }
+
+    @Test
+    @DisplayName("streamers keep their names, so the relay's cut-off name can be matched; clearing forgets it")
+    void namesTravelWithStreamers() {
+        UUID a = UUID.randomUUID();
+        UUID b = UUID.randomUUID();
+        try {
+            LiveStreamers.add(SERVER, a, "Alice");
+            LiveStreamers.add(SERVER, b, "Bob");
+            assertEquals(java.util.Map.of(b, "Bob"), LiveStreamers.othersWithNames(SERVER, a));
+            assertEquals(java.util.Map.of(a, "Alice"), LiveStreamers.othersWithNames(SERVER, b));
+            LiveStreamers.clearIf(SERVER, b);
+            assertEquals(java.util.Map.of(), LiveStreamers.othersWithNames(SERVER, a));
+        } finally {
+            LiveStreamers.clearIf(SERVER, a);
+            LiveStreamers.clearIf(SERVER, b);
+        }
+    }
+
+    @Test
+    @DisplayName("both started = the second-earliest start; 0 with fewer than two")
+    void secondEarliestStart() {
+        assertEquals(0L, LiveStreamers.secondEarliest(java.util.List.of()));
+        assertEquals(0L, LiveStreamers.secondEarliest(java.util.List.of(5L)));
+        assertEquals(9L, LiveStreamers.secondEarliest(java.util.List.of(9L, 3L)));
+        assertEquals(7L, LiveStreamers.secondEarliest(java.util.List.of(12L, 3L, 7L)));
+    }
 }

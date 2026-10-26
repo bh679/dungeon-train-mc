@@ -1080,6 +1080,24 @@
       ]
     }
   },
+  "chat.dungeontrain.live.muted": {
+    "1": {
+      "label": "how long the chat mute still has to run",
+      "examples": [
+        "15 minutes",
+        "1 day"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.muted_reminder": {
+    "1": {
+      "label": "how long the chat mute still has to run",
+      "examples": [
+        "15 minutes",
+        "1 day"
+      ]
+    }
+  },
   "command.dungeontrain.live_appeal.no_such_line": {
     "1": {
       "label": "how many lines there are to pick from",
@@ -1122,6 +1140,16 @@
   "chat.dungeontrain.familiar_photo.tributed.3": {
     "1": {
       "label": "the player who paid Tribute to the photo",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    }
+  },
+  "jade.dungeontrain.photo_frame.photographer": {
+    "1": {
+      "label": "the player who took the photo in the frame",
       "examples": [
         "Steve",
         "Alex",
@@ -7078,6 +7106,15 @@
       "examples": [
         "treasure",
         "kitchen"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.container.vault_key": {
+    "1": {
+      "label": "the name of the key item that unlocks the vault",
+      "examples": [
+        "Trial Key",
+        "Ominous Trial Key"
       ]
     }
   },
@@ -17341,37 +17378,37 @@
       ]
     }
   },
-  "chat.dungeontrain.perks.active_gained": {
+  "chat.dungeontrain.live_room.now": {
     "1": {
-      "label": "active perk points the player now has this life",
+      "label": "which of the two live streams: 1 or 2",
       "examples": [
         "1",
-        "3"
-      ]
-    }
-  },
-  "chat.dungeontrain.perks.ready_to_spend": {
-    "1": {
-      "label": "active perk points ready to spend",
-      "examples": [
-        "1",
-        "4"
-      ]
-    }
-  },
-  "chat.dungeontrain.perks.unlock_gained": {
-    "1": {
-      "label": "unlock points just earned",
-      "examples": [
-        "1",
-        "3"
+        "2"
       ]
     },
     "2": {
-      "label": "unspent unlock points in total",
+      "label": "the Minecraft player name of that stream's streamer",
       "examples": [
-        "12",
-        "40"
+        "Alice",
+        "Bo"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_room.now_unnamed": {
+    "1": {
+      "label": "which of the two live streams: 1 or 2",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.live_room.stream": {
+    "1": {
+      "label": "which of the two live streams: 1 or 2",
+      "examples": [
+        "1",
+        "2"
       ]
     }
   },

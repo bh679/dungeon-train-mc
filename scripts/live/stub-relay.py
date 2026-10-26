@@ -20,7 +20,14 @@ GET logs its `slot=` query so the viewer's second-slot flag can be checked. Meas
   with the relay's own live-player.js hls.js settings and posts `now - hls.playingDate` once a second.
 - In-game TV: run the TV's own ffmpeg command against the playlist (the stub logs each GET with its
   User-Agent); a TV shows segment N's first frame as it fetches it, so delay(N) = GET(N) - PDT(N).
-- GET /report: per-segment upload lateness (PUT time - PDT - segment length), TV and web delay stats.
+- GET /report: per-segment upload lateness (PUT time - PDT - segment length), TV and web delay stats,
+  and the newest segments' sizes (an adaptive-quality step shows as smaller segments).
+
+--prev-name NAME makes every claim that lands on the main slot a takeover of NAME (`prevName`), so a
+server can be seen demoting exactly that streamer. Second-slot claims never carry it, as on the relay.
+
+--throttle-kbps N caps how fast PUT bodies are read, to play a streamer whose upload can't keep up;
+GET /ctl?throttle=N changes it while running (0 = no cap).
 
 The segments' wall-clock start (PDT) comes from the encoder's #EXT-X-PROGRAM-DATE-TIME tags.
 Dev tool only; never exposed beyond loopback.
@@ -50,7 +57,29 @@ STATE = {
     "presigns": [],    # t
     "files": {},       # (session, name) -> (bytes, headers)
     "edge": {},        # (session, name) -> (served_at, bytes)
+    "throttle_kbps": 0,  # PUT bodies are read no faster than this (0 = no cap)
 }
+
+THROTTLE_CHUNK = 16 * 1024
+
+
+def read_throttled(rfile, n):
+    """Reads n bytes, sleeping between chunks so the rate stays under STATE["throttle_kbps"]."""
+    start = time.time()
+    chunks, got = [], 0
+    while got < n:
+        chunk = rfile.read(min(THROTTLE_CHUNK, n - got))
+        if not chunk:
+            break
+        chunks.append(chunk)
+        got += len(chunk)
+        kbps = STATE["throttle_kbps"]
+        if kbps > 0:
+            due = got * 8 / (kbps * 1000)
+            ahead = due - (time.time() - start)
+            if ahead > 0:
+                time.sleep(ahead)
+    return b"".join(chunks)
 
 
 def parse_pdt(text, session):
@@ -102,7 +131,24 @@ def report():
             "tvDelayS": summary(tv),
             "webDelayS": summary(web),
             "presignsPerMin": round(len(STATE["presigns"]) / span, 1) if span else None,
+            "throttleKbps": STATE["throttle_kbps"],
+            "recentSegments": recent_segments(seg),
         }
+
+
+def recent_segments(seg, count=30):
+    """The newest segments of the current session: size, and how late each landed."""
+    session = STATE["session"]
+    rows = []
+    for (s, name), (data, _) in STATE["files"].items():
+        if s != session or not SEG_RE.match(name):
+            continue
+        pdt = STATE["pdt"].get((s, name))
+        put = STATE["puts"].get((s, name))
+        late = round(put - pdt - seg, 1) if pdt is not None and put is not None else None
+        rows.append({"name": name, "kb": len(data) // 1024, "lateS": late})
+    rows.sort(key=lambda r: r["name"])
+    return rows[-count:]
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -145,6 +191,8 @@ class Handler(BaseHTTPRequestHandler):
                     STATE["session"] = session
             out = {"ok": True, "channel": channel, "session": session, "token": "tok-" + session,
                    "playlistUrl": "http://127.0.0.1:%d/files/%s/live.m3u8" % (port, session)}
+            if ARGS.prev_name and channel == "main":
+                out["prevName"] = ARGS.prev_name
             if ARGS.quick:
                 seg = ARGS.quick_seconds
                 out.update(segmentSeconds=seg, listSize=max(6, -(-60 // seg)))
@@ -189,7 +237,7 @@ class Handler(BaseHTTPRequestHandler):
         if not (SEG_RE.match(name) or name == "live.m3u8"):
             return self._send(400)
         n = int(self.headers.get("Content-Length") or 0)
-        data = self.rfile.read(n)
+        data = read_throttled(self.rfile, n)
         now = time.time()
         headers = {"Content-Type": self.headers.get("Content-Type", ""), "Cache-Control": self.headers.get("Cache-Control", "")}
         with LOCK:
@@ -232,6 +280,12 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, out)
         if path == "/report":
             return self._send(200, report())
+        if path == "/ctl":
+            m = re.search(r"(?:^|&)throttle=(\d+)", urlparse(self.path).query)
+            if m:
+                STATE["throttle_kbps"] = int(m.group(1))
+                print("[stub] upload throttle now %d kbit/s" % STATE["throttle_kbps"], flush=True)
+            return self._send(200, {"throttleKbps": STATE["throttle_kbps"]})
         if path == "/harness.html":
             return self._send(200, HARNESS.encode(), "text/html")
         if path.startswith("/public/") and ARGS.relay_public:
@@ -295,7 +349,10 @@ def main():
     p.add_argument("--quick-seconds", type=int, default=3)
     p.add_argument("--relay-public", default="")
     p.add_argument("--second-streamer", default="", help="Two Streams: a second player of this name is live on the second slot")
+    p.add_argument("--prev-name", default="", help="main-slot claims take over from this streamer (prevName)")
+    p.add_argument("--throttle-kbps", type=int, default=0, help="cap PUT upload speed (kbit/s); /ctl?throttle=N changes it")
     ARGS = p.parse_args()
+    STATE["throttle_kbps"] = max(0, ARGS.throttle_kbps)
     STATE["segment_seconds"] = ARGS.quick_seconds if ARGS.quick else 10
     STATE["list_size"] = max(6, -(-60 // STATE["segment_seconds"]))
     os.makedirs(ARGS.out, exist_ok=True)

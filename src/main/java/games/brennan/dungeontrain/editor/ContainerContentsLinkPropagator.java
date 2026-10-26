@@ -100,6 +100,7 @@ public final class ContainerContentsLinkPropagator {
                 be.loadCustomOnly(rolled, level.registryAccess());
                 be.setChanged();
                 ChiseledBookshelfSync.syncIfNeeded(level, worldPos);
+                VaultLoot.syncState(level, worldPos);
                 touched++;
             }
         }

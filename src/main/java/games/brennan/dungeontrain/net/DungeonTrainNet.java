@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "163";
+    public static final String PROTOCOL_VERSION = "165";
 
     private DungeonTrainNet() {}
 
@@ -414,7 +414,7 @@ public final class DungeonTrainNet {
         registrar.playToClient(BuilderUploadStatusPacket.TYPE, BuilderUploadStatusPacket.STREAM_CODEC, BuilderUploadStatusPacket::handle);
         registrar.playToClient(EditorSaveAsPromptPacket.TYPE, EditorSaveAsPromptPacket.STREAM_CODEC, EditorSaveAsPromptPacket::handle);
         registrar.playToServer(EditorSaveAsPacket.TYPE, EditorSaveAsPacket.STREAM_CODEC, EditorSaveAsPacket::handle);
-        // Hand-held Vista TV: left-click switches the set on or off (compat/vista/TvItems).
+        // Hand-held Vista TV: right-click switches the set on or off (compat/vista/TvItems).
         registrar.playToServer(TvHeldTogglePacket.TYPE, TvHeldTogglePacket.STREAM_CODEC, TvHeldTogglePacket::handle);
         registrar.playToServer(TvStreamChoicePacket.TYPE, TvStreamChoicePacket.STREAM_CODEC, TvStreamChoicePacket::handle);
         // Perks menu: unlock a perk / put a point in; the server judges and re-syncs (client/perks/PerksScreen).

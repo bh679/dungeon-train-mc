@@ -221,6 +221,12 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue CHUNCKS_HIDE_DISTANT_HORIZONS;
     public static final ModConfigSpec.BooleanValue SPHERES_HIDE_DISTANT_HORIZONS;
     public static final ModConfigSpec.BooleanValue STACKS_HIDE_DISTANT_HORIZONS;
+    /**
+     * Whether Distant Horizons leaves the sunk zone's attic (dimensional carriages over the invisible
+     * barrier lid) out of its LODs. DH keeps drawing everything else there. See
+     * {@code compat.DistantHorizonsSunkAttic}.
+     */
+    public static final ModConfigSpec.BooleanValue SUNK_ATTIC_HIDE_DISTANT_HORIZONS;
 
     /** How many blocks either side of a void band DH stays hidden — the approach, and past its far edge. */
     public static final ModConfigSpec.IntValue VOID_BANDS_DISTANT_HORIZONS_MARGIN;
@@ -428,6 +434,7 @@ public final class ClientDisplayConfig {
         CHUNCKS_HIDE_DISTANT_HORIZONS = pair.getLeft().chuncksHideDistantHorizons;
         SPHERES_HIDE_DISTANT_HORIZONS = pair.getLeft().spheresHideDistantHorizons;
         STACKS_HIDE_DISTANT_HORIZONS = pair.getLeft().stacksHideDistantHorizons;
+        SUNK_ATTIC_HIDE_DISTANT_HORIZONS = pair.getLeft().sunkAtticHideDistantHorizons;
         VOID_BANDS_DISTANT_HORIZONS_MARGIN = pair.getLeft().voidBandsDistantHorizonsMargin;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
@@ -596,6 +603,9 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue stacksHideDistantHorizons = b
                 .comment("Stop Distant Horizons drawing while you are in, or approaching, the stacks section of the track - the void standing with towers of terrain. Set false to let DH draw there anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
                 .define("hideInStacks", true);
+        ModConfigSpec.BooleanValue sunkAtticHideDistantHorizons = b
+                .comment("Fixes a Distant Horizons sky glitch on one stretch of the track. Leave this on; set false only to troubleshoot. Chunks DH stored before this was on keep the glitch until DH processes them again. Does nothing if Distant Horizons is not installed, and never touches DH's own settings.")
+                .define("hideSunkAttic", true);
         ModConfigSpec.IntValue voidBandsDistantHorizonsMargin = b
                 .comment("How many blocks either side of the chunks, spheres and stacks sections DH stays hidden. A section comes into DH's draw distance well before you reach it, so this covers the way in (and the same distance past its far end). Raise it if you run a very large DH render distance; 0 cuts DH out exactly at the sections' edges.")
                 .defineInRange("strangeBandsHideMarginBlocks", DEFAULT_DISTANT_HORIZONS_HIDE_MARGIN,
@@ -978,6 +988,7 @@ public final class ClientDisplayConfig {
                 upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
                 portalRoomHideDistantHorizons,
                 chuncksHideDistantHorizons, spheresHideDistantHorizons, stacksHideDistantHorizons,
+                sunkAtticHideDistantHorizons,
                 voidBandsDistantHorizonsMargin,
                 framerateThrottleEnabled, framerateThrottleFps, afkPauseEnabled, trainEngineVolume, windVolume, windScreenEffects, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, scribbleFileButtonsVisible, scribbleInsertPageButtonVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
                 creativeModBlockTabs, creativeModBlocksInSearch, deleteWorldOnReboard,
@@ -2317,6 +2328,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue chuncksHideDistantHorizons,
             ModConfigSpec.BooleanValue spheresHideDistantHorizons,
             ModConfigSpec.BooleanValue stacksHideDistantHorizons,
+            ModConfigSpec.BooleanValue sunkAtticHideDistantHorizons,
             ModConfigSpec.IntValue voidBandsDistantHorizonsMargin,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,

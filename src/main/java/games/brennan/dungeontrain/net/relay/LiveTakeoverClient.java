@@ -120,6 +120,10 @@ public final class LiveTakeoverClient {
     static PollLine parsePollLine(JsonObject m) {
         if (!m.has("poll") || !m.get("poll").isJsonObject()) return null;
         JsonObject p = m.getAsJsonObject("poll");
+        // Only a takeover vote is one of ours. A poll that names another kind (the relay's Twitch view vote,
+        // or anything later) is not drawn as a takeover with blank names and Yes/No buttons.
+        String kind = str(p, "kind");
+        if (!kind.isEmpty() && !"takeover".equals(kind)) return null;
         String id = str(p, "id");
         String state = str(p, "state");
         if (id.isEmpty() || state.isEmpty()) return null;
