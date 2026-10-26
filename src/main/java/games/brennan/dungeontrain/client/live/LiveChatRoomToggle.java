@@ -28,8 +28,8 @@ public final class LiveChatRoomToggle {
     static final String STREAM_KEY = "gui.dungeontrain.live_room.stream";
     static final String TOOLTIP_KEY = "gui.dungeontrain.live_room.tooltip";
     static final int W = 54, H = 12, GAP = 2;
-    /** Above the input box (the bottom 14 px) and under the chat log, which ends 40 px up. */
-    static final int BOTTOM_OFFSET = 28;
+    /** Centred between the input box (the bottom 14 px) and the chat log, which ends 40 px up: 7 px either side. */
+    static final int BOTTOM_OFFSET = 33;
 
     @Nullable private static Button stream1;
     @Nullable private static Button stream2;
