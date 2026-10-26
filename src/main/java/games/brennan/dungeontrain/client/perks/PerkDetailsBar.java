@@ -200,6 +200,29 @@ final class PerkDetailsBar {
         }
     }
 
+    /**
+     * The Engine hovered or kept: how many points are active against how many the unlocked perks can
+     * hold, and what each currency does, each beside its icon.
+     */
+    private void renderEngine(GuiGraphics g, PerkMenuSnapshot snap, int a) {
+        g.fill(0, top + 1, STRIPE, top + HEIGHT, (a << 24) | (SkyPalette.GOLD & 0xFFFFFF));
+        int holds = 0;
+        for (int level : snap.unlocks().values()) holds += Math.max(0, level);
+        int x = PAD + STRIPE, y = top + PAD - 1, icon = 8, tx = x + icon + 5;
+        g.drawString(font, Component.translatable(KEY + "engine.active", snap.ranksBought(), holds), x, y,
+            (a << 24) | (SkyPalette.FG & 0xFFFFFF), false);
+        int y2 = y + LINE + 2, y3 = y2 + LINE + 1;
+        g.blit(PerkCounters.ADVANCEMENT_ICON, x, y2 - 1, icon, icon, 0, 0, PerkCounters.ICON_TEX, PerkCounters.ICON_TEX,
+            PerkCounters.ICON_TEX, PerkCounters.ICON_TEX);
+        g.drawString(font, Component.translatable(KEY + "engine.advancements"), tx, y2, ((int) (a * 0.85) << 24) | (SkyPalette.FG & 0xFFFFFF), false);
+        g.pose().pushPose();
+        g.pose().translate(x, y3 - 1, 0);
+        g.pose().scale(0.5F, 0.5F, 1F);
+        g.renderItem(new net.minecraft.world.item.ItemStack(games.brennan.dungeontrain.registry.ModItems.COSMIC_APPLE.get()), 0, 0);
+        g.pose().popPose();
+        g.drawString(font, Component.translatable(KEY + "engine.apples"), tx, y3, ((int) (a * 0.85) << 24) | (SkyPalette.FG & 0xFFFFFF), false);
+    }
+
     void render(GuiGraphics g, PerkMenuSnapshot snap, double fade) {
         int a = (int) (fade * 255);
         g.fill(0, top, width, top + HEIGHT, (Math.min(a, BG >>> 24) << 24) | (BG & 0xFFFFFF));
@@ -215,6 +238,10 @@ final class PerkDetailsBar {
             return;
         }
         PerkTree.Perk p = perk;
+        if (p.isRoot()) {
+            renderEngine(g, snap, a);
+            return;
+        }
         int colour = SkyPalette.classColour(tree, p);
         g.fill(0, top + 1, STRIPE, top + HEIGHT, (a << 24) | (colour & 0xFFFFFF));
 

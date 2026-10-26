@@ -23,9 +23,9 @@ final class PerkCounters {
     enum Kind { UNLOCK, ACTIVE }
 
     /** The web page's Advancement Points icon (a gold advancement frame), 26 px square. */
-    private static final ResourceLocation ADVANCEMENT_ICON =
+    static final ResourceLocation ADVANCEMENT_ICON =
         ResourceLocation.fromNamespaceAndPath(games.brennan.dungeontrain.DungeonTrain.MOD_ID, "textures/gui/perks/advancement_points.png");
-    private static final int ICON_TEX = 26;
+    static final int ICON_TEX = 26;
     private static final int ICON = 16, PAD_X = 5, PAD_Y = 3, GAP = 6, MARGIN = 8;
     private static final long SHAKE_MS = 400;
     private static final int DANGER = 0xFFD9534F;

@@ -17801,5 +17801,21 @@
         "7"
       ]
     }
+  },
+  "gui.dungeontrain.perks.bar.engine.active": {
+    "1": {
+      "label": "points put into perks this life",
+      "examples": [
+        "0",
+        "7"
+      ]
+    },
+    "2": {
+      "label": "how many points the unlocked perks can hold",
+      "examples": [
+        "3",
+        "12"
+      ]
+    }
   }
 }
