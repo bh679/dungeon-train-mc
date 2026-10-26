@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.perks;
 
 import games.brennan.dungeontrain.perks.PerkRegistry;
+import games.brennan.dungeontrain.perks.PerkStats;
 import games.brennan.dungeontrain.perks.PerkTree;
 import games.brennan.dungeontrain.perks.PerkUnlocks;
 import net.minecraft.client.gui.Font;
@@ -25,10 +26,11 @@ import java.util.function.Consumer;
 @OnlyIn(Dist.CLIENT)
 final class PerkDetailsBar {
 
-    static final int HEIGHT = 46;
+    static final int HEIGHT = 54;
     private static final int PAD = 8, LINE = 10, BUTTON_W = 34, BUTTON_H = 16, GAP = 4, STRIPE = 3;
     private static final int MIN_LEFT = 90, DOT_W = 8;
     private static final int SEG_H = 5, GRAPH_H = 7;
+    private static final int CHIP_H = 11, CHIP_PAD = 4, CHIP_GAP = 4, CHIP_BG = 0x1B1F36;
     private static final float CLASS_SCALE = 0.75F;
     private static final int CARD_H = 18, CARD_GAP = 3, CARD_ROWS = 2, CARD_PAD = 4, CARD_MIN_W = 40;
     private static final int BLOCK_W = 6, BLOCK_H = 3;
@@ -313,9 +315,12 @@ final class PerkDetailsBar {
         graph = perkGraph(p, snap);
         if (graphW > 0) graph.render(g, font, graphX, graphY, graphW, GRAPH_H, colour, a / 255.0, graphHover, 1F);
 
-        // below: the description, then the per-point line; a refusal takes the last line, in red
+        // below: the description, then the per-point line; a refusal takes the last line, in red;
+        // the perk's key stats as chips along the bottom
         int dy = y + LINE + 2, mw = contentRight - x;
-        int max = (top + HEIGHT - 1 - dy) / LINE;
+        List<PerkStats.Stat> stats = PerkStats.of(p.id());
+        int chipY = top + HEIGHT - 4 - CHIP_H;
+        int max = ((stats.isEmpty() ? top + HEIGHT : chipY) - 1 - dy) / LINE;
         boolean refused = refusalKey != null && p.id().equals(refusedFor) && net.minecraft.Util.getMillis() - refusedAt < REFUSAL_MS;
         int room = refused ? max - 1 : max;
         int shown = 0;
@@ -333,6 +338,36 @@ final class PerkDetailsBar {
             String why = font.plainSubstrByWidth(Component.translatable(refusalKey).getString(), mw);
             g.drawString(font, why, x, dy + (max - 1) * LINE, (a << 24) | 0xFFC9C9, false);
         }
+        if (!stats.isEmpty()) renderStats(g, stats, snap.points(p.id()), x, chipY, contentRight, a);
+    }
+
+    /**
+     * One chip per stat: its name and its value at the perk's points now; with a graph block hovered,
+     * an arrow and the value that block's point would give, in gold.
+     */
+    private void renderStats(GuiGraphics g, List<PerkStats.Stat> stats, int points, int x, int y, int right, int a) {
+        int preview = graphHover >= 0 && graph != null && graphHover < graph.layout(graphW).segments() ? graphHover + 1 : -1;
+        int cx = x;
+        for (PerkStats.Stat s : stats) {
+            String now = Component.translatable("gui.dungeontrain.perks.stat." + s.id()).getString() + " " + statValue(s, points);
+            String then = preview >= 0 && preview != points ? " → " + statValue(s, preview) : "";
+            int w = CHIP_PAD * 2 + font.width(now) + font.width(then);
+            if (cx + w > right) break;
+            g.fill(cx, y, cx + w, y + CHIP_H, ((int) (a * 0.9) << 24) | (CHIP_BG & 0xFFFFFF));
+            int ty = y + (CHIP_H - font.lineHeight) / 2 + 1;
+            g.drawString(font, now, cx + CHIP_PAD, ty, (a << 24) | (SkyPalette.FG & 0xFFFFFF), false);
+            if (!then.isEmpty()) {
+                g.drawString(font, then, cx + CHIP_PAD + font.width(now), ty, (a << 24) | (SkyPalette.GOLD & 0xFFFFFF), false);
+            }
+            cx += w + CHIP_GAP;
+        }
+    }
+
+    /** A stat's value at {@code points}: whole numbers plain, others to one place, in its unit. */
+    private static String statValue(PerkStats.Stat s, int points) {
+        double v = s.at(points);
+        String n = v == Math.rint(v) ? Long.toString((long) v) : String.format(Locale.ROOT, "%.1f", v);
+        return s.unit().isEmpty() ? n : Component.translatable("gui.dungeontrain.perks.stat.unit." + s.unit(), n).getString();
     }
 
     /** A perk's points, its empty room, and one dark block for the next unlock. */

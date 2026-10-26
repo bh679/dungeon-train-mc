@@ -17801,5 +17801,14 @@
         "12"
       ]
     }
+  },
+  "gui.dungeontrain.perks.stat.unit.seconds": {
+    "1": {
+      "label": "a number of seconds",
+      "examples": [
+        "2",
+        "4.5"
+      ]
+    }
   }
 }
