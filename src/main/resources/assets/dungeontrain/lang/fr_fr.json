@@ -1438,7 +1438,7 @@
   "gui.dungeontrain.rewards.replays_kept.amount": "$80 AUD",
   "gui.dungeontrain.rewards.replays_kept.amount_short": "$80",
   "gui.dungeontrain.rewards.live_translation.name": "Traductions en direct",
-  "gui.dungeontrain.rewards.live_translation.line": "Chat en direct traduit dans la langue de chaque spectateur pendant 2 mois",
+  "gui.dungeontrain.rewards.live_translation.line": "Chat en direct traduit dans la langue de chaque spectateur pendant 1 mois",
   "gui.dungeontrain.rewards.live_translation.amount": "90 $ AUD",
   "gui.dungeontrain.rewards.live_translation.amount_short": "90 $",
   "gui.dungeontrain.rewards.status.on_by": "ACTIF jusqu'au %s · grâce à %s",

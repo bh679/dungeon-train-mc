@@ -60,8 +60,8 @@ class CommunityRewardsTest {
     void queuedGiftsStartOneTermApartAtThatRewardsLength() {
         long until = NOW + 5 * DAY;
         assertEquals(until, CommunityRewards.queuedStartMs(until, CommunityRewards.Reward.LIVE_TRANSLATION, 0));
-        // Live Translations runs 2 months a gift: the second queued giver starts 2 months after the first.
-        assertEquals(until + 2 * CommunityRewards.MONTH_MS,
+        // Every reward runs a month a gift today (Live Translations included): queued givers a month apart.
+        assertEquals(until + CommunityRewards.MONTH_MS,
                 CommunityRewards.queuedStartMs(until, CommunityRewards.Reward.LIVE_TRANSLATION, 1));
         assertEquals(until + CommunityRewards.MONTH_MS,
                 CommunityRewards.queuedStartMs(until, CommunityRewards.Reward.QUICKER_STREAMS, 1));
@@ -81,7 +81,7 @@ class CommunityRewardsTest {
         assertEquals("reward_replays_kept", CommunityRewards.Reward.REPLAYS_KEPT.analyticsTarget());
         assertEquals(CommunityRewards.Reward.LIVE_TRANSLATION, CommunityRewards.Reward.byTarget("reward_live_translation"));
         assertEquals(90, CommunityRewards.Reward.LIVE_TRANSLATION.costAud());
-        assertEquals(2, CommunityRewards.Reward.LIVE_TRANSLATION.months());
+        assertEquals(1, CommunityRewards.Reward.LIVE_TRANSLATION.months());
         assertEquals(1, CommunityRewards.Reward.QUICKER_STREAMS.months());
         assertEquals(CommunityRewards.Reward.HD_STREAMS, CommunityRewards.Reward.byTarget("reward_hd_streams"));
         assertNull(CommunityRewards.Reward.byTarget("donate_big_fan"));
@@ -112,9 +112,9 @@ class CommunityRewardsTest {
     }
 
     @Test
-    void aTwoMonthRewardQueuesTwoMonthsPerGiftBehindIt() {
+    void liveTranslationQueuesOneMonthPerGiftBehindIt() {
         LiveRewards state = new LiveRewards(List.of(on(LiveRewards.LIVE_TRANSLATION, 10 * DAY, "Moth", "Ash", "Wren")));
-        assertEquals(NOW + 10 * DAY + 2 * 2 * CommunityRewards.MONTH_MS,
+        assertEquals(NOW + 10 * DAY + 2 * CommunityRewards.MONTH_MS,
                 CommunityRewards.nextFreeMs(state, CommunityRewards.Reward.LIVE_TRANSLATION, NOW));
     }
 }

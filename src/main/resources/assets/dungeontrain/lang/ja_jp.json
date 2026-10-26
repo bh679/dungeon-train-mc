@@ -1393,7 +1393,7 @@
   "gui.dungeontrain.rewards.replays_kept.amount": "$80 AUD",
   "gui.dungeontrain.rewards.replays_kept.amount_short": "$80",
   "gui.dungeontrain.rewards.live_translation.name": "ライブ翻訳",
-  "gui.dungeontrain.rewards.live_translation.line": "ライブチャットを各視聴者の言語に翻訳、2か月間",
+  "gui.dungeontrain.rewards.live_translation.line": "ライブチャットを各視聴者の言語に翻訳、1か月間",
   "gui.dungeontrain.rewards.live_translation.amount": "$90 AUD",
   "gui.dungeontrain.rewards.live_translation.amount_short": "$90",
   "gui.dungeontrain.rewards.status.on_by": "%sまで有効 · 寄付: %s",

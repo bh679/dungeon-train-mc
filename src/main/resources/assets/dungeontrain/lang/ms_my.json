@@ -1393,7 +1393,7 @@
   "gui.dungeontrain.rewards.replays_kept.amount": "$80 AUD",
   "gui.dungeontrain.rewards.replays_kept.amount_short": "$80",
   "gui.dungeontrain.rewards.live_translation.name": "Terjemahan Langsung",
-  "gui.dungeontrain.rewards.live_translation.line": "Sembang langsung diterjemahkan ke bahasa setiap penonton selama 2 bulan",
+  "gui.dungeontrain.rewards.live_translation.line": "Sembang langsung diterjemahkan ke bahasa setiap penonton selama 1 bulan",
   "gui.dungeontrain.rewards.live_translation.amount": "$90 AUD",
   "gui.dungeontrain.rewards.live_translation.amount_short": "$90",
   "gui.dungeontrain.rewards.status.on_by": "HIDUP hingga %s · dikekalkan oleh %s",

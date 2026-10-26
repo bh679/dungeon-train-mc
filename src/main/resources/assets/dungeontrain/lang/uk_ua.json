@@ -1665,7 +1665,7 @@
   "gui.dungeontrain.rewards.replays_kept.amount": "$80 AUD",
   "gui.dungeontrain.rewards.replays_kept.amount_short": "$80",
   "gui.dungeontrain.rewards.live_translation.name": "Живий переклад",
-  "gui.dungeontrain.rewards.live_translation.line": "Чат ефіру перекладається мовою кожного глядача, 2 місяці",
+  "gui.dungeontrain.rewards.live_translation.line": "Чат ефіру перекладається мовою кожного глядача, на 1 місяць",
   "gui.dungeontrain.rewards.live_translation.amount": "90 $ AUD",
   "gui.dungeontrain.rewards.live_translation.amount_short": "90 $",
   "gui.dungeontrain.rewards.status.on_by": "УВІМК. до %s · завдяки %s",
