@@ -5624,6 +5624,7 @@
   "gui.dungeontrain.perks.ap.one": "%s Advancement Point",
   "gui.dungeontrain.perks.ap.other": "%s Advancement Points",
   "gui.dungeontrain.perks.classes": "Classes",
+  "gui.dungeontrain.perks.classes.hide": "Hide class",
   "gui.dungeontrain.perks.card.start": "Start",
   "gui.dungeontrain.perks.card.always_active": "Always active.",
   "gui.dungeontrain.perks.card.locked": "Locked. Tier %s. Unlocking costs %s.",

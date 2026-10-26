@@ -5691,6 +5691,7 @@
   "gui.dungeontrain.perks.ap.few": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
   "gui.dungeontrain.perks.ap.other": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "3fb28742ea7fa730"},
   "gui.dungeontrain.perks.classes": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "84637286c5b731d7"},
+  "gui.dungeontrain.perks.classes.hide": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "94dfc4b21751c6af"},
   "gui.dungeontrain.perks.card.start": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "e4bb9f1ece9af926"},
   "gui.dungeontrain.perks.card.always_active": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "5a19961af34f55ae"},
   "gui.dungeontrain.perks.card.locked": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "62d974431e595211"},

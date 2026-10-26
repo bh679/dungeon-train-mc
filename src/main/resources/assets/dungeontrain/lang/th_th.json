@@ -5563,6 +5563,7 @@
   "gui.dungeontrain.perks.refused.gate_short": "ใช้แต้มปลดล็อกเพิ่มเพื่อเพิ่มขีดจำกัด",
   "gui.dungeontrain.perks.ap.other": "แต้มความก้าวหน้า %s",
   "gui.dungeontrain.perks.classes": "คลาส",
+  "gui.dungeontrain.perks.classes.hide": "ซ่อนคลาส",
   "gui.dungeontrain.perks.card.start": "จุดเริ่มต้น",
   "gui.dungeontrain.perks.card.always_active": "ใช้งานตลอด",
   "gui.dungeontrain.perks.card.locked": "ล็อกอยู่ ระดับ %s ปลดล็อกราคา %s",

@@ -5563,6 +5563,7 @@
   "gui.dungeontrain.perks.refused.gate_short": "Gumastos pa sa pag-unlock para itaas ang limit nito.",
   "gui.dungeontrain.perks.ap.other": "%s Advancement Points",
   "gui.dungeontrain.perks.classes": "Mga Class",
+  "gui.dungeontrain.perks.classes.hide": "Itago ang klase",
   "gui.dungeontrain.perks.card.start": "Simula",
   "gui.dungeontrain.perks.card.always_active": "Laging aktibo.",
   "gui.dungeontrain.perks.card.locked": "Naka-lock. Tier %s. Ang pag-unlock ay nagkakahalaga ng %s.",

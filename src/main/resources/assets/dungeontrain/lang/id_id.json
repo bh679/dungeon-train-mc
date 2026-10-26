@@ -5563,6 +5563,7 @@
   "gui.dungeontrain.perks.refused.gate_short": "Belanjakan lebih banyak untuk membuka agar batasnya naik.",
   "gui.dungeontrain.perks.ap.other": "%s Poin Kemajuan",
   "gui.dungeontrain.perks.classes": "Kelas",
+  "gui.dungeontrain.perks.classes.hide": "Sembunyikan kelas",
   "gui.dungeontrain.perks.card.start": "Awal",
   "gui.dungeontrain.perks.card.always_active": "Selalu aktif.",
   "gui.dungeontrain.perks.card.locked": "Terkunci. Tingkat %s. Membuka butuh %s.",

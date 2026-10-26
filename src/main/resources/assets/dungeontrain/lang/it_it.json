@@ -5627,6 +5627,7 @@
   "gui.dungeontrain.perks.ap.one": "%s punto progresso",
   "gui.dungeontrain.perks.ap.other": "%s punti progresso",
   "gui.dungeontrain.perks.classes": "Classi",
+  "gui.dungeontrain.perks.classes.hide": "Nascondi classe",
   "gui.dungeontrain.perks.card.start": "Inizio",
   "gui.dungeontrain.perks.card.always_active": "Sempre attivo.",
   "gui.dungeontrain.perks.card.locked": "Bloccato. Livello %s. Sbloccare costa %s.",

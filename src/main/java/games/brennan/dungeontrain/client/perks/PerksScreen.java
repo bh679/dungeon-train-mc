@@ -90,6 +90,11 @@ public final class PerksScreen extends Screen {
     private boolean dragging;
     private double dragMoved;
     private long lastSkyClickAt;
+    /** The class clicked in the Classes list to stay in the bar, as a hover would; null when none. */
+    private String selectedClass;
+    private String lastStarClick;
+    private long lastStarClickAt;
+    private String eyeHover;
     private long spentAt;
     private boolean firstSnapshot = true;
 
@@ -282,14 +287,18 @@ public final class PerksScreen extends Screen {
         int listLeft = classesList.layout(width);
         int countersTop = counters.layout(width, skyH(), snap.unlockPoints(), snap.activePoints());
         String listHover = classesList.classAt(mouseX, mouseY);
+        eyeHover = classesList.eyeAt(mouseX, mouseY, off);
+        if (selectedClass != null && off.contains(selectedClass)) selectedClass = null;
         zoomHover = zoomControl.at(mouseX, mouseY);
-        glow = listHover;
         preview = listHover != null && off.contains(listHover) ? listHover : null;
 
         vis = new ClassVisibility(tree, off, preview, snap.unlocks(), snap.active(), snap.unlockPoints());
         drawn = tree.withPositions(layout.positions(tree, vis, now));
-        hovered = card.contains(mouseX, mouseY) || listHover != null ? null : starAt(mouseX, mouseY);
-        if (DETAILS == DetailsMode.BAR) updateBar(snap, listHover);
+        hovered = card.contains(mouseX, mouseY) || listHover != null || eyeHover != null ? null : starAt(mouseX, mouseY);
+        // a hovered class shows, else a hovered star, else the class clicked to stay
+        String classShown = listHover != null ? listHover : hovered == null ? selectedClass : null;
+        glow = classShown;
+        if (DETAILS == DetailsMode.BAR) updateBar(snap, classShown);
         else updateCard(snap, now, mouseX, mouseY, listLeft, countersTop);
 
         g.fill(0, 0, width, height, SkyPalette.BG);
@@ -333,7 +342,7 @@ public final class PerksScreen extends Screen {
         renderHeader(g, snap, now, fade);
         String marked = selected == null ? null : tree.perk(selected).map(PerkTree.Perk::cls).orElse(null);
         String hoverMarked = hovered == null ? null : tree.perk(hovered).map(PerkTree.Perk::cls).orElse(null);
-        classesList.render(g, off, listHover, marked, hoverMarked, fade);
+        classesList.render(g, off, listHover, selectedClass != null ? selectedClass : marked, hoverMarked, eyeHover, fade);
         counters.render(g, snap.unlockPoints(), snap.activePoints(), now, fade);
         g.flush(); // titles and names are batched: push them out so the card paints over them
         if (DETAILS == DetailsMode.BAR) {
@@ -345,6 +354,7 @@ public final class PerksScreen extends Screen {
         super.render(g, mouseX, mouseY, partialTick);
 
         if (zoomHover >= 0) g.renderTooltip(font, ZoomControl.tooltip(zoomHover), mouseX, mouseY);
+        if (eyeHover != null) g.renderTooltip(font, ClassesList.hideTooltip(), mouseX, mouseY);
         PerkCounters.Kind counter = counters.at(mouseX, mouseY);
         if (counter != null) g.renderComponentTooltip(font, PerkCounters.tooltip(counter), mouseX, mouseY);
     }
@@ -511,7 +521,8 @@ public final class PerksScreen extends Screen {
             return true;
         }
         if (DETAILS == DetailsMode.BAR && bar.contains(mx, my)) return true;
-        if (card.contains(mx, my) || classesList.classAt(mx, my) != null || counters.at(mx, my) != null) return true;
+        if (card.contains(mx, my) || classesList.classAt(mx, my) != null || classesList.eyeAt(mx, my, off) != null
+            || counters.at(mx, my) != null) return true;
         if (button == 0 || button == 2) {
             dragging = true;
             dragMoved = 0;
@@ -524,16 +535,26 @@ public final class PerksScreen extends Screen {
         if (super.mouseReleased(mx, my, button)) return true;
         boolean wasDrag = dragging && dragMoved > 3;
         dragging = false;
-        // right-click a star: put a point in it, or unlock it when locked or full
+        // right-click a star: unlock it (again, once full)
         if (button == 1 && !(DETAILS == DetailsMode.BAR && bar.contains(mx, my))) {
             String id = starAt(mx, my);
-            if (id != null) tree.perk(id).ifPresent(this::act);
+            if (id != null) tree.perk(id).ifPresent(this::unlockAction);
             return true;
         }
         if (button != 0 || wasDrag || my < SkyView.HEADER) return true;
+        String eye = classesList.eyeAt(mx, my, off);
+        if (eye != null) {
+            setOff(with(off, eye));
+            if (eye.equals(selectedClass)) selectedClass = null;
+            play(SoundEvents.UI_BUTTON_CLICK.value(), 0.3F, 1.0F);
+            return true;
+        }
+        // a hidden class: show it; a shown one: keep it in the bar (click again to let go)
         String cls = classesList.classAt(mx, my);
         if (cls != null) {
-            setOff(off.contains(cls) ? without(off, cls) : with(off, cls));
+            if (off.contains(cls)) setOff(without(off, cls));
+            selectedClass = cls.equals(selectedClass) && !off.contains(cls) ? null : cls;
+            selected = null;
             play(SoundEvents.UI_BUTTON_CLICK.value(), 0.3F, 1.0F);
             return true;
         }
@@ -550,13 +571,19 @@ public final class PerksScreen extends Screen {
         long now = Util.getMillis();
         if (id != null) {
             selected = id;
-            // the bar: a click keeps the star in it; the cards: a click acts
+            selectedClass = null;
+            boolean twice = id.equals(lastStarClick) && now - lastStarClickAt < DOUBLE_CLICK_MS;
+            lastStarClick = twice ? null : id;
+            lastStarClickAt = now;
+            // the bar: a click keeps the star in it, a double click puts a point in it; the cards: a click acts
             if (DETAILS != DetailsMode.BAR) tree.perk(id).ifPresent(this::act);
+            else if (twice) tree.perk(id).ifPresent(this::activateAction);
             else play(SoundEvents.UI_BUTTON_CLICK.value(), 0.3F, 1.0F);
         } else {
             if (now - lastSkyClickAt < DOUBLE_CLICK_MS) view = SkyView.fit(width, skyH());
             lastSkyClickAt = now;
             selected = null;
+            selectedClass = null;
         }
         return true;
     }

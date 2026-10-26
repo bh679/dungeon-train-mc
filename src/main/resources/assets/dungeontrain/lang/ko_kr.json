@@ -5563,6 +5563,7 @@
   "gui.dungeontrain.perks.refused.gate_short": "한도를 올리려면 해금에 더 쓰세요.",
   "gui.dungeontrain.perks.ap.other": "발전 과제 포인트 %s",
   "gui.dungeontrain.perks.classes": "클래스",
+  "gui.dungeontrain.perks.classes.hide": "클래스 숨기기",
   "gui.dungeontrain.perks.card.start": "시작",
   "gui.dungeontrain.perks.card.always_active": "항상 활성.",
   "gui.dungeontrain.perks.card.locked": "잠김. %s단계. 해금 비용 %s.",

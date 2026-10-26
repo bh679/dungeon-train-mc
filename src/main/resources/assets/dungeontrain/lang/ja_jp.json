@@ -5563,6 +5563,7 @@
   "gui.dungeontrain.perks.refused.gate_short": "上限を上げるには解放にもっとポイントを使ってください。",
   "gui.dungeontrain.perks.ap.other": "進捗ポイント %s",
   "gui.dungeontrain.perks.classes": "クラス",
+  "gui.dungeontrain.perks.classes.hide": "クラスを隠す",
   "gui.dungeontrain.perks.card.start": "スタート",
   "gui.dungeontrain.perks.card.always_active": "常時有効。",
   "gui.dungeontrain.perks.card.locked": "ロック中。ティア%s。解放コスト%s。",

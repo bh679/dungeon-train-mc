@@ -5627,6 +5627,7 @@
   "gui.dungeontrain.perks.ap.one": "%s Fortschrittspunkt",
   "gui.dungeontrain.perks.ap.other": "%s Fortschrittspunkte",
   "gui.dungeontrain.perks.classes": "Klassen",
+  "gui.dungeontrain.perks.classes.hide": "Klasse ausblenden",
   "gui.dungeontrain.perks.card.start": "Start",
   "gui.dungeontrain.perks.card.always_active": "Immer aktiv.",
   "gui.dungeontrain.perks.card.locked": "Gesperrt. Stufe %s. Freischalten kostet %s.",

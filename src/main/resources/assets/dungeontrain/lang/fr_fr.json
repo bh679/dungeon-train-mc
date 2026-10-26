@@ -5627,6 +5627,7 @@
   "gui.dungeontrain.perks.ap.one": "%s point de progrès",
   "gui.dungeontrain.perks.ap.other": "%s points de progrès",
   "gui.dungeontrain.perks.classes": "Classes",
+  "gui.dungeontrain.perks.classes.hide": "Masquer la classe",
   "gui.dungeontrain.perks.card.start": "Départ",
   "gui.dungeontrain.perks.card.always_active": "Toujours actif.",
   "gui.dungeontrain.perks.card.locked": "Verrouillé. Palier %s. Le déblocage coûte %s.",

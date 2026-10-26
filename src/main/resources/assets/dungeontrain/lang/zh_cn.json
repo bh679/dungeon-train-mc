@@ -5577,6 +5577,7 @@
   "gui.dungeontrain.perks.refused.gate_short": "在解锁上花费更多点数以提高上限。",
   "gui.dungeontrain.perks.ap.other": "%s 进度点数",
   "gui.dungeontrain.perks.classes": "职业",
+  "gui.dungeontrain.perks.classes.hide": "隐藏职业",
   "gui.dungeontrain.perks.card.start": "起点",
   "gui.dungeontrain.perks.card.always_active": "始终激活。",
   "gui.dungeontrain.perks.card.locked": "未解锁。第%s阶。解锁花费%s。",

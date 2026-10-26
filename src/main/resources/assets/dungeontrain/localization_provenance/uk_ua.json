@@ -5546,6 +5546,7 @@
       "gui.dungeontrain.perks.ap.few",
       "gui.dungeontrain.perks.ap.many",
       "gui.dungeontrain.perks.classes",
+      "gui.dungeontrain.perks.classes.hide",
       "gui.dungeontrain.perks.card.start",
       "gui.dungeontrain.perks.card.always_active",
       "gui.dungeontrain.perks.card.locked",

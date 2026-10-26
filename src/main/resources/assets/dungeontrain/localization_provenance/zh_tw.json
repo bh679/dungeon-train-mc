@@ -5567,6 +5567,7 @@
       "gui.dungeontrain.perks.refused.gate_short",
       "gui.dungeontrain.perks.ap.other",
       "gui.dungeontrain.perks.classes",
+      "gui.dungeontrain.perks.classes.hide",
       "gui.dungeontrain.perks.card.start",
       "gui.dungeontrain.perks.card.always_active",
       "gui.dungeontrain.perks.card.locked",
