@@ -393,9 +393,12 @@ public final class PerksScreen extends Screen {
         List<NameLayout.Want> wants = new java.util.ArrayList<>();
         // a class hovered in the list: only its perks are named, and every one of them is
         boolean classHover = glow != null;
+        // fully zoomed out: no names by default, only the hovered or kept star and a hovered class
+        boolean zoomedOut = view.step(width, skyH()) == 0;
         visible.stream()
             .filter(p -> !p.isRoot())
             .filter(p -> !classHover || glow.equals(p.cls()))
+            .filter(p -> !zoomedOut || rank.applyAsInt(p) <= 2)
             // every visible star asks for its name; the layout fits as many as there is room for, most
             // important first (kept, hovered, glowing, the focus's neighbours, unlocked, then nearest the Engine)
             .sorted(java.util.Comparator.comparingInt((PerkTree.Perk p) -> rank.applyAsInt(p) <= 2 ? rank.applyAsInt(p)
