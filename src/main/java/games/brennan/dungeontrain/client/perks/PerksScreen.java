@@ -211,8 +211,11 @@ public final class PerksScreen extends Screen {
     private void refused(String perkId, String reasonKey) {
         long now = Util.getMillis();
         card.refused(perkId, reasonKey, now);
+        bar.refused(perkId, reasonKey, now);
         if (reasonKey.endsWith(".no_active")) counters.shake(PerkCounters.Kind.ACTIVE, now);
-        else if (reasonKey.endsWith(".points") || reasonKey.endsWith(".gate")) counters.shake(PerkCounters.Kind.UNLOCK, now);
+        else if (reasonKey.endsWith(".points") || reasonKey.endsWith(".gate") || reasonKey.endsWith(".gate_short")) {
+            counters.shake(PerkCounters.Kind.UNLOCK, now);
+        }
         play(SoundEvents.UI_BUTTON_CLICK.value(), 0.5F, 0.6F);
     }
 
@@ -235,14 +238,21 @@ public final class PerksScreen extends Screen {
         long now = Util.getMillis();
         PerkRegistry.bootstrap();
         if (!PerkRegistry.isKnown(p.id())) {
-            card.refused(p.id(), "gui.dungeontrain.perks.refused.not_built", now);
+            refused(p.id(), "gui.dungeontrain.perks.refused.not_built");
             return;
         }
         int level = s.unlockLevel(p.id());
-        if (level <= 0 && !tree.reachable(p.id(), s::isUnlocked)) return;
+        if (level <= 0 && !tree.reachable(p.id(), s::isUnlocked)) {
+            refused(p.id(), "gui.dungeontrain.perks.card.needs_path");
+            return;
+        }
         if (level > 0 && s.points(p.id()) < level) return;
-        if (s.unlockPoints() < p.unlockCost() || !PerkUnlocks.allowed(level + 1, s.unlockSpent(tree))) {
-            counters.shake(PerkCounters.Kind.UNLOCK, now);
+        if (!PerkUnlocks.allowed(level + 1, s.unlockSpent(tree))) {
+            refused(p.id(), "gui.dungeontrain.perks.refused.gate_short");
+            return;
+        }
+        if (s.unlockPoints() < p.unlockCost()) {
+            refused(p.id(), "gui.dungeontrain.perks.refused.points");
             return;
         }
         DungeonTrainNet.sendToServer(new PerkUnlockPacket(p.id()));
@@ -255,7 +265,7 @@ public final class PerksScreen extends Screen {
         int level = s.unlockLevel(p.id());
         if (level <= 0 || s.points(p.id()) >= level) return;
         if (!s.canAffordRank()) {
-            counters.shake(PerkCounters.Kind.ACTIVE, Util.getMillis());
+            refused(p.id(), "gui.dungeontrain.perks.refused.no_active");
             return;
         }
         DungeonTrainNet.sendToServer(new PerkSpendPacket(p.id()));

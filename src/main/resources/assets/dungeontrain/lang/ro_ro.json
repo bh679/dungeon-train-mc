@@ -5684,6 +5684,7 @@
   "gui.dungeontrain.perks.raise_limit": "Crește limita (%s)",
   "gui.dungeontrain.perks.points_of": "Activ. %s din %s puncte.",
   "gui.dungeontrain.perks.refused.gate": "Cheltuie %s puncte de progres ca să ridici un atu peste %s.",
+  "gui.dungeontrain.perks.refused.gate_short": "Cheltuiește mai mult pe deblocări ca să-i crești limita.",
   "gui.dungeontrain.perks.ap.one": "%s punct de progres",
   "gui.dungeontrain.perks.ap.few": "%s puncte de progres",
   "gui.dungeontrain.perks.ap.other": "%s de puncte de progres",

@@ -5558,6 +5558,7 @@
   "gui.dungeontrain.perks.raise_limit": "Itaas ang limit (%s)",
   "gui.dungeontrain.perks.points_of": "Aktibo. %s sa %s point.",
   "gui.dungeontrain.perks.refused.gate": "Gumastos ng %s Advancement Point para itaas ang perk lampas %s.",
+  "gui.dungeontrain.perks.refused.gate_short": "Gumastos pa sa pag-unlock para itaas ang limit nito.",
   "gui.dungeontrain.perks.ap.other": "%s Advancement Points",
   "gui.dungeontrain.perks.classes": "Mga Class",
   "gui.dungeontrain.perks.card.start": "Simula",

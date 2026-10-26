@@ -5558,6 +5558,7 @@
   "gui.dungeontrain.perks.raise_limit": "Naikkan batas (%s)",
   "gui.dungeontrain.perks.points_of": "Aktif. %s dari %s poin.",
   "gui.dungeontrain.perks.refused.gate": "Gunakan %s Poin Kemajuan untuk menaikkan perk melewati %s.",
+  "gui.dungeontrain.perks.refused.gate_short": "Belanjakan lebih banyak untuk membuka agar batasnya naik.",
   "gui.dungeontrain.perks.ap.other": "%s Poin Kemajuan",
   "gui.dungeontrain.perks.classes": "Kelas",
   "gui.dungeontrain.perks.card.start": "Awal",

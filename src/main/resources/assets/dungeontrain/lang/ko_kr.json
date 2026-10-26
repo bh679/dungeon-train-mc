@@ -5558,6 +5558,7 @@
   "gui.dungeontrain.perks.raise_limit": "한도 올리기 (%s)",
   "gui.dungeontrain.perks.points_of": "활성. %s / %s 포인트.",
   "gui.dungeontrain.perks.refused.gate": "발전 과제 포인트를 %s 쓰면 퍽을 %s 넘게 올릴 수 있습니다.",
+  "gui.dungeontrain.perks.refused.gate_short": "한도를 올리려면 해금에 더 쓰세요.",
   "gui.dungeontrain.perks.ap.other": "발전 과제 포인트 %s",
   "gui.dungeontrain.perks.classes": "클래스",
   "gui.dungeontrain.perks.card.start": "시작",

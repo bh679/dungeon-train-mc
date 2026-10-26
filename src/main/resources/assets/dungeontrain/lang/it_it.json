@@ -5621,6 +5621,7 @@
   "gui.dungeontrain.perks.raise_limit": "Alza limite (%s)",
   "gui.dungeontrain.perks.points_of": "Attivo. %s su %s punti.",
   "gui.dungeontrain.perks.refused.gate": "Spendi %s punti progresso per portare un talento oltre %s.",
+  "gui.dungeontrain.perks.refused.gate_short": "Spendi di più negli sblocchi per alzarne il limite.",
   "gui.dungeontrain.perks.ap.one": "%s punto progresso",
   "gui.dungeontrain.perks.ap.other": "%s punti progresso",
   "gui.dungeontrain.perks.classes": "Classi",

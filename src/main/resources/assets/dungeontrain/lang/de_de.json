@@ -5621,6 +5621,7 @@
   "gui.dungeontrain.perks.raise_limit": "Limit erhöhen (%s)",
   "gui.dungeontrain.perks.points_of": "Aktiv. %s von %s Punkten.",
   "gui.dungeontrain.perks.refused.gate": "Gib %s Fortschrittspunkte aus, um einen Perk über %s zu heben.",
+  "gui.dungeontrain.perks.refused.gate_short": "Gib mehr für Freischaltungen aus, um sein Limit zu erhöhen.",
   "gui.dungeontrain.perks.ap.one": "%s Fortschrittspunkt",
   "gui.dungeontrain.perks.ap.other": "%s Fortschrittspunkte",
   "gui.dungeontrain.perks.classes": "Klassen",

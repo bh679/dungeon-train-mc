@@ -5558,6 +5558,7 @@
   "gui.dungeontrain.perks.raise_limit": "เพิ่มขีดจำกัด (%s)",
   "gui.dungeontrain.perks.points_of": "ใช้งาน %s จาก %s แต้ม",
   "gui.dungeontrain.perks.refused.gate": "ใช้แต้มความก้าวหน้า %s แต้มเพื่อเพิ่มเพิร์กเกิน %s",
+  "gui.dungeontrain.perks.refused.gate_short": "ใช้แต้มปลดล็อกเพิ่มเพื่อเพิ่มขีดจำกัด",
   "gui.dungeontrain.perks.ap.other": "แต้มความก้าวหน้า %s",
   "gui.dungeontrain.perks.classes": "คลาส",
   "gui.dungeontrain.perks.card.start": "จุดเริ่มต้น",

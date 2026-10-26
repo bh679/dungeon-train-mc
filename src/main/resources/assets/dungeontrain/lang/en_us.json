@@ -5618,6 +5618,7 @@
   "gui.dungeontrain.perks.raise_limit": "Raise limit (%s)",
   "gui.dungeontrain.perks.points_of": "Active. %s of %s points.",
   "gui.dungeontrain.perks.refused.gate": "Spend %s Advancement Points to raise a perk past %s.",
+  "gui.dungeontrain.perks.refused.gate_short": "Spend more on unlocks to raise its limit.",
   "gui.dungeontrain.perks.ap.one": "%s Advancement Point",
   "gui.dungeontrain.perks.ap.other": "%s Advancement Points",
   "gui.dungeontrain.perks.classes": "Classes",

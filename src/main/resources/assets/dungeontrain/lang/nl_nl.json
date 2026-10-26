@@ -5621,6 +5621,7 @@
   "gui.dungeontrain.perks.raise_limit": "Limiet verhogen (%s)",
   "gui.dungeontrain.perks.points_of": "Actief. %s van %s punten.",
   "gui.dungeontrain.perks.refused.gate": "Geef %s vooruitgangspunten uit om een perk boven %s te brengen.",
+  "gui.dungeontrain.perks.refused.gate_short": "Besteed meer aan ontgrendelingen om de limiet te verhogen.",
   "gui.dungeontrain.perks.ap.one": "%s vooruitgangspunt",
   "gui.dungeontrain.perks.ap.other": "%s vooruitgangspunten",
   "gui.dungeontrain.perks.classes": "Klassen",

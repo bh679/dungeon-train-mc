@@ -5558,6 +5558,7 @@
   "gui.dungeontrain.perks.raise_limit": "Naikkan had (%s)",
   "gui.dungeontrain.perks.points_of": "Aktif. %s daripada %s mata.",
   "gui.dungeontrain.perks.refused.gate": "Belanjakan %s Mata Kemajuan untuk menaikkan perk melepasi %s.",
+  "gui.dungeontrain.perks.refused.gate_short": "Belanjakan lebih banyak untuk buka kunci bagi menaikkan hadnya.",
   "gui.dungeontrain.perks.ap.other": "%s Mata Kemajuan",
   "gui.dungeontrain.perks.classes": "Kelas",
   "gui.dungeontrain.perks.card.start": "Mula",

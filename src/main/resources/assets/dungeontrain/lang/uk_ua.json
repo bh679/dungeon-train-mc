@@ -5681,6 +5681,7 @@
   "gui.dungeontrain.perks.raise_limit": "Підняти межу (%s)",
   "gui.dungeontrain.perks.points_of": "Активно. %s з %s очок.",
   "gui.dungeontrain.perks.refused.gate": "Витрать %s очок досягнень, щоб підняти навичку вище %s.",
+  "gui.dungeontrain.perks.refused.gate_short": "Витратьте більше на розблокування, щоб підняти межу.",
   "gui.dungeontrain.perks.ap.one": "%s очко досягнень",
   "gui.dungeontrain.perks.ap.few": "%s очка досягнень",
   "gui.dungeontrain.perks.ap.many": "%s очок досягнень",

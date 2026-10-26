@@ -5558,6 +5558,7 @@
   "gui.dungeontrain.perks.raise_limit": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "887f5c7c037f593c"},
   "gui.dungeontrain.perks.points_of": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "1aadb4eb3e46b8c4"},
   "gui.dungeontrain.perks.refused.gate": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "d237f3015c430138"},
+  "gui.dungeontrain.perks.refused.gate_short": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "f47d95b1450dc773"},
   "gui.dungeontrain.perks.ap.other": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "3fb28742ea7fa730"},
   "gui.dungeontrain.perks.classes": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "84637286c5b731d7"},
   "gui.dungeontrain.perks.card.start": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "e4bb9f1ece9af926"},

@@ -44,6 +44,10 @@ final class PerkDetailsBar {
     private PerkTree.Perk perk;
     private boolean locked;
     private String classShown;
+    private String refusalKey;
+    private String refusedFor;
+    private long refusedAt;
+    private static final long REFUSAL_MS = 2000;
     private Button unlockButton;
     private Button activateButton;
     private String builtFor = "";
@@ -59,6 +63,13 @@ final class PerkDetailsBar {
     /** The screen re-initialised and dropped its widgets: rebuild the buttons on the next update. */
     void invalidate() {
         builtFor = "";
+    }
+
+    /** Show why an action on {@code perkId} was refused, in place of its status line, for a moment. */
+    void refused(String perkId, String key, long now) {
+        refusedFor = perkId;
+        refusalKey = key;
+        refusedAt = now;
     }
 
     int top() {
@@ -232,10 +243,12 @@ final class PerkDetailsBar {
         int right = width - PAD;
         List<Component> lines = text.testLines(p, snap);
         int statusW = 0;
-        if (!lines.isEmpty()) {
-            String status = font.plainSubstrByWidth(lines.get(0).getString(), Math.max(rightW, width / 3));
+        boolean refused = refusalKey != null && p.id().equals(refusedFor) && net.minecraft.Util.getMillis() - refusedAt < REFUSAL_MS;
+        if (refused || !lines.isEmpty()) {
+            String status = font.plainSubstrByWidth(refused ? Component.translatable(refusalKey).getString() : lines.get(0).getString(),
+                Math.max(rightW, width / 3));
             statusW = font.width(status);
-            g.drawString(font, status, right - statusW, y, (a << 24) | (SkyPalette.FG & 0xFFFFFF), false);
+            g.drawString(font, status, right - statusW, y, (a << 24) | ((refused ? 0xFFFFC9C9 : SkyPalette.FG) & 0xFFFFFF), false);
         }
         if (lines.size() > 1 && p.isRoot()) {
             String hint = font.plainSubstrByWidth(lines.get(1).getString(), Math.max(rightW, width / 3));

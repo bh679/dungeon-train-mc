@@ -5684,6 +5684,7 @@
   "gui.dungeontrain.perks.raise_limit": "Поднять предел (%s)",
   "gui.dungeontrain.perks.points_of": "Активно. %s из %s очков.",
   "gui.dungeontrain.perks.refused.gate": "Потрать %s очков достижений, чтобы поднять навык выше %s.",
+  "gui.dungeontrain.perks.refused.gate_short": "Потратьте больше на разблокировки, чтобы поднять предел.",
   "gui.dungeontrain.perks.ap.one": "%s очко достижений",
   "gui.dungeontrain.perks.ap.few": "%s очка достижений",
   "gui.dungeontrain.perks.ap.many": "%s очков достижений",

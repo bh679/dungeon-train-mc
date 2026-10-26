@@ -5558,6 +5558,7 @@
   "gui.dungeontrain.perks.raise_limit": "Nâng giới hạn (%s)",
   "gui.dungeontrain.perks.points_of": "Đang dùng. %s trên %s điểm.",
   "gui.dungeontrain.perks.refused.gate": "Dùng %s điểm tiến trình để nâng kỹ năng vượt %s.",
+  "gui.dungeontrain.perks.refused.gate_short": "Chi thêm cho việc mở khóa để nâng giới hạn.",
   "gui.dungeontrain.perks.ap.other": "%s điểm tiến trình",
   "gui.dungeontrain.perks.classes": "Lớp",
   "gui.dungeontrain.perks.card.start": "Khởi đầu",

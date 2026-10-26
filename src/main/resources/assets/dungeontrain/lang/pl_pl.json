@@ -5684,6 +5684,7 @@
   "gui.dungeontrain.perks.raise_limit": "Podnieś limit (%s)",
   "gui.dungeontrain.perks.points_of": "Aktywny. %s z %s punktów.",
   "gui.dungeontrain.perks.refused.gate": "Wydaj %s punktów postępu, by podnieść atut powyżej %s.",
+  "gui.dungeontrain.perks.refused.gate_short": "Wydaj więcej na odblokowania, aby podnieść limit.",
   "gui.dungeontrain.perks.ap.one": "%s punkt postępu",
   "gui.dungeontrain.perks.ap.few": "%s punkty postępu",
   "gui.dungeontrain.perks.ap.many": "%s punktów postępu",

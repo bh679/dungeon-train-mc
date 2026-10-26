@@ -5572,6 +5572,7 @@
   "gui.dungeontrain.perks.raise_limit": "提高上限 (%s)",
   "gui.dungeontrain.perks.points_of": "已激活。%s / %s 点。",
   "gui.dungeontrain.perks.refused.gate": "花费 %s 进度点数才能让天赋超过 %s。",
+  "gui.dungeontrain.perks.refused.gate_short": "在解锁上花费更多点数以提高上限。",
   "gui.dungeontrain.perks.ap.other": "%s 进度点数",
   "gui.dungeontrain.perks.classes": "职业",
   "gui.dungeontrain.perks.card.start": "起点",

@@ -5621,6 +5621,7 @@
   "gui.dungeontrain.perks.raise_limit": "Subir limite (%s)",
   "gui.dungeontrain.perks.points_of": "Ativo. %s de %s pontos.",
   "gui.dungeontrain.perks.refused.gate": "Gasta %s pontos de progresso para subir uma vantagem acima de %s.",
+  "gui.dungeontrain.perks.refused.gate_short": "Gasta mais em desbloqueios para aumentar o limite.",
   "gui.dungeontrain.perks.ap.one": "%s Ponto de Progresso",
   "gui.dungeontrain.perks.ap.other": "%s Pontos de Progresso",
   "gui.dungeontrain.perks.classes": "Classes",
