@@ -59,10 +59,34 @@ public record SkyView(double zoom, double centreX, double centreY) {
         return new SkyView(zoom, centreX - dxScreen / zoom, centreY - dyScreen / zoom).clamped(screenWidth, screenHeight);
     }
 
-    /** Zoom by {@code factor} keeping the sky point under {@code (screenX, screenY)} still. */
+    /**
+     * The three zoom steps: fully out (the whole sky fits), halfway, and fully in. A screen so large
+     * that the fit is already past {@link #MAX_ZOOM} has the one step.
+     */
+    public static double[] zoomSteps(int screenWidth, int screenHeight) {
+        double fit = fitZoom(screenWidth, screenHeight);
+        if (fit >= MAX_ZOOM) return new double[] {fit};
+        return new double[] {fit, (fit + MAX_ZOOM) / 2, MAX_ZOOM};
+    }
+
+    /** Index of the step nearest the current zoom. */
+    private int stepIndex(double[] steps) {
+        int best = 0;
+        for (int i = 1; i < steps.length; i++) {
+            if (Math.abs(steps[i] - zoom) < Math.abs(steps[best] - zoom)) best = i;
+        }
+        return best;
+    }
+
+    /**
+     * One zoom step in ({@code factor > 1}) or out ({@code factor < 1}), keeping the sky point under
+     * {@code (screenX, screenY)} still. Zoom moves only between {@link #zoomSteps}.
+     */
     public SkyView zoomedAt(double factor, double screenX, double screenY, int screenWidth, int screenHeight) {
-        double minZoom = fitZoom(screenWidth, screenHeight);
-        double next = Math.max(minZoom, Math.min(MAX_ZOOM, zoom * factor));
+        double[] steps = zoomSteps(screenWidth, screenHeight);
+        int i = stepIndex(steps);
+        int target = factor > 1 ? Math.min(steps.length - 1, i + 1) : factor < 1 ? Math.max(0, i - 1) : i;
+        double next = steps[target];
         if (next == zoom) return this;
         double sx = toSkyX(screenX, screenWidth), sy = toSkyY(screenY, screenHeight);
         double cx = sx - (screenX - skyMidX(screenWidth)) / next;

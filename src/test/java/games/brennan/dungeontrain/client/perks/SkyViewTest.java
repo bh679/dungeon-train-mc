@@ -33,19 +33,24 @@ class SkyViewTest {
         double mx = 700, my = 300;
         double sx = v.toSkyX(mx, 960), sy = v.toSkyY(my, 540);
         SkyView z = v.zoomedAt(1.25, mx, my, 960, 540);
-        assertEquals(v.zoom() * 1.25, z.zoom(), 1e-9);
+        assertEquals(SkyView.zoomSteps(960, 540)[1], z.zoom(), 1e-9);
         assertEquals(sx, z.toSkyX(mx, 960), 1e-6);
         assertEquals(sy, z.toSkyY(my, 540), 1e-6);
     }
 
     @Test
-    @DisplayName("zoom never goes below fit or above the maximum")
-    void zoomClamp() {
+    @DisplayName("zoom steps between exactly three levels: out, halfway, in")
+    void threeSteps() {
         SkyView v = SkyView.fit(960, 540);
-        assertEquals(v.zoom(), v.zoomedAt(0.5, 480, 270, 960, 540).zoom(), 1e-9);
-        SkyView big = v;
-        for (int i = 0; i < 20; i++) big = big.zoomedAt(1.25, 480, 270, 960, 540);
-        assertEquals(SkyView.MAX_ZOOM, big.zoom(), 1e-9);
+        double fit = v.zoom();
+        assertEquals(fit, v.zoomedAt(0.8, 480, 270, 960, 540).zoom(), 1e-9, "already fully out");
+        SkyView half = v.zoomedAt(1.25, 480, 270, 960, 540);
+        assertEquals((fit + SkyView.MAX_ZOOM) / 2, half.zoom(), 1e-9);
+        SkyView in = half.zoomedAt(1.25, 480, 270, 960, 540);
+        assertEquals(SkyView.MAX_ZOOM, in.zoom(), 1e-9);
+        assertEquals(SkyView.MAX_ZOOM, in.zoomedAt(1.25, 480, 270, 960, 540).zoom(), 1e-9, "already fully in");
+        assertEquals((fit + SkyView.MAX_ZOOM) / 2, in.zoomedAt(0.8, 480, 270, 960, 540).zoom(), 1e-9);
+        assertEquals(3, SkyView.zoomSteps(426, 240).length);
     }
 
     @Test
