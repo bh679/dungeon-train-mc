@@ -147,7 +147,7 @@
     "name": "corners"
   },
   "passanger": {
-    "weight": 1,
+    "weight": 8,
     "optIn": true
   },
   "passanger2": 10,

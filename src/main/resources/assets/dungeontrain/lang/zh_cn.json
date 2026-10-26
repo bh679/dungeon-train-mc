@@ -2931,6 +2931,7 @@
   "gui.dungeontrain.options.stream_chat.hint": "观众能看到聊天",
   "gui.dungeontrain.options.stream_chat.tip": "观众是否能看到你屏幕上的聊天行(包括私聊)。你输入的内容永远不会显示。",
   "gui.dungeontrain.options.stream_chat.kid_tip": "儿童模式下始终关闭:聊天永远不会出现在直播中。",
+  "gui.dungeontrain.options.stream_chat.live_chat_off_tip": "实时聊天关闭时也会关闭：你的聊天内容不会出现在直播画面中。",
   "gui.dungeontrain.options.stream_audio": "直播游戏声音",
   "gui.dungeontrain.options.stream_audio.hint": "观众只听到游戏声音，无麦克风",
   "gui.dungeontrain.options.stream_audio.tip": "将游戏内声音发送到直播。不含语音聊天或其他应用。从下一次直播开始生效。",

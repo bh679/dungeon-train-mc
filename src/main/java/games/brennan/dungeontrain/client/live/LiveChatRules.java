@@ -48,11 +48,12 @@ public final class LiveChatRules {
     private LiveChatRules() {}
 
     /**
-     * In the chat: the switch is on, not Kid mode, and this client is either streaming or wearing a TV
-     * while someone is on air. A TV with nobody live is silent — the chat belongs to a stream.
+     * In the chat: the switch is on, not Kid mode, and this client is either streaming or wearing a TV.
+     * A TV is in the room whether or not anyone is on air: TV wearers, Discord and the website keep
+     * talking between streams, and a streamer with chat off only stops reading it.
      */
-    public static boolean granted(boolean setting, boolean kid, boolean streaming, boolean wearingTv, boolean someoneLive) {
-        return setting && !kid && (streaming || (wearingTv && someoneLive));
+    public static boolean granted(boolean setting, boolean kid, boolean streaming, boolean wearingTv) {
+        return setting && !kid && (streaming || wearingTv);
     }
 
     /**

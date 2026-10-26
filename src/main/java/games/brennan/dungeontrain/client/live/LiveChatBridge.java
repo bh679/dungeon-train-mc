@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * The stream's Discord chat in this client's chat, and this client's chat back to it.
  *
  * <p>While {@link LiveChatRules#granted} holds — the Live Chat switch on, not Kid mode, and this client
- * either streaming or wearing a TV with someone on air — the bridge polls the relay's
+ * either streaming or wearing a TV, on air or not — the bridge polls the relay's
  * {@code GET /live/chat} every {@link #POLL_MS} (single-flight, cursor = the relay's seq; the first
  * poll takes the head so joining never replays history) and prints each new line as
  * {@code [Live] Name: text}. Every non-command line typed in chat goes out through
@@ -149,10 +149,10 @@ public final class LiveChatBridge {
             || LiveStreamController.get().watchingWithEye());
         boolean setting = LiveFeedClientConfig.liveChat();
         boolean kid = ClientDisplayConfig.isKidMode();
-        // A worn TV keeps the status fresh even with the pinned viewer hidden; the poll also counts
-        // the wearer as a viewer, which they are — they are reading the stream's chat.
-        boolean someoneLive = wearingTv && setting && !kid && LiveStatusPoller.wanted().live();
-        boolean granted = LiveChatRules.granted(setting, kid, streaming, wearingTv, someoneLive);
+        boolean granted = LiveChatRules.granted(setting, kid, streaming, wearingTv);
+        // A worn TV keeps the status fresh even with the pinned viewer hidden (it picks the Two Streams
+        // room); the poll also counts the wearer as a viewer, which they are — they are reading the chat.
+        if (granted && wearingTv) LiveStatusPoller.wanted();
         if (!granted) {
             if (connected) disconnect();
             return;

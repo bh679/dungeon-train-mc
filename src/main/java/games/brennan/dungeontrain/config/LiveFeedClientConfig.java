@@ -84,7 +84,7 @@ public final class LiveFeedClientConfig {
             .comment("While two players are live, what a TV on your head shows: BOTH (one above the other), STREAM_1 or STREAM_2. A TV that remembers a stream (soloed in your inventory, or broken while tuned) shows that instead.")
             .defineEnum("wornTvStreams", WornTvStreams.BOTH);
         LIVE_CHAT = b
-            .comment("Mirror the stream's Discord chat into your in-game chat while a stream is on air (as the streamer, or wearing a TV), and post what you type back to it. Always off in Kid mode, whatever this says.")
+            .comment("Mirror the stream's Discord chat into your in-game chat while you stream or wear a TV (a worn TV is in the chat even with nobody live), and post what you type back to it. Off while you stream only hides the chat from you: everyone else can still talk. Always off in Kid mode, whatever this says.")
             .define("liveChat", true);
         LIVE_CHAT_TRANSLATION = b
             .comment("While the Live Translations community reward is on, how a Live chat line translated into your language shows: UNDER the original in grey, REPLACE it (the original on hover), or FIRST with the original under it.")
