@@ -14,7 +14,8 @@ listSize 20, keyframeSeconds 3), as the relay does while the reward is on.
 --second-streamer NAME plays the Two Streams reward: every status carries a `second` block (a second
 player NAME live on the relay's `second` slot, at a playlist nobody uploads to), and a claim made
 while the first session is live answers `channel: "second"` instead of taking it over. Each status
-GET logs its `slot=` query so the viewer's second-slot flag can be checked. Measurements:
+GET logs its `slot=` query so the viewer's second-slot flag can be checked. --two-streams adds
+`twoStreams: true` to every status (the reward is on, so with one streamer the second channel is free). Measurements:
 
 - Website: open http://127.0.0.1:<port>/harness.html (needs --relay-public). It plays the stream
   with the relay's own live-player.js hls.js settings and posts `now - hls.playingDate` once a second.
@@ -267,14 +268,15 @@ class Handler(BaseHTTPRequestHandler):
                 second = {"live": True, "session": "second-stub", "streamer": ARGS.second_streamer,
                           "playlistUrl": "http://127.0.0.1:%d/files/second-stub/live.m3u8" % port,
                           "segmentSeconds": STATE["segment_seconds"]}
+            flag = {"twoStreams": True} if ARGS.two_streams else {}
             if not s:
                 # Nobody on the first slot: the second streamer, if any, is the primary (as the relay promotes it).
                 if second:
-                    return self._send(200, {"ok": True, "channel": "second", "viewers": 1, "cap": 100, "slot": True, **second})
-                return self._send(200, {"ok": True, "live": False, "viewers": 0, "cap": 100, "slot": True})
+                    return self._send(200, {"ok": True, "channel": "second", "viewers": 1, "cap": 100, "slot": True, **second, **flag})
+                return self._send(200, {"ok": True, "live": False, "viewers": 0, "cap": 100, "slot": True, **flag})
             out = {"ok": True, "channel": "main", "live": True, "session": s, "streamer": "Dev",
                    "playlistUrl": "http://127.0.0.1:%d/files/%s/live.m3u8" % (port, s),
-                   "segmentSeconds": STATE["segment_seconds"], "viewers": 1, "cap": 100, "slot": True}
+                   "segmentSeconds": STATE["segment_seconds"], "viewers": 1, "cap": 100, "slot": True, **flag}
             if second:
                 out["second"] = second
             return self._send(200, out)
@@ -349,6 +351,7 @@ def main():
     p.add_argument("--quick-seconds", type=int, default=3)
     p.add_argument("--relay-public", default="")
     p.add_argument("--second-streamer", default="", help="Two Streams: a second player of this name is live on the second slot")
+    p.add_argument("--two-streams", action="store_true", help="every status says the Two Streams reward is on (twoStreams: true)")
     p.add_argument("--prev-name", default="", help="main-slot claims take over from this streamer (prevName)")
     p.add_argument("--throttle-kbps", type=int, default=0, help="cap PUT upload speed (kbit/s); /ctl?throttle=N changes it")
     ARGS = p.parse_args()

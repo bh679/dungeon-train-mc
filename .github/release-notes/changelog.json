@@ -31030,6 +31030,25 @@
       "notable": true,
       "description": "Live chat now speaks your language.\n\n**Live Eye Chat Translations** is a new Community Reward. When one person gives it, Live chat is translated for everyone for a month: messages from the stream, Discord, Twitch and the website show in your own game language, right under the original.\n\nChoose how translations show in Options: under the original, translation only, or translation first.\n\nFind it on the Community Rewards shelf at $90 AUD for a month.",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/live-translations.jpg"
+    },
+    {
+      "id": "live-eye-second-channel-free",
+      "version": "0.1542.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "loot",
+        "balance"
+      ],
+      "title": "Live Eyes stay easy to find while a second stream is open",
+      "summary": "When Two Streams is on and only one person is streaming, Live Eyes are as easy to find as when nobody is live, so someone can take the open stream. TVs still turn up more often while a stream is on.",
+      "highlights": [],
+      "date": "2026-10-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 2344
     }
   ]
 }

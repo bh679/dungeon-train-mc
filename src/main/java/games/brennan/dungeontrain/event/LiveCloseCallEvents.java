@@ -63,17 +63,36 @@ public final class LiveCloseCallEvents {
         CloseCallPace next = pace.with(reading);
         PACE.put(uuid, next);
         Route route = route(player);
-        if (route != null) evaluate(player, next, reading, route);
+        if (route == Route.TRAIN_FOR_CHALLENGE) {
+            evaluate(player, next, reading, Route.TRAIN);
+            evaluate(player, next, reading, Route.STREAMER, true);
+        } else if (route != null) {
+            evaluate(player, next, reading, route);
+        }
     }
 
-    /** Who hands a close-call player the Live Eye: the streamer on air, or the train when nobody is. */
-    enum Route { STREAMER, TRAIN }
+    /**
+     * Who hands a close-call player the Live Eye: the streamer on air, or the train when nobody is.
+     * {@code TRAIN_FOR_CHALLENGE}: a streamer is on air but a second channel is free, so the train hands
+     * out The Challenge's eye and the streamer is asked for the rest.
+     */
+    enum Route { STREAMER, TRAIN, TRAIN_FOR_CHALLENGE }
 
     /** Pure form for the tests: null when nobody may be asked to offer one. */
     static Route route(boolean blocked, boolean someoneElseLive, boolean nobodyLive) {
+        return route(blocked, someoneElseLive, nobodyLive, false);
+    }
+
+    /**
+     * As above, plus {@code secondFree}: the Two Streams reward has its second channel free
+     * ({@link ServerLiveStatus#isSecondChannelFree}). Nobody has to hand over their Live Eye then, so
+     * The Challenge goes to the train as if nobody were live ({@link Route#TRAIN_FOR_CHALLENGE}); the
+     * other targets still ask the streamer.
+     */
+    static Route route(boolean blocked, boolean someoneElseLive, boolean nobodyLive, boolean secondFree) {
         if (blocked) return null;
-        if (someoneElseLive) return Route.STREAMER;
-        return nobodyLive ? Route.TRAIN : null;
+        if (someoneElseLive) return secondFree ? Route.TRAIN_FOR_CHALLENGE : Route.STREAMER;
+        return nobodyLive || secondFree ? Route.TRAIN : null;
     }
 
     private static Route route(ServerPlayer player) {
@@ -82,14 +101,31 @@ public final class LiveCloseCallEvents {
             || LiveStreamers.isStreamer(server, player.getUUID())
             || LiveGiftServer.refusalFor(player) != null;
         if (blocked) return null;
-        return route(false, ServerLiveStatus.isSomeoneElseLive(server, player), ServerLiveStatus.isNobodyLive(server));
+        return route(false, ServerLiveStatus.isSomeoneElseLive(server, player), ServerLiveStatus.isNobodyLive(server),
+            ServerLiveStatus.isSecondChannelFree(server));
+    }
+
+    /**
+     * Whether {@code route} handles a close call on a target the train owes an eye for ({@code challenge}):
+     * the train takes only The Challenge; the streamer takes every target, less The Challenge when the
+     * train has it ({@code trainHasChallenge}). Pure, for the tests.
+     */
+    static boolean takes(Route route, boolean trainHasChallenge, boolean challenge) {
+        if (route == Route.TRAIN) return challenge;
+        return !(trainHasChallenge && challenge);
     }
 
     private static void evaluate(ServerPlayer player, CloseCallPace pace, CloseCallPace.Sample reading, Route route) {
+        evaluate(player, pace, reading, route, false);
+    }
+
+    /** {@code trainHasChallenge}: the train hands out The Challenge's eye, so the streamer is not told of it. */
+    private static void evaluate(ServerPlayer player, CloseCallPace pace, CloseCallPace.Sample reading, Route route,
+                                 boolean trainHasChallenge) {
         List<String> sent = player.getData(ModDataAttachments.CLOSE_CALLS_SENT_THIS_LIFE.get());
         // The train only helps with The Challenge: the other targets stay unsent for a streamer later this life.
         Found found = CloseCallRules.find(pace, reading,
-            t -> eligible(player, t) && (route != Route.TRAIN || LiveEyeTrainHandout.owesEye(t)), new HashSet<>(sent));
+            t -> eligible(player, t) && takes(route, trainHasChallenge, LiveEyeTrainHandout.owesEye(t)), new HashSet<>(sent));
         if (!found.any()) return;
         List<String> marked = new ArrayList<>(sent);
         marked.addAll(found.keys());
@@ -97,7 +133,7 @@ public final class LiveCloseCallEvents {
         int minutes = CloseCallRules.minutes(found.etaMs());
         String name = player.getGameProfile().getName();
         if (route == Route.TRAIN) {
-            LOGGER.info("[DungeonTrain] Close call ({}): {} is ~{} min from {}; nobody is live, the train hands out the Live Eye",
+            LOGGER.info("[DungeonTrain] Close call ({}): {} is ~{} min from {}; nobody is live or a second channel is free, the train hands out the Live Eye",
                 found.stage(), name, minutes, found.close().get(0).id());
             LiveEyeTrainHandout.onCloseCall(player);
             return;

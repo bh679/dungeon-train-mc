@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.player;
 
+import com.google.gson.JsonObject;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import net.minecraft.server.MinecraftServer;
@@ -20,7 +21,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * {@code /live/status} on the public ({@code LIVE}) channel. Polled every {@link #POLL_TICKS} while players are online (an idle server
  * asks nothing); the answer goes stale after {@link #STALE_MS}, and a stale or failed answer reads
  * as not live. A streamer on this server ({@link LiveStreamers}) counts even if the relay is
- * unreachable. Read by {@code event/LiveEyeLootResolver} to make Live Eyes rare while someone is live.</p>
+ * unreachable. Read by {@code event/LiveEyeLootResolver} to make Live Eyes rare while someone is live
+ * (unless the Two Streams reward has a second channel free: {@link #isLiveForEyes}).</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class ServerLiveStatus {
@@ -32,6 +34,8 @@ public final class ServerLiveStatus {
     private static volatile boolean relayLive;
     /** The relay's last answer carried a live second stream (Two Streams). */
     private static volatile boolean relaySecondLive;
+    /** The relay's last answer said Two Streams is on ({@code twoStreams}): a second channel can be claimed. */
+    private static volatile boolean relayTwoStreams;
     private static volatile long relayAtMs;
     /** When the poll behind the last answer was sent: an answer only knows of claims made before that. */
     private static volatile long relayAskedAtMs;
@@ -75,6 +79,33 @@ public final class ServerLiveStatus {
      */
     public static void requestPoll() {
         if (relaySecondLive) pollRequested = true;
+    }
+
+    /**
+     * True while the Two Streams reward is on and its second channel is free: a fresh relay answer says
+     * Two Streams is on, no second stream is live, and fewer than two players here are streaming. Nobody
+     * would have to give up a Live Eye for another to go live, so Live Eyes are as easy to find as when
+     * nobody is live ({@link #isLiveForEyes}). A stale or failed answer, or a relay that does not send
+     * {@code twoStreams}, reads as not free.
+     */
+    public static boolean isSecondChannelFree(MinecraftServer server) {
+        int local = server == null ? 0 : LiveStreamers.all(server).size();
+        return secondChannelFree(local, relayTwoStreams, relaySecondLive, relayAtMs, System.currentTimeMillis());
+    }
+
+    /** Pure form for the tests. */
+    static boolean secondChannelFree(int localStreamers, boolean relayTwoStreams, boolean relaySecondLive,
+                                     long relayAtMs, long nowMs) {
+        if (localStreamers >= 2 || !isFresh(relayTwoStreams, relayAtMs, nowMs)) return false;
+        return !isFresh(relaySecondLive, relayAtMs, nowMs);
+    }
+
+    /**
+     * {@link #isAnyoneLive} as Live Eye loot sees it: a free second channel ({@link #isSecondChannelFree})
+     * counts as nobody live. Read by {@code event/LiveEyeLootResolver} and {@code compat/vista/LiveTvWeighting}.
+     */
+    public static boolean isLiveForEyes(MinecraftServer server) {
+        return isAnyoneLive(server) && !isSecondChannelFree(server);
     }
 
     /** True while the relay recently said someone is live, or someone on this server is streaming. */
@@ -135,6 +166,16 @@ public final class ServerLiveStatus {
         return live && atMs > 0 && nowMs - atMs < STALE_MS;
     }
 
+    /** The status body's {@code twoStreams} flag; absent (an older relay) or malformed reads as off. */
+    static boolean twoStreamsIn(@Nullable JsonObject body) {
+        if (body == null || !body.has("twoStreams")) return false;
+        try {
+            return body.get("twoStreams").getAsBoolean();
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
@@ -149,6 +190,7 @@ public final class ServerLiveStatus {
                     LiveFeedClient.Status status = LiveFeedClient.parseStatus(result);
                     relayLive = status.live();
                     relaySecondLive = status.live() && status.second() != null;
+                    relayTwoStreams = twoStreamsIn(result.body());
                     relayStreamer = status.streamer();
                     relaySecondStreamer = relaySecondLive ? status.second().streamer() : null;
                     relayAtMs = System.currentTimeMillis();
@@ -164,6 +206,7 @@ public final class ServerLiveStatus {
     public static void onServerStopped(ServerStoppedEvent event) {
         relayLive = false;
         relaySecondLive = false;
+        relayTwoStreams = false;
         relayAtMs = 0L;
         relayAskedAtMs = 0L;
         relayStreamer = null;
