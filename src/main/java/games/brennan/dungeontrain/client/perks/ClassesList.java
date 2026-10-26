@@ -194,7 +194,7 @@ final class ClassesList {
             int level = snap.unlockLevel(p.id());
             if (snap.points(p.id()) > 0) SkyDraw.disc(g, cx, cy, 2.0, SkyDraw.withAlpha(colour, alpha * fade));
             else if (level > 0) SkyDraw.ring(g, cx, cy, 1.6, 0.9, SkyDraw.withAlpha(colour, alpha * fade));
-            else SkyDraw.disc(g, cx, cy, 1.3, SkyDraw.withAlpha(locked, fade));
+            else SkyDraw.disc(g, cx, cy, 0.8, SkyDraw.withAlpha(locked, fade));
         }
     }
 
