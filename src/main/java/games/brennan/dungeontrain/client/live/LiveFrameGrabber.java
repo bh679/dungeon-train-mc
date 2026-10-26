@@ -77,7 +77,7 @@ public final class LiveFrameGrabber implements AutoCloseable {
             int[] crop = LiveAspect.cropRect(main.width, main.height, width, height);
             GL30C.glBlitFramebuffer(crop[0], crop[1], crop[2], crop[3], 0, 0, width, height,
                 GL11C.GL_COLOR_BUFFER_BIT, GL11C.GL_LINEAR);
-            StreamNameTag.drawInto(target); // viewers' copy, unless the HUD's is already in the frame
+            StreamNameTag.drawInto(target); // viewers' copy only — the main target is untouched
             LiveToastRects.copyOver(main, target, crop); // popups back over the name tag
             int slot = ring.issue();
             if (slot >= 0) {

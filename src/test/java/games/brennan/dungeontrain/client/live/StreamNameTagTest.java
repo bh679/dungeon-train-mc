@@ -20,12 +20,6 @@ class StreamNameTagTest {
     }
 
     @Test
-    void streamCarriesOnePill() {
-        assertFalse(StreamNameTag.overlayNeeded(true), "HUD pill already in the frame: no second copy");
-        assertTrue(StreamNameTag.overlayNeeded(false), "frame read without the HUD pill: viewers still get one");
-    }
-
-    @Test
     void minecraftShowsTheMinecraftName() {
         assertEquals("Steve", text(NameTag.MINECRAFT, "Steve", true, "steve#discord"));
     }
