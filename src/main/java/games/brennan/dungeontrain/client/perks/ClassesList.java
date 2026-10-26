@@ -21,6 +21,7 @@ final class ClassesList {
 
     private static final int RIGHT = 8, TOP_GAP = 8, ROW = 11, HEAD = 12;
     private static final float HEAD_SCALE = 0.75F;
+    private static final double DASH = 12;
 
     private final List<PerkTree.PerkClass> order;
     private final Font font;
@@ -57,7 +58,11 @@ final class ClassesList {
         return i >= 0 && i < order.size() ? order.get(i).id() : null;
     }
 
-    void render(GuiGraphics g, Set<String> off, String hovered, double fade) {
+    /**
+     * @param marked the class of the perk clicked to stay in the bar: a dash in its colour comes out
+     *               to the left of its name
+     */
+    void render(GuiGraphics g, Set<String> off, String hovered, String marked, double fade) {
         if (order.isEmpty()) return;
         int right = screenW - RIGHT;
         int a = (int) (fade * 255);
@@ -74,6 +79,10 @@ final class ClassesList {
             int colour = shown ? c.colour() : SkyPalette.MUTED;
             double alpha = shown ? 1.0 : hov ? 0.9 : 0.55;
             g.drawString(font, c.name(), right - font.width(c.name()), y + 1, ((int) (a * alpha) << 24) | (colour & 0xFFFFFF), true);
+            if (c.id().equals(marked)) {
+                double x1 = right - font.width(c.name()) - 4, mid = y + 1 + font.lineHeight / 2.0 - 1;
+                SkyDraw.line(g, x1 - DASH, mid, x1, mid, 1.5, SkyDraw.withAlpha(c.colour(), fade), SkyDraw.withAlpha(c.colour(), fade));
+            }
             y += ROW;
         }
     }

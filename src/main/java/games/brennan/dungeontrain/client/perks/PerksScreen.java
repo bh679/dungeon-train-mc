@@ -54,6 +54,8 @@ public final class PerksScreen extends Screen {
     private static final long FADE_MS = 200;
     private static final long CARD_LINGER_MS = 250;
     private static final int CLOSE_W = 12;
+    /** How far a label's leader line starts off the label's edge, GUI px. */
+    private static final double LEADER_GAP = 1.5;
     private static final double DOUBLE_CLICK_MS = 300;
 
     private final PerkTree tree;
@@ -292,6 +294,7 @@ public final class PerksScreen extends Screen {
         names.forEach((id, at) -> tree.perk(id).ifPresent(p -> nameBoxes.add(new NameLayout.Box(at[0], at[1],
             at[0] + Math.ceil(font.width(p.name()) * SkyPalette.NAME_SCALE), at[1] + Math.ceil(font.lineHeight * SkyPalette.NAME_SCALE)))));
         ClassTitlePainter.render(g, font, drawn, vis, glow, view, width, skyH(), fade, nameBoxes);
+        renderLeaders(g, names, fade);
 
         for (PerkTree.Perk p : drawn.perks()) {
             if (vis.hidden(p)) continue;
@@ -308,7 +311,8 @@ public final class PerksScreen extends Screen {
         }
 
         renderHeader(g, snap, now, fade);
-        classesList.render(g, off, listHover, fade);
+        String marked = selected == null ? null : tree.perk(selected).map(PerkTree.Perk::cls).orElse(null);
+        classesList.render(g, off, listHover, marked, fade);
         counters.render(g, snap.unlockPoints(), snap.activePoints(), now, fade);
         g.flush(); // titles and names are batched: push them out so the card paints over them
         if (DETAILS == DetailsMode.BAR) bar.render(g, snap, fade);
@@ -378,6 +382,28 @@ public final class PerksScreen extends Screen {
             g.drawString(font, line, x, y, (SkyPalette.GOLD & 0xFFFFFF) | ((int) (pulse * fade * 255) << 24), true);
         }
         g.drawString(font, "x", width - 8 - font.width("x"), y, (SkyPalette.MUTED & 0xFFFFFF) | alpha, false);
+    }
+
+    /**
+     * A thin line from each label to its perk: from just off the label's side nearest the dot, to the
+     * middle of the dot. Drawn under the stars, so the dot sits on top of its line.
+     */
+    private void renderLeaders(GuiGraphics g, Map<String, int[]> names, double fade) {
+        for (Map.Entry<String, int[]> e : names.entrySet()) {
+            PerkTree.Perk p = drawn.perk(e.getKey()).orElse(null);
+            if (p == null || vis.hidden(p)) continue;
+            double cx = view.toScreenX(p.x(), width), cy = view.toScreenY(p.y(), skyH());
+            int[] at = e.getValue();
+            double x0 = at[0], y0 = at[1];
+            double x1 = x0 + Math.ceil(font.width(p.name()) * SkyPalette.NAME_SCALE), y1 = y0 + Math.ceil(font.lineHeight * SkyPalette.NAME_SCALE);
+            // nearest point of the label to the dot's middle, stepped just off the label toward the dot
+            double nx = Math.max(x0, Math.min(cx, x1)), ny = Math.max(y0, Math.min(cy, y1));
+            double dx = cx - nx, dy = cy - ny, d = Math.hypot(dx, dy);
+            if (d < 2) continue;
+            double sx = nx + dx / d * LEADER_GAP, sy = ny + dy / d * LEADER_GAP;
+            int c = SkyDraw.withAlpha(SkyPalette.FG, 0.45 * (vis.ghost(p) ? 0.5 : 1.0) * fade);
+            SkyDraw.line(g, sx, sy, cx, cy, 0.75, c, c);
+        }
     }
 
     /**
