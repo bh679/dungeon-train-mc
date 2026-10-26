@@ -26,7 +26,6 @@ import games.brennan.dungeontrain.net.LiveClaimResultPacket;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Claim;
 import games.brennan.dungeontrain.net.relay.LiveTakeoverClient;
-import net.mehvahdjukaar.vista.VistaModClient;
 import net.mehvahdjukaar.vista.client.web.ffmpeg.FFmpeg;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -444,7 +443,7 @@ public final class LiveStreamController {
     private void giveUpIfStalled(long nowMs) {
         FfmpegSupport.watch();
         FfmpegSupport.logProgress(nowMs);
-        if (!ffmpegWait.tick(VistaModClient.getFFmpegDownloadProgress(), nowMs)) return;
+        if (!ffmpegWait.tick(FfmpegSupport.downloadProgress(), nowMs)) return;
         LOGGER.warn("[DungeonTrain] live stream gave up: Vista's ffmpeg download made no progress for {} s (at {}, {} s in)",
             FfmpegWait.STALL_MS / 1000, ffmpegWait.lastProgress() >= 0 ? ffmpegWait.lastProgress() + "%" : "no percentage",
             ffmpegWait.elapsedMs(nowMs) / 1000);

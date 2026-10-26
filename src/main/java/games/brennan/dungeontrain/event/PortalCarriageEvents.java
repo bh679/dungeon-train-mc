@@ -1473,6 +1473,44 @@ public final class PortalCarriageEvents {
     private static void sendDepthFor(List<ServerPlayer> players, CarriageDims dims,
                                      PortalStructure structure, int groundY, Set<UUID> inStructure) {
         AABB box = structureBox(dims, structure);
+        PortalRoomDepthPacket region = depthRegion(dims, structure, box, groundY);
+
+        for (ServerPlayer player : players) {
+            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
+            inStructure.add(player.getUUID());
+            sendDepthIfChanged(player, region);
+        }
+    }
+
+    /**
+     * Send a player walking into a structure its depth region <b>before</b> the swap moves them.
+     *
+     * <p><b>Why ahead.</b> The region is not only the debug screen's: it is the one "inside a
+     * dimensional carriage" box every client has, and {@code DistantHorizonsSuppression} cancels DH's
+     * frame on it. Sent by {@link #sendDepthFor} it goes out at the end of the tick, after the room
+     * tiler — behind the position packet the swap sent earlier in the same tick. Measured on twenty
+     * walk-ins the gap was 0.2 to 3.5 ms and never straddled a frame, but nothing guaranteed it: a
+     * frame drawn between the two would put DH's surface horizon in the room. Sent here, the client
+     * holds the box before it holds the position.</p>
+     *
+     * <p>Recorded in {@link #LAST_DEPTH}, so the end-of-tick pass sends nothing unless the tiler grew
+     * the box this tick, in which case the bigger box replaces it.</p>
+     */
+    private static void sendDepthAhead(ServerPlayer player, CarriageDims dims,
+                                       PortalStructure structure, int groundY) {
+        sendDepthIfChanged(player,
+            depthRegion(dims, structure, structureBox(dims, structure), groundY));
+    }
+
+    private static void sendDepthIfChanged(ServerPlayer player, PortalRoomDepthPacket region) {
+        if (region.equals(LAST_DEPTH.get(player.getUUID()))) return;
+        LAST_DEPTH.put(player.getUUID(), region);
+        PacketDistributor.sendToPlayer(player, region);
+    }
+
+    /** A structure's depth region: its box, and the shift that disguises it. */
+    private static PortalRoomDepthPacket depthRegion(CarriageDims dims, PortalStructure structure,
+                                                     AABB box, int groundY) {
         // The entry twin's minimum corner is the corridor's floor; the exit twin shares that Y — it
         // is offset along X only — so one shift covers the whole structure.
         // X and Z centre on the base room, so standing in its middle reads 0, 0; its tiled copies
@@ -1480,20 +1518,12 @@ public final class PortalCarriageEvents {
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         Vec3i room = structure.roomSize();
-        PortalRoomDepthPacket region = new PortalRoomDepthPacket(
+        return new PortalRoomDepthPacket(
             (int) Math.floor(box.minX), (int) Math.floor(box.minY), (int) Math.floor(box.minZ),
             (int) Math.ceil(box.maxX), (int) Math.ceil(box.maxY), (int) Math.ceil(box.maxZ),
             -(roomOrigin.getX() + room.getX() / 2),
             groundY - structure.origin().getY(),
             -(roomOrigin.getZ() + room.getZ() / 2));
-
-        for (ServerPlayer player : players) {
-            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
-            inStructure.add(player.getUUID());
-            if (region.equals(LAST_DEPTH.get(player.getUUID()))) continue;
-            LAST_DEPTH.put(player.getUUID(), region);
-            PacketDistributor.sendToPlayer(player, region);
-        }
     }
 
     /** Hand the debug screen back its honest numbers for anyone who has left a structure. */
@@ -2287,6 +2317,12 @@ public final class PortalCarriageEvents {
             // and the copies' exits are ways back, not crossings.
             if (move.toFrame() == PortalFrames.FRAME_TWIN && !copyOnly) {
                 PortalConnectionStats.noteConnected(player.getUUID());
+            }
+            // Going in, the client must know it is inside before it learns where it is. See
+            // sendDepthAhead.
+            if (move.toFrame() == PortalFrames.FRAME_TWIN) {
+                sendDepthAhead(player, dims, structure,
+                    DungeonTrainWorldData.get(level).getTrainY());
             }
             player.connection.teleport(move.x(), targetY, move.z(),
                 player.getYRot(), player.getXRot(), RELATIVE_ALL);

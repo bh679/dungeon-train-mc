@@ -266,6 +266,7 @@ public final class LiveHeadViewer {
                 g.blit(whole != null ? whole.texture() : source.frameTexture(), b.x(), b.y(), b.w(), b.h(), 0f, 0f, 1, 1, 1, 1);
             }
             case STATIC -> noise(g, b);
+            case NO_FFMPEG -> g.blit(LiveFeedSource.NO_FFMPEG_TEXTURE, b.x(), b.y(), b.w(), b.h(), 0f, 0f, 1, 1, 1, 1);
             case DOWNLOADING -> {
                 g.fill(b.x(), b.y(), b.x() + b.w(), b.y() + b.h(), DARK);
                 downloadingLabel(g, b, font, frame.progress());
