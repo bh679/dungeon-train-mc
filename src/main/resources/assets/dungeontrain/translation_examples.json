@@ -17363,6 +17363,108 @@
       ]
     }
   },
+  "gui.dungeontrain.rewards.status.on_for_seconds.one": {
+    "1": {
+      "label": "how many seconds the reward has left (1)",
+      "examples": [
+        "1"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_for_seconds.other": {
+    "1": {
+      "label": "how many seconds the reward has left",
+      "examples": [
+        "42",
+        "5"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_for_minutes.one": {
+    "1": {
+      "label": "how many minutes the reward has left (1)",
+      "examples": [
+        "1"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_for_minutes.other": {
+    "1": {
+      "label": "how many minutes the reward has left",
+      "examples": [
+        "35",
+        "5"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_for_hours.one": {
+    "1": {
+      "label": "how many hours the reward has left (1)",
+      "examples": [
+        "1"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_for_hours.other": {
+    "1": {
+      "label": "how many hours the reward has left",
+      "examples": [
+        "11",
+        "5"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_until_tomorrow": {
+    "1": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
   "gui.dungeontrain.rewards.give.month": {
     "1": {
       "label": "a month name, short or full",
