@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.client.perks;
 
-import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.perks.PerkRegistry;
 import games.brennan.dungeontrain.perks.PerkTree;
 import games.brennan.dungeontrain.perks.PerkUnlocks;
@@ -27,9 +26,10 @@ import java.util.function.Consumer;
 final class PerkDetailsBar {
 
     static final int HEIGHT = 46;
-    private static final int PAD = 8, LINE = 10, BUTTON_W = 60, BUTTON_H = 16, GAP = 4, STRIPE = 3;
+    private static final int PAD = 8, LINE = 10, BUTTON_W = 34, BUTTON_H = 16, GAP = 4, STRIPE = 3;
     private static final int MIN_LEFT = 90, DOT_W = 8;
-    private static final int SEG_W = 10, SEG_H = 5, SEG_GAP = 2, SEG_LOCKED = 0x2A2F4A;
+    private static final int SEG_H = 5, GRAPH_H = 7;
+    private static final float CLASS_SCALE = 0.75F;
     private static final int CARD_H = 18, CARD_GAP = 3, CARD_ROWS = 2, CARD_PAD = 4, CARD_MIN_W = 40;
     private static final int BLOCK_W = 6, BLOCK_H = 3;
     /** Deep indigo, a shade off the sky so the bar reads as its own surface. */
@@ -54,6 +54,8 @@ final class PerkDetailsBar {
     private Button unlockButton;
     private Button activateButton;
     private String builtFor = "";
+    private PointsGraph graph;
+    private int graphX, graphY, graphW, graphHover = -1;
 
     PerkDetailsBar(PerkTree tree, Font font, PerkCard text, Consumer<PerkTree.Perk> unlock, Consumer<PerkTree.Perk> activate) {
         this.tree = tree;
@@ -106,10 +108,11 @@ final class PerkDetailsBar {
             activateButton = null;
             return true;
         }
-        int bx = screenW - PAD - BUTTON_W * 2 - GAP, by = top + HEIGHT - PAD - BUTTON_H;
-        unlockButton = new DarkTintedButton(bx, by, BUTTON_W, BUTTON_H, Component.translatable(KEY + "unlock"), b -> unlock.accept(shown));
-        activateButton = new DarkTintedButton(bx + BUTTON_W + GAP, by, BUTTON_W, BUTTON_H, Component.translatable(KEY + "activate"),
-            b -> activate.accept(shown));
+        int bx = screenW - PAD - BUTTON_W * 2 - GAP, by = top + (HEIGHT - BUTTON_H) / 2;
+        unlockButton = new CostButton(bx, by, BUTTON_W, BUTTON_H, CostButton.Currency.ADVANCEMENT, shown.unlockCost(),
+            Component.translatable(KEY + "unlock"), b -> unlock.accept(shown));
+        activateButton = new CostButton(bx + BUTTON_W + GAP, by, BUTTON_W, BUTTON_H, CostButton.Currency.APPLE, snap.nextRankCost(),
+            Component.translatable(KEY + "activate"), b -> activate.accept(shown));
         Component unlockWhy = unlockBlocked(shown, snap);
         Component activateWhy = activateBlocked(shown, snap);
         unlockButton.active = unlockWhy == null;
@@ -193,36 +196,24 @@ final class PerkDetailsBar {
     }
 
     /**
-     * One block per perk of the class, active ones first: filled in the class colour when a point is in
-     * it, outlined when unlocked with none, dark while locked. Blocks shrink to fit {@code maxW}.
+     * The class's perks as one graph: active ones filled in the class colour, unlocked ones with no point
+     * outlined, locked ones dark ({@link PointsGraph} turns it into a bar when the blocks get too thin).
      */
     private void renderSegments(GuiGraphics g, PerkMenuSnapshot snap, List<PerkTree.Perk> perks, int colour,
                                 int x, int y, int maxW, int a) {
-        int n = perks.size();
-        if (n == 0) return;
         int active = 0, unlocked = 0;
         for (PerkTree.Perk p : perks) {
             if (snap.points(p.id()) > 0) active++;
             else if (snap.unlockLevel(p.id()) > 0) unlocked++;
         }
-        int w = Math.max(2, Math.min(SEG_W, (maxW - (n - 1) * SEG_GAP) / n));
-        int on = (a << 24) | (colour & 0xFFFFFF);
-        for (int i = 0; i < n; i++) {
-            int sx = x + i * (w + SEG_GAP);
-            if (i < active) {
-                g.fill(sx, y, sx + w, y + SEG_H, on);
-            } else if (i < active + unlocked) {
-                g.renderOutline(sx, y, w, SEG_H, on);
-            } else {
-                g.fill(sx, y, sx + w, y + SEG_H, ((int) (a * 0.9) << 24) | (SEG_LOCKED & 0xFFFFFF));
-            }
-        }
+        new PointsGraph(active, unlocked, perks.size() - active - unlocked, perks.size())
+            .render(g, font, x, y, maxW, SEG_H, colour, a / 255.0, -1, 0.75F);
     }
 
     /** Wide enough for the name, or for its point blocks if they run longer. */
     private int cardWidth(PerkTree.Perk p, PerkMenuSnapshot snap) {
         int level = snap.unlockLevel(p.id());
-        int blocks = level * (BLOCK_W + 1) - 1;
+        int blocks = Math.min(level, PointsGraph.MAX_SEGMENTS) * (BLOCK_W + 1) - 1;
         return CARD_PAD * 2 + Math.max(font.width(text.name(p)), blocks);
     }
 
@@ -252,13 +243,10 @@ final class PerkDetailsBar {
         g.drawString(font, name, tx, ty, (a << 24) | ((on ? SkyPalette.FG : SkyPalette.MUTED) & 0xFFFFFF), false);
         if (!on) return;
         int points = snap.points(p.id()), room = w - CARD_PAD * 2;
-        int bw = Math.max(1, Math.min(BLOCK_W, (room - (level - 1)) / level));
-        int by = y + h - 2 - BLOCK_H, c = (a << 24) | (colour & 0xFFFFFF);
-        for (int i = 0; i < level; i++) {
-            int bx = tx + i * (bw + 1);
-            if (i < points) g.fill(bx, by, bx + bw, by + BLOCK_H, c);
-            else g.renderOutline(bx, by, bw, BLOCK_H, c);
-        }
+        int shown = Math.min(level, PointsGraph.MAX_SEGMENTS);
+        int gw = Math.min(room, shown * (BLOCK_W + PointsGraph.GAP) - PointsGraph.GAP + (level > shown ? PointsGraph.PLUS_W + 1 : 0));
+        new PointsGraph(points, level - points, 0, level)
+            .render(g, font, tx, y + h - 2 - BLOCK_H, Math.max(gw, room / 2), BLOCK_H, colour, a / 255.0, -1, 0.5F);
     }
 
     /**
@@ -306,64 +294,74 @@ final class PerkDetailsBar {
         int colour = SkyPalette.classColour(tree, p);
         g.fill(0, top + 1, STRIPE, top + HEIGHT, (a << 24) | (colour & 0xFFFFFF));
 
-        // left: name and class (and a lock mark when clicked to stay)
-        int x = PAD + STRIPE, y = top + PAD;
+        // top row: the name, the points graph across the row, then the class and tier
+        int x = PAD + STRIPE, y = top + 5;
+        int contentRight = width - PAD - BUTTON_W * 2 - GAP - 10;
         String name = text.name(p);
         g.drawString(font, name, x, y, (a << 24) | (colour & 0xFFFFFF), true);
-        String cls = p.isRoot() ? Component.translatable("gui.dungeontrain.perks.card.start").getString()
-            : tree.perkClass(p.cls()).map(PerkTree.PerkClass::name).orElse("");
-        if (locked) cls = cls + "  •";
+        String cls = tree.perkClass(p.cls()).map(PerkTree.PerkClass::name).orElse("").toUpperCase(Locale.ROOT)
+            + " · " + Component.translatable(KEY + "tier", p.tier()).getString().toUpperCase(Locale.ROOT) + (locked ? "  •" : "");
+        int clsW = (int) Math.ceil(font.width(cls) * CLASS_SCALE);
         g.pose().pushPose();
-        g.pose().translate(x, y + LINE + 1, 0);
-        g.pose().scale(0.75F, 0.75F, 1F);
-        g.drawString(font, cls.toUpperCase(Locale.ROOT), 0, 0, (a << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
+        g.pose().translate(contentRight - clsW, y + 2, 0);
+        g.pose().scale(CLASS_SCALE, CLASS_SCALE, 1F);
+        g.drawString(font, cls, 0, 0, (a << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
         g.pose().popPose();
-        if (!p.isRoot()) {
-            g.drawString(font, Component.translatable("gui.dungeontrain.perks.bar.tier", p.tier()), x, y + LINE * 2 + 2,
-                ((int) (a * 0.8) << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
-        }
-        String tierLine = p.isRoot() ? "" : Component.translatable("gui.dungeontrain.perks.bar.tier", p.tier()).getString();
-        int leftW = leftColumn(name, cls.toUpperCase(Locale.ROOT), tierLine);
-        divider(g, x + leftW, a);
+        graphX = x + font.width(name) + 8;
+        graphY = y;
+        graphW = Math.max(0, contentRight - clsW - 8 - graphX);
+        graph = perkGraph(p, snap);
+        if (graphW > 0) graph.render(g, font, graphX, graphY, graphW, GRAPH_H, colour, a / 255.0, graphHover, 1F);
 
-        // right: where the perk stands, right-aligned above the buttons; it may reach left past them
-        int rightW = BUTTON_W * 2 + GAP;
-        int right = width - PAD;
-        List<Component> lines = text.testLines(p, snap);
-        int statusW = 0;
+        // below: the description, then the per-point line; a refusal takes the last line, in red
+        int dy = y + LINE + 2, mw = contentRight - x;
+        int max = (top + HEIGHT - 1 - dy) / LINE;
         boolean refused = refusalKey != null && p.id().equals(refusedFor) && net.minecraft.Util.getMillis() - refusedAt < REFUSAL_MS;
-        if (refused || !lines.isEmpty()) {
-            String status = font.plainSubstrByWidth(refused ? Component.translatable(refusalKey).getString() : lines.get(0).getString(),
-                Math.max(rightW, width / 3));
-            statusW = font.width(status);
-            g.drawString(font, status, right - statusW, y, (a << 24) | ((refused ? 0xFFFFC9C9 : SkyPalette.FG) & 0xFFFFFF), false);
+        int room = refused ? max - 1 : max;
+        int shown = 0;
+        for (FormattedCharSequence l : font.split(Component.literal(text.descText(p)), mw)) {
+            if (shown >= room) break;
+            g.drawString(font, l, x, dy + shown++ * LINE, (a << 24) | (SkyPalette.FG & 0xFFFFFF), false);
         }
-        if (lines.size() > 1 && p.isRoot()) {
-            String hint = font.plainSubstrByWidth(lines.get(1).getString(), Math.max(rightW, width / 3));
-            g.drawString(font, hint, right - font.width(hint), y + LINE, (a << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
-            statusW = Math.max(statusW, font.width(hint));
+        if (!p.point().isEmpty()) {
+            for (FormattedCharSequence l : font.split(Component.translatable("gui.dungeontrain.perks.per_point", text.pointText(p)), mw)) {
+                if (shown >= room) break;
+                g.drawString(font, l, x, dy + shown++ * LINE, (a << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
+            }
         }
-        int rx = right - Math.max(rightW, statusW);
+        if (refused) {
+            String why = font.plainSubstrByWidth(Component.translatable(refusalKey).getString(), mw);
+            g.drawString(font, why, x, dy + (max - 1) * LINE, (a << 24) | 0xFFC9C9, false);
+        }
+    }
 
-        // middle: description, then the per-point line, wrapped into the space between
-        divider(g, rx - 8, a);
-        int mx = x + leftW + 10, mw = rx - 16 - mx;
-        if (mw > 40) {
-            int ty = y;
-            int max = (HEIGHT - PAD * 2) / LINE;
-            int shown = 0;
-            for (FormattedCharSequence l : font.split(Component.literal(text.descText(p)), mw)) {
-                if (shown++ >= max) break;
-                g.drawString(font, l, mx, ty, (a << 24) | (SkyPalette.FG & 0xFFFFFF), false);
-                ty += LINE;
-            }
-            if (!p.isRoot() && !p.point().isEmpty() && shown < max) {
-                for (FormattedCharSequence l : font.split(Component.translatable("gui.dungeontrain.perks.per_point", text.pointText(p)), mw)) {
-                    if (shown++ >= max) break;
-                    g.drawString(font, l, mx, ty, (a << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
-                    ty += LINE;
-                }
-            }
-        }
+    /** A perk's points, its empty room, and one dark block for the next unlock. */
+    private static PointsGraph perkGraph(PerkTree.Perk p, PerkMenuSnapshot snap) {
+        int level = snap.unlockLevel(p.id()), points = Math.min(snap.points(p.id()), level);
+        return new PointsGraph(points, level - points, 1, level);
+    }
+
+    /** The mouse moved: light the graph block under it. */
+    void mouse(double mx, double my) {
+        graphHover = overGraph(mx, my) ? graph.indexAt(graphW, mx - graphX) : -1;
+    }
+
+    private boolean overGraph(double mx, double my) {
+        return graph != null && perk != null && !perk.isRoot() && graphW > 0
+            && my >= graphY - 2 && my < graphY + GRAPH_H + 2 && mx >= graphX && mx < graphX + graphW;
+    }
+
+    /**
+     * A click in the bar: on the graph, a filled or outlined block adds a point and a dark block unlocks
+     * one more; on a bar, it does whichever the perk needs next. Returns true when it acted.
+     */
+    boolean click(double mx, double my) {
+        if (!overGraph(mx, my)) return false;
+        PointsGraph.Kind k = graph.at(graphW, mx - graphX);
+        if (k == null && !graph.layout(graphW).bar()) return false;
+        boolean full = graph.open == 0;
+        if (k == PointsGraph.Kind.LOCKED || k == null && full) unlock.accept(perk);
+        else activate.accept(perk);
+        return true;
     }
 }

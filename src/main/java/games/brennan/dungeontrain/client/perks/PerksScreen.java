@@ -336,7 +336,10 @@ public final class PerksScreen extends Screen {
         classesList.render(g, off, listHover, marked, hoverMarked, fade);
         counters.render(g, snap.unlockPoints(), snap.activePoints(), now, fade);
         g.flush(); // titles and names are batched: push them out so the card paints over them
-        if (DETAILS == DetailsMode.BAR) bar.render(g, snap, fade);
+        if (DETAILS == DetailsMode.BAR) {
+            bar.mouse(mouseX, mouseY);
+            bar.render(g, snap, fade);
+        }
         else card.render(g, now);
         g.flush();
         super.render(g, mouseX, mouseY, partialTick);
@@ -534,7 +537,10 @@ public final class PerksScreen extends Screen {
             play(SoundEvents.UI_BUTTON_CLICK.value(), 0.3F, 1.0F);
             return true;
         }
-        if (DETAILS == DetailsMode.BAR && bar.contains(mx, my)) return true;
+        if (DETAILS == DetailsMode.BAR && bar.contains(mx, my)) {
+            bar.click(mx, my);
+            return true;
+        }
         if (counters.at(mx, my) == PerkCounters.Kind.UNLOCK) {
             openAdvancements();
             return true;
