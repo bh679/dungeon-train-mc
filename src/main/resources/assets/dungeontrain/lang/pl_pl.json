@@ -5720,6 +5720,7 @@
   "gui.dungeontrain.perks.stat.unit.seconds": "%s s",
   "gui.dungeontrain.perks.zoom.out": "Całe niebo",
   "gui.dungeontrain.perks.zoom.in": "Blisko",
+  "gui.dungeontrain.perks.zoom.closest": "Najbliżej",
   "gui.dungeontrain.perks.bar.full": "Pełny. Odblokuj ponownie, aby zrobić miejsce na kolejny punkt.",
   "gui.dungeontrain.perks.bar.fill_first": "Najpierw wypełnij jego punkty.",
   "gui.dungeontrain.perks.bar.hint": "Najedź na atut, aby zobaczyć go tutaj. Kliknij, aby go zatrzymać.",

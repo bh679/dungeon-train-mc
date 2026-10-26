@@ -5656,6 +5656,7 @@
   "gui.dungeontrain.perks.stat.unit.seconds": "%s s",
   "gui.dungeontrain.perks.zoom.out": "Céu inteiro",
   "gui.dungeontrain.perks.zoom.in": "Perto",
+  "gui.dungeontrain.perks.zoom.closest": "Muito perto",
   "gui.dungeontrain.perks.bar.full": "Cheio. Desbloqueia de novo para teres espaço para mais um ponto.",
   "gui.dungeontrain.perks.bar.fill_first": "Preenche primeiro os pontos dela.",
   "gui.dungeontrain.perks.bar.hint": "Passa o rato por uma vantagem para a veres aqui. Clica para a fixar.",

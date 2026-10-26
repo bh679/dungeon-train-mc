@@ -5720,6 +5720,7 @@
   "gui.dungeontrain.perks.stat.unit.seconds": "%s s",
   "gui.dungeontrain.perks.zoom.out": "Tot cerul",
   "gui.dungeontrain.perks.zoom.in": "Aproape",
+  "gui.dungeontrain.perks.zoom.closest": "Cel mai aproape",
   "gui.dungeontrain.perks.bar.full": "Plin. Deblochează-l din nou pentru loc pentru încă un punct.",
   "gui.dungeontrain.perks.bar.fill_first": "Umple mai întâi punctele lui.",
   "gui.dungeontrain.perks.bar.hint": "Treci peste un avantaj ca să-l vezi aici. Dă clic ca să-l păstrezi.",

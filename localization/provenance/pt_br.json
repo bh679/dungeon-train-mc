@@ -5656,6 +5656,7 @@
   "gui.dungeontrain.perks.stat.unit.seconds": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "c142d89262dadc6d"},
   "gui.dungeontrain.perks.zoom.out": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0d71cd6c5128531b"},
   "gui.dungeontrain.perks.zoom.in": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "7d9eb7acb13e2462"},
+  "gui.dungeontrain.perks.zoom.closest": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "63eaa6b03cfe075b"},
   "gui.dungeontrain.perks.bar.full": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "7279d95a12417bfc"},
   "gui.dungeontrain.perks.bar.fill_first": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0f3c824d825f7443"},
   "gui.dungeontrain.perks.bar.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0dc26fad5284ead3"},

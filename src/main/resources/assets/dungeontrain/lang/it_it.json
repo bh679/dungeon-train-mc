@@ -5656,6 +5656,7 @@
   "gui.dungeontrain.perks.stat.unit.seconds": "%s s",
   "gui.dungeontrain.perks.zoom.out": "Tutto il cielo",
   "gui.dungeontrain.perks.zoom.in": "Vicino",
+  "gui.dungeontrain.perks.zoom.closest": "Vicinissimo",
   "gui.dungeontrain.perks.bar.full": "Pieno. Sbloccalo di nuovo per avere spazio per un punto in più.",
   "gui.dungeontrain.perks.bar.fill_first": "Riempi prima i suoi punti.",
   "gui.dungeontrain.perks.bar.hint": "Passa sopra un vantaggio per vederlo qui. Clicca per tenerlo.",

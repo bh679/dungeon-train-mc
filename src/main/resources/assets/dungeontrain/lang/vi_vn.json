@@ -5592,6 +5592,7 @@
   "gui.dungeontrain.perks.stat.unit.seconds": "%s giây",
   "gui.dungeontrain.perks.zoom.out": "Cả bầu trời",
   "gui.dungeontrain.perks.zoom.in": "Gần",
+  "gui.dungeontrain.perks.zoom.closest": "Gần nhất",
   "gui.dungeontrain.perks.bar.full": "Đầy. Mở khóa lại để có chỗ cho thêm một điểm.",
   "gui.dungeontrain.perks.bar.fill_first": "Hãy lấp đầy điểm của nó trước.",
   "gui.dungeontrain.perks.bar.hint": "Di chuột lên một đặc quyền để xem ở đây. Nhấp để ghim.",

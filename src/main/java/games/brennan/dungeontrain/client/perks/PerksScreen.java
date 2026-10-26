@@ -59,6 +59,7 @@ public final class PerksScreen extends Screen {
     /** Labels fade in over this long once the stars stop moving. */
     private static final long LABEL_FADE_MS = 250;
     private static final double DOUBLE_CLICK_MS = 300;
+    private static final int CLOSEST_ZOOM_MAX_GUI_SCALE = 9;
 
     private final PerkTree tree;
     private final boolean fromApple;
@@ -353,11 +354,12 @@ public final class PerksScreen extends Screen {
         }
 
         renderHeader(g, snap, now, fade);
-        String marked = selected == null ? null : tree.perk(selected).map(PerkTree.Perk::cls).orElse(null);
+        // only a class clicked to stay gets the pill; a hovered title or perk, or the kept perk, outlines its class
+        String keptPerkClass = selected == null ? null : tree.perk(selected).map(PerkTree.Perk::cls).orElse(null);
         String hoverMarked = titleHover != null ? titleHover
-            : hovered == null ? null : tree.perk(hovered).map(PerkTree.Perk::cls).orElse(null);
+            : hovered != null ? tree.perk(hovered).map(PerkTree.Perk::cls).orElse(null) : keptPerkClass;
         int head = headEyeHover ? 2 : classesList.headingAt(mouseX, mouseY) ? 1 : 0;
-        classesList.render(g, snap, off, listHover, selectedClass != null ? selectedClass : marked, hoverMarked,
+        classesList.render(g, snap, off, listHover, selectedClass, hoverMarked,
             classesList.rowHover(mouseX, mouseY), selectedClass, eyeHover, head, fade);
         counters.render(g, snap.unlockPoints(), snap.activePoints(), now, fade);
         g.flush(); // titles and names are batched: push them out so the card paints over them
@@ -369,7 +371,7 @@ public final class PerksScreen extends Screen {
         g.flush();
         super.render(g, mouseX, mouseY, partialTick);
 
-        if (zoomHover >= 0) g.renderTooltip(font, ZoomControl.tooltip(zoomHover), mouseX, mouseY);
+        if (zoomHover >= 0) g.renderTooltip(font, zoomControl.tooltip(zoomHover), mouseX, mouseY);
         if (eyeHover != null || titleEyeHover) g.renderTooltip(font, ClassesList.hideTooltip(), mouseX, mouseY);
         if (headEyeHover) g.renderTooltip(font, ClassesList.hideAllTooltip(), mouseX, mouseY);
         PerkCounters.Kind counter = counters.at(mouseX, mouseY);
@@ -423,8 +425,8 @@ public final class PerksScreen extends Screen {
         int alpha = (int) (fade * 255) << 24;
         int x = 8, y = (SkyView.HEADER - font.lineHeight) / 2 + 1;
         g.drawString(font, title, x, y, (SkyPalette.GOLD & 0xFFFFFF) | alpha, true);
-        x = zoomControl.layout(x + font.width(title) + 8, SkyView.HEADER / 2) + 12;
-        zoomControl.render(g, view.step(width, skyH()), zoomHover, fade);
+        x = zoomControl.layout(x + font.width(title) + 8, SkyView.HEADER / 2, closestZoom() ? 3 : 2) + 12;
+        zoomControl.render(g, view.step(width, skyH(), closestZoom()), zoomHover, fade);
         if (fromApple && snap.canAffordRank() && spentAt == 0) {
             boolean none = snap.unlocked().isEmpty();
             Component line = none ? Component.translatable("gui.dungeontrain.perks.unlock_first")
@@ -481,7 +483,7 @@ public final class PerksScreen extends Screen {
         // a class hovered in the list: only its perks are named, and every one of them is
         boolean classHover = glow != null;
         // fully zoomed out: no names by default, only the hovered or kept star and a hovered class
-        boolean zoomedOut = view.step(width, skyH()) == 0;
+        boolean zoomedOut = view.step(width, skyH(), closestZoom()) == 0;
         visible.stream()
             .filter(p -> !p.isRoot())
             .filter(p -> !classHover || glow.equals(p.cls()))
@@ -533,7 +535,7 @@ public final class PerksScreen extends Screen {
         }
         int step = zoomControl.at(mx, my);
         if (button == 0 && step >= 0) {
-            view = view.atStep(step, width, skyH());
+            view = view.atStep(step, width, skyH(), closestZoom());
             play(SoundEvents.UI_BUTTON_CLICK.value(), 0.3F, 1.0F);
             return true;
         }
@@ -614,6 +616,11 @@ public final class PerksScreen extends Screen {
         return true;
     }
 
+    /** The third, closest zoom step is offered only at a GUI scale of {@value #CLOSEST_ZOOM_MAX_GUI_SCALE} or less. */
+    private static boolean closestZoom() {
+        return Minecraft.getInstance().getWindow().getGuiScale() <= CLOSEST_ZOOM_MAX_GUI_SCALE;
+    }
+
     /** The class title (or its hide icon) under the mouse, from the last frame drawn; null when none. */
     private ClassTitlePainter.Title titleAt(double mx, double my) {
         for (ClassTitlePainter.Title t : titles) {
@@ -645,7 +652,7 @@ public final class PerksScreen extends Screen {
         // view keeps its centre
         double ax = width / 2.0, ay = SkyView.HEADER + (skyH() - SkyView.HEADER) / 2.0;
         if (overStars(mx, my)) { ax = mx; ay = my; }
-        view = view.zoomedAt(scrollY > 0 ? SkyView.ZOOM_STEP : 1 / SkyView.ZOOM_STEP, ax, ay, width, skyH());
+        view = view.zoomedAt(scrollY > 0 ? SkyView.ZOOM_STEP : 1 / SkyView.ZOOM_STEP, ax, ay, width, skyH(), closestZoom());
         return true;
     }
 
@@ -705,7 +712,7 @@ public final class PerksScreen extends Screen {
 
     private void zoomKey(double factor) {
         PerkTree.Perk p = drawnPerk(selected == null ? PerkTree.ROOT : selected);
-        view = view.zoomedAt(factor, view.toScreenX(p.x(), width), view.toScreenY(p.y(), skyH()), width, skyH());
+        view = view.zoomedAt(factor, view.toScreenX(p.x(), width), view.toScreenY(p.y(), skyH()), width, skyH(), closestZoom());
     }
 
     private void arrow(int keyCode) {

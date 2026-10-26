@@ -19,8 +19,8 @@ import java.util.Set;
  * sky; hovering any class makes its perks glow. A click on a hidden class shows it; on a shown one it
  * selects it (the bar keeps showing it).
  *
- * <p>The selected class (or the class of the perk kept in the bar) sits in a pill of its colour with dark
- * text; the hovered one gets a grey outline. A shown class, while hovered or selected, gets an eye with a
+ * <p>The selected class sits in a pill of its colour with dark text; the hovered one, and the class of
+ * the perk kept in the bar, get a grey outline. A shown class, while hovered or selected, gets an eye with a
  * slash after its name that hides it; the heading gets one while hovered that hides them all. Every row
  * leaves room for it so the names never shift.
  */
@@ -125,8 +125,8 @@ final class ClassesList {
 
     /**
      * @param hovered  the class whose name is under the mouse (a hidden one reads brighter)
-     * @param marked   the selected class, or the class of the perk kept in the bar: a pill of its colour
-     * @param hoverMarked the class of the hovered perk: a grey outline
+     * @param marked   the selected class: a pill of its colour
+     * @param hoverMarked the class of the hovered title or perk, or of the perk kept in the bar: a grey outline
      * @param rowHover the class whose row is under the mouse: its icon shows, and a grey outline
      * @param selectedClass the class clicked to stay: its icon shows
      * @param eyeHover the class whose hide icon is under the mouse, drawn brighter

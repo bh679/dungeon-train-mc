@@ -5592,6 +5592,7 @@
   "gui.dungeontrain.perks.stat.unit.seconds": "%s วิ",
   "gui.dungeontrain.perks.zoom.out": "ท้องฟ้าทั้งหมด",
   "gui.dungeontrain.perks.zoom.in": "ใกล้",
+  "gui.dungeontrain.perks.zoom.closest": "ใกล้ที่สุด",
   "gui.dungeontrain.perks.bar.full": "เต็มแล้ว ปลดล็อกอีกครั้งเพื่อเพิ่มที่ว่างอีกหนึ่งแต้ม",
   "gui.dungeontrain.perks.bar.fill_first": "เติมแต้มให้เต็มก่อน",
   "gui.dungeontrain.perks.bar.hint": "วางเมาส์บนพลังพิเศษเพื่อดูที่นี่ คลิกเพื่อปักไว้",

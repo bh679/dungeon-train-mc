@@ -5592,6 +5592,7 @@
   "gui.dungeontrain.perks.stat.unit.seconds": "%s saat",
   "gui.dungeontrain.perks.zoom.out": "Seluruh langit",
   "gui.dungeontrain.perks.zoom.in": "Dekat",
+  "gui.dungeontrain.perks.zoom.closest": "Paling dekat",
   "gui.dungeontrain.perks.bar.full": "Penuh. Buka kunci sekali lagi untuk ruang satu mata lagi.",
   "gui.dungeontrain.perks.bar.fill_first": "Isi matanya dahulu.",
   "gui.dungeontrain.perks.bar.hint": "Tuding pada perk untuk melihatnya di sini. Klik untuk menyematkannya.",

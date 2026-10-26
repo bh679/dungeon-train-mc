@@ -5653,6 +5653,7 @@
   "gui.dungeontrain.perks.stat.unit.seconds": "%ss",
   "gui.dungeontrain.perks.zoom.out": "Whole sky",
   "gui.dungeontrain.perks.zoom.in": "Close",
+  "gui.dungeontrain.perks.zoom.closest": "Closest",
   "gui.dungeontrain.perks.bar.full": "Full. Unlock it again for room for one more point.",
   "gui.dungeontrain.perks.bar.fill_first": "Fill its points first.",
   "gui.dungeontrain.perks.bar.hint": "Hover a perk to see it here. Click one to keep it.",

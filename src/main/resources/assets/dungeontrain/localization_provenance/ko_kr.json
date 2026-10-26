@@ -5595,6 +5595,7 @@
       "gui.dungeontrain.perks.stat.unit.seconds",
       "gui.dungeontrain.perks.zoom.out",
       "gui.dungeontrain.perks.zoom.in",
+      "gui.dungeontrain.perks.zoom.closest",
       "gui.dungeontrain.perks.bar.full",
       "gui.dungeontrain.perks.bar.fill_first",
       "gui.dungeontrain.perks.bar.hint",

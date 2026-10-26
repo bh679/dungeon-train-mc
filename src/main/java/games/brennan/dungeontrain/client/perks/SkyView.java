@@ -60,23 +60,29 @@ public record SkyView(double zoom, double centreX, double centreY) {
     }
 
     /**
-     * The two zoom steps: fully out (the whole sky fits) and close, halfway from there to
-     * {@link #MAX_ZOOM}. A screen so large that the fit is already past {@link #MAX_ZOOM} has the one step.
+     * The zoom steps: fully out (the whole sky fits) and close, halfway from there to {@link #MAX_ZOOM};
+     * with {@code closest}, a third at {@link #MAX_ZOOM} itself. A screen so large that the fit is already
+     * past {@link #MAX_ZOOM} has the one step.
      */
-    public static double[] zoomSteps(int screenWidth, int screenHeight) {
+    public static double[] zoomSteps(int screenWidth, int screenHeight, boolean closest) {
         double fit = fitZoom(screenWidth, screenHeight);
         if (fit >= MAX_ZOOM) return new double[] {fit};
-        return new double[] {fit, (fit + MAX_ZOOM) / 2};
+        double half = (fit + MAX_ZOOM) / 2;
+        return closest ? new double[] {fit, half, MAX_ZOOM} : new double[] {fit, half};
+    }
+
+    public static double[] zoomSteps(int screenWidth, int screenHeight) {
+        return zoomSteps(screenWidth, screenHeight, false);
     }
 
     /** Which of {@link #zoomSteps} the view is at (the nearest one). */
-    public int step(int screenWidth, int screenHeight) {
-        return stepIndex(zoomSteps(screenWidth, screenHeight));
+    public int step(int screenWidth, int screenHeight, boolean closest) {
+        return stepIndex(zoomSteps(screenWidth, screenHeight, closest));
     }
 
     /** The view at zoom step {@code i}, keeping its centre. */
-    public SkyView atStep(int i, int screenWidth, int screenHeight) {
-        double[] steps = zoomSteps(screenWidth, screenHeight);
+    public SkyView atStep(int i, int screenWidth, int screenHeight, boolean closest) {
+        double[] steps = zoomSteps(screenWidth, screenHeight, closest);
         double z = steps[Math.max(0, Math.min(steps.length - 1, i))];
         return new SkyView(z, centreX, centreY).clamped(screenWidth, screenHeight);
     }
@@ -95,7 +101,11 @@ public record SkyView(double zoom, double centreX, double centreY) {
      * {@code (screenX, screenY)} still. Zoom moves only between {@link #zoomSteps}.
      */
     public SkyView zoomedAt(double factor, double screenX, double screenY, int screenWidth, int screenHeight) {
-        double[] steps = zoomSteps(screenWidth, screenHeight);
+        return zoomedAt(factor, screenX, screenY, screenWidth, screenHeight, false);
+    }
+
+    public SkyView zoomedAt(double factor, double screenX, double screenY, int screenWidth, int screenHeight, boolean closest) {
+        double[] steps = zoomSteps(screenWidth, screenHeight, closest);
         int i = stepIndex(steps);
         int target = factor > 1 ? Math.min(steps.length - 1, i + 1) : factor < 1 ? Math.max(0, i - 1) : i;
         double next = steps[target];

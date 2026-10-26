@@ -5592,6 +5592,7 @@
   "gui.dungeontrain.perks.stat.unit.seconds": "%ss",
   "gui.dungeontrain.perks.zoom.out": "Buong langit",
   "gui.dungeontrain.perks.zoom.in": "Malapit",
+  "gui.dungeontrain.perks.zoom.closest": "Pinakamalapit",
   "gui.dungeontrain.perks.bar.full": "Puno na. I-unlock ulit para may puwang sa isa pang point.",
   "gui.dungeontrain.perks.bar.fill_first": "Punuin muna ang mga point nito.",
   "gui.dungeontrain.perks.bar.hint": "I-hover ang isang perk para makita ito rito. I-click para manatili ito.",

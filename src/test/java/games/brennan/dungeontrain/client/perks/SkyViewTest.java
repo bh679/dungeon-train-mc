@@ -52,6 +52,17 @@ class SkyViewTest {
     }
 
     @Test
+    @DisplayName("with the closest step on, a third step reaches the maximum zoom")
+    void closestStep() {
+        SkyView v = SkyView.fit(960, 540);
+        assertEquals(3, SkyView.zoomSteps(960, 540, true).length);
+        SkyView in = v.zoomedAt(1.25, 480, 270, 960, 540, true).zoomedAt(1.25, 480, 270, 960, 540, true);
+        assertEquals(SkyView.MAX_ZOOM, in.zoom(), 1e-9);
+        assertEquals(2, in.step(960, 540, true));
+        assertEquals(SkyView.MAX_ZOOM, v.atStep(2, 960, 540, true).zoom(), 1e-9);
+    }
+
+    @Test
     @DisplayName("panning stops with a quarter of the sky still on screen")
     void panClamp() {
         SkyView v = new SkyView(1.0, PerkTree.CENTRE, PerkTree.CENTRE).panned(-5000, -5000, 640, 360);

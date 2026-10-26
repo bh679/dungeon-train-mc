@@ -5592,6 +5592,7 @@
   "gui.dungeontrain.perks.stat.unit.seconds": "%s秒",
   "gui.dungeontrain.perks.zoom.out": "空全体",
   "gui.dungeontrain.perks.zoom.in": "近く",
+  "gui.dungeontrain.perks.zoom.closest": "最も近く",
   "gui.dungeontrain.perks.bar.full": "満タン。もう一度解放するとポイントをもう1つ入れられます。",
   "gui.dungeontrain.perks.bar.fill_first": "先にポイントを満たしてください。",
   "gui.dungeontrain.perks.bar.hint": "パークにカーソルを合わせるとここに表示。クリックで固定。",

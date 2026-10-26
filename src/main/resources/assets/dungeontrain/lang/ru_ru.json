@@ -5720,6 +5720,7 @@
   "gui.dungeontrain.perks.stat.unit.seconds": "%s с",
   "gui.dungeontrain.perks.zoom.out": "Всё небо",
   "gui.dungeontrain.perks.zoom.in": "Близко",
+  "gui.dungeontrain.perks.zoom.closest": "Ближе всего",
   "gui.dungeontrain.perks.bar.full": "Заполнено. Разблокируйте снова, чтобы освободить место для ещё одного очка.",
   "gui.dungeontrain.perks.bar.fill_first": "Сначала заполните его очки.",
   "gui.dungeontrain.perks.bar.hint": "Наведите на перк, чтобы увидеть его здесь. Нажмите, чтобы закрепить.",

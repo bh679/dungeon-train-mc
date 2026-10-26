@@ -5656,6 +5656,7 @@
   "gui.dungeontrain.perks.stat.unit.seconds": "%s s",
   "gui.dungeontrain.perks.zoom.out": "Hele hemel",
   "gui.dungeontrain.perks.zoom.in": "Dichtbij",
+  "gui.dungeontrain.perks.zoom.closest": "Dichtstbij",
   "gui.dungeontrain.perks.bar.full": "Vol. Ontgrendel hem opnieuw voor ruimte voor nog een punt.",
   "gui.dungeontrain.perks.bar.fill_first": "Vul eerst zijn punten.",
   "gui.dungeontrain.perks.bar.hint": "Beweeg over een perk om hem hier te zien. Klik om hem vast te houden.",
