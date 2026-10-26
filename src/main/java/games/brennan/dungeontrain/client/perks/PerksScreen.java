@@ -56,6 +56,8 @@ public final class PerksScreen extends Screen {
     private static final int CLOSE_W = 12;
     /** How far a label's leader line starts off the label's edge, GUI px. */
     private static final double LEADER_GAP = 1.5;
+    /** Labels fade in over this long once the stars stop moving. */
+    private static final long LABEL_FADE_MS = 250;
     private static final double DOUBLE_CLICK_MS = 300;
 
     private final PerkTree tree;
@@ -81,6 +83,7 @@ public final class PerksScreen extends Screen {
     private String hovered;
     private String cardFor;
     private int zoomHover = -1;
+    private long labelsSettledAt = -1;
     private long cardLeftAt = -1;
     private PerkTree drawn;
     private ClassVisibility vis;
@@ -293,8 +296,15 @@ public final class PerksScreen extends Screen {
         List<NameLayout.Box> nameBoxes = new java.util.ArrayList<>();
         names.forEach((id, at) -> tree.perk(id).ifPresent(p -> nameBoxes.add(new NameLayout.Box(at[0], at[1],
             at[0] + Math.ceil(font.width(p.name()) * SkyPalette.NAME_SCALE), at[1] + Math.ceil(font.lineHeight * SkyPalette.NAME_SCALE)))));
-        ClassTitlePainter.render(g, font, drawn, vis, glow, view, width, skyH(), fade, nameBoxes);
-        renderLeaders(g, names, fade);
+        // labels hide while stars swing to a new layout, then fade in once they settle
+        if (layout.moving()) labelsSettledAt = -1;
+        else if (labelsSettledAt < 0) labelsSettledAt = now;
+        double labelFade = labelsSettledAt < 0 ? 0 : Math.min(1.0, (now - labelsSettledAt) / (double) LABEL_FADE_MS) * fade;
+        boolean labels = labelFade > 0.03; // Minecraft draws near-zero alpha text fully opaque, so skip it
+        if (labels) {
+            ClassTitlePainter.render(g, font, drawn, vis, glow, view, width, skyH(), labelFade, nameBoxes);
+            renderLeaders(g, names, labelFade);
+        }
 
         for (PerkTree.Perk p : drawn.perks()) {
             if (vis.hidden(p)) continue;
@@ -304,15 +314,16 @@ public final class PerksScreen extends Screen {
                 new StarPainter.Look(hov, sel, names.get(p.id()), spendable, vis.ghost(p), glows), unlockedAt, pointAt, now, fade);
         }
         // names after every star, so no dot covers a label
-        for (PerkTree.Perk p : drawn.perks()) {
+        for (PerkTree.Perk p : labels ? drawn.perks() : List.<PerkTree.Perk>of()) {
             int[] at = names.get(p.id());
             if (at == null || vis.hidden(p)) continue;
-            StarPainter.renderName(g, font, drawn, p, snap, at, glow != null && glow.equals(p.cls()), vis.ghost(p), fade);
+            StarPainter.renderName(g, font, drawn, p, snap, at, glow != null && glow.equals(p.cls()), vis.ghost(p), labelFade);
         }
 
         renderHeader(g, snap, now, fade);
         String marked = selected == null ? null : tree.perk(selected).map(PerkTree.Perk::cls).orElse(null);
-        classesList.render(g, off, listHover, marked, fade);
+        String hoverMarked = hovered == null ? null : tree.perk(hovered).map(PerkTree.Perk::cls).orElse(null);
+        classesList.render(g, off, listHover, marked, hoverMarked, fade);
         counters.render(g, snap.unlockPoints(), snap.activePoints(), now, fade);
         g.flush(); // titles and names are batched: push them out so the card paints over them
         if (DETAILS == DetailsMode.BAR) bar.render(g, snap, fade);

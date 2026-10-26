@@ -21,6 +21,8 @@ final class GlowText {
     /** {@code colour} is ARGB; the glow takes the same alpha, softened. */
     static void draw(GuiGraphics g, Font font, String text, int x, int y, int colour) {
         double a = ((colour >>> 24) & 0xFF) / 255.0;
+        // Minecraft draws text with an alpha under 4/255 fully opaque: below a visible alpha, draw nothing
+        if (a * GLOW_ALPHA < 0.03) return;
         int glow = SkyDraw.withAlpha(SkyPalette.BG, a * GLOW_ALPHA);
         for (int[] d : AROUND) g.drawString(font, text, x + d[0], y + d[1], glow, false);
         g.drawString(font, text, x, y, colour, false);

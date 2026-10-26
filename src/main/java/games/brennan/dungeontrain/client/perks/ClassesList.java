@@ -62,7 +62,7 @@ final class ClassesList {
      * @param marked the class of the perk clicked to stay in the bar: a dash in its colour comes out
      *               to the left of its name
      */
-    void render(GuiGraphics g, Set<String> off, String hovered, String marked, double fade) {
+    void render(GuiGraphics g, Set<String> off, String hovered, String marked, String hoverMarked, double fade) {
         if (order.isEmpty()) return;
         int right = screenW - RIGHT;
         int a = (int) (fade * 255);
@@ -79,9 +79,11 @@ final class ClassesList {
             int colour = shown ? c.colour() : SkyPalette.MUTED;
             double alpha = shown ? 1.0 : hov ? 0.9 : 0.55;
             g.drawString(font, c.name(), right - font.width(c.name()), y + 1, ((int) (a * alpha) << 24) | (colour & 0xFFFFFF), true);
-            if (c.id().equals(marked)) {
+            // the clicked perk's class: a dash in its colour; the hovered perk's class: a grey one
+            int dash = c.id().equals(marked) ? c.colour() : c.id().equals(hoverMarked) ? SkyPalette.MUTED : 0;
+            if (dash != 0) {
                 double x1 = right - font.width(c.name()) - 4, mid = y + 1 + font.lineHeight / 2.0 - 1;
-                SkyDraw.line(g, x1 - DASH, mid, x1, mid, 1.5, SkyDraw.withAlpha(c.colour(), fade), SkyDraw.withAlpha(c.colour(), fade));
+                SkyDraw.line(g, x1 - DASH, mid, x1, mid, 1.5, SkyDraw.withAlpha(dash, fade), SkyDraw.withAlpha(dash, fade));
             }
             y += ROW;
         }

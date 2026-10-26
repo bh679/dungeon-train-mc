@@ -28,7 +28,7 @@ final class SkyLayout {
     static final double FILL = 0.85;
     static final double MAX_SPREAD = 0.35;
     static final double MAX_STRETCH = 6;
-    static final long MOVE_MS = 1500, MOVE_MIN_MS = 350;
+    static final long MOVE_MS = 750, MOVE_MIN_MS = 175;
     private static final double TAU = Math.PI * 2;
 
     private String key;

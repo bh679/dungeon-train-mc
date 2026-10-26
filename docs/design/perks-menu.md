@@ -34,7 +34,8 @@ the older sections below disagree, this section wins.
   on this computer (`config/dungeontrain/perks-classes.json`).
 - **The classes on the circle share it.** Each gets an equal sector in its authored order (a class
   shown only because points are held gets half a share), spread to 85 % of its share and at most 35 %
-  of the circle. A layout change swings every star round the Engine over 1.5 s (`SkyLayout`).
+  of the circle. A layout change swings every star round the Engine over 0.75 s (`SkyLayout`); labels hide while
+  stars move and fade in once they settle.
 - **Looks.** Locked stars are grey at 35 %; a locked star a solid line reaches is at 75 %. Each star
   carries one ring segment per unlock level, filled per point. The Engine is a clock: points spent on
   ranks in the middle and a gold sweep through the current price run (`EngineClock`).
