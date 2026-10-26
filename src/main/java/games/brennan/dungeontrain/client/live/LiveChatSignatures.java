@@ -68,6 +68,14 @@ final class LiveChatSignatures {
         return bySeq.remove(key(seq, 0));
     }
 
+    /**
+     * Whether {@code newest} — the signature of the newest line in chat, null for an unsigned one — is line
+     * {@code seq} itself, so something printed now lands right under it. Nothing is forgotten here.
+     */
+    boolean isNewest(long seq, @Nullable MessageSignature newest) {
+        return newest != null && newest.equals(bySeq.get(key(seq, 0)));
+    }
+
     /** Every signature printed for {@code seq} (the line and any part under it), all forgotten here. */
     List<MessageSignature> takeAll(long seq) {
         List<MessageSignature> out = new ArrayList<>();

@@ -108,7 +108,12 @@ public final class CommunityRewards {
     static long nextFreeMs(LiveRewards state, Reward reward, long now) {
         LiveRewards.Reward live = state.find(reward.id());
         if (live == null || live.activeUntilMs() <= now) return now;
-        return live.activeUntilMs() + MONTH_MS * reward.months() * live.queuedBy().size();
+        return queuedStartMs(live.activeUntilMs(), reward, live.queuedBy().size());
+    }
+
+    /** When the {@code index}th gift queued behind a term ending {@code activeUntilMs} starts (0 = right after it). */
+    static long queuedStartMs(long activeUntilMs, Reward reward, int index) {
+        return activeUntilMs + MONTH_MS * reward.months() * index;
     }
 
     /**

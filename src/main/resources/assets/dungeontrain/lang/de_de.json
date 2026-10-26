@@ -774,7 +774,7 @@
   "chat.dungeontrain.live_chat.translation": "    ↳ %s",
   "chat.dungeontrain.live_chat.translation.named": "    ↳ %s: %s",
   "chat.dungeontrain.live_chat.translation.original": "Original: %s",
-  "chat.dungeontrain.live_chat.translation.on": "Der Live-Chat wird für dich ins %s übersetzt (Live-Übersetzungen, eine Community-Belohnung). Ändere die Anzeige unter %s",
+  "chat.dungeontrain.live_chat.translation.on": "Der Live-Chat wird für dich auf %s übersetzt (Live-Übersetzungen, eine Community-Belohnung). Ändere die Anzeige unter %s",
   "chat.dungeontrain.live_chat.translation.path": "Optionen / Dungeon Train / Stream / Chat-Übersetzungen",
   "chat.dungeontrain.live_gift.prompt": "%s schaut über einen Fernseher zu und hatte noch nie einen Sende-Camcorder.",
   "chat.dungeontrain.live_gift.give": "Schenk ihn",

@@ -100,6 +100,24 @@ Approved Gate 1 plan (full detail, both repos):
   one-time notice and deletion verified; every poll carried `lang=zh_cn`. Screenshots kept locally in this worktree's `test-results/` (gitignored).
 - Not covered: the real relay (doesn't exist yet); multiplayer/server (feature is client-only); Sable n/a.
 
+## Go-live review fixes (2026-10-26, after Gate 2)
+
+Brennan: "Fix all of these". Mod side, on this branch:
+- Merged origin/main; changelog entry `live-translations-reward` retitled **Live Eye Chat Translations**
+  (the reward's in-game name stays "Live Translations").
+- Late translation under the wrong line: adjacency no longer uses a `lastPrintedSeq` that only live lines
+  updated. `LiveChatBridge#applyLate` now asks `LiveChatSignatures#isNewest(seq, newest)` with the newest
+  `GuiMessage`'s signature (via `ChatComponentAccessor`), so any line since (server chat, system, poll,
+  death, restart, reaction notice, the one-time notice) gets the named `↳ Name: text` form. UNDER and late
+  FIRST both use it. Unit test in `LiveChatSignaturesTest#isNewest`.
+- Queued givers' start month on the Community Rewards screen stepped one month per giver; now
+  `CommunityRewards.queuedStartMs` (months per gift, so 2 for Live Translations). `CommunityRewardsTest`.
+- The reader's own lines are never translated (shown as typed, late translations skipped).
+- The `↳` under-line and FIRST's moved original go through `ChatReactionTracker.onOtherChat`, so `:emote:`
+  codes render like live lines.
+- de_de `translation.on` reworded "ins %s" → "auf %s"; provenance restamped. The one-time notice reads
+  the game language when it is shown (call time), confirmed.
+
 ### Re-running the in-game check
 
 ```bash

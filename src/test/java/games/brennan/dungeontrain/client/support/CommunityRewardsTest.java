@@ -57,6 +57,17 @@ class CommunityRewardsTest {
     }
 
     @Test
+    void queuedGiftsStartOneTermApartAtThatRewardsLength() {
+        long until = NOW + 5 * DAY;
+        assertEquals(until, CommunityRewards.queuedStartMs(until, CommunityRewards.Reward.LIVE_TRANSLATION, 0));
+        // Live Translations runs 2 months a gift: the second queued giver starts 2 months after the first.
+        assertEquals(until + 2 * CommunityRewards.MONTH_MS,
+                CommunityRewards.queuedStartMs(until, CommunityRewards.Reward.LIVE_TRANSLATION, 1));
+        assertEquals(until + CommunityRewards.MONTH_MS,
+                CommunityRewards.queuedStartMs(until, CommunityRewards.Reward.QUICKER_STREAMS, 1));
+    }
+
+    @Test
     void anExpiredRewardIsOffAndFreeNow() {
         LiveRewards state = new LiveRewards(List.of(on(LiveRewards.QUICKER_STREAMS, -DAY, "Moth", "Ash")));
         assertEquals(NOW, CommunityRewards.nextFreeMs(state, CommunityRewards.Reward.QUICKER_STREAMS, NOW));
