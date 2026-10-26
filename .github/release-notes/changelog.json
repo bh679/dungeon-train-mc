@@ -31081,6 +31081,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "perks-menu-constellation",
+      "version": "0.1540.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Perks menu",
+      "summary": "Press P (or use the button on the pause menu) to open your perks as a sky of stars. Unlock perks with Advancement Points and activate them with Cosmic Apples, all from the bar along the bottom.",
+      "highlights": [
+        "Hover or click a star to see what it does, its points and its key stats",
+        "Right-click a star to unlock it, double-click to add a point",
+        "Show, hide and pick classes from the list on the right"
+      ],
+      "date": "2026-10-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
