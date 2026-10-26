@@ -30959,9 +30959,9 @@
       "highlights": [],
       "pr": 2337,
       "date": "2026-10-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1542.0",
+      "released_at": "2026-10-26T14:15:58Z"
     },
     {
       "id": "tv-chat-always-open",
@@ -30981,9 +30981,9 @@
       ],
       "pr": 2338,
       "date": "2026-10-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1542.0",
+      "released_at": "2026-10-26T14:15:58Z"
     },
     {
       "id": "reward-time-left",
@@ -31001,9 +31001,9 @@
         "Rewards ending the next day say ON until tomorrow"
       ],
       "date": "2026-10-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1542.0",
+      "released_at": "2026-10-26T14:15:58Z"
     },
     {
       "id": "live-translations-reward",
@@ -31023,9 +31023,9 @@
       ],
       "pr": 2339,
       "date": "2026-10-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1542.0",
+      "released_at": "2026-10-26T14:15:58Z",
       "major": true,
       "notable": true,
       "description": "Live chat now speaks your language.\n\n**Live Eye Chat Translations** is a new Community Reward. When one person gives it, Live chat is translated for everyone for a month: messages from the stream, Discord, Twitch and the website show in your own game language, right under the original.\n\nChoose how translations show in Options: under the original, translation only, or translation first.\n\nFind it on the Community Rewards shelf at $90 AUD for a month.",
