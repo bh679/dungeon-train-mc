@@ -9,13 +9,25 @@ max-age it was uploaded with (2 s, or 1 s for a Quicker Streams session), segmen
     python3 -I scripts/live/stub-relay.py --port 8787 --out <dir> [--quick] [--relay-public <dp-relay>/public/dungeontrain]
 
 --quick makes every claim a Quicker Streams one (--quick-seconds, default 3: segmentSeconds 3,
-listSize 20, keyframeSeconds 3), as the relay does while the reward is on. Measurements:
+listSize 20, keyframeSeconds 3), as the relay does while the reward is on.
+
+--second-streamer NAME plays the Two Streams reward: every status carries a `second` block (a second
+player NAME live on the relay's `second` slot, at a playlist nobody uploads to), and a claim made
+while the first session is live answers `channel: "second"` instead of taking it over. Each status
+GET logs its `slot=` query so the viewer's second-slot flag can be checked. Measurements:
 
 - Website: open http://127.0.0.1:<port>/harness.html (needs --relay-public). It plays the stream
   with the relay's own live-player.js hls.js settings and posts `now - hls.playingDate` once a second.
 - In-game TV: run the TV's own ffmpeg command against the playlist (the stub logs each GET with its
   User-Agent); a TV shows segment N's first frame as it fetches it, so delay(N) = GET(N) - PDT(N).
-- GET /report: per-segment upload lateness (PUT time - PDT - segment length), TV and web delay stats.
+- GET /report: per-segment upload lateness (PUT time - PDT - segment length), TV and web delay stats,
+  and the newest segments' sizes (an adaptive-quality step shows as smaller segments).
+
+--prev-name NAME makes every claim that lands on the main slot a takeover of NAME (`prevName`), so a
+server can be seen demoting exactly that streamer. Second-slot claims never carry it, as on the relay.
+
+--throttle-kbps N caps how fast PUT bodies are read, to play a streamer whose upload can't keep up;
+GET /ctl?throttle=N changes it while running (0 = no cap).
 
 The segments' wall-clock start (PDT) comes from the encoder's #EXT-X-PROGRAM-DATE-TIME tags.
 Dev tool only; never exposed beyond loopback.
@@ -45,7 +57,29 @@ STATE = {
     "presigns": [],    # t
     "files": {},       # (session, name) -> (bytes, headers)
     "edge": {},        # (session, name) -> (served_at, bytes)
+    "throttle_kbps": 0,  # PUT bodies are read no faster than this (0 = no cap)
 }
+
+THROTTLE_CHUNK = 16 * 1024
+
+
+def read_throttled(rfile, n):
+    """Reads n bytes, sleeping between chunks so the rate stays under STATE["throttle_kbps"]."""
+    start = time.time()
+    chunks, got = [], 0
+    while got < n:
+        chunk = rfile.read(min(THROTTLE_CHUNK, n - got))
+        if not chunk:
+            break
+        chunks.append(chunk)
+        got += len(chunk)
+        kbps = STATE["throttle_kbps"]
+        if kbps > 0:
+            due = got * 8 / (kbps * 1000)
+            ahead = due - (time.time() - start)
+            if ahead > 0:
+                time.sleep(ahead)
+    return b"".join(chunks)
 
 
 def parse_pdt(text, session):
@@ -97,7 +131,24 @@ def report():
             "tvDelayS": summary(tv),
             "webDelayS": summary(web),
             "presignsPerMin": round(len(STATE["presigns"]) / span, 1) if span else None,
+            "throttleKbps": STATE["throttle_kbps"],
+            "recentSegments": recent_segments(seg),
         }
+
+
+def recent_segments(seg, count=30):
+    """The newest segments of the current session: size, and how late each landed."""
+    session = STATE["session"]
+    rows = []
+    for (s, name), (data, _) in STATE["files"].items():
+        if s != session or not SEG_RE.match(name):
+            continue
+        pdt = STATE["pdt"].get((s, name))
+        put = STATE["puts"].get((s, name))
+        late = round(put - pdt - seg, 1) if pdt is not None and put is not None else None
+        rows.append({"name": name, "kb": len(data) // 1024, "lateS": late})
+    rows.sort(key=lambda r: r["name"])
+    return rows[-count:]
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -135,9 +186,13 @@ class Handler(BaseHTTPRequestHandler):
         if path.endswith("/live/claim"):
             session = "%x-stub" % int(time.time() * 1000)
             with LOCK:
-                STATE["session"] = session
-            out = {"ok": True, "channel": "main", "session": session, "token": "tok-" + session,
+                channel = "second" if ARGS.second_streamer and STATE["session"] else "main"
+                if channel == "main":
+                    STATE["session"] = session
+            out = {"ok": True, "channel": channel, "session": session, "token": "tok-" + session,
                    "playlistUrl": "http://127.0.0.1:%d/files/%s/live.m3u8" % (port, session)}
+            if ARGS.prev_name and channel == "main":
+                out["prevName"] = ARGS.prev_name
             if ARGS.quick:
                 seg = ARGS.quick_seconds
                 out.update(segmentSeconds=seg, listSize=max(6, -(-60 // seg)))
@@ -174,13 +229,15 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         parts = urlparse(self.path).path.strip("/").split("/")
-        if len(parts) != 3 or parts[0] != "files":
+        # /files/<session>/<name> is the stub's own layout; /main/<session>/<name> is the bucket's, so a
+        # relay pointed at this stub as its LIVE_PUBLIC_BASE finds the same files.
+        if len(parts) != 3 or parts[0] not in ("files", "main"):
             return self._send(404)
         _, session, name = parts
         if not (SEG_RE.match(name) or name == "live.m3u8"):
             return self._send(400)
         n = int(self.headers.get("Content-Length") or 0)
-        data = self.rfile.read(n)
+        data = read_throttled(self.rfile, n)
         now = time.time()
         headers = {"Content-Type": self.headers.get("Content-Type", ""), "Cache-Control": self.headers.get("Cache-Control", "")}
         with LOCK:
@@ -193,18 +250,42 @@ class Handler(BaseHTTPRequestHandler):
             fh.write(data)
         return self._send(200)
 
+    def do_HEAD(self):
+        # A relay's readiness check HEADs the first segment on the public base; _send drops the body.
+        self.do_GET()
+
     def do_GET(self):
         path = urlparse(self.path).path
         if path.endswith("/live/status") or path.endswith("/live/public-status"):
             s = STATE["session"]
-            if not s:
-                return self._send(200, {"ok": True, "live": False, "viewers": 0, "cap": 100, "slot": True})
+            query = urlparse(self.path).query
+            if ARGS.second_streamer:
+                print("[stub] status slot=%s (%s)" % ("second" if "slot=second" in query else "main", query[:120]), flush=True)
             port = self.server.server_address[1]
-            return self._send(200, {"ok": True, "live": True, "session": s, "streamer": "Dev",
-                                    "playlistUrl": "http://127.0.0.1:%d/files/%s/live.m3u8" % (port, s),
-                                    "segmentSeconds": STATE["segment_seconds"], "viewers": 1, "cap": 100, "slot": True})
+            second = None
+            if ARGS.second_streamer:
+                second = {"live": True, "session": "second-stub", "streamer": ARGS.second_streamer,
+                          "playlistUrl": "http://127.0.0.1:%d/files/second-stub/live.m3u8" % port,
+                          "segmentSeconds": STATE["segment_seconds"]}
+            if not s:
+                # Nobody on the first slot: the second streamer, if any, is the primary (as the relay promotes it).
+                if second:
+                    return self._send(200, {"ok": True, "channel": "second", "viewers": 1, "cap": 100, "slot": True, **second})
+                return self._send(200, {"ok": True, "live": False, "viewers": 0, "cap": 100, "slot": True})
+            out = {"ok": True, "channel": "main", "live": True, "session": s, "streamer": "Dev",
+                   "playlistUrl": "http://127.0.0.1:%d/files/%s/live.m3u8" % (port, s),
+                   "segmentSeconds": STATE["segment_seconds"], "viewers": 1, "cap": 100, "slot": True}
+            if second:
+                out["second"] = second
+            return self._send(200, out)
         if path == "/report":
             return self._send(200, report())
+        if path == "/ctl":
+            m = re.search(r"(?:^|&)throttle=(\d+)", urlparse(self.path).query)
+            if m:
+                STATE["throttle_kbps"] = int(m.group(1))
+                print("[stub] upload throttle now %d kbit/s" % STATE["throttle_kbps"], flush=True)
+            return self._send(200, {"throttleKbps": STATE["throttle_kbps"]})
         if path == "/harness.html":
             return self._send(200, HARNESS.encode(), "text/html")
         if path.startswith("/public/") and ARGS.relay_public:
@@ -215,7 +296,7 @@ class Handler(BaseHTTPRequestHandler):
             with open(full, "rb") as fh:
                 return self._send(200, fh.read(), "application/javascript")
         parts = path.strip("/").split("/")
-        if len(parts) == 3 and parts[0] == "files":
+        if len(parts) == 3 and parts[0] in ("files", "main"):
             key = (parts[1], parts[2])
             now = time.time()
             with LOCK:
@@ -267,7 +348,11 @@ def main():
     p.add_argument("--quick", action="store_true")
     p.add_argument("--quick-seconds", type=int, default=3)
     p.add_argument("--relay-public", default="")
+    p.add_argument("--second-streamer", default="", help="Two Streams: a second player of this name is live on the second slot")
+    p.add_argument("--prev-name", default="", help="main-slot claims take over from this streamer (prevName)")
+    p.add_argument("--throttle-kbps", type=int, default=0, help="cap PUT upload speed (kbit/s); /ctl?throttle=N changes it")
     ARGS = p.parse_args()
+    STATE["throttle_kbps"] = max(0, ARGS.throttle_kbps)
     STATE["segment_seconds"] = ARGS.quick_seconds if ARGS.quick else 10
     STATE["list_size"] = max(6, -(-60 // STATE["segment_seconds"]))
     os.makedirs(ARGS.out, exist_ok=True)

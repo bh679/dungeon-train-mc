@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.compat.vista;
 
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.mehvahdjukaar.vista.VistaMod;
@@ -11,6 +12,7 @@ import net.mehvahdjukaar.vista.common.cassette.IBroadcastSource;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.TickTask;
@@ -21,26 +23,45 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A Vista broadcast location that is nowhere: it resolves straight to {@link LiveBroadcastSource}.
- * Registered in Vista's broadcast-location registry so {@code BroadcastManager} can persist and sync
- * the link like any other; {@link #link} puts the feed id → this location into every server level,
- * which is what lets a cassette carrying the id play on any TV with no antenna block.
+ * A Vista broadcast location that is nowhere: it resolves straight to a {@link LiveBroadcastSource}.
+ * One per stream ({@link #INSTANCE} the first, {@link #SECOND} the second stream of the Two Streams
+ * reward), each registered in Vista's broadcast-location registry so {@code BroadcastManager} can
+ * persist and sync the link like any other; {@link #link} puts both feed ids → their locations into
+ * every server level, which is what lets a cassette carrying either id play on any TV with no antenna
+ * block.
  */
 public final class LiveBroadcastLocation implements IBroadcastLocation {
 
-    public static final LiveBroadcastLocation INSTANCE = new LiveBroadcastLocation();
+    public static final LiveBroadcastLocation INSTANCE = new LiveBroadcastLocation(LiveBroadcastSource.INSTANCE);
+    public static final LiveBroadcastLocation SECOND = new LiveBroadcastLocation(LiveBroadcastSource.SECOND);
 
+    /**
+     * Both streams' type ({@code dungeontrain:live}): the second stream is the same type with
+     * {@code second: true}. Saved that way, a world opened by an older Dungeon Train (which only knows
+     * {@code live}, as a unit) reads the second link as the first instead of failing Vista's whole
+     * broadcast file, which would drop every link in the dimension, players' own included. The first
+     * stream's saved form is unchanged.
+     */
     public static final BroadcastLocationType TYPE = new BroadcastLocationType(
-        MapCodec.unit(INSTANCE), StreamCodec.unit(INSTANCE));
+        Codec.BOOL.optionalFieldOf("second", false).xmap(LiveBroadcastLocation::of, LiveBroadcastLocation::isSecond),
+        ByteBufCodecs.BOOL.map(LiveBroadcastLocation::of, LiveBroadcastLocation::isSecond));
+    /** Read-only: unreleased dev builds saved the second link under its own type. Nothing is written as it now. */
+    public static final BroadcastLocationType SECOND_TYPE = new BroadcastLocationType(
+        MapCodec.unit(SECOND), StreamCodec.unit(SECOND));
 
     private static final DeferredRegister<BroadcastLocationType> TYPES =
         DeferredRegister.create(VistaMod.BROADCAST_LOCATION_REGISTRY.key(), DungeonTrain.MOD_ID);
 
     static {
         TYPES.register("live", () -> TYPE);
+        TYPES.register("live_second", () -> SECOND_TYPE);
     }
 
-    private LiveBroadcastLocation() {}
+    private final LiveBroadcastSource source;
+
+    private LiveBroadcastLocation(LiveBroadcastSource source) {
+        this.source = source;
+    }
 
     /** Call from the mod constructor. */
     public static void register(IEventBus modBus) {
@@ -54,14 +75,21 @@ public final class LiveBroadcastLocation implements IBroadcastLocation {
      */
     public static void link(ServerLevel level) {
         MinecraftServer server = level.getServer();
-        Runnable task = () -> BroadcastManager.getInstance(level).linkFeed(LiveBroadcastSource.MAIN_FEED_UUID, INSTANCE);
+        Runnable task = () -> {
+            BroadcastManager manager = BroadcastManager.getInstance(level);
+            manager.linkFeed(LiveBroadcastSource.MAIN_FEED_UUID, INSTANCE);
+            manager.linkFeed(LiveBroadcastSource.SECOND_FEED_UUID, SECOND);
+            // An unchanged link is not saved again; this rewrites a save that still holds the old
+            // second-stream type, so an older Dungeon Train can read the file.
+            manager.setDirty();
+        };
         if (server.overworld() == null) server.tell(new TickTask(server.getTickCount(), task));
         else task.run();
     }
 
     @Override
     public TriResult<IBroadcastSource> get(boolean isClient) {
-        return TriResult.valid(LiveBroadcastSource.INSTANCE);
+        return TriResult.valid(source);
     }
 
     @Override
@@ -69,9 +97,17 @@ public final class LiveBroadcastLocation implements IBroadcastLocation {
         return TYPE;
     }
 
+    private static LiveBroadcastLocation of(boolean second) {
+        return second ? SECOND : INSTANCE;
+    }
+
+    private boolean isSecond() {
+        return source.isSecond();
+    }
+
     @Override
     public MutableComponent getTooltipComponent(Level level) {
-        return Component.translatable("item.dungeontrain.live_cassette.tooltip");
+        return Component.translatable(source.isSecond() ? "item.dungeontrain.live_cassette_2.tooltip" : "item.dungeontrain.live_cassette.tooltip");
     }
 
     @Override
@@ -81,11 +117,11 @@ public final class LiveBroadcastLocation implements IBroadcastLocation {
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof LiveBroadcastLocation;
+        return o instanceof LiveBroadcastLocation other && other.source == source;
     }
 
     @Override
     public int hashCode() {
-        return 0x11FE;
+        return source.isSecond() ? 0x11FF : 0x11FE;
     }
 }

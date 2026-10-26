@@ -729,6 +729,16 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 yield Setting.of(nameTag, kid ? key + ".kid_tip" : key + ".tip");
             }
 
+            // Two streams live: what a worn TV shows by default (a TV that remembers a stream wins).
+            case WORN_TV_STREAMS -> Setting.of(
+                    CycleButton.<LiveFeedClientConfig.WornTvStreams>builder(DungeonTrainClientOptionsScreen::wornTvStreamsLabel)
+                            .withValues(LiveFeedClientConfig.WornTvStreams.values())
+                            .withInitialValue(LiveFeedClientConfig.wornTvStreams())
+                            .displayOnlyValue()
+                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
+                                    (btn, v) -> LiveFeedClientConfig.setWornTvStreams(v)),
+                    key + ".tip");
+
             // Pop-ups copied back over the stream's name tag (LiveToastRects). On the Performance tab too.
             case STREAM_POPUPS_OVER_TAG -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.popupsOverNameTag(),
                     LiveFeedClientConfig::setPopupsOverNameTag), key + ".tip");
@@ -786,15 +796,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                         key + ".tip");
             }
 
-            // The pinned top-right feed; the preview outlines it at the chosen size.
-            case HEAD_VIEWER_SIZE -> Setting.of(
-                    CycleButton.<Integer>builder(DungeonTrainClientOptionsScreen::headViewerSizeLabel)
-                            .withValues(LiveFeedClientConfig.headViewerSizeIndexes())
-                            .withInitialValue(LiveFeedClientConfig.headViewerSize(false))
-                            .displayOnlyValue()
-                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
-                                    (btn, i) -> LiveFeedClientConfig.setHeadViewerSize(i)),
-                    key + ".tip");
+            // The pinned top-right feed, one size while you watch and one while you stream (the
+            // preview outlines the streaming one).
+            case HEAD_VIEWER_SIZE -> headViewerSize(key, false);
+            case HEAD_VIEWER_SIZE_STREAMING -> headViewerSize(key, true);
 
             // The consent card's Developer chat switch. Inert (greyed) in Kid mode, where the Kid rule
             // keeps developer chat off whatever this says; flipping it re-syncs the inbound gate.
@@ -904,6 +909,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // the same value. The slider carries the sound screen's long tooltip; the row has its own short one.
             case TRAIN_VOLUME -> Setting.of(slider(TrainVolumeOption.valueOnly()), key + ".tip");
             case WIND_VOLUME -> Setting.of(slider(games.brennan.dungeontrain.client.wind.WindVolumeOption.valueOnly()),
+                    key + ".tip");
+            // OFF, then six tiers of the edge streaks (3 = the default look).
+            case WIND_EFFECTS -> Setting.of(slider(games.brennan.dungeontrain.client.wind.WindEffectsOption.valueOnly()),
                     key + ".tip");
 
             // The standing answer to the start-of-world prompt shown when the player has Train Editor
@@ -1136,6 +1144,18 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     }
 
     /** A pinned-feed size index as a percentage of its normal width: "150%". */
+    /** One of the two pinned-feed size rows: {@code streaming} picks which size it sets. */
+    private static Setting headViewerSize(String key, boolean streaming) {
+        return Setting.of(
+                CycleButton.<Integer>builder(DungeonTrainClientOptionsScreen::headViewerSizeLabel)
+                        .withValues(LiveFeedClientConfig.headViewerSizeIndexes())
+                        .withInitialValue(LiveFeedClientConfig.headViewerSize(streaming))
+                        .displayOnlyValue()
+                        .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
+                                (btn, i) -> LiveFeedClientConfig.setHeadViewerSize(streaming, i)),
+                key + ".tip");
+    }
+
     private static Component headViewerSizeLabel(int index) {
         return Component.literal(LiveFeedClientConfig.headViewerSizePercent(index) + "%");
     }
@@ -1162,6 +1182,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
     private static Component liveChatTranslationLabel(LiveFeedClientConfig.LiveChatTranslation mode) {
         return Component.translatable("gui.dungeontrain.options.live_chat_translation." + mode.name().toLowerCase(java.util.Locale.ROOT));
+    }
+
+    private static Component wornTvStreamsLabel(LiveFeedClientConfig.WornTvStreams v) {
+        return Component.translatable("gui.dungeontrain.options.worn_tv_streams." + v.name().toLowerCase(java.util.Locale.ROOT));
     }
 
     private static Component streamNameTagLabel(LiveFeedClientConfig.NameTag tag) {

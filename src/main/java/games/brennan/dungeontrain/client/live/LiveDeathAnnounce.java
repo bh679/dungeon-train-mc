@@ -78,7 +78,8 @@ public final class LiveDeathAnnounce {
         if (text.isBlank()) text = name + " died";
         JsonObject json = toJson(mc, plain(message));
         LOGGER.info("[DungeonTrain] live chat: telling the room {} died ({})", name, text);
-        LiveFeedClient.chatDied(LiveChatBridge.base(false), mc.getUser().getProfileId(), name, text, json)
+        LiveFeedClient.chatDied(LiveChatBridge.base(false), mc.getUser().getProfileId(), name, text, json,
+                LiveChatBridge.room())
             .thenAccept(r -> {
                 if (r.ok() || r.status() == 404 || r.status() == 409 || failureLogged) return;
                 failureLogged = true;

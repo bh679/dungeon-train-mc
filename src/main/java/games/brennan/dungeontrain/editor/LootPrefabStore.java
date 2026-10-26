@@ -330,6 +330,20 @@ public final class LootPrefabStore {
         }
     }
 
+    /**
+     * One pool as prefab-document text, every field kept — what a placed vault carries in its block
+     * entity so it can roll each player's reward later ({@link VaultLoot}). Read back with
+     * {@link #poolFromText}.
+     */
+    public static String poolText(ContainerContentsPool pool, ResourceLocation sourceBlock) {
+        return toJsonText(pool, sourceBlock, CATEGORY_LOOT);
+    }
+
+    /** The pool in text written by {@link #poolText}; empty when the text will not parse. */
+    public static Optional<ContainerContentsPool> poolFromText(String jsonText) {
+        return parse("embedded", jsonText).map(Data::pool);
+    }
+
     /** Whether this install holds {@code id} in the config tier (user-authored, or an override). */
     public static boolean hasConfigFile(String id) {
         return id != null && UserContentPaths.findFile(SUBDIR, id.toLowerCase(Locale.ROOT) + EXT) != null;
@@ -431,6 +445,8 @@ public final class LootPrefabStore {
             ? obj.get("fillMin").getAsInt() : 0;
         int fillMax = obj.has("fillMax") && obj.get("fillMax").isJsonPrimitive()
             ? obj.get("fillMax").getAsInt() : ContainerContentsPool.FILL_ALL;
+        String vaultKey = obj.has("vaultKey") && obj.get("vaultKey").isJsonPrimitive()
+            ? obj.get("vaultKey").getAsString() : ContainerContentsPool.DEFAULT_VAULT_KEY;
         List<ContainerContentsEntry> entries = new ArrayList<>();
         if (obj.has("entries") && obj.get("entries").isJsonArray()) {
             JsonArray arr = obj.getAsJsonArray("entries");
@@ -474,7 +490,7 @@ public final class LootPrefabStore {
                     randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, book));
             }
         }
-        return Optional.of(new Data(key, block, category, new ContainerContentsPool(entries, fillMin, fillMax)));
+        return Optional.of(new Data(key, block, category, new ContainerContentsPool(entries, fillMin, fillMax, vaultKey)));
     }
 
     private static String toJsonText(ContainerContentsPool pool, ResourceLocation sourceBlock, String category) {
@@ -488,6 +504,9 @@ public final class LootPrefabStore {
         }
         if (pool.fillMax() != ContainerContentsPool.FILL_ALL) {
             sb.append("  \"fillMax\": ").append(pool.fillMax()).append(",\n");
+        }
+        if (!pool.isDefaultVaultKey()) {
+            sb.append("  \"vaultKey\": \"").append(pool.vaultKey()).append("\",\n");
         }
         sb.append("  \"entries\": [");
         boolean first = true;

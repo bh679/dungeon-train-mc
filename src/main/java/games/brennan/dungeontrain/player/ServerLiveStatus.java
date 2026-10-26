@@ -8,6 +8,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,27 +30,71 @@ public final class ServerLiveStatus {
 
     private static final AtomicBoolean IN_FLIGHT = new AtomicBoolean();
     private static volatile boolean relayLive;
+    /** The relay's last answer carried a live second stream (Two Streams). */
+    private static volatile boolean relaySecondLive;
     private static volatile long relayAtMs;
+    /** When the poll behind the last answer was sent: an answer only knows of claims made before that. */
+    private static volatile long relayAskedAtMs;
     /** The relay's name for whoever is live, when it gave one. */
     private static volatile String relayStreamer;
+    /** The relay's name for whoever holds the second stream, when it gave one. */
+    private static volatile String relaySecondStreamer;
+    /** Poll on the next tick instead of waiting out {@link #POLL_TICKS}: a stream here just ended. */
+    private static volatile boolean pollRequested;
 
     private ServerLiveStatus() {}
 
+    /**
+     * True while a second stream is live (the Two Streams reward): a fresh relay answer carrying a
+     * second stream, or, for the short wait before the relay reports the second stream ready, two
+     * streamers on this server while a fresh relay answer says someone is live and that answer was asked
+     * for before the second of them started. Once the relay has answered since both started and still
+     * names no second stream, the local pair no longer counts (a lapsed claim, a cut-off streamer whose
+     * name did not match the relay's). Local streamers alone never count: their claims are only their
+     * clients' word, and a server that cannot reach the relay keeps the one-stream TV it always had. A
+     * placed TV's right-click only steps to Stream 2 while this holds ({@code compat/vista/TvChannelCycle}).
+     */
+    public static boolean isSecondStreamLive(MinecraftServer server) {
+        int local = server == null ? 0 : LiveStreamers.all(server).size();
+        long bothStarted = server == null ? 0L : LiveStreamers.bothStartedMs(server);
+        return secondStreamLive(local, bothStarted, relayLive, relaySecondLive, relayAtMs, relayAskedAtMs,
+            System.currentTimeMillis());
+    }
+
+    /** Pure form for the tests. */
+    static boolean secondStreamLive(int localStreamers, long bothStartedMs, boolean relayLive, boolean relaySecondLive,
+                                    long relayAtMs, long relayAskedAtMs, long nowMs) {
+        if (isFresh(relaySecondLive, relayAtMs, nowMs)) return true;
+        return localStreamers >= 2 && isFresh(relayLive, relayAtMs, nowMs) && relayAskedAtMs < bothStartedMs;
+    }
+
+    /**
+     * A stream on this server just ended or was cut off: while the last answer had a second stream,
+     * ask the relay again on the next tick, so Stream 2 goes away within seconds rather than at the
+     * next 30 s poll. A failed poll still keeps the old answer until {@link #STALE_MS}.
+     */
+    public static void requestPoll() {
+        if (relaySecondLive) pollRequested = true;
+    }
+
     /** True while the relay recently said someone is live, or someone on this server is streaming. */
     public static boolean isAnyoneLive(MinecraftServer server) {
-        if (server != null && LiveStreamers.get(server) != null) return true;
+        if (server != null && LiveStreamers.any(server) != null) return true;
         return isFresh(relayLive, relayAtMs, System.currentTimeMillis());
     }
 
     /**
      * True while someone other than {@code player} is broadcasting — what a TV on their head would be
-     * showing. A streamer on this server counts unless it is them; otherwise a fresh relay answer counts
-     * unless it names them (a nameless answer counts as someone else).
+     * showing. Another streamer on this server counts (with Two Streams on there may be two, so the
+     * player's own stream is set aside first); otherwise a fresh relay answer counts unless it names
+     * them (a nameless answer counts as someone else), and so does a fresh second stream that is not
+     * theirs.
      */
     public static boolean isSomeoneElseLive(MinecraftServer server, ServerPlayer player) {
-        UUID local = server == null ? null : LiveStreamers.get(server);
-        return someoneElseLive(local, player.getUUID(), isFresh(relayLive, relayAtMs, System.currentTimeMillis()),
-            relayStreamer, player.getGameProfile().getName());
+        UUID local = server == null ? null : firstOf(LiveStreamers.othersThan(server, player.getUUID()));
+        long now = System.currentTimeMillis();
+        return someoneElseLive(local, player.getUUID(), isFresh(relayLive, relayAtMs, now), relayStreamer,
+            isFresh(relaySecondLive, relayAtMs, now), relaySecondStreamer, player.getGameProfile().getName());
     }
 
     /**
@@ -58,8 +103,13 @@ public final class ServerLiveStatus {
      * false here (unlike {@link #isAnyoneLive}, where it reads as not live).
      */
     public static boolean isNobodyLive(MinecraftServer server) {
-        UUID local = server == null ? null : LiveStreamers.get(server);
+        UUID local = server == null ? null : LiveStreamers.any(server);
         return nobodyLive(local, relayLive, relayAtMs, System.currentTimeMillis());
+    }
+
+    @Nullable
+    private static UUID firstOf(java.util.Set<UUID> ids) {
+        return ids.isEmpty() ? null : ids.iterator().next();
     }
 
     /** Pure form for the tests. */
@@ -69,9 +119,15 @@ public final class ServerLiveStatus {
     }
 
     /** Pure form for the tests. */
-    static boolean someoneElseLive(UUID localStreamer, UUID self, boolean relayFresh, String relayName, String selfName) {
+    static boolean someoneElseLive(UUID localStreamer, UUID self, boolean relayFresh, String relayName,
+                                   boolean secondFresh, String secondName, String selfName) {
         if (localStreamer != null && !localStreamer.equals(self)) return true;
-        return relayFresh && (relayName == null || relayName.isEmpty() || !relayName.equalsIgnoreCase(selfName));
+        return (relayFresh && notSelf(relayName, selfName)) || (secondFresh && notSelf(secondName, selfName));
+    }
+
+    /** A nameless answer counts as someone else. */
+    private static boolean notSelf(String name, String selfName) {
+        return name == null || name.isEmpty() || !name.equalsIgnoreCase(selfName);
     }
 
     /** Pure form for the tests. */
@@ -82,16 +138,21 @@ public final class ServerLiveStatus {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
-        if (server.getTickCount() % POLL_TICKS != 0) return;
+        if (server.getTickCount() % POLL_TICKS != 0 && !pollRequested) return;
         if (server.getPlayerCount() == 0) return;
         if (!IN_FLIGHT.compareAndSet(false, true)) return;
+        pollRequested = false;
+        long askedAt = System.currentTimeMillis();
         LiveFeedClient.status(null, LiveFeedClient.Channel.LIVE).whenComplete((result, error) -> {
             try {
                 if (error == null && result != null && result.ok()) {
                     LiveFeedClient.Status status = LiveFeedClient.parseStatus(result);
                     relayLive = status.live();
+                    relaySecondLive = status.live() && status.second() != null;
                     relayStreamer = status.streamer();
+                    relaySecondStreamer = relaySecondLive ? status.second().streamer() : null;
                     relayAtMs = System.currentTimeMillis();
+                    relayAskedAtMs = askedAt;
                 }
             } finally {
                 IN_FLIGHT.set(false);
@@ -102,7 +163,11 @@ public final class ServerLiveStatus {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         relayLive = false;
+        relaySecondLive = false;
         relayAtMs = 0L;
+        relayAskedAtMs = 0L;
         relayStreamer = null;
+        relaySecondStreamer = null;
+        pollRequested = false;
     }
 }

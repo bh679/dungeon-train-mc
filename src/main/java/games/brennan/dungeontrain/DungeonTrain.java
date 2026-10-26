@@ -483,6 +483,13 @@ public class DungeonTrain {
         // needed. The gate is a cheap tag-prefix scan (TrainMembership).
         NamingConfig.registerMobNameGate(TrainMembership::isOnTrain);
 
+        // Distant Horizons would otherwise draw the sunk zone's attic (dimensional carriages over an
+        // invisible barrier lid) hanging in its horizon. Common side, so a DH server's LODs are filtered
+        // too; behind the ModList check because the filter names DH types.
+        if (ModList.get().isLoaded("distanthorizons")) {
+            games.brennan.dungeontrain.compat.DistantHorizonsAtticFilter.register();
+        }
+
         // Watch the relay's answer to a book upload: a re-upload of a book this player already sent
         // is refused and pauses their uploads, and the writer is told in chat (see
         // SharedBookSubmitResponses). Registration only — no network, no game state.

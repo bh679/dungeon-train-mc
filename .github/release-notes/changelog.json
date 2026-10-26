@@ -30354,6 +30354,595 @@
       "released": true,
       "released_in": "v0.1501.0",
       "released_at": "2026-10-24T07:42:39Z"
+    },
+    {
+      "id": "enchantment-fix-echoes",
+      "version": "0.1502.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "loot"
+      ],
+      "title": "Enchantment fix",
+      "summary": "Fixed an enchantment not behaving the same on echoes as it does on players.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1503.0",
+      "released_at": "2026-10-24T13:06:51Z"
+    },
+    {
+      "id": "gallery-carriage-variant-conditions",
+      "version": "0.1503.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Gallery carriage",
+      "summary": "A new passenger carriage, the Gallery, can now turn up on the train. Builders also get a few editor upgrades for block variants.",
+      "highlights": [
+        "New Gallery passenger carriage",
+        "Block variant conditions can be set to Is not",
+        "Variants that follow another group now match what that group placed",
+        "Pasting a copied variant keeps the conditions it was copied with",
+        "Player heads added to a build face into the room"
+      ],
+      "pr": 2294,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1503.0",
+      "released_at": "2026-10-24T13:06:51Z"
+    },
+    {
+      "id": "off-train-advancements",
+      "version": "0.1504.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "Some advancements that should have been earned were not. They are now. Vanilla and other mods' advancements are no longer held back by the AFK check.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1506.0",
+      "released_at": "2026-10-24T13:54:27Z"
+    },
+    {
+      "id": "live-chat-on-death-screens",
+      "version": "0.1505.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Talk to your stream after you die",
+      "summary": "If your stream is still running after you die, you can now read and answer its chat from the death screens. The newest message shows quietly at the bottom of the page. Press T to see the whole chat and type a reply.",
+      "highlights": [
+        "The latest chat message shows at the bottom of every death page",
+        "Press T to open the full chat and reply without leaving the page",
+        "What you type stays off the stream"
+      ],
+      "pr": 2295,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1506.0",
+      "released_at": "2026-10-24T13:54:27Z"
+    },
+    {
+      "id": "feel-the-wind",
+      "version": "0.1506.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "ui"
+      ],
+      "title": "Feel the wind",
+      "summary": "You can now tell when the wind is hitting you. Out in the open it sounds louder and closer, and faint streaks blow past the edges of your screen. You can turn the streaks down or off in the Dungeon Train options, on the Train tab.",
+      "highlights": [
+        "The wind gets louder and rumbles when it is on you, even before it starts to push you",
+        "You hear a gust while it shoves you, not just before",
+        "Streaks at the edges of the screen show which way the wind is blowing",
+        "New Wind effects setting: Off, or 1 to 6 (3 is the default)",
+        "No more wind streaks when the air is calm"
+      ],
+      "pr": 2296,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1506.0",
+      "released_at": "2026-10-24T13:54:27Z"
+    },
+    {
+      "id": "two-streams-second-channel",
+      "version": "0.1507.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "multiplayer",
+        "community"
+      ],
+      "title": "Two Streams, Trial Vaults & Smarter Mobs",
+      "summary": "When the Two Streams reward is on, a second player can go live without taking the Eye from whoever is already streaming. Right-click any TV to step it through off, Stream 1 and Stream 2, TV rooms come up showing a mix of both, and a TV worn on your head shows both streams, one above the other. Each stream has its own Live chat; watching both, pick Stream 1 or Stream 2 just above the chat box.",
+      "highlights": [
+        "Right-click a TV: off, Stream 1, Stream 2 (while a second stream is live), off",
+        "A TV on Stream 2 shows Stream 1 while nobody is on the second",
+        "Wearing a TV: both streams stacked (unless the box is at its largest size or your window is too short); in your inventory, click one to watch only it, click again for both. The TV remembers your pick, and TVs broken while tuned come back on that stream",
+        "Options / Dungeon Train / Stream: choose what a TV on your head shows by default",
+        "Each stream has its own Live chat: watching both, pick Stream 1 or Stream 2 just above the chat box (Stream 1 by default)"
+      ],
+      "pr": 2290,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z",
+      "major": true,
+      "description": "Three big additions ride the train at once.\n\n**Two Streams** is a new Community Reward on the donations page. If one person donates, everyone gets it for a month! When active, a second player can go live without taking the Live Eye from whoever is already streaming. Right-click any TV to step it through off, Stream 1 and Stream 2. TV rooms come up showing a mix of both, and a TV worn on your head shows both streams, one above the other. Prefer just one? Click the TV in your inventory to pick, or set the default in Options / Dungeon Train / Stream. Each stream has its own Live chat too: watching both, pick Stream 1 or Stream 2 just above the chat box.\n\n**Trial vaults.** Vaults now turn up on the train. Find a trial key to claim your own reward from each one.\n\n**Smarter mobs.** Deeper down the line, in a place a good number of you reach, mobs reach for tools they previously ignored: a pickaxe, shovel or axe. Once they have seen you, a wall will not keep them out for long. The deeper you go, the more of them carry one and the smarter they get with them.\n\n## Other significant updates\n\n- Live streams adjust their quality to the streamer's upload speed, so viewers stop seeing them drop\n- Live streams keep the streamer's real shape instead of looking stretched\n- Hold a TV and right-click to switch it on or off\n- Some of the players you meet on the train now turn up wearing a TV on their head\n- Echoes no longer pick fights with piglin traders\n- Fairer chat moderation that steps up gradually\n- Smoother dimensional carriages, with less lag the further you go\n- Leaving a dimensional carriage by a far exit puts you back in the right carriage\n- A new story for the loading screen\n- Bug fixes",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/two-streams.jpg"
+    },
+    {
+      "id": "echoes-update-modpack",
+      "version": "0.1507.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "mobs"
+      ],
+      "title": "Echoes update",
+      "summary": "The modpacks now include the latest update for echoes.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z",
+      "pr": 2297
+    },
+    {
+      "id": "dimensional-carriage-far-exit-landing",
+      "version": "0.1509.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage exit fix",
+      "summary": "Walking a long way through a dimensional carriage and leaving by a far exit now puts you back inside the right carriage. The train waits for you to land before it moves off.",
+      "highlights": [],
+      "pr": 2269,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "playermob-tv-hats",
+      "version": "0.1510.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "TV heads",
+      "summary": "Some of the players you meet on the train now turn up wearing a TV on their head.",
+      "highlights": [],
+      "pr": 2304,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "live-adaptive-stream-quality",
+      "version": "0.1510.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Smoother live streams",
+      "summary": "When your upload can't keep up with your Live Eye stream, the stream now lowers its own quality so viewers stop seeing it drop, then raises it again once your connection catches up. Your next stream starts at a quality your connection can carry.",
+      "highlights": [
+        "Live streams adjust their quality to your upload speed",
+        "A chat message tells you when your connection lowered the quality",
+        "Prefer a fixed quality? Turn off adaptiveQuality in the live client config"
+      ],
+      "pr": 2305,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "loading-screen-story-12",
+      "version": "0.1512.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "ui"
+      ],
+      "title": "New loading story",
+      "summary": "A new story for the loading screen.",
+      "highlights": [],
+      "pr": 2306,
+      "date": "2026-10-24",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "held-tv-live-feed-static",
+      "version": "0.1513.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Hand-held TV fix",
+      "summary": "A TV switched on in your hand now shows the live feed instead of static.",
+      "highlights": [],
+      "pr": 2308,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "held-tv-remembered-stream",
+      "version": "0.1515.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Hand-held TV channel fix",
+      "summary": "A TV you pick up off the second stream keeps showing the second stream while you hold it, instead of jumping back to the first.",
+      "highlights": [],
+      "pr": 2310,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "held-tv-right-click",
+      "version": "0.1516.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Right-click to switch on a TV in your hand",
+      "summary": "Hold a TV and right-click the air to switch it on or off, the same click that works on a placed TV. Left-click is a normal swing again.",
+      "highlights": [],
+      "pr": 2312,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "live-stream-real-shape",
+      "version": "0.1517.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui"
+      ],
+      "title": "Live streams keep their real shape",
+      "summary": "Streams no longer look stretched when the streamer plays in a window that isn't widescreen. The picture now keeps the streamer's own shape everywhere it is shown.",
+      "highlights": [
+        "TVs fill their screen and trim the edges instead of stretching the picture",
+        "The pinned live feed resizes to fit the stream, so you see all of it",
+        "New setting: separate pinned feed sizes for watching and for streaming"
+      ],
+      "pr": 2314,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "minimap-fix",
+      "version": "0.1518.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Minimap fix",
+      "summary": "Minimap fix.",
+      "highlights": [],
+      "pr": 2315,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "echoes-calmer-around-traders",
+      "version": "0.1520.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Echoes are calmer around traders",
+      "summary": "Echoes no longer pick fights with piglin traders. Only the most aggressive echoes will still attack one, and the most timid just keep a wary eye on it instead of running away. A trader that attacks first still gets a fight.",
+      "highlights": [],
+      "pr": 2311,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "backpacks-narrative-tab",
+      "version": "0.1521.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "loot"
+      ],
+      "title": "Backpacks in the editor",
+      "summary": "The Edible Backpack and Golden Edible Backpack now sit in the editor's Narrative tab, so builders can place them straight into carriages.",
+      "highlights": [],
+      "pr": 2318,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "live-eye-ban-message-fix",
+      "version": "0.1521.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Live Eye ban messages fixed",
+      "summary": "When a Live Eye burns away because you are banned from wearing one, the message now shows how long the ban really lasts and the lines that caused it. /liveappeal now finds your ban instead of saying you are not banned.",
+      "highlights": [],
+      "pr": 2319,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "trial-vault-carriages",
+      "version": "0.1523.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train",
+        "loot"
+      ],
+      "title": "Trial vault carriages",
+      "summary": "Vaults now turn up on the train. Bring a trial key to claim your own reward from each one, and every player gets their own. Ominous vaults take an ominous trial key and hold richer loot.",
+      "highlights": [
+        "New trial vault carriages",
+        "Every player gets their own reward from each vault",
+        "Builders can choose a vault's loot and the key that opens it"
+      ],
+      "pr": 2320,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "live-chat-moderation-tiers",
+      "version": "0.1525.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Fairer chat moderation",
+      "summary": "Chat moderation now steps up gradually. Blocked words earn warnings first, then short chat mutes, and only repeated offences reach longer penalties. A penalty has to run out before the next one can be earned, so a burst of messages no longer jumps straight to the harshest outcome. Mutes can be appealed with /liveappeal, just like bans.",
+      "highlights": [
+        "First offences mute chat for a short time instead of removing streaming",
+        "Penalties no longer stack up while one is already running",
+        "Mutes can be appealed with /liveappeal"
+      ],
+      "pr": 2322,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "dimensional-carriage-crossing-fix",
+      "version": "0.1526.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage fix",
+      "summary": "Dimensional carriages now only take you in once you are actually inside one. Stepping between the train and the room no longer drops you to the floor or sends you back along the train.",
+      "highlights": [],
+      "pr": 2323,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "dh-sky-fix",
+      "version": "0.1527.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Sky fix",
+      "summary": "Sky fix.",
+      "highlights": [],
+      "pr": 2313,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "dimensional-carriage-less-lag",
+      "version": "0.1527.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Less lag in dimensional carriages",
+      "summary": "Exploring dimensional carriages is smoother, with less lag the further you go.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2325,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "mobs-dig-with-tools",
+      "version": "0.1529.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Mobs dig through to you",
+      "summary": "Deep into a run, some mobs now carry a pickaxe, shovel or axe, and once they have seen you they will dig through walls to reach you, as fast as that tool would let you. The deeper you go, the more of them carry one and the more they can break. They never dig through the floor.",
+      "highlights": [
+        "Mobs with tools dig through to you once they have seen you",
+        "A mob already holding a weapon carries its tool in the other hand",
+        "The deeper you go, the more mobs carry tools and the more they can break",
+        "The players you meet on the train can dig through almost anything"
+      ],
+      "pr": 2326,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "advancement-asks-a-little-more",
+      "version": "0.1531.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Advancement change",
+      "summary": "One hidden advancement now asks for a little more before it unlocks.",
+      "highlights": [],
+      "pr": 2329,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "live-chat-release-names",
+      "version": "0.1532.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Update news in Live chat names the update",
+      "summary": "When a new version comes out, the Live chat on the website, the Discord live room and Twitch now name the update just like the message you see in game. Bigger updates also get a short description, and major ones stand out.",
+      "highlights": [
+        "Update messages in Live chat show the update's name and version",
+        "Notable and major updates add a one-line description"
+      ],
+      "pr": 2331,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1532.0",
+      "released_at": "2026-10-25T16:47:58Z"
+    },
+    {
+      "id": "sky-fix-3",
+      "version": "0.1533.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Sky fix",
+      "summary": "Sky fix.",
+      "highlights": [],
+      "pr": 2334,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1536.0",
+      "released_at": "2026-10-26T10:16:46Z"
+    },
+    {
+      "id": "jade-photo-frame-photographer",
+      "version": "0.1534.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "ui"
+      ],
+      "title": "See who took a framed photo",
+      "summary": "Look at a framed photo with Jade and it now tells you who took it.",
+      "highlights": [],
+      "pr": 2335,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1536.0",
+      "released_at": "2026-10-26T10:16:46Z"
+    },
+    {
+      "id": "photo-frame-take-out-no-burn",
+      "version": "0.1534.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Photo frame fix",
+      "summary": "Taking a photo out of a frame no longer sets it alight before you can pick it up.",
+      "highlights": [],
+      "pr": 2336,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1536.0",
+      "released_at": "2026-10-26T10:16:46Z"
+    },
+    {
+      "id": "tv-needs-ffmpeg",
+      "version": "0.1530.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "TVs tell you when they need FFmpeg",
+      "summary": "If your TVs only showed static even while someone was live, they now show an FFmpeg sign instead, and chat offers a one-click Set up FFmpeg button. If the usual FFmpeg download can't reach your network, the game fetches it from a backup source, so the install prompt stops coming back every time you launch.",
+      "highlights": [
+        "A TV that can't play the live stream now says so, instead of looking like nobody is live",
+        "Chose not to install FFmpeg? The Set up FFmpeg button in chat turns TV video back on",
+        "FFmpeg now installs even where its usual download is blocked"
+      ],
+      "pr": 2327,
+      "date": "2026-10-25",
+      "released": true,
+      "released_in": "v0.1536.0",
+      "released_at": "2026-10-26T10:16:46Z"
     }
   ]
 }

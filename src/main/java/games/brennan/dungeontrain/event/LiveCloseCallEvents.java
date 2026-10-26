@@ -79,7 +79,7 @@ public final class LiveCloseCallEvents {
     private static Route route(ServerPlayer player) {
         MinecraftServer server = player.server;
         boolean blocked = PlayerActivityTracker.isAfk(player)
-            || player.getUUID().equals(LiveStreamers.get(server))
+            || LiveStreamers.isStreamer(server, player.getUUID())
             || LiveGiftServer.refusalFor(player) != null;
         if (blocked) return null;
         return route(false, ServerLiveStatus.isSomeoneElseLive(server, player), ServerLiveStatus.isNobodyLive(server));

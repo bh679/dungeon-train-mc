@@ -160,13 +160,64 @@ class PlayerActivityTrackerTest {
     }
 
     @Test
-    @DisplayName("every reason that stops the train clock is AFK")
+    @DisplayName("paused, mouse idle and input idle are AFK; not getting anywhere stops train time only")
     void afkReasonsBlockAdvancements() {
         assertTrue(PlayerActivityTracker.isAfk(Reason.PAUSED));
         assertTrue(PlayerActivityTracker.isAfk(Reason.MOUSE_IDLE));
         assertTrue(PlayerActivityTracker.isAfk(Reason.INPUT_IDLE));
-        assertTrue(PlayerActivityTracker.isAfk(Reason.NO_PROGRESS));
+        assertFalse(PlayerActivityTracker.isAfk(Reason.NO_PROGRESS));
         assertFalse(PlayerActivityTracker.isAfk(Reason.TRACKING));
+        // Two tiers: the train clock still stops for it.
+        assertFalse(PlayerActivityTracker.countsTrain(Reason.NO_PROGRESS));
+    }
+
+    // -------------------------------------------------------- off the train
+
+    /** Boarded at tick 0, then nothing: the progress rule starts judging a window later. */
+    private static UUID boardedThenWentQuiet() {
+        UUID uuid = UUID.randomUUID();
+        PlayerActivityTracker.recordCarriage(uuid, 5, 0L);
+        return uuid;
+    }
+
+    @Test
+    @DisplayName("an off-train player who is looking and pressing keys is NO_PROGRESS, not AFK")
+    void offTrainButPresentIsNotAfk() {
+        UUID uuid = boardedThenWentQuiet();
+        long now = PlayerActivityTracker.PROGRESS_WINDOW_TICKS + 1_000L;
+        PlayerActivityTracker.markLook(uuid, now - 100L);
+        PlayerActivityTracker.markInput(uuid, now - 2_000L, "use item");
+        assertEquals(Reason.NO_PROGRESS, PlayerActivityTracker.reason(uuid, now));
+        assertFalse(PlayerActivityTracker.countsTrain(PlayerActivityTracker.reason(uuid, now)));
+        assertFalse(PlayerActivityTracker.isAfk(uuid, now, 1_000_000L));
+    }
+
+    @Test
+    @DisplayName("off the train with the mouse still for 30 s is MOUSE_IDLE: idle still outranks")
+    void offTrainAndIdleIsStillAfk() {
+        UUID uuid = boardedThenWentQuiet();
+        long now = PlayerActivityTracker.PROGRESS_WINDOW_TICKS + 1_000L;
+        PlayerActivityTracker.markLook(uuid, now - LOOK);
+        PlayerActivityTracker.markInput(uuid, now - 2_000L, "use item");
+        assertEquals(Reason.MOUSE_IDLE, PlayerActivityTracker.reason(uuid, now));
+        assertTrue(PlayerActivityTracker.isAfk(uuid, now, 1_000_000L));
+    }
+
+    @Test
+    @DisplayName("a photo or hand-earned advancement opens a fresh progress window and refreshes both clocks")
+    void creditedProgressRestartsTheWindow() {
+        UUID uuid = boardedThenWentQuiet();
+        long window = PlayerActivityTracker.PROGRESS_WINDOW_TICKS;
+        long shot = window + 5_000L;
+        // Idle on both clocks and out of progress when the shot lands.
+        PlayerActivityTracker.markLook(uuid, shot - LOOK);
+        PlayerActivityTracker.markInput(uuid, shot - INPUT, "use item");
+        assertEquals(Reason.MOUSE_IDLE, PlayerActivityTracker.reason(uuid, shot));
+
+        PlayerActivityTracker.creditProgress(uuid, shot, "took a photo");
+        assertEquals(Reason.TRACKING, PlayerActivityTracker.reason(uuid, shot));
+        assertTrue(PlayerActivityTracker.hasCarriageProgress(uuid, shot + window));
+        assertFalse(PlayerActivityTracker.hasCarriageProgress(uuid, shot + window + 1));
     }
 
     @Test

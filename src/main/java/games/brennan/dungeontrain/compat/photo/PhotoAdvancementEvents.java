@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.advancement.EnchiridionAdvancements;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.EchoIdentity;
+import games.brennan.dungeontrain.event.PlayerActivityTracker;
 import games.brennan.dungeontrain.event.StartingBookEvents;
 import games.brennan.dungeontrain.narrative.TechnobladePigNames;
 import games.brennan.pigmanvillagers.api.PigmanVillagersApi;
@@ -74,6 +75,9 @@ public final class PhotoAdvancementEvents {
     @SubscribeEvent
     public static void onFrameAdded(FrameAddedEvent event) {
         if (!(event.getCameraHolderEntity() instanceof ServerPlayer player)) return;
+        // A shot is play wherever it is taken: it restarts the progress window and refreshes the idle
+        // clocks before the triggers below run, so the shot itself can never be refused as idle.
+        PlayerActivityTracker.creditProgress(player, "took a photo");
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotoShots();
         rememberSubjects(player, event);
         LiveMomentPhotos.onFrameAdded(player, event.getFrame());

@@ -11,7 +11,8 @@
     "vista.TVItemMixin"
   ],
   "client": [
-    "vista.TvItemRendererMixin"
+    "vista.TvItemRendererMixin",
+    "vista.VistaModClientAccessor"
   ],
   "server": [],
   "injectors": {

@@ -49,6 +49,34 @@ final class LiveModerationLadderTest {
     }
 
     @Test
+    @DisplayName("a mute answer stops chat, not the Live Eye, and lapses from arrival")
+    void parsesMute() {
+        Verdict v = LiveModerationLadder.parse("{\"ok\":true,\"strikes\":0,\"removals\":1,\"action\":\"mute\",\"banned\":false,"
+            + "\"muted\":true,\"muteRemainingSec\":900,\"endStream\":false,\"evidence\":[{\"id\":3,\"text\":\"x\",\"terms\":[]}]}");
+        assertNotNull(v);
+        assertEquals(Action.MUTE, v.action());
+        assertTrue(v.mayStream(0, 0));
+        assertFalse(v.mayChat(899_000, 0));
+        assertTrue(v.mayChat(900_000, 0));
+        assertEquals(1, v.evidence().size(), "a mute carries its evidence like a ban");
+        assertFalse(v.endStream());
+    }
+
+    @Test
+    @DisplayName("a permanent mute never lapses; an older relay with no mute fields is unmuted")
+    void permanentMuteAndOldRelay() {
+        Verdict forever = LiveModerationLadder.parse("{\"ok\":true,\"strikes\":0,\"action\":\"mute\",\"muted\":true,\"mutePermanent\":true,\"endStream\":true}");
+        assertNotNull(forever);
+        assertFalse(forever.mayChat(Long.MAX_VALUE / 2, 0));
+        assertEquals(Long.MAX_VALUE, forever.muteRemainingAt(5, 0));
+        assertTrue(forever.endStream());
+        Verdict old = LiveModerationLadder.parse("{\"ok\":true,\"strikes\":1,\"action\":\"warn\"}");
+        assertNotNull(old);
+        assertTrue(old.mayChat(0, 0));
+        assertEquals(Action.NONE, LiveModerationLadder.parse("{\"ok\":true,\"strikes\":0,\"action\":\"while_muted\"}").action());
+    }
+
+    @Test
     @DisplayName("not ok, missing strikes, or junk → null")
     void rejectsMalformed() {
         assertNull(LiveModerationLadder.parse(null));

@@ -76,6 +76,7 @@ final class ClientOptionsIcons {
 
             case TRAIN_VOLUME -> Icon.item(Items.NOTE_BLOCK);
             case WIND_VOLUME -> Icon.item(Items.FEATHER);
+            case WIND_EFFECTS -> Icon.item(Items.WIND_CHARGE);
             case CUSTOM_CONTENT -> FREE_PLAY;
             case SNAPSHOT_MAX_RES -> Icon.item(Items.PAINTING);
             case SNAPSHOT_CHAT_LOG -> Icon.item(Items.PAPER);
@@ -94,9 +95,11 @@ final class ClientOptionsIcons {
             case LIVE_MOMENT_BOOKS -> Icon.item(Items.WRITABLE_BOOK);
             case TWITCH_HINT -> TWITCH;
             case LIVE_FEED_VIEWING -> Icon.item(Items.ENDER_EYE);
+            case WORN_TV_STREAMS -> Icon.item(Items.SPYGLASS);
             case STREAM_SIZE -> Icon.item(Items.MAP);
             case STREAM_SAVE_BANDWIDTH -> Icon.item(Items.PISTON);
             case HEAD_VIEWER_SIZE -> Icon.item(Items.GLASS);
+            case HEAD_VIEWER_SIZE_STREAMING -> Icon.item(Items.TINTED_GLASS);
 
             case SCALE_ALL -> ACCESSIBILITY;
             case SCALE_WORLDSPACE -> Icon.item(Items.FILLED_MAP);

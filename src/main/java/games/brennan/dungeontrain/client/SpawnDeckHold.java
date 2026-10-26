@@ -47,6 +47,12 @@ public final class SpawnDeckHold {
     /** A drop of more than this below the deck top counts as "fell under the train". */
     private static final double DROP_TOLERANCE = 1.0;
 
+    /**
+     * The furthest below the deck top the hold will lift a player from. One tick's fall is at most
+     * about 4 blocks, so anything past this was a move, not a fall.
+     */
+    private static final double MAX_LIFT = 8.0;
+
     private static volatile boolean active = false;
     private static double deckTopY;
     private static int remaining;
@@ -72,6 +78,18 @@ public final class SpawnDeckHold {
             String.format("%.2f", deckTopY), SpawnDeckHold.remaining);
     }
 
+    /**
+     * Drop the hold outright, with no post-check — the player has left the deck on purpose (a portal
+     * swap into a dimensional carriage's room), so there is nothing to hold them to or verify.
+     */
+    public static void cancel() {
+        if (active) {
+            LOGGER.debug("[DungeonTrain] Spawn deck-hold cancelled after {} corrections", clampsFired);
+        }
+        active = false;
+        verifyRemaining = 0;
+    }
+
     /** End the hold and arm the post-release verification sample. */
     private static void endHold() {
         active = false;
@@ -93,6 +111,15 @@ public final class SpawnDeckHold {
         }
 
         if (active) {
+            if (player.getY() < deckTopY - MAX_LIFT) {
+                // Too far below to have fallen there: the clamp catches a fall a tick at a time, so
+                // a gap this size means the player was moved — a portal swap, a /tp — and lifting
+                // them would carry them straight up to wherever the deck is overhead.
+                LOGGER.debug("[DungeonTrain] Spawn deck-hold dropped: player {} below deck top, moved away",
+                    String.format("%.2f", deckTopY - player.getY()));
+                cancel();
+                return;
+            }
             if (player.getY() < deckTopY) {
                 // Snap back up onto the deck and kill any downward velocity so the
                 // player rides instead of accelerating through the hollow slab.

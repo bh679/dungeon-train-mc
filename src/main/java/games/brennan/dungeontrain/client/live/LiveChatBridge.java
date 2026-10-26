@@ -39,6 +39,7 @@ import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -69,6 +70,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>Joining through a TV also tells the relay ({@code POST /live/chat/join}), so a viewer who has never
  * streamed can be offered a Live Eye by the streamer; each poll's gift notices go to {@link LiveGiftClient}.</p>
  *
+ * <p>Two streams up (Two Streams), each has its own room ({@link LiveChatRoom}): reads, sends, joins and
+ * death lines name it, and moving to the other room starts its chat from the head, with one short line
+ * saying which. With one stream up no room is named, exactly as before.</p>
+ *
  * <p>Failures are quiet: a bad poll is retried next interval, a failed send is logged once per session.
  * Nothing here touches the stream itself.</p>
  */
@@ -88,6 +93,8 @@ public final class LiveChatBridge {
     private static volatile boolean tvChatReported;
     /** Joined through a TV: the relay's join list is memory only, so a relay restart needs the join again. */
     private static volatile boolean joinedViaTv;
+    /** The room this client reads and posts in ({@link LiveChatRoom}); null with one stream up. */
+    @org.jetbrains.annotations.Nullable private static volatile String room;
     private static final AtomicBoolean inFlight = new AtomicBoolean();
     /** Relay-restart lines waiting their turn: printed at the relay's own gaps, not a poll's batch at once. */
     private static final ArrayDeque<ChatLine> restartLines = new ArrayDeque<>();
@@ -116,6 +123,19 @@ public final class LiveChatBridge {
         return connected;
     }
 
+    /** The room this client is in, for a request that must land there; null with one stream up. */
+    @org.jetbrains.annotations.Nullable
+    public static String room() {
+        return room;
+    }
+
+    /** Who this client reads the chat as, for {@link LiveChatRoom}. */
+    static LiveChatRoom.Role role() {
+        LiveStreamController c = LiveStreamController.get();
+        if (c.streaming()) return LiveChatRoom.Role.STREAMER;
+        return c.watchingWithEye() ? LiveChatRoom.Role.EYE : LiveChatRoom.Role.TV;
+    }
+
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
@@ -137,14 +157,26 @@ public final class LiveChatBridge {
             if (connected) disconnect();
             return;
         }
-        if (!connected) connect(mc, wearingTv);
+        LiveFeedClient.Status status = LiveStatusPoller.current();
+        if (status.second() == null) LiveChatRoom.reset();
+        LiveChatRoom.Pick pick = LiveChatRoom.pick(status, role(), LiveStreamController.get().onSecondChannel(),
+            HeadViewerPanes.choice(), LiveChatRoom.chosen());
+        if (!connected) {
+            connect(mc, wearingTv, pick);
+        } else if (!Objects.equals(LiveChatRoom.roomOf(pick), room)) {
+            switchRoom(mc, pick);
+        }
         long now = System.currentTimeMillis();
         printRestartLines(mc, now);
         if (now - lastPollMs < LiveRelayRestart.chatPollMs(now, POLL_MS) || !inFlight.compareAndSet(false, true)) return;
         lastPollMs = now;
-        LiveFeedClient.chat(base(streaming), cursor, LiveChatTranslations.readerLang(mc.options.languageCode)).thenAcceptAsync(r -> {
+        String asked = room;
+        LiveFeedClient.chat(base(streaming), cursor, asked, LiveChatTranslations.readerLang(mc.options.languageCode)).thenAcceptAsync(r -> {
             inFlight.set(false);
-            if (connected) deliver(mc, LiveFeedClient.parseChat(r), LiveFeedClient.parseGiftNotices(r));
+            // A page from the room this client just left would move the new room's cursor: dropped.
+            if (connected && Objects.equals(asked, room)) {
+                deliver(mc, LiveFeedClient.parseChat(r), LiveFeedClient.parseGiftNotices(r));
+            }
         }, mc).exceptionally(t -> {
             inFlight.set(false);
             return null;
@@ -188,7 +220,7 @@ public final class LiveChatBridge {
         String name = mc.getUser().getName();
         boolean streaming = LiveStreamController.get().streaming();
         boolean fromTv = !streaming && mc.player != null && TvItems.isTv(mc.player.getItemBySlot(EquipmentSlot.HEAD));
-        LiveFeedClient.chatSend(base(streaming), me, name, content).thenAccept(r -> {
+        LiveFeedClient.chatSend(base(streaming), me, name, content, room).thenAccept(r -> {
             if (r.ok()) {
                 if (fromTv) mc.execute(LiveChatBridge::reportTvChat);
             } else if (!sendFailureLogged) {
@@ -213,22 +245,53 @@ public final class LiveChatBridge {
         }
     }
 
-    private static void connect(Minecraft mc, boolean viaTv) {
+    private static void connect(Minecraft mc, boolean viaTv, @org.jetbrains.annotations.Nullable LiveChatRoom.Pick pick) {
         connected = true;
         joinedViaTv = viaTv;
         cursor = -1;
         lastPollMs = 0;
+        room = LiveChatRoom.roomOf(pick);
         signatures.clear();
         mc.gui.getChat().addMessage(Component.translatable(LiveChatRules.CONNECTED_KEY,
             LiveOptionsCommand.pathLink(LiveChatRules.PATH_KEY)).withStyle(ChatFormatting.GRAY));
+        if (pick != null) mc.gui.getChat().addMessage(roomLine(pick));
         if (viaTv) join(mc);
     }
+
+    /**
+     * Into another stream's room (or, the second stream gone, back to the one room): its own seqs, so the
+     * chat starts again from its head; a TV viewer joins it so the streamer there sees them arrive.
+     */
+    private static void switchRoom(Minecraft mc, @org.jetbrains.annotations.Nullable LiveChatRoom.Pick pick) {
+        room = LiveChatRoom.roomOf(pick);
+        cursor = -1;
+        lastPollMs = 0;
+        restartLines.clear();
+        LiveTakeoverChat.reset();
+        signatures.clear();
+        printed.clear();
+        lastPrintedSeq = -1;
+        ChatReactionTracker.forgetLive();
+        if (pick != null) mc.gui.getChat().addMessage(roomLine(pick));
+        if (joinedViaTv) join(mc);
+    }
+
+    /** "Now chatting in Stream 2 (Bo)": which room this client just entered. */
+    static Component roomLine(LiveChatRoom.Pick pick) {
+        Component line = pick.streamer() == null || pick.streamer().isBlank()
+            ? Component.translatable(ROOM_UNNAMED_KEY, pick.stream())
+            : Component.translatable(ROOM_KEY, pick.stream(), pick.streamer());
+        return line.copy().withStyle(ChatFormatting.GRAY);
+    }
+
+    static final String ROOM_KEY = "chat.dungeontrain.live_room.now";
+    static final String ROOM_UNNAMED_KEY = "chat.dungeontrain.live_room.now_unnamed";
 
     private static void join(Minecraft mc) {
         if (mc.getUser() == null) return;
         // Only a viewer who can take a Live Eye may be offered one (LiveGiftClient#canReceive).
         LiveFeedClient.chatJoin(base(false), mc.getUser().getProfileId(), mc.getUser().getName(),
-            LiveGiftClient.canReceive(mc));
+            LiveGiftClient.canReceive(mc), room);
     }
 
     /**
@@ -250,6 +313,7 @@ public final class LiveChatBridge {
 
     private static void disconnect() {
         connected = false;
+        room = null;
         restartLines.clear();
         LiveTakeoverChat.reset();
         cursor = -1;
@@ -267,6 +331,7 @@ public final class LiveChatBridge {
         tvChatReported = false;
         joinedViaTv = false;
         translationNoticeShown = false;
+        LiveChatRoom.reset();
         lastRestartTs = 0L;
         lastRestartPrintedMs = 0L;
         LiveRelayRestart.reset();

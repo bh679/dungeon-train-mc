@@ -156,7 +156,8 @@ public final class LiveTakeoverChat {
         UUID me = mc.getUser().getProfileId();
         PollLine poll = open;
         String pollId = poll == null ? null : poll.id();
-        LiveFeedClient.chatSend(LiveChatBridge.base(LiveStreamController.get().streaming()), me, mc.getUser().getName(), choice)
+        LiveFeedClient.chatSend(LiveChatBridge.base(LiveStreamController.get().streaming()), me, mc.getUser().getName(), choice,
+                LiveChatBridge.room())
             .thenAcceptAsync(r -> {
                 if (mc.player == null) return;
                 String counted = r.ok() ? r.str("vote") : "";

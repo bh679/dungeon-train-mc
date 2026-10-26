@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.compat.jade;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.block.PhotographFrameBlock;
 import games.brennan.dungeontrain.event.LiveEyeContainerEvents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -23,7 +24,8 @@ import snownee.jade.api.WailaPlugin;
  *
  * <p>On the client it also moves Jade's tooltip down under the Live stream's name pill while this
  * player is live ({@link LiveEyeJadeClient}), and hides infested blocks behind their host block for
- * survival players ({@link InfestedBlockJadeClient}).</p>
+ * survival players ({@link InfestedBlockJadeClient}), and names who took the photo in a photo frame
+ * ({@link PhotoFrameJadeProvider}).</p>
  *
  * <p>Optional: Jade finds this class by its {@link WailaPlugin} annotation, so nothing loads it — or
  * any Jade class — when Jade is not installed.</p>
@@ -42,6 +44,7 @@ public final class LiveEyeJadePlugin implements IWailaPlugin {
         registration.addBeforeRenderCallback(LiveEyeJadeClient.INSTANCE);
         registration.addAfterRenderCallback(LiveEyeJadeClient.INSTANCE);
         InfestedBlockJadeClient.register(registration);
+        registration.registerBlockComponent(PhotoFrameJadeProvider.INSTANCE, PhotographFrameBlock.class);
     }
 
     enum LiveEyeProvider implements IServerDataProvider<BlockAccessor> {

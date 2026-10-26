@@ -20,7 +20,8 @@ final class MobEffectOffsetsTest {
     @Test
     @DisplayName("Deeper Darker's room mobs and pot mobs have offsets")
     void deeperDarkerMobsCovered() {
-        assertEquals(21, MobEffectOffsets.offsetFor("deeperdarker:shriek_worm", false));
+        // The deep room's authored minimum for the shriek worm (cell 10,1,2).
+        assertEquals(28, MobEffectOffsets.offsetFor("deeperdarker:shriek_worm", false));
         for (String pot : new String[] {"anger_pot", "fear_pot", "sorrow_pot"}) {
             assertTrue(MobEffectOffsets.offsetFor("deeperdarker:" + pot, false) > 0, pot + " has no offset");
         }

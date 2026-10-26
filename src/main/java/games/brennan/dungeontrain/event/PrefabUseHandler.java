@@ -169,6 +169,7 @@ public final class PrefabUseHandler {
                 be.loadCustomOnly(merged, level.registryAccess());
                 be.setChanged();
                 ChiseledBookshelfSync.syncIfNeeded(level, placePos);
+                games.brennan.dungeontrain.editor.VaultLoot.syncState(level, placePos);
             }
         }
 
@@ -245,6 +246,7 @@ public final class PrefabUseHandler {
         be.loadCustomOnly(rolled, serverLevel.registryAccess());
         be.setChanged();
         ChiseledBookshelfSync.syncIfNeeded(serverLevel, pos);
+        games.brennan.dungeontrain.editor.VaultLoot.syncState(serverLevel, pos);
 
         // Editor-plot integration: if the player is standing in an editor plot,
         // record the link to the prefab. The pool itself is fetched from

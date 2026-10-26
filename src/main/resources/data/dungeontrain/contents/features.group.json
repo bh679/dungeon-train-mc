@@ -187,6 +187,15 @@
         "AMPLIFIED",
         "LOST_CITY"
       ]
+    },
+    {
+      "id": "trialvault",
+      "weight": 5
+    },
+    {
+      "id": "trailvault2",
+      "weight": 6,
+      "stage": "copper"
     }
   ]
 }
