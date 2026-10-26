@@ -347,6 +347,10 @@ public final class ContainerContentsRoller {
      * with the difficulty frame split out from the seed frame — see
      * {@link #rollItemStack(ContainerContentsEntry, int, BlockPos, long, int, int, int, HolderLookup.Provider)}
      * for why world-X-keyed callers (tunnels) must pass a distinct {@code diffIndex}.
+     *
+     * <p>Whatever lands in a container is fingerprinted ({@link RolledItemsFingerprint}) so a difficulty
+     * swap can leave untouched containers as generated. Brushables and vaults aren't containers and keep
+     * their NBT as rolled.</p>
      */
     @Nullable
     public static CompoundTag roll(ContainerContentsPool pool, BlockState state,
@@ -355,6 +359,19 @@ public final class ContainerContentsRoller {
                                    @Nullable CompoundTag baseNbt,
                                    HolderLookup.Provider registries,
                                    @Nullable Level level) {
+        CompoundTag rolled = rollUnstamped(pool, state, localPos, worldSeed, carriageIndex, diffIndex,
+            baseNbt, registries, level);
+        if (rolled == null || rolled == baseNbt || isBrushable(state) || VaultLoot.isVault(state)) return rolled;
+        return RolledItemsFingerprint.stamp(rolled, registries);
+    }
+
+    @Nullable
+    private static CompoundTag rollUnstamped(ContainerContentsPool pool, BlockState state,
+                                             BlockPos localPos, long worldSeed, int carriageIndex,
+                                             int diffIndex,
+                                             @Nullable CompoundTag baseNbt,
+                                             HolderLookup.Provider registries,
+                                             @Nullable Level level) {
         if (pool == null || pool.isEmpty()) return baseNbt;
         if (!state.hasBlockEntity()) return baseNbt;
         int totalWeight = pool.totalWeight();
