@@ -401,14 +401,14 @@ public final class PerksScreen extends Screen {
             .filter(p -> !zoomedOut || rank.applyAsInt(p) <= 2)
             // every visible star asks for its name; the layout fits as many as there is room for, most
             // important first (kept, hovered, glowing, the focus's neighbours, unlocked, then nearest the Engine)
-            .sorted(java.util.Comparator.comparingInt((PerkTree.Perk p) -> rank.applyAsInt(p) <= 2 ? rank.applyAsInt(p)
-                    : focus != null && linked(focus, p.id()) ? 3 : rank.applyAsInt(p) + 1)
-                .thenComparingDouble(PerkTree.Perk::distanceToCentre))
+            // hovered and kept stars (and a hovered class) first; then the rightmost perk wins its spot
+            .sorted(java.util.Comparator.comparingInt((PerkTree.Perk p) -> rank.applyAsInt(p) <= 2 ? 0 : 1)
+                .thenComparingDouble(p -> -stars.get(p.id())[0]))
             .forEach(p -> {
                 double[] s = stars.get(p.id());
                 wants.add(new NameLayout.Want(p.id(), s[0], s[1], s[2],
                     (int) Math.ceil(font.width(p.name()) * SkyPalette.NAME_SCALE), (int) Math.ceil(font.lineHeight * SkyPalette.NAME_SCALE),
-                    classHover));
+                    rank.applyAsInt(p) <= 2));
             });
         return NameLayout.place(wants, titles, stars);
     }

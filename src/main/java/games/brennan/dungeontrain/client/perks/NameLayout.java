@@ -36,22 +36,25 @@ final class NameLayout {
     /**
      * @param wants     stars to name, highest priority first
      * @param obstacles boxes nothing may cover (class titles)
-     * @param stars     every drawn star's centre and halo radius {x, y, r}, keyed by id
+     * @param stars     drawn stars' centre and halo radius {x, y, r}, keyed by id; only the dots of stars
+     *                  that are themselves named are kept clear, an unnamed star may be covered
      * @return id to the label's top-left corner, for the names that fit
      */
     static Map<String, int[]> place(List<Want> wants, List<Box> obstacles, Map<String, double[]> stars) {
         List<Box> taken = new ArrayList<>(obstacles);
+        Map<String, double[]> named = new LinkedHashMap<>();
+        for (Want w : wants) if (stars.containsKey(w.id())) named.put(w.id(), stars.get(w.id()));
         Map<String, int[]> out = new LinkedHashMap<>();
         for (Want w : wants) {
             double[] chosen = null;
             for (double[] c : candidates(w)) {
                 Box b = box(c, w);
-                if (hitsAny(b, taken) || hitsStar(b, w.id(), stars)) continue;
+                if (hitsAny(b, taken) || hitsStar(b, w.id(), named)) continue;
                 chosen = c;
                 break;
             }
             if (chosen == null && w.forced()) {
-                // clear of the other names at least, else straight below its star
+                // a hovered name always shows: clear of the other names at least, else at its default spot
                 for (double[] c : candidates(w)) if (!hitsAny(box(c, w), taken)) { chosen = c; break; }
                 if (chosen == null) chosen = candidates(w)[0];
             }
@@ -66,14 +69,27 @@ final class NameLayout {
         return new Box(c[0] - PAD, c[1] - PAD, c[0] + w.width() + PAD, c[1] + w.height() + PAD);
     }
 
-    private static double[][] candidates(Want w) {
-        double cx = w.x() - w.width() / 2.0;
-        return new double[][] {
-            {cx, w.y() + w.halo() + GAP},                              // below
-            {cx, w.y() - w.halo() - GAP - w.height()},                 // above
-            {w.x() + w.halo() + GAP, w.y() - w.height() / 2.0},        // right
-            {w.x() - w.halo() - GAP - w.width(), w.y() - w.height() / 2.0}, // left
-        };
+    /**
+     * Spots to try, best first: right of the dot (left-aligned, centred on it), left of it, below,
+     * above, then stepping up and down on either side.
+     */
+    static double[][] candidates(Want w) {
+        double right = w.x() + w.halo() + GAP, left = w.x() - w.halo() - GAP - w.width();
+        double mid = w.y() - w.height() / 2.0, cx = w.x() - w.width() / 2.0, step = w.height() + 2;
+        List<double[]> out = new ArrayList<>();
+        out.add(new double[] {right, mid});
+        out.add(new double[] {left, mid});
+        out.add(new double[] {cx, w.y() + w.halo() + GAP});
+        out.add(new double[] {cx, w.y() - w.halo() - GAP - w.height()});
+        for (int k = 1; k <= 6; k++) {
+            out.add(new double[] {right, mid + k * step});
+            out.add(new double[] {right, mid - k * step});
+            out.add(new double[] {left, mid + k * step});
+            out.add(new double[] {left, mid - k * step});
+            out.add(new double[] {cx, w.y() + w.halo() + GAP + k * step});
+            out.add(new double[] {cx, w.y() - w.halo() - GAP - w.height() - k * step});
+        }
+        return out.toArray(new double[0][]);
     }
 
     private static boolean hitsAny(Box b, List<Box> boxes) {

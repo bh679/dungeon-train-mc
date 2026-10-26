@@ -18,26 +18,35 @@ class NameLayoutTest {
     }
 
     @Test
-    @DisplayName("two stars side by side: the second name moves off the first, never on top")
-    void namesNeverOverlap() {
-        NameLayout.Want a = new NameLayout.Want("a", 100, 100, 5, 60, 9);
-        NameLayout.Want b = new NameLayout.Want("b", 120, 100, 5, 60, 9);
-        Map<String, double[]> stars = Map.of("a", new double[] {100, 100, 5}, "b", new double[] {120, 100, 5});
-        Map<String, int[]> out = NameLayout.place(List.of(a, b), List.of(), stars);
-        assertEquals(new int[] {70, 108}[0], out.get("a")[0], "the first name sits below its star");
-        assertTrue(out.containsKey("b"));
-        assertFalse(box(out.get("a"), a).hits(box(out.get("b"), b)));
+    @DisplayName("a name sits right of its dot, left-aligned and centred on it")
+    void defaultIsRight() {
+        NameLayout.Want a = new NameLayout.Want("a", 100, 100, 5, 40, 6);
+        Map<String, int[]> out = NameLayout.place(List.of(a), List.of(), Map.of("a", new double[] {100, 100, 5}));
+        assertEquals(108, out.get("a")[0]);
+        assertEquals(97, out.get("a")[1]);
     }
 
     @Test
-    @DisplayName("a name keeps clear of a class title, and is left out when nothing is free")
-    void namesAvoidTitles() {
-        NameLayout.Want a = new NameLayout.Want("a", 100, 100, 5, 40, 9);
-        List<NameLayout.Box> titles = new ArrayList<>(List.of(new NameLayout.Box(60, 100, 140, 125)));
+    @DisplayName("an unnamed star may be covered; a named star's dot may not")
+    void onlyNamedStarsBlock() {
+        NameLayout.Want a = new NameLayout.Want("a", 100, 100, 5, 40, 6);
+        Map<String, double[]> stars = Map.of("a", new double[] {100, 100, 5}, "b", new double[] {125, 100, 5});
+        assertEquals(108, NameLayout.place(List.of(a), List.of(), stars).get("a")[0], "b is unnamed: covered");
+        NameLayout.Want b = new NameLayout.Want("b", 125, 100, 5, 40, 6);
+        Map<String, int[]> both = NameLayout.place(List.of(b, a), List.of(), stars);
+        assertFalse(box(both.get("a"), a).hits(box(both.get("b"), b)), "names never overlap");
+        assertTrue(both.get("a")[0] != 108 || both.get("a")[1] != 97, "a moved off b's dot");
+    }
+
+    @Test
+    @DisplayName("a hovered name always shows, clear of the other names")
+    void forcedAlwaysPlaced() {
+        NameLayout.Want a = new NameLayout.Want("a", 100, 100, 5, 40, 6, true);
+        List<NameLayout.Box> titles = new ArrayList<>(List.of(new NameLayout.Box(105, 90, 160, 110)));
         Map<String, int[]> out = NameLayout.place(List.of(a), titles, Map.of("a", new double[] {100, 100, 5}));
         assertTrue(out.containsKey("a"));
-        assertFalse(box(out.get("a"), a).hits(titles.get(0)), "moved off the title");
+        assertFalse(box(out.get("a"), a).hits(titles.get(0)));
         titles.add(new NameLayout.Box(0, 0, 400, 400));
-        assertTrue(NameLayout.place(List.of(a), titles, Map.of()).isEmpty(), "no free spot: no name");
+        assertTrue(NameLayout.place(List.of(a), titles, Map.of()).containsKey("a"), "even with nowhere free");
     }
 }
