@@ -31084,6 +31084,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "difficulty-separation-fix",
+      "version": "0.1546.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "multiplayer"
+      ],
+      "title": "Difficulty fix",
+      "summary": "Changing difficulty on a server now keeps each difficulty fully separate, as intended.",
+      "highlights": [],
+      "pr": 2347,
+      "date": "2026-10-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
