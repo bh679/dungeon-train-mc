@@ -27,13 +27,21 @@ final class ClassTitlePainter {
 
     private record Spot(double x, double y, double hw, double hh) {}
 
-    /** Draws the titles and returns their screen boxes, so the perk names can keep clear of them. */
+    /**
+     * Draws the titles, placed after the perk names: a title moves around the names' screen boxes
+     * ({@code names}) as it does around other titles. Returns the titles' screen boxes.
+     */
     static List<NameLayout.Box> render(GuiGraphics g, Font font, PerkTree tree, ClassVisibility vis, String glow, SkyView view, int w, int h,
-                                       double fade) {
+                                       double fade, List<NameLayout.Box> names) {
         List<NameLayout.Box> boxes = new ArrayList<>();
         float scale = w < NARROW_WIDTH ? 0.75F : 1F;
         double z = view.zoom();
         List<Spot> placed = new ArrayList<>();
+        // the perk names, in sky units, count as already placed: titles keep clear of them
+        for (NameLayout.Box b : names) {
+            double cx = view.toSkyX((b.x0() + b.x1()) / 2, w), cy = view.toSkyY((b.y0() + b.y1()) / 2, h);
+            placed.add(new Spot(cx, cy, (b.x1() - b.x0()) / 2 / z, (b.y1() - b.y0()) / 2 / z));
+        }
         for (PerkTree.PerkClass c : tree.classes()) {
             // only the drawn perks place the title; a hidden class is named once one of its perks is unlocked
             if (!vis.titleShown(c.id())) continue;
@@ -61,7 +69,7 @@ final class ClassTitlePainter {
             g.pose().pushPose();
             g.pose().translate(sx, sy, 0);
             g.pose().scale(scale, scale, 1F);
-            g.drawString(font, title, -font.width(title) / 2, -font.lineHeight / 2, colour, true);
+            GlowText.draw(g, font, title, -font.width(title) / 2, -font.lineHeight / 2, colour);
             g.pose().popPose();
             double tw = font.width(title) * scale / 2.0 + 2, th = font.lineHeight * scale / 2.0 + 1;
             boxes.add(new NameLayout.Box(sx - tw, sy - th, sx + tw, sy + th));

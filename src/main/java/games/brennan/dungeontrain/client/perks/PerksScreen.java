@@ -283,18 +283,28 @@ public final class PerksScreen extends Screen {
         SkyDraw.glow(g, gx, gy, 256 * view.zoom(), SkyDraw.withAlpha(SkyPalette.GOLD, 0.07 * fade));
         stars.render(g, view, width, skyH(), now, fade);
         LinkPainter.render(g, drawn, snap, vis, view, width, skyH(), fade);
-        List<NameLayout.Box> titleBoxes = ClassTitlePainter.render(g, font, drawn, vis, glow, view, width, skyH(), fade);
-
+        // perk names take their spots first; the class titles then move around them
         boolean allNames = view.showsAllNames();
         boolean spendable = fromApple && snap.canAffordRank() && spentAt == 0;
         String focus = cardFor != null ? cardFor : selected;
-        Map<String, int[]> names = layoutNames(allNames, focus, titleBoxes);
+        Map<String, int[]> names = layoutNames(allNames, focus, List.of());
+        List<NameLayout.Box> nameBoxes = new java.util.ArrayList<>();
+        names.forEach((id, at) -> tree.perk(id).ifPresent(p -> nameBoxes.add(new NameLayout.Box(at[0], at[1],
+            at[0] + Math.ceil(font.width(p.name()) * SkyPalette.NAME_SCALE), at[1] + Math.ceil(font.lineHeight * SkyPalette.NAME_SCALE)))));
+        ClassTitlePainter.render(g, font, drawn, vis, glow, view, width, skyH(), fade, nameBoxes);
+
         for (PerkTree.Perk p : drawn.perks()) {
             if (vis.hidden(p)) continue;
             boolean sel = p.id().equals(selected), hov = p.id().equals(hovered) || p.id().equals(cardFor);
             boolean glows = glow != null && glow.equals(p.cls());
             StarPainter.render(g, font, drawn, p, snap, view, width, skyH(),
                 new StarPainter.Look(hov, sel, names.get(p.id()), spendable, vis.ghost(p), glows), unlockedAt, pointAt, now, fade);
+        }
+        // names after every star, so no dot covers a label
+        for (PerkTree.Perk p : drawn.perks()) {
+            int[] at = names.get(p.id());
+            if (at == null || vis.hidden(p)) continue;
+            StarPainter.renderName(g, font, drawn, p, snap, at, glow != null && glow.equals(p.cls()), vis.ghost(p), fade);
         }
 
         renderHeader(g, snap, now, fade);

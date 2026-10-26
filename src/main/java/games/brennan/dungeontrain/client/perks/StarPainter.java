@@ -99,15 +99,24 @@ final class StarPainter {
 
         renderSegments(g, x, y, halo, z, snap.unlockLevel(p.id()), snap.points(p.id()), colour, opacity, pointAge);
 
-        if (look.namePos() != null) {
-            int text = state == PerkMenuSnapshot.StarState.LOCKED && !look.glow() ? SkyPalette.MUTED : SkyPalette.FG;
-            int alpha = (int) (Math.max(0.35, opacity) * 255);
-            g.pose().pushPose();
-            g.pose().translate(look.namePos()[0], look.namePos()[1], 0);
-            g.pose().scale(SkyPalette.NAME_SCALE, SkyPalette.NAME_SCALE, 1F);
-            g.drawString(font, p.name(), 0, 0, (alpha << 24) | (text & 0xFFFFFF), true);
-            g.pose().popPose();
-        }
+    }
+
+    /**
+     * A star's name, drawn in a pass after every star so no dot covers a label. Glowing dark round its
+     * edge so it reads where it crosses a dot or a line.
+     */
+    static void renderName(GuiGraphics g, Font font, PerkTree tree, PerkTree.Perk p, PerkMenuSnapshot snap, int[] at,
+                           boolean glow, boolean ghost, double fade) {
+        PerkMenuSnapshot.StarState state = snap.stateOf(tree, p.id());
+        boolean locked = state == PerkMenuSnapshot.StarState.LOCKED && !glow;
+        int text = locked ? SkyPalette.MUTED : SkyPalette.FG;
+        double opacity = (locked ? 0.6 : state == PerkMenuSnapshot.StarState.REACHABLE && !glow ? 0.85 : 1.0)
+            * (ghost ? 0.5 : 1.0) * fade;
+        g.pose().pushPose();
+        g.pose().translate(at[0], at[1], 0);
+        g.pose().scale(SkyPalette.NAME_SCALE, SkyPalette.NAME_SCALE, 1F);
+        GlowText.draw(g, font, p.name(), 0, 0, SkyDraw.withAlpha(text, opacity));
+        g.pose().popPose();
     }
 
     /**
