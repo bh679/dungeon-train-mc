@@ -3133,7 +3133,7 @@
   "advancements.dungeontrain.dungeon_train.million_metre_club.hint": "Смерті не важать, відстань — так.",
   "advancements.dungeontrain.dungeon_train.cross_country.hint": "Ото довга поїздка без смерті.",
   "advancements.dungeontrain.dungeon_train.the_long_run.hint": "Вау. За одне життя?",
-  "advancements.dungeontrain.dungeon_train.the_long_way_back.hint": "Шкода кидати, бо стільки вкладено в дорогу назад?",
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.hint": "Шкода кидати, бо стільки вкладено? x 100",
   "advancements.dungeontrain.dungeon_train.leather_over_diamond.hint": "Деяка здобич випадає кращою, ніж здається.",
   "advancements.dungeontrain.dungeon_train.train_inside_a_train.hint": "Деякі вагони більші всередині, ніж зовні.",
   "advancements.dungeontrain.dungeon_train.a_new_way_out.hint": "Двері, крізь які ти зайшов, — не єдині.",
