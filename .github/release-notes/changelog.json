@@ -30943,6 +30943,28 @@
       "released": true,
       "released_in": "v0.1536.0",
       "released_at": "2026-10-26T10:16:46Z"
+    },
+    {
+      "id": "tv-chat-always-open",
+      "version": "0.1537.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "TV chat, any time",
+      "summary": "Wear a TV and you can chat in Live chat even when nobody is streaming.",
+      "highlights": [
+        "Wear a TV to chat with other TV wearers, Discord and the website, even when nobody is live.",
+        "A streamer who turns Live chat off just stops seeing it. Everyone else can keep talking.",
+        "Turning Live chat off also keeps your chat off your stream.",
+        "Rather not see Live chat on your TV? Switch it off in Options, Stream, Live chat."
+      ],
+      "pr": 2338,
+      "date": "2026-10-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
