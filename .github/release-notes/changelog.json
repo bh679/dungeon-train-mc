@@ -31015,7 +31015,7 @@
         "ui"
       ],
       "title": "Live Eye Chat Translations",
-      "summary": "A new Community Reward: while it is on, Live chat is translated into each viewer's own language. Anyone who gives it keeps it on for everyone for a month.",
+      "summary": "Live chat now speaks your language. A new Community Reward translates Live chat into each viewer's own language, for everyone, for a month.",
       "highlights": [
         "Chat from the stream, Discord, Twitch and the website shows in your game language, right under the original",
         "Choose how it shows in Options: under the original, translation only, or translation first",
@@ -31025,7 +31025,10 @@
       "date": "2026-10-26",
       "released": false,
       "released_in": null,
-      "released_at": null
+      "released_at": null,
+      "major": true,
+      "notable": true,
+      "description": "Live chat now speaks your language.\n\n**Live Eye Chat Translations** is a new Community Reward. When one person gives it, Live chat is translated for everyone for a month: messages from the stream, Discord, Twitch and the website show in your own game language, right under the original.\n\nChoose how translations show in Options: under the original, translation only, or translation first.\n\nFind it on the Community Rewards shelf at $90 AUD for a month."
     }
   ]
 }
