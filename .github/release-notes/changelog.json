@@ -31045,9 +31045,9 @@
       "summary": "When Two Streams is on and only one person is streaming, Live Eyes are as easy to find as when nobody is live, so someone can take the open stream. TVs still turn up more often while a stream is on.",
       "highlights": [],
       "date": "2026-10-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1547.0",
+      "released_at": "2026-10-26T17:49:15Z",
       "pr": 2344
     },
     {
@@ -31063,9 +31063,9 @@
       "highlights": [],
       "pr": 2345,
       "date": "2026-10-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1547.0",
+      "released_at": "2026-10-26T17:49:15Z"
     },
     {
       "id": "live-pill-shows-once",
@@ -31081,9 +31081,9 @@
       "highlights": [],
       "pr": 2346,
       "date": "2026-10-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1547.0",
+      "released_at": "2026-10-26T17:49:15Z"
     },
     {
       "id": "difficulty-separation-fix",
@@ -31098,9 +31098,9 @@
       "highlights": [],
       "pr": 2347,
       "date": "2026-10-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1547.0",
+      "released_at": "2026-10-26T17:49:15Z"
     },
     {
       "id": "advancement-tweaks-reset",
@@ -31115,9 +31115,9 @@
       "highlights": [],
       "pr": 2349,
       "date": "2026-10-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1547.0",
+      "released_at": "2026-10-26T17:49:15Z"
     }
   ]
 }
