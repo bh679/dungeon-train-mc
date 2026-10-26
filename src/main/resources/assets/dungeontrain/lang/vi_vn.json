@@ -1344,7 +1344,7 @@
   "gui.dungeontrain.rewards.replays_kept.amount": "$80 AUD",
   "gui.dungeontrain.rewards.replays_kept.amount_short": "$80",
   "gui.dungeontrain.rewards.live_translation.name": "Dịch trực tiếp",
-  "gui.dungeontrain.rewards.live_translation.line": "Trò chuyện trực tiếp được dịch sang ngôn ngữ của từng người xem trong 3 tháng",
+  "gui.dungeontrain.rewards.live_translation.line": "Trò chuyện trực tiếp được dịch sang ngôn ngữ của từng người xem trong 2 tháng",
   "gui.dungeontrain.rewards.live_translation.amount": "$90 AUD",
   "gui.dungeontrain.rewards.live_translation.amount_short": "$90",
   "gui.dungeontrain.rewards.status.on_by": "BẬT đến %s · duy trì bởi %s",

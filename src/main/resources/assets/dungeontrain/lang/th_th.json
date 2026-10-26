@@ -1344,7 +1344,7 @@
   "gui.dungeontrain.rewards.replays_kept.amount": "$80 AUD",
   "gui.dungeontrain.rewards.replays_kept.amount_short": "$80",
   "gui.dungeontrain.rewards.live_translation.name": "แปลสด",
-  "gui.dungeontrain.rewards.live_translation.line": "แปลแชทไลฟ์เป็นภาษาของผู้ชมแต่ละคน เป็นเวลา 3 เดือน",
+  "gui.dungeontrain.rewards.live_translation.line": "แปลแชทไลฟ์เป็นภาษาของผู้ชมแต่ละคน เป็นเวลา 2 เดือน",
   "gui.dungeontrain.rewards.live_translation.amount": "$90 AUD",
   "gui.dungeontrain.rewards.live_translation.amount_short": "$90",
   "gui.dungeontrain.rewards.status.on_by": "เปิดถึง %s · เปิดไว้โดย %s",

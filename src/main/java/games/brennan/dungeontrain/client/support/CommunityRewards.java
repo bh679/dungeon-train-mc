@@ -42,7 +42,7 @@ public final class CommunityRewards {
         VOICE_ON_STREAM(LiveRewards.VOICE_ON_STREAM, Group.STREAMS, 160),
         HD_STREAMS(LiveRewards.HD_STREAMS, Group.EXTRA, 90),
         REPLAYS_KEPT(LiveRewards.REPLAYS_KEPT, Group.EXTRA, 80),
-        LIVE_TRANSLATION(LiveRewards.LIVE_TRANSLATION, Group.EXTRA, 90, 3);
+        LIVE_TRANSLATION(LiveRewards.LIVE_TRANSLATION, Group.EXTRA, 90, 2);
 
         private final String id;
         private final Group group;

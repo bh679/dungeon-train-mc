@@ -7,7 +7,7 @@ picking the feature up in a new session.
 
 Live Eye chat lines translated on the dp-relay by Claude Haiku (`claude-haiku-4-5`) into the
 languages the room is actually read in, shown in game under / instead of / above the original.
-Sold as a **Community Reward `live_translation`: A$90 for 3 months** (every other reward is 1 month).
+Sold as a **Community Reward `live_translation`: A$90 for 2 months** (every other reward is 1 month; was 3 until 2026-10-26).
 Nothing changes on the wire while the reward is off.
 
 Approved Gate 1 plan (full detail, both repos):
@@ -26,7 +26,7 @@ Approved Gate 1 plan (full detail, both repos):
 
 1. Brennan approves Gate 2 for the mod (screenshots, gitignored so local only: `.claude/worktrees/blissful-benz-4307f1/test-results/gate2-live-translations-*-2026-10.png`; re-create with the stub steps below).
 2. Relay Part A is built on dp-relay `dev/live-translations`: `live-chat-translate.js` (+ test), the `trans` ring
-   step in `live-chat.js`, `rewards.js` (`live_translation`, A$90, `TERM_MONTHS` = 3), `lang=` noting in
+   step in `live-chat.js`, `rewards.js` (`live_translation`, A$90, `TERM_MONTHS` = 2), `lang=` noting in
    `server.js` / `live-chat-web.js`, `rewards` on the public status (`live.js`), the Live page using relay
    translations first (`public/dungeontrain/live/chat-*.js`, `live-translate.js`), shelf/thanks pages, env keys
    in `config-schema.js` + `.env.example`, README section. Remaining: its Gate 2 (a local relay with a mock
@@ -50,10 +50,10 @@ Approved Gate 1 plan (full detail, both repos):
   only / Translation first.
 - Website Live page also prefers relay translations while the reward is on (browser engine stays as
   fallback).
-- Price A$90, **3 months per gift**.
+- Price A$90, **2 months per gift**.
 - **Lean Haiku call (2026-10-26, for margin):** ~250-token system prompt (no big glossary, no prompt
   caching) and a strict JSON schema listing **only the requested locales**; monthly cap 1.5M chars.
-  At today's volume that is ≈ A$45 of Haiku per 3-month gift (3 reader languages), so ≈ A$43 profit
+  At today's volume that is ≈ A$36 of Haiku per 2-month gift (3 reader languages), so ≈ A$52 profit
   on A$90. A ~2k-token cached glossary + fixed 22-locale schema was costed at a loss and rejected.
   Full figures in the plan's Risks / Cost section.
 - Injection posture: nonce-tagged `<chat_line_xxxx>` data block, strict per-request JSON schema, then
@@ -68,9 +68,9 @@ Approved Gate 1 plan (full detail, both repos):
   game and web read shapes; a new ring seq step (like `reacts`), latest per line since the cursor.
 - **Inline:** a message read in the same poll as its translation carries `"tr": {...}` on the message.
 - **Status:** public live status gains `rewards: [active ids]` while live (web page uses it).
-- **Reward length:** relay `rewards.js` must give `live_translation` **3 x 30 days per gift** (it stacks
+- **Reward length:** relay `rewards.js` must give `live_translation` **2 x 30 days per gift** (it stacks
   `from = max(now, until)`; the mod's `CommunityRewards.nextFreeMs` mirrors it via `Reward.months()`).
-  Also: `IDS`, `PRICE_AUD.live_translation = 90`, `NAMES`, support/thanks pages ("for 3 months"),
+  Also: `IDS`, `PRICE_AUD.live_translation = 90`, `NAMES`, support/thanks pages ("for 2 months"),
   `ui-events.js` `reward_live_translation`.
 - Old mods ignore all of this; old relays never send it.
 
@@ -87,7 +87,7 @@ Approved Gate 1 plan (full detail, both repos):
 - `config/LiveFeedClientConfig.LiveChatTranslation` + Options / Stream / Chat translations row
   (`ClientOptionsTab`, `DungeonTrainClientOptionsScreen`, `ClientOptionsIcons`).
 - Rewards roster: `LiveRewards.LIVE_TRANSLATION`, `CommunityRewards.Reward.LIVE_TRANSLATION` (A$90,
-  3 months, Extra group), `RewardIcons` (book).
+  2 months, Extra group), `RewardIcons` (book).
 - 16 lang keys in all 22 locales, provenance stamped; `translation_examples.json` entries.
 - Tests: `LiveFeedClientTranslationsParseTest`, `LiveChatTranslationsTest`, plus additions to
   `LiveChatSignaturesTest`, `CommunityRewardsTest`, `ClientOptionsTabTest`.
@@ -115,7 +115,7 @@ are forwarded by `build.gradle`.
 ## Cost reference
 
 Prod `live_msgs` (14 to 24 Oct 2026): 4,671 lines in ~9.8 days, about 14k lines/month, ~76% from game.
-On the lean call: ≈ US$7/10/12 a month for 1/3/5 reader languages, so ≈ A$32/45/54 per 3-month gift
-and ≈ A$57/43/34 profit on A$90 after Stripe. Break-even ≈ US$19/month (about twice today's volume);
+On the lean call as built: ≈ US$8/12/15 a month for 1/3/5 reader languages, so ≈ A$24/36/46 per 2-month gift
+and ≈ A$64/52/42 profit on A$90 after Stripe. Break-even ≈ US$19/month (about twice today's volume);
 the 1.5M-char monthly cap stops translating before that. Prices from memory: recheck Haiku pricing
 and FX before launch.
