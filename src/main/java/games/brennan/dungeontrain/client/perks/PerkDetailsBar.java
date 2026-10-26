@@ -29,6 +29,7 @@ final class PerkDetailsBar {
     static final int HEIGHT = 46;
     private static final int PAD = 8, LINE = 10, BUTTON_W = 60, BUTTON_H = 16, GAP = 4, STRIPE = 3;
     private static final int MIN_LEFT = 90, DOT_W = 8;
+    private static final int SEG_W = 10, SEG_H = 5, SEG_GAP = 2, SEG_LOCKED = 0x2A2F4A;
     private static final int PILL_H = 12, PILL_GAP = 3, PILL_PITCH = PILL_H + 2, PILL_PAD = 4;
     /** Deep indigo, a shade off the sky so the bar reads as its own surface. */
     private static final int BG = 0xF20D0B2A;
@@ -157,7 +158,7 @@ final class PerkDetailsBar {
     }
 
     /**
-     * A class hovered in the Classes list. Left column: its name and "X/Y perks". Right of a divider:
+     * A class hovered in the Classes list. Left column: its name over one segment per perk. Right of a divider:
      * one pill per perk, flowing left to right and wrapping, lit in the class colour once unlocked (with
      * its points), muted while locked. What doesn't fit ends in a "+N" pill.
      */
@@ -167,11 +168,10 @@ final class PerkDetailsBar {
         List<PerkTree.Perk> perks = tree.perksOf(c.id());
         g.fill(0, top + 1, STRIPE, top + HEIGHT, (a << 24) | (c.colour() & 0xFFFFFF));
         int x = PAD + STRIPE, y = top + PAD;
-        long unlocked = perks.stream().filter(p -> snap.unlockLevel(p.id()) > 0).count();
-        Component count = Component.translatable(KEY + "class_progress", unlocked, perks.size());
         g.drawString(font, c.name(), x, y, (a << 24) | (c.colour() & 0xFFFFFF), true);
-        g.drawString(font, count, x, y + LINE + 2, ((int) (a * 0.8) << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
-        int split = x + leftColumn(c.name(), count.getString());
+        int column = leftColumn(c.name());
+        renderSegments(g, snap, perks, c.colour(), x, y + LINE + 4, column - 12, a);
+        int split = x + column;
         divider(g, split, a);
 
         int left = split + 8, right = width - PAD;
@@ -200,6 +200,33 @@ final class PerkDetailsBar {
             }
             pill(g, px, py, name, pts, c.colour(), level > 0, a);
             px += w + PILL_GAP;
+        }
+    }
+
+    /**
+     * One block per perk of the class, active ones first: filled in the class colour when a point is in
+     * it, outlined when unlocked with none, dark while locked. Blocks shrink to fit {@code maxW}.
+     */
+    private void renderSegments(GuiGraphics g, PerkMenuSnapshot snap, List<PerkTree.Perk> perks, int colour,
+                                int x, int y, int maxW, int a) {
+        int n = perks.size();
+        if (n == 0) return;
+        int active = 0, unlocked = 0;
+        for (PerkTree.Perk p : perks) {
+            if (snap.points(p.id()) > 0) active++;
+            else if (snap.unlockLevel(p.id()) > 0) unlocked++;
+        }
+        int w = Math.max(2, Math.min(SEG_W, (maxW - (n - 1) * SEG_GAP) / n));
+        int on = (a << 24) | (colour & 0xFFFFFF);
+        for (int i = 0; i < n; i++) {
+            int sx = x + i * (w + SEG_GAP);
+            if (i < active) {
+                g.fill(sx, y, sx + w, y + SEG_H, on);
+            } else if (i < active + unlocked) {
+                g.renderOutline(sx, y, w, SEG_H, on);
+            } else {
+                g.fill(sx, y, sx + w, y + SEG_H, ((int) (a * 0.9) << 24) | (SEG_LOCKED & 0xFFFFFF));
+            }
         }
     }
 

@@ -5594,7 +5594,6 @@
   "gui.dungeontrain.perks.bar.unlock": "解鎖",
   "gui.dungeontrain.perks.bar.activate": "啟用",
   "gui.dungeontrain.perks.bar.tier": "第%s階",
-  "gui.dungeontrain.perks.bar.class_progress": "特權 %s/%s",
   "gui.dungeontrain.perks.bar.engine.active": "已啟用點數 %s / %s。",
   "gui.dungeontrain.perks.bar.engine.advancements": "用進度永久解鎖特權。",
   "gui.dungeontrain.perks.bar.engine.apples": "用宇宙蘋果在這條命中啟用特權。",

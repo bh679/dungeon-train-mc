@@ -5644,7 +5644,6 @@
   "gui.dungeontrain.perks.bar.unlock": "Desbloquear",
   "gui.dungeontrain.perks.bar.activate": "Ativar",
   "gui.dungeontrain.perks.bar.tier": "Nível %s",
-  "gui.dungeontrain.perks.bar.class_progress": "%s/%s vantagens",
   "gui.dungeontrain.perks.bar.engine.active": "%s / %s pontos ativos.",
   "gui.dungeontrain.perks.bar.engine.advancements": "Use as conquistas para desbloquear vantagens para sempre.",
   "gui.dungeontrain.perks.bar.engine.apples": "Use as maçãs cósmicas para ativar vantagens nesta vida.",

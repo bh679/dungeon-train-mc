@@ -5644,7 +5644,6 @@
   "gui.dungeontrain.perks.bar.unlock": "Ontgrendelen",
   "gui.dungeontrain.perks.bar.activate": "Activeren",
   "gui.dungeontrain.perks.bar.tier": "Niveau %s",
-  "gui.dungeontrain.perks.bar.class_progress": "%s/%s perks",
   "gui.dungeontrain.perks.bar.engine.active": "%s / %s punten actief.",
   "gui.dungeontrain.perks.bar.engine.advancements": "Gebruik vooruitgang om perks voorgoed te ontgrendelen.",
   "gui.dungeontrain.perks.bar.engine.apples": "Gebruik kosmische appels om perks voor dit leven te activeren.",

@@ -5708,7 +5708,6 @@
   "gui.dungeontrain.perks.bar.unlock": "Odblokuj",
   "gui.dungeontrain.perks.bar.activate": "Aktywuj",
   "gui.dungeontrain.perks.bar.tier": "Poziom %s",
-  "gui.dungeontrain.perks.bar.class_progress": "Atuty: %s/%s",
   "gui.dungeontrain.perks.bar.engine.active": "Aktywne punkty: %s / %s.",
   "gui.dungeontrain.perks.bar.engine.advancements": "Użyj postępów, aby odblokować atuty na zawsze.",
   "gui.dungeontrain.perks.bar.engine.apples": "Użyj kosmicznych jabłek, aby aktywować atuty na to życie.",

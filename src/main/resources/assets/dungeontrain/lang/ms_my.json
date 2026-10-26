@@ -5580,7 +5580,6 @@
   "gui.dungeontrain.perks.bar.unlock": "Buka kunci",
   "gui.dungeontrain.perks.bar.activate": "Aktifkan",
   "gui.dungeontrain.perks.bar.tier": "Peringkat %s",
-  "gui.dungeontrain.perks.bar.class_progress": "%s/%s perk",
   "gui.dungeontrain.perks.bar.engine.active": "%s / %s mata aktif.",
   "gui.dungeontrain.perks.bar.engine.advancements": "Gunakan kemajuan untuk membuka perk selama-lamanya.",
   "gui.dungeontrain.perks.bar.engine.apples": "Gunakan Epal Kosmik untuk mengaktifkan perk bagi hayat ini.",

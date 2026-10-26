@@ -5580,7 +5580,6 @@
   "gui.dungeontrain.perks.bar.unlock": "ปลดล็อก",
   "gui.dungeontrain.perks.bar.activate": "เปิดใช้",
   "gui.dungeontrain.perks.bar.tier": "ระดับ %s",
-  "gui.dungeontrain.perks.bar.class_progress": "พลังพิเศษ %s/%s",
   "gui.dungeontrain.perks.bar.engine.active": "แต้มที่ใช้งาน %s / %s",
   "gui.dungeontrain.perks.bar.engine.advancements": "ใช้ความก้าวหน้าเพื่อปลดล็อกพลังพิเศษถาวร",
   "gui.dungeontrain.perks.bar.engine.apples": "ใช้แอปเปิลจักรวาลเพื่อเปิดใช้พลังพิเศษในชีวิตนี้",
