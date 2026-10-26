@@ -5703,5 +5703,12 @@
   "gui.dungeontrain.perks.counter.unlock.title": "Puncte de deblocare",
   "gui.dungeontrain.perks.counter.unlock.body": "Câștigă deblocând realizări",
   "gui.dungeontrain.perks.counter.active.title": "Puncte active",
-  "gui.dungeontrain.perks.counter.active.body": "Adună găsind Mere Cosmice."
+  "gui.dungeontrain.perks.counter.active.body": "Adună găsind Mere Cosmice.",
+  "gui.dungeontrain.perks.bar.unlock": "Deblochează",
+  "gui.dungeontrain.perks.bar.activate": "Activează",
+  "gui.dungeontrain.perks.bar.tier": "Nivelul %s",
+  "gui.dungeontrain.perks.bar.full": "Plin. Deblochează-l din nou pentru loc pentru încă un punct.",
+  "gui.dungeontrain.perks.bar.fill_first": "Umple mai întâi punctele lui.",
+  "gui.dungeontrain.perks.bar.hint": "Treci peste un avantaj ca să-l vezi aici. Dă clic ca să-l păstrezi.",
+  "gui.dungeontrain.perks.counter.unlock.click": "Dă clic ca să deschizi progresele."
 }

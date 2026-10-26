@@ -5639,5 +5639,12 @@
   "gui.dungeontrain.perks.counter.unlock.title": "Points de déblocage",
   "gui.dungeontrain.perks.counter.unlock.body": "À gagner en débloquant des progrès.",
   "gui.dungeontrain.perks.counter.active.title": "Points d'atout",
-  "gui.dungeontrain.perks.counter.active.body": "À récolter en trouvant des pommes cosmiques."
+  "gui.dungeontrain.perks.counter.active.body": "À récolter en trouvant des pommes cosmiques.",
+  "gui.dungeontrain.perks.bar.unlock": "Débloquer",
+  "gui.dungeontrain.perks.bar.activate": "Activer",
+  "gui.dungeontrain.perks.bar.tier": "Palier %s",
+  "gui.dungeontrain.perks.bar.full": "Plein. Débloquez-le à nouveau pour avoir la place d’un point de plus.",
+  "gui.dungeontrain.perks.bar.fill_first": "Remplissez d’abord ses points.",
+  "gui.dungeontrain.perks.bar.hint": "Survolez un atout pour le voir ici. Cliquez pour le garder.",
+  "gui.dungeontrain.perks.counter.unlock.click": "Cliquez pour ouvrir les progrès."
 }

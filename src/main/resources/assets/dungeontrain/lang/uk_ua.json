@@ -5700,5 +5700,12 @@
   "gui.dungeontrain.perks.counter.unlock.title": "Бали розблокування",
   "gui.dungeontrain.perks.counter.unlock.body": "Заробляються розблокуванням досягнень",
   "gui.dungeontrain.perks.counter.active.title": "Активні бали",
-  "gui.dungeontrain.perks.counter.active.body": "Збираються під час пошуку космічних яблук."
+  "gui.dungeontrain.perks.counter.active.body": "Збираються під час пошуку космічних яблук.",
+  "gui.dungeontrain.perks.bar.unlock": "Розблокувати",
+  "gui.dungeontrain.perks.bar.activate": "Активувати",
+  "gui.dungeontrain.perks.bar.tier": "Рівень %s",
+  "gui.dungeontrain.perks.bar.full": "Заповнено. Розблокуйте знову, щоб звільнити місце для ще одного очка.",
+  "gui.dungeontrain.perks.bar.fill_first": "Спершу заповніть його очки.",
+  "gui.dungeontrain.perks.bar.hint": "Наведіть на перк, щоб побачити його тут. Натисніть, щоб закріпити.",
+  "gui.dungeontrain.perks.counter.unlock.click": "Натисніть, щоб відкрити досягнення."
 }

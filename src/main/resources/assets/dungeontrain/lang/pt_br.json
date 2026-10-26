@@ -5639,5 +5639,12 @@
   "gui.dungeontrain.perks.counter.unlock.title": "Pontos de Desbloqueio",
   "gui.dungeontrain.perks.counter.unlock.body": "Ganhe desbloqueando conquistas",
   "gui.dungeontrain.perks.counter.active.title": "Pontos Ativos",
-  "gui.dungeontrain.perks.counter.active.body": "Obtenha encontrando Maçãs Cósmicas."
+  "gui.dungeontrain.perks.counter.active.body": "Obtenha encontrando Maçãs Cósmicas.",
+  "gui.dungeontrain.perks.bar.unlock": "Desbloquear",
+  "gui.dungeontrain.perks.bar.activate": "Ativar",
+  "gui.dungeontrain.perks.bar.tier": "Nível %s",
+  "gui.dungeontrain.perks.bar.full": "Cheio. Desbloqueie de novo para ter espaço para mais um ponto.",
+  "gui.dungeontrain.perks.bar.fill_first": "Preencha os pontos dela primeiro.",
+  "gui.dungeontrain.perks.bar.hint": "Passe o mouse sobre uma vantagem para vê-la aqui. Clique para fixá-la.",
+  "gui.dungeontrain.perks.counter.unlock.click": "Clique para abrir as conquistas."
 }

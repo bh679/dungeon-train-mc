@@ -5575,5 +5575,12 @@
   "gui.dungeontrain.perks.counter.unlock.title": "Điểm mở khóa",
   "gui.dungeontrain.perks.counter.unlock.body": "Nhận bằng cách mở khóa tiến trình",
   "gui.dungeontrain.perks.counter.active.title": "Điểm kích hoạt",
-  "gui.dungeontrain.perks.counter.active.body": "Nhận bằng cách tìm táo vũ trụ"
+  "gui.dungeontrain.perks.counter.active.body": "Nhận bằng cách tìm táo vũ trụ",
+  "gui.dungeontrain.perks.bar.unlock": "Mở khóa",
+  "gui.dungeontrain.perks.bar.activate": "Kích hoạt",
+  "gui.dungeontrain.perks.bar.tier": "Bậc %s",
+  "gui.dungeontrain.perks.bar.full": "Đầy. Mở khóa lại để có chỗ cho thêm một điểm.",
+  "gui.dungeontrain.perks.bar.fill_first": "Hãy lấp đầy điểm của nó trước.",
+  "gui.dungeontrain.perks.bar.hint": "Di chuột lên một đặc quyền để xem ở đây. Nhấp để ghim.",
+  "gui.dungeontrain.perks.counter.unlock.click": "Nhấp để mở tiến trình."
 }

@@ -17776,5 +17776,14 @@
         "3 Advancement Points"
       ]
     }
+  },
+  "gui.dungeontrain.perks.bar.tier": {
+    "1": {
+      "label": "the perk's tier",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
   }
 }

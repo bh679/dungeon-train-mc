@@ -5575,5 +5575,12 @@
   "gui.dungeontrain.perks.counter.unlock.title": "解放ポイント",
   "gui.dungeontrain.perks.counter.unlock.body": "進捗を解除して獲得",
   "gui.dungeontrain.perks.counter.active.title": "有効ポイント",
-  "gui.dungeontrain.perks.counter.active.body": "宇宙のリンゴを見つけて獲得"
+  "gui.dungeontrain.perks.counter.active.body": "宇宙のリンゴを見つけて獲得",
+  "gui.dungeontrain.perks.bar.unlock": "解放",
+  "gui.dungeontrain.perks.bar.activate": "有効化",
+  "gui.dungeontrain.perks.bar.tier": "ティア%s",
+  "gui.dungeontrain.perks.bar.full": "満タン。もう一度解放するとポイントをもう1つ入れられます。",
+  "gui.dungeontrain.perks.bar.fill_first": "先にポイントを満たしてください。",
+  "gui.dungeontrain.perks.bar.hint": "パークにカーソルを合わせるとここに表示。クリックで固定。",
+  "gui.dungeontrain.perks.counter.unlock.click": "クリックで進捗を開く。"
 }

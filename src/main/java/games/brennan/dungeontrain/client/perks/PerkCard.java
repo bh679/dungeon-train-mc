@@ -151,7 +151,7 @@ final class PerkCard {
     }
 
     /** Where the perk stands and what a click does (web {@code testControls}). Hints carry no colour. */
-    private List<Component> testLines(PerkTree.Perk p, PerkMenuSnapshot snap) {
+    List<Component> testLines(PerkTree.Perk p, PerkMenuSnapshot snap) {
         List<Component> out = new ArrayList<>();
         if (p.isRoot()) {
             out.add(state(Component.translatable(KEY + "always_active")));
@@ -192,7 +192,7 @@ final class PerkCard {
     }
 
     /** "1 Advancement Point" / "5 Advancement Points", in the reader's plural forms. */
-    private static Component ap(int n) {
+    static Component ap(int n) {
         String locale = Minecraft.getInstance().getLanguageManager().getSelected();
         return PluralRules.clause(locale, "gui.dungeontrain.perks.ap", n);
     }
@@ -206,12 +206,12 @@ final class PerkCard {
         return p.isRoot() ? p.name() : translated("perk.dungeontrain." + p.id() + ".name", p.name());
     }
 
-    private String descText(PerkTree.Perk p) {
+    String descText(PerkTree.Perk p) {
         return p.isRoot() ? Component.translatable("gui.dungeontrain.perks.the_start").getString()
             : translated("perk.dungeontrain." + p.id() + ".desc", p.desc());
     }
 
-    private String pointText(PerkTree.Perk p) {
+    String pointText(PerkTree.Perk p) {
         return translated("perk.dungeontrain." + p.id() + ".point", p.point());
     }
 

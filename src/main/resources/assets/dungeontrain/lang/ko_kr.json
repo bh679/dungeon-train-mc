@@ -5575,5 +5575,12 @@
   "gui.dungeontrain.perks.counter.unlock.title": "해금 포인트",
   "gui.dungeontrain.perks.counter.unlock.body": "발전 과제를 달성하여 획득",
   "gui.dungeontrain.perks.counter.active.title": "활성 포인트",
-  "gui.dungeontrain.perks.counter.active.body": "우주 사과를 찾아 획득"
+  "gui.dungeontrain.perks.counter.active.body": "우주 사과를 찾아 획득",
+  "gui.dungeontrain.perks.bar.unlock": "해금",
+  "gui.dungeontrain.perks.bar.activate": "활성화",
+  "gui.dungeontrain.perks.bar.tier": "단계 %s",
+  "gui.dungeontrain.perks.bar.full": "가득 참. 다시 해금하면 포인트를 하나 더 넣을 수 있습니다.",
+  "gui.dungeontrain.perks.bar.fill_first": "먼저 포인트를 채우세요.",
+  "gui.dungeontrain.perks.bar.hint": "특성에 마우스를 올리면 여기에 표시됩니다. 클릭하면 고정됩니다.",
+  "gui.dungeontrain.perks.counter.unlock.click": "클릭하면 발전 과제를 엽니다."
 }

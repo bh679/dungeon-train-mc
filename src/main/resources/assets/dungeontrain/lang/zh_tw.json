@@ -5589,5 +5589,12 @@
   "gui.dungeontrain.perks.counter.unlock.title": "解鎖點數",
   "gui.dungeontrain.perks.counter.unlock.body": "透過解鎖進度獲得",
   "gui.dungeontrain.perks.counter.active.title": "啟用點數",
-  "gui.dungeontrain.perks.counter.active.body": "透過尋找宇宙蘋果獲得"
+  "gui.dungeontrain.perks.counter.active.body": "透過尋找宇宙蘋果獲得",
+  "gui.dungeontrain.perks.bar.unlock": "解鎖",
+  "gui.dungeontrain.perks.bar.activate": "啟用",
+  "gui.dungeontrain.perks.bar.tier": "第%s階",
+  "gui.dungeontrain.perks.bar.full": "已滿。再次解鎖可多放一個點數。",
+  "gui.dungeontrain.perks.bar.fill_first": "請先填滿它的點數。",
+  "gui.dungeontrain.perks.bar.hint": "將滑鼠停在特權上即可在此查看。點擊可固定。",
+  "gui.dungeontrain.perks.counter.unlock.click": "點擊開啟進度。"
 }

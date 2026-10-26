@@ -5639,5 +5639,12 @@
   "gui.dungeontrain.perks.counter.unlock.title": "Freischaltpunkte",
   "gui.dungeontrain.perks.counter.unlock.body": "Verdiene sie durch das Freischalten von Fortschritten.",
   "gui.dungeontrain.perks.counter.active.title": "Aktive Punkte",
-  "gui.dungeontrain.perks.counter.active.body": "Sammle sie, indem du Kosmische Äpfel findest."
+  "gui.dungeontrain.perks.counter.active.body": "Sammle sie, indem du Kosmische Äpfel findest.",
+  "gui.dungeontrain.perks.bar.unlock": "Freischalten",
+  "gui.dungeontrain.perks.bar.activate": "Aktivieren",
+  "gui.dungeontrain.perks.bar.tier": "Stufe %s",
+  "gui.dungeontrain.perks.bar.full": "Voll. Schalte ihn erneut frei für Platz für einen weiteren Punkt.",
+  "gui.dungeontrain.perks.bar.fill_first": "Fülle zuerst seine Punkte.",
+  "gui.dungeontrain.perks.bar.hint": "Fahre über einen Perk, um ihn hier zu sehen. Klicke, um ihn festzuhalten.",
+  "gui.dungeontrain.perks.counter.unlock.click": "Klicken, um die Fortschritte zu öffnen."
 }

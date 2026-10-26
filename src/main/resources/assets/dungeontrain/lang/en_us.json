@@ -5636,5 +5636,12 @@
   "gui.dungeontrain.perks.counter.unlock.title": "Unlock Points",
   "gui.dungeontrain.perks.counter.unlock.body": "Earn through unlocking advancements",
   "gui.dungeontrain.perks.counter.active.title": "Active Points",
-  "gui.dungeontrain.perks.counter.active.body": "Collect through finding Cosmic Apples."
+  "gui.dungeontrain.perks.counter.active.body": "Collect through finding Cosmic Apples.",
+  "gui.dungeontrain.perks.bar.unlock": "Unlock",
+  "gui.dungeontrain.perks.bar.activate": "Activate",
+  "gui.dungeontrain.perks.bar.tier": "Tier %s",
+  "gui.dungeontrain.perks.bar.full": "Full. Unlock it again for room for one more point.",
+  "gui.dungeontrain.perks.bar.fill_first": "Fill its points first.",
+  "gui.dungeontrain.perks.bar.hint": "Hover a perk to see it here. Click one to keep it.",
+  "gui.dungeontrain.perks.counter.unlock.click": "Click to open advancements."
 }

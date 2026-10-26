@@ -5639,5 +5639,12 @@
   "gui.dungeontrain.perks.counter.unlock.title": "Punti sblocco",
   "gui.dungeontrain.perks.counter.unlock.body": "Si guadagnano sbloccando i progressi.",
   "gui.dungeontrain.perks.counter.active.title": "Punti talento",
-  "gui.dungeontrain.perks.counter.active.body": "Si raccolgono trovando mele cosmiche."
+  "gui.dungeontrain.perks.counter.active.body": "Si raccolgono trovando mele cosmiche.",
+  "gui.dungeontrain.perks.bar.unlock": "Sblocca",
+  "gui.dungeontrain.perks.bar.activate": "Attiva",
+  "gui.dungeontrain.perks.bar.tier": "Livello %s",
+  "gui.dungeontrain.perks.bar.full": "Pieno. Sbloccalo di nuovo per avere spazio per un punto in più.",
+  "gui.dungeontrain.perks.bar.fill_first": "Riempi prima i suoi punti.",
+  "gui.dungeontrain.perks.bar.hint": "Passa sopra un vantaggio per vederlo qui. Clicca per tenerlo.",
+  "gui.dungeontrain.perks.counter.unlock.click": "Clicca per aprire i progressi."
 }

@@ -5575,5 +5575,12 @@
   "gui.dungeontrain.perks.counter.unlock.title": "แต้มปลดล็อก",
   "gui.dungeontrain.perks.counter.unlock.body": "รับจากการปลดล็อกความก้าวหน้า",
   "gui.dungeontrain.perks.counter.active.title": "แต้มใช้งาน",
-  "gui.dungeontrain.perks.counter.active.body": "รับจากการหาแอปเปิลจักรวาล"
+  "gui.dungeontrain.perks.counter.active.body": "รับจากการหาแอปเปิลจักรวาล",
+  "gui.dungeontrain.perks.bar.unlock": "ปลดล็อก",
+  "gui.dungeontrain.perks.bar.activate": "เปิดใช้",
+  "gui.dungeontrain.perks.bar.tier": "ระดับ %s",
+  "gui.dungeontrain.perks.bar.full": "เต็มแล้ว ปลดล็อกอีกครั้งเพื่อเพิ่มที่ว่างอีกหนึ่งแต้ม",
+  "gui.dungeontrain.perks.bar.fill_first": "เติมแต้มให้เต็มก่อน",
+  "gui.dungeontrain.perks.bar.hint": "วางเมาส์บนพลังพิเศษเพื่อดูที่นี่ คลิกเพื่อปักไว้",
+  "gui.dungeontrain.perks.counter.unlock.click": "คลิกเพื่อเปิดความก้าวหน้า"
 }

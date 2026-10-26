@@ -5558,7 +5558,14 @@
       "gui.dungeontrain.perks.counter.unlock.title",
       "gui.dungeontrain.perks.counter.unlock.body",
       "gui.dungeontrain.perks.counter.active.title",
-      "gui.dungeontrain.perks.counter.active.body"
+      "gui.dungeontrain.perks.counter.active.body",
+      "gui.dungeontrain.perks.bar.unlock",
+      "gui.dungeontrain.perks.bar.activate",
+      "gui.dungeontrain.perks.bar.tier",
+      "gui.dungeontrain.perks.bar.full",
+      "gui.dungeontrain.perks.bar.fill_first",
+      "gui.dungeontrain.perks.bar.hint",
+      "gui.dungeontrain.perks.counter.unlock.click"
     ],
     "adventureitemnames": "*",
     "playermob": "*",

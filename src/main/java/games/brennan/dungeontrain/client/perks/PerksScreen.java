@@ -41,6 +41,16 @@ import java.util.UUID;
 @OnlyIn(Dist.CLIENT)
 public final class PerksScreen extends Screen {
 
+    /**
+     * How a perk's details show. {@link DetailsMode#BAR} is on: a permanent bar along the bottom with
+     * Unlock and Activate buttons, clicking a star keeps it in the bar. {@link DetailsMode#CARD_STRICT}
+     * (built, off) is the floating card that closes the moment the mouse leaves the star.
+     * {@link DetailsMode#CARD} is the web test mode's floating card, clicking a star acts.
+     */
+    enum DetailsMode { CARD, CARD_STRICT, BAR }
+
+    static final DetailsMode DETAILS = DetailsMode.BAR;
+
     private static final long FADE_MS = 200;
     private static final long CARD_LINGER_MS = 250;
     private static final int CLOSE_W = 12;
@@ -52,6 +62,7 @@ public final class PerksScreen extends Screen {
     private final PerkCard card;
     private final ClassesList classesList;
     private final PerkCounters counters;
+    private final PerkDetailsBar bar;
     private final SkyLayout layout = new SkyLayout();
     private final Map<String, Long> unlockedAt = new HashMap<>();
     private final Map<String, Long> pointAt = new HashMap<>();
@@ -84,9 +95,15 @@ public final class PerksScreen extends Screen {
         this.card = new PerkCard(tree, mc.font);
         this.classesList = new ClassesList(tree, mc.font);
         this.counters = new PerkCounters(mc.font);
+        this.bar = new PerkDetailsBar(tree, mc.font, card, this::unlockAction, this::activateAction);
         this.player = mc.player != null ? mc.player.getUUID() : new UUID(0, 0);
         this.off = ClassChoiceStore.load(player).orElseGet(this::allClasses);
         this.drawn = tree;
+    }
+
+    /** The height the sky gets: the screen, less the details bar when it is on. */
+    private int skyH() {
+        return DETAILS == DetailsMode.BAR ? height - PerkDetailsBar.HEIGHT : height;
     }
 
     private Set<String> allClasses() {
@@ -111,7 +128,8 @@ public final class PerksScreen extends Screen {
 
     @Override
     protected void init() {
-        view = view == null ? SkyView.fit(width, height) : view.clamped(width, height);
+        view = view == null ? SkyView.fit(width, skyH()) : view.clamped(width, skyH());
+        bar.invalidate();
     }
 
     @Override
@@ -192,11 +210,19 @@ public final class PerksScreen extends Screen {
     }
 
     /**
-     * A click on a star (web {@code testClick}): unlock it when locked and reachable; add a point while it
-     * holds fewer than its unlock level; once full, unlock it again for room for one more. Short of
-     * points, the matching counter shakes and nothing is sent.
+     * A click on a star in the card modes (web {@code testClick}): unlock it when locked and reachable;
+     * add a point while it holds fewer than its unlock level; once full, unlock it again for room for one
+     * more. Short of points, the matching counter shakes and nothing is sent.
      */
     private void act(PerkTree.Perk p) {
+        if (p.isRoot()) return;
+        int level = last.unlockLevel(p.id());
+        if (level > 0 && last.points(p.id()) < level) activateAction(p);
+        else unlockAction(p);
+    }
+
+    /** Unlock {@code p} (first time, or again once full). */
+    private void unlockAction(PerkTree.Perk p) {
         if (p.isRoot()) return;
         PerkMenuSnapshot s = last;
         long now = Util.getMillis();
@@ -207,16 +233,25 @@ public final class PerksScreen extends Screen {
         }
         int level = s.unlockLevel(p.id());
         if (level <= 0 && !tree.reachable(p.id(), s::isUnlocked)) return;
-        if (level > 0 && s.points(p.id()) < level) {
-            if (!s.canAffordRank()) { counters.shake(PerkCounters.Kind.ACTIVE, now); return; }
-            DungeonTrainNet.sendToServer(new PerkSpendPacket(p.id()));
-            return;
-        }
+        if (level > 0 && s.points(p.id()) < level) return;
         if (s.unlockPoints() < p.unlockCost() || !PerkUnlocks.allowed(level + 1, s.unlockSpent(tree))) {
             counters.shake(PerkCounters.Kind.UNLOCK, now);
             return;
         }
         DungeonTrainNet.sendToServer(new PerkUnlockPacket(p.id()));
+    }
+
+    /** Put one point into {@code p}. */
+    private void activateAction(PerkTree.Perk p) {
+        if (p.isRoot()) return;
+        PerkMenuSnapshot s = last;
+        int level = s.unlockLevel(p.id());
+        if (level <= 0 || s.points(p.id()) >= level) return;
+        if (!s.canAffordRank()) {
+            counters.shake(PerkCounters.Kind.ACTIVE, Util.getMillis());
+            return;
+        }
+        DungeonTrainNet.sendToServer(new PerkSpendPacket(p.id()));
     }
 
     // ---- render ----------------------------------------------------------------------------------------
@@ -228,7 +263,7 @@ public final class PerksScreen extends Screen {
         double fade = Math.min(1.0, (now - openedAt) / (double) FADE_MS);
 
         int listLeft = classesList.layout(width);
-        int countersTop = counters.layout(width, height, snap.unlockPoints(), snap.activePoints());
+        int countersTop = counters.layout(width, skyH(), snap.unlockPoints(), snap.activePoints());
         String listHover = classesList.classAt(mouseX, mouseY);
         glow = listHover;
         preview = listHover != null && off.contains(listHover) ? listHover : null;
@@ -236,15 +271,16 @@ public final class PerksScreen extends Screen {
         vis = new ClassVisibility(tree, off, preview, snap.unlocks(), snap.active(), snap.unlockPoints());
         drawn = tree.withPositions(layout.positions(tree, vis, now));
         hovered = card.contains(mouseX, mouseY) || listHover != null ? null : starAt(mouseX, mouseY);
-        updateCard(snap, now, mouseX, mouseY, listLeft, countersTop);
+        if (DETAILS == DetailsMode.BAR) updateBar(snap);
+        else updateCard(snap, now, mouseX, mouseY, listLeft, countersTop);
 
         g.fill(0, 0, width, height, SkyPalette.BG);
-        double gx = view.toScreenX(PerkTree.CENTRE, width), gy = view.toScreenY(PerkTree.CENTRE, height);
+        double gx = view.toScreenX(PerkTree.CENTRE, width), gy = view.toScreenY(PerkTree.CENTRE, skyH());
         // the web's soft centre glow (radial, gold, fading out by a third of the sky)
         SkyDraw.glow(g, gx, gy, 256 * view.zoom(), SkyDraw.withAlpha(SkyPalette.GOLD, 0.07 * fade));
-        stars.render(g, view, width, height, now, fade);
-        LinkPainter.render(g, drawn, snap, vis, view, width, height, fade);
-        ClassTitlePainter.render(g, font, drawn, vis, glow, view, width, height, fade);
+        stars.render(g, view, width, skyH(), now, fade);
+        LinkPainter.render(g, drawn, snap, vis, view, width, skyH(), fade);
+        ClassTitlePainter.render(g, font, drawn, vis, glow, view, width, skyH(), fade);
 
         boolean allNames = view.showsAllNames();
         boolean spendable = fromApple && snap.canAffordRank() && spentAt == 0;
@@ -254,7 +290,7 @@ public final class PerksScreen extends Screen {
             boolean sel = p.id().equals(selected), hov = p.id().equals(hovered) || p.id().equals(cardFor);
             boolean glows = glow != null && glow.equals(p.cls());
             boolean name = allNames || sel || hov || glows || (focus != null && view.zoom() >= 0.7 && linked(focus, p.id()));
-            StarPainter.render(g, font, drawn, p, snap, view, width, height,
+            StarPainter.render(g, font, drawn, p, snap, view, width, skyH(),
                 new StarPainter.Look(hov, sel, name, spendable, vis.ghost(p), glows), unlockedAt, pointAt, now, fade);
         }
 
@@ -262,12 +298,25 @@ public final class PerksScreen extends Screen {
         classesList.render(g, off, listHover, fade);
         counters.render(g, snap.unlockPoints(), snap.activePoints(), now, fade);
         g.flush(); // titles and names are batched: push them out so the card paints over them
-        card.render(g, now);
+        if (DETAILS == DetailsMode.BAR) bar.render(g, snap, fade);
+        else card.render(g, now);
         g.flush();
         super.render(g, mouseX, mouseY, partialTick);
 
         PerkCounters.Kind counter = counters.at(mouseX, mouseY);
         if (counter != null) g.renderComponentTooltip(font, PerkCounters.tooltip(counter), mouseX, mouseY);
+    }
+
+    /** The bar shows the hovered star, else the one clicked to stay; its buttons follow it. */
+    private void updateBar(PerkMenuSnapshot snap) {
+        String id = hovered != null ? hovered : selected;
+        PerkTree.Perk p = id == null ? null : tree.perk(id).orElse(null);
+        if (p != null && vis.hidden(p)) p = null;
+        List<net.minecraft.client.gui.components.Button> before = bar.buttons();
+        if (bar.update(width, height, p, p != null && p.id().equals(selected), snap)) {
+            before.forEach(this::removeWidget);
+            bar.buttons().forEach(this::addRenderableWidget);
+        }
     }
 
     /**
@@ -279,6 +328,8 @@ public final class PerksScreen extends Screen {
         if (hovered != null) {
             cardFor = hovered;
             cardLeftAt = -1;
+        } else if (DETAILS == DetailsMode.CARD_STRICT) {
+            cardFor = null; // option 1: the card closes the moment the mouse leaves the star
         } else if (cardFor != null && card.contains(mx, my)) {
             cardLeftAt = -1;
         } else if (cardFor != null && !cardFor.equals(selected)) {
@@ -291,7 +342,7 @@ public final class PerksScreen extends Screen {
             card.close();
             return;
         }
-        card.open(p, drawn, snap, view, width, height, right, bottom);
+        card.open(p, drawn, snap, view, width, skyH(), right, bottom);
     }
 
     @Override
@@ -321,12 +372,12 @@ public final class PerksScreen extends Screen {
 
     /** The drawn, visible star under the mouse, or null. */
     private String starAt(double mx, double my) {
-        if (my < SkyView.HEADER || vis == null) return null;
+        if (my < SkyView.HEADER || my >= skyH() || vis == null) return null;
         String best = null;
         double bestD = Double.MAX_VALUE;
         for (PerkTree.Perk p : drawn.perks()) {
             if (vis.hidden(p)) continue;
-            double dx = view.toScreenX(p.x(), width) - mx, dy = view.toScreenY(p.y(), height) - my;
+            double dx = view.toScreenX(p.x(), width) - mx, dy = view.toScreenY(p.y(), skyH()) - my;
             double d = Math.hypot(dx, dy);
             if (d <= SkyPalette.hitRadius(p, view.zoom()) && d < bestD) {
                 best = p.id();
@@ -345,6 +396,7 @@ public final class PerksScreen extends Screen {
             onClose();
             return true;
         }
+        if (DETAILS == DetailsMode.BAR && bar.contains(mx, my)) return true;
         if (card.contains(mx, my) || classesList.classAt(mx, my) != null || counters.at(mx, my) != null) return true;
         if (button == 0 || button == 2) {
             dragging = true;
@@ -365,32 +417,47 @@ public final class PerksScreen extends Screen {
             play(SoundEvents.UI_BUTTON_CLICK.value(), 0.3F, 1.0F);
             return true;
         }
+        if (DETAILS == DetailsMode.BAR && bar.contains(mx, my)) return true;
+        if (counters.at(mx, my) == PerkCounters.Kind.UNLOCK) {
+            openAdvancements();
+            return true;
+        }
         if (card.contains(mx, my) || counters.at(mx, my) != null) return true;
         String id = starAt(mx, my);
         long now = Util.getMillis();
         if (id != null) {
             selected = id;
-            tree.perk(id).ifPresent(this::act);
+            // the bar: a click keeps the star in it; the cards: a click acts
+            if (DETAILS != DetailsMode.BAR) tree.perk(id).ifPresent(this::act);
+            else play(SoundEvents.UI_BUTTON_CLICK.value(), 0.3F, 1.0F);
         } else {
-            if (now - lastSkyClickAt < DOUBLE_CLICK_MS) view = SkyView.fit(width, height);
+            if (now - lastSkyClickAt < DOUBLE_CLICK_MS) view = SkyView.fit(width, skyH());
             lastSkyClickAt = now;
             selected = null;
         }
         return true;
     }
 
+    /** The Advancement Points counter opens the advancements screen; closing it comes back here. */
+    private void openAdvancements() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        play(SoundEvents.UI_BUTTON_CLICK.value(), 0.3F, 1.0F);
+        mc.setScreen(new net.minecraft.client.gui.screens.advancements.AdvancementsScreen(mc.player.connection.getAdvancements(), this));
+    }
+
     @Override
     public boolean mouseDragged(double mx, double my, int button, double dx, double dy) {
         if (!dragging) return super.mouseDragged(mx, my, button, dx, dy);
         dragMoved += Math.abs(dx) + Math.abs(dy);
-        view = view.panned(dx, dy, width, height);
+        view = view.panned(dx, dy, width, skyH());
         return true;
     }
 
     @Override
     public boolean mouseScrolled(double mx, double my, double scrollX, double scrollY) {
         if (scrollY == 0) return false;
-        view = view.zoomedAt(scrollY > 0 ? SkyView.ZOOM_STEP : 1 / SkyView.ZOOM_STEP, mx, my, width, height);
+        view = view.zoomedAt(scrollY > 0 ? SkyView.ZOOM_STEP : 1 / SkyView.ZOOM_STEP, mx, my, width, skyH());
         return true;
     }
 
@@ -410,7 +477,7 @@ public final class PerksScreen extends Screen {
                 return true;
             }
             case GLFW.GLFW_KEY_HOME -> {
-                view = SkyView.fit(width, height);
+                view = SkyView.fit(width, skyH());
                 selected = PerkTree.ROOT;
                 cardFor = null;
                 return true;
@@ -437,14 +504,14 @@ public final class PerksScreen extends Screen {
 
     private void zoomKey(double factor) {
         PerkTree.Perk p = drawnPerk(selected == null ? PerkTree.ROOT : selected);
-        view = view.zoomedAt(factor, view.toScreenX(p.x(), width), view.toScreenY(p.y(), height), width, height);
+        view = view.zoomedAt(factor, view.toScreenX(p.x(), width), view.toScreenY(p.y(), skyH()), width, skyH());
     }
 
     private void arrow(int keyCode) {
         double ax = keyCode == GLFW.GLFW_KEY_RIGHT ? 1 : keyCode == GLFW.GLFW_KEY_LEFT ? -1 : 0;
         double ay = keyCode == GLFW.GLFW_KEY_DOWN ? 1 : keyCode == GLFW.GLFW_KEY_UP ? -1 : 0;
         if (selected == null) {
-            view = view.panned(-ax * 40, -ay * 40, width, height);
+            view = view.panned(-ax * 40, -ay * 40, width, skyH());
             return;
         }
         PerkTree.Perk from = drawn.perk(selected).orElse(null);
@@ -455,7 +522,7 @@ public final class PerksScreen extends Screen {
             selected = best;
             cardFor = null;
             PerkTree.Perk p = drawnPerk(best);
-            if (!onScreen(p)) view = view.centredOn(p.x(), p.y(), width, height);
+            if (!onScreen(p)) view = view.centredOn(p.x(), p.y(), width, skyH());
         }
     }
 
@@ -495,12 +562,12 @@ public final class PerksScreen extends Screen {
         PerkTree.Perk p = drawn.perksOf(c.id()).stream().filter(q -> vis == null || !vis.hidden(q)).findFirst().orElseThrow();
         selected = p.id();
         cardFor = null;
-        view = view.centredOn(p.x(), p.y(), width, height);
+        view = view.centredOn(p.x(), p.y(), width, skyH());
     }
 
     private boolean onScreen(PerkTree.Perk p) {
-        double sx = view.toScreenX(p.x(), width), sy = view.toScreenY(p.y(), height);
-        return sx > 20 && sx < width - 20 && sy > SkyView.HEADER + 20 && sy < height - 20;
+        double sx = view.toScreenX(p.x(), width), sy = view.toScreenY(p.y(), skyH());
+        return sx > 20 && sx < width - 20 && sy > SkyView.HEADER + 20 && sy < skyH() - 20;
     }
 
     @Override

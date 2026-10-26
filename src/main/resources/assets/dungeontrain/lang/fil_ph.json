@@ -5575,5 +5575,12 @@
   "gui.dungeontrain.perks.counter.unlock.title": "Unlock Points",
   "gui.dungeontrain.perks.counter.unlock.body": "Makuha sa pag-unlock ng mga advancement",
   "gui.dungeontrain.perks.counter.active.title": "Active Points",
-  "gui.dungeontrain.perks.counter.active.body": "Makuha sa paghahanap ng Cosmic Apples."
+  "gui.dungeontrain.perks.counter.active.body": "Makuha sa paghahanap ng Cosmic Apples.",
+  "gui.dungeontrain.perks.bar.unlock": "I-unlock",
+  "gui.dungeontrain.perks.bar.activate": "I-activate",
+  "gui.dungeontrain.perks.bar.tier": "Tier %s",
+  "gui.dungeontrain.perks.bar.full": "Puno na. I-unlock ulit para may puwang sa isa pang point.",
+  "gui.dungeontrain.perks.bar.fill_first": "Punuin muna ang mga point nito.",
+  "gui.dungeontrain.perks.bar.hint": "I-hover ang isang perk para makita ito rito. I-click para manatili ito.",
+  "gui.dungeontrain.perks.counter.unlock.click": "I-click para buksan ang mga advancement."
 }

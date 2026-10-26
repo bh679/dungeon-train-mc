@@ -5575,5 +5575,12 @@
   "gui.dungeontrain.perks.counter.unlock.title": "Poin Pembuka",
   "gui.dungeontrain.perks.counter.unlock.body": "Didapat dengan membuka pencapaian",
   "gui.dungeontrain.perks.counter.active.title": "Poin Aktif",
-  "gui.dungeontrain.perks.counter.active.body": "Dikumpulkan dengan menemukan Apel Kosmik."
+  "gui.dungeontrain.perks.counter.active.body": "Dikumpulkan dengan menemukan Apel Kosmik.",
+  "gui.dungeontrain.perks.bar.unlock": "Buka",
+  "gui.dungeontrain.perks.bar.activate": "Aktifkan",
+  "gui.dungeontrain.perks.bar.tier": "Tingkat %s",
+  "gui.dungeontrain.perks.bar.full": "Penuh. Buka lagi untuk ruang satu poin lagi.",
+  "gui.dungeontrain.perks.bar.fill_first": "Isi poinnya dulu.",
+  "gui.dungeontrain.perks.bar.hint": "Arahkan ke perk untuk melihatnya di sini. Klik untuk menyematkannya.",
+  "gui.dungeontrain.perks.counter.unlock.click": "Klik untuk membuka kemajuan."
 }

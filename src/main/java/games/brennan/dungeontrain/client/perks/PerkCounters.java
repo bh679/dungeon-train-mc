@@ -22,7 +22,10 @@ final class PerkCounters {
 
     enum Kind { UNLOCK, ACTIVE }
 
-    private static final ResourceLocation FRAME = ResourceLocation.withDefaultNamespace("advancements/task_frame_obtained");
+    /** The web page's Advancement Points icon (a gold advancement frame), 26 px square. */
+    private static final ResourceLocation ADVANCEMENT_ICON =
+        ResourceLocation.fromNamespaceAndPath(games.brennan.dungeontrain.DungeonTrain.MOD_ID, "textures/gui/perks/advancement_points.png");
+    private static final int ICON_TEX = 26;
     private static final int ICON = 16, PAD_X = 5, PAD_Y = 3, GAP = 6, MARGIN = 8;
     private static final long SHAKE_MS = 400;
     private static final int DANGER = 0xFFD9534F;
@@ -77,7 +80,7 @@ final class PerkCounters {
             g.renderOutline(x, by, bw[i], bh, nope ? DANGER : (a << 24) | (SkyPalette.LINE & 0xFFFFFF));
             int ix = x + PAD_X, iy = by + PAD_Y;
             if (k == Kind.UNLOCK) {
-                g.blitSprite(FRAME, ix - 1, iy - 1, ICON + 2, ICON + 2);
+                g.blit(ADVANCEMENT_ICON, ix - 1, iy - 1, ICON + 2, ICON + 2, 0, 0, ICON_TEX, ICON_TEX, ICON_TEX, ICON_TEX);
             } else {
                 g.renderItem(new ItemStack(ModItems.COSMIC_APPLE.get()), ix, iy);
             }
@@ -88,6 +91,11 @@ final class PerkCounters {
     /** The hover tip: title, how it is earned. */
     static List<Component> tooltip(Kind k) {
         String base = "gui.dungeontrain.perks.counter." + (k == Kind.UNLOCK ? "unlock" : "active");
+        if (k == Kind.UNLOCK) {
+            return List.of(Component.translatable(base + ".title").withColor(SkyPalette.FG & 0xFFFFFF),
+                Component.translatable(base + ".body").withColor(SkyPalette.MUTED & 0xFFFFFF),
+                Component.translatable(base + ".click").withColor(SkyPalette.GOLD & 0xFFFFFF));
+        }
         return List.of(Component.translatable(base + ".title").withColor(SkyPalette.FG & 0xFFFFFF),
             Component.translatable(base + ".body").withColor(SkyPalette.MUTED & 0xFFFFFF));
     }

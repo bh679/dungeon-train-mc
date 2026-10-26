@@ -5639,5 +5639,12 @@
   "gui.dungeontrain.perks.counter.unlock.title": "Ontgrendelpunten",
   "gui.dungeontrain.perks.counter.unlock.body": "Verdien je door voortgang te ontgrendelen.",
   "gui.dungeontrain.perks.counter.active.title": "Actieve punten",
-  "gui.dungeontrain.perks.counter.active.body": "Verzamel je door kosmische appels te vinden."
+  "gui.dungeontrain.perks.counter.active.body": "Verzamel je door kosmische appels te vinden.",
+  "gui.dungeontrain.perks.bar.unlock": "Ontgrendelen",
+  "gui.dungeontrain.perks.bar.activate": "Activeren",
+  "gui.dungeontrain.perks.bar.tier": "Niveau %s",
+  "gui.dungeontrain.perks.bar.full": "Vol. Ontgrendel hem opnieuw voor ruimte voor nog een punt.",
+  "gui.dungeontrain.perks.bar.fill_first": "Vul eerst zijn punten.",
+  "gui.dungeontrain.perks.bar.hint": "Beweeg over een perk om hem hier te zien. Klik om hem vast te houden.",
+  "gui.dungeontrain.perks.counter.unlock.click": "Klik om de vooruitgang te openen."
 }

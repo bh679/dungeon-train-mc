@@ -5703,5 +5703,12 @@
   "gui.dungeontrain.perks.counter.unlock.title": "Punkty odblokowania",
   "gui.dungeontrain.perks.counter.unlock.body": "Zdobywa się je, odblokowując postępy.",
   "gui.dungeontrain.perks.counter.active.title": "Aktywne punkty",
-  "gui.dungeontrain.perks.counter.active.body": "Zbiera się je, znajdując kosmiczne jabłka."
+  "gui.dungeontrain.perks.counter.active.body": "Zbiera się je, znajdując kosmiczne jabłka.",
+  "gui.dungeontrain.perks.bar.unlock": "Odblokuj",
+  "gui.dungeontrain.perks.bar.activate": "Aktywuj",
+  "gui.dungeontrain.perks.bar.tier": "Poziom %s",
+  "gui.dungeontrain.perks.bar.full": "Pełny. Odblokuj ponownie, aby zrobić miejsce na kolejny punkt.",
+  "gui.dungeontrain.perks.bar.fill_first": "Najpierw wypełnij jego punkty.",
+  "gui.dungeontrain.perks.bar.hint": "Najedź na atut, aby zobaczyć go tutaj. Kliknij, aby go zatrzymać.",
+  "gui.dungeontrain.perks.counter.unlock.click": "Kliknij, aby otworzyć postępy."
 }

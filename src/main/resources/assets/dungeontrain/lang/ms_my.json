@@ -5575,5 +5575,12 @@
   "gui.dungeontrain.perks.counter.unlock.title": "Mata Buka Kunci",
   "gui.dungeontrain.perks.counter.unlock.body": "Diperoleh dengan membuka kunci pencapaian",
   "gui.dungeontrain.perks.counter.active.title": "Mata Aktif",
-  "gui.dungeontrain.perks.counter.active.body": "Dikumpul dengan menemui Epal Kosmik."
+  "gui.dungeontrain.perks.counter.active.body": "Dikumpul dengan menemui Epal Kosmik.",
+  "gui.dungeontrain.perks.bar.unlock": "Buka kunci",
+  "gui.dungeontrain.perks.bar.activate": "Aktifkan",
+  "gui.dungeontrain.perks.bar.tier": "Peringkat %s",
+  "gui.dungeontrain.perks.bar.full": "Penuh. Buka kunci sekali lagi untuk ruang satu mata lagi.",
+  "gui.dungeontrain.perks.bar.fill_first": "Isi matanya dahulu.",
+  "gui.dungeontrain.perks.bar.hint": "Tuding pada perk untuk melihatnya di sini. Klik untuk menyematkannya.",
+  "gui.dungeontrain.perks.counter.unlock.click": "Klik untuk membuka kemajuan."
 }

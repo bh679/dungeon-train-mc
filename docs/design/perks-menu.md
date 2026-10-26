@@ -41,6 +41,14 @@ the older sections below disagree, this section wins.
 - **Counters** at the bottom right replace the header balances: the advancement frame with Unlock
   (Advancement) Points, the cosmic apple with Active Points. A shortfall shakes the matching counter.
 - **Zoom** has three steps: whole sky, halfway, close.
+- **Details modes** (`PerksScreen.DETAILS`). **On: the bottom bar.** A permanent bar shows the hovered
+  perk, or the one clicked to keep it there (click empty sky to let go): name, class and tier on the
+  left with a class-colour stripe, the description in the middle, and on the right where the perk
+  stands with **Unlock** and **Activate** buttons (disabled ones say why). Clicking a star keeps it in
+  the bar instead of acting. **Built, off: the strict card**, the floating card that closes the moment
+  the mouse leaves the star. The web-style lingering card is the third mode.
+- **The Unlock Points counter** carries the web page's advancement icon; clicking it opens the
+  advancements screen, and closing that comes back to the menu.
 
 ## 1. What the game copies from the web page
 
