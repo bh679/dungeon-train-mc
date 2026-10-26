@@ -30,7 +30,8 @@ final class PerkDetailsBar {
     private static final int PAD = 8, LINE = 10, BUTTON_W = 60, BUTTON_H = 16, GAP = 4, STRIPE = 3;
     private static final int MIN_LEFT = 90, DOT_W = 8;
     private static final int SEG_W = 10, SEG_H = 5, SEG_GAP = 2, SEG_LOCKED = 0x2A2F4A;
-    private static final int PILL_H = 12, PILL_GAP = 3, PILL_PITCH = PILL_H + 2, PILL_PAD = 4;
+    private static final int CARD_H = 18, CARD_GAP = 3, CARD_ROWS = 2, CARD_PAD = 4, CARD_MIN_W = 40;
+    private static final int BLOCK_W = 6, BLOCK_H = 3;
     /** Deep indigo, a shade off the sky so the bar reads as its own surface. */
     private static final int BG = 0xF20D0B2A;
     private static final int EDGE = 0xFF3A3F6A;
@@ -159,8 +160,8 @@ final class PerkDetailsBar {
 
     /**
      * A class hovered in the Classes list. Left column: its name over one segment per perk. Right of a divider:
-     * one pill per perk, flowing left to right and wrapping, lit in the class colour once unlocked (with
-     * its points), muted while locked. What doesn't fit ends in a "+N" pill.
+     * one card per perk in two rows, filling columns left to right, each showing its points as blocks.
+     * What doesn't fit ends in a "+N" card.
      */
     private void renderClass(GuiGraphics g, PerkMenuSnapshot snap, int a) {
         PerkTree.PerkClass c = tree.perkClass(classShown).orElse(null);
@@ -175,31 +176,19 @@ final class PerkDetailsBar {
         divider(g, split, a);
 
         int left = split + 8, right = width - PAD;
-        int rows = Math.max(1, (HEIGHT - 2) / PILL_PITCH);
-        int px = left, py = top + 1 + (HEIGHT - 1 - rows * PILL_PITCH + PILL_GAP) / 2, row = 0;
+        int colW = 0;
+        for (PerkTree.Perk p : perks) colW = Math.max(colW, cardWidth(p, snap));
+        colW = Math.min(colW, Math.max(CARD_MIN_W, right - left));
+        int cols = Math.max(1, (right - left + CARD_GAP) / (colW + CARD_GAP));
+        int fits = cols * CARD_ROWS;
+        int y0 = top + 1 + (HEIGHT - 1 - CARD_ROWS * CARD_H - (CARD_ROWS - 1) * CARD_GAP) / 2;
         for (int i = 0; i < perks.size(); i++) {
-            PerkTree.Perk p = perks.get(i);
-            int level = snap.unlockLevel(p.id());
-            String name = text.name(p), pts = level > 0 ? snap.points(p.id()) + "/" + level : "";
-            int w = pillWidth(name, pts);
-            String more = "+" + (perks.size() - i);
-            int moreW = font.width(more) + PILL_PAD * 2;
-            if (px > left && px + w > right) {
-                if (row == rows - 1) {
-                    if (px + moreW <= right) pill(g, px, py, more, "", 0, false, a);
-                    break;
-                }
-                row++;
-                px = left;
-                py += PILL_PITCH;
-            }
-            boolean moreAfter = i < perks.size() - 1;
-            if (row == rows - 1 && moreAfter && px + w + PILL_GAP + font.width("+" + (perks.size() - i - 1)) + PILL_PAD * 2 > right) {
-                pill(g, px, py, more, "", 0, false, a);
+            int cx = left + i / CARD_ROWS * (colW + CARD_GAP), cy = y0 + i % CARD_ROWS * (CARD_H + CARD_GAP);
+            if (i == fits - 1 && perks.size() > fits) {
+                card(g, cx, cy, colW, null, snap, 0, "+" + (perks.size() - i), a);
                 break;
             }
-            pill(g, px, py, name, pts, c.colour(), level > 0, a);
-            px += w + PILL_GAP;
+            card(g, cx, cy, colW, perks.get(i), snap, c.colour(), null, a);
         }
     }
 
@@ -230,34 +219,45 @@ final class PerkDetailsBar {
         }
     }
 
-    private int pillWidth(String name, String pts) {
-        return PILL_PAD + DOT_W + font.width(name) + (pts.isEmpty() ? 0 : 4 + font.width(pts)) + PILL_PAD;
+    /** Wide enough for the name, or for its point blocks if they run longer. */
+    private int cardWidth(PerkTree.Perk p, PerkMenuSnapshot snap) {
+        int level = snap.unlockLevel(p.id());
+        int blocks = level * (BLOCK_W + 1) - 1;
+        return CARD_PAD * 2 + Math.max(font.width(text.name(p)), blocks);
     }
 
     /**
-     * One perk's pill: a rounded box, filled faintly and edged in the class colour once unlocked, dark and
-     * muted while locked; the dot, the name, then its points. {@code colour} 0 draws a plain "+N" pill.
+     * One perk's card, {@code w} wide in its column: the name, and under it one block per point it can
+     * hold (filled per point, outlined while empty), the way a star's ring shows them. Edged and faintly
+     * filled in the class colour once unlocked; dark and muted while locked. A null perk draws {@code more}.
      */
-    private void pill(GuiGraphics g, int x, int y, String name, String pts, int colour, boolean on, int a) {
-        int w = colour == 0 ? font.width(name) + PILL_PAD * 2 : pillWidth(name, pts);
-        int fill = on ? SkyDraw.withAlpha(colour, 0.22 * a / 255.0) : ((int) (a * 0.6) << 24) | (SkyPalette.PANEL & 0xFFFFFF);
+    private void card(GuiGraphics g, int x, int y, int w, PerkTree.Perk p, PerkMenuSnapshot snap, int colour,
+                      String more, int a) {
+        int level = p == null ? 0 : snap.unlockLevel(p.id());
+        boolean on = level > 0;
+        int fill = on ? SkyDraw.withAlpha(colour, 0.14 * a / 255.0) : ((int) (a * 0.6) << 24) | (SkyPalette.PANEL & 0xFFFFFF);
         int edge = on ? SkyDraw.withAlpha(colour, 0.85 * a / 255.0) : ((int) (a * 0.9) << 24) | (EDGE & 0xFFFFFF);
-        int h = PILL_H;
-        g.fill(x + 1, y, x + w - 1, y + h, fill);
-        g.fill(x, y + 1, x + 1, y + h - 1, fill);
-        g.fill(x + w - 1, y + 1, x + w, y + h - 1, fill);
+        int h = CARD_H;
+        g.fill(x + 1, y + 1, x + w - 1, y + h - 1, fill);
         g.fill(x + 1, y, x + w - 1, y + 1, edge);
         g.fill(x + 1, y + h - 1, x + w - 1, y + h, edge);
         g.fill(x, y + 1, x + 1, y + h - 1, edge);
         g.fill(x + w - 1, y + 1, x + w, y + h - 1, edge);
-        int ty = y + (h - font.lineHeight) / 2 + 1, tx = x + PILL_PAD;
-        if (colour != 0) {
-            SkyDraw.disc(g, tx + 2.5, y + h / 2.0, 2.0, SkyDraw.withAlpha(on ? colour : SkyPalette.MUTED, (on ? 1.0 : 0.6) * a / 255.0));
-            tx += DOT_W;
+        int tx = x + CARD_PAD, ty = y + 2;
+        if (p == null) {
+            g.drawString(font, more, tx, y + (h - font.lineHeight) / 2 + 1, (a << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
+            return;
         }
+        String name = font.plainSubstrByWidth(text.name(p), w - CARD_PAD * 2);
         g.drawString(font, name, tx, ty, (a << 24) | ((on ? SkyPalette.FG : SkyPalette.MUTED) & 0xFFFFFF), false);
-        if (!pts.isEmpty()) {
-            g.drawString(font, pts, tx + font.width(name) + 4, ty, ((int) (a * 0.85) << 24) | (colour & 0xFFFFFF), false);
+        if (!on) return;
+        int points = snap.points(p.id()), room = w - CARD_PAD * 2;
+        int bw = Math.max(1, Math.min(BLOCK_W, (room - (level - 1)) / level));
+        int by = y + h - 2 - BLOCK_H, c = (a << 24) | (colour & 0xFFFFFF);
+        for (int i = 0; i < level; i++) {
+            int bx = tx + i * (bw + 1);
+            if (i < points) g.fill(bx, by, bx + bw, by + BLOCK_H, c);
+            else g.renderOutline(bx, by, bw, BLOCK_H, c);
         }
     }
 
