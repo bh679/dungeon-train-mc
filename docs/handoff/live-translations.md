@@ -18,7 +18,7 @@ Approved Gate 1 plan (full detail, both repos):
 | Piece | State |
 |---|---|
 | Mod (Part B) | **Built, Gate 2 tested against a stub relay, NOT yet approved by Brennan.** No PR opened yet. |
-| Relay (Part A) | **Built and pushed** on dp-relay branch `dev/live-translations` (commit 0b522a56, worktree `~/Projects/dp-relay-worktrees/live-translations`, version 0.282.1). Full relay suite 7,491/7,491 pass. No PR yet; the local end-to-end run (real relay + mock Anthropic, script in the session scratchpad) was not run because it was blocked by permissions. Must ship and deploy before the mod is useful. |
+| Relay (Part A) | **Built and pushed** on dp-relay branch `dev/live-translations` (commit 0b522a56, worktree `~/Projects/dp-relay-worktrees/live-translations`, version 0.282.1). Full relay suite 7,491/7,491 pass. No PR yet. End to end passed 2026-10-26 on a local relay (real `server.js`, mock Anthropic + Discord webhook on 127.0.0.1:3199): a game line came back with `tr: {zh_cn: …}` inline and in `translations` on both the mod and web reads; `gg` was skipped without a call; public status carried `rewards: ['live_translation']`; the call used `LIVE_TRANSLATE_API_KEY`, not the shared key (747-char system prompt, one requested locale); with the reward off the poll body had no new keys and no call went out. Note: the claim route does not forward `language`, so the streamer's language only comes from world-info (pre-existing). Must ship and deploy before the mod is useful. |
 | Reward on sale | Not open. `REWARDS_OPEN` on the box gains `live_translation` only after the mod release. |
 | Changelog entry | Not written yet (Gate 3 step, via `scripts/release-notes/append-entry.py`). |
 
