@@ -324,9 +324,8 @@ public final class PerksScreen extends Screen {
         boolean spendable = fromApple && snap.canAffordRank() && spentAt == 0;
         String focus = cardFor != null ? cardFor : selected;
         Map<String, int[]> names = layoutNames(allNames, focus, List.of());
-        List<NameLayout.Box> nameBoxes = new java.util.ArrayList<>();
-        names.forEach((id, at) -> tree.perk(id).ifPresent(p -> nameBoxes.add(new NameLayout.Box(at[0], at[1],
-            at[0] + Math.ceil(font.width(p.name()) * SkyPalette.NAME_SCALE), at[1] + Math.ceil(font.lineHeight * SkyPalette.NAME_SCALE)))));
+        // titles keep clear of every class's names as if all were shown, so they stay put when one is
+        List<NameLayout.Box> nameBoxes = allClassNameBoxes();
         // labels hide while stars swing to a new layout, then fade in once they settle
         if (layout.moving()) labelsSettledAt = -1;
         else if (labelsSettledAt < 0) labelsSettledAt = now;
@@ -464,6 +463,34 @@ public final class PerksScreen extends Screen {
      * names: all of them when zoomed in, else the kept, hovered and glowing stars and the focus's
      * neighbours. Placed in that priority; a name with no free spot is left out.
      */
+    /**
+     * Where each class's perk names would sit with that class hovered (all its perks named, laid out as
+     * {@link #layoutNames} does then), for every class at once: the boxes the class titles keep clear of.
+     */
+    private List<NameLayout.Box> allClassNameBoxes() {
+        Map<String, double[]> stars = new HashMap<>();
+        Map<String, List<PerkTree.Perk>> byClass = new HashMap<>();
+        for (PerkTree.Perk p : drawn.perks()) {
+            if (vis.hidden(p) || p.isRoot()) continue;
+            stars.put(p.id(), new double[] {view.toScreenX(p.x(), width), view.toScreenY(p.y(), skyH()), SkyPalette.haloRadius(p, view.zoom())});
+            byClass.computeIfAbsent(p.cls(), k -> new java.util.ArrayList<>()).add(p);
+        }
+        int h = (int) Math.ceil(font.lineHeight * SkyPalette.NAME_SCALE);
+        List<NameLayout.Box> out = new java.util.ArrayList<>();
+        for (List<PerkTree.Perk> perks : byClass.values()) {
+            List<NameLayout.Want> wants = perks.stream()
+                .sorted(java.util.Comparator.comparingDouble((PerkTree.Perk p) -> -stars.get(p.id())[0]))
+                .map(p -> {
+                    double[] st = stars.get(p.id());
+                    return new NameLayout.Want(p.id(), st[0], st[1], st[2], (int) Math.ceil(font.width(p.name()) * SkyPalette.NAME_SCALE), h, true);
+                })
+                .toList();
+            NameLayout.place(wants, List.of(), stars).forEach((id, at) -> tree.perk(id).ifPresent(p -> out.add(
+                new NameLayout.Box(at[0], at[1], at[0] + Math.ceil(font.width(p.name()) * SkyPalette.NAME_SCALE), at[1] + h))));
+        }
+        return out;
+    }
+
     private Map<String, int[]> layoutNames(boolean allNames, String focus, List<NameLayout.Box> titles) {
         Map<String, double[]> stars = new HashMap<>();
         List<PerkTree.Perk> visible = new java.util.ArrayList<>();
