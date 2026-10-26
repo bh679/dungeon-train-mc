@@ -240,8 +240,8 @@ public final class PerksScreen extends Screen {
 
         g.fill(0, 0, width, height, SkyPalette.BG);
         double gx = view.toScreenX(PerkTree.CENTRE, width), gy = view.toScreenY(PerkTree.CENTRE, height);
-        SkyDraw.disc(g, gx, gy, 260 * view.zoom(), SkyDraw.withAlpha(SkyPalette.GOLD, 0.05 * fade));
-        SkyDraw.disc(g, gx, gy, 110 * view.zoom(), SkyDraw.withAlpha(SkyPalette.GOLD, 0.04 * fade));
+        // the web's soft centre glow (radial, gold, fading out by a third of the sky)
+        SkyDraw.glow(g, gx, gy, 256 * view.zoom(), SkyDraw.withAlpha(SkyPalette.GOLD, 0.07 * fade));
         stars.render(g, view, width, height, now, fade);
         LinkPainter.render(g, drawn, snap, vis, view, width, height, fade);
         ClassTitlePainter.render(g, font, drawn, vis, glow, view, width, height, fade);

@@ -117,7 +117,7 @@ final class PerkCard {
         PerkTree.Perk p = perk;
         int shake = refusalKey != null && now - refusedAt < SHAKE_MS ? (int) Math.round(2 * Math.sin((now - refusedAt) / 25.0)) : 0;
         g.pose().pushPose();
-        g.pose().translate(shake, 0, 0);
+        g.pose().translate(shake, 0, 200); // above the sky's names in depth, not only in draw order
         g.fill(x, y, x + w, y + h, SkyPalette.PANEL);
         g.renderOutline(x, y, w, h, SkyPalette.LINE);
         int tx = x + PAD, ty = y + PAD;

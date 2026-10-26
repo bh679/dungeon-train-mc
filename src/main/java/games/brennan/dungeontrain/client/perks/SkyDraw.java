@@ -111,6 +111,23 @@ final class SkyDraw {
         end();
     }
 
+    /** A soft radial glow: {@code colour} at the centre fading to nothing at radius {@code r}. */
+    static void glow(GuiGraphics g, double cx, double cy, double r, int colour) {
+        if (r <= 0 || (colour >>> 24) == 0) return;
+        begin();
+        Matrix4f m = g.pose().last().pose();
+        int rim = colour & 0x00FFFFFF;
+        int n = 72;
+        BufferBuilder bb = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
+        bb.addVertex(m, (float) cx, (float) cy, 0).setColor(colour);
+        for (int i = 0; i <= n; i++) {
+            double a = i * Math.PI * 2 / n;
+            bb.addVertex(m, (float) (cx + Math.cos(a) * r), (float) (cy + Math.sin(a) * r), 0).setColor(rim);
+        }
+        BufferUploader.drawWithShader(bb.buildOrThrow());
+        end();
+    }
+
     /** A filled pie slice from angle {@code a0} to {@code a1} (radians, clockwise from 3 o'clock, y down). */
     static void pie(GuiGraphics g, double cx, double cy, double r, double a0, double a1, int colour) {
         if (r <= 0 || (colour >>> 24) == 0 || a1 <= a0) return;
