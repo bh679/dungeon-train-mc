@@ -30984,6 +30984,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "reward-time-left",
+      "version": "0.1539.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Community Rewards show how long is left",
+      "summary": "A Community Reward that ends soon now says how long it has left instead of just a date: ON for 11 more hours, then minutes, then seconds, and ON until tomorrow when it ends the next day.",
+      "highlights": [
+        "Rewards ending within a day count down in hours, minutes and seconds",
+        "Rewards ending the next day say ON until tomorrow"
+      ],
+      "date": "2026-10-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
