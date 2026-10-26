@@ -22,6 +22,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.ClientHooks;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
@@ -34,7 +35,9 @@ import org.joml.Matrix4fStack;
  * read back ({@link LiveFrameGrabber}), and into the Options preview the same way
  * ({@link StreamPreview}) — so viewers see it on every frame (menus open, GUI off) until the
  * streamer sets it to None. Sized in the stream's own GUI pixels so it matches the HUD viewers see.
- * The streamer sees the same pill on their own HUD while live (a GUI layer, hidden by F1).</p>
+ * The streamer sees the same pill on their own HUD while live (a GUI layer, hidden by F1). A frame
+ * read after that layer drew already carries the pill, so the viewers' copy is left off it: the
+ * two never landed on exactly the same pixels once the stream was cropped, and viewers saw two.</p>
  *
  * <p>The pill owns the top-middle: it never moves. Jade's look-at tooltip moves down under it
  * instead ({@link LivePillSlot}).</p>
@@ -75,6 +78,8 @@ public final class StreamNameTag {
     private static int labelTick = Integer.MIN_VALUE;
     @Nullable private static Component cachedLabel;
     @Nullable private static GuiGraphics graphics;
+    /** The HUD layer drew the pill into the main target this frame. Cleared at every frame start. */
+    private static boolean hudPillThisFrame;
     private static final Matrix4f SAVED_PROJECTION = new Matrix4f();
     private static final Matrix4f TAG_PROJECTION = new Matrix4f();
 
@@ -84,6 +89,19 @@ public final class StreamNameTag {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         ticks++;
+    }
+
+    @SubscribeEvent
+    public static void onFrameStart(RenderFrameEvent.Pre event) {
+        hudPillThisFrame = false;
+    }
+
+    /**
+     * Whether a frame copied from the main target needs the viewers' pill painted on: not when the
+     * HUD layer already drew it there, or the stream would carry two.
+     */
+    static boolean overlayNeeded(boolean hudPillDrawn) {
+        return !hudPillDrawn;
     }
 
     /** The streamer's own copy, above every other HUD layer; F1 hides it like the rest of the HUD. */
@@ -188,14 +206,16 @@ public final class StreamNameTag {
         g.pose().scale(1f / scale, 1f / scale, 1f);
         draw(g, mc.font, label, mc.getWindow().getWidth(), scale);
         g.pose().popPose();
+        hudPillThisFrame = true;
     }
 
     /**
      * Render thread: draw the tag into {@code target} (already holding this frame), then rebind the
      * main target. Projection and model-view are set here and restored, as the call can land inside
-     * or after the GUI pass.
+     * or after the GUI pass. Nothing is drawn when the copied frame already holds the HUD's pill.
      */
     static void drawInto(RenderTarget target) {
+        if (!overlayNeeded(hudPillThisFrame)) return;
         Component label = label();
         if (label == null) return;
         Minecraft mc = Minecraft.getInstance();
