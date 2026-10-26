@@ -4797,6 +4797,8 @@
   "perk.dungeontrain.stackable-book-quill.desc": "+1 stack bawat tier",
   "perk.dungeontrain.extra-cam-shots.name": "Dagdag na Kuha ng Kamera",
   "perk.dungeontrain.extra-cam-shots.desc": "50%% na makakakuha ang kamera ng 1 dagdag na kuha bawat tier\n+ 50%% sa bawat point.",
+  "perk.dungeontrain.extra-journal.name": "Dagdag na Journal",
+  "perk.dungeontrain.extra-journal.desc": "Kumukuha ang mga journal ng isa pang litrato bago masunog",
   "perk.dungeontrain.live-eye-safe-duration.name": "Ligtas na Tagal ng Live Eye",
   "perk.dungeontrain.live-eye-safe-duration.desc": "Hindi sapilitang makukuha ang iyong Live Eye nang dagdag na 5 minuto sa bawat point (kalahati sa unang 10 minuto, kalahati sa ikalawang 10 minuto)",
   "perk.dungeontrain.vote-weight.name": "Bigat ng Boto",

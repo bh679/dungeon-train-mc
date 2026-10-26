@@ -4797,6 +4797,8 @@
   "perk.dungeontrain.stackable-book-quill.desc": "+1 tumpukan per tingkat",
   "perk.dungeontrain.extra-cam-shots.name": "Jepretan Kamera Ekstra",
   "perk.dungeontrain.extra-cam-shots.desc": "50%% kamera bisa mengambil 1 jepretan ekstra per tingkat\n+ 50%% untuk setiap poin.",
+  "perk.dungeontrain.extra-journal.name": "Jurnal Tambahan",
+  "perk.dungeontrain.extra-journal.desc": "Jurnal mengambil satu foto lagi sebelum terbakar",
   "perk.dungeontrain.live-eye-safe-duration.name": "Durasi Aman Live Eye",
   "perk.dungeontrain.live-eye-safe-duration.desc": "Live Eye-mu tidak bisa diambil paksa selama 5 menit lebih lama di setiap poin (setengah ke 10 menit pertama, setengah ke 10 menit kedua)",
   "perk.dungeontrain.vote-weight.name": "Bobot Suara",

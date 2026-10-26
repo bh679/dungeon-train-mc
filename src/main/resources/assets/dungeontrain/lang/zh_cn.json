@@ -4811,6 +4811,8 @@
   "perk.dungeontrain.stackable-book-quill.desc": "每阶堆叠上限+1",
   "perk.dungeontrain.extra-cam-shots.name": "额外拍摄次数",
   "perk.dungeontrain.extra-cam-shots.desc": "相机有50%%几率多拍1张（每阶）\n+ 每点额外50%%",
+  "perk.dungeontrain.extra-journal.name": "额外日志",
+  "perk.dungeontrain.extra-journal.desc": "日志在烧毁前可多拍一张照片",
   "perk.dungeontrain.live-eye-safe-duration.name": "直播之眼保护时长",
   "perk.dungeontrain.live-eye-safe-duration.desc": "每点使你的直播之眼多5分钟不会被强行夺走（一半用于前10分钟，一半用于后10分钟）",
   "perk.dungeontrain.vote-weight.name": "投票权重",

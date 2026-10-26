@@ -4854,6 +4854,8 @@
   "perk.dungeontrain.stackable-book-quill.desc": "+1 Stapelgröße pro Stufe",
   "perk.dungeontrain.extra-cam-shots.name": "Extra Kamerabilder",
   "perk.dungeontrain.extra-cam-shots.desc": "50 %% Chance, dass Kameras pro Stufe 1 Bild mehr machen können.\n+ 50 %% mit jedem Punkt.",
+  "perk.dungeontrain.extra-journal.name": "Extra-Tagebuch",
+  "perk.dungeontrain.extra-journal.desc": "Tagebücher machen ein Foto mehr, bevor sie verbrennen",
   "perk.dungeontrain.live-eye-safe-duration.name": "Live-Auge Schutzdauer",
   "perk.dungeontrain.live-eye-safe-duration.desc": "Dein Live-Auge kann dir pro Punkt 5 Minuten länger nicht gewaltsam abgenommen werden (die Hälfte für die ersten 10 Minuten, die Hälfte für die zweiten 10 Minuten).",
   "perk.dungeontrain.vote-weight.name": "Stimmgewicht",

@@ -5558,6 +5558,8 @@
   "perk.dungeontrain.stackable-book-quill.desc": "+1 la stivă per nivel",
   "perk.dungeontrain.extra-cam-shots.name": "Poze Extra",
   "perk.dungeontrain.extra-cam-shots.desc": "50%% ca aparatele foto să facă 1 poză în plus per nivel\n+ 50%% cu fiecare punct.",
+  "perk.dungeontrain.extra-journal.name": "Jurnal în plus",
+  "perk.dungeontrain.extra-journal.desc": "Jurnalele mai fac o fotografie înainte să ardă",
   "perk.dungeontrain.live-eye-safe-duration.name": "Durată Sigură Ochi Live",
   "perk.dungeontrain.live-eye-safe-duration.desc": "Ochiul tău Live nu poate fi luat cu forța încă 5 min cu fiecare punct (jumătate în primele 10 min, jumătate în următoarele 10 min)",
   "perk.dungeontrain.vote-weight.name": "Greutatea Votului",

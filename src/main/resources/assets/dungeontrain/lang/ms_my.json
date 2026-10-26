@@ -4797,6 +4797,8 @@
   "perk.dungeontrain.stackable-book-quill.desc": "+1 susunan setiap peringkat",
   "perk.dungeontrain.extra-cam-shots.name": "Tangkapan Kamera Tambahan",
   "perk.dungeontrain.extra-cam-shots.desc": "50%% kamera boleh mengambil 1 tangkapan tambahan setiap peringkat\n+ 50%% dengan setiap mata.",
+  "perk.dungeontrain.extra-journal.name": "Jurnal Tambahan",
+  "perk.dungeontrain.extra-journal.desc": "Jurnal mengambil satu lagi foto sebelum terbakar",
   "perk.dungeontrain.live-eye-safe-duration.name": "Tempoh Selamat Live Eye",
   "perk.dungeontrain.live-eye-safe-duration.desc": "Live Eye anda tidak boleh diambil secara paksa selama 5 minit lagi dengan setiap mata (separuh ke 10 minit pertama, separuh ke 10 minit kedua)",
   "perk.dungeontrain.vote-weight.name": "Berat Undi",

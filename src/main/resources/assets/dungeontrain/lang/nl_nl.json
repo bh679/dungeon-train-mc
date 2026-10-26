@@ -4854,6 +4854,8 @@
   "perk.dungeontrain.stackable-book-quill.desc": "+1 stapelgrootte per niveau",
   "perk.dungeontrain.extra-cam-shots.name": "Extra camerafoto's",
   "perk.dungeontrain.extra-cam-shots.desc": "50%% kans dat camera's per niveau 1 extra foto kunnen maken.\n+ 50%% met elk punt.",
+  "perk.dungeontrain.extra-journal.name": "Extra dagboek",
+  "perk.dungeontrain.extra-journal.desc": "Dagboeken maken nog een foto voordat ze verbranden",
   "perk.dungeontrain.live-eye-safe-duration.name": "Veilige duur Live Eye",
   "perk.dungeontrain.live-eye-safe-duration.desc": "Je Live Eye kan niet met geweld van je worden afgenomen, 5 min langer met elk punt (de helft voor de eerste 10 min, de helft voor de tweede 10 min).",
   "perk.dungeontrain.vote-weight.name": "Stemgewicht",

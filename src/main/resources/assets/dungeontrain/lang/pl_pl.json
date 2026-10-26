@@ -4911,6 +4911,8 @@
   "perk.dungeontrain.stackable-book-quill.desc": "+1 do rozmiaru stosu na poziom",
   "perk.dungeontrain.extra-cam-shots.name": "Dodatkowe zdjęcia aparatu",
   "perk.dungeontrain.extra-cam-shots.desc": "Aparaty mogą zrobić 1 dodatkowe zdjęcie na poziom, z szansą 50%%, +50%% z każdym punktem.",
+  "perk.dungeontrain.extra-journal.name": "Dodatkowy dziennik",
+  "perk.dungeontrain.extra-journal.desc": "Dzienniki robią jedno zdjęcie więcej, zanim spłoną",
   "perk.dungeontrain.live-eye-safe-duration.name": "Czas ochrony Żywego Oka",
   "perk.dungeontrain.live-eye-safe-duration.desc": "Twojego Żywego Oka nie da się odebrać siłą przez dodatkowe 5 min z każdym punktem (połowa do pierwszych 10 min, połowa do drugich 10 min).",
   "perk.dungeontrain.vote-weight.name": "Waga głosu",

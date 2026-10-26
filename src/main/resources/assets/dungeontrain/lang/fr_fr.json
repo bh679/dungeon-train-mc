@@ -4854,6 +4854,8 @@
   "perk.dungeontrain.stackable-book-quill.desc": "+1 à la taille de pile par palier",
   "perk.dungeontrain.extra-cam-shots.name": "Photos en plus",
   "perk.dungeontrain.extra-cam-shots.desc": "50 %% de chances que les appareils photo prennent 1 photo de plus par palier.\n+ 50 %% avec chaque point.",
+  "perk.dungeontrain.extra-journal.name": "Journal supplémentaire",
+  "perk.dungeontrain.extra-journal.desc": "Les journaux prennent une photo de plus avant de brûler",
   "perk.dungeontrain.live-eye-safe-duration.name": "Durée de protection de l'Œil en direct",
   "perk.dungeontrain.live-eye-safe-duration.desc": "Votre Œil en direct ne peut pas vous être pris de force pendant 5 min de plus par point (la moitié pour les 10 premières minutes, l'autre moitié pour les 10 suivantes).",
   "perk.dungeontrain.vote-weight.name": "Poids du vote",

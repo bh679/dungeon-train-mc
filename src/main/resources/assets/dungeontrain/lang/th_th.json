@@ -4797,6 +4797,8 @@
   "perk.dungeontrain.stackable-book-quill.desc": "ซ้อนได้ +1 ต่อระดับ",
   "perk.dungeontrain.extra-cam-shots.name": "ถ่ายภาพเพิ่ม",
   "perk.dungeontrain.extra-cam-shots.desc": "กล้องถ่ายได้เพิ่ม 1 ภาพต่อระดับ\n+50%% ต่อแต้ม",
+  "perk.dungeontrain.extra-journal.name": "บันทึกเพิ่มเติม",
+  "perk.dungeontrain.extra-journal.desc": "บันทึกถ่ายรูปได้อีกหนึ่งภาพก่อนจะไหม้",
   "perk.dungeontrain.live-eye-safe-duration.name": "ระยะปลอดภัยของไลฟ์อาย",
   "perk.dungeontrain.live-eye-safe-duration.desc": "ไลฟ์อายของคุณจะไม่ถูกแย่งไปเพิ่มอีก 5 นาทีต่อแต้ม (ครึ่งหนึ่งใน 10 นาทีแรก อีกครึ่งใน 10 นาทีที่สอง)",
   "perk.dungeontrain.vote-weight.name": "น้ำหนักโหวต",

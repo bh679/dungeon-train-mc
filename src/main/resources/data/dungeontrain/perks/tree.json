@@ -1,5 +1,5 @@
 {
- "v": 17,
+ "v": 18,
  "classes": [
   {
    "id": "c0",
@@ -66,8 +66,8 @@
    "cls": "c0",
    "name": "Stackable BookQill",
    "desc": "+1 to stack per teir",
-   "x": 402.1,
-   "y": 295.0,
+   "x": 398.0,
+   "y": 294.5,
    "tier": 1
   },
   {
@@ -84,8 +84,8 @@
    "cls": "c0",
    "name": "Live Eye Safe Duration",
    "desc": "Your Live Eye cant be forcably taken for extra 5min with every point (half goes to first10min, half to second 10min)",
-   "x": 341.0,
-   "y": 196.2,
+   "x": 388.7,
+   "y": 192.8,
    "tier": 2
   },
   {
@@ -489,8 +489,8 @@
    "cls": "c0",
    "name": "Gift liveEye",
    "desc": "Gift the liveeye to whoever you want",
-   "x": 357.4,
-   "y": 255.9,
+   "x": 391.4,
+   "y": 242.1,
    "tier": 2
   },
   {
@@ -555,6 +555,15 @@
    "x": 215.2,
    "y": 197.6,
    "tier": 3
+  },
+  {
+   "id": "extra-journal",
+   "cls": "c0",
+   "name": "Extra Journal",
+   "desc": "Journals take one more photo before burning",
+   "x": 328.9,
+   "y": 218.3,
+   "tier": 2
   }
  ],
  "links": [
@@ -615,12 +624,6 @@
   {
    "a": "craft-level-stats",
    "b": "health",
-   "kind": "cross",
-   "oneWay": false
-  },
-  {
-   "a": "speed",
-   "b": "damage",
    "kind": "cross",
    "oneWay": false
   },
@@ -1149,6 +1152,18 @@
   {
    "a": "reduced-reduction",
    "b": "reroll-trades",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "stackable-book-quill",
+   "b": "extra-journal",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "extra-cam-shots",
+   "b": "extra-journal",
    "kind": "req",
    "oneWay": true
   }

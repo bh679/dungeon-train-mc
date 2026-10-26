@@ -4797,6 +4797,8 @@
   "perk.dungeontrain.stackable-book-quill.desc": "단계마다 스택 +1",
   "perk.dungeontrain.extra-cam-shots.name": "카메라 촬영 추가",
   "perk.dungeontrain.extra-cam-shots.desc": "카메라가 사진을 1장 더 찍을 확률 50%% (단계마다)\n+ 포인트마다 50%%",
+  "perk.dungeontrain.extra-journal.name": "추가 일지",
+  "perk.dungeontrain.extra-journal.desc": "일지가 불타기 전에 사진을 한 장 더 찍는다",
   "perk.dungeontrain.live-eye-safe-duration.name": "라이브 아이 보호 시간",
   "perk.dungeontrain.live-eye-safe-duration.desc": "포인트마다 라이브 아이를 5분 더 강제로 빼앗기지 않음 (절반은 처음 10분, 절반은 다음 10분)",
   "perk.dungeontrain.vote-weight.name": "투표 가중치",

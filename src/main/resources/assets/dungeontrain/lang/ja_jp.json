@@ -4797,6 +4797,8 @@
   "perk.dungeontrain.stackable-book-quill.desc": "ティアごとにスタック数+1",
   "perk.dungeontrain.extra-cam-shots.name": "カメラ撮影回数増加",
   "perk.dungeontrain.extra-cam-shots.desc": "カメラが追加で1枚撮影できる確率50%%(ティアごと)\n+ ポイントごとに50%%",
+  "perk.dungeontrain.extra-journal.name": "追加ジャーナル",
+  "perk.dungeontrain.extra-journal.desc": "ジャーナルは燃える前に写真をもう1枚撮れる",
   "perk.dungeontrain.live-eye-safe-duration.name": "ライブアイ保護時間",
   "perk.dungeontrain.live-eye-safe-duration.desc": "ライブアイがポイントごとに5分長く強制的に奪われなくなる(半分は最初の10分、半分は次の10分)",
   "perk.dungeontrain.vote-weight.name": "投票の重み",

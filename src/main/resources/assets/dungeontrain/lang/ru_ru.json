@@ -4916,6 +4916,8 @@
   "perk.dungeontrain.stackable-book-quill.desc": "+1 к размеру стопки за уровень",
   "perk.dungeontrain.extra-cam-shots.name": "Дополнительные снимки",
   "perk.dungeontrain.extra-cam-shots.desc": "Камеры делают 1 дополнительный снимок за уровень с шансом 50%%, +50%% с каждым очком.",
+  "perk.dungeontrain.extra-journal.name": "Дополнительный журнал",
+  "perk.dungeontrain.extra-journal.desc": "Журналы делают ещё один снимок, прежде чем сгореть",
   "perk.dungeontrain.live-eye-safe-duration.name": "Защита Живого Ока",
   "perk.dungeontrain.live-eye-safe-duration.desc": "Ваше Живое Око нельзя отобрать силой ещё 5 минут за каждое очко (половина к первым 10 минутам, половина ко вторым 10 минутам).",
   "perk.dungeontrain.vote-weight.name": "Вес голоса",

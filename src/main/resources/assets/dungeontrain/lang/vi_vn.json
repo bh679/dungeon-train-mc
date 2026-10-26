@@ -4797,6 +4797,8 @@
   "perk.dungeontrain.stackable-book-quill.desc": "+1 giới hạn chồng mỗi bậc",
   "perk.dungeontrain.extra-cam-shots.name": "Thêm lượt chụp",
   "perk.dungeontrain.extra-cam-shots.desc": "Máy ảnh chụp thêm 1 ảnh mỗi bậc\n+50%% mỗi điểm.",
+  "perk.dungeontrain.extra-journal.name": "Nhật ký thêm",
+  "perk.dungeontrain.extra-journal.desc": "Nhật ký chụp thêm một ảnh trước khi cháy",
   "perk.dungeontrain.live-eye-safe-duration.name": "Thời gian an toàn Mắt Trực Tiếp",
   "perk.dungeontrain.live-eye-safe-duration.desc": "Mắt Trực Tiếp của bạn không bị cướp thêm 5 phút cho mỗi điểm (một nửa vào 10 phút đầu, một nửa vào 10 phút sau)",
   "perk.dungeontrain.vote-weight.name": "Sức nặng phiếu bầu",

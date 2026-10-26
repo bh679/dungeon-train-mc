@@ -5496,6 +5496,8 @@
   "perk.dungeontrain.stackable-book-quill.desc": "+1 to stack per teir",
   "perk.dungeontrain.extra-cam-shots.name": "Extra Cam-Shots",
   "perk.dungeontrain.extra-cam-shots.desc": "50% a cameras can take 1 extra shots per teir \n+ 50% with each point.",
+  "perk.dungeontrain.extra-journal.name": "Extra Journal",
+  "perk.dungeontrain.extra-journal.desc": "Journals take one more photo before burning",
   "perk.dungeontrain.live-eye-safe-duration.name": "Live Eye Safe Duration",
   "perk.dungeontrain.live-eye-safe-duration.desc": "Your Live Eye cant be forcably taken for extra 5min with every point (half goes to first10min, half to second 10min)",
   "perk.dungeontrain.vote-weight.name": "Vote Weight",

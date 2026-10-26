@@ -4854,6 +4854,8 @@
   "perk.dungeontrain.stackable-book-quill.desc": "+1 ao empilhamento por nível",
   "perk.dungeontrain.extra-cam-shots.name": "Fotos Extra",
   "perk.dungeontrain.extra-cam-shots.desc": "50%% de as câmaras tirarem 1 foto extra por nível\n+ 50%% com cada ponto.",
+  "perk.dungeontrain.extra-journal.name": "Diário extra",
+  "perk.dungeontrain.extra-journal.desc": "Os diários tiram mais uma fotografia antes de arder",
   "perk.dungeontrain.live-eye-safe-duration.name": "Duração Segura do Olho Vivo",
   "perk.dungeontrain.live-eye-safe-duration.desc": "O teu Olho Vivo não pode ser tirado à força durante mais 5 min por ponto (metade nos primeiros 10 min, metade nos 10 seguintes)",
   "perk.dungeontrain.vote-weight.name": "Peso do Voto",
