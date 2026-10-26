@@ -95,6 +95,7 @@ public final class PerksScreen extends Screen {
     private String lastStarClick;
     private long lastStarClickAt;
     private String eyeHover;
+    private boolean headEyeHover;
     private long spentAt;
     private boolean firstSnapshot = true;
 
@@ -284,22 +285,25 @@ public final class PerksScreen extends Screen {
         long now = Util.getMillis();
         double fade = Math.min(1.0, (now - openedAt) / (double) FADE_MS);
 
-        int listLeft = classesList.layout(width);
+        classesList.layout(width);
+        int cardRight = width - 8;
         int countersTop = counters.layout(width, skyH(), snap.unlockPoints(), snap.activePoints());
         String listHover = classesList.classAt(mouseX, mouseY);
         eyeHover = classesList.eyeAt(mouseX, mouseY, off);
+        headEyeHover = classesList.headEyeAt(mouseX, mouseY, off);
         if (selectedClass != null && off.contains(selectedClass)) selectedClass = null;
         zoomHover = zoomControl.at(mouseX, mouseY);
         preview = listHover != null && off.contains(listHover) ? listHover : null;
 
         vis = new ClassVisibility(tree, off, preview, snap.unlocks(), snap.active(), snap.unlockPoints());
         drawn = tree.withPositions(layout.positions(tree, vis, now));
-        hovered = card.contains(mouseX, mouseY) || listHover != null || eyeHover != null ? null : starAt(mouseX, mouseY);
+        hovered = card.contains(mouseX, mouseY) || classesList.rowHover(mouseX, mouseY) != null || headEyeHover
+            ? null : starAt(mouseX, mouseY);
         // a hovered class shows, else a hovered star, else the class clicked to stay
         String classShown = listHover != null ? listHover : hovered == null ? selectedClass : null;
         glow = classShown;
         if (DETAILS == DetailsMode.BAR) updateBar(snap, classShown);
-        else updateCard(snap, now, mouseX, mouseY, listLeft, countersTop);
+        else updateCard(snap, now, mouseX, mouseY, cardRight, countersTop);
 
         g.fill(0, 0, width, height, SkyPalette.BG);
         double gx = view.toScreenX(PerkTree.CENTRE, width), gy = view.toScreenY(PerkTree.CENTRE, skyH());
@@ -342,7 +346,9 @@ public final class PerksScreen extends Screen {
         renderHeader(g, snap, now, fade);
         String marked = selected == null ? null : tree.perk(selected).map(PerkTree.Perk::cls).orElse(null);
         String hoverMarked = hovered == null ? null : tree.perk(hovered).map(PerkTree.Perk::cls).orElse(null);
-        classesList.render(g, off, listHover, selectedClass != null ? selectedClass : marked, hoverMarked, eyeHover, fade);
+        int head = headEyeHover ? 2 : classesList.headingAt(mouseX, mouseY) ? 1 : 0;
+        classesList.render(g, snap, off, listHover, selectedClass != null ? selectedClass : marked, hoverMarked,
+            classesList.rowHover(mouseX, mouseY), selectedClass, eyeHover, head, fade);
         counters.render(g, snap.unlockPoints(), snap.activePoints(), now, fade);
         g.flush(); // titles and names are batched: push them out so the card paints over them
         if (DETAILS == DetailsMode.BAR) {
@@ -355,6 +361,7 @@ public final class PerksScreen extends Screen {
 
         if (zoomHover >= 0) g.renderTooltip(font, ZoomControl.tooltip(zoomHover), mouseX, mouseY);
         if (eyeHover != null) g.renderTooltip(font, ClassesList.hideTooltip(), mouseX, mouseY);
+        if (headEyeHover) g.renderTooltip(font, ClassesList.hideAllTooltip(), mouseX, mouseY);
         PerkCounters.Kind counter = counters.at(mouseX, mouseY);
         if (counter != null) g.renderComponentTooltip(font, PerkCounters.tooltip(counter), mouseX, mouseY);
     }
@@ -521,7 +528,7 @@ public final class PerksScreen extends Screen {
             return true;
         }
         if (DETAILS == DetailsMode.BAR && bar.contains(mx, my)) return true;
-        if (card.contains(mx, my) || classesList.classAt(mx, my) != null || classesList.eyeAt(mx, my, off) != null
+        if (card.contains(mx, my) || classesList.rowHover(mx, my) != null || classesList.headingAt(mx, my)
             || counters.at(mx, my) != null) return true;
         if (button == 0 || button == 2) {
             dragging = true;
@@ -542,6 +549,12 @@ public final class PerksScreen extends Screen {
             return true;
         }
         if (button != 0 || wasDrag || my < SkyView.HEADER) return true;
+        if (classesList.headEyeAt(mx, my, off)) {
+            setOff(Set.copyOf(classesList.ids()));
+            selectedClass = null;
+            play(SoundEvents.UI_BUTTON_CLICK.value(), 0.3F, 1.0F);
+            return true;
+        }
         String eye = classesList.eyeAt(mx, my, off);
         if (eye != null) {
             setOff(with(off, eye));

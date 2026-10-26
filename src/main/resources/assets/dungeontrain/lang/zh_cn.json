@@ -5578,6 +5578,7 @@
   "gui.dungeontrain.perks.ap.other": "%s 进度点数",
   "gui.dungeontrain.perks.classes": "职业",
   "gui.dungeontrain.perks.classes.hide": "隐藏职业",
+  "gui.dungeontrain.perks.classes.hide_all": "隐藏所有职业",
   "gui.dungeontrain.perks.card.start": "起点",
   "gui.dungeontrain.perks.card.always_active": "始终激活。",
   "gui.dungeontrain.perks.card.locked": "未解锁。第%s阶。解锁花费%s。",

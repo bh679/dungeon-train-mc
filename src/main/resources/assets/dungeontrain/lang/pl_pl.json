@@ -5692,6 +5692,7 @@
   "gui.dungeontrain.perks.ap.many": "%s punktów postępu",
   "gui.dungeontrain.perks.classes": "Klasy",
   "gui.dungeontrain.perks.classes.hide": "Ukryj klasę",
+  "gui.dungeontrain.perks.classes.hide_all": "Ukryj wszystkie klasy",
   "gui.dungeontrain.perks.card.start": "Start",
   "gui.dungeontrain.perks.card.always_active": "Zawsze aktywne.",
   "gui.dungeontrain.perks.card.locked": "Zablokowane. Poziom %s. Odblokowanie kosztuje %s.",

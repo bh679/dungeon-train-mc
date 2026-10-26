@@ -5692,6 +5692,7 @@
   "gui.dungeontrain.perks.ap.other": "%s de puncte de progres",
   "gui.dungeontrain.perks.classes": "Clase",
   "gui.dungeontrain.perks.classes.hide": "Ascunde clasa",
+  "gui.dungeontrain.perks.classes.hide_all": "Ascunde toate clasele",
   "gui.dungeontrain.perks.card.start": "Început",
   "gui.dungeontrain.perks.card.always_active": "Mereu activ.",
   "gui.dungeontrain.perks.card.locked": "Blocat. Nivel %s. Deblocarea costă %s.",

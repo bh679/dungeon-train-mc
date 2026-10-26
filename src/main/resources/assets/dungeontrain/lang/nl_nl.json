@@ -5628,6 +5628,7 @@
   "gui.dungeontrain.perks.ap.other": "%s vooruitgangspunten",
   "gui.dungeontrain.perks.classes": "Klassen",
   "gui.dungeontrain.perks.classes.hide": "Klasse verbergen",
+  "gui.dungeontrain.perks.classes.hide_all": "Alle klassen verbergen",
   "gui.dungeontrain.perks.card.start": "Start",
   "gui.dungeontrain.perks.card.always_active": "Altijd actief.",
   "gui.dungeontrain.perks.card.locked": "Vergrendeld. Niveau %s. Ontgrendelen kost %s.",

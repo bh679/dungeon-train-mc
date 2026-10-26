@@ -7,64 +7,101 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
 /**
- * The Classes list down the right edge (the web page's {@code renderLockedList}): every class in circle
- * order, in its colour when shown and muted when hidden. Hovering a hidden class previews it on the
+ * The Classes list down the left edge (the web page's {@code renderLockedList}): every class in circle
+ * order, in its colour when shown and muted when hidden, with a dot per perk after its name (filled once
+ * a point is in it, a ring once unlocked, dim while locked). Hovering a hidden class previews it on the
  * sky; hovering any class makes its perks glow. A click on a hidden class shows it; on a shown one it
- * selects it (the bar keeps showing it). Shown classes get an eye with a slash to their right that
- * hides them; every row leaves room for it so the names never shift.
+ * selects it (the bar keeps showing it).
+ *
+ * <p>The selected class (or the class of the perk kept in the bar) sits in a pill of its colour with dark
+ * text; the hovered one gets a grey outline. A shown class, while hovered or selected, gets an eye with a
+ * slash before its name that hides it; the heading gets one while hovered that hides them all. Every row
+ * leaves room for it so the names never shift.
  */
 @OnlyIn(Dist.CLIENT)
 final class ClassesList {
 
-    private static final int RIGHT = 8, TOP_GAP = 8, ROW = 11, HEAD = 12;
+    private static final int LEFT = 10, TOP_GAP = 8, ROW = 12, HEAD = 12;
     private static final float HEAD_SCALE = 0.75F;
-    private static final double DASH = 12;
-    /** The hide icon's column right of the names. */
+    /** The hide icon's column before the names. */
     private static final int EYE_W = 7, EYE_H = 5, EYE_GAP = 5;
+    private static final int DOT_GAP = 5, DOT_PITCH = 6, PILL_PAD = 3;
+    private static final double DARK_TEXT = 0.72, DARK_LOCKED = 0.4;
 
+    private final PerkTree tree;
     private final List<PerkTree.PerkClass> order;
     private final Font font;
     private int top;
-    private int left;
-    private int screenW;
+    private int right;
 
     ClassesList(PerkTree tree, Font font) {
+        this.tree = tree;
         this.order = ClassVisibility.circleOrder(tree);
         this.font = font;
     }
 
-    /** Lay out for this screen; returns the list's left edge (the card keeps clear of it). */
+    /** Lay out for this screen; returns the list's right edge. */
     int layout(int screenW) {
-        this.screenW = screenW;
         this.top = SkyView.HEADER + TOP_GAP;
-        int widest = 0;
-        for (PerkTree.PerkClass c : order) widest = Math.max(widest, font.width(c.name()));
-        widest = Math.max(widest, (int) (font.width(heading()) * HEAD_SCALE));
-        left = screenW - RIGHT - EYE_W - EYE_GAP - widest;
-        return left - 6;
+        int widest = (int) (font.width(heading()) * HEAD_SCALE);
+        for (PerkTree.PerkClass c : order) widest = Math.max(widest, rowWidth(c));
+        right = nameX() + widest;
+        return right + PILL_PAD;
+    }
+
+    private int rowWidth(PerkTree.PerkClass c) {
+        int n = tree.perksOf(c.id()).size();
+        return font.width(c.name()) + (n > 0 ? DOT_GAP + n * DOT_PITCH - 2 : 0);
+    }
+
+    private static int nameX() {
+        return LEFT + EYE_W + EYE_GAP;
     }
 
     private static Component heading() {
         return Component.translatable("gui.dungeontrain.perks.classes");
     }
 
-    /** The class whose name is under the mouse, or null. */
+    /** The class whose name or dots are under the mouse, or null. */
     String classAt(double mx, double my) {
-        if (mx < left - 4 || mx > nameRight() + 2) return null;
+        if (mx < nameX() - 2 || mx > right + PILL_PAD) return null;
         return rowAt(my);
     }
 
     /** The shown class whose hide icon is under the mouse, or null. */
     String eyeAt(double mx, double my, Set<String> off) {
-        int ex = nameRight() + EYE_GAP;
-        if (mx < ex - 2 || mx > ex + EYE_W + 2) return null;
+        if (mx < LEFT - 2 || mx >= nameX() - 2) return null;
         String id = rowAt(my);
         return id != null && !off.contains(id) ? id : null;
+    }
+
+    /** The class on the row under the mouse, icon, name or dots, or null. */
+    String rowHover(double mx, double my) {
+        if (mx < LEFT - PILL_PAD - 1 || mx > right + PILL_PAD) return null;
+        return rowAt(my);
+    }
+
+    /** The mouse is on the heading row. */
+    boolean headingAt(double mx, double my) {
+        return my >= top - 2 && my < top + HEAD - 2 && mx >= LEFT - PILL_PAD - 1 && mx <= right + PILL_PAD;
+    }
+
+    /** The heading's hide-all icon is under the mouse (and some class is shown to hide). */
+    boolean headEyeAt(double mx, double my, Set<String> off) {
+        return headingAt(mx, my) && mx < nameX() - 2 && off.size() < order.size();
+    }
+
+    /** Every class id in the list. */
+    Set<String> ids() {
+        Set<String> out = new HashSet<>();
+        for (PerkTree.PerkClass c : order) out.add(c.id());
+        return out;
     }
 
     private String rowAt(double my) {
@@ -74,47 +111,76 @@ final class ClassesList {
         return i >= 0 && i < order.size() ? order.get(i).id() : null;
     }
 
-    private int nameRight() {
-        return screenW - RIGHT - EYE_W - EYE_GAP;
-    }
-
     /**
-     * @param marked   the selected class, or the class of the perk clicked to stay in the bar: a dash in
-     *                 its colour comes out to the left of its name
+     * @param hovered  the class whose name is under the mouse (a hidden one reads brighter)
+     * @param marked   the selected class, or the class of the perk kept in the bar: a pill of its colour
+     * @param hoverMarked the class of the hovered perk: a grey outline
+     * @param rowHover the class whose row is under the mouse: its icon shows, and a grey outline
+     * @param selectedClass the class clicked to stay: its icon shows
      * @param eyeHover the class whose hide icon is under the mouse, drawn brighter
+     * @param head 0 the heading is not hovered, 1 hovered (its hide-all icon shows), 2 its icon hovered
      */
-    void render(GuiGraphics g, Set<String> off, String hovered, String marked, String hoverMarked, String eyeHover,
-                double fade) {
+    void render(GuiGraphics g, PerkMenuSnapshot snap, Set<String> off, String hovered, String marked, String hoverMarked,
+                String rowHover, String selectedClass, String eyeHover, int head, double fade) {
         if (order.isEmpty()) return;
-        int right = nameRight();
         int a = (int) (fade * 255);
-        String head = heading().getString().toUpperCase(Locale.ROOT);
+        String title = heading().getString().toUpperCase(Locale.ROOT);
         g.pose().pushPose();
-        g.pose().translate(right - font.width(head) * HEAD_SCALE, top, 0);
+        g.pose().translate(nameX(), top, 0);
         g.pose().scale(HEAD_SCALE, HEAD_SCALE, 1F);
-        g.drawString(font, head, 0, 0, ((int) (a * 0.7) << 24) | (SkyPalette.MUTED & 0xFFFFFF), true);
+        g.drawString(font, title, 0, 0, ((int) (a * 0.7) << 24) | (SkyPalette.MUTED & 0xFFFFFF), true);
         g.pose().popPose();
+        if (head > 0 && off.size() < order.size()) renderEye(g, LEFT, top + 1, head == 2, SkyPalette.MUTED, fade);
         int y = top + HEAD;
         for (PerkTree.PerkClass c : order) {
-            boolean shown = !off.contains(c.id());
-            boolean hov = c.id().equals(hovered);
-            int colour = shown ? c.colour() : SkyPalette.MUTED;
-            double alpha = shown ? 1.0 : hov ? 0.9 : 0.55;
-            g.drawString(font, c.name(), right - font.width(c.name()), y + 1, ((int) (a * alpha) << 24) | (colour & 0xFFFFFF), true);
-            if (shown) renderEye(g, right + EYE_GAP, y + 1 + (font.lineHeight - EYE_H) / 2 - 1, c.id().equals(eyeHover), fade);
-            // the clicked perk's class: a dash in its colour; the hovered perk's class: a grey one
-            int dash = c.id().equals(marked) ? c.colour() : c.id().equals(hoverMarked) ? SkyPalette.MUTED : 0;
-            if (dash != 0) {
-                double x1 = right - font.width(c.name()) - 4, mid = y + 1 + font.lineHeight / 2.0 - 1;
-                SkyDraw.line(g, x1 - DASH, mid, x1, mid, 1.5, SkyDraw.withAlpha(dash, fade), SkyDraw.withAlpha(dash, fade));
-            }
+            renderRow(g, snap, c, y, !off.contains(c.id()), c.id().equals(hovered), c.id().equals(marked),
+                c.id().equals(hoverMarked) || c.id().equals(rowHover),
+                c.id().equals(rowHover) || c.id().equals(selectedClass), c.id().equals(eyeHover), fade);
             y += ROW;
         }
     }
 
-    /** An eye with a slash through it: "hide this class". */
-    private static void renderEye(GuiGraphics g, int x, int y, boolean hot, double fade) {
-        int c = SkyDraw.withAlpha(hot ? SkyPalette.FG : SkyPalette.MUTED, (hot ? 1.0 : 0.7) * fade);
+    private void renderRow(GuiGraphics g, PerkMenuSnapshot snap, PerkTree.PerkClass c, int y, boolean shown, boolean hov,
+                           boolean pill, boolean outline, boolean eye, boolean eyeHot, double fade) {
+        int x0 = LEFT - PILL_PAD, x1 = nameX() + rowWidth(c) + PILL_PAD, y0 = y - 1, y1 = y + ROW - 2;
+        int dark = SkyDraw.mix(c.colour(), 0xFF000000, DARK_TEXT);
+        if (pill) {
+            int fill = SkyDraw.withAlpha(c.colour(), fade);
+            g.fill(x0 + 1, y0, x1 - 1, y1, fill);
+            g.fill(x0, y0 + 1, x0 + 1, y1 - 1, fill);
+            g.fill(x1 - 1, y0 + 1, x1, y1 - 1, fill);
+        } else if (outline) {
+            int edge = SkyDraw.withAlpha(SkyPalette.MUTED, 0.8 * fade);
+            g.fill(x0 + 1, y0, x1 - 1, y0 + 1, edge);
+            g.fill(x0 + 1, y1 - 1, x1 - 1, y1, edge);
+            g.fill(x0, y0 + 1, x0 + 1, y1 - 1, edge);
+            g.fill(x1 - 1, y0 + 1, x1, y1 - 1, edge);
+        }
+        int colour = pill ? dark : shown ? c.colour() : SkyPalette.MUTED;
+        double alpha = pill || shown ? 1.0 : hov ? 0.9 : 0.55;
+        g.drawString(font, c.name(), nameX(), y + 1, SkyDraw.withAlpha(colour, alpha * fade), !pill);
+        if (shown && eye) renderEye(g, LEFT, y + 1 + (font.lineHeight - EYE_H) / 2 - 1, eyeHot, pill ? dark : SkyPalette.MUTED, fade);
+        renderDots(g, snap, c, nameX() + font.width(c.name()) + DOT_GAP, y + 1 + font.lineHeight / 2.0 - 1,
+            pill ? dark : c.colour(), pill, shown ? 1.0 : 0.55, fade);
+    }
+
+    /** One dot per perk: filled with a point in it, a ring once unlocked, small and dim while locked. */
+    private void renderDots(GuiGraphics g, PerkMenuSnapshot snap, PerkTree.PerkClass c, int x, double cy, int colour,
+                            boolean onPill, double alpha, double fade) {
+        int locked = onPill ? SkyDraw.mix(c.colour(), 0xFF000000, DARK_LOCKED) : 0xFF3A3F5A;
+        int i = 0;
+        for (PerkTree.Perk p : tree.perksOf(c.id())) {
+            double cx = x + 2 + i++ * DOT_PITCH;
+            int level = snap.unlockLevel(p.id());
+            if (snap.points(p.id()) > 0) SkyDraw.disc(g, cx, cy, 2.0, SkyDraw.withAlpha(colour, alpha * fade));
+            else if (level > 0) SkyDraw.ring(g, cx, cy, 1.6, 0.9, SkyDraw.withAlpha(colour, alpha * fade));
+            else SkyDraw.disc(g, cx, cy, 1.3, SkyDraw.withAlpha(locked, fade));
+        }
+    }
+
+    /** An eye with a slash through it: "hide". */
+    private static void renderEye(GuiGraphics g, int x, int y, boolean hot, int idle, double fade) {
+        int c = SkyDraw.withAlpha(hot ? SkyPalette.FG : idle, (hot ? 1.0 : 0.8) * fade);
         g.fill(x + 2, y, x + 5, y + 1, c);
         g.fill(x + 1, y + 1, x + 2, y + 2, c);
         g.fill(x + 5, y + 1, x + 6, y + 2, c);
@@ -129,5 +195,9 @@ final class ClassesList {
 
     static Component hideTooltip() {
         return Component.translatable("gui.dungeontrain.perks.classes.hide");
+    }
+
+    static Component hideAllTooltip() {
+        return Component.translatable("gui.dungeontrain.perks.classes.hide_all");
     }
 }

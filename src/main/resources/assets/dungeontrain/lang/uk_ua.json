@@ -5689,6 +5689,7 @@
   "gui.dungeontrain.perks.ap.many": "%s очок досягнень",
   "gui.dungeontrain.perks.classes": "Класи",
   "gui.dungeontrain.perks.classes.hide": "Сховати клас",
+  "gui.dungeontrain.perks.classes.hide_all": "Сховати всі класи",
   "gui.dungeontrain.perks.card.start": "Початок",
   "gui.dungeontrain.perks.card.always_active": "Завжди активно.",
   "gui.dungeontrain.perks.card.locked": "Заблоковано. Рівень %s. Розблокування коштує %s.",
