@@ -27,17 +27,20 @@ final class ClassTitlePainter {
 
     private record Spot(double x, double y, double hw, double hh) {}
 
-    static void render(GuiGraphics g, Font font, PerkTree tree, SkyView view, int w, int h, double fade) {
+    static void render(GuiGraphics g, Font font, PerkTree tree, ClassVisibility vis, String glow, SkyView view, int w, int h,
+                       double fade) {
         float scale = w < NARROW_WIDTH ? 0.75F : 1F;
         double z = view.zoom();
         List<Spot> placed = new ArrayList<>();
         for (PerkTree.PerkClass c : tree.classes()) {
-            List<PerkTree.Perk> ps = tree.perksOf(c.id());
+            // only the drawn perks place the title; a hidden class is named once one of its perks is unlocked
+            if (!vis.titleShown(c.id())) continue;
+            List<PerkTree.Perk> ps = tree.perksOf(c.id()).stream().filter(p -> !vis.hidden(p)).toList();
             if (ps.isEmpty()) continue;
             String title = c.name().toUpperCase(Locale.ROOT);
             double hwPx = font.width(title) * scale / 2.0 + 4, hhPx = font.lineHeight * scale / 2.0 + 1;
             double hw = hwPx / z, hh = hhPx / z;
-            PerkTree.Perk first = tree.firstPerkOf(c.id()).orElse(null);
+            PerkTree.Perk first = tree.firstPerkOf(c.id()).filter(p -> !vis.hidden(p)).orElse(null);
             double a;
             if (first != null) a = Math.atan2(first.y() - PerkTree.CENTRE, first.x() - PerkTree.CENTRE);
             else {
@@ -49,7 +52,10 @@ final class ClassTitlePainter {
             Spot spot = place(tree, a, r0, hw, hh, placed);
             placed.add(spot);
             double sx = view.toScreenX(spot.x(), w), sy = view.toScreenY(spot.y(), h);
-            int colour = SkyDraw.withAlpha(c.colour(), fade);
+            // the title takes its colour once a point is in one of its perks (or while it glows in the list)
+            boolean lit = vis.titleLit(c.id(), glow);
+            double alpha = (lit ? 1.0 : 0.55) * (c.id().equals(vis.preview()) ? 0.4 : 1.0) * fade;
+            int colour = SkyDraw.withAlpha(lit ? c.colour() : SkyPalette.MUTED, alpha);
             g.pose().pushPose();
             g.pose().translate(sx, sy, 0);
             g.pose().scale(scale, scale, 1F);

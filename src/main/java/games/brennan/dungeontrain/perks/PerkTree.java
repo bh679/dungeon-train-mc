@@ -17,9 +17,10 @@ import java.util.function.Predicate;
  * {@link PerkTreeLoader} from {@code data/dungeontrain/perks/tree.json} and read by the menu (positions,
  * names) and the server (costs, reachability). Nothing in the mod re-lays it out.
  *
- * <p>Reachability is the one rule both sides must agree on: a locked perk may be unlocked when it is
- * linked to the Engine, or a requirement-link neighbour is unlocked, or a two-way chord neighbour is
- * unlocked, or it is the target end of a one-way chord whose source is unlocked.</p>
+ * <p>Reachability is the one rule both sides must agree on: a locked perk may be unlocked when a
+ * <b>solid</b> (requirement) line joins it to the Engine or to an unlocked perk, either way round.
+ * Dashed lines (chords) open nothing; they only show which perks belong together. This is the web
+ * page's test mode ({@code perks.js reachableNow}).</p>
  */
 public final class PerkTree {
 
@@ -139,10 +140,9 @@ public final class PerkTree {
         Perk p = byId.get(id);
         if (p == null || p.isRoot()) return false;
         for (Link l : linksOf(id)) {
+            if (l.kind() != LinkKind.REQ) continue;
             String other = l.other(id);
-            if (ROOT.equals(other)) return true;
-            if (l.kind() == LinkKind.CROSS && l.oneWay() && !l.b().equals(id)) continue;
-            if (unlocked.test(other)) return true;
+            if (ROOT.equals(other) || unlocked.test(other)) return true;
         }
         return false;
     }
@@ -165,6 +165,20 @@ public final class PerkTree {
             }
         }
         return seen;
+    }
+
+    /**
+     * The same tree with some stars moved (display only: the menu's class layout). Perks missing from
+     * {@code positions} keep their place; ids, links and costs are unchanged.
+     */
+    public PerkTree withPositions(Map<String, double[]> positions) {
+        if (positions.isEmpty()) return this;
+        List<Perk> moved = new java.util.ArrayList<>(perks.size());
+        for (Perk p : perks) {
+            double[] xy = positions.get(p.id());
+            moved.add(xy == null ? p : new Perk(p.id(), p.cls(), p.name(), p.desc(), p.point(), p.tier(), xy[0], xy[1]));
+        }
+        return new PerkTree(version, classes, moved, links);
     }
 
     /** Sum of the unlock costs of every unlocked perk the tree knows, once each. */

@@ -1,40 +1,48 @@
 package games.brennan.dungeontrain.client.perks;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PerkSpendPacket;
 import games.brennan.dungeontrain.net.PerkUnlockPacket;
+import games.brennan.dungeontrain.perks.PerkRegistry;
 import games.brennan.dungeontrain.perks.PerkTree;
 import games.brennan.dungeontrain.perks.PerkTreeLoader;
+import games.brennan.dungeontrain.perks.PerkUnlocks;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 /**
- * The perks constellation: the web page's night sky drawn on a Minecraft screen (see
- * {@code docs/design/perks-menu.md}). The whole sky fits by default; wheel zooms around the cursor,
- * drag pans, arrows walk the links, Tab hops classes. Clicking a star opens its card; the card's one
- * button sends {@link PerkUnlockPacket} or {@link PerkSpendPacket} and the server's re-sync is what the
- * screen reacts to (animation, sound, HUD line), never its own guess.
+ * The perks constellation, working the way the web page's test mode does ({@code perks.js}; see
+ * {@code docs/design/perks-menu.md}). Hovering a star shows its card; clicking it acts: unlock it,
+ * add a point, or unlock it again for room for one more. Every class starts hidden and appears once a
+ * tier 1 perk in it is unlocked; the Classes list down the right edge shows, hides and previews
+ * classes. The classes on the circle share it, and stars swing to a new layout. The two counters at
+ * the bottom right hold the Advancement Points and Active Points.
  *
- * <p>Not a pause screen: the train keeps moving while you choose.</p>
+ * <p>Every action is a packet the server judges ({@link PerkUnlockPacket}, {@link PerkSpendPacket}); the
+ * screen reacts to the re-synced state (animation, sound, HUD line), never its own guess. Not a pause
+ * screen: the train keeps moving while you choose.</p>
  */
 @OnlyIn(Dist.CLIENT)
 public final class PerksScreen extends Screen {
 
     private static final long FADE_MS = 200;
+    private static final long CARD_LINGER_MS = 250;
     private static final int CLOSE_W = 12;
     private static final double DOUBLE_CLICK_MS = 300;
 
@@ -42,28 +50,49 @@ public final class PerksScreen extends Screen {
     private final boolean fromApple;
     private final StarField stars;
     private final PerkCard card;
+    private final ClassesList classesList;
+    private final PerkCounters counters;
+    private final SkyLayout layout = new SkyLayout();
     private final Map<String, Long> unlockedAt = new HashMap<>();
     private final Map<String, Long> pointAt = new HashMap<>();
     private final long openedAt = Util.getMillis();
+    private final UUID player;
 
     private SkyView view;
     private PerkMenuSnapshot last = PerkMenuSnapshot.EMPTY;
+    private Set<String> off;
+    private String preview;
+    private String glow;
     private String selected;
     private String hovered;
-    private Button cardButton;
+    private String cardFor;
+    private long cardLeftAt = -1;
+    private PerkTree drawn;
+    private ClassVisibility vis;
     private boolean dragging;
     private double dragMoved;
     private long lastSkyClickAt;
-    private long balanceFlashAt;
     private long spentAt;
     private boolean firstSnapshot = true;
 
     private PerksScreen(boolean fromApple) {
         super(Component.translatable("gui.dungeontrain.perks.title"));
+        Minecraft mc = Minecraft.getInstance();
         this.tree = PerkTreeLoader.get();
         this.fromApple = fromApple;
         this.stars = new StarField(openedAt);
-        this.card = new PerkCard(tree, Minecraft.getInstance().font, this::sendUnlock, this::sendSpend);
+        this.card = new PerkCard(tree, mc.font);
+        this.classesList = new ClassesList(tree, mc.font);
+        this.counters = new PerkCounters(mc.font);
+        this.player = mc.player != null ? mc.player.getUUID() : new UUID(0, 0);
+        this.off = ClassChoiceStore.load(player).orElseGet(this::allClasses);
+        this.drawn = tree;
+    }
+
+    private Set<String> allClasses() {
+        Set<String> all = new HashSet<>();
+        ClassVisibility.liveClasses(tree).forEach(c -> all.add(c.id()));
+        return Set.copyOf(all);
     }
 
     /** Open the menu over the game. {@code fromApple}: an apple was just eaten (header mode). */
@@ -83,7 +112,6 @@ public final class PerksScreen extends Screen {
     @Override
     protected void init() {
         view = view == null ? SkyView.fit(width, height) : view.clamped(width, height);
-        reopenCard();
     }
 
     @Override
@@ -104,74 +132,91 @@ public final class PerksScreen extends Screen {
         long ms = Util.getMillis();
         if (!firstSnapshot) {
             for (String id : now.unlocked()) {
-                if (!last.unlocked().contains(id)) {
-                    unlockedAt.put(id, ms);
-                    play(SoundEvents.PLAYER_LEVELUP, 0.7F, 1.0F);
-                    PerksHud.show(Component.translatable("gui.dungeontrain.perks.hud_unlocked", card.name(tree.perk(id).orElseThrow())), colourOf(id));
-                }
+                int before = last.unlockLevel(id), after = now.unlockLevel(id);
+                if (after <= before) continue;
+                unlockedAt.put(id, ms);
+                play(SoundEvents.PLAYER_LEVELUP, 0.7F, 1.0F);
+                tree.perk(id).ifPresent(p -> {
+                    PerksHud.show(Component.translatable("gui.dungeontrain.perks.hud_unlocked", card.name(p)), colourOf(id));
+                    // the first unlock of a tier 1 perk shows its class (web testAct)
+                    if (before == 0 && p.tier() == 1 && p.cls() != null && off.contains(p.cls())) setOff(without(off, p.cls()));
+                });
             }
             for (Map.Entry<String, Integer> e : now.active().entrySet()) {
                 int before = last.points(e.getKey());
                 if (e.getValue() > before) {
                     pointAt.put(e.getKey(), ms);
                     play(SoundEvents.AMETHYST_BLOCK_CHIME, 0.8F, 1.2F + 0.05F * before);
-                    PerksHud.show(Component.translatable("gui.dungeontrain.perks.hud_points", card.name(tree.perk(e.getKey()).orElseThrow()), e.getValue()), colourOf(e.getKey()));
+                    tree.perk(e.getKey()).ifPresent(p -> PerksHud.show(
+                        Component.translatable("gui.dungeontrain.perks.hud_points", card.name(p), e.getValue()), colourOf(e.getKey())));
                     spentAt = ms;
                 }
             }
-            if (now.unlockPoints() > last.unlockPoints() || now.activePoints() > last.activePoints()) balanceFlashAt = ms;
-            if (!now.equals(last)) reopenCard();
         }
         firstSnapshot = false;
         last = now;
         return now;
     }
 
+    private static Set<String> without(Set<String> set, String id) {
+        Set<String> next = new HashSet<>(set);
+        next.remove(id);
+        return Set.copyOf(next);
+    }
+
+    private static Set<String> with(Set<String> set, String id) {
+        Set<String> next = new HashSet<>(set);
+        next.add(id);
+        return Set.copyOf(next);
+    }
+
+    private void setOff(Set<String> next) {
+        off = next;
+        ClassChoiceStore.save(player, off);
+    }
+
     private int colourOf(String id) {
         return tree.perk(id).map(p -> SkyPalette.classColour(tree, p)).orElse(SkyPalette.GOLD);
     }
 
-    private void play(net.minecraft.sounds.SoundEvent sound, float volume, float pitch) {
+    private void play(SoundEvent sound, float volume, float pitch) {
         Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(sound, pitch, volume));
     }
 
     private void refused(String perkId, String reasonKey) {
-        card.refused(perkId, reasonKey, Util.getMillis());
+        long now = Util.getMillis();
+        card.refused(perkId, reasonKey, now);
+        if (reasonKey.endsWith(".no_active")) counters.shake(PerkCounters.Kind.ACTIVE, now);
+        else if (reasonKey.endsWith(".points") || reasonKey.endsWith(".gate")) counters.shake(PerkCounters.Kind.UNLOCK, now);
         play(SoundEvents.UI_BUTTON_CLICK.value(), 0.5F, 0.6F);
     }
 
-    private void sendUnlock(String id) {
-        DungeonTrainNet.sendToServer(new PerkUnlockPacket(id));
-    }
-
-    private void sendSpend(String id) {
-        DungeonTrainNet.sendToServer(new PerkSpendPacket(id));
-    }
-
-    // ---- card ------------------------------------------------------------------------------------------
-
-    private void reopenCard() {
-        if (cardButton != null) {
-            removeWidget(cardButton);
-            cardButton = null;
-        }
-        PerkTree.Perk p = selected == null ? null : tree.perk(selected).orElse(null);
-        if (p == null) {
-            card.close();
+    /**
+     * A click on a star (web {@code testClick}): unlock it when locked and reachable; add a point while it
+     * holds fewer than its unlock level; once full, unlock it again for room for one more. Short of
+     * points, the matching counter shakes and nothing is sent.
+     */
+    private void act(PerkTree.Perk p) {
+        if (p.isRoot()) return;
+        PerkMenuSnapshot s = last;
+        long now = Util.getMillis();
+        PerkRegistry.bootstrap();
+        if (!PerkRegistry.isKnown(p.id())) {
+            card.refused(p.id(), "gui.dungeontrain.perks.refused.not_built", now);
             return;
         }
-        cardButton = card.open(p, last, view, width, height, Util.getMillis());
-        if (cardButton != null) addRenderableWidget(cardButton);
-    }
-
-    private void select(String id) {
-        if (id != null && id.equals(selected)) {
-            selected = null;
-        } else {
-            selected = id;
-            if (id != null) play(SoundEvents.UI_BUTTON_CLICK.value(), 0.3F, 1.0F);
+        int level = s.unlockLevel(p.id());
+        if (level <= 0 && !tree.reachable(p.id(), s::isUnlocked)) return;
+        if (level > 0 && s.points(p.id()) < level) {
+            if (!s.canAffordRank()) { counters.shake(PerkCounters.Kind.ACTIVE, now); return; }
+            DungeonTrainNet.sendToServer(new PerkSpendPacket(p.id()));
+            return;
         }
-        reopenCard();
+        if (s.unlockPoints() < p.unlockCost() || !PerkUnlocks.allowed(level + 1, s.unlockSpent(tree))) {
+            counters.shake(PerkCounters.Kind.UNLOCK, now);
+            return;
+        }
+        DungeonTrainNet.sendToServer(new PerkUnlockPacket(p.id()));
     }
 
     // ---- render ----------------------------------------------------------------------------------------
@@ -181,34 +226,72 @@ public final class PerksScreen extends Screen {
         PerkMenuSnapshot snap = snapshot();
         long now = Util.getMillis();
         double fade = Math.min(1.0, (now - openedAt) / (double) FADE_MS);
-        hovered = card.contains(mouseX, mouseY) ? null : starAt(mouseX, mouseY);
+
+        int listLeft = classesList.layout(width);
+        int countersTop = counters.layout(width, height, snap.unlockPoints(), snap.activePoints());
+        String listHover = classesList.classAt(mouseX, mouseY);
+        glow = listHover;
+        preview = listHover != null && off.contains(listHover) ? listHover : null;
+
+        vis = new ClassVisibility(tree, off, preview, snap.unlocks(), snap.active(), snap.unlockPoints());
+        drawn = tree.withPositions(layout.positions(tree, vis, now));
+        hovered = card.contains(mouseX, mouseY) || listHover != null ? null : starAt(mouseX, mouseY);
+        updateCard(snap, now, mouseX, mouseY, listLeft, countersTop);
 
         g.fill(0, 0, width, height, SkyPalette.BG);
         double gx = view.toScreenX(PerkTree.CENTRE, width), gy = view.toScreenY(PerkTree.CENTRE, height);
         SkyDraw.disc(g, gx, gy, 260 * view.zoom(), SkyDraw.withAlpha(SkyPalette.GOLD, 0.05 * fade));
         SkyDraw.disc(g, gx, gy, 110 * view.zoom(), SkyDraw.withAlpha(SkyPalette.GOLD, 0.04 * fade));
         stars.render(g, view, width, height, now, fade);
-        LinkPainter.render(g, tree, snap, view, width, height, fade);
-        ClassTitlePainter.render(g, font, tree, view, width, height, fade);
+        LinkPainter.render(g, drawn, snap, vis, view, width, height, fade);
+        ClassTitlePainter.render(g, font, drawn, vis, glow, view, width, height, fade);
 
         boolean allNames = view.showsAllNames();
         boolean spendable = fromApple && snap.canAffordRank() && spentAt == 0;
-        for (PerkTree.Perk p : tree.perks()) {
-            boolean sel = p.id().equals(selected), hov = p.id().equals(hovered);
-            boolean name = allNames || sel || hov || (selected != null && view.zoom() >= 0.7 && linked(selected, p.id()));
-            StarPainter.render(g, font, tree, p, snap, view, width, height, hov, sel, name, spendable || (snap.canAffordRank() && fromApple),
-                unlockedAt, pointAt, now, fade);
+        String focus = cardFor != null ? cardFor : selected;
+        for (PerkTree.Perk p : drawn.perks()) {
+            if (vis.hidden(p)) continue;
+            boolean sel = p.id().equals(selected), hov = p.id().equals(hovered) || p.id().equals(cardFor);
+            boolean glows = glow != null && glow.equals(p.cls());
+            boolean name = allNames || sel || hov || glows || (focus != null && view.zoom() >= 0.7 && linked(focus, p.id()));
+            StarPainter.render(g, font, drawn, p, snap, view, width, height,
+                new StarPainter.Look(hov, sel, name, spendable, vis.ghost(p), glows), unlockedAt, pointAt, now, fade);
         }
 
         renderHeader(g, snap, now, fade);
+        classesList.render(g, off, listHover, fade);
+        counters.render(g, snap.unlockPoints(), snap.activePoints(), now, fade);
         g.flush(); // titles and names are batched: push them out so the card paints over them
-        card.render(g, snap, now);
+        card.render(g, now);
         g.flush();
         super.render(g, mouseX, mouseY, partialTick);
 
-        if (hovered != null && !hovered.equals(selected)) {
-            tree.perk(hovered).ifPresent(p -> g.renderComponentTooltip(font, card.tooltip(p, snap), mouseX, mouseY));
+        PerkCounters.Kind counter = counters.at(mouseX, mouseY);
+        if (counter != null) g.renderComponentTooltip(font, PerkCounters.tooltip(counter), mouseX, mouseY);
+    }
+
+    /**
+     * The card follows the hovered star and stays while the mouse is on the star or the card, closing
+     * {@link #CARD_LINGER_MS} after it leaves both (web {@code hoverShow}/{@code hoverHide}). With no hover
+     * it shows the keyboard selection.
+     */
+    private void updateCard(PerkMenuSnapshot snap, long now, int mx, int my, int right, int bottom) {
+        if (hovered != null) {
+            cardFor = hovered;
+            cardLeftAt = -1;
+        } else if (cardFor != null && card.contains(mx, my)) {
+            cardLeftAt = -1;
+        } else if (cardFor != null && !cardFor.equals(selected)) {
+            if (cardLeftAt < 0) cardLeftAt = now;
+            if (now - cardLeftAt > CARD_LINGER_MS) cardFor = null;
         }
+        String id = cardFor != null ? cardFor : selected;
+        PerkTree.Perk p = id == null ? null : tree.perk(id).orElse(null);
+        if (p == null || vis.hidden(p)) {
+            card.close();
+            return;
+        }
+        card.open(p, drawn, snap, view, width, height, right, bottom);
     }
 
     @Override
@@ -221,37 +304,14 @@ public final class PerksScreen extends Screen {
         int x = 8, y = (SkyView.HEADER - font.lineHeight) / 2 + 1;
         g.drawString(font, title, x, y, (SkyPalette.GOLD & 0xFFFFFF) | alpha, true);
         x += font.width(title) + 16;
-        boolean flash = now - balanceFlashAt < 500;
-        int balanceColour = (flash ? SkyPalette.GOLD : SkyPalette.FG) & 0xFFFFFF | alpha;
         if (fromApple && snap.canAffordRank() && spentAt == 0) {
             boolean none = snap.unlocked().isEmpty();
             Component line = none ? Component.translatable("gui.dungeontrain.perks.unlock_first")
                 : Component.translatable("gui.dungeontrain.perks.point_to_spend", snap.activePoints());
             double pulse = 0.75 + 0.25 * Math.sin(now / 600.0);
             g.drawString(font, line, x, y, (SkyPalette.GOLD & 0xFFFFFF) | ((int) (pulse * fade * 255) << 24), true);
-        } else {
-            drawStar(g, x + 3, y + 4, 3.5, (SkyPalette.GOLD & 0xFFFFFF) | alpha);
-            x += 10;
-            Component unlock = Component.translatable("gui.dungeontrain.perks.unlock_points", snap.unlockPoints());
-            g.drawString(font, unlock, x, y, balanceColour, true);
-            x += font.width(unlock) + 14;
-            if (snap.activePoints() > 0 || !snap.active().isEmpty()) {
-                SkyDraw.disc(g, x + 3, y + 4, 3.0, (0xA07CFF & 0xFFFFFF) | alpha);
-                x += 10;
-                g.drawString(font, Component.translatable("gui.dungeontrain.perks.points", snap.activePoints()), x, y, balanceColour, true);
-            }
         }
         g.drawString(font, "x", width - 8 - font.width("x"), y, (SkyPalette.MUTED & 0xFFFFFF) | alpha, false);
-    }
-
-    /** A five-point star for the unlock-point icon. */
-    private static void drawStar(GuiGraphics g, double cx, double cy, double r, int colour) {
-        for (int i = 0; i < 5; i++) {
-            double a0 = -Math.PI / 2 + i * Math.PI * 2 / 5, a1 = a0 + Math.PI / 5;
-            SkyDraw.line(g, cx + Math.cos(a0) * r, cy + Math.sin(a0) * r, cx + Math.cos(a1) * r * 0.45, cy + Math.sin(a1) * r * 0.45, 1.2, colour, colour);
-            SkyDraw.line(g, cx + Math.cos(a1) * r * 0.45, cy + Math.sin(a1) * r * 0.45, cx + Math.cos(a1 + Math.PI / 5) * r, cy + Math.sin(a1 + Math.PI / 5) * r, 1.2, colour, colour);
-        }
-        SkyDraw.disc(g, cx, cy, r * 0.45, colour);
     }
 
     private boolean linked(String a, String b) {
@@ -259,11 +319,13 @@ public final class PerksScreen extends Screen {
         return false;
     }
 
+    /** The drawn, visible star under the mouse, or null. */
     private String starAt(double mx, double my) {
-        if (my < SkyView.HEADER) return null;
+        if (my < SkyView.HEADER || vis == null) return null;
         String best = null;
         double bestD = Double.MAX_VALUE;
-        for (PerkTree.Perk p : tree.perks()) {
+        for (PerkTree.Perk p : drawn.perks()) {
+            if (vis.hidden(p)) continue;
             double dx = view.toScreenX(p.x(), width) - mx, dy = view.toScreenY(p.y(), height) - my;
             double d = Math.hypot(dx, dy);
             if (d <= SkyPalette.hitRadius(p, view.zoom()) && d < bestD) {
@@ -283,7 +345,7 @@ public final class PerksScreen extends Screen {
             onClose();
             return true;
         }
-        if (card.contains(mx, my)) return true;
+        if (card.contains(mx, my) || classesList.classAt(mx, my) != null || counters.at(mx, my) != null) return true;
         if (button == 0 || button == 2) {
             dragging = true;
             dragMoved = 0;
@@ -296,15 +358,23 @@ public final class PerksScreen extends Screen {
         if (super.mouseReleased(mx, my, button)) return true;
         boolean wasDrag = dragging && dragMoved > 3;
         dragging = false;
-        if (button != 0 || wasDrag || card.contains(mx, my) || my < SkyView.HEADER) return true;
+        if (button != 0 || wasDrag || my < SkyView.HEADER) return true;
+        String cls = classesList.classAt(mx, my);
+        if (cls != null) {
+            setOff(off.contains(cls) ? without(off, cls) : with(off, cls));
+            play(SoundEvents.UI_BUTTON_CLICK.value(), 0.3F, 1.0F);
+            return true;
+        }
+        if (card.contains(mx, my) || counters.at(mx, my) != null) return true;
         String id = starAt(mx, my);
         long now = Util.getMillis();
         if (id != null) {
-            select(id);
+            selected = id;
+            tree.perk(id).ifPresent(this::act);
         } else {
             if (now - lastSkyClickAt < DOUBLE_CLICK_MS) view = SkyView.fit(width, height);
             lastSkyClickAt = now;
-            if (selected != null) select(null);
+            selected = null;
         }
         return true;
     }
@@ -314,7 +384,6 @@ public final class PerksScreen extends Screen {
         if (!dragging) return super.mouseDragged(mx, my, button, dx, dy);
         dragMoved += Math.abs(dx) + Math.abs(dy);
         view = view.panned(dx, dy, width, height);
-        reopenCard();
         return true;
     }
 
@@ -322,7 +391,6 @@ public final class PerksScreen extends Screen {
     public boolean mouseScrolled(double mx, double my, double scrollX, double scrollY) {
         if (scrollY == 0) return false;
         view = view.zoomedAt(scrollY > 0 ? SkyView.ZOOM_STEP : 1 / SkyView.ZOOM_STEP, mx, my, width, height);
-        reopenCard();
         return true;
     }
 
@@ -344,15 +412,16 @@ public final class PerksScreen extends Screen {
             case GLFW.GLFW_KEY_HOME -> {
                 view = SkyView.fit(width, height);
                 selected = PerkTree.ROOT;
-                reopenCard();
+                cardFor = null;
                 return true;
             }
             case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER, GLFW.GLFW_KEY_SPACE -> {
-                if (cardButton != null && cardButton.active) cardButton.onPress();
+                if (selected != null) tree.perk(selected).ifPresent(this::act);
                 return true;
             }
             case GLFW.GLFW_KEY_BACKSPACE -> {
-                if (selected != null) { selected = null; reopenCard(); }
+                selected = null;
+                cardFor = null;
                 return true;
             }
             case GLFW.GLFW_KEY_EQUAL, GLFW.GLFW_KEY_KP_ADD -> { zoomKey(SkyView.ZOOM_STEP); return true; }
@@ -362,10 +431,13 @@ public final class PerksScreen extends Screen {
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
+    private PerkTree.Perk drawnPerk(String id) {
+        return drawn.perk(id).orElse(drawn.root());
+    }
+
     private void zoomKey(double factor) {
-        PerkTree.Perk p = tree.perk(selected == null ? PerkTree.ROOT : selected).orElse(tree.root());
+        PerkTree.Perk p = drawnPerk(selected == null ? PerkTree.ROOT : selected);
         view = view.zoomedAt(factor, view.toScreenX(p.x(), width), view.toScreenY(p.y(), height), width, height);
-        reopenCard();
     }
 
     private void arrow(int keyCode) {
@@ -373,30 +445,29 @@ public final class PerksScreen extends Screen {
         double ay = keyCode == GLFW.GLFW_KEY_DOWN ? 1 : keyCode == GLFW.GLFW_KEY_UP ? -1 : 0;
         if (selected == null) {
             view = view.panned(-ax * 40, -ay * 40, width, height);
-            reopenCard();
             return;
         }
-        PerkTree.Perk from = tree.perk(selected).orElse(null);
+        PerkTree.Perk from = drawn.perk(selected).orElse(null);
         if (from == null) return;
         String best = pick(from, ax, ay, true);
         if (best == null) best = pick(from, ax, ay, false);
         if (best != null) {
             selected = best;
-            PerkTree.Perk p = tree.perk(best).orElseThrow();
+            cardFor = null;
+            PerkTree.Perk p = drawnPerk(best);
             if (!onScreen(p)) view = view.centredOn(p.x(), p.y(), width, height);
-            reopenCard();
         }
     }
 
-    /** The linked (or, failing that, nearby) star whose direction best matches the arrow. */
+    /** The linked (or, failing that, nearby) visible star whose direction best matches the arrow. */
     private String pick(PerkTree.Perk from, double ax, double ay, boolean linkedOnly) {
         String best = null;
         double bestScore = 0.3;
         List<PerkTree.Perk> candidates = linkedOnly
-            ? tree.linksOf(from.id()).stream().map(l -> tree.perk(l.other(from.id())).orElse(null)).filter(p -> p != null).toList()
-            : tree.perks();
+            ? drawn.linksOf(from.id()).stream().map(l -> drawn.perk(l.other(from.id())).orElse(null)).filter(p -> p != null).toList()
+            : drawn.perks();
         for (PerkTree.Perk p : candidates) {
-            if (p.id().equals(from.id())) continue;
+            if (p.id().equals(from.id()) || (vis != null && vis.hidden(p))) continue;
             double dx = p.x() - from.x(), dy = p.y() - from.y(), d = Math.hypot(dx, dy);
             if (d == 0 || (!linkedOnly && d > 160)) continue;
             double cos = (dx * ax + dy * ay) / d;
@@ -409,8 +480,10 @@ public final class PerksScreen extends Screen {
         return best;
     }
 
+    /** Tab: the next class on the circle (shown classes, or hidden ones with a drawn perk). */
     private void hopClass(int dir) {
-        List<PerkTree.PerkClass> classes = tree.classes().stream().filter(c -> !tree.perksOf(c.id()).isEmpty()).toList();
+        List<PerkTree.PerkClass> classes = ClassVisibility.circleOrder(tree).stream()
+            .filter(c -> vis == null || drawn.perksOf(c.id()).stream().anyMatch(p -> !vis.hidden(p))).toList();
         if (classes.isEmpty()) return;
         int idx = -1;
         if (selected != null) {
@@ -419,10 +492,10 @@ public final class PerksScreen extends Screen {
         }
         int next = ((idx + dir) % classes.size() + classes.size()) % classes.size();
         PerkTree.PerkClass c = classes.get(next);
-        PerkTree.Perk p = tree.firstPerkOf(c.id()).orElse(tree.perksOf(c.id()).get(0));
+        PerkTree.Perk p = drawn.perksOf(c.id()).stream().filter(q -> vis == null || !vis.hidden(q)).findFirst().orElseThrow();
         selected = p.id();
+        cardFor = null;
         view = view.centredOn(p.x(), p.y(), width, height);
-        reopenCard();
     }
 
     private boolean onScreen(PerkTree.Perk p) {

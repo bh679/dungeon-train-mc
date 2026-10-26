@@ -17654,5 +17654,127 @@
         "20"
       ]
     }
+  },
+  "gui.dungeontrain.perks.ap.one": {
+    "1": {
+      "label": "how many Advancement Points (one)",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.ap.other": {
+    "1": {
+      "label": "how many Advancement Points",
+      "examples": [
+        "0",
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.card.locked": {
+    "1": {
+      "label": "the perk's tier",
+      "examples": [
+        "1",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "a number of Advancement Points, already worded (\"1 Advancement Point\", \"5 Advancement Points\")",
+      "examples": [
+        "1 Advancement Point",
+        "3 Advancement Points"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.card.you_hold": {
+    "1": {
+      "label": "Advancement Points the player holds",
+      "examples": [
+        "0",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.card.points": {
+    "1": {
+      "label": "points in the perk now",
+      "examples": [
+        "0",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the most points it can hold (its unlock level)",
+      "examples": [
+        "1",
+        "10"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.card.next_cost": {
+    "1": {
+      "label": "Active Points the next point costs",
+      "examples": [
+        "1",
+        "4"
+      ]
+    },
+    "2": {
+      "label": "Active Points the player holds",
+      "examples": [
+        "0",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.card.click_add": {
+    "1": {
+      "label": "Active Points the next point costs",
+      "examples": [
+        "1",
+        "4"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.card.gate": {
+    "1": {
+      "label": "a number of Advancement Points, already worded (\"1 Advancement Point\", \"5 Advancement Points\")",
+      "examples": [
+        "40 Advancement Points"
+      ]
+    },
+    "2": {
+      "label": "the current most points a perk can hold",
+      "examples": [
+        "10",
+        "20"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.card.again_cost": {
+    "1": {
+      "label": "a number of Advancement Points, already worded (\"1 Advancement Point\", \"5 Advancement Points\")",
+      "examples": [
+        "2 Advancement Points"
+      ]
+    },
+    "2": {
+      "label": "Advancement Points the player holds",
+      "examples": [
+        "0",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.card.click_again": {
+    "1": {
+      "label": "a number of Advancement Points, already worded (\"1 Advancement Point\", \"5 Advancement Points\")",
+      "examples": [
+        "1 Advancement Point",
+        "3 Advancement Points"
+      ]
+    }
   }
 }

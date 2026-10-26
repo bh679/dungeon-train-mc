@@ -46,11 +46,21 @@ public record PerkMenuSnapshot(Map<String, Integer> unlocks, Map<String, Integer
         return PerkTree.ROOT.equals(id) || unlocks.containsKey(id);
     }
 
-    /** Active points the next rank costs (rises with every rank bought this life). */
-    public int nextRankCost() {
+    /** Ranks bought this life across every perk (the web's {@code ranksHeld}). */
+    public int ranksBought() {
         int sum = 0;
         for (int r : active.values()) sum += Math.max(0, r);
-        return games.brennan.dungeontrain.perks.PerkRankCost.nextCost(sum);
+        return sum;
+    }
+
+    /** Active points the next rank costs (rises with every rank bought this life). */
+    public int nextRankCost() {
+        return games.brennan.dungeontrain.perks.PerkRankCost.nextCost(ranksBought());
+    }
+
+    /** Advancement Points spent on unlocks across the tree. */
+    public int unlockSpent(PerkTree tree) {
+        return tree.unlockCostOf(unlocks);
     }
 
     /** Enough active points for the next rank. */

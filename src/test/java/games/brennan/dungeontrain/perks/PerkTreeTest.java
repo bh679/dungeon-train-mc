@@ -55,13 +55,13 @@ class PerkTreeTest {
     }
 
     @Test
-    @DisplayName("a two-way chord opens either end; a one-way chord only its target")
+    @DisplayName("dashed lines (chords) open nothing, whichever way they point")
     void chords() {
         PerkTree t = tree();
-        assertTrue(t.reachable("haste", Set.of("armour")::contains));
-        assertTrue(t.reachable("armour", Set.of("haste")::contains));
-        assertTrue(t.reachable("totem", Set.of("haste")::contains), "haste -> totem is the chord's direction");
-        assertFalse(t.reachable("haste", Set.of("totem")::contains), "totem does not open haste back");
+        assertFalse(t.reachable("haste", Set.of("armour")::contains));
+        assertFalse(t.reachable("armour", Set.of("haste")::contains));
+        assertFalse(t.reachable("totem", Set.of("haste")::contains));
+        assertTrue(t.reachable("haste", Set.of("speed")::contains), "a solid line still opens it");
     }
 
     @Test
