@@ -5,6 +5,7 @@ import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.editor.RolledItemsFingerprint;
 import games.brennan.dungeontrain.mixin.ChunkMapChunksInvoker;
 import games.brennan.dungeontrain.player.DifficultyPartition;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
@@ -73,6 +74,9 @@ public final class DifficultyWorldLootEvents {
     /** A chunk that loaded with another difficulty's key, cleared on the next tick. */
     private record StaleChunk(ServerLevel level, ChunkPos pos) {}
 
+    /** Rolled containers the current sweep found untouched and left; reported in the swap's log line. */
+    private static int keptRolled;
+
     private static final Queue<StaleChunk> STALE_CHUNKS = new ConcurrentLinkedQueue<>();
 
     private DifficultyWorldLootEvents() {}
@@ -80,6 +84,7 @@ public final class DifficultyWorldLootEvents {
     /** The swap itself. Called once from {@link DifficultyIsolationEvents}, on the server thread. */
     static void onSwap(MinecraftServer server, String fromKey, String toKey) {
         long startNanos = System.nanoTime();
+        keptRolled = 0;
         int containers = 0;
         int entities = 0;
         Set<UUID> sweptShips = new HashSet<>();
@@ -99,9 +104,9 @@ public final class DifficultyWorldLootEvents {
                 if (ship != null && !sweptShips.contains(ship.subLevelId())) HELD_AT_SWAP.add(ship.subLevelId());
             }
         }
-        LOGGER.info("[DungeonTrain] difficulty loot clear {} → {}: emptied {} container(s), {} entit(y/ies); "
+        LOGGER.info("[DungeonTrain] difficulty loot clear {} → {}: emptied {} container(s) (kept {} untouched), {} entit(y/ies); "
                 + "{} held carriage(s) wait for their return; took {} ms",
-            fromKey, toKey, containers, entities, HELD_AT_SWAP.size(), (System.nanoTime() - startNanos) / 1_000_000);
+            fromKey, toKey, containers, keptRolled, entities, HELD_AT_SWAP.size(), (System.nanoTime() - startNanos) / 1_000_000);
     }
 
     @SubscribeEvent
@@ -188,7 +193,11 @@ public final class DifficultyWorldLootEvents {
         int emptied = 0;
         for (BlockPos pos : new ArrayList<>(chunk.getBlockEntitiesPos())) {
             BlockEntity be = chunk.getBlockEntity(pos, LevelChunk.EntityCreationType.IMMEDIATE);
-            if (be == null || !DifficultyLootClear.clearBlockEntity(level, be)) continue;
+            if (be == null) continue;
+            if (!DifficultyLootClear.clearBlockEntity(level, be)) {
+                if (be.getPersistentData().contains(RolledItemsFingerprint.NBT_KEY)) keptRolled++;
+                continue;
+            }
             emptied++;
             LOGGER.debug("[DungeonTrain] difficulty loot clear: emptied {} at {} in {}",
                 be.getBlockState().getBlock(), pos, level.dimension().location());
@@ -217,7 +226,11 @@ public final class DifficultyWorldLootEvents {
         }
         int cleared = 0;
         for (Entity entity : handled) {
-            if (DifficultyLootClear.clearEntity(entity)) cleared++;
+            if (DifficultyLootClear.clearEntity(entity)) {
+                cleared++;
+                LOGGER.debug("[DungeonTrain] difficulty loot clear: emptied {} at {} in {}",
+                    entity.getType(), entity.blockPosition(), level.dimension().location());
+            }
             if (!entity.isRemoved()) DifficultyLootClear.tagEntity(entity, key);
         }
         return cleared;
