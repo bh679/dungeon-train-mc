@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.perks.effects.trader.RestockVillagerRequestPacket;
+import games.brennan.dungeontrain.perks.effects.trader.RestockVillagerStatusPacket;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -28,7 +30,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "163";
+    public static final String PROTOCOL_VERSION = "164";
 
     private DungeonTrainNet() {}
 
@@ -195,6 +197,15 @@ public final class DungeonTrainNet {
         // Book vote: client casts 👍/👎 from the virtual vote page (buttons or Y/N hotkeys); server
         // re-validates the held stack's identity, stamps dt_book_vote (offline burn color), and
         // consent-gates the relay POST.
+        // Restock Villager perk: server tells the trade menu how many restocks are left on this
+        // villager; the menu's Restock button asks for one (server re-validates).
+        registrar.playToClient(RestockVillagerStatusPacket.TYPE,
+            RestockVillagerStatusPacket.STREAM_CODEC,
+            RestockVillagerStatusPacket::handle);
+        registrar.playToServer(RestockVillagerRequestPacket.TYPE,
+            RestockVillagerRequestPacket.STREAM_CODEC,
+            RestockVillagerRequestPacket::handle);
+
         registrar.playToServer(BookVotePacket.TYPE, BookVotePacket.STREAM_CODEC, BookVotePacket::handle);
 
         // Book report: client asks for a community book to be pulled from the shared pool (the ⚠
@@ -262,6 +273,7 @@ public final class DungeonTrainNet {
         // advancement. The client decides whether to show it (gated on its local
         // "opened advancements" flag) and renders it with the live keybind.
         registrar.playToClient(AdvancementsHintPacket.TYPE, AdvancementsHintPacket.STREAM_CODEC, AdvancementsHintPacket::handle);
+        registrar.playToClient(OpenPerksMenuPacket.TYPE, OpenPerksMenuPacket.STREAM_CODEC, OpenPerksMenuPacket::handle);
         registrar.playToClient(LifeDisqualifiedPacket.TYPE, LifeDisqualifiedPacket.STREAM_CODEC, LifeDisqualifiedPacket::handle);
         registrar.playToClient(ChallengesLockedPacket.TYPE, ChallengesLockedPacket.STREAM_CODEC, ChallengesLockedPacket::handle);
         registrar.playToClient(EarnedPhotoPacket.TYPE, EarnedPhotoPacket.STREAM_CODEC, EarnedPhotoPacket::handle);
@@ -416,6 +428,11 @@ public final class DungeonTrainNet {
         // Hand-held Vista TV: left-click switches the set on or off (compat/vista/TvItems).
         registrar.playToServer(TvHeldTogglePacket.TYPE, TvHeldTogglePacket.STREAM_CODEC, TvHeldTogglePacket::handle);
         registrar.playToServer(TvStreamChoicePacket.TYPE, TvStreamChoicePacket.STREAM_CODEC, TvStreamChoicePacket::handle);
+        // Perks menu: unlock a perk / put a point in; the server judges and re-syncs (client/perks/PerksScreen).
+        registrar.playToServer(PerkUnlockPacket.TYPE, PerkUnlockPacket.STREAM_CODEC, PerkUnlockPacket::handle);
+        registrar.playToServer(PerkSpendPacket.TYPE, PerkSpendPacket.STREAM_CODEC, PerkSpendPacket::handle);
+        registrar.playToClient(PerkBalancesPacket.TYPE, PerkBalancesPacket.STREAM_CODEC, PerkBalancesPacket::handle);
+        registrar.playToClient(PerkRefusedPacket.TYPE, PerkRefusedPacket.STREAM_CODEC, PerkRefusedPacket::handle);
         // /dt flyspeed: the local player's creative sprint-fly multiplier. See player/SprintFlyBoost.
         registrar.playToClient(SprintFlyBoostPacket.TYPE, SprintFlyBoostPacket.STREAM_CODEC, SprintFlyBoostPacket::handle);
         // How many hidden advancements sit between two linked ones, for the "…" on the advancements
@@ -423,6 +440,7 @@ public final class DungeonTrainNet {
         registrar.playToClient(AdvancementGapsPacket.TYPE, AdvancementGapsPacket.STREAM_CODEC, AdvancementGapsPacket::handle);
         // Train wind: profile + seed + start X, so the client computes the wind itself. See wind/WindServer.
         registrar.playToClient(WindProfilePacket.TYPE, WindProfilePacket.STREAM_CODEC, WindProfilePacket::handle);
+        registrar.playToClient(PerkStatePacket.TYPE, PerkStatePacket.STREAM_CODEC, PerkStatePacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

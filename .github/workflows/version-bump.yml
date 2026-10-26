@@ -11,15 +11,46 @@ name: Auto-bump mod_version after Gate 3 merge
 # instead. The `gh pr` flow needs `pull-requests: write` on top of
 # `contents: write`.
 
+#
+# Integration branches (2026-10-25, Brennan's rule): a long-lived branch such as dev/perks
+# collects several PRs before reaching main. Every PR merged into it bumps MINOR on that branch
+# (`bump-integration-branch` below), and when the branch reaches main, main goes up once per PR
+# it carried, nested PRs included, one commit each (`scripts/version/merge_bump.py`). A normal
+# PR (no PRs merged into its head) takes the original single-bump path unchanged.
+
 on:
   push:
     branches: [main]
+  pull_request:
+    types: [closed]
   workflow_dispatch:        # Manual re-fire after fixing a malformed gradle.properties
+    inputs:
+      dry_run_pr:
+        description: "Print the bumps PR <n> would get on main, change nothing (blank = normal re-fire)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
+  pull-requests: read
+
+# No `concurrency:` group on purpose: a group keeps only ONE pending run and cancels the rest,
+# which would silently drop a bump when three merges land close together. Races instead fail
+# loudly on main (non-fast-forward push, re-fire by hand) and retry on integration branches.
 
 jobs:
+  dry-run:
+    if: github.event_name == 'workflow_dispatch' && inputs.dry_run_pr != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Plan the bumps
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/version/merge_bump.py plan --pr "${{ inputs.dry_run_pr }}" --from-version "$(grep '^mod_version=' gradle.properties | cut -d= -f2)"
+
   bump:
     runs-on: ubuntu-latest
     # Defense in depth: don't fire on our own commit. GITHUB_TOKEN-authored
@@ -32,7 +63,7 @@ jobs:
     # cascade commits also include `[skip ci]` so under normal Actions
     # behaviour they don't trigger here, but this guard is a fallback if
     # `[skip ci]` honoring is ever disabled at the repo level.
-    if: "${{ !startsWith(github.event.head_commit.message, 'chore(version): bump to') && !startsWith(github.event.head_commit.message, 'chore(auto):') }}"
+    if: "${{ github.event_name != 'pull_request' && inputs.dry_run_pr == '' && !startsWith(github.event.head_commit.message, 'chore(version): bump to') && !startsWith(github.event.head_commit.message, 'chore(auto):') }}"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -70,8 +101,28 @@ jobs:
 
           echo "✓ gradle.properties valid (mod_version=$CURRENT)"
 
+      # A squash that carried other PRs (an integration branch such as dev/perks) gets one
+      # MINOR per carried PR, counted from main's version BEFORE the squash, one commit each,
+      # with each unit's changelog entries re-stamped to the version it got. Anything else
+      # prints mode=legacy, changes nothing, and falls through to the single bump below.
+      - name: Integration merge (one MINOR per carried PR)
+        id: integration
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          OUT=$(python3 scripts/version/merge_bump.py main --sha "$GITHUB_SHA")
+          echo "$OUT"
+          if echo "$OUT" | grep -q '^mode=integration'; then
+            git push
+            echo "done=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Compute and apply MINOR bump
         id: bump
+        if: steps.integration.outputs.done != 'true'
         run: |
           set -euo pipefail
           CURRENT=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
@@ -97,12 +148,12 @@ jobs:
       # is included even though it isn't committed yet. A failure here must not block the bump —
       # a stale index degrades to a slightly low count, a missing bump breaks the release chain.
       - name: Refresh the version-history index
-        if: steps.bump.outputs.skipped != 'true'
+        if: steps.integration.outputs.done != 'true' && steps.bump.outputs.skipped != 'true'
         continue-on-error: true
         run: python3 scripts/version-history/collect.py
 
       - name: Commit and push
-        if: steps.bump.outputs.skipped != 'true'
+        if: steps.integration.outputs.done != 'true' && steps.bump.outputs.skipped != 'true'
         env:
           NEW_VERSION: ${{ steps.bump.outputs.version }}
         run: |
@@ -115,3 +166,36 @@ jobs:
           # so [skip ci] doesn't cause us to miss a real merge.
           git commit -m "chore(version): bump to $NEW_VERSION (MINOR — Gate 3 merge) [skip ci]"
           git push
+
+  # A PR squash-merged into any branch other than main (an integration branch such as dev/perks,
+  # or a stacked feature branch) bumps MINOR on that branch, once per PR it carried. The numbers
+  # start above main's current version so they never reuse one main already shipped; they are
+  # provisional, and main recomputes from scratch when the branch lands (job above).
+  # Note: pull_request workflows run from the base branch, so the base must carry this file.
+  bump-integration-branch:
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.base.ref != 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          fetch-depth: 0
+
+      - name: Bump the integration branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch -q origin main
+          python3 scripts/version/merge_bump.py branch --pr "$PR" --branch "$BASE" --main-ref origin/main
+          # Someone may push to the branch while this runs; replay the bumps on top and retry.
+          for attempt in 1 2 3; do
+            git push origin "HEAD:$BASE" && exit 0
+            git pull --rebase -q origin "$BASE"
+          done
+          echo "::error::could not push the bump to $BASE after 3 attempts"
+          exit 1
