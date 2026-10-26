@@ -28,6 +28,7 @@ final class PerkDetailsBar {
 
     static final int HEIGHT = 46;
     private static final int PAD = 8, LINE = 10, BUTTON_W = 60, BUTTON_H = 16, GAP = 4, STRIPE = 3;
+    private static final int MIN_LEFT = 90, DOT_W = 8;
     /** Deep indigo, a shade off the sky so the bar reads as its own surface. */
     private static final int BG = 0xF20D0B2A;
     private static final int EDGE = 0xFF3A3F6A;
@@ -131,9 +132,22 @@ final class PerkDetailsBar {
         return null;
     }
 
+    /** Width of the left column: wide enough for every line in it, never narrower than {@link #MIN_LEFT}. */
+    private int leftColumn(String... lines) {
+        int w = MIN_LEFT;
+        for (String l : lines) w = Math.max(w, font.width(l) + 12);
+        return w;
+    }
+
+    /** A thin vertical rule between the bar's sections. */
+    private void divider(GuiGraphics g, int x, int a) {
+        g.fill(x, top + PAD - 2, x + 1, top + HEIGHT - PAD + 2, ((int) (a * 0.8) << 24) | (EDGE & 0xFFFFFF));
+    }
+
     /**
-     * A class hovered in the Classes list: its name, how many perks it has and how many are unlocked,
-     * then every perk by name, unlocked ones bright with their points, locked ones muted.
+     * A class hovered in the Classes list. Left column: its name and "N perks, M unlocked". Right of a
+     * divider: every perk in a grid of columns, filled top to bottom, each with a dot lit in the class
+     * colour once unlocked (and its points), muted while locked. What doesn't fit ends in "+N".
      */
     private void renderClass(GuiGraphics g, PerkMenuSnapshot snap, int a) {
         PerkTree.PerkClass c = tree.perkClass(classShown).orElse(null);
@@ -141,30 +155,37 @@ final class PerkDetailsBar {
         List<PerkTree.Perk> perks = tree.perksOf(c.id());
         g.fill(0, top + 1, STRIPE, top + HEIGHT, (a << 24) | (c.colour() & 0xFFFFFF));
         int x = PAD + STRIPE, y = top + PAD;
-        g.drawString(font, c.name(), x, y, (a << 24) | (c.colour() & 0xFFFFFF), true);
         long unlocked = perks.stream().filter(p -> snap.unlockLevel(p.id()) > 0).count();
-        g.drawString(font, Component.translatable(KEY + "class_count", perks.size(), unlocked), x, y + LINE + 2,
-            ((int) (a * 0.8) << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
-        int mx = x + Math.max(90, font.width(c.name()) + 12), right = width - PAD;
-        int cx = mx, cy = y, max = (HEIGHT - PAD * 2) / LINE;
-        int row = 0;
-        String sep = "  \u00b7  ";
+        Component count = Component.translatable(KEY + "class_count", perks.size(), unlocked);
+        g.drawString(font, c.name(), x, y, (a << 24) | (c.colour() & 0xFFFFFF), true);
+        g.drawString(font, count, x, y + LINE + 2, ((int) (a * 0.8) << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
+        int split = x + leftColumn(c.name(), count.getString());
+        divider(g, split, a);
+
+        int rows = Math.max(1, (HEIGHT - PAD * 2 + 2) / LINE);
+        int gx = split + 10, right = width - PAD;
+        String[] labels = new String[perks.size()];
+        int colW = 0;
         for (int i = 0; i < perks.size(); i++) {
             PerkTree.Perk p = perks.get(i);
             int level = snap.unlockLevel(p.id());
-            String label = text.name(p) + (level > 0 ? " " + snap.points(p.id()) + "/" + level : "");
-            String piece = (i == 0 ? "" : sep) + label;
-            int w = font.width(piece);
-            if (cx + w > right && cx > mx) {
-                if (++row >= max) break;
-                cx = mx;
-                cy += LINE;
-                piece = label;
-                w = font.width(piece);
+            labels[i] = text.name(p) + (level > 0 ? "  " + snap.points(p.id()) + "/" + level : "");
+            colW = Math.max(colW, font.width(labels[i]));
+        }
+        colW += DOT_W + 12;
+        int cols = Math.max(1, (right - gx + 12) / colW);
+        int fits = cols * rows;
+        for (int i = 0; i < perks.size(); i++) {
+            int col = i / rows, row = i % rows;
+            int cx = gx + col * colW, cy = y + row * LINE;
+            if (i == fits - 1 && perks.size() > fits) {
+                g.drawString(font, "+" + (perks.size() - i), cx, cy, (a << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
+                break;
             }
-            int colour = level > 0 ? SkyPalette.FG : SkyPalette.MUTED;
-            g.drawString(font, piece, cx, cy, (a << 24) | (colour & 0xFFFFFF), false);
-            cx += w;
+            boolean on = snap.unlockLevel(perks.get(i).id()) > 0;
+            int dot = on ? c.colour() : SkyPalette.MUTED;
+            SkyDraw.disc(g, cx + 2.5, cy + 3.5, 2.0, SkyDraw.withAlpha(dot, (on ? 1.0 : 0.6) * a / 255.0));
+            g.drawString(font, labels[i], cx + DOT_W, cy, (a << 24) | ((on ? SkyPalette.FG : SkyPalette.MUTED) & 0xFFFFFF), false);
         }
     }
 
@@ -202,7 +223,9 @@ final class PerkDetailsBar {
             g.drawString(font, Component.translatable("gui.dungeontrain.perks.bar.tier", p.tier()), x, y + LINE * 2 + 2,
                 ((int) (a * 0.8) << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
         }
-        int leftW = Math.max(90, font.width(name) + 12);
+        String tierLine = p.isRoot() ? "" : Component.translatable("gui.dungeontrain.perks.bar.tier", p.tier()).getString();
+        int leftW = leftColumn(name, cls.toUpperCase(Locale.ROOT), tierLine);
+        divider(g, x + leftW, a);
 
         // right: where the perk stands, right-aligned above the buttons; it may reach left past them
         int rightW = BUTTON_W * 2 + GAP;
@@ -222,7 +245,8 @@ final class PerkDetailsBar {
         int rx = right - Math.max(rightW, statusW);
 
         // middle: description, then the per-point line, wrapped into the space between
-        int mx = x + leftW, mw = rx - 12 - mx;
+        divider(g, rx - 8, a);
+        int mx = x + leftW + 10, mw = rx - 16 - mx;
         if (mw > 40) {
             int ty = y;
             int max = (HEIGHT - PAD * 2) / LINE;
