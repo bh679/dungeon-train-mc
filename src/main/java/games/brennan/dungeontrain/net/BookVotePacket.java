@@ -6,6 +6,9 @@ import games.brennan.dungeontrain.discord.BookVoteReporter;
 import games.brennan.dungeontrain.event.NetworkConsentMirror;
 import games.brennan.dungeontrain.narrative.BookCopy;
 import games.brennan.dungeontrain.narrative.BookVoteTag;
+import games.brennan.dungeontrain.perks.Perks;
+import games.brennan.dungeontrain.perks.effects.archivist.ArchivistPerks;
+import games.brennan.dungeontrain.perks.effects.archivist.VoteWeight;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -84,7 +87,8 @@ public record BookVotePacket(String bookType, String bookId, int vote, int varia
             // Per-player, fail-closed: the vote only leaves the machine with the same network consent
             // that gates every other reporter. No consent → local stamp only, no relay POST.
             if (!NetworkConsentMirror.isGranted(player)) return;
-            BookVoteReporter.report(player.getUUID(), player.getName().getString(), packet);
+            int weight = VoteWeight.weight(Perks.rank(player, ArchivistPerks.VOTE_WEIGHT));
+            BookVoteReporter.report(player.getUUID(), player.getName().getString(), packet, weight);
         });
     }
 

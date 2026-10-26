@@ -9,12 +9,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 final class UnlockPointLedgerTest {
 
     @Test
-    @DisplayName("frame sets the base, hidden adds one")
+    @DisplayName("frame sets the base; only a hidden Secret Menu advancement adds one; capstones are 10")
     void weights() {
-        assertEquals(1, UnlockPointLedger.weight(AdvancementType.TASK, false));
-        assertEquals(2, UnlockPointLedger.weight(AdvancementType.GOAL, false));
-        assertEquals(3, UnlockPointLedger.weight(AdvancementType.CHALLENGE, false));
-        assertEquals(4, UnlockPointLedger.weight(AdvancementType.CHALLENGE, true));
+        assertEquals(1, UnlockPointLedger.weight(AdvancementType.TASK, false, false));
+        assertEquals(2, UnlockPointLedger.weight(AdvancementType.GOAL, false, false));
+        assertEquals(3, UnlockPointLedger.weight(AdvancementType.CHALLENGE, false, false));
+        assertEquals(4, UnlockPointLedger.weight(AdvancementType.CHALLENGE, true, false));
+        assertEquals(10, UnlockPointLedger.weight(AdvancementType.CHALLENGE, false, true));
+        assertEquals(10, UnlockPointLedger.weight(AdvancementType.TASK, true, true));
     }
 
     @Test

@@ -9,7 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
  * <ul>
  *   <li><b>Unlock points</b> come from advancements and keep forever. Derived, see
  *       {@link UnlockPointLedger}; the earned total is cached in {@code PERK_UNLOCK_EARNED}.</li>
- *   <li><b>Active points</b> come from eating Cosmic Debris and last one life:
+ *   <li><b>Active points</b> come from eating cosmic apples and last one life:
  *       {@code PERK_ACTIVE_POINTS} is not {@code copyOnDeath}, and respawn clears it explicitly.</li>
  * </ul>
  */

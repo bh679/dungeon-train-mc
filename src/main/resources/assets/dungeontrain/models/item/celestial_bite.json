@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "dungeontrain:item/cosmic_debris"
+    "layer0": "dungeontrain:item/celestial_bite"
   }
 }

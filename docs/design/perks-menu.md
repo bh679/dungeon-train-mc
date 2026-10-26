@@ -7,7 +7,7 @@ the web reference at https://brennan.games/dungeontrain/perks/ (dp-relay
 `public/dungeontrain/perks/perks.js`, `perks.css`, `index.html`), and the constellation editor
 (`docs/design/perks-constellation.html` on the perk-list branch). The foundation code (PerkState synced to
 the client, `Perks.rank`) is being built in the sibling session "perks-tier1"; the earning flow
-(advancements give unlock points, cosmic debris gives active points) in "perks-earning". Where this doc
+(advancements give unlock points, cosmic apples give active points) in "perks-earning". Where this doc
 leans on either, the assumption is marked **(assumes)**.
 
 Mockups: `perks-menu-mockup/` (SVGs drawn by `generate.py` at GUI-scale-2 proportions).
@@ -39,7 +39,7 @@ below are lifted straight from `perks.js` and should be constants in the Screen,
 
 Class colours (editor seed, the published tree carries its own): Archivist `#c9a7e0`, Lover `#f08aa8`,
 Warlock (TBD in editor), Knight `#d9534f`, Tank `#e8956a`, Crafter `#c7b08a`, Speedster `#7fb4f0`,
-Builder `#b0b8c8`, Hoarder `#8fc97a`, Trader `#e0c070`. Costs by tier: 1, 5, 10 unlock points.
+Builder `#b0b8c8`, Hoarder `#8fc97a`, Trader `#e0c070`. Costs by tier: 1, 2, 3 unlock points.
 
 ---
 
@@ -68,7 +68,7 @@ screen and 1 GUI px on a 720p scale-3 laptop. That is why the stars do not shrin
   `placeCard()` does. It is not a docked side panel: on 426 x 240 a docked panel would take a third of the
   width. Nothing is selected when the menu opens, so the whole sky is visible.
 - Default view: the whole sky fitted (zoom from the table), centred on the Engine. Opened from a cosmic
-  debris (section 5.3), the default view is the same, not zoomed to anything.
+  apple (section 5.3), the default view is the same, not zoomed to anything.
 
 ### 2.3 Zoom and star sizes
 
@@ -186,7 +186,7 @@ State line and buttons by state:
 | Locked, not reachable | `Locked. Needs <neighbour name>.` (the nearest reachable neighbour on a requirement link, else `Not reachable yet.`) | none |
 | Locked, reachable, enough unlock points | `Locked. <N> unlock points.` | `Unlock` |
 | Locked, reachable, not enough | `Locked. <N> of <cost> unlock points.` | `Unlock` disabled |
-| Unlocked, 0 points | `Unlocked. 0 points.` plus `What a point does: <effect>` | `Add point` (disabled when the active balance is 0, tooltip `Eat cosmic debris.`) |
+| Unlocked, 0 points | `Unlocked. 0 points.` plus `What a point does: <effect>` | `Add point` (disabled when the active balance is 0, tooltip `Eat a cosmic apple.`) |
 | Active N | `Active. <N> points.` | `Add point` as above; disabled at 10 with tooltip `Full.` |
 | The Engine | `The start.` | none |
 | Free Play | the normal state line plus `Free Play. Perks are off.` | all disabled |
@@ -216,8 +216,8 @@ Perks        ✦ 3 unlock points        ● 1 point
 
 - **Unlock points** come from advancements, persist across deaths, and buy perks. Icon: a star shape in
   gold (a 5-point polygon from the same fan drawing), label `<N> unlock points`.
-- **Active points** come from eating cosmic debris, are per life, and go into unlocked perks one at a
-  time. Icon: the cosmic debris item itself (`renderItem`), label `<N> points`. Hidden entirely when the
+- **Active points** come from eating cosmic apples, are per life, and go into unlocked perks one at a
+  time. Icon: the Cosmic Apple item itself (`renderItem`), label `<N> points`. Hidden entirely when the
   balance is 0 and nothing is active, so a new player sees one number, not two.
 - Both are read from PerkState; the menu never computes them.
 
@@ -227,9 +227,9 @@ The PerkState sync packet can arrive while the Screen is up (an advancement toas
 Screen re-reads state every frame from the client-side PerkState holder, so balances and stars update
 live; a balance that goes up flashes gold for 0.5 s.
 
-### 5.3 Opened by eating a cosmic debris
+### 5.3 Opened by eating a cosmic apple
 
-Eating a debris adds one active point and opens the menu **(assumes** the earning session opens the
+Eating a cosmic apple adds its active points (1, 5 or 10) and opens the menu **(assumes** the earning session opens the
 Screen from the client on the eat packet or the item's `finishUsingItem`). In that case:
 
 - The header shows `1 point to spend` in gold in place of the plain balance, pulsing slowly.
@@ -238,7 +238,7 @@ Screen from the client on the eat packet or the item's `finishUsingItem`). In th
 - If no perk is unlocked yet, the header says `1 point. Unlock a perk first.` and the point stays in the
   balance; nothing is lost. The point sits there until spent or until death resets it.
 - After the point is spent, the header returns to the normal balances and the menu stays open. Eating a
-  second debris while the menu is open just bumps the number.
+  second apple while the menu is open just bumps the number.
 - Esc closes with the point still banked. No nag.
 
 ---
@@ -276,7 +276,7 @@ through the existing HUD overlay path (`client/HudText` scale), in the class col
 
 - Unlock: `Health unlocked`
 - Add point: `Health 3` (the new count, no maximum)
-- Debris eaten with the menu not open (player disabled auto-open, section 8): `1 point to spend`
+- An apple eaten with the menu not open (player disabled auto-open, section 8): `1 point to spend`
 
 No toast in the top-right: the advancement toasts already live there and this is not an advancement.
 
@@ -292,7 +292,7 @@ No toast in the top-right: the advancement toasts already live there and this is
   `net/BookBoostPacket`).
 - **Free Play** (`FreePlayQuery` via `RunIntegrity.isCheated`): the tree is viewable, nothing can be bought
   or pointed, the card says `Free Play. Perks are off.`, the header balances are hidden, and eating a
-  debris does not open the menu or add a point **(assumes** the foundation keeps perk effects inert in
+  cosmic apple does not open the menu or add a point **(assumes** the foundation keeps perk effects inert in
   Free Play, which is the fair-play line: advancement points never accrue there either). The server
   refuses unlock and spend packets from a Free Play player silently.
 - Dedicated server: the tree JSON is bundled in the mod jar on both sides (section 8.4), so no tree sync
@@ -315,7 +315,7 @@ package games.brennan.dungeontrain.client.perks;
 public final class PerksScreen extends Screen {
     private final Screen parent;          // pause menu or null
     private final PerkTree tree;          // PerkTrees.client(): parsed data/dungeontrain/perks/tree.json
-    private final boolean fromDebris;     // header mode, section 5.3
+    private final boolean fromApple;     // header mode, section 5.3
     private SkyView view;                 // immutable record: zoom, panX, panY (editor units at screen centre)
     private @Nullable String selected;    // perk id
     private @Nullable String hovered;
@@ -358,7 +358,7 @@ Supporting pieces, each its own small file (coding-style rule: many small files)
 | Field | Used for |
 |---|---|
 | `unlockPoints()` int | header balance, Unlock enabled |
-| `activePoints()` int | header balance, Add point enabled, debris mode |
+| `activePoints()` int | header balance, Add point enabled, apple mode |
 | `unlocked()` Set of perk id | star state, reachability |
 | `active()` Map perk id to int | ring slots, state line |
 | `freePlay()` boolean (or read from the existing client-side cheated flag) | section 7 |
@@ -429,8 +429,8 @@ Rate: one action per click; the server ignores a second packet for the same id i
 `gui.dungeontrain.perks.title` Perks, `.unlock_points` %s unlock points, `.points` %s points,
 `.point_to_spend` 1 point to spend, `.unlock_first` 1 point. Unlock a perk first., `.locked` Locked.,
 `.needs` Needs %s., `.not_reachable` Not reachable yet., `.unlocked` Unlocked., `.active` Active.,
-`.n_points` %s points., `.unlock` Unlock, `.add_point` Add point, `.full` Full., `.eat_debris` Eat
-cosmic debris., `.free_play` Free Play. Perks are off., `.links` Links: %s, `.the_start` The start.,
+`.n_points` %s points., `.unlock` Unlock, `.add_point` Add point, `.full` Full., `.eat_apple` Eat
+a cosmic apple., `.free_play` Free Play. Perks are off., `.links` Links: %s, `.the_start` The start.,
 `.hud_unlocked` %s unlocked, `key.dungeontrain.perks` Open perks. No long dashes anywhere.
 
 ### 8.6 Order of work for the engineer
@@ -441,7 +441,7 @@ cosmic debris., `.free_play` Free Play. Perks are off., `.links` Links: %s, `.th
    "Dev command improvement" in notes).
 3. Card, keyboard, hotkey, pause button.
 4. Packets and server checks against the foundation API; refusal line.
-5. Animations, sounds, HUD line. 6. Debris-open mode with the earning session. 7. Lang + screenshots at
+5. Animations, sounds, HUD line. 6. Apple-open mode with the earning session. 7. Lang + screenshots at
    the four budgets in section 2.1 for Gate 2.
 
 ---

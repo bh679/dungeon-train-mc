@@ -471,7 +471,7 @@ public final class LiveFeedClient {
     /** A plain claim: no takeover choice or ticket yet. */
     public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
                                                   LiveClaimInfo info, @Nullable Life life) {
-        return claim(uuid, name, eyeId, info, life, false, null, null);
+        return claim(uuid, name, eyeId, info, life, false, null, null, 0L, 0L);
     }
 
     /**
@@ -479,12 +479,22 @@ public final class LiveFeedClient {
      * the claim reads with {@link LiveTakeoverClient#parseBlocked}); {@code takeover} is the player's
      * "Take over" past the holder's protected minutes, {@code ticket} an approved takeover vote's pass,
      * {@code takeoverTicket} a won dead streamer's takeover ({@link #acceptTakeover}). Either ticket carries
-     * the claim past the relay's tenure check, once.
+     * the claim past the relay's tenure check, once. {@code takeoverExtraMs} / {@code holderVoteExtraMs}
+     * are the Live Eye Safe Duration perk's extra protected minutes, added by the relay to its two windows.
      */
     public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
                                                   LiveClaimInfo info, @Nullable Life life,
                                                   boolean takeover, @Nullable String ticket,
-                                                  @Nullable String takeoverTicket) {
+                                                  @Nullable String takeoverTicket,
+                                                  long takeoverExtraMs, long holderVoteExtraMs) {
+        return post("/live/claim", claimBody(uuid, name, eyeId, info, life, takeover, ticket, takeoverTicket,
+            takeoverExtraMs, holderVoteExtraMs));
+    }
+
+    /** The claim's request body. Package-private for tests. */
+    static JsonObject claimBody(UUID uuid, String name, String eyeId, LiveClaimInfo info, @Nullable Life life,
+                                boolean takeover, @Nullable String ticket, @Nullable String takeoverTicket,
+                                long takeoverExtraMs, long holderVoteExtraMs) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
@@ -506,7 +516,10 @@ public final class LiveFeedClient {
             body.addProperty("versionDot", info.versionDot());
             body.addProperty("chat", info.chat());
         }
-        return post("/live/claim", body);
+        // Live Eye Safe Duration perk: extra protected time, half per window. An older relay ignores them.
+        if (takeoverExtraMs > 0) body.addProperty("takeoverExtraMs", takeoverExtraMs);
+        if (holderVoteExtraMs > 0) body.addProperty("holderVoteExtraMs", holderVoteExtraMs);
+        return body;
     }
 
     @Nullable
@@ -657,19 +670,43 @@ public final class LiveFeedClient {
 
     /** Post one in-game line into the stream's Discord chat as this player. */
     public static CompletableFuture<Result> chatSend(String base, UUID uuid, String name, String content) {
-        return chatSend(base, uuid, name, content, null);
+        return chatSend(base, uuid, name, content, 1, null);
     }
 
     /** {@link #chatSend(String, UUID, String, String)} into one stream's room ({@link #chat(String, long, String)}). */
     public static CompletableFuture<Result> chatSend(String base, UUID uuid, String name, String content, @Nullable String room) {
-        return post(base, "/live/chat/send", chatSendBody(uuid, name, content, room));
+        return chatSend(base, uuid, name, content, 1, room);
+    }
+
+    /**
+     * {@link #chatSend(String, UUID, String, String)} with the Vote Weight perk's {@code weight}, sent
+     * only above 1: the relay counts a takeover vote line that many times (an older relay once).
+     */
+    public static CompletableFuture<Result> chatSend(String base, UUID uuid, String name, String content, int weight) {
+        return chatSend(base, uuid, name, content, weight, null);
+    }
+
+    /** Both: a weighted line into one stream's room. */
+    public static CompletableFuture<Result> chatSend(String base, UUID uuid, String name, String content, int weight,
+                                                     @Nullable String room) {
+        return post(base, "/live/chat/send", chatSendBody(uuid, name, content, weight, room));
     }
 
     static JsonObject chatSendBody(UUID uuid, String name, String content, @Nullable String room) {
+        return chatSendBody(uuid, name, content, 1, room);
+    }
+
+    /** The chat line's request body. Package-private for tests. */
+    static JsonObject chatSendBody(UUID uuid, String name, String content, int weight) {
+        return chatSendBody(uuid, name, content, weight, null);
+    }
+
+    static JsonObject chatSendBody(UUID uuid, String name, String content, int weight, @Nullable String room) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
         body.addProperty("content", content);
+        if (weight > 1) body.addProperty("weight", weight);
         return withRoom(body, room);
     }
 

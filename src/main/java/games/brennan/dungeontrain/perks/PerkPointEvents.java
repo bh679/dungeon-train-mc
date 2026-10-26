@@ -2,6 +2,10 @@ package games.brennan.dungeontrain.perks;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.AdvancementProfiles;
+import games.brennan.dungeontrain.advancement.BandAdvancements;
+import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
+import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
+import games.brennan.dungeontrain.advancement.TabCompleteAdvancements;
 import games.brennan.dungeontrain.advancement.TabGateways;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.ChatFormatting;
@@ -85,15 +89,28 @@ public final class PerkPointEvents {
             DisplayInfo display = holder.value().display().orElse(null);
             if (display == null || !counts(holder.id())) continue;
             if (!player.getAdvancements().getOrStartProgress(holder).isDone()) continue;
-            total += UnlockPointLedger.weight(display.getType(), display.isHidden());
+            ResourceLocation id = holder.id();
+            boolean secretMenuHidden = display.isHidden()
+                && id.getPath().startsWith(BandAdvancements.SECRETE_MENU_PREFIX);
+            total += UnlockPointLedger.weight(display.getType(), secretMenuHidden, isCapstone(id));
         }
         return total;
     }
 
-    /** Editor authoring and tab-head copies are not achievements. */
+    /** Everything Burrito, It's Not That Simple and every tab-complete advancement: 10 points each. */
+    static boolean isCapstone(ResourceLocation id) {
+        return id.equals(CompletionistAdvancement.ID) || id.equals(StartAgainAdvancement.ID)
+            || TabCompleteAdvancements.isTabComplete(id);
+    }
+
+    /**
+     * Only Dungeon Train's own tabs earn points: vanilla and other mods' advancements count for
+     * nothing, and nor do editor authoring and tab-head copies.
+     */
     static boolean counts(ResourceLocation id) {
+        if (!DungeonTrain.MOD_ID.equals(id.getNamespace())) return false;
         String path = id.getPath();
-        if (path.startsWith("recipes/") || path.startsWith("editor/")) return false;
+        if (path.startsWith("editor/")) return false;
         return !TabGateways.isLinked(id);
     }
 }

@@ -5,7 +5,6 @@
   "fillMin": 1,
   "fillMax": 10,
   "entries": [
-    { "id": "dungeontrain:cosmic_debris", "count": 1, "weight": 2, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:stone_sword", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:iron_sword", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:golden_sword", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },

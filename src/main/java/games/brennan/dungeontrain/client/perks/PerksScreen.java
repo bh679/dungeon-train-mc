@@ -39,7 +39,7 @@ public final class PerksScreen extends Screen {
     private static final double DOUBLE_CLICK_MS = 300;
 
     private final PerkTree tree;
-    private final boolean fromDebris;
+    private final boolean fromApple;
     private final StarField stars;
     private final PerkCard card;
     private final Map<String, Long> unlockedAt = new HashMap<>();
@@ -58,20 +58,20 @@ public final class PerksScreen extends Screen {
     private long spentAt;
     private boolean firstSnapshot = true;
 
-    private PerksScreen(boolean fromDebris) {
+    private PerksScreen(boolean fromApple) {
         super(Component.translatable("gui.dungeontrain.perks.title"));
         this.tree = PerkTreeLoader.get();
-        this.fromDebris = fromDebris;
+        this.fromApple = fromApple;
         this.stars = new StarField(openedAt);
         this.card = new PerkCard(tree, Minecraft.getInstance().font, this::sendUnlock, this::sendSpend);
     }
 
-    /** Open the menu over the game. {@code fromDebris}: a point was just eaten (header mode). */
-    public static void open(boolean fromDebris) {
+    /** Open the menu over the game. {@code fromApple}: an apple was just eaten (header mode). */
+    public static void open(boolean fromApple) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
         if (mc.screen instanceof PerksScreen) return;
-        mc.setScreen(new PerksScreen(fromDebris));
+        mc.setScreen(new PerksScreen(fromApple));
         mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.AMETHYST_BLOCK_CHIME, 0.8F, 0.4F));
     }
 
@@ -192,11 +192,11 @@ public final class PerksScreen extends Screen {
         ClassTitlePainter.render(g, font, tree, view, width, height, fade);
 
         boolean allNames = view.showsAllNames();
-        boolean spendable = fromDebris && snap.activePoints() > 0 && spentAt == 0;
+        boolean spendable = fromApple && snap.canAffordRank() && spentAt == 0;
         for (PerkTree.Perk p : tree.perks()) {
             boolean sel = p.id().equals(selected), hov = p.id().equals(hovered);
             boolean name = allNames || sel || hov || (selected != null && view.zoom() >= 0.7 && linked(selected, p.id()));
-            StarPainter.render(g, font, tree, p, snap, view, width, height, hov, sel, name, spendable || (snap.activePoints() > 0 && fromDebris),
+            StarPainter.render(g, font, tree, p, snap, view, width, height, hov, sel, name, spendable || (snap.canAffordRank() && fromApple),
                 unlockedAt, pointAt, now, fade);
         }
 
@@ -223,7 +223,7 @@ public final class PerksScreen extends Screen {
         x += font.width(title) + 16;
         boolean flash = now - balanceFlashAt < 500;
         int balanceColour = (flash ? SkyPalette.GOLD : SkyPalette.FG) & 0xFFFFFF | alpha;
-        if (fromDebris && snap.activePoints() > 0 && spentAt == 0) {
+        if (fromApple && snap.canAffordRank() && spentAt == 0) {
             boolean none = snap.unlocked().isEmpty();
             Component line = none ? Component.translatable("gui.dungeontrain.perks.unlock_first")
                 : Component.translatable("gui.dungeontrain.perks.point_to_spend", snap.activePoints());

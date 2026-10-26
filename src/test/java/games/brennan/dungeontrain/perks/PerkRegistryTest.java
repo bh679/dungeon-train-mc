@@ -31,16 +31,16 @@ final class PerkRegistryTest {
     }
 
     @Test
-    @DisplayName("ids must be kebab-case, tiers 1..3, cost 1/5/10")
+    @DisplayName("ids must be kebab-case, tiers 1..3, cost 1/2/3")
     void defValidation() {
         assertThrows(IllegalArgumentException.class, () -> new PerkDef("Health", PerkClass.TANK, 1));
         assertThrows(IllegalArgumentException.class, () -> new PerkDef("see_trade", PerkClass.TRADER, 1));
         assertThrows(IllegalArgumentException.class, () -> new PerkDef("x", PerkClass.TANK, 0));
         assertThrows(IllegalArgumentException.class, () -> new PerkDef("x", PerkClass.TANK, 4));
         assertEquals(1, PerkDef.unlockCostFor(1));
-        assertEquals(5, PerkDef.unlockCostFor(2));
-        assertEquals(10, PerkDef.unlockCostFor(3));
-        assertEquals(10, new PerkDef("x", PerkClass.TANK, 3).unlockCost());
+        assertEquals(2, PerkDef.unlockCostFor(2));
+        assertEquals(3, PerkDef.unlockCostFor(3));
+        assertEquals(3, new PerkDef("x", PerkClass.TANK, 3).unlockCost());
         PerkDef d = new PerkDef("x", PerkClass.TANK, 1, 5);
         assertEquals(5, d.clampRank(99));
         assertEquals(0, d.clampRank(-1));

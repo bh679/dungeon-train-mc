@@ -24,7 +24,7 @@ final class StarPainter {
      * @param unlockedAt perk id to the ms it was seen unlocked (fill animation)
      * @param pointAt    perk id to the ms its last point was seen (ring sweep)
      * @param showName   draw the name under the star
-     * @param spendable  debris mode: mark stars that can take a point
+     * @param spendable  apple mode: mark stars that can take a point
      */
     static void render(GuiGraphics g, Font font, PerkTree tree, PerkTree.Perk p, PerkMenuSnapshot snap, SkyView view,
                        int w, int h, boolean hovered, boolean selected, boolean showName, boolean spendable,
@@ -58,7 +58,7 @@ final class StarPainter {
         SkyDraw.ring(g, x, y, halo, 1.0, SkyDraw.withAlpha(haloColour, haloAlpha * opacity));
         if (selected) SkyDraw.ring(g, x, y, halo + 4, 1.0, SkyDraw.withAlpha(SkyPalette.GOLD, 0.5 * fade));
         if (spendable && (state == PerkMenuSnapshot.StarState.UNLOCKED || state == PerkMenuSnapshot.StarState.ACTIVE) && !root
-            && snap.points(p.id()) < SkyPalette.RING_SLOTS) {
+            && snap.points(p.id()) < snap.unlockLevel(p.id())) {
             SkyDraw.ring(g, x, y, halo + 3, 1.0, SkyDraw.withAlpha(SkyPalette.GOLD, (0.25 + 0.3 * breathe) * fade));
         }
 

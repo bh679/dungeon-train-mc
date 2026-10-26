@@ -4,7 +4,6 @@
   "category": "loot",
   "fillMin": 1,
   "entries": [
-    { "id": "dungeontrain:cosmic_debris", "count": 1, "weight": 1, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:sand", "count": 4, "weight": 11, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:string", "count": 6, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:rotten_flesh", "count": 6, "weight": 9, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },

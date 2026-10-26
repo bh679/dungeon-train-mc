@@ -6,7 +6,7 @@ import java.util.function.ToIntFunction;
 
 /**
  * Seam for the unlock points a player has spent. The perk foundation ({@code PerkState}) owns which
- * perks are unlocked; it installs {@link #setSpentFunction} with "sum of the tier costs (1/5/10) of
+ * perks are unlocked; it installs {@link #setSpentFunction} with "sum of the tier costs (1/2/3) of
  * the unlocked perks". Until it does, nothing is spent.
  */
 public final class PerkSpend {
