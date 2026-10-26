@@ -146,9 +146,20 @@
     "EntitySelectorSelfPermissionMixin",
     "PlayerEnderChestAccessor",
     "PlayerEnderChestContainerAccessor",
-    "PlayerEnderChestContainerSizeMixin"
+    "PlayerEnderChestContainerSizeMixin",
+    "EnchantmentMenuCrafterMixin",
+    "AnvilMenuCrafterMixin",
+    "EnchantmentHelperCrafterMixin",
+    "AbstractFurnaceCookingTimeMixin",
+    "BaseContainerBlockEntityCookingOwnerMixin",
+    "CampfireCookingTimeMixin",
+    "LivingEntityEnchantOwnerMixin",
+    "ItemStackEnchantOwnerMixin",
+    "BlockDropsEnchantOwnerMixin"
   ],
   "client": [
+    "client.EnchantmentScreenCrafterCostMixin",
+    "client.AnvilScreenCrafterCapMixin",
     "client.IntegratedServerPublishGameModeMixin",
     "client.LevelRendererWeatherSlantMixin",
     "client.ParticleEngineWindDriftMixin",
