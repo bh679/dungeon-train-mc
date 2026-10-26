@@ -31028,7 +31028,8 @@
       "released_at": null,
       "major": true,
       "notable": true,
-      "description": "Live chat now speaks your language.\n\n**Live Eye Chat Translations** is a new Community Reward. When one person gives it, Live chat is translated for everyone for a month: messages from the stream, Discord, Twitch and the website show in your own game language, right under the original.\n\nChoose how translations show in Options: under the original, translation only, or translation first.\n\nFind it on the Community Rewards shelf at $90 AUD for a month."
+      "description": "Live chat now speaks your language.\n\n**Live Eye Chat Translations** is a new Community Reward. When one person gives it, Live chat is translated for everyone for a month: messages from the stream, Discord, Twitch and the website show in your own game language, right under the original.\n\nChoose how translations show in Options: under the original, translation only, or translation first.\n\nFind it on the Community Rewards shelf at $90 AUD for a month.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/live-translations.jpg"
     }
   ]
 }
