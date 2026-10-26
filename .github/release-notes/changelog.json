@@ -31049,6 +31049,23 @@
       "released_in": null,
       "released_at": null,
       "pr": 2344
+    },
+    {
+      "id": "empty-long-carriage-fix",
+      "version": "0.1544.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Empty carriage fix",
+      "summary": "A rare long carriage could turn up completely empty. It won't anymore.",
+      "highlights": [],
+      "pr": 2345,
+      "date": "2026-10-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
