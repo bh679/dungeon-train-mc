@@ -42,22 +42,30 @@ public final class CommunityRewards {
         VOICE_ON_STREAM(LiveRewards.VOICE_ON_STREAM, Group.STREAMS, 160),
         HD_STREAMS(LiveRewards.HD_STREAMS, Group.EXTRA, 90),
         REPLAYS_KEPT(LiveRewards.REPLAYS_KEPT, Group.EXTRA, 80),
-        LIVE_TRANSLATION(LiveRewards.LIVE_TRANSLATION, Group.EXTRA, 90);
+        LIVE_TRANSLATION(LiveRewards.LIVE_TRANSLATION, Group.EXTRA, 90, 3);
 
         private final String id;
         private final Group group;
         private final int costAud;
+        private final int months;
 
         Reward(String id, Group group, int costAud) {
+            this(id, group, costAud, 1);
+        }
+
+        Reward(String id, Group group, int costAud, int months) {
             this.id = id;
             this.group = group;
             this.costAud = costAud;
+            this.months = months;
         }
 
         public String id() { return id; }
         public Group group() { return group; }
         /** Whole AUD: the figure converted into the player's chosen currency. Must match {@link #amountKey()}. */
         public int costAud() { return costAud; }
+        /** How many {@link #MONTH_MS} months one gift keeps it on; the relay's rewards.js must agree. */
+        public int months() { return months; }
 
         public String nameKey() { return KEY + id + ".name"; }
         /** One line: "Reduce delay, from 30s to 5s. For EVERYONE, 1 month." */
@@ -94,13 +102,13 @@ public final class CommunityRewards {
 
     /**
      * When the next gift to {@code reward} would start: now when it is off, else after its current
-     * month and every month already queued behind it. Mirrors the relay's stacking
-     * ({@code from = max(now, until)}, each gift adding 30 days).
+     * term and every term already queued behind it. Mirrors the relay's stacking
+     * ({@code from = max(now, until)}, each gift adding 30 days per {@link Reward#months()}).
      */
     static long nextFreeMs(LiveRewards state, Reward reward, long now) {
         LiveRewards.Reward live = state.find(reward.id());
         if (live == null || live.activeUntilMs() <= now) return now;
-        return live.activeUntilMs() + MONTH_MS * live.queuedBy().size();
+        return live.activeUntilMs() + MONTH_MS * reward.months() * live.queuedBy().size();
     }
 
     /**

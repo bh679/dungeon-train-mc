@@ -70,6 +70,8 @@ class CommunityRewardsTest {
         assertEquals("reward_replays_kept", CommunityRewards.Reward.REPLAYS_KEPT.analyticsTarget());
         assertEquals(CommunityRewards.Reward.LIVE_TRANSLATION, CommunityRewards.Reward.byTarget("reward_live_translation"));
         assertEquals(90, CommunityRewards.Reward.LIVE_TRANSLATION.costAud());
+        assertEquals(3, CommunityRewards.Reward.LIVE_TRANSLATION.months());
+        assertEquals(1, CommunityRewards.Reward.QUICKER_STREAMS.months());
         assertEquals(CommunityRewards.Reward.HD_STREAMS, CommunityRewards.Reward.byTarget("reward_hd_streams"));
         assertNull(CommunityRewards.Reward.byTarget("donate_big_fan"));
     }
@@ -96,5 +98,12 @@ class CommunityRewardsTest {
         assertEquals(CommunityRewards.Reward.QUICKER_STREAMS, CommunityRewards.featured(LiveRewards.NONE, NOW, onlyQuicker));
         // None open yet: Brennan's whole order, as before.
         assertEquals(CommunityRewards.Reward.VOICE_ON_STREAM, CommunityRewards.featured(quickerOn, NOW, r -> false));
+    }
+
+    @Test
+    void aThreeMonthRewardQueuesThreeMonthsPerGiftBehindIt() {
+        LiveRewards state = new LiveRewards(List.of(on(LiveRewards.LIVE_TRANSLATION, 10 * DAY, "Moth", "Ash", "Wren")));
+        assertEquals(NOW + 10 * DAY + 2 * 3 * CommunityRewards.MONTH_MS,
+                CommunityRewards.nextFreeMs(state, CommunityRewards.Reward.LIVE_TRANSLATION, NOW));
     }
 }

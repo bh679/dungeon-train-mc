@@ -1616,7 +1616,7 @@
   "gui.dungeontrain.rewards.replays_kept.amount": "$80 AUD",
   "gui.dungeontrain.rewards.replays_kept.amount_short": "$80",
   "gui.dungeontrain.rewards.live_translation.name": "Traduceri live",
-  "gui.dungeontrain.rewards.live_translation.line": "Chat live tradus în limba fiecărui spectator timp de 1 lună",
+  "gui.dungeontrain.rewards.live_translation.line": "Chat live tradus în limba fiecărui spectator timp de 3 luni",
   "gui.dungeontrain.rewards.live_translation.amount": "90 $ AUD",
   "gui.dungeontrain.rewards.live_translation.amount_short": "90 $",
   "gui.dungeontrain.rewards.status.on_by": "PORNIT până la %s · ținut pornit de %s",

@@ -1616,7 +1616,7 @@
   "gui.dungeontrain.rewards.replays_kept.amount": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "efd57aed9a74b949"},
   "gui.dungeontrain.rewards.replays_kept.amount_short": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "c35e030d43dd5689"},
   "gui.dungeontrain.rewards.live_translation.name": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "5fa0ca881ec647b7"},
-  "gui.dungeontrain.rewards.live_translation.line": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "73dd84f59a67b517"},
+  "gui.dungeontrain.rewards.live_translation.line": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "b1b904e97f6f8380"},
   "gui.dungeontrain.rewards.live_translation.amount": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "25205a7e695d6259"},
   "gui.dungeontrain.rewards.live_translation.amount_short": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "d8f5ddc6809a7100"},
   "gui.dungeontrain.rewards.status.on_by": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "1be1b5fdad1ab589"},

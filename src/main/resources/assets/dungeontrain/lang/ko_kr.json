@@ -1344,7 +1344,7 @@
   "gui.dungeontrain.rewards.replays_kept.amount": "$80 AUD",
   "gui.dungeontrain.rewards.replays_kept.amount_short": "$80",
   "gui.dungeontrain.rewards.live_translation.name": "라이브 번역",
-  "gui.dungeontrain.rewards.live_translation.line": "라이브 채팅을 각 시청자의 언어로 번역, 1개월",
+  "gui.dungeontrain.rewards.live_translation.line": "라이브 채팅을 각 시청자의 언어로 번역, 3개월",
   "gui.dungeontrain.rewards.live_translation.amount": "$90 AUD",
   "gui.dungeontrain.rewards.live_translation.amount_short": "$90",
   "gui.dungeontrain.rewards.status.on_by": "%s까지 켜짐 · %s 님이 유지 중",
