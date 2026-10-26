@@ -93,6 +93,18 @@ public final class DifficultyLootClear {
         return removed;
     }
 
+    /**
+     * Fingerprint {@code be}'s contents as placed when a carriage or room has just been generated, so
+     * template-baked items count as untouched. Skips TVs and pending loot tables (asking those whether
+     * they are empty would roll them).
+     */
+    public static void fingerprintPlaced(ServerLevel level, BlockEntity be) {
+        if (TvBlocks.isTelevision(be.getBlockState())) return;
+        if (!(be instanceof Container container)) return;
+        if (be instanceof RandomizableContainer randomizable && randomizable.getLootTable() != null) return;
+        RolledItemsFingerprint.stampIfAbsent(be, container, level.registryAccess());
+    }
+
     // ---- entities --------------------------------------------------------------------------------
 
     /** Whether a swap has anything to take from {@code entity}. */

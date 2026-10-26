@@ -56,6 +56,19 @@ public final class RolledItemsFingerprint {
         return out;
     }
 
+    /**
+     * Fingerprint what {@code container} holds right now, when it holds something and has no fingerprint
+     * yet: contents baked into a template (never rolled) count as generated once their carriage or room is
+     * placed. True when a fingerprint was written.
+     */
+    public static boolean stampIfAbsent(BlockEntity be, Container container, HolderLookup.Provider registries) {
+        CompoundTag data = be.getPersistentData();
+        if (data.contains(NBT_KEY, Tag.TAG_INT) || container.isEmpty()) return false;
+        data.putInt(NBT_KEY, hashOf(container, registries));
+        be.setChanged();
+        return true;
+    }
+
     /** True when {@code be} was rolled and {@code container} (its own inventory) still holds exactly that roll. */
     public static boolean isPristine(BlockEntity be, Container container, HolderLookup.Provider registries) {
         CompoundTag data = be.getPersistentData();

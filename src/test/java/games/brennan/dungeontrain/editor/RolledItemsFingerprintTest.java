@@ -112,6 +112,33 @@ final class RolledItemsFingerprintTest {
     }
 
     @Test
+    @DisplayName("template-baked contents are fingerprinted as placed, once, and never over a roll")
+    void bakedContentsStampedAsPlaced() {
+        ChestBlockEntity baked = new ChestBlockEntity(CELL, Blocks.CHEST.defaultBlockState());
+        baked.setItem(4, new ItemStack(Items.HONEYCOMB, 2));
+        assertTrue(RolledItemsFingerprint.stampIfAbsent(baked, baked, registries));
+        assertTrue(RolledItemsFingerprint.isPristine(baked, baked, registries));
+        assertFalse(RolledItemsFingerprint.stampIfAbsent(baked, baked, registries), "already stamped");
+        baked.removeItem(4, 1);
+        assertFalse(RolledItemsFingerprint.isPristine(baked, baked, registries));
+
+        ChestBlockEntity rolled = rolledChest();
+        rolled.removeItem(firstFilled(rolled), 1);
+        assertFalse(RolledItemsFingerprint.stampIfAbsent(rolled, rolled, registries), "a roll's own fingerprint stands");
+        assertFalse(RolledItemsFingerprint.isPristine(rolled, rolled, registries));
+
+        ChestBlockEntity empty = new ChestBlockEntity(CELL, Blocks.CHEST.defaultBlockState());
+        assertFalse(RolledItemsFingerprint.stampIfAbsent(empty, empty, registries), "nothing to fingerprint");
+    }
+
+    private static int firstFilled(ChestBlockEntity chest) {
+        for (int slot = 0; slot < chest.getContainerSize(); slot++) {
+            if (!chest.getItem(slot).isEmpty()) return slot;
+        }
+        return -1;
+    }
+
+    @Test
     @DisplayName("saved NBT agrees with the live check, so snapshots judge the same way")
     void savedNbtMatchesLive() {
         ChestBlockEntity chest = rolledChest();

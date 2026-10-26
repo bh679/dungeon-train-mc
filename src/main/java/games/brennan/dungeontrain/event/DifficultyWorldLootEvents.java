@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.world.DifficultyLootClear;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
@@ -172,6 +173,43 @@ public final class DifficultyWorldLootEvents {
     public static void onServerStopped(ServerStoppedEvent event) {
         HELD_AT_SWAP.clear();
         STALE_CHUNKS.clear();
+    }
+
+    // ---- fingerprinting what generation placed ----
+
+    /**
+     * A carriage group has just been generated: fingerprint every stocked container in its plot that
+     * the loot roll didn't (template-baked contents, a shared build's contents), so an untouched one
+     * survives the next swap. Called by {@code TrainAssembler.spawnGroup}.
+     */
+    public static void fingerprintCarriage(ServerLevel level, ManagedShip ship) {
+        if (!(ship instanceof SableManagedShip sable) || sable.subLevel() == null) return;
+        for (PlotChunkHolder holder : sable.subLevel().getPlot().getLoadedChunks()) {
+            LevelChunk chunk = holder.getChunk();
+            if (chunk == null) continue;
+            for (BlockEntity be : chunk.getBlockEntities().values()) DifficultyLootClear.fingerprintPlaced(level, be);
+        }
+    }
+
+    /**
+     * As {@link #fingerprintCarriage}, for a portal room just stamped from its template at
+     * {@code origin} spanning {@code size}. Never for a room laid back from memory: what a player left
+     * in it must not be taken as generated.
+     */
+    public static void fingerprintRoom(ServerLevel level, BlockPos origin, Vec3i size) {
+        BlockPos max = origin.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1);
+        for (int cx = origin.getX() >> 4; cx <= max.getX() >> 4; cx++) {
+            for (int cz = origin.getZ() >> 4; cz <= max.getZ() >> 4; cz++) {
+                LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
+                if (chunk == null) continue;
+                for (BlockEntity be : chunk.getBlockEntities().values()) {
+                    BlockPos p = be.getBlockPos();
+                    if (p.getX() < origin.getX() || p.getY() < origin.getY() || p.getZ() < origin.getZ()
+                            || p.getX() > max.getX() || p.getY() > max.getY() || p.getZ() > max.getZ()) continue;
+                    DifficultyLootClear.fingerprintPlaced(level, be);
+                }
+            }
+        }
     }
 
     // ---- sweeps ----------------------------------------------------------------------------------
