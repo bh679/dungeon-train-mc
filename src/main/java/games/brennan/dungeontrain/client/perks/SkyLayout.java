@@ -29,10 +29,6 @@ final class SkyLayout {
     static final double MAX_SPREAD = 0.35;
     static final double MAX_STRETCH = 6;
     static final long MOVE_MS = 1500, MOVE_MIN_MS = 350;
-    /** A previewed class at the fully zoomed-out view takes at least this share of the circle, and spreads across it. */
-    static final double PREVIEW_SHARE = 0.4;
-    static final double PREVIEW_FILL = 0.95;
-    static final double PREVIEW_MAX_STRETCH = 40;
     private static final double TAU = Math.PI * 2;
 
     private String key;
@@ -44,18 +40,9 @@ final class SkyLayout {
 
     /** The positions to draw at {@code now}: perk id to {x, y}; perks absent keep their authored place. */
     Map<String, double[]> positions(PerkTree tree, ClassVisibility vis, long now) {
-        return positions(tree, vis, now, false);
-    }
-
-    /**
-     * @param boostPreview the view is fully zoomed out: spread a previewed class across at least
-     *                     {@link #PREVIEW_SHARE} of the circle so its perks can be read
-     */
-    Map<String, double[]> positions(PerkTree tree, ClassVisibility vis, long now, boolean boostPreview) {
-        boolean boost = boostPreview && vis.preview() != null;
-        String nextKey = keyOf(tree, vis) + (boost ? "|boost:" + vis.preview() : "");
+        String nextKey = keyOf(tree, vis);
         if (!nextKey.equals(key)) {
-            Map<String, double[]> nextTarget = nextKey.isEmpty() ? Map.of() : target(tree, vis, boost);
+            Map<String, double[]> nextTarget = nextKey.isEmpty() ? Map.of() : target(tree, vis);
             if (key == null) {
                 from = null;
             } else {
@@ -123,10 +110,6 @@ final class SkyLayout {
 
     /** The laid-out positions for the classes on the circle (web {@code shown()}). */
     static Map<String, double[]> target(PerkTree tree, ClassVisibility vis) {
-        return target(tree, vis, false);
-    }
-
-    static Map<String, double[]> target(PerkTree tree, ClassVisibility vis, boolean boost) {
         List<Group> groups = new ArrayList<>();
         for (PerkTree.PerkClass c : ClassVisibility.liveClasses(tree)) {
             if (!vis.onCircle(c.id())) continue;
@@ -140,13 +123,6 @@ final class SkyLayout {
         }
         if (groups.isEmpty()) return Collections.emptyMap();
         groups.sort((a, b) -> Double.compare(a.mid(), b.mid()));
-        String boosted = boost ? vis.preview() : null;
-        if (boosted != null) {
-            // the previewed class takes at least PREVIEW_SHARE of the circle: w / (w + rest) >= share
-            double rest = groups.stream().filter(g -> !g.id().equals(boosted)).mapToDouble(Group::weight).sum();
-            double need = rest * PREVIEW_SHARE / (1 - PREVIEW_SHARE);
-            groups.replaceAll(g -> g.id().equals(boosted) ? new Group(g.id(), g.mid(), g.half(), Math.max(g.weight(), need)) : g);
-        }
         double total = groups.stream().mapToDouble(Group::weight).sum();
         double[] size = new double[groups.size()], offset = new double[groups.size()];
         double run = 0;
@@ -157,9 +133,9 @@ final class SkyLayout {
         }
         // turn the ring so the anchors move least
         double rs = 0, rc = 0;
-        boolean anyAnchor = groups.stream().anyMatch(g -> g.weight() >= 1);
+        boolean anyAnchor = groups.stream().anyMatch(g -> g.weight() == 1);
         for (int i = 0; i < groups.size(); i++) {
-            if (anyAnchor && groups.get(i).weight() < 1) continue;
+            if (anyAnchor && groups.get(i).weight() != 1) continue;
             rs += Math.sin(groups.get(i).mid() - offset[i]);
             rc += Math.cos(groups.get(i).mid() - offset[i]);
         }
@@ -168,9 +144,7 @@ final class SkyLayout {
         for (int i = 0; i < groups.size(); i++) {
             Group g = groups.get(i);
             double centre = startAngle + offset[i];
-            boolean big = g.id().equals(boosted);
-            double spread = big ? Math.max(PREVIEW_SHARE * TAU, Math.min(PREVIEW_FILL * size[i], 0.9 * TAU)) : Math.min(FILL * size[i], MAX_SPREAD * TAU);
-            double k = g.half() > 0.01 ? Math.min(big ? PREVIEW_MAX_STRETCH : MAX_STRETCH, (spread / 2) / g.half()) : 1;
+            double k = g.half() > 0.01 ? Math.min(MAX_STRETCH, (Math.min(FILL * size[i], MAX_SPREAD * TAU) / 2) / g.half()) : 1;
             for (PerkTree.Perk p : tree.perksOf(g.id())) {
                 double r = Math.hypot(p.x() - PerkTree.CENTRE, p.y() - PerkTree.CENTRE);
                 double a = centre + wrap(angle(p) - g.mid()) * k;

@@ -64,6 +64,7 @@ public final class PerksScreen extends Screen {
     private final PerkCounters counters;
     private final PerkDetailsBar bar;
     private final SkyLayout layout = new SkyLayout();
+    private final ZoomControl zoomControl = new ZoomControl();
     private final Map<String, Long> unlockedAt = new HashMap<>();
     private final Map<String, Long> pointAt = new HashMap<>();
     private final long openedAt = Util.getMillis();
@@ -77,6 +78,7 @@ public final class PerksScreen extends Screen {
     private String selected;
     private String hovered;
     private String cardFor;
+    private int zoomHover = -1;
     private long cardLeftAt = -1;
     private PerkTree drawn;
     private ClassVisibility vis;
@@ -265,12 +267,12 @@ public final class PerksScreen extends Screen {
         int listLeft = classesList.layout(width);
         int countersTop = counters.layout(width, skyH(), snap.unlockPoints(), snap.activePoints());
         String listHover = classesList.classAt(mouseX, mouseY);
+        zoomHover = zoomControl.at(mouseX, mouseY);
         glow = listHover;
         preview = listHover != null && off.contains(listHover) ? listHover : null;
 
         vis = new ClassVisibility(tree, off, preview, snap.unlocks(), snap.active(), snap.unlockPoints());
-        boolean zoomedOut = view.zoom() <= SkyView.fitZoom(width, skyH()) + 1e-6;
-        drawn = tree.withPositions(layout.positions(tree, vis, now, zoomedOut));
+        drawn = tree.withPositions(layout.positions(tree, vis, now));
         hovered = card.contains(mouseX, mouseY) || listHover != null ? null : starAt(mouseX, mouseY);
         if (DETAILS == DetailsMode.BAR) updateBar(snap, listHover);
         else updateCard(snap, now, mouseX, mouseY, listLeft, countersTop);
@@ -304,6 +306,7 @@ public final class PerksScreen extends Screen {
         g.flush();
         super.render(g, mouseX, mouseY, partialTick);
 
+        if (zoomHover >= 0) g.renderTooltip(font, ZoomControl.tooltip(zoomHover), mouseX, mouseY);
         PerkCounters.Kind counter = counters.at(mouseX, mouseY);
         if (counter != null) g.renderComponentTooltip(font, PerkCounters.tooltip(counter), mouseX, mouseY);
     }
@@ -355,7 +358,8 @@ public final class PerksScreen extends Screen {
         int alpha = (int) (fade * 255) << 24;
         int x = 8, y = (SkyView.HEADER - font.lineHeight) / 2 + 1;
         g.drawString(font, title, x, y, (SkyPalette.GOLD & 0xFFFFFF) | alpha, true);
-        x += font.width(title) + 16;
+        x = zoomControl.layout(x + font.width(title) + 8, SkyView.HEADER / 2) + 12;
+        zoomControl.render(g, view.step(width, skyH()), zoomHover, fade);
         if (fromApple && snap.canAffordRank() && spentAt == 0) {
             boolean none = snap.unlocked().isEmpty();
             Component line = none ? Component.translatable("gui.dungeontrain.perks.unlock_first")
@@ -395,6 +399,12 @@ public final class PerksScreen extends Screen {
         if (super.mouseClicked(mx, my, button)) return true;
         if (button == 0 && mx >= width - 8 - CLOSE_W && my < SkyView.HEADER) {
             onClose();
+            return true;
+        }
+        int step = zoomControl.at(mx, my);
+        if (button == 0 && step >= 0) {
+            view = view.atStep(step, width, skyH());
+            play(SoundEvents.UI_BUTTON_CLICK.value(), 0.3F, 1.0F);
             return true;
         }
         if (DETAILS == DetailsMode.BAR && bar.contains(mx, my)) return true;

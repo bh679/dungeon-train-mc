@@ -69,6 +69,18 @@ public record SkyView(double zoom, double centreX, double centreY) {
         return new double[] {fit, (fit + MAX_ZOOM) / 2, MAX_ZOOM};
     }
 
+    /** Which of {@link #zoomSteps} the view is at (the nearest one). */
+    public int step(int screenWidth, int screenHeight) {
+        return stepIndex(zoomSteps(screenWidth, screenHeight));
+    }
+
+    /** The view at zoom step {@code i}, keeping its centre. */
+    public SkyView atStep(int i, int screenWidth, int screenHeight) {
+        double[] steps = zoomSteps(screenWidth, screenHeight);
+        double z = steps[Math.max(0, Math.min(steps.length - 1, i))];
+        return new SkyView(z, centreX, centreY).clamped(screenWidth, screenHeight);
+    }
+
     /** Index of the step nearest the current zoom. */
     private int stepIndex(double[] steps) {
         int best = 0;

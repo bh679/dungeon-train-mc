@@ -64,31 +64,53 @@ final class ClassTitlePainter {
         }
     }
 
+    /**
+     * Where a title goes: on its class's line out from the Engine, slid outward (then inward) until it
+     * clears the stars and the titles already placed. Failing that, nudged a little either side of the
+     * line. Other titles are a hard rule: if no spot clears the stars too, the first spot clear of every
+     * title wins, so titles never overlap each other.
+     */
     private static Spot place(PerkTree tree, double a, double r0, double hw, double hh, List<Spot> placed) {
-        Spot first = at(a, r0, hw, hh);
-        if (ok(tree, first, placed)) return first;
-        for (double dr = 8; dr <= 160; dr += 8) {
-            Spot s = at(a, r0 + dr, hw, hh);
-            if (ok(tree, s, placed)) return s;
+        double[] nudges = {0, 0.06, -0.06, 0.12, -0.12, 0.2, -0.2, 0.3, -0.3};
+        Spot titlesOnly = null;
+        for (double da : nudges) {
+            for (double dr = 0; dr <= 240; dr += 8) {
+                Spot s = at(a + da, r0 + dr, hw, hh);
+                if (!clearOfTitles(s, placed)) continue;
+                if (clearOfStars(tree, s)) return s;
+                if (titlesOnly == null) titlesOnly = s;
+            }
+            for (double dr = -8; dr >= -80; dr -= 8) {
+                Spot s = at(a + da, r0 + dr, hw, hh);
+                if (!clearOfTitles(s, placed)) continue;
+                if (clearOfStars(tree, s)) return s;
+                if (titlesOnly == null) titlesOnly = s;
+            }
         }
-        for (double dr = -8; dr >= -80; dr -= 8) {
+        if (titlesOnly != null) return titlesOnly;
+        // crowded beyond reach: keep pushing outward until clear of every title
+        for (double dr = 248; ; dr += 8) {
             Spot s = at(a, r0 + dr, hw, hh);
-            if (ok(tree, s, placed)) return s;
+            if (clearOfTitles(s, placed) || dr > 2000) return s;
         }
-        return first;
     }
 
     private static Spot at(double a, double r, double hw, double hh) {
         return new Spot(PerkTree.CENTRE + r * Math.cos(a), PerkTree.CENTRE + r * Math.sin(a), hw, hh);
     }
 
-    private static boolean ok(PerkTree tree, Spot s, List<Spot> placed) {
+    private static boolean clearOfStars(PerkTree tree, Spot s) {
         for (PerkTree.Perk p : tree.perks()) {
             double pw = p.name().length() * 3 + 8;
             if (Math.abs(p.x() - s.x()) < s.hw() + pw - 8 && Math.abs(p.y() - s.y()) < s.hh() + 18) return false;
         }
+        return true;
+    }
+
+    /** Clear of every placed title, with a small margin. */
+    private static boolean clearOfTitles(Spot s, List<Spot> placed) {
         for (Spot q : placed) {
-            if (Math.abs(q.x() - s.x()) < s.hw() + q.hw() && Math.abs(q.y() - s.y()) < s.hh() * 2 + 2) return false;
+            if (Math.abs(q.x() - s.x()) < s.hw() + q.hw() + 2 && Math.abs(q.y() - s.y()) < s.hh() + q.hh() + 2) return false;
         }
         return true;
     }
