@@ -468,6 +468,8 @@ public class DungeonTrain {
         // temporary copy of the melee half (VivecraftMixinPlugin) for players without it; this is the
         // always-on belt under both, for any other trigger. See SableAabbLogFilter.
         SableAabbLogFilter.install();
+        // Perks: the "unlock points spent" rule and balance sync (perks/PerkBalances).
+        games.brennan.dungeontrain.perks.PerkBalances.install();
 
         LOGGER.info("Dungeon Train constructor — mod loading");
     }

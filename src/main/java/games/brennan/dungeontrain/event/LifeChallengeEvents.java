@@ -54,6 +54,8 @@ public final class LifeChallengeEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         ItemStack eaten = event.getItem();
         if (eaten.getFoodProperties(player) == null) return; // drinks without food, bows, shields…
+        // Cosmic apples are perk points, not a meal: they never break the melon diet.
+        if (games.brennan.dungeontrain.item.CosmicAppleItem.isCosmicApple(eaten)) return;
         if (!LifeChallengeAdvancements.breaksMelonDiet(id(eaten))) return;
         LifeChallengeAdvancements.markLost(player, ModDataAttachments.ATE_NON_MELON_THIS_LIFE,
             LifeChallengeAdvancements.MELON_TIERS);

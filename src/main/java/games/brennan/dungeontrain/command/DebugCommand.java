@@ -68,7 +68,6 @@ public final class DebugCommand {
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("debug")
             .then(Commands.literal("scan").executes(ctx -> runScan(ctx.getSource())))
-            .then(PerkShimCommand.build()) // SHIM: perks dev command until the foundation lands
             // /dungeontrain debug stage-placeholders — walks every live carriage's footprint and
             // counts stage placeholder blocks that survived generation (expected: none) plus the
             // top real blocks, so a build's placeholders can be proven resolved without a client.
@@ -175,6 +174,8 @@ public final class DebugCommand {
             // /dungeontrain debug wind [reload|export|on|off] — the train wind at your feet; reload the tuned
             // profile (scripts/wind/); export band edges for the tuner; a temporary on/off. See wind/WindServer.
             .then(WindDebug.build())
+            // /dungeontrain debug perk set|unlock|clear|list: dev builds only (perks/Perks).
+            .then(PerkDebug.build())
             // /dungeontrain debug mixin-guards — the guarded WorldWeaver/BCLib/BetterEnd/TerraBlender mixins
             // that are off this boot and what each falls back to. Also logged at INFO for RCON runs.
             .then(Commands.literal("mixin-guards").executes(ctx -> MixinGuardsDebug.report(ctx.getSource())))
