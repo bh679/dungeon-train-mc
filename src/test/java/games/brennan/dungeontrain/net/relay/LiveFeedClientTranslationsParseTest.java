@@ -61,4 +61,13 @@ class LiveFeedClientTranslationsParseTest {
         ChatPage p = parse("{\"seq\":1,\"messages\":[{\"seq\":1,\"author\":\"A\",\"content\":\"x\",\"source\":\"web\",\"tr\":{" + tr + "}}]}");
         assertEquals(LiveFeedClient.MAX_TRANSLATIONS, p.lines().get(0).tr().size());
     }
+
+    @Test
+    @DisplayName("the poll names the room and the reader's language; a bad language is left out")
+    void chatPathWithLang() {
+        assertEquals("/live/chat?since=5&room=second&lang=zh_cn", LiveFeedClient.chatPath(5, "second", "zh_cn"));
+        assertEquals("/live/chat?lang=de_de", LiveFeedClient.chatPath(-1, null, "de_de"));
+        assertEquals("/live/chat?since=5", LiveFeedClient.chatPath(5, null, "en-US&x=1"));
+        assertEquals("/live/chat?since=5&room=main", LiveFeedClient.chatPath(5, "main"));
+    }
 }
