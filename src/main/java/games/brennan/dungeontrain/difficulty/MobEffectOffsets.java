@@ -52,8 +52,8 @@ public final class MobEffectOffsets {
             Map.entry("minecraft:guardian", 11),
             Map.entry("minecraft:evoker", 20),
             Map.entry("minecraft:shulker", 20),
-            Map.entry("deeperdarker:shriek_worm", 28),
             Map.entry("minecraft:elder_guardian", 30),
+            Map.entry("deeperdarker:shriek_worm", 35),
             Map.entry("minecraft:ravager", 40),
             Map.entry("minecraft:warden", 60)
     );

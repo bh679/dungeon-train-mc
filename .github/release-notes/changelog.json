@@ -30945,6 +30945,25 @@
       "released_at": "2026-10-26T10:16:46Z"
     },
     {
+      "id": "contents-weight-tuning-2337",
+      "version": "0.1537.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "mobs",
+        "balance"
+      ],
+      "title": "Carriage balance tweaks",
+      "summary": "Some of the toughest creatures deep in the run now show up a little later, and passenger carriages turn up more often.",
+      "highlights": [],
+      "pr": 2337,
+      "date": "2026-10-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "tv-chat-always-open",
       "version": "0.1537.0",
       "type": "feat",
