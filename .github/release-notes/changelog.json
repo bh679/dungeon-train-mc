@@ -31111,7 +31111,7 @@
         "advancements"
       ],
       "title": "Advancement tweaks",
-      "summary": "One hidden advancement has a new hint, another hidden one has been retired, and one hidden advancement earned under its old, easier rule has been reset so it can be earned the new way.",
+      "summary": "One hidden advancement has a new hint, and another hidden one has been retired.",
       "highlights": [],
       "pr": 2349,
       "date": "2026-10-26",
