@@ -30621,6 +30621,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "perks-tree-v18",
+      "version": "0.1539.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Perks tree update",
+      "summary": "The perks tree gains a new Archivist perk and a few links and positions are tidied.",
+      "highlights": [],
+      "date": "2026-10-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
