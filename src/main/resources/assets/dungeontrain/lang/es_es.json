@@ -5643,7 +5643,7 @@
   "gui.dungeontrain.perks.bar.unlock": "Desbloquear",
   "gui.dungeontrain.perks.bar.activate": "Activar",
   "gui.dungeontrain.perks.bar.tier": "Nivel %s",
-  "gui.dungeontrain.perks.bar.class_count": "%s ventajas, %s desbloqueadas",
+  "gui.dungeontrain.perks.bar.class_progress": "%s/%s ventajas",
   "gui.dungeontrain.perks.zoom.out": "Todo el cielo",
   "gui.dungeontrain.perks.zoom.half": "A medias",
   "gui.dungeontrain.perks.zoom.in": "Cerca",

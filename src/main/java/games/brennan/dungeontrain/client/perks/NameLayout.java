@@ -19,8 +19,15 @@ final class NameLayout {
         }
     }
 
-    /** A star to name: its id, screen centre, halo radius and the label's width and height. */
-    record Want(String id, double x, double y, double halo, int width, int height) {}
+    /**
+     * A star to name: its id, screen centre, halo radius and the label's width and height. A
+     * {@code forced} name is always placed: at its first free spot, or below its star if none is free.
+     */
+    record Want(String id, double x, double y, double halo, int width, int height, boolean forced) {
+        Want(String id, double x, double y, double halo, int width, int height) {
+            this(id, x, y, halo, width, height, false);
+        }
+    }
 
     private static final double GAP = 3, PAD = 1;
 
@@ -36,15 +43,27 @@ final class NameLayout {
         List<Box> taken = new ArrayList<>(obstacles);
         Map<String, int[]> out = new LinkedHashMap<>();
         for (Want w : wants) {
+            double[] chosen = null;
             for (double[] c : candidates(w)) {
-                Box b = new Box(c[0] - PAD, c[1] - PAD, c[0] + w.width() + PAD, c[1] + w.height() + PAD);
+                Box b = box(c, w);
                 if (hitsAny(b, taken) || hitsStar(b, w.id(), stars)) continue;
-                taken.add(b);
-                out.put(w.id(), new int[] {(int) Math.round(c[0]), (int) Math.round(c[1])});
+                chosen = c;
                 break;
             }
+            if (chosen == null && w.forced()) {
+                // clear of the other names at least, else straight below its star
+                for (double[] c : candidates(w)) if (!hitsAny(box(c, w), taken)) { chosen = c; break; }
+                if (chosen == null) chosen = candidates(w)[0];
+            }
+            if (chosen == null) continue;
+            taken.add(box(chosen, w));
+            out.put(w.id(), new int[] {(int) Math.round(chosen[0]), (int) Math.round(chosen[1])});
         }
         return out;
+    }
+
+    private static Box box(double[] c, Want w) {
+        return new Box(c[0] - PAD, c[1] - PAD, c[0] + w.width() + PAD, c[1] + w.height() + PAD);
     }
 
     private static double[][] candidates(Want w) {

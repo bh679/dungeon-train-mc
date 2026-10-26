@@ -5579,7 +5579,7 @@
   "gui.dungeontrain.perks.bar.unlock": "解放",
   "gui.dungeontrain.perks.bar.activate": "有効化",
   "gui.dungeontrain.perks.bar.tier": "ティア%s",
-  "gui.dungeontrain.perks.bar.class_count": "パーク%s個、解放済み%s個",
+  "gui.dungeontrain.perks.bar.class_progress": "パーク %s/%s",
   "gui.dungeontrain.perks.zoom.out": "空全体",
   "gui.dungeontrain.perks.zoom.half": "中間",
   "gui.dungeontrain.perks.zoom.in": "近く",

@@ -391,8 +391,11 @@ public final class PerksScreen extends Screen {
             return 4;
         };
         List<NameLayout.Want> wants = new java.util.ArrayList<>();
+        // a class hovered in the list: only its perks are named, and every one of them is
+        boolean classHover = glow != null;
         visible.stream()
             .filter(p -> !p.isRoot())
+            .filter(p -> !classHover || glow.equals(p.cls()))
             // every visible star asks for its name; the layout fits as many as there is room for, most
             // important first (kept, hovered, glowing, the focus's neighbours, unlocked, then nearest the Engine)
             .sorted(java.util.Comparator.comparingInt((PerkTree.Perk p) -> rank.applyAsInt(p) <= 2 ? rank.applyAsInt(p)
@@ -401,7 +404,8 @@ public final class PerksScreen extends Screen {
             .forEach(p -> {
                 double[] s = stars.get(p.id());
                 wants.add(new NameLayout.Want(p.id(), s[0], s[1], s[2],
-                    (int) Math.ceil(font.width(p.name()) * SkyPalette.NAME_SCALE), (int) Math.ceil(font.lineHeight * SkyPalette.NAME_SCALE)));
+                    (int) Math.ceil(font.width(p.name()) * SkyPalette.NAME_SCALE), (int) Math.ceil(font.lineHeight * SkyPalette.NAME_SCALE),
+                    classHover));
             });
         return NameLayout.place(wants, titles, stars);
     }

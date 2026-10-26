@@ -5579,7 +5579,7 @@
   "gui.dungeontrain.perks.bar.unlock": "해금",
   "gui.dungeontrain.perks.bar.activate": "활성화",
   "gui.dungeontrain.perks.bar.tier": "단계 %s",
-  "gui.dungeontrain.perks.bar.class_count": "특성 %s개, 해금 %s개",
+  "gui.dungeontrain.perks.bar.class_progress": "특성 %s/%s",
   "gui.dungeontrain.perks.zoom.out": "하늘 전체",
   "gui.dungeontrain.perks.zoom.half": "중간",
   "gui.dungeontrain.perks.zoom.in": "가까이",

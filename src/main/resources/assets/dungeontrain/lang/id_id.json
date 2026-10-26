@@ -5579,7 +5579,7 @@
   "gui.dungeontrain.perks.bar.unlock": "Buka",
   "gui.dungeontrain.perks.bar.activate": "Aktifkan",
   "gui.dungeontrain.perks.bar.tier": "Tingkat %s",
-  "gui.dungeontrain.perks.bar.class_count": "%s perk, %s terbuka",
+  "gui.dungeontrain.perks.bar.class_progress": "%s/%s perk",
   "gui.dungeontrain.perks.zoom.out": "Seluruh langit",
   "gui.dungeontrain.perks.zoom.half": "Setengah",
   "gui.dungeontrain.perks.zoom.in": "Dekat",

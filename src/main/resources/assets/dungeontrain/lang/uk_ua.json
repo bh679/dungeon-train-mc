@@ -5704,7 +5704,7 @@
   "gui.dungeontrain.perks.bar.unlock": "Розблокувати",
   "gui.dungeontrain.perks.bar.activate": "Активувати",
   "gui.dungeontrain.perks.bar.tier": "Рівень %s",
-  "gui.dungeontrain.perks.bar.class_count": "Перків: %s, розблоковано: %s",
+  "gui.dungeontrain.perks.bar.class_progress": "Перки: %s/%s",
   "gui.dungeontrain.perks.zoom.out": "Усе небо",
   "gui.dungeontrain.perks.zoom.half": "Наполовину",
   "gui.dungeontrain.perks.zoom.in": "Близько",

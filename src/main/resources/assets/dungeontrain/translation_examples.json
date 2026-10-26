@@ -17786,19 +17786,19 @@
       ]
     }
   },
-  "gui.dungeontrain.perks.bar.class_count": {
+  "gui.dungeontrain.perks.bar.class_progress": {
     "1": {
+      "label": "how many of the class's perks are unlocked",
+      "examples": [
+        "0",
+        "2"
+      ]
+    },
+    "2": {
       "label": "how many perks the class has",
       "examples": [
         "5",
         "7"
-      ]
-    },
-    "2": {
-      "label": "how many of them are unlocked",
-      "examples": [
-        "0",
-        "2"
       ]
     }
   }

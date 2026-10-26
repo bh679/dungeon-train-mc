@@ -5707,7 +5707,7 @@
   "gui.dungeontrain.perks.bar.unlock": "Deblochează",
   "gui.dungeontrain.perks.bar.activate": "Activează",
   "gui.dungeontrain.perks.bar.tier": "Nivelul %s",
-  "gui.dungeontrain.perks.bar.class_count": "Avantaje: %s, deblocate: %s",
+  "gui.dungeontrain.perks.bar.class_progress": "Avantaje: %s/%s",
   "gui.dungeontrain.perks.zoom.out": "Tot cerul",
   "gui.dungeontrain.perks.zoom.half": "La jumătate",
   "gui.dungeontrain.perks.zoom.in": "Aproape",

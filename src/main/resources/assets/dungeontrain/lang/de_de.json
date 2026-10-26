@@ -5643,7 +5643,7 @@
   "gui.dungeontrain.perks.bar.unlock": "Freischalten",
   "gui.dungeontrain.perks.bar.activate": "Aktivieren",
   "gui.dungeontrain.perks.bar.tier": "Stufe %s",
-  "gui.dungeontrain.perks.bar.class_count": "%s Perks, %s freigeschaltet",
+  "gui.dungeontrain.perks.bar.class_progress": "%s/%s Perks",
   "gui.dungeontrain.perks.zoom.out": "Ganzer Himmel",
   "gui.dungeontrain.perks.zoom.half": "Halb",
   "gui.dungeontrain.perks.zoom.in": "Nah",

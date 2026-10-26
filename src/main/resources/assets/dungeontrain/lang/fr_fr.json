@@ -5643,7 +5643,7 @@
   "gui.dungeontrain.perks.bar.unlock": "Débloquer",
   "gui.dungeontrain.perks.bar.activate": "Activer",
   "gui.dungeontrain.perks.bar.tier": "Palier %s",
-  "gui.dungeontrain.perks.bar.class_count": "%s atouts, %s débloqués",
+  "gui.dungeontrain.perks.bar.class_progress": "%s/%s atouts",
   "gui.dungeontrain.perks.zoom.out": "Tout le ciel",
   "gui.dungeontrain.perks.zoom.half": "À mi-chemin",
   "gui.dungeontrain.perks.zoom.in": "Près",

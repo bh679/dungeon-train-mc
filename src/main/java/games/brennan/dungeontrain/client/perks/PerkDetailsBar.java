@@ -156,7 +156,7 @@ final class PerkDetailsBar {
         g.fill(0, top + 1, STRIPE, top + HEIGHT, (a << 24) | (c.colour() & 0xFFFFFF));
         int x = PAD + STRIPE, y = top + PAD;
         long unlocked = perks.stream().filter(p -> snap.unlockLevel(p.id()) > 0).count();
-        Component count = Component.translatable(KEY + "class_count", perks.size(), unlocked);
+        Component count = Component.translatable(KEY + "class_progress", unlocked, perks.size());
         g.drawString(font, c.name(), x, y, (a << 24) | (c.colour() & 0xFFFFFF), true);
         g.drawString(font, count, x, y + LINE + 2, ((int) (a * 0.8) << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
         int split = x + leftColumn(c.name(), count.getString());

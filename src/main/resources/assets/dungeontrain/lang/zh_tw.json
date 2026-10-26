@@ -5593,7 +5593,7 @@
   "gui.dungeontrain.perks.bar.unlock": "解鎖",
   "gui.dungeontrain.perks.bar.activate": "啟用",
   "gui.dungeontrain.perks.bar.tier": "第%s階",
-  "gui.dungeontrain.perks.bar.class_count": "%s 個特權，已解鎖 %s 個",
+  "gui.dungeontrain.perks.bar.class_progress": "特權 %s/%s",
   "gui.dungeontrain.perks.zoom.out": "整片天空",
   "gui.dungeontrain.perks.zoom.half": "一半",
   "gui.dungeontrain.perks.zoom.in": "近處",

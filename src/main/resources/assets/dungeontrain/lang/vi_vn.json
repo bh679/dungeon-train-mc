@@ -5579,7 +5579,7 @@
   "gui.dungeontrain.perks.bar.unlock": "Mở khóa",
   "gui.dungeontrain.perks.bar.activate": "Kích hoạt",
   "gui.dungeontrain.perks.bar.tier": "Bậc %s",
-  "gui.dungeontrain.perks.bar.class_count": "%s đặc quyền, đã mở khóa %s",
+  "gui.dungeontrain.perks.bar.class_progress": "%s/%s đặc quyền",
   "gui.dungeontrain.perks.zoom.out": "Cả bầu trời",
   "gui.dungeontrain.perks.zoom.half": "Nửa chừng",
   "gui.dungeontrain.perks.zoom.in": "Gần",

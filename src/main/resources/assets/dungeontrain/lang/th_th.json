@@ -5579,7 +5579,7 @@
   "gui.dungeontrain.perks.bar.unlock": "ปลดล็อก",
   "gui.dungeontrain.perks.bar.activate": "เปิดใช้",
   "gui.dungeontrain.perks.bar.tier": "ระดับ %s",
-  "gui.dungeontrain.perks.bar.class_count": "พลังพิเศษ %s อย่าง ปลดล็อกแล้ว %s",
+  "gui.dungeontrain.perks.bar.class_progress": "พลังพิเศษ %s/%s",
   "gui.dungeontrain.perks.zoom.out": "ท้องฟ้าทั้งหมด",
   "gui.dungeontrain.perks.zoom.half": "ครึ่งทาง",
   "gui.dungeontrain.perks.zoom.in": "ใกล้",

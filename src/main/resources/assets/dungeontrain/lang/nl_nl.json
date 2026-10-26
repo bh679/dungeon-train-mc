@@ -5643,7 +5643,7 @@
   "gui.dungeontrain.perks.bar.unlock": "Ontgrendelen",
   "gui.dungeontrain.perks.bar.activate": "Activeren",
   "gui.dungeontrain.perks.bar.tier": "Niveau %s",
-  "gui.dungeontrain.perks.bar.class_count": "%s perks, %s ontgrendeld",
+  "gui.dungeontrain.perks.bar.class_progress": "%s/%s perks",
   "gui.dungeontrain.perks.zoom.out": "Hele hemel",
   "gui.dungeontrain.perks.zoom.half": "Halverwege",
   "gui.dungeontrain.perks.zoom.in": "Dichtbij",
