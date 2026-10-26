@@ -20,8 +20,9 @@ import java.util.regex.Pattern;
 
 /**
  * Vista's downloaded ffmpeg, as the Live Feed uses it. Vista fetches a static build per client the
- * first time its welcome screen is accepted ({@code VistaModClient.getFFmpegFuture()}); DT never
- * downloads anything itself. {@link State} tells the UI what to say while waiting.
+ * first time its welcome screen is accepted ({@code VistaModClient.getFFmpegFuture()}). When that
+ * fails, or the player declined it, {@link FfmpegInstaller} fetches DT's own copy and hands it to
+ * Vista. {@link State} tells the UI what to say while waiting.
  */
 public final class FfmpegSupport {
 
@@ -41,7 +42,7 @@ public final class FfmpegSupport {
     public enum State {
         /** Vista has not been asked to fetch ffmpeg (its welcome screen was declined or not yet shown). */
         OFF,
-        /** Vista is downloading or verifying the binary. */
+        /** Vista, or DT's {@link FfmpegInstaller}, is downloading or verifying the binary. */
         DOWNLOADING,
         /** Vista tried and failed; no ffmpeg this session. */
         FAILED,
@@ -52,6 +53,7 @@ public final class FfmpegSupport {
 
     public static State state() {
         CompletableFuture<FFmpeg> f = VistaModClient.getFFmpegFuture();
+        if (FfmpegInstaller.running() && (f == null || f.isCompletedExceptionally())) return State.DOWNLOADING;
         if (f == null) return State.OFF;
         if (!f.isDone()) return State.DOWNLOADING;
         return f.isCompletedExceptionally() ? State.FAILED : State.READY;
@@ -62,8 +64,13 @@ public final class FfmpegSupport {
         return state() == State.READY ? VistaModClient.getFFmpeg() : null;
     }
 
+    /** Download percentage for the TV's bars: DT's own install while it runs, else Vista's; -1 when unknown. */
+    public static int downloadProgress() {
+        return FfmpegInstaller.running() ? FfmpegInstaller.progress() : VistaModClient.getFFmpegDownloadProgress();
+    }
+
     /**
-     * Logs how Vista's download ends, once per future: Vista's own log line is easy to miss, and a
+     * Logs how Vista's download ends, once per future, and starts DT's own copy when it fails: Vista's own log line is easy to miss, and a
      * download that never ends writes nothing at all. Any thread; safe to call every frame.
      */
     public static void watch() {
@@ -75,12 +82,20 @@ public final class FfmpegSupport {
             watchedSinceMs = System.currentTimeMillis();
             lastProgressLogMs = watchedSinceMs;
         }
-        if (f.isDone()) return; // ready before anyone asked: nothing to wait for
+        if (f.isDone()) {
+            // Settled before anyone asked: nothing to wait for, but a failure still gets DT's copy.
+            if (f.isCompletedExceptionally()) FfmpegInstaller.afterVistaFailed();
+            return;
+        }
         long since = watchedSinceMs;
         f.whenComplete((ffmpeg, e) -> {
             long secs = (System.currentTimeMillis() - since) / 1000;
-            if (e == null) LOGGER.info("[DungeonTrain] Vista's ffmpeg is ready ({} s after the Live Feed first waited for it)", secs);
-            else LOGGER.warn("[DungeonTrain] Vista's ffmpeg download failed after {} s: {}", secs, e.toString());
+            if (e == null) {
+                LOGGER.info("[DungeonTrain] Vista's ffmpeg is ready ({} s after the Live Feed first waited for it)", secs);
+            } else {
+                LOGGER.warn("[DungeonTrain] Vista's ffmpeg download failed after {} s: {}", secs, e.toString());
+                FfmpegInstaller.afterVistaFailed();
+            }
         });
     }
 
@@ -91,7 +106,7 @@ public final class FfmpegSupport {
     public static void logProgress(long nowMs) {
         if (state() != State.DOWNLOADING || nowMs - lastProgressLogMs < PROGRESS_LOG_MS) return;
         lastProgressLogMs = nowMs;
-        int pct = VistaModClient.getFFmpegDownloadProgress();
+        int pct = downloadProgress();
         LOGGER.info("[DungeonTrain] waiting for Vista's ffmpeg: {} ({} s)",
             pct >= 0 ? pct + "%" : "no progress reported", (nowMs - watchedSinceMs) / 1000);
     }

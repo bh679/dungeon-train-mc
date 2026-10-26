@@ -30922,6 +30922,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "tv-needs-ffmpeg",
+      "version": "0.1530.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "TVs tell you when they need FFmpeg",
+      "summary": "If your TVs only showed static even while someone was live, they now show an FFmpeg sign instead, and chat offers a one-click Set up FFmpeg button. If the usual FFmpeg download can't reach your network, the game fetches it from a backup source, so the install prompt stops coming back every time you launch.",
+      "highlights": [
+        "A TV that can't play the live stream now says so, instead of looking like nobody is live",
+        "Chose not to install FFmpeg? The Set up FFmpeg button in chat turns TV video back on",
+        "FFmpeg now installs even where its usual download is blocked"
+      ],
+      "pr": 2327,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
