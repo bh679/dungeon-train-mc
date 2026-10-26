@@ -1355,7 +1355,7 @@
   "gui.dungeontrain.currency.name.pln": "ซลอตีโปแลนด์",
   "gui.dungeontrain.currency.name.inr": "รูปีอินเดีย",
   "gui.dungeontrain.rewards.title": "รางวัลชุมชน",
-  "gui.dungeontrain.rewards.subtitle": "ของขวัญที่ส่งถึงทุกคนทั่วโลก สนับสนุนชุมชนทั้งหมด",
+  "gui.dungeontrain.rewards.subtitle": "ของขวัญที่ส่งถึงทุกคน สนับสนุนชุมชนทั้งหมดด้วยการบริจาคเพียงครั้งเดียว",
   "gui.dungeontrain.rewards.personal.title": "รางวัลส่วนตัว",
   "gui.dungeontrain.rewards.personal.summary.help_dev": "ชื่อของคุณและบูสต์หนังสือ 10 ครั้ง",
   "gui.dungeontrain.rewards.personal.summary.big_fan": "ชื่อของคุณและบูสต์หนังสือ 30 ครั้ง",
