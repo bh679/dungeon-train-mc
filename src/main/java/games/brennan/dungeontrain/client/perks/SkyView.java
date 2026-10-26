@@ -60,13 +60,13 @@ public record SkyView(double zoom, double centreX, double centreY) {
     }
 
     /**
-     * The three zoom steps: fully out (the whole sky fits), halfway, and fully in. A screen so large
-     * that the fit is already past {@link #MAX_ZOOM} has the one step.
+     * The two zoom steps: fully out (the whole sky fits) and close, halfway from there to
+     * {@link #MAX_ZOOM}. A screen so large that the fit is already past {@link #MAX_ZOOM} has the one step.
      */
     public static double[] zoomSteps(int screenWidth, int screenHeight) {
         double fit = fitZoom(screenWidth, screenHeight);
         if (fit >= MAX_ZOOM) return new double[] {fit};
-        return new double[] {fit, (fit + MAX_ZOOM) / 2, MAX_ZOOM};
+        return new double[] {fit, (fit + MAX_ZOOM) / 2};
     }
 
     /** Which of {@link #zoomSteps} the view is at (the nearest one). */

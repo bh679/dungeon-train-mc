@@ -6,16 +6,16 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 /**
- * The three zoom steps as clickable cells beside the "Perks" title: whole sky, halfway, close. Each
+ * The two zoom steps as clickable cells beside the "Perks" title: whole sky and close. Each
  * cell holds a dot that grows with the zoom; the current step is outlined in gold.
  */
 @OnlyIn(Dist.CLIENT)
 final class ZoomControl {
 
-    static final int STEPS = 3;
+    static final int STEPS = 2;
     private static final int CELL = 12, GAP = 2;
-    private static final double[] DOT = {1.5, 2.5, 3.5};
-    private static final String[] KEYS = {"out", "half", "in"};
+    private static final double[] DOT = {1.5, 3.0};
+    private static final String[] KEYS = {"out", "in"};
 
     private int x, y;
 

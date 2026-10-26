@@ -39,18 +39,16 @@ class SkyViewTest {
     }
 
     @Test
-    @DisplayName("zoom steps between exactly three levels: out, halfway, in")
-    void threeSteps() {
+    @DisplayName("zoom steps between exactly two levels: out and close")
+    void twoSteps() {
         SkyView v = SkyView.fit(960, 540);
-        double fit = v.zoom();
+        double fit = v.zoom(), close = (fit + SkyView.MAX_ZOOM) / 2;
         assertEquals(fit, v.zoomedAt(0.8, 480, 270, 960, 540).zoom(), 1e-9, "already fully out");
-        SkyView half = v.zoomedAt(1.25, 480, 270, 960, 540);
-        assertEquals((fit + SkyView.MAX_ZOOM) / 2, half.zoom(), 1e-9);
-        SkyView in = half.zoomedAt(1.25, 480, 270, 960, 540);
-        assertEquals(SkyView.MAX_ZOOM, in.zoom(), 1e-9);
-        assertEquals(SkyView.MAX_ZOOM, in.zoomedAt(1.25, 480, 270, 960, 540).zoom(), 1e-9, "already fully in");
-        assertEquals((fit + SkyView.MAX_ZOOM) / 2, in.zoomedAt(0.8, 480, 270, 960, 540).zoom(), 1e-9);
-        assertEquals(3, SkyView.zoomSteps(426, 240).length);
+        SkyView in = v.zoomedAt(1.25, 480, 270, 960, 540);
+        assertEquals(close, in.zoom(), 1e-9);
+        assertEquals(close, in.zoomedAt(1.25, 480, 270, 960, 540).zoom(), 1e-9, "already fully in");
+        assertEquals(fit, in.zoomedAt(0.8, 480, 270, 960, 540).zoom(), 1e-9);
+        assertEquals(2, SkyView.zoomSteps(426, 240).length);
     }
 
     @Test
