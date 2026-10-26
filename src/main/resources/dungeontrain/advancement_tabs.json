@@ -95,7 +95,6 @@
     "dungeontrain:dungeon_train/reached_far_lands": true,
     "dungeontrain:dungeon_train/reached_floating": true,
     "dungeontrain:dungeon_train/reached_infdev": true,
-    "dungeontrain:dungeon_train/reached_large_biomes": false,
     "dungeontrain:dungeon_train/reached_lost_city": true,
     "dungeontrain:dungeon_train/reached_nether": true,
     "dungeontrain:dungeon_train/reached_overworld_again": true,
@@ -219,7 +218,6 @@
     "dungeontrain:dungeon_train/completionist": "always",
     "dungeontrain:dungeon_train/all_out_of_secrets": "earned",
     "dungeontrain:dungeon_train/secrete_menu": "earned",
-    "dungeontrain:dungeon_train/reached_large_biomes": "earned",
     "dungeontrain:dungeon_train/help_i_cant_get_off": "earned"
   },
   "complete": {
@@ -231,7 +229,6 @@
     "dungeontrain:dungeon_train/all_out_of_secrets": "dungeontrain:secrete_menu/root"
   },
   "notForTabComplete": [
-    "dungeontrain:dungeon_train/reached_large_biomes",
     "dungeontrain:dungeon_train/memory_lane_link",
     "dungeontrain:dungeon_train/keepsake_link",
     "dungeontrain:dungeon_train/no_room_left_link"
