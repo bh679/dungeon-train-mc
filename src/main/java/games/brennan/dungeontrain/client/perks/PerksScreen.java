@@ -283,18 +283,18 @@ public final class PerksScreen extends Screen {
         SkyDraw.glow(g, gx, gy, 256 * view.zoom(), SkyDraw.withAlpha(SkyPalette.GOLD, 0.07 * fade));
         stars.render(g, view, width, skyH(), now, fade);
         LinkPainter.render(g, drawn, snap, vis, view, width, skyH(), fade);
-        ClassTitlePainter.render(g, font, drawn, vis, glow, view, width, skyH(), fade);
+        List<NameLayout.Box> titleBoxes = ClassTitlePainter.render(g, font, drawn, vis, glow, view, width, skyH(), fade);
 
         boolean allNames = view.showsAllNames();
         boolean spendable = fromApple && snap.canAffordRank() && spentAt == 0;
         String focus = cardFor != null ? cardFor : selected;
+        Map<String, int[]> names = layoutNames(allNames, focus, titleBoxes);
         for (PerkTree.Perk p : drawn.perks()) {
             if (vis.hidden(p)) continue;
             boolean sel = p.id().equals(selected), hov = p.id().equals(hovered) || p.id().equals(cardFor);
             boolean glows = glow != null && glow.equals(p.cls());
-            boolean name = allNames || sel || hov || glows || (focus != null && view.zoom() >= 0.7 && linked(focus, p.id()));
             StarPainter.render(g, font, drawn, p, snap, view, width, skyH(),
-                new StarPainter.Look(hov, sel, name, spendable, vis.ghost(p), glows), unlockedAt, pointAt, now, fade);
+                new StarPainter.Look(hov, sel, names.get(p.id()), spendable, vis.ghost(p), glows), unlockedAt, pointAt, now, fade);
         }
 
         renderHeader(g, snap, now, fade);
@@ -368,6 +368,38 @@ public final class PerksScreen extends Screen {
             g.drawString(font, line, x, y, (SkyPalette.GOLD & 0xFFFFFF) | ((int) (pulse * fade * 255) << 24), true);
         }
         g.drawString(font, "x", width - 8 - font.width("x"), y, (SkyPalette.MUTED & 0xFFFFFF) | alpha, false);
+    }
+
+    /**
+     * Which perk names show and where, so none overlaps another name, a class title or a star. Wanted
+     * names: all of them when zoomed in, else the kept, hovered and glowing stars and the focus's
+     * neighbours. Placed in that priority; a name with no free spot is left out.
+     */
+    private Map<String, int[]> layoutNames(boolean allNames, String focus, List<NameLayout.Box> titles) {
+        Map<String, double[]> stars = new HashMap<>();
+        List<PerkTree.Perk> visible = new java.util.ArrayList<>();
+        for (PerkTree.Perk p : drawn.perks()) {
+            if (vis.hidden(p)) continue;
+            visible.add(p);
+            stars.put(p.id(), new double[] {view.toScreenX(p.x(), width), view.toScreenY(p.y(), skyH()), SkyPalette.haloRadius(p, view.zoom())});
+        }
+        java.util.function.ToIntFunction<PerkTree.Perk> rank = p -> {
+            if (p.id().equals(selected)) return 0;
+            if (p.id().equals(hovered) || p.id().equals(cardFor)) return 1;
+            if (glow != null && glow.equals(p.cls())) return 2;
+            if (last.unlockLevel(p.id()) > 0) return 3;
+            return 4;
+        };
+        List<NameLayout.Want> wants = new java.util.ArrayList<>();
+        visible.stream()
+            .filter(p -> !p.isRoot())
+            .filter(p -> allNames || rank.applyAsInt(p) <= 2 || (focus != null && view.zoom() >= 0.7 && linked(focus, p.id())))
+            .sorted(java.util.Comparator.comparingInt(rank).thenComparingDouble(PerkTree.Perk::distanceToCentre))
+            .forEach(p -> {
+                double[] s = stars.get(p.id());
+                wants.add(new NameLayout.Want(p.id(), s[0], s[1], s[2], font.width(p.name()), font.lineHeight));
+            });
+        return NameLayout.place(wants, titles, stars);
     }
 
     private boolean linked(String a, String b) {

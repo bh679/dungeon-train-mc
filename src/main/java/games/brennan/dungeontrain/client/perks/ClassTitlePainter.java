@@ -27,8 +27,10 @@ final class ClassTitlePainter {
 
     private record Spot(double x, double y, double hw, double hh) {}
 
-    static void render(GuiGraphics g, Font font, PerkTree tree, ClassVisibility vis, String glow, SkyView view, int w, int h,
-                       double fade) {
+    /** Draws the titles and returns their screen boxes, so the perk names can keep clear of them. */
+    static List<NameLayout.Box> render(GuiGraphics g, Font font, PerkTree tree, ClassVisibility vis, String glow, SkyView view, int w, int h,
+                                       double fade) {
+        List<NameLayout.Box> boxes = new ArrayList<>();
         float scale = w < NARROW_WIDTH ? 0.75F : 1F;
         double z = view.zoom();
         List<Spot> placed = new ArrayList<>();
@@ -61,7 +63,10 @@ final class ClassTitlePainter {
             g.pose().scale(scale, scale, 1F);
             g.drawString(font, title, -font.width(title) / 2, -font.lineHeight / 2, colour, true);
             g.pose().popPose();
+            double tw = font.width(title) * scale / 2.0 + 2, th = font.lineHeight * scale / 2.0 + 1;
+            boxes.add(new NameLayout.Box(sx - tw, sy - th, sx + tw, sy + th));
         }
+        return boxes;
     }
 
     /**

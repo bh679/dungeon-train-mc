@@ -26,7 +26,8 @@ final class StarPainter {
     private StarPainter() {}
 
     /** How this star is lit beyond its own state. */
-    record Look(boolean hovered, boolean selected, boolean showName, boolean spendable, boolean ghost, boolean glow) {}
+    /** {@code namePos}: where the name goes (top-left, screen px), or null to leave it out. */
+    record Look(boolean hovered, boolean selected, int[] namePos, boolean spendable, boolean ghost, boolean glow) {}
 
     static void render(GuiGraphics g, Font font, PerkTree tree, PerkTree.Perk p, PerkMenuSnapshot snap, SkyView view,
                        int w, int h, Look look, Map<String, Long> unlockedAt, Map<String, Long> pointAt, long now, double fade) {
@@ -98,12 +99,10 @@ final class StarPainter {
 
         renderSegments(g, x, y, halo, z, snap.unlockLevel(p.id()), snap.points(p.id()), colour, opacity, pointAge);
 
-        if (look.showName()) {
+        if (look.namePos() != null) {
             int text = state == PerkMenuSnapshot.StarState.LOCKED && !look.glow() ? SkyPalette.MUTED : SkyPalette.FG;
             int alpha = (int) (Math.max(0.35, opacity) * 255);
-            String name = p.name();
-            int tx = (int) Math.round(x - font.width(name) / 2.0), ty = (int) Math.round(y + halo + 4);
-            g.drawString(font, name, tx, ty, (alpha << 24) | (text & 0xFFFFFF), true);
+            g.drawString(font, p.name(), look.namePos()[0], look.namePos()[1], (alpha << 24) | (text & 0xFFFFFF), true);
         }
     }
 
