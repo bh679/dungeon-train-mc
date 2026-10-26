@@ -173,16 +173,23 @@ final class ClassesList {
         double alpha = pill || shown ? 1.0 : hov ? 0.9 : 0.55;
         g.drawString(font, c.name(), nameX, y + 1, SkyDraw.withAlpha(colour, alpha * fade), !pill);
         if (shown && eye) renderEye(g, eyeX(), y + 1 + (font.lineHeight - EYE_H) / 2 - 1, eyeHot, pill ? dark : SkyPalette.MUTED, fade);
-        renderDots(g, snap, c, nameX - DOT_GAP - dotsWidth(c), y + 1 + font.lineHeight / 2.0 - 1,
-            pill ? dark : c.colour(), pill, shown ? 1.0 : 0.55, fade);
+        renderDots(g, snap, c, nameX - DOT_GAP, y + 1 + font.lineHeight / 2.0 - 1,
+            pill ? dark : c.colour(), pill, pill || outline, shown ? 1.0 : 0.55, fade);
     }
 
-    /** One dot per perk: filled with a point in it, a ring once unlocked, small and dim while locked. */
-    private void renderDots(GuiGraphics g, PerkMenuSnapshot snap, PerkTree.PerkClass c, int x, double cy, int colour,
-                            boolean onPill, double alpha, double fade) {
+    /**
+     * Dots ending at {@code right}. Selected or hovered: one per perk, filled with a point in it, a ring
+     * once unlocked, small and dim while locked. Otherwise only the filled ones, for the active perks.
+     */
+    private void renderDots(GuiGraphics g, PerkMenuSnapshot snap, PerkTree.PerkClass c, int right, double cy, int colour,
+                            boolean onPill, boolean full, double alpha, double fade) {
         int locked = onPill ? SkyDraw.mix(c.colour(), 0xFF000000, DARK_LOCKED) : 0xFF3A3F5A;
+        List<PerkTree.Perk> perks = tree.perksOf(c.id());
+        if (!full) perks = perks.stream().filter(p -> snap.points(p.id()) > 0).toList();
+        if (perks.isEmpty()) return;
+        int x = right - (perks.size() * DOT_PITCH - 2);
         int i = 0;
-        for (PerkTree.Perk p : tree.perksOf(c.id())) {
+        for (PerkTree.Perk p : perks) {
             double cx = x + 2 + i++ * DOT_PITCH;
             int level = snap.unlockLevel(p.id());
             if (snap.points(p.id()) > 0) SkyDraw.disc(g, cx, cy, 2.0, SkyDraw.withAlpha(colour, alpha * fade));
