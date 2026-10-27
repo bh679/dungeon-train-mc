@@ -248,12 +248,12 @@ public final class PerksScreen extends Screen {
         PerkMenuSnapshot s = last;
         long now = Util.getMillis();
         PerkRegistry.bootstrap();
-        if (!PerkRegistry.isKnown(p.id())) {
+        if (!PerkRegistry.isBuilt(p.id())) {
             refused(p.id(), "gui.dungeontrain.perks.refused.not_built");
             return;
         }
         int level = s.unlockLevel(p.id());
-        if (level <= 0 && !tree.reachable(p.id(), s::isUnlocked)) {
+        if (level <= 0 && !tree.reachableNow(p.id(), s::isUnlocked)) {
             refused(p.id(), "gui.dungeontrain.perks.card.needs_path");
             return;
         }

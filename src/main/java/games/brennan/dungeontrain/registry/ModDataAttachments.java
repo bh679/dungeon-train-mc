@@ -137,6 +137,17 @@ public final class ModDataAttachments {
                 .build()
         );
 
+    /**
+     * Disposable cameras this player has shot with this life, for Extra Cam-Shots' "every second camera"
+     * ({@code perks/effects/archivist/ArchivistCamera}). Per life: not {@code copyOnDeath}.
+     */
+    public static final Supplier<AttachmentType<Integer>> PERK_CAMERAS_USED =
+        TYPES.register("perk_cameras_used",
+            () -> AttachmentType.<Integer>builder(() -> 0)
+                .serialize(Codec.INT)
+                .build()
+        );
+
     public static final Supplier<AttachmentType<Long>> LIVE_EYE_SEEN_AT =
         TYPES.register("live_eye_seen_at",
             () -> AttachmentType.<Long>builder(() -> 0L)

@@ -1,5 +1,8 @@
 package games.brennan.dungeontrain.perks.effects.trader;
 
+import games.brennan.dungeontrain.perks.BuiltPerks;
+import games.brennan.dungeontrain.perks.PerkStats;
+import games.brennan.dungeontrain.perks.PerkStats.Unit;
 import games.brennan.dungeontrain.perks.Perks;
 import games.brennan.tradeeverything.trade.DemandLedger;
 import net.minecraft.world.entity.npc.AbstractVillager;
@@ -34,6 +37,12 @@ public final class ReducedReduction {
         Math.log((1.0 - MIN_WEIGHT) / (0.5 - MIN_WEIGHT)) / HALF_RATE_RANK;
 
     private ReducedReduction() {}
+
+    /** Marks Reduced Reduction built; its stat is how much less of each sale's value is lost. */
+    public static void declare() {
+        BuiltPerks.markBuilt(ID);
+        PerkStats.register(ID, "value_loss", r -> PerkStats.num(-(1.0 - saleWeight(r)) * 100.0, Unit.PERCENT));
+    }
 
     /**
      * Share of a sale the villager remembers: 1.0 at rank 0, 0.5 at rank 5, approaching

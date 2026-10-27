@@ -8,7 +8,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -74,17 +73,11 @@ public final class OfferEyeCommand {
                 return;
             }
             LiveGiftClient.say(mc, Component.translatable(KEY + "header").withStyle(ChatFormatting.LIGHT_PURPLE));
-            // Gift Live Eye perk: the per-viewer [Offer] needs it; the All row below is for everyone.
-            boolean canTarget = LiveGiftClient.canOfferToOne(mc);
             for (String name : viewers) {
-                MutableComponent line = Component.literal(" " + name + " ").withStyle(ChatFormatting.WHITE);
-                if (canTarget) line.append(LiveGiftClient.offerButton(name));
-                LiveGiftClient.say(mc, line);
+                LiveGiftClient.say(mc, Component.literal(" " + name + " ").withStyle(ChatFormatting.WHITE)
+                    .append(LiveGiftClient.offerButton(name)));
             }
-            if (!canTarget) {
-                LiveGiftClient.say(mc, Component.translatable(KEY + "needs_perk").withStyle(ChatFormatting.GRAY));
-            }
-            if (viewers.size() > 1 || !canTarget) {
+            if (viewers.size() > 1) {
                 LiveGiftClient.say(mc, Component.literal(" ").append(Component.translatable(KEY + "all"))
                     .append(" ").withStyle(ChatFormatting.WHITE).append(LiveGiftClient.offerAllButton()));
             }

@@ -45,6 +45,11 @@ public final class PerkRegistry {
         return id != null && PERKS.containsKey(id);
     }
 
+    /** Known and has effect code ({@link BuiltPerks}): can be unlocked and given points. Otherwise "Coming soon". */
+    public static boolean isBuilt(String id) {
+        return isKnown(id) && BuiltPerks.isBuilt(id);
+    }
+
     /** Registration order. */
     public static Collection<PerkDef> all() {
         synchronized (PERKS) {

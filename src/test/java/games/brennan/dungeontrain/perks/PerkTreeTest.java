@@ -65,6 +65,36 @@ class PerkTreeTest {
     }
 
     @Test
+    @DisplayName("a Coming soon perk is crossed on the way to the perks behind it")
+    void passThrough() {
+        PerkTree t = tree();
+        assertFalse(t.reachable("armour", Set.of()::contains));
+        assertTrue(t.reachable("armour", Set.of()::contains, Set.of("health")::contains), "through Coming soon health");
+        assertFalse(t.reachable("armour", Set.of()::contains, Set.of("haste")::contains), "a chord is never crossed");
+        assertFalse(t.reachable("totem", Set.of()::contains, Set.of("health", "armour")::contains),
+            "only solid lines carry the path");
+    }
+
+    @Test
+    @DisplayName("Drift Gift Repaid is reachable through locked Drift Chance in the bundled tree")
+    void bundledLockedBuilderEntry() {
+        PerkTree t = PerkTreeLoader.get();
+        assertFalse(PerkRegistry.isBuilt("drift-chance"), "Drift Chance is locked");
+        assertFalse(t.reachable("drift-gift-repaid", Set.of()::contains));
+        assertTrue(t.reachableNow("drift-gift-repaid", Set.of()::contains));
+    }
+
+    @Test
+    @DisplayName("a perk removed from the tree (Gift Live Eye) is gone, and a saved unlock of it costs nothing")
+    void removedPerkIsHarmless() {
+        PerkTree t = PerkTreeLoader.get();
+        assertTrue(t.perk("gift-live-eye").isEmpty());
+        assertEquals(t.unlockCostOf(java.util.Map.of("vote-weight", 1)),
+            t.unlockCostOf(java.util.Map.of("vote-weight", 1, "gift-live-eye", 2)));
+        assertFalse(t.reachableNow("gift-live-eye", Set.of()::contains));
+    }
+
+    @Test
     @DisplayName("costs follow the tier and sum over the unlocked set")
     void costs() {
         PerkTree t = tree();
