@@ -31120,8 +31120,31 @@
       "released_at": "2026-10-26T17:49:15Z"
     },
     {
-      "id": "editor-test-live-photos",
+      "id": "pets-stay-with-owner",
       "version": "0.1548.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "mobs"
+      ],
+      "title": "Pets stay with you",
+      "summary": "Your pets no longer get left behind on the train or turn up in someone else's world.",
+      "highlights": [
+        "A pet that is not sitting now comes to you when the carriage it is on falls far behind.",
+        "A pet you told to sit stays in its carriage, and is still there when you come back.",
+        "Pets left on the train when you log off are waiting beside you when you return.",
+        "Only sitting pets in a drifting carriage travel with it to other worlds."
+      ],
+      "pr": 2351,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-test-live-photos",
+      "version": "0.1549.0",
       "type": "feat",
       "tags": [
         "feature",
