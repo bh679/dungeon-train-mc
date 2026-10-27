@@ -5,10 +5,12 @@ import games.brennan.dungeontrain.portal.PortalEditMirror;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.util.BlockSnapshot;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.ExplosionEvent;
 
 /**
  * The twin half of hallway-portal edit mirroring: an edit to a twin corridor's blocks is copied into
@@ -50,5 +52,16 @@ public final class PortalEditEvents {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         // Fires before the block is removed, so mirror air rather than reading the position back.
         PortalEditMirror.onTwinBlockChanged(level, event.getPos(), Blocks.AIR.defaultBlockState());
+    }
+
+    /**
+     * Explosions clear blocks without a break event, so a blast in a pocket room needs its own feed.
+     * Lowest priority so guards that trim the list (LostCityPlotGuard) have had their say; the list
+     * that is left is exactly what the explosion is about to destroy.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onExplosion(ExplosionEvent.Detonate event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        PortalEditMirror.onTwinExploded(level, event.getAffectedBlocks());
     }
 }
