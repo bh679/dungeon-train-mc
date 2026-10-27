@@ -144,6 +144,7 @@
     "MobCheckDespawnDeadRiderMixin",
     "ChunkMapDeadRiderAccessor",
     "ChunkMapDeadRiderMixin",
+    "ServerLevelDeadRiderMixin",
     "PlayerListDeadRiderMixin",
     "NetherFortressStructureMixin",
     "NetherFossilStructureMixin",

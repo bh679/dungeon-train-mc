@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.ship.sable.DeadRiderAnchors;
+import games.brennan.dungeontrain.ship.sable.DeadRiderServerCarry;
 import games.brennan.dungeontrain.util.AsyncPerfLog;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -309,6 +310,10 @@ public final class TrainTickEvents {
             && level.getGameTime() % MSPT_LOG_PERIOD_TICKS == 0) {
             logGenTiming(level);
         }
+
+        // A dead rider's server body rides on with its carriage, so the appender's keep-alive, the
+        // entity trackers and the chunk view below all measure from where the client shows them.
+        DeadRiderServerCarry.tick(level);
 
         long t0 = System.nanoTime();
 
