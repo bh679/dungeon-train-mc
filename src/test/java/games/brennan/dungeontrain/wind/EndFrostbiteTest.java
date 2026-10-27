@@ -9,6 +9,8 @@ class EndFrostbiteTest {
 
     private static final int TICKS_TO_FREEZE = 140;
     private static final long HALF_LIFE = 45_000L;
+    private static final double START = EndFrostbite.SECONDS_TO_FREEZE_AT_START;
+    private static final double FLOOR = EndFrostbite.SECONDS_TO_FREEZE_FLOOR;
 
     @Test
     void firstCycleNeverFreezes() {
@@ -23,22 +25,22 @@ class EndFrostbiteTest {
     }
 
     @Test
-    void startsAtHalfAMinuteToFreeze() {
-        assertEquals(30.0, EndFrostbite.secondsToFreeze(0L, HALF_LIFE), 1e-9);
-        assertEquals(TICKS_TO_FREEZE / 600.0, EndFrostbite.netRate(0L, HALF_LIFE, TICKS_TO_FREEZE), 1e-9);
+    void startsAtTheStartingPace() {
+        assertEquals(START, EndFrostbite.secondsToFreeze(0L, HALF_LIFE), 1e-9);
+        assertEquals(TICKS_TO_FREEZE / (START * 20.0), EndFrostbite.netRate(0L, HALF_LIFE, TICKS_TO_FREEZE), 1e-9);
     }
 
     @Test
     void gapToFloorHalvesEveryHalfLife() {
-        assertEquals(7.0 + 23.0 / 2, EndFrostbite.secondsToFreeze(HALF_LIFE, HALF_LIFE), 1e-9);
-        assertEquals(7.0 + 23.0 / 4, EndFrostbite.secondsToFreeze(2 * HALF_LIFE, HALF_LIFE), 1e-9);
+        assertEquals(FLOOR + (START - FLOOR) / 2, EndFrostbite.secondsToFreeze(HALF_LIFE, HALF_LIFE), 1e-9);
+        assertEquals(FLOOR + (START - FLOOR) / 4, EndFrostbite.secondsToFreeze(2 * HALF_LIFE, HALF_LIFE), 1e-9);
     }
 
     @Test
     void approachesButNeverReachesPowderSnowPace() {
         double far = EndFrostbite.netRate(50 * HALF_LIFE, HALF_LIFE, TICKS_TO_FREEZE);
         assertTrue(far > 0.999 && far < 1.0, "net rate " + far);
-        assertTrue(EndFrostbite.secondsToFreeze(50 * HALF_LIFE, HALF_LIFE) > 7.0);
+        assertTrue(EndFrostbite.secondsToFreeze(50 * HALF_LIFE, HALF_LIFE) > FLOOR);
     }
 
     @Test
@@ -51,9 +53,21 @@ class EndFrostbiteTest {
         }
     }
 
+    /**
+     * The shipped curve on the shipped layout (period 101,492, {@code CycleLayoutTest#shippedGeometry}). Cycle 2 is
+     * a doubled run starting one period in, so a base offset {@code u} sits {@code 2u} blocks into the cold: the
+     * first End band (u ≈ 12,000) stays near its old ≈ 26 s, BetterEnd (u ≈ 42,500) is down to ≈ 17 s.
+     */
+    @Test
+    void shippedCycleTwoPace() {
+        long halfLife = Math.round(101_492L * EndFrostbite.HALF_LIFE_CYCLES);
+        assertEquals(26.0, EndFrostbite.secondsToFreeze(2 * 12_000L, halfLife), 1.0);
+        assertEquals(17.0, EndFrostbite.secondsToFreeze(2 * 42_500L, halfLife), 1.0);
+    }
+
     @Test
     void noHalfLifeHoldsTheStartingPace() {
-        assertEquals(30.0, EndFrostbite.secondsToFreeze(1_000_000L, 0L), 1e-9);
+        assertEquals(START, EndFrostbite.secondsToFreeze(1_000_000L, 0L), 1e-9);
     }
 
     @Test
@@ -72,7 +86,7 @@ class EndFrostbiteTest {
         assertEquals(16.0, EndFrostbite.leatherFactor(9), "clamped at four armour slots");
         assertEquals(1.0, EndFrostbite.leatherFactor(-1));
         for (int pieces = 0; pieces <= 4; pieces++) {
-            assertEquals(30.0 * (1 << pieces), EndFrostbite.secondsToFreeze(0L, HALF_LIFE, pieces), 1e-9);
+            assertEquals(START * (1 << pieces), EndFrostbite.secondsToFreeze(0L, HALF_LIFE, pieces), 1e-9);
             assertEquals(EndFrostbite.netRate(HALF_LIFE, HALF_LIFE, TICKS_TO_FREEZE) / (1 << pieces),
                     EndFrostbite.netRate(HALF_LIFE, HALF_LIFE, TICKS_TO_FREEZE, pieces), 1e-12);
         }
