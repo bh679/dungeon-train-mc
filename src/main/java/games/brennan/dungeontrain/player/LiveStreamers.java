@@ -87,6 +87,11 @@ public final class LiveStreamers {
         return Set.copyOf(out);
     }
 
+    /** {@code player}'s name as remembered when they went live; empty when unknown. */
+    public static synchronized String nameOf(MinecraftServer server, UUID player) {
+        return NAMES.getOrDefault(server, Map.of()).getOrDefault(player, "");
+    }
+
     /** Whether {@code player} is streaming on this server right now. */
     public static synchronized boolean isStreamer(MinecraftServer server, @Nullable UUID player) {
         Set<UUID> all = STREAMERS.get(server);

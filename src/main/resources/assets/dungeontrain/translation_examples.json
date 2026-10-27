@@ -17557,5 +17557,109 @@
         "2"
       ]
     }
+  },
+  "command.dungeontrain.live_report.stream": {
+    "1": {
+      "label": "which of the two live streams it is",
+      "examples": [
+        "1",
+        "2"
+      ]
+    },
+    "2": {
+      "label": "that stream's streamer name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.stream_unnamed": {
+    "1": {
+      "label": "which of the two live streams it is",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.pick_reason": {
+    "1": {
+      "label": "the reported streamer's Minecraft player name, or \"the streamer\" when unknown",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.sent": {
+    "1": {
+      "label": "the reported streamer's Minecraft player name, or \"the streamer\" when unknown",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.open": {
+    "1": {
+      "label": "the reported streamer's Minecraft player name, or \"the streamer\" when unknown",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    },
+    "2": {
+      "label": "how long ago the earlier report was made, already translated (e.g. 'just now', '5 min ago')",
+      "examples": [
+        "5 min ago",
+        "just now"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.kept": {
+    "1": {
+      "label": "the reported streamer's Minecraft player name, or \"the streamer\" when unknown",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.not_live": {
+    "1": {
+      "label": "the reported streamer's Minecraft player name, or \"the streamer\" when unknown",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.ago.minutes": {
+    "1": {
+      "label": "a number of minutes",
+      "examples": [
+        "5",
+        "42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.ago.hours": {
+    "1": {
+      "label": "a number of hours",
+      "examples": [
+        "2",
+        "13"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.ago.days": {
+    "1": {
+      "label": "a number of days",
+      "examples": [
+        "3",
+        "12"
+      ]
+    }
   }
 }

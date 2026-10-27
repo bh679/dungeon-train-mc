@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.client.live.FfmpegHint;
 import games.brennan.dungeontrain.client.live.LiveTakeoverOffer;
 import games.brennan.dungeontrain.client.live.LiveTakeoverChat;
 import games.brennan.dungeontrain.client.live.LiveGiftClient;
+import games.brennan.dungeontrain.client.live.LiveReportButton;
 import games.brennan.dungeontrain.client.live.LiveOptionsCommand;
 import games.brennan.dungeontrain.logrequest.LogRequestClient;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
@@ -43,6 +44,7 @@ public final class DungeonTrainClient {
         LiveTakeoverOffer.registerClicks();
         LiveTakeoverChat.registerClicks();
         LiveGiftClient.registerClicks();
+        LiveReportButton.registerClicks();
         LiveOptionsCommand.registerClicks();
         LogRequestClient.registerClicks();
         BugResponseChatNotifier.registerClicks();

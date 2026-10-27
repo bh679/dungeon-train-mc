@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.player;
 
 import com.google.gson.JsonObject;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.moderation.LiveReport;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,6 +12,10 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -43,6 +48,9 @@ public final class ServerLiveStatus {
     private static volatile String relayStreamer;
     /** The relay's name for whoever holds the second stream, when it gave one. */
     private static volatile String relaySecondStreamer;
+    /** The relay slots of the primary and second stream ({@code main} / {@code second}). */
+    private static volatile String relayChannel = LiveFeedClient.CHANNEL_MAIN;
+    private static volatile String relaySecondChannel = LiveFeedClient.CHANNEL_SECOND;
     /** Poll on the next tick instead of waiting out {@link #POLL_TICKS}: a stream here just ended. */
     private static volatile boolean pollRequested;
 
@@ -138,6 +146,52 @@ public final class ServerLiveStatus {
         return nobodyLive(local, relayLive, relayAtMs, System.currentTimeMillis());
     }
 
+    /**
+     * The streams on air as {@code /livereport} sees them: Stream 1 (the relay's primary) and Stream 2 (its
+     * second), named as the relay names them, with a uuid where the streamer is on this server. A stale or
+     * failed relay answer falls back to this server's own streamers, in claim order.
+     */
+    public static List<LiveReport.Stream> liveStreams(MinecraftServer server) {
+        Map<UUID, String> local = new LinkedHashMap<>();
+        if (server != null) {
+            for (UUID id : LiveStreamers.all(server)) local.put(id, LiveStreamers.nameOf(server, id));
+        }
+        long now = System.currentTimeMillis();
+        return liveStreams(isFresh(relayLive, relayAtMs, now), relayStreamer, relayChannel,
+            isFresh(relaySecondLive, relayAtMs, now), relaySecondStreamer, relaySecondChannel, local);
+    }
+
+    /** Pure form for the tests. {@code local}: this server's streamers and their names, in claim order. */
+    static List<LiveReport.Stream> liveStreams(boolean relayFresh, String name, String channel,
+                                               boolean secondFresh, String secondName, String secondChannel,
+                                               Map<UUID, String> local) {
+        List<LiveReport.Stream> out = new ArrayList<>();
+        if (relayFresh) {
+            out.add(new LiveReport.Stream(1, channel, name == null ? "" : name, uuidByName(local, name)));
+            if (secondFresh) {
+                out.add(new LiveReport.Stream(2, secondChannel, secondName == null ? "" : secondName, uuidByName(local, secondName)));
+            }
+            return out;
+        }
+        int i = 0;
+        for (Map.Entry<UUID, String> e : local.entrySet()) {
+            if (i == 2) break;
+            i++;
+            out.add(new LiveReport.Stream(i, i == 1 ? LiveFeedClient.CHANNEL_MAIN : LiveFeedClient.CHANNEL_SECOND,
+                e.getValue() == null ? "" : e.getValue(), e.getKey()));
+        }
+        return out;
+    }
+
+    @Nullable
+    private static UUID uuidByName(Map<UUID, String> local, @Nullable String name) {
+        if (name == null || name.isEmpty()) return null;
+        for (Map.Entry<UUID, String> e : local.entrySet()) {
+            if (name.equalsIgnoreCase(e.getValue())) return e.getKey();
+        }
+        return null;
+    }
+
     @Nullable
     private static UUID firstOf(java.util.Set<UUID> ids) {
         return ids.isEmpty() ? null : ids.iterator().next();
@@ -193,6 +247,8 @@ public final class ServerLiveStatus {
                     relayTwoStreams = twoStreamsIn(result.body());
                     relayStreamer = status.streamer();
                     relaySecondStreamer = relaySecondLive ? status.second().streamer() : null;
+                    relayChannel = LiveFeedClient.roomOf(status, false);
+                    relaySecondChannel = LiveFeedClient.roomOf(status.second(), true);
                     relayAtMs = System.currentTimeMillis();
                     relayAskedAtMs = askedAt;
                 }
@@ -211,6 +267,8 @@ public final class ServerLiveStatus {
         relayAskedAtMs = 0L;
         relayStreamer = null;
         relaySecondStreamer = null;
+        relayChannel = LiveFeedClient.CHANNEL_MAIN;
+        relaySecondChannel = LiveFeedClient.CHANNEL_SECOND;
         pollRequested = false;
     }
 }

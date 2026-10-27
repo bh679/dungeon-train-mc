@@ -55,6 +55,8 @@ public final class CommandEvents {
         ReportCarriageCommand.register(event.getDispatcher());
         // /liveappeal <reason> — a player banned from the Live Eye by the text filter asks for review.
         games.brennan.dungeontrain.command.LiveAppealCommand.register(event.getDispatcher());
+        // /livereport [reason] — any player reports a Live Eye streamer for review.
+        games.brennan.dungeontrain.command.LiveReportCommand.register(event.getDispatcher());
         // Dev-only: a relay-free way to drive the remote-echo encounter journal end-to-end.
         // Never registered in production, and only when PlayerMob (whose types the command
         // references) is present.

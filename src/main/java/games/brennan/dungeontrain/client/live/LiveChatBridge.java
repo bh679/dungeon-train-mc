@@ -253,9 +253,11 @@ public final class LiveChatBridge {
         lastPollMs = 0;
         room = LiveChatRoom.roomOf(pick);
         signatures.clear();
-        mc.gui.getChat().addMessage(Component.translatable(LiveChatRules.CONNECTED_KEY,
-            LiveOptionsCommand.pathLink(LiveChatRules.PATH_KEY)).withStyle(ChatFormatting.GRAY));
-        if (pick != null) mc.gui.getChat().addMessage(roomLine(pick));
+        Component connectedLine = Component.translatable(LiveChatRules.CONNECTED_KEY,
+            LiveOptionsCommand.pathLink(LiveChatRules.PATH_KEY)).withStyle(ChatFormatting.GRAY);
+        // [Report streamer] rides on the last line: the room line when there is one.
+        mc.gui.getChat().addMessage(pick == null ? withReport(connectedLine, pick) : connectedLine);
+        if (pick != null) mc.gui.getChat().addMessage(withReport(roomLine(pick), pick));
         if (viaTv) join(mc);
     }
 
@@ -272,7 +274,7 @@ public final class LiveChatBridge {
         signatures.clear();
         printed.clear();
         ChatReactionTracker.forgetLive();
-        if (pick != null) mc.gui.getChat().addMessage(roomLine(pick));
+        if (pick != null) mc.gui.getChat().addMessage(withReport(roomLine(pick), pick));
         if (joinedViaTv) join(mc);
     }
 
@@ -282,6 +284,11 @@ public final class LiveChatBridge {
             ? Component.translatable(ROOM_UNNAMED_KEY, pick.stream())
             : Component.translatable(ROOM_KEY, pick.stream(), pick.streamer());
         return line.copy().withStyle(ChatFormatting.GRAY);
+    }
+
+    /** {@code line} with {@link LiveReportButton}'s [Report streamer] while someone else is on air. */
+    private static Component withReport(Component line, @Nullable LiveChatRoom.Pick pick) {
+        return LiveReportButton.append(line, LiveStatusPoller.current(), role(), pick);
     }
 
     static final String ROOM_KEY = "chat.dungeontrain.live_room.now";
