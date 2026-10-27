@@ -64,17 +64,17 @@ public final class DeathCameraCycle {
 
     /** The world-locked shots of the train, looped until Space. */
     static final List<DeathShot> TRAIN_SHOTS = List.of(
-        DeathShot.world(0.0, 14.0, 6.0, 120, "W-5"),
-        DeathShot.world(0.0, 1.5, 12.0, 120, "W-6"),
-        DeathShot.world(-30.0, 10.0, -14.0, 120, "W-7"),
-        DeathShot.world(25.0, 2.0, -12.0, 120, "W-8"),
-        DeathShot.world(0.0, 20.0, 24.0, 120, "W-9"),
-        DeathShot.world(-12.0, 2.5, -9.0, 120, "W-10")
+        DeathShot.world(0.0, 24.0, 14.0, 120, "W-5"),    // high overhead, a little to the side
+        DeathShot.world(0.0, 3.0, 26.0, 120, "W-6"),     // low and wide from the side
+        DeathShot.world(-55.0, 18.0, -28.0, 120, "W-7"), // far behind, high, far side
+        DeathShot.world(45.0, 4.0, -24.0, 120, "W-8"),   // far ahead, low, far side
+        DeathShot.world(0.0, 36.0, 44.0, 120, "W-9"),    // very high and wide
+        DeathShot.world(-26.0, 5.0, -20.0, 120, "W-10")  // behind, low, far side
     );
 
     private static List<DeathShot> sequence = List.of();
     private static List<DeathShot> reviewSequence;
-    private static boolean reviewLabels;
+    private static boolean reviewLabels = DungeonTrain.isDevBuild();
 
     private static boolean active;
     private static int index;
