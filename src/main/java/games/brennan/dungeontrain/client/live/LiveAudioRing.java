@@ -11,8 +11,10 @@ import java.nio.ByteBuffer;
  * <p>The audio leaves the same ffmpeg run as the picture, so it is in step with it as it arrives; what
  * this keeps in step is playback. A reader plays {@link #TARGET_LAG} behind the newest sample (a cushion
  * for the bursts ffmpeg writes in) and is pulled forward whenever it falls more than {@link #MAX_LAG}
- * behind, so a hitch never leaves the sound running late for good. A reader that runs out of samples
- * gets silence and stays where it is: Minecraft must always get a buffer, or it ends the sound.</p>
+ * behind, so a hitch never leaves the sound running late for good. A read the ring cannot fill whole
+ * gets silence and leaves the cursor where it was: Minecraft must always get a buffer, or it ends the
+ * sound, and a buffer half sound and half silence would crackle. Each such gap lets the cushion grow by
+ * one buffer, so a reader settles just far enough behind to ride out ffmpeg's jitter.</p>
  */
 public final class LiveAudioRing {
 
@@ -49,13 +51,13 @@ public final class LiveAudioRing {
     }
 
     /**
-     * Fill {@code dst} from {@code cursor} (a negative cursor is a new reader) and return the next one.
-     * Bytes the ring does not have yet are left silent, and the cursor does not move past them.
-     * {@code dst} is filled with absolute puts from its position, which it keeps.
+     * Fill {@code dst} with {@code len} bytes from {@code cursor} (a negative cursor is a new reader) and
+     * return the next cursor; when the ring does not hold all {@code len} yet, silence, and the cursor
+     * stays. {@code dst} is filled with absolute puts from its position, which it keeps.
      */
     public synchronized long read(long cursor, ByteBuffer dst, int len) {
         long from = cursorFor(cursor, head);
-        int n = (int) Math.min(len, head - from);
+        int n = head - from >= len ? len : 0;
         int base = dst.position();
         for (int i = 0; i < len; i++) dst.put(base + i, (byte) 0);
         int at = (int) (from % CAPACITY);

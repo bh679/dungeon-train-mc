@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.live;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.vista.TvItems;
 import net.mehvahdjukaar.vista.common.tv.TVBlockEntity;
@@ -7,6 +8,7 @@ import net.mehvahdjukaar.vista.configs.ClientConfigs;
 import net.mehvahdjukaar.vista.integration.sable.SableCompatClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
@@ -15,6 +17,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -31,8 +34,9 @@ import java.util.Map;
  * that only records the TV as a candidate. Once a client tick, {@link #onClientTick} keeps the nearest
  * {@link #MAX_TV_SPEAKERS} candidates playing — Minecraft has few streaming channels, and a TV room holds
  * dozens of screens — and stops the rest, along with any TV that stopped asking (switched off, retuned,
- * broken, out of range). A TV plays only what Vista's own TVs would: Vista's audio mode (with or without
- * a speaker block) and its TV volume, then the Blocks slider.</p>
+ * broken, out of range). Vista's audio mode OFF silences them all; its default, REQUIRE_SPEAKER (a note
+ * block beside the TV), is not asked of a Live Feed TV — almost no TV on the train has one, and the
+ * stream's sound is the point of tuning in. Loudness is Vista's TV volume, then the Blocks slider.</p>
  *
  * <p>Silence rules, checked every tick so a change is heard at once: TV stream sound off, the stream or
  * its streamer muted ({@link LiveViewerMutes}), and this client streaming — its own feed would loop back
@@ -48,11 +52,15 @@ public final class LiveTvSpeakers {
     static final int MAX_TV_SPEAKERS = 4;
     /** The dark channel's looped replay, as a share of full volume. */
     static final float REPLAY_VOLUME = 0.3f;
+    private static final Logger LOGGER = LogUtils.getLogger();
+    /** How often the speakers' line goes to the debug log while any play. */
+    private static final long PERF_MS = 30_000;
+    private static long lastPerfMs;
     /** A speaker that failed to start is retried after this long. */
     private static final long RETRY_MS = 250;
 
     /** A placed TV asking to play this tick. */
-    private record Candidate(BlockPos pos, LiveFeedSource.Hearing hearing, Vec3 at, double distance, boolean speakerBlock) {}
+    private record Candidate(BlockPos pos, LiveFeedSource.Hearing hearing, Vec3 at, double distance) {}
 
     private static final class Speaker {
         final LiveSpeakerSound sound;
@@ -82,7 +90,7 @@ public final class LiveTvSpeakers {
         double d = at.distanceTo(Minecraft.getInstance().gameRenderer.getMainCamera().getPosition());
         if (d > RANGE) return;
         BlockPos pos = tv.getBlockPos().immutable();
-        CANDIDATES.put(pos, new Candidate(pos, h, at, d, tv.hasSpeaker()));
+        CANDIDATES.put(pos, new Candidate(pos, h, at, d));
     }
 
     /** The stream most recently heard, or null. */
@@ -99,9 +107,11 @@ public final class LiveTvSpeakers {
             CANDIDATES.clear();
             return;
         }
-        boolean mayPlay = !LiveStreamController.get().streaming();
+        // Streaming: never (echo). Master or Blocks at zero: Minecraft would refuse every start, so don't ask.
+        boolean mayPlay = !LiveStreamController.get().streaming()
+            && mc.options.getSoundSourceVolume(SoundSource.MASTER) > 0 && mc.options.getSoundSourceVolume(SoundSource.BLOCKS) > 0;
         LiveFeedSource.Hearing flatHearing = mayPlay ? flatHearing(mc) : null;
-        if (flatHearing != null && !mayHear(flatHearing, true)) flatHearing = null;
+        if (flatHearing != null && !mayHear(flatHearing)) flatHearing = null;
         flat = reconcile(flat, flatHearing, null, mc);
 
         List<Candidate> wanted = new ArrayList<>();
@@ -109,7 +119,7 @@ public final class LiveTvSpeakers {
             for (Candidate c : CANDIDATES.values()) {
                 // The worn or held TV already plays this stream: no second copy out of the TVs around.
                 if (flatHearing != null && flatHearing.session() == c.hearing().session()) continue;
-                if (mayHear(c.hearing(), c.speakerBlock())) wanted.add(c);
+                if (mayHear(c.hearing())) wanted.add(c);
             }
             wanted.sort(Comparator.comparingDouble(Candidate::distance));
         }
@@ -130,6 +140,11 @@ public final class LiveTvSpeakers {
         }
         LiveFeedSource.Hearing now = flatHearing != null ? flatHearing : wanted.isEmpty() ? null : wanted.get(0).hearing();
         if (now != null) heard = now;
+        long ms = System.currentTimeMillis();
+        if ((flat != null || !TVS.isEmpty()) && ms - lastPerfMs >= PERF_MS) {
+            lastPerfMs = ms;
+            LOGGER.debug("[DungeonTrain] [live] {}", perf());
+        }
     }
 
     /** What the worn TV (the pinned box) or a TV in hand plays, flat; null when neither. */
@@ -156,9 +171,9 @@ public final class LiveTvSpeakers {
         };
     }
 
-    /** Whether {@code h} may play: Vista's audio mode, TV stream sound, and the viewer's mutes. */
-    private static boolean mayHear(LiveFeedSource.Hearing h, boolean speakerBlock) {
-        return ClientConfigs.AUDIO_MODE.get().isOn(speakerBlock) && LiveViewerMutes.audible(h.streamKey(), h.streamer());
+    /** Whether {@code h} may play: Vista's audio mode not OFF, TV stream sound on, and the viewer's mutes. */
+    private static boolean mayHear(LiveFeedSource.Hearing h) {
+        return ClientConfigs.AUDIO_MODE.get() != ClientConfigs.AudioMode.OFF && LiveViewerMutes.audible(h.streamKey(), h.streamer());
     }
 
     /**
@@ -182,6 +197,10 @@ public final class LiveTvSpeakers {
             if (System.currentTimeMillis() - current.startedMs < RETRY_MS) return current;
         }
         if (current != null) current.sound.end();
+        boolean restart = current != null && current.session == h.session();
+        if (restart) LOGGER.debug("[DungeonTrain] live speaker: restarting {} (dropped)", h.streamKey());
+        else LOGGER.info("[DungeonTrain] live speaker: {} plays {}{}", at == null ? "worn/held TV" : "TV at " + at,
+            h.streamKey(), h.replay() ? " (replay)" : "");
         LiveSpeakerSound sound = new LiveSpeakerSound(h.session().audio(), at, volume);
         mc.getSoundManager().play(sound);
         LiveMuteChat.heard(h);
@@ -204,7 +223,12 @@ public final class LiveTvSpeakers {
     /** The {@code [live]} perf line: speakers playing and the worst lag behind the feed, ms. */
     static String perf() {
         long lag = flat != null ? flat.sound.lagMs() : 0;
-        for (Speaker s : TVS.values()) lag = Math.max(lag, s.sound.lagMs());
-        return "speakers " + (TVS.size() + (flat != null ? 1 : 0)) + " audio lag " + lag + " ms";
+        StringBuilder at = new StringBuilder();
+        for (Speaker s : TVS.values()) {
+            lag = Math.max(lag, s.sound.lagMs());
+            at.append(String.format(java.util.Locale.ROOT, " (%.1f %.1f %.1f)", s.sound.getX(), s.sound.getY(), s.sound.getZ()));
+        }
+        return "speakers " + (TVS.size() + (flat != null ? 1 : 0)) + (flat != null ? " flat" : "") + at
+            + " audio lag " + lag + " ms";
     }
 }

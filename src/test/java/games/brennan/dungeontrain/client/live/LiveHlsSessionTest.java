@@ -124,6 +124,9 @@ class LiveHlsSessionTest {
         assertTrue(LiveHlsSession.audioMissing("Stream map '' matches no streams."));
         assertTrue(LiveHlsSession.audioMissing("Failed to set value '0:a:0' for option 'map': Invalid argument"));
         assertFalse(LiveHlsSession.audioMissing("Connection timed out"));
+        assertTrue(LiveHlsSession.audioOutputFailed("Error opening output tcp://127.0.0.1:54544: Connection refused"),
+            "a sound output that will not open falls back to the picture alone");
+        assertFalse(LiveHlsSession.audioOutputFailed("Error opening input https://x/live.m3u8"));
         assertFalse(LiveHlsSession.audioMissing("Stream map '0:v:0' matches no streams."));
     }
 

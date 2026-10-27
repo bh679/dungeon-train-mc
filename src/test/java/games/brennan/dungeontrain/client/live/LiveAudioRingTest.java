@@ -47,23 +47,24 @@ class LiveAudioRingTest {
     }
 
     @Test
-    void readsWhatWasWrittenThenSilenceWithoutRunningAhead() {
+    void readsWholeBuffersOrSilenceWithoutRunningAhead() {
         LiveAudioRing ring = new LiveAudioRing();
         byte[] data = ramp(400, 1);
         ring.write(data, 0, data.length);
-        long cursor = 300; // within the lag window
-        ByteBuffer out = ByteBuffer.allocate(200);
-        long next = ring.read(cursor, out, 200);
-        assertEquals(400, next, "only up to what exists");
-        byte[] got = bytes(out, 200);
-        byte[] want = new byte[200];
-        System.arraycopy(data, 300, want, 0, 100);
-        assertArrayEquals(want, got, "the rest is silence");
+        ByteBuffer out = ByteBuffer.allocate(100);
+        long next = ring.read(200, out, 100); // within the lag window
+        assertEquals(300, next);
+        byte[] want = new byte[100];
+        System.arraycopy(data, 200, want, 0, 100);
+        assertArrayEquals(want, bytes(out, 100));
 
-        // Underrun: no new data, so the cursor waits instead of skipping the next sound.
-        ByteBuffer again = ByteBuffer.allocate(100);
-        assertEquals(400, ring.read(next, again, 100));
-        assertArrayEquals(new byte[100], bytes(again, 100));
+        // Only 100 bytes left and 200 asked: silence, never half sound and half silence (a crackle),
+        // and the cursor waits instead of skipping the next sound, so the cushion grows.
+        ByteBuffer again = ByteBuffer.allocate(200);
+        assertEquals(300, ring.read(next, again, 200));
+        assertArrayEquals(new byte[200], bytes(again, 200));
+        ring.write(data, 0, 100);
+        assertEquals(500, ring.read(next, again, 200), "once the ring holds a whole buffer, it plays");
     }
 
     @Test

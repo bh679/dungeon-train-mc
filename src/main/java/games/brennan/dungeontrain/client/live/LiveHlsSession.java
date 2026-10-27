@@ -126,6 +126,11 @@ public final class LiveHlsSession implements IMediaSession {
     private volatile long lastAudioMs;
     /** How long a feed may go without sound and still count as {@link #hasSound sounding}. */
     private static final long AUDIO_FRESH_MS = 2_000;
+    /**
+     * Where a run's sound comes back: IPv4 loopback by number, never {@code getLoopbackAddress()}, which
+     * Minecraft's JVM (IPv6 preferred) answers with {@code ::1} while ffmpeg dials {@code 127.0.0.1}.
+     */
+    private static final InetAddress AUDIO_HOST = ipv4Loopback();
     /** How long a run's ffmpeg has to connect its audio output. */
     private static final int AUDIO_ACCEPT_MS = 10_000;
 
@@ -387,7 +392,7 @@ public final class LiveHlsSession implements IMediaSession {
                 LOGGER.info("[DungeonTrain] live decoder: {} at {}x{}{}", mediaUrl, width, height,
                     mediaUrl.equals(playlistUrl) ? "" : " (a rendition of " + playlistUrl + ")");
                 audioMissing = false;
-                sound = local || noAudio ? null : new ServerSocket(0, 1, InetAddress.getLoopbackAddress());
+                sound = local || noAudio ? null : new ServerSocket(0, 1, AUDIO_HOST);
                 int port = sound != null ? sound.getLocalPort() : 0;
                 p = ffmpeg.runFFmpeg(local ? localArgs(mediaUrl, width, height) : args(mediaUrl, width, height, replay, catchup, port));
                 LivePerfStats.decoderRun();
@@ -433,7 +438,7 @@ public final class LiveHlsSession implements IMediaSession {
             if (audioMissing && !noAudio) {
                 // The stream has no sound: decode its picture alone from now on, straight away.
                 noAudio = true;
-                LOGGER.info("[DungeonTrain] live decoder: {} has no audio track, picture only", playlistUrl);
+                LOGGER.info("[DungeonTrain] live decoder: no sound for {} (no audio track, or its output failed), picture only", playlistUrl);
                 continue;
             }
             if (closed || finished || refused || idle()) break;
@@ -444,9 +449,17 @@ public final class LiveHlsSession implements IMediaSession {
         status = frameSeq == 0 ? MediaStatus.LOADING : MediaStatus.BUFFERING;
     }
 
-    /** A decoder stderr line: notes a run whose audio map found no track (the stream has no sound). */
+    /**
+     * A decoder stderr line: notes a run whose sound cannot be had — no audio track, or its loopback
+     * output would not open — so the next run decodes the picture alone rather than failing again.
+     */
     private void onDecoderError(String line) {
-        if (audioMissing(line)) audioMissing = true;
+        if (audioMissing(line) || audioOutputFailed(line)) audioMissing = true;
+    }
+
+    /** Whether an ffmpeg error line says the loopback sound output would not open. Pure, for the tests. */
+    static boolean audioOutputFailed(String line) {
+        return line.contains("Error opening output") && line.contains("tcp://127.0.0.1:");
     }
 
     /**
@@ -486,6 +499,14 @@ public final class LiveHlsSession implements IMediaSession {
         }, "dt-live-audio");
         t.setDaemon(true);
         t.start();
+    }
+
+    private static InetAddress ipv4Loopback() {
+        try {
+            return InetAddress.getByAddress(new byte[] {127, 0, 0, 1});
+        } catch (java.net.UnknownHostException e) {
+            throw new IllegalStateException(e); // four bytes is always a valid address
+        }
     }
 
     private static void closeQuietly(@Nullable ServerSocket s) {
