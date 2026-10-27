@@ -1,0 +1,1144 @@
+{
+ "v": 17,
+ "classes": [
+  {
+   "id": "c0",
+   "name": "Archivist",
+   "color": "#c9a7e0"
+  },
+  {
+   "id": "c3",
+   "name": "Lover",
+   "color": "#f08aa8"
+  },
+  {
+   "id": "c4",
+   "name": "Trader",
+   "color": "#e0c070"
+  },
+  {
+   "id": "c5",
+   "name": "Hoarder",
+   "color": "#8fc97a"
+  },
+  {
+   "id": "c6",
+   "name": "Crafter",
+   "color": "#c7b08a"
+  },
+  {
+   "id": "c7",
+   "name": "Tank",
+   "color": "#e8956a"
+  },
+  {
+   "id": "c8",
+   "name": "Speedster",
+   "color": "#7fb4f0"
+  },
+  {
+   "id": "c9",
+   "name": "Knight",
+   "color": "#d9534f"
+  },
+  {
+   "id": "cbuilder",
+   "name": "Builder",
+   "color": "#b0b8c8"
+  },
+  {
+   "id": "cwarlock",
+   "name": "Warlock",
+   "color": "#a07cff"
+  }
+ ],
+ "perks": [
+  {
+   "id": "root",
+   "cls": null,
+   "name": "The Engine",
+   "desc": "The starting point. Not a perk, does nothing.",
+   "x": 400.0,
+   "y": 400.0
+  },
+  {
+   "id": "stackable-book-quill",
+   "cls": "c0",
+   "name": "Stackable Book and Quill",
+   "desc": "+1 to stack per teir",
+   "x": 398.0,
+   "y": 294.5,
+   "tier": 1
+  },
+  {
+   "id": "extra-cam-shots",
+   "cls": "c0",
+   "name": "Extra Cam-Shots",
+   "desc": "50% a cameras can take 1 extra shots per teir \n+ 50% with each point.",
+   "x": 330.9,
+   "y": 121.8,
+   "tier": 3
+  },
+  {
+   "id": "live-eye-safe-duration",
+   "cls": "c0",
+   "name": "Live Eye Safe Duration",
+   "desc": "Your Live Eye cant be forcably taken for extra 5min with every point (half goes to first10min, half to second 10min)",
+   "x": 388.7,
+   "y": 192.8,
+   "tier": 2
+  },
+  {
+   "id": "vote-weight",
+   "cls": "c0",
+   "name": "Vote Weight",
+   "desc": "Your votes in Live Eyes and books count for +1 for every rank.",
+   "x": 426.5,
+   "y": 120.4,
+   "tier": 3
+  },
+  {
+   "id": "chest-sense",
+   "cls": "c5",
+   "name": "Chest Sense",
+   "desc": "Once per 5 min you can do a chest sense, to detect chest within 4+X blocks for 5+x seconds",
+   "x": 231.4,
+   "y": 335.0,
+   "tier": 2
+  },
+  {
+   "id": "pet-health",
+   "cls": "c3",
+   "name": "Pet Health",
+   "desc": "Increase health of pets by 1 heart per teir",
+   "x": 519.1,
+   "y": 208.0,
+   "tier": 2
+  },
+  {
+   "id": "good-gifter",
+   "cls": "c3",
+   "name": "Good Gifter",
+   "desc": "Animals are less picky about food. At max level, you can tame them without food\n\nPlayermob like gifts more",
+   "x": 453.7,
+   "y": 246.2,
+   "tier": 2
+  },
+  {
+   "id": "friendliness",
+   "cls": "c3",
+   "name": "Friendliness",
+   "desc": "Playermobs like you more, and animals are easier to tame",
+   "x": 463.4,
+   "y": 316.3,
+   "tier": 1
+  },
+  {
+   "id": "heal-friends",
+   "cls": "c3",
+   "name": "Heal Friends",
+   "desc": "Right-click a player or tame with food to feed and heal them; rank 2 also gives Regeneration I for 5 s",
+   "x": 529.5,
+   "y": 290.5,
+   "tier": 2
+  },
+  {
+   "id": "spare-enemies",
+   "cls": "c3",
+   "name": "Spare Enemies",
+   "desc": "Hostiles you drop under 20% health flee and pay the XP a kill would have; rank 2 raises it to 35%",
+   "x": 489.6,
+   "y": 158.3,
+   "tier": 3
+  },
+  {
+   "id": "save-ally",
+   "cls": "c3",
+   "name": "Save Ally",
+   "desc": "Once per tier, a player who dies within 12 blocks of you is left at one heart beside  you; in singleplayer your tames respawn next tier",
+   "x": 593.2,
+   "y": 202.9,
+   "tier": 3
+  },
+  {
+   "id": "see-trade-values",
+   "cls": "c4",
+   "name": "See Trade Values",
+   "desc": "Hovering any item shows what it trades for; rank 2 also shows the best nearby buyer",
+   "x": 340.0,
+   "y": 313.9,
+   "tier": 1
+  },
+  {
+   "id": "persuade-enemy",
+   "cls": "c4",
+   "name": "Persuade Enemy",
+   "desc": "Neutral mobs (piglins, endermen, zombie piglins) ignore you unless attacked.\n\nMobs can be persuaded to stop attacking with gifts",
+   "x": 292.7,
+   "y": 244.0,
+   "tier": 2
+  },
+  {
+   "id": "restock-villager",
+   "cls": "c4",
+   "name": "Restock Villager",
+   "desc": "Restock a villager X times per villager",
+   "x": 273.8,
+   "y": 156.8,
+   "tier": 3
+  },
+  {
+   "id": "bigger-backpacks",
+   "cls": "c5",
+   "name": "Bigger Backpacks",
+   "desc": "Apples have a 25% chance to be worth 2.\n+ 25% chance with each level",
+   "x": 300.8,
+   "y": 365.6,
+   "tier": 1
+  },
+  {
+   "id": "luck",
+   "cls": "c5",
+   "name": "Luck",
+   "desc": "1 in 20 containers rolls with Luck per rank (2 in 20, 3 in 20, ...)",
+   "x": 118.2,
+   "y": 363.7,
+   "tier": 3
+  },
+  {
+   "id": "looting",
+   "cls": "c5",
+   "name": "Looting",
+   "desc": "Mobs drop 1 extra item 1% of the time for each point",
+   "x": 141.1,
+   "y": 270.8,
+   "tier": 3
+  },
+  {
+   "id": "craft-level-stats",
+   "cls": "c6",
+   "name": "Craft Level Stats",
+   "desc": "Items you craft get the stats of the level you are in, as if looted there. (Randomized - but higher teirs get higher chance of max for that level).",
+   "x": 397.9,
+   "y": 505.0,
+   "tier": 1
+  },
+  {
+   "id": "enchant-cost",
+   "cls": "c6",
+   "name": "Enchant Cost",
+   "desc": "Enchanting requires 1 level less per rank",
+   "x": 370.7,
+   "y": 606.4,
+   "tier": 2
+  },
+  {
+   "id": "re-enchant",
+   "cls": "c6",
+   "name": "Re-enchant",
+   "desc": "Already-enchanted items can go back on the table and keep what they have",
+   "x": 408.0,
+   "y": 647.4,
+   "tier": 3
+  },
+  {
+   "id": "enchant-max",
+   "cls": "c6",
+   "name": "Enchant Max",
+   "desc": "Enchantments can roll X level past their normal max",
+   "x": 323.3,
+   "y": 682.7,
+   "tier": 3
+  },
+  {
+   "id": "enchant-bonus",
+   "cls": "c6",
+   "name": "Enchant Bonus",
+   "desc": "Worn armour and held weapons act one enchantment level higher on everything they already have",
+   "x": 480.1,
+   "y": 677.5,
+   "tier": 3
+  },
+  {
+   "id": "health",
+   "cls": "c7",
+   "name": "Health",
+   "desc": "+1 hearts per rank",
+   "x": 460.0,
+   "y": 486.1,
+   "tier": 1
+  },
+  {
+   "id": "armour",
+   "cls": "c7",
+   "name": "Armour",
+   "desc": "+2 armour per rank, ignores the diamond-over-leather penalty",
+   "x": 479.1,
+   "y": 599.5,
+   "tier": 2
+  },
+  {
+   "id": "totem",
+   "cls": "c7",
+   "name": "Totem",
+   "desc": "Totem of Undying effect without the item, X(10-20?) min cooldown; less cooldown each rank",
+   "x": 541.4,
+   "y": 639.0,
+   "tier": 3
+  },
+  {
+   "id": "hunger",
+   "cls": "c7",
+   "name": "Hunger",
+   "desc": "Hunger drains X% slower",
+   "x": 522.4,
+   "y": 545.6,
+   "tier": 2
+  },
+  {
+   "id": "speed",
+   "cls": "c8",
+   "name": "Speed",
+   "desc": "+1% base speed per rank",
+   "x": 336.6,
+   "y": 483.7,
+   "tier": 1
+  },
+  {
+   "id": "sprint-speed",
+   "cls": "c8",
+   "name": "Sprint Speed",
+   "desc": "Sprinting is 5% faster per rank",
+   "x": 215.4,
+   "y": 646.1,
+   "tier": 3
+  },
+  {
+   "id": "sprint-jump",
+   "cls": "c8",
+   "name": "Sprint Jump",
+   "desc": "Sprint-jumps carry 0,1 block further per rank",
+   "x": 196.7,
+   "y": 575.8,
+   "tier": 3
+  },
+  {
+   "id": "sprint-hunger",
+   "cls": "c8",
+   "name": "Sprint Hunger",
+   "desc": "Sprint uses less 10% hunger. +5% for each point.",
+   "x": 267.5,
+   "y": 532.4,
+   "tier": 2
+  },
+  {
+   "id": "wind-resistance",
+   "cls": "c8",
+   "name": "Wind Resistance",
+   "desc": "Wind Resistance +10% per rank",
+   "x": 298.6,
+   "y": 652.2,
+   "tier": 3
+  },
+  {
+   "id": "haste",
+   "cls": "c8",
+   "name": "Haste",
+   "desc": "Increased mining speed per rank",
+   "x": 313.3,
+   "y": 566.0,
+   "tier": 2
+  },
+  {
+   "id": "damage",
+   "cls": "c9",
+   "name": "Damage",
+   "desc": "+0.5 attack damage per rank",
+   "x": 499.2,
+   "y": 434.4,
+   "tier": 1
+  },
+  {
+   "id": "debuff-aura",
+   "cls": "c9",
+   "name": "Debuff Aura",
+   "desc": "Hostiles within 8 blocks get Weakness 1+Rank/2; rank 2 adds Slowness Rank/2\n\nActive for 20s\nCooldown 30s",
+   "x": 597.7,
+   "y": 432.6,
+   "tier": 2
+  },
+  {
+   "id": "crits",
+   "cls": "c9",
+   "name": "Crits",
+   "desc": "1% chance of crit on every hit",
+   "x": 588.6,
+   "y": 487.2,
+   "tier": 2
+  },
+  {
+   "id": "kill-buff",
+   "cls": "c9",
+   "name": "Kill Buff",
+   "desc": "Kills grant 2 s of Strength I and heal half a heart",
+   "x": 669.5,
+   "y": 445.4,
+   "tier": 3
+  },
+  {
+   "id": "vampirism",
+   "cls": "c9",
+   "name": "Vampirism",
+   "desc": "Half a heart per kill, per point",
+   "x": 647.4,
+   "y": 517.0,
+   "tier": 3
+  },
+  {
+   "id": "drift-chance",
+   "cls": "cbuilder",
+   "name": "Drift Chance",
+   "desc": "More drifting carriages roll into your train each band",
+   "x": 299.5,
+   "y": 430.5,
+   "tier": 1
+  },
+  {
+   "id": "own-carriage-return",
+   "cls": "cbuilder",
+   "name": "Own Carriage Return",
+   "desc": "Carriages you built come back around to you more often",
+   "x": 237.3,
+   "y": 491.9,
+   "tier": 2
+  },
+  {
+   "id": "bonus-blocks",
+   "cls": "cbuilder",
+   "name": "Bonus Blocks",
+   "desc": "A chest of building blocks in every drifting carriage you find. (once per carraige per life)",
+   "x": 201.5,
+   "y": 454.8,
+   "tier": 2
+  },
+  {
+   "id": "drift-reach",
+   "cls": "cbuilder",
+   "name": "Drift Reach",
+   "desc": "Your builds travel to more players' trains",
+   "x": 149.4,
+   "y": 537.2,
+   "tier": 3
+  },
+  {
+   "id": "keep-carriage",
+   "cls": "cbuilder",
+   "name": "Keep Carriage",
+   "desc": "X drifting carriages you have edited is pinned and follows you into your next run",
+   "x": 116.3,
+   "y": 442.2,
+   "tier": 3
+  },
+  {
+   "id": "drift-gift-repaid",
+   "cls": "cbuilder",
+   "name": "Drift Gift Repaid",
+   "desc": "Get rapid in emeralds of gifts you leave in drifting carraiges",
+   "x": 200.5,
+   "y": 404.3,
+   "tier": 2
+  },
+  {
+   "id": "reduced-reduction",
+   "cls": "c4",
+   "name": "Reduced Reduction",
+   "desc": "Items reduce their worth slower in the trade anything slot",
+   "x": 235.1,
+   "y": 293.9,
+   "tier": 2
+  },
+  {
+   "id": "healing",
+   "cls": "c7",
+   "name": "Healing",
+   "desc": "You gain half a heart every 1min - X*5s",
+   "x": 601.0,
+   "y": 582.6,
+   "tier": 3
+  },
+  {
+   "id": "cooking-time",
+   "cls": "c6",
+   "name": "Cooking Time",
+   "desc": "Reduces cooking /smelting time",
+   "x": 422.1,
+   "y": 559.1,
+   "tier": 2
+  },
+  {
+   "id": "shared-aura",
+   "cls": "c3",
+   "name": "Shared Arua",
+   "desc": "Allies get buffs",
+   "x": 584.1,
+   "y": 262.9,
+   "tier": 2
+  },
+  {
+   "id": "throwables",
+   "cls": "cwarlock",
+   "name": "Throwables",
+   "desc": "Any throwable does damage or an effect: slimeballs slow and hurt, snowballs frostbite and hurt, fire charges work, wind charges hurt too",
+   "x": 500.5,
+   "y": 369.5,
+   "tier": 1
+  },
+  {
+   "id": "teleport-player",
+   "cls": "cwarlock",
+   "name": "Teleport Player",
+   "desc": "Teleport a player to you",
+   "x": 595.0,
+   "y": 326.5,
+   "tier": 2
+  },
+  {
+   "id": "standless-brewing",
+   "cls": "cwarlock",
+   "name": "Standless Brewing",
+   "desc": "Brew potions without a brewing stand",
+   "x": 601.5,
+   "y": 375.4,
+   "tier": 2
+  },
+  {
+   "id": "summon-lightning",
+   "cls": "cwarlock",
+   "name": "Summon Lightning",
+   "desc": "Call down lightning",
+   "x": 717.8,
+   "y": 361.8,
+   "tier": 3
+  },
+  {
+   "id": "convert-mob",
+   "cls": "cwarlock",
+   "name": "Convert Mob",
+   "desc": "Turn a mob to your side",
+   "x": 653.4,
+   "y": 288.4,
+   "tier": 3
+  },
+  {
+   "id": "fav-author",
+   "cls": "c0",
+   "name": "Fav Author",
+   "desc": "Subscribe to an author to get more of their books / photos. More points, more authors",
+   "x": 431.3,
+   "y": 194.2,
+   "tier": 2
+  },
+  {
+   "id": "reroll-trades",
+   "cls": "c4",
+   "name": "ReRoll Trades",
+   "desc": "Reroll a villagers trades once per level per vilalgeer",
+   "x": 215.2,
+   "y": 197.6,
+   "tier": 3
+  },
+  {
+   "id": "extra-journal",
+   "cls": "c0",
+   "name": "Extra Journal",
+   "desc": "Journals take one more photo before burning",
+   "x": 328.9,
+   "y": 218.3,
+   "tier": 2
+  }
+ ],
+ "links": [
+  {
+   "a": "root",
+   "b": "stackable-book-quill",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "root",
+   "b": "friendliness",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "root",
+   "b": "see-trade-values",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "root",
+   "b": "bigger-backpacks",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "root",
+   "b": "craft-level-stats",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "root",
+   "b": "health",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "root",
+   "b": "speed",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "root",
+   "b": "damage",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "see-trade-values",
+   "b": "bigger-backpacks",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "craft-level-stats",
+   "b": "health",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "heal-friends",
+   "b": "friendliness",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "persuade-enemy",
+   "b": "see-trade-values",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "enchant-cost",
+   "b": "craft-level-stats",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "armour",
+   "b": "health",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "debuff-aura",
+   "b": "damage",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "crits",
+   "b": "damage",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "enchant-cost",
+   "b": "re-enchant",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "armour",
+   "b": "totem",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "live-eye-safe-duration",
+   "b": "extra-cam-shots",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "restock-villager",
+   "b": "persuade-enemy",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "looting",
+   "b": "persuade-enemy",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "enchant-max",
+   "b": "enchant-cost",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "enchant-bonus",
+   "b": "re-enchant",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "enchant-bonus",
+   "b": "armour",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "sprint-hunger",
+   "b": "sprint-speed",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "kill-buff",
+   "b": "debuff-aura",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "vampirism",
+   "b": "crits",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "good-gifter",
+   "b": "spare-enemies",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "restock-villager",
+   "b": "looting",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "wind-resistance",
+   "b": "haste",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "hunger",
+   "b": "sprint-hunger",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "persuade-enemy",
+   "b": "spare-enemies",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "stackable-book-quill",
+   "b": "friendliness",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "damage",
+   "b": "health",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "see-trade-values",
+   "b": "stackable-book-quill",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "good-gifter",
+   "b": "pet-health",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "pet-health",
+   "b": "heal-friends",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "drift-chance",
+   "b": "own-carriage-return",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "drift-chance",
+   "b": "bonus-blocks",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "own-carriage-return",
+   "b": "drift-reach",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "drift-reach",
+   "b": "keep-carriage",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "bonus-blocks",
+   "b": "drift-reach",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "bonus-blocks",
+   "b": "bigger-backpacks",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "drift-chance",
+   "b": "bigger-backpacks",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "luck",
+   "b": "chest-sense",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "drift-gift-repaid",
+   "b": "keep-carriage",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "reduced-reduction",
+   "b": "see-trade-values",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "reduced-reduction",
+   "b": "restock-villager",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "drift-gift-repaid",
+   "b": "drift-chance",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "own-carriage-return",
+   "b": "keep-carriage",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "drift-chance",
+   "b": "root",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "bigger-backpacks",
+   "b": "chest-sense",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "bigger-backpacks",
+   "b": "drift-gift-repaid",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "live-eye-safe-duration",
+   "b": "vote-weight",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "friendliness",
+   "b": "speed",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "health",
+   "b": "pet-health",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "drift-gift-repaid",
+   "b": "chest-sense",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "good-gifter",
+   "b": "friendliness",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "healing",
+   "b": "hunger",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "hunger",
+   "b": "health",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "healing",
+   "b": "vampirism",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "health",
+   "b": "cooking-time",
+   "kind": "cross",
+   "oneWay": true
+  },
+  {
+   "a": "cooking-time",
+   "b": "craft-level-stats",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "hunger",
+   "b": "cooking-time",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "shared-aura",
+   "b": "heal-friends",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "shared-aura",
+   "b": "debuff-aura",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "shared-aura",
+   "b": "save-ally",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "haste",
+   "b": "speed",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "speed",
+   "b": "sprint-hunger",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "sprint-jump",
+   "b": "sprint-hunger",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "healing",
+   "b": "totem",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "looting",
+   "b": "kill-buff",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "looting",
+   "b": "extra-cam-shots",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "bonus-blocks",
+   "b": "luck",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "chest-sense",
+   "b": "looting",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "save-ally",
+   "b": "totem",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "shared-aura",
+   "b": "healing",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "drift-gift-repaid",
+   "b": "see-trade-values",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "root",
+   "b": "throwables",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "throwables",
+   "b": "teleport-player",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "throwables",
+   "b": "standless-brewing",
+   "kind": "req",
+   "oneWay": false
+  },
+  {
+   "a": "teleport-player",
+   "b": "friendliness",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "persuade-enemy",
+   "b": "convert-mob",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "teleport-player",
+   "b": "convert-mob",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "standless-brewing",
+   "b": "summon-lightning",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "crits",
+   "b": "summon-lightning",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "heal-friends",
+   "b": "convert-mob",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "fav-author",
+   "b": "stackable-book-quill",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "fav-author",
+   "b": "vote-weight",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "damage",
+   "b": "throwables",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "throwables",
+   "b": "friendliness",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "craft-level-stats",
+   "b": "speed",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "speed",
+   "b": "drift-chance",
+   "kind": "cross",
+   "oneWay": false
+  },
+  {
+   "a": "reroll-trades",
+   "b": "persuade-enemy",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "reduced-reduction",
+   "b": "reroll-trades",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "stackable-book-quill",
+   "b": "extra-journal",
+   "kind": "req",
+   "oneWay": true
+  },
+  {
+   "a": "extra-cam-shots",
+   "b": "extra-journal",
+   "kind": "req",
+   "oneWay": true
+  }
+ ]
+}

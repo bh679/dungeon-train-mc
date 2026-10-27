@@ -485,6 +485,12 @@ logoFile="logo.png"
 [[mixins]]
     config="${mod_id}.distanthorizons.mixins.json"
 
+# JourneyMap (optional, players add it) scans chunks itself, so it mapped the sealed world over a
+# dimensional room and the twins under the terrain floor. dungeontrain.journeymap.mixins.json, gated by
+# JourneyMapMixinPlugin, hides the same rows from its map as the renderer does. No-op when JM is absent.
+[[mixins]]
+    config="${mod_id}.journeymap.mixins.json"
+
 # Sodium replaces chunk meshing wholesale, so the upside-down band's per-block flip needs a second
 # copy of itself on Sodium's pipeline (dungeontrain.sodium.mixins.json, gated by SodiumMixinPlugin).
 # Every Iris install has Sodium under it, and the modpack ships both. No dependency is declared here:

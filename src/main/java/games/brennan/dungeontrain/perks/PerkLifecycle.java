@@ -30,6 +30,7 @@ public final class PerkLifecycle {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         PerkRegistry.bootstrap();
         Perks.sync(player);
+        PerkBalances.sync(player);
         Perks.playerReady(player);
         LOGGER.debug("[DungeonTrain] perks on login for {}: {}", player.getScoreboardName(),
             Perks.describe(Perks.state(player)));
@@ -42,6 +43,7 @@ public final class PerkLifecycle {
             Perks.clearActive(player);
         }
         Perks.sync(player);
+        PerkBalances.sync(player);
         Perks.playerReady(player);
     }
 
@@ -49,6 +51,7 @@ public final class PerkLifecycle {
     public static void onChangeDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         Perks.sync(player);
+        PerkBalances.sync(player);
         Perks.playerReady(player);
     }
 }

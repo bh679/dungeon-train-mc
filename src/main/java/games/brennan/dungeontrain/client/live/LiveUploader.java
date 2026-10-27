@@ -42,6 +42,10 @@ import java.util.regex.Pattern;
  * skipped — viewers see a jump, not a crash. An unanswered presign (relay down, 5xx) backs off
  * 1 s, 2 s, 4 s … up to 10 s instead of asking again every poll.</p>
  *
+ * <p>Every segment PUT is timed into a {@link LiveUploadHealth} (presign calls never are), which the
+ * adaptive quality reads. While the encoder is swapped for another at a new bitrate the uploader is
+ * {@link #hold held}: no playlist goes out, so the old encoder's ENDLIST never reaches viewers.</p>
+ *
  * <p>Every pass runs on the uploader's own thread — the final one on a clean stop too, so two passes
  * never touch the upload bookkeeping at once; {@link #close(boolean, long)} only waits for it, and
  * cuts every call short at its deadline.</p>
@@ -87,6 +91,10 @@ public final class LiveUploader implements AutoCloseable {
     private final Map<String, Integer> failures = new java.util.HashMap<>();
     /** Sequence numbers of segments given up on: never on storage, never in a published playlist. */
     private final NavigableSet<Long> skippedSeqs = new TreeSet<>();
+    /** Sequence numbers where a restarted encoder picked the stream up (ffmpeg's own DISCONTINUITY tags). */
+    private final NavigableSet<Long> encoderBreaks = new TreeSet<>();
+    private final LiveUploadHealth health;
+    private volatile boolean held;
     private String lastPublished;
     private long presignBackoffMs; // uploader thread only
     private volatile boolean running = true;
@@ -99,17 +107,23 @@ public final class LiveUploader implements AutoCloseable {
     /** The newest segment index a published playlist names; −1 before the first. */
     private volatile long publishedThrough = -1;
 
-    public LiveUploader(Path dir, String token, Consumer<String> onCutOff) {
-        this(dir, token, onCutOff, LIVE, true);
+    public LiveUploader(Path dir, String token, Consumer<String> onCutOff, LiveUploadHealth health) {
+        this(dir, token, onCutOff, LIVE, System::currentTimeMillis, health, true);
     }
 
     LiveUploader(Path dir, String token, Consumer<String> onCutOff, Storage storage, boolean start) {
         this(dir, token, onCutOff, storage, System::currentTimeMillis, start);
     }
 
-    /** {@code start} false = the thread is not started; the caller drives {@link #pass} (tests). */
     LiveUploader(Path dir, String token, Consumer<String> onCutOff, Storage storage, LongSupplier clock, boolean start) {
+        this(dir, token, onCutOff, storage, clock, new LiveUploadHealth(10), start); // tests: 10 s segments
+    }
+
+    /** {@code start} false = the thread is not started; the caller drives {@link #pass} (tests). */
+    LiveUploader(Path dir, String token, Consumer<String> onCutOff, Storage storage, LongSupplier clock,
+                 LiveUploadHealth health, boolean start) {
         this.dir = dir;
+        this.health = health;
         this.token = token;
         this.onCutOff = onCutOff;
         this.storage = storage;
@@ -117,6 +131,19 @@ public final class LiveUploader implements AutoCloseable {
         this.thread = new Thread(this::loop, "dt-live-uploader");
         this.thread.setDaemon(true);
         if (start) this.thread.start();
+    }
+
+    /**
+     * Encoder swap starting: publish no playlist until {@link #release}. Segments still go up. The last
+     * pass of a clean stop ignores the hold.
+     */
+    public void hold() {
+        held = true;
+    }
+
+    /** Encoder swap done (the old ENDLIST is gone from the local playlist): publish again. */
+    public void release() {
+        held = false;
     }
 
     public int segmentsUploaded() {
@@ -205,6 +232,7 @@ public final class LiveUploader implements AutoCloseable {
         if (mtime == lastPlaylistMtime) return;
         String text = Files.readString(playlist, StandardCharsets.UTF_8);
         LivePlaylist parsed = LivePlaylist.parse(text);
+        encoderBreaks.addAll(LivePlaylist.discontinuities(text));
         Map<String, Long> pending = new LinkedHashMap<>();
         long seq = parsed.mediaSequence();
         for (String seg : parsed.segments()) {
@@ -237,12 +265,18 @@ public final class LiveUploader implements AutoCloseable {
             String seg = e.getKey();
             SignedPut target = urls.get(seg);
             if (target == null) { allDone = false; continue; }
-            Result put = await(storage.upload(target, dir.resolve(seg)));
+            Path file = dir.resolve(seg);
+            long bytes = sizeOf(file);
+            long t0 = System.nanoTime();
+            Result put = await(storage.upload(target, file));
+            long putMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t0);
             if (put.status() >= 200 && put.status() < 300) {
                 uploaded.add(seg);
                 segmentsUploaded++;
+                health.uploaded(bytes, putMs);
                 continue;
             }
+            health.failed(putMs);
             int failed = failures.merge(seg, 1, Integer::sum);
             LOGGER.warn("[DungeonTrain] live segment {} upload → {} {}", seg, put.status(), put.error() == null ? "" : put.error().toString());
             // The last pass has no later pass to retry in: give up now so the ENDLIST playlist still goes out.
@@ -253,10 +287,11 @@ public final class LiveUploader implements AutoCloseable {
                 notBeforeMs = clock.getAsLong() + FAIL_BACKOFF_MS;
             }
         }
-        Optional<String> publish = LivePlaylist.publishable(text, uploaded, skippedSeqs);
+        Optional<String> publish = LivePlaylist.publishable(text, uploaded, skippedSeqs, encoderBreaks);
         boolean published = publish.isEmpty() || publish.get().equals(lastPublished);
         SignedPut pl = urls.get(LivePlaylist.FILE_NAME);
-        if (!published && pl != null) {
+        // Held (encoder swap): the text may carry the old encoder's ENDLIST. Not published, so a later pass comes back.
+        if (!published && pl != null && !(held && !last)) {
             Result put = await(storage.upload(pl, publish.get()));
             if (put.status() >= 200 && put.status() < 300) {
                 lastPublished = publish.get();
@@ -281,6 +316,14 @@ public final class LiveUploader implements AutoCloseable {
             if (m.matches()) newest = Math.max(newest, Long.parseLong(m.group(1)));
         }
         return newest;
+    }
+
+    private static long sizeOf(Path file) {
+        try {
+            return Files.size(file);
+        } catch (IOException e) {
+            return -1;
+        }
     }
 
     private void skip(String seg, long sn, String why) {

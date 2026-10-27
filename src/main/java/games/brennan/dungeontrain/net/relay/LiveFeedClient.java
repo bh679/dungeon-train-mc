@@ -386,8 +386,14 @@ public final class LiveFeedClient {
     public record Status(boolean live, @Nullable String session, @Nullable String playlistUrl,
                          @Nullable String streamer, int viewers, int cap, boolean slot,
                          @Nullable String replayUrl, boolean ended, List<Variant> variants, @Nullable String twitchLogin,
-                         @Nullable Status second) {
+                         @Nullable Status second, @Nullable String channel) {
         public static final Status OFFLINE = new Status(false, null, null, null, 0, 0, true, null, false, List.of(), null, null);
+
+        public Status(boolean live, @Nullable String session, @Nullable String playlistUrl, @Nullable String streamer, int viewers,
+                      int cap, boolean slot, @Nullable String replayUrl, boolean ended, List<Variant> variants,
+                      @Nullable String twitchLogin, @Nullable Status second) {
+            this(live, session, playlistUrl, streamer, viewers, cap, slot, replayUrl, ended, variants, twitchLogin, second, null);
+        }
 
         public Status(boolean live, @Nullable String session, @Nullable String playlistUrl, @Nullable String streamer, int viewers,
                       int cap, boolean slot, @Nullable String replayUrl, boolean ended, List<Variant> variants) {
@@ -405,6 +411,15 @@ public final class LiveFeedClient {
          */
         public @Nullable Status second() {
             return second;
+        }
+
+        /**
+         * The relay slot this stream is on ({@code main} / {@code second}): its chat room. Null from an
+         * older relay; {@link #CHANNEL_MAIN} for the primary and {@link #CHANNEL_SECOND} for its second
+         * are the fallbacks ({@link #roomOf}).
+         */
+        public @Nullable String channel() {
+            return channel;
         }
 
         /** What a TV tuned to the second stream shows: the second stream while there is one, else this (the first). */
@@ -456,7 +471,7 @@ public final class LiveFeedClient {
     /** A plain claim: no takeover choice or ticket yet. */
     public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
                                                   LiveClaimInfo info, @Nullable Life life) {
-        return claim(uuid, name, eyeId, info, life, false, null, null);
+        return claim(uuid, name, eyeId, info, life, false, null, null, 0L, 0L);
     }
 
     /**
@@ -464,12 +479,22 @@ public final class LiveFeedClient {
      * the claim reads with {@link LiveTakeoverClient#parseBlocked}); {@code takeover} is the player's
      * "Take over" past the holder's protected minutes, {@code ticket} an approved takeover vote's pass,
      * {@code takeoverTicket} a won dead streamer's takeover ({@link #acceptTakeover}). Either ticket carries
-     * the claim past the relay's tenure check, once.
+     * the claim past the relay's tenure check, once. {@code takeoverExtraMs} / {@code holderVoteExtraMs}
+     * are the Live Eye Safe Duration perk's extra protected minutes, added by the relay to its two windows.
      */
     public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
                                                   LiveClaimInfo info, @Nullable Life life,
                                                   boolean takeover, @Nullable String ticket,
-                                                  @Nullable String takeoverTicket) {
+                                                  @Nullable String takeoverTicket,
+                                                  long takeoverExtraMs, long holderVoteExtraMs) {
+        return post("/live/claim", claimBody(uuid, name, eyeId, info, life, takeover, ticket, takeoverTicket,
+            takeoverExtraMs, holderVoteExtraMs));
+    }
+
+    /** The claim's request body. Package-private for tests. */
+    static JsonObject claimBody(UUID uuid, String name, String eyeId, LiveClaimInfo info, @Nullable Life life,
+                                boolean takeover, @Nullable String ticket, @Nullable String takeoverTicket,
+                                long takeoverExtraMs, long holderVoteExtraMs) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
@@ -491,7 +516,10 @@ public final class LiveFeedClient {
             body.addProperty("versionDot", info.versionDot());
             body.addProperty("chat", info.chat());
         }
-        return post("/live/claim", body);
+        // Live Eye Safe Duration perk: extra protected time, half per window. An older relay ignores them.
+        if (takeoverExtraMs > 0) body.addProperty("takeoverExtraMs", takeoverExtraMs);
+        if (holderVoteExtraMs > 0) body.addProperty("holderVoteExtraMs", holderVoteExtraMs);
+        return body;
     }
 
     @Nullable
@@ -606,19 +634,80 @@ public final class LiveFeedClient {
      * {@code base} — the streamer's own relay or the viewer channel's.
      */
     public static CompletableFuture<Result> chat(String base, long since) {
-        String path = "/live/chat" + (since < 0 ? "" : "?since=" + since);
+        return chat(base, since, null);
+    }
+
+    /**
+     * {@link #chat(String, long)} in one stream's room ({@code room} = its slot, Two Streams); null asks for
+     * the primary stream's room, the one room there always was.
+     */
+    public static CompletableFuture<Result> chat(String base, long since, @Nullable String room) {
+        String path = chatPath(since, room);
         HttpRequest req = HttpRequest.newBuilder(URI.create(base + path))
             .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
         return send(RELAY, req);
     }
 
+    /** The chat read path: {@code since} when known, {@code room} when one stream's room is named. Pure. */
+    static String chatPath(long since, @Nullable String room) {
+        StringBuilder path = new StringBuilder("/live/chat");
+        char sep = '?';
+        if (since >= 0) {
+            path.append(sep).append("since=").append(since);
+            sep = '&';
+        }
+        if (room != null) {
+            path.append(sep).append("room=").append(java.net.URLEncoder.encode(room, java.nio.charset.StandardCharsets.UTF_8));
+        }
+        return path.toString();
+    }
+
+    /** Adds {@code room} to a chat request body when one is named; with one stream up there is none. */
+    static JsonObject withRoom(JsonObject body, @Nullable String room) {
+        if (room != null) body.addProperty("room", room);
+        return body;
+    }
+
     /** Post one in-game line into the stream's Discord chat as this player. */
     public static CompletableFuture<Result> chatSend(String base, UUID uuid, String name, String content) {
+        return chatSend(base, uuid, name, content, 1, null);
+    }
+
+    /** {@link #chatSend(String, UUID, String, String)} into one stream's room ({@link #chat(String, long, String)}). */
+    public static CompletableFuture<Result> chatSend(String base, UUID uuid, String name, String content, @Nullable String room) {
+        return chatSend(base, uuid, name, content, 1, room);
+    }
+
+    /**
+     * {@link #chatSend(String, UUID, String, String)} with the Vote Weight perk's {@code weight}, sent
+     * only above 1: the relay counts a takeover vote line that many times (an older relay once).
+     */
+    public static CompletableFuture<Result> chatSend(String base, UUID uuid, String name, String content, int weight) {
+        return chatSend(base, uuid, name, content, weight, null);
+    }
+
+    /** Both: a weighted line into one stream's room. */
+    public static CompletableFuture<Result> chatSend(String base, UUID uuid, String name, String content, int weight,
+                                                     @Nullable String room) {
+        return post(base, "/live/chat/send", chatSendBody(uuid, name, content, weight, room));
+    }
+
+    static JsonObject chatSendBody(UUID uuid, String name, String content, @Nullable String room) {
+        return chatSendBody(uuid, name, content, 1, room);
+    }
+
+    /** The chat line's request body. Package-private for tests. */
+    static JsonObject chatSendBody(UUID uuid, String name, String content, int weight) {
+        return chatSendBody(uuid, name, content, weight, null);
+    }
+
+    static JsonObject chatSendBody(UUID uuid, String name, String content, int weight, @Nullable String room) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
         body.addProperty("content", content);
-        return post(base, "/live/chat/send", body);
+        if (weight > 1) body.addProperty("weight", weight);
+        return withRoom(body, room);
     }
 
     /**
@@ -627,8 +716,9 @@ public final class LiveFeedClient {
      * 200 {@code posted}; 409 not_live; 404 from an older relay.
      */
     public static CompletableFuture<Result> chatDied(String base, UUID uuid, String name, String text,
-                                                     @Nullable JsonObject message) {
+                                                     @Nullable JsonObject message, @Nullable String room) {
         JsonObject body = new JsonObject();
+        withRoom(body, room);
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
         body.addProperty("text", text);
@@ -736,8 +826,10 @@ public final class LiveFeedClient {
      * This client joined the stream's chat through a TV. {@code eligible}: not Kid mode and Livestreaming
      * on — only then may the streamer be offered to gift it a Live Eye.
      */
-    public static CompletableFuture<Result> chatJoin(String base, UUID uuid, String name, boolean eligible) {
+    public static CompletableFuture<Result> chatJoin(String base, UUID uuid, String name, boolean eligible,
+                                                     @Nullable String room) {
         JsonObject body = new JsonObject();
+        withRoom(body, room);
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
         body.addProperty("eligible", eligible);
@@ -1076,7 +1168,23 @@ public final class LiveFeedClient {
         Twitch tw = parseTwitch(b);
         Status second = withSecond ? parseSecond(r, b, viewers, cap, slot) : null;
         return new Status(true, str(b, "session"), playlistUrl, str(b, "streamer"), viewers, cap, slot,
-            ended ? replayUrl : null, ended, parseVariants(b, playlistUrl), tw == null ? null : tw.login(), second);
+            ended ? replayUrl : null, ended, parseVariants(b, playlistUrl), tw == null ? null : tw.login(), second,
+            slotName(str(b, "channel")));
+    }
+
+    /** A relay slot name from a status body: {@code main} or {@code second}, anything else null. */
+    @Nullable
+    static String slotName(@Nullable String channel) {
+        return CHANNEL_MAIN.equals(channel) || CHANNEL_SECOND.equals(channel) ? channel : null;
+    }
+
+    /**
+     * The chat room of one stream of a pair: its own {@link Status#channel}, else the slot it usually
+     * sits on ({@code second} for the status's second block, {@code main} for the primary).
+     */
+    public static String roomOf(@Nullable Status stream, boolean isSecond) {
+        String c = stream == null ? null : stream.channel();
+        return c != null ? c : isSecond ? CHANNEL_SECOND : CHANNEL_MAIN;
     }
 
     /** The {@code second} block of a live status: a live status of its own, or null when absent, malformed or dark. */
@@ -1090,7 +1198,7 @@ public final class LiveFeedClient {
             // The viewer figures are the outer body's (one room per poll): carry them so a TV on the
             // second stream reads the same cap and slot answer.
             return new Status(true, parsed.session(), parsed.playlistUrl(), parsed.streamer(), viewers, cap, slot,
-                parsed.replayUrl(), parsed.ended(), parsed.variants(), parsed.twitchLogin(), null);
+                parsed.replayUrl(), parsed.ended(), parsed.variants(), parsed.twitchLogin(), null, parsed.channel());
         } catch (RuntimeException e) {
             LOGGER.debug("[DungeonTrain] live status: ignoring malformed second block", e);
             return null;

@@ -10,6 +10,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import games.brennan.dungeontrain.client.skybox.SkyboxStencil;
+import games.brennan.dungeontrain.client.live.FfmpegHint;
 import games.brennan.dungeontrain.client.live.LiveTakeoverOffer;
 import games.brennan.dungeontrain.client.live.LiveTakeoverChat;
 import games.brennan.dungeontrain.client.live.LiveGiftClient;
@@ -46,6 +47,7 @@ public final class DungeonTrainClient {
         LogRequestClient.registerClicks();
         BugResponseChatNotifier.registerClicks();
         LowMemoryNotice.registerClicks();
+        FfmpegHint.registerClicks();
 
         // Falling blocks rise in the upside-down band on the client too (FallingBlockEntityUpsideDownMixin).
         UpsideDownGravity.setClientBand(ClientUpsideDownBand::isInBand);
@@ -85,6 +87,13 @@ public final class DungeonTrainClient {
             DistantHorizonsSuppression.register();
             // DH keeps generating LODs behind the pause menu; hold it while singleplayer is paused.
             DistantHorizonsPauseHold.register();
+            // The sunk-zone attic filter is registered on the common side; the client supplies the
+            // player's toggle and answers for client-side levels (DH on a server without DH).
+            games.brennan.dungeontrain.compat.DistantHorizonsSunkAttic.setEnabled(
+                () -> !games.brennan.dungeontrain.config.ClientDisplayConfig.isLoaded()
+                    || games.brennan.dungeontrain.config.ClientDisplayConfig.SUNK_ATTIC_HIDE_DISTANT_HORIZONS.get());
+            games.brennan.dungeontrain.compat.DistantHorizonsSunkAttic.setClientResolver(
+                ClientUpsideDownBand::sunkAtticFor);
         }
 
         // Skybox blocks mask each variant's sky with the stencil buffer, which Minecraft's

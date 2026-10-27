@@ -123,6 +123,31 @@ public final class ModDataAttachments {
      * 15-minute window in which loot Live Eyes become TVs for them ({@code event/LiveEyeLootResolver}).
      * {@code copyOnDeath} so dying doesn't reset it.
      */
+    /** Perk unlock points earned from advancements (derived and cached; {@code perks/PerkPointEvents}). */
+    public static final Supplier<AttachmentType<Integer>> PERK_UNLOCK_EARNED =
+        TYPES.register("perk_unlock_earned",
+            () -> AttachmentType.<Integer>builder(() -> 0).build()
+        );
+
+    /** Active perk points from cosmic apples. Per life: not {@code copyOnDeath}, cleared on respawn. */
+    public static final Supplier<AttachmentType<Integer>> PERK_ACTIVE_POINTS =
+        TYPES.register("perk_active_points",
+            () -> AttachmentType.<Integer>builder(() -> 0)
+                .serialize(Codec.INT)
+                .build()
+        );
+
+    /**
+     * Disposable cameras this player has shot with this life, for Extra Cam-Shots' "every second camera"
+     * ({@code perks/effects/archivist/ArchivistCamera}). Per life: not {@code copyOnDeath}.
+     */
+    public static final Supplier<AttachmentType<Integer>> PERK_CAMERAS_USED =
+        TYPES.register("perk_cameras_used",
+            () -> AttachmentType.<Integer>builder(() -> 0)
+                .serialize(Codec.INT)
+                .build()
+        );
+
     public static final Supplier<AttachmentType<Long>> LIVE_EYE_SEEN_AT =
         TYPES.register("live_eye_seen_at",
             () -> AttachmentType.<Long>builder(() -> 0L)

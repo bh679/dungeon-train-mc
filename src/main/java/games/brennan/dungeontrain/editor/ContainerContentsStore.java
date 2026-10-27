@@ -62,6 +62,7 @@ import java.util.Objects;
  *     "x,y,z": {
  *       "fillMin": 1,
  *       "fillMax": 10,
+ *       "vaultKey": "minecraft:ominous_trial_key",   // vaults only; omitted when the default
  *       "entries": [
  *         { "id": "minecraft:diamond", "count": 3, "weight": 5 },
  *         { "id": "minecraft:air", "count": 1, "weight": 20 }
@@ -200,7 +201,7 @@ public final class ContainerContentsStore {
         // Drop only when truly default (no entries AND default fill range) so
         // a player who sets Fill before adding any items doesn't lose the
         // setting between clicks.
-        if (pool == null || (pool.isEmpty() && pool.isDefaultRange())) {
+        if (pool == null || (pool.isEmpty() && pool.isDefaultRange() && pool.isDefaultVaultKey())) {
             pools.remove(localPos);
             links.remove(localPos);
         } else {
@@ -556,6 +557,9 @@ public final class ContainerContentsStore {
             if (pool.fillMax() != ContainerContentsPool.FILL_ALL) {
                 sb.append("\n      \"fillMax\": ").append(pool.fillMax()).append(",");
             }
+            if (!pool.isDefaultVaultKey()) {
+                sb.append("\n      \"vaultKey\": \"").append(pool.vaultKey()).append("\",");
+            }
             sb.append("\n      \"entries\": [");
             boolean firstEntry = true;
             for (ContainerContentsEntry ce : pool.entries()) {
@@ -667,6 +671,7 @@ public final class ContainerContentsStore {
                     JsonArray arr;
                     int fillMin = 0;
                     int fillMax = ContainerContentsPool.FILL_ALL;
+                    String vaultKey = ContainerContentsPool.DEFAULT_VAULT_KEY;
                     if (value.isJsonArray()) {
                         // Legacy form (no fill fields).
                         arr = value.getAsJsonArray();
@@ -681,6 +686,7 @@ public final class ContainerContentsStore {
                         }
                         if (po.has("fillMin")) fillMin = po.get("fillMin").getAsInt();
                         if (po.has("fillMax")) fillMax = po.get("fillMax").getAsInt();
+                        if (po.has("vaultKey")) vaultKey = po.get("vaultKey").getAsString();
                         if (!po.has("entries") || !po.get("entries").isJsonArray()) continue;
                         arr = po.getAsJsonArray("entries");
                     } else {
@@ -724,7 +730,7 @@ public final class ContainerContentsStore {
                             randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, book));
                     }
                     if (!entries.isEmpty()) {
-                        out.put(pos.immutable(), new ContainerContentsPool(entries, fillMin, fillMax));
+                        out.put(pos.immutable(), new ContainerContentsPool(entries, fillMin, fillMax, vaultKey));
                     }
                 }
             }

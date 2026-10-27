@@ -228,6 +228,39 @@ public final class ProceduralTiers {
         return new DifficultyTier.WeaponSet(pool, chance);
     }
 
+    /** Pickaxe / shovel / axe share of a digging-tool pick ({@link ToolTiers}). */
+    private static final int PICKAXE_SHARE = 50;
+    private static final int SHOVEL_SHARE  = 30;
+    private static final int AXE_SHARE     = 20;
+
+    /**
+     * Digging-tool pool at {@code level}: pickaxes, shovels and axes, each material weighted by the
+     * same curves as the weapon pool so a mob's tool matches its sword. Whether a mob gets one at
+     * all is {@link ToolTiers#toolChance}.
+     */
+    static List<DifficultyTier.WeightedItem> toolPool(int level) {
+        List<DifficultyTier.WeightedItem> pool = new ArrayList<>();
+        String[] materials = {"wooden", "stone", "iron", "diamond", "netherite"};
+        int[] weights = {
+            WOOD_W.weight(level),
+            STONE_W.weight(level),
+            IRON_W.weight(level),
+            DIAMOND_W.weight(level),
+            NETHERITE_W.weight(level),
+        };
+        for (int i = 0; i < materials.length; i++) {
+            addToolTrio(pool, materials[i], weights[i]);
+        }
+        addToolTrio(pool, "golden", GOLDEN_WEIGHT);
+        return pool;
+    }
+
+    private static void addToolTrio(List<DifficultyTier.WeightedItem> pool, String material, int weight) {
+        addIfPositive(pool, "minecraft:" + material + "_pickaxe", weight * PICKAXE_SHARE);
+        addIfPositive(pool, "minecraft:" + material + "_shovel",  weight * SHOVEL_SHARE);
+        addIfPositive(pool, "minecraft:" + material + "_axe",     weight * AXE_SHARE);
+    }
+
     /**
      * Potion effects a mob gets at {@code level}; empty at or below level 0. The applier calls
      * this with the level shifted by {@link MobEffectOffsets} so late-appearing mobs and babies

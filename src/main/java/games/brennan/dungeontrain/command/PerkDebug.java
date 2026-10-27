@@ -19,9 +19,9 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * {@code /dungeontrain debug perk set <id> <rank> | unlock <id> | clear | list}: dev-build only
- * (a release server neither lists nor runs it, same gate as {@code workbench}). {@code set}
- * also unlocks the perk so one command is enough to see an effect; {@code clear} forgets
- * everything, unlocked set included.
+ * (a release server neither lists nor runs it, same gate as {@code workbench}). {@code unlock} adds
+ * one unlock level (one more point the perk can hold); {@code set} raises the unlock level to the rank
+ * if needed so one command is enough to see an effect; {@code clear} forgets everything.
  */
 public final class PerkDebug {
 
@@ -63,7 +63,7 @@ public final class PerkDebug {
             int pts = state.activePoints(def.id());
             String line = String.format("  %-24s %-9s t%d  %s  %d/%d",
                 def.id(), def.perkClass().id(), def.tier(),
-                unlocked ? "unlocked" : "locked  ", pts, def.maxRank());
+                unlocked ? "unlocked" : "locked  ", pts, state.unlockLevel(def.id()));
             ChatFormatting colour = !unlocked ? ChatFormatting.DARK_GRAY
                 : pts > 0 ? ChatFormatting.GREEN : ChatFormatting.GRAY;
             src.sendSuccess(() -> Component.literal(line).withStyle(colour), false);
@@ -83,14 +83,15 @@ public final class PerkDebug {
         ServerPlayer player = src.getPlayerOrException();
         if (!known(src, id)) return 0;
         Perks.unlock(player, id);
-        src.sendSuccess(() -> Component.literal("Unlocked " + id + ".").withStyle(ChatFormatting.GREEN), true);
+        int level = Perks.state(player).unlockLevel(id);
+        src.sendSuccess(() -> Component.literal("Unlocked " + id + " (level " + level + ").").withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
     private static int set(CommandSourceStack src, String id, int rank) throws CommandSyntaxException {
         ServerPlayer player = src.getPlayerOrException();
         if (!known(src, id)) return 0;
-        Perks.unlock(player, id);
+        Perks.setUnlockLevel(player, id, Math.max(Perks.state(player).unlockLevel(id), Math.max(1, rank)));
         Perks.setActive(player, id, rank);
         int applied = Perks.rank(player, id);
         src.sendSuccess(() -> Component.literal(id + " rank " + applied

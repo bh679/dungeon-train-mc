@@ -1080,6 +1080,24 @@
       ]
     }
   },
+  "chat.dungeontrain.live.muted": {
+    "1": {
+      "label": "how long the chat mute still has to run",
+      "examples": [
+        "15 minutes",
+        "1 day"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.muted_reminder": {
+    "1": {
+      "label": "how long the chat mute still has to run",
+      "examples": [
+        "15 minutes",
+        "1 day"
+      ]
+    }
+  },
   "command.dungeontrain.live_appeal.no_such_line": {
     "1": {
       "label": "how many lines there are to pick from",
@@ -1122,6 +1140,16 @@
   "chat.dungeontrain.familiar_photo.tributed.3": {
     "1": {
       "label": "the player who paid Tribute to the photo",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    }
+  },
+  "jade.dungeontrain.photo_frame.photographer": {
+    "1": {
+      "label": "the player who took the photo in the frame",
       "examples": [
         "Steve",
         "Alex",
@@ -7078,6 +7106,15 @@
       "examples": [
         "treasure",
         "kitchen"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.container.vault_key": {
+    "1": {
+      "label": "the name of the key item that unlocks the vault",
+      "examples": [
+        "Trial Key",
+        "Ominous Trial Key"
       ]
     }
   },
@@ -17338,6 +17375,495 @@
       "examples": [
         "Steve was slain by Zombie",
         "Alex fell from a high place"
+      ]
+    }
+  },
+  "chat.dungeontrain.perks.active_gained": {
+    "1": {
+      "label": "the name of the cosmic apple just eaten",
+      "examples": [
+        "Cosmic Apple",
+        "Violet Core"
+      ]
+    },
+    "2": {
+      "label": "perk points that apple gave",
+      "examples": [
+        "1",
+        "10"
+      ]
+    },
+    "3": {
+      "label": "active perk points the player now has this life",
+      "examples": [
+        "1",
+        "11"
+      ]
+    }
+  },
+  "chat.dungeontrain.perks.ready_to_spend": {
+    "1": {
+      "label": "active perk points ready to spend",
+      "examples": [
+        "1",
+        "4"
+      ]
+    }
+  },
+  "chat.dungeontrain.perks.unlock_gained": {
+    "1": {
+      "label": "unlock points just earned",
+      "examples": [
+        "1",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "unspent unlock points in total",
+      "examples": [
+        "12",
+        "40"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_room.now": {
+    "1": {
+      "label": "which of the two live streams: 1 or 2",
+      "examples": [
+        "1",
+        "2"
+      ]
+    },
+    "2": {
+      "label": "the Minecraft player name of that stream's streamer",
+      "examples": [
+        "Alice",
+        "Bo"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_room.now_unnamed": {
+    "1": {
+      "label": "which of the two live streams: 1 or 2",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.live_room.stream": {
+    "1": {
+      "label": "which of the two live streams: 1 or 2",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.unlock_points": {
+    "1": {
+      "label": "how many unlock points are unspent",
+      "examples": [
+        "0",
+        "7"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.points": {
+    "1": {
+      "label": "how many active perk points are unspent",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.point_to_spend": {
+    "1": {
+      "label": "how many active perk points are waiting",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.tier_cost": {
+    "1": {
+      "label": "the perk's tier",
+      "examples": [
+        "1",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "unlock points the perk costs",
+      "examples": [
+        "1",
+        "10"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.per_point": {
+    "1": {
+      "label": "what one point in the perk does",
+      "examples": [
+        "+2 max health",
+        "one more shot"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.needs": {
+    "1": {
+      "label": "the name of the perk that must be unlocked first",
+      "examples": [
+        "Health",
+        "Trade Values"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.locked_points": {
+    "1": {
+      "label": "unlock points the player has",
+      "examples": [
+        "3",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.locked_short": {
+    "1": {
+      "label": "unlock points the player has",
+      "examples": [
+        "3",
+        "0"
+      ]
+    },
+    "2": {
+      "label": "unlock points the perk costs",
+      "examples": [
+        "5",
+        "10"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.unlocked_points": {
+    "1": {
+      "label": "active points in the perk",
+      "examples": [
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.active_points": {
+    "1": {
+      "label": "active points in the perk",
+      "examples": [
+        "1",
+        "10"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.links": {
+    "1": {
+      "label": "comma-separated names of the linked perks",
+      "examples": [
+        "Health, Armour",
+        "The Engine"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.hud_unlocked": {
+    "1": {
+      "label": "the perk's name",
+      "examples": [
+        "Health",
+        "Trade Values"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.hud_points": {
+    "1": {
+      "label": "the perk's name",
+      "examples": [
+        "Health"
+      ]
+    },
+    "2": {
+      "label": "active points in it now",
+      "examples": [
+        "3",
+        "10"
+      ]
+    }
+  },
+  "perk.dungeontrain.restock_villager.button": {
+    "1": {
+      "label": "restocks the player still has left with this villager this life",
+      "examples": [
+        "0",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.rank_cost": {
+    "1": {
+      "label": "active perk points the next rank costs",
+      "examples": [
+        "2",
+        "9"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.raise_limit": {
+    "1": {
+      "label": "Advancement Points one more unlock costs",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.points_of": {
+    "1": {
+      "label": "points in the perk",
+      "examples": [
+        "2",
+        "7"
+      ]
+    },
+    "2": {
+      "label": "most points the perk can hold",
+      "examples": [
+        "3",
+        "10"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.refused.gate": {
+    "1": {
+      "label": "Advancement Points that must be spent in total",
+      "examples": [
+        "100",
+        "200"
+      ]
+    },
+    "2": {
+      "label": "the perk point limit to go past",
+      "examples": [
+        "10",
+        "20"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.ap.one": {
+    "1": {
+      "label": "how many Advancement Points (one)",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.ap.other": {
+    "1": {
+      "label": "how many Advancement Points",
+      "examples": [
+        "0",
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.card.locked": {
+    "1": {
+      "label": "the perk's tier",
+      "examples": [
+        "1",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "a number of Advancement Points, already worded (\"1 Advancement Point\", \"5 Advancement Points\")",
+      "examples": [
+        "1 Advancement Point",
+        "3 Advancement Points"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.card.you_hold": {
+    "1": {
+      "label": "Advancement Points the player holds",
+      "examples": [
+        "0",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.card.points": {
+    "1": {
+      "label": "points in the perk now",
+      "examples": [
+        "0",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the most points it can hold (its unlock level)",
+      "examples": [
+        "1",
+        "10"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.card.next_cost": {
+    "1": {
+      "label": "Active Points the next point costs",
+      "examples": [
+        "1",
+        "4"
+      ]
+    },
+    "2": {
+      "label": "Active Points the player holds",
+      "examples": [
+        "0",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.card.click_add": {
+    "1": {
+      "label": "Active Points the next point costs",
+      "examples": [
+        "1",
+        "4"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.card.gate": {
+    "1": {
+      "label": "a number of Advancement Points, already worded (\"1 Advancement Point\", \"5 Advancement Points\")",
+      "examples": [
+        "40 Advancement Points"
+      ]
+    },
+    "2": {
+      "label": "the current most points a perk can hold",
+      "examples": [
+        "10",
+        "20"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.card.again_cost": {
+    "1": {
+      "label": "a number of Advancement Points, already worded (\"1 Advancement Point\", \"5 Advancement Points\")",
+      "examples": [
+        "2 Advancement Points"
+      ]
+    },
+    "2": {
+      "label": "Advancement Points the player holds",
+      "examples": [
+        "0",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.card.click_again": {
+    "1": {
+      "label": "a number of Advancement Points, already worded (\"1 Advancement Point\", \"5 Advancement Points\")",
+      "examples": [
+        "1 Advancement Point",
+        "3 Advancement Points"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.bar.tier": {
+    "1": {
+      "label": "the perk's tier",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.bar.engine.active": {
+    "1": {
+      "label": "points put into perks this life",
+      "examples": [
+        "0",
+        "7"
+      ]
+    },
+    "2": {
+      "label": "how many points the unlocked perks can hold",
+      "examples": [
+        "3",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.unit.seconds": {
+    "1": {
+      "label": "a number of seconds",
+      "examples": [
+        "2",
+        "4.5"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.unit.plain": {
+    "1": {
+      "label": "a number, maybe with a sign",
+      "examples": [
+        "3",
+        "+1",
+        "-2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.unit.percent": {
+    "1": {
+      "label": "a percentage number, without the % sign",
+      "examples": [
+        "5",
+        "80",
+        "12.5"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.unit.minutes": {
+    "1": {
+      "label": "a number of minutes",
+      "examples": [
+        "10",
+        "12.5"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.unit.multiplier": {
+    "1": {
+      "label": "a multiplier number",
+      "examples": [
+        "2",
+        "1.5"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.unit.blocks": {
+    "1": {
+      "label": "a number of blocks",
+      "examples": [
+        "0.1",
+        "1.5"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.works_on.groups": {
+    "1": {
+      "label": "how many enchantment groups (3 to 9)",
+      "examples": [
+        "3",
+        "7"
       ]
     }
   }

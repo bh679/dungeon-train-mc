@@ -63,43 +63,54 @@ public final class LiveToastRects {
 
     /**
      * Copies each recorded popup from {@code main} onto {@code target} (already holding this frame,
-     * name tag included). The caller rebinds the main target.
+     * name tag included), where {@code crop} is the part of {@code main} the frame shows
+     * ({@link LiveAspect#cropRect}). The caller rebinds the main target.
      */
-    static void copyOver(RenderTarget main, RenderTarget target) {
+    static void copyOver(RenderTarget main, RenderTarget target, int[] crop) {
         if (count == 0 || !LiveFeedClientConfig.popupsOverNameTag()) return;
         double guiScale = Minecraft.getInstance().getWindow().getGuiScale();
         GlStateManager._glBindFramebuffer(GL30C.GL_READ_FRAMEBUFFER, main.frameBufferId);
         GlStateManager._glBindFramebuffer(GL30C.GL_DRAW_FRAMEBUFFER, target.frameBufferId);
         for (int i = 0; i < count; i++) {
-            int[] r = blitRect(X[i], Y[i], W[i], H[i], guiScale, main.width, main.height, target.width, target.height);
+            int[] r = blitRect(X[i], Y[i], W[i], H[i], guiScale, crop, main.height, target.width, target.height);
             if (r == null) continue;
             GL30C.glBlitFramebuffer(r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7],
                 GL11C.GL_COLOR_BUFFER_BIT, GL11C.GL_LINEAR);
         }
     }
 
-    /**
-     * The blit for one popup: {@code {srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1}} in GL's
-     * bottom-up pixels, or null when it falls outside the picture. The destination is rounded outward
-     * to whole stream pixels, and the source is that same box scaled up, so the copy lines up exactly
-     * with the full-frame copy beneath it.
-     */
+    /** {@link #blitRect(float, float, int, int, double, int[], int, int, int)} with the whole window streamed. */
     @Nullable
     static int[] blitRect(float x, float y, int w, int h, double guiScale,
                           int mainW, int mainH, int targetW, int targetH) {
-        if (mainW <= 0 || mainH <= 0 || targetW <= 0 || targetH <= 0 || guiScale <= 0) return null;
-        double sx = guiScale * targetW / mainW;
-        double sy = guiScale * targetH / mainH;
-        int left = clamp((int) Math.floor(x * sx), targetW);
-        int right = clamp((int) Math.ceil((x + w) * sx), targetW);
-        int top = clamp((int) Math.floor(y * sy), targetH);
-        int bottom = clamp((int) Math.ceil((y + h) * sy), targetH);
+        return blitRect(x, y, w, h, guiScale, new int[] {0, 0, mainW, mainH}, mainH, targetW, targetH);
+    }
+
+    /**
+     * The blit for one popup: {@code {srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1}} in GL's
+     * bottom-up pixels, or null when it falls outside the picture. {@code crop} is the
+     * {@code {x0, y0, x1, y1}} part of the {@code mainH}-tall window the picture shows. The destination
+     * is rounded outward to whole stream pixels, and the source is that same box scaled up, so the copy
+     * lines up exactly with the full-frame copy beneath it.
+     */
+    @Nullable
+    static int[] blitRect(float x, float y, int w, int h, double guiScale,
+                          int[] crop, int mainH, int targetW, int targetH) {
+        int cropW = crop[2] - crop[0];
+        int cropH = crop[3] - crop[1];
+        if (cropW <= 0 || cropH <= 0 || mainH <= 0 || targetW <= 0 || targetH <= 0 || guiScale <= 0) return null;
+        double cropTop = mainH - crop[3]; // the crop's top edge, in top-down window pixels
+        // Multiply before dividing: whole window pixels land on whole stream pixels exactly.
+        int left = clamp((int) Math.floor((x * guiScale - crop[0]) * targetW / cropW), targetW);
+        int right = clamp((int) Math.ceil(((x + w) * guiScale - crop[0]) * targetW / cropW), targetW);
+        int top = clamp((int) Math.floor((y * guiScale - cropTop) * targetH / cropH), targetH);
+        int bottom = clamp((int) Math.ceil(((y + h) * guiScale - cropTop) * targetH / cropH), targetH);
         if (right <= left || bottom <= top) return null;
         int dy0 = targetH - bottom;
         int dy1 = targetH - top;
         return new int[] {
-            scale(left, mainW, targetW), scale(dy0, mainH, targetH),
-            scale(right, mainW, targetW), scale(dy1, mainH, targetH),
+            crop[0] + scale(left, cropW, targetW), crop[1] + scale(dy0, cropH, targetH),
+            crop[0] + scale(right, cropW, targetW), crop[1] + scale(dy1, cropH, targetH),
             left, dy0, right, dy1
         };
     }

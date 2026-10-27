@@ -78,12 +78,13 @@ final class PerkStateTest {
     @DisplayName("codec round-trips unlocked + active")
     void codecRoundTrip() {
         PerkState s = PerkState.empty().withUnlocked("health").withUnlocked("drift-chance")
-            .withActive("health", 7).withActive("speed", 2);
+            .withUnlockLevel("health", 7).withActive("health", 7).withActive("speed", 2);
         DataResult<Tag> enc = PerkState.CODEC.encodeStart(NbtOps.INSTANCE, s);
         Tag tag = enc.getOrThrow();
         PerkState back = PerkState.CODEC.parse(NbtOps.INSTANCE, tag).getOrThrow();
         assertEquals(s, back);
         assertEquals(7, back.rank("health"));
+        assertEquals(7, back.unlockLevel("health"));
         assertEquals(0, back.rank("speed"), "speed has points but is locked");
         assertEquals(2, back.activePoints("speed"));
     }
@@ -100,6 +101,7 @@ final class PerkStateTest {
         partial.put("unlocked", list);
         PerkState s = PerkState.CODEC.parse(NbtOps.INSTANCE, partial).getOrThrow();
         assertTrue(s.isUnlocked("health"));
+        assertEquals(1, s.unlockLevel("health"), "a pre-repeat-unlock save reads as level 1");
         assertEquals(0, s.rank("health"));
     }
 

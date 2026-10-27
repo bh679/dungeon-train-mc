@@ -50,20 +50,28 @@ public final class Perks {
 
     public static void unlock(ServerPlayer player, String perkId) {
         requireKnown(perkId);
-        apply(player, state(player).withUnlocked(perkId));
+        apply(player, state(player).withUnlockedOnce(perkId));
     }
 
-    /** Set active points (clamped to the perk's max rank). Does not unlock. */
+    /** Set the unlock level directly (dev command). Zero locks the perk. */
+    public static void setUnlockLevel(ServerPlayer player, String perkId, int level) {
+        requireKnown(perkId);
+        apply(player, state(player).withUnlockLevel(perkId, level));
+    }
+
+    /** Set active points (clamped to the perk's unlock level). Does not unlock. */
     public static void setActive(ServerPlayer player, String perkId, int points) {
-        PerkDef def = requireKnown(perkId);
-        apply(player, state(player).withActive(perkId, def.clampRank(points)));
+        requireKnown(perkId);
+        PerkState s = state(player);
+        apply(player, s.withActive(perkId, clamp(points, s.unlockLevel(perkId))));
     }
 
     /** Add active points (clamped). Returns the new rank. */
     public static int addActive(ServerPlayer player, String perkId, int delta) {
-        PerkDef def = requireKnown(perkId);
+        requireKnown(perkId);
         PerkState before = state(player);
-        PerkState after = before.withActive(perkId, def.clampRank(before.activePoints(perkId) + delta));
+        PerkState after = before.withActive(perkId,
+            clamp(before.activePoints(perkId) + delta, before.unlockLevel(perkId)));
         apply(player, after);
         return after.rank(perkId);
     }
@@ -105,6 +113,10 @@ public final class Perks {
         for (String id : touched) {
             PerkEffects.fireRankChanged(player, id, prev.rank(id), next.rank(id));
         }
+    }
+
+    private static int clamp(int points, int unlockLevel) {
+        return Math.max(0, Math.min(unlockLevel, points));
     }
 
     private static PerkDef requireKnown(String perkId) {

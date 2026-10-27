@@ -468,6 +468,8 @@ public class DungeonTrain {
         // temporary copy of the melee half (VivecraftMixinPlugin) for players without it; this is the
         // always-on belt under both, for any other trigger. See SableAabbLogFilter.
         SableAabbLogFilter.install();
+        // Perks: the "unlock points spent" rule and balance sync (perks/PerkBalances).
+        games.brennan.dungeontrain.perks.PerkBalances.install();
 
         LOGGER.info("Dungeon Train constructor — mod loading");
     }
@@ -482,6 +484,13 @@ public class DungeonTrain {
         // jarJar, so NamingConfig is always present — no ModList.isLoaded guard
         // needed. The gate is a cheap tag-prefix scan (TrainMembership).
         NamingConfig.registerMobNameGate(TrainMembership::isOnTrain);
+
+        // Distant Horizons would otherwise draw the sunk zone's attic (dimensional carriages over an
+        // invisible barrier lid) hanging in its horizon. Common side, so a DH server's LODs are filtered
+        // too; behind the ModList check because the filter names DH types.
+        if (ModList.get().isLoaded("distanthorizons")) {
+            games.brennan.dungeontrain.compat.DistantHorizonsAtticFilter.register();
+        }
 
         // Watch the relay's answer to a book upload: a re-upload of a book this player already sent
         // is refused and pauses their uploads, and the writer is told in chat (see

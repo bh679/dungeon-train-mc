@@ -364,4 +364,45 @@ class LiveUploaderTest {
             return inner.upload(target, body);
         }
     }
+
+    @Test
+    void aHeldUploaderShipsSegmentsButNotTheOldEncodersEnd() throws Exception {
+        FakeStorage s = new FakeStorage();
+        LiveUploader u = uploader(s, new AtomicReference<>());
+        encoderWrites(0, 2, false);
+        u.pass(false);
+        int before = s.published.size();
+
+        u.hold();
+        encoderWrites(0, 3, true); // the swapped-out encoder's last segment and its ENDLIST
+        passNow(u);
+        assertTrue(s.onStorage.contains("seg00002.ts"));
+        assertEquals(before, s.published.size(), "no playlist while held");
+
+        LivePlaylist.dropEndlist(dir.resolve(LivePlaylist.FILE_NAME));
+        u.release();
+        passNow(u);
+        assertFalse(s.last().ended());
+        assertEquals(List.of("seg00000.ts", "seg00001.ts", "seg00002.ts"), s.last().segments());
+    }
+
+    @Test
+    void theLastPassOfAStopIgnoresTheHold() throws Exception {
+        FakeStorage s = new FakeStorage();
+        LiveUploader u = uploader(s, new AtomicReference<>());
+        u.hold();
+        encoderWrites(0, 2, true);
+        u.pass(true);
+        assertTrue(s.last().ended());
+    }
+
+    @Test
+    void segmentPutsAreTimedIntoTheHealth() throws Exception {
+        FakeStorage s = new FakeStorage();
+        LiveUploadHealth health = new LiveUploadHealth(10);
+        LiveUploader u = new LiveUploader(dir, "tok", by -> { }, s, System::currentTimeMillis, health, false);
+        encoderWrites(0, 3, false);
+        u.pass(false);
+        assertEquals(3, health.snapshot().samples());
+    }
 }

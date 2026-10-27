@@ -30,14 +30,49 @@ import java.util.WeakHashMap;
 public final class LiveStreamers {
 
     private static final Map<MinecraftServer, Set<UUID>> STREAMERS = new WeakHashMap<>();
+    /** Each streamer's profile name, so the relay's {@code prevName} can name who it cut off. */
+    private static final Map<MinecraftServer, Map<UUID, String>> NAMES = new WeakHashMap<>();
     /** Pending wearers → whether they put the Live Eye on in place of a TV while someone else was live. */
     private static final Map<MinecraftServer, Map<UUID, Boolean>> PENDING = new WeakHashMap<>();
+    /** When each streamer started (wall clock), so {@code ServerLiveStatus} knows if the relay answered since. */
+    private static final Map<MinecraftServer, Map<UUID, Long>> STARTED = new WeakHashMap<>();
 
     private LiveStreamers() {}
 
     /** {@code player} holds a stream from now. True when they were not already a streamer. */
     public static synchronized boolean add(MinecraftServer server, UUID player) {
-        return STREAMERS.computeIfAbsent(server, s -> new LinkedHashSet<>()).add(player);
+        return add(server, player, "");
+    }
+
+    /** {@link #add(MinecraftServer, UUID)}, remembering the streamer's profile {@code name}. */
+    public static synchronized boolean add(MinecraftServer server, UUID player, String name) {
+        NAMES.computeIfAbsent(server, s -> new HashMap<>()).put(player, name == null ? "" : name);
+        boolean added = STREAMERS.computeIfAbsent(server, s -> new LinkedHashSet<>()).add(player);
+        if (added) STARTED.computeIfAbsent(server, s -> new HashMap<>()).put(player, System.currentTimeMillis());
+        return added;
+    }
+
+    /**
+     * When the second of this server's streamers started: from then on two streams run here. 0 while
+     * fewer than two are streaming.
+     */
+    public static synchronized long bothStartedMs(MinecraftServer server) {
+        Map<UUID, Long> started = STARTED.get(server);
+        return started == null ? 0L : secondEarliest(started.values());
+    }
+
+    /** The second-smallest start time, or 0 with fewer than two. Pure, for the tests. */
+    static long secondEarliest(java.util.Collection<Long> starts) {
+        if (starts.size() < 2) return 0L;
+        return starts.stream().sorted().skip(1).findFirst().orElse(0L);
+    }
+
+    /** The other streamers on this server with their names (empty when unknown), in claim order. */
+    public static synchronized Map<UUID, String> othersWithNames(MinecraftServer server, UUID player) {
+        Map<UUID, String> names = NAMES.getOrDefault(server, Map.of());
+        Map<UUID, String> out = new java.util.LinkedHashMap<>();
+        for (UUID id : othersThan(server, player)) out.put(id, names.getOrDefault(id, ""));
+        return java.util.Collections.unmodifiableMap(out);
     }
 
     /**
@@ -95,6 +130,10 @@ public final class LiveStreamers {
     public static synchronized boolean clearIf(MinecraftServer server, UUID player) {
         Set<UUID> all = STREAMERS.get(server);
         if (all == null || !all.remove(player)) return false;
+        Map<UUID, String> names = NAMES.get(server);
+        if (names != null) names.remove(player);
+        Map<UUID, Long> started = STARTED.get(server);
+        if (started != null) started.remove(player);
         if (all.isEmpty()) STREAMERS.remove(server);
         return true;
     }
