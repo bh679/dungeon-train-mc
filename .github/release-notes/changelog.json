@@ -31147,6 +31147,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "perks-button-advancements",
+      "version": "0.1562.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "advancements",
+        "ui"
+      ],
+      "title": "Perks button on the advancements screen",
+      "summary": "A star button beside Done on the advancements screen opens your perks, with your Advancement Points shown on it. Cosmic Apples now start turning up once you've unlocked your first perk.",
+      "highlights": [
+        "Open your perks straight from the advancements screen",
+        "Your Advancement Points sit on the button",
+        "Cosmic Apples appear after your first perk unlock"
+      ],
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
