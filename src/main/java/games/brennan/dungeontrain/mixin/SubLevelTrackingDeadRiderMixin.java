@@ -26,7 +26,8 @@ import java.util.UUID;
  *
  * <p>Bytecode-verified against {@code sable-2.0.5+mc1.21.1}: {@code ServerLevel.players()} is
  * called once in {@code collectPlayers} and once in {@code tick}; {@code getPlayerByUUID} is called
- * twice in {@code tick}. <b>Re-verify on any {@code sable_version} bump.</b> Left {@code required}
+ * twice in {@code tick} and three times in {@code sendMovementUpdates} (without those the dead player stays tracked but gets no movement packets, and the train
+ * freezes on their screen). <b>Re-verify on any {@code sable_version} bump.</b> Left {@code required}
  * so a Sable change fails loudly instead of silently bringing the vanish back.</p>
  */
 @Mixin(value = SubLevelTrackingSystem.class, remap = false)
@@ -46,7 +47,7 @@ public abstract class SubLevelTrackingDeadRiderMixin {
     }
 
     @WrapOperation(
-        method = "tick",
+        method = {"tick", "sendMovementUpdates"},
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/server/level/ServerLevel;getPlayerByUUID(Ljava/util/UUID;)Lnet/minecraft/world/entity/player/Player;"
