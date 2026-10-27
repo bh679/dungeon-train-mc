@@ -502,10 +502,12 @@ public final class LiveStreamController {
      * relay reports the official TikTok mirror on air: on the claim, or on an uncounted status poll of
      * the stream's own channel every {@link #TIKTOK_POLL_MS} after the going-live line. The relay sends
      * {@code tiktokUrl} only while the mirror is actually live, and never from an older relay; polling
-     * stops once the line is said, so the field flapping off and on again is never repeated.
+     * stops once the line is said, so the field flapping off and on again is never repeated. Never on
+     * the second channel (Two Streams): the status body's {@code tiktokUrl} is about the main stream,
+     * which the mirror carries, so it is not this streamer's.
      */
     private void announceTikTok(long nowMs) {
-        if (saidTikTok) return;
+        if (saidTikTok || onSecondChannel()) return;
         Component line = LiveWatchLinks.alsoOnLine(tiktokUrl);
         if (line != null) {
             saidTikTok = true;
