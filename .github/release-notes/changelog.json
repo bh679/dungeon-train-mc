@@ -31141,6 +31141,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-test-live-photos",
+      "version": "0.1549.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community"
+      ],
+      "title": "Editor test photos",
+      "summary": "When you test a carriage in the editor, its photo frames now show real community photos instead of a placeholder picture.",
+      "highlights": [],
+      "pr": 2352,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
