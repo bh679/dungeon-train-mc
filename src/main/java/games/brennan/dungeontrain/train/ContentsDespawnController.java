@@ -289,6 +289,7 @@ public final class ContentsDespawnController {
                 switch (decide(ENABLED, distSq, !snap, snap, provider.getContentsAwayTicks())) {
                     case DESPAWN -> {
                         if (swept >= MAX_SWEEPS_PER_TICK) break;
+                        CarriagePets.onCarriageUnloading(level, carriage.ship());
                         int captured = ContentsEntitySnapshot.captureAndDiscard(level, carriage);
                         if (captured < 0) break; // sweep abandoned; entities untouched
                         provider.setContentsDespawned(true);

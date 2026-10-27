@@ -132,6 +132,7 @@ public final class ContentsSnapshotStore {
     public static void clear(ServerLevel level) {
         Path dim = dimDirectory(level);
         if (!Files.isDirectory(dim)) return;
+        rescuePets(level, dim);
         int deleted = deleteMatching(level, dim, path -> true);
         if (deleted > 0) {
             LOGGER.info("[DungeonTrain] Cleared {} contents-despawn snapshots under {}", deleted, dim);
@@ -150,6 +151,28 @@ public final class ContentsSnapshotStore {
      */
     public static void pruneStaleFromPreviousSession(ServerLevel level) {
         clear(level);
+    }
+
+    /**
+     * Hand back the pets frozen in every snapshot about to be cleared. A player's pet must outlive the
+     * train it was swept from — and every server start clears these before its owner has joined, so
+     * most go to {@code PendingPets} to wait.
+     */
+    private static void rescuePets(ServerLevel level, Path dim) {
+        try (Stream<Path> files = Files.list(dim)) {
+            for (Path file : files.toList()) {
+                String name = file.getFileName().toString();
+                if (!name.endsWith(EXT)) continue;
+                try {
+                    UUID subLevelId = UUID.fromString(name.substring(0, name.length() - EXT.length()));
+                    CarriagePets.rescueFromSnapshot(level, subLevelId, java.util.List.of());
+                } catch (IllegalArgumentException notASnapshot) {
+                    // Not one of ours — leave it to the delete pass's own filter.
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Failed to list contents-despawn dir {} for pets: {}", dim, e.toString());
+        }
     }
 
     /** Walk the dim dir and delete every {@code .nbt} whose bare filename passes {@code predicate}. */

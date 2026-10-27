@@ -4085,7 +4085,10 @@ public final class TrainCarriageAppender {
      * anchor first because the anchor itself is the ghost, while {@link #sweepDuplicateAnchors}
      * must NOT, because that anchor is legitimately registered to the surviving twin.</p>
      *
-     * <p>Known gap, pre-existing: world-space contents entities belonging to the deleted
+     * <p>Pets aboard are settled first ({@link CarriagePets}): sitting ones in a drifting carriage
+     * leave with its upload, the rest are sent to their owner.</p>
+     *
+     * <p>Known gap, pre-existing: other world-space contents entities belonging to the deleted
      * sub-level are not swept. A duplicated group already spawned duplicate mobs, and deleting
      * one twin leaves its mobs standing on the survivor — same behaviour as the ghost cleanup
      * has always had.</p>
@@ -4100,20 +4103,30 @@ public final class TrainCarriageAppender {
         // synchronous on the server thread (reading the still-live plot); only the return POST is
         // async. This plugs the SharedCarriageRegistry leak (removeSubLevel finally has a caller)
         // and frees the lease promptly instead of at the ~1h TTL.
+        Set<Entity> driftedPets = new HashSet<>();
+        List<CarriagePets.DriftFootprint> driftFootprints = new ArrayList<>();
         if (SharedCarriageRegistry.hasSubLevel(shipId)) {
             for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.bySubLevel(shipId)) {
                 boolean allowCapture = sharedCaptured < captureBudget;
+                CarriagePets.DriftFootprint footprint = CarriagePets.DriftFootprint.of(inst);
+                if (footprint != null) driftFootprints.add(footprint);
+                List<Entity> drifters = CarriagePets.sittingDrifters(level, ship, inst);
                 if (games.brennan.dungeontrain.event.SharedCarriageEvents.finalFlushAndReturn(inst, allowCapture)) {
                     sharedCaptured++;
+                    driftedPets.addAll(drifters);
                 } else if (!allowCapture && inst.hasPending()) {
                     sharedDeferred++;
                 }
             }
             SharedCarriageRegistry.removeSubLevel(shipId);
         }
+        // Sitting pets that just uploaded with their drifting carriage go with it; every other pet
+        // aboard goes to its owner rather than being stranded where the carriage was.
+        CarriagePets.settleBeforeRemoval(level, ship, driftedPets);
         // Drop any despawn snapshot this group was holding. The group is about to stop
         // existing, so its swept mobs have nowhere to come back to — leaving the file would
-        // strand it on disk until the next train wipe.
+        // strand it on disk until the next train wipe. Pets frozen in it go to their owner first.
+        CarriagePets.rescueFromSnapshot(level, shipId, driftFootprints);
         ContentsSnapshotStore.delete(level, shipId);
         // Tear down any force-load ticket on this anchor (mirror + Sable
         // ticket together) before deleting it.
