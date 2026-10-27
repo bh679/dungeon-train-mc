@@ -59,7 +59,7 @@ public final class DeathMomentScreen extends Screen {
 
     @Override
     protected void init() {
-        // init() re-runs on a window resize; the prewarm and the camera are started once per death.
+        // init() re-runs on a window resize; the prewarm is started once per death.
         if (started) return;
         started = true;
         // Freeze now, not when the recap opens: no capture, flush or eviction may touch the
@@ -71,13 +71,15 @@ public final class DeathMomentScreen extends Screen {
         }
         // Page 0's photo is already settled, so the death report's photo can start encoding now.
         DeathPhotoUploads.sendFallPhoto(prewarm.length > 0 ? prewarm[0] : null);
-        if (minecraft != null) DeathCameraCycle.start(minecraft.player);
     }
 
     @Override
     public void tick() {
         ticks++;
         uploadOneReadyTexture();
+        // The camera starts a tick or two in, once the client knows the player is dead and the
+        // body is pinned to its carriage (see DeathCameraCycle.ensureStarted).
+        if (minecraft != null) DeathCameraCycle.ensureStarted(minecraft.player);
         DeathCameraCycle.tick();
     }
 

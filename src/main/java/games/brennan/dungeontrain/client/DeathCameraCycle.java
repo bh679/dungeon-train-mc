@@ -39,7 +39,7 @@ public final class DeathCameraCycle {
     static final Vec3[] OFFSETS = {
         new Vec3(7.0, 2.5, 8.0),    // trackside, a little ahead: the carriage rolls past
         new Vec3(-12.0, 10.0, -5.0), // high and behind: the train stretching ahead
-        new Vec3(14.0, 1.5, 1.0),    // low, ahead, down the line
+        new Vec3(12.0, 1.5, -7.0),   // low, ahead, the far side of the track, looking back down the line
     };
     static final int ANGLE_COUNT = OFFSETS.length;
     /** Aim a little above the feet so the body sits in the lower middle of the frame. */
@@ -54,8 +54,25 @@ public final class DeathCameraCycle {
     /** Resolved lens position per shot, in the same space as {@link #bodyLocal}; null until the shot starts. */
     private static final Vector3d[] lensLocal = new Vector3d[ANGLE_COUNT];
     private static boolean savedHideGui;
+    /** Dead ticks seen before starting, so {@link DeadRiderCarry} has had a tick to pin the body. */
+    private static int waitTicks;
+    /** Give the carriage pin this many dead ticks to appear before starting in world space. */
+    private static final int PIN_WAIT_TICKS = 3;
 
     private DeathCameraCycle() {}
+
+    /**
+     * Start once the player is actually dead on the client. The death screen opens from the
+     * combat-kill packet, a tick or two before the health update that makes
+     * {@code isDeadOrDying()} true, and {@link DeadRiderCarry} pins the body on its first dead
+     * tick (after the screen's tick). So the screen calls this every tick and the cycle begins
+     * when the body is dead and pinned, or after {@link #PIN_WAIT_TICKS} dead ticks off the train.
+     */
+    public static void ensureStarted(LocalPlayer player) {
+        if (active || player == null || !player.isDeadOrDying()) return;
+        waitTicks++;
+        if (DeadRiderCarry.pinned() != null || waitTicks >= PIN_WAIT_TICKS) start(player);
+    }
 
     public static boolean isActive() {
         return active;
@@ -91,6 +108,7 @@ public final class DeathCameraCycle {
         active = false;
         carriage = null;
         bodyLocal = null;
+        waitTicks = 0;
         Minecraft.getInstance().options.hideGui = savedHideGui;
     }
 
