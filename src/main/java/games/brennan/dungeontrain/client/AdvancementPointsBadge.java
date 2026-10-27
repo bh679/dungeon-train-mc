@@ -26,8 +26,8 @@ public final class AdvancementPointsBadge {
     private static final int VANILLA_WINDOW_WIDTH = 252;
     private static final int VANILLA_WINDOW_HEIGHT = 140;
     private static final int PAD_X = 4;
-    private static final int BOX_HEIGHT = 12;
-    private static final int GAP = 2;
+    static final int BOX_HEIGHT = 12;
+    static final int GAP = 2;
     private static final int BG = 0xE0101018;
     private static final int BORDER = 0xFFA0A0B0;
     private static final int TEXT = 0xFFFFD24A;
@@ -44,27 +44,44 @@ public final class AdvancementPointsBadge {
         baBottom = bottom;
     }
 
-    @SubscribeEvent
-    public static void onRender(ScreenEvent.Render.Post event) {
-        Screen screen = event.getScreen();
-        if (!DefaultAdvancementsTab.isAdvancementsScreen(screen)) return;
+    /** The row the badge (and {@link AdvancementPerksButton}) sit on: the window's right edge and the row's top. */
+    record Row(int right, int top) {}
+
+    /**
+     * Below the window's bottom-right corner when there is room, else tucked inside it; null until
+     * Better Advancements has reported its window.
+     */
+    static Row row(Screen screen) {
         int right;
         int bottom;
         if (screen instanceof AdvancementsScreen) {
             right = (screen.width + VANILLA_WINDOW_WIDTH) / 2;
             bottom = (screen.height + VANILLA_WINDOW_HEIGHT) / 2;
         } else {
-            if (baRight <= 0) return;
+            if (baRight <= 0) return null;
             right = baRight;
             bottom = baBottom;
         }
+        int top = bottom + GAP + BOX_HEIGHT <= screen.height ? bottom + GAP : bottom - BOX_HEIGHT - GAP * 3;
+        return new Row(right, top);
+    }
+
+    /** The badge's width for the current balance. */
+    static int width(Font font) {
+        return font.width(Integer.toString(PerkClientBalances.unlockPoints())) + PAD_X * 2;
+    }
+
+    @SubscribeEvent
+    public static void onRender(ScreenEvent.Render.Post event) {
+        Screen screen = event.getScreen();
+        if (!DefaultAdvancementsTab.isAdvancementsScreen(screen)) return;
+        Row row = row(screen);
+        if (row == null) return;
         Font font = Minecraft.getInstance().font;
         String text = Integer.toString(PerkClientBalances.unlockPoints());
-        int w = font.width(text) + PAD_X * 2;
-        int x1 = right;
-        int x0 = x1 - w;
-        // Below the window when there is room, else tucked inside its bottom-right corner.
-        int y0 = bottom + GAP + BOX_HEIGHT <= screen.height ? bottom + GAP : bottom - BOX_HEIGHT - GAP * 3;
+        int x1 = row.right();
+        int x0 = x1 - width(font);
+        int y0 = row.top();
         int y1 = y0 + BOX_HEIGHT;
         GuiGraphics g = event.getGuiGraphics();
         g.pose().pushPose();

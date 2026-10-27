@@ -4,7 +4,9 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.registry.ModItems;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -26,7 +28,7 @@ import java.util.List;
  * Violet Cores from {@link #CORE_FROM}. Deterministic per world seed and group, so a regenerated group
  * rolls the same way the rest of its loot does. Called from {@code TrainAssembler.spawnGroup} right after
  * a carriage's contents pass, before a fresh shared carriage registers (so the apple never counts as an
- * author's edit).
+ * author's edit). Nothing drops until someone has unlocked a perk ({@link #open}).
  */
 public final class CosmicAppleDrops {
 
@@ -47,6 +49,26 @@ public final class CosmicAppleDrops {
     private static final long SALT = 0xC05_41C_DEB_215L;
 
     private CosmicAppleDrops() {}
+
+    /**
+     * Apples only turn up once someone online has spent this many unlock points: before the first
+     * perk is unlocked there is nothing to spend an apple's points on. Judged when a group
+     * generates; unlocks are never taken back, so once open it stays open.
+     */
+    static final int UNLOCK_SPENT_TO_OPEN = 1;
+
+    /** True once any online player has spent {@link #UNLOCK_SPENT_TO_OPEN} unlock points. */
+    public static boolean open(MinecraftServer server) {
+        if (server == null) return false;
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (opensAt(PerkSpend.unlockSpent(player))) return true;
+        }
+        return false;
+    }
+
+    static boolean opensAt(int unlockSpent) {
+        return unlockSpent >= UNLOCK_SPENT_TO_OPEN;
+    }
 
     /** Which slot of the group holds the apple, or -1 when this group gets none. */
     public static int slotFor(long seed, int anchorPIdx, int groupSize) {

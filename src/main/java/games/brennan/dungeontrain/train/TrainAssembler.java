@@ -770,7 +770,9 @@ public final class TrainAssembler {
         PendingRelayEntitySpawn[] pendingRelayEntities = new PendingRelayEntitySpawn[groupSize];
         PendingWholeDecorSpawn[] pendingWholeDecor = new PendingWholeDecorSpawn[groupSize];
         // Cosmic apples: about one group in five, in the drawn slot's containers (-1 = none here).
-        int appleSlot = games.brennan.dungeontrain.perks.CosmicAppleDrops.slotFor(genCfg.seed(), anchorPIdx, groupSize);
+        // None until someone has unlocked a perk (CosmicAppleDrops.open).
+        int appleSlot = games.brennan.dungeontrain.perks.CosmicAppleDrops.open(level.getServer())
+            ? games.brennan.dungeontrain.perks.CosmicAppleDrops.slotFor(genCfg.seed(), anchorPIdx, groupSize) : -1;
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
             BlockPos carriageShipyardOrigin = shipyardOrigin.offset(enclosedStartOffset + slot * length, 0, 0);
