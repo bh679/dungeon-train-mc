@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client;
 
+import dev.ryanhcode.sable.companion.math.Pose3dc;
+import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.snapshot.SnapshotCamera;
@@ -183,9 +185,19 @@ public final class DeathCameraCycle {
         if (!active || bodyLocal == null) return null;
         Vector3d lens = lensLocal[angle];
         if (lens == null) lens = lensFor(bodyLocal, OFFSETS[angle]);
-        Vector3d lensW = toWorld(lens);
-        Vector3d bodyW = bodyWorld();
+        // Render time: project through the carriage's frame-interpolated pose, the same one the
+        // carriage itself is drawn with, so the camera glides instead of stepping once per tick.
+        Vector3d lensW = toWorldRender(lens, partialTick);
+        Vector3d bodyW = toWorldRender(bodyLocal, partialTick);
         return poseFor(new Vec3(lensW.x, lensW.y, lensW.z), new Vec3(bodyW.x, bodyW.y + LOOK_Y_OFFSET, bodyW.z));
+    }
+
+    private static Vector3d toWorldRender(Vector3d local, float partialTick) {
+        if (carriage instanceof ClientSubLevel client) {
+            Pose3dc pose = client.renderPose(partialTick);
+            if (pose != null) return pose.transformPosition(new Vector3d(local), new Vector3d());
+        }
+        return toWorld(local);
     }
 
     /** Pure: a pose at {@code lens} looking at {@code target}. */
