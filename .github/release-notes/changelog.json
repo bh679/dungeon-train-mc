@@ -31263,6 +31263,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "mob-tick-lag-fix",
+      "version": "0.1556.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance"
+      ],
+      "title": "Lag fix",
+      "summary": "Fixed long freezes that could hit during fights on the train, or right after loading back into a world.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2360,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

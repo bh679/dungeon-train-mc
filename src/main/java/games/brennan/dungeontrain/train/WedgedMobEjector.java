@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.AABB;
 import org.joml.Vector3dc;
 import org.joml.primitives.AABBdc;
@@ -30,6 +31,9 @@ import java.util.WeakHashMap;
  * <p>Owned pets never go over the side. One whose owner is online is sent to the owner (onto the
  * deck, when they ride one); one whose owner is offline takes a safe side spot or stays put, and is
  * never discarded.</p>
+ *
+ * <p>A side whose chunk isn't loaded is never checked (that would sync-load it); if one was skipped,
+ * the mob waits for a later tick instead of being discarded.</p>
  */
 public final class WedgedMobEjector {
 
@@ -37,6 +41,9 @@ public final class WedgedMobEjector {
 
     /** One per level, so a mob that keeps getting back in logs once per window, not per move. */
     private static final Map<ServerLevel, EjectLogThrottle> LOG_THROTTLES = new WeakHashMap<>();
+
+    /** Same, for a mob left waiting on an unloaded side; kept apart so it never hides a later move's line. */
+    private static final Map<ServerLevel, EjectLogThrottle> WAIT_LOG_THROTTLES = new WeakHashMap<>();
 
     private WedgedMobEjector() {}
 
@@ -70,11 +77,19 @@ public final class WedgedMobEjector {
         double halfWidth = e.getBbWidth() / 2.0;
         double[] targets = WedgedUnderFloor.sideTargets(e.getX(), e.getZ(), halfWidth,
             c.minX(), c.minZ(), c.maxX(), c.maxZ(), velocity.x(), velocity.z());
+        boolean anyUnloaded = false;
         boolean roomBeside = false;
         for (int i = 0; i < targets.length; i += 2) {
             double tx = targets[i];
             double tz = targets[i + 1];
             AABB moved = e.getBoundingBox().move(tx - e.getX(), 0.0, tz - e.getZ());
+            // noCollision would sync-load an unloaded chunk on this side; try it on a later tick.
+            // The same x/z span covers groundBelow's box under it.
+            if (!WedgedUnderFloor.collisionChunksLoaded(moved.minX, moved.minZ, moved.maxX, moved.maxZ,
+                    key -> level.getChunkSource().getChunkNow(ChunkPos.getX(key), ChunkPos.getZ(key)) != null)) {
+                anyUnloaded = true;
+                continue;
+            }
             if (!level.noCollision(e, moved) || CarriageSpace.overlapsAnyCarriage(level, moved)) continue;
             roomBeside = true;
             if (groundBelow(level, e, moved)) {
@@ -87,6 +102,16 @@ public final class WedgedMobEjector {
                 e.teleportTo(tx, e.getY(), tz);
                 return;
             }
+        }
+        if (anyUnloaded) {
+            // A side we couldn't check may be free once it loads: keep the mob rather than discard it.
+            int repeats = WAIT_LOG_THROTTLES.computeIfAbsent(level, l -> new EjectLogThrottle())
+                .record(e.getId(), level.getGameTime());
+            if (repeats >= 0) {
+                LOGGER.debug("[DungeonTrain] Left {} in a carriage floor at ({}, {}, {}) until the chunk beside it loads repeats={}",
+                    e.getType().toShortString(), e.getX(), e.getY(), e.getZ(), repeats);
+            }
+            return;
         }
         String why = roomBeside ? "no ground beside it" : "no room beside it";
         if (ownerId != null) {

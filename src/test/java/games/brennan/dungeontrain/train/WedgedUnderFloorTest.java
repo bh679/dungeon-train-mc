@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.train;
 
+import net.minecraft.world.level.ChunkPos;
 import org.junit.jupiter.api.Test;
+
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -91,6 +94,34 @@ class WedgedUnderFloorTest {
         // 2 from the low-Z edge, 10 from the low-X edge: out across Z.
         double[] t = WedgedUnderFloor.sideTargets(110, 2, 0.3, MIN_X, MIN_Z, MAX_X, MAX_Z, 0, 0);
         assertTrue(t[1] < MIN_Z);
+    }
+
+    private static boolean loadedIn(double minX, double minZ, double maxX, double maxZ, Set<Long> loaded) {
+        return WedgedUnderFloor.collisionChunksLoaded(minX, minZ, maxX, maxZ, loaded::contains);
+    }
+
+    @Test
+    void boxWellInsideOneChunkNeedsOnlyThatChunk() {
+        assertTrue(loadedIn(5.2, 5.2, 5.8, 5.8, Set.of(ChunkPos.asLong(0, 0))));
+    }
+
+    @Test
+    void boxNearAChunkEdgeNeedsTheNeighbourToo() {
+        // noCollision reads one block past the box: x 15.2..15.8 reaches block 16, chunk 1.
+        assertFalse(loadedIn(15.2, 5.2, 15.8, 5.8, Set.of(ChunkPos.asLong(0, 0))));
+        assertTrue(loadedIn(15.2, 5.2, 15.8, 5.8, Set.of(ChunkPos.asLong(0, 0), ChunkPos.asLong(1, 0))));
+    }
+
+    @Test
+    void negativeCoordinatesMapToNegativeChunks() {
+        // x -0.8..-0.2 reads blocks -2..0: chunks -1 and 0.
+        assertFalse(loadedIn(-0.8, 5.2, -0.2, 5.8, Set.of(ChunkPos.asLong(-1, 0))));
+        assertTrue(loadedIn(-0.8, 5.2, -0.2, 5.8, Set.of(ChunkPos.asLong(-1, 0), ChunkPos.asLong(0, 0))));
+    }
+
+    @Test
+    void sideOutsideAnUnloadedChunkIsNotLoaded() {
+        assertFalse(loadedIn(100.2, -0.65, 100.8, -0.05, Set.of()));
     }
 
     @Test
