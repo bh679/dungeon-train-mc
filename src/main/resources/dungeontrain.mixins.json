@@ -140,6 +140,7 @@
     "SubLevelStorageFileNoDsyncMixin",
     "SubLevelSerializerTimingMixin",
     "SubLevelTrackingOrderedSnapshotMixin",
+    "SubLevelTrackingDeadRiderMixin",
     "NetherFortressStructureMixin",
     "NetherFossilStructureMixin",
     "JigsawStructureMixin",

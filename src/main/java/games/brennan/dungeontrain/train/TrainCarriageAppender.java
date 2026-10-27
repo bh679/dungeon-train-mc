@@ -19,6 +19,7 @@ import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.ship.sable.DeadRiderAnchors;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreeze;
 import games.brennan.dungeontrain.ship.sable.SableHoldingIndex;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
@@ -2162,7 +2163,9 @@ public final class TrainCarriageAppender {
     }
 
     public static void onLevelTick(ServerLevel level) {
-        List<ServerPlayer> players = level.players();
+        // Dead players on the death screen count as riders standing where they fell (world
+        // space) until they respawn, so the train carries on around them (DeadRiderAnchors).
+        List<ServerPlayer> players = DeadRiderAnchors.withDead(level);
         if (players.isEmpty()) return;
 
         // First, so every reader of the registry this tick (portal walk included) sees live
@@ -3903,7 +3906,7 @@ public final class TrainCarriageAppender {
     public static void holdWholeTrainForResume(ServerLevel level, UUID trainId, List<Trains.Carriage> train) {
         if (train == null || train.isEmpty()) return;
         Shipyard shipyard = Shipyards.of(level);
-        List<ServerPlayer> players = level.players();
+        List<ServerPlayer> players = DeadRiderAnchors.withDead(level);
         Set<UUID> current = FORCELOADED_BY_TRAIN.computeIfAbsent(trainId, k -> new HashSet<>());
         int held = 0;
         int skipped = 0;
@@ -3998,7 +4001,7 @@ public final class TrainCarriageAppender {
     public static boolean anyPlayerNearLoadedTrain(MinecraftServer server) {
         ServerLevel trainLevel = trainLevelOf(server);
         if (trainLevel == null) return false;
-        List<ServerPlayer> players = trainLevel.players();
+        List<ServerPlayer> players = DeadRiderAnchors.withDead(trainLevel);
         if (players.isEmpty()) return false;
         for (List<Trains.Carriage> train : Trains.byTrainId(trainLevel).values()) {
             for (Trains.Carriage c : train) {
