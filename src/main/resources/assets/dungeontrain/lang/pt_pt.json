@@ -1419,6 +1419,8 @@
   "gui.dungeontrain.rewards.group.extra": "EXTRAS",
   "gui.dungeontrain.tv.channel.main": "Emissão 1",
   "gui.dungeontrain.tv.channel.second": "Emissão 2",
+  "item.dungeontrain.tv.on": "Ligada",
+  "item.dungeontrain.tv.off": "Desligada",
   "gui.dungeontrain.rewards.quicker_streams.name": "Transmissões mais rápidas",
   "gui.dungeontrain.rewards.quicker_streams.line": "Reduz o atraso de %1$ss para %2$ss durante 1 mês",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",

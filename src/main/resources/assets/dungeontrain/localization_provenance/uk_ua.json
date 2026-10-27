@@ -1540,6 +1540,8 @@
       "gui.dungeontrain.rewards.group.extra",
       "gui.dungeontrain.tv.channel.main",
       "gui.dungeontrain.tv.channel.second",
+      "item.dungeontrain.tv.on",
+      "item.dungeontrain.tv.off",
       "gui.dungeontrain.rewards.quicker_streams.name",
       "gui.dungeontrain.rewards.quicker_streams.line",
       "gui.dungeontrain.rewards.quicker_streams.amount",

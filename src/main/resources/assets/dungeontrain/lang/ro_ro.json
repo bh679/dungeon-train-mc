@@ -1646,6 +1646,8 @@
   "gui.dungeontrain.rewards.group.extra": "EXTRA",
   "gui.dungeontrain.tv.channel.main": "Stream 1",
   "gui.dungeontrain.tv.channel.second": "Stream 2",
+  "item.dungeontrain.tv.on": "Pornit",
+  "item.dungeontrain.tv.off": "Oprit",
   "gui.dungeontrain.rewards.quicker_streams.name": "Streamuri mai rapide",
   "gui.dungeontrain.rewards.quicker_streams.line": "Întârziere redusă de la %1$ss la %2$ss timp de 1 lună",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",

@@ -1374,6 +1374,8 @@
   "gui.dungeontrain.rewards.group.extra": "TAMBAHAN",
   "gui.dungeontrain.tv.channel.main": "Strim 1",
   "gui.dungeontrain.tv.channel.second": "Strim 2",
+  "item.dungeontrain.tv.on": "Hidup",
+  "item.dungeontrain.tv.off": "Mati",
   "gui.dungeontrain.rewards.quicker_streams.name": "Strim Lebih Pantas",
   "gui.dungeontrain.rewards.quicker_streams.line": "Kurangkan kelewatan dari %1$ss ke %2$ss selama 1 bulan",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
