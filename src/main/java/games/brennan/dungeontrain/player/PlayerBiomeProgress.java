@@ -15,8 +15,8 @@ import java.util.Set;
  *
  * <p>Tracks the distinct biomes the player has ridden through in the current
  * life. Drives the exploration advancements: the count tiers ("Far Afield" /
- * "Many Lands" / "World Without End" / "Terra Omnia") all read
- * {@link #biomeCount()}.</p>
+ * "Many Lands" / "World Without End") read {@link #biomeCount()}; "Terra Omnia" asks for every biome
+ * there is ({@link games.brennan.dungeontrain.advancement.TerraOmnia}) and reads {@link #biomes()}.</p>
  *
  * <p>This lives in its own attachment rather than as fields on
  * {@link PlayerRunState} because that class's {@code RecordCodecBuilder.group(...)}
@@ -57,6 +57,11 @@ public final class PlayerBiomeProgress {
      */
     public boolean addBiome(ResourceLocation id) {
         return biomes.add(id);
+    }
+
+    /** The biomes ridden through this run, as an unmodifiable copy. */
+    public Set<ResourceLocation> biomes() {
+        return Set.copyOf(biomes);
     }
 
     /** Number of distinct biomes ridden through this run. */

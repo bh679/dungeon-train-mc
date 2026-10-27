@@ -7,6 +7,8 @@ import games.brennan.dungeontrain.advancement.AdvancementRevocations;
 import games.brennan.dungeontrain.advancement.BurritoClock;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
+import games.brennan.dungeontrain.advancement.TerraOmnia;
+import games.brennan.dungeontrain.advancement.TerraOmniaMigration;
 import games.brennan.dungeontrain.advancement.TabGateways;
 import games.brennan.dungeontrain.advancement.TabCompleteAdvancements;
 import games.brennan.dungeontrain.advancement.FarStartAdvancement;
@@ -40,11 +42,13 @@ import games.brennan.dungeontrain.narrative.StoryFile;
 import games.brennan.dungeontrain.narrative.StoryRegistry;
 import games.brennan.dungeontrain.net.AdvancementsHintPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.RiddenBiomesPacket;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.portal.PortalTripTracker;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerAdvancementManager;
@@ -446,10 +450,22 @@ public final class AchievementEvents {
      * distinct-biome count grows. {@code distinctBiomes} is the player's
      * single-life {@link games.brennan.dungeontrain.player.PlayerBiomeProgress#biomeCount()}.
      * Drives the exploration count tiers ("Far Afield", "Many Lands", "World
-     * Without End", "Terra Omnia").
+     * Without End") and "Terra Omnia" once every biome there is has been ridden
+     * through ({@link TerraOmnia}). Also sends the player their ridden list, which
+     * Terra Omnia's checklist shows.
      */
     public static void notifyBiomesVisited(ServerPlayer player, int distinctBiomes) {
         ModAdvancementTriggers.BIOMES_VISITED.get().trigger(player, distinctBiomes);
+        Set<ResourceLocation> ridden = player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get()).biomes();
+        if (TerraOmnia.isComplete(ridden, player.registryAccess().registryOrThrow(Registries.BIOME))) {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, TerraOmnia.ACTION);
+        }
+        syncRiddenBiomes(player, ridden);
+    }
+
+    /** Send {@code player} the biomes they have ridden through this life, for Terra Omnia's checklist. */
+    public static void syncRiddenBiomes(ServerPlayer player, Set<ResourceLocation> ridden) {
+        DungeonTrainNet.sendTo(player, new RiddenBiomesPacket(ridden.stream().map(ResourceLocation::toString).toList()));
     }
 
     // ---------------- Train-time milestones ----------------
@@ -959,6 +975,7 @@ public final class AchievementEvents {
         // Exploration progress is per-life too — clear distinct biomes so the
         // count tiers (and "Terra Omnia") restart for the new run.
         player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get()).clear();
+        syncRiddenBiomes(player, Set.of());
         player.getData(ModDataAttachments.AFK_LIFE_STATS.get()).clear();
         // Per-life container markers. Neither attachment is copyOnDeath, so the
         // respawn clone already starts clean — cleared explicitly for the same
@@ -1037,6 +1054,10 @@ public final class AchievementEvents {
         // updated player's complete vanilla / other-mod trees, which will never
         // re-fire AdvancementEarnEvent — is captured before the replay below
         // mirrors the store back onto this world.
+        // Terra Omnia now asks for every biome: whoever earned its old 150-biome version loses it, keeping
+        // their biomes (topped up to 150). Before the replay below, which would only warn about the retired id.
+        TerraOmniaMigration.apply(player);
+        syncRiddenBiomes(player, player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get()).biomes());
         AdvancementProfiles.absorb(player, AdvancementProfiles.currentKey(player));
         // Half-finished collections too (Most Wanted's 34 mobs): the store above only holds
         // finished advancements, so without this a new world started them from zero.
