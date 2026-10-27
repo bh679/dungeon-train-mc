@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.client.snapshot.SnapshotCamera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -16,59 +17,97 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 import org.joml.Vector3d;
 
+import java.util.List;
+
 /**
- * The death moment's camera: three shots of the train, cycling on their own, until the player
- * presses Space on {@link DeathMomentScreen} (Left/Right pick a shot by hand).
+ * The death moment's camera: the player's own view first (with the red wash), then a one-pass
+ * run of shots riding the carriage, a world-locked shot that watches the carriage roll away, and
+ * a looping set of world-locked shots of the train passing by, until Space on
+ * {@link DeathMomentScreen}. Every cut fades through black; Left/Right step through the shots.
  *
- * <p>Each shot is an offset from the body in carriage space (the train runs along +X), re-projected
- * through the carriage's live pose every frame, the same way {@link DeadRiderCarry} keeps the body
- * on the carriage, so the train stays framed while it rolls on. The camera always aims at the body.
- * A body that died off the train gets the same offsets in world space instead, and the train rolls
- * out of frame as it would for anyone standing there.</p>
- *
- * <p>When a shot starts, its lens is clipped toward open air once ({@link
- * SnapshotCamera#clipTowardOpenAir}) so a trackside camera inside a tunnel wall is pulled back to
- * the body's side of it. {@link games.brennan.dungeontrain.mixin.client.CameraCinematicMixin}
- * applies {@link #pose(float)} while {@link #isActive()}; the HUD and the first-person hand are
- * hidden for the duration. Client main thread only.</p>
+ * <p>Train-locked lenses are offsets from the body in carriage space, re-projected through the
+ * carriage's frame-interpolated render pose (the one the carriage is drawn with) so they glide.
+ * World-locked lenses are fixed where their shot starts. A body that died off the train gets the
+ * same offsets in world space. Each lens is clipped toward open air against world blocks once when
+ * its shot starts ({@link SnapshotCamera#clipTowardOpenAir}); carriage walls are invisible to that
+ * clip, so every offset stands clear of the train's 7-block width. HUD and first-person hand are
+ * hidden while a camera shot is up. Client main thread only.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class DeathCameraCycle {
 
-    /** How long each shot holds before the next one (4 s). */
-    static final int ANGLE_TICKS = 80;
-    /** Carriage-space offsets from the body: along the train, up, across. */
-    static final Vec3[] OFFSETS = {
-        new Vec3(7.0, 2.5, 8.0),    // trackside, a little ahead: the carriage rolls past
-        new Vec3(-12.0, 10.0, -5.0), // high and behind: the train stretching ahead
-        new Vec3(12.0, 1.5, -7.0),   // low, ahead, the far side of the track, looking back down the line
-    };
-    static final int ANGLE_COUNT = OFFSETS.length;
+    /** Ticks of black on each side of a cut. */
+    static final int FADE_TICKS = 8;
     /** Aim a little above the feet so the body sits in the lower middle of the frame. */
     private static final double LOOK_Y_OFFSET = 1.0;
 
+    /** The shipped sequence: POV, three carriage shots, one transition, three passing shots (looped). */
+    static final List<DeathShot> DEFAULT_SEQUENCE = List.of(
+        DeathShot.pov(40),
+        DeathShot.trainLocked(4.0, 1.8, 6.0, 60, "P1-1"),
+        DeathShot.trainLocked(-8.0, 6.0, -4.0, 60, "P1-3"),
+        DeathShot.trainLocked(9.0, 1.2, -5.5, 60, "P1-5"),
+        DeathShot.transition(-3.0, 2.5, 8.0, 100, "T-1"),
+        DeathShot.world(0.0, 3.0, 14.0, 120, "W-1"),
+        DeathShot.world(-20.0, 4.0, 10.0, 120, "W-3"),
+        DeathShot.world(0.0, 8.0, 18.0, 120, "W-2")
+    );
+
+    private static List<DeathShot> sequence = DEFAULT_SEQUENCE;
+    private static boolean reviewLabels;
+
     private static boolean active;
-    private static int angle;
-    private static int angleTicks;
+    private static int index;
+    private static int shotTicks;
     private static SubLevel carriage;
     /** Body position in carriage (plot) space, or world space when {@link #carriage} is null. */
     private static Vector3d bodyLocal;
-    /** Resolved lens position per shot, in the same space as {@link #bodyLocal}; null until the shot starts. */
-    private static final Vector3d[] lensLocal = new Vector3d[ANGLE_COUNT];
+    /** The current shot's lens: carriage space for train-locked shots, world space otherwise. */
+    private static Vector3d lens;
+    /** Fixed world aim for {@link DeathShot.Kind#WORLD} shots. */
+    private static Vector3d aimWorld;
     private static boolean savedHideGui;
-    /** Dead ticks seen before starting, so {@link DeadRiderCarry} has had a tick to pin the body. */
     private static int waitTicks;
-    /** Give the carriage pin this many dead ticks to appear before starting in world space. */
     private static final int PIN_WAIT_TICKS = 3;
 
     private DeathCameraCycle() {}
 
+    public static boolean isActive() {
+        return active;
+    }
+
+    /** The shot now showing, or null when inactive. */
+    public static DeathShot current() {
+        return active ? sequence.get(index) : null;
+    }
+
+    /** True while the player's own view is up (the red wash belongs to it alone). */
+    public static boolean isPov() {
+        DeathShot shot = current();
+        return shot != null && shot.kind() == DeathShot.Kind.POV;
+    }
+
+    /** The current shot's label when the review overlay is on, else null. */
+    public static String reviewLabel() {
+        DeathShot shot = current();
+        return reviewLabels && shot != null ? shot.label() : null;
+    }
+
+    /** Ticks into the current shot. */
+    public static int shotTicks() {
+        return shotTicks;
+    }
+
+    /** Dev review: swap the sequence and show each shot's label. Takes effect at the next start. */
+    static void review(List<DeathShot> shots, boolean labels) {
+        sequence = shots == null || shots.isEmpty() ? DEFAULT_SEQUENCE : List.copyOf(shots);
+        reviewLabels = labels;
+    }
+
     /**
-     * Start once the player is actually dead on the client. The death screen opens from the
-     * combat-kill packet, a tick or two before the health update that makes
-     * {@code isDeadOrDying()} true, and {@link DeadRiderCarry} pins the body on its first dead
-     * tick (after the screen's tick). So the screen calls this every tick and the cycle begins
-     * when the body is dead and pinned, or after {@link #PIN_WAIT_TICKS} dead ticks off the train.
+     * Start once the player is actually dead on the client: the death screen opens from the
+     * combat-kill packet a tick before the health update, and {@link DeadRiderCarry} pins the body
+     * on its first dead tick (after the screen's tick). So the screen calls this every tick.
      */
     public static void ensureStarted(LocalPlayer player) {
         if (active || player == null || !player.isDeadOrDying()) return;
@@ -76,18 +115,7 @@ public final class DeathCameraCycle {
         if (DeadRiderCarry.pinned() != null || waitTicks >= PIN_WAIT_TICKS) start(player);
     }
 
-    public static boolean isActive() {
-        return active;
-    }
-
-    /** Which of the three shots is showing (0-based). */
-    public static int angle() {
-        return angle;
-    }
-
-    /** Begin the cycle on the first shot. Safe to call again while active (no-op). */
-    public static void start(LocalPlayer player) {
-        if (active || player == null) return;
+    private static void start(LocalPlayer player) {
         Minecraft mc = Minecraft.getInstance();
         DeadRiderCarry.Pin pin = DeadRiderCarry.pinned();
         if (pin != null) {
@@ -97,19 +125,19 @@ public final class DeathCameraCycle {
             carriage = null;
             bodyLocal = new Vector3d(player.getX(), player.getY(), player.getZ());
         }
-        for (int i = 0; i < ANGLE_COUNT; i++) lensLocal[i] = null;
         savedHideGui = mc.options.hideGui;
-        mc.options.hideGui = true;
         active = true;
         select(0);
     }
 
-    /** End the cycle and give the HUD back. Safe to call when not active. */
+    /** End the sequence and give the HUD back. Safe to call when not active. */
     public static void stop() {
         if (!active) return;
         active = false;
         carriage = null;
         bodyLocal = null;
+        lens = null;
+        aimWorld = null;
         waitTicks = 0;
         Minecraft.getInstance().options.hideGui = savedHideGui;
     }
@@ -123,81 +151,125 @@ public final class DeathCameraCycle {
             return;
         }
         if (carriage != null && carriage.isRemoved()) {
-            // The carriage under the body is gone: fall back to where the body is now, in world space.
+            // The carriage under the body is gone: carry on from where the body is, in world space.
             Vector3d world = bodyWorld();
             carriage = null;
             bodyLocal = world;
-            for (int i = 0; i < ANGLE_COUNT; i++) lensLocal[i] = null;
-            select(angle);
+            select(index);
         }
-        angleTicks++;
-        if (angleTicks >= ANGLE_TICKS) select(nextIndex(angle));
+        shotTicks++;
+        if (shotTicks >= sequence.get(index).holdTicks()) select(nextIndex(sequence, index));
     }
 
     /** Right arrow. */
     public static void next() {
-        if (active) select(nextIndex(angle));
+        if (active) select(nextIndex(sequence, index));
     }
 
     /** Left arrow. */
     public static void previous() {
-        if (active) select(previousIndex(angle));
-    }
-
-    static int nextIndex(int current) {
-        return (current + 1) % ANGLE_COUNT;
-    }
-
-    static int previousIndex(int current) {
-        return (current + ANGLE_COUNT - 1) % ANGLE_COUNT;
-    }
-
-    private static void select(int index) {
-        angle = index;
-        angleTicks = 0;
-        if (lensLocal[index] == null) lensLocal[index] = resolveLens(index);
+        if (active) select(previousIndex(sequence, index));
     }
 
     /**
-     * The shot's lens in local space, clipped toward open air against the world once. Falls back
-     * to the raw offset when there is no level to clip against.
+     * Pure: the shot after {@code current}. Past the end, the looping world shots start over;
+     * a sequence with no world shot holds its last shot.
      */
-    private static Vector3d resolveLens(int index) {
-        Vector3d want = lensFor(bodyLocal, OFFSETS[index]);
+    static int nextIndex(List<DeathShot> shots, int current) {
+        if (current + 1 < shots.size()) return current + 1;
+        int loop = loopStart(shots);
+        return loop >= 0 ? loop : current;
+    }
+
+    /** Pure: the shot before {@code current}; never back into the POV. */
+    static int previousIndex(List<DeathShot> shots, int current) {
+        int floor = shots.size() > 1 && shots.get(0).kind() == DeathShot.Kind.POV ? 1 : 0;
+        if (current - 1 >= floor) return current - 1;
+        int loop = loopStart(shots);
+        return current == floor && loop >= 0 ? shots.size() - 1 : current;
+    }
+
+    /** Pure: index of the first world-locked shot, the start of the loop, or -1. */
+    static int loopStart(List<DeathShot> shots) {
+        for (int i = 0; i < shots.size(); i++) {
+            if (shots.get(i).kind() == DeathShot.Kind.WORLD) return i;
+        }
+        return -1;
+    }
+
+    /**
+     * Pure: black overlay alpha for a shot of {@code hold} ticks at {@code t} ticks in. Fades in
+     * from black over the first {@link #FADE_TICKS} (not on the POV, which opens on the live world)
+     * and out to black over the last.
+     */
+    static float blackAlpha(double t, int hold, boolean fadeIn) {
+        float in = fadeIn ? 1.0f - (float) Mth.clamp(t / FADE_TICKS, 0.0, 1.0) : 0.0f;
+        float out = (float) Mth.clamp((t - (hold - FADE_TICKS)) / FADE_TICKS, 0.0, 1.0);
+        return Math.max(in, out);
+    }
+
+    /** Black overlay alpha for this frame, 0 when inactive. */
+    public static float blackAlpha(float partialTick) {
+        DeathShot shot = current();
+        if (shot == null) return 0.0f;
+        return blackAlpha(shotTicks + partialTick, shot.holdTicks(), shot.kind() != DeathShot.Kind.POV);
+    }
+
+    private static void select(int i) {
+        index = i;
+        shotTicks = 0;
+        DeathShot shot = sequence.get(i);
+        Minecraft mc = Minecraft.getInstance();
+        mc.options.hideGui = shot.kind() != DeathShot.Kind.POV;
+        lens = null;
+        aimWorld = null;
+        if (shot.kind() == DeathShot.Kind.POV) return;
+        if (shot.kind() == DeathShot.Kind.TRAIN_LOCKED) {
+            lens = resolveLens(shot, true);
+            return;
+        }
+        lens = resolveLens(shot, false);
+        if (shot.kind() == DeathShot.Kind.WORLD) {
+            Vector3d body = bodyWorld();
+            aimWorld = new Vector3d(body.x, body.y + LOOK_Y_OFFSET, body.z);
+        }
+    }
+
+    /**
+     * The shot's lens, clipped toward open air against world blocks once. Carriage space when
+     * {@code carriageSpace} (train-locked) and a carriage is pinned, else world space.
+     */
+    private static Vector3d resolveLens(DeathShot shot, boolean carriageSpace) {
+        boolean local = carriageSpace && carriage != null;
+        Vector3d body = local ? bodyLocal : bodyWorld();
+        Vector3d want = lensFor(body, shot.offset());
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
         if (level == null || player == null) return want;
-        Vector3d bodyW = toWorld(bodyLocal);
-        Vector3d wantW = toWorld(want);
+        Vector3d bodyW = bodyWorld();
+        Vector3d wantW = local ? toWorld(want) : want;
         Vec3 from = new Vec3(bodyW.x, bodyW.y + player.getBbHeight() * 0.6, bodyW.z);
         Vec3 clipped = SnapshotCamera.clipTowardOpenAir(level, player, from, new Vec3(wantW.x, wantW.y, wantW.z));
-        return toLocal(new Vector3d(clipped.x, clipped.y, clipped.z));
+        Vector3d clippedW = new Vector3d(clipped.x, clipped.y, clipped.z);
+        return local ? toLocal(clippedW) : clippedW;
     }
 
-    /** Pure: the lens position for a body position and a carriage-space offset. */
+    /** Pure: the lens position for a body position and an offset in the same space. */
     static Vector3d lensFor(Vector3d body, Vec3 offset) {
         return new Vector3d(body.x + offset.x, body.y + offset.y, body.z + offset.z);
     }
 
-    /** The camera pose for this render frame, or null when not active. */
+    /** The camera pose for this render frame, or null when the player's own view should show. */
     public static CinematicCameraController.Pose pose(float partialTick) {
-        if (!active || bodyLocal == null) return null;
-        Vector3d lens = lensLocal[angle];
-        if (lens == null) lens = lensFor(bodyLocal, OFFSETS[angle]);
-        // Render time: project through the carriage's frame-interpolated pose, the same one the
-        // carriage itself is drawn with, so the camera glides instead of stepping once per tick.
-        Vector3d lensW = toWorldRender(lens, partialTick);
+        DeathShot shot = current();
+        if (shot == null || shot.kind() == DeathShot.Kind.POV || lens == null) return null;
         Vector3d bodyW = toWorldRender(bodyLocal, partialTick);
-        return poseFor(new Vec3(lensW.x, lensW.y, lensW.z), new Vec3(bodyW.x, bodyW.y + LOOK_Y_OFFSET, bodyW.z));
-    }
-
-    private static Vector3d toWorldRender(Vector3d local, float partialTick) {
-        if (carriage instanceof ClientSubLevel client) {
-            Pose3dc pose = client.renderPose(partialTick);
-            if (pose != null) return pose.transformPosition(new Vector3d(local), new Vector3d());
-        }
-        return toWorld(local);
+        Vector3d lensW = shot.kind() == DeathShot.Kind.TRAIN_LOCKED ? toWorldRender(lens, partialTick) : lens;
+        Vector3d aim = shot.kind() == DeathShot.Kind.WORLD && aimWorld != null
+            ? aimWorld
+            : new Vector3d(bodyW.x, bodyW.y + LOOK_Y_OFFSET, bodyW.z);
+        return poseFor(new Vec3(lensW.x, lensW.y, lensW.z), new Vec3(aim.x, aim.y, aim.z));
     }
 
     /** Pure: a pose at {@code lens} looking at {@code target}. */
@@ -220,10 +292,19 @@ public final class DeathCameraCycle {
         return carriage.logicalPose().transformPositionInverse(new Vector3d(world));
     }
 
+    /** Render time: through the carriage's frame-interpolated pose, the one it is drawn with. */
+    private static Vector3d toWorldRender(Vector3d local, float partialTick) {
+        if (carriage instanceof ClientSubLevel client) {
+            Pose3dc pose = client.renderPose(partialTick);
+            if (pose != null) return pose.transformPosition(new Vector3d(local), new Vector3d());
+        }
+        return toWorld(local);
+    }
+
     /** The camera is detached: no first-person hand floating in the shot. */
     @SubscribeEvent
     public static void onRenderHand(RenderHandEvent event) {
-        if (active) event.setCanceled(true);
+        if (active && !isPov()) event.setCanceled(true);
     }
 
     @SubscribeEvent

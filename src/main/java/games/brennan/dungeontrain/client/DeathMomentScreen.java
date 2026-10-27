@@ -13,8 +13,9 @@ import net.minecraft.util.Mth;
 
 /**
  * The beat between dying and the death recap: the live world keeps drawing, the train still
- * rolling on, watched from three camera shots that cycle on their own ({@link DeathCameraCycle})
- * under a light red wash, until the player presses Space. Left and Right pick a shot by hand.
+ * rolling on. First the player's own view under a red wash, then {@link DeathCameraCycle}'s shots
+ * (riding the carriage, then watching it leave, then the train passing by on a loop), each cut
+ * fading through black, until the player presses Space. Left and Right step through the shots.
  *
  * <p>It also keeps the frame of death smooth. {@link NarrativeDeathScreen} needs this run's
  * ride photos decoded and uploaded to the GPU, and opening it straight away did that work on the
@@ -32,7 +33,7 @@ public final class DeathMomentScreen extends Screen {
     private static final int FADE_TICKS = 10;
     /** Ignore Space and clicks this early so one already in flight at death can't skip the moment. */
     private static final int MIN_SKIP_TICKS = 10;
-    /** Vanilla DeathScreen's wash, top and bottom (ARGB), at half strength so the train reads through it. */
+    /** Vanilla DeathScreen's wash, top and bottom (ARGB), at half strength so the train reads through it. POV only. */
     private static final int WASH_TOP = 0x30500000;
     private static final int WASH_BOTTOM = 0x50803030;
 
@@ -148,9 +149,24 @@ public final class DeathMomentScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        float fade = Mth.clamp((ticks + partialTick) / FADE_TICKS, 0.0f, 1.0f);
-        g.fillGradient(0, 0, this.width, this.height, scaleAlpha(WASH_TOP, fade), scaleAlpha(WASH_BOTTOM, fade));
+        // The red wash belongs to the player's own view only; it rises over the moment of death and
+        // goes out with the first cut to black. Every later cut fades through black and back.
+        boolean pov = !DeathCameraCycle.isActive() || DeathCameraCycle.isPov();
+        if (pov) {
+            float fade = Mth.clamp((ticks + partialTick) / FADE_TICKS, 0.0f, 1.0f);
+            g.fillGradient(0, 0, this.width, this.height, scaleAlpha(WASH_TOP, fade), scaleAlpha(WASH_BOTTOM, fade));
+        }
+        float black = DeathCameraCycle.blackAlpha(partialTick);
+        if (black > 0.0f) g.fill(0, 0, this.width, this.height, scaleAlpha(0xFF000000, black));
         renderPrompt(g, partialTick);
+        String label = DeathCameraCycle.reviewLabel();
+        if (label != null && minecraft != null) {
+            g.fill(4, 4, 8 + minecraft.font.width(label) * 2, 8 + minecraft.font.lineHeight * 2, BACKDROP_COLOR);
+            g.pose().pushPose();
+            g.pose().scale(2.0f, 2.0f, 1.0f);
+            g.drawString(minecraft.font, label, 3, 3, TEXT_COLOR, true);
+            g.pose().popPose();
+        }
     }
 
     /** Bottom-centre prompt, in the intro cinematic's style, faded in after the wash. */
