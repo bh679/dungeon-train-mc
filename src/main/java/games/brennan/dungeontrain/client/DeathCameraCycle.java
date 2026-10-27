@@ -43,6 +43,8 @@ import java.util.List;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class DeathCameraCycle {
 
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+
     /** Ticks of black on each side of a cut. */
     static final int FADE_TICKS = 8;
     /** Candidate angles tested around an orbit subject. */
@@ -52,7 +54,7 @@ public final class DeathCameraCycle {
     /** An orbit never sweeps more than half a turn. */
     static final double MAX_SWEEP_DEGREES = 180.0;
     /** Radii an orbit tries, widest first. */
-    static final double[] ORBIT_RADII = {6.0, 4.0, 2.5};
+    static final double[] ORBIT_RADII = {6.0, 4.0, 2.5, 1.6};
     /** Re-test a moving subject's view this often; the arc is recomputed only when the lens is blocked. */
     private static final int ORBIT_RECHECK_TICKS = 20;
     /** Aim a little above the feet so the body sits in the lower middle of the frame. */
@@ -175,6 +177,9 @@ public final class DeathCameraCycle {
         killer = livingOnClient(mc, hints.killerId());
         contact = livingOnClient(mc, hints.contactId());
         DeathSceneHints.clear();
+        LOGGER.info("[DungeonTrain] Death scene starts: hints={} killer={} contact={} onTrain={}", hints,
+            killer == null ? "none" : killer.getType().toShortString(), contact == null ? "none" : contact.getType().toShortString(),
+            carriage != null);
         sequence = reviewSequence != null
             ? reviewSequence
             : buildSequence(hints.voidDeath(), killer != null, contact != null, carriage != null);
@@ -327,11 +332,16 @@ public final class DeathCameraCycle {
     private static boolean setUpOrbit(DeathShot shot) {
         Vector3d subject = subjectWorld(shot, 1.0f);
         if (subject == null) return false;
+        Entity e = shot.target() == DeathShot.Target.KILLER ? killer : shot.target() == DeathShot.Target.CONTACT ? contact : null;
+        if (e != null) LOGGER.info("[DungeonTrain] Death scene {} subject {} at {} removed={} invisible={} bb={}", shot.label(),
+            e.getType().toShortString(), e.position(), e.isRemoved(), e.isInvisible(), e.getBoundingBox());
         double height = shot.offset().y;
         for (double radius : ORBIT_RADII) {
-            for (double h : new double[] {height, height * 0.5}) {
+            for (double h : new double[] {height, height * 0.5, 0.8}) {
                 boolean[] clear = clearAngles(subject, radius, h);
                 int[] run = longestClearRun(clear);
+                LOGGER.debug("[DungeonTrain] Death scene orbit {}: radius={} height={} clearRun={} of {} subject=({}, {}, {})",
+                    shot.label(), radius, h, run[1], ORBIT_SAMPLES, (int) subject.x, (int) subject.y, (int) subject.z);
                 if (run[1] == 0) continue;
                 double arc = run[1] * 360.0 / ORBIT_SAMPLES;
                 if (arc < MIN_ARC_DEGREES && radius != ORBIT_RADII[ORBIT_RADII.length - 1]) continue;

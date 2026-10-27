@@ -58,7 +58,10 @@ public final class RecentMobContacts {
         CONTACTS.remove(event.getEntity().getUUID());
     }
 
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+
     private static void remember(UUID player, int id) {
+        LOGGER.info("[DungeonTrain] Mob contact remembered: player={} mob={}", player, id);
         CONTACTS.put(player, remember(CONTACTS.get(player), id, MAX));
     }
 
@@ -77,6 +80,7 @@ public final class RecentMobContacts {
     /** The nearest remembered mob that is still alive and near the player, excluding {@code excludeId}; -1 if none. */
     public static int nearestAlive(ServerPlayer player, int excludeId) {
         Deque<Integer> ids = CONTACTS.get(player.getUUID());
+        LOGGER.info("[DungeonTrain] Mob contacts for {}: {} (excluding {})", player.getGameProfile().getName(), ids, excludeId);
         if (ids == null) return -1;
         int best = -1;
         double bestDist = MAX_DISTANCE * MAX_DISTANCE;

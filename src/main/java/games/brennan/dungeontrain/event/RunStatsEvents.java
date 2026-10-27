@@ -377,6 +377,8 @@ public final class RunStatsEvents {
         int killer = source.getEntity() instanceof LivingEntity living && living != player
             ? living.getId() : DeathScenePacket.NONE;
         int contact = RecentMobContacts.nearestAlive(player, killer);
+        LOGGER.info("[DungeonTrain] Death scene for {}: void={} killer={} ({}) contact={}", player.getGameProfile().getName(),
+            voidDeath, killer, source.getEntity() == null ? "none" : source.getEntity().getType().toShortString(), contact);
         return new DeathScenePacket(voidDeath, killer, contact);
     }
 
