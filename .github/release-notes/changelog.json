@@ -31315,9 +31315,9 @@
       "highlights": [],
       "pr": 2362,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
     },
     {
       "id": "mob-haste-slower",
@@ -31333,9 +31333,9 @@
       "highlights": [],
       "pr": 2363,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
     },
     {
       "id": "advancement-progress-list",
@@ -31355,9 +31355,9 @@
       ],
       "pr": 2366,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
     },
     {
       "id": "balance-tweak-2026-10-27",
@@ -31372,9 +31372,9 @@
       "highlights": [],
       "pr": 2368,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
     },
     {
       "id": "replay-mod-keeps-camera",
@@ -31389,9 +31389,9 @@
       "highlights": [],
       "pr": 2370,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
     },
     {
       "id": "fade-terrain-lag-fix",
@@ -31410,9 +31410,9 @@
       ],
       "pr": 2371,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
     },
     {
       "id": "exploration-list-and-nether-variety",
@@ -31428,9 +31428,9 @@
       "highlights": [],
       "pr": 2372,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
     }
   ]
 }
