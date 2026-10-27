@@ -101,10 +101,10 @@ class LiveAudioRingTest {
 
     @Test
     void aSpeakerBufferIsShortSoTheSoundStaysNearThePicture() {
-        // Minecraft keeps four buffers queued: 4 x 50 ms plus the 60 ms cushion stays well under 300 ms.
+        // Minecraft keeps four buffers queued: 4 x 40 ms plus the 40 ms cushion is 200 ms.
         long queuedMs = 4L * LiveAudioStream.CHUNK_BYTES * 1000 / LiveAudioRing.BYTES_PER_SECOND;
         long cushionMs = LiveAudioRing.TARGET_LAG * 1000 / LiveAudioRing.BYTES_PER_SECOND;
-        assertTrue(queuedMs + cushionMs <= 300, "audio within ~300 ms of the picture: " + (queuedMs + cushionMs));
+        assertTrue(queuedMs + cushionMs <= 200, "audio within ~200 ms of the picture: " + (queuedMs + cushionMs));
         assertEquals(24_000f, LiveAudioStream.FORMAT.getSampleRate());
         assertEquals(1, LiveAudioStream.FORMAT.getChannels(), "mono, so OpenAL can place it in the world");
     }

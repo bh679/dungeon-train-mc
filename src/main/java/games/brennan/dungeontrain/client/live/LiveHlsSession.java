@@ -449,9 +449,13 @@ public final class LiveHlsSession implements IMediaSession {
         if (audioMissing(line)) audioMissing = true;
     }
 
-    /** Whether an ffmpeg error line says {@code -map 0:a:0} found nothing. Pure, for the tests. */
+    /**
+     * Whether an ffmpeg error line says {@code -map 0:a:0} found nothing. ffmpeg 8 names the map in a
+     * second line ("Stream map '' matches no streams." then "Failed to set value '0:a:0' for option
+     * 'map'"); older ones in the first. Pure, for the tests.
+     */
     static boolean audioMissing(String line) {
-        return line.contains("0:a:0") && line.contains("matches no streams");
+        return line.contains("'0:a:0'") || (line.contains("matches no streams") && !line.contains("0:v"));
     }
 
     /**
@@ -535,6 +539,9 @@ public final class LiveHlsSession implements IMediaSession {
             "-protocol_whitelist", protocols, "-rw_timeout", Long.toString(RW_TIMEOUT_US)));
         if (replay || !catchup) a.add("-re");
         else a.addAll(List.of("-readrate", "1", "-readrate_catchup", "2"));
+        // Frame-threaded H.264 decoding holds the picture back a frame per thread (360 ms on 12 cores,
+        // measured), while the sound goes straight out: slice threads keep the two together.
+        if (audioPort > 0) a.addAll(List.of("-thread_type", "slice"));
         if (replay) {
             a.addAll(List.of("-stream_loop", "-1", "-i", playlistUrl));
             a.addAll(audioArgs(audioPort));

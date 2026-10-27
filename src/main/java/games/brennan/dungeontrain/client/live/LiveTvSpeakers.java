@@ -49,7 +49,7 @@ public final class LiveTvSpeakers {
     /** The dark channel's looped replay, as a share of full volume. */
     static final float REPLAY_VOLUME = 0.3f;
     /** A speaker that failed to start is retried after this long. */
-    private static final long RETRY_MS = 1_000;
+    private static final long RETRY_MS = 250;
 
     /** A placed TV asking to play this tick. */
     private record Candidate(BlockPos pos, LiveFeedSource.Hearing hearing, Vec3 at, double distance, boolean speakerBlock) {}

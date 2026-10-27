@@ -20,8 +20,8 @@ public final class LiveAudioRing {
     public static final int BYTES_PER_SECOND = 48_000;
     /** Three seconds of sound: far more than any reader may lag. */
     static final int CAPACITY = 3 * BYTES_PER_SECOND;
-    /** How far behind the newest sample a reader plays: 60 ms. */
-    static final long TARGET_LAG = BYTES_PER_SECOND * 60L / 1000;
+    /** How far behind the newest sample a reader plays: 40 ms, about two of ffmpeg's audio writes. */
+    static final long TARGET_LAG = BYTES_PER_SECOND * 40L / 1000;
     /** A reader further behind than this (200 ms) is pulled back to {@link #TARGET_LAG}. */
     static final long MAX_LAG = BYTES_PER_SECOND * 200L / 1000;
 

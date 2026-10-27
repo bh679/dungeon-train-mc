@@ -103,6 +103,8 @@ class LiveHlsSessionTest {
             assertTrue(s.contains("-map 0:a:0 -vn -ac 1 -ar 24000 -f s16le tcp://127.0.0.1:41234 -map 0:v:0"),
                 "track 0 named, never ffmpeg's pick (a mic stream's game + mic mix): " + s);
             assertTrue(a.indexOf("-map") > a.indexOf("-i"), "output options follow the input");
+            assertTrue(s.contains("-thread_type slice") && a.indexOf("-thread_type") < a.indexOf("-i"),
+                "slice-threaded decode, so the picture is not held back behind the sound: " + s);
             assertEquals(List.of("-f", "image2pipe", "-c:v", "pam", "-pix_fmt", "rgba", "-"), a.subList(a.size() - 7, a.size()),
                 "the picture output is unchanged and last");
         }
@@ -118,6 +120,9 @@ class LiveHlsSessionTest {
     @Test
     void aStreamWithNoAudioTrackIsRecognisedFromFfmpegsError() {
         assertTrue(LiveHlsSession.audioMissing("Stream map '0:a:0' matches no streams."));
+        // ffmpeg 8: the map is unnamed in the first line and named in the second.
+        assertTrue(LiveHlsSession.audioMissing("Stream map '' matches no streams."));
+        assertTrue(LiveHlsSession.audioMissing("Failed to set value '0:a:0' for option 'map': Invalid argument"));
         assertFalse(LiveHlsSession.audioMissing("Connection timed out"));
         assertFalse(LiveHlsSession.audioMissing("Stream map '0:v:0' matches no streams."));
     }
