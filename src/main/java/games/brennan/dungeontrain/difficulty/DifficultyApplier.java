@@ -182,26 +182,46 @@ public final class DifficultyApplier {
         // The effect curve is read later for mobs that first spawn further down the train
         // (and for babies), so they are not buffed the moment they appear.
         if (applyEffects && !(mob instanceof Creeper)) {
-            int effectLevel = tierIndex - MobEffectOffsets.offsetFor(mob);
-            for (DifficultyTier.EffectSpec spec : ProceduralTiers.effectsFor(effectLevel)) {
-                if (rng.nextDouble() >= spec.chance()) continue;
-                Holder<MobEffect> holder = lookupEffect(spec.id());
-                if (holder == null) {
-                    LOGGER.warn("[DungeonTrain] Difficulty: unknown mob effect '{}' in tier '{}' — skipping",
-                            spec.id(), tier.name());
-                    continue;
-                }
-                // -1 is the vanilla infinite sentinel (MobEffectInstance.INFINITE_DURATION);
-                // a huge finite duration would render as an absurd hour count in Jade.
-                int duration = spec.durationTicks() < 0
-                        ? MobEffectInstance.INFINITE_DURATION
-                        : spec.durationTicks();
-                mob.addEffect(new MobEffectInstance(holder, duration, rollAmplifier(spec.minAmplifier(), spec.amplifier(), rng), false, true));
-            }
+            rollEffects(mob, tierIndex, tier.name(), rng);
         }
 
         mob.addTag(APPLIED_TAG);
         return true;
+    }
+
+    /**
+     * The potion-effect pass alone — no armor, weapon or tool — for a hostile DT spawns outside the
+     * carriage placer (a creaking heart's Creaking). Same tier, offset and chance rolls as
+     * {@link #apply}; tags the mob with {@link #APPLIED_TAG}.
+     *
+     * @return false when the travelled progress is still tier 0 (vanilla baseline) — nothing applied
+     */
+    public static boolean applyEffects(Mob mob, int carriageIndex, RandomSource rng) {
+        int tierIndex = DifficultyProgression.tierForTravelled(carriageIndex);
+        DifficultyTier tier = ProceduralTiers.tierFor(tierIndex);
+        if (tier == null) return false;
+        rollEffects(mob, tierIndex, tier.name(), rng);
+        mob.addTag(APPLIED_TAG);
+        return true;
+    }
+
+    private static void rollEffects(Mob mob, int tierIndex, String tierName, RandomSource rng) {
+        int effectLevel = tierIndex - MobEffectOffsets.offsetFor(mob);
+        for (DifficultyTier.EffectSpec spec : ProceduralTiers.effectsFor(effectLevel)) {
+            if (rng.nextDouble() >= spec.chance()) continue;
+            Holder<MobEffect> holder = lookupEffect(spec.id());
+            if (holder == null) {
+                LOGGER.warn("[DungeonTrain] Difficulty: unknown mob effect '{}' in tier '{}' — skipping",
+                        spec.id(), tierName);
+                continue;
+            }
+            // -1 is the vanilla infinite sentinel (MobEffectInstance.INFINITE_DURATION);
+            // a huge finite duration would render as an absurd hour count in Jade.
+            int duration = spec.durationTicks() < 0
+                    ? MobEffectInstance.INFINITE_DURATION
+                    : spec.durationTicks();
+            mob.addEffect(new MobEffectInstance(holder, duration, rollAmplifier(spec.minAmplifier(), spec.amplifier(), rng), false, true));
+        }
     }
 
     /**
