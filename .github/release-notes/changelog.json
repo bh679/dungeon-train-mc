@@ -31134,7 +31134,7 @@
         "A pet that is not sitting now comes to you when the carriage it is on falls far behind.",
         "A pet you told to sit stays in its carriage, and is still there when you come back.",
         "Pets left on the train when you log off are waiting beside you when you return.",
-        "Pets standing in a drifting carriage no longer travel with it to other worlds."
+        "Only sitting pets in a drifting carriage travel with it to other worlds."
       ],
       "pr": 2351,
       "date": "2026-10-27",
