@@ -206,6 +206,11 @@ public final class DebugCommand {
             .then(Commands.literal("sphere-gravity").executes(ctx -> SphereGravityDebug.report(ctx.getSource()))
                 .then(Commands.literal("on").executes(ctx -> SphereGravityDebug.setForcedOff(ctx.getSource(), false)))
                 .then(Commands.literal("off").executes(ctx -> SphereGravityDebug.setForcedOff(ctx.getSource(), true))))
+            // /dungeontrain debug comet [aimed|miss] — comet chance where you stand and how many are in flight;
+            // aimed|miss launch one at the nearest train now, whatever the band. Also logged at INFO.
+            .then(Commands.literal("comet").executes(ctx -> SpheresCometDebug.report(ctx.getSource()))
+                .then(Commands.literal("aimed").executes(ctx -> SpheresCometDebug.launch(ctx.getSource(), true)))
+                .then(Commands.literal("miss").executes(ctx -> SpheresCometDebug.launch(ctx.getSource(), false))))
             // /dungeontrain debug spider-jockey — spawn spiders through the carriage variant-mob path
             // at your feet until one rolls a skeleton jockey; reports whether the rider is in the level
             // and carries the contents tag (regression probe for the ghost-passenger bug).
