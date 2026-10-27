@@ -528,10 +528,11 @@ public final class LiveStreamController {
         // Won a dead streamer's takeover: that ticket carries the claim past the relay's tenure check
         // (an approved takeover vote's ticket does the same).
         String deathTicket = LiveTakeoverOffer.takeTicket(System.currentTimeMillis());
-        // Live Eye Safe Duration perk: extra protected minutes, half per relay window.
+        // Live Eye Safe Duration perk: both relay deadlines count from the start of the hold, so the takeover
+        // deadline moves by the whole extra and the holder's vote deadline by half (each window gains half).
         int safeRank = games.brennan.dungeontrain.perks.Perks.rank(mc.player, ArchivistPerks.LIVE_EYE_SAFE_DURATION);
-        long takeoverExtraMs = LiveEyeSafeDuration.firstWindowExtraMs(safeRank);
-        long holderVoteExtraMs = LiveEyeSafeDuration.secondWindowExtraMs(safeRank);
+        long takeoverExtraMs = LiveEyeSafeDuration.takeoverExtraMs(safeRank);
+        long holderVoteExtraMs = LiveEyeSafeDuration.holderVoteExtraMs(safeRank);
         LiveFeedClient.claim(uuid, name, eyeId, info, life, takeover, ticket, deathTicket, takeoverExtraMs, holderVoteExtraMs)
             .thenAcceptBothAsync(aac, (result, hasAac) -> {
             if (gen != generation || state != State.CLAIMING) return;

@@ -32,7 +32,6 @@ public final class KnightPerks {
     static final int STRENGTH_BASE_TICKS = 60;
     static final int RANKS_PER_STRENGTH_LEVEL = 10;
 
-    static final int VAMPIRISM_BASE_PERCENT = 25;
     static final int VAMPIRISM_PERCENT_PER_RANK = 5;
     static final float HALF_HEART = 1.0f;
 
@@ -105,10 +104,10 @@ public final class KnightPerks {
         return newAmplifier == currentAmplifier && newTicks > remainingTicks;
     }
 
-    /** Vampirism percentage at {@code rank}: 25%, +5% per rank past the first, uncapped. */
+    /** Vampirism percentage at {@code rank}: 5% per rank, uncapped (past 100% it overflows into extra halves). */
     public static int vampirismPercent(int rank) {
         if (rank <= 0) return 0;
-        return VAMPIRISM_BASE_PERCENT + (rank - 1) * VAMPIRISM_PERCENT_PER_RANK;
+        return rank * VAMPIRISM_PERCENT_PER_RANK;
     }
 
     /** One Vampirism roll at {@code rank}: health to heal (half a heart per step). */

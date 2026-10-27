@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.perks.effects.crafter;
 import games.brennan.dungeontrain.perks.BuiltPerks;
 import games.brennan.dungeontrain.perks.PerkStats;
 import games.brennan.dungeontrain.perks.PerkStats.Unit;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -16,10 +18,14 @@ import java.util.function.BiPredicate;
  * <p>Numbers (all flagged for balancing):
  * <ul>
  *   <li>Enchant Cost: 1 level less per rank, floor 1, table requirement and anvil price alike.</li>
- *   <li>Cooking Time: {@value #COOK_SPEEDUP_PER_RANK_PERCENT}% faster per rank, never below
- *       {@value #COOK_FLOOR_PERCENT}% of the recipe time.</li>
- *   <li>Enchant Max: a roll that lands on an enchantment's normal max goes {@code rank} levels past it.</li>
- *   <li>Enchant Bonus: worn armour and held weapons act {@value #BONUS_LEVELS} level higher while active.</li>
+ *   <li>Cooking Time: rank 1 cooks in {@value #COOK_FIRST_RANK_SHARE} of the recipe time and each rank
+ *       after keeps {@value #COOK_PER_RANK_KEEP} of the last (80, 70, 62, 55, 48 ... 25% at rank 10):
+ *       no floor, it never stops shrinking and never reaches 0.</li>
+ *   <li>Enchant Max and Enchant Bonus: {@link #groupBonus}. Levels come in bands of {@value #GROUPS}
+ *       points: each point in a band opens one more {@link EnchantGroups enchantment group} at the
+ *       band's level (+1 for points 1 to 10, +2 for 11 to 20 ...), the rest stay at the band below.
+ *       Enchant Max lets a max-level roll and the anvil climb that far past the normal max; Enchant
+ *       Bonus makes worn and held gear act that many levels higher.</li>
  * </ul>
  */
 public final class CrafterPerks {
@@ -30,19 +36,16 @@ public final class CrafterPerks {
     public static final String ENCHANT_MAX = "enchant-max";
     public static final String ENCHANT_BONUS = "enchant-bonus";
 
-    /** Cooking speed-up per rank, in percent of the recipe's cook time. */
-    public static final int COOK_SPEEDUP_PER_RANK_PERCENT = 20;
-    /** Cook time never drops below this share of the recipe time, whatever the rank. */
-    public static final int COOK_FLOOR_PERCENT = 25;
+    /** Share of the recipe time rank 1 cooks in. Balancing knob. */
+    public static final double COOK_FIRST_RANK_SHARE = 0.80;
+    /** Each rank past the first keeps this share of the last rank's time. Balancing knob. */
+    public static final double COOK_PER_RANK_KEEP = 0.88;
     /** Lowest level requirement / price the Enchant Cost perk can reach. */
     public static final int MIN_COST = 1;
     /** Vanilla's anvil "Too Expensive!" threshold: a price at or above this is refused outside creative. */
     public static final int ANVIL_CAP = 40;
-    /** Levels added by Enchant Bonus while the perk has any active points. */
-    public static final int BONUS_LEVELS = 1;
-
-    /** A recipe time to show Cooking Time's share of, in ticks: a round number so the share reads as a percent. */
-    private static final int COOK_SHOWN_BASE = 10_000;
+    /** Enchantment groups a band of points opens, one per point ({@link EnchantGroups}). */
+    public static final int GROUPS = 10;
 
     private CrafterPerks() {}
 
@@ -50,10 +53,23 @@ public final class CrafterPerks {
     public static void declare() {
         BuiltPerks.markBuilt(ENCHANT_COST, COOKING_TIME, ENCHANT_MAX, ENCHANT_BONUS);
         PerkStats.register(ENCHANT_COST, "level_cost", r -> PerkStats.num(-Math.max(0, r), Unit.PLAIN));
-        PerkStats.register(COOKING_TIME, "cook_time",
-            r -> PerkStats.num(cookTicks(COOK_SHOWN_BASE, r) * 100.0 / COOK_SHOWN_BASE, Unit.PERCENT));
-        PerkStats.register(ENCHANT_MAX, "past_max", r -> PerkStats.plus(maxLevelBonus(r), Unit.PLAIN));
-        PerkStats.register(ENCHANT_BONUS, "bonus_level", r -> PerkStats.plus(bonusLevels(r), Unit.PLAIN));
+        PerkStats.register(COOKING_TIME, "cook_time", r -> PerkStats.num(cookShare(r) * 100.0, Unit.PERCENT));
+        PerkStats.register(ENCHANT_MAX, "past_max", r -> PerkStats.plus(topLevel(r), Unit.PLAIN));
+        PerkStats.register(ENCHANT_MAX, "works_on", r -> new PerkStats.Text(worksOn(r)));
+        PerkStats.register(ENCHANT_BONUS, "bonus_level", r -> PerkStats.plus(topLevel(r), Unit.PLAIN));
+        PerkStats.register(ENCHANT_BONUS, "works_on", r -> new PerkStats.Text(worksOn(r)));
+    }
+
+    /** The groups at {@link #topLevel} for the menu chip: one or two by name, then a count, then all. */
+    static Component worksOn(int rank) {
+        int groups = groupsAtTop(rank);
+        String key = "gui.dungeontrain.perks.stat.works_on.";
+        if (groups <= 0) return Component.translatable(key + "none");
+        if (groups >= GROUPS) return Component.translatable(key + "all");
+        if (groups > 2) return Component.translatable(key + "groups", groups);
+        MutableComponent names = Component.translatable(EnchantGroups.NAME_KEY + 1);
+        if (groups == 2) names.append(" + ").append(Component.translatable(EnchantGroups.NAME_KEY + 2));
+        return names;
     }
 
     /**
@@ -76,16 +92,38 @@ public final class CrafterPerks {
         return rank > 0 && vanillaCost >= ANVIL_CAP && reducedCost(vanillaCost, rank) < ANVIL_CAP;
     }
 
-    /** Cooking Time: ticks a recipe takes at {@code rank}; at least 1 and at least the floor share. */
-    public static int cookTicks(int baseTicks, int rank) {
-        if (baseTicks <= 0 || rank <= 0) return baseTicks;
-        int percent = Math.max(COOK_FLOOR_PERCENT, 100 - COOK_SPEEDUP_PER_RANK_PERCENT * rank);
-        return Math.max(1, Math.round(baseTicks * percent / 100f));
+    /** Cooking Time: share of the recipe time a {@code rank} cook takes; 1 at rank 0. */
+    public static double cookShare(int rank) {
+        if (rank <= 0) return 1.0;
+        return COOK_FIRST_RANK_SHARE * Math.pow(COOK_PER_RANK_KEEP, rank - 1);
     }
 
-    /** Enchant Max: how many levels past the vanilla max a max-level roll climbs. */
-    public static int maxLevelBonus(int rank) {
-        return Math.max(0, rank);
+    /** Cooking Time: ticks a recipe takes at {@code rank}; never below 1. */
+    public static int cookTicks(int baseTicks, int rank) {
+        if (baseTicks <= 0 || rank <= 0) return baseTicks;
+        return Math.max(1, (int) Math.round(baseTicks * cookShare(rank)));
+    }
+
+    /**
+     * Enchant Max and Enchant Bonus: the levels an enchantment in group {@code group} (0 = first, -1 =
+     * none) gets at {@code rank}. Point {@code n} of a band opens group {@code n} at the band's level;
+     * the groups it hasn't reached yet stay a level lower. 0 at rank 0 and for an enchantment in no group.
+     */
+    public static int groupBonus(int rank, int group) {
+        if (rank <= 0 || group < 0) return 0;
+        int band = (rank - 1) / GROUPS;
+        int opened = (rank - 1) % GROUPS;
+        return group <= opened ? band + 1 : band;
+    }
+
+    /** The highest level {@link #groupBonus} gives at {@code rank}: +1 for ranks 1 to 10, +2 for 11 to 20 ... */
+    public static int topLevel(int rank) {
+        return rank <= 0 ? 0 : (rank - 1) / GROUPS + 1;
+    }
+
+    /** How many groups are at {@link #topLevel} at {@code rank} (1 to {@value #GROUPS}). */
+    public static int groupsAtTop(int rank) {
+        return rank <= 0 ? 0 : (rank - 1) % GROUPS + 1;
     }
 
     /**
@@ -97,14 +135,12 @@ public final class CrafterPerks {
         return bonus > 0 && rolled == vanillaMax ? rolled + bonus : rolled;
     }
 
-    /** Enchant Max in the anvil: the clamp for a combined level, never below what either input already has. */
-    public static int anvilLevelCap(int vanillaMax, int rank, int highestOnInputs) {
-        return Math.max(vanillaMax + maxLevelBonus(rank), highestOnInputs);
-    }
-
-    /** Enchant Bonus: extra levels a worn/held item acts with at {@code rank}. */
-    public static int bonusLevels(int rank) {
-        return rank > 0 ? BONUS_LEVELS : 0;
+    /**
+     * Enchant Max in the anvil: the clamp for a combined level, {@code bonus} past the vanilla max
+     * ({@link #groupBonus} for the enchantment) and never below what either input already has.
+     */
+    public static int anvilLevelCap(int vanillaMax, int bonus, int highestOnInputs) {
+        return Math.max(vanillaMax + Math.max(0, bonus), highestOnInputs);
     }
 
     /**

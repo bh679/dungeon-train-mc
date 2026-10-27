@@ -31,6 +31,7 @@ public final class PerkEffects {
 
     static void fireRankChanged(ServerPlayer player, String perkId, int oldRank, int newRank) {
         if (oldRank == newRank) return;
+        BuiltPerks.bootstrap(); // the classes' declare() register their handlers
         for (PerkEffect effect : EFFECTS) {
             try {
                 effect.onRankChanged(player, perkId, oldRank, newRank);
@@ -42,6 +43,7 @@ public final class PerkEffects {
     }
 
     static void firePlayerReady(ServerPlayer player) {
+        BuiltPerks.bootstrap();
         for (PerkEffect effect : EFFECTS) {
             try {
                 effect.onPlayerReady(player);

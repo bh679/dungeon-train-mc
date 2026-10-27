@@ -17857,5 +17857,14 @@
         "1.5"
       ]
     }
+  },
+  "gui.dungeontrain.perks.stat.works_on.groups": {
+    "1": {
+      "label": "how many enchantment groups (3 to 9)",
+      "examples": [
+        "3",
+        "7"
+      ]
+    }
   }
 }

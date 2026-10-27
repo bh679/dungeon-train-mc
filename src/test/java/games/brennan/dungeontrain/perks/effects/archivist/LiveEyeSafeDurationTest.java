@@ -20,13 +20,18 @@ class LiveEyeSafeDurationTest {
     }
 
     @Test
-    void halvesAddUpWithTheOddMillisecondInTheFirstWindow() {
+    void eachWindowGainsHalfTheExtra() {
         for (int rank = 0; rank < 30; rank++) {
-            long first = LiveEyeSafeDuration.firstWindowExtraMs(rank);
-            long second = LiveEyeSafeDuration.secondWindowExtraMs(rank);
-            assertEquals(LiveEyeSafeDuration.extraMs(rank), first + second);
-            assertTrue(first - second >= 0 && first - second <= 1);
+            long extra = LiveEyeSafeDuration.extraMs(rank);
+            long holder = LiveEyeSafeDuration.holderVoteExtraMs(rank);
+            long community = LiveEyeSafeDuration.communityVoteExtraMs(rank);
+            // both relay deadlines count from the start of the hold: the takeover deadline moves by the whole extra
+            assertEquals(extra, LiveEyeSafeDuration.takeoverExtraMs(rank));
+            assertEquals(extra, holder + community);
+            assertTrue(community - holder >= 0 && community - holder <= 1);
         }
+        assertEquals(Math.round(2.5 * MIN), LiveEyeSafeDuration.holderVoteExtraMs(1));
+        assertEquals(Math.round(2.5 * MIN), LiveEyeSafeDuration.communityVoteExtraMs(1));
     }
 
     @Test

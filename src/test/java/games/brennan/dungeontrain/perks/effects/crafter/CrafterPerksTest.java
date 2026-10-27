@@ -38,17 +38,18 @@ class CrafterPerksTest {
     }
 
     @Test
-    @DisplayName("Cooking Time: 20% faster per rank, floor 25% of base, never below one tick")
+    @DisplayName("Cooking Time: 80% at rank 1, each rank keeps 88% of the last, no floor, never below one tick")
     void cookTicks() {
         assertEquals(200, CrafterPerks.cookTicks(200, 0));
         assertEquals(160, CrafterPerks.cookTicks(200, 1));
-        assertEquals(120, CrafterPerks.cookTicks(200, 2));
-        assertEquals(80, CrafterPerks.cookTicks(200, 3));
-        assertEquals(50, CrafterPerks.cookTicks(200, 4));   // 20% would be 40; floor 25%
-        assertEquals(50, CrafterPerks.cookTicks(200, 99));
-        assertEquals(80, CrafterPerks.cookTicks(100, 1));
+        assertEquals(141, CrafterPerks.cookTicks(200, 2));  // 70.4%
+        assertEquals(124, CrafterPerks.cookTicks(200, 3));  // 62%
+        assertEquals(50, CrafterPerks.cookTicks(200, 10), 1); // about 25%
+        assertTrue(CrafterPerks.cookTicks(200, 20) < CrafterPerks.cookTicks(200, 10), "keeps shrinking");
         assertEquals(1, CrafterPerks.cookTicks(1, 3));
         assertEquals(0, CrafterPerks.cookTicks(0, 3));
+        for (int r = 2; r < 60; r++) assertTrue(CrafterPerks.cookShare(r) < CrafterPerks.cookShare(r - 1));
+        assertTrue(CrafterPerks.cookShare(200) > 0);
     }
 
     @Test
@@ -58,8 +59,6 @@ class CrafterPerksTest {
         assertEquals(6, CrafterPerks.rolledLevel(5, 5, 1));
         assertEquals(7, CrafterPerks.rolledLevel(5, 5, 2));
         assertEquals(4, CrafterPerks.rolledLevel(4, 5, 2));
-        assertEquals(0, CrafterPerks.maxLevelBonus(-1));
-        assertEquals(2, CrafterPerks.maxLevelBonus(2));
     }
 
     @Test
@@ -72,11 +71,28 @@ class CrafterPerksTest {
     }
 
     @Test
-    @DisplayName("Enchant Bonus: +1 while active, 0 otherwise")
-    void bonusLevels() {
-        assertEquals(0, CrafterPerks.bonusLevels(0));
-        assertEquals(1, CrafterPerks.bonusLevels(1));
-        assertEquals(1, CrafterPerks.bonusLevels(3));
+    @DisplayName("Enchant Max/Bonus: each point opens one group at its band's level, a band is 10 points")
+    void groupBonus() {
+        int protection = 0, melee = 1, thorns = 9;
+        assertEquals(0, CrafterPerks.groupBonus(0, protection));
+        assertEquals(0, CrafterPerks.groupBonus(5, -1), "an enchantment in no group never moves");
+        assertEquals(1, CrafterPerks.groupBonus(1, protection));
+        assertEquals(0, CrafterPerks.groupBonus(1, melee));
+        assertEquals(1, CrafterPerks.groupBonus(2, melee));
+        assertEquals(0, CrafterPerks.groupBonus(9, thorns));
+        assertEquals(1, CrafterPerks.groupBonus(10, thorns));
+        assertEquals(2, CrafterPerks.groupBonus(11, protection));
+        assertEquals(1, CrafterPerks.groupBonus(11, melee));
+        assertEquals(3, CrafterPerks.groupBonus(30, thorns));
+        assertEquals(1, CrafterPerks.topLevel(10));
+        assertEquals(2, CrafterPerks.topLevel(11));
+        assertEquals(1, CrafterPerks.groupsAtTop(11));
+        assertEquals(10, CrafterPerks.groupsAtTop(20));
+        for (int rank = 1; rank < 50; rank++) {
+            for (int g = 0; g < CrafterPerks.GROUPS; g++) {
+                assertTrue(CrafterPerks.groupBonus(rank, g) >= CrafterPerks.groupBonus(rank - 1, g), "never drops");
+            }
+        }
     }
 
     @Test

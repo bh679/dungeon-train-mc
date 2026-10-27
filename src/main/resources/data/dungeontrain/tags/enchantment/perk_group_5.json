@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:power",
+    "minecraft:punch",
+    "minecraft:piercing",
+    "minecraft:quick_charge"
+  ]
+}

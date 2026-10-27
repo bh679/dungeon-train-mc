@@ -51,34 +51,62 @@ final class StatChips {
     private StatChips() {}
 
     /**
-     * One chip per stat from {@code x} along {@code y}, stopping at the first that would pass {@code right}.
-     * {@code preview} is the points a hovered block would give, or -1.
+     * One chip per stat from {@code x} along {@code y}, within {@code right}. {@code preview} is the points
+     * a hovered block would give, or -1. Every chip is always shown: when the row is too wide the previews
+     * go first, then the row shrinks to fit (never below {@value #MIN_SCALE}).
      */
     static void render(GuiGraphics g, Font font, List<PerkStats.Stat> stats, int points, int preview,
                        int x, int y, int right, int chipH, int pad, int gap, int bg, int fg, int gold, int a) {
-        int cx = x;
+        List<List<Piece>> now = new ArrayList<>(), then = new ArrayList<>();
         for (PerkStats.Stat s : stats) {
-            List<Piece> now = new ArrayList<>(label(s.id()));
-            now.add(Piece.of(" "));
-            now.addAll(value(s.valueAt(points)));
-            List<Piece> then = new ArrayList<>();
+            List<Piece> n = new ArrayList<>(label(s.id()));
+            n.add(Piece.of(" "));
+            n.addAll(value(s.valueAt(points)));
+            now.add(n);
+            List<Piece> t = new ArrayList<>();
             if (preview >= 0 && preview != points) {
                 List<Piece> next = value(s.valueAt(preview));
                 // a stat the hovered point doesn't change (a Strength level within its band) shows no arrow
                 if (!next.equals(value(s.valueAt(points)))) {
-                    then.add(Piece.of(" → "));
-                    then.addAll(next);
+                    t.add(Piece.of(" → "));
+                    t.addAll(next);
                 }
             }
-            int w = pad * 2 + width(font, now) + width(font, then);
-            if (cx + w > right) break;
-            g.fill(cx, y, cx + w, y + chipH, ((int) (a * 0.9) << 24) | (bg & 0xFFFFFF));
-            int ty = y + (chipH - font.lineHeight) / 2 + 1;
-            int iy = y + (chipH - ICON) / 2;
-            int tx = draw(g, font, now, cx + pad, ty, iy, (a << 24) | (fg & 0xFFFFFF));
-            draw(g, font, then, tx, ty, iy, (a << 24) | (gold & 0xFFFFFF));
+            then.add(t);
+        }
+        int room = right - x;
+        // the preview is what hovering is for: shrink a little to keep it before giving it up
+        boolean previews = rowWidth(font, now, then, true, pad, gap) * PREVIEW_MIN_SCALE <= room;
+        int width = rowWidth(font, now, then, previews, pad, gap);
+        float scale = width <= room ? 1F : Math.max(MIN_SCALE, room / (float) width);
+        g.pose().pushPose();
+        g.pose().translate(x, y + chipH * (1F - scale), 0);
+        g.pose().scale(scale, scale, 1F);
+        int cx = 0;
+        for (int i = 0; i < now.size(); i++) {
+            List<Piece> t = previews ? then.get(i) : List.of();
+            int w = pad * 2 + width(font, now.get(i)) + width(font, t);
+            g.fill(cx, 0, cx + w, chipH, ((int) (a * 0.9) << 24) | (bg & 0xFFFFFF));
+            int ty = (chipH - font.lineHeight) / 2 + 1;
+            int iy = (chipH - ICON) / 2;
+            int tx = draw(g, font, now.get(i), cx + pad, ty, iy, (a << 24) | (fg & 0xFFFFFF));
+            draw(g, font, t, tx, ty, iy, (a << 24) | (gold & 0xFFFFFF));
             cx += w + gap;
         }
+        g.pose().popPose();
+    }
+
+    /** Smallest the chip row shrinks to before chips may overrun. */
+    private static final float MIN_SCALE = 0.6F;
+    /** Smallest the row shrinks to while still showing the hovered point's previews. */
+    private static final float PREVIEW_MIN_SCALE = 0.8F;
+
+    private static int rowWidth(Font font, List<List<Piece>> now, List<List<Piece>> then, boolean previews, int pad, int gap) {
+        int w = 0;
+        for (int i = 0; i < now.size(); i++) {
+            w += pad * 2 + width(font, now.get(i)) + (previews ? width(font, then.get(i)) : 0);
+        }
+        return w + gap * Math.max(0, now.size() - 1);
     }
 
     /** The stat's label, with any sprite tokens turned into sprites. */

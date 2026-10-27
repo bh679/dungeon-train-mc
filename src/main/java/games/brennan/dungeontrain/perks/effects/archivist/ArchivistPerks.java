@@ -41,15 +41,11 @@ public final class ArchivistPerks {
 
     /** Minutes the holder may vote on a takeover: the relay's window plus this perk's share. */
     static double protectedMinutes(int rank) {
-        return HOLDER_VOTE_BASE_MIN + LiveEyeSafeDuration.secondWindowExtraMs(rank) / MS_PER_MIN;
+        return HOLDER_VOTE_BASE_MIN + LiveEyeSafeDuration.holderVoteExtraMs(rank) / MS_PER_MIN;
     }
 
-    /**
-     * Minutes a takeover still needs a community vote once the holder's vote window has passed. Both
-     * relay deadlines count from the start of the hold, so this is the takeover extra less the holder's.
-     */
+    /** Minutes a takeover still needs a community vote once the holder's vote window has passed. */
     static double communityVoteMinutes(int rank) {
-        long extra = LiveEyeSafeDuration.firstWindowExtraMs(rank) - LiveEyeSafeDuration.secondWindowExtraMs(rank);
-        return COMMUNITY_VOTE_BASE_MIN + extra / MS_PER_MIN;
+        return COMMUNITY_VOTE_BASE_MIN + LiveEyeSafeDuration.communityVoteExtraMs(rank) / MS_PER_MIN;
     }
 }
