@@ -1,14 +1,17 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.perks.PerksScreen;
-import games.brennan.dungeontrain.registry.ModItems;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -18,8 +21,9 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 /**
- * A cosmic apple icon on the advancements screen, on the Advancement Points badge's row just left of
- * it ({@link AdvancementPointsBadge#row}), opening {@link PerksScreen}; hovering names it "Perks".
+ * A nether star on the advancements screen, under the window's bottom-right corner
+ * ({@link AdvancementWindowRow#row}), opening {@link PerksScreen}. The player's unspent Advancement
+ * Points ({@link PerkClientBalances#unlockPoints}) sit on it like a stack count; hovering names both.
  * Re-placed every frame, since Better Advancements only reports its window while drawing; hidden
  * until it has.
  */
@@ -27,11 +31,17 @@ import java.util.WeakHashMap;
 public final class AdvancementPerksButton {
 
     private static final Component LABEL = Component.translatable("gui.dungeontrain.perks.title");
-    /** Item icons are 16 px; the box is a pixel of border around one. */
-    private static final int SIZE = 18;
-    private static final int BG = 0xE0101018;
-    private static final int BORDER = 0xFFA0A0B0;
-    private static final int BORDER_HOVER = 0xFFFFFFFF;
+    private static final Component TOOLTIP = Component.empty().append(LABEL).append("\n")
+            .append(Component.translatable("gui.dungeontrain.advancements.points").withStyle(ChatFormatting.GRAY));
+    /** The Perks page's button height. */
+    private static final int HEIGHT = 16;
+    /** The star, drawn at three quarters of an item's 16 px. */
+    private static final float STAR_SCALE = 0.75F;
+    private static final int STAR = 12;
+    private static final int INSET = 2;
+    /** How far the count reaches back over the star, as a stack's count does. */
+    private static final int OVERLAP = 4;
+    private static final ItemStack ICON = new ItemStack(Items.NETHER_STAR);
 
     private static final Map<Screen, Button> BUTTONS = new WeakHashMap<>();
 
@@ -41,8 +51,8 @@ public final class AdvancementPerksButton {
     public static void onInit(ScreenEvent.Init.Post event) {
         Screen screen = event.getScreen();
         if (!DefaultAdvancementsTab.isAdvancementsScreen(screen)) return;
-        Button button = new AppleButton();
-        button.setTooltip(Tooltip.create(LABEL));
+        Button button = new StarButton();
+        button.setTooltip(Tooltip.create(TOOLTIP));
         button.visible = false;
         event.addListener(button);
         BUTTONS.put(screen, button);
@@ -53,29 +63,44 @@ public final class AdvancementPerksButton {
         Screen screen = event.getScreen();
         Button button = BUTTONS.get(screen);
         if (button == null) return;
-        AdvancementPointsBadge.Row row = AdvancementPointsBadge.row(screen);
+        AdvancementWindowRow.Row row = AdvancementWindowRow.row(screen, HEIGHT);
         button.visible = row != null;
         if (row == null) return;
-        int badgeLeft = row.right() - AdvancementPointsBadge.width(screen.getMinecraft().font);
-        // Centred on the badge's row, which is shorter than the icon.
-        int y = row.top() - (SIZE - AdvancementPointsBadge.BOX_HEIGHT) / 2;
-        button.setPosition(badgeLeft - AdvancementPointsBadge.GAP - SIZE, y);
+        int width = StarButton.width(screen.getMinecraft().font);
+        button.setWidth(width);
+        button.setPosition(row.right() - width, row.top());
     }
 
-    /** The badge's dark box with a cosmic apple in it instead of a label. */
-    private static final class AppleButton extends Button {
+    /** The Perks page's dark button, holding the star with the points count over its corner like a stack's. */
+    private static final class StarButton extends DarkTintedButton {
 
-        AppleButton() {
-            super(0, 0, SIZE, SIZE, LABEL, b -> PerksScreen.open(false), DEFAULT_NARRATION);
+        StarButton() {
+            super(0, 0, HEIGHT, HEIGHT, LABEL, b -> PerksScreen.open(false));
+        }
+
+        private static String count() {
+            return Integer.toString(PerkClientBalances.unlockPoints());
+        }
+
+        static int width(Font font) {
+            return Math.max(HEIGHT, INSET + STAR - OVERLAP + font.width(count()) + INSET);
         }
 
         @Override
-        protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-            int x0 = getX();
-            int y0 = getY();
-            g.fill(x0, y0, x0 + SIZE, y0 + SIZE, isHoveredOrFocused() ? BORDER_HOVER : BORDER);
-            g.fill(x0 + 1, y0 + 1, x0 + SIZE - 1, y0 + SIZE - 1, BG);
-            g.renderItem(new ItemStack(ModItems.COSMIC_APPLE.get()), x0 + 1, y0 + 1);
+        public void renderString(GuiGraphics g, Font font, int colour) {
+            int x = getX() + INSET;
+            int y = getY() + INSET;
+            g.pose().pushPose();
+            g.pose().translate(x, y, 0);
+            g.pose().scale(STAR_SCALE, STAR_SCALE, 1F);
+            g.renderItem(ICON, 0, 0);
+            g.pose().popPose();
+            // Always shown, 0 included, unlike a real stack's count; above the item, as vanilla draws it.
+            String count = count();
+            g.pose().pushPose();
+            g.pose().translate(0, 0, 200);
+            g.drawString(font, count, getX() + getWidth() - INSET + 1 - font.width(count), getY() + getHeight() - 9, colour, true);
+            g.pose().popPose();
         }
     }
 }
