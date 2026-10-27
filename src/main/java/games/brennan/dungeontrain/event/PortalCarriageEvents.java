@@ -2799,8 +2799,9 @@ public final class PortalCarriageEvents {
     /**
      * Capture and remember {@code structure}'s room box when a player has been inside it, and hand the
      * capture back as the blob its next stamp should lay; null for an untouched room (its template is
-     * what it still is) or one whose chunks are not loaded — reading those would load them, and a room
-     * nobody can see has not changed since it was last captured anyway.
+     * what it still is). Chunks that have unloaded are loaded for the read: the eviction that calls this
+     * erases the room next and loads them regardless, and a skipped capture meant the room came back
+     * from its template (see {@link PortalRoomMemory} "Unloaded chunks").
      */
     private static games.brennan.dungeontrain.portal.PortalRoomBlob rememberIfTouched(
             ServerLevel level, CarriageDims dims, int pairKey, PortalStructure structure) {
@@ -2808,8 +2809,8 @@ public final class PortalCarriageEvents {
         BlockPos roomOrigin = structure.roomOrigin(dims,
             PortalCarriageBuilder.layoutFor(dims, structure.kind()));
         net.minecraft.core.Vec3i size = structure.roomSize();
-        BlockPos far = roomOrigin.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1);
-        if (!level.hasChunksAt(roomOrigin, far)) return null;
+        if (!PortalRoomMemory.ensureLoaded(level, roomOrigin, size,
+                "portal pair " + pairKey + "'s room '" + structure.roomName() + "'")) return null;
         long started = System.nanoTime();
         net.minecraft.nbt.CompoundTag snapshot = PortalRoomMemory.capture(level, roomOrigin, size);
         if (snapshot == null) return null;
