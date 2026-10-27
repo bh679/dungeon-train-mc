@@ -31243,9 +31243,9 @@
       "highlights": [],
       "pr": 2357,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1557.0",
+      "released_at": "2026-10-27T07:54:15Z"
     },
     {
       "id": "pets-follow-onto-train",
@@ -31260,9 +31260,9 @@
       "highlights": [],
       "pr": 2359,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1557.0",
+      "released_at": "2026-10-27T07:54:15Z"
     },
     {
       "id": "mob-tick-lag-fix",
@@ -31280,9 +31280,9 @@
       ],
       "pr": 2360,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1557.0",
+      "released_at": "2026-10-27T07:54:15Z"
     },
     {
       "id": "mobs-stay-visible-after-lag",
@@ -31297,9 +31297,9 @@
       "highlights": [],
       "pr": 2361,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1557.0",
+      "released_at": "2026-10-27T07:54:15Z"
     }
   ]
 }
