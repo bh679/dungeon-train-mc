@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.train;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -90,5 +91,25 @@ class WedgedUnderFloorTest {
         // 2 from the low-Z edge, 10 from the low-X edge: out across Z.
         double[] t = WedgedUnderFloor.sideTargets(110, 2, 0.3, MIN_X, MIN_Z, MAX_X, MAX_Z, 0, 0);
         assertTrue(t[1] < MIN_Z);
+    }
+
+    @Test
+    void petWithOnlineOwnerGoesToTheOwnerNotOverTheSide() {
+        assertEquals(WedgedUnderFloor.Route.TO_OWNER, WedgedUnderFloor.route(true, true));
+    }
+
+    @Test
+    void petWithOfflineOwnerTakesASideSpot() {
+        assertEquals(WedgedUnderFloor.Route.BESIDE, WedgedUnderFloor.route(true, false));
+    }
+
+    @Test
+    void wildMobTakesASideSpot() {
+        assertEquals(WedgedUnderFloor.Route.BESIDE, WedgedUnderFloor.route(false, false));
+    }
+
+    @Test
+    void safeDropMatchesVanillaFallDamageThreshold() {
+        assertEquals(3, WedgedUnderFloor.MAX_SAFE_DROP_BLOCKS);
     }
 }

@@ -25,7 +25,26 @@ public final class WedgedUnderFloor {
     /** Gap left between the carriage's side and the moved mob's box. */
     static final double SIDE_CLEARANCE = 0.05;
 
+    /**
+     * The furthest a moved mob may drop to the ground beside the carriage. Vanilla fall damage
+     * starts past 3 blocks; a side spot with nothing that close below it is over a drop (a bridge,
+     * a cliff) and is not used.
+     */
+    static final int MAX_SAFE_DROP_BLOCKS = 3;
+
+    /** Where a wedged mob goes. */
+    public enum Route {
+        /** An owned pet with its owner online: sent to the owner, never over the side. */
+        TO_OWNER,
+        /** Beside the carriage, on ground. */
+        BESIDE
+    }
+
     private WedgedUnderFloor() {}
+
+    public static Route route(boolean ownedPet, boolean ownerOnline) {
+        return ownedPet && ownerOnline ? Route.TO_OWNER : Route.BESIDE;
+    }
 
     /**
      * True when the mob's centre is inside the carriage footprint, its feet are below the deck,
