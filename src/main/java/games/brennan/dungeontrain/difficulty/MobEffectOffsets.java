@@ -29,6 +29,7 @@ public final class MobEffectOffsets {
             Map.entry("minecraft:cave_spider", 2),
             Map.entry("minecraft:pillager", 2),
             Map.entry("betternether:skull", 3),
+            Map.entry("minecraft:creaking", 3),
             Map.entry("minecraft:vindicator", 3),
             Map.entry("minecraft:witch", 3),
             Map.entry("betternether:jungle_skeleton", 4),
