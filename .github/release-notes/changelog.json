@@ -31318,6 +31318,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "mob-haste-slower",
+      "version": "0.1559.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Mobs dig more slowly",
+      "summary": "Mobs get Haste later in a run and it grows much more slowly, so digging mobs break through your defences more slowly at high difficulty.",
+      "highlights": [],
+      "pr": 2363,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
