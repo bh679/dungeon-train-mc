@@ -31336,6 +31336,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sky-falling-comets",
+      "version": "0.1560.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Something is falling from the sky",
+      "summary": "Out in the stranger stretches of the journey, the sky is no longer empty. Keep an eye above you, and on the roof of your carriage.",
+      "highlights": [
+        "Fiery visitors streak overhead, and some of them come for the train.",
+        "Each time around, they come more often."
+      ],
+      "pr": 2365,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
