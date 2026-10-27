@@ -31138,9 +31138,9 @@
       ],
       "pr": 2351,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1550.0",
+      "released_at": "2026-10-27T03:23:07Z"
     },
     {
       "id": "editor-test-live-photos",
@@ -31155,6 +31155,93 @@
       "summary": "When you test a carriage in the editor, its photo frames now show real community photos instead of a placeholder picture.",
       "highlights": [],
       "pr": 2352,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1550.0",
+      "released_at": "2026-10-27T03:23:07Z"
+    },
+    {
+      "id": "vault-keys-on-train",
+      "version": "0.1549.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot"
+      ],
+      "title": "Vault fix",
+      "summary": "Trial keys now open vaults on the train. Vaults in carriages also light up and show their loot as you walk up to them.",
+      "highlights": [],
+      "pr": 2353,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1550.0",
+      "released_at": "2026-10-27T03:23:07Z"
+    },
+    {
+      "id": "enderchest-shulker-photos-keep-pictures",
+      "version": "0.1551.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Photos in shulker boxes keep their pictures",
+      "summary": "Photos you keep in a shulker box or bundle inside your Ender Chest now still show their picture when you start a new run, instead of turning into blank paper.",
+      "highlights": [
+        "Photos in shulker boxes and bundles in the Ender Chest keep their pictures from one run to the next"
+      ],
+      "pr": 2354,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1553.0",
+      "released_at": "2026-10-27T04:59:42Z"
+    },
+    {
+      "id": "tv-inventory-labels",
+      "version": "0.1552.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "TV labels",
+      "summary": "TVs now say whether they're on or off, and which stream they're set to, when you hover them in your inventory, so you can tell your TV stacks apart.",
+      "highlights": [],
+      "pr": 2355,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1553.0",
+      "released_at": "2026-10-27T04:59:42Z"
+    },
+    {
+      "id": "deathnote-echo-head-trophy",
+      "version": "0.1553.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "books"
+      ],
+      "title": "Death Note trophy",
+      "summary": "Kill the echo a Death Note sent after you and you take its author's head as well as the note.",
+      "highlights": [],
+      "pr": 2356,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1553.0",
+      "released_at": "2026-10-27T04:59:42Z"
+    },
+    {
+      "id": "twitch-prompt-mentions-fix",
+      "version": "0.1554.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Twitch prompt fix",
+      "summary": "Tagging the developer or another player in chat no longer asks you to connect a Twitch channel. The Twitch prompt now only appears while you are streaming with the Live Eye.",
+      "highlights": [],
+      "pr": 2357,
       "date": "2026-10-27",
       "released": false,
       "released_in": null,

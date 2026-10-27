@@ -11,6 +11,7 @@
     "PhotographFrameItemPlaceMixin",
     "WitherRoseBlockCreditMixin",
     "VaultServerMixin",
+    "VaultSharedDataMixin",
     "RecipeManagerDisableMixin",
     "PlayerFudgeSpawnMixin",
     "SignalGetterMuteMixin",

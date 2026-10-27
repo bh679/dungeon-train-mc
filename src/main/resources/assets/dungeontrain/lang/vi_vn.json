@@ -1374,6 +1374,8 @@
   "gui.dungeontrain.rewards.group.extra": "THÊM",
   "gui.dungeontrain.tv.channel.main": "Stream 1",
   "gui.dungeontrain.tv.channel.second": "Stream 2",
+  "item.dungeontrain.tv.on": "Bật",
+  "item.dungeontrain.tv.off": "Tắt",
   "gui.dungeontrain.rewards.quicker_streams.name": "Stream nhanh hơn",
   "gui.dungeontrain.rewards.quicker_streams.line": "Giảm độ trễ từ %1$ss xuống %2$ss trong 1 tháng",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
