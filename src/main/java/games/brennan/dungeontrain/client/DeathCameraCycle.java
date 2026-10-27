@@ -536,7 +536,8 @@ public final class DeathCameraCycle {
     /** The camera pose for this render frame, or null when the player's own view should show. */
     public static CinematicCameraController.Pose pose(float partialTick) {
         DeathShot shot = current();
-        if (shot == null || shot.kind() == DeathShot.Kind.POV) return null;
+        if (shot == null) return null;
+        if (shot.kind() == DeathShot.Kind.POV) return povPose(partialTick);
         double t = shotTicks + partialTick;
         Vector3d bodyW = toWorldRender(bodyLocal, partialTick);
         Vector3d aimBody = new Vector3d(bodyW.x, bodyW.y + LOOK_Y_OFFSET, bodyW.z);
@@ -587,6 +588,22 @@ public final class DeathCameraCycle {
             }
         }
         return poseFor(new Vec3(lensW.x, lensW.y, lensW.z), new Vec3(aim.x, aim.y, aim.z));
+    }
+
+    /**
+     * The player's own view, but placed through the carriage's frame-interpolated render pose.
+     * The body itself is re-pinned to the carriage once per tick from the server-synced pose,
+     * which lands in uneven bursts, so the vanilla eye camera jitters; this follows the carriage
+     * the way it is drawn. Look angles stay the player's own, and the death roll still applies
+     * (it is added after the camera is placed). Null off the train: vanilla does fine there.
+     */
+    private static CinematicCameraController.Pose povPose(float partialTick) {
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player == null || carriage == null || bodyLocal == null) return null;
+        Vector3d eye = toWorldRender(bodyLocal, partialTick);
+        return new CinematicCameraController.Pose(
+            new Vec3(eye.x, eye.y + player.getEyeHeight(), eye.z),
+            player.getViewYRot(partialTick), player.getViewXRot(partialTick));
     }
 
     /** Pure: a pose at {@code lens} looking at {@code target}. */
