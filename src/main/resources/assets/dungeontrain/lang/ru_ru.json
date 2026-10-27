@@ -1469,6 +1469,8 @@
   "gui.dungeontrain.rewards.group.extra": "ДОПОЛНИТЕЛЬНО",
   "gui.dungeontrain.tv.channel.main": "Трансляция 1",
   "gui.dungeontrain.tv.channel.second": "Трансляция 2",
+  "item.dungeontrain.tv.on": "Включён",
+  "item.dungeontrain.tv.off": "Выключен",
   "gui.dungeontrain.rewards.quicker_streams.name": "Быстрые трансляции",
   "gui.dungeontrain.rewards.quicker_streams.line": "Задержка с %1$s с до %2$s с на 1 месяц",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",

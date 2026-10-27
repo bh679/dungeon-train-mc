@@ -31194,6 +31194,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "tv-inventory-labels",
+      "version": "0.1552.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "TV labels",
+      "summary": "TVs now say whether they're on or off, and which stream they're set to, when you hover them in your inventory, so you can tell your TV stacks apart.",
+      "highlights": [],
+      "pr": 2355,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

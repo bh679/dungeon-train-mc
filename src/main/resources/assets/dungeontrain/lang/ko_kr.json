@@ -1374,6 +1374,8 @@
   "gui.dungeontrain.rewards.group.extra": "기타",
   "gui.dungeontrain.tv.channel.main": "방송 1",
   "gui.dungeontrain.tv.channel.second": "방송 2",
+  "item.dungeontrain.tv.on": "켜짐",
+  "item.dungeontrain.tv.off": "꺼짐",
   "gui.dungeontrain.rewards.quicker_streams.name": "더 빠른 방송",
   "gui.dungeontrain.rewards.quicker_streams.line": "지연 시간을 %1$s초에서 %2$s초로 단축, 1개월",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",

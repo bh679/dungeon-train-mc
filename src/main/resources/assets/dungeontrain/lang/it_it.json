@@ -1419,6 +1419,8 @@
   "gui.dungeontrain.rewards.group.extra": "EXTRA",
   "gui.dungeontrain.tv.channel.main": "Stream 1",
   "gui.dungeontrain.tv.channel.second": "Stream 2",
+  "item.dungeontrain.tv.on": "Accesa",
+  "item.dungeontrain.tv.off": "Spenta",
   "gui.dungeontrain.rewards.quicker_streams.name": "Stream più veloci",
   "gui.dungeontrain.rewards.quicker_streams.line": "Riduce il ritardo da %1$ss a %2$ss per 1 mese",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
