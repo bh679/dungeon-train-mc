@@ -9,6 +9,7 @@ import net.minecraft.nbt.FloatTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
@@ -31,7 +32,7 @@ import java.util.UUID;
 
 /**
  * One comet in flight over the spheres band: a full-bright magma-block display the server flies a fixed line,
- * trailing fire and smoke, that explodes where it meets a carriage or a block. Immutable — each tick
+ * trailing a long tail of fire, smoke and glowing sparks, that explodes where it meets a carriage or a block. Immutable — each tick
  * {@link #step} hands back the comet's next state, or empty once it has hit something or burnt out.
  *
  * <p>A vanilla {@code block_display}, not a registered entity: nothing to render client-side, and its
@@ -53,6 +54,10 @@ record SpheresComet(UUID displayId, Vec3 pos, Vec3 velocity, int age) {
     private static final double AHEAD_MIN = 40.0, AHEAD_SPAN = 50.0;
     private static final double UP_MIN = 60.0, UP_SPAN = 40.0;
     private static final double SIDE_SPAN = 50.0;
+    /** Players this close (blocks) see the tail. */
+    private static final double TAIL_VIEW = 256.0;
+    /** Points per tick the tail is laid at along the comet's step. */
+    private static final int TAIL_STEPS = 4;
     /** Carriages this close (blocks, horizontally) to the watching player are the targets. */
     private static final double FOCUS_REACH = 24.0;
     /** How far off the train a near miss passes. */
@@ -137,7 +142,7 @@ record SpheresComet(UUID displayId, Vec3 pos, Vec3 velocity, int age) {
             return Optional.empty();
         }
         display.setPos(next.x, next.y, next.z);
-        trail(level, next);
+        trail(level, pos, next, velocity);
         return Optional.of(new SpheresComet(displayId, next, velocity, age + 1));
     }
 
@@ -163,12 +168,35 @@ record SpheresComet(UUID displayId, Vec3 pos, Vec3 velocity, int age) {
         return block.getType() == HitResult.Type.BLOCK ? block.getLocation() : null;
     }
 
-    private static void trail(ServerLevel level, Vec3 at) {
-        level.sendParticles(ParticleTypes.FLAME, at.x, at.y, at.z, 6, 0.4, 0.4, 0.4, 0.02);
-        level.sendParticles(ParticleTypes.LARGE_SMOKE, at.x, at.y, at.z, 3, 0.3, 0.3, 0.3, 0.01);
-        if (level.random.nextInt(3) == 0) {
-            level.sendParticles(ParticleTypes.LAVA, at.x, at.y, at.z, 1, 0.2, 0.2, 0.2, 0.0);
+    /**
+     * The tail, laid along this tick's whole step so it reads as one unbroken streak: flames blown back off the head,
+     * dark smoke behind them, and glowing end-rod sparks that hang in the sky for a few seconds, so a long bright
+     * tail traces the comet's path. Sent long-distance to each player within {@value #TAIL_VIEW} blocks; the
+     * ordinary broadcast stops at 32, which left only the bare block visible from the train.
+     */
+    private static void trail(ServerLevel level, Vec3 from, Vec3 to, Vec3 velocity) {
+        Vec3 back = velocity.normalize().scale(-1.0);
+        for (ServerPlayer player : level.players()) {
+            if (player.distanceToSqr(to) > TAIL_VIEW * TAIL_VIEW) continue;
+            for (int i = 0; i < TAIL_STEPS; i++) {
+                Vec3 at = from.lerp(to, (i + 1.0) / TAIL_STEPS);
+                for (int f = 0; f < 2; f++) {
+                    Vec3 dir = back.add(jitter(level.random, 0.25));
+                    level.sendParticles(player, ParticleTypes.FLAME, true, at.x, at.y, at.z, 0, dir.x, dir.y, dir.z, 0.25);
+                }
+                level.sendParticles(player, ParticleTypes.LARGE_SMOKE, true, at.x, at.y, at.z, 1, 0.3, 0.3, 0.3, 0.01);
+                Vec3 drift = back.add(jitter(level.random, 0.6));
+                level.sendParticles(player, ParticleTypes.END_ROD, true, at.x, at.y, at.z, 0, drift.x, drift.y, drift.z, 0.04);
+            }
+            if (level.random.nextBoolean()) {
+                level.sendParticles(player, ParticleTypes.LAVA, true, to.x, to.y, to.z, 1, 0.3, 0.3, 0.3, 0.0);
+            }
         }
+    }
+
+    private static Vec3 jitter(RandomSource random, double spread) {
+        return new Vec3((random.nextDouble() - 0.5) * spread, (random.nextDouble() - 0.5) * spread,
+                (random.nextDouble() - 0.5) * spread);
     }
 
     /** The train's velocity in blocks per tick (target velocity is blocks per second). */
