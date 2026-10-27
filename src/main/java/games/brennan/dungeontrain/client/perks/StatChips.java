@@ -63,8 +63,12 @@ final class StatChips {
             now.addAll(value(s.valueAt(points)));
             List<Piece> then = new ArrayList<>();
             if (preview >= 0 && preview != points) {
-                then.add(Piece.of(" → "));
-                then.addAll(value(s.valueAt(preview)));
+                List<Piece> next = value(s.valueAt(preview));
+                // a stat the hovered point doesn't change (a Strength level within its band) shows no arrow
+                if (!next.equals(value(s.valueAt(points)))) {
+                    then.add(Piece.of(" → "));
+                    then.addAll(next);
+                }
             }
             int w = pad * 2 + width(font, now) + width(font, then);
             if (cx + w > right) break;
@@ -121,6 +125,7 @@ final class StatChips {
             case HEARTS -> pair(sign, n.value(), Icon.HEART, Icon.HALF_HEART);
             case ARMOUR -> pair(sign, n.value(), Icon.ARMOUR, Icon.HALF_ARMOUR);
             case EMERALDS -> List.of(Piece.of(sign + (long) Math.floor(n.value()) + " "), Piece.of(Icon.EMERALD));
+            case MULTIPLIER -> List.of(Piece.of(sign + Component.translatable(KEY + "unit." + n.unit().key(), number(n.value(), 100.0)).getString()));
             default -> List.of(Piece.of(sign + Component.translatable(KEY + "unit." + n.unit().key(), number(n.value())).getString()));
         };
     }
@@ -144,8 +149,15 @@ final class StatChips {
 
     /** Whole numbers plain, others to one place; minus as a plain hyphen. */
     static String number(double v) {
-        double r = Math.round(v * 10.0) / 10.0;
-        return r == Math.rint(r) ? Long.toString((long) r) : String.format(Locale.ROOT, "%.1f", r);
+        return number(v, 10.0);
+    }
+
+    /** {@code v} rounded to 1/{@code scale}, without trailing zeros (a multiplier keeps 1.25). */
+    static String number(double v, double scale) {
+        double r = Math.round(v * scale) / scale;
+        if (r == Math.rint(r)) return Long.toString((long) r);
+        String s = String.format(Locale.ROOT, scale >= 100 ? "%.2f" : "%.1f", r);
+        return s.endsWith("0") ? s.substring(0, s.length() - 1) : s;
     }
 
     private static int width(Font font, List<Piece> pieces) {
