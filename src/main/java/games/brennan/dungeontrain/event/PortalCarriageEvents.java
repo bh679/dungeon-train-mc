@@ -1798,6 +1798,35 @@ public final class PortalCarriageEvents {
         }
     }
 
+    /**
+     * A player did something to the block at {@code pos}: broke it, placed one, or opened what stands
+     * there. The copy it is in is marked as visited so it is captured before it is erased.
+     *
+     * <p>{@link #occupiedTiles} marks the copies players <b>stand</b> in, and that is not the same
+     * set: a player can reach across a seam and mine a barrel in the next copy over, or loot a chest
+     * through an authored opening, without ever setting foot in it. That copy was never captured, so
+     * it came back whole from its template on the next visit (reported by Dowl and Akazuki_ruru on
+     * v0.1494.0, reproduced by Brennan). The base tile goes through {@link PortalRoomMemory#markTouched}
+     * for the same reason.</p>
+     */
+    public static void markTouchedAt(ServerLevel level, BlockPos pos) {
+        if (STRUCTURES.isEmpty()) return;
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        for (Map.Entry<Integer, PortalStructure> pair : STRUCTURES.entrySet()) {
+            PortalStructure structure = pair.getValue();
+            if (!structureBox(dims, structure).contains(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5)) continue;
+            if (games.brennan.dungeontrain.portal.PortalTestSession.isTestStamp(pair.getKey())) return;
+            PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+            PortalRoomTiling.Tile tile = structure.tileAt(dims, layout, pos.getX(), pos.getZ());
+            if (PortalRoomTiling.Tile.BASE.equals(tile)) {
+                PortalRoomMemory.markTouched(level, pair.getKey(), dims);
+            } else {
+                PortalRoomMemory.markTileTouched(pair.getKey(), tile);
+            }
+            return;
+        }
+    }
+
     private static Set<PortalRoomTiling.Tile> occupiedTiles(List<ServerPlayer> players,
                                                             CarriageDims dims,
                                                             PortalCarriageLayout layout,
