@@ -113,12 +113,33 @@ final class TierOnePerksMathTest {
     @Test
     @DisplayName("trade value ceiling: 1 emerald at rank 1, steps grow by 0.8, ~5 emerald blocks at rank 10")
     void tradeValueCeiling() {
-        assertEquals(0.0, TradeValueTooltip.ceilingEmeralds(0));
-        assertEquals(1.0, TradeValueTooltip.ceilingEmeralds(1), 1e-9);
-        assertEquals(2.8, TradeValueTooltip.ceilingEmeralds(2), 1e-9);
-        assertEquals(46.0, TradeValueTooltip.ceilingEmeralds(10), 1e-9);
-        assertTrue(TradeValueTooltip.visibleAt(16, 1));
-        assertFalse(TradeValueTooltip.visibleAt(17, 1));
-        assertFalse(TradeValueTooltip.visibleAt(16, 0));
+        assertEquals(0.0, SeeTradeValues.ceilingEmeralds(0));
+        assertEquals(1.0, SeeTradeValues.ceilingEmeralds(1), 1e-9);
+        assertEquals(2.8, SeeTradeValues.ceilingEmeralds(2), 1e-9);
+        assertEquals(46.0, SeeTradeValues.ceilingEmeralds(10), 1e-9);
+        assertTrue(SeeTradeValues.visibleAt(16, 1));
+        assertFalse(SeeTradeValues.visibleAt(17, 1));
+        assertFalse(SeeTradeValues.visibleAt(16, 0));
+    }
+
+    @Test
+    @DisplayName("craft level stats average: 33% at rank 1, below the best roll, rising with rank")
+    void craftAverage() {
+        assertEquals(0.0, CraftLevelStats.averageShare(0));
+        assertEquals(1.0 / 3.0, CraftLevelStats.averageShare(1), 1e-9);
+        for (int r = 1; r <= 30; r++) {
+            assertTrue(CraftLevelStats.averageShare(r) < CraftLevelStats.ceiling(r));
+            assertTrue(CraftLevelStats.averageShare(r + 1) > CraftLevelStats.averageShare(r));
+        }
+    }
+
+    @Test
+    @DisplayName("Friendliness extra rolls on a Good Gifter chance: unchanged at rank 0, never 100%")
+    void friendlinessOnGiftChance() {
+        assertEquals(0.4, Friendliness.withExtraRolls(0.4, 0), 1e-9);
+        assertEquals(1 - 0.6 * 0.6, Friendliness.withExtraRolls(0.4, 1), 1e-9);
+        assertEquals(1.0, Friendliness.withExtraRolls(1.0, 3), 1e-9);
+        assertTrue(Friendliness.withExtraRolls(0.4, 50) < 1.0);
+        assertEquals(Friendliness.tameChance(3, 2), Friendliness.withExtraRolls(1.0 / 3.0, 2), 1e-9);
     }
 }

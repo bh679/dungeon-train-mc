@@ -59,6 +59,15 @@ public final class Friendliness {
         return 1.0 - Math.pow(miss, 1 + Math.max(0, rank));
     }
 
+    /**
+     * A tame chance that bypasses the vanilla roll (Good Gifter's offerings) with Friendliness's
+     * {@code rank} extra rolls: {@code 1 - (1 - chance)^(1 + rank)}.
+     */
+    public static double withExtraRolls(double chance, int rank) {
+        double c = Math.max(0, Math.min(1, chance));
+        return 1.0 - Math.pow(1.0 - c, 1 + Math.max(0, rank));
+    }
+
     /** Roll helper for the mixins: the interacting player's rank, 0 for anything else. */
     public static int tameRollFor(int vanilla, int bound, Player player, RandomSource rng) {
         return tameRoll(vanilla, bound, Perks.rank(player, TierOnePerks.FRIENDLINESS), rng);

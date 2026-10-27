@@ -57,6 +57,15 @@ public final class CraftLevelStats {
         return 1.0 - (1.0 - CEILING_AT_RANK_ONE) * Math.pow(CEILING_GAP_KEPT_PER_RANK, rank - 1);
     }
 
+    /**
+     * Average share of the chest-loot tier at {@code rank}, before the tier is floored: the best of
+     * {@code 1 + rank} uniform draws averages {@code (r + 1) / (r + 2)}, times the {@link #ceiling}.
+     */
+    public static double averageShare(int rank) {
+        if (rank <= 0) return 0;
+        return ceiling(rank) * (rank + 1) / (rank + 2.0);
+    }
+
     /** The tier the crafted item is stamped at; always below {@code levelTier}. */
     public static int rolledTier(int levelTier, double quality, int rank) {
         if (levelTier <= 0) return 0;

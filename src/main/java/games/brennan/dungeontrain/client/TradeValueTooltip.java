@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.perks.Perks;
 import games.brennan.dungeontrain.perks.TierOnePerks;
+import games.brennan.dungeontrain.perks.tier1.SeeTradeValues;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -19,29 +20,14 @@ import java.util.Optional;
 /**
  * See Trade Values (Trader): hovering an item shows what it trades for (Trade Everything's value,
  * in emeralds and sixteenths), but only while that value is at most the rank's ceiling
- * ({@link #ceilingEmeralds}). The ceiling starts at 1 emerald and each rank adds
- * {@link #CEILING_STEP_GROWTH} more than the last (+1.8, +2.6, +3.4 ...): rank 10 sees up to
- * 46 emeralds, about five emerald blocks. Uncapped.
+ * ({@link SeeTradeValues#ceilingEmeralds}).
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class TradeValueTooltip {
 
-    /** Extra emeralds each rank's step adds over the previous step. */
-    public static final double CEILING_STEP_GROWTH = 0.8;
     private static final Boolean[] TE_LOADED = new Boolean[1];
 
     private TradeValueTooltip() {}
-
-    /** Highest value (emeralds) visible at {@code rank}: {@code r + 0.4 r(r-1)}; 0 at rank 0. */
-    public static double ceilingEmeralds(int rank) {
-        int r = Math.max(0, rank);
-        return r + CEILING_STEP_GROWTH * r * (r - 1) / 2.0;
-    }
-
-    /** Whether a value in sixteenths is visible at {@code rank}. */
-    public static boolean visibleAt(int sixteenths, int rank) {
-        return sixteenths > 0 && sixteenths <= ceilingEmeralds(rank) * 16.0;
-    }
 
     /** "1 emerald", "2 emeralds 3/16" or "5/16 of an emerald" from a value in sixteenths. */
     public static String formatSixteenths(int sixteenths) {
@@ -62,7 +48,7 @@ public final class TradeValueTooltip {
         ItemStack stack = event.getItemStack();
         if (stack.isEmpty()) return;
         Optional<Integer> value = valueOf(stack);
-        if (value.isEmpty() || !visibleAt(value.get(), rank)) return;
+        if (value.isEmpty() || !SeeTradeValues.visibleAt(value.get(), rank)) return;
         event.getToolTip().add(Component.literal("Trades for " + formatSixteenths(value.get()))
             .withStyle(ChatFormatting.GREEN));
     }
