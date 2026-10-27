@@ -1,9 +1,6 @@
 package games.brennan.dungeontrain.advancement;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.event.AchievementEvents;
-import games.brennan.dungeontrain.player.PlayerBiomeProgress;
-import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,9 +10,10 @@ import java.util.List;
 
 /**
  * The one-time move from Terra Omnia's old 150-biome version ({@link TerraOmnia#OLD_ID}) to the every-biome one.
- * Everyone who earned the old one loses it — it is a different advancement now — but keeps their biomes: this
- * life's ridden list is topped up to {@link TerraOmnia#OLD_THRESHOLD} in checklist order, so they start on the
- * new one where the old one left them. Removing the old id from their profile is what makes it run once.
+ * Everyone who earned the old one loses it (it is a different advancement now) but keeps their biomes: their
+ * permanent list ({@link GlobalBiomeProgress}) is topped up to {@link TerraOmnia#OLD_THRESHOLD} in checklist
+ * order, so they start the new one where the old one left them. It only ever adds; removing the old id from
+ * their profile is what makes it run once.
  */
 public final class TerraOmniaMigration {
 
@@ -27,14 +25,12 @@ public final class TerraOmniaMigration {
     public static void apply(ServerPlayer player) {
         String partition = AdvancementProfiles.partitionFor(player, TerraOmnia.OLD_ID);
         if (!GlobalAchievementStore.read(player.getUUID(), partition).contains(TerraOmnia.OLD_ID)) return;
-        PlayerBiomeProgress progress = player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get());
         var registry = player.registryAccess().registryOrThrow(Registries.BIOME);
-        List<ResourceLocation> credit = TerraOmnia.topUp(progress.biomes(),
+        List<ResourceLocation> credit = TerraOmnia.topUp(GlobalBiomeProgress.biomes(player.getUUID()),
             TerraOmnia.ordered(registry).keySet(), TerraOmnia.OLD_THRESHOLD);
-        credit.forEach(progress::addBiome);
+        GlobalBiomeProgress.addAll(player.getUUID(), credit);
         GlobalAchievementStore.remove(player.getUUID(), partition, TerraOmnia.OLD_ID);
         LOGGER.info("[DungeonTrain] Terra Omnia moved to every biome for {}: old 150 version retired, {} biomes credited ({} now)",
-            player.getName().getString(), credit.size(), progress.biomeCount());
-        AchievementEvents.notifyBiomesVisited(player, progress.biomeCount());
+            player.getName().getString(), credit.size(), GlobalBiomeProgress.biomes(player.getUUID()).size());
     }
 }

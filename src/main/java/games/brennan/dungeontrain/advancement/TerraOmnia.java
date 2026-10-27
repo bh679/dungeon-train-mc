@@ -16,7 +16,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * "Terra Omnia": ride through every biome the game has, in one life. "Every biome" is the whole biome
+ * "Terra Omnia": ride through every biome the game has. Kept for good, across deaths and worlds
+ * ({@link GlobalBiomeProgress}). "Every biome" is the whole biome
  * registry less the {@link #EXCLUDED} entries no world ever places. Shared by the server (the award and the one-time
  * credit for the old 150-biome version, {@link TerraOmniaMigration}) and the client's checklist, so both
  * list the biomes in one order: the vanilla Overworld, the Nether, the End, then Biomes O' Plenty,

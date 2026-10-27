@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * The client's copy of the biomes the local player has ridden through this life, from the server
+ * The client's copy of every biome the local player has ever ridden through, from the server
  * ({@link games.brennan.dungeontrain.net.RiddenBiomesPacket}). Read by Terra Omnia's checklist. Client thread only.
  */
 public final class RiddenBiomes {
@@ -21,7 +21,7 @@ public final class RiddenBiomes {
             .collect(java.util.stream.Collectors.toUnmodifiableSet());
     }
 
-    /** The biomes ridden through this life. */
+    /** Every biome ridden through, in any life or world. */
     public static Set<ResourceLocation> get() {
         return ridden;
     }

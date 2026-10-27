@@ -12,9 +12,9 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import java.util.List;
 
 /**
- * Server → client: every biome the local player has ridden through this life, for Terra Omnia's
- * checklist ({@link games.brennan.dungeontrain.client.BiomeChecklistScreen}). Sent whole on join, on
- * respawn (empty) and each time a new biome is ridden through — new ones are rare, so a delta isn't worth it.
+ * Server → client: every biome the local player has ever ridden through, for Terra Omnia's checklist
+ * ({@link games.brennan.dungeontrain.client.BiomeChecklistScreen}). Sent whole on join and each time a new
+ * biome joins the list; new ones are rare, so a delta isn't worth it.
  */
 public record RiddenBiomesPacket(List<String> biomes) implements CustomPacketPayload {
 

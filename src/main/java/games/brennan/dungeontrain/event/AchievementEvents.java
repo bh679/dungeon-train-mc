@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.advancement.AdvancementRevocations;
 import games.brennan.dungeontrain.advancement.BurritoClock;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
+import games.brennan.dungeontrain.advancement.GlobalBiomeProgress;
 import games.brennan.dungeontrain.advancement.TerraOmnia;
 import games.brennan.dungeontrain.advancement.TerraOmniaMigration;
 import games.brennan.dungeontrain.advancement.TabGateways;
@@ -450,22 +451,36 @@ public final class AchievementEvents {
      * distinct-biome count grows. {@code distinctBiomes} is the player's
      * single-life {@link games.brennan.dungeontrain.player.PlayerBiomeProgress#biomeCount()}.
      * Drives the exploration count tiers ("Far Afield", "Many Lands", "World
-     * Without End") and "Terra Omnia" once every biome there is has been ridden
-     * through ({@link TerraOmnia}). Also sends the player their ridden list, which
-     * Terra Omnia's checklist shows.
+     * Without End"). Terra Omnia keeps its own, permanent list: {@link #recordLifetimeBiomes}.
      */
     public static void notifyBiomesVisited(ServerPlayer player, int distinctBiomes) {
         ModAdvancementTriggers.BIOMES_VISITED.get().trigger(player, distinctBiomes);
-        Set<ResourceLocation> ridden = player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get()).biomes();
+    }
+
+    /**
+     * Add {@code biomes} to the biomes {@code player} has ever ridden through ({@link GlobalBiomeProgress}),
+     * which Terra Omnia asks to hold every biome. That list is kept for good: across deaths and worlds, and
+     * nothing removes from it. A cheated run adds nothing, as with the other cross-world stats.
+     */
+    public static void recordLifetimeBiomes(ServerPlayer player, Set<ResourceLocation> biomes) {
+        if (biomes.isEmpty() || RunIntegrity.isCheated(player)) return;
+        if (!GlobalBiomeProgress.addAll(player.getUUID(), biomes)) return;
+        checkTerraOmnia(player);
+        syncRiddenBiomes(player);
+    }
+
+    /** Award Terra Omnia once {@code player}'s permanent list holds every biome. Re-firing an earned one is a no-op. */
+    public static void checkTerraOmnia(ServerPlayer player) {
+        Set<ResourceLocation> ridden = GlobalBiomeProgress.biomes(player.getUUID());
         if (TerraOmnia.isComplete(ridden, player.registryAccess().registryOrThrow(Registries.BIOME))) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, TerraOmnia.ACTION);
         }
-        syncRiddenBiomes(player, ridden);
     }
 
-    /** Send {@code player} the biomes they have ridden through this life, for Terra Omnia's checklist. */
-    public static void syncRiddenBiomes(ServerPlayer player, Set<ResourceLocation> ridden) {
-        DungeonTrainNet.sendTo(player, new RiddenBiomesPacket(ridden.stream().map(ResourceLocation::toString).toList()));
+    /** Send {@code player} every biome they have ever ridden through, for Terra Omnia's checklist. */
+    public static void syncRiddenBiomes(ServerPlayer player) {
+        DungeonTrainNet.sendTo(player, new RiddenBiomesPacket(
+            GlobalBiomeProgress.biomes(player.getUUID()).stream().map(ResourceLocation::toString).toList()));
     }
 
     // ---------------- Train-time milestones ----------------
@@ -972,10 +987,9 @@ public final class AchievementEvents {
         if (event.isEndConquered()) return; // End → overworld portal, not a death.
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         run.resetAll();
-        // Exploration progress is per-life too — clear distinct biomes so the
-        // count tiers (and "Terra Omnia") restart for the new run.
+        // The count tiers' biomes are per-life — clear them for the new run. Terra Omnia's
+        // list (GlobalBiomeProgress) is kept for good and is not touched here.
         player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get()).clear();
-        syncRiddenBiomes(player, Set.of());
         player.getData(ModDataAttachments.AFK_LIFE_STATS.get()).clear();
         // Per-life container markers. Neither attachment is copyOnDeath, so the
         // respawn clone already starts clean — cleared explicitly for the same
@@ -1054,10 +1068,13 @@ public final class AchievementEvents {
         // updated player's complete vanilla / other-mod trees, which will never
         // re-fire AdvancementEarnEvent — is captured before the replay below
         // mirrors the store back onto this world.
-        // Terra Omnia now asks for every biome: whoever earned its old 150-biome version loses it, keeping
-        // their biomes (topped up to 150). Before the replay below, which would only warn about the retired id.
+        // Terra Omnia keeps every biome ever ridden: fold in this life's, then (once) retire its old
+        // 150-biome version, crediting its earners up to 150. Before the replay below, which would only
+        // warn about the retired id.
+        recordLifetimeBiomes(player, player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get()).biomes());
         TerraOmniaMigration.apply(player);
-        syncRiddenBiomes(player, player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get()).biomes());
+        checkTerraOmnia(player);
+        syncRiddenBiomes(player);
         AdvancementProfiles.absorb(player, AdvancementProfiles.currentKey(player));
         // Half-finished collections too (Most Wanted's 34 mobs): the store above only holds
         // finished advancements, so without this a new world started them from zero.
@@ -1107,6 +1124,7 @@ public final class AchievementEvents {
         GlobalPlayerStats.evict(uuid);
         GlobalBookBurnStats.flush(uuid);
         GlobalBookBurnStats.evict(uuid);
+        GlobalBiomeProgress.evict(uuid);   // every biome was written when it was added
         AdvancementProfiles.reconcileRevokes(player);
         // After the reconcile, which may still strike ids. Queued writes finish in the background.
         GlobalAchievementStore.evict(uuid);
