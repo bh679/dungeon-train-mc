@@ -347,6 +347,10 @@ public final class ContainerContentsRoller {
      * with the difficulty frame split out from the seed frame — see
      * {@link #rollItemStack(ContainerContentsEntry, int, BlockPos, long, int, int, int, HolderLookup.Provider)}
      * for why world-X-keyed callers (tunnels) must pass a distinct {@code diffIndex}.
+     *
+     * <p>Whatever lands in a container is fingerprinted ({@link RolledItemsFingerprint}) so a difficulty
+     * swap can leave untouched containers as generated. Brushables and vaults aren't containers and keep
+     * their NBT as rolled.</p>
      */
     @Nullable
     public static CompoundTag roll(ContainerContentsPool pool, BlockState state,
@@ -355,6 +359,19 @@ public final class ContainerContentsRoller {
                                    @Nullable CompoundTag baseNbt,
                                    HolderLookup.Provider registries,
                                    @Nullable Level level) {
+        CompoundTag rolled = rollUnstamped(pool, state, localPos, worldSeed, carriageIndex, diffIndex,
+            baseNbt, registries, level);
+        if (rolled == null || rolled == baseNbt || isBrushable(state) || VaultLoot.isVault(state)) return rolled;
+        return RolledItemsFingerprint.stamp(rolled, registries);
+    }
+
+    @Nullable
+    private static CompoundTag rollUnstamped(ContainerContentsPool pool, BlockState state,
+                                             BlockPos localPos, long worldSeed, int carriageIndex,
+                                             int diffIndex,
+                                             @Nullable CompoundTag baseNbt,
+                                             HolderLookup.Provider registries,
+                                             @Nullable Level level) {
         if (pool == null || pool.isEmpty()) return baseNbt;
         if (!state.hasBlockEntity()) return baseNbt;
         int totalWeight = pool.totalWeight();
@@ -372,6 +389,10 @@ public final class ContainerContentsRoller {
         // Container at all — an authored pool rolls into it the way a vase does.
         if (isBrushable(state)) {
             return rollBrushable(pool, totalWeight, localPos, worldSeed, carriageIndex, diffIndex, baseNbt, registries);
+        }
+        // A vault rolls nothing now: it carries the pool and rolls each player's reward on unlock.
+        if (VaultLoot.isVault(state)) {
+            return VaultLoot.writeVault(pool, localPos, worldSeed, carriageIndex, diffIndex, baseNbt, registries);
         }
         int slots = containerSlotsFor(state);
         if (slots <= 0) return baseNbt;
@@ -557,6 +578,7 @@ public final class ContainerContentsRoller {
      */
     public static int slotsForContainer(BlockState state) {
         if (isBrushable(state)) return 1;
+        if (VaultLoot.isVault(state)) return VaultLoot.VAULT_SLOTS;
         return containerSlotsFor(state);
     }
 
@@ -696,10 +718,11 @@ public final class ContainerContentsRoller {
 
     /**
      * True for any block the loot (C) menu can author a pool for: a vanilla {@link Container}, or a
-     * brushable block, whose single dig item rolls from the pool like a vase's.
+     * brushable block, whose single dig item rolls from the pool like a vase's, or a vault, which
+     * rolls each player's reward from it on unlock ({@link VaultLoot}).
      */
     public static boolean isLootAuthorable(BlockState state) {
-        return isContainerState(state) || isBrushable(state);
+        return isContainerState(state) || isBrushable(state) || VaultLoot.isVault(state);
     }
 
     /**

@@ -105,6 +105,15 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Piglin Proliferation — REQUIRED. Its Piglin Alchemist and Piglin Traveler stand in carriages; its entities,
+# items and blocks have to exist on both sides.
+[[dependencies.${mod_id}]]
+    modId="piglinproliferation"
+    type="required"
+    versionRange="[${piglinproliferation_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # VanillaBackport (+ its Platform library) — REQUIRED. Its sulfur caves join the caves on the way out of
 # every Nether pass; its blocks and network channels have to exist on both sides.
 [[dependencies.${mod_id}]]
@@ -475,6 +484,12 @@ logoFile="logo.png"
 # DistantHorizonsMixinPlugin, gives the query room. No-op when DH is absent.
 [[mixins]]
     config="${mod_id}.distanthorizons.mixins.json"
+
+# JourneyMap (optional, players add it) scans chunks itself, so it mapped the sealed world over a
+# dimensional room and the twins under the terrain floor. dungeontrain.journeymap.mixins.json, gated by
+# JourneyMapMixinPlugin, hides the same rows from its map as the renderer does. No-op when JM is absent.
+[[mixins]]
+    config="${mod_id}.journeymap.mixins.json"
 
 # Sodium replaces chunk meshing wholesale, so the upside-down band's per-block flip needs a second
 # copy of itself on Sodium's pipeline (dungeontrain.sodium.mixins.json, gated by SodiumMixinPlugin).

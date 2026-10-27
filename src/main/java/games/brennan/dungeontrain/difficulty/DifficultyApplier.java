@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.difficulty;
 import com.mojang.logging.LogUtils;
 import games.brennan.adventureitemnames.api.NameComposer;
 import games.brennan.adventureitemstats.api.StatsModifier;
+import games.brennan.dungeontrain.combat.MobDigGoal;
+import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.HolderSet;
@@ -19,11 +21,15 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
+import net.minecraft.world.entity.monster.AbstractIllager;
+import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Ghast;
 import net.minecraft.world.entity.monster.MagmaCube;
 import net.minecraft.world.entity.monster.Phantom;
 import net.minecraft.world.entity.monster.Slime;
+import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ProjectileWeaponItem;
@@ -53,6 +59,9 @@ public final class DifficultyApplier {
 
     /** Sticky marker tag — present on a mob once we've rolled difficulty for it. */
     public static final String APPLIED_TAG = "dungeontrain_difficulty_applied";
+
+    /** Persistent-data key holding a tool mob's {@link ToolTiers#breakTier break tier}; absent = no digging. */
+    public static final String DIG_TIER_KEY = "dungeontrain_dig_tier";
 
     /** Drop chance for difficulty-applied gear — matches vanilla zombie/skeleton ~0.085. */
     private static final float DIFFICULTY_DROP_CHANCE = 0.05f;
@@ -164,6 +173,7 @@ public final class DifficultyApplier {
             applyArmorSlot(mob, EquipmentSlot.LEGS,  tier.armor().leggings(),   tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier, tierIndex);
             applyArmorSlot(mob, EquipmentSlot.FEET,  tier.armor().boots(),      tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier, tierIndex);
             applyWeaponSlot(mob, tier.weapon().mainhand(), tier.weapon().chance(), tier.enchant(), registries, rng, statScalingTier, tierIndex);
+            applyToolSlot(mob, tier.enchant(), registries, rng, statScalingTier, tierIndex);
         }
 
         // Creepers convert their active effects into a lingering AreaEffectCloud on
@@ -172,26 +182,46 @@ public final class DifficultyApplier {
         // The effect curve is read later for mobs that first spawn further down the train
         // (and for babies), so they are not buffed the moment they appear.
         if (applyEffects && !(mob instanceof Creeper)) {
-            int effectLevel = tierIndex - MobEffectOffsets.offsetFor(mob);
-            for (DifficultyTier.EffectSpec spec : ProceduralTiers.effectsFor(effectLevel)) {
-                if (rng.nextDouble() >= spec.chance()) continue;
-                Holder<MobEffect> holder = lookupEffect(spec.id());
-                if (holder == null) {
-                    LOGGER.warn("[DungeonTrain] Difficulty: unknown mob effect '{}' in tier '{}' — skipping",
-                            spec.id(), tier.name());
-                    continue;
-                }
-                // -1 is the vanilla infinite sentinel (MobEffectInstance.INFINITE_DURATION);
-                // a huge finite duration would render as an absurd hour count in Jade.
-                int duration = spec.durationTicks() < 0
-                        ? MobEffectInstance.INFINITE_DURATION
-                        : spec.durationTicks();
-                mob.addEffect(new MobEffectInstance(holder, duration, rollAmplifier(spec.minAmplifier(), spec.amplifier(), rng), false, true));
-            }
+            rollEffects(mob, tierIndex, tier.name(), rng);
         }
 
         mob.addTag(APPLIED_TAG);
         return true;
+    }
+
+    /**
+     * The potion-effect pass alone — no armor, weapon or tool — for a hostile DT spawns outside the
+     * carriage placer (a creaking heart's Creaking). Same tier, offset and chance rolls as
+     * {@link #apply}; tags the mob with {@link #APPLIED_TAG}.
+     *
+     * @return false when the travelled progress is still tier 0 (vanilla baseline) — nothing applied
+     */
+    public static boolean applyEffects(Mob mob, int carriageIndex, RandomSource rng) {
+        int tierIndex = DifficultyProgression.tierForTravelled(carriageIndex);
+        DifficultyTier tier = ProceduralTiers.tierFor(tierIndex);
+        if (tier == null) return false;
+        rollEffects(mob, tierIndex, tier.name(), rng);
+        mob.addTag(APPLIED_TAG);
+        return true;
+    }
+
+    private static void rollEffects(Mob mob, int tierIndex, String tierName, RandomSource rng) {
+        int effectLevel = tierIndex - MobEffectOffsets.offsetFor(mob);
+        for (DifficultyTier.EffectSpec spec : ProceduralTiers.effectsFor(effectLevel)) {
+            if (rng.nextDouble() >= spec.chance()) continue;
+            Holder<MobEffect> holder = lookupEffect(spec.id());
+            if (holder == null) {
+                LOGGER.warn("[DungeonTrain] Difficulty: unknown mob effect '{}' in tier '{}' — skipping",
+                        spec.id(), tierName);
+                continue;
+            }
+            // -1 is the vanilla infinite sentinel (MobEffectInstance.INFINITE_DURATION);
+            // a huge finite duration would render as an absurd hour count in Jade.
+            int duration = spec.durationTicks() < 0
+                    ? MobEffectInstance.INFINITE_DURATION
+                    : spec.durationTicks();
+            mob.addEffect(new MobEffectInstance(holder, duration, rollAmplifier(spec.minAmplifier(), spec.amplifier(), rng), false, true));
+        }
     }
 
     /**
@@ -258,6 +288,43 @@ public final class DifficultyApplier {
         if (stack == null) return;
         mob.setItemSlot(EquipmentSlot.MAINHAND, stack);
         mob.setDropChance(EquipmentSlot.MAINHAND, DIFFICULTY_DROP_CHANCE);
+    }
+
+    /**
+     * Digging-tool roll ({@link ToolTiers}), after the weapon so it knows which hand is free: an empty
+     * mainhand takes the tool, otherwise it goes in the offhand (a held weapon stays in the main hand).
+     * Hands-on mobs only. A mob given a tool carries its {@link ToolTiers#rollTier rolled break tier} in
+     * {@link #DIG_TIER_KEY} and gets its {@link MobDigGoal}.
+     */
+    private static void applyToolSlot(Mob mob,
+                                      DifficultyTier.EnchantSpec enchant,
+                                      HolderLookup.Provider registries,
+                                      RandomSource rng,
+                                      int statScalingTier,
+                                      int tierIndex) {
+        if (!canHoldTools(mob)) return;
+        int digTier = ToolTiers.rollTier(tierIndex, rng::nextDouble);
+        if (digTier == ToolTiers.NO_TIER) return;
+        EquipmentSlot slot = mob.getItemBySlot(EquipmentSlot.MAINHAND).isEmpty()
+                ? EquipmentSlot.MAINHAND
+                : EquipmentSlot.OFFHAND;
+        if (!mob.getItemBySlot(slot).isEmpty()) return;
+
+        ItemStack stack = rollEquipment(ToolTiers.toolPool(tierIndex), enchant, registries, rng, statScalingTier, tierIndex);
+        if (stack == null) return;
+        mob.setItemSlot(slot, stack);
+        mob.setDropChance(slot, DIFFICULTY_DROP_CHANCE);
+        mob.getPersistentData().putInt(DIG_TIER_KEY, digTier);
+        MobDigGoal.attach(mob);
+    }
+
+    /** Mobs with hands that show and swing a held tool. */
+    static boolean canHoldTools(Mob mob) {
+        return mob instanceof Zombie
+                || mob instanceof AbstractSkeleton
+                || mob instanceof AbstractPiglin
+                || mob instanceof AbstractIllager
+                || mob instanceof PlayerMobEntity;
     }
 
     /**

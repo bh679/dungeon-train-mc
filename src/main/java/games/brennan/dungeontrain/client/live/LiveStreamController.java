@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.live;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.live.life.LiveLifeEvents;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -25,7 +26,6 @@ import games.brennan.dungeontrain.net.LiveClaimResultPacket;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Claim;
 import games.brennan.dungeontrain.net.relay.LiveTakeoverClient;
-import net.mehvahdjukaar.vista.VistaModClient;
 import net.mehvahdjukaar.vista.client.web.ffmpeg.FFmpeg;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -124,6 +124,15 @@ public final class LiveStreamController {
     /** The stream's sound, when Options → Stream → Stream sound is on and this client can do it. */
     @Nullable private LiveAudioPump audio;
     @Nullable private LiveUploader uploader;
+    /** Adaptive quality: the upload's health (fed by the uploader) and the bitrate it picks; null when off. */
+    @Nullable private LiveUploadHealth health;
+    @Nullable private LiveQualityGovernor governor;
+    /** An encoder swap to a new bitrate is under way (render thread). */
+    private boolean switching;
+    /** Stream seconds the encoders before the running one wrote: where its timestamps start. */
+    private double tsOffsetSeconds;
+    /** The streamer was told once this stream that their upload lowered the quality. */
+    private boolean toldLowered;
     @Nullable private Claim claim;
     /** The worn Live Eye's id from the server's START; the relay matches reconnects by it. */
     private String eyeId = "";
@@ -218,6 +227,12 @@ public final class LiveStreamController {
         return segmentSecondsOf(claim);
     }
 
+    /** This stream went out on the relay's second channel (Two Streams), so its own picture is the second stream's. */
+    public boolean onSecondChannel() {
+        Claim c = claim;
+        return c != null && c.second();
+    }
+
     static int segmentSecondsOf(@Nullable Claim c) {
         return c != null && c.segmentSeconds() > 0 ? c.segmentSeconds() : LiveFeedClientConfig.segmentSeconds();
     }
@@ -271,7 +286,7 @@ public final class LiveStreamController {
         // A Live Eye put on from now wins the channel; the viewers' offer waits for the handover.
         LiveFeedClient.markDied(c.token());
         LiveEncoder enc = encoder;
-        double deathS = enc == null ? 0 : enc.framesWritten() / (double) Math.max(1, LiveFeedClientConfig.captureFps());
+        double deathS = tsOffsetSeconds + (enc == null ? 0 : enc.framesWritten() / (double) Math.max(1, LiveFeedClientConfig.captureFps()));
         int segmentS = segmentSecondsOf(c);
         handover = new LiveDeathHandover(deathS, segmentS, System.currentTimeMillis());
         LOGGER.info("[DungeonTrain] live: death at {} s into the stream; offering it once segment {} is up",
@@ -421,6 +436,7 @@ public final class LiveStreamController {
             tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
         } else if (state == State.STREAMING) {
             announceViewers(System.currentTimeMillis());
+            if (++qualityTicks % QUALITY_CHECK_TICKS == 0) tickQuality(System.currentTimeMillis());
             // The approved list can change under a running stream (the relay's overlay revokes a mod).
             if (audio != null && ++waitTicks % MOD_RECHECK_TICKS == 0) AudioMirror.setSilenced(!soundAllowedByMods(false));
         }
@@ -434,7 +450,7 @@ public final class LiveStreamController {
     private void giveUpIfStalled(long nowMs) {
         FfmpegSupport.watch();
         FfmpegSupport.logProgress(nowMs);
-        if (!ffmpegWait.tick(VistaModClient.getFFmpegDownloadProgress(), nowMs)) return;
+        if (!ffmpegWait.tick(FfmpegSupport.downloadProgress(), nowMs)) return;
         LOGGER.warn("[DungeonTrain] live stream gave up: Vista's ffmpeg download made no progress for {} s (at {}, {} s in)",
             FfmpegWait.STALL_MS / 1000, ffmpegWait.lastProgress() >= 0 ? ffmpegWait.lastProgress() + "%" : "no percentage",
             ffmpegWait.elapsedMs(nowMs) / 1000);
@@ -569,7 +585,7 @@ public final class LiveStreamController {
             }
             // The channel is ours: the server makes this player its streamer (and turns the previous
             // one's Live Eye into a TV).
-            tellServerTakeover(LiveClaimResultPacket.Result.LIVE);
+            tellServerTakeover(LiveClaimResultPacket.Result.LIVE, c.prevName() == null ? "" : c.prevName());
             beginStreaming(c, hasAac);
         }, mc);
     }
@@ -612,8 +628,13 @@ public final class LiveStreamController {
     }
 
     private static void tellServerTakeover(LiveClaimResultPacket.Result result) {
+        tellServerTakeover(result, "");
+    }
+
+    /** {@code cutOff}: who the relay cut off for this claim, or empty (the server turns their Live Eye into a TV). */
+    private static void tellServerTakeover(LiveClaimResultPacket.Result result, String cutOff) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.getConnection() != null) PacketDistributor.sendToServer(new LiveClaimResultPacket(result));
+        if (mc.getConnection() != null) PacketDistributor.sendToServer(new LiveClaimResultPacket(result, cutOff));
     }
 
     /**
@@ -630,8 +651,14 @@ public final class LiveStreamController {
             LiveDeathClip.forget();
             Path d = liveRoot().resolve(c.session());
             Files.createDirectories(d);
-            int w = LiveFeedClientConfig.captureWidth();
-            int h = LiveFeedClientConfig.heightFor(w);
+            boolean adaptive = LiveFeedClientConfig.adaptiveQuality();
+            int learned = adaptive ? LiveFeedClientConfig.learnedUploadKbps() : 0;
+            int boxW = LiveQualityGovernor.startWidth(LiveFeedClientConfig.captureWidth(), learned);
+            // The streamer's own window shape inside that size, fixed for the stream (LiveAspect).
+            RenderTarget main = mc.getMainRenderTarget();
+            int[] size = LiveAspect.frameSize(boxW, LiveFeedClientConfig.heightFor(boxW), main.width, main.height);
+            int w = size[0];
+            int h = size[1];
             var ffmpeg = FfmpegSupport.get();
             if (ffmpeg == null) throw new IOException("ffmpeg vanished");
             StreamNameTag.prepare();
@@ -648,7 +675,19 @@ public final class LiveStreamController {
             // the stream goes out without sound, as before.
             audio = LiveFeedClientConfig.streamAudio() && soundAllowedByMods(true) ? LiveAudioPump.open(aac) : null;
             int audioPort = audio == null ? 0 : audio.port();
-            CompletableFuture.supplyAsync(() -> spawnEncoder(ffmpeg, grab, d, fps, bitrate, cadence, audioPort, save), STARTER)
+            int ceiling = LiveEncoder.effectiveBitrateKbps(bitrate, save);
+            int audioKbps = audio == null ? 0 : LiveEncoder.AUDIO_KBPS;
+            int kbps = adaptive ? LiveQualityGovernor.startKbps(ceiling, learned, audioKbps) : ceiling;
+            health = new LiveUploadHealth(cadence.segmentSeconds());
+            governor = adaptive ? new LiveQualityGovernor(ceiling, kbps, audioKbps, System.currentTimeMillis()) : null;
+            switching = false;
+            tsOffsetSeconds = 0;
+            toldLowered = false;
+            if (kbps < ceiling || boxW < LiveFeedClientConfig.captureWidth()) {
+                LOGGER.info("[DungeonTrain] live quality: starting at {}x{} {} kbit/s (set {} kbit/s) for the {} kbit/s upload measured last stream",
+                    w, h, kbps, ceiling, learned);
+            }
+            CompletableFuture.supplyAsync(() -> spawnEncoder(ffmpeg, grab, d, fps, kbps, cadence, audioPort, save, null), STARTER)
                 .whenCompleteAsync((enc, err) -> adoptEncoder(gen, enc, err, fps), mc);
         } catch (Exception e) {
             failStart(e);
@@ -670,20 +709,23 @@ public final class LiveStreamController {
         Minecraft mc = Minecraft.getInstance();
         encoder = enc;
         if (audio != null) audio.start(enc::framesWritten, fps);
-        uploader = new LiveUploader(d, c.token(), by -> mc.execute(() -> cutOff(by)));
+        LiveUploadHealth h = health != null ? health : new LiveUploadHealth(segmentSecondsOf(c));
+        uploader = new LiveUploader(d, c.token(), by -> mc.execute(() -> cutOff(by)), h);
         streamStartedMs = System.currentTimeMillis();
         state = State.STREAMING;
         LiveLifeEvents.stintStarted(segmentSecondsOf(c));
         LiveEncoder.Cadence cadence = cadenceOf(c);
-        LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps{}{}, {} s segments x{}, {} s keyframes, playlist {}",
+        LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps, {} kbit/s{}{}{}, {} s segments x{}, {} s keyframes, playlist {}",
             c.session(), grabber == null ? 0 : grabber.width(), grabber == null ? 0 : grabber.height(),
-            fps, audio != null ? " with sound" : "", enc.saveBandwidth() ? ", saving bandwidth" : "",
+            fps, enc.videoKbps(), governor != null ? " (adaptive)" : "", audio != null ? " with sound" : "", enc.saveBandwidth() ? ", saving bandwidth" : "",
             cadence.segmentSeconds(), cadence.listSize(), cadence.keyframeSeconds(), c.playlistUrl());
         announcedLive = false;
         saidTikTok = false;
         lastTikTokPollMs = streamStartedMs;
         tiktokUrl = c.tiktokUrl();
         if (c.prevName() != null) say(Component.translatable("chat.dungeontrain.live.took_over", c.prevName()).withStyle(ChatFormatting.GRAY));
+        // Two Streams: the relay gave this player the second channel instead of the takeover prompt.
+        if (c.second()) say(Component.translatable("chat.dungeontrain.live.second_stream").withStyle(ChatFormatting.GRAY));
     }
 
     /** Render thread: the stream could not start — say so, free what was set up, hand the headpiece back. */
@@ -696,11 +738,12 @@ public final class LiveStreamController {
         tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
     }
 
-    /** {@link #STARTER} thread: spawning ffmpeg can take a while, so never on the render thread. */
-    private static LiveEncoder spawnEncoder(FFmpeg ffmpeg, LiveFrameGrabber grab, Path d, int fps, int bitrate,
-                                            LiveEncoder.Cadence cadence, int audioPort, boolean saveBandwidth) {
+    /** {@link #STARTER} thread: spawning ffmpeg can take a while, so never on the render thread. {@code videoKbps} is sent as it is. */
+    private static LiveEncoder spawnEncoder(FFmpeg ffmpeg, LiveFrameGrabber grab, Path d, int fps, int videoKbps,
+                                            LiveEncoder.Cadence cadence, int audioPort, boolean saveBandwidth,
+                                            @Nullable LiveEncoder.Resume resume) {
         try {
-            return new LiveEncoder(ffmpeg, grab, d, fps, bitrate, cadence, audioPort, saveBandwidth);
+            return new LiveEncoder(ffmpeg, grab, d, fps, videoKbps, cadence, audioPort, saveBandwidth, resume);
         } catch (IOException e) {
             throw new CompletionException(e);
         }
@@ -734,13 +777,13 @@ public final class LiveStreamController {
         encoder = null;
         int gen = generation;
         int fps = LiveFeedClientConfig.captureFps();
-        int bitrate = LiveFeedClientConfig.bitrateKbps();
+        int kbps = old.videoKbps();
         LiveEncoder.Cadence cadence = cadenceOf(claim);
         boolean save = old.saveBandwidth();
         CompletableFuture.supplyAsync(() -> {
             snd.close();
             old.close();
-            return spawnEncoder(ffmpeg, grab, d, fps, bitrate, cadence, 0, save);
+            return spawnEncoder(ffmpeg, grab, d, fps, kbps, cadence, 0, save, null);
         }, STARTER).whenCompleteAsync((enc, err) -> {
             if (gen != generation || state != State.STREAMING) {
                 if (enc != null) closeEncoderAsync(enc);
@@ -755,6 +798,119 @@ public final class LiveStreamController {
             encoder = enc;
         }, Minecraft.getInstance());
         return true;
+    }
+
+    /** How often a stream asks the governor whether the upload calls for another bitrate (2 s). */
+    private static final int QUALITY_CHECK_TICKS = 40;
+    private int qualityTicks;
+
+    /** Render thread, STREAMING: switch bitrate when the upload's health calls for it. */
+    private void tickQuality(long nowMs) {
+        LiveQualityGovernor gov = governor;
+        LiveUploadHealth h = health;
+        LiveEncoder enc = encoder;
+        if (gov == null || h == null || enc == null || switching || postMortem.active()) return;
+        LiveUploadHealth.Snapshot snap = h.snapshot();
+        gov.decide(snap, nowMs).ifPresent(kbps -> {
+            if (kbps == enc.videoKbps()) return;
+            LOGGER.info("[DungeonTrain] live quality {} -> {} kbit/s (upload {} kbit/s, busy {}% of the time over {} segment(s))",
+                enc.videoKbps(), kbps, snap.throughputKbps(), Math.round(snap.utilisation() * 100), snap.samples());
+            restartAtBitrate(kbps);
+        });
+    }
+
+    /**
+     * Swaps the encoder for one at {@code kbps}, in the same session: the new one carries on the old
+     * one's playlist, segment numbers and clock ({@link LiveEncoder.Resume}), so viewers, the relay's
+     * renditions and Twitch's copy see a discontinuity, not a new stream. The uploader is held while the
+     * old one writes its ENDLIST, which is taken out again before anyone sees it. Sound needs its own
+     * pump again (one ffmpeg connection each), opened back on the render thread.
+     */
+    private void restartAtBitrate(int kbps) {
+        LiveUploader up = uploader;
+        var ffmpeg = FfmpegSupport.get();
+        LiveFrameGrabber grab = grabber;
+        Path d = dir;
+        LiveEncoder old = encoder;
+        LiveAudioPump snd = audio;
+        Claim c = claim;
+        if (up == null || ffmpeg == null || grab == null || d == null || old == null || c == null) return;
+        Minecraft mc = Minecraft.getInstance();
+        int gen = generation;
+        int from = old.videoKbps();
+        int fps = LiveFeedClientConfig.captureFps();
+        boolean save = old.saveBandwidth();
+        LiveEncoder.Cadence cadence = cadenceOf(c);
+        switching = true;
+        encoder = null;
+        audio = null;
+        up.hold();
+        double base = tsOffsetSeconds;
+        CompletableFuture.supplyAsync(() -> {
+            if (snd != null) snd.close();
+            old.close();
+            LivePlaylist.dropEndlist(d.resolve(LivePlaylist.FILE_NAME));
+            up.release();
+            return base + old.secondsWritten();
+        }, STARTER).whenCompleteAsync((offset, err) -> {
+            if (gen != generation || state != State.STREAMING) return;
+            if (err != null) {
+                restartFailed(err);
+                return;
+            }
+            LiveAudioPump pump = snd != null && soundAllowedByMods(false) ? LiveAudioPump.open(true) : null;
+            int port = pump == null ? 0 : pump.port();
+            CompletableFuture.supplyAsync(() -> spawnEncoder(ffmpeg, grab, d, fps, kbps, cadence, port, save,
+                    new LiveEncoder.Resume(offset)), STARTER)
+                .whenCompleteAsync((enc, err2) -> adoptSwitched(gen, enc, err2, pump, offset, from, fps), mc);
+        }, mc);
+    }
+
+    /** Render thread: the encoder a bitrate switch spawned is up (or failed). */
+    private void adoptSwitched(int gen, @Nullable LiveEncoder enc, @Nullable Throwable err, @Nullable LiveAudioPump pump,
+                               double offset, int fromKbps, int fps) {
+        if (gen != generation || state != State.STREAMING) {
+            if (enc != null) closeEncoderAsync(enc);
+            if (pump != null) pump.close();
+            return;
+        }
+        if (err != null || enc == null) {
+            if (pump != null) pump.close();
+            restartFailed(err);
+            return;
+        }
+        tsOffsetSeconds = offset;
+        encoder = enc;
+        audio = pump;
+        if (pump != null) pump.start(enc::framesWritten, fps);
+        if (health != null) health.restart();
+        switching = false;
+        if (enc.videoKbps() < fromKbps && !toldLowered) {
+            toldLowered = true;
+            say(Component.translatable("chat.dungeontrain.live.quality_lowered").withStyle(ChatFormatting.GRAY));
+        }
+    }
+
+    private void restartFailed(@Nullable Throwable err) {
+        LOGGER.error("[DungeonTrain] live encoder could not restart at a new bitrate", err);
+        switching = false;
+        stop(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED), LiveStreamEndedToast.Reason.FAILED);
+        tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
+    }
+
+    /** Stream over: remember the upload speed it measured, so the next one starts at a bitrate it carries. */
+    private void learnUploadSpeed() {
+        LiveUploadHealth h = health;
+        health = null;
+        governor = null;
+        switching = false;
+        if (h == null || !LiveFeedClientConfig.adaptiveQuality()) return;
+        int measured = h.sustainedKbps();
+        if (measured <= 0) return;
+        int before = LiveFeedClientConfig.learnedUploadKbps();
+        int learned = before > 0 ? (before + measured) / 2 : measured;
+        LiveFeedClientConfig.setLearnedUploadKbps(learned);
+        LOGGER.info("[DungeonTrain] live quality: this stream's upload measured {} kbit/s; remembered {} kbit/s", measured, learned);
     }
 
     /** How often a stream with sound re-checks the loaded mods against the approved list. */
@@ -825,6 +981,7 @@ public final class LiveStreamController {
         LOGGER.info("[DungeonTrain] live stream stopping ({}; {} segment(s) uploaded)", clean ? "clean" : "cut off",
             uploader == null ? 0 : uploader.segmentsUploaded());
         state = State.STOPPING;
+        learnUploadSpeed();
         teardown(clean, deadlineMs, ended, life);
         state = State.IDLE;
         if (why != null) say(why);
@@ -979,11 +1136,12 @@ public final class LiveStreamController {
     }
 
     /**
-     * The Stream chat switch as it applies to this player — always off in Kid mode, and off while a
-     * Discord/Twitch link code may be on the HUD ({@link LinkCodeGuard}).
+     * The Stream chat switch as it applies to this player — always off in Kid mode or with Live chat off,
+     * and off while a Discord/Twitch link code may be on the HUD ({@link LinkCodeGuard}).
      */
     public static boolean streamChatShown() {
-        return StreamCapture.chatShown(LiveFeedClientConfig.streamChat(), ClientDisplayConfig.getContentMode().isKid())
+        return StreamCapture.chatShown(LiveFeedClientConfig.streamChat(), LiveFeedClientConfig.liveChat(),
+                ClientDisplayConfig.getContentMode().isKid())
             && !LinkCodeGuard.onHud();
     }
 

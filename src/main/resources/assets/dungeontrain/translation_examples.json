@@ -1080,6 +1080,24 @@
       ]
     }
   },
+  "chat.dungeontrain.live.muted": {
+    "1": {
+      "label": "how long the chat mute still has to run",
+      "examples": [
+        "15 minutes",
+        "1 day"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.muted_reminder": {
+    "1": {
+      "label": "how long the chat mute still has to run",
+      "examples": [
+        "15 minutes",
+        "1 day"
+      ]
+    }
+  },
   "command.dungeontrain.live_appeal.no_such_line": {
     "1": {
       "label": "how many lines there are to pick from",
@@ -1122,6 +1140,16 @@
   "chat.dungeontrain.familiar_photo.tributed.3": {
     "1": {
       "label": "the player who paid Tribute to the photo",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    }
+  },
+  "jade.dungeontrain.photo_frame.photographer": {
+    "1": {
+      "label": "the player who took the photo in the frame",
       "examples": [
         "Steve",
         "Alex",
@@ -7078,6 +7106,15 @@
       "examples": [
         "treasure",
         "kitchen"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.container.vault_key": {
+    "1": {
+      "label": "the name of the key item that unlocks the vault",
+      "examples": [
+        "Trial Key",
+        "Ominous Trial Key"
       ]
     }
   },
@@ -15799,6 +15836,50 @@
       ]
     }
   },
+  "chat.dungeontrain.live_chat.translation": {
+    "1": {
+      "label": "the chat line's translation into the reader's language, as typed by the relay",
+      "examples": [
+        "the creeper got me again"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_chat.translation.named": {
+    "1": {
+      "label": "the name of the player or viewer who wrote the line",
+      "examples": [
+        "Alice"
+      ]
+    },
+    "2": {
+      "label": "the chat line's translation into the reader's language",
+      "examples": [
+        "the creeper got me again"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_chat.translation.original": {
+    "1": {
+      "label": "the line as it was typed, in its own language",
+      "examples": [
+        "苦力怕又炸了我一次"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_chat.translation.on": {
+    "1": {
+      "label": "the reader's language, named in itself",
+      "examples": [
+        "Deutsch"
+      ]
+    },
+    "2": {
+      "label": "the clickable settings path, already translated (chat.dungeontrain.live_chat.translation.path)",
+      "examples": [
+        "Options / Dungeon Train / Stream / Chat translations"
+      ]
+    }
+  },
   "chat.dungeontrain.live_chat.restart.countdown": {
     "1": {
       "label": "the first countdown number before the restart",
@@ -15819,6 +15900,42 @@
   "chat.dungeontrain.live_gift.offered": {
     "1": {
       "label": "the TV viewer's Minecraft player name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.offer_eye.not_watching": {
+    "1": {
+      "label": "the TV viewer's Minecraft player name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.offer_eye.already_offered": {
+    "1": {
+      "label": "the TV viewer's Minecraft player name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.offer_eye.offered_all": {
+    "1": {
+      "label": "how many TV viewers were offered the Live Eye",
+      "examples": [
+        "2",
+        "7"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_gift.offer_all": {
+    "1": {
+      "label": "the streamer's Minecraft player name",
       "examples": [
         "Steve",
         "Alex_42"
@@ -17254,6 +17371,108 @@
       ]
     }
   },
+  "gui.dungeontrain.rewards.status.on_for_seconds.one": {
+    "1": {
+      "label": "how many seconds the reward has left (1)",
+      "examples": [
+        "1"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_for_seconds.other": {
+    "1": {
+      "label": "how many seconds the reward has left",
+      "examples": [
+        "42",
+        "5"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_for_minutes.one": {
+    "1": {
+      "label": "how many minutes the reward has left (1)",
+      "examples": [
+        "1"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_for_minutes.other": {
+    "1": {
+      "label": "how many minutes the reward has left",
+      "examples": [
+        "35",
+        "5"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_for_hours.one": {
+    "1": {
+      "label": "how many hours the reward has left (1)",
+      "examples": [
+        "1"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_for_hours.other": {
+    "1": {
+      "label": "how many hours the reward has left",
+      "examples": [
+        "11",
+        "5"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_until_tomorrow": {
+    "1": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
   "gui.dungeontrain.rewards.give.month": {
     "1": {
       "label": "a month name, short or full",
@@ -17301,6 +17520,49 @@
       "examples": [
         "6",
         "4"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.viewer_died": {
+    "1": {
+      "label": "the dead player's death message, as vanilla words it",
+      "examples": [
+        "Steve was slain by Zombie",
+        "Alex fell from a high place"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_room.now": {
+    "1": {
+      "label": "which of the two live streams: 1 or 2",
+      "examples": [
+        "1",
+        "2"
+      ]
+    },
+    "2": {
+      "label": "the Minecraft player name of that stream's streamer",
+      "examples": [
+        "Alice",
+        "Bo"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_room.now_unnamed": {
+    "1": {
+      "label": "which of the two live streams: 1 or 2",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.live_room.stream": {
+    "1": {
+      "label": "which of the two live streams: 1 or 2",
+      "examples": [
+        "1",
+        "2"
       ]
     }
   }

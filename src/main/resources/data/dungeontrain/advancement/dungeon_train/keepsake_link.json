@@ -1,0 +1,28 @@
+{
+  "parent": "dungeontrain:dungeon_train/memory_lane_link",
+  "display": {
+    "icon": {
+      "id": "exposure:photograph"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.keepsake.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.keepsake.description"
+    },
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "mirrored": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "mirrored"
+    ]
+  ]
+}

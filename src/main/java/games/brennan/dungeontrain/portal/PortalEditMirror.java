@@ -98,6 +98,9 @@ public final class PortalEditMirror {
         int[] local = entry.localOfTwin(pos);
         if (local == null) return false;
 
+        // Before the mirror, as on the carriage side: a side wall broken from the room severs too.
+        PortalSever.onTwinBlockChanged(level, entry, local, newState, pos);
+
         BlockPos target = entry.plotPosOf(local);
 
         MIRRORING.set(true);

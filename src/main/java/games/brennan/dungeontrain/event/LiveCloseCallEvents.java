@@ -37,7 +37,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>Fed by {@code AchievementEvents#notifyRunDistance} on every boarded scan; {@link CloseCallPace}
  * keeps one reading a minute. Nothing is sent while the player is AFK, is the one streaming, could
- * not take a Live Eye anyway, or nobody else is on air. Each advancement alerts at most twice a life,
+ * not take a Live Eye anyway, or whether anyone is on air can't be told. When nobody at all is on air
+ * ({@link ServerLiveStatus#isNobodyLive}) there is no streamer to ask, so for The Challenge the train
+ * drops the Live Eye itself ({@link LiveEyeTrainHandout}); the other targets wait for a streamer. Each advancement alerts at most twice a life,
  * at 20 and at 5 minutes ({@link CloseCallRules.Stage}, recorded in
  * {@link ModDataAttachments#CLOSE_CALLS_SENT_THIS_LIFE}).</p>
  */
@@ -60,26 +62,82 @@ public final class LiveCloseCallEvents {
         CloseCallPace.Sample reading = new CloseCallPace.Sample(now, AchievementEvents.effectiveTravelled(run), runMeters);
         CloseCallPace next = pace.with(reading);
         PACE.put(uuid, next);
-        if (mayAlert(player)) evaluate(player, next, reading);
+        Route route = route(player);
+        if (route == Route.TRAIN_FOR_CHALLENGE) {
+            evaluate(player, next, reading, Route.TRAIN);
+            evaluate(player, next, reading, Route.STREAMER, true);
+        } else if (route != null) {
+            evaluate(player, next, reading, route);
+        }
     }
 
-    private static boolean mayAlert(ServerPlayer player) {
+    /**
+     * Who hands a close-call player the Live Eye: the streamer on air, or the train when nobody is.
+     * {@code TRAIN_FOR_CHALLENGE}: a streamer is on air but a second channel is free, so the train hands
+     * out The Challenge's eye and the streamer is asked for the rest.
+     */
+    enum Route { STREAMER, TRAIN, TRAIN_FOR_CHALLENGE }
+
+    /** Pure form for the tests: null when nobody may be asked to offer one. */
+    static Route route(boolean blocked, boolean someoneElseLive, boolean nobodyLive) {
+        return route(blocked, someoneElseLive, nobodyLive, false);
+    }
+
+    /**
+     * As above, plus {@code secondFree}: the Two Streams reward has its second channel free
+     * ({@link ServerLiveStatus#isSecondChannelFree}). Nobody has to hand over their Live Eye then, so
+     * The Challenge goes to the train as if nobody were live ({@link Route#TRAIN_FOR_CHALLENGE}); the
+     * other targets still ask the streamer.
+     */
+    static Route route(boolean blocked, boolean someoneElseLive, boolean nobodyLive, boolean secondFree) {
+        if (blocked) return null;
+        if (someoneElseLive) return secondFree ? Route.TRAIN_FOR_CHALLENGE : Route.STREAMER;
+        return nobodyLive || secondFree ? Route.TRAIN : null;
+    }
+
+    private static Route route(ServerPlayer player) {
         MinecraftServer server = player.server;
-        if (PlayerActivityTracker.isAfk(player)) return false;
-        if (player.getUUID().equals(LiveStreamers.get(server))) return false;
-        if (!ServerLiveStatus.isSomeoneElseLive(server, player)) return false;
-        return LiveGiftServer.refusalFor(player) == null;
+        boolean blocked = PlayerActivityTracker.isAfk(player)
+            || LiveStreamers.isStreamer(server, player.getUUID())
+            || LiveGiftServer.refusalFor(player) != null;
+        if (blocked) return null;
+        return route(false, ServerLiveStatus.isSomeoneElseLive(server, player), ServerLiveStatus.isNobodyLive(server),
+            ServerLiveStatus.isSecondChannelFree(server));
     }
 
-    private static void evaluate(ServerPlayer player, CloseCallPace pace, CloseCallPace.Sample reading) {
+    /**
+     * Whether {@code route} handles a close call on a target the train owes an eye for ({@code challenge}):
+     * the train takes only The Challenge; the streamer takes every target, less The Challenge when the
+     * train has it ({@code trainHasChallenge}). Pure, for the tests.
+     */
+    static boolean takes(Route route, boolean trainHasChallenge, boolean challenge) {
+        if (route == Route.TRAIN) return challenge;
+        return !(trainHasChallenge && challenge);
+    }
+
+    private static void evaluate(ServerPlayer player, CloseCallPace pace, CloseCallPace.Sample reading, Route route) {
+        evaluate(player, pace, reading, route, false);
+    }
+
+    /** {@code trainHasChallenge}: the train hands out The Challenge's eye, so the streamer is not told of it. */
+    private static void evaluate(ServerPlayer player, CloseCallPace pace, CloseCallPace.Sample reading, Route route,
+                                 boolean trainHasChallenge) {
         List<String> sent = player.getData(ModDataAttachments.CLOSE_CALLS_SENT_THIS_LIFE.get());
-        Found found = CloseCallRules.find(pace, reading, t -> eligible(player, t), new HashSet<>(sent));
+        // The train only helps with The Challenge: the other targets stay unsent for a streamer later this life.
+        Found found = CloseCallRules.find(pace, reading,
+            t -> eligible(player, t) && takes(route, trainHasChallenge, LiveEyeTrainHandout.owesEye(t)), new HashSet<>(sent));
         if (!found.any()) return;
         List<String> marked = new ArrayList<>(sent);
         marked.addAll(found.keys());
         player.setData(ModDataAttachments.CLOSE_CALLS_SENT_THIS_LIFE.get(), List.copyOf(marked));
         int minutes = CloseCallRules.minutes(found.etaMs());
         String name = player.getGameProfile().getName();
+        if (route == Route.TRAIN) {
+            LOGGER.info("[DungeonTrain] Close call ({}): {} is ~{} min from {}; nobody is live or a second channel is free, the train hands out the Live Eye",
+                found.stage(), name, minutes, found.close().get(0).id());
+            LiveEyeTrainHandout.onCloseCall(player);
+            return;
+        }
         LOGGER.info("[DungeonTrain] Close call ({}): {} is ~{} min from {}; telling the stream",
             found.stage(), name, minutes, found.close().get(0).id());
         MinecraftServer server = player.server;

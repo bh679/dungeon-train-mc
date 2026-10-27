@@ -1,17 +1,24 @@
 package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.compat.vista.TvBlocks;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.player.DifficultyPartition;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.LeaseSnapshots;
+import games.brennan.dungeontrain.world.DifficultyLootClear;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderGetter;
 import net.minecraft.core.Vec3i;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.NbtUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.storage.LevelResource;
 import org.slf4j.Logger;
 
@@ -21,8 +28,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -50,6 +59,17 @@ import java.util.stream.Stream;
  * (as {@link PortalRegistry}'s per-pair stage does), so the store is never cleared wholesale; it is
  * bounded instead to the {@link #MAX_REMEMBERED} most recently written rooms — a room being farmed is
  * always a recent one.</p>
+ *
+ * <h2>Copies</h2>
+ * <p>A room that tiles ({@link PortalRoomMode#tiles}) stands as a grid of copies around the base room,
+ * and each copy is stamped from the template and erased again as it slides out of the window — or as
+ * the room drains once its last player has left. Only the base box went into the memory above, so a
+ * player who mined a copy, walked out and came back found it whole again. A copy a player has stood in
+ * ({@link #markTileTouched}) is therefore captured when {@code PortalRoomTiler} erases it and laid back
+ * the next time that tile is stamped. Tiles are counted from the base room, so a copy keeps its identity
+ * across a relocation. They live under {@code tiles/} beside the rooms with a cap of their own
+ * ({@link #MAX_REMEMBERED_TILES}), so a wide walk through copies never pushes a base room out. A tile
+ * nobody has reached is still a fresh template copy: an endless room is endless by design.</p>
  */
 public final class PortalRoomMemory {
 
@@ -58,19 +78,34 @@ public final class PortalRoomMemory {
     /** How many rooms a world remembers before the least recently written are forgotten. */
     public static final int MAX_REMEMBERED = 256;
 
+    /** How many room copies a world remembers, separately from {@link #MAX_REMEMBERED}. */
+    public static final int MAX_REMEMBERED_TILES = 1024;
+
     private static final String SUBDIR = "dungeontrain/portal-room-memory";
+    private static final String TILES_SUBDIR = "tiles";
     private static final String EXT = ".nbt";
     private static final String TAG_ROOM = "room";
     private static final String TAG_SNAPSHOT = "snap";
+    private static final String TAG_DIFFICULTY = "difficulty";
 
     /** Where a touched pair's room stands, so a shutdown can capture every one still standing. */
     public record Touch(ServerLevel level, CarriageDims dims) {}
 
-    /** A remembered room: the room it was rolled as, and its captured snapshot. */
-    public record Entry(String roomName, CompoundTag snapshot) {}
+    /**
+     * A remembered room: the room it was rolled as, its captured snapshot, and the difficulty profile it
+     * was captured under ({@code ""} for rooms remembered before that was recorded).
+     */
+    public record Entry(String roomName, CompoundTag snapshot, String difficulty) {
+        public Entry(String roomName, CompoundTag snapshot) {
+            this(roomName, snapshot, "");
+        }
+    }
 
     /** Pairs a player has stood inside this session — the rooms worth capturing before an erase. */
     private static final Map<Integer, Touch> TOUCHED = new HashMap<>();
+
+    /** Copies (never {@link PortalRoomTiling.Tile#BASE}) a player has stood in, per pair, this session. */
+    private static final Map<Integer, Set<PortalRoomTiling.Tile>> TOUCHED_TILES = new HashMap<>();
 
     private PortalRoomMemory() {}
 
@@ -90,9 +125,24 @@ public final class PortalRoomMemory {
         return Map.copyOf(TOUCHED);
     }
 
+    /**
+     * A player is standing in copy {@code tile} of pair {@code pairKey}'s room. The base tile is the
+     * pair's own memory ({@link #markTouched}) and is ignored here.
+     */
+    public static void markTileTouched(int pairKey, PortalRoomTiling.Tile tile) {
+        if (PortalRoomTiling.Tile.BASE.equals(tile)) return;
+        TOUCHED_TILES.computeIfAbsent(pairKey, k -> new HashSet<>()).add(tile);
+    }
+
+    public static boolean isTileTouched(int pairKey, PortalRoomTiling.Tile tile) {
+        Set<PortalRoomTiling.Tile> tiles = TOUCHED_TILES.get(pairKey);
+        return tiles != null && tiles.contains(tile);
+    }
+
     /** The server stopped: the next world's pair keys mean different rooms. The files stay. */
     public static void clearSession() {
         TOUCHED.clear();
+        TOUCHED_TILES.clear();
     }
 
     // ---- capture / remember / recall -----------------------------------------
@@ -115,15 +165,9 @@ public final class PortalRoomMemory {
     /** Remember {@code snapshot} as pair {@code pairKey}'s room, on disk, then trim the store. */
     public static void remember(ServerLevel level, int pairKey, String roomName, CompoundTag snapshot) {
         Path file = fileFor(level, pairKey);
-        try {
-            Files.createDirectories(file.getParent());
-            NbtIo.writeCompressed(encode(new Entry(roomName, snapshot)), file);
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Could not remember portal pair {}'s room at {}: {}",
-                pairKey, file, e.toString());
-            return;
+        if (write(file, new Entry(roomName, snapshot, DifficultyPartition.keyFor(level)), "portal pair " + pairKey + "'s room")) {
+            prune(file.getParent(), MAX_REMEMBERED);
         }
-        prune(file.getParent());
     }
 
     /**
@@ -131,31 +175,88 @@ public final class PortalRoomMemory {
      * {@code size}; null otherwise. A stale entry (another room, another size) is deleted on the way.
      */
     public static CompoundTag recall(ServerLevel level, int pairKey, String roomName, Vec3i size) {
-        Path file = fileFor(level, pairKey);
+        return read(level, fileFor(level, pairKey), roomName, size, "portal pair " + pairKey + "'s room");
+    }
+
+    /** Drop pair {@code pairKey}'s remembered room, if any. */
+    public static void forget(ServerLevel level, int pairKey) {
+        delete(fileFor(level, pairKey), "portal pair " + pairKey + "'s room");
+    }
+
+    /** Remember {@code snapshot} as copy {@code tile} of pair {@code pairKey}'s room, then trim the copies. */
+    public static void rememberTile(ServerLevel level, int pairKey, PortalRoomTiling.Tile tile,
+                                    String roomName, CompoundTag snapshot) {
+        Path file = tileFileFor(level, pairKey, tile);
+        if (write(file, new Entry(roomName, snapshot, DifficultyPartition.keyFor(level)), describeTile(pairKey, tile))) {
+            prune(file.getParent(), MAX_REMEMBERED_TILES);
+        }
+    }
+
+    /** As {@link #recall}, for copy {@code tile} of pair {@code pairKey}'s room. */
+    public static CompoundTag recallTile(ServerLevel level, int pairKey, PortalRoomTiling.Tile tile,
+                                         String roomName, Vec3i size) {
+        return read(level, tileFileFor(level, pairKey, tile), roomName, size, describeTile(pairKey, tile));
+    }
+
+    private static String describeTile(int pairKey, PortalRoomTiling.Tile tile) {
+        return "portal pair " + pairKey + "'s copy " + tile.x() + "," + tile.z();
+    }
+
+    private static boolean write(Path file, Entry entry, String what) {
+        try {
+            Files.createDirectories(file.getParent());
+            NbtIo.writeCompressed(encode(entry), file);
+            return true;
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Could not remember {} at {}: {}", what, file, e.toString());
+            return false;
+        }
+    }
+
+    private static CompoundTag read(ServerLevel level, Path file, String roomName, Vec3i size, String what) {
         if (!Files.isRegularFile(file)) return null;
         Entry entry;
         try {
             entry = decode(NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap()));
         } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Could not read portal pair {}'s remembered room at {} — "
-                + "stamping its template: {}", pairKey, file, e.toString());
+            LOGGER.warn("[DungeonTrain] Could not read {} remembered at {} — stamping its template: {}",
+                what, file, e.toString());
             return null;
         }
         if (!fits(entry, roomName, size)) {
-            LOGGER.info("[DungeonTrain] Portal pair {}'s remembered room no longer fits ('{}' vs '{}' "
-                + "at {}) — forgetting it", pairKey, entry == null ? "?" : entry.roomName(), roomName, size);
-            forget(level, pairKey);
+            LOGGER.info("[DungeonTrain] {} as remembered no longer fits ('{}' vs '{}' at {}) — forgetting it",
+                what, entry == null ? "?" : entry.roomName(), roomName, size);
+            delete(file, what);
             return null;
         }
-        return entry.snapshot();
+        return forCurrentDifficulty(level, entry, what);
     }
 
-    /** Drop pair {@code pairKey}'s remembered room, if any. */
-    public static void forget(ServerLevel level, int pairKey) {
+    /**
+     * The snapshot to lay, minus the loot it held if it was captured under another difficulty: a room
+     * looted on one difficulty and stocked by the player must not hand that stock to the next
+     * ({@code DifficultyWorldLootEvents}). Untouched rolled containers keep their loot.
+     */
+    private static CompoundTag forCurrentDifficulty(ServerLevel level, Entry entry, String what) {
+        String current = DifficultyPartition.keyFor(level);
+        if (!DungeonTrainConfig.getDifficultyIsolatedStash()
+                || !DifficultyLootClear.isStale(entry.difficulty(), current)) {
+            return entry.snapshot();
+        }
+        CompoundTag snapshot = entry.snapshot().copy();
+        HolderGetter<Block> blocks = level.holderLookup(Registries.BLOCK);
+        DifficultyLootClear.scrubSnapshot(snapshot, level.registryAccess(),
+            stateTag -> TvBlocks.isTelevision(NbtUtils.readBlockState(blocks, stateTag)));
+        LOGGER.info("[DungeonTrain] {} was remembered on {}; its loot was cleared for {}",
+            what, entry.difficulty(), current);
+        return snapshot;
+    }
+
+    private static void delete(Path file, String what) {
         try {
-            Files.deleteIfExists(fileFor(level, pairKey));
+            Files.deleteIfExists(file);
         } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Could not forget portal pair {}'s room: {}", pairKey, e.toString());
+            LOGGER.warn("[DungeonTrain] Could not forget {}: {}", what, e.toString());
         }
     }
 
@@ -172,13 +273,14 @@ public final class PortalRoomMemory {
         CompoundTag tag = new CompoundTag();
         tag.putString(TAG_ROOM, entry.roomName());
         tag.put(TAG_SNAPSHOT, entry.snapshot());
+        if (!entry.difficulty().isEmpty()) tag.putString(TAG_DIFFICULTY, entry.difficulty());
         return tag;
     }
 
     /** Null for a tag that does not hold an entry. */
     static Entry decode(CompoundTag tag) {
         if (tag == null || !tag.contains(TAG_ROOM) || !tag.contains(TAG_SNAPSHOT)) return null;
-        return new Entry(tag.getString(TAG_ROOM), tag.getCompound(TAG_SNAPSHOT));
+        return new Entry(tag.getString(TAG_ROOM), tag.getCompound(TAG_SNAPSHOT), tag.getString(TAG_DIFFICULTY));
     }
 
     /** The files to delete so at most {@code keep} remain: the oldest by write time. */
@@ -189,9 +291,15 @@ public final class PortalRoomMemory {
         return List.copyOf(oldestFirst.subList(0, writtenAt.size() - keep));
     }
 
+    /** The file a copy is kept in, inside its dimension's {@code tiles/} folder. */
+    static String tileFileName(int pairKey, PortalRoomTiling.Tile tile) {
+        return pairKey + "_" + tile.x() + "_" + tile.z() + EXT;
+    }
+
     // ---- disk ---------------------------------------------------------------
 
-    private static void prune(Path dir) {
+    /** Keeps the newest {@code keep} files directly in {@code dir}; subfolders are not counted. */
+    private static void prune(Path dir, int keep) {
         Map<Path, Long> writtenAt = new HashMap<>();
         try (Stream<Path> files = Files.list(dir)) {
             files.filter(p -> p.toString().endsWith(EXT)).forEach(p -> {
@@ -205,7 +313,7 @@ public final class PortalRoomMemory {
             LOGGER.warn("[DungeonTrain] Could not list remembered portal rooms in {}: {}", dir, e.toString());
             return;
         }
-        for (Path p : toPrune(writtenAt, MAX_REMEMBERED)) {
+        for (Path p : toPrune(writtenAt, keep)) {
             try {
                 Files.deleteIfExists(p);
             } catch (IOException e) {
@@ -215,10 +323,18 @@ public final class PortalRoomMemory {
     }
 
     private static Path fileFor(ServerLevel level, int pairKey) {
+        return dimDir(level).resolve(pairKey + EXT);
+    }
+
+    private static Path tileFileFor(ServerLevel level, int pairKey, PortalRoomTiling.Tile tile) {
+        return dimDir(level).resolve(TILES_SUBDIR).resolve(tileFileName(pairKey, tile));
+    }
+
+    private static Path dimDir(ServerLevel level) {
         Path worldRoot = level.getServer().getWorldPath(LevelResource.ROOT);
         ResourceLocation dim = level.dimension().location();
         // Colons are reserved on Windows.
         String dimSeg = dim.getNamespace() + "__" + dim.getPath();
-        return worldRoot.resolve(SUBDIR).resolve(dimSeg).resolve(pairKey + EXT);
+        return worldRoot.resolve(SUBDIR).resolve(dimSeg);
     }
 }

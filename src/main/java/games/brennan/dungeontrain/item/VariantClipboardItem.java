@@ -146,6 +146,8 @@ public final class VariantClipboardItem extends Item {
     /** Pool sub-keys, kept short for compact NBT. */
     private static final String NBT_POOL_FILL_MIN = "fmin";
     private static final String NBT_POOL_FILL_MAX = "fmax";
+    /** A vault's unlock key; absent means the default trial key. */
+    private static final String NBT_POOL_VAULT_KEY = "vkey";
     private static final String NBT_POOL_ENTRIES = "e";
     private static final String NBT_POOL_ENTRY_ID = "id";
     private static final String NBT_POOL_ENTRY_COUNT = "c";
@@ -305,14 +307,14 @@ public final class VariantClipboardItem extends Item {
             }
         }
 
-        // A pasted conditional cell reads the group it now touches, not the one it was copied beside.
-        games.brennan.dungeontrain.editor.VariantConditionRetarget.around(plot, localPos);
+        // A pasted cell keeps the condition targets it was copied with: a group prefab means what
+        // it said where it was made, so nothing here retargets it (or its neighbours).
 
         // Mirror the pasted variant pool (+ reflected base block) to the
         // symmetric cells when the plot's "V" toggle is on — parity with the
         // shift-click add and break paths, which otherwise leaves a paste
         // looking like a plain mirrored block on the far side.
-        EditorVariantMirror.mirrorEditLive(serverLevel, plot, localPos, states);
+        EditorVariantMirror.mirrorEditLive(serverLevel, plot, localPos, states, false);
 
         // Refresh the all-faces lock-id overlay so the new badge shows
         // immediately without waiting for the next overlay tick.
@@ -492,6 +494,9 @@ public final class VariantClipboardItem extends Item {
         if (pool.fillMax() != ContainerContentsPool.FILL_ALL) {
             tag.putInt(NBT_POOL_FILL_MAX, pool.fillMax());
         }
+        if (!pool.isDefaultVaultKey()) {
+            tag.putString(NBT_POOL_VAULT_KEY, pool.vaultKey());
+        }
         ListTag entries = new ListTag();
         for (ContainerContentsEntry e : pool.entries()) {
             CompoundTag et = new CompoundTag();
@@ -521,6 +526,8 @@ public final class VariantClipboardItem extends Item {
             ? pt.getInt(NBT_POOL_FILL_MIN) : 0;
         int fillMax = pt.contains(NBT_POOL_FILL_MAX, Tag.TAG_INT)
             ? pt.getInt(NBT_POOL_FILL_MAX) : ContainerContentsPool.FILL_ALL;
+        String vaultKey = pt.contains(NBT_POOL_VAULT_KEY, Tag.TAG_STRING)
+            ? pt.getString(NBT_POOL_VAULT_KEY) : ContainerContentsPool.DEFAULT_VAULT_KEY;
         List<ContainerContentsEntry> entries = new ArrayList<>();
         if (pt.contains(NBT_POOL_ENTRIES, Tag.TAG_LIST)) {
             ListTag list = pt.getList(NBT_POOL_ENTRIES, Tag.TAG_COMPOUND);
@@ -547,7 +554,7 @@ public final class VariantClipboardItem extends Item {
                     .withBook(book));
             }
         }
-        return new ContainerContentsPool(entries, fillMin, fillMax);
+        return new ContainerContentsPool(entries, fillMin, fillMax, vaultKey);
     }
 
     /** Decode the variant list from an ItemStack's NBT. Empty list when malformed. */

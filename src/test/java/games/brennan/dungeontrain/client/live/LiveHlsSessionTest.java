@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -194,5 +195,31 @@ class LiveHlsSessionTest {
 
         for (int i = 0; i < 50 && session.decoding(); i++) Thread.sleep(10);
         assertFalse(session.decoding(), "the interrupt ends the reader instead of leaving it asleep");
+    }
+
+    @Test
+    void everyDecoderKeepsTheStreamsShapeAndSendsItsSize() {
+        String cover = "scale=640:360:force_original_aspect_ratio=increase";
+        assertEquals(cover, LiveHlsSession.cover(640, 360));
+        List<String> live = List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, true));
+        assertEquals(cover, live.get(live.indexOf("-vf") + 1), "scaled in its own shape, not stretched or cropped: " + live);
+        List<String> replay = List.of(LiveHlsSession.args("https://x/seg.ts", 640, 360, true, true));
+        assertTrue(replay.get(replay.indexOf("-vf") + 1).startsWith(cover + ","), "replay too: " + replay);
+        List<String> local = List.of(LiveHlsSession.localArgs("/tmp/clip.mp4", 640, 360));
+        assertEquals(cover, local.get(local.indexOf("-vf") + 1), "the local loop too: " + local);
+        for (List<String> a : List.of(live, replay, local)) {
+            assertEquals(List.of("-f", "image2pipe", "-c:v", "pam", "-pix_fmt", "rgba", "-"), a.subList(a.size() - 7, a.size()),
+                "PAM frames carry their own size: " + a);
+        }
+    }
+
+    @Test
+    void aTvCropsTheCentreOfATallerOrWiderFrame() {
+        // A 4:3 frame (640×480) on a 16:9 screen (640×360): 60 rows off the top and bottom.
+        assertArrayEquals(new int[] {0, 60, 0, 0, 640, 360}, LiveHlsSession.centreOffsets(640, 480, 640, 360));
+        // A 21:9 frame (840×360): 100 columns off each side.
+        assertArrayEquals(new int[] {100, 0, 0, 0, 640, 360}, LiveHlsSession.centreOffsets(840, 360, 640, 360));
+        // A smaller frame sits centred.
+        assertArrayEquals(new int[] {0, 0, 10, 0, 620, 360}, LiveHlsSession.centreOffsets(620, 360, 640, 360));
     }
 }

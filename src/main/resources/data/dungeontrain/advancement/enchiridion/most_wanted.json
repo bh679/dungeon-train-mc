@@ -315,6 +315,12 @@
       "conditions": {
         "subject": "entity:minecraft:creaking"
       }
+    },
+    "piglinproliferation:piglin_alchemist": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:piglinproliferation:piglin_alchemist"
+      }
     }
   },
   "requirements": [
@@ -467,6 +473,9 @@
     ],
     [
       "minecraft:creaking"
+    ],
+    [
+      "piglinproliferation:piglin_alchemist"
     ]
   ]
 }

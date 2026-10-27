@@ -5,6 +5,8 @@
   "discordpresence.consent.footnote": "Thay đổi bất cứ lúc nào trong cấu hình hoặc bằng /chatconnect on.",
   "discordpresence.consent.enable": "Bật",
   "discordpresence.consent.not_now": "Để sau",
+  "discordpresence.consent.toggle_on": "Bật",
+  "discordpresence.consent.toggle_off": "Tắt",
   "discordpresence.survey.give_feedback": "Gửi Phản hồi",
   "discordpresence.survey.title": "Phản hồi",
   "discordpresence.survey.comment": "Bình luận",

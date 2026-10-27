@@ -42,7 +42,8 @@ class CommunityRewardsTest {
                 on(LiveRewards.TWO_STREAMS, 20 * DAY, "A"),
                 on(LiveRewards.VOICE_ON_STREAM, 25 * DAY, "B"),
                 on(LiveRewards.HD_STREAMS, 15 * DAY, "C"),
-                on(LiveRewards.REPLAYS_KEPT, 10 * DAY, "D")));
+                on(LiveRewards.REPLAYS_KEPT, 10 * DAY, "D"),
+                on(LiveRewards.LIVE_TRANSLATION, 12 * DAY, "E")));
         // Quicker Streams ends soonest, but a month is already queued behind it: free on day 32.
         assertEquals(CommunityRewards.Reward.REPLAYS_KEPT, CommunityRewards.featured(state, NOW));
     }
@@ -53,6 +54,17 @@ class CommunityRewardsTest {
         assertEquals(NOW + 5 * DAY + 2 * CommunityRewards.MONTH_MS,
                 CommunityRewards.nextFreeMs(state, CommunityRewards.Reward.QUICKER_STREAMS, NOW));
         assertEquals(NOW, CommunityRewards.nextFreeMs(state, CommunityRewards.Reward.TWO_STREAMS, NOW));
+    }
+
+    @Test
+    void queuedGiftsStartOneTermApartAtThatRewardsLength() {
+        long until = NOW + 5 * DAY;
+        assertEquals(until, CommunityRewards.queuedStartMs(until, CommunityRewards.Reward.LIVE_TRANSLATION, 0));
+        // Every reward runs a month a gift today (Live Translations included): queued givers a month apart.
+        assertEquals(until + CommunityRewards.MONTH_MS,
+                CommunityRewards.queuedStartMs(until, CommunityRewards.Reward.LIVE_TRANSLATION, 1));
+        assertEquals(until + CommunityRewards.MONTH_MS,
+                CommunityRewards.queuedStartMs(until, CommunityRewards.Reward.QUICKER_STREAMS, 1));
     }
 
     @Test
@@ -67,6 +79,10 @@ class CommunityRewardsTest {
     void analyticsTargetsMatchTheRelayAllowlist() {
         assertEquals("reward_quicker_streams", CommunityRewards.Reward.QUICKER_STREAMS.analyticsTarget());
         assertEquals("reward_replays_kept", CommunityRewards.Reward.REPLAYS_KEPT.analyticsTarget());
+        assertEquals(CommunityRewards.Reward.LIVE_TRANSLATION, CommunityRewards.Reward.byTarget("reward_live_translation"));
+        assertEquals(90, CommunityRewards.Reward.LIVE_TRANSLATION.costAud());
+        assertEquals(1, CommunityRewards.Reward.LIVE_TRANSLATION.months());
+        assertEquals(1, CommunityRewards.Reward.QUICKER_STREAMS.months());
         assertEquals(CommunityRewards.Reward.HD_STREAMS, CommunityRewards.Reward.byTarget("reward_hd_streams"));
         assertNull(CommunityRewards.Reward.byTarget("donate_big_fan"));
     }
@@ -93,5 +109,12 @@ class CommunityRewardsTest {
         assertEquals(CommunityRewards.Reward.QUICKER_STREAMS, CommunityRewards.featured(LiveRewards.NONE, NOW, onlyQuicker));
         // None open yet: Brennan's whole order, as before.
         assertEquals(CommunityRewards.Reward.VOICE_ON_STREAM, CommunityRewards.featured(quickerOn, NOW, r -> false));
+    }
+
+    @Test
+    void liveTranslationQueuesOneMonthPerGiftBehindIt() {
+        LiveRewards state = new LiveRewards(List.of(on(LiveRewards.LIVE_TRANSLATION, 10 * DAY, "Moth", "Ash", "Wren")));
+        assertEquals(NOW + 10 * DAY + 2 * CommunityRewards.MONTH_MS,
+                CommunityRewards.nextFreeMs(state, CommunityRewards.Reward.LIVE_TRANSLATION, NOW));
     }
 }

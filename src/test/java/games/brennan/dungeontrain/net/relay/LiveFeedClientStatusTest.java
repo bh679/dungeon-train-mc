@@ -186,4 +186,62 @@ class LiveFeedClientStatusTest {
         assertEquals(0, r.status());
         assertTrue(r.error() instanceof IllegalArgumentException);
     }
+
+    @Test
+    void theSecondStreamIsParsedWithTheOuterViewerFiguresAndNeverNests() {
+        LiveFeedClient.Status s = parse("{\"ok\":true,\"live\":true,\"channel\":\"main\",\"session\":\"s1\",\"playlistUrl\":\"https://x/main/s1/live.m3u8\","
+            + "\"streamer\":\"Alice\",\"viewers\":7,\"cap\":100,\"slot\":true,"
+            + "\"second\":{\"live\":true,\"session\":\"s2\",\"playlistUrl\":\"https://x/main/s2/live.m3u8\",\"streamer\":\"Bob\","
+            + "\"second\":{\"live\":true,\"session\":\"s3\",\"playlistUrl\":\"https://x/main/s3/live.m3u8\"}}}");
+        assertTrue(s.live());
+        assertEquals("s1", s.session());
+        LiveFeedClient.Status second = s.second();
+        assertTrue(second != null && second.live());
+        assertEquals("s2", second.session());
+        assertEquals("Bob", second.streamer());
+        assertEquals("https://x/main/s2/live.m3u8", second.playlistUrl());
+        assertEquals(7, second.viewers(), "the room's figures are the outer body's");
+        assertTrue(second.slot());
+        assertNull(second.second(), "one level only");
+        assertEquals(second, s.secondOrThis());
+    }
+
+    @Test
+    void aMissingDarkOrBrokenSecondBlockReadsAsNoSecondStream() {
+        assertNull(parse("{\"ok\":true,\"live\":true,\"session\":\"s1\",\"playlistUrl\":\"https://x/main/s1/live.m3u8\"}").second(),
+            "an older relay sends none");
+        LiveFeedClient.Status dark = parse("{\"ok\":true,\"live\":true,\"session\":\"s1\",\"playlistUrl\":\"https://x/main/s1/live.m3u8\","
+            + "\"second\":{\"live\":false}}");
+        assertNull(dark.second());
+        assertEquals(dark, dark.secondOrThis(), "a TV on the second stream shows the first");
+        LiveFeedClient.Status junk = parse("{\"ok\":true,\"live\":true,\"session\":\"s1\",\"playlistUrl\":\"https://x/main/s1/live.m3u8\","
+            + "\"second\":{\"live\":true,\"session\":\"s2\",\"playlistUrl\":\"ftp://x/main/s2/live.m3u8\"}}");
+        assertNull(junk.second(), "a refused playlist is no stream");
+        assertNull(parse("{\"ok\":true,\"live\":true,\"session\":\"s1\",\"playlistUrl\":\"https://x/main/s1/live.m3u8\",\"second\":\"yes\"}").second());
+    }
+
+    @Test
+    void theStatusPathCountsAViewerOnTheSecondSlotOnlyWhenTheyHaveAnId() {
+        java.util.UUID id = java.util.UUID.fromString("01234567-89ab-cdef-0123-456789abcdef");
+        assertEquals("/live/status", LiveFeedClient.statusPath(null, null, null, false, true));
+        assertEquals("/live/status?viewer=" + id + "&slot=second", LiveFeedClient.statusPath(id, null, null, false, true));
+        assertEquals("/live/status?viewer=" + id, LiveFeedClient.statusPath(id, null, null, false, false));
+        LiveFeedClient.Life ranked = new LiveFeedClient.Life("", false, "0.1497.0");
+        assertEquals("/live/status?viewer=" + id + "&lb=1&slot=second&name=Dev&head=1",
+            LiveFeedClient.statusPath(id, ranked, "Dev", true, true));
+    }
+
+    @Test
+    void aClaimNamesItsChannelAndDefaultsToTheFirst() {
+        JsonObject body = JsonParser.parseString("{\"ok\":true,\"session\":\"s2\",\"token\":\"t\",\"playlistUrl\":\"https://x/main/s2/live.m3u8\",\"channel\":\"second\"}").getAsJsonObject();
+        LiveFeedClient.Claim c = LiveFeedClient.parseClaim(new LiveFeedClient.Result(200, body, null));
+        assertTrue(c != null && c.second());
+        assertEquals("second", c.channel());
+        JsonObject older = JsonParser.parseString("{\"ok\":true,\"session\":\"s1\",\"token\":\"t\",\"playlistUrl\":\"https://x/main/s1/live.m3u8\"}").getAsJsonObject();
+        LiveFeedClient.Claim m = LiveFeedClient.parseClaim(new LiveFeedClient.Result(200, older, null));
+        assertFalse(m == null || m.second());
+        assertEquals("main", m.channel());
+        JsonObject odd = JsonParser.parseString("{\"ok\":true,\"session\":\"s1\",\"token\":\"t\",\"playlistUrl\":\"https://x/main/s1/live.m3u8\",\"channel\":\"third\"}").getAsJsonObject();
+        assertEquals("main", LiveFeedClient.parseClaim(new LiveFeedClient.Result(200, odd, null)).channel(), "an unknown channel reads as the first");
+    }
 }

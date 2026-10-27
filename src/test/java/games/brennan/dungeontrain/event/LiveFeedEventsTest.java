@@ -31,13 +31,25 @@ final class LiveFeedEventsTest {
     }
 
     @Test
-    @DisplayName("a second START for the player already live (login, then the first-tick equip event) is ignored")
-    void alreadyStreamingSkipsTheSecondStart() {
-        UUID me = UUID.randomUUID();
-        assertTrue(LiveFeedEvents.alreadyStreaming(me, me));
-        assertTrue(LiveFeedEvents.alreadyStreaming(me, UUID.fromString(me.toString())));
-        assertFalse(LiveFeedEvents.alreadyStreaming(me, UUID.randomUUID()));
-        assertFalse(LiveFeedEvents.alreadyStreaming(me, null));
+    @DisplayName("a takeover demotes only the streamer the relay named; the other streamer here keeps going")
+    void takeoverDemotesOnlyTheNamedStreamer() {
+        UUID alice = UUID.randomUUID(), bob = UUID.randomUUID();
+        java.util.Map<UUID, String> two = new java.util.LinkedHashMap<>();
+        two.put(alice, "Alice");
+        two.put(bob, "Bob");
+        assertEquals(java.util.Set.of(bob), LiveFeedEvents.demoted(two, "Bob"));
+        assertEquals(java.util.Set.of(alice), LiveFeedEvents.demoted(two, "aLiCe"));
+    }
+
+    @Test
+    @DisplayName("no name (a free or second channel) or a name not streaming here demotes nobody")
+    void noNameDemotesNobody() {
+        UUID alice = UUID.randomUUID(), bob = UUID.randomUUID();
+        java.util.Map<UUID, String> two = java.util.Map.of(alice, "Alice", bob, "Bob");
+        assertEquals(java.util.Set.of(), LiveFeedEvents.demoted(two, ""));
+        assertEquals(java.util.Set.of(), LiveFeedEvents.demoted(two, null));
+        assertEquals(java.util.Set.of(), LiveFeedEvents.demoted(two, "Carol"));
+        assertEquals(java.util.Set.of(), LiveFeedEvents.demoted(java.util.Map.of(), "Bob"));
     }
 
     @Test

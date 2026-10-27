@@ -94,7 +94,7 @@ public final class CommandAllowlist {
 
     /**
      * Roots DT registers <b>client-side only</b> ({@code RegisterClientCommandsEvent}) that players type
-     * on purpose: the streamer, options and rewards commands, the Twitch/Discord links, the framerate
+     * on purpose: the streamer, options and rewards commands, the Live Eye's {@code /offereye}, the Twitch/Discord links, the framerate
      * throttle, and the client preview tools. NeoForge runs a client command on the client, but when the
      * typed form is incomplete ("unknown or incomplete command" on the client dispatcher) it hands the
      * string to the server instead. None of these roots exists on the server, so the command can do
@@ -105,7 +105,8 @@ public final class CommandAllowlist {
      */
     private static final Set<String> CLIENT_ONLY_ROOTS = Set.of(
         "streamer", "dungeontrain-options", "dungeontrain-rewards", "framerate-throttle", "twitch",
-        "discord", "dt-ledger-preview", "dungeontrain-debug-contribute", "dungeontrain-debug-death-pages");
+        "discord", "dt-ledger-preview", "dungeontrain-debug-contribute", "dungeontrain-debug-death-pages",
+        "offereye");
 
     private CommandAllowlist() {}
 

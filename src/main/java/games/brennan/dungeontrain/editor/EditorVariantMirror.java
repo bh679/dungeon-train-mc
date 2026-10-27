@@ -53,6 +53,16 @@ public final class EditorVariantMirror {
      */
     public static void mirrorEditLive(ServerLevel level, BlockVariantPlot plot, BlockPos localEdited,
                                       @Nullable List<VariantState> updatedOrNull) {
+        mirrorEditLive(level, plot, localEdited, updatedOrNull, true);
+    }
+
+    /**
+     * {@link #mirrorEditLive(ServerLevel, BlockVariantPlot, BlockPos, List)}, where {@code retarget}
+     * false leaves the image cells' group conditions exactly as reflected — a pasted group prefab
+     * keeps its targets on both sides.
+     */
+    public static void mirrorEditLive(ServerLevel level, BlockVariantPlot plot, BlockPos localEdited,
+                                      @Nullable List<VariantState> updatedOrNull, boolean retarget) {
         boolean mx = plot.mirrorX(), my = plot.mirrorY(), mz = plot.mirrorZ();
         if (!plot.mirrorVariants() || (!mx && !my && !mz)) return;
         if (!plot.inBounds(localEdited)) return;
@@ -87,7 +97,7 @@ public final class EditorVariantMirror {
         }
         // The reflected pool still reads the source side's group; each image cell follows the
         // group it touches, as the source did. After the loop so images see each other's lock ids.
-        if (updatedOrNull != null) {
+        if (updatedOrNull != null && retarget) {
             for (EditorMirror.Image img : EditorMirror.imagesOf(localEdited, f, mx, my, mz)) {
                 VariantConditionRetarget.around(plot, img.local());
             }

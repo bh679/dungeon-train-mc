@@ -18,6 +18,11 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.BooleanValue STREAM_CHAT;
     public static final ModConfigSpec.BooleanValue STREAM_AUDIO;
     public static final ModConfigSpec.EnumValue<NameTag> STREAM_NAME_TAG;
+    public static final ModConfigSpec.EnumValue<WornTvStreams> WORN_TV_STREAMS;
+    public static final ModConfigSpec.EnumValue<LiveChatTranslation> LIVE_CHAT_TRANSLATION;
+
+    /** Where a Live chat line's translation goes while the Live Translations reward is on. */
+    public enum LiveChatTranslation { UNDER, REPLACE, FIRST }
     public static final ModConfigSpec.BooleanValue POPUPS_OVER_NAME_TAG;
     public static final ModConfigSpec.BooleanValue LIVE_CHAT;
     public static final ModConfigSpec.BooleanValue LIVE_MOMENT_ADVANCEMENTS;
@@ -28,6 +33,8 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.IntValue CAPTURE_FPS;
     public static final ModConfigSpec.IntValue BITRATE_KBPS;
     public static final ModConfigSpec.BooleanValue SAVE_BANDWIDTH;
+    public static final ModConfigSpec.BooleanValue ADAPTIVE_QUALITY;
+    public static final ModConfigSpec.IntValue LEARNED_UPLOAD_KBPS;
     public static final ModConfigSpec.IntValue SEGMENT_SECONDS;
     public static final ModConfigSpec.BooleanValue VIEWING_ENABLED;
     public static final ModConfigSpec.BooleanValue TVS_SPAWN_ON;
@@ -39,6 +46,9 @@ public final class LiveFeedClientConfig {
 
     /** Which of the streamer's names viewers see above the hotbar. */
     public enum NameTag { MINECRAFT, DISCORD, NONE }
+
+    /** What a TV worn on the head shows while two streams are live, when the TV itself remembers no stream. */
+    public enum WornTvStreams { BOTH, STREAM_1, STREAM_2 }
 
     /** The pinned feed's sizes, as fractions of {@code headViewerWidth}: two smaller, normal, one bigger. */
     static final float[] HEAD_VIEWER_SIZES = {0.5f, 0.75f, 1f, 1.5f};
@@ -70,9 +80,15 @@ public final class LiveFeedClientConfig {
         POPUPS_OVER_NAME_TAG = b
             .comment("Advancement and other pop-ups show on top of your name tag on the stream. Off = your name tag stays on top, and the stream skips copying the pop-ups back over it.")
             .define("popupsOverNameTag", true);
+        WORN_TV_STREAMS = b
+            .comment("While two players are live, what a TV on your head shows: BOTH (one above the other), STREAM_1 or STREAM_2. A TV that remembers a stream (soloed in your inventory, or broken while tuned) shows that instead.")
+            .defineEnum("wornTvStreams", WornTvStreams.BOTH);
         LIVE_CHAT = b
-            .comment("Mirror the stream's Discord chat into your in-game chat while a stream is on air (as the streamer, or wearing a TV), and post what you type back to it. Always off in Kid mode, whatever this says.")
+            .comment("Mirror the stream's Discord chat into your in-game chat while you stream or wear a TV (a worn TV is in the chat even with nobody live), and post what you type back to it. Off while you stream only hides the chat from you: everyone else can still talk. Always off in Kid mode, whatever this says.")
             .define("liveChat", true);
+        LIVE_CHAT_TRANSLATION = b
+            .comment("While the Live Translations community reward is on, how a Live chat line translated into your language shows: UNDER the original in grey, REPLACE it (the original on hover), or FIRST with the original under it.")
+            .defineEnum("liveChatTranslation", LiveChatTranslation.UNDER);
         LIVE_MOMENT_ADVANCEMENTS = b
             .comment("While you stream with the Live Eye, say in the stream's Live chat (Discord, Twitch, the website and TV wearers) when you earn an advancement. Always off in Kid mode.")
             .define("liveMomentAdvancements", true);
@@ -97,6 +113,12 @@ public final class LiveFeedClientConfig {
         SAVE_BANDWIDTH = b
             .comment("Compress the stream harder on your own computer: a slower x264 preset at about half of bitrateKbps, for roughly the same picture with less upload. Costs CPU and so frame rate. Off by default; takes effect from your next stream.")
             .define("saveBandwidth", false);
+        ADAPTIVE_QUALITY = b
+            .comment("Lower the stream's bitrate while your upload can't keep up, and raise it again when it can, so viewers don't see it stall. Never goes above bitrateKbps. Off = always send bitrateKbps.")
+            .define("adaptiveQuality", true);
+        LEARNED_UPLOAD_KBPS = b
+            .comment("Your upload speed as measured on your last stream, kbit/s (0 = not measured yet). Written by the game: the next stream starts at a bitrate it can carry. Set to 0 to forget it.")
+            .defineInRange("learnedUploadKbps", 0, 0, 1_000_000);
         SEGMENT_SECONDS = b
             .comment("Seconds of video per uploaded segment. Viewers run 1-2 segments behind. Longer = fewer uploads (cheaper), more delay.")
             .defineInRange("segmentSeconds", 10, 2, 30);
@@ -187,6 +209,18 @@ public final class LiveFeedClientConfig {
     /** Whether the encoder trades CPU for upload (slower preset, lower bitrate). Off unless the player turns it on. */
     public static boolean saveBandwidth() { return loaded() && SAVE_BANDWIDTH.get(); }
 
+    public static boolean adaptiveQuality() { return !loaded() || ADAPTIVE_QUALITY.get(); }
+
+    /** The upload speed remembered from the last stream, kbit/s; 0 when none. */
+    public static int learnedUploadKbps() { return loaded() ? LEARNED_UPLOAD_KBPS.get() : 0; }
+
+    /** Remembers the upload speed {@code kbps} a stream measured (ignored when not positive). */
+    public static void setLearnedUploadKbps(int kbps) {
+        if (!loaded() || kbps <= 0 || LEARNED_UPLOAD_KBPS.get() == kbps) return;
+        LEARNED_UPLOAD_KBPS.set(Math.min(1_000_000, kbps));
+        LEARNED_UPLOAD_KBPS.save();
+    }
+
     public static void setSaveBandwidth(boolean value) {
         if (!loaded() || SAVE_BANDWIDTH.get() == value) return;
         SAVE_BANDWIDTH.set(value);
@@ -206,6 +240,15 @@ public final class LiveFeedClientConfig {
         if (!loaded() || STREAM_NAME_TAG.get() == value) return;
         STREAM_NAME_TAG.set(value);
         STREAM_NAME_TAG.save();
+    }
+
+    /** What a worn TV with no remembered stream shows while two streams are live. */
+    public static WornTvStreams wornTvStreams() { return loaded() ? WORN_TV_STREAMS.get() : WornTvStreams.BOTH; }
+
+    public static void setWornTvStreams(WornTvStreams value) {
+        if (!loaded() || WORN_TV_STREAMS.get() == value) return;
+        WORN_TV_STREAMS.set(value);
+        WORN_TV_STREAMS.save();
     }
 
     /** Pop-ups are copied back over the stream's name tag ({@code LiveToastRects}). On unless turned off. */
@@ -245,6 +288,15 @@ public final class LiveFeedClientConfig {
         if (!loaded() || LIVE_CHAT.get() == value) return;
         LIVE_CHAT.set(value);
         LIVE_CHAT.save();
+    }
+
+    /** Where a translated Live chat line goes; UNDER until the config loads. */
+    public static LiveChatTranslation liveChatTranslation() { return loaded() ? LIVE_CHAT_TRANSLATION.get() : LiveChatTranslation.UNDER; }
+
+    public static void setLiveChatTranslation(LiveChatTranslation value) {
+        if (!loaded() || LIVE_CHAT_TRANSLATION.get() == value) return;
+        LIVE_CHAT_TRANSLATION.set(value);
+        LIVE_CHAT_TRANSLATION.save();
     }
 
     /** Share advancements into Live chat while streaming; {@code LiveMoments} still forces it off in Kid mode. */
@@ -310,6 +362,11 @@ public final class LiveFeedClientConfig {
         return (streaming ? HEAD_VIEWER_SIZE_STREAMING : HEAD_VIEWER_SIZE_WATCHING).get();
     }
 
+    /** The pinned feed is at its largest size: too big for two panes, so a second stream is not shown beside it. */
+    public static boolean headViewerAtMaxSize(boolean streaming) {
+        return headViewerSize(streaming) >= HEAD_VIEWER_SIZES.length - 1;
+    }
+
     /** The pinned feed's width now, in GUI pixels. */
     public static int headViewerWidth(boolean streaming) {
         return sizeWidth(headViewerWidth(), headViewerSize(streaming));
@@ -327,17 +384,16 @@ public final class LiveFeedClientConfig {
     }
 
     /**
-     * Options → Stream → Live viewer size: one size for the pinned feed whether you watch or stream.
-     * Clicking the feed still steps each mode on its own afterwards. Persisted; no-op pre-load.
+     * Options → Stream → Live viewer size (watching, or while streaming): the pinned feed's size in
+     * that mode only. Clicking the feed in the inventory steps the same value. Persisted; no-op pre-load.
      */
-    public static void setHeadViewerSize(int index) {
+    public static void setHeadViewerSize(boolean streaming, int index) {
         int i = clampSize(index);
         if (!loaded()) return;
-        for (ModConfigSpec.IntValue v : List.of(HEAD_VIEWER_SIZE_WATCHING, HEAD_VIEWER_SIZE_STREAMING)) {
-            if (v.get() != i) {
-                v.set(i);
-                v.save();
-            }
+        ModConfigSpec.IntValue v = streaming ? HEAD_VIEWER_SIZE_STREAMING : HEAD_VIEWER_SIZE_WATCHING;
+        if (v.get() != i) {
+            v.set(i);
+            v.save();
         }
     }
 

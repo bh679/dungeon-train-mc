@@ -221,6 +221,12 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue CHUNCKS_HIDE_DISTANT_HORIZONS;
     public static final ModConfigSpec.BooleanValue SPHERES_HIDE_DISTANT_HORIZONS;
     public static final ModConfigSpec.BooleanValue STACKS_HIDE_DISTANT_HORIZONS;
+    /**
+     * Whether Distant Horizons leaves the sunk zone's attic (dimensional carriages over the invisible
+     * barrier lid) out of its LODs. DH keeps drawing everything else there. See
+     * {@code compat.DistantHorizonsSunkAttic}.
+     */
+    public static final ModConfigSpec.BooleanValue SUNK_ATTIC_HIDE_DISTANT_HORIZONS;
 
     /** How many blocks either side of a void band DH stays hidden — the approach, and past its far edge. */
     public static final ModConfigSpec.IntValue VOID_BANDS_DISTANT_HORIZONS_MARGIN;
@@ -232,6 +238,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.DoubleValue TRAIN_ENGINE_VOLUME;
     /** How loud the train wind plays. See {@link #getWindVolume()}. */
     public static final ModConfigSpec.DoubleValue WIND_VOLUME;
+    /** How strongly the wind's on-screen effects draw, 0 (off) to 6. See {@link #getWindScreenEffects()}. */
+    public static final ModConfigSpec.IntValue WIND_SCREEN_EFFECTS;
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
     /** Tiles per row in the Train Builder's Open screen grid. See {@link #getBuilderTilesPerRow()}. */
     public static final ModConfigSpec.IntValue BUILDER_TILES_PER_ROW;
@@ -426,12 +434,14 @@ public final class ClientDisplayConfig {
         CHUNCKS_HIDE_DISTANT_HORIZONS = pair.getLeft().chuncksHideDistantHorizons;
         SPHERES_HIDE_DISTANT_HORIZONS = pair.getLeft().spheresHideDistantHorizons;
         STACKS_HIDE_DISTANT_HORIZONS = pair.getLeft().stacksHideDistantHorizons;
+        SUNK_ATTIC_HIDE_DISTANT_HORIZONS = pair.getLeft().sunkAtticHideDistantHorizons;
         VOID_BANDS_DISTANT_HORIZONS_MARGIN = pair.getLeft().voidBandsDistantHorizonsMargin;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         AFK_PAUSE_ENABLED = pair.getLeft().afkPauseEnabled;
         TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
         WIND_VOLUME = pair.getLeft().windVolume;
+        WIND_SCREEN_EFFECTS = pair.getLeft().windScreenEffects;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
         BUILDER_TILES_PER_ROW = pair.getLeft().builderTilesPerRow;
         MENU_RENDER_DISTANCE = pair.getLeft().menuRenderDistance;
@@ -593,6 +603,9 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue stacksHideDistantHorizons = b
                 .comment("Stop Distant Horizons drawing while you are in, or approaching, the stacks section of the track - the void standing with towers of terrain. Set false to let DH draw there anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
                 .define("hideInStacks", true);
+        ModConfigSpec.BooleanValue sunkAtticHideDistantHorizons = b
+                .comment("Fixes a Distant Horizons sky glitch on one stretch of the track. Leave this on; set false only to troubleshoot. Chunks DH stored before this was on keep the glitch until DH processes them again. Does nothing if Distant Horizons is not installed, and never touches DH's own settings.")
+                .define("hideSunkAttic", true);
         ModConfigSpec.IntValue voidBandsDistantHorizonsMargin = b
                 .comment("How many blocks either side of the chunks, spheres and stacks sections DH stays hidden. A section comes into DH's draw distance well before you reach it, so this covers the way in (and the same distance past its far end). Raise it if you run a very large DH render distance; 0 cuts DH out exactly at the sections' edges.")
                 .defineInRange("strangeBandsHideMarginBlocks", DEFAULT_DISTANT_HORIZONS_HIDE_MARGIN,
@@ -624,6 +637,12 @@ public final class ClientDisplayConfig {
                 .comment("How loud the wind on the train plays, 0.0 (off) to 1.0 (unscaled). Scales the breeze and the gusts together. Separate from vanilla's Ambient slider. Also settable in Options -> Music & Sounds and in Options -> Dungeon Train...")
                 .defineInRange("windVolume", DEFAULT_TRAIN_ENGINE_VOLUME,
                         MIN_TRAIN_ENGINE_VOLUME, MAX_TRAIN_ENGINE_VOLUME);
+        b.pop();
+
+        b.push("wind");
+        ModConfigSpec.IntValue windScreenEffects = b
+                .comment("How strongly the wind's on-screen effects (streaks at the screen edges while the wind is on you) draw: 0 = off, 1 (faint) to 6 (strongest). 3 is the default. Also settable in Options -> Dungeon Train... -> Train.")
+                .defineInRange("screenEffects", DEFAULT_WIND_SCREEN_EFFECTS, 0, MAX_WIND_SCREEN_EFFECTS);
         b.pop();
 
         b.push("skybox");
@@ -969,8 +988,9 @@ public final class ClientDisplayConfig {
                 upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
                 portalRoomHideDistantHorizons,
                 chuncksHideDistantHorizons, spheresHideDistantHorizons, stacksHideDistantHorizons,
+                sunkAtticHideDistantHorizons,
                 voidBandsDistantHorizonsMargin,
-                framerateThrottleEnabled, framerateThrottleFps, afkPauseEnabled, trainEngineVolume, windVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, scribbleFileButtonsVisible, scribbleInsertPageButtonVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
+                framerateThrottleEnabled, framerateThrottleFps, afkPauseEnabled, trainEngineVolume, windVolume, windScreenEffects, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, scribbleFileButtonsVisible, scribbleInsertPageButtonVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
                 creativeModBlockTabs, creativeModBlocksInSearch, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
@@ -1652,6 +1672,30 @@ public final class ClientDisplayConfig {
         WIND_VOLUME.save();
     }
 
+    // ----- Wind screen effects (see client/wind/WindFeelOverlay) -----
+
+    /** Default and top tier of {@link #getWindScreenEffects()}. */
+    public static final int DEFAULT_WIND_SCREEN_EFFECTS = 3;
+    public static final int MAX_WIND_SCREEN_EFFECTS = 6;
+
+    /**
+     * How strongly the wind's on-screen effects draw: {@code 0} off, {@code 1} (faint) to
+     * {@link #MAX_WIND_SCREEN_EFFECTS}; {@link #DEFAULT_WIND_SCREEN_EFFECTS} before the config loads.
+     */
+    public static int getWindScreenEffects() {
+        if (!isLoaded()) return DEFAULT_WIND_SCREEN_EFFECTS;
+        return Math.max(0, Math.min(MAX_WIND_SCREEN_EFFECTS, WIND_SCREEN_EFFECTS.get()));
+    }
+
+    /** Persist the wind screen-effects tier, clamped; skips unchanged writes (sliders call this live). */
+    public static void setWindScreenEffects(int tier) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(0, Math.min(MAX_WIND_SCREEN_EFFECTS, tier));
+        if (WIND_SCREEN_EFFECTS.get() == clamped) return;
+        WIND_SCREEN_EFFECTS.set(clamped);
+        WIND_SCREEN_EFFECTS.save();
+    }
+
     // ----- Delete old world on reboard (death-screen trash toggle) -----
 
     /**
@@ -2284,12 +2328,14 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue chuncksHideDistantHorizons,
             ModConfigSpec.BooleanValue spheresHideDistantHorizons,
             ModConfigSpec.BooleanValue stacksHideDistantHorizons,
+            ModConfigSpec.BooleanValue sunkAtticHideDistantHorizons,
             ModConfigSpec.IntValue voidBandsDistantHorizonsMargin,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.BooleanValue afkPauseEnabled,
             ModConfigSpec.DoubleValue trainEngineVolume,
             ModConfigSpec.DoubleValue windVolume,
+            ModConfigSpec.IntValue windScreenEffects,
             ModConfigSpec.BooleanValue skyboxPunchEnabled,
             ModConfigSpec.BooleanValue skyboxBlocksOn,
             ModConfigSpec.BooleanValue portalCrossingFade,

@@ -29,6 +29,7 @@ public final class MobEffectOffsets {
             Map.entry("minecraft:cave_spider", 2),
             Map.entry("minecraft:pillager", 2),
             Map.entry("betternether:skull", 3),
+            Map.entry("minecraft:creaking", 3),
             Map.entry("minecraft:vindicator", 3),
             Map.entry("minecraft:witch", 3),
             Map.entry("betternether:jungle_skeleton", 4),
@@ -48,11 +49,12 @@ public final class MobEffectOffsets {
             Map.entry("minecraft:piglin_brute", 6),
             Map.entry("betterend:shadow_walker", 7),
             Map.entry("minecraft:stray", 7),
+            Map.entry("piglinproliferation:piglin_alchemist", 9),
             Map.entry("minecraft:guardian", 11),
             Map.entry("minecraft:evoker", 20),
             Map.entry("minecraft:shulker", 20),
-            Map.entry("deeperdarker:shriek_worm", 21),
             Map.entry("minecraft:elder_guardian", 30),
+            Map.entry("deeperdarker:shriek_worm", 35),
             Map.entry("minecraft:ravager", 40),
             Map.entry("minecraft:warden", 60)
     );

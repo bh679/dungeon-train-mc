@@ -26,12 +26,14 @@ class AlbumAdvancementsTest {
     }
 
     @Test
-    @DisplayName("one photo earns Keepsake; a photo on all 16 pages also earns No Room Left")
+    @DisplayName("Keepsake needs a photo with a note on its page; a photo on all 16 pages earns No Room Left")
     void actionsByPhotoCount() {
-        assertEquals(List.of(), AlbumAdvancements.actionsFor(0));
-        assertEquals(List.of(EnchiridionAdvancements.ALBUM_PHOTO), AlbumAdvancements.actionsFor(1));
-        assertEquals(List.of(EnchiridionAdvancements.ALBUM_PHOTO), AlbumAdvancements.actionsFor(15));
-        assertEquals(List.of(EnchiridionAdvancements.ALBUM_PHOTO, EnchiridionAdvancements.ALBUM_FULL), AlbumAdvancements.actionsFor(16));
+        assertEquals(List.of(), AlbumAdvancements.actionsFor(0, 0));
+        assertEquals(List.of(), AlbumAdvancements.actionsFor(1, 0), "a photo with no note");
+        assertEquals(List.of(EnchiridionAdvancements.ALBUM_PHOTO), AlbumAdvancements.actionsFor(1, 1));
+        assertEquals(List.of(EnchiridionAdvancements.ALBUM_PHOTO), AlbumAdvancements.actionsFor(15, 3));
+        assertEquals(List.of(EnchiridionAdvancements.ALBUM_FULL), AlbumAdvancements.actionsFor(16, 0));
+        assertEquals(List.of(EnchiridionAdvancements.ALBUM_PHOTO, EnchiridionAdvancements.ALBUM_FULL), AlbumAdvancements.actionsFor(16, 1));
         assertEquals(16, AlbumAdvancements.FULL);
     }
 

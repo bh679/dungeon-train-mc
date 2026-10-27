@@ -143,6 +143,16 @@ final class WorldGenCycleLayoutTest {
     }
 
     @Test
+    @DisplayName("Nether Return Again gate: Lap 2's Nethers are still cycle 0, cycle 2's first Nether is cycle 1")
+    void netherReturnKeysOnCycleNotPass() {
+        int lapTwoNether = x(LAYOUT.start(7) + 100);
+        assertEquals(1L, C.netherPassIndex(lapTwoNether));     // a second Nether pass ...
+        assertEquals(0L, C.cycleIndex(lapTwoNether));          // ... but still the first cycle: no grant
+        assertEquals(0L, C.cycleIndex(x(LAYOUT.start(8) + 100)));
+        assertEquals(1L, C.cycleIndex(x(LAYOUT.start(1) + 100, 1)));   // cycle 2's first Nether: grant
+    }
+
+    @Test
     @DisplayName("passes count occurrences: 0, 1 and 2 on run 0, 3 and 4 on run 1; cycleIndex is the run")
     void passes() {
         assertEquals(0L, C.netherPassIndex(x(LAYOUT.start(1) + 100)));

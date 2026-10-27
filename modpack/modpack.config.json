@@ -69,18 +69,18 @@
       "mod_ids": [
         "playermob"
       ],
-      "sha1": "64fbacb28502536738401bf7fc8f96f1f8e70e51",
+      "sha1": "397cc52f483464e09c5fcedf0c9ae35dbc8008cd",
       "packages": [
         "games.brennan"
       ],
       "project_id": 1559379,
-      "file_id": 9144074,
+      "file_id": 9317322,
       "required": true,
       "dependency_type": "required",
-      "version": "0.111.0",
+      "version": "0.116.0",
       "gradle_property": "playermob_min_version",
       "modrinth_project": "interactive-player-mobs",
-      "modrinth_version": "mO9TV0XI"
+      "modrinth_version": "mJh3PVIr"
     },
     {
       "name": "Ender Chest Persistence",
@@ -477,6 +477,25 @@
       "version": "1.4.1",
       "modrinth_project": "deeperdarker",
       "modrinth_version": "TuD0Zvi3"
+    },
+    {
+      "name": "Piglin Proliferation",
+      "slug": "piglin-proliferation",
+      "mod_ids": [
+        "piglinproliferation"
+      ],
+      "sha1": "796da3c70e43c5fec367059f3bd898cea18afd63",
+      "packages": [
+        "tallestred.piglinproliferation"
+      ],
+      "project_id": 657831,
+      "file_id": 9104126,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "piglinproliferation_min_version",
+      "version": "2.0.16",
+      "modrinth_project": "piglin-proliferation",
+      "modrinth_version": "ErOncGme"
     },
     {
       "name": "Exposure",

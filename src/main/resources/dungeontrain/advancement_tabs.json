@@ -24,7 +24,10 @@
     "dungeontrain:dungeon_train/challenge_complete_tab": "dungeontrain:dungeon_train/challenge_complete",
     "dungeontrain:dungeon_train/heros_handbook_tab": "dungeontrain:dungeon_train/heros_handbook",
     "dungeontrain:dungeon_train/fully_developed_tab": "dungeontrain:dungeon_train/fully_developed",
-    "dungeontrain:dungeon_train/all_out_of_secrets_tab": "dungeontrain:dungeon_train/all_out_of_secrets"
+    "dungeontrain:dungeon_train/all_out_of_secrets_tab": "dungeontrain:dungeon_train/all_out_of_secrets",
+    "dungeontrain:dungeon_train/memory_lane_link": "dungeontrain:enchiridion/memory_lane",
+    "dungeontrain:dungeon_train/keepsake_link": "dungeontrain:enchiridion/keepsake",
+    "dungeontrain:dungeon_train/no_room_left_link": "dungeontrain:enchiridion/no_room_left"
   },
   "unlockedBy": {
     "dungeontrain:dungeon_train/tab_challenges": "dungeontrain:dungeon_train/carts_100"
@@ -92,7 +95,6 @@
     "dungeontrain:dungeon_train/reached_far_lands": true,
     "dungeontrain:dungeon_train/reached_floating": true,
     "dungeontrain:dungeon_train/reached_infdev": true,
-    "dungeontrain:dungeon_train/reached_large_biomes": false,
     "dungeontrain:dungeon_train/reached_lost_city": true,
     "dungeontrain:dungeon_train/reached_nether": true,
     "dungeontrain:dungeon_train/reached_overworld_again": true,
@@ -113,7 +115,7 @@
     "dungeontrain:dungeon_train/remote_echo_kill": true,
     "dungeontrain:dungeon_train/remote_echo_void": true,
     "dungeontrain:dungeon_train/ridden_biomes_100": true,
-    "dungeontrain:dungeon_train/ridden_biomes_150": true,
+    "dungeontrain:dungeon_train/ridden_biomes_all": true,
     "dungeontrain:dungeon_train/ridden_biomes_25": true,
     "dungeontrain:dungeon_train/ridden_biomes_50": true,
     "dungeontrain:dungeon_train/seasoned_traveller": true,
@@ -216,7 +218,6 @@
     "dungeontrain:dungeon_train/completionist": "always",
     "dungeontrain:dungeon_train/all_out_of_secrets": "earned",
     "dungeontrain:dungeon_train/secrete_menu": "earned",
-    "dungeontrain:dungeon_train/reached_large_biomes": "earned",
     "dungeontrain:dungeon_train/help_i_cant_get_off": "earned"
   },
   "complete": {
@@ -228,7 +229,9 @@
     "dungeontrain:dungeon_train/all_out_of_secrets": "dungeontrain:secrete_menu/root"
   },
   "notForTabComplete": [
-    "dungeontrain:dungeon_train/reached_large_biomes"
+    "dungeontrain:dungeon_train/memory_lane_link",
+    "dungeontrain:dungeon_train/keepsake_link",
+    "dungeontrain:dungeon_train/no_room_left_link"
   ],
   "needs": {
     "dungeontrain:dungeon_train/all_at_once": [

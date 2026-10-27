@@ -654,6 +654,16 @@ dependencies {
     // loads it (annotation scan), so it is never linked without JEI installed.
     compileOnly "maven.modrinth:jei:${jei_version}"
 
+    // JourneyMap — COMPILE ONLY (dev run opt-in below) and never shipped (All Rights Reserved).
+    // Players add it themselves; only the @Pseudo mixins in dungeontrain.journeymap.mixins.json name
+    // it, and JourneyMapMixinPlugin applies them only when it is installed.
+    compileOnly "maven.modrinth:journeymap:${journeymap_version}"
+    // `-PjourneyMap` puts it (and its required Common Networking) in runClient for testing that filter.
+    if (project.hasProperty('journeyMap')) {
+        localRuntime "maven.modrinth:journeymap:${journeymap_version}"
+        localRuntime "maven.modrinth:common-network:${journeymap_common_networking_version}"
+    }
+
     // Fast Paintings + Moonlight — REQUIRED third-party deps (see gradle.properties). Not bundled:
     // the launchers install them from the (required) relations like Sable and the siblings. On the
     // dev classpath so runClient/runServer stamp block paintings; DT references the block only by
@@ -701,6 +711,10 @@ dependencies {
     // its Otherside dimension; DT names its level, biomes and structures by registry id only.
     implementation "maven.modrinth:deeperdarker:${deeperdarker_version}"
 
+    // Piglin Proliferation — REQUIRED third-party dep (see gradle.properties). Its piglins stand in carriages;
+    // DT names its entities and items by registry id only.
+    implementation "maven.modrinth:piglin-proliferation:${piglinproliferation_version}"
+
     // Exposure + its Polaroid add-on — REQUIRED third-party deps (see gradle.properties). DT compiles
     // against both: compat/DisposableCamera* uses their camera, frame and photograph classes.
     implementation "maven.modrinth:exposure:${exposure_version}"
@@ -717,6 +731,10 @@ dependencies {
     // Pinned to the modpack's Jade build (modpack.config.json → jade.modrinth_version).
     compileOnly "maven.modrinth:jade:${jade_version}"
     localRuntime "maven.modrinth:jade:${jade_version}"
+    // Jade Sable Compat — the modpack ships it beside Jade (required:true). Without it Jade's own ray
+    // ignores Sable's carriage pose, so on a moving train it names the block behind thin ones (a
+    // photo frame reads as the wall). Dev runtime only, so the dev client sees what players see.
+    localRuntime "maven.modrinth:jade-sable-compat:${jade_sable_compat_version}"
 
     // Windy: Configurable (client-only visuals for the train wind; see wind/WindServer and the
     // dungeontrain.windy.mixins.json entry in neoforge.mods.toml). Runtime only: the dev client gets the
@@ -1051,6 +1069,8 @@ tasks.register('generateModMetadata', ProcessResources) {
         platform_min_version              : platform_min_version,
         // Deeper Darker — floor only.
         deeperdarker_min_version          : deeperdarker_min_version,
+        // Piglin Proliferation — floor only.
+        piglinproliferation_min_version   : piglinproliferation_min_version,
         // Exposure + its Polaroid add-on — floors only.
         exposure_min_version              : exposure_min_version,
         exposurepolaroid_min_version      : exposurepolaroid_min_version,

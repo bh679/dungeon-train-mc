@@ -246,6 +246,8 @@ public final class ContainerContentsMenuInputHandler {
             }
             case LINK_UNLINK -> DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                 ContainerContentsEditPacket.Op.UNLINK, plotKey, local, -1, "", 0));
+            case VAULT_KEY -> DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                ContainerContentsEditPacket.Op.CYCLE_VAULT_KEY, plotKey, local, -1, "", 0));
             // LINK_INDICATOR is informational — no click action.
             default -> {}
         }

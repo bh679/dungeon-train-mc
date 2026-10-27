@@ -13,8 +13,9 @@ import java.util.Set;
  * Keeps a cell's group condition on the group it touches. Copying a column (its lock cells and
  * the conditional cells between them) and re-locking it, or pasting a conditional cell beside a
  * different group, used to leave the conditions reading the original group — so the new column
- * came out gappy whenever the two groups rolled differently. After a paste or a lock change the
- * affected cells are retargeted by {@link VariantConditionCheck#retargetFor}'s rule.
+ * came out gappy whenever the two groups rolled differently. After a lock change the affected
+ * cells are retargeted by {@link VariantConditionCheck#retargetFor}'s rule. A paste is not: a
+ * pasted group prefab keeps the targets it was copied with.
  */
 public final class VariantConditionRetarget {
 
@@ -47,7 +48,7 @@ public final class VariantConditionRetarget {
         for (VariantState s : states) {
             VariantCondition c = s.condition();
             next.add(c.isGroupTarget() && c.groupId() == from
-                ? s.withCondition(new VariantCondition(0, to, c.blocks())) : s);
+                ? s.withCondition(c.withGroup(to)) : s);
         }
         plot.put(pos, next);
         return true;
