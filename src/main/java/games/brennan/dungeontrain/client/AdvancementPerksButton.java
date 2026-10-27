@@ -6,9 +6,13 @@ import games.brennan.dungeontrain.client.perks.PerksScreen;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractButton;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -21,8 +25,8 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 /**
- * A nether star on the advancements screen, under the window's bottom-right corner
- * ({@link AdvancementWindowRow#row}), opening {@link PerksScreen}. The player's unspent Advancement
+ * A nether star on the advancements screen, beside its Done button (or, on a screen without one, under
+ * the window's bottom-right corner, {@link AdvancementWindowRow#row}), opening {@link PerksScreen}. The player's unspent Advancement
  * Points ({@link PerkClientBalances#unlockPoints}) sit on it like a stack count; hovering names both.
  * Re-placed every frame, since Better Advancements only reports its window while drawing; hidden
  * until it has.
@@ -41,6 +45,8 @@ public final class AdvancementPerksButton {
     private static final int INSET = 2;
     /** How far the count reaches back over the star, as a stack's count does. */
     private static final int OVERLAP = 4;
+    /** The count's top below the star's, low on it as a stack's count sits. */
+    private static final int COUNT_DROP = 5;
     private static final ItemStack ICON = new ItemStack(Items.NETHER_STAR);
 
     private static final Map<Screen, Button> BUTTONS = new WeakHashMap<>();
@@ -63,12 +69,30 @@ public final class AdvancementPerksButton {
         Screen screen = event.getScreen();
         Button button = BUTTONS.get(screen);
         if (button == null) return;
+        int width = StarButton.width(screen.getMinecraft().font);
+        button.setWidth(width);
+        AbstractWidget done = doneButton(screen, button);
+        if (done != null) {
+            button.visible = true;
+            button.setHeight(done.getHeight());
+            button.setPosition(done.getX() + done.getWidth() + AdvancementWindowRow.GAP * 2, done.getY());
+            return;
+        }
         AdvancementWindowRow.Row row = AdvancementWindowRow.row(screen, HEIGHT);
         button.visible = row != null;
         if (row == null) return;
-        int width = StarButton.width(screen.getMinecraft().font);
-        button.setWidth(width);
+        button.setHeight(HEIGHT);
         button.setPosition(row.right() - width, row.top());
+    }
+
+    /** The screen's Done button (vanilla's footer has one), or null. */
+    private static AbstractWidget doneButton(Screen screen, Button self) {
+        String done = CommonComponents.GUI_DONE.getString();
+        for (GuiEventListener child : screen.children()) {
+            if (child != self && child instanceof AbstractButton b && b.visible
+                    && done.equals(b.getMessage().getString())) return b;
+        }
+        return null;
     }
 
     /** The Perks page's dark button, holding the star with the points count over its corner like a stack's. */
@@ -89,7 +113,7 @@ public final class AdvancementPerksButton {
         @Override
         public void renderString(GuiGraphics g, Font font, int colour) {
             int x = getX() + INSET;
-            int y = getY() + INSET;
+            int y = getY() + (getHeight() - STAR) / 2;
             g.pose().pushPose();
             g.pose().translate(x, y, 0);
             g.pose().scale(STAR_SCALE, STAR_SCALE, 1F);
@@ -99,7 +123,7 @@ public final class AdvancementPerksButton {
             String count = count();
             g.pose().pushPose();
             g.pose().translate(0, 0, 200);
-            g.drawString(font, count, getX() + getWidth() - INSET + 1 - font.width(count), getY() + getHeight() - 9, colour, true);
+            g.drawString(font, count, getX() + getWidth() - INSET + 1 - font.width(count), y + COUNT_DROP, colour, true);
             g.pose().popPose();
         }
     }
