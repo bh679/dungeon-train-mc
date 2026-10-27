@@ -19,15 +19,15 @@ class DeathCameraCycleTest {
     @Test
     void fullSceneHasEveryShotInOrder() {
         List<DeathShot> seq = DeathCameraCycle.buildSequence(false, true, true, true);
-        assertEquals(List.of("POV", "spot", "killer", "mob", "carriage", "leaving"), labels(seq).subList(0, 6));
-        assertEquals(DeathCameraCycle.TRAIN_SHOTS.size(), seq.size() - 6);
-        assertEquals(6, DeathCameraCycle.loopStart(seq));
+        assertEquals(List.of("POV", "spot", "killer", "mob", "carriage"), labels(seq).subList(0, 5));
+        assertEquals(DeathCameraCycle.TRAIN_SHOTS.size(), seq.size() - 5);
+        assertEquals(5, DeathCameraCycle.loopStart(seq));
     }
 
     @Test
     void voidDeathSkipsTheDeathSpot() {
-        assertEquals(List.of("POV", "killer", "carriage", "leaving"),
-            labels(DeathCameraCycle.buildSequence(true, true, false, true)).subList(0, 4));
+        assertEquals(List.of("POV", "killer", "carriage"),
+            labels(DeathCameraCycle.buildSequence(true, true, false, true)).subList(0, 3));
     }
 
     @Test
@@ -54,6 +54,14 @@ class DeathCameraCycleTest {
         assertArrayEquals(new int[] {1, 2}, DeathCameraCycle.longestClearRun(new boolean[] {false, true, true, false}));
         // Clear at the end and the start: one run of 2 wrapping from index 5.
         assertArrayEquals(new int[] {5, 2}, DeathCameraCycle.longestClearRun(new boolean[] {true, false, true, false, false, true}));
+    }
+
+    @Test
+    void orbitsHoldThreeSecondsAndTheCarriageShotZoomsThenHolds() {
+        for (DeathShot shot : DeathCameraCycle.buildSequence(false, true, true, true)) {
+            if (shot.kind() == DeathShot.Kind.ORBIT) assertEquals(60, shot.holdTicks(), shot.label());
+            if (shot.kind() == DeathShot.Kind.DOLLY) assertEquals(DeathCameraCycle.DOLLY_TICKS + 60, shot.holdTicks());
+        }
     }
 
     @Test

@@ -47,6 +47,8 @@ public final class DeathCameraCycle {
 
     /** Ticks of black on each side of a cut. */
     static final int FADE_TICKS = 8;
+    /** The carriage shot zooms out for this long (3 s), then holds in the world and tracks the body. */
+    static final int DOLLY_TICKS = 60;
     /** Candidate angles tested around an orbit subject. */
     static final int ORBIT_SAMPLES = 24;
     /** An orbit needs at least this much clear arc (degrees) at a radius before it falls back to a tighter one. */
@@ -90,6 +92,8 @@ public final class DeathCameraCycle {
     private static Vector3d lens;
     /** Dolly end, carriage space. */
     private static Vector3d lensEnd;
+    /** Where the dolly ended, in the world, once it has: the lens holds there and tracks the body. */
+    private static Vector3d dollyHold;
     /** Fixed world aim for {@link DeathShot.Kind#WORLD} shots. */
     private static Vector3d aimWorld;
     /** Orbit: start angle (radians), sweep (radians), radius and height in use. */
@@ -142,11 +146,13 @@ public final class DeathCameraCycle {
     static List<DeathShot> buildSequence(boolean voidDeath, boolean hasKiller, boolean hasContact, boolean onTrain) {
         List<DeathShot> shots = new ArrayList<>();
         shots.add(DeathShot.pov(40));
-        if (!voidDeath) shots.add(DeathShot.orbit(DeathShot.Target.DEATH_SPOT, 6.0, 3.0, 80, "spot"));
-        if (hasKiller) shots.add(DeathShot.orbit(DeathShot.Target.KILLER, 5.0, 2.5, 80, "killer"));
-        if (hasContact) shots.add(DeathShot.orbit(DeathShot.Target.CONTACT, 5.0, 2.5, 80, "mob"));
-        if (onTrain) shots.add(DeathShot.dolly(new Vec3(3.0, 2.0, 5.0), new Vec3(-6.0, 8.0, 14.0), 80, "carriage"));
-        shots.add(DeathShot.transition(-3.0, 2.5, 8.0, 100, "leaving"));
+        if (!voidDeath) shots.add(DeathShot.orbit(DeathShot.Target.DEATH_SPOT, 6.0, 3.0, 60, "spot"));
+        if (hasKiller) shots.add(DeathShot.orbit(DeathShot.Target.KILLER, 5.0, 2.5, 60, "killer"));
+        if (hasContact) shots.add(DeathShot.orbit(DeathShot.Target.CONTACT, 5.0, 2.5, 60, "mob"));
+        // One shot: zoom out from beside the body for DOLLY_TICKS, then the lens stays where it
+        // reached, in the world, and tracks the body as the carriage rolls away.
+        if (onTrain) shots.add(DeathShot.dolly(new Vec3(3.0, 2.0, 5.0), new Vec3(-6.0, 8.0, 14.0), DOLLY_TICKS + 60, "carriage"));
+        else shots.add(DeathShot.transition(-3.0, 2.5, 8.0, 60, "leaving"));
         shots.addAll(TRAIN_SHOTS);
         return List.copyOf(shots);
     }
@@ -205,6 +211,7 @@ public final class DeathCameraCycle {
         contact = null;
         lens = null;
         lensEnd = null;
+        dollyHold = null;
         aimWorld = null;
         waitTicks = 0;
         Minecraft.getInstance().options.hideGui = savedHideGui;
@@ -286,13 +293,14 @@ public final class DeathCameraCycle {
         mc.options.hideGui = shot.kind() != DeathShot.Kind.POV;
         lens = null;
         lensEnd = null;
+        dollyHold = null;
         aimWorld = null;
         switch (shot.kind()) {
             case POV -> { }
-            case TRAIN_LOCKED -> lens = resolveLens(shot.offset(), true);
+            case TRAIN_LOCKED -> lens = resolveLens(shot.offset(), true, null);
             case DOLLY -> {
-                lens = resolveLens(shot.offset(), true);
-                lensEnd = resolveLens(shot.offsetEnd(), true);
+                lens = resolveLens(shot.offset(), true, null);
+                lensEnd = resolveLens(shot.offsetEnd(), true, null);
             }
             case ORBIT -> {
                 if (!setUpOrbit(shot)) {
@@ -301,11 +309,12 @@ public final class DeathCameraCycle {
                     if (next != i) select(next);
                 }
             }
-            case TRANSITION -> lens = resolveLens(shot.offset(), false);
+            case TRANSITION -> lens = resolveLens(shot.offset(), false, null);
             case WORLD -> {
-                lens = resolveLens(shot.offset(), false);
-                Vector3d body = bodyWorld();
-                aimWorld = new Vector3d(body.x, body.y + LOOK_Y_OFFSET, body.z);
+                // Phase 2 is about the place: lens and aim hang off where the player died, in the
+                // world, not off the body the carriage has since carried on.
+                lens = resolveLens(shot.offset(), false, deathSpot);
+                aimWorld = new Vector3d(deathSpot.x, deathSpot.y + LOOK_Y_OFFSET, deathSpot.z);
             }
         }
     }
@@ -428,27 +437,32 @@ public final class DeathCameraCycle {
     // ── lenses ───────────────────────────────────────────────────────────
 
     /**
-     * A lens at {@code offset} from the body, pulled to open air once against world blocks and
-     * carriage blocks. Carriage space when {@code carriageSpace} and a carriage is pinned, else world.
+     * A lens at {@code offset} from the body (or from {@code worldAnchor} when given), pulled to open
+     * air once against world blocks and carriage blocks. Carriage space when {@code carriageSpace} and
+     * a carriage is pinned, else world.
      */
-    private static Vector3d resolveLens(Vec3 offset, boolean carriageSpace) {
+    private static Vector3d resolveLens(Vec3 offset, boolean carriageSpace, Vector3d worldAnchor) {
         boolean local = carriageSpace && carriage != null;
-        Vector3d body = local ? bodyLocal : bodyWorld();
+        Vector3d body = local ? bodyLocal : (worldAnchor != null ? new Vector3d(worldAnchor) : bodyWorld());
         Vector3d want = lensFor(body, offset);
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
         if (level == null || player == null) return want;
-        Vector3d bodyW = bodyWorld();
+        Vector3d bodyW = local || worldAnchor == null ? bodyWorld() : new Vector3d(worldAnchor);
         Vector3d wantW = local ? toWorld(want) : want;
         Vec3 from = new Vec3(bodyW.x, bodyW.y + player.getBbHeight() * 0.6, bodyW.z);
         Vec3 clipped = SnapshotCamera.clipTowardOpenAir(level, player, from, new Vec3(wantW.x, wantW.y, wantW.z));
+        // A lens that lands inside a carriage block (the body is usually inside one, so a ray
+        // from the body always crosses its own wall first) steps back toward the body until it
+        // is in open air. The body's own wall is never a reason to pull the lens inside.
         List<CarriageOcclusion.Carriage> carriages = CarriageOcclusion.gatherNearby(level, from, CARRIAGE_SCAN_RADIUS, 1.0f);
-        Vec3 hit = CarriageOcclusion.firstHit(carriages, from, clipped);
-        if (hit != null) {
-            double len = clipped.distanceTo(from);
-            double d = Math.max(0.0, hit.distanceTo(from) - CLIP_MARGIN);
-            if (len > 1.0e-6) clipped = from.add(clipped.subtract(from).scale(d / len));
+        Vec3 dir = from.subtract(clipped);
+        double len = dir.length();
+        for (int i = 0; i < 40 && len > 1.0e-6 && CarriageOcclusion.insideBlock(carriages, clipped); i++) {
+            clipped = clipped.add(dir.scale(CLIP_MARGIN / len));
+            dir = from.subtract(clipped);
+            len = dir.length();
         }
         Vector3d clippedW = new Vector3d(clipped.x, clipped.y, clipped.z);
         return local ? toLocal(clippedW) : clippedW;
@@ -484,7 +498,12 @@ public final class DeathCameraCycle {
             }
             case DOLLY -> {
                 if (lens == null || lensEnd == null) return null;
-                lensW = toWorldRender(dollyAt(lens, lensEnd, t / Math.max(1.0, shot.holdTicks() - FADE_TICKS)), partialTick);
+                if (t < DOLLY_TICKS) {
+                    lensW = toWorldRender(dollyAt(lens, lensEnd, t / DOLLY_TICKS), partialTick);
+                } else {
+                    if (dollyHold == null) dollyHold = toWorldRender(lensEnd, partialTick);
+                    lensW = dollyHold;
+                }
             }
             case TRAIN_LOCKED -> {
                 if (lens == null) return null;

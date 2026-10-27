@@ -142,6 +142,15 @@ public final class CarriageOcclusion {
         return best;
     }
 
+    /** True when {@code world} lies inside a solid block of any of these carriages. */
+    public static boolean insideBlock(List<Carriage> carriages, Vec3 world) {
+        for (Carriage carriage : carriages) {
+            Vec3 local = carriage.pose().transformPositionInverse(world);
+            if (occludes(carriage.chunks(), BlockPos.containing(local))) return true;
+        }
+        return false;
+    }
+
     /** True if a solid carriage block lies on the world segment {@code camWorld → bodyWorld}. */
     private static boolean segmentHitsCarriage(Carriage carriage, Vec3 camWorld, Vec3 bodyWorld) {
         // World → ship-local (plot storage) space: the inverse of the renderPose that draws
