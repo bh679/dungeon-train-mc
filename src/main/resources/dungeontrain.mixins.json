@@ -118,6 +118,7 @@
     "RapierPipelineRotationLockMixin",
     "LevelAcceleratorNoSyncLoadMixin",
     "SubLevelEntityCollisionNoLoadMixin",
+    "EntityOnPosNoSyncLoadMixin",
     "LivingEntityClimbPushMixin",
     "CombatRulesArmorCurveMixin",
     "RapierPipelineNoSyncLoadMixin",

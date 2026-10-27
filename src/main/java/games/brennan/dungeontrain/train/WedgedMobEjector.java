@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.util.DtLogging;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.AABB;
 import org.joml.Vector3dc;
 import org.joml.primitives.AABBdc;
@@ -22,7 +23,8 @@ import java.util.WeakHashMap;
  * <p>Spawning into a carriage is refused at the source ({@code NetherMobSpawner},
  * {@code TrainSpawnGuard}); this catches the rest — mobs already wedged in an existing save, or one
  * that gets in some other way. If neither side of the carriage has room, the mob is discarded, which
- * is what happened to every one of them before 0.1397.0.</p>
+ * is what happened to every one of them before 0.1397.0. A side whose chunk isn't loaded is never
+ * checked (that would sync-load it); if one was skipped, the mob waits for a later tick instead.</p>
  */
 public final class WedgedMobEjector {
 
@@ -30,6 +32,9 @@ public final class WedgedMobEjector {
 
     /** One per level, so a mob that keeps getting back in logs once per window, not per move. */
     private static final Map<ServerLevel, EjectLogThrottle> LOG_THROTTLES = new WeakHashMap<>();
+
+    /** Same, for a mob left waiting on an unloaded side; kept apart so it never hides a later move's line. */
+    private static final Map<ServerLevel, EjectLogThrottle> WAIT_LOG_THROTTLES = new WeakHashMap<>();
 
     private WedgedMobEjector() {}
 
@@ -57,10 +62,17 @@ public final class WedgedMobEjector {
         double halfWidth = e.getBbWidth() / 2.0;
         double[] targets = WedgedUnderFloor.sideTargets(e.getX(), e.getZ(), halfWidth,
             c.minX(), c.minZ(), c.maxX(), c.maxZ(), velocity.x(), velocity.z());
+        boolean anyUnloaded = false;
         for (int i = 0; i < targets.length; i += 2) {
             double tx = targets[i];
             double tz = targets[i + 1];
             AABB moved = e.getBoundingBox().move(tx - e.getX(), 0.0, tz - e.getZ());
+            // noCollision would sync-load an unloaded chunk on this side; try it on a later tick.
+            if (!WedgedUnderFloor.collisionChunksLoaded(moved.minX, moved.minZ, moved.maxX, moved.maxZ,
+                    key -> level.getChunkSource().getChunkNow(ChunkPos.getX(key), ChunkPos.getZ(key)) != null)) {
+                anyUnloaded = true;
+                continue;
+            }
             if (level.noCollision(e, moved) && !CarriageSpace.overlapsAnyCarriage(level, moved)) {
                 int repeats = LOG_THROTTLES.computeIfAbsent(level, l -> new EjectLogThrottle())
                     .record(e.getId(), level.getGameTime());
@@ -71,6 +83,16 @@ public final class WedgedMobEjector {
                 e.teleportTo(tx, e.getY(), tz);
                 return;
             }
+        }
+        if (anyUnloaded) {
+            // A side we couldn't check may be free once it loads: keep the mob rather than discard it.
+            int repeats = WAIT_LOG_THROTTLES.computeIfAbsent(level, l -> new EjectLogThrottle())
+                .record(e.getId(), level.getGameTime());
+            if (repeats >= 0) {
+                LOGGER.debug("[DungeonTrain] Left {} in a carriage floor at ({}, {}, {}) until the chunk beside it loads repeats={}",
+                    e.getType().toShortString(), e.getX(), e.getY(), e.getZ(), repeats);
+            }
+            return;
         }
         LOGGER.info("[DungeonTrain] Discarded {} stuck in a carriage floor at ({}, {}, {}): no room beside it source={} ageTicks={} tags={}",
             e.getType().toShortString(), e.getX(), e.getY(), e.getZ(), sourceOf(e), e.tickCount, e.getTags());
