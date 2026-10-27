@@ -5664,7 +5664,6 @@
   "gui.dungeontrain.perks.death.kicker": "Die Punkte, die du trugst",
   "gui.dungeontrain.perks.death.question": "Du hast in diesem Leben %s Punkte in %s Perks gesteckt.",
   "gui.dungeontrain.perks.death.narration": "Sie gehen mit dir unter. Was du freigeschaltet hast, bleibt für das nächste Leben.",
-  "gui.dungeontrain.perks.death.tile.spent": "Aktive Punkte ausgegeben",
   "gui.dungeontrain.perks.death.tile.ranks": "Punkte gesetzt",
   "gui.dungeontrain.perks.death.tile.perks": "Gestärkte Perks",
   "gui.dungeontrain.perks.death.tile.top": "Meiste Punkte",

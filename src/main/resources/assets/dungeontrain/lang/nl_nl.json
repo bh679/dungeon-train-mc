@@ -5664,7 +5664,6 @@
   "gui.dungeontrain.perks.death.kicker": "De punten die je droeg",
   "gui.dungeontrain.perks.death.question": "Je stopte dit leven %s punten in %s perks.",
   "gui.dungeontrain.perks.death.narration": "Ze gaan met je ten onder. Wat je ontgrendelde blijft voor het volgende leven.",
-  "gui.dungeontrain.perks.death.tile.spent": "Actieve punten uitgegeven",
   "gui.dungeontrain.perks.death.tile.ranks": "Punten geplaatst",
   "gui.dungeontrain.perks.death.tile.perks": "Versterkte perks",
   "gui.dungeontrain.perks.death.tile.top": "Meeste punten",

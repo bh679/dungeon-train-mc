@@ -59,7 +59,7 @@ recap, and it only unlocks.
 - `DeathMomentScreen` hands over to `PerksScreen.openForDeath(NarrativeDeathScreen::new)`.
 - **Points page.** A life that put points into perks opens on a death page over the sky: only the stars
   that held points, with full rings, "The points you carried" in the recap's voice, and
-  tiles along the bottom (Active Points spent, points put in, perks powered, the perk with the most).
+  tiles along the bottom (points put in, perks powered, the perk with the most).
   It never moves on by itself; Next Screen, Enter or Esc leave it (not Space, the jump key, and nothing
   in its first second). Next Screen plays the **drain** (`DeathPerksPhase`): the framing fades, the rings empty, the rest of
   the tree swings in and the menu fades in, all on the same sky. A click skips it.

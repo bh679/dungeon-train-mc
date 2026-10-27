@@ -5664,7 +5664,6 @@
   "gui.dungeontrain.perks.death.kicker": "Les points que tu portais",
   "gui.dungeontrain.perks.death.question": "Tu as mis %s points dans %s atouts pendant cette vie.",
   "gui.dungeontrain.perks.death.narration": "Ils disparaissent avec toi. Ce que tu as débloqué reste pour la prochaine vie.",
-  "gui.dungeontrain.perks.death.tile.spent": "Points d'atout dépensés",
   "gui.dungeontrain.perks.death.tile.ranks": "Points placés",
   "gui.dungeontrain.perks.death.tile.perks": "Atouts renforcés",
   "gui.dungeontrain.perks.death.tile.top": "Le plus de points",

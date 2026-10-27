@@ -5728,7 +5728,6 @@
   "gui.dungeontrain.perks.death.kicker": "Punkty, które niosłeś",
   "gui.dungeontrain.perks.death.question": "W tym życiu włożyłeś %s pkt w %s perków.",
   "gui.dungeontrain.perks.death.narration": "Odchodzą razem z tobą. To, co odblokowałeś, zostaje na następne życie.",
-  "gui.dungeontrain.perks.death.tile.spent": "Wydane aktywne punkty",
   "gui.dungeontrain.perks.death.tile.ranks": "Włożone punkty",
   "gui.dungeontrain.perks.death.tile.perks": "Wzmocnione perki",
   "gui.dungeontrain.perks.death.tile.top": "Najwięcej punktów",

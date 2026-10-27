@@ -5600,7 +5600,6 @@
   "gui.dungeontrain.perks.death.kicker": "Poin yang kamu bawa",
   "gui.dungeontrain.perks.death.question": "Kamu menaruh %s poin ke %s perk dalam hidup ini.",
   "gui.dungeontrain.perks.death.narration": "Poin itu ikut hilang bersamamu. Yang sudah kamu buka tetap ada untuk hidup berikutnya.",
-  "gui.dungeontrain.perks.death.tile.spent": "Poin Aktif terpakai",
   "gui.dungeontrain.perks.death.tile.ranks": "Poin dimasukkan",
   "gui.dungeontrain.perks.death.tile.perks": "Perk diperkuat",
   "gui.dungeontrain.perks.death.tile.top": "Poin terbanyak",

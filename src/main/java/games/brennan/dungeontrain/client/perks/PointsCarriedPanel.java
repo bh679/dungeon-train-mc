@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.client.perks;
 
 import games.brennan.dungeontrain.client.DeathScreenText;
-import games.brennan.dungeontrain.perks.PerkRankCost;
 import games.brennan.dungeontrain.perks.PerkTree;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -14,7 +13,8 @@ import java.util.Map;
 /**
  * The death page framing over the sky when a life ends with points in perks ({@link DeathPerksPhase}):
  * a kicker, question and narration across the top in the death recap's voice, and along the bottom, in
- * the details bar's place, tiles for what the points bought and the Next Screen button. Everything here
+ * the details bar's place, tiles for the points put in, the perks they went into and the perk with the most,
+ * and the Next Screen button. Everything here
  * fades with one alpha so the drain can hand the same spots over to the menu.
  */
 @OnlyIn(Dist.CLIENT)
@@ -56,7 +56,6 @@ final class PointsCarriedPanel {
         int ty = barTop + (PerkDetailsBar.HEIGHT - TILE_H) / 2;
         int x = PAD;
         int right = width - PAD - BUTTON_W - TILE_GAP;
-        x = tile(g, x, ty, right, String.valueOf(PerkRankCost.totalCost(carried.ranksBought())), "tile.spent", alpha);
         x = tile(g, x, ty, right, String.valueOf(carried.ranksBought()), "tile.ranks", alpha);
         x = tile(g, x, ty, right, String.valueOf(carried.active().size()), "tile.perks", alpha);
         String top = topPerk(carried);

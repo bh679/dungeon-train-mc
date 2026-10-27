@@ -5661,7 +5661,6 @@
   "gui.dungeontrain.perks.death.kicker": "The points you carried",
   "gui.dungeontrain.perks.death.question": "You put %s points into %s perks this life.",
   "gui.dungeontrain.perks.death.narration": "They go down with you. What you unlocked stays for the next life.",
-  "gui.dungeontrain.perks.death.tile.spent": "Active Points spent",
   "gui.dungeontrain.perks.death.tile.ranks": "Points put in",
   "gui.dungeontrain.perks.death.tile.perks": "Perks powered",
   "gui.dungeontrain.perks.death.tile.top": "Most points",

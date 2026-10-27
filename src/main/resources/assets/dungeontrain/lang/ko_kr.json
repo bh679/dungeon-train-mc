@@ -5600,7 +5600,6 @@
   "gui.dungeontrain.perks.death.kicker": "지니고 있던 포인트",
   "gui.dungeontrain.perks.death.question": "이번 생에서 %s 포인트를 %s개의 특성에 넣었습니다.",
   "gui.dungeontrain.perks.death.narration": "포인트는 당신과 함께 사라집니다. 해금한 것은 다음 생에도 남습니다.",
-  "gui.dungeontrain.perks.death.tile.spent": "사용한 활성 포인트",
   "gui.dungeontrain.perks.death.tile.ranks": "넣은 포인트",
   "gui.dungeontrain.perks.death.tile.perks": "강화한 특성",
   "gui.dungeontrain.perks.death.tile.top": "가장 많은 포인트",

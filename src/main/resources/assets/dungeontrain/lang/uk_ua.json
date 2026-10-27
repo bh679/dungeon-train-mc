@@ -5725,7 +5725,6 @@
   "gui.dungeontrain.perks.death.kicker": "Бали, що були з тобою",
   "gui.dungeontrain.perks.death.question": "У цьому житті ти вклав %s бал. у %s перк.",
   "gui.dungeontrain.perks.death.narration": "Вони зникають разом із тобою. Відкрите лишається на наступне життя.",
-  "gui.dungeontrain.perks.death.tile.spent": "Витрачено активних балів",
   "gui.dungeontrain.perks.death.tile.ranks": "Вкладено балів",
   "gui.dungeontrain.perks.death.tile.perks": "Посилено перків",
   "gui.dungeontrain.perks.death.tile.top": "Найбільше балів",

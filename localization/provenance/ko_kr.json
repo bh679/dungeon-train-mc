@@ -5600,7 +5600,6 @@
   "gui.dungeontrain.perks.death.kicker": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "716b6a2d0a4c5181"},
   "gui.dungeontrain.perks.death.question": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "93447c71fe43a630"},
   "gui.dungeontrain.perks.death.narration": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "0532545791435741"},
-  "gui.dungeontrain.perks.death.tile.spent": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "4c37c7a407305702"},
   "gui.dungeontrain.perks.death.tile.ranks": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "16163b7f80d26624"},
   "gui.dungeontrain.perks.death.tile.perks": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "d24e47371ec2aeb9"},
   "gui.dungeontrain.perks.death.tile.top": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "9c308d418bfd42a7"},

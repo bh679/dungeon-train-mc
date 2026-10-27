@@ -5600,7 +5600,6 @@
   "gui.dungeontrain.perks.death.kicker": "持っていたポイント",
   "gui.dungeontrain.perks.death.question": "この命で %s ポイントを %s 個のパークに使いました。",
   "gui.dungeontrain.perks.death.narration": "ポイントはあなたと共に消えます。解放したものは次の命に残ります。",
-  "gui.dungeontrain.perks.death.tile.spent": "使った有効ポイント",
   "gui.dungeontrain.perks.death.tile.ranks": "振ったポイント",
   "gui.dungeontrain.perks.death.tile.perks": "強化したパーク",
   "gui.dungeontrain.perks.death.tile.top": "最多ポイント",

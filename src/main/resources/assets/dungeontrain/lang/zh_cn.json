@@ -5614,7 +5614,6 @@
   "gui.dungeontrain.perks.death.kicker": "你随身的点数",
   "gui.dungeontrain.perks.death.question": "这一生你把 %s 点投入了 %s 项特权。",
   "gui.dungeontrain.perks.death.narration": "它们随你而去。已解锁的会留到下一生。",
-  "gui.dungeontrain.perks.death.tile.spent": "已用激活点数",
   "gui.dungeontrain.perks.death.tile.ranks": "投入的点数",
   "gui.dungeontrain.perks.death.tile.perks": "强化的特权",
   "gui.dungeontrain.perks.death.tile.top": "点数最多",

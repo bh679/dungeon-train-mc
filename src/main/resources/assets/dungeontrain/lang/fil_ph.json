@@ -5600,7 +5600,6 @@
   "gui.dungeontrain.perks.death.kicker": "Ang mga puntos na dala mo",
   "gui.dungeontrain.perks.death.question": "Naglagay ka ng %s puntos sa %s perks sa buhay na ito.",
   "gui.dungeontrain.perks.death.narration": "Kasama mo silang nawala. Ang na-unlock mo ay mananatili para sa susunod na buhay.",
-  "gui.dungeontrain.perks.death.tile.spent": "Active Points na nagastos",
   "gui.dungeontrain.perks.death.tile.ranks": "Puntos na nailagay",
   "gui.dungeontrain.perks.death.tile.perks": "Perks na pinalakas",
   "gui.dungeontrain.perks.death.tile.top": "Pinakamaraming puntos",
