@@ -1374,6 +1374,8 @@
   "gui.dungeontrain.rewards.group.extra": "พิเศษ",
   "gui.dungeontrain.tv.channel.main": "สตรีม 1",
   "gui.dungeontrain.tv.channel.second": "สตรีม 2",
+  "item.dungeontrain.tv.on": "เปิด",
+  "item.dungeontrain.tv.off": "ปิด",
   "gui.dungeontrain.rewards.quicker_streams.name": "สตรีมเร็วขึ้น",
   "gui.dungeontrain.rewards.quicker_streams.line": "ลดดีเลย์จาก %1$ss เหลือ %2$ss เป็นเวลา 1 เดือน",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",

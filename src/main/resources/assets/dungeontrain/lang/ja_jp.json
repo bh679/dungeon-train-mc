@@ -1374,6 +1374,8 @@
   "gui.dungeontrain.rewards.group.extra": "その他",
   "gui.dungeontrain.tv.channel.main": "配信 1",
   "gui.dungeontrain.tv.channel.second": "配信 2",
+  "item.dungeontrain.tv.on": "オン",
+  "item.dungeontrain.tv.off": "オフ",
   "gui.dungeontrain.rewards.quicker_streams.name": "配信の高速化",
   "gui.dungeontrain.rewards.quicker_streams.line": "遅延を%1$s秒から%2$s秒に短縮、1か月間",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",

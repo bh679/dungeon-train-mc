@@ -109,6 +109,11 @@ public final class DeathNoteEvents {
         echo.level().addFreshEntity(drop);
         if (KillCredit.resolveKiller(echo, event.getSource()).orElse(null) instanceof ServerPlayer killer) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(killer, killedEchoActionId(kind));
+            // The cursed player who kills their own hunter also takes its author's head.
+            if (DeathNoteEchoHead.shouldDrop(kind, killer.getUUID(),
+                    data.getString(DeathNoteEchoSpawner.KEY_TARGET))) {
+                DeathNoteEchoHead.drop(echo, author);
+            }
         }
         LOGGER.debug("[DungeonTrain] Note: echo of {} dropped a {} on death", author, kind.trophyTitle());
     }
