@@ -285,6 +285,7 @@
   "gui.dungeontrain.live.takeover": "Sende-Camcorder nehmen",
   "gui.dungeontrain.live.takeover.tip": "Öffne den Chat oder dein Inventar, um zu klicken. Wer zuerst klickt, geht live; dein Fernseher wird zum Sende-Camcorder.",
   "chat.dungeontrain.live.takeover.offer": "%s ist live gestorben. Der Stream ist zu haben: %s",
+  "chat.dungeontrain.live.takeover.offer.removed": "%s hat den Sende-Camcorder abgenommen. Der Stream ist zu haben: %s",
   "chat.dungeontrain.live.takeover.button": "Sende-Camcorder nehmen",
   "chat.dungeontrain.live.takeover.button.tip": "Wer zuerst klickt, geht live. Der Fernseher auf deinem Kopf wird zum Sende-Camcorder.",
   "chat.dungeontrain.live.takeover.won": "Du hast den Stream übernommen. Du gehst live …",

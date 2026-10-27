@@ -285,6 +285,7 @@
   "gui.dungeontrain.live.takeover": "Pegar a filmadora de transmissão",
   "gui.dungeontrain.live.takeover.tip": "Abra o chat ou o inventário para clicar. Quem clicar primeiro entra ao vivo; sua TV vira uma filmadora de transmissão.",
   "chat.dungeontrain.live.takeover.offer": "%s morreu ao vivo. A transmissão está livre: %s",
+  "chat.dungeontrain.live.takeover.offer.removed": "%s tirou a Filmadora de transmissão. A transmissão está livre: %s",
   "chat.dungeontrain.live.takeover.button": "Pegar a filmadora de transmissão",
   "chat.dungeontrain.live.takeover.button.tip": "Quem clicar primeiro entra ao vivo. A TV na sua cabeça vira uma filmadora de transmissão.",
   "chat.dungeontrain.live.takeover.won": "Você assumiu a transmissão. Entrando ao vivo...",

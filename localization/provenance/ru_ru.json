@@ -313,6 +313,7 @@
   "gui.dungeontrain.live.takeover": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "4b33876f2712c5a4"},
   "gui.dungeontrain.live.takeover.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "9f86ca9da0ff866b"},
   "chat.dungeontrain.live.takeover.offer": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "6eb2605e737ddd4a"},
+  "chat.dungeontrain.live.takeover.offer.removed": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "710fdd4abb76abd2"},
   "chat.dungeontrain.live.takeover.button": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "4b33876f2712c5a4"},
   "chat.dungeontrain.live.takeover.button.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "5bc6920904f73bcf"},
   "chat.dungeontrain.live.takeover.won": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "3d6aa7acb7f601c3"},

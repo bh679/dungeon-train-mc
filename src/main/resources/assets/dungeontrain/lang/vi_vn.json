@@ -262,6 +262,7 @@
   "gui.dungeontrain.live.takeover": "Lấy Máy quay phát sóng",
   "gui.dungeontrain.live.takeover.tip": "Mở khung chat hoặc túi đồ để bấm. Ai bấm trước sẽ được phát trực tiếp; TV của bạn biến thành Máy quay phát sóng.",
   "chat.dungeontrain.live.takeover.offer": "%s đã chết khi đang phát trực tiếp. Buổi phát đang chờ người tiếp quản: %s",
+  "chat.dungeontrain.live.takeover.offer.removed": "%s đã tháo Máy quay phát sóng. Buổi phát đang chờ người tiếp quản: %s",
   "chat.dungeontrain.live.takeover.button": "Lấy Máy quay phát sóng",
   "chat.dungeontrain.live.takeover.button.tip": "Ai bấm trước sẽ được phát trực tiếp. TV trên đầu bạn biến thành Máy quay phát sóng.",
   "chat.dungeontrain.live.takeover.won": "Bạn đã tiếp quản buổi phát. Đang bắt đầu phát...",

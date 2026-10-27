@@ -143,6 +143,7 @@
       "gui.dungeontrain.live.end_stream",
       "gui.dungeontrain.live.takeover.tip",
       "chat.dungeontrain.live.takeover.offer",
+      "chat.dungeontrain.live.takeover.offer.removed",
       "chat.dungeontrain.live.takeover.button.tip",
       "chat.dungeontrain.live.takeover.won",
       "chat.dungeontrain.live.takeover.taken",

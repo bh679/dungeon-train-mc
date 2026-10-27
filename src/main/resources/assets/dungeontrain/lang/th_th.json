@@ -262,6 +262,7 @@
   "gui.dungeontrain.live.takeover": "รับกล้องวิดีโอถ่ายทอด",
   "gui.dungeontrain.live.takeover.tip": "เปิดแชทหรือช่องเก็บของเพื่อคลิก คนแรกที่คลิกจะได้ไลฟ์ และทีวีของคุณจะกลายเป็นกล้องวิดีโอถ่ายทอด",
   "chat.dungeontrain.live.takeover.offer": "%s ตายระหว่างไลฟ์ สตรีมนี้เปิดให้รับช่วง: %s",
+  "chat.dungeontrain.live.takeover.offer.removed": "%s ถอดกล้องวิดีโอถ่ายทอดออกแล้ว สตรีมนี้เปิดให้รับช่วง: %s",
   "chat.dungeontrain.live.takeover.button": "รับกล้องวิดีโอถ่ายทอด",
   "chat.dungeontrain.live.takeover.button.tip": "คนแรกที่คลิกจะได้ไลฟ์ ทีวีบนหัวคุณจะกลายเป็นกล้องวิดีโอถ่ายทอด",
   "chat.dungeontrain.live.takeover.won": "คุณรับช่วงสตรีมแล้ว กำลังเริ่มไลฟ์...",

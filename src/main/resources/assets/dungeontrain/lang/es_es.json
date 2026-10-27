@@ -285,6 +285,7 @@
   "gui.dungeontrain.live.takeover": "Coger la videocámara de emisión",
   "gui.dungeontrain.live.takeover.tip": "Abre el chat o tu inventario para hacer clic. Quien haga clic primero sale en directo; tu tele se convierte en una videocámara de emisión.",
   "chat.dungeontrain.live.takeover.offer": "%s ha muerto en directo. Su emisión está libre: %s",
+  "chat.dungeontrain.live.takeover.offer.removed": "%s se ha quitado la Videocámara de emisión. Su emisión está libre: %s",
   "chat.dungeontrain.live.takeover.button": "Coger la videocámara de emisión",
   "chat.dungeontrain.live.takeover.button.tip": "Quien haga clic primero sale en directo. La tele de tu cabeza se convierte en una videocámara de emisión.",
   "chat.dungeontrain.live.takeover.won": "Has tomado el relevo de la emisión. Saliendo en directo...",
