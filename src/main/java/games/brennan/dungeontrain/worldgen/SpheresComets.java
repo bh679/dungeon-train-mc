@@ -19,9 +19,9 @@ package games.brennan.dungeontrain.worldgen;
 public final class SpheresComets {
 
     static final double FIRST_LAP_MIN_END_SKY = 0.5;
-    static final double FIRST_LAP_INTERVAL_SECONDS = 120.0;
-    static final double SECOND_LAP_INTERVAL_SECONDS = 20.0;
-    static final double MIN_INTERVAL_SECONDS = 4.0;
+    static final double FIRST_LAP_INTERVAL_SECONDS = 20.0;
+    static final double SECOND_LAP_INTERVAL_SECONDS = 5.0;
+    static final double MIN_INTERVAL_SECONDS = 2.0;
     /** Share of comets aimed at the train; the rest cross the sky on near-miss lines. */
     public static final double AIMED_SHARE = 1.0 / 3.0;
     private static final int TICKS_PER_SECOND = 20;

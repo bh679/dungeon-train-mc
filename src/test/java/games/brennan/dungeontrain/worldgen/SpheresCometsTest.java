@@ -26,17 +26,16 @@ class SpheresCometsTest {
 
     @Test
     void intervalClimbsEachLapToAFloor() {
-        assertEquals(120.0, SpheresComets.intervalSeconds(0L), 1e-9);
-        assertEquals(20.0, SpheresComets.intervalSeconds(1L), 1e-9);
-        assertEquals(10.0, SpheresComets.intervalSeconds(2L), 1e-9);
-        assertEquals(5.0, SpheresComets.intervalSeconds(3L), 1e-9);
-        assertEquals(4.0, SpheresComets.intervalSeconds(4L), 1e-9);
-        assertEquals(4.0, SpheresComets.intervalSeconds(1_000L), 1e-9);
+        assertEquals(20.0, SpheresComets.intervalSeconds(0L), 1e-9);
+        assertEquals(5.0, SpheresComets.intervalSeconds(1L), 1e-9);
+        assertEquals(2.5, SpheresComets.intervalSeconds(2L), 1e-9);
+        assertEquals(2.0, SpheresComets.intervalSeconds(3L), 1e-9);
+        assertEquals(2.0, SpheresComets.intervalSeconds(1_000L), 1e-9);
     }
 
     @Test
     void chanceIsOnePerIntervalOfTicks() {
-        assertEquals(1.0 / 2400.0, SpheresComets.chancePerTick(0L, 1.0, 1.0), 1e-12);
-        assertEquals(1.0 / 400.0, SpheresComets.chancePerTick(1L, 0.0, 1.0), 1e-12);
+        assertEquals(1.0 / 400.0, SpheresComets.chancePerTick(0L, 1.0, 1.0), 1e-12);
+        assertEquals(1.0 / 100.0, SpheresComets.chancePerTick(1L, 0.0, 1.0), 1e-12);
     }
 }
