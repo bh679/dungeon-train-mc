@@ -31283,6 +31283,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "mobs-stay-visible-after-lag",
+      "version": "0.1557.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Mob fix",
+      "summary": "Mobs fighting you on the train no longer sometimes turn invisible after a lag spike while still attacking.",
+      "highlights": [],
+      "pr": 2361,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -250,6 +250,7 @@
     "client.LanguageSelectEntryLogoMixin",
     "client.FrustumPortalSealMixin",
     "client.SubLevelSealCullMixin",
+    "client.LivingEntityPlotLerpGuardMixin",
     "client.SectionOcclusionGraphPortalSwapMixin",
     "client.LevelRendererPortalSwapCompileMixin",
     "client.LevelRendererArrivalListMixin",
