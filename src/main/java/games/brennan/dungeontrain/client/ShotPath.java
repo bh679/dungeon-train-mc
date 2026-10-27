@@ -1,10 +1,10 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.client.snapshot.CarriageOcclusion;
-import games.brennan.dungeontrain.client.snapshot.SnapshotCamera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
 
@@ -36,13 +36,24 @@ public final class ShotPath {
     /** Every sample in open air, and the aim visible from the first, middle and last. */
     public static boolean clear(ClientLevel level, Entity viewer, List<CarriageOcclusion.Carriage> carriages,
                                 List<Vector3d> path, Vector3d aim) {
+        return clear(level, viewer, carriages, path, aim, false);
+    }
+
+    /**
+     * As above; with {@code throughCarriages} the view test ignores carriage blocks (a shot of the
+     * place where the train passes: the aim sits where a carriage was or will be, and the train
+     * crossing the frame is the point), while the lens itself must still be outside every block.
+     */
+    public static boolean clear(ClientLevel level, Entity viewer, List<CarriageOcclusion.Carriage> carriages,
+                                List<Vector3d> path, Vector3d aim, boolean throughCarriages) {
         if (path.isEmpty()) return false;
         for (Vector3d p : path) {
             if (insideBlock(level, carriages, p)) return false;
         }
+        List<CarriageOcclusion.Carriage> forView = throughCarriages ? List.of() : carriages;
         int[] checks = {0, path.size() / 2, path.size() - 1};
         for (int i : checks) {
-            if (!clearView(level, viewer, carriages, aim, path.get(i))) return false;
+            if (!clearView(level, viewer, forView, aim, path.get(i))) return false;
         }
         return true;
     }
@@ -59,8 +70,20 @@ public final class ShotPath {
                                     Vector3d subject, Vector3d lens) {
         Vec3 from = new Vec3(subject.x, subject.y + 1.2, subject.z);
         Vec3 to = new Vec3(lens.x, lens.y, lens.z);
-        Vec3 clipped = SnapshotCamera.clipTowardOpenAir(level, viewer, from, to);
-        if (clipped.distanceToSqr(to) > 0.25) return false;
+        if (terrainBetween(level, from, to)) return false;
         return CarriageOcclusion.firstHit(carriages, from, to) == null;
+    }
+
+    /**
+     * A world block with a collision shape on the segment, found by walking the blocks directly.
+     * {@code Level.clip} is not used: Sable redirects a ray that starts inside a carriage into that
+     * carriage's own sub-level, so from a body on the train it never reports the hillside beyond.
+     */
+    public static boolean terrainBetween(ClientLevel level, Vec3 from, Vec3 to) {
+        if (from.distanceToSqr(to) < 1.0e-6) return false;
+        Boolean hit = BlockGetter.traverseBlocks(from, to, level,
+            (lvl, pos) -> lvl.getBlockState(pos).getCollisionShape(lvl, pos).isEmpty() ? null : Boolean.TRUE,
+            lvl -> null);
+        return Boolean.TRUE.equals(hit);
     }
 }
