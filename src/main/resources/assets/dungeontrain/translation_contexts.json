@@ -958,6 +958,12 @@
  "gui.dungeontrain.cinematic.press_space_to_skip": [
   "screen"
  ],
+ "gui.dungeontrain.death_moment.continue": [
+  "screen"
+ ],
+ "gui.dungeontrain.death_moment.change_view": [
+  "screen"
+ ],
  "gui.dungeontrain.loading.title": [
   "screen"
  ],

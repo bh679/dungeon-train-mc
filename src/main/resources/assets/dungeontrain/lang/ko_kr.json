@@ -250,6 +250,8 @@
   "gui.dungeontrain.cinematic.loading.ready": "모두 탑승!",
   "gui.dungeontrain.cinematic.press_space_to_start": "스페이스를 눌러 시작",
   "gui.dungeontrain.cinematic.press_space_to_skip": "스페이스를 눌러 건너뛰기",
+  "gui.dungeontrain.death_moment.continue": "스페이스 키를 눌러 계속",
+  "gui.dungeontrain.death_moment.change_view": "왼쪽 또는 오른쪽 키로 시점 변경",
   "gui.dungeontrain.viewfinder.selfie": "셀카",
   "gui.dungeontrain.viewfinder.front": "정면",
   "gui.dungeontrain.live.badge": "LIVE",

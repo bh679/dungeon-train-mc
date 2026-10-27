@@ -296,6 +296,8 @@
   "gui.dungeontrain.cinematic.loading.ready": "Wszyscy na pokład!",
   "gui.dungeontrain.cinematic.press_space_to_start": "Naciśnij Spację, aby zacząć",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Naciśnij Spację, aby pominąć",
+  "gui.dungeontrain.death_moment.continue": "Naciśnij spację, aby kontynuować",
+  "gui.dungeontrain.death_moment.change_view": "Lewo lub Prawo, aby zmienić widok",
   "gui.dungeontrain.viewfinder.selfie": "Selfie",
   "gui.dungeontrain.viewfinder.front": "Przód",
   "gui.dungeontrain.live.badge": "NA ŻYWO",

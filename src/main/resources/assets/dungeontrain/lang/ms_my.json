@@ -250,6 +250,8 @@
   "gui.dungeontrain.cinematic.loading.ready": "Semua naik!",
   "gui.dungeontrain.cinematic.press_space_to_start": "Tekan Space untuk Mula",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Tekan Space untuk langkau",
+  "gui.dungeontrain.death_moment.continue": "Tekan Space untuk teruskan",
+  "gui.dungeontrain.death_moment.change_view": "Kiri atau Kanan untuk tukar pandangan",
   "gui.dungeontrain.viewfinder.selfie": "Swafoto",
   "gui.dungeontrain.viewfinder.front": "Depan",
   "gui.dungeontrain.live.badge": "LANGSUNG",

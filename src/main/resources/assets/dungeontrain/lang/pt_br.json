@@ -273,6 +273,8 @@
   "gui.dungeontrain.cinematic.loading.ready": "Todos a bordo!",
   "gui.dungeontrain.cinematic.press_space_to_start": "Pressione Espaço para Começar",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Pressione Espaço para pular",
+  "gui.dungeontrain.death_moment.continue": "Pressione Espaço para continuar",
+  "gui.dungeontrain.death_moment.change_view": "Esquerda ou Direita para mudar a visão",
   "gui.dungeontrain.viewfinder.selfie": "Selfie",
   "gui.dungeontrain.viewfinder.front": "Frente",
   "gui.dungeontrain.live.badge": "AO VIVO",

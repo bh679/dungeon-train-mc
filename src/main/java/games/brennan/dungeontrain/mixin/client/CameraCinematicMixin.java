@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import games.brennan.dungeontrain.client.CinematicCameraController;
+import games.brennan.dungeontrain.client.DeathCameraCycle;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshotCapture;
 import net.minecraft.client.Camera;
 import net.minecraft.world.entity.Entity;
@@ -55,6 +56,13 @@ public abstract class CameraCinematicMixin {
         if (preview != null) {
             this.setPosition(preview.pos());
             this.setRotation(preview.yaw(), preview.pitch());
+            return;
+        }
+        // Death moment: three shots of the train cycling until Space (DeathMomentScreen).
+        CinematicCameraController.Pose death = DeathCameraCycle.pose(partialTick);
+        if (death != null) {
+            this.setPosition(death.pos());
+            this.setRotation(death.yaw(), death.pitch());
             return;
         }
         if (!CinematicCameraController.isActive()) return;
