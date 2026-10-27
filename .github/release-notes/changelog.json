@@ -31431,6 +31431,23 @@
       "released": true,
       "released_in": "v0.1564.0",
       "released_at": "2026-10-27T15:33:54Z"
+    },
+    {
+      "id": "dimensional-carriage-copies-stay-changed",
+      "version": "0.1565.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train",
+        "loot"
+      ],
+      "title": "Dimensional carriage fix",
+      "summary": "Rooms inside a dimensional carriage now stay as you left them, including the parts you changed from the room next door. Step back onto the train and come back, and what you took or broke is still gone.",
+      "highlights": [],
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
