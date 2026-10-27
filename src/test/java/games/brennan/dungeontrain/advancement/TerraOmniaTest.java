@@ -65,4 +65,18 @@ final class TerraOmniaTest {
         assertEquals(List.of(), TerraOmnia.topUp(Set.of(id("a:1"), id("a:2")), order, 2));
         assertEquals(order, TerraOmnia.topUp(Set.of(), order, 10));
     }
+
+    @Test
+    @DisplayName("every-biome photos: never-placed registry entries are not asked for; coverage, not count")
+    void coversEvery() {
+        List<ResourceLocation> registry = List.of(id("minecraft:plains"), id("minecraft:the_void"),
+            id("terrablender:deferred_placeholder"), id("biomesoplenty:bayou"));
+        assertTrue(TerraOmnia.coversEvery(List.of("minecraft:plains", "biomesoplenty:bayou"), registry));
+        assertFalse(TerraOmnia.coversEvery(List.of("minecraft:plains"), registry));
+        // As many ids as the registry holds, but one placeable biome missing: still not every biome.
+        assertFalse(TerraOmnia.coversEvery(List.of("minecraft:plains", "x:gone", "y:gone", "z:gone"), registry));
+        assertTrue(TerraOmnia.coversEvery(List.of("minecraft:plains", "Not An Id!", "biomesoplenty:bayou"), registry));
+        assertFalse(TerraOmnia.coversEvery(List.of(), List.of()));
+        assertFalse(TerraOmnia.coversEvery(List.of("minecraft:the_void"), List.of(id("minecraft:the_void"))));
+    }
 }

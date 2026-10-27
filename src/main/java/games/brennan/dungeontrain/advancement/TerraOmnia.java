@@ -10,6 +10,7 @@ import net.minecraft.world.level.biome.Biome;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +66,22 @@ public final class TerraOmnia {
     /** Whether {@code ridden} holds every biome Terra Omnia asks for in {@code registry}. */
     public static boolean isComplete(Set<ResourceLocation> ridden, Registry<Biome> registry) {
         return isComplete(ridden, ordered(registry).keySet());
+    }
+
+    /**
+     * Whether the stored biome ids {@code have} cover every id in {@code registryIds} a world can place
+     * (less {@link #EXCLUDED}). Unparsable stored ids are ignored. Used by the every-biome photo
+     * advancement, so it asks for the same biomes as Terra Omnia. Pure.
+     */
+    public static boolean coversEvery(Collection<String> have, Collection<ResourceLocation> registryIds) {
+        Set<ResourceLocation> parsed = new HashSet<>();
+        for (String s : have) {
+            ResourceLocation id = ResourceLocation.tryParse(s);
+            if (id != null) parsed.add(id);
+        }
+        List<ResourceLocation> asked = new ArrayList<>(registryIds);
+        asked.removeIf(EXCLUDED::contains);
+        return isComplete(parsed, asked);
     }
 
     /** Every biome Terra Omnia asks for in {@code registry}, keyed in checklist order, each with its group. */

@@ -284,7 +284,8 @@ public final class EarnedPhotos {
         if (target != null) return target;
         var level = Minecraft.getInstance().level;
         return level == null ? 0
-                : level.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.BIOME).size();
+                : games.brennan.dungeontrain.advancement.TerraOmnia.ordered(
+                        level.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.BIOME)).size();
     }
 
     @SubscribeEvent

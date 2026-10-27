@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.BandAdvancements;
 import games.brennan.dungeontrain.advancement.EnchiridionAdvancements;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.advancement.TerraOmnia;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.EchoIdentity;
 import games.brennan.dungeontrain.event.PlayerActivityTracker;
@@ -258,7 +259,7 @@ public final class PhotoAdvancementEvents {
         for (Tag t : seen) {
             if (id.equals(t.getAsString())) {
                 ModAdvancementTriggers.PHOTO_BIOMES.get().trigger(player, seen.size());
-                checkEveryBiome(player, seen.size());
+                checkEveryBiome(player, seen);
                 return;
             }
         }
@@ -270,13 +271,17 @@ public final class PhotoAdvancementEvents {
         AdvancementPhotoCapture.sendEntry(player,
                 ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, EnchiridionAdvancements.BIOME_ALBUM), id);
         ModAdvancementTriggers.PHOTO_BIOMES.get().trigger(player, updated.size());
-        checkEveryBiome(player, updated.size());
+        checkEveryBiome(player, updated);
     }
 
-    /** "Coffee Table Book": a photo taken in every biome the game has. */
-    private static void checkEveryBiome(ServerPlayer player, int photographed) {
-        int total = player.registryAccess().registryOrThrow(Registries.BIOME).size();
-        if (total > 0 && photographed >= total) {
+    /**
+     * "Coffee Table Book": a photo taken in every biome the game has, i.e. every biome Terra Omnia asks for
+     * (registry entries no world places are left out, see {@link TerraOmnia#coversEvery}).
+     */
+    private static void checkEveryBiome(ServerPlayer player, ListTag photographed) {
+        List<String> ids = new java.util.ArrayList<>(photographed.size());
+        for (Tag t : photographed) ids.add(t.getAsString());
+        if (TerraOmnia.coversEvery(ids, player.registryAccess().registryOrThrow(Registries.BIOME).keySet())) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, PHOTOGRAPHED_EVERY_BIOME);
         }
     }
