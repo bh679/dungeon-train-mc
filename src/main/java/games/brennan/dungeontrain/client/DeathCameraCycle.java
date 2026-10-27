@@ -1,5 +1,8 @@
 package games.brennan.dungeontrain.client;
 
+import dev.ryanhcode.sable.Sable;
+import dev.ryanhcode.sable.api.sublevel.ClientSubLevelContainer;
+import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
@@ -23,6 +26,7 @@ import org.joml.Vector3d;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * The death moment's camera. In order: the player's own view (red wash, death tilt), an orbit of
@@ -70,11 +74,23 @@ public final class DeathCameraCycle {
     static final List<DeathShot> TRAIN_SHOTS = List.of(
         DeathShot.worldArc(0.0, 24.0, 14.0, 50.0, 120, "W-5"),                                     // high overhead, slow arc
         DeathShot.worldDolly(new Vec3(-14.0, 3.0, 26.0), new Vec3(14.0, 3.0, 26.0), 120, "W-6"),   // low side, slide along
+        DeathShot.orbit(DeathShot.Target.RANDOM_MOB, 3.0, 2.0, 100, "mob-arc"),                     // close arc on any mob riding the train
         DeathShot.worldDolly(new Vec3(-55.0, 18.0, -28.0), new Vec3(-42.0, 15.0, -22.0), 120, "W-7"), // far behind high, push in
         DeathShot.worldArc(45.0, 4.0, -24.0, -25.0, 120, "W-8"),                                   // far ahead low, slow arc
         DeathShot.worldArc(0.0, 36.0, 44.0, 35.0, 120, "W-9"),                                     // very high and wide, slow arc
         DeathShot.worldDolly(new Vec3(-26.0, 5.0, -20.0), new Vec3(-18.0, 4.0, -15.0), 120, "W-10") // behind low, push in
     );
+
+    /** Played instead of the open-air train shots while none of those has a clear path (a tunnel). */
+    static final List<DeathShot> TUNNEL_SHOTS = List.of(
+        DeathShot.tunnel(DeathShot.Kind.TUNNEL_WINDOW_OUT, 100, "window-out"),
+        DeathShot.tunnel(DeathShot.Kind.TUNNEL_ROOF, 100, "roof-skim"),
+        DeathShot.tunnel(DeathShot.Kind.TUNNEL_COUPLING, 100, "coupling"),
+        DeathShot.tunnel(DeathShot.Kind.TUNNEL_EYES, 100, "eyes-forward")
+    );
+    /** Train-locked shots are re-tested this often for a lens that has run into a block. */
+    private static final int TRAIN_LOCKED_RECHECK_TICKS = 5;
+    private static final double RANDOM_MOB_RANGE = 64.0;
 
     private static List<DeathShot> sequence = List.of();
     private static List<DeathShot> reviewSequence;
@@ -90,6 +106,15 @@ public final class DeathCameraCycle {
     private static Vector3d deathSpot;
     private static Entity killer;
     private static Entity contact;
+    private static Entity randomMob;
+    /** The feature shot's subject: a point on a sub-level, in that sub-level's plot space. */
+    private static ClientSubLevel featureSub;
+    private static Vector3d featureLocal;
+    private static DeathScenePacket.Target.Kind featureKind;
+    /** Tunnel shots: where the train-locked lens looks, carriage space. */
+    private static Vector3d aimLocal;
+    /** Open-air loop shots that played since the loop last started; tunnel shots play only when it is 0. */
+    private static int playedInLoop;
     /** The current shot's lens: carriage space for train-locked shots, world space otherwise. */
     private static Vector3d lens;
     /** Dolly end, carriage space. */
@@ -146,16 +171,23 @@ public final class DeathCameraCycle {
      * train shots are always there, so the loop always has something to show.
      */
     static List<DeathShot> buildSequence(boolean voidDeath, boolean hasKiller, boolean hasContact, boolean onTrain) {
+        return buildSequence(voidDeath, hasKiller, hasContact, onTrain, false);
+    }
+
+    static List<DeathShot> buildSequence(boolean voidDeath, boolean hasKiller, boolean hasContact, boolean onTrain,
+                                         boolean hasFeature) {
         List<DeathShot> shots = new ArrayList<>();
         shots.add(DeathShot.pov(40));
         if (!voidDeath) shots.add(DeathShot.orbit(DeathShot.Target.DEATH_SPOT, 6.0, 3.0, 60, "spot"));
         if (hasKiller) shots.add(DeathShot.orbit(DeathShot.Target.KILLER, 5.0, 2.5, 60, "killer"));
         if (hasContact) shots.add(DeathShot.orbit(DeathShot.Target.CONTACT, 5.0, 2.5, 60, "mob"));
+        if (hasFeature) shots.add(DeathShot.feature(80, "feature"));
         // One shot: zoom out from beside the body for DOLLY_TICKS, then the lens stays where it
         // reached, in the world, and tracks the body as the carriage rolls away.
         if (onTrain) shots.add(DeathShot.dolly(new Vec3(3.0, 2.0, 5.0), new Vec3(-6.0, 8.0, 14.0), DOLLY_TICKS + 60, "carriage"));
         else shots.add(DeathShot.transition(-3.0, 2.5, 8.0, 60, "leaving"));
         shots.addAll(TRAIN_SHOTS);
+        shots.addAll(TUNNEL_SHOTS);
         return List.copyOf(shots);
     }
 
@@ -184,16 +216,45 @@ public final class DeathCameraCycle {
         DeathScenePacket hints = DeathSceneHints.latest();
         killer = livingOnClient(mc, hints.killerId());
         contact = livingOnClient(mc, hints.contactId());
+        resolveFeature(mc, hints.targets());
         DeathSceneHints.clear();
         LOGGER.info("[DungeonTrain] Death scene starts: hints={} killer={} contact={} onTrain={}", hints,
             killer == null ? "none" : killer.getType().toShortString(), contact == null ? "none" : contact.getType().toShortString(),
             carriage != null);
         sequence = reviewSequence != null
             ? reviewSequence
-            : buildSequence(hints.voidDeath(), killer != null, contact != null, carriage != null);
+            : buildSequence(hints.voidDeath(), killer != null, contact != null, carriage != null, featureSub != null);
         savedHideGui = mc.options.hideGui;
         active = true;
+        playedInLoop = 0;
         select(0);
+    }
+
+    /** The first server-listed feature whose sub-level is on this client (contents first, nearest first). */
+    private static void resolveFeature(Minecraft mc, List<DeathScenePacket.Target> targets) {
+        featureSub = null;
+        featureLocal = null;
+        featureKind = null;
+        if (mc.level == null || targets == null) return;
+        ClientSubLevelContainer container = SubLevelContainer.getContainer(mc.level);
+        if (container == null) return;
+        for (DeathScenePacket.Target t : targets) {
+            for (ClientSubLevel sub : container.getAllSubLevels()) {
+                if (!sub.isRemoved() && sub.getUniqueId().equals(t.subLevelId())) {
+                    featureSub = sub;
+                    featureLocal = new Vector3d(t.x(), t.y(), t.z());
+                    featureKind = t.kind();
+                    return;
+                }
+            }
+        }
+    }
+
+    private static Vector3d featureWorld(float partialTick) {
+        if (featureSub == null || featureSub.isRemoved() || featureLocal == null) return null;
+        Pose3dc pose = featureSub.renderPose(partialTick);
+        if (pose == null) pose = featureSub.logicalPose();
+        return pose.transformPosition(new Vector3d(featureLocal), new Vector3d());
     }
 
     private static Entity livingOnClient(Minecraft mc, int id) {
@@ -211,6 +272,10 @@ public final class DeathCameraCycle {
         deathSpot = null;
         killer = null;
         contact = null;
+        randomMob = null;
+        featureSub = null;
+        featureLocal = null;
+        aimLocal = null;
         lens = null;
         lensEnd = null;
         dollyHold = null;
@@ -237,6 +302,10 @@ public final class DeathCameraCycle {
         shotTicks++;
         DeathShot shot = sequence.get(index);
         if (shot.kind() == DeathShot.Kind.ORBIT && shotTicks % ORBIT_RECHECK_TICKS == 0) recheckOrbit(shot);
+        if (shotTicks % TRAIN_LOCKED_RECHECK_TICKS == 0 && lensRanIntoBlock(shot)) {
+            select(nextIndex(sequence, index));
+            return;
+        }
         if (shotTicks >= shot.holdTicks()) select(nextIndex(sequence, index));
     }
 
@@ -268,8 +337,7 @@ public final class DeathCameraCycle {
     /** Pure: index of the first world-locked shot, the start of the loop, or -1. */
     static int loopStart(List<DeathShot> shots) {
         for (int i = 0; i < shots.size(); i++) {
-            DeathShot.Kind k = shots.get(i).kind();
-            if (k == DeathShot.Kind.WORLD || k == DeathShot.Kind.WORLD_DOLLY || k == DeathShot.Kind.WORLD_ARC) return i;
+            if (shots.get(i).kind().isLoop()) return i;
         }
         return -1;
     }
@@ -288,19 +356,64 @@ public final class DeathCameraCycle {
         return blackAlpha(shotTicks + partialTick, shot.holdTicks(), shot.kind() != DeathShot.Kind.POV);
     }
 
+    /**
+     * Show shot {@code i}, or the next one that can be shown: a shot whose subject is missing or
+     * whose lens path is not clear is skipped. Tunnel shots play only in a loop pass in which no
+     * open-air train shot could. {@code TUNNEL_EYES} always can, so this always lands somewhere.
+     */
     private static void select(int i) {
-        index = i;
+        int loop = loopStart(sequence);
+        for (int hops = 0; hops <= sequence.size() + TUNNEL_SHOTS.size(); hops++) {
+            if (i == loop && hops > 0) playedInLoop = 0;
+            DeathShot shot = sequence.get(i);
+            if (shot.kind().isTunnel() && playedInLoop > 0) {
+                i = nextIndex(sequence, i);
+                continue;
+            }
+            if (prepare(shot)) {
+                if (shot.kind().isLoop() && !shot.kind().isTunnel()) playedInLoop++;
+                index = i;
+                shotTicks = 0;
+                Minecraft.getInstance().options.hideGui = shot.kind() != DeathShot.Kind.POV;
+                return;
+            }
+            int next = nextIndex(sequence, i);
+            if (next == i) break;
+            i = next;
+        }
+        // Nothing at all could be shown (no carriage, no level): hold the player's own view.
+        index = 0;
         shotTicks = 0;
-        DeathShot shot = sequence.get(i);
-        Minecraft mc = Minecraft.getInstance();
-        mc.options.hideGui = shot.kind() != DeathShot.Kind.POV;
+    }
+
+    /** Resolve a shot's lens, aim and path; false when it cannot be shown now. */
+    private static boolean prepare(DeathShot shot) {
         lens = null;
         lensEnd = null;
         dollyHold = null;
         aimWorld = null;
+        aimLocal = null;
+        Minecraft mc = Minecraft.getInstance();
+        ClientLevel level = mc.level;
+        LocalPlayer player = mc.player;
+        if (level == null || player == null) return shot.kind() == DeathShot.Kind.POV;
+        Vector3d bodyW = bodyWorld();
+        Vec3 bodyVec = new Vec3(bodyW.x, bodyW.y, bodyW.z);
+        List<CarriageOcclusion.Carriage> carriages = CarriageOcclusion.gatherNearby(level, bodyVec, CARRIAGE_SCAN_RADIUS, 1.0f);
+        Vector3d aimBody = new Vector3d(bodyW.x, bodyW.y + LOOK_Y_OFFSET, bodyW.z);
         switch (shot.kind()) {
-            case POV -> { }
-            case TRAIN_LOCKED -> lens = resolveLens(shot.offset(), true, null);
+            case POV, TUNNEL_EYES -> {
+                if (shot.kind() == DeathShot.Kind.TUNNEL_EYES) {
+                    if (carriage == null) return false;
+                    lens = lensFor(bodyLocal, new Vec3(0.0, 1.6, 0.0));
+                    aimLocal = lensFor(lens, new Vec3(12.0, 0.0, 0.0));
+                }
+                return true;
+            }
+            case TRAIN_LOCKED -> {
+                lens = resolveLens(shot.offset(), true, null);
+                return ShotPath.clear(level, player, carriages, List.of(toWorld(lens)), aimBody);
+            }
             case DOLLY -> {
                 // Start just outside the carriage wall, looking in (through a window when there
                 // is one), then pull out a little more into the hold.
@@ -309,31 +422,118 @@ public final class DeathCameraCycle {
                 Vec3 to = window != null ? toVec(window.end()) : shot.offsetEnd();
                 lens = resolveLens(from, true, null);
                 lensEnd = resolveLens(to, true, null);
+                Vector3d a = lens;
+                Vector3d b = lensEnd;
+                return ShotPath.clear(level, player, carriages, ShotPath.samples(f -> toWorld(dollyAt(a, b, f))), aimBody);
             }
             case ORBIT -> {
-                if (!setUpOrbit(shot)) {
-                    // Nothing can see the subject from anywhere: skip this shot.
-                    int next = nextIndex(sequence, i);
-                    if (next != i) select(next);
-                }
+                return setUpOrbit(shot);
             }
-            case TRANSITION -> lens = resolveLens(shot.offset(), false, null);
+            case TRANSITION -> {
+                lens = resolveLens(shot.offset(), false, null);
+                return ShotPath.clear(level, player, carriages, List.of(lens), aimBody);
+            }
+            case FEATURE_TRACK -> {
+                Vector3d feature = featureWorld(1.0f);
+                if (feature == null) return false;
+                double up = featureKind == DeathScenePacket.Target.Kind.GROUP ? 9.0 : 4.0;
+                double across = featureKind == DeathScenePacket.Target.Kind.GROUP ? 26.0 : 14.0;
+                aimWorld = new Vector3d(feature.x, feature.y + LOOK_Y_OFFSET, feature.z);
+                for (double side : new double[] {1.0, -1.0}) {
+                    Vector3d candidate = lensFor(feature, new Vec3(0.0, up, side * across));
+                    if (ShotPath.clear(level, player, carriages, List.of(candidate), aimWorld)) {
+                        lens = candidate;
+                        return true;
+                    }
+                }
+                return false;
+            }
             case WORLD -> {
                 // Phase 2 is about the place: lens and aim hang off where the player died, in the
                 // world, not off the body the carriage has since carried on.
                 lens = resolveLens(shot.offset(), false, deathSpot);
                 aimWorld = new Vector3d(deathSpot.x, deathSpot.y + LOOK_Y_OFFSET, deathSpot.z);
+                return ShotPath.clear(level, player, carriages, List.of(lens), aimWorld);
             }
             case WORLD_DOLLY -> {
                 lens = resolveLens(shot.offset(), false, deathSpot);
                 lensEnd = resolveLens(shot.offsetEnd(), false, deathSpot);
                 aimWorld = new Vector3d(deathSpot.x, deathSpot.y + LOOK_Y_OFFSET, deathSpot.z);
+                Vector3d a = lens;
+                Vector3d b = lensEnd;
+                return ShotPath.clear(level, player, carriages, ShotPath.samples(f -> new Vector3d(a).lerp(b, f)), aimWorld);
             }
             case WORLD_ARC -> {
                 lens = resolveLens(shot.offset(), false, deathSpot);
                 aimWorld = new Vector3d(deathSpot.x, deathSpot.y + LOOK_Y_OFFSET, deathSpot.z);
+                Vector3d a = lens;
+                Vector3d c = deathSpot;
+                return ShotPath.clear(level, player, carriages, ShotPath.samples(f -> arcAt(c, a, shot.sweepDegrees(), f)), aimWorld);
+            }
+            case TUNNEL_WINDOW_OUT -> {
+                CarriageWindow window = windowForBody();
+                if (window == null || carriage == null) return false;
+                double side = window.side();
+                lens = lensFor(bodyLocal, new Vec3(0.0, 1.2, side * Math.max(0.5, window.wallAcross() - 0.8)));
+                aimLocal = lensFor(lens, new Vec3(0.0, 0.0, side * 12.0));
+                return ShotPath.clear(level, player, carriages, List.of(toWorld(lens)), toWorld(lensFor(lens, new Vec3(0.0, 0.0, side * 1.5))));
+            }
+            case TUNNEL_ROOF -> {
+                Double roof = roofAboveBody();
+                if (roof == null || carriage == null) return false;
+                lens = new Vector3d(bodyLocal.x, roof + 1.2, bodyLocal.z);
+                aimLocal = lensFor(lens, new Vec3(14.0, -2.0, 0.0));
+                return ShotPath.clear(level, player, carriages, List.of(toWorld(lens)), toWorld(lensFor(lens, new Vec3(3.0, -0.3, 0.0))));
+            }
+            case TUNNEL_COUPLING -> {
+                if (carriage == null) return false;
+                lens = lensFor(bodyLocal, new Vec3(-7.0, 1.5, 0.0));
+                aimLocal = lensFor(lens, new Vec3(-14.0, -0.5, 0.0));
+                return ShotPath.clear(level, player, carriages, List.of(toWorld(lens)), toWorld(lensFor(lens, new Vec3(-3.0, -0.1, 0.0))));
             }
         }
+        return false;
+    }
+
+    /** A train-locked lens that the moving train has carried into a block: cut away from it. */
+    private static boolean lensRanIntoBlock(DeathShot shot) {
+        if (lens == null || carriage == null) return false;
+        boolean trainLocked = switch (shot.kind()) {
+            case TRAIN_LOCKED, TUNNEL_WINDOW_OUT, TUNNEL_ROOF, TUNNEL_COUPLING -> true;
+            case DOLLY -> shotTicks < DOLLY_TICKS;
+            default -> false;
+        };
+        if (!trainLocked) return false;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return false;
+        Vector3d now = shot.kind() == DeathShot.Kind.DOLLY && lensEnd != null
+            ? toWorld(dollyAt(lens, lensEnd, shotTicks / (double) DOLLY_TICKS)) : toWorld(lens);
+        Vector3d bodyW = bodyWorld();
+        List<CarriageOcclusion.Carriage> carriages = CarriageOcclusion.gatherNearby(mc.level, new Vec3(bodyW.x, bodyW.y, bodyW.z), CARRIAGE_SCAN_RADIUS, 1.0f);
+        return ShotPath.insideBlock(mc.level, carriages, now);
+    }
+
+    /** The top of the carriage roof above the body, in carriage-space Y, or null with no roof within 10 blocks. */
+    private static Double roofAboveBody() {
+        CarriageOcclusion.Carriage own = ownCarriage();
+        if (own == null) return null;
+        Vector3d bodyW = bodyWorld();
+        Vec3 local = own.pose().transformPositionInverse(new Vec3(bodyW.x, bodyW.y, bodyW.z));
+        int bx = (int) Math.floor(local.x);
+        int bz = (int) Math.floor(local.z);
+        for (int dy = 2; dy <= 10; dy++) {
+            int y = (int) Math.floor(local.y) + dy;
+            if (CarriageOcclusion.solidAt(own, new net.minecraft.core.BlockPos(bx, y, bz))) return bodyLocal.y + dy + 1.0;
+        }
+        return null;
+    }
+
+    private static CarriageOcclusion.Carriage ownCarriage() {
+        Minecraft mc = Minecraft.getInstance();
+        if (carriage == null || bodyLocal == null || mc.level == null) return null;
+        Vector3d bodyW = bodyWorld();
+        Vec3 bodyVec = new Vec3(bodyW.x, bodyW.y, bodyW.z);
+        return CarriageOcclusion.carriageAt(CarriageOcclusion.gatherNearby(mc.level, bodyVec, 16.0, 1.0f), bodyVec);
     }
 
     // ── orbits ───────────────────────────────────────────────────────────
@@ -344,6 +544,8 @@ public final class DeathCameraCycle {
             case DEATH_SPOT -> deathSpot == null ? null : new Vector3d(deathSpot);
             case KILLER -> entityWorld(killer, partialTick);
             case CONTACT -> entityWorld(contact, partialTick);
+            case RANDOM_MOB -> entityWorld(randomMob, partialTick);
+            case FEATURE -> featureWorld(partialTick);
             case BODY -> toWorldRender(bodyLocal, partialTick);
         };
     }
@@ -356,11 +558,9 @@ public final class DeathCameraCycle {
 
     /** Pick the orbit's clear arc at the widest radius that has one. False when no angle at all is clear. */
     private static boolean setUpOrbit(DeathShot shot) {
+        if (shot.target() == DeathShot.Target.RANDOM_MOB) randomMob = pickRandomMob();
         Vector3d subject = subjectWorld(shot, 1.0f);
         if (subject == null) return false;
-        Entity e = shot.target() == DeathShot.Target.KILLER ? killer : shot.target() == DeathShot.Target.CONTACT ? contact : null;
-        if (e != null) LOGGER.info("[DungeonTrain] Death scene {} subject {} at {} removed={} invisible={} bb={}", shot.label(),
-            e.getType().toShortString(), e.position(), e.isRemoved(), e.isInvisible(), e.getBoundingBox());
         double height = shot.offset().y;
         for (double radius : ORBIT_RADII) {
             for (double h : new double[] {height, height * 0.5, 0.8}) {
@@ -382,6 +582,21 @@ public final class DeathCameraCycle {
             }
         }
         return false;
+    }
+
+    /** Any living creature (not a player) riding a carriage within range of the death spot, at random. */
+    private static Entity pickRandomMob() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null || deathSpot == null) return null;
+        List<Entity> riders = new ArrayList<>();
+        for (Entity e : mc.level.entitiesForRendering()) {
+            if (!(e instanceof LivingEntity living) || e == mc.player || !living.isAlive()) continue;
+            if (e.distanceToSqr(deathSpot.x, deathSpot.y, deathSpot.z) > RANDOM_MOB_RANGE * RANDOM_MOB_RANGE) continue;
+            if (Sable.HELPER.getTrackingSubLevel(e) == null) continue;
+            riders.add(e);
+        }
+        if (riders.isEmpty()) return null;
+        return riders.get(mc.level.random.nextInt(riders.size()));
     }
 
     /** A moving subject may have walked behind something: re-pick the arc only when the lens is blocked now. */
@@ -420,11 +635,8 @@ public final class DeathCameraCycle {
         LocalPlayer player = mc.player;
         if (level == null || player == null) return true;
         Vec3 from = new Vec3(subject.x, subject.y + 1.2, subject.z);
-        Vec3 to = new Vec3(lensW.x, lensW.y, lensW.z);
-        Vec3 clipped = SnapshotCamera.clipTowardOpenAir(level, player, from, to);
-        if (clipped.distanceToSqr(to) > 0.25) return false;
         List<CarriageOcclusion.Carriage> carriages = CarriageOcclusion.gatherNearby(level, from, CARRIAGE_SCAN_RADIUS, 1.0f);
-        return CarriageOcclusion.firstHit(carriages, from, to) == null;
+        return ShotPath.clearView(level, player, carriages, subject, lensW);
     }
 
     /**
@@ -576,6 +788,18 @@ public final class DeathCameraCycle {
             case TRAIN_LOCKED -> {
                 if (lens == null) return null;
                 lensW = toWorldRender(lens, partialTick);
+            }
+            case FEATURE_TRACK -> {
+                if (lens == null) return null;
+                lensW = lens;
+                Vector3d feature = featureWorld(partialTick);
+                if (feature != null) aim = new Vector3d(feature.x, feature.y + LOOK_Y_OFFSET, feature.z);
+                else if (aimWorld != null) aim = aimWorld;
+            }
+            case TUNNEL_WINDOW_OUT, TUNNEL_ROOF, TUNNEL_COUPLING, TUNNEL_EYES -> {
+                if (lens == null || aimLocal == null) return null;
+                lensW = toWorldRender(lens, partialTick);
+                aim = toWorldRender(aimLocal, partialTick);
             }
             case WORLD -> {
                 if (lens == null) return null;

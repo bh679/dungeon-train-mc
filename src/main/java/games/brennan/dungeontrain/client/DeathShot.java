@@ -5,14 +5,14 @@ import net.minecraft.world.phys.Vec3;
 /**
  * One shot of the death moment's camera sequence.
  *
- * @param kind      how the lens moves
- * @param target    what the lens looks at
- * @param offset    lens start relative to the target: along the train (+X forward), up, across.
- *                  For an orbit: x = radius, y = height above the subject
- * @param offsetEnd lens end for a dolly, else ignored
+ * @param kind         how the lens moves
+ * @param target       what the lens looks at
+ * @param offset       lens start relative to the target: along the train (+X forward), up, across.
+ *                     For an orbit: x = radius, y = height above the subject
+ * @param offsetEnd    lens end for a dolly, else ignored
  * @param sweepDegrees how far a world arc turns around the death spot over its hold (signed), else 0
- * @param holdTicks how long the shot holds before the cut
- * @param label     short name for logs and the review overlay
+ * @param holdTicks    how long the shot holds before the cut
+ * @param label        short name for logs and the review overlay
  */
 public record DeathShot(Kind kind, Target target, Vec3 offset, Vec3 offsetEnd, double sweepDegrees, int holdTicks, String label) {
 
@@ -21,18 +21,38 @@ public record DeathShot(Kind kind, Target target, Vec3 offset, Vec3 offsetEnd, d
         POV,
         /** Lens rides the carriage (offset re-projected through its pose every frame). */
         TRAIN_LOCKED,
-        /** Lens rides the carriage and eases from {@code offset} to {@code offsetEnd}. */
+        /** Lens rides the carriage and eases from {@code offset} to {@code offsetEnd}, then holds in the world. */
         DOLLY,
         /** Lens circles the target through the longest arc with a clear view of it. */
         ORBIT,
         /** Lens fixed in the world where the shot starts, aimed at the body as the carriage rolls away. */
         TRANSITION,
+        /** Lens fixed in the world beside a feature of the train, tracking it as it rides past. */
+        FEATURE_TRACK,
         /** Lens and aim both fixed in the world; the train passes through the frame. */
         WORLD,
         /** Lens slides at constant speed from {@code offset} to {@code offsetEnd} around the death spot, aimed at it. */
         WORLD_DOLLY,
         /** Lens sweeps an arc around the death spot at constant speed, starting from {@code offset}, aimed at it. */
-        WORLD_ARC
+        WORLD_ARC,
+        /** Tunnel set: inside the body's carriage at the window, looking out across the track. */
+        TUNNEL_WINDOW_OUT,
+        /** Tunnel set: just above the carriage roof, looking forward along the train. */
+        TUNNEL_ROOF,
+        /** Tunnel set: behind the body's carriage, low, looking back along the train. */
+        TUNNEL_COUPLING,
+        /** Tunnel set: the body's own eyes, looking forward along the train. Always clear. */
+        TUNNEL_EYES;
+
+        /** Phase 2 shots that play only when none of the open-air train shots has a clear path. */
+        public boolean isTunnel() {
+            return this == TUNNEL_WINDOW_OUT || this == TUNNEL_ROOF || this == TUNNEL_COUPLING || this == TUNNEL_EYES;
+        }
+
+        /** Shots of the looping second phase (open air or tunnel). */
+        public boolean isLoop() {
+            return this == WORLD || this == WORLD_DOLLY || this == WORLD_ARC || isTunnel();
+        }
     }
 
     public enum Target {
@@ -42,8 +62,12 @@ public record DeathShot(Kind kind, Target target, Vec3 offset, Vec3 offsetEnd, d
         DEATH_SPOT,
         /** The entity that killed them. */
         KILLER,
-        /** The other mob they fought most recently. */
-        CONTACT
+        /** The last creature they had to do with. */
+        CONTACT,
+        /** Any creature riding the train, drawn afresh each time the shot comes round. */
+        RANDOM_MOB,
+        /** A contents template or carriage group near the body (from the server's list). */
+        FEATURE
     }
 
     public static DeathShot pov(int holdTicks) {
@@ -66,6 +90,10 @@ public record DeathShot(Kind kind, Target target, Vec3 offset, Vec3 offsetEnd, d
         return new DeathShot(Kind.TRANSITION, Target.BODY, new Vec3(x, y, z), Vec3.ZERO, 0, holdTicks, label);
     }
 
+    public static DeathShot feature(int holdTicks, String label) {
+        return new DeathShot(Kind.FEATURE_TRACK, Target.FEATURE, Vec3.ZERO, Vec3.ZERO, 0, holdTicks, label);
+    }
+
     public static DeathShot world(double x, double y, double z, int holdTicks, String label) {
         return new DeathShot(Kind.WORLD, Target.DEATH_SPOT, new Vec3(x, y, z), Vec3.ZERO, 0, holdTicks, label);
     }
@@ -76,5 +104,9 @@ public record DeathShot(Kind kind, Target target, Vec3 offset, Vec3 offsetEnd, d
 
     public static DeathShot worldArc(double x, double y, double z, double sweepDegrees, int holdTicks, String label) {
         return new DeathShot(Kind.WORLD_ARC, Target.DEATH_SPOT, new Vec3(x, y, z), Vec3.ZERO, sweepDegrees, holdTicks, label);
+    }
+
+    public static DeathShot tunnel(Kind kind, int holdTicks, String label) {
+        return new DeathShot(kind, Target.BODY, Vec3.ZERO, Vec3.ZERO, 0, holdTicks, label);
     }
 }

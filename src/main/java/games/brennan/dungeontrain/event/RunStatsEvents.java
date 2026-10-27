@@ -25,6 +25,7 @@ import games.brennan.dungeontrain.narrative.DeathLoreStore;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.AbandonRunPacket;
 import games.brennan.dungeontrain.net.DeathScenePacket;
+import games.brennan.dungeontrain.ship.sable.DeadRiderAnchors;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
@@ -383,7 +384,9 @@ public final class RunStatsEvents {
         int contact = RecentMobContacts.nearestAlive(player, killer);
         LOGGER.info("[DungeonTrain] Death scene for {}: void={} killer={} ({}) contact={}", player.getGameProfile().getName(),
             voidDeath, killer, source.getEntity() == null ? "none" : source.getEntity().getType().toShortString(), contact);
-        return new DeathScenePacket(voidDeath, killer, contact);
+        List<DeathScenePacket.Target> targets = voidDeath ? List.of()
+            : DeathSceneTargets.near(player.serverLevel(), DeadRiderAnchors.anchorPos(player));
+        return new DeathScenePacket(voidDeath, killer, contact, targets);
     }
 
     private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet,
