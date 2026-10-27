@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.twitch;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -34,5 +35,24 @@ class TwitchHandleTest {
         assertEquals(Optional.empty(), TwitchHandle.find("settings", true), "a route");
         assertEquals(Optional.empty(), TwitchHandle.find("", true));
         assertEquals(Optional.empty(), TwitchHandle.find(null, true));
+    }
+
+    @Test
+    void devPingTagsAreNotChannels() {
+        Set<String> ignore = TwitchHandle.mentionLogins();
+        assertEquals(Optional.empty(), TwitchHandle.find("@dev the train broke", false, ignore));
+        assertEquals(Optional.empty(), TwitchHandle.find("@BrennanHatton hi", false, ignore));
+        assertEquals(Optional.empty(), TwitchHandle.find("@开发者 你好", false, ignore));
+        assertEquals(Optional.empty(), TwitchHandle.find("dev", true, ignore), "a bare tag word");
+        assertEquals(Optional.of("steve_streams"), TwitchHandle.find("@dev look @steve_streams", false, ignore), "skips to the next mention");
+        assertEquals(Optional.of("dev"), TwitchHandle.find("twitch.tv/dev", false, ignore), "a pasted link is meant");
+    }
+
+    @Test
+    void playersOnTheServerAreNotChannels() {
+        Set<String> ignore = Set.of("alex");
+        assertEquals(Optional.empty(), TwitchHandle.find("@Alex come here", false, ignore));
+        assertEquals(Optional.empty(), TwitchHandle.find("Alex", true, ignore));
+        assertEquals(Optional.of("steve_streams"), TwitchHandle.find("@Alex follow @steve_streams", false, ignore));
     }
 }

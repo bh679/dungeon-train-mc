@@ -1,8 +1,11 @@
 package games.brennan.dungeontrain.client.twitch;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.live.LiveStreamController;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -12,18 +15,23 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientChatEvent;
 
+import java.util.HashSet;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * "Drop your Twitch username or URL in chat for a free shout-out": after that hint is said at stream
  * start ({@code LiveStreamController}), this watches what the player types for {@link #WINDOW_MS}.
- * A Twitch URL or @-handle anywhere in a line, or a lone bare name, gets a one-click confirmation —
+ * A Twitch URL or @-handle anywhere in a line (any time on air), or a lone bare name (inside the
+ * window), gets a one-click confirmation —
  * "Save twitch.tv/x for your shout-out? [Yes] [No]" — never an automatic save, because a bare word
  * ("lol") can be a channel too. Yes runs {@code /twitch save <login>} ({@link TwitchLinkCommand}). The
  * chat line itself still goes out: they meant to share it.
  *
  * <p>Client only, like {@code LiveChatBridge}. The window closes on save, on {@link #close()} (the
- * stream ending), or by itself after ten minutes; outside it nothing is read.</p>
+ * stream ending), or by itself after ten minutes. Off air nothing is read, and DT's own ping tags
+ * ({@code @dev}) or the name of a player on the server are never offered.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class TwitchHandleCapture {
@@ -54,18 +62,26 @@ public final class TwitchHandleCapture {
         String message = event.getMessage();
         if (message == null || message.startsWith("/")) return;
         boolean open = isOpen();
-        // A URL or @handle is unmistakable at any time while streaming; a bare name only inside the window.
-        Optional<String> found = TwitchHandle.find(message, open);
-        if (found.isEmpty() || !open && !looksExplicit(message)) return;
+        // Nothing is read off air: a URL or @handle counts while streaming, a bare name only inside the window.
+        if (!open && LiveStreamController.get().state() != LiveStreamController.State.STREAMING) return;
+        Optional<String> found = TwitchHandle.find(message, open, notHandles());
+        if (found.isEmpty()) return;
         String login = found.get();
         if (login.equals(lastOffered)) return;
         lastOffered = login;
         Minecraft.getInstance().execute(() -> offer(login));
     }
 
-    private static boolean looksExplicit(String message) {
-        String m = message.toLowerCase(java.util.Locale.ROOT);
-        return m.contains("twitch.tv/") || m.contains("@");
+    /** "@dev" and friends tag the dev, and "@Alex" a player here: neither is a channel. */
+    private static Set<String> notHandles() {
+        Set<String> out = new HashSet<>(TwitchHandle.mentionLogins());
+        ClientPacketListener connection = Minecraft.getInstance().getConnection();
+        if (connection != null) {
+            for (PlayerInfo info : connection.getOnlinePlayers()) {
+                out.add(info.getProfile().getName().toLowerCase(Locale.ROOT));
+            }
+        }
+        return out;
     }
 
     /** "Save twitch.tv/x for your shout-out? [Yes] [No]" */
