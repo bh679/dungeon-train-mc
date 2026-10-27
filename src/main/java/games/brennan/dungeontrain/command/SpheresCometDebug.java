@@ -15,7 +15,7 @@ import java.util.List;
 
 /**
  * {@code /dungeontrain debug comet [aimed|miss]} — with no argument, the comet chance at the caller's X and how
- * many are in flight; {@code aimed} / {@code miss} launch one at the nearest train now, whatever the band.
+ * many are in flight; {@code aimed} / {@code miss} launch one at the nearest train, by the caller,, whatever the band.
  * Logged at INFO for RCON runs.
  */
 final class SpheresCometDebug {
@@ -40,7 +40,7 @@ final class SpheresCometDebug {
             send(source, "[DungeonTrain] comet: no train loaded", ChatFormatting.RED);
             return 0;
         }
-        boolean ok = SpheresCometEvents.launch(level, train, aimed);
+        boolean ok = SpheresCometEvents.launch(level, train, source.getPosition(), aimed);
         send(source, "[DungeonTrain] comet " + (aimed ? "aimed at" : "missing") + " the train: "
                 + (ok ? "launched" : "failed to spawn"), ok ? ChatFormatting.GOLD : ChatFormatting.RED);
         return ok ? 1 : 0;

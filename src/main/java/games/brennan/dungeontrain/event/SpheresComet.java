@@ -53,18 +53,21 @@ record SpheresComet(UUID displayId, Vec3 pos, Vec3 velocity, int age) {
     private static final double AHEAD_MIN = 40.0, AHEAD_SPAN = 50.0;
     private static final double UP_MIN = 60.0, UP_SPAN = 40.0;
     private static final double SIDE_SPAN = 50.0;
+    /** Carriages this close (blocks, horizontally) to the watching player are the targets. */
+    private static final double FOCUS_REACH = 24.0;
     /** How far off the train a near miss passes. */
     private static final double MISS_MIN = 15.0, MISS_SPAN = 25.0;
 
     /**
-     * Launch a comet at {@code train}: aimed into a random carriage (leading it by the train's velocity), or on a
-     * near-miss line {@value #MISS_MIN}..{@code MISS_MIN + MISS_SPAN} blocks off it. Null when the display could
-     * not be added.
+     * Launch a comet at {@code train}: aimed into a carriage near {@code focus} (leading it by the train's
+     * velocity), or on a near-miss line {@value #MISS_MIN}..{@code MISS_MIN + MISS_SPAN} blocks off it. Null when
+     * the display could not be added.
      */
     @Nullable
-    static SpheresComet launch(ServerLevel level, List<Trains.Carriage> train, boolean aimed, RandomSource random) {
+    static SpheresComet launch(ServerLevel level, List<Trains.Carriage> train, Vec3 focus, boolean aimed,
+                               RandomSource random) {
         if (train.isEmpty()) return null;
-        Trains.Carriage carriage = train.get(random.nextInt(train.size()));
+        Trains.Carriage carriage = pick(train, focus, random);
         AABBdc bb = carriage.ship().worldAABB();
         Vec3 trainVel = perTick(carriage);
         double dirX = trainVel.x < -1.0E-3 ? -1.0 : 1.0;
@@ -90,6 +93,24 @@ record SpheresComet(UUID displayId, Vec3 pos, Vec3 velocity, int age) {
         if (display == null) return null;
         level.playSound(null, start.x, start.y, start.z, SoundEvents.GHAST_SHOOT, SoundSource.AMBIENT, 8.0F, 0.5F);
         return new SpheresComet(display.getUUID(), start, velocity, 0);
+    }
+
+    /** A random carriage within {@value #FOCUS_REACH} blocks of {@code focus}, else the nearest one. */
+    private static Trains.Carriage pick(List<Trains.Carriage> train, Vec3 focus, RandomSource random) {
+        List<Trains.Carriage> near = new java.util.ArrayList<>();
+        Trains.Carriage nearest = train.get(0);
+        double nearestD = Double.MAX_VALUE;
+        for (Trains.Carriage c : train) {
+            AABBdc bb = c.ship().worldAABB();
+            double dx = (bb.minX() + bb.maxX()) / 2 - focus.x, dz = (bb.minZ() + bb.maxZ()) / 2 - focus.z;
+            double d = dx * dx + dz * dz;
+            if (d <= FOCUS_REACH * FOCUS_REACH) near.add(c);
+            if (d < nearestD) {
+                nearestD = d;
+                nearest = c;
+            }
+        }
+        return near.isEmpty() ? nearest : near.get(random.nextInt(near.size()));
     }
 
     /**
