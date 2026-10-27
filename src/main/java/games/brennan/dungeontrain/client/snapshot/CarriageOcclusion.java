@@ -11,6 +11,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
@@ -140,6 +141,27 @@ public final class CarriageOcclusion {
             }
         }
         return best;
+    }
+
+    /** The carriage whose plot has a chunk under {@code world} (the one a body stands in), or null. */
+    public static Carriage carriageAt(List<Carriage> carriages, Vec3 world) {
+        for (Carriage carriage : carriages) {
+            Vec3 local = carriage.pose().transformPositionInverse(world);
+            BlockPos pos = BlockPos.containing(local);
+            if (carriage.chunks().get(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4)) != null) return carriage;
+        }
+        return null;
+    }
+
+    /** The block at a plot-space position of this carriage (air when the chunk is not built). */
+    public static BlockState blockAt(Carriage carriage, BlockPos local) {
+        LevelChunk chunk = carriage.chunks().get(ChunkPos.asLong(local.getX() >> 4, local.getZ() >> 4));
+        return chunk == null ? Blocks.AIR.defaultBlockState() : chunk.getBlockState(local);
+    }
+
+    /** A solid, view-blocking block at a plot-space position of this carriage. */
+    public static boolean solidAt(Carriage carriage, BlockPos local) {
+        return occludes(carriage.chunks(), local);
     }
 
     /** True when {@code world} lies inside a solid block of any of these carriages. */

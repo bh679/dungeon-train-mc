@@ -73,14 +73,37 @@ class DeathCameraCycleTest {
     }
 
     @Test
-    void dollyEasesFromStartToEnd() {
+    void dollyMovesAtConstantSpeedThenSlowsIntoTheEnd() {
         Vector3d a = new Vector3d(0, 0, 0);
         Vector3d b = new Vector3d(10, 0, 0);
         assertEquals(0, DeathCameraCycle.dollyAt(a, b, 0).x, 1e-9);
-        assertEquals(5, DeathCameraCycle.dollyAt(a, b, 0.5).x, 1e-9);
         assertEquals(10, DeathCameraCycle.dollyAt(a, b, 1).x, 1e-9);
         assertEquals(10, DeathCameraCycle.dollyAt(a, b, 2).x, 1e-9);
-        assertTrue(DeathCameraCycle.dollyAt(a, b, 0.1).x < 1.0, "slow start");
+        double early = DeathCameraCycle.dollyAt(a, b, 0.1).x - DeathCameraCycle.dollyAt(a, b, 0.0).x;
+        double late = DeathCameraCycle.dollyAt(a, b, 1.0).x - DeathCameraCycle.dollyAt(a, b, 0.9).x;
+        assertTrue(early > 1.5, "no slow start: moved " + early + " in the first tenth");
+        assertTrue(late < early / 5, "slows into the end: " + late + " vs " + early);
+    }
+
+    @Test
+    void arcKeepsRadiusAndHeightAndTurnsTheSweep() {
+        Vector3d centre = new Vector3d(100, 64, 0);
+        Vector3d start = new Vector3d(120, 80, 0);
+        Vector3d end = DeathCameraCycle.arcAt(centre, start, 90.0, 1.0);
+        assertEquals(100, end.x, 1e-6);
+        assertEquals(80, end.y, 1e-9);
+        assertEquals(20, end.z, 1e-6);
+        assertEquals(start.x, DeathCameraCycle.arcAt(centre, start, 90.0, 0.0).x, 1e-9);
+    }
+
+    @Test
+    void trainShotsAreAllMovingAndStartTheLoop() {
+        List<DeathShot> seq = DeathCameraCycle.buildSequence(false, false, false, true);
+        int loop = DeathCameraCycle.loopStart(seq);
+        assertTrue(loop > 0);
+        for (DeathShot shot : DeathCameraCycle.TRAIN_SHOTS) {
+            assertTrue(shot.kind() == DeathShot.Kind.WORLD_DOLLY || shot.kind() == DeathShot.Kind.WORLD_ARC, shot.label());
+        }
     }
 
     @Test
