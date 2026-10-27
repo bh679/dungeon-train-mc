@@ -16,6 +16,7 @@ import games.brennan.dungeontrain.client.credits.DonationPrefsClient;
 import games.brennan.dungeontrain.client.credits.DonationPrefsState;
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
 import games.brennan.dungeontrain.client.live.StreamNameTag;
+import games.brennan.dungeontrain.client.live.audio.MicCapture;
 import games.brennan.dungeontrain.client.live.StreamPreviewWidget;
 import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
 import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
@@ -700,6 +701,46 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case STREAM_AUDIO -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.streamAudio(),
                     LiveFeedClientConfig::setStreamAudio), key + ".tip");
 
+            // ---- Microphone (LiveMic): read when the next stream starts, except gain and mode, which apply at once.
+            case MIC_SUPPORT -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.micSupport(),
+                    LiveFeedClientConfig::setMicSupport), key + ".tip");
+            case MIC_DEVICE -> {
+                List<String> devices = new ArrayList<>();
+                devices.add("");
+                devices.addAll(MicCapture.devices());
+                String current = LiveFeedClientConfig.micDevice();
+                if (!devices.contains(current)) current = "";
+                yield Setting.of(
+                        CycleButton.<String>builder(DungeonTrainClientOptionsScreen::micDeviceLabel)
+                                .withValues(devices)
+                                .withInitialValue(current)
+                                .displayOnlyValue()
+                                .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
+                                        (btn, v) -> LiveFeedClientConfig.setMicDevice(v)),
+                        key + ".tip");
+            }
+            case MIC_GAIN -> {
+                int current = LiveFeedClientConfig.micGainPercent();
+                List<Integer> steps = new ArrayList<>(MIC_GAIN_STEPS);
+                if (!steps.contains(current)) { steps.add(current); steps.sort(null); }
+                yield Setting.of(
+                        CycleButton.<Integer>builder(v -> Component.literal(v + "%"))
+                                .withValues(steps)
+                                .withInitialValue(current)
+                                .displayOnlyValue()
+                                .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
+                                        (btn, v) -> LiveFeedClientConfig.setMicGainPercent(v)),
+                        key + ".tip");
+            }
+            case MIC_MODE -> Setting.of(
+                    CycleButton.<Boolean>builder(ptt -> Component.translatable(ptt ? key + ".push_to_talk" : key + ".always_on"))
+                            .withValues(false, true)
+                            .withInitialValue(LiveFeedClientConfig.micPushToTalk())
+                            .displayOnlyValue()
+                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
+                                    (btn, v) -> LiveFeedClientConfig.setMicPushToTalk(v)),
+                    key + ".tip");
+
             // Slower x264 at a lower bitrate; read when the next stream starts. On Performance too, as a frame-rate cost.
             case STREAM_SAVE_BANDWIDTH -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.saveBandwidth(),
                     LiveFeedClientConfig::setSaveBandwidth), key + ".tip");
@@ -1185,6 +1226,18 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     private static Component liveChatTranslationLabel(LiveFeedClientConfig.LiveChatTranslation mode) {
         return Component.translatable("gui.dungeontrain.options.live_chat_translation." + mode.name().toLowerCase(java.util.Locale.ROOT));
     }
+
+    /** The mic gain choices, percent. */
+    private static final List<Integer> MIC_GAIN_STEPS = List.of(50, 75, 100, 150, 200, 300);
+
+    /** "" is the system default; a device name can be long, so it is cut to fit the button. */
+    private static Component micDeviceLabel(String device) {
+        if (device.isEmpty()) return Component.translatable("gui.dungeontrain.options.mic_device.default");
+        String shown = device.length() > MIC_DEVICE_CHARS ? device.substring(0, MIC_DEVICE_CHARS - 1) + "…" : device;
+        return Component.literal(shown);
+    }
+
+    private static final int MIC_DEVICE_CHARS = 22;
 
     private static Component wornTvStreamsLabel(LiveFeedClientConfig.WornTvStreams v) {
         return Component.translatable("gui.dungeontrain.options.worn_tv_streams." + v.name().toLowerCase(java.util.Locale.ROOT));

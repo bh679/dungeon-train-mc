@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.live;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.client.live.audio.LiveMic;
 import games.brennan.dungeontrain.client.live.life.LiveLifeEvents;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Result;
@@ -75,7 +76,9 @@ public final class LiveUploader implements AutoCloseable {
     }
 
     private static final Storage LIVE = new Storage() {
-        @Override public CompletableFuture<Result> presign(String token, List<String> files) { return LiveFeedClient.presign(token, files); }
+        @Override public CompletableFuture<Result> presign(String token, List<String> files) {
+            return LiveFeedClient.presign(token, files, LiveMic.on());
+        }
         @Override public CompletableFuture<Result> upload(SignedPut target, Path file) { return LiveFeedClient.upload(target, file); }
         @Override public CompletableFuture<Result> upload(SignedPut target, String body) { return LiveFeedClient.upload(target, body); }
     };

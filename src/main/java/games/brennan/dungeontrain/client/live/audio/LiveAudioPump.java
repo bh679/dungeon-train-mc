@@ -12,6 +12,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.ShortBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -26,6 +27,10 @@ import java.util.function.LongSupplier;
  * it has written exactly {@code n × 48000 / fps} sample frames ({@link #samplesDue}), so both inputs
  * sit on one timeline even when the encoder's writer falls behind and skips ticks. What the encoder
  * wrote before ffmpeg connected is matched with silence, as is {@link #DELAY_MS}.</p>
+ *
+ * <p>A stream with a mic track ({@link LiveMic}) sends four channels instead of two:
+ * {@code mixL, mixR, gameL, gameR}, which the encoder splits into its two audio tracks. One connection
+ * keeps the voice and the game on the same sample clock.</p>
  */
 public final class LiveAudioPump implements AutoCloseable {
 
@@ -51,15 +56,20 @@ public final class LiveAudioPump implements AutoCloseable {
      */
     private static final byte[] IPV4_LOOPBACK = {127, 0, 0, 1};
 
+    /** Channels in a four-channel (mic) frame: the mix's pair, then the game's. */
+    public static final int MIC_CHANNELS = 4;
+
     private final ServerSocketChannel server;
     private final int port;
+    private final boolean withMic;
     @Nullable private volatile SocketChannel client;
     @Nullable private Thread thread;
     private volatile boolean running = true;
 
-    private LiveAudioPump(ServerSocketChannel server, int port) {
+    private LiveAudioPump(ServerSocketChannel server, int port, boolean withMic) {
         this.server = server;
         this.port = port;
+        this.withMic = withMic;
     }
 
     /**
@@ -70,6 +80,12 @@ public final class LiveAudioPump implements AutoCloseable {
      */
     @Nullable
     public static LiveAudioPump open(boolean aacAvailable) {
+        return open(aacAvailable, false);
+    }
+
+    /** {@link #open(boolean)}; {@code withMic} = send the four-channel frame with {@link LiveMic}'s voice mixed in. */
+    @Nullable
+    public static LiveAudioPump open(boolean aacAvailable, boolean withMic) {
         if (!aacAvailable) {
             LOGGER.warn("[DungeonTrain] stream audio off: this ffmpeg has no aac encoder");
             return null;
@@ -79,7 +95,7 @@ public final class LiveAudioPump implements AutoCloseable {
             ServerSocketChannel server = ServerSocketChannel.open();
             server.bind(new InetSocketAddress(InetAddress.getByAddress(IPV4_LOOPBACK), 0), 1);
             int port = ((InetSocketAddress) server.getLocalAddress()).getPort();
-            return new LiveAudioPump(server, port);
+            return new LiveAudioPump(server, port, withMic);
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] stream audio off: no local port ({})", e.toString());
             AudioMirror.stop();
@@ -89,6 +105,16 @@ public final class LiveAudioPump implements AutoCloseable {
 
     public int port() {
         return port;
+    }
+
+    /** Whether this pump sends the four-channel frame (the encoder then writes two audio tracks). */
+    public boolean withMic() {
+        return withMic;
+    }
+
+    /** Bytes in one sample frame on the wire. */
+    static int bytesPerFrame(boolean withMic) {
+        return (withMic ? MIC_CHANNELS : MirrorDevice.CHANNELS) * Short.BYTES;
     }
 
     /** Starts feeding once ffmpeg connects; {@code videoFrames} is the encoder's written-frame count. */
@@ -120,13 +146,16 @@ public final class LiveAudioPump implements AutoCloseable {
             }
             client = c;
             c.socket().setTcpNoDelay(true);
+            int frameBytes = bytesPerFrame(withMic);
             ByteBuffer mix = ByteBuffer.allocateDirect(CHUNK_FRAMES * MirrorDevice.BYTES_PER_FRAME).order(ByteOrder.nativeOrder());
-            ByteBuffer silence = ByteBuffer.allocateDirect(mix.capacity());
+            ByteBuffer out = withMic ? ByteBuffer.allocateDirect(CHUNK_FRAMES * frameBytes).order(ByteOrder.nativeOrder()) : mix;
+            ByteBuffer silence = ByteBuffer.allocateDirect(CHUNK_FRAMES * frameBytes);
+            short[] voice = new short[CHUNK_FRAMES];
             long written = 0;
             long backlog = samplesDue(videoFrames.getAsLong(), fps);
             while (written < backlog && running) {
                 int n = (int) Math.min(backlog - written, CHUNK_FRAMES);
-                send(c, silence, n);
+                send(c, silence, n, frameBytes);
                 written += n;
             }
             while (running) {
@@ -136,8 +165,18 @@ public final class LiveAudioPump implements AutoCloseable {
                     long t0 = System.nanoTime();
                     mix.clear();
                     boolean mixed = AudioMirror.render(mix, n);
+                    if (withMic) {
+                        // clear() only rewinds (the samples stay); the views read from index 0 in native order.
+                        mix.clear();
+                        ShortBuffer game = mix.asShortBuffer();
+                        if (!mixed) for (int i = 0; i < 2 * n; i++) game.put(i, (short) 0);
+                        LiveMic.fill(voice, n);
+                        out.clear();
+                        MicDsp.mixInterleave4(game, voice, n, out.asShortBuffer());
+                        mixed = true;
+                    }
                     LivePerfStats.audioRendered(System.nanoTime() - t0);
-                    send(c, mixed ? mix : silence, n);
+                    send(c, mixed ? out : silence, n, frameBytes);
                     written += n;
                     due -= n;
                 }
@@ -152,9 +191,9 @@ public final class LiveAudioPump implements AutoCloseable {
         }
     }
 
-    private static void send(SocketChannel c, ByteBuffer samples, int frames) throws IOException {
+    private static void send(SocketChannel c, ByteBuffer samples, int frames, int frameBytes) throws IOException {
         ByteBuffer out = samples.duplicate();
-        out.position(0).limit(frames * MirrorDevice.BYTES_PER_FRAME);
+        out.position(0).limit(frames * frameBytes);
         long t0 = System.nanoTime();
         while (out.hasRemaining()) c.write(out);
         if (System.nanoTime() - t0 > STALL_NS) LivePerfStats.audioStall();

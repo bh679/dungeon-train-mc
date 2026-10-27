@@ -17,6 +17,12 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.BooleanValue STREAM_GUI;
     public static final ModConfigSpec.BooleanValue STREAM_CHAT;
     public static final ModConfigSpec.BooleanValue STREAM_AUDIO;
+    // Microphone (Live Eye mic): grouped here so other live settings merge around them.
+    public static final ModConfigSpec.BooleanValue MIC_SUPPORT;
+    public static final ModConfigSpec.ConfigValue<String> MIC_DEVICE;
+    public static final ModConfigSpec.IntValue MIC_GAIN_PERCENT;
+    public static final ModConfigSpec.BooleanValue MIC_PUSH_TO_TALK;
+    public static final ModConfigSpec.BooleanValue MIC_NOISE_GATE;
     public static final ModConfigSpec.EnumValue<NameTag> STREAM_NAME_TAG;
     public static final ModConfigSpec.EnumValue<WornTvStreams> WORN_TV_STREAMS;
     public static final ModConfigSpec.EnumValue<LiveChatTranslation> LIVE_CHAT_TRANSLATION;
@@ -58,6 +64,9 @@ public final class LiveFeedClientConfig {
     static final List<Integer> CAPTURE_SIZES = List.of(640, 854, 960, 1280, 1920);
     static final int CAPTURE_WIDTH_MIN = 320;
     static final int CAPTURE_WIDTH_MAX = 1920;
+    /** The mic gain's range, percent. */
+    static final int MIC_GAIN_MIN = 0;
+    static final int MIC_GAIN_MAX = 300;
 
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
@@ -72,8 +81,23 @@ public final class LiveFeedClientConfig {
             .comment("Show the chat lines on your screen to viewers, whispers included. What you type is never shown. Always off in Kid mode, whatever this says.")
             .define("streamChat", true);
         STREAM_AUDIO = b
-            .comment("Send in-game sounds with your stream: everything you hear from Minecraft and Dungeon Train, music included. Never your microphone, voice chat or other apps. On by default; takes effect from your next stream.")
+            .comment("Send in-game sounds with your stream: everything you hear from Minecraft and Dungeon Train, music included. Never voice chat or other apps. Your microphone is separate (micSupport) and only goes out once you switch it on by LIVE. On by default; takes effect from your next stream.")
             .define("streamAudio", true);
+        MIC_SUPPORT = b
+            .comment("Let your microphone join your stream. Even with this on, the mic starts every stream off: click the mic by LIVE (or press Toggle Mic) to talk. Needs streamAudio. Off = no mic button, and the stream carries one sound track as before. Takes effect from your next stream.")
+            .define("micSupport", true);
+        MIC_DEVICE = b
+            .comment("Which microphone to use, by the name your system gives it. Empty = the system default. A name that is no longer plugged in falls back to the default.")
+            .define("micDevice", "");
+        MIC_GAIN_PERCENT = b
+            .comment("Microphone volume on the stream, in percent. 100 = as captured.")
+            .defineInRange("micGainPercent", 100, MIC_GAIN_MIN, MIC_GAIN_MAX);
+        MIC_PUSH_TO_TALK = b
+            .comment("Push to talk: with the mic switched on, you are only heard while the Push to Talk key is held. Off = heard whenever the mic is on.")
+            .define("micPushToTalk", false);
+        MIC_NOISE_GATE = b
+            .comment("Silence the microphone between words, so fans and breathing stay off the stream.")
+            .define("micNoiseGate", true);
         STREAM_NAME_TAG = b
             .comment("Your name on the stream, bottom-middle above the hotbar: MINECRAFT, DISCORD (your linked Discord name; nothing if not linked) or NONE. Always NONE in Kid mode.")
             .defineEnum("streamNameTag", NameTag.MINECRAFT);
@@ -203,7 +227,7 @@ public final class LiveFeedClientConfig {
     /** The chat switch as set; {@code StreamCapture} still forces chat off in Kid mode. */
     public static boolean streamChat() { return !loaded() || STREAM_CHAT.get(); }
 
-    /** Whether the stream carries in-game sounds (never the microphone). On unless the player turns it off. */
+    /** Whether the stream carries in-game sounds (the microphone is {@link #micSupport}). On unless the player turns it off. */
     public static boolean streamAudio() { return !loaded() || STREAM_AUDIO.get(); }
 
     /** Whether the encoder trades CPU for upload (slower preset, lower bitrate). Off unless the player turns it on. */
@@ -232,6 +256,46 @@ public final class LiveFeedClientConfig {
         STREAM_AUDIO.set(value);
         STREAM_AUDIO.save();
     }
+
+    // ---- microphone ----
+
+    /** Whether the mic may join streams at all (it still starts every stream off). On unless turned off. */
+    public static boolean micSupport() { return !loaded() || MIC_SUPPORT.get(); }
+
+    public static void setMicSupport(boolean value) {
+        if (!loaded() || MIC_SUPPORT.get() == value) return;
+        MIC_SUPPORT.set(value);
+        MIC_SUPPORT.save();
+    }
+
+    /** The chosen capture device's name; empty = the system default. */
+    public static String micDevice() { return loaded() ? MIC_DEVICE.get() : ""; }
+
+    public static void setMicDevice(String value) {
+        String v = value == null ? "" : value;
+        if (!loaded() || MIC_DEVICE.get().equals(v)) return;
+        MIC_DEVICE.set(v);
+        MIC_DEVICE.save();
+    }
+
+    public static int micGainPercent() { return loaded() ? MIC_GAIN_PERCENT.get() : 100; }
+
+    public static void setMicGainPercent(int value) {
+        int v = Math.max(MIC_GAIN_MIN, Math.min(MIC_GAIN_MAX, value));
+        if (!loaded() || MIC_GAIN_PERCENT.get() == v) return;
+        MIC_GAIN_PERCENT.set(v);
+        MIC_GAIN_PERCENT.save();
+    }
+
+    public static boolean micPushToTalk() { return loaded() && MIC_PUSH_TO_TALK.get(); }
+
+    public static void setMicPushToTalk(boolean value) {
+        if (!loaded() || MIC_PUSH_TO_TALK.get() == value) return;
+        MIC_PUSH_TO_TALK.set(value);
+        MIC_PUSH_TO_TALK.save();
+    }
+
+    public static boolean micNoiseGate() { return !loaded() || MIC_NOISE_GATE.get(); }
 
     /** The name tag as set; {@code StreamNameTag} still forces it off in Kid mode. */
     public static NameTag streamNameTag() { return loaded() ? STREAM_NAME_TAG.get() : NameTag.MINECRAFT; }

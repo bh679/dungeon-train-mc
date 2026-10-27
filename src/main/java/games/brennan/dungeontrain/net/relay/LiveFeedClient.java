@@ -539,7 +539,7 @@ public final class LiveFeedClient {
     /** A plain claim: no takeover choice or ticket yet. */
     public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
                                                   LiveClaimInfo info, @Nullable Life life) {
-        return claim(uuid, name, eyeId, info, life, false, null, null);
+        return claim(uuid, name, eyeId, info, life, false, null, null, false);
     }
 
     /**
@@ -547,12 +547,18 @@ public final class LiveFeedClient {
      * the claim reads with {@link LiveTakeoverClient#parseBlocked}); {@code takeover} is the player's
      * "Take over" past the holder's protected minutes, {@code ticket} an approved takeover vote's pass,
      * {@code takeoverTicket} a won dead streamer's takeover ({@link #acceptTakeover}). Either ticket carries
-     * the claim past the relay's tenure check, once.
+     * the claim past the relay's tenure check, once. {@code mic}: this client can stream a microphone
+     * (support on and a capture device listed); the reply's {@code mic} says whether it may ({@link #parseMic}).
      */
     public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
                                                   LiveClaimInfo info, @Nullable Life life,
                                                   boolean takeover, @Nullable String ticket,
-                                                  @Nullable String takeoverTicket) {
+                                                  @Nullable String takeoverTicket, boolean mic) {
+        return post("/live/claim", claimBody(uuid, name, eyeId, info, life, takeover, ticket, takeoverTicket, mic));
+    }
+
+    static JsonObject claimBody(UUID uuid, String name, String eyeId, @Nullable LiveClaimInfo info, @Nullable Life life,
+                                boolean takeover, @Nullable String ticket, @Nullable String takeoverTicket, boolean mic) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
@@ -574,7 +580,30 @@ public final class LiveFeedClient {
             body.addProperty("versionDot", info.versionDot());
             body.addProperty("chat", info.chat());
         }
-        return post("/live/claim", body);
+        body.addProperty("mic", mic);
+        return body;
+    }
+
+    /**
+     * The relay's word on this streamer's microphone, from a claim reply's {@code mic}: {@code allowed}
+     * false = barred from the mic (no mic track at all); {@code twitch} = the mic also reaches Twitch
+     * (shown only; the relay picks the track it forwards).
+     */
+    public record MicPolicy(boolean allowed, boolean twitch) {
+        public static final MicPolicy DEFAULT = new MicPolicy(true, false);
+    }
+
+    /** A claim reply's {@code mic}; an older relay that sends none (or a malformed one) allows it, without Twitch. */
+    public static MicPolicy parseMic(Result r) {
+        JsonObject body = r.body();
+        if (body == null || !body.has("mic") || !body.get("mic").isJsonObject()) return MicPolicy.DEFAULT;
+        JsonObject m = body.getAsJsonObject("mic");
+        return new MicPolicy(bool(m, "allowed", true), bool(m, "twitch", false));
+    }
+
+    private static boolean bool(JsonObject o, String key, boolean absent) {
+        if (!o.has(key) || !o.get(key).isJsonPrimitive() || !o.getAsJsonPrimitive(key).isBoolean()) return absent;
+        return o.get(key).getAsBoolean();
     }
 
     @Nullable
@@ -609,12 +638,22 @@ public final class LiveFeedClient {
     }
 
     public static CompletableFuture<Result> presign(String token, List<String> files) {
+        return presign(token, files, false);
+    }
+
+    /** The heartbeat too: {@code micOn} is whether the streamer's mic is switched on right now. */
+    public static CompletableFuture<Result> presign(String token, List<String> files, boolean micOn) {
+        return post("/live/presign", presignBody(token, files, micOn));
+    }
+
+    static JsonObject presignBody(String token, List<String> files, boolean micOn) {
         JsonObject body = new JsonObject();
         body.addProperty("token", token);
         JsonArray arr = new JsonArray();
         files.forEach(arr::add);
         body.add("files", arr);
-        return post("/live/presign", body);
+        body.addProperty("micOn", micOn);
+        return body;
     }
 
     /** file name → signed PUT, in request order; empty on a malformed reply. */

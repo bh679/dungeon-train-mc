@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client.live;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.live.audio.LiveMic;
+import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -45,6 +47,11 @@ import java.util.function.Consumer;
  * <p>While the stream carries on after death ({@link LivePostMortem}) an End Stream button sits right
  * of LIVE. It is drawn in the same pass, so it never reaches the broadcast either; being outside any
  * screen's widget list, its click is caught in {@link #onMousePressed}.</p>
+ *
+ * <p>On a stream that carries a mic track ({@link LiveMic#enabled()}) a mic button sits right of LIVE
+ * (End Stream moves right of it): crossed out in red while the mic is off, which it is at the start of
+ * every stream; clicking it with a screen open (or pressing Toggle Mic, {@link LiveMicHotkeys}) turns it
+ * on. With push to talk set it shows dimmed until the key is held.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveRecOverlay {
@@ -81,6 +88,11 @@ public final class LiveRecOverlay {
     private static final ResourceLocation BUTTON = ResourceLocation.withDefaultNamespace("widget/button");
     private static final ResourceLocation BUTTON_HOVER = ResourceLocation.withDefaultNamespace("widget/button_highlighted");
     private static final int END_TEXT = 0xFFFF5555;
+    /** The mic button: a square vanilla button right of LIVE, the mic sprite inside. */
+    static final int MIC_SIZE = 20;
+    static final int MIC_ICON = 16;
+    private static final ResourceLocation MIC_ON = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/mic_on");
+    private static final ResourceLocation MIC_OFF = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/mic_off");
     private static final int WHITE = 0xF0FFFFFF;
     private static final int RED = 0xFFE62E2E;
     /** The corner mask as runs of set pixels, {lx0, lx1, ly} in local space — worked out once, not per frame. */
@@ -164,18 +176,56 @@ public final class LiveRecOverlay {
         g.pose().scale(BADGE_SCALE, BADGE_SCALE, 1f);
         g.drawString(font, LABEL, 0, 0, 0xFFFFFFFF, true);
         g.pose().popPose();
+        if (LiveMic.enabled()) micButton(g, font);
         if (LiveStreamController.get().postMortem()) endStreamButton(g, font);
         int viewers = LiveStreamController.get().viewerCount();
         if (viewers >= 0) viewerCount(g, font, left, countTop(font.lineHeight), viewers);
     }
 
-    /** The End Stream button's place: right of LIVE, centred on it. */
+    /** Right edge of LIVE. */
+    private static int labelRight(Font font) {
+        return innerLeft() + 2 * DOT_RADIUS + LABEL_GAP + Math.round(font.width(LABEL) * BADGE_SCALE);
+    }
+
+    /** The mic button's place: right of LIVE, centred on it. */
+    static LiveHeadViewer.Box micBox(Font font) {
+        int innerTop = MARGIN + LINE + BADGE_PAD;
+        int textH = Math.round(font.lineHeight * BADGE_SCALE);
+        return new LiveHeadViewer.Box(labelRight(font) + END_GAP, innerTop + (textH - MIC_SIZE) / 2, MIC_SIZE, MIC_SIZE);
+    }
+
+    /** The End Stream button's place: right of LIVE (and of the mic button, when there is one), centred on it. */
     static LiveHeadViewer.Box endStreamBox(Font font) {
         int innerTop = MARGIN + LINE + BADGE_PAD;
         int textH = Math.round(font.lineHeight * BADGE_SCALE);
-        int labelRight = innerLeft() + 2 * DOT_RADIUS + LABEL_GAP + Math.round(font.width(LABEL) * BADGE_SCALE);
+        int left = LiveMic.enabled() ? micBox(font).x() + MIC_SIZE + END_GAP : labelRight(font) + END_GAP;
         int w = font.width(END_STREAM) + 2 * END_PAD_X;
-        return new LiveHeadViewer.Box(labelRight + END_GAP, innerTop + (textH - END_H) / 2, w, END_H);
+        return new LiveHeadViewer.Box(left, innerTop + (textH - END_H) / 2, w, END_H);
+    }
+
+    private static void micButton(GuiGraphics g, Font font) {
+        LiveHeadViewer.Box b = micBox(font);
+        Minecraft mc = Minecraft.getInstance();
+        Window window = mc.getWindow();
+        double mx = mc.mouseHandler.xpos() * window.getGuiScaledWidth() / window.getScreenWidth();
+        double my = mc.mouseHandler.ypos() * window.getGuiScaledHeight() / window.getScreenHeight();
+        boolean hover = mc.screen != null && LiveStreamSettingsButton.contains(b, mx, my);
+        g.blitSprite(hover ? BUTTON_HOVER : BUTTON, b.x(), b.y(), b.w(), b.h());
+        boolean on = LiveMic.on();
+        int inset = (MIC_SIZE - MIC_ICON) / 2;
+        // Push to talk with the key up: on, but not heard, so dimmed.
+        boolean dim = on && !LiveMic.transmitting();
+        if (dim) g.setColor(1f, 1f, 1f, 0.45f);
+        RenderSystem.enableBlend();
+        g.blitSprite(on ? MIC_ON : MIC_OFF, b.x() + inset, b.y() + inset, MIC_ICON, MIC_ICON);
+        if (dim) g.setColor(1f, 1f, 1f, 1f);
+        if (hover) g.renderTooltip(font, micTooltip(on), (int) mx, (int) my);
+    }
+
+    private static Component micTooltip(boolean on) {
+        if (!on) return Component.translatable("gui.dungeontrain.live.mic_tip_off");
+        return Component.translatable(LiveFeedClientConfig.micPushToTalk()
+            ? "gui.dungeontrain.live.mic_tip_on_ptt" : "gui.dungeontrain.live.mic_tip_on");
     }
 
     private static void endStreamButton(GuiGraphics g, Font font) {
@@ -194,8 +244,14 @@ public final class LiveRecOverlay {
     public static void onMousePressed(ScreenEvent.MouseButtonPressed.Pre event) {
         if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
         LiveStreamController live = LiveStreamController.get();
-        if (!live.postMortem()) return;
         Minecraft mc = Minecraft.getInstance();
+        if (live.streaming() && LiveMic.enabled()
+            && LiveStreamSettingsButton.contains(micBox(mc.font), event.getMouseX(), event.getMouseY())) {
+            event.setCanceled(true);
+            LiveMicHotkeys.toggle();
+            return;
+        }
+        if (!live.postMortem()) return;
         if (!LiveStreamSettingsButton.contains(endStreamBox(mc.font), event.getMouseX(), event.getMouseY())) return;
         event.setCanceled(true);
         mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1f));

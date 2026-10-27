@@ -170,6 +170,15 @@ public enum ClientOptionsTab {
         STREAM_CHAT("gui.dungeontrain.options.stream_chat"),
         /** Whether the stream carries the game's sound. Off by default. */
         STREAM_AUDIO("gui.dungeontrain.options.stream_audio"),
+        // Microphone rows: an even count, so the rows after them keep their pairs.
+        /** Whether the mic may join streams (it still starts each stream off). */
+        MIC_SUPPORT("gui.dungeontrain.options.mic_support"),
+        /** Which capture device the mic uses. */
+        MIC_DEVICE("gui.dungeontrain.options.mic_device"),
+        /** The mic's volume on the stream. */
+        MIC_GAIN("gui.dungeontrain.options.mic_gain"),
+        /** Always on (while switched on) or push to talk. */
+        MIC_MODE("gui.dungeontrain.options.mic_mode"),
         /** Which name viewers see above the hotbar. Locked to none in Kid mode. */
         STREAM_NAME_TAG("gui.dungeontrain.options.stream_name_tag"),
         /** Pop-ups drawn back over the stream's name tag. Also on Performance, as a per-frame cost. */
@@ -352,6 +361,10 @@ public enum ClientOptionsTab {
                 rows.add(Row.STREAM_GUI);
                 rows.add(Row.STREAM_CHAT);
                 rows.add(Row.STREAM_AUDIO);
+                rows.add(Row.MIC_SUPPORT);
+                rows.add(Row.MIC_DEVICE);
+                rows.add(Row.MIC_GAIN);
+                rows.add(Row.MIC_MODE);
                 rows.add(Row.STREAM_NAME_TAG);
                 rows.add(Row.STREAM_POPUPS_OVER_TAG);
                 rows.add(Row.LIVE_CHAT);

@@ -95,11 +95,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: sixty-two rows (five repeated on Performance), none of the conditional rows present")
+    @DisplayName("Plain client: sixty-six rows (five repeated on Performance), none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(62, rows.size());
+        assertEquals(66, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -218,8 +218,8 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        // 62 rows, five of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
-        assertEquals(66, rows.size());
+        // 66 rows, five of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
+        assertEquals(70, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
@@ -228,7 +228,9 @@ final class ClientOptionsTabTest {
     @DisplayName("The Stream tab holds Livestreaming and the what-viewers-see rows; General no longer does")
     void streamTabRows() {
         assertEquals(List.of(ClientOptionsTab.Row.LIVESTREAM, ClientOptionsTab.Row.STREAM_GUI,
-                        ClientOptionsTab.Row.STREAM_CHAT, ClientOptionsTab.Row.STREAM_AUDIO, ClientOptionsTab.Row.STREAM_NAME_TAG,
+                        ClientOptionsTab.Row.STREAM_CHAT, ClientOptionsTab.Row.STREAM_AUDIO,
+                        ClientOptionsTab.Row.MIC_SUPPORT, ClientOptionsTab.Row.MIC_DEVICE, ClientOptionsTab.Row.MIC_GAIN, ClientOptionsTab.Row.MIC_MODE,
+                        ClientOptionsTab.Row.STREAM_NAME_TAG,
                         ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG, ClientOptionsTab.Row.LIVE_CHAT,
                         ClientOptionsTab.Row.LIVE_CHAT_TRANSLATION, ClientOptionsTab.Row.LIVE_MOMENT_ADVANCEMENTS, ClientOptionsTab.Row.LIVE_MOMENT_PHOTOS,
                         ClientOptionsTab.Row.LIVE_MOMENT_BOOKS, ClientOptionsTab.Row.TWITCH_HINT, ClientOptionsTab.Row.LIVE_FEED_VIEWING, ClientOptionsTab.Row.WORN_TV_STREAMS, ClientOptionsTab.Row.STREAM_SIZE,
