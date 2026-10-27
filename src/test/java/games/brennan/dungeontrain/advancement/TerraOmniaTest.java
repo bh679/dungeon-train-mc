@@ -44,13 +44,15 @@ final class TerraOmniaTest {
     }
 
     @Test
-    @DisplayName("ordered: by group, then id")
+    @DisplayName("ordered: by group, then id; never-placed biomes left out")
     void ordered() {
         Map<ResourceLocation, Integer> groups = new LinkedHashMap<>();
         groups.put(id("betterend:x"), 5);
         groups.put(id("minecraft:taiga"), 0);
         groups.put(id("minecraft:nether_wastes"), 1);
         groups.put(id("minecraft:badlands"), 0);
+        groups.put(id("minecraft:the_void"), 0);
+        groups.put(id("terrablender:deferred_placeholder"), 7);
         assertEquals(List.of(id("minecraft:badlands"), id("minecraft:taiga"), id("minecraft:nether_wastes"), id("betterend:x")),
                 List.copyOf(TerraOmnia.ordered(groups).keySet()));
     }

@@ -114,7 +114,7 @@ public final class BiomeChecklistScreen extends Screen {
         }
         g.pose().pushPose();
         g.pose().translate(0, 0, OVERLAY_Z);
-        g.fill(0, 0, width, height, 0xC0000000);
+        g.fill(0, 0, width, height, 0xE8000000);
         g.pose().popPose();
     }
 

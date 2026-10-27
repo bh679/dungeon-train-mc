@@ -17,7 +17,7 @@ import java.util.Set;
 
 /**
  * "Terra Omnia": ride through every biome the game has, in one life. "Every biome" is the whole biome
- * registry, the same set Coffee Table Book asks a photo of. Shared by the server (the award and the one-time
+ * registry less the {@link #EXCLUDED} entries no world ever places. Shared by the server (the award and the one-time
  * credit for the old 150-biome version, {@link TerraOmniaMigration}) and the client's checklist, so both
  * list the biomes in one order: the vanilla Overworld, the Nether, the End, then Biomes O' Plenty,
  * BetterNether, BetterEnd and Deeper Darker, then anything else; alphabetical within each.
@@ -41,6 +41,14 @@ public final class TerraOmnia {
     /** Modded biome namespaces, in the order they follow the vanilla dimensions. */
     private static final List<String> MOD_ORDER = List.of("biomesoplenty", "betternether", "betterend", "deeperdarker");
 
+    /**
+     * Registry entries no world ever places, so nobody could stand in them: the superflat void preset's biome,
+     * and TerraBlender's stand-in for biomes it resolves later.
+     */
+    static final Set<ResourceLocation> EXCLUDED = Set.of(
+        ResourceLocation.withDefaultNamespace("the_void"),
+        ResourceLocation.fromNamespaceAndPath("terrablender", "deferred_placeholder"));
+
     private static final int OVERWORLD = 0;
     private static final int NETHER = 1;
     private static final int END = 2;
@@ -53,21 +61,22 @@ public final class TerraOmnia {
         return !all.isEmpty() && ridden.containsAll(all);
     }
 
-    /** Whether {@code ridden} holds every biome in {@code registry}. */
+    /** Whether {@code ridden} holds every biome Terra Omnia asks for in {@code registry}. */
     public static boolean isComplete(Set<ResourceLocation> ridden, Registry<Biome> registry) {
-        return isComplete(ridden, registry.keySet());
+        return isComplete(ridden, ordered(registry).keySet());
     }
 
-    /** Every biome in {@code registry}, keyed in checklist order, each with its group (see {@link #groupOf}). */
+    /** Every biome Terra Omnia asks for in {@code registry}, keyed in checklist order, each with its group. */
     public static Map<ResourceLocation, Integer> ordered(Registry<Biome> registry) {
         Map<ResourceLocation, Integer> groups = new LinkedHashMap<>();
         registry.holders().forEach(h -> groups.put(h.key().location(), groupOf(h)));
         return ordered(groups);
     }
 
-    /** {@code groups} sorted by group, then id. Pure; package-private for tests. */
+    /** {@code groups} less {@link #EXCLUDED}, sorted by group, then id. Pure; package-private for tests. */
     static Map<ResourceLocation, Integer> ordered(Map<ResourceLocation, Integer> groups) {
         List<Map.Entry<ResourceLocation, Integer>> entries = new ArrayList<>(groups.entrySet());
+        entries.removeIf(e -> EXCLUDED.contains(e.getKey()));
         entries.sort(Map.Entry.<ResourceLocation, Integer>comparingByValue()
             .thenComparing(Map.Entry.comparingByKey(Comparator.comparing(ResourceLocation::toString))));
         Map<ResourceLocation, Integer> out = new LinkedHashMap<>();
