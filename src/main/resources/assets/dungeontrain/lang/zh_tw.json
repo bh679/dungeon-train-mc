@@ -1374,6 +1374,8 @@
   "gui.dungeontrain.rewards.group.extra": "其他",
   "gui.dungeontrain.tv.channel.main": "直播 1",
   "gui.dungeontrain.tv.channel.second": "直播 2",
+  "item.dungeontrain.tv.on": "開",
+  "item.dungeontrain.tv.off": "關",
   "gui.dungeontrain.rewards.quicker_streams.name": "更快直播",
   "gui.dungeontrain.rewards.quicker_streams.line": "延遲從 %1$ss 降到 %2$ss，持續 1 個月",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
