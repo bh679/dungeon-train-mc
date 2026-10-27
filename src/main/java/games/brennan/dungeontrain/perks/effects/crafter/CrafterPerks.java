@@ -1,5 +1,9 @@
 package games.brennan.dungeontrain.perks.effects.crafter;
 
+import games.brennan.dungeontrain.perks.BuiltPerks;
+import games.brennan.dungeontrain.perks.PerkStats;
+import games.brennan.dungeontrain.perks.PerkStats.Unit;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -37,7 +41,20 @@ public final class CrafterPerks {
     /** Levels added by Enchant Bonus while the perk has any active points. */
     public static final int BONUS_LEVELS = 1;
 
+    /** A recipe time to show Cooking Time's share of, in ticks: a round number so the share reads as a percent. */
+    private static final int COOK_SHOWN_BASE = 10_000;
+
     private CrafterPerks() {}
+
+    /** Marks the built Crafter perks (Re-enchant is on hold) and registers their menu stats. */
+    public static void declare() {
+        BuiltPerks.markBuilt(ENCHANT_COST, COOKING_TIME, ENCHANT_MAX, ENCHANT_BONUS);
+        PerkStats.register(ENCHANT_COST, "level_cost", r -> PerkStats.num(-Math.max(0, r), Unit.PLAIN));
+        PerkStats.register(COOKING_TIME, "cook_time",
+            r -> PerkStats.num(cookTicks(COOK_SHOWN_BASE, r) * 100.0 / COOK_SHOWN_BASE, Unit.PERCENT));
+        PerkStats.register(ENCHANT_MAX, "past_max", r -> PerkStats.plus(maxLevelBonus(r), Unit.PLAIN));
+        PerkStats.register(ENCHANT_BONUS, "bonus_level", r -> PerkStats.plus(bonusLevels(r), Unit.PLAIN));
+    }
 
     /**
      * Enchant Cost: a table row requirement or anvil price after {@code rank}. A cost of 0 (vanilla's

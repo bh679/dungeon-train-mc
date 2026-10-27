@@ -1,5 +1,8 @@
 package games.brennan.dungeontrain.perks.effects.trader;
 
+import games.brennan.dungeontrain.perks.BuiltPerks;
+import games.brennan.dungeontrain.perks.PerkStats;
+import games.brennan.dungeontrain.perks.PerkStats.Unit;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.trading.MerchantOffer;
@@ -25,6 +28,12 @@ public final class RestockVillager {
     static final String STORE_KEY = "dungeontrain:perk_restocks";
 
     private RestockVillager() {}
+
+    /** Marks Restock Villager built; its stat is the restocks per villager each life. */
+    public static void declare() {
+        BuiltPerks.markBuilt(ID);
+        PerkStats.register(ID, "restocks", r -> PerkStats.num(charges(r), Unit.PLAIN));
+    }
 
     /** Restocks a player of this rank gets on each villager this life. */
     public static int charges(int rank) {

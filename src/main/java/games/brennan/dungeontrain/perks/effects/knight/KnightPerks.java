@@ -1,5 +1,9 @@
 package games.brennan.dungeontrain.perks.effects.knight;
 
+import games.brennan.dungeontrain.perks.BuiltPerks;
+import games.brennan.dungeontrain.perks.PerkStats;
+import games.brennan.dungeontrain.perks.PerkStats.Unit;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.RandomSource;
 
 /**
@@ -33,6 +37,17 @@ public final class KnightPerks {
     static final float HALF_HEART = 1.0f;
 
     private KnightPerks() {}
+
+    /** Marks the built Knight perks and registers their menu stats. */
+    public static void declare() {
+        BuiltPerks.markBuilt(CRITS, KILL_BUFF, VAMPIRISM);
+        PerkStats.register(CRITS, "crit_chance", r -> PerkStats.num(critPercent(r), Unit.PERCENT));
+        PerkStats.register(CRITS, "crit", r -> PerkStats.num(critMultiplier(Math.max(1, critPercent(r) / 100)), Unit.MULTIPLIER));
+        PerkStats.register(KILL_BUFF, "strength",
+            r -> new PerkStats.Text(Component.translatable("enchantment.level." + (strengthAmplifier(r) + 1))));
+        PerkStats.register(KILL_BUFF, "duration", r -> PerkStats.num(strengthDurationTicks(r) / 20.0, Unit.SECONDS));
+        PerkStats.register(VAMPIRISM, "heal_chance", r -> PerkStats.num(vampirismPercent(r), Unit.PERCENT));
+    }
 
     /**
      * Rolls an overflow percentage: {@code percent / 100} guaranteed steps plus a

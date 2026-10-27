@@ -64,7 +64,7 @@
   {
    "id": "stackable-book-quill",
    "cls": "c0",
-   "name": "Stackable BookQill",
+   "name": "Stackable Book and Quill",
    "desc": "+1 to stack per teir",
    "x": 398.0,
    "y": 294.5,
@@ -482,15 +482,6 @@
    "desc": "Allies get buffs",
    "x": 584.1,
    "y": 262.9,
-   "tier": 2
-  },
-  {
-   "id": "gift-live-eye",
-   "cls": "c0",
-   "name": "Gift liveEye",
-   "desc": "Gift the liveeye to whoever you want",
-   "x": 391.4,
-   "y": 242.1,
    "tier": 2
   },
   {
@@ -964,18 +955,6 @@
    "oneWay": false
   },
   {
-   "a": "live-eye-safe-duration",
-   "b": "gift-live-eye",
-   "kind": "req",
-   "oneWay": true
-  },
-  {
-   "a": "stackable-book-quill",
-   "b": "gift-live-eye",
-   "kind": "req",
-   "oneWay": false
-  },
-  {
    "a": "shared-aura",
    "b": "save-ally",
    "kind": "req",
@@ -1020,12 +999,6 @@
   {
    "a": "bonus-blocks",
    "b": "luck",
-   "kind": "cross",
-   "oneWay": false
-  },
-  {
-   "a": "gift-live-eye",
-   "b": "good-gifter",
    "kind": "cross",
    "oneWay": false
   },

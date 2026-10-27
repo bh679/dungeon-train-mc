@@ -17810,5 +17810,52 @@
         "4.5"
       ]
     }
+  },
+  "gui.dungeontrain.perks.stat.unit.plain": {
+    "1": {
+      "label": "a number, maybe with a sign",
+      "examples": [
+        "3",
+        "+1",
+        "-2"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.unit.percent": {
+    "1": {
+      "label": "a percentage number, without the % sign",
+      "examples": [
+        "5",
+        "80",
+        "12.5"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.unit.minutes": {
+    "1": {
+      "label": "a number of minutes",
+      "examples": [
+        "10",
+        "12.5"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.unit.multiplier": {
+    "1": {
+      "label": "a multiplier number",
+      "examples": [
+        "2",
+        "1.5"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.stat.unit.blocks": {
+    "1": {
+      "label": "a number of blocks",
+      "examples": [
+        "0.1",
+        "1.5"
+      ]
+    }
   }
 }

@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.client.live;
 
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.perks.effects.archivist.ArchivistPerks;
 import games.brennan.dungeontrain.chat.ChatClick;
 import games.brennan.dungeontrain.client.ChatClickActions;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -186,10 +185,6 @@ public final class LiveGiftClient {
             say(mc, Component.translatable(OFFER_KEY + "not_live").withStyle(ChatFormatting.GRAY));
             return 0;
         }
-        if (!canOfferToOne(mc)) {
-            say(mc, Component.translatable(OFFER_KEY + "needs_perk").withStyle(ChatFormatting.GRAY));
-            return 0;
-        }
         LiveFeedClient.giftOffer(DungeonTrain.relayBaseUrl(), token, name).thenAcceptAsync(r -> {
             if (r.ok()) {
                 say(mc, Component.translatable(KEY + "offered", r.str("name").isEmpty() ? name : r.str("name"))
@@ -237,16 +232,6 @@ public final class LiveGiftClient {
         if (status == 404) return OFFER_KEY + "unavailable";
         if (status == 403) return OFFER_KEY + "not_live";
         return KEY + "give_failed";
-    }
-
-    /**
-     * Whether this player may offer the Live Eye to ONE named viewer: the Gift Live Eye perk. Judged at
-     * execute time, never in a command's {@code requires} (NeoForge reads that once, at login). Offering
-     * to all needs no perk. The relay-prompted gifts (a never-streamed viewer joining, a close call) are
-     * not gated here.
-     */
-    static boolean canOfferToOne(Minecraft mc) {
-        return games.brennan.dungeontrain.perks.Perks.rank(mc.player, ArchivistPerks.GIFT_LIVE_EYE) > 0;
     }
 
     /** The list's {@code All [Offer]} button: offer it to everyone, first to accept gets it. */
