@@ -162,8 +162,8 @@ final class PerkCard {
         int level = snap.unlockLevel(p.id()), pts = snap.points(p.id());
         if (level <= 0) {
             out.add(state(Component.translatable(KEY + "locked", p.tier(), ap(cost))));
-            if (!PerkRegistry.isKnown(p.id())) out.add(Component.translatable("gui.dungeontrain.perks.not_built"));
-            else if (!tree.reachable(p.id(), snap::isUnlocked)) out.add(Component.translatable(KEY + "needs_path"));
+            if (!PerkRegistry.isBuilt(p.id())) out.add(Component.translatable("gui.dungeontrain.perks.not_built"));
+            else if (!tree.reachableNow(p.id(), snap::isUnlocked)) out.add(Component.translatable(KEY + "needs_path"));
             else if (snap.unlockPoints() < cost) out.add(Component.translatable(KEY + "you_hold", snap.unlockPoints()));
             else out.add(Component.translatable(KEY + "click_unlock"));
             return out;

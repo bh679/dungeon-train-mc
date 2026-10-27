@@ -57,7 +57,7 @@ public record PerkSpendPacket(String perkId) implements CustomPacketPayload {
         if (PerkTreeLoader.get().perk(id).isEmpty()) return "gui.dungeontrain.perks.refused.unknown";
         PerkRegistry.bootstrap();
         PerkDef def = PerkRegistry.get(id).orElse(null);
-        if (def == null) return "gui.dungeontrain.perks.refused.not_built";
+        if (def == null || !PerkRegistry.isBuilt(id)) return "gui.dungeontrain.perks.refused.not_built";
         PerkState state = Perks.state(player);
         if (!state.isUnlocked(id)) return "gui.dungeontrain.perks.refused.locked";
         if (state.activePoints(id) >= state.unlockLevel(id)) return "gui.dungeontrain.perks.refused.full";

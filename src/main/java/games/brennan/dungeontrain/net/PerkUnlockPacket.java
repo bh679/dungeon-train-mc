@@ -65,9 +65,9 @@ public record PerkUnlockPacket(String perkId) implements CustomPacketPayload {
         PerkTree.Perk perk = tree.perk(id).orElse(null);
         if (perk == null || perk.isRoot()) return "gui.dungeontrain.perks.refused.unknown";
         PerkRegistry.bootstrap();
-        if (!PerkRegistry.isKnown(id)) return "gui.dungeontrain.perks.refused.not_built";
+        if (!PerkRegistry.isBuilt(id)) return "gui.dungeontrain.perks.refused.not_built";
         PerkState state = Perks.state(player);
-        if (!state.isUnlocked(id) && !tree.reachable(id, state)) return "gui.dungeontrain.perks.refused.reach";
+        if (!state.isUnlocked(id) && !tree.reachableNow(id, state::isUnlocked)) return "gui.dungeontrain.perks.refused.reach";
         if (!PerkUnlocks.allowed(state.unlockLevel(id) + 1, PerkSpend.unlockSpent(player))) {
             return "gui.dungeontrain.perks.refused.gate";
         }

@@ -137,18 +137,41 @@ public final class PerkTree {
      * never unlockable; an unknown id is not reachable.
      */
     public boolean reachable(String id, Predicate<String> unlocked) {
+        return reachable(id, unlocked, other -> false);
+    }
+
+    /**
+     * As {@link #reachable(String, Predicate)}, where a {@code passThrough} perk (one not built yet,
+     * "Coming soon") counts as a step on the path: a solid line from the Engine or an unlocked perk
+     * through any run of pass-through perks opens {@code id}. A pass-through perk is never itself
+     * unlocked by this, only crossed.
+     */
+    public boolean reachable(String id, Predicate<String> unlocked, Predicate<String> passThrough) {
         Perk p = byId.get(id);
         if (p == null || p.isRoot()) return false;
-        for (Link l : linksOf(id)) {
-            if (l.kind() != LinkKind.REQ) continue;
-            String other = l.other(id);
-            if (ROOT.equals(other) || unlocked.test(other)) return true;
+        Set<String> seen = new HashSet<>();
+        Deque<String> queue = new ArrayDeque<>();
+        seen.add(id);
+        queue.add(id);
+        while (!queue.isEmpty()) {
+            String cur = queue.poll();
+            for (Link l : linksOf(cur)) {
+                if (l.kind() != LinkKind.REQ) continue;
+                String other = l.other(cur);
+                if (ROOT.equals(other) || unlocked.test(other)) return true;
+                if (passThrough.test(other) && seen.add(other)) queue.add(other);
+            }
         }
         return false;
     }
 
     public boolean reachable(String id, PerkState state) {
         return reachable(id, state::isUnlocked);
+    }
+
+    /** As {@link #reachable(String, PerkState)}, crossing perks that are not built yet. */
+    public boolean reachableNow(String id, Predicate<String> unlocked) {
+        return reachable(id, unlocked, other -> !PerkRegistry.isBuilt(other));
     }
 
     /** Ids joined to the Engine by some chain of links, the Engine included. */

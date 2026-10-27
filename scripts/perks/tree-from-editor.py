@@ -26,6 +26,12 @@ OVERRIDES = {
     "Gift liveEye": "gift-live-eye",
     "Shared Arua": "shared-aura",
 }
+# Perks taken out of the game: dropped with their links even while the editor still has them.
+REMOVED = {"gift-live-eye"}
+# Names the game shows differently from the editor (the editor keeps its own spelling).
+NAMES = {
+    "stackable-book-quill": "Stackable Book and Quill",
+}
 ROOT = "root"
 CENTRE = 400.0
 
@@ -47,10 +53,12 @@ def convert(editor: dict) -> dict:
     perks = []
     for p in model["perks"]:
         pid = perk_id(p)
+        if pid in REMOVED:
+            continue
         if pid in ids.values():
             raise SystemExit(f"duplicate id {pid!r} (name {p['name']!r})")
         ids[p["id"]] = pid
-        out = {"id": pid, "cls": p.get("cls"), "name": p["name"].strip(), "desc": (p.get("desc") or "").strip(),
+        out = {"id": pid, "cls": p.get("cls"), "name": NAMES.get(pid, p["name"].strip()), "desc": (p.get("desc") or "").strip(),
                "x": float(p["x"]), "y": float(p["y"])}
         if pid != ROOT:
             out["tier"] = int(p.get("tier") or (3 if p.get("cap") else 1))
@@ -79,7 +87,8 @@ def lang_fragment(tree: dict) -> dict:
         if p["id"] == ROOT:
             continue
         out[f"perk.dungeontrain.{p['id']}.name"] = p["name"]
-        out[f"perk.dungeontrain.{p['id']}.desc"] = p["desc"]
+        # .desc is not written: the player text lives in en_us.json, hand-written. The tree's desc is
+        # the editor's design note and stays in tree.json only.
         if p.get("point"):
             out[f"perk.dungeontrain.{p['id']}.point"] = p["point"]
     for c in tree["classes"]:
