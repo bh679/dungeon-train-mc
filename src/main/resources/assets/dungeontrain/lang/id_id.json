@@ -5596,5 +5596,13 @@
   "gui.dungeontrain.perks.bar.full": "Penuh. Buka lagi untuk ruang satu poin lagi.",
   "gui.dungeontrain.perks.bar.fill_first": "Isi poinnya dulu.",
   "gui.dungeontrain.perks.bar.hint": "Arahkan ke perk untuk melihatnya di sini. Klik untuk menyematkannya.",
-  "gui.dungeontrain.perks.counter.unlock.click": "Klik untuk membuka kemajuan."
+  "gui.dungeontrain.perks.counter.unlock.click": "Klik untuk membuka kemajuan.",
+  "gui.dungeontrain.perks.death.kicker": "Poin yang kamu bawa",
+  "gui.dungeontrain.perks.death.question": "Kamu menaruh %s poin ke %s perk dalam hidup ini.",
+  "gui.dungeontrain.perks.death.narration": "Poin itu ikut hilang bersamamu. Yang sudah kamu buka tetap ada untuk hidup berikutnya.",
+  "gui.dungeontrain.perks.death.tile.spent": "Poin Aktif terpakai",
+  "gui.dungeontrain.perks.death.tile.ranks": "Poin dimasukkan",
+  "gui.dungeontrain.perks.death.tile.perks": "Perk diperkuat",
+  "gui.dungeontrain.perks.death.tile.top": "Poin terbanyak",
+  "gui.dungeontrain.perks.death.unlock_hint": "Buka perk untuk hidup berikutnya."
 }

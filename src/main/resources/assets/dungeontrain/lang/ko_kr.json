@@ -5596,5 +5596,13 @@
   "gui.dungeontrain.perks.bar.full": "가득 참. 다시 해금하면 포인트를 하나 더 넣을 수 있습니다.",
   "gui.dungeontrain.perks.bar.fill_first": "먼저 포인트를 채우세요.",
   "gui.dungeontrain.perks.bar.hint": "특성에 마우스를 올리면 여기에 표시됩니다. 클릭하면 고정됩니다.",
-  "gui.dungeontrain.perks.counter.unlock.click": "클릭하면 발전 과제를 엽니다."
+  "gui.dungeontrain.perks.counter.unlock.click": "클릭하면 발전 과제를 엽니다.",
+  "gui.dungeontrain.perks.death.kicker": "지니고 있던 포인트",
+  "gui.dungeontrain.perks.death.question": "이번 생에서 %s 포인트를 %s개의 특성에 넣었습니다.",
+  "gui.dungeontrain.perks.death.narration": "포인트는 당신과 함께 사라집니다. 해금한 것은 다음 생에도 남습니다.",
+  "gui.dungeontrain.perks.death.tile.spent": "사용한 활성 포인트",
+  "gui.dungeontrain.perks.death.tile.ranks": "넣은 포인트",
+  "gui.dungeontrain.perks.death.tile.perks": "강화한 특성",
+  "gui.dungeontrain.perks.death.tile.top": "가장 많은 포인트",
+  "gui.dungeontrain.perks.death.unlock_hint": "다음 생을 위해 특성을 해금하세요."
 }

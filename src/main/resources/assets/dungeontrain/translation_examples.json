@@ -17810,5 +17810,21 @@
         "4.5"
       ]
     }
+  },
+  "gui.dungeontrain.perks.death.question": {
+    "1": {
+      "label": "points put into perks this life",
+      "examples": [
+        "3",
+        "24"
+      ]
+    },
+    "2": {
+      "label": "how many perks held those points",
+      "examples": [
+        "1",
+        "5"
+      ]
+    }
   }
 }

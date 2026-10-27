@@ -5596,5 +5596,13 @@
   "gui.dungeontrain.perks.bar.full": "Penuh. Buka kunci sekali lagi untuk ruang satu mata lagi.",
   "gui.dungeontrain.perks.bar.fill_first": "Isi matanya dahulu.",
   "gui.dungeontrain.perks.bar.hint": "Tuding pada perk untuk melihatnya di sini. Klik untuk menyematkannya.",
-  "gui.dungeontrain.perks.counter.unlock.click": "Klik untuk membuka kemajuan."
+  "gui.dungeontrain.perks.counter.unlock.click": "Klik untuk membuka kemajuan.",
+  "gui.dungeontrain.perks.death.kicker": "Mata yang anda bawa",
+  "gui.dungeontrain.perks.death.question": "Anda meletakkan %s mata ke dalam %s perk dalam hayat ini.",
+  "gui.dungeontrain.perks.death.narration": "Ia hilang bersama anda. Apa yang anda buka kekal untuk hayat seterusnya.",
+  "gui.dungeontrain.perks.death.tile.spent": "Mata Aktif dibelanjakan",
+  "gui.dungeontrain.perks.death.tile.ranks": "Mata diletakkan",
+  "gui.dungeontrain.perks.death.tile.perks": "Perk dikuatkan",
+  "gui.dungeontrain.perks.death.tile.top": "Mata terbanyak",
+  "gui.dungeontrain.perks.death.unlock_hint": "Buka perk untuk hayat seterusnya."
 }

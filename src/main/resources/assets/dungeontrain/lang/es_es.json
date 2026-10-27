@@ -5660,5 +5660,13 @@
   "gui.dungeontrain.perks.bar.full": "Lleno. Desbloquéalo otra vez para tener sitio para un punto más.",
   "gui.dungeontrain.perks.bar.fill_first": "Llena primero sus puntos.",
   "gui.dungeontrain.perks.bar.hint": "Pasa el ratón por una ventaja para verla aquí. Haz clic para fijarla.",
-  "gui.dungeontrain.perks.counter.unlock.click": "Haz clic para abrir los logros."
+  "gui.dungeontrain.perks.counter.unlock.click": "Haz clic para abrir los logros.",
+  "gui.dungeontrain.perks.death.kicker": "Los puntos que llevabas",
+  "gui.dungeontrain.perks.death.question": "Has puesto %s puntos en %s ventajas en esta vida.",
+  "gui.dungeontrain.perks.death.narration": "Se van contigo. Lo que desbloqueaste se queda para la próxima vida.",
+  "gui.dungeontrain.perks.death.tile.spent": "Puntos de ventaja gastados",
+  "gui.dungeontrain.perks.death.tile.ranks": "Puntos asignados",
+  "gui.dungeontrain.perks.death.tile.perks": "Ventajas activadas",
+  "gui.dungeontrain.perks.death.tile.top": "Más puntos",
+  "gui.dungeontrain.perks.death.unlock_hint": "Desbloquea ventajas para la próxima vida."
 }

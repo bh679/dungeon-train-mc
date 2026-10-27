@@ -26,6 +26,22 @@ public record PerkMenuSnapshot(Map<String, Integer> unlocks, Map<String, Integer
         return new PerkMenuSnapshot(s.unlocks(), s.active(), PerkClientBalances.unlockPoints(), PerkClientBalances.activePoints());
     }
 
+    /** The same unlocks with every point gone: how the tree stands for the next life. */
+    public PerkMenuSnapshot withoutActive() {
+        return new PerkMenuSnapshot(unlocks, Map.of(), unlockPoints, 0);
+    }
+
+    /** Each perk's points cut to {@code left} (0..1) of what it holds, to the nearest; a perk at 0 drops out, so small rings empty first. */
+    public PerkMenuSnapshot drained(double left) {
+        double f = Math.max(0, Math.min(1, left));
+        Map<String, Integer> out = new java.util.LinkedHashMap<>();
+        active.forEach((id, n) -> {
+            int kept = (int) Math.round(n * f);
+            if (kept > 0) out.put(id, kept);
+        });
+        return new PerkMenuSnapshot(unlocks, Map.copyOf(out), unlockPoints, activePoints);
+    }
+
     public Set<String> unlocked() {
         return unlocks.keySet();
     }

@@ -5610,5 +5610,13 @@
   "gui.dungeontrain.perks.bar.full": "已滿。再次解鎖可多放一個點數。",
   "gui.dungeontrain.perks.bar.fill_first": "請先填滿它的點數。",
   "gui.dungeontrain.perks.bar.hint": "將滑鼠停在特權上即可在此查看。點擊可固定。",
-  "gui.dungeontrain.perks.counter.unlock.click": "點擊開啟進度。"
+  "gui.dungeontrain.perks.counter.unlock.click": "點擊開啟進度。",
+  "gui.dungeontrain.perks.death.kicker": "你隨身的點數",
+  "gui.dungeontrain.perks.death.question": "這一生你把 %s 點投入了 %s 項特權。",
+  "gui.dungeontrain.perks.death.narration": "它們隨你而去。已解鎖的會留到下一生。",
+  "gui.dungeontrain.perks.death.tile.spent": "已用啟用點數",
+  "gui.dungeontrain.perks.death.tile.ranks": "投入的點數",
+  "gui.dungeontrain.perks.death.tile.perks": "強化的特權",
+  "gui.dungeontrain.perks.death.tile.top": "點數最多",
+  "gui.dungeontrain.perks.death.unlock_hint": "為下一生解鎖特權。"
 }

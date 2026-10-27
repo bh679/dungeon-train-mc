@@ -5724,5 +5724,13 @@
   "gui.dungeontrain.perks.bar.full": "Pełny. Odblokuj ponownie, aby zrobić miejsce na kolejny punkt.",
   "gui.dungeontrain.perks.bar.fill_first": "Najpierw wypełnij jego punkty.",
   "gui.dungeontrain.perks.bar.hint": "Najedź na atut, aby zobaczyć go tutaj. Kliknij, aby go zatrzymać.",
-  "gui.dungeontrain.perks.counter.unlock.click": "Kliknij, aby otworzyć postępy."
+  "gui.dungeontrain.perks.counter.unlock.click": "Kliknij, aby otworzyć postępy.",
+  "gui.dungeontrain.perks.death.kicker": "Punkty, które niosłeś",
+  "gui.dungeontrain.perks.death.question": "W tym życiu włożyłeś %s pkt w %s perków.",
+  "gui.dungeontrain.perks.death.narration": "Odchodzą razem z tobą. To, co odblokowałeś, zostaje na następne życie.",
+  "gui.dungeontrain.perks.death.tile.spent": "Wydane aktywne punkty",
+  "gui.dungeontrain.perks.death.tile.ranks": "Włożone punkty",
+  "gui.dungeontrain.perks.death.tile.perks": "Wzmocnione perki",
+  "gui.dungeontrain.perks.death.tile.top": "Najwięcej punktów",
+  "gui.dungeontrain.perks.death.unlock_hint": "Odblokuj perki na następne życie."
 }

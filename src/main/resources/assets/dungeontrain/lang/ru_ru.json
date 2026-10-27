@@ -5724,5 +5724,13 @@
   "gui.dungeontrain.perks.bar.full": "Заполнено. Разблокируйте снова, чтобы освободить место для ещё одного очка.",
   "gui.dungeontrain.perks.bar.fill_first": "Сначала заполните его очки.",
   "gui.dungeontrain.perks.bar.hint": "Наведите на перк, чтобы увидеть его здесь. Нажмите, чтобы закрепить.",
-  "gui.dungeontrain.perks.counter.unlock.click": "Нажмите, чтобы открыть достижения."
+  "gui.dungeontrain.perks.counter.unlock.click": "Нажмите, чтобы открыть достижения.",
+  "gui.dungeontrain.perks.death.kicker": "Очки, что были с тобой",
+  "gui.dungeontrain.perks.death.question": "В этой жизни ты вложил %s очк. в %s перк.",
+  "gui.dungeontrain.perks.death.narration": "Они уходят вместе с тобой. Открытое остаётся на следующую жизнь.",
+  "gui.dungeontrain.perks.death.tile.spent": "Потрачено активных очков",
+  "gui.dungeontrain.perks.death.tile.ranks": "Вложено очков",
+  "gui.dungeontrain.perks.death.tile.perks": "Усилено перков",
+  "gui.dungeontrain.perks.death.tile.top": "Больше всего очков",
+  "gui.dungeontrain.perks.death.unlock_hint": "Открой перки для следующей жизни."
 }

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import games.brennan.dungeontrain.client.perks.PerksScreen;
 import games.brennan.dungeontrain.client.snapshot.DeathPhotoUploads;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshot;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshotGallery;
@@ -98,7 +99,8 @@ public final class DeathMomentScreen extends Screen {
     private void handOver() {
         if (handedOver || minecraft == null) return;
         handedOver = true;
-        minecraft.setScreen(new NarrativeDeathScreen());
+        // the perks menu (unlocking only) comes first; moving on from it opens the recap
+        PerksScreen.openForDeath(NarrativeDeathScreen::new);
     }
 
     private boolean maySkip() {

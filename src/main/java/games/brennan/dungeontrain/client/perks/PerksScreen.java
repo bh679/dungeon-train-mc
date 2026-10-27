@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 
 /**
  * The perks constellation, working the way the web page's test mode does ({@code perks.js}; see
@@ -54,8 +56,6 @@ public final class PerksScreen extends Screen {
     private static final long FADE_MS = 200;
     private static final long CARD_LINGER_MS = 250;
     private static final int CLOSE_W = 12;
-    /** How far a label's leader line starts off the label's edge, GUI px. */
-    private static final double LEADER_GAP = 1.5;
     /** Labels fade in over this long once the stars stop moving. */
     private static final long LABEL_FADE_MS = 250;
     private static final double DOUBLE_CLICK_MS = 300;
@@ -74,6 +74,10 @@ public final class PerksScreen extends Screen {
     private final Map<String, Long> pointAt = new HashMap<>();
     private final long openedAt = Util.getMillis();
     private final UUID player;
+    /** Set when the menu opened on death, ahead of the recap; null for the menu opened in play. */
+    private final DeathPerksPhase death;
+    private final PointsCarriedPanel deathPanel;
+    private long frameAt;
 
     private SkyView view;
     private PerkMenuSnapshot last = PerkMenuSnapshot.EMPTY;
@@ -104,8 +108,9 @@ public final class PerksScreen extends Screen {
     private long spentAt;
     private boolean firstSnapshot = true;
 
-    private PerksScreen(boolean fromApple) {
+    private PerksScreen(boolean fromApple, DeathPerksPhase death) {
         super(Component.translatable("gui.dungeontrain.perks.title"));
+        this.death = death;
         Minecraft mc = Minecraft.getInstance();
         this.tree = PerkTreeLoader.get();
         this.fromApple = fromApple;
@@ -117,6 +122,9 @@ public final class PerksScreen extends Screen {
         this.player = mc.player != null ? mc.player.getUUID() : new UUID(0, 0);
         this.off = ClassChoiceStore.load(player).orElseGet(this::allClasses);
         this.drawn = tree;
+        this.deathPanel = new PointsCarriedPanel(mc.font);
+        bar.unlockOnly(death != null);
+        counters.unlockOnly(death != null);
     }
 
     /** The height the sky gets: the screen, less the details bar when it is on. */
@@ -135,7 +143,21 @@ public final class PerksScreen extends Screen {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
         if (mc.screen instanceof PerksScreen) return;
-        mc.setScreen(new PerksScreen(fromApple));
+        mc.setScreen(new PerksScreen(fromApple, null));
+        mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.AMETHYST_BLOCK_CHIME, 0.8F, 0.4F));
+    }
+
+    /**
+     * Open the menu as the first thing on death, unlocking only; moving on opens {@code next} (the death
+     * recap). A life with points in perks opens on the points page first ({@link DeathPerksPhase}).
+     */
+    public static void openForDeath(Supplier<Screen> next) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            mc.setScreen(next.get());
+            return;
+        }
+        mc.setScreen(new PerksScreen(false, new DeathPerksPhase(PerkMenuSnapshot.current(), next)));
         mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.AMETHYST_BLOCK_CHIME, 0.8F, 0.4F));
     }
 
@@ -158,14 +180,40 @@ public final class PerksScreen extends Screen {
     @Override
     public void onClose() {
         PerksHud.onMenuClosed();
-        super.onClose();
+        // on death there is no game to go back to: closing moves on to the recap
+        if (death != null) Minecraft.getInstance().setScreen(death.next());
+        else super.onClose();
+    }
+
+    /** The death menu takes no input until the points page has drained away. */
+    private boolean deathPage() {
+        return death != null && !death.menuLive(Util.getMillis());
+    }
+
+    /** The points page or the drain: Next Screen (or a click during the drain) moves it on. */
+    private void advanceDeath() {
+        death.advance(Util.getMillis());
+        play(SoundEvents.UI_BUTTON_CLICK.value(), 0.3F, 1.0F);
+    }
+
+    private double menuAlpha() {
+        return death == null ? 1 : death.menuAlpha(frameAt);
+    }
+
+    /** A star with no points, drawn faint while the points page is up. */
+    private boolean dimmed(PerkTree.Perk p) {
+        return death != null && !p.isRoot() && death.dimsUnpointed(frameAt) && death.carried().points(p.id()) == 0;
     }
 
     // ---- state -----------------------------------------------------------------------------------------
 
     private PerkMenuSnapshot snapshot() {
-        PerkMenuSnapshot now = PerkMenuSnapshot.current();
         long ms = Util.getMillis();
+        PerkMenuSnapshot now = death == null ? PerkMenuSnapshot.current() : death.view(PerkMenuSnapshot.current(), ms);
+        // the drain: a falling chime as each point leaves
+        if (!firstSnapshot && death != null && now.ranksBought() < last.ranksBought()) {
+            play(SoundEvents.AMETHYST_BLOCK_CHIME, 0.5F, 0.6F + 0.04F * Math.min(now.ranksBought(), 20));
+        }
         if (!firstSnapshot) {
             for (String id : now.unlocked()) {
                 int before = last.unlockLevel(id), after = now.unlockLevel(id);
@@ -237,6 +285,10 @@ public final class PerksScreen extends Screen {
      */
     private void act(PerkTree.Perk p) {
         if (p.isRoot()) return;
+        if (death != null) {
+            unlockAction(p);
+            return;
+        }
         int level = last.unlockLevel(p.id());
         if (level > 0 && last.points(p.id()) < level) activateAction(p);
         else unlockAction(p);
@@ -257,7 +309,7 @@ public final class PerksScreen extends Screen {
             refused(p.id(), "gui.dungeontrain.perks.card.needs_path");
             return;
         }
-        if (level > 0 && s.points(p.id()) < level) return;
+        if (death == null && level > 0 && s.points(p.id()) < level) return;
         if (!PerkUnlocks.allowed(level + 1, s.unlockSpent(tree))) {
             refused(p.id(), "gui.dungeontrain.perks.refused.gate_short");
             return;
@@ -271,7 +323,7 @@ public final class PerksScreen extends Screen {
 
     /** Put one point into {@code p}. */
     private void activateAction(PerkTree.Perk p) {
-        if (p.isRoot()) return;
+        if (p.isRoot() || death != null) return;
         PerkMenuSnapshot s = last;
         int level = s.unlockLevel(p.id());
         if (level <= 0 || s.points(p.id()) >= level) return;
@@ -286,9 +338,11 @@ public final class PerksScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        frameAt = Util.getMillis();
         PerkMenuSnapshot snap = snapshot();
-        long now = Util.getMillis();
+        long now = frameAt;
         double fade = Math.min(1.0, (now - openedAt) / (double) FADE_MS);
+        double menuFade = fade * menuAlpha();
 
         int cardRight = classesList.layout(width);
         int countersTop = counters.layout(width, skyH(), snap.unlockPoints(), snap.activePoints());
@@ -310,7 +364,7 @@ public final class PerksScreen extends Screen {
         // a hovered class (in the list or its title) shows, else a hovered star, else the class clicked to stay
         String classShown = classHover != null ? classHover : hovered == null ? selectedClass : null;
         glow = classShown;
-        if (DETAILS == DetailsMode.BAR) updateBar(snap, classShown);
+        if (DETAILS == DetailsMode.BAR) updateBar(snap, deathPage() ? null : classShown);
         else updateCard(snap, now, mouseX, mouseY, cardRight, countersTop);
 
         g.fill(0, 0, width, height, SkyPalette.BG);
@@ -320,12 +374,10 @@ public final class PerksScreen extends Screen {
         stars.render(g, view, width, skyH(), now, fade);
         LinkPainter.render(g, drawn, snap, vis, view, width, skyH(), fade);
         // perk names take their spots first; the class titles then move around them
-        boolean allNames = view.showsAllNames();
         boolean spendable = fromApple && snap.canAffordRank() && spentAt == 0;
-        String focus = cardFor != null ? cardFor : selected;
-        Map<String, int[]> names = layoutNames(allNames, focus, List.of());
+        Map<String, int[]> names = layoutNames(List.of());
         // titles keep clear of every class's names as if all were shown, so they stay put when one is
-        List<NameLayout.Box> nameBoxes = allClassNameBoxes();
+        List<NameLayout.Box> nameBoxes = SkyNames.allClassNameBoxes(sky());
         // labels hide while stars swing to a new layout, then fade in once they settle
         if (layout.moving()) labelsSettledAt = -1;
         else if (labelsSettledAt < 0) labelsSettledAt = now;
@@ -335,7 +387,7 @@ public final class PerksScreen extends Screen {
         if (labels) {
             titles = ClassTitlePainter.render(g, font, drawn, vis, glow, view, width, skyH(), labelFade, nameBoxes,
                 titleHover, titleEyeHover);
-            renderLeaders(g, names, labelFade);
+            SkyNames.renderLeaders(g, sky(), names, labelFade);
         }
 
         for (PerkTree.Perk p : drawn.perks()) {
@@ -343,33 +395,40 @@ public final class PerksScreen extends Screen {
             boolean sel = p.id().equals(selected), hov = p.id().equals(hovered) || p.id().equals(cardFor);
             boolean glows = glow != null && glow.equals(p.cls());
             StarPainter.render(g, font, drawn, p, snap, view, width, skyH(),
-                new StarPainter.Look(hov, sel, names.get(p.id()), spendable, vis.ghost(p), glows), unlockedAt, pointAt, now, fade);
+                new StarPainter.Look(hov, sel, names.get(p.id()), spendable, vis.ghost(p) || dimmed(p), glows), unlockedAt, pointAt, now, fade);
         }
         // names after every star, so no dot covers a label
         for (PerkTree.Perk p : labels ? drawn.perks() : List.<PerkTree.Perk>of()) {
             int[] at = names.get(p.id());
             if (at == null || vis.hidden(p)) continue;
-            StarPainter.renderName(g, font, drawn, p, snap, at, glow != null && glow.equals(p.cls()), vis.ghost(p), labelFade);
+            StarPainter.renderName(g, font, drawn, p, snap, at, glow != null && glow.equals(p.cls()), vis.ghost(p) || dimmed(p), labelFade);
         }
 
-        renderHeader(g, snap, now, fade);
+        if (menuFade > 0.03) renderHeader(g, snap, now, menuFade, mouseX, mouseY);
         // only a class clicked to stay gets the pill; a hovered title or perk, or the kept perk, outlines its class
         String keptPerkClass = selected == null ? null : tree.perk(selected).map(PerkTree.Perk::cls).orElse(null);
         String hoverMarked = titleHover != null ? titleHover
             : hovered != null ? tree.perk(hovered).map(PerkTree.Perk::cls).orElse(null) : keptPerkClass;
         int head = headEyeHover ? 2 : classesList.headingAt(mouseX, mouseY) ? 1 : 0;
-        classesList.render(g, snap, off, listHover, selectedClass, hoverMarked,
-            classesList.rowHover(mouseX, mouseY), selectedClass, eyeHover, head, fade);
-        counters.render(g, snap.unlockPoints(), snap.activePoints(), now, fade);
+        if (menuFade > 0.03) {
+            classesList.render(g, snap, off, listHover, selectedClass, hoverMarked,
+                classesList.rowHover(mouseX, mouseY), selectedClass, eyeHover, head, menuFade);
+            counters.render(g, snap.unlockPoints(), snap.activePoints(), now, menuFade);
+        }
         g.flush(); // titles and names are batched: push them out so the card paints over them
         if (DETAILS == DetailsMode.BAR) {
             bar.mouse(mouseX, mouseY);
-            bar.render(g, snap, fade);
+            if (menuFade > 0.03) bar.render(g, snap, menuFade);
         }
         else card.render(g, now);
+        if (death != null) {
+            deathPanel.render(g, tree, card, death.carried(), width, height - PerkDetailsBar.HEIGHT, mouseX, mouseY,
+                death.pageAlpha(now) * fade);
+        }
         g.flush();
         super.render(g, mouseX, mouseY, partialTick);
 
+        if (deathPage()) return;
         if (zoomHover >= 0) g.renderTooltip(font, zoomControl.tooltip(zoomHover), mouseX, mouseY);
         if (eyeHover != null || titleEyeHover) g.renderTooltip(font, ClassesList.hideTooltip(), mouseX, mouseY);
         if (headEyeHover) g.renderTooltip(font, ClassesList.hideAllTooltip(), mouseX, mouseY);
@@ -420,7 +479,7 @@ public final class PerksScreen extends Screen {
         // the sky is the background
     }
 
-    private void renderHeader(GuiGraphics g, PerkMenuSnapshot snap, long now, double fade) {
+    private void renderHeader(GuiGraphics g, PerkMenuSnapshot snap, long now, double fade, int mouseX, int mouseY) {
         int alpha = (int) (fade * 255) << 24;
         int x = 8, y = (SkyView.HEADER - font.lineHeight) / 2 + 1;
         g.drawString(font, title, x, y, (SkyPalette.GOLD & 0xFFFFFF) | alpha, true);
@@ -433,100 +492,38 @@ public final class PerksScreen extends Screen {
             double pulse = 0.75 + 0.25 * Math.sin(now / 600.0);
             g.drawString(font, line, x, y, (SkyPalette.GOLD & 0xFFFFFF) | ((int) (pulse * fade * 255) << 24), true);
         }
+        if (death != null) {
+            g.drawString(font, Component.translatable("gui.dungeontrain.perks.death.unlock_hint"), x, y,
+                (SkyPalette.GOLD & 0xFFFFFF) | alpha, true);
+            PointsCarriedPanel.nextButton(g, font, width - 8 - NEXT_W, NEXT_Y, NEXT_W, NEXT_H, overNext(mouseX, mouseY), fade);
+            return;
+        }
         g.drawString(font, "x", width - 8 - font.width("x"), y, (SkyPalette.MUTED & 0xFFFFFF) | alpha, false);
     }
 
-    /**
-     * A thin line from each label to its perk: from just off the label's side nearest the dot, to the
-     * middle of the dot. Drawn under the stars, so the dot sits on top of its line.
-     */
-    private void renderLeaders(GuiGraphics g, Map<String, int[]> names, double fade) {
-        for (Map.Entry<String, int[]> e : names.entrySet()) {
-            PerkTree.Perk p = drawn.perk(e.getKey()).orElse(null);
-            if (p == null || vis.hidden(p)) continue;
-            double cx = view.toScreenX(p.x(), width), cy = view.toScreenY(p.y(), skyH());
-            int[] at = e.getValue();
-            double x0 = at[0], y0 = at[1];
-            double x1 = x0 + Math.ceil(font.width(p.name()) * SkyPalette.NAME_SCALE), y1 = y0 + Math.ceil(font.lineHeight * SkyPalette.NAME_SCALE);
-            // nearest point of the label to the dot's middle, stepped just off the label toward the dot
-            double nx = Math.max(x0, Math.min(cx, x1)), ny = Math.max(y0, Math.min(cy, y1));
-            double dx = cx - nx, dy = cy - ny, d = Math.hypot(dx, dy);
-            if (d < 2) continue;
-            double sx = nx + dx / d * LEADER_GAP, sy = ny + dy / d * LEADER_GAP;
-            int c = SkyDraw.withAlpha(SkyPalette.FG, 0.45 * (vis.ghost(p) ? 0.5 : 1.0) * fade);
-            SkyDraw.line(g, sx, sy, cx, cy, 0.75, c, c);
-        }
+    private static final int NEXT_W = 80, NEXT_H = 18, NEXT_Y = 3;
+
+    /** Over the death menu's Next Screen button, in the header's top right. */
+    private boolean overNext(double mx, double my) {
+        return death != null && mx >= width - 8 - NEXT_W && mx < width - 8 && my >= NEXT_Y && my < NEXT_Y + NEXT_H;
     }
 
-    /**
-     * Which perk names show and where, so none overlaps another name, a class title or a star. Wanted
-     * names: all of them when zoomed in, else the kept, hovered and glowing stars and the focus's
-     * neighbours. Placed in that priority; a name with no free spot is left out.
-     */
-    /**
-     * Where each class's perk names would sit with that class hovered (all its perks named, laid out as
-     * {@link #layoutNames} does then), for every class at once: the boxes the class titles keep clear of.
-     */
-    private List<NameLayout.Box> allClassNameBoxes() {
-        Map<String, double[]> stars = new HashMap<>();
-        Map<String, List<PerkTree.Perk>> byClass = new HashMap<>();
-        for (PerkTree.Perk p : drawn.perks()) {
-            if (vis.hidden(p) || p.isRoot()) continue;
-            stars.put(p.id(), new double[] {view.toScreenX(p.x(), width), view.toScreenY(p.y(), skyH()), SkyPalette.haloRadius(p, view.zoom())});
-            byClass.computeIfAbsent(p.cls(), k -> new java.util.ArrayList<>()).add(p);
-        }
-        int h = (int) Math.ceil(font.lineHeight * SkyPalette.NAME_SCALE);
-        List<NameLayout.Box> out = new java.util.ArrayList<>();
-        for (List<PerkTree.Perk> perks : byClass.values()) {
-            List<NameLayout.Want> wants = perks.stream()
-                .sorted(java.util.Comparator.comparingDouble((PerkTree.Perk p) -> -stars.get(p.id())[0]))
-                .map(p -> {
-                    double[] st = stars.get(p.id());
-                    return new NameLayout.Want(p.id(), st[0], st[1], st[2], (int) Math.ceil(font.width(p.name()) * SkyPalette.NAME_SCALE), h, true);
-                })
-                .toList();
-            NameLayout.place(wants, List.of(), stars).forEach((id, at) -> tree.perk(id).ifPresent(p -> out.add(
-                new NameLayout.Box(at[0], at[1], at[0] + Math.ceil(font.width(p.name()) * SkyPalette.NAME_SCALE), at[1] + h))));
-        }
-        return out;
+    private SkyNames.Sky sky() {
+        return new SkyNames.Sky(font, tree, drawn, vis, view, width, skyH());
     }
 
-    private Map<String, int[]> layoutNames(boolean allNames, String focus, List<NameLayout.Box> titles) {
-        Map<String, double[]> stars = new HashMap<>();
-        List<PerkTree.Perk> visible = new java.util.ArrayList<>();
-        for (PerkTree.Perk p : drawn.perks()) {
-            if (vis.hidden(p)) continue;
-            visible.add(p);
-            stars.put(p.id(), new double[] {view.toScreenX(p.x(), width), view.toScreenY(p.y(), skyH()), SkyPalette.haloRadius(p, view.zoom())});
-        }
-        java.util.function.ToIntFunction<PerkTree.Perk> rank = p -> {
+    private Map<String, int[]> layoutNames(List<NameLayout.Box> titles) {
+        ToIntFunction<PerkTree.Perk> rank = p -> {
             if (p.id().equals(selected)) return 0;
             if (p.id().equals(hovered) || p.id().equals(cardFor)) return 1;
             if (glow != null && glow.equals(p.cls())) return 2;
+            if (death != null && death.dimsUnpointed(frameAt) && death.carried().points(p.id()) > 0) return 2;
             if (last.unlockLevel(p.id()) > 0) return 3;
             return 4;
         };
-        List<NameLayout.Want> wants = new java.util.ArrayList<>();
-        // a class hovered in the list: only its perks are named, and every one of them is
-        boolean classHover = glow != null;
         // fully zoomed out: no names by default, only the hovered or kept star and a hovered class
         boolean zoomedOut = view.step(width, skyH(), closestZoom()) == 0;
-        visible.stream()
-            .filter(p -> !p.isRoot())
-            .filter(p -> !classHover || glow.equals(p.cls()))
-            .filter(p -> !zoomedOut || rank.applyAsInt(p) <= 2)
-            // every visible star asks for its name; the layout fits as many as there is room for, most
-            // important first (kept, hovered, glowing, the focus's neighbours, unlocked, then nearest the Engine)
-            // hovered and kept stars (and a hovered class) first; then the rightmost perk wins its spot
-            .sorted(java.util.Comparator.comparingInt((PerkTree.Perk p) -> rank.applyAsInt(p) <= 2 ? 0 : 1)
-                .thenComparingDouble(p -> -stars.get(p.id())[0]))
-            .forEach(p -> {
-                double[] s = stars.get(p.id());
-                wants.add(new NameLayout.Want(p.id(), s[0], s[1], s[2],
-                    (int) Math.ceil(font.width(p.name()) * SkyPalette.NAME_SCALE), (int) Math.ceil(font.lineHeight * SkyPalette.NAME_SCALE),
-                    rank.applyAsInt(p) <= 2));
-            });
-        return NameLayout.place(wants, titles, stars);
+        return SkyNames.layoutNames(sky(), glow, zoomedOut, rank, titles);
     }
 
     private boolean linked(String a, String b) {
@@ -555,8 +552,18 @@ public final class PerksScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
+        if (deathPage()) {
+            boolean draining = death.phase(Util.getMillis()) == DeathPerksPhase.Phase.DRAIN;
+            if (button == 0 && (draining || deathPanel.overButton(mx, my))) advanceDeath();
+            return true;
+        }
         if (super.mouseClicked(mx, my, button)) return true;
-        if (button == 0 && mx >= width - 8 - CLOSE_W && my < SkyView.HEADER) {
+        if (button == 0 && overNext(mx, my)) {
+            play(SoundEvents.UI_BUTTON_CLICK.value(), 0.3F, 1.0F);
+            onClose();
+            return true;
+        }
+        if (button == 0 && death == null && mx >= width - 8 - CLOSE_W && my < SkyView.HEADER) {
             onClose();
             return true;
         }
@@ -578,6 +585,7 @@ public final class PerksScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mx, double my, int button) {
+        if (deathPage()) return true;
         if (super.mouseReleased(mx, my, button)) return true;
         boolean wasDrag = dragging && dragMoved > 3;
         dragging = false;
@@ -666,7 +674,7 @@ public final class PerksScreen extends Screen {
 
     @Override
     public boolean mouseDragged(double mx, double my, int button, double dx, double dy) {
-        if (!dragging) return super.mouseDragged(mx, my, button, dx, dy);
+        if (!dragging || deathPage()) return super.mouseDragged(mx, my, button, dx, dy);
         dragMoved += Math.abs(dx) + Math.abs(dy);
         view = view.panned(dx, dy, width, skyH());
         return true;
@@ -698,6 +706,11 @@ public final class PerksScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (deathPage()) {
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER
+                || keyCode == GLFW.GLFW_KEY_SPACE) advanceDeath();
+            return true;
+        }
         if (PerksHotkeyClient.key().matches(keyCode, scanCode) || keyCode == GLFW.GLFW_KEY_ESCAPE) {
             onClose();
             return true;
@@ -751,8 +764,8 @@ public final class PerksScreen extends Screen {
         }
         PerkTree.Perk from = drawn.perk(selected).orElse(null);
         if (from == null) return;
-        String best = pick(from, ax, ay, true);
-        if (best == null) best = pick(from, ax, ay, false);
+        String best = SkyNav.pick(drawn, vis, from, ax, ay, true);
+        if (best == null) best = SkyNav.pick(drawn, vis, from, ax, ay, false);
         if (best != null) {
             selected = best;
             cardFor = null;
@@ -761,40 +774,10 @@ public final class PerksScreen extends Screen {
         }
     }
 
-    /** The linked (or, failing that, nearby) visible star whose direction best matches the arrow. */
-    private String pick(PerkTree.Perk from, double ax, double ay, boolean linkedOnly) {
-        String best = null;
-        double bestScore = 0.3;
-        List<PerkTree.Perk> candidates = linkedOnly
-            ? drawn.linksOf(from.id()).stream().map(l -> drawn.perk(l.other(from.id())).orElse(null)).filter(p -> p != null).toList()
-            : drawn.perks();
-        for (PerkTree.Perk p : candidates) {
-            if (p.id().equals(from.id()) || (vis != null && vis.hidden(p))) continue;
-            double dx = p.x() - from.x(), dy = p.y() - from.y(), d = Math.hypot(dx, dy);
-            if (d == 0 || (!linkedOnly && d > 160)) continue;
-            double cos = (dx * ax + dy * ay) / d;
-            double score = cos - (linkedOnly ? 0 : d / 800.0);
-            if (cos > 0.3 && score > bestScore) {
-                best = p.id();
-                bestScore = score;
-            }
-        }
-        return best;
-    }
-
     /** Tab: the next class on the circle (shown classes, or hidden ones with a drawn perk). */
     private void hopClass(int dir) {
-        List<PerkTree.PerkClass> classes = ClassVisibility.circleOrder(tree).stream()
-            .filter(c -> vis == null || drawn.perksOf(c.id()).stream().anyMatch(p -> !vis.hidden(p))).toList();
-        if (classes.isEmpty()) return;
-        int idx = -1;
-        if (selected != null) {
-            String cls = tree.perk(selected).map(PerkTree.Perk::cls).orElse(null);
-            for (int i = 0; i < classes.size(); i++) if (classes.get(i).id().equals(cls)) idx = i;
-        }
-        int next = ((idx + dir) % classes.size() + classes.size()) % classes.size();
-        PerkTree.PerkClass c = classes.get(next);
-        PerkTree.Perk p = drawn.perksOf(c.id()).stream().filter(q -> vis == null || !vis.hidden(q)).findFirst().orElseThrow();
+        PerkTree.Perk p = SkyNav.hopTarget(tree, drawn, vis, selected, dir);
+        if (p == null) return;
         selected = p.id();
         cardFor = null;
         view = view.centredOn(p.x(), p.y(), width, skyH());

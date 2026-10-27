@@ -31,6 +31,13 @@ public final class PerkRankCost {
         return (int) Math.min(Integer.MAX_VALUE, grown);
     }
 
+    /** Active points paid for {@code ranksBought} ranks bought one after another from a fresh life. */
+    public static long totalCost(int ranksBought) {
+        long sum = 0;
+        for (int i = 0; i < ranksBought; i++) sum += nextCost(i);
+        return sum;
+    }
+
     /** Ranks bought this life, across every perk. */
     public static int ranksBought(PerkState state) {
         int sum = 0;

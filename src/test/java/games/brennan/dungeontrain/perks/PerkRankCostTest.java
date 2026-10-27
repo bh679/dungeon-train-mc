@@ -49,4 +49,14 @@ final class PerkRankCostTest {
     void clamps() {
         assertEquals(Integer.MAX_VALUE, PerkRankCost.nextCost(Integer.MAX_VALUE));
     }
+
+    @Test
+    @DisplayName("totalCost adds up every rank's price from a fresh life")
+    void totalCost() {
+        assertEquals(0, PerkRankCost.totalCost(0));
+        assertEquals(10, PerkRankCost.totalCost(10));
+        assertEquals(28, PerkRankCost.totalCost(19));
+        assertEquals(220, PerkRankCost.totalCost(55));
+        assertEquals(total(60), PerkRankCost.totalCost(60));
+    }
 }

@@ -5596,5 +5596,13 @@
   "gui.dungeontrain.perks.bar.full": "เต็มแล้ว ปลดล็อกอีกครั้งเพื่อเพิ่มที่ว่างอีกหนึ่งแต้ม",
   "gui.dungeontrain.perks.bar.fill_first": "เติมแต้มให้เต็มก่อน",
   "gui.dungeontrain.perks.bar.hint": "วางเมาส์บนพลังพิเศษเพื่อดูที่นี่ คลิกเพื่อปักไว้",
-  "gui.dungeontrain.perks.counter.unlock.click": "คลิกเพื่อเปิดความก้าวหน้า"
+  "gui.dungeontrain.perks.counter.unlock.click": "คลิกเพื่อเปิดความก้าวหน้า",
+  "gui.dungeontrain.perks.death.kicker": "แต้มที่คุณพกไว้",
+  "gui.dungeontrain.perks.death.question": "ชีวิตนี้คุณใส่ %s แต้มลงใน %s พลังพิเศษ",
+  "gui.dungeontrain.perks.death.narration": "แต้มหายไปพร้อมกับคุณ สิ่งที่ปลดล็อกแล้วจะอยู่ต่อในชีวิตหน้า",
+  "gui.dungeontrain.perks.death.tile.spent": "แต้มใช้งานที่ใช้ไป",
+  "gui.dungeontrain.perks.death.tile.ranks": "แต้มที่ใส่",
+  "gui.dungeontrain.perks.death.tile.perks": "พลังพิเศษที่เสริม",
+  "gui.dungeontrain.perks.death.tile.top": "แต้มมากที่สุด",
+  "gui.dungeontrain.perks.death.unlock_hint": "ปลดล็อกพลังพิเศษสำหรับชีวิตหน้า"
 }

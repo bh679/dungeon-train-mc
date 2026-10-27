@@ -55,6 +55,8 @@ final class PerkDetailsBar {
     private static final long REFUSAL_MS = 2000;
     private Button unlockButton;
     private Button activateButton;
+    /** The death screen's menu: Unlock only, no Activate and no Active Points. */
+    private boolean unlockOnly;
     private String builtFor = "";
     private PointsGraph graph;
     private int graphX, graphY, graphW, graphHover = -1;
@@ -87,9 +89,22 @@ final class PerkDetailsBar {
         return my >= top;
     }
 
-    /** The two buttons, rebuilt when the perk or its state changes; null while nothing is shown. */
+    /** Unlock only: the Activate button and every Active Points line drop out. */
+    void unlockOnly(boolean on) {
+        if (on == unlockOnly) return;
+        unlockOnly = on;
+        builtFor = "";
+    }
+
+    /** The buttons, rebuilt when the perk or its state changes; empty while nothing is shown. */
     List<Button> buttons() {
-        return unlockButton == null ? List.of() : List.of(unlockButton, activateButton);
+        if (unlockButton == null) return List.of();
+        return activateButton == null ? List.of(unlockButton) : List.of(unlockButton, activateButton);
+    }
+
+    /** How many buttons sit at the right of the bar. */
+    private int buttonCount() {
+        return unlockOnly ? 1 : 2;
     }
 
     /**
@@ -110,16 +125,20 @@ final class PerkDetailsBar {
             activateButton = null;
             return true;
         }
-        int bx = screenW - PAD - BUTTON_W * 2 - GAP, by = top + (HEIGHT - BUTTON_H) / 2;
+        int bx = screenW - PAD - BUTTON_W * buttonCount() - GAP * (buttonCount() - 1), by = top + (HEIGHT - BUTTON_H) / 2;
         unlockButton = new CostButton(bx, by, BUTTON_W, BUTTON_H, CostButton.Currency.ADVANCEMENT, shown.unlockCost(),
             Component.translatable(KEY + "unlock"), b -> unlock.accept(shown));
+        Component unlockWhy = unlockBlocked(shown, snap);
+        unlockButton.active = unlockWhy == null;
+        if (unlockWhy != null) unlockButton.setTooltip(Tooltip.create(unlockWhy));
+        if (unlockOnly) {
+            activateButton = null;
+            return true;
+        }
         activateButton = new CostButton(bx + BUTTON_W + GAP, by, BUTTON_W, BUTTON_H, CostButton.Currency.APPLE, snap.nextRankCost(),
             Component.translatable(KEY + "activate"), b -> activate.accept(shown));
-        Component unlockWhy = unlockBlocked(shown, snap);
         Component activateWhy = activateBlocked(shown, snap);
-        unlockButton.active = unlockWhy == null;
         activateButton.active = activateWhy == null;
-        if (unlockWhy != null) unlockButton.setTooltip(Tooltip.create(unlockWhy));
         if (activateWhy != null) activateButton.setTooltip(Tooltip.create(activateWhy));
         return true;
     }
@@ -130,7 +149,8 @@ final class PerkDetailsBar {
         if (!PerkRegistry.isKnown(p.id())) return Component.translatable("gui.dungeontrain.perks.not_built");
         int level = s.unlockLevel(p.id());
         if (level <= 0 && !tree.reachable(p.id(), s::isUnlocked)) return Component.translatable("gui.dungeontrain.perks.card.needs_path");
-        if (level > 0 && s.points(p.id()) < level) return Component.translatable(KEY + "fill_first");
+        // points are gone at death, so the death screen's menu raises a level without filling it first
+        if (!unlockOnly && level > 0 && s.points(p.id()) < level) return Component.translatable(KEY + "fill_first");
         int spent = s.unlockSpent(tree);
         if (level > 0 && !PerkUnlocks.allowed(level + 1, spent)) {
             return Component.translatable("gui.dungeontrain.perks.card.gate", PerkCard.ap(PerkUnlocks.spentNeeded(level + 1) - spent),
@@ -260,6 +280,13 @@ final class PerkDetailsBar {
         int holds = 0;
         for (int level : snap.unlocks().values()) holds += Math.max(0, level);
         int x = PAD + STRIPE, y = top + PAD - 1, icon = 8, tx = x + icon + 5;
+        if (unlockOnly) {
+            g.blit(PerkCounters.ADVANCEMENT_ICON, x, y + LINE + 1, icon, icon, 0, 0, PerkCounters.ICON_TEX, PerkCounters.ICON_TEX,
+                PerkCounters.ICON_TEX, PerkCounters.ICON_TEX);
+            g.drawString(font, Component.translatable(KEY + "engine.advancements"), tx, y + LINE + 2,
+                ((int) (a * 0.85) << 24) | (SkyPalette.FG & 0xFFFFFF), false);
+            return;
+        }
         g.drawString(font, Component.translatable(KEY + "engine.active", snap.ranksBought(), holds), x, y,
             (a << 24) | (SkyPalette.FG & 0xFFFFFF), false);
         int y2 = y + LINE + 2, y3 = y2 + LINE + 1;
@@ -298,7 +325,7 @@ final class PerkDetailsBar {
 
         // top row: the name, the points graph across the row, then the class and tier
         int x = PAD + STRIPE, y = top + 5;
-        int contentRight = width - PAD - BUTTON_W * 2 - GAP - 10;
+        int contentRight = width - PAD - BUTTON_W * buttonCount() - GAP * (buttonCount() - 1) - 10;
         String name = text.name(p);
         g.drawString(font, name, x, y, (a << 24) | (colour & 0xFFFFFF), true);
         String cls = tree.perkClass(p.cls()).map(PerkTree.PerkClass::name).orElse("").toUpperCase(Locale.ROOT)
@@ -395,7 +422,7 @@ final class PerkDetailsBar {
         PointsGraph.Kind k = graph.at(graphW, mx - graphX);
         if (k == null && !graph.layout(graphW).bar()) return false;
         boolean full = graph.open == 0;
-        if (k == PointsGraph.Kind.LOCKED || k == null && full) unlock.accept(perk);
+        if (unlockOnly || k == PointsGraph.Kind.LOCKED || k == null && full) unlock.accept(perk);
         else activate.accept(perk);
         return true;
     }

@@ -5660,5 +5660,13 @@
   "gui.dungeontrain.perks.bar.full": "Cheio. Desbloqueia de novo para teres espaço para mais um ponto.",
   "gui.dungeontrain.perks.bar.fill_first": "Preenche primeiro os pontos dela.",
   "gui.dungeontrain.perks.bar.hint": "Passa o rato por uma vantagem para a veres aqui. Clica para a fixar.",
-  "gui.dungeontrain.perks.counter.unlock.click": "Clica para abrir os progressos."
+  "gui.dungeontrain.perks.counter.unlock.click": "Clica para abrir os progressos.",
+  "gui.dungeontrain.perks.death.kicker": "Os pontos que levavas",
+  "gui.dungeontrain.perks.death.question": "Puseste %s pontos em %s vantagens nesta vida.",
+  "gui.dungeontrain.perks.death.narration": "Vão-se contigo. O que desbloqueaste fica para a próxima vida.",
+  "gui.dungeontrain.perks.death.tile.spent": "Pontos Ativos gastos",
+  "gui.dungeontrain.perks.death.tile.ranks": "Pontos colocados",
+  "gui.dungeontrain.perks.death.tile.perks": "Vantagens reforçadas",
+  "gui.dungeontrain.perks.death.tile.top": "Mais pontos",
+  "gui.dungeontrain.perks.death.unlock_hint": "Desbloqueia vantagens para a próxima vida."
 }
