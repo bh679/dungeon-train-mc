@@ -31302,8 +31302,26 @@
       "released_at": "2026-10-27T07:54:15Z"
     },
     {
-      "id": "mob-haste-slower",
+      "id": "creakings-potion-effects",
       "version": "0.1558.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Creakings get potion effects",
+      "summary": "Creakings now get potion effects as the run gets harder, just like the other monsters on the train.",
+      "highlights": [],
+      "pr": 2362,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "mob-haste-slower",
+      "version": "0.1559.0",
       "type": "feat",
       "tags": [
         "feature",
