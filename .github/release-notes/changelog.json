@@ -31138,6 +31138,59 @@
       ],
       "pr": 2351,
       "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1550.0",
+      "released_at": "2026-10-27T03:23:07Z"
+    },
+    {
+      "id": "editor-test-live-photos",
+      "version": "0.1549.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community"
+      ],
+      "title": "Editor test photos",
+      "summary": "When you test a carriage in the editor, its photo frames now show real community photos instead of a placeholder picture.",
+      "highlights": [],
+      "pr": 2352,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1550.0",
+      "released_at": "2026-10-27T03:23:07Z"
+    },
+    {
+      "id": "vault-keys-on-train",
+      "version": "0.1549.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot"
+      ],
+      "title": "Vault fix",
+      "summary": "Trial keys now open vaults on the train. Vaults in carriages also light up and show their loot as you walk up to them.",
+      "highlights": [],
+      "pr": 2353,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1550.0",
+      "released_at": "2026-10-27T03:23:07Z"
+    },
+    {
+      "id": "enderchest-shulker-photos-keep-pictures",
+      "version": "0.1551.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Photos in shulker boxes keep their pictures",
+      "summary": "Photos you keep in a shulker box or bundle inside your Ender Chest now still show their picture when you start a new run, instead of turning into blank paper.",
+      "highlights": [
+        "Photos in shulker boxes and bundles in the Ender Chest keep their pictures from one run to the next"
+      ],
+      "pr": 2354,
+      "date": "2026-10-27",
       "released": false,
       "released_in": null,
       "released_at": null

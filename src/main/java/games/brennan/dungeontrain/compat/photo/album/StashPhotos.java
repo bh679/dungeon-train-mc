@@ -9,6 +9,7 @@ import io.github.mortuusars.exposure.world.camera.frame.Frame;
 import io.github.mortuusars.exposure.world.item.component.StackedPhotographs;
 import io.github.mortuusars.exposure.world.level.storage.ExposureData;
 import io.github.mortuusars.exposure.world.level.storage.ExposureIdentifier;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
@@ -17,6 +18,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.PlayerEnderChestContainer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.BundleContents;
+import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -62,6 +65,9 @@ public final class StashPhotos {
      */
     private static final Set<String> searched = ConcurrentHashMap.newKeySet();
 
+    /** How deep boxes and bundles are looked into (a bundle in a box in a bundle, …). */
+    private static final int MAX_DEPTH = 4;
+
     private StashPhotos() {}
 
     // ---- lifecycle ------------------------------------------------------------------
@@ -106,7 +112,7 @@ public final class StashPhotos {
 
     // ---- the chest ------------------------------------------------------------------
 
-    /** Every photo in the player's Ender Chest: kept outside the world, and shown in this one. */
+    /** Every photo in the player's Ender Chest, boxes and bundles included: kept outside the world, and shown in this one. */
     static void settle(ServerPlayer player) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
@@ -115,7 +121,7 @@ public final class StashPhotos {
             for (int slot = 0; slot < chest.getContainerSize(); slot++) {
                 ItemStack stack = chest.getItem(slot);
                 if (stack.isEmpty()) continue;
-                ItemStack settled = settleStack(server, stack);
+                ItemStack settled = settleStack(server, stack, 0);
                 if (settled != stack) chest.setItem(slot, settled);
             }
         } catch (RuntimeException e) {
@@ -123,8 +129,14 @@ public final class StashPhotos {
         }
     }
 
-    /** {@code stack} itself when nothing changed, else a re-pointed copy. */
-    private static ItemStack settleStack(MinecraftServer server, ItemStack stack) {
+    /**
+     * {@code stack} itself when nothing changed, else a re-pointed copy. Looks inside shulker boxes
+     * and bundles too — a photo stashed in a box in the chest crosses worlds just the same.
+     */
+    private static ItemStack settleStack(MinecraftServer server, ItemStack stack, int depth) {
+        if (stack.isEmpty() || depth > MAX_DEPTH) return stack;
+        ItemStack out = settleBox(server, settleBundle(server, stack, depth), depth);
+        if (out != stack) return out;
         StackedPhotographs stacked = stack.get(Exposure.DataComponents.STACKED_PHOTOGRAPHS);
         if (stacked != null && !stacked.isEmpty()) {
             List<ItemStack> photos = stacked.photographs();
@@ -141,6 +153,40 @@ public final class StashPhotos {
             return copy;
         }
         return stack.has(Exposure.DataComponents.PHOTOGRAPH_FRAME) ? settlePhoto(server, stack) : stack;
+    }
+
+    /** A shulker box's contents settled, slot order kept. */
+    private static ItemStack settleBox(MinecraftServer server, ItemStack stack, int depth) {
+        ItemContainerContents box = stack.get(DataComponents.CONTAINER);
+        if (box == null) return stack;
+        List<ItemStack> items = new ArrayList<>();
+        boolean changed = false;
+        for (ItemStack inner : box.stream().toList()) {
+            ItemStack next = settleStack(server, inner, depth + 1);
+            changed |= next != inner;
+            items.add(next == inner ? inner.copy() : next);
+        }
+        if (!changed) return stack;
+        ItemStack copy = stack.copy();
+        copy.set(DataComponents.CONTAINER, ItemContainerContents.fromItems(items));
+        return copy;
+    }
+
+    /** A bundle's contents settled, order kept. */
+    private static ItemStack settleBundle(MinecraftServer server, ItemStack stack, int depth) {
+        BundleContents bundle = stack.get(DataComponents.BUNDLE_CONTENTS);
+        if (bundle == null) return stack;
+        List<ItemStack> items = new ArrayList<>();
+        boolean changed = false;
+        for (ItemStack inner : bundle.items()) {
+            ItemStack next = settleStack(server, inner, depth + 1);
+            changed |= next != inner;
+            items.add(next == inner ? inner.copy() : next);
+        }
+        if (!changed) return stack;
+        ItemStack copy = stack.copy();
+        copy.set(DataComponents.BUNDLE_CONTENTS, new BundleContents(items));
+        return copy;
     }
 
     private static ItemStack settlePhoto(MinecraftServer server, ItemStack photo) {
