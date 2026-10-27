@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "165";
+    public static final String PROTOCOL_VERSION = "166";
 
     private DungeonTrainNet() {}
 
@@ -266,6 +266,7 @@ public final class DungeonTrainNet {
         registrar.playToClient(ChallengesLockedPacket.TYPE, ChallengesLockedPacket.STREAM_CODEC, ChallengesLockedPacket::handle);
         registrar.playToClient(EarnedPhotoPacket.TYPE, EarnedPhotoPacket.STREAM_CODEC, EarnedPhotoPacket::handle);
         registrar.playToClient(PhotoBiomesPacket.TYPE, PhotoBiomesPacket.STREAM_CODEC, PhotoBiomesPacket::handle);
+        registrar.playToClient(RiddenBiomesPacket.TYPE, RiddenBiomesPacket.STREAM_CODEC, RiddenBiomesPacket::handle);
 
         // Free Play confirmation: server holds a tainting action (creative/spectator
         // switch or cheat command) and asks before it commits; client replies

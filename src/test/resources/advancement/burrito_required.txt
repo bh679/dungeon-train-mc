@@ -93,9 +93,9 @@ dungeontrain:dungeon_train/remote_echo_kill
 dungeontrain:dungeon_train/remote_echo_void
 dungeontrain:dungeon_train/returned_to_train
 dungeontrain:dungeon_train/ridden_biomes_100
-dungeontrain:dungeon_train/ridden_biomes_150
 dungeontrain:dungeon_train/ridden_biomes_25
 dungeontrain:dungeon_train/ridden_biomes_50
+dungeontrain:dungeon_train/ridden_biomes_all
 dungeontrain:dungeon_train/roof_run_1
 dungeontrain:dungeon_train/roof_runner
 dungeontrain:dungeon_train/root

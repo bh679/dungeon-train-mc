@@ -115,7 +115,7 @@
     "dungeontrain:dungeon_train/remote_echo_kill": true,
     "dungeontrain:dungeon_train/remote_echo_void": true,
     "dungeontrain:dungeon_train/ridden_biomes_100": true,
-    "dungeontrain:dungeon_train/ridden_biomes_150": true,
+    "dungeontrain:dungeon_train/ridden_biomes_all": true,
     "dungeontrain:dungeon_train/ridden_biomes_25": true,
     "dungeontrain:dungeon_train/ridden_biomes_50": true,
     "dungeontrain:dungeon_train/seasoned_traveller": true,

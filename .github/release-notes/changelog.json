@@ -31338,8 +31338,85 @@
       "released_at": null
     },
     {
-      "id": "sky-falling-comets",
+      "id": "advancement-progress-list",
       "version": "0.1560.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Advancement progress you can check",
+      "summary": "One hidden exploration advancement now remembers your progress for good, across lives and worlds, and clicking it on the advancements screen shows what you have done and what is left.",
+      "highlights": [
+        "Progress toward it is never lost, not even when you die",
+        "Click it to see a full list, with a scrollbar",
+        "If you had earned its earlier version, it is now a bigger goal, and you start with your progress carried over"
+      ],
+      "pr": 2366,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "balance-tweak-2026-10-27",
+      "version": "0.1561.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "balance"
+      ],
+      "title": "Balance tweak",
+      "summary": "A small balance adjustment.",
+      "highlights": [],
+      "pr": 2368,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "replay-mod-keeps-camera",
+      "version": "0.1562.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Replay Mod fix",
+      "summary": "Replay Mod now keeps its camera from the first moment of a recording. Keyframed shots of your spawn onto the train render the way you set them, instead of holding one still frame.",
+      "highlights": [],
+      "pr": 2370,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "fade-terrain-lag-fix",
+      "version": "0.1563.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "world"
+      ],
+      "title": "Lag fix",
+      "summary": "Fixed a lag spike on one stretch of the journey, where loose terrain could collapse all at once as the train arrived.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2371,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "sky-falling-comets",
+      "version": "0.1563.0",
       "type": "feat",
       "tags": [
         "feature",
