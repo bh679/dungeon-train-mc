@@ -31211,6 +31211,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "deathnote-echo-head-trophy",
+      "version": "0.1553.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "books"
+      ],
+      "title": "Death Note trophy",
+      "summary": "Kill the echo a Death Note sent after you and you take its author's head as well as the note.",
+      "highlights": [],
+      "pr": 2356,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
