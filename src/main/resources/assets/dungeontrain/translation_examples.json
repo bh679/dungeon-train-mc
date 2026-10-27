@@ -17557,5 +17557,78 @@
         "2"
       ]
     }
+  },
+  "gui.dungeontrain.options.muted_streamers.button": {
+    "1": {
+      "label": "how many streamers you have muted",
+      "examples": [
+        "0",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.muted_streamers.unmute.tip": {
+    "1": {
+      "label": "the streamer's Minecraft name",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.hearing": {
+    "1": {
+      "label": "the streamer's Minecraft name",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.button.streamer": {
+    "1": {
+      "label": "the streamer's Minecraft name",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.button.streamer.hover": {
+    "1": {
+      "label": "the streamer's Minecraft name",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.streamer_muted": {
+    "1": {
+      "label": "the streamer's Minecraft name",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.unmuted": {
+    "1": {
+      "label": "the streamer's Minecraft name",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.list": {
+    "1": {
+      "label": "the muted streamers' names, comma separated",
+      "examples": [
+        "Alice, Bob"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.not_muted": {
+    "1": {
+      "label": "the name typed after /livemute unmute",
+      "examples": [
+        "Alice"
+      ]
+    }
   }
 }
