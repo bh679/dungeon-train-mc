@@ -31423,13 +31423,9 @@
         "world",
         "advancements"
       ],
-      "title": "Exploration goal and Nether variety",
-      "summary": "A hidden exploration advancement no longer asks for places the train never takes you, and later trips through the Nether show every kind of Nether again.",
-      "highlights": [
-        "A hidden exploration advancement now only asks for places the train can reach",
-        "Your progress toward it is kept, nothing is taken away",
-        "Later Nether stretches bring back the warped forests, soul sand valleys and basalt deltas"
-      ],
+      "title": "Exploration fix",
+      "summary": "A hidden advancement is fairer, and the world has a little more variety further along.",
+      "highlights": [],
       "pr": 2372,
       "date": "2026-10-27",
       "released": false,
