@@ -31413,6 +31413,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "exploration-list-and-nether-variety",
+      "version": "0.1564.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world",
+        "advancements"
+      ],
+      "title": "Exploration goal and Nether variety",
+      "summary": "A hidden exploration advancement no longer asks for places the train never takes you, and later trips through the Nether show every kind of Nether again.",
+      "highlights": [
+        "A hidden exploration advancement now only asks for places the train can reach",
+        "Your progress toward it is kept, nothing is taken away",
+        "Later Nether stretches bring back the warped forests, soul sand valleys and basalt deltas"
+      ],
+      "pr": 2372,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
