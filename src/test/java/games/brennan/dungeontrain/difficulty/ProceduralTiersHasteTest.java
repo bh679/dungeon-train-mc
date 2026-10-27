@@ -9,8 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests for the Haste curve in {@link ProceduralTiers}: it holds off until 100 levels after the
- * first digging-tool mob, then climbs at 1/10 the rate of the other buffs.
+ * Tests for the Haste curve in {@link ProceduralTiers}: it holds off until level 120, well after
+ * the first digging-tool mob, then climbs at 1/10 the rate of the other buffs.
  */
 final class ProceduralTiersHasteTest {
 
@@ -27,9 +27,10 @@ final class ProceduralTiersHasteTest {
     }
 
     @Test
-    @DisplayName("Haste starts 100 levels after the first digging-tool mob")
+    @DisplayName("Haste starts at level 120, after the first digging-tool mob")
     void startsAfterTools() {
-        assertEquals(ToolTiers.TOOL_START_LEVEL + 100, ProceduralTiers.HASTE_START_LEVEL);
+        assertEquals(120, ProceduralTiers.HASTE_START_LEVEL);
+        assertTrue(ProceduralTiers.HASTE_START_LEVEL > ToolTiers.TOOL_START_LEVEL);
         assertTrue(haste(ProceduralTiers.HASTE_START_LEVEL).isEmpty());
         assertTrue(haste(ProceduralTiers.HASTE_START_LEVEL + 1).isPresent());
     }

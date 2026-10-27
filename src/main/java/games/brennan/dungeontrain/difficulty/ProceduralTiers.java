@@ -100,10 +100,10 @@ public final class ProceduralTiers {
     private static final int AMP_EVERY_LEVELS = 25;
 
     /**
-     * Haste only matters on mobs that dig, so it holds off until 100 levels after the first
+     * Haste only matters on mobs that dig, so it holds off until well after the first
      * digging-tool mob ({@link ToolTiers#TOOL_START_LEVEL}).
      */
-    static final int HASTE_START_LEVEL = ToolTiers.TOOL_START_LEVEL + 100;
+    static final int HASTE_START_LEVEL = 120;
 
     /** Haste's amplifier climbs at 1/10 the rate of the other buffs. */
     static final int HASTE_AMP_EVERY_LEVELS = AMP_EVERY_LEVELS * 10;
