@@ -31375,6 +31375,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "replay-mod-keeps-camera",
+      "version": "0.1562.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Replay Mod fix",
+      "summary": "Replay Mod now keeps its camera from the first moment of a recording. Keyframed shots of your spawn onto the train render the way you set them, instead of holding one still frame.",
+      "highlights": [],
+      "pr": 2370,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
