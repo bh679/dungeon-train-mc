@@ -5,6 +5,7 @@ import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
@@ -35,7 +36,7 @@ public final class DeadRiderServerCarry {
 
     private DeadRiderServerCarry() {}
 
-    private record Pin(SubLevel carriage, Vector3d local) {}
+    private record Pin(SubLevel carriage, Vector3d local, Vec3 deathSpot) {}
 
     /** Once per server level tick, after the carriages have moved for this tick. */
     public static void tick(ServerLevel level) {
@@ -62,6 +63,16 @@ public final class DeadRiderServerCarry {
         PINS.remove(player);
     }
 
+    /**
+     * Where this player died, in world space, while their body is carried: the train's keep-alive
+     * measures from here, so the line behaves as if they still stood at that spot (the train rolls
+     * past and keeps extending behind itself). Null when the body is not carried.
+     */
+    public static Vec3 deathSpot(ServerPlayer player) {
+        Pin pin = PINS.get(player);
+        return pin == null ? null : pin.deathSpot();
+    }
+
     /** True while this player's body is being carried. */
     public static boolean isCarried(ServerPlayer player) {
         return PINS.containsKey(player);
@@ -72,7 +83,7 @@ public final class DeadRiderServerCarry {
         if (carriage == null || carriage.isRemoved()) return null;
         Vector3d local = carriage.logicalPose().transformPositionInverse(
             new Vector3d(player.getX(), player.getY(), player.getZ()));
-        return new Pin(carriage, local);
+        return new Pin(carriage, local, player.position());
     }
 
     /** Pure: the pinned ship-local spot in world space under the carriage's current pose. */

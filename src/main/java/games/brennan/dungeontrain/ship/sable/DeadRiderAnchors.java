@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.ship.sable;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -69,6 +70,16 @@ public final class DeadRiderAnchors {
         all.addAll(live);
         all.addAll(dead);
         return List.copyOf(all);
+    }
+
+    /**
+     * Where the train's keep-alive should measure this player from: a dead rider's death spot
+     * (their body rides on for the trackers, but the line carries on as if they stood where they
+     * fell), else the player's own position.
+     */
+    public static Vec3 anchorPos(ServerPlayer player) {
+        Vec3 spot = DeadRiderServerCarry.deathSpot(player);
+        return spot != null ? spot : player.position();
     }
 
     /** The dead-but-connected player with this id in {@code level}, or null. */
