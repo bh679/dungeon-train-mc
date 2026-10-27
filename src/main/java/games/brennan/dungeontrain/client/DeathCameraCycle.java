@@ -4,11 +4,15 @@ import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.snapshot.CarriageOcclusion;
 import games.brennan.dungeontrain.client.snapshot.SnapshotCamera;
+import games.brennan.dungeontrain.net.DeathScenePacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -17,43 +21,57 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 import org.joml.Vector3d;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The death moment's camera: the player's own view first (with the red wash), then a one-pass
- * run of shots riding the carriage, a world-locked shot that watches the carriage roll away, and
- * a looping set of world-locked shots of the train passing by, until Space on
- * {@link DeathMomentScreen}. Every cut fades through black; Left/Right step through the shots.
+ * The death moment's camera. In order: the player's own view (red wash, death tilt), an orbit of
+ * where they died, an orbit of who killed them, an orbit of the other mob they fought, a dolly out
+ * from the carriage they died on, a world-locked shot of the carriage leaving, then world-locked
+ * shots of the train passing, looping until Space on {@link DeathMomentScreen}. Shots whose
+ * subject does not exist are skipped ({@link #buildSequence}). Every cut fades through black;
+ * Left/Right step through the shots.
  *
  * <p>Train-locked lenses are offsets from the body in carriage space, re-projected through the
- * carriage's frame-interpolated render pose (the one the carriage is drawn with) so they glide.
- * World-locked lenses are fixed where their shot starts. A body that died off the train gets the
- * same offsets in world space. Each lens is clipped toward open air against world blocks once when
- * its shot starts ({@link SnapshotCamera#clipTowardOpenAir}); carriage walls are invisible to that
- * clip, so every offset stands clear of the train's 7-block width. HUD and first-person hand are
- * hidden while a camera shot is up. Client main thread only.</p>
+ * carriage's frame-interpolated render pose so they glide. World-locked lenses are fixed where
+ * their shot starts. Orbits sweep the longest arc with a clear view of the subject, tested against
+ * world blocks and carriage walls ({@link #clearArc}). Every lens is pulled to open air once when
+ * its shot starts, against world blocks ({@link SnapshotCamera#clipTowardOpenAir}) and carriage
+ * blocks ({@link CarriageOcclusion#firstHit}). HUD, hand and death tilt are off while a camera
+ * shot is up. Client main thread only.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class DeathCameraCycle {
 
     /** Ticks of black on each side of a cut. */
     static final int FADE_TICKS = 8;
+    /** Candidate angles tested around an orbit subject. */
+    static final int ORBIT_SAMPLES = 24;
+    /** An orbit needs at least this much clear arc (degrees) at a radius before it falls back to a tighter one. */
+    static final double MIN_ARC_DEGREES = 60.0;
+    /** An orbit never sweeps more than half a turn. */
+    static final double MAX_SWEEP_DEGREES = 180.0;
+    /** Radii an orbit tries, widest first. */
+    static final double[] ORBIT_RADII = {6.0, 4.0, 2.5};
+    /** Re-test a moving subject's view this often; the arc is recomputed only when the lens is blocked. */
+    private static final int ORBIT_RECHECK_TICKS = 20;
     /** Aim a little above the feet so the body sits in the lower middle of the frame. */
     private static final double LOOK_Y_OFFSET = 1.0;
+    private static final double CARRIAGE_SCAN_RADIUS = 40.0;
+    private static final double CLIP_MARGIN = 0.6;
 
-    /** The shipped sequence: POV, three carriage shots, one transition, three passing shots (looped). */
-    static final List<DeathShot> DEFAULT_SEQUENCE = List.of(
-        DeathShot.pov(40),
-        DeathShot.trainLocked(4.0, 1.8, 6.0, 60, "P1-1"),
-        DeathShot.trainLocked(-8.0, 6.0, -4.0, 60, "P1-3"),
-        DeathShot.trainLocked(9.0, 1.2, -5.5, 60, "P1-5"),
-        DeathShot.transition(-3.0, 2.5, 8.0, 100, "T-1"),
-        DeathShot.world(0.0, 3.0, 14.0, 120, "W-1"),
-        DeathShot.world(-20.0, 4.0, 10.0, 120, "W-3"),
-        DeathShot.world(0.0, 8.0, 18.0, 120, "W-2")
+    /** The world-locked shots of the train, looped until Space. */
+    static final List<DeathShot> TRAIN_SHOTS = List.of(
+        DeathShot.world(0.0, 14.0, 6.0, 120, "W-5"),
+        DeathShot.world(0.0, 1.5, 12.0, 120, "W-6"),
+        DeathShot.world(-30.0, 10.0, -14.0, 120, "W-7"),
+        DeathShot.world(25.0, 2.0, -12.0, 120, "W-8"),
+        DeathShot.world(0.0, 20.0, 24.0, 120, "W-9"),
+        DeathShot.world(-12.0, 2.5, -9.0, 120, "W-10")
     );
 
-    private static List<DeathShot> sequence = DEFAULT_SEQUENCE;
+    private static List<DeathShot> sequence = List.of();
+    private static List<DeathShot> reviewSequence;
     private static boolean reviewLabels;
 
     private static boolean active;
@@ -62,10 +80,21 @@ public final class DeathCameraCycle {
     private static SubLevel carriage;
     /** Body position in carriage (plot) space, or world space when {@link #carriage} is null. */
     private static Vector3d bodyLocal;
+    /** Where the body was when the scene started, in world space. */
+    private static Vector3d deathSpot;
+    private static Entity killer;
+    private static Entity contact;
     /** The current shot's lens: carriage space for train-locked shots, world space otherwise. */
     private static Vector3d lens;
+    /** Dolly end, carriage space. */
+    private static Vector3d lensEnd;
     /** Fixed world aim for {@link DeathShot.Kind#WORLD} shots. */
     private static Vector3d aimWorld;
+    /** Orbit: start angle (radians), sweep (radians), radius and height in use. */
+    private static double orbitStart;
+    private static double orbitSweep;
+    private static double orbitRadius;
+    private static double orbitHeight;
     private static boolean savedHideGui;
     private static int waitTicks;
     private static final int PIN_WAIT_TICKS = 3;
@@ -78,10 +107,10 @@ public final class DeathCameraCycle {
 
     /** The shot now showing, or null when inactive. */
     public static DeathShot current() {
-        return active ? sequence.get(index) : null;
+        return active && index < sequence.size() ? sequence.get(index) : null;
     }
 
-    /** True while the player's own view is up (the red wash belongs to it alone). */
+    /** True while the player's own view is up (the red wash and the death tilt belong to it alone). */
     public static boolean isPov() {
         DeathShot shot = current();
         return shot != null && shot.kind() == DeathShot.Kind.POV;
@@ -98,10 +127,26 @@ public final class DeathCameraCycle {
         return shotTicks;
     }
 
-    /** Dev review: swap the sequence and show each shot's label. Takes effect at the next start. */
+    /** Dev review: play this list instead of the built one (null = built), and show each shot's label. */
     static void review(List<DeathShot> shots, boolean labels) {
-        sequence = shots == null || shots.isEmpty() ? DEFAULT_SEQUENCE : List.copyOf(shots);
+        reviewSequence = shots == null || shots.isEmpty() ? null : List.copyOf(shots);
         reviewLabels = labels;
+    }
+
+    /**
+     * Pure: the sequence for this death. Shots whose subject is missing are left out; the
+     * train shots are always there, so the loop always has something to show.
+     */
+    static List<DeathShot> buildSequence(boolean voidDeath, boolean hasKiller, boolean hasContact, boolean onTrain) {
+        List<DeathShot> shots = new ArrayList<>();
+        shots.add(DeathShot.pov(40));
+        if (!voidDeath) shots.add(DeathShot.orbit(DeathShot.Target.DEATH_SPOT, 6.0, 3.0, 80, "spot"));
+        if (hasKiller) shots.add(DeathShot.orbit(DeathShot.Target.KILLER, 5.0, 2.5, 80, "killer"));
+        if (hasContact) shots.add(DeathShot.orbit(DeathShot.Target.CONTACT, 5.0, 2.5, 80, "mob"));
+        if (onTrain) shots.add(DeathShot.dolly(new Vec3(3.0, 2.0, 5.0), new Vec3(-6.0, 8.0, 14.0), 80, "carriage"));
+        shots.add(DeathShot.transition(-3.0, 2.5, 8.0, 100, "leaving"));
+        shots.addAll(TRAIN_SHOTS);
+        return List.copyOf(shots);
     }
 
     /**
@@ -125,9 +170,23 @@ public final class DeathCameraCycle {
             carriage = null;
             bodyLocal = new Vector3d(player.getX(), player.getY(), player.getZ());
         }
+        deathSpot = bodyWorld();
+        DeathScenePacket hints = DeathSceneHints.latest();
+        killer = livingOnClient(mc, hints.killerId());
+        contact = livingOnClient(mc, hints.contactId());
+        DeathSceneHints.clear();
+        sequence = reviewSequence != null
+            ? reviewSequence
+            : buildSequence(hints.voidDeath(), killer != null, contact != null, carriage != null);
         savedHideGui = mc.options.hideGui;
         active = true;
         select(0);
+    }
+
+    private static Entity livingOnClient(Minecraft mc, int id) {
+        if (id == DeathScenePacket.NONE || mc.level == null) return null;
+        Entity entity = mc.level.getEntity(id);
+        return entity instanceof LivingEntity living && living.isAlive() && living != mc.player ? entity : null;
     }
 
     /** End the sequence and give the HUD back. Safe to call when not active. */
@@ -136,7 +195,11 @@ public final class DeathCameraCycle {
         active = false;
         carriage = null;
         bodyLocal = null;
+        deathSpot = null;
+        killer = null;
+        contact = null;
         lens = null;
+        lensEnd = null;
         aimWorld = null;
         waitTicks = 0;
         Minecraft.getInstance().options.hideGui = savedHideGui;
@@ -158,7 +221,9 @@ public final class DeathCameraCycle {
             select(index);
         }
         shotTicks++;
-        if (shotTicks >= sequence.get(index).holdTicks()) select(nextIndex(sequence, index));
+        DeathShot shot = sequence.get(index);
+        if (shot.kind() == DeathShot.Kind.ORBIT && shotTicks % ORBIT_RECHECK_TICKS == 0) recheckOrbit(shot);
+        if (shotTicks >= shot.holdTicks()) select(nextIndex(sequence, index));
     }
 
     /** Right arrow. */
@@ -171,10 +236,7 @@ public final class DeathCameraCycle {
         if (active) select(previousIndex(sequence, index));
     }
 
-    /**
-     * Pure: the shot after {@code current}. Past the end, the looping world shots start over;
-     * a sequence with no world shot holds its last shot.
-     */
+    /** Pure: the shot after {@code current}; past the end, the looping train shots start over. */
     static int nextIndex(List<DeathShot> shots, int current) {
         if (current + 1 < shots.size()) return current + 1;
         int loop = loopStart(shots);
@@ -197,11 +259,7 @@ public final class DeathCameraCycle {
         return -1;
     }
 
-    /**
-     * Pure: black overlay alpha for a shot of {@code hold} ticks at {@code t} ticks in. Fades in
-     * from black over the first {@link #FADE_TICKS} (not on the POV, which opens on the live world)
-     * and out to black over the last.
-     */
+    /** Pure: black overlay alpha for a shot of {@code hold} ticks at {@code t} ticks in. */
     static float blackAlpha(double t, int hold, boolean fadeIn) {
         float in = fadeIn ? 1.0f - (float) Mth.clamp(t / FADE_TICKS, 0.0, 1.0) : 0.0f;
         float out = (float) Mth.clamp((t - (hold - FADE_TICKS)) / FADE_TICKS, 0.0, 1.0);
@@ -222,27 +280,151 @@ public final class DeathCameraCycle {
         Minecraft mc = Minecraft.getInstance();
         mc.options.hideGui = shot.kind() != DeathShot.Kind.POV;
         lens = null;
+        lensEnd = null;
         aimWorld = null;
-        if (shot.kind() == DeathShot.Kind.POV) return;
-        if (shot.kind() == DeathShot.Kind.TRAIN_LOCKED) {
-            lens = resolveLens(shot, true);
-            return;
-        }
-        lens = resolveLens(shot, false);
-        if (shot.kind() == DeathShot.Kind.WORLD) {
-            Vector3d body = bodyWorld();
-            aimWorld = new Vector3d(body.x, body.y + LOOK_Y_OFFSET, body.z);
+        switch (shot.kind()) {
+            case POV -> { }
+            case TRAIN_LOCKED -> lens = resolveLens(shot.offset(), true);
+            case DOLLY -> {
+                lens = resolveLens(shot.offset(), true);
+                lensEnd = resolveLens(shot.offsetEnd(), true);
+            }
+            case ORBIT -> {
+                if (!setUpOrbit(shot)) {
+                    // Nothing can see the subject from anywhere: skip this shot.
+                    int next = nextIndex(sequence, i);
+                    if (next != i) select(next);
+                }
+            }
+            case TRANSITION -> lens = resolveLens(shot.offset(), false);
+            case WORLD -> {
+                lens = resolveLens(shot.offset(), false);
+                Vector3d body = bodyWorld();
+                aimWorld = new Vector3d(body.x, body.y + LOOK_Y_OFFSET, body.z);
+            }
         }
     }
 
+    // ── orbits ───────────────────────────────────────────────────────────
+
+    /** The orbit subject's world position now (null if it is gone). */
+    private static Vector3d subjectWorld(DeathShot shot, float partialTick) {
+        return switch (shot.target()) {
+            case DEATH_SPOT -> deathSpot == null ? null : new Vector3d(deathSpot);
+            case KILLER -> entityWorld(killer, partialTick);
+            case CONTACT -> entityWorld(contact, partialTick);
+            case BODY -> toWorldRender(bodyLocal, partialTick);
+        };
+    }
+
+    private static Vector3d entityWorld(Entity entity, float partialTick) {
+        if (entity == null || !entity.isAlive()) return null;
+        Vec3 p = entity.getPosition(partialTick);
+        return new Vector3d(p.x, p.y, p.z);
+    }
+
+    /** Pick the orbit's clear arc at the widest radius that has one. False when no angle at all is clear. */
+    private static boolean setUpOrbit(DeathShot shot) {
+        Vector3d subject = subjectWorld(shot, 1.0f);
+        if (subject == null) return false;
+        double height = shot.offset().y;
+        for (double radius : ORBIT_RADII) {
+            for (double h : new double[] {height, height * 0.5}) {
+                boolean[] clear = clearAngles(subject, radius, h);
+                int[] run = longestClearRun(clear);
+                if (run[1] == 0) continue;
+                double arc = run[1] * 360.0 / ORBIT_SAMPLES;
+                if (arc < MIN_ARC_DEGREES && radius != ORBIT_RADII[ORBIT_RADII.length - 1]) continue;
+                double sweep = Math.min(arc, MAX_SWEEP_DEGREES);
+                double step = 2.0 * Math.PI / ORBIT_SAMPLES;
+                double centre = run[0] * step + (run[1] - 1) * step / 2.0;
+                orbitSweep = Math.toRadians(sweep);
+                orbitStart = centre - orbitSweep / 2.0;
+                orbitRadius = radius;
+                orbitHeight = h;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** A moving subject may have walked behind something: re-pick the arc only when the lens is blocked now. */
+    private static void recheckOrbit(DeathShot shot) {
+        if (shot.target() == DeathShot.Target.DEATH_SPOT) return;
+        Vector3d subject = subjectWorld(shot, 1.0f);
+        if (subject == null) return;
+        double angle = orbitAngle(shotTicks, shot.holdTicks());
+        Vector3d lensNow = orbitLens(subject, orbitRadius, orbitHeight, angle);
+        if (!clearView(subject, lensNow)) setUpOrbit(shot);
+    }
+
+    private static double orbitAngle(double t, int hold) {
+        double f = Mth.clamp(t / Math.max(1.0, hold - FADE_TICKS), 0.0, 1.0);
+        return orbitStart + orbitSweep * f;
+    }
+
+    /** Pure: lens position on the orbit circle. */
+    static Vector3d orbitLens(Vector3d subject, double radius, double height, double angle) {
+        return new Vector3d(subject.x + radius * Math.cos(angle), subject.y + height, subject.z + radius * Math.sin(angle));
+    }
+
+    private static boolean[] clearAngles(Vector3d subject, double radius, double height) {
+        boolean[] clear = new boolean[ORBIT_SAMPLES];
+        for (int i = 0; i < ORBIT_SAMPLES; i++) {
+            double angle = i * 2.0 * Math.PI / ORBIT_SAMPLES;
+            clear[i] = clearView(subject, orbitLens(subject, radius, height, angle));
+        }
+        return clear;
+    }
+
+    /** Can a lens at {@code lensW} see the subject's chest, past world blocks and carriage walls? */
+    private static boolean clearView(Vector3d subject, Vector3d lensW) {
+        Minecraft mc = Minecraft.getInstance();
+        ClientLevel level = mc.level;
+        LocalPlayer player = mc.player;
+        if (level == null || player == null) return true;
+        Vec3 from = new Vec3(subject.x, subject.y + 1.2, subject.z);
+        Vec3 to = new Vec3(lensW.x, lensW.y, lensW.z);
+        Vec3 clipped = SnapshotCamera.clipTowardOpenAir(level, player, from, to);
+        if (clipped.distanceToSqr(to) > 0.25) return false;
+        List<CarriageOcclusion.Carriage> carriages = CarriageOcclusion.gatherNearby(level, from, CARRIAGE_SCAN_RADIUS, 1.0f);
+        return CarriageOcclusion.firstHit(carriages, from, to) == null;
+    }
+
     /**
-     * The shot's lens, clipped toward open air against world blocks once. Carriage space when
-     * {@code carriageSpace} (train-locked) and a carriage is pinned, else world space.
+     * Pure: {start index, length} of the longest run of true values, wrapping around the end.
+     * Length 0 when nothing is clear; length {@code clear.length} when everything is.
      */
-    private static Vector3d resolveLens(DeathShot shot, boolean carriageSpace) {
+    static int[] longestClearRun(boolean[] clear) {
+        int n = clear.length;
+        int bestStart = 0;
+        int bestLen = 0;
+        int start = -1;
+        for (int i = 0; i < 2 * n; i++) {
+            if (clear[i % n]) {
+                if (start < 0) start = i;
+                int len = Math.min(i - start + 1, n);
+                if (len > bestLen) {
+                    bestLen = len;
+                    bestStart = start % n;
+                }
+            } else {
+                start = -1;
+            }
+        }
+        return new int[] {bestStart, bestLen};
+    }
+
+    // ── lenses ───────────────────────────────────────────────────────────
+
+    /**
+     * A lens at {@code offset} from the body, pulled to open air once against world blocks and
+     * carriage blocks. Carriage space when {@code carriageSpace} and a carriage is pinned, else world.
+     */
+    private static Vector3d resolveLens(Vec3 offset, boolean carriageSpace) {
         boolean local = carriageSpace && carriage != null;
         Vector3d body = local ? bodyLocal : bodyWorld();
-        Vector3d want = lensFor(body, shot.offset());
+        Vector3d want = lensFor(body, offset);
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
@@ -251,6 +433,13 @@ public final class DeathCameraCycle {
         Vector3d wantW = local ? toWorld(want) : want;
         Vec3 from = new Vec3(bodyW.x, bodyW.y + player.getBbHeight() * 0.6, bodyW.z);
         Vec3 clipped = SnapshotCamera.clipTowardOpenAir(level, player, from, new Vec3(wantW.x, wantW.y, wantW.z));
+        List<CarriageOcclusion.Carriage> carriages = CarriageOcclusion.gatherNearby(level, from, CARRIAGE_SCAN_RADIUS, 1.0f);
+        Vec3 hit = CarriageOcclusion.firstHit(carriages, from, clipped);
+        if (hit != null) {
+            double len = clipped.distanceTo(from);
+            double d = Math.max(0.0, hit.distanceTo(from) - CLIP_MARGIN);
+            if (len > 1.0e-6) clipped = from.add(clipped.subtract(from).scale(d / len));
+        }
         Vector3d clippedW = new Vector3d(clipped.x, clipped.y, clipped.z);
         return local ? toLocal(clippedW) : clippedW;
     }
@@ -260,15 +449,47 @@ public final class DeathCameraCycle {
         return new Vector3d(body.x + offset.x, body.y + offset.y, body.z + offset.z);
     }
 
+    /** Pure: smooth ease between two lens positions. */
+    static Vector3d dollyAt(Vector3d from, Vector3d to, double f) {
+        double c = Mth.clamp(f, 0.0, 1.0);
+        double e = c * c * (3.0 - 2.0 * c);
+        return new Vector3d(from).lerp(to, e);
+    }
+
     /** The camera pose for this render frame, or null when the player's own view should show. */
     public static CinematicCameraController.Pose pose(float partialTick) {
         DeathShot shot = current();
-        if (shot == null || shot.kind() == DeathShot.Kind.POV || lens == null) return null;
+        if (shot == null || shot.kind() == DeathShot.Kind.POV) return null;
+        double t = shotTicks + partialTick;
         Vector3d bodyW = toWorldRender(bodyLocal, partialTick);
-        Vector3d lensW = shot.kind() == DeathShot.Kind.TRAIN_LOCKED ? toWorldRender(lens, partialTick) : lens;
-        Vector3d aim = shot.kind() == DeathShot.Kind.WORLD && aimWorld != null
-            ? aimWorld
-            : new Vector3d(bodyW.x, bodyW.y + LOOK_Y_OFFSET, bodyW.z);
+        Vector3d aimBody = new Vector3d(bodyW.x, bodyW.y + LOOK_Y_OFFSET, bodyW.z);
+        Vector3d lensW;
+        Vector3d aim = aimBody;
+        switch (shot.kind()) {
+            case ORBIT -> {
+                Vector3d subject = subjectWorld(shot, partialTick);
+                if (subject == null) return null;
+                lensW = orbitLens(subject, orbitRadius, orbitHeight, orbitAngle(t, shot.holdTicks()));
+                aim = new Vector3d(subject.x, subject.y + LOOK_Y_OFFSET, subject.z);
+            }
+            case DOLLY -> {
+                if (lens == null || lensEnd == null) return null;
+                lensW = toWorldRender(dollyAt(lens, lensEnd, t / Math.max(1.0, shot.holdTicks() - FADE_TICKS)), partialTick);
+            }
+            case TRAIN_LOCKED -> {
+                if (lens == null) return null;
+                lensW = toWorldRender(lens, partialTick);
+            }
+            case WORLD -> {
+                if (lens == null) return null;
+                lensW = lens;
+                if (aimWorld != null) aim = aimWorld;
+            }
+            default -> {
+                if (lens == null) return null;
+                lensW = lens;
+            }
+        }
         return poseFor(new Vec3(lensW.x, lensW.y, lensW.z), new Vec3(aim.x, aim.y, aim.z));
     }
 

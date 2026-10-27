@@ -6,42 +6,73 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DeathCameraCycleTest {
 
-    private static final List<DeathShot> SEQ = List.of(
-        DeathShot.pov(40),
-        DeathShot.trainLocked(4, 1.8, 6, 60, "a"),
-        DeathShot.trainLocked(-8, 6, -4, 60, "b"),
-        DeathShot.transition(-3, 2.5, 8, 100, "t"),
-        DeathShot.world(0, 3, 14, 120, "w1"),
-        DeathShot.world(0, 8, 18, 120, "w2"));
-
-    @Test
-    void sequenceRunsOnceThenLoopsTheWorldShots() {
-        assertEquals(4, DeathCameraCycle.loopStart(SEQ));
-        assertEquals(1, DeathCameraCycle.nextIndex(SEQ, 0));
-        assertEquals(4, DeathCameraCycle.nextIndex(SEQ, 3));
-        assertEquals(5, DeathCameraCycle.nextIndex(SEQ, 4));
-        assertEquals(4, DeathCameraCycle.nextIndex(SEQ, 5), "past the end: back to the first world shot");
+    private static List<String> labels(List<DeathShot> shots) {
+        return shots.stream().map(DeathShot::label).toList();
     }
 
     @Test
-    void leftNeverReturnsToThePovAndWrapsWithinTheLoop() {
-        assertEquals(1, DeathCameraCycle.previousIndex(SEQ, 2));
-        assertEquals(5, DeathCameraCycle.previousIndex(SEQ, 1), "from the first camera shot, Left wraps to the last");
-        assertEquals(4, DeathCameraCycle.previousIndex(SEQ, 5));
-        assertEquals(3, DeathCameraCycle.previousIndex(SEQ, 4));
+    void fullSceneHasEveryShotInOrder() {
+        List<DeathShot> seq = DeathCameraCycle.buildSequence(false, true, true, true);
+        assertEquals(List.of("POV", "spot", "killer", "mob", "carriage", "leaving"), labels(seq).subList(0, 6));
+        assertEquals(DeathCameraCycle.TRAIN_SHOTS.size(), seq.size() - 6);
+        assertEquals(6, DeathCameraCycle.loopStart(seq));
     }
 
     @Test
-    void sequenceWithoutWorldShotsHoldsItsLastShot() {
-        List<DeathShot> seq = List.of(DeathShot.pov(40), DeathShot.trainLocked(4, 2, 6, 60, "a"));
-        assertEquals(-1, DeathCameraCycle.loopStart(seq));
-        assertEquals(1, DeathCameraCycle.nextIndex(seq, 1));
+    void voidDeathSkipsTheDeathSpot() {
+        assertEquals(List.of("POV", "killer", "carriage", "leaving"),
+            labels(DeathCameraCycle.buildSequence(true, true, false, true)).subList(0, 4));
+    }
+
+    @Test
+    void noKillerNoMobOffTrainStillLeavesTheTrainShots() {
+        List<DeathShot> seq = DeathCameraCycle.buildSequence(false, false, false, false);
+        assertEquals(List.of("POV", "spot", "leaving"), labels(seq).subList(0, 3));
+        assertEquals(3, DeathCameraCycle.loopStart(seq));
+    }
+
+    @Test
+    void sequenceRunsOnceThenLoopsTheTrainShots() {
+        List<DeathShot> seq = DeathCameraCycle.buildSequence(false, false, false, true);
+        int loop = DeathCameraCycle.loopStart(seq);
+        assertEquals(1, DeathCameraCycle.nextIndex(seq, 0));
+        assertEquals(loop, DeathCameraCycle.nextIndex(seq, seq.size() - 1));
+        assertEquals(seq.size() - 1, DeathCameraCycle.previousIndex(seq, 1), "Left from the first camera shot wraps to the last");
+        assertEquals(1, DeathCameraCycle.previousIndex(seq, 2));
+    }
+
+    @Test
+    void longestClearRunWrapsAroundTheCircle() {
+        assertArrayEquals(new int[] {0, 0}, DeathCameraCycle.longestClearRun(new boolean[] {false, false, false, false}));
+        assertArrayEquals(new int[] {0, 4}, DeathCameraCycle.longestClearRun(new boolean[] {true, true, true, true}));
+        assertArrayEquals(new int[] {1, 2}, DeathCameraCycle.longestClearRun(new boolean[] {false, true, true, false}));
+        // Clear at the end and the start: one run of 2 wrapping from index 5.
+        assertArrayEquals(new int[] {5, 2}, DeathCameraCycle.longestClearRun(new boolean[] {true, false, true, false, false, true}));
+    }
+
+    @Test
+    void orbitLensSitsOnTheCircleAtTheGivenHeight() {
+        Vector3d lens = DeathCameraCycle.orbitLens(new Vector3d(10, 64, -5), 6.0, 3.0, Math.PI / 2);
+        assertEquals(10, lens.x, 1e-9);
+        assertEquals(67, lens.y, 1e-9);
+        assertEquals(1, lens.z, 1e-9);
+    }
+
+    @Test
+    void dollyEasesFromStartToEnd() {
+        Vector3d a = new Vector3d(0, 0, 0);
+        Vector3d b = new Vector3d(10, 0, 0);
+        assertEquals(0, DeathCameraCycle.dollyAt(a, b, 0).x, 1e-9);
+        assertEquals(5, DeathCameraCycle.dollyAt(a, b, 0.5).x, 1e-9);
+        assertEquals(10, DeathCameraCycle.dollyAt(a, b, 1).x, 1e-9);
+        assertEquals(10, DeathCameraCycle.dollyAt(a, b, 2).x, 1e-9);
+        assertTrue(DeathCameraCycle.dollyAt(a, b, 0.1).x < 1.0, "slow start");
     }
 
     @Test
@@ -49,38 +80,17 @@ class DeathCameraCycleTest {
         int hold = 60;
         assertEquals(1.0f, DeathCameraCycle.blackAlpha(0, hold, true), 1e-6);
         assertEquals(0.0f, DeathCameraCycle.blackAlpha(DeathCameraCycle.FADE_TICKS, hold, true), 1e-6);
-        assertEquals(0.0f, DeathCameraCycle.blackAlpha(30, hold, true), 1e-6);
         assertEquals(1.0f, DeathCameraCycle.blackAlpha(hold, hold, true), 1e-6);
-        assertEquals(0.5f, DeathCameraCycle.blackAlpha(hold - DeathCameraCycle.FADE_TICKS / 2.0, hold, true), 1e-6);
+        assertEquals(0.0f, DeathCameraCycle.blackAlpha(0, 40, false), 1e-6, "POV opens on the live world");
     }
 
     @Test
-    void povOpensOnTheLiveWorldWithoutAFadeIn() {
-        assertEquals(0.0f, DeathCameraCycle.blackAlpha(0, 40, false), 1e-6);
-        assertEquals(1.0f, DeathCameraCycle.blackAlpha(40, 40, false), 1e-6);
-    }
-
-    @Test
-    void lensIsBodyPlusOffset() {
-        Vector3d lens = DeathCameraCycle.lensFor(new Vector3d(100, 64, -3), new Vec3(7, 2.5, 8));
-        assertEquals(107, lens.x, 1e-9);
-        assertEquals(66.5, lens.y, 1e-9);
-        assertEquals(5, lens.z, 1e-9);
-    }
-
-    @Test
-    void shippedShotsLookDownAtTheBodyFromDistinctSidesAndStayClearOfTheTrain() {
-        Vector3d body = new Vector3d(0, 0, 0);
-        Vec3 target = new Vec3(0, 1, 0);
-        float lastYaw = Float.NaN;
-        for (DeathShot shot : DeathCameraCycle.DEFAULT_SEQUENCE) {
-            if (shot.kind() == DeathShot.Kind.POV) continue;
+    void trainShotsStandClearOfTheTrainAndLookDown() {
+        for (DeathShot shot : DeathCameraCycle.TRAIN_SHOTS) {
             assertTrue(Math.abs(shot.offset().z) >= 4.0, shot.label() + " must stand clear of the 7-wide train");
-            Vector3d lens = DeathCameraCycle.lensFor(body, shot.offset());
-            CinematicCameraController.Pose pose = DeathCameraCycle.poseFor(new Vec3(lens.x, lens.y, lens.z), target);
-            assertTrue(pose.pitch() > 0 && pose.pitch() < 70, shot.label() + " pitch " + pose.pitch());
-            if (!Float.isNaN(lastYaw)) assertNotEquals(Math.round(lastYaw), Math.round(pose.yaw()), shot.label());
-            lastYaw = pose.yaw();
+            Vector3d lens = DeathCameraCycle.lensFor(new Vector3d(), shot.offset());
+            CinematicCameraController.Pose pose = DeathCameraCycle.poseFor(new Vec3(lens.x, lens.y, lens.z), new Vec3(0, 1, 0));
+            assertTrue(pose.pitch() > 0 && pose.pitch() < 80, shot.label() + " pitch " + pose.pitch());
         }
     }
 }

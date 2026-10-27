@@ -115,6 +115,33 @@ public final class CarriageOcclusion {
         return false;
     }
 
+    /**
+     * The nearest point to {@code from} on the world segment {@code from → to} where a carriage
+     * block stands, or null when the segment is clear. Used to pull a lens back out of a carriage.
+     */
+    public static Vec3 firstHit(List<Carriage> carriages, Vec3 from, Vec3 to) {
+        Vec3 best = null;
+        double bestDist = Double.MAX_VALUE;
+        for (Carriage carriage : carriages) {
+            Vec3 localFrom = carriage.pose().transformPositionInverse(from);
+            Vec3 localTo = carriage.pose().transformPositionInverse(to);
+            if (localFrom.distanceToSqr(localTo) < 1.0e-6) continue;
+            Map<Long, LevelChunk> chunks = carriage.chunks();
+            BlockPos hit = BlockGetter.<BlockPos, Map<Long, LevelChunk>>traverseBlocks(
+                    localFrom, localTo, chunks,
+                    (map, pos) -> occludes(map, pos) ? pos.immutable() : null,
+                    map -> null);
+            if (hit == null) continue;
+            Vec3 world = carriage.pose().transformPosition(Vec3.atCenterOf(hit));
+            double d = world.distanceToSqr(from);
+            if (d < bestDist) {
+                bestDist = d;
+                best = world;
+            }
+        }
+        return best;
+    }
+
     /** True if a solid carriage block lies on the world segment {@code camWorld → bodyWorld}. */
     private static boolean segmentHitsCarriage(Carriage carriage, Vec3 camWorld, Vec3 bodyWorld) {
         // World → ship-local (plot storage) space: the inverse of the renderPose that draws
