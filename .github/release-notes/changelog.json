@@ -31336,6 +31336,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "advancement-progress-list",
+      "version": "0.1560.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Advancement progress you can check",
+      "summary": "One hidden exploration advancement now remembers your progress for good, across lives and worlds, and clicking it on the advancements screen shows what you have done and what is left.",
+      "highlights": [
+        "Progress toward it is never lost, not even when you die",
+        "Click it to see a full list, with a scrollbar",
+        "If you had earned its earlier version, it is now a bigger goal, and you start with your progress carried over"
+      ],
+      "pr": 2366,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
