@@ -94,6 +94,10 @@ class DeathCameraCycleTest {
         assertEquals(80, end.y, 1e-9);
         assertEquals(20, end.z, 1e-6);
         assertEquals(start.x, DeathCameraCycle.arcAt(centre, start, 90.0, 0.0).x, 1e-9);
+        // Constant speed: halfway through the sweep is 45 degrees round.
+        Vector3d mid = DeathCameraCycle.arcAt(centre, start, 90.0, 0.5);
+        assertEquals(100 + 20 * Math.cos(Math.PI / 4), mid.x, 1e-6);
+        assertEquals(20 * Math.sin(Math.PI / 4), mid.z, 1e-6);
     }
 
     @Test

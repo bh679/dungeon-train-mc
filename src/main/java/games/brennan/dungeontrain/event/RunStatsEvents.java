@@ -23,6 +23,7 @@ import games.brennan.dungeontrain.discord.DeathManifestFormat;
 import games.brennan.dungeontrain.discord.DeathReportFormat;
 import games.brennan.dungeontrain.narrative.DeathLoreStore;
 import games.brennan.dungeontrain.net.DeathNarrative;
+import games.brennan.dungeontrain.net.AbandonRunPacket;
 import games.brennan.dungeontrain.net.DeathScenePacket;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -372,8 +373,11 @@ public final class RunStatsEvents {
      */
     /** What the death moment's camera needs: void death, the killer, and the other mob (see DeathScenePacket). */
     private static DeathScenePacket deathScene(ServerPlayer player, DamageSource source) {
+        // No place to look at: fell out of the world, or stepped off / walked away from the
+        // train (the body is on the ground wherever the walk ended, not somewhere worth a shot).
         boolean voidDeath = source.is(DamageTypes.FELL_OUT_OF_WORLD)
-            || player.getY() < player.serverLevel().getMinBuildHeight();
+            || player.getY() < player.serverLevel().getMinBuildHeight()
+            || AbandonRunPacket.isAbandonCause(source);
         int killer = source.getEntity() instanceof LivingEntity living && living != player
             ? living.getId() : DeathScenePacket.NONE;
         int contact = RecentMobContacts.nearestAlive(player, killer);

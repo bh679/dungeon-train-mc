@@ -12,7 +12,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * What the death moment's camera needs to know about this death, sent right after the vanilla
  * death so it is on the client before the camera starts (dead tick 2 to 3).
  *
- * @param voidDeath the player fell out of the world: there is no death spot to look at
+ * @param voidDeath no death spot to look at: fell out of the world, or stepped off / walked away from the train
  * @param killerId  entity id of the living thing that killed them, or -1
  * @param contactId entity id of the nearest other mob they recently fought or interacted with, or -1
  */

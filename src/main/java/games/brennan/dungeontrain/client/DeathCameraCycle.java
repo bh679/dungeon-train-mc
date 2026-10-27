@@ -521,14 +521,15 @@ public final class DeathCameraCycle {
 
     /**
      * Pure: lens on an arc around {@code centre}, starting at {@code start} and turning
-     * {@code sweepDegrees} over the move, constant speed then slowing into the end. Height and
-     * radius are those of {@code start}.
+     * {@code sweepDegrees} over the move at constant speed. Height and radius are those of
+     * {@code start}. (The train shots run at constant speed end to end; only the carriage zoom
+     * eases into its end.)
      */
     static Vector3d arcAt(Vector3d centre, Vector3d start, double sweepDegrees, double f) {
         double dx = start.x - centre.x;
         double dz = start.z - centre.z;
         double radius = Math.sqrt(dx * dx + dz * dz);
-        double angle = Math.atan2(dz, dx) + Math.toRadians(sweepDegrees) * easeOut(f);
+        double angle = Math.atan2(dz, dx) + Math.toRadians(sweepDegrees) * Mth.clamp(f, 0.0, 1.0);
         return new Vector3d(centre.x + radius * Math.cos(angle), start.y, centre.z + radius * Math.sin(angle));
     }
 
@@ -563,7 +564,7 @@ public final class DeathCameraCycle {
             }
             case WORLD_DOLLY -> {
                 if (lens == null || lensEnd == null) return null;
-                lensW = dollyAt(lens, lensEnd, t / Math.max(1.0, shot.holdTicks()));
+                lensW = new Vector3d(lens).lerp(lensEnd, Mth.clamp(t / Math.max(1.0, shot.holdTicks()), 0.0, 1.0));
                 if (aimWorld != null) aim = aimWorld;
             }
             case WORLD_ARC -> {
