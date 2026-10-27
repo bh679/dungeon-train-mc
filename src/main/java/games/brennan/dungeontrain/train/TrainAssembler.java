@@ -1074,9 +1074,12 @@ public final class TrainAssembler {
         for (ManagedShip ship : doomed) {
             UUID shipId = ship.subLevelId();
             Set<Entity> driftedPets = new HashSet<>();
+            List<CarriagePets.DriftFootprint> driftFootprints = new ArrayList<>();
             if (SharedCarriageRegistry.hasSubLevel(shipId)) {
                 for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.bySubLevel(shipId)) {
                     boolean allowCapture = captured < MAX_SHARED_CAPTURES_PER_WIPE;
+                    CarriagePets.DriftFootprint footprint = CarriagePets.DriftFootprint.of(inst);
+                    if (footprint != null) driftFootprints.add(footprint);
                     try {
                         List<Entity> drifters = CarriagePets.sittingDrifters(level, ship, inst);
                         if (games.brennan.dungeontrain.event.SharedCarriageEvents.finalFlushAndReturn(inst, allowCapture)) {
@@ -1095,6 +1098,8 @@ public final class TrainAssembler {
             // Same pet rule as the rolling-window cull: sitting pets drift with an uploaded build,
             // the rest go to their owner before the wipe deletes the carriage under them.
             CarriagePets.settleBeforeRemoval(level, ship, driftedPets);
+            // Pets frozen in its despawn snapshot, which the wipe clears below.
+            CarriagePets.rescueFromSnapshot(level, shipId, driftFootprints);
         }
         if (captured > 0 || deferred > 0) {
             LOGGER.info("[DungeonTrain] wipe: returned shared carriages ({} captured, {} bare-returned past "

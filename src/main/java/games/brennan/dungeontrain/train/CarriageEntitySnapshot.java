@@ -208,6 +208,11 @@ public final class CarriageEntitySnapshot {
         return footprintOffset(ship, origin, dims, entity) != null;
     }
 
+    /** The same footprint test on an offset already in the carriage's frame (a snapshot's ship position). */
+    static boolean inFootprint(BlockPos origin, CarriageDims dims, double dx, double dy, double dz) {
+        return !(outside(dx, dims.length()) || outside(dy, dims.height()) || outside(dz, dims.width()));
+    }
+
     /**
      * The world-space twin of {@link #footprintOffset} — plain subtraction, because a build in an
      * editor plot is already in the frame its blocks are stored in and there is no ship to convert

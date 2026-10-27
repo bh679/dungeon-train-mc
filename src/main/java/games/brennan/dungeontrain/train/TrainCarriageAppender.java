@@ -4104,9 +4104,12 @@ public final class TrainCarriageAppender {
         // async. This plugs the SharedCarriageRegistry leak (removeSubLevel finally has a caller)
         // and frees the lease promptly instead of at the ~1h TTL.
         Set<Entity> driftedPets = new HashSet<>();
+        List<CarriagePets.DriftFootprint> driftFootprints = new ArrayList<>();
         if (SharedCarriageRegistry.hasSubLevel(shipId)) {
             for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.bySubLevel(shipId)) {
                 boolean allowCapture = sharedCaptured < captureBudget;
+                CarriagePets.DriftFootprint footprint = CarriagePets.DriftFootprint.of(inst);
+                if (footprint != null) driftFootprints.add(footprint);
                 List<Entity> drifters = CarriagePets.sittingDrifters(level, ship, inst);
                 if (games.brennan.dungeontrain.event.SharedCarriageEvents.finalFlushAndReturn(inst, allowCapture)) {
                     sharedCaptured++;
@@ -4122,7 +4125,8 @@ public final class TrainCarriageAppender {
         CarriagePets.settleBeforeRemoval(level, ship, driftedPets);
         // Drop any despawn snapshot this group was holding. The group is about to stop
         // existing, so its swept mobs have nowhere to come back to — leaving the file would
-        // strand it on disk until the next train wipe.
+        // strand it on disk until the next train wipe. Pets frozen in it go to their owner first.
+        CarriagePets.rescueFromSnapshot(level, shipId, driftFootprints);
         ContentsSnapshotStore.delete(level, shipId);
         // Tear down any force-load ticket on this anchor (mirror + Sable
         // ticket together) before deleting it.
