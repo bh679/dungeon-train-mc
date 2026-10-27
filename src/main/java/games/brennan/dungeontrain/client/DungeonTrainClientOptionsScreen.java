@@ -730,6 +730,15 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 yield Setting.of(nameTag, kid ? key + ".kid_tip" : key + ".tip");
             }
 
+            // Whether TVs play stream sound, and the streamers muted on them (LiveTvSpeakers, LiveViewerMutes).
+            case TV_STREAM_SOUND -> Setting.of(onOff(Component.translatable(key),
+                    games.brennan.dungeontrain.config.LiveViewerClientConfig.tvStreamSound(),
+                    games.brennan.dungeontrain.config.LiveViewerClientConfig::setTvStreamSound), key + ".tip");
+            case MUTED_STREAMERS -> Setting.of(Button.builder(Component.translatable(key + ".button",
+                            games.brennan.dungeontrain.config.LiveViewerClientConfig.mutedStreamers().size()),
+                            b -> this.minecraft.setScreen(new MutedStreamersScreen(this)))
+                    .bounds(0, 0, CONTROL_W, ROW_H).build(), key + ".tip");
+
             // Two streams live: what a worn TV shows by default (a TV that remembers a stream wins).
             case WORN_TV_STREAMS -> Setting.of(
                     CycleButton.<LiveFeedClientConfig.WornTvStreams>builder(DungeonTrainClientOptionsScreen::wornTvStreamsLabel)

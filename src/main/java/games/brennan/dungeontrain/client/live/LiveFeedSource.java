@@ -64,6 +64,8 @@ public final class LiveFeedSource implements IVideoSource {
     @Nullable private LiveFeedTexture pendingTexture;
     /** The stopped stream's playlist this viewer already played to its ENDLIST; never rejoined. */
     @Nullable private String finishedUrl;
+    /** The status the newest {@link #frame} showed, for {@link #hearing} (who the stream is by). */
+    @Nullable private volatile Status lastStatus;
 
     private LiveFeedSource(String textureName, boolean second) {
         this.texture = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, textureName);
@@ -158,6 +160,40 @@ public final class LiveFeedSource implements IVideoSource {
         // Borrowing the first stream: let go of our own decoder and texture, so nothing idles behind the picture.
         if (session != null || pending != null) dropAll();
         return MAIN;
+    }
+
+    /**
+     * Vista's client tick for a TV showing this feed ({@code playing}: switched on, not paused): its
+     * speaker ({@link LiveTvSpeakers}) plays the stream's sound.
+     */
+    @Override
+    public void updateAudio(TVBlockEntity tv, boolean playing) {
+        LiveTvSpeakers.tv(this, tv, playing);
+    }
+
+    /**
+     * What a speaker of this feed would play now: the session on screen and who it is by. {@code
+     * streamKey} is the stream's playlist (what "mute this stream" keys on); {@code streamer} is null
+     * for the replay loop, whose broadcaster the status no longer names. {@code second}: the second
+     * stream (false while borrowing the first).
+     */
+    public record Hearing(LiveHlsSession session, String streamKey, boolean replay, @Nullable String streamer, boolean second) {}
+
+    /** Client thread: {@link Hearing} for this feed, or null while it has no sound to play. */
+    @Nullable
+    public Hearing hearing() {
+        if (!LiveFeedClientConfig.viewingEnabled()) return null;
+        LiveFeedSource d = delegate();
+        LiveHlsSession s = d.session;
+        if (s == null || s.frameSequence() == 0 || !s.hasSound()) return null;
+        return new Hearing(s, s.playlistUrl(), s.isReplay(), streamerOf(s.playlistUrl(), s.isReplay(), d.lastStatus), d.second);
+    }
+
+    /** Who the stream at {@code url} is by, from the status shown with it: null for a replay or another stream. Pure. */
+    @Nullable
+    static String streamerOf(String url, boolean replay, @Nullable Status status) {
+        if (replay || status == null || status.playlistUrl() == null) return null;
+        return status.playlistUrl().equals(url) ? status.streamer() : null;
     }
 
     @Override
@@ -266,6 +302,7 @@ public final class LiveFeedSource implements IVideoSource {
         Status polled = tvBlock ? LiveStatusPoller.tvWanted() : LiveStatusPoller.wanted();
         String own = second ? ownSecondUrl() : null;
         Status status = statusFor(polled, second, own, own != null ? ownName() : null);
+        lastStatus = status;
         boolean replay = false;
         String url;
         if (status.live() && status.slot() && status.playlistUrl() != null && !playedToEnd(status.playlistUrl())) {

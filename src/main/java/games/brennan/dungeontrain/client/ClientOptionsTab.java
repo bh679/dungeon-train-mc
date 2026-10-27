@@ -190,6 +190,10 @@ public enum ClientOptionsTab {
         LIVE_FEED_VIEWING("gui.dungeontrain.options.live_feed_viewing"),
         /** What a worn TV shows while two streams are live: both, or one of them. */
         WORN_TV_STREAMS("gui.dungeontrain.options.worn_tv_streams"),
+        /** Whether TVs play a stream's sound at all. On by default. */
+        TV_STREAM_SOUND("gui.dungeontrain.options.tv_stream_sound"),
+        /** The streamers this viewer muted on TVs, each with an Unmute button (its own page). */
+        MUTED_STREAMERS("gui.dungeontrain.options.muted_streamers"),
         /** The broadcast's picture size; the preview shows it. */
         STREAM_SIZE("gui.dungeontrain.options.stream_size"),
         /** Slower, smaller encoding: less upload for frame rate. Off by default; also on Performance. */
@@ -362,6 +366,9 @@ public enum ClientOptionsTab {
                 rows.add(Row.TWITCH_HINT);
                 rows.add(Row.LIVE_FEED_VIEWING);
                 rows.add(Row.WORN_TV_STREAMS);
+                // TV stream sound and the muted list: a pair, so the rows after keep their pairing.
+                rows.add(Row.TV_STREAM_SOUND);
+                rows.add(Row.MUTED_STREAMERS);
                 rows.add(Row.STREAM_SIZE);
                 rows.add(Row.STREAM_SAVE_BANDWIDTH);
                 rows.add(Row.HEAD_VIEWER_SIZE);

@@ -114,6 +114,11 @@ public final class LiveHeadViewer {
         return head.is(ModItems.LIVE_HEADPIECE.get()) || TvItems.isTv(head);
     }
 
+    /** Whether the pinned box is up now (its sound plays flat: {@code LiveTvSpeakers}). */
+    static boolean watching() {
+        return shown(Minecraft.getInstance());
+    }
+
     /** Wearing a viewer hat with the box switched on — the box is shown in one of the two passes. */
     private static boolean shown(Minecraft mc) {
         return mc.level != null && mc.player != null && LiveFeedClientConfig.headViewerEnabled()

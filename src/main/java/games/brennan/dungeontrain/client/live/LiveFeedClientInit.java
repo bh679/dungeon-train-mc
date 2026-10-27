@@ -21,6 +21,7 @@ public final class LiveFeedClientInit {
     @SubscribeEvent
     static void onClientSetup(FMLClientSetupEvent event) {
         LiveBroadcastSource.setClientSource(() -> LiveFeedSource.MAIN, () -> LiveFeedSource.SECOND);
+        LiveMuteChat.registerClicks();
         // ItemProperties is not thread-safe; registration belongs on the main thread like the rest
         event.enqueueWork(LiveHeadpieceAntenna::register);
     }
@@ -38,6 +39,8 @@ public final class LiveFeedClientInit {
                 LiveStatusPoller.reset();
                 LiveChatBridge.reset();
                 LiveHeadpieceAntenna.reset();
+                LiveTvSpeakers.stopAll();
+                LiveMuteChat.reset();
             });
         }
     }

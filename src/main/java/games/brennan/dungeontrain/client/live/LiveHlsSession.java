@@ -16,6 +16,10 @@ import org.slf4j.Logger;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -50,6 +54,13 @@ import java.util.regex.Pattern;
  * instead of exiting, so a live run with no frame for {@link #STALL_MS} is killed into that same
  * backoff by {@link #watchdog}, which a client tick drives whether or not a TV is in view. {@link #release()} after 30 s with no viewer kills
  * the process; the texture survives.</p>
+ *
+ * <p>Sound: a live or replay run also writes the stream's first audio track ({@code -map 0:a:0}, the
+ * game + mic mix when a stream carries two) as 24 kHz mono PCM to a loopback socket this session opens
+ * for that run ({@link #audioArgs}), into {@link #audio()} for the TVs' speakers ({@code LiveTvSpeakers}).
+ * One process, one input clock: the sound leaves ffmpeg in step with the picture. A stream with no audio
+ * track makes ffmpeg refuse the run ("matches no streams"), so the session then decodes picture only
+ * ({@code noAudio}) for good. The death clip loops silent.</p>
  *
  * <p>Frames arrive as RGBA, whose bytes are already {@link NativeImage}'s pixel layout, so the
  * reader reads each into a direct buffer and {@code memCopy}s it whole into a staging image under {@code fillLock} and swaps it with {@code back} under
@@ -105,6 +116,18 @@ public final class LiveHlsSession implements IMediaSession {
     private volatile long lastProgressMs = System.currentTimeMillis();
     /** The run the stall watchdog already killed, so it is killed (and logged) once. */
     private volatile Process stallKilled;
+    /** This feed's sound, for every speaker playing it. */
+    private final LiveAudioRing audio = new LiveAudioRing();
+    /** The stream has no audio track (ffmpeg said so): runs decode the picture only. */
+    private volatile boolean noAudio;
+    /** The current run's ffmpeg said its audio map matched nothing. */
+    private volatile boolean audioMissing;
+    /** When the newest sound arrived, ms; 0 before any. */
+    private volatile long lastAudioMs;
+    /** How long a feed may go without sound and still count as {@link #hasSound sounding}. */
+    private static final long AUDIO_FRESH_MS = 2_000;
+    /** How long a run's ffmpeg has to connect its audio output. */
+    private static final int AUDIO_ACCEPT_MS = 10_000;
 
     public LiveHlsSession(String playlistUrl, int width, int height) {
         this(playlistUrl, width, height, false);
@@ -155,6 +178,14 @@ public final class LiveHlsSession implements IMediaSession {
 
     /** The playlist ffmpeg reads: the source, or a rendition of it. */
     public String mediaUrl() { return mediaUrl; }
+
+    /** This feed's sound ({@link LiveAudioRing}): empty for the death clip and a stream without audio. */
+    public LiveAudioRing audio() { return audio; }
+
+    /** Whether sound arrived within the last two seconds: there is something for a speaker to play. */
+    public boolean hasSound() {
+        return !closed && lastAudioMs != 0 && System.currentTimeMillis() - lastAudioMs < AUDIO_FRESH_MS;
+    }
 
     /** The decode width, in pixels. */
     public int width() { return width; }
@@ -346,6 +377,7 @@ public final class LiveHlsSession implements IMediaSession {
         long backoffMs = 2000;
         while (!closed && !idle()) {
             Process p = null;
+            ServerSocket sound = null;
             try {
                 status = frameSeq == 0 ? MediaStatus.LOADING : MediaStatus.BUFFERING;
                 if (!replay && !playlistSafe()) {
@@ -354,12 +386,16 @@ public final class LiveHlsSession implements IMediaSession {
                 }
                 LOGGER.info("[DungeonTrain] live decoder: {} at {}x{}{}", mediaUrl, width, height,
                     mediaUrl.equals(playlistUrl) ? "" : " (a rendition of " + playlistUrl + ")");
-                p = ffmpeg.runFFmpeg(local ? localArgs(mediaUrl, width, height) : args(mediaUrl, width, height, replay, catchup));
+                audioMissing = false;
+                sound = local || noAudio ? null : new ServerSocket(0, 1, InetAddress.getLoopbackAddress());
+                int port = sound != null ? sound.getLocalPort() : 0;
+                p = ffmpeg.runFFmpeg(local ? localArgs(mediaUrl, width, height) : args(mediaUrl, width, height, replay, catchup, port));
                 LivePerfStats.decoderRun();
                 lastProgressMs = System.currentTimeMillis(); // a fresh run gets a whole stall window
                 process = p;
                 if (closed) break;
-                FfmpegSupport.drain(p.getErrorStream(), "decoder");
+                FfmpegSupport.drain(p.getErrorStream(), "decoder", this::onDecoderError);
+                if (sound != null) startAudioReader(sound);
                 long framesThisRun = 0;
                 try (InputStream in = new BufferedInputStream(p.getInputStream(), 1 << 16);
                      ReadableByteChannel ch = Channels.newChannel(in)) {
@@ -392,6 +428,13 @@ public final class LiveHlsSession implements IMediaSession {
             } finally {
                 if (p != null) p.destroyForcibly();
                 process = null;
+                closeQuietly(sound);
+            }
+            if (audioMissing && !noAudio) {
+                // The stream has no sound: decode its picture alone from now on, straight away.
+                noAudio = true;
+                LOGGER.info("[DungeonTrain] live decoder: {} has no audio track, picture only", playlistUrl);
+                continue;
             }
             if (closed || finished || refused || idle()) break;
             status = frameSeq == 0 ? MediaStatus.LOADING : MediaStatus.BUFFERING;
@@ -399,6 +442,51 @@ public final class LiveHlsSession implements IMediaSession {
             backoffMs = Math.min(backoffMs * 2, 30_000);
         }
         status = frameSeq == 0 ? MediaStatus.LOADING : MediaStatus.BUFFERING;
+    }
+
+    /** A decoder stderr line: notes a run whose audio map found no track (the stream has no sound). */
+    private void onDecoderError(String line) {
+        if (audioMissing(line)) audioMissing = true;
+    }
+
+    /** Whether an ffmpeg error line says {@code -map 0:a:0} found nothing. Pure, for the tests. */
+    static boolean audioMissing(String line) {
+        return line.contains("0:a:0") && line.contains("matches no streams");
+    }
+
+    /**
+     * Reader side of a run's sound: wait for ffmpeg to connect its audio output, then copy everything it
+     * writes into {@link #audio} until the run ends. Always reads to the end — an unread socket would
+     * block ffmpeg, and the picture with it.
+     */
+    private void startAudioReader(ServerSocket server) {
+        Thread t = new Thread(() -> {
+            try {
+                server.setSoTimeout(AUDIO_ACCEPT_MS);
+                try (Socket s = server.accept(); InputStream in = s.getInputStream()) {
+                    closeQuietly(server); // one connection, ffmpeg's
+                    byte[] chunk = new byte[4096];
+                    int n;
+                    while ((n = in.read(chunk)) > 0) {
+                        if (!closed) {
+                            audio.write(chunk, 0, n);
+                            lastAudioMs = System.currentTimeMillis();
+                        }
+                    }
+                }
+            } catch (SocketTimeoutException e) {
+                LOGGER.debug("[DungeonTrain] live decoder: no audio connection for {}", playlistUrl);
+            } catch (IOException e) {
+                // the run ended
+            }
+        }, "dt-live-audio");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private static void closeQuietly(@Nullable ServerSocket s) {
+        if (s == null) return;
+        try { s.close(); } catch (IOException ignored) { /* already closed */ }
     }
 
     /**
@@ -434,21 +522,44 @@ public final class LiveHlsSession implements IMediaSession {
      * always uses {@code -re} — {@code -stream_loop} would otherwise spin through it.
      */
     static String[] args(String playlistUrl, int width, int height, boolean replay, boolean catchup) {
+        return args(playlistUrl, width, height, replay, catchup, 0);
+    }
+
+    /**
+     * {@link #args(String, int, int, boolean, boolean)} with the sound too, when {@code audioPort} is a
+     * loopback port this session listens on ({@link #audioArgs}); 0 decodes the picture alone.
+     */
+    static String[] args(String playlistUrl, int width, int height, boolean replay, boolean catchup, int audioPort) {
         String protocols = playlistUrl.startsWith("http://") ? "http,https,tls,tcp" : "https,tls,tcp";
         List<String> a = new ArrayList<>(List.of("-hide_banner", "-loglevel", "error", "-nostdin",
             "-protocol_whitelist", protocols, "-rw_timeout", Long.toString(RW_TIMEOUT_US)));
         if (replay || !catchup) a.add("-re");
         else a.addAll(List.of("-readrate", "1", "-readrate_catchup", "2"));
         if (replay) {
-            a.addAll(List.of("-stream_loop", "-1", "-i", playlistUrl, "-an",
-                "-vf", cover(width, height) + ",format=gray,noise=alls=18:allf=t+u,format=rgba"));
+            a.addAll(List.of("-stream_loop", "-1", "-i", playlistUrl));
+            a.addAll(audioArgs(audioPort));
+            a.addAll(List.of("-vf", cover(width, height) + ",format=gray,noise=alls=18:allf=t+u,format=rgba"));
         } else {
             a.addAll(List.of("-live_start_index", "-1",
                 "-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5",
-                "-i", playlistUrl, "-an", "-vf", cover(width, height)));
+                "-i", playlistUrl));
+            a.addAll(audioArgs(audioPort));
+            a.addAll(List.of("-vf", cover(width, height)));
         }
         a.addAll(List.of(PAM_OUT));
         return a.toArray(new String[0]);
+    }
+
+    /**
+     * The options between the input and the picture output: with no {@code audioPort}, {@code -an}; else
+     * a first output of the stream's first audio track — named, never left to ffmpeg's pick, since a mic
+     * stream carries the game + mic mix first and the game alone second — as 24 kHz mono PCM to the
+     * loopback port, then {@code -map 0:v:0} for the picture output that follows.
+     */
+    static List<String> audioArgs(int audioPort) {
+        if (audioPort <= 0) return List.of("-an");
+        return List.of("-map", "0:a:0", "-vn", "-ac", "1", "-ar", "24000", "-f", "s16le",
+            "tcp://127.0.0.1:" + audioPort, "-map", "0:v:0");
     }
 
     /** Every decoder's output: RGBA frames as PAM, each with its own size ({@link LiveFrameShape}). */

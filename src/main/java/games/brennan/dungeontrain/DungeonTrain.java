@@ -384,6 +384,11 @@ public class DungeonTrain {
                 ModConfig.Type.CLIENT,
                 games.brennan.dungeontrain.config.LiveFeedClientConfig.SPEC,
                 "dungeontrain-live-client.toml");
+        // Watching the Live Feed: TV stream sound and muted streamers, apart from the streamer's knobs above.
+        modContainer.registerConfig(
+                ModConfig.Type.CLIENT,
+                games.brennan.dungeontrain.config.LiveViewerClientConfig.SPEC,
+                "dungeontrain-live-viewer-client.toml");
         // The Contribute screens' currency choice — its own small file for the same reason.
         modContainer.registerConfig(
                 ModConfig.Type.CLIENT,

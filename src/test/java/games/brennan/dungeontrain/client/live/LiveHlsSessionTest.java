@@ -94,6 +94,34 @@ class LiveHlsSessionTest {
         assertFalse(String.join(" ", replay).contains("rgb24"), "the replay filter ends in rgba too");
     }
 
+    @Test
+    void withSoundTheFirstAudioTrackGoesToTheLoopbackPortAsMonoPcm() {
+        for (boolean replay : new boolean[] {false, true}) {
+            List<String> a = List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, replay, true, 41234));
+            String s = String.join(" ", a);
+            assertFalse(a.contains("-an"), "sound is decoded: " + s);
+            assertTrue(s.contains("-map 0:a:0 -vn -ac 1 -ar 24000 -f s16le tcp://127.0.0.1:41234 -map 0:v:0"),
+                "track 0 named, never ffmpeg's pick (a mic stream's game + mic mix): " + s);
+            assertTrue(a.indexOf("-map") > a.indexOf("-i"), "output options follow the input");
+            assertEquals(List.of("-f", "image2pipe", "-c:v", "pam", "-pix_fmt", "rgba", "-"), a.subList(a.size() - 7, a.size()),
+                "the picture output is unchanged and last");
+        }
+    }
+
+    @Test
+    void withoutSoundTheRunStaysPictureOnly() {
+        assertTrue(List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, true, 0)).contains("-an"));
+        assertTrue(List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, true)).contains("-an"));
+        assertTrue(List.of(LiveHlsSession.localArgs("/tmp/clip.mp4", 640, 360)).contains("-an"), "the death clip loops silent");
+    }
+
+    @Test
+    void aStreamWithNoAudioTrackIsRecognisedFromFfmpegsError() {
+        assertTrue(LiveHlsSession.audioMissing("Stream map '0:a:0' matches no streams."));
+        assertFalse(LiveHlsSession.audioMissing("Connection timed out"));
+        assertFalse(LiveHlsSession.audioMissing("Stream map '0:v:0' matches no streams."));
+    }
+
     private static String joined(String url, boolean replay, boolean catchup) {
         return String.join(" ", LiveHlsSession.args(url, 640, 360, replay, catchup));
     }

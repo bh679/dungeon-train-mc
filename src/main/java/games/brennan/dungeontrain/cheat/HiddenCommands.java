@@ -44,7 +44,7 @@ public final class HiddenCommands {
         "dtbackup", "dtrestore", "dungeonbackup", "feedback", "log",
         // client-only
         "streamer", "twitch", "discord", "dungeontrain-options", "dungeontrain-rewards",
-        "framerate-throttle", "new-world",
+        "framerate-throttle", "new-world", "livemute",
         "dt-ledger-preview", "dungeontrain-debug-contribute", "dungeontrain-debug-death-pages");
 
     private static boolean warned;
