@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.SableEntityCarry;
+import games.brennan.dungeontrain.world.PendingPets;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -38,7 +39,8 @@ import java.util.UUID;
  *
  * <p>A carriage deleted for good takes its despawn snapshot with it, so sitting pets frozen in that
  * snapshot are handed to their owner too — unless they sat in a drifting carriage the relay holds, in
- * which case they have left with it. A pet whose owner is offline stays where it is.</p>
+ * which case they have left with it. A live pet whose owner is offline stays where it is; a frozen one
+ * waits in {@link PendingPets} until the owner is back.</p>
  *
  * <p>Pure decisions ({@link #fate}, {@link #mayUpload}) are split from the world-touching code so
  * they test without Minecraft.</p>
@@ -205,8 +207,11 @@ public final class CarriagePets {
                 ServerPlayer owner = onlineOwner(level, stored.getUUID(NBT_OWNER));
                 switch (fate(leftWithCarriage, owner != null)) {
                     case DRIFTS -> LOGGER.info("[DungeonTrain] Sitting pet {} left with its drifting carriage", id);
-                    case SENT_HOME -> respawnAt(stored, owner);
-                    case LEFT -> LOGGER.warn("[DungeonTrain] Pet {} in a removed carriage's snapshot is lost: owner offline", id);
+                    case SENT_HOME -> respawnBeside(stored, owner);
+                    case LEFT -> {
+                        PendingPets.get(level).add(stored.getUUID(NBT_OWNER), stored);
+                        LOGGER.info("[DungeonTrain] Pet {} from a removed carriage is waiting for its offline owner", id);
+                    }
                 }
             } catch (Throwable t) {
                 LOGGER.warn("[DungeonTrain] Pet {} in a removed carriage's snapshot could not be handed back: {}",
@@ -237,8 +242,8 @@ public final class CarriagePets {
                 typeId(pet), owner.getGameProfile().getName(), from, moved ? "ok" : "refused");
     }
 
-    /** Respawn a snapshot pet beside its owner — the contents-despawn restore idiom, at the owner. */
-    private static void respawnAt(CompoundTag stored, ServerPlayer owner) {
+    /** Respawn a saved pet beside its owner — the contents-despawn restore idiom, at the owner. */
+    public static void respawnBeside(CompoundTag stored, ServerPlayer owner) {
         ServerLevel to = owner.serverLevel();
         CompoundTag nbt = stored.copy();
         nbt.remove(ContentsEntitySnapshot.KEY_SHIP_POS);
