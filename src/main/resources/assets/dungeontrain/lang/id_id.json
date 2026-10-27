@@ -712,6 +712,8 @@
   "chat.dungeontrain.live.watch_link": "Anda kini siaran langsung di %s",
   "chat.dungeontrain.live.link.twitch": "Twitch",
   "chat.dungeontrain.live.link.tv": "DungeonTrain TV",
+  "chat.dungeontrain.live.also_on": "Juga siaran langsung di %s",
+  "chat.dungeontrain.live.link.tiktok": "TikTok",
   "chat.dungeontrain.live.watching.other": "%s orang menonton",
   "chat.dungeontrain.live.viewers.other": "Kamu punya %s penonton",
   "chat.dungeontrain.live.one_eye": "Kamu hanya bisa membawa satu Camcorder Siaran. Yang lebih berubah menjadi TV.",

@@ -712,6 +712,8 @@
   "chat.dungeontrain.live.watch_link": "ตอนนี้คุณกำลังถ่ายทอดสดบน %s",
   "chat.dungeontrain.live.link.twitch": "Twitch",
   "chat.dungeontrain.live.link.tv": "DungeonTrain TV",
+  "chat.dungeontrain.live.also_on": "ถ่ายทอดสดบน %s ด้วย",
+  "chat.dungeontrain.live.link.tiktok": "TikTok",
   "chat.dungeontrain.live.watching.other": "มีผู้ชม %s คน",
   "chat.dungeontrain.live.viewers.other": "คุณมีผู้ชม %s คน",
   "chat.dungeontrain.live.one_eye": "พกกล้องวิดีโอถ่ายทอดได้แค่ตัวเดียว ตัวที่เกินกลายเป็นทีวีแล้ว",

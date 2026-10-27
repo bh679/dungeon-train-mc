@@ -777,6 +777,8 @@
   "chat.dungeontrain.live.watch_link": "Теперь ты в эфире на %s",
   "chat.dungeontrain.live.link.twitch": "Twitch",
   "chat.dungeontrain.live.link.tv": "DungeonTrain TV",
+  "chat.dungeontrain.live.also_on": "Также в эфире на %s",
+  "chat.dungeontrain.live.link.tiktok": "TikTok",
   "chat.dungeontrain.live.watching.one": "Смотрит %s человек",
   "chat.dungeontrain.live.watching.few": "Смотрят %s человека",
   "chat.dungeontrain.live.watching.many": "Смотрят %s человек",

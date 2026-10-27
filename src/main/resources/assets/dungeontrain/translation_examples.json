@@ -16052,6 +16052,14 @@
       ]
     }
   },
+  "chat.dungeontrain.live.also_on": {
+    "1": {
+      "label": "the clickable name of the TikTok mirror, already translated (chat.dungeontrain.live.link.tiktok)",
+      "examples": [
+        "TikTok"
+      ]
+    }
+  },
   "advancements.dungeontrain.enchiridion.prime_time.description": {
     "1": {
       "label": "minutes, from the requirement",

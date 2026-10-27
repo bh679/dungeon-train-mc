@@ -742,6 +742,8 @@
   "chat.dungeontrain.live.watch_link": "Ora sei in diretta su %s",
   "chat.dungeontrain.live.link.twitch": "Twitch",
   "chat.dungeontrain.live.link.tv": "DungeonTrain TV",
+  "chat.dungeontrain.live.also_on": "In diretta anche su %s",
+  "chat.dungeontrain.live.link.tiktok": "TikTok",
   "chat.dungeontrain.live.watching.one": "%s persona sta guardando",
   "chat.dungeontrain.live.watching.other": "%s persone stanno guardando",
   "chat.dungeontrain.live.viewers.one": "Hai %s spettatore",

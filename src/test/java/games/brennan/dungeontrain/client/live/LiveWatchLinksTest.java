@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LiveWatchLinksTest {
 
@@ -38,6 +39,25 @@ class LiveWatchLinksTest {
         assertEquals("chat.dungeontrain.live.watch_links", key(LiveWatchLinks.line("main", null)));
         assertEquals("chat.dungeontrain.live.watch_link_own", key(LiveWatchLinks.line("dev/x", on)));
         assertEquals("chat.dungeontrain.live.watch_link", key(LiveWatchLinks.line("dev/x", null)));
+    }
+
+    @Test
+    void theAlsoOnLineLinksTikTokOnlyForAnOfficialTikTokUrl() {
+        String url = "https://www.tiktok.com/@dungeontrain/live";
+        Component line = LiveWatchLinks.alsoOnLine(url);
+        assertEquals("chat.dungeontrain.live.also_on", key(line));
+        Object[] args = ((net.minecraft.network.chat.contents.TranslatableContents) line.getContents()).getArgs();
+        assertEquals(1, args.length);
+        Component tiktok = (Component) args[0];
+        assertEquals("chat.dungeontrain.live.link.tiktok", key(tiktok));
+        assertEquals(net.minecraft.ChatFormatting.AQUA.getColor(), tiktok.getStyle().getColor().getValue());
+        assertTrue(tiktok.getStyle().isUnderlined());
+        assertEquals(net.minecraft.network.chat.ClickEvent.Action.OPEN_URL, tiktok.getStyle().getClickEvent().getAction());
+        assertEquals(url, tiktok.getStyle().getClickEvent().getValue());
+
+        assertNull(LiveWatchLinks.alsoOnLine(null));
+        assertNull(LiveWatchLinks.alsoOnLine("https://twitch.tv/x"));
+        assertNull(LiveWatchLinks.alsoOnLine("http://www.tiktok.com/@dungeontrain/live"));
     }
 
     private static String key(Component c) {

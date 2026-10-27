@@ -64,6 +64,18 @@ final class LiveWatchLinks {
         return line.withStyle(ChatFormatting.GREEN);
     }
 
+    /**
+     * "Also live on [TikTok]": the follow-up said once the relay reports the official TikTok mirror on
+     * air ({@code tiktokUrl} on a status poll, {@link LiveFeedClient#parseTikTokUrl}). Null for a URL
+     * that is not an official TikTok link, so a stray relay value is never said.
+     */
+    @Nullable
+    static Component alsoOnLine(@Nullable String url) {
+        if (url == null || !url.startsWith(LiveFeedClient.TIKTOK_URL_PREFIX)) return null;
+        return Component.translatable("chat.dungeontrain.live.also_on", link("chat.dungeontrain.live.link.tiktok", url))
+            .withStyle(ChatFormatting.GREEN);
+    }
+
     /** "twitch.tv/login" as a link. */
     private static MutableComponent ownLink(LiveFeedClient.Twitch own) {
         return Component.literal("twitch.tv/" + own.login())
