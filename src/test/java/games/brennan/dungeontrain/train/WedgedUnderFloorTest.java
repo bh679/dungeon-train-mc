@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -121,5 +122,25 @@ class WedgedUnderFloorTest {
     @Test
     void sideOutsideAnUnloadedChunkIsNotLoaded() {
         assertFalse(loadedIn(100.2, -0.65, 100.8, -0.05, Set.of()));
+    }
+
+    @Test
+    void petWithOnlineOwnerGoesToTheOwnerNotOverTheSide() {
+        assertEquals(WedgedUnderFloor.Route.TO_OWNER, WedgedUnderFloor.route(true, true));
+    }
+
+    @Test
+    void petWithOfflineOwnerTakesASideSpot() {
+        assertEquals(WedgedUnderFloor.Route.BESIDE, WedgedUnderFloor.route(true, false));
+    }
+
+    @Test
+    void wildMobTakesASideSpot() {
+        assertEquals(WedgedUnderFloor.Route.BESIDE, WedgedUnderFloor.route(false, false));
+    }
+
+    @Test
+    void safeDropMatchesVanillaFallDamageThreshold() {
+        assertEquals(3, WedgedUnderFloor.MAX_SAFE_DROP_BLOCKS);
     }
 }

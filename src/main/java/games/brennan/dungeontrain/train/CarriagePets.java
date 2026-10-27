@@ -231,7 +231,34 @@ public final class CarriagePets {
 
     // ---- moving pets ----
 
-    private static void sendHome(Entity pet, ServerPlayer owner, String from) {
+    /**
+     * A pet catching up with an owner who rides a carriage lands on the deck at their feet.
+     *
+     * <p>Vanilla's follow-teleport picks a spot near the owner with ground under it, but it reads
+     * only the main level, where a carriage deck is air. The one "ground" it finds there is the track
+     * bed under the carriage, so the pet lands in the floor (2026-10-26: a wolf landed in the floor
+     * that way, was moved off the side of a bridge and fell to its death).</p>
+     *
+     * @return true when the pet was moved and vanilla's teleport must not run
+     */
+    public static boolean followOntoDeck(TamableAnimal pet) {
+        if (pet.level().isClientSide()) return false;
+        if (!(pet.getOwner() instanceof ServerPlayer owner) || owner.level() != pet.level()) return false;
+        if (!ridingDeck(owner)) return false;
+        SableEntityCarry.shed(pet);
+        pet.setDeltaMovement(Vec3.ZERO);
+        pet.resetFallDistance();
+        pet.moveTo(owner.getX(), owner.getY(), owner.getZ(), pet.getYRot(), pet.getXRot());
+        pet.getNavigation().stop();
+        return true;
+    }
+
+    /** Standing on a carriage deck: their feet are on something a main-level block scan can't see. */
+    static boolean ridingDeck(ServerPlayer owner) {
+        return !owner.isSpectator() && SableEntityCarry.carrier(owner) != null;
+    }
+
+    static void sendHome(Entity pet, ServerPlayer owner, String from) {
         SableEntityCarry.shed(pet);
         pet.setDeltaMovement(Vec3.ZERO);
         pet.resetFallDistance();
@@ -269,7 +296,7 @@ public final class CarriagePets {
         if (owner.onGround() && !owner.isSpectator()) return owner.position();
         // A carriage deck is not a world block, so the scan below would fall straight through it to
         // the track bed. An owner riding one is standing on it: put the pet at their feet.
-        if (!owner.isSpectator() && SableEntityCarry.carrier(owner) != null) return owner.position();
+        if (ridingDeck(owner)) return owner.position();
         ServerLevel level = owner.serverLevel();
         BlockPos.MutableBlockPos p = owner.blockPosition().mutable();
         int floor = Math.max(level.getMinBuildHeight(), p.getY() - LANDING_SCAN_BLOCKS);
