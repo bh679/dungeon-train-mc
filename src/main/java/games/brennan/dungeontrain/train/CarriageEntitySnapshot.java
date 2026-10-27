@@ -52,6 +52,8 @@ import java.util.stream.Stream;
  *       player never shared with them.</li>
  *   <li><b>Bosses</b> — a wither posted into the community pool is a weapon, not a build.</li>
  *   <li><b>Passengers</b> as roots: a passenger is already written inside its vehicle's tag.</li>
+ *   <li><b>Pets that are not sitting</b>: a standing pet belongs with its owner, not with the build.
+ *       A pet told to sit stays in the carriage and drifts with it ({@link CarriagePets}).</li>
  * </ul>
  *
  * <h2>Identity</h2>
@@ -174,6 +176,7 @@ public final class CarriageEntitySnapshot {
         if (entity == null || entity instanceof Player) return false;
         if (entity.isPassenger()) return false; // written inside its vehicle's tag instead
         if (EXCLUDED_TYPES.contains(typeId(entity))) return false;
+        if (CarriagePets.isStandingPet(entity)) return false;
         for (Entity part : entity.getSelfAndPassengers().toList()) {
             // A boat or minecart a player is sitting in takes the player with it if captured whole.
             if (part instanceof Player) return false;
@@ -198,6 +201,11 @@ public final class CarriageEntitySnapshot {
         double dz = ship_.z - origin.getZ();
         if (outside(dx, dims.length()) || outside(dy, dims.height()) || outside(dz, dims.width())) return null;
         return new double[]{dx, dy, dz};
+    }
+
+    /** Whether {@code entity} stands in the carriage footprint {@code [origin, origin+dims)} of {@code ship}. */
+    static boolean inFootprint(ManagedShip ship, BlockPos origin, CarriageDims dims, Entity entity) {
+        return footprintOffset(ship, origin, dims, entity) != null;
     }
 
     /**

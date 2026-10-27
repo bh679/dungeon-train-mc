@@ -16,6 +16,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import org.joml.Vector3d;
@@ -1021,7 +1022,7 @@ public final class TrainAssembler {
                 trains.add(ship);
             }
         }
-        returnSharedCarriages(trains);
+        returnSharedCarriages(level, trains);
         // Sweep any trailing-segment force-load tickets before the train
         // re-fills. Guarantees no DT force-load survives a session boundary —
         // Sable persists tickets to disk and resurrects the ticketed
@@ -1067,26 +1068,33 @@ public final class TrainAssembler {
      * <p>Best-effort per instance — a carriage that throws is logged and
      * skipped so one bad build can never abort the wipe.</p>
      */
-    private static void returnSharedCarriages(List<ManagedShip> doomed) {
+    private static void returnSharedCarriages(ServerLevel level, List<ManagedShip> doomed) {
         int captured = 0;
         int deferred = 0;
         for (ManagedShip ship : doomed) {
             UUID shipId = ship.subLevelId();
-            if (!SharedCarriageRegistry.hasSubLevel(shipId)) continue;
-            for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.bySubLevel(shipId)) {
-                boolean allowCapture = captured < MAX_SHARED_CAPTURES_PER_WIPE;
-                try {
-                    if (games.brennan.dungeontrain.event.SharedCarriageEvents.finalFlushAndReturn(inst, allowCapture)) {
-                        captured++;
-                    } else if (!allowCapture && inst.hasPending()) {
-                        deferred++;
+            Set<Entity> driftedPets = new HashSet<>();
+            if (SharedCarriageRegistry.hasSubLevel(shipId)) {
+                for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.bySubLevel(shipId)) {
+                    boolean allowCapture = captured < MAX_SHARED_CAPTURES_PER_WIPE;
+                    try {
+                        List<Entity> drifters = CarriagePets.sittingDrifters(level, ship, inst);
+                        if (games.brennan.dungeontrain.event.SharedCarriageEvents.finalFlushAndReturn(inst, allowCapture)) {
+                            captured++;
+                            driftedPets.addAll(drifters);
+                        } else if (!allowCapture && inst.hasPending()) {
+                            deferred++;
+                        }
+                    } catch (Throwable t) {
+                        LOGGER.debug("[DungeonTrain] wipe: shared-carriage return failed for pIdx={}: {}",
+                            inst.pIdx, t.toString());
                     }
-                } catch (Throwable t) {
-                    LOGGER.debug("[DungeonTrain] wipe: shared-carriage return failed for pIdx={}: {}",
-                        inst.pIdx, t.toString());
                 }
+                SharedCarriageRegistry.removeSubLevel(shipId);
             }
-            SharedCarriageRegistry.removeSubLevel(shipId);
+            // Same pet rule as the rolling-window cull: sitting pets drift with an uploaded build,
+            // the rest go to their owner before the wipe deletes the carriage under them.
+            CarriagePets.settleBeforeRemoval(level, ship, driftedPets);
         }
         if (captured > 0 || deferred > 0) {
             LOGGER.info("[DungeonTrain] wipe: returned shared carriages ({} captured, {} bare-returned past "

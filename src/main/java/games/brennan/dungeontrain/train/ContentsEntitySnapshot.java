@@ -259,7 +259,10 @@ public record ContentsEntitySnapshot(
             b.minX() - 1, b.minY() - 1, b.minZ() - 1,
             b.maxX() + 1, b.maxY() + 2, b.maxZ() + 1);
         UUID subLevelId = ship.subLevelId();
+        // A pet is never frozen to disk: a snapshot dies with its carriage, and a pet must not. It stays
+        // live so a carriage removal can send it to its owner (CarriagePets).
         return level.getEntitiesOfClass(Mob.class, box, mob -> mob.isAlive()
+            && CarriagePets.ownerOf(mob) == null
             && ContentsDespawnController.isSweepable(
                 BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).toString(),
                 mob.getTags(),
