@@ -31229,6 +31229,23 @@
       "released": true,
       "released_in": "v0.1553.0",
       "released_at": "2026-10-27T04:59:42Z"
+    },
+    {
+      "id": "twitch-prompt-mentions-fix",
+      "version": "0.1554.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Twitch prompt fix",
+      "summary": "Tagging the developer or another player in chat no longer asks you to connect a Twitch channel. The Twitch prompt now only appears while you are streaming with the Live Eye.",
+      "highlights": [],
+      "pr": 2357,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
