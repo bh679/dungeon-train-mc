@@ -22,8 +22,8 @@ Authors are **players** (relay accounts, by player name), not in-game characters
 - **Slots.** r = active follow slots. More follows than slots (points reset on death): the newest
   follows are active, the rest stay saved and greyed as inactive until a point returns.
 - **Share.** When a community book spawns for the player, the chance it is an unread book by an
-  active followed author (if any are left) is `25% + 1% × active followed authors`. Otherwise the
-  normal pick. The same share applies to shared photos placed in frames. The +1% rule is not
+  active followed author (if any are left) is `15% + 2% × active followed authors`. Otherwise the
+  normal pick. The same share applies to shared photos placed in frames. The +2% rule is not
   written anywhere on the card.
 - **Library rooms.** Author-locked library rooms prefer active followed authors.
 - **Persistence.** Follows are stored on the relay against the player's account, so they survive
@@ -31,7 +31,7 @@ Authors are **players** (relay accounts, by player name), not in-game characters
 
 **Details card**
 - Description: "Follow players to find more of their books and photos."
-- Chips: `Authors 2 → 3` (r, PLAIN, with the hover preview) and `Their share 26%` (PERCENT, the
+- Chips: `Authors 2 → 3` (r, PLAIN, with the hover preview) and `Their share 17%` (PERCENT, the
   current share; previews the next point's value).
 - After the chips, once unlocked: a **Following N (M active)** button that opens the menu.
 
