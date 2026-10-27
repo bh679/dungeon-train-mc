@@ -17,6 +17,7 @@
     "SignalGetterMuteMixin",
     "PlayerSprintFlyMixin",
     "TamableAnimalTameMixin",
+    "TamableAnimalFollowTeleportMixin",
     "AbstractHorseTameMixin",
     "LightningBoltVisualOnlyMixin",
     "RegenerationSoftCapMixin",
