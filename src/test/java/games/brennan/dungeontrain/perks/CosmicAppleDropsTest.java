@@ -12,6 +12,14 @@ final class CosmicAppleDropsTest {
     private static final int GROUPS = 10_000;
 
     @Test
+    @DisplayName("apples stay shut until one unlock point is spent")
+    void opensAfterFirstUnlockPoint() {
+        assertTrue(!CosmicAppleDrops.opensAt(0));
+        assertTrue(CosmicAppleDrops.opensAt(1));
+        assertTrue(CosmicAppleDrops.opensAt(3));
+    }
+
+    @Test
     @DisplayName("about one carriage group in five draws an apple")
     void rate() {
         int hits = 0;
