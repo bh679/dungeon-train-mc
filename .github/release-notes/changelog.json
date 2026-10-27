@@ -31358,6 +31358,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "end-cold-bites-harder-second-trip",
+      "version": "0.1561.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "balance"
+      ],
+      "title": "The cold bites harder on your second trip",
+      "summary": "On your second trip around, the cold out on the train roof now closes in faster the further you go. The first stretch feels the same as before, but later on you will freeze noticeably sooner, so plan your time outside the carriages.",
+      "highlights": [
+        "The cold out on the roof builds faster later in your second trip"
+      ],
+      "pr": 2368,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
