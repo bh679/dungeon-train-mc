@@ -21,8 +21,8 @@ import java.util.Map;
 final class PointsCarriedPanel {
 
     private static final String KEY = "gui.dungeontrain.perks.death.";
-    private static final int TOP_BAND = 64;
-    private static final int TILE_W = 92, TILE_H = 30, TILE_GAP = 6, PAD = 8;
+    private static final int BAND_FADE = 14;
+    private static final int TILE_MIN_W = 56, TILE_PAD = 6, TILE_H = 30, TILE_GAP = 6, PAD = 8;
     private static final int BUTTON_W = 96, BUTTON_H = 20;
     private static final int TILE_BG = 0x14FFFFFF, TILE_BORDER = 0x33D6C496;
     private static final int VALUE = 0xFFE6D6B0, LABEL = 0xFF9A8F74;
@@ -40,8 +40,11 @@ final class PointsCarriedPanel {
     void render(GuiGraphics g, PerkTree tree, PerkCard names, PerkMenuSnapshot carried, int width, int barTop,
                 int mouseX, int mouseY, double alpha) {
         if (alpha <= 0.03) return; // Minecraft draws near-zero alpha text fully opaque
-        g.fillGradient(0, 0, width, TOP_BAND, fade(0xE0070B16, alpha), fade(0x00070B16, alpha));
         int cx = width / 2, w = Math.min(DeathScreenText.MAX_CONTENT_WIDTH, width - PAD * 2);
+        // a solid band under the text (class titles near the top would show through), fading into the sky
+        int textBottom = textBottom(carried, w);
+        g.fill(0, 0, width, textBottom, fade(0xFF070B16, alpha));
+        g.fillGradient(0, textBottom, width, textBottom + BAND_FADE, fade(0xFF070B16, alpha), fade(0x00070B16, alpha));
         DeathScreenText.drawCenteredLine(g, font, Component.translatable(KEY + "kicker"), cx, 8, fade(DeathScreenText.KICKER, alpha));
         int y = DeathScreenText.drawQuestion(g, font, question(carried), cx, w, 8 + DeathScreenText.KICKER_STEP - 4,
             fade(DeathScreenText.QUESTION, alpha));
@@ -57,10 +60,8 @@ final class PointsCarriedPanel {
         x = tile(g, x, ty, right, String.valueOf(carried.ranksBought()), "tile.ranks", alpha);
         x = tile(g, x, ty, right, String.valueOf(carried.active().size()), "tile.perks", alpha);
         String top = topPerk(carried);
-        if (top != null) {
-            tree.perk(top).ifPresent(p -> tile(g, PAD + 3 * (TILE_W + TILE_GAP), ty, right,
-                names.name(p) + " " + carried.points(top), "tile.top", alpha));
-        }
+        PerkTree.Perk topPerk = top == null ? null : tree.perk(top).orElse(null);
+        if (topPerk != null) tile(g, x, ty, right, names.name(topPerk) + " " + carried.points(top), "tile.top", alpha);
 
         buttonX = width - PAD - BUTTON_W;
         buttonY = barTop + (PerkDetailsBar.HEIGHT - BUTTON_H) / 2;
@@ -71,16 +72,26 @@ final class PointsCarriedPanel {
         return mx >= buttonX && mx < buttonX + BUTTON_W && my >= buttonY && my < buttonY + BUTTON_H;
     }
 
-    /** One stat tile: the value over its label. Returns the next tile's x; skipped when it would cross {@code right}. */
+    /** Where the kicker, question and narration end, measured the way they are drawn. */
+    private int textBottom(PerkMenuSnapshot carried, int w) {
+        int lines = font.split(DeathScreenText.styled(question(carried)), w - 8).size()
+            + font.split(DeathScreenText.styled(Component.translatable(KEY + "narration").getString()), w - 8).size();
+        return 8 + DeathScreenText.KICKER_STEP + lines * (font.lineHeight + 2) + 6;
+    }
+
+    /**
+     * One stat tile, as wide as its value or label: the value over its label. Returns the next tile's x;
+     * a tile that would cross {@code right} is left out, so a narrow screen shows the first ones only.
+     */
     private int tile(GuiGraphics g, int x, int y, int right, String value, String labelKey, double alpha) {
-        if (x + TILE_W > right) return x;
-        g.fill(x, y, x + TILE_W, y + TILE_H, fade(TILE_BG, alpha));
-        g.renderOutline(x, y, TILE_W, TILE_H, fade(TILE_BORDER, alpha));
-        String v = font.plainSubstrByWidth(value, TILE_W - 8);
-        g.drawString(font, v, x + (TILE_W - font.width(v)) / 2, y + 5, fade(VALUE, alpha), false);
-        String label = font.plainSubstrByWidth(Component.translatable(KEY + labelKey).getString(), TILE_W - 6);
-        g.drawString(font, label, x + (TILE_W - font.width(label)) / 2, y + 17, fade(LABEL, alpha), false);
-        return x + TILE_W + TILE_GAP;
+        String label = Component.translatable(KEY + labelKey).getString();
+        int w = Math.max(TILE_MIN_W, Math.max(font.width(value), font.width(label)) + TILE_PAD * 2);
+        if (x + w > right) return right;
+        g.fill(x, y, x + w, y + TILE_H, fade(TILE_BG, alpha));
+        g.renderOutline(x, y, w, TILE_H, fade(TILE_BORDER, alpha));
+        g.drawString(font, value, x + (w - font.width(value)) / 2, y + 5, fade(VALUE, alpha), false);
+        g.drawString(font, label, x + (w - font.width(label)) / 2, y + 17, fade(LABEL, alpha), false);
+        return x + w + TILE_GAP;
     }
 
     /** "N points went into M perks this life.", figures marked for the death screen's white numbers. */

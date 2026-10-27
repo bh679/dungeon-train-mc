@@ -21,17 +21,19 @@ class DeathPerksPhaseTest {
     @Test
     @DisplayName("a life with points opens on the points page; one without opens on the menu")
     void opensOnPointsOnlyWithPoints() {
-        assertEquals(DeathPerksPhase.Phase.POINTS, new DeathPerksPhase(POINTED, () -> null).phase(0));
-        assertEquals(DeathPerksPhase.Phase.UNLOCK, new DeathPerksPhase(NO_POINTS, () -> null).phase(0));
+        assertEquals(DeathPerksPhase.Phase.POINTS, new DeathPerksPhase(POINTED, () -> null, 0).phase(0));
+        assertEquals(DeathPerksPhase.Phase.UNLOCK, new DeathPerksPhase(NO_POINTS, () -> null, 0).phase(0));
     }
 
     @Test
-    @DisplayName("Next Screen drains the rings into the menu, which then takes input")
+    @DisplayName("the points page waits; Next Screen (after a second) drains the rings into the menu")
     void drainRunsToUnlock() {
-        DeathPerksPhase phase = new DeathPerksPhase(POINTED, () -> null);
+        DeathPerksPhase phase = new DeathPerksPhase(POINTED, () -> null, 0);
         assertEquals(1.0, phase.pageAlpha(0));
         assertEquals(0.0, phase.menuAlpha(0));
         assertFalse(phase.menuLive(0));
+        phase.advance(500);
+        assertEquals(DeathPerksPhase.Phase.POINTS, phase.phase(500));
         phase.advance(1000);
         assertEquals(DeathPerksPhase.Phase.DRAIN, phase.phase(1000));
         assertEquals(1.0, phase.ringsLeft(1000));
@@ -45,20 +47,21 @@ class DeathPerksPhaseTest {
     @Test
     @DisplayName("a second advance during the drain skips to the menu")
     void skipDrain() {
-        DeathPerksPhase phase = new DeathPerksPhase(POINTED, () -> null);
-        phase.advance(0);
-        phase.advance(100);
-        assertEquals(DeathPerksPhase.Phase.UNLOCK, phase.phase(100));
+        DeathPerksPhase phase = new DeathPerksPhase(POINTED, () -> null, 0);
+        phase.advance(1000);
+        phase.advance(1100);
+        assertEquals(DeathPerksPhase.Phase.UNLOCK, phase.phase(1100));
     }
 
     @Test
     @DisplayName("the points page shows the points held at death; the menu shows the live tree with none")
     void viewPerPhase() {
         PerkMenuSnapshot live = new PerkMenuSnapshot(Map.of("health", 4, "speed", 2), Map.of("health", 3), 1, 2);
-        DeathPerksPhase phase = new DeathPerksPhase(POINTED, () -> null);
+        DeathPerksPhase phase = new DeathPerksPhase(POINTED, () -> null, 0);
         assertEquals(POINTED, phase.view(live, 0));
-        phase.advance(0);
-        PerkMenuSnapshot unlock = phase.view(live, DeathPerksPhase.DRAIN_MS);
+        assertEquals(POINTED, phase.view(live, 60_000)); // never moves on by itself
+        phase.advance(1000);
+        PerkMenuSnapshot unlock = phase.view(live, 1000 + DeathPerksPhase.DRAIN_MS);
         assertTrue(unlock.active().isEmpty());
         assertEquals(0, unlock.activePoints());
         assertEquals(4, unlock.unlockLevel("health"));

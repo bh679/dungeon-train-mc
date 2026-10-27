@@ -13,6 +13,9 @@ import java.util.function.Supplier;
  * the menu, then {@link Phase#UNLOCK}: the menu with unlocking only, showing the tree as the next life
  * starts it. A life with no points opens straight on {@link Phase#UNLOCK}.
  *
+ * <p>The points page never moves on by itself: only Next Screen, Enter or Esc leave it, and not in
+ * its first {@link #READY_MS} ms, so a click or key already on its way at death cannot skip it.</p>
+ *
  * <p>The points shown are the ones held at death, frozen when the screen opens; the unlock phase reads
  * the live state, so unlocks made there show at once.</p>
  */
@@ -27,15 +30,19 @@ final class DeathPerksPhase {
     private static final long RINGS_FROM_MS = 200, RINGS_TO_MS = 1000;
     private static final long DIM_LIFTS_MS = 900;
     private static final long MENU_IN_FROM_MS = 1000;
+    /** The points page ignores Next Screen this long after it opens. */
+    static final long READY_MS = 1000;
 
     private final PerkMenuSnapshot carried;
     private final Supplier<Screen> next;
+    private final long openedAt;
     private Phase phase;
     private long drainAt = -1;
 
-    DeathPerksPhase(PerkMenuSnapshot atDeath, Supplier<Screen> next) {
+    DeathPerksPhase(PerkMenuSnapshot atDeath, Supplier<Screen> next, long openedAt) {
         this.carried = atDeath;
         this.next = next;
+        this.openedAt = openedAt;
         this.phase = atDeath.ranksBought() > 0 ? Phase.POINTS : Phase.UNLOCK;
     }
 
@@ -52,6 +59,7 @@ final class DeathPerksPhase {
 
     /** Leave the points page: start the drain. A second call during the drain skips to its end. */
     void advance(long now) {
+        if (phase == Phase.POINTS && now - openedAt < READY_MS) return;
         if (phase == Phase.POINTS) {
             phase = Phase.DRAIN;
             drainAt = now;
@@ -96,8 +104,11 @@ final class DeathPerksPhase {
         };
     }
 
-    /** Whether stars that held no points are drawn faint (the points page and the start of the drain). */
-    boolean dimsUnpointed(long now) {
+    /**
+     * Whether only the perks that held points are drawn (the points page and the start of the drain); the
+     * rest of the tree joins them once the rings have emptied.
+     */
+    boolean onlyPointed(long now) {
         Phase p = phase(now);
         return p == Phase.POINTS || p == Phase.DRAIN && now - drainAt < DIM_LIFTS_MS;
     }

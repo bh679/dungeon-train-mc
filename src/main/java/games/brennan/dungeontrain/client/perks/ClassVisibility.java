@@ -25,9 +25,16 @@ import java.util.Set;
  * @param unlocks      perk id to unlock level
  * @param active       perk id to points this life
  * @param unlockPoints Advancement Points held
+ * @param only         when set, the only perks drawn (besides the Engine), whatever else holds; null for the
+ *                     usual rules. The death screen's points page draws just the perks that held points.
  */
 public record ClassVisibility(PerkTree tree, Set<String> off, String preview, Map<String, Integer> unlocks,
-                              Map<String, Integer> active, int unlockPoints) {
+                              Map<String, Integer> active, int unlockPoints, Set<String> only) {
+
+    public ClassVisibility(PerkTree tree, Set<String> off, String preview, Map<String, Integer> unlocks,
+                           Map<String, Integer> active, int unlockPoints) {
+        this(tree, off, preview, unlocks, active, unlockPoints, null);
+    }
 
     /** Hidden classes take this share of the circle when shown only because points are held. */
     public static final double EXTRA_SHARE = 0.5;
@@ -47,6 +54,7 @@ public record ClassVisibility(PerkTree tree, Set<String> off, String preview, Ma
     /** Hidden from the drawing. The Engine always shows. */
     public boolean hidden(PerkTree.Perk p) {
         if (p.isRoot() || p.cls() == null) return false;
+        if (only != null) return !only.contains(p.id());
         if (!off.contains(p.cls()) || p.cls().equals(preview)) return false;
         if (unlocks.getOrDefault(p.id(), 0) > 0) return false;
         return !(unlockPoints > 0 && nextToUnlocked(p));

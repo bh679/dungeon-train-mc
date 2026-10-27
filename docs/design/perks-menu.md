@@ -57,11 +57,12 @@ Brennan's direction: the perks menu is the first thing a player sees after dying
 recap, and it only unlocks.
 
 - `DeathMomentScreen` hands over to `PerksScreen.openForDeath(NarrativeDeathScreen::new)`.
-- **Points page.** A life that put points into perks opens on a death page over the sky: the stars that
-  held points lit with full rings (the rest faint), "The points you carried" in the recap's voice, and
+- **Points page.** A life that put points into perks opens on a death page over the sky: only the stars
+  that held points, with full rings, "The points you carried" in the recap's voice, and
   tiles along the bottom (Active Points spent, points put in, perks powered, the perk with the most).
-  Next Screen plays the **drain** (`DeathPerksPhase`): the framing fades, the rings empty, the faint
-  stars come back and the menu fades in, all on the same sky. A click skips it.
+  It never moves on by itself; Next Screen, Enter or Esc leave it (not Space, the jump key, and nothing
+  in its first second). Next Screen plays the **drain** (`DeathPerksPhase`): the framing fades, the rings empty, the rest of
+  the tree swings in and the menu fades in, all on the same sky. A click skips it.
 - **Unlock menu.** The tree as the next life starts it (no points): Unlock only, no Activate button and
   no Active Points counter; a level can be raised without filling it first, since the points are gone.
   Next Screen (top right) or Esc opens the recap; closing to the game is not possible while dead.

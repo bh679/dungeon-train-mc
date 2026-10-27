@@ -157,7 +157,7 @@ public final class PerksScreen extends Screen {
             mc.setScreen(next.get());
             return;
         }
-        mc.setScreen(new PerksScreen(false, new DeathPerksPhase(PerkMenuSnapshot.current(), next)));
+        mc.setScreen(new PerksScreen(false, new DeathPerksPhase(PerkMenuSnapshot.current(), next, Util.getMillis())));
         mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.AMETHYST_BLOCK_CHIME, 0.8F, 0.4F));
     }
 
@@ -200,10 +200,6 @@ public final class PerksScreen extends Screen {
         return death == null ? 1 : death.menuAlpha(frameAt);
     }
 
-    /** A star with no points, drawn faint while the points page is up. */
-    private boolean dimmed(PerkTree.Perk p) {
-        return death != null && !p.isRoot() && death.dimsUnpointed(frameAt) && death.carried().points(p.id()) == 0;
-    }
 
     // ---- state -----------------------------------------------------------------------------------------
 
@@ -357,7 +353,8 @@ public final class PerksScreen extends Screen {
         String classHover = listHover != null ? listHover : titleHover;
         preview = classHover != null && off.contains(classHover) ? classHover : null;
 
-        vis = new ClassVisibility(tree, off, preview, snap.unlocks(), snap.active(), snap.unlockPoints());
+        vis = new ClassVisibility(tree, off, preview, snap.unlocks(), snap.active(), snap.unlockPoints(),
+            death != null && death.onlyPointed(now) ? death.carried().active().keySet() : null);
         drawn = tree.withPositions(layout.positions(tree, vis, now));
         hovered = card.contains(mouseX, mouseY) || classesList.rowHover(mouseX, mouseY) != null || headEyeHover
             || titleHover != null ? null : starAt(mouseX, mouseY);
@@ -395,13 +392,13 @@ public final class PerksScreen extends Screen {
             boolean sel = p.id().equals(selected), hov = p.id().equals(hovered) || p.id().equals(cardFor);
             boolean glows = glow != null && glow.equals(p.cls());
             StarPainter.render(g, font, drawn, p, snap, view, width, skyH(),
-                new StarPainter.Look(hov, sel, names.get(p.id()), spendable, vis.ghost(p) || dimmed(p), glows), unlockedAt, pointAt, now, fade);
+                new StarPainter.Look(hov, sel, names.get(p.id()), spendable, vis.ghost(p), glows), unlockedAt, pointAt, now, fade);
         }
         // names after every star, so no dot covers a label
         for (PerkTree.Perk p : labels ? drawn.perks() : List.<PerkTree.Perk>of()) {
             int[] at = names.get(p.id());
             if (at == null || vis.hidden(p)) continue;
-            StarPainter.renderName(g, font, drawn, p, snap, at, glow != null && glow.equals(p.cls()), vis.ghost(p) || dimmed(p), labelFade);
+            StarPainter.renderName(g, font, drawn, p, snap, at, glow != null && glow.equals(p.cls()), vis.ghost(p), labelFade);
         }
 
         if (menuFade > 0.03) renderHeader(g, snap, now, menuFade, mouseX, mouseY);
@@ -517,7 +514,7 @@ public final class PerksScreen extends Screen {
             if (p.id().equals(selected)) return 0;
             if (p.id().equals(hovered) || p.id().equals(cardFor)) return 1;
             if (glow != null && glow.equals(p.cls())) return 2;
-            if (death != null && death.dimsUnpointed(frameAt) && death.carried().points(p.id()) > 0) return 2;
+            if (death != null && death.onlyPointed(frameAt)) return 2;
             if (last.unlockLevel(p.id()) > 0) return 3;
             return 4;
         };
@@ -707,8 +704,8 @@ public final class PerksScreen extends Screen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (deathPage()) {
-            if (keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER
-                || keyCode == GLFW.GLFW_KEY_SPACE) advanceDeath();
+            // not Space: it is the jump key, and may still be held from the moment of death
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) advanceDeath();
             return true;
         }
         if (PerksHotkeyClient.key().matches(keyCode, scanCode) || keyCode == GLFW.GLFW_KEY_ESCAPE) {
