@@ -236,10 +236,52 @@ public final class CarriagePets {
         pet.setDeltaMovement(Vec3.ZERO);
         pet.resetFallDistance();
         if (pet instanceof Mob mob) mob.getNavigation().stop();
-        boolean moved = pet.teleportTo(owner.serverLevel(), owner.getX(), owner.getY(), owner.getZ(),
-                Set.of(), pet.getYRot(), pet.getXRot());
-        LOGGER.info("[DungeonTrain] Pet {} sent to owner {} from {} ({})",
-                typeId(pet), owner.getGameProfile().getName(), from, moved ? "ok" : "refused");
+        // Vanilla's own follow-teleport first: it picks a free spot beside a grounded owner.
+        Vec3 before = pet.position();
+        if (pet instanceof TamableAnimal tamable && pet.level() == owner.level() && owner.onGround()) {
+            tamable.tryToTeleportToOwner();
+            if (!pet.position().equals(before)) {
+                logSentHome(typeId(pet), owner, from);
+                return;
+            }
+        }
+        Vec3 at = landingNear(owner);
+        if (pet.teleportTo(owner.serverLevel(), at.x, at.y, at.z, Set.of(), pet.getYRot(), pet.getXRot())) {
+            logSentHome(typeId(pet), owner, from);
+        } else {
+            LOGGER.warn("[DungeonTrain] Pet {} could not be sent to owner {} from {}",
+                    typeId(pet), owner.getGameProfile().getName(), from);
+        }
+    }
+
+    private static void logSentHome(String type, ServerPlayer owner, String from) {
+        LOGGER.info("[DungeonTrain] Pet {} sent to owner {} from {}", type, owner.getGameProfile().getName(), from);
+    }
+
+    /** How far below a flying owner to look for ground a pet can land on. */
+    static final int LANDING_SCAN_BLOCKS = 96;
+
+    /**
+     * Where a pet lands beside {@code owner}: at their feet when they stand on something, otherwise on
+     * the first ground below them. A pet dropped at a flying owner's position falls to its death.
+     */
+    static Vec3 landingNear(ServerPlayer owner) {
+        if (owner.onGround() && !owner.isSpectator()) return owner.position();
+        // A carriage deck is not a world block, so the scan below would fall straight through it to
+        // the track bed. An owner riding one is standing on it: put the pet at their feet.
+        if (!owner.isSpectator() && SableEntityCarry.carrier(owner) != null) return owner.position();
+        ServerLevel level = owner.serverLevel();
+        BlockPos.MutableBlockPos p = owner.blockPosition().mutable();
+        int floor = Math.max(level.getMinBuildHeight(), p.getY() - LANDING_SCAN_BLOCKS);
+        for (; p.getY() > floor; p.move(0, -1, 0)) {
+            BlockPos below = p.below();
+            if (level.getBlockState(below).isFaceSturdy(level, below, net.minecraft.core.Direction.UP)
+                    && level.getBlockState(p).getCollisionShape(level, p).isEmpty()
+                    && level.getBlockState(p.above()).getCollisionShape(level, p.above()).isEmpty()) {
+                return Vec3.atBottomCenterOf(p);
+            }
+        }
+        return owner.position();
     }
 
     /** Respawn a saved pet beside its owner — the contents-despawn restore idiom, at the owner. */
@@ -248,18 +290,20 @@ public final class CarriagePets {
         CompoundTag nbt = stored.copy();
         nbt.remove(ContentsEntitySnapshot.KEY_SHIP_POS);
         nbt.remove(ContentsEntitySnapshot.KEY_SHIP_YROT);
+        Vec3 at = landingNear(owner);
         ListTag pos = new ListTag();
-        pos.add(DoubleTag.valueOf(owner.getX()));
-        pos.add(DoubleTag.valueOf(owner.getY()));
-        pos.add(DoubleTag.valueOf(owner.getZ()));
+        pos.add(DoubleTag.valueOf(at.x));
+        pos.add(DoubleTag.valueOf(at.y));
+        pos.add(DoubleTag.valueOf(at.z));
         nbt.put("Pos", pos);
         Entity pet = EntityType.loadEntityRecursive(nbt, to, e -> e);
         if (pet == null) {
             LOGGER.warn("[DungeonTrain] Pet {} from a removed carriage could not be loaded", nbt.getString("id"));
             return;
         }
-        pet.moveTo(owner.getX(), owner.getY(), owner.getZ(), owner.getYRot(), 0.0f);
+        pet.moveTo(at.x, at.y, at.z, owner.getYRot(), 0.0f);
         pet.setDeltaMovement(Vec3.ZERO);
+        pet.resetFallDistance();
         if (!to.tryAddFreshEntityWithPassengers(pet)) {
             // The same UUID is already loaded — re-identify, as the despawn restore does.
             pet.getSelfAndPassengers().forEach(e -> e.setUUID(UUID.randomUUID()));
