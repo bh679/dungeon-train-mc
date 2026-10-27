@@ -110,14 +110,14 @@ public abstract class EnchantmentMenuCrafterMixin extends AbstractContainerMenu 
     @Inject(method = "getEnchantmentList", at = @At("HEAD"))
     private void dungeontrain$enterRoll(RegistryAccess registryAccess, ItemStack stack, int slot, int cost,
                                         CallbackInfoReturnable<List<EnchantmentInstance>> cir) {
-        EnchantContext.pushMaxLevelBonus(CrafterPerks.maxLevelBonus(CrafterRank.enchantMax(dungeontrain$player)));
+        EnchantContext.pushEnchantMaxRank(CrafterRank.enchantMax(dungeontrain$player));
     }
 
     /** Re-enchant: drop candidates that clash with the item's current enchantments, then leave the roll context. */
     @Inject(method = "getEnchantmentList", at = @At("RETURN"))
     private void dungeontrain$leaveRoll(RegistryAccess registryAccess, ItemStack stack, int slot, int cost,
                                         CallbackInfoReturnable<List<EnchantmentInstance>> cir) {
-        EnchantContext.popMaxLevelBonus();
+        EnchantContext.popEnchantMaxRank();
         List<EnchantmentInstance> rolled = cir.getReturnValue();
         if (rolled == null || rolled.isEmpty()) return;
         if (!CrafterPerks.allowsReenchant(CrafterRank.reenchant(dungeontrain$player))) return;

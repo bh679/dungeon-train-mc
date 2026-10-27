@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin;
 
 import games.brennan.dungeontrain.perks.effects.crafter.CrafterPerks;
 import games.brennan.dungeontrain.perks.effects.crafter.CrafterRank;
+import games.brennan.dungeontrain.perks.effects.crafter.EnchantGroups;
 import net.minecraft.core.Holder;
 import games.brennan.dungeontrain.perks.effects.crafter.CrafterAnvilMenu;
 import net.minecraft.world.entity.player.Abilities;
@@ -127,7 +128,9 @@ public abstract class AnvilMenuCrafterMixin extends ItemCombinerMenu implements 
         int vanilla = enchantment.getMaxLevel();
         int onInputs = Math.max(dungeontrain$levelOn(this.inputSlots.getItem(0), enchantment),
                                 dungeontrain$levelOn(this.inputSlots.getItem(1), enchantment));
-        return CrafterPerks.anvilLevelCap(vanilla, CrafterRank.enchantMax(this.player), onInputs);
+        int bonus = CrafterPerks.groupBonus(CrafterRank.enchantMax(this.player),
+            EnchantGroups.indexOf(this.player.registryAccess(), enchantment));
+        return CrafterPerks.anvilLevelCap(vanilla, bonus, onInputs);
     }
 
     @Unique

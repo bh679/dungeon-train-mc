@@ -40,6 +40,7 @@ class PerkStatsTest {
         assertEquals(10.0, at("live-eye-safe-duration", "protected", 0), 1e-9);
         assertEquals(10.0, at("live-eye-safe-duration", "community_vote", 0), 1e-9);
         assertEquals(12.5, at("live-eye-safe-duration", "protected", 1), 1e-9);
+        assertEquals(12.5, at("live-eye-safe-duration", "community_vote", 1), 1e-9);
     }
 
     @Test
