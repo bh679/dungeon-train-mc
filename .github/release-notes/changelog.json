@@ -31645,6 +31645,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "deeper-dark-wider-reach",
+      "version": "0.1577.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "The deeper dark spreads",
+      "summary": "The deeper dark no longer keeps to its own stretch of the line. Keep an eye out for its sculk and gloom in places you thought you knew.",
+      "highlights": [],
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
