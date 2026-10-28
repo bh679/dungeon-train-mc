@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.SpheresProgressionConfig;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.wind.EndFrostbite;
@@ -60,7 +61,7 @@ public final class SpheresCometEvents {
             double chance = chanceAt(x);
             if (chance <= 0.0 || level.random.nextDouble() >= chance) continue;
             launch(level, train, watcher.position(),
-                level.random.nextDouble() < SpheresComets.aimedShare(lapAt(x)) ? Aim.HIT : Aim.MISS);
+                level.random.nextDouble() < SpheresComets.aimedShare(lapAt(x), depthAt(x)) ? Aim.HIT : Aim.MISS);
             if (live.size() >= MAX_LIVE) return;
         }
     }
@@ -97,6 +98,14 @@ public final class SpheresCometEvents {
     public static double chanceAt(int x) {
         long lap = lapAt(x);
         return SpheresComets.chancePerTick(lap, WindZones.endSkyAt(x), WindZones.spheresVoidAt(x));
+    }
+
+    /** How far through the spheres band's End-sky stretch world X is, 0..1 (where lap 0's comets fall). */
+    private static double depthAt(int x) {
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        long end = cycle.spheresLen() - Math.max(0, SpheresProgressionConfig.exitVoidBlocks());
+        return SpheresComets.firstLapDepth(cycle.spheresCoreOffset(x),
+            SpheresProgressionConfig.segments().endSkyStart(), end);
     }
 
     /** The lap (0-based) of the cycle at world X. */

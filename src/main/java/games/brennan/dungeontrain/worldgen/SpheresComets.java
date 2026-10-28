@@ -28,8 +28,9 @@ public final class SpheresComets {
     static final double MIN_INTERVAL_SECONDS = 2.0;
     /** Share of comets aimed at the train ({@link #aimedShare}); the rest cross the sky on near-miss lines. */
     public static final double AIMED_SHARE = 1.0 / 3.0;
-    /** Lower in lap 0, where comets are new and rare. */
-    public static final double FIRST_LAP_AIMED_SHARE = 1.0 / 6.0;
+    /** Lower in lap 0, where comets are new: from this at the first comets, climbing to the next by the band's end. */
+    public static final double FIRST_LAP_AIMED_START = 1.0 / 60.0;
+    public static final double FIRST_LAP_AIMED_END = 1.0 / 6.0;
     /** A comet this far below the train's lowest carriage (blocks) has missed it for good and ends. */
     public static final double MISS_DROP_BLOCKS = 16.0;
     /** Ticks for a comet's block to make one full turn as it falls. */
@@ -71,9 +72,25 @@ public final class SpheresComets {
         return 1.0 / (intervalSeconds(cycleIndex) * TICKS_PER_SECOND);
     }
 
-    /** Share of lap {@code cycleIndex}'s comets aimed at the train. */
-    public static double aimedShare(long cycleIndex) {
-        return cycleIndex <= 0L ? FIRST_LAP_AIMED_SHARE : AIMED_SHARE;
+    /**
+     * Share of lap {@code cycleIndex}'s comets aimed at the train. In lap 0 it climbs in a straight line with
+     * {@code depth} (0 where comets start, 1 where the band's End sky ends; see {@link #firstLapDepth}) from
+     * {@value #FIRST_LAP_AIMED_START} to {@value #FIRST_LAP_AIMED_END}; {@value #AIMED_SHARE} after.
+     */
+    public static double aimedShare(long cycleIndex, double depth) {
+        if (cycleIndex > 0L) return AIMED_SHARE;
+        double d = Math.max(0.0, Math.min(1.0, depth));
+        return FIRST_LAP_AIMED_START + (FIRST_LAP_AIMED_END - FIRST_LAP_AIMED_START) * d;
+    }
+
+    /**
+     * How far through the band's comet stretch core offset {@code coreOffset} is, 0..1: 0 where the End sky
+     * starts ({@code endSkyStart}, where lap 0's comets begin), 1 where it ends ({@code endSkyEnd}).
+     */
+    public static double firstLapDepth(long coreOffset, long endSkyStart, long endSkyEnd) {
+        if (coreOffset < 0L || endSkyEnd <= endSkyStart) return 0.0;
+        double d = (double) (coreOffset - endSkyStart) / (endSkyEnd - endSkyStart);
+        return Math.max(0.0, Math.min(1.0, d));
     }
 
     /**

@@ -99,9 +99,20 @@ class SpheresCometsTest {
     }
 
     @Test
-    void fewerAimedAtTheTrainInTheFirstLap() {
-        assertEquals(1.0 / 6.0, SpheresComets.aimedShare(0L), 1e-12);
-        assertEquals(1.0 / 3.0, SpheresComets.aimedShare(1L), 1e-12);
-        assertEquals(1.0 / 3.0, SpheresComets.aimedShare(5L), 1e-12);
+    void firstLapAimsMoreAtTheTrainTheDeeperYouGo() {
+        assertEquals(1.0 / 60.0, SpheresComets.aimedShare(0L, 0.0), 1e-12);
+        assertEquals(1.0 / 6.0, SpheresComets.aimedShare(0L, 1.0), 1e-12);
+        assertEquals((1.0 / 60.0 + 1.0 / 6.0) / 2.0, SpheresComets.aimedShare(0L, 0.5), 1e-12);
+        assertEquals(1.0 / 6.0, SpheresComets.aimedShare(0L, 3.0), 1e-12, "clamped past the end");
+        assertEquals(1.0 / 3.0, SpheresComets.aimedShare(1L, 0.0), 1e-12, "later laps ignore depth");
+        assertEquals(1.0 / 3.0, SpheresComets.aimedShare(5L, 1.0), 1e-12);
+    }
+
+    @Test
+    void depthRunsAcrossTheEndSkyStretch() {
+        assertEquals(0.0, SpheresComets.firstLapDepth(-1L, 1000L, 3000L), 1e-12, "outside the core");
+        assertEquals(0.0, SpheresComets.firstLapDepth(500L, 1000L, 3000L), 1e-12);
+        assertEquals(0.5, SpheresComets.firstLapDepth(2000L, 1000L, 3000L), 1e-12);
+        assertEquals(1.0, SpheresComets.firstLapDepth(3500L, 1000L, 3000L), 1e-12);
     }
 }
