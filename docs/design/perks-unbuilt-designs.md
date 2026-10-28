@@ -145,3 +145,40 @@ gives its own buffs.
   have a higher amplifier. Reuse the friend test from Share Hearts / Good Gifter.
 - Card: `PerksScreen`'s chip row needs a chip kind that lists effects and is clickable.
 
+### Save Ally (tier 4) — CONFIRMED 2026-10-28
+
+**How it works**
+- A friend (player, PlayerMob or tamed pet) within Range who takes a killing hit is saved exactly
+  as a totem of undying would save them: left at one heart (2 health), Regeneration II 45 s,
+  Absorption II 40 s, Fire Resistance 40 s, totem flash and sound on them.
+- The cooldown (`Every`) is the Lover's, not per friend: one save, then nothing for that long.
+  No chance roll. Not the Lover themself. Void and `/kill` deaths are not saved. Works in one-life.
+- Ladder (points 1 to 7 set by hand; from 8 the wait eases toward 8 min and never reaches it):
+
+  | r | Range | Every |
+  |---|-------|-------|
+  | 1 | 6 blocks | 30 min |
+  | 2 | 7 | 25 |
+  | 3 | 8 | 21 |
+  | 4 | 8 | 19 |
+  | 5 | 9 | 17.5 |
+  | 6 | 9 | 16.5 |
+  | 7 | 10 | 16 |
+  | 8+ | +1 block every 2 points (10, 10, 11, 11, 12, …) | `8 + (prev − 8) × 0.94` each point: 15.5, 15.1, 14.6, 14.2, 13.9, … (20: 11.6, 30: 9.9, 50: 8.6) |
+
+  No two points are the same; no cap.
+
+**Details card**
+- Description: "Once in a while, a friend who dies near you is saved like a totem would."
+- Chips: `Range 9 blocks → 9` (BLOCKS) and `Every 17.5 min → 16.5 min` (MINUTES, shown to one
+  decimal, e.g. `15.1 min`; whole minutes drop the `.0`).
+
+**Build notes**
+- Hook `LivingDeathEvent` (like `KnightCombatEvents.onKill`): if the victim is a friend of a
+  Lover with the perk within Range and that Lover's cooldown has passed, cancel the event,
+  `setHealth(1.0F)`, clear effects as the totem does, add the three totem effects, and send the
+  totem packet (`ClientboundEntityEventPacket` id 35) so the flash and sound play.
+- Cooldown: last-save game time stored per Lover in an attachment that is **not** copyOnDeath
+  (a new life starts ready).
+- `PerkStats` MINUTES unit needs a fractional form for this chip.
+
