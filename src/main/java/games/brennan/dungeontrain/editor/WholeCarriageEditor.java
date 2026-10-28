@@ -144,7 +144,7 @@ public final class WholeCarriageEditor {
         List<String> rooms = WholeCarriageRegistry.ids();
         Vec3i roomBox = plotSize(WholeKind.ROOM, dims);
         for (int i = 0; i < rooms.size(); i++) {
-            if (inBox(pos, slotOrigin(WholeKind.ROOM, i, dims), roomBox)) {
+            if (EditorPlotBox.contains(pos, slotOrigin(WholeKind.ROOM, i, dims), roomBox)) {
                 return new PlotLocation(WholeKind.ROOM, rooms.get(i),
                     new Template.WholeCarriage(new WholeCarriage(rooms.get(i))));
             }
@@ -152,7 +152,7 @@ public final class WholeCarriageEditor {
         List<String> groups = CarriageGroupRegistry.ids();
         Vec3i groupBox = plotSize(WholeKind.GROUP, dims);
         for (int i = 0; i < groups.size(); i++) {
-            if (inBox(pos, slotOrigin(WholeKind.GROUP, i, dims), groupBox)) {
+            if (EditorPlotBox.contains(pos, slotOrigin(WholeKind.GROUP, i, dims), groupBox)) {
                 return new PlotLocation(WholeKind.GROUP, groups.get(i),
                     new Template.CarriageGroup(new CarriageGroup(groups.get(i))));
             }
@@ -160,18 +160,12 @@ public final class WholeCarriageEditor {
         List<String> halves = games.brennan.dungeontrain.train.WholeHalfRegistry.ids();
         Vec3i halfBox = plotSize(WholeKind.HALF, dims);
         for (int i = 0; i < halves.size(); i++) {
-            if (inBox(pos, slotOrigin(WholeKind.HALF, i, dims), halfBox)) {
+            if (EditorPlotBox.contains(pos, slotOrigin(WholeKind.HALF, i, dims), halfBox)) {
                 return new PlotLocation(WholeKind.HALF, halves.get(i),
                     new Template.WholeHalf(new WholeCarriage(halves.get(i))));
             }
         }
         return null;
-    }
-
-    static boolean inBox(BlockPos pos, BlockPos o, Vec3i box) {
-        return pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + box.getX()
-            && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + box.getY() + 2
-            && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + box.getZ();
     }
 
     // ---- stamp / clear --------------------------------------------------------------------------
@@ -294,7 +288,7 @@ public final class WholeCarriageEditor {
             LOGGER.warn("[DungeonTrain] Whole editor enter: unknown template '{}'", model.id());
             return;
         }
-        CarriageEditor.rememberReturn(player);
+        EditorSessions.rememberReturn(player);
         if (stamp) stampPlot(overworld, model, dims);
         Vec3i footprint = model.plotSize(dims);
         // A half's doorways sit on its own, longer box.
@@ -322,14 +316,8 @@ public final class WholeCarriageEditor {
             overworld, origin, box.getX(), box.getY(), box.getZ());
         EditorRelaySave.afterSave(player, new Template.WholeCarriage(room));
         LOGGER.info("[DungeonTrain] Whole editor save: {} -> room {}", player.getName().getString(), room.id());
-        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
-        try {
-            WholeCarriageTemplateStore.saveToSource(room, template);
-            return SaveResult.written();
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Whole editor save: source write failed for {}: {}", room.id(), e.toString());
-            return SaveResult.failed(e.getMessage());
-        }
+        return EditorSave.toSource("Whole editor save: room " + room.id(),
+            () -> WholeCarriageTemplateStore.saveToSource(room, template));
     }
 
     /** Capture {@code group}'s plot and persist it. */
@@ -345,15 +333,10 @@ public final class WholeCarriageEditor {
         saveSidecars(WholeKind.HALF, half.id(), box);
         EditorPlotSnapshots.capture(snapshotKey(WholeKind.HALF, half.id()),
             overworld, origin, box.getX(), box.getY(), box.getZ());
+        EditorRelaySave.afterSave(player, new Template.WholeHalf(half));
         LOGGER.info("[DungeonTrain] Whole editor save: {} -> half {}", player.getName().getString(), half.id());
-        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
-        try {
-            WholeHalfTemplateStore.saveToSource(half, template);
-            return SaveResult.written();
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Whole editor save: source write failed for {}: {}", half.id(), e.toString());
-            return SaveResult.failed(e.getMessage());
-        }
+        return EditorSave.toSource("Whole editor save: half " + half.id(),
+            () -> WholeHalfTemplateStore.saveToSource(half, template));
     }
 
     public static SaveResult saveGroup(ServerPlayer player, CarriageGroup group) throws IOException {
@@ -372,14 +355,8 @@ public final class WholeCarriageEditor {
         EditorRelaySave.afterSave(player, new Template.CarriageGroup(group));
         LOGGER.info("[DungeonTrain] Whole editor save: {} -> group {} ({} carriages)",
             player.getName().getString(), group.id(), n);
-        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
-        try {
-            CarriageGroupTemplateStore.saveToSource(group, template);
-            return SaveResult.written();
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Whole editor save: source write failed for {}: {}", group.id(), e.toString());
-            return SaveResult.failed(e.getMessage());
-        }
+        return EditorSave.toSource("Whole editor save: group " + group.id(),
+            () -> CarriageGroupTemplateStore.saveToSource(group, template));
     }
 
     /**

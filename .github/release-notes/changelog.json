@@ -31315,9 +31315,9 @@
       "highlights": [],
       "pr": 2362,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
     },
     {
       "id": "mob-haste-slower",
@@ -31333,9 +31333,9 @@
       "highlights": [],
       "pr": 2363,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
     },
     {
       "id": "advancement-progress-list",
@@ -31355,9 +31355,9 @@
       ],
       "pr": 2366,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
     },
     {
       "id": "balance-tweak-2026-10-27",
@@ -31372,9 +31372,9 @@
       "highlights": [],
       "pr": 2368,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
     },
     {
       "id": "replay-mod-keeps-camera",
@@ -31389,9 +31389,9 @@
       "highlights": [],
       "pr": 2370,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
     },
     {
       "id": "fade-terrain-lag-fix",
@@ -31410,6 +31410,219 @@
       ],
       "pr": 2371,
       "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
+    },
+    {
+      "id": "exploration-list-and-nether-variety",
+      "version": "0.1564.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world",
+        "advancements"
+      ],
+      "title": "Exploration fix",
+      "summary": "A hidden advancement is fairer, and the world has a little more variety further along.",
+      "highlights": [],
+      "pr": 2372,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
+    },
+    {
+      "id": "dimensional-carriage-copies-stay-changed",
+      "version": "0.1565.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train",
+        "loot"
+      ],
+      "title": "Dimensional carriage fix",
+      "summary": "Rooms inside a dimensional carriage now stay as you left them, including the parts you changed from the room next door. Step back onto the train and come back, and what you took or broke is still gone.",
+      "highlights": [],
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1565.0",
+      "released_at": "2026-10-27T16:41:08Z"
+    },
+    {
+      "id": "live-eye-removed-takeover",
+      "version": "0.1566.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Taking off the Live Eye passes the stream on",
+      "summary": "When a streamer takes off their Live Eye, anyone watching with a TV on their head is now offered the stream, just like when a streamer dies. First click wins.",
+      "highlights": [],
+      "pr": 2375,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1567.0",
+      "released_at": "2026-10-28T04:54:28Z"
+    },
+    {
+      "id": "dimensional-carriage-explosion-fix",
+      "version": "0.1566.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage fix",
+      "summary": "Explosions inside a dimensional carriage now leave the same damage everywhere they should, so a wall you blew open stays open.",
+      "highlights": [],
+      "pr": 2376,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1567.0",
+      "released_at": "2026-10-28T04:54:28Z"
+    },
+    {
+      "id": "reload-settle-rider-fling",
+      "version": "0.1568.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "No more sudden jumps when revisiting carriages",
+      "summary": "Walking back along the train and then forward again could suddenly throw you several carriages ahead, into the walls of a carriage you had not reached yet. Carriages you return to now stay exactly where they belong, and so do you.",
+      "highlights": [],
+      "pr": 2378,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1568.0",
+      "released_at": "2026-10-28T05:57:48Z"
+    },
+    {
+      "id": "streamer-box-stream-switching",
+      "version": "0.1569.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Watch the other stream while you stream",
+      "summary": "While you stream and another player is live too, the box in your corner can now show your stream, theirs, both or nothing.",
+      "highlights": [
+        "Click the box in your inventory to switch it, or pick where it starts in Options, Stream.",
+        "In your inventory the box now sits behind your menus and comes to the front when you hover it."
+      ],
+      "pr": 2379,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1569.0",
+      "released_at": "2026-10-28T06:41:56Z"
+    },
+    {
+      "id": "echo-text-tweak",
+      "version": "0.1570.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Text fix",
+      "summary": "A small text fix.",
+      "highlights": [],
+      "pr": 2381,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "fallen-mobs-stay-on-tracks",
+      "version": "0.1571.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Mobs that fall onto the tracks stay there",
+      "summary": "Mobs knocked off the train onto the tracks near you no longer vanish. They stay down on the rails and get slowly hurt while carriages roll over them.",
+      "highlights": [],
+      "pr": 2384,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "read-one-book-from-stack",
+      "version": "0.1572.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "books"
+      ],
+      "title": "Book stack fix",
+      "summary": "Reading a book from a stack of identical copies now burns only the copy you read. The rest stay in your inventory to read later.",
+      "highlights": [],
+      "pr": 2382,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "note-story-once-per-life",
+      "version": "0.1572.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "books"
+      ],
+      "title": "Note story fix",
+      "summary": "A note's story no longer arrives twice in the same life.",
+      "highlights": [],
+      "pr": 2382,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "fluid-barrier-tick-cache",
+      "version": "0.1573.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Smoother ride near water",
+      "summary": "Crossing rivers, lakes and oceans is easier on the server: the train no longer costs extra tick time while the water around it settles. Water still stays out of the carriages.",
+      "highlights": [
+        "Fewer freezes when the world around the train fills with water."
+      ],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2383,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-shared-plot-helpers",
+      "version": "0.1574.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Editor housekeeping",
+      "summary": "The Train Editor's plots share one set of plumbing now, whichever kind of template you are working on. Leaving the editor takes you straight back to where you came in, however many areas you wandered through.",
+      "highlights": [
+        "One exit from anywhere in the editor."
+      ],
+      "pr": 2385,
+      "date": "2026-10-28",
       "released": false,
       "released_in": null,
       "released_at": null

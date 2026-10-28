@@ -43,12 +43,25 @@ public final class TerraOmnia {
     private static final List<String> MOD_ORDER = List.of("biomesoplenty", "betternether", "betterend", "deeperdarker");
 
     /**
-     * Registry entries no world ever places, so nobody could stand in them: the superflat void preset's biome,
-     * and TerraBlender's stand-in for biomes it resolves later.
+     * Registry entries a rider can never be in, so Terra Omnia never asks for them: the superflat void preset's
+     * biome and TerraBlender's stand-in for biomes it resolves later (no world places either); BetterEnd's cave
+     * biomes, which only exist underground, never at the track; and BetterNether's edge and variant sub-biomes,
+     * which DT's Nether never places ({@code BetterNetherCoreBiomes#isStandaloneBiomePath}). A track probe over
+     * 150 cycles found none of them.
      */
     static final Set<ResourceLocation> EXCLUDED = Set.of(
         ResourceLocation.withDefaultNamespace("the_void"),
-        ResourceLocation.fromNamespaceAndPath("terrablender", "deferred_placeholder"));
+        ResourceLocation.fromNamespaceAndPath("terrablender", "deferred_placeholder"),
+        ResourceLocation.fromNamespaceAndPath("betterend", "empty_aurora_cave"),
+        ResourceLocation.fromNamespaceAndPath("betterend", "empty_end_cave"),
+        ResourceLocation.fromNamespaceAndPath("betterend", "empty_smaragdant_cave"),
+        ResourceLocation.fromNamespaceAndPath("betterend", "jade_cave"),
+        ResourceLocation.fromNamespaceAndPath("betterend", "lush_aurora_cave"),
+        ResourceLocation.fromNamespaceAndPath("betterend", "lush_smaragdant_cave"),
+        ResourceLocation.fromNamespaceAndPath("betternether", "nether_mushroom_forest_edge"),
+        ResourceLocation.fromNamespaceAndPath("betternether", "nether_swampland_terraces"),
+        ResourceLocation.fromNamespaceAndPath("betternether", "upside_down_forest_cleared"),
+        ResourceLocation.fromNamespaceAndPath("betternether", "wart_forest_edge"));
 
     private static final int OVERWORLD = 0;
     private static final int NETHER = 1;

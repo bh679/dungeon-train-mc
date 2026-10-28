@@ -278,6 +278,29 @@ final class TrainTransformProviderTest {
     }
 
     @Test
+    @DisplayName("reload settle: one call after a cull gap lands on the true slot whatever stale pose the body came back at, and a same-tick repeat is a no-op")
+    void nextTransform_reloadSettle_firstCallAfterGapLandsOnCanonical() {
+        TrainTransformProvider p = newProvider();
+        tick(p, 0);
+        tick(p, 1);
+        tick(p, 2);
+        // Culled after tick 2; Sable restores the body at tick 200 wherever it was filed — here
+        // deliberately far from both the cull pose and the true slot.
+        Vector3d stale = new Vector3d(1000 + 2.0 * 2 * DT, 64, 0);
+        Vector3d pivot = new Vector3d(2.0e7, 100, 2.0e7);
+        KinematicDriver.TickOutput settled = p.nextTransform(
+            new KinematicDriver.TickInput(stale, new Quaterniond(), pivot, 200));
+        double trueSlot = 1000.0 + 2.0 * 200 * DT;
+        assertEquals(trueSlot, settled.position().x(), 1e-6, "settle ignores where Sable put the body");
+        // The kinematic ticker may run again in the same game tick after the settle: same answer.
+        KinematicDriver.TickOutput again = p.nextTransform(
+            new KinematicDriver.TickInput(settled.position(), new Quaterniond(), pivot, 200));
+        assertEquals(trueSlot, again.position().x(), 1e-6, "same-tick repeat is idempotent");
+        // And the next contiguous tick is one plain step, not a second catch-up.
+        assertEquals(trueSlot + 2.0 * DT, tick(p, 201), 1e-6);
+    }
+
+    @Test
     @DisplayName("no gap: contiguous ticks extrapolate identically to a never-culled driver")
     void nextTransform_noGap_matchesContinuousExtrapolation() {
         TrainTransformProvider p = newProvider();

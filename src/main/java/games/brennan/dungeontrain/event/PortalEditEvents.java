@@ -5,10 +5,13 @@ import games.brennan.dungeontrain.portal.PortalEditMirror;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.util.BlockSnapshot;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.ExplosionEvent;
 
 /**
  * The twin half of hallway-portal edit mirroring: an edit to a twin corridor's blocks is copied into
@@ -19,6 +22,9 @@ import net.neoforged.neoforge.event.level.BlockEvent;
  * job for the editor's mirror axes. The other direction is fed from Sable's per-block-change hook
  * instead, because a carriage's blocks live in a sub-level plot rather than the world; see
  * {@link PortalEditMirror}.</p>
+ *
+ * <p>The same events also tell {@link PortalCarriageEvents#markTouchedAt} which room copy a player
+ * has changed, so the copy is remembered even when they never stood in it.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PortalEditEvents {
@@ -29,6 +35,7 @@ public final class PortalEditEvents {
     public static void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
         if (event.isCanceled()) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
+        PortalCarriageEvents.markTouchedAt(level, event.getPos());
         PortalEditMirror.onTwinBlockChanged(level, event.getPos(), event.getPlacedBlock());
     }
 
@@ -40,6 +47,7 @@ public final class PortalEditEvents {
         // trusting a single placed state — the same approach EditorMirrorLiveHandler takes.
         for (BlockSnapshot snapshot : event.getReplacedBlockSnapshots()) {
             BlockPos pos = snapshot.getPos();
+            PortalCarriageEvents.markTouchedAt(level, pos);
             PortalEditMirror.onTwinBlockChanged(level, pos, level.getBlockState(pos));
         }
     }
@@ -49,6 +57,25 @@ public final class PortalEditEvents {
         if (event.isCanceled()) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         // Fires before the block is removed, so mirror air rather than reading the position back.
+        PortalCarriageEvents.markTouchedAt(level, event.getPos());
         PortalEditMirror.onTwinBlockChanged(level, event.getPos(), Blocks.AIR.defaultBlockState());
+    }
+
+    /** Opening a chest, barrel or pot in a copy counts as changing it: its loot can leave. */
+    @SubscribeEvent
+    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        PortalCarriageEvents.markTouchedAt(level, event.getPos());
+    }
+
+    /**
+     * Explosions clear blocks without a break event, so a blast in a pocket room needs its own feed.
+     * Lowest priority so guards that trim the list (LostCityPlotGuard) have had their say; the list
+     * that is left is exactly what the explosion is about to destroy.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onExplosion(ExplosionEvent.Detonate event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        PortalEditMirror.onTwinExploded(level, event.getAffectedBlocks());
     }
 }

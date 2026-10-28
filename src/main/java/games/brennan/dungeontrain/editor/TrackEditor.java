@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
+import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateStamp;
 import net.minecraft.core.BlockPos;
@@ -19,7 +20,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
@@ -36,21 +36,13 @@ import java.util.Optional;
  * column at {@link TrackSidePlots#X_TRACK}. Plot positioning lives in
  * {@link TrackSidePlots} so every track-side editor uses the same grid.
  *
- * <p>{@link CarriageEditor#rememberReturn} is reused for the session map
- * so a single {@code /dungeontrain editor exit} restores the player no
- * matter which sub-editor they entered last.</p>
+ * <p>The return point is recorded in {@link EditorSessions}, so a single
+ * {@code /dungeontrain editor exit} restores the player no matter which
+ * sub-editor they entered last.</p>
  */
 public final class TrackEditor {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-
-    private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
-
-    public record SaveResult(boolean sourceAttempted, boolean sourceWritten, String sourceError) {
-        public static SaveResult skipped() { return new SaveResult(false, false, null); }
-        public static SaveResult written() { return new SaveResult(true, true, null); }
-        public static SaveResult failed(String error) { return new SaveResult(true, false, error); }
-    }
 
     private TrackEditor() {}
 
@@ -82,17 +74,10 @@ public final class TrackEditor {
     public static String resolveName(BlockPos pos, CarriageDims dims) {
         // Answers only while TRACKS is the resident category — every category shares the origin.
         if (!EditorStampedCategoryState.isActive(EditorCategory.TRACKS)) return null;
+        Vec3i footprint = TrackKind.TILE.dims(dims);
         for (String name : TrackVariantRegistry.namesFor(TrackKind.TILE)) {
             BlockPos o = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
-            int w = dims.width();
-            // +2 Y headroom — see CarriageEditor.plotContaining. Without it the roof landing was
-            // "outside" here while TrackSidePlots.containsWithMargin (the HUD) said inside, so a
-            // Go here from the roof restamped and discarded edits.
-            if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + TrackPlacer.TILE_LENGTH
-                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + TrackPlacer.HEIGHT + 2
-                && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + w) {
-                return name;
-            }
+            if (EditorPlotBox.contains(pos, o, footprint)) return name;
         }
         return null;
     }
@@ -133,7 +118,7 @@ public final class TrackEditor {
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        CarriageEditor.rememberReturn(player);
+        EditorSessions.rememberReturn(player);
         if (stamp) stampAllPlots(overworld, dims);
 
         BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, TrackKind.DEFAULT_NAME, dims);
@@ -242,19 +227,9 @@ public final class TrackEditor {
             player.getName().getString(), name,
             TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width());
 
-        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
-        try {
-            TrackVariantStore.saveToSource(TrackKind.TILE, name, template);
-            try {
-                sidecar.saveToSource(TrackKind.TILE, name);
-            } catch (IOException e) {
-                LOGGER.warn("[DungeonTrain] Track editor save: variant sidecar source write failed: {}", e.toString());
-            }
-            return SaveResult.written();
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Track editor save: source write failed: {}", e.toString());
-            return SaveResult.failed(e.getMessage());
-        }
+        return EditorSave.toSource("Track editor save: tile/" + name,
+            () -> TrackVariantStore.saveToSource(TrackKind.TILE, name, template),
+            () -> sidecar.saveToSource(TrackKind.TILE, name));
     }
 
     private static void stampAllPlots(ServerLevel overworld, CarriageDims dims) {
@@ -271,15 +246,7 @@ public final class TrackEditor {
     }
 
     private static void eraseAt(ServerLevel level, BlockPos origin, CarriageDims dims) {
-        BlockState air = Blocks.AIR.defaultBlockState();
-        int w = dims.width();
-        for (int dx = -1; dx <= TrackPlacer.TILE_LENGTH; dx++) {
-            for (int dz = -1; dz <= w; dz++) {
-                for (int dy = -1; dy <= TrackPlacer.HEIGHT; dy++) {
-                    level.setBlock(origin.offset(dx, dy, dz), air, 3);
-                }
-            }
-        }
+        EditorPlotBox.erase(level, origin, TrackKind.TILE.dims(dims), EditorPlotCage.NOTIFY);
     }
 
     private static void stampNameAt(ServerLevel level, BlockPos origin, String name, CarriageDims dims) {
@@ -307,24 +274,6 @@ public final class TrackEditor {
     }
 
     private static void setOutline(ServerLevel level, BlockPos origin, CarriageDims dims) {
-        int w = dims.width();
-        int x0 = origin.getX() - 1;
-        int y0 = origin.getY() - 1;
-        int z0 = origin.getZ() - 1;
-        int x1 = origin.getX() + TrackPlacer.TILE_LENGTH;
-        int y1 = origin.getY() + TrackPlacer.HEIGHT;
-        int z1 = origin.getZ() + w;
-
-        for (int x = x0; x <= x1; x++) {
-            for (int y = y0; y <= y1; y++) {
-                for (int z = z0; z <= z1; z++) {
-                    int extremes = (x == x0 || x == x1 ? 1 : 0)
-                        + (y == y0 || y == y1 ? 1 : 0)
-                        + (z == z0 || z == z1 ? 1 : 0);
-                    if (extremes < 2) continue;
-                    level.setBlock(new BlockPos(x, y, z), OUTLINE_BLOCK, 3);
-                }
-            }
-        }
+        EditorPlotCage.setOutline(level, origin, TrackKind.TILE.dims(dims), EditorPlotCage.OUTLINE_BLOCK);
     }
 }

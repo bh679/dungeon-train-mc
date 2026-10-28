@@ -7,15 +7,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 /**
- * Verifies the Love Note echo-arrival announcement pool ({@link LoveNoteSpawnMessage}): 20 lines,
+ * Verifies the Love Note echo-arrival announcement pool ({@link LoveNoteSpawnMessage}): 18 lines,
  * each substituting the author name with no leftover placeholder, and a blank-name fallback — the
  * mirror of {@link DeathNoteSpawnMessageTest}.
  */
 class LoveNoteSpawnMessageTest {
 
     @Test
-    void hasTwentyVariations() {
-        assertEquals(20, LoveNoteSpawnMessage.variantCount());
+    void hasEighteenVariations() {
+        assertEquals(18,LoveNoteSpawnMessage.variantCount());
     }
 
     @Test

@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
+import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateStamp;
 import net.minecraft.core.BlockPos;
@@ -41,21 +42,12 @@ import java.util.Optional;
  * variant names lay out along {@code +Z} with
  * {@link EditorLayout#GAP}-block spacing between footprints.
  *
- * <p>The carriage editor's session map is reused via
- * {@link CarriageEditor#rememberReturn} so {@code /dungeontrain editor
+ * <p>The return point is recorded in {@link EditorSessions} so {@code /dungeontrain editor
  * exit} restores the player from any track-side editor.</p>
  */
 public final class PillarEditor {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-
-    private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
-
-    public record SaveResult(boolean sourceAttempted, boolean sourceWritten, String sourceError) {
-        public static SaveResult skipped() { return new SaveResult(false, false, null); }
-        public static SaveResult written() { return new SaveResult(true, true, null); }
-        public static SaveResult failed(String error) { return new SaveResult(true, false, error); }
-    }
 
     /** Resolved section + name pair for a player position. */
     public record SectionPlot(PillarSection section, String name) {}
@@ -104,16 +96,11 @@ public final class PillarEditor {
         // Answers only while TRACKS is the resident category — every category shares the origin.
         if (!EditorStampedCategoryState.isActive(EditorCategory.TRACKS)) return null;
         for (PillarSection section : PillarSection.values()) {
-            int h = section.height();
-            int w = dims.width();
-            for (String name : TrackVariantRegistry.namesFor(PillarTemplateStore.pillarKind(section))) {
-                BlockPos o = TrackSidePlots.plotOrigin(PillarTemplateStore.pillarKind(section), name, dims);
-                // +2 Y headroom — see CarriageEditor.plotContaining.
-                if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + 1
-                    && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + h + 2
-                    && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + w) {
-                    return new SectionPlot(section, name);
-                }
+            TrackKind kind = PillarTemplateStore.pillarKind(section);
+            Vec3i footprint = kind.dims(dims);
+            for (String name : TrackVariantRegistry.namesFor(kind)) {
+                BlockPos o = TrackSidePlots.plotOrigin(kind, name, dims);
+                if (EditorPlotBox.contains(pos, o, footprint)) return new SectionPlot(section, name);
             }
         }
         return null;
@@ -127,14 +114,11 @@ public final class PillarEditor {
         // Answers only while TRACKS is the resident category — every category shares the origin.
         if (!EditorStampedCategoryState.isActive(EditorCategory.TRACKS)) return null;
         for (PillarAdjunct adjunct : PillarAdjunct.values()) {
-            for (String name : TrackVariantRegistry.namesFor(PillarTemplateStore.adjunctKind(adjunct))) {
-                BlockPos o = TrackSidePlots.plotOrigin(PillarTemplateStore.adjunctKind(adjunct), name, dims);
-                // +2 Y headroom — see CarriageEditor.plotContaining.
-                if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + adjunct.xSize()
-                    && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + adjunct.ySize() + 2
-                    && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + adjunct.zSize()) {
-                    return new AdjunctPlot(adjunct, name);
-                }
+            TrackKind kind = PillarTemplateStore.adjunctKind(adjunct);
+            Vec3i footprint = kind.dims(dims);
+            for (String name : TrackVariantRegistry.namesFor(kind)) {
+                BlockPos o = TrackSidePlots.plotOrigin(kind, name, dims);
+                if (EditorPlotBox.contains(pos, o, footprint)) return new AdjunctPlot(adjunct, name);
             }
         }
         return null;
@@ -178,7 +162,7 @@ public final class PillarEditor {
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         BlockPos origin = plotOrigin(section, TrackKind.DEFAULT_NAME, dims);
 
-        CarriageEditor.rememberReturn(player);
+        EditorSessions.rememberReturn(player);
         if (stamp) stampAllSectionPlots(overworld, section, dims);
 
         Vec3i footprint = TrackSidePlots.footprint(
@@ -291,21 +275,9 @@ public final class PillarEditor {
             player.getName().getString(), section.id(), name,
             section.height(), dims.width());
 
-        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
-        try {
-            TrackVariantStore.saveToSource(kind, name, template);
-            try {
-                sidecar.saveToSource(kind, name);
-            } catch (IOException e) {
-                LOGGER.warn("[DungeonTrain] Pillar editor save: variant sidecar source write failed for {}: {}",
-                    section.id(), e.toString());
-            }
-            return SaveResult.written();
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Pillar editor save: source write failed for {}: {}",
-                section.id(), e.toString());
-            return SaveResult.failed(e.getMessage());
-        }
+        return EditorSave.toSource("Pillar editor save: " + section.id() + "/" + name,
+            () -> TrackVariantStore.saveToSource(kind, name, template),
+            () -> sidecar.saveToSource(kind, name));
     }
 
     private static void stampAllSectionPlots(ServerLevel overworld, PillarSection section, CarriageDims dims) {
@@ -318,16 +290,7 @@ public final class PillarEditor {
     }
 
     private static void eraseAt(ServerLevel level, BlockPos origin, PillarSection section, CarriageDims dims) {
-        BlockState air = Blocks.AIR.defaultBlockState();
-        int h = section.height();
-        int w = dims.width();
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= w; dz++) {
-                for (int dy = -1; dy <= h; dy++) {
-                    level.setBlock(origin.offset(dx, dy, dz), air, 3);
-                }
-            }
-        }
+        EditorPlotBox.erase(level, origin, PillarTemplateStore.pillarKind(section).dims(dims), EditorPlotCage.NOTIFY);
     }
 
     private static void stampNameAt(ServerLevel level, BlockPos origin, PillarSection section, String name, CarriageDims dims) {
@@ -382,7 +345,7 @@ public final class PillarEditor {
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         BlockPos origin = plotOriginAdjunct(adjunct, TrackKind.DEFAULT_NAME, dims);
 
-        CarriageEditor.rememberReturn(player);
+        EditorSessions.rememberReturn(player);
         if (stamp) stampAllAdjunctPlots(overworld, adjunct, dims);
 
         Vec3i footprint = TrackSidePlots.footprint(
@@ -490,21 +453,9 @@ public final class PillarEditor {
             player.getName().getString(), adjunct.id(), name,
             adjunct.xSize(), adjunct.ySize(), adjunct.zSize());
 
-        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
-        try {
-            TrackVariantStore.saveToSource(kind, name, template);
-            try {
-                sidecar.saveToSource(kind, name);
-            } catch (IOException e) {
-                LOGGER.warn("[DungeonTrain] Pillar editor save adjunct: variant sidecar source write failed for {}: {}",
-                    adjunct.id(), e.toString());
-            }
-            return SaveResult.written();
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Pillar editor save adjunct: source write failed for {}: {}",
-                adjunct.id(), e.toString());
-            return SaveResult.failed(e.getMessage());
-        }
+        return EditorSave.toSource("Pillar editor save adjunct: " + adjunct.id() + "/" + name,
+            () -> TrackVariantStore.saveToSource(kind, name, template),
+            () -> sidecar.saveToSource(kind, name));
     }
 
     private static void stampAllAdjunctPlots(ServerLevel overworld, PillarAdjunct adjunct, CarriageDims dims) {
@@ -517,14 +468,11 @@ public final class PillarEditor {
     }
 
     private static void eraseAtAdjunct(ServerLevel level, BlockPos origin, PillarAdjunct adjunct) {
-        BlockState air = Blocks.AIR.defaultBlockState();
-        for (int dx = -1; dx <= adjunct.xSize(); dx++) {
-            for (int dz = -1; dz <= adjunct.zSize(); dz++) {
-                for (int dy = -1; dy <= adjunct.ySize(); dy++) {
-                    level.setBlock(origin.offset(dx, dy, dz), air, 3);
-                }
-            }
-        }
+        EditorPlotBox.erase(level, origin, adjunctSize(adjunct), EditorPlotCage.NOTIFY);
+    }
+
+    private static Vec3i adjunctSize(PillarAdjunct adjunct) {
+        return new Vec3i(adjunct.xSize(), adjunct.ySize(), adjunct.zSize());
     }
 
     private static void stampNameAtAdjunct(ServerLevel level, BlockPos origin, PillarAdjunct adjunct, String name) {
@@ -575,50 +523,15 @@ public final class PillarEditor {
     }
 
     private static StructureTemplate captureAdjunctTemplate(ServerLevel level, BlockPos origin, PillarAdjunct adjunct) {
-        Vec3i size = new Vec3i(adjunct.xSize(), adjunct.ySize(), adjunct.zSize());
-        return TemplateDecor.capture(level, origin, size, Blocks.AIR);
+        return TemplateDecor.capture(level, origin, adjunctSize(adjunct), Blocks.AIR);
     }
 
     private static void setOutlineAdjunct(ServerLevel level, BlockPos origin, PillarAdjunct adjunct) {
-        int x0 = origin.getX() - 1;
-        int y0 = origin.getY() - 1;
-        int z0 = origin.getZ() - 1;
-        int x1 = origin.getX() + adjunct.xSize();
-        int y1 = origin.getY() + adjunct.ySize();
-        int z1 = origin.getZ() + adjunct.zSize();
-        for (int x = x0; x <= x1; x++) {
-            for (int y = y0; y <= y1; y++) {
-                for (int z = z0; z <= z1; z++) {
-                    int extremes = (x == x0 || x == x1 ? 1 : 0)
-                        + (y == y0 || y == y1 ? 1 : 0)
-                        + (z == z0 || z == z1 ? 1 : 0);
-                    if (extremes < 2) continue;
-                    level.setBlock(new BlockPos(x, y, z), OUTLINE_BLOCK, 3);
-                }
-            }
-        }
+        EditorPlotCage.setOutline(level, origin, adjunctSize(adjunct), EditorPlotCage.OUTLINE_BLOCK);
     }
 
     private static void setOutline(ServerLevel level, BlockPos origin, PillarSection section, CarriageDims dims) {
-        int h = section.height();
-        int w = dims.width();
-        int x0 = origin.getX() - 1;
-        int y0 = origin.getY() - 1;
-        int z0 = origin.getZ() - 1;
-        int x1 = origin.getX() + 1;
-        int y1 = origin.getY() + h;
-        int z1 = origin.getZ() + w;
-
-        for (int x = x0; x <= x1; x++) {
-            for (int y = y0; y <= y1; y++) {
-                for (int z = z0; z <= z1; z++) {
-                    int extremes = (x == x0 || x == x1 ? 1 : 0)
-                        + (y == y0 || y == y1 ? 1 : 0)
-                        + (z == z0 || z == z1 ? 1 : 0);
-                    if (extremes < 2) continue;
-                    level.setBlock(new BlockPos(x, y, z), OUTLINE_BLOCK, 3);
-                }
-            }
-        }
+        EditorPlotCage.setOutline(level, origin, PillarTemplateStore.pillarKind(section).dims(dims),
+            EditorPlotCage.OUTLINE_BLOCK);
     }
 }
