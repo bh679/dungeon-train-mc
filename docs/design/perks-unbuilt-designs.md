@@ -102,3 +102,46 @@ Replaces the review's "Heal Friends" (feeding). Same tree slot; rename the perk 
   on the giver (direct `setHealth`, no damage event, so armour and Resistance do not apply).
 - Needs a new "or" form in `PerkStats.Value` (two HEARTS values) for the chip renderer.
 
+### Spare Enemies (tier 3) — SKIPPED 2026-10-28
+
+Brennan may change or remove it. Not designed in this pass; stays "Coming soon".
+
+### Aura (tier 3) — CONFIRMED 2026-10-28
+
+Replaces the review's "Shared Aura" (mirroring the Lover's own buffs). Rename the perk; the aura
+gives its own buffs.
+
+**How it works**
+- Players, PlayerMobs and tamed pets within Range get the aura's buffs. Not the Lover themself.
+- Reapplied every second while in range, with a 5-second tail so it fades shortly after they leave.
+  A friend who already has a stronger version of an effect keeps theirs; the aura never lowers one.
+- **Pool (10):** Regeneration, Speed, Resistance, Strength, Haste, Jump Boost, Fire Resistance,
+  Absorption, Slow Falling, Water Breathing.
+- **Per point:**
+  - Points 1 to 10: one buff drawn at random from the pool entries not yet owned. Point 1 also sets
+    range 4 blocks. The draw order is rolled per life (points reset on death).
+  - Point 11: range 5 blocks.
+  - Points 12 to 19: a random level II among the owned buffs that have one (Fire Resistance and
+    Water Breathing ignore the amplifier, so they are skipped). Point 20: range 6. Then level III
+    the same way, then range, and so on. No cap.
+- **Toggles.** Each owned buff can be switched off by the player. A switched-off buff stays owned
+  (still counts toward "all ten" for the range point), is drawn in grey, and is skipped by the
+  level rounds until switched back on. Toggles are saved with the perk state and survive death.
+
+**Details card**
+- Description: "Friends and pets near you get buffs."
+- Chips: `Range 4 blocks` (BLOCKS) first, then one green chip per owned buff with its level
+  (`Resistance`, `Haste II`), switched-off ones greyed and struck through. The last chip is the
+  gold dashed preview for the next point: `→ a new buff`, `→ Range 5 blocks`, or `→ a level II`.
+  No numeric previews; the next chip is the preview.
+- Clicking a buff chip toggles it. Hint line under the chips: "Click a buff to turn it off or on."
+
+**Build notes**
+- Perk state needs per-life data beyond the rank: the ordered list of drawn buffs with levels, the
+  range step, and the toggle set (toggles persist across death; draws do not). A new attachment or
+  an extension of `PerkState`; a client→server packet for the toggle (bump `PROTOCOL_VERSION`).
+- Server tick every 20 ticks: for each Lover with the perk, apply `MobEffectInstance(effect,
+  120 ticks, level−1, ambient=true, showParticles=false)` to targets in range unless they already
+  have a higher amplifier. Reuse the friend test from Share Hearts / Good Gifter.
+- Card: `PerksScreen`'s chip row needs a chip kind that lists effects and is clickable.
+
