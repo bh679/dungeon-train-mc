@@ -53,7 +53,7 @@ final class PerkDetailsBar {
     private String refusedFor;
     private long refusedAt;
     private static final long REFUSAL_MS = 2000;
-    private Button unlockButton;
+    private UnlockTab unlockButton;
     /** Why the Unlock tab can't be pressed, said in the bar under it; null when it can. */
     private Component unlockReason;
     private Button activateButton;
@@ -111,7 +111,9 @@ final class PerkDetailsBar {
 
     /** Over the Unlock tab standing on the bar's top edge. */
     boolean tabContains(double mx, double my) {
-        return unlockButton != null && unlockButton.isMouseOver(mx, my);
+        // by bounds, not isMouseOver, which ignores a greyed tab
+        Button t = unlockButton;
+        return t != null && mx >= t.getX() && mx < t.getX() + t.getWidth() && my >= t.getY() && my < t.getY() + t.getHeight();
     }
 
     /**
@@ -127,8 +129,7 @@ final class PerkDetailsBar {
             + "|" + snap.unlockPoints() + "|" + snap.activePoints() + "|" + screenW + "x" + screenH;
         if (key.equals(builtFor)) return false;
         builtFor = key;
-        // only the perk clicked to stay gets buttons: a hovered one is shown, never bought
-        if (shown == null || shown.isRoot() || !isLocked) {
+        if (shown == null || shown.isRoot()) {
             unlockButton = null;
             activateButton = null;
             unlockReason = null;
@@ -137,8 +138,17 @@ final class PerkDetailsBar {
         // Unlock: the tab centred on the bar's top edge, naming the level it buys; why not, under it in the bar
         unlockButton = UnlockTab.centred(font, screenW / 2, top, Component.translatable(KEY + "unlock"),
             snap.unlockLevel(shown.id()) + 1, shown.unlockCost(), b -> unlock.accept(shown));
-        unlockReason = unlockBlocked(shown, snap);
-        unlockButton.active = unlockReason == null;
+        Component why = unlockBlocked(shown, snap);
+        if (!isLocked) {
+            // a hovered perk is shown, never bought: an outline when it could be unlocked once
+            // selected, grey when it couldn't; Activate stays away
+            unlockButton.look(why == null ? UnlockTab.Look.AVAILABLE : UnlockTab.Look.BLOCKED);
+            unlockReason = null;
+            activateButton = null;
+            return true;
+        }
+        unlockReason = why;
+        unlockButton.look(why == null ? UnlockTab.Look.READY : UnlockTab.Look.BLOCKED);
         if (unlockOnly) {
             activateButton = null;
             return true;
