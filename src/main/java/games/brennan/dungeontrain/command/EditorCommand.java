@@ -3222,9 +3222,10 @@ public final class EditorCommand {
                 LOGGER.info("[DungeonTrain] Editor: '{}' overlaps the landing plot — erasing it first", job.label());
                 job.work().run();
             }
-            // The landing plot, stamped now so the teleport puts the player on something real.
-            stampCategoryModel(overworld, head, dims);
-            enterFirstModel(player, head);
+            // The landing plot, stamped now so the teleport puts the player on something real, then
+            // the teleport itself via the model's own editor — without a second stamp.
+            head.restampPlot(overworld, dims);
+            head.enter(player, true, false, games.brennan.dungeontrain.editor.EditorPlotArrival.Inside.FRONT_DOOR);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor enter-category failed", t);
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.enter_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
@@ -3239,7 +3240,7 @@ public final class EditorCommand {
         for (Template model : category.models()) {
             if (model.equals(head) || model instanceof Template.Part) continue;   // parts: below
             queued.add(new EditorStampQueue.Job("stamp " + model.displayName(),
-                () -> stampCategoryModel(overworld, model, dims)));
+                () -> model.restampPlot(overworld, dims)));
         }
         // CARRIAGES also paints the parts grid — floor / walls / roof / doors
         // templates laid out on new Z rows past the carriage plots so every
@@ -3257,61 +3258,6 @@ public final class EditorCommand {
         final int pending = queued.size();
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered", Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id()), head.displayName(), (pending > 0 ? Component.translatable("chat.dungeontrain.editor.entered_pending") : Component.empty())), true);
         return 1;
-    }
-
-    /** Teleport onto {@code head}'s plot via its editor's enter path, without restamping it. */
-    private static void enterFirstModel(ServerPlayer player, Template head) {
-        if (head instanceof Template.WholeCarriage || head instanceof Template.CarriageGroup) {
-            games.brennan.dungeontrain.editor.WholeCarriageEditor.enter(player, head, true, false,
-                games.brennan.dungeontrain.editor.EditorPlotArrival.Inside.FRONT_DOOR);
-        } else if (head instanceof Template.Carriage cm) {
-            CarriageEditor.enter(player, cm.variant(), true, false);
-        } else if (head instanceof Template.Contents cm) {
-            CarriageContentsEditor.enter(player, cm.contents(), null, true, false);
-        } else if (head instanceof Template.Pillar pm) {
-            PillarEditor.enter(player, pm.section(), true, false);
-        } else if (head instanceof Template.Adjunct am) {
-            PillarEditor.enter(player, am.adjunct(), true, false);
-        } else if (head instanceof Template.Tunnel tm) {
-            TunnelEditor.enter(player, tm.variant(), true, false);
-        } else if (head instanceof Template.Track) {
-            TrackEditor.enter(player, true, false);
-        } else if (head instanceof Template.PortalRoom rm) {
-            games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, rm.name(), true, false);
-        } else if (head instanceof Template.Building b) {
-            games.brennan.dungeontrain.editor.BuildingEditor.walkTo(player, player.serverLevel(), b.name(), false);
-        } else if (head instanceof Template.LostCity l) {
-            games.brennan.dungeontrain.editor.LostCityReferenceEditor.walkTo(player, player.serverLevel(), l.name(), false);
-        } else if (head instanceof Template.Staged s) {
-            games.brennan.dungeontrain.editor.WorkbenchEditor.enter(player, player.getServer().overworld(), s.stagedId(), true,
-                games.brennan.dungeontrain.editor.EditorPlotArrival.Inside.FRONT_DOOR);
-        }
-    }
-
-    private static void stampCategoryModel(ServerLevel overworld, Template model, CarriageDims dims) {
-        if (model instanceof Template.WholeCarriage || model instanceof Template.CarriageGroup) {
-            games.brennan.dungeontrain.editor.WholeCarriageEditor.stampPlot(overworld, model, dims);
-        } else if (model instanceof Template.Carriage cm) {
-            CarriageEditor.stampPlot(overworld, cm.variant(), dims);
-        } else if (model instanceof Template.Contents cm) {
-            CarriageContentsEditor.stampPlot(overworld, cm.contents(), dims);
-        } else if (model instanceof Template.Pillar pm) {
-            PillarEditor.stampPlot(overworld, pm.section(), dims);
-        } else if (model instanceof Template.Adjunct am) {
-            PillarEditor.stampPlot(overworld, am.adjunct(), dims);
-        } else if (model instanceof Template.Tunnel tm) {
-            TunnelEditor.stampPlot(overworld, tm.variant());
-        } else if (model instanceof Template.Track) {
-            TrackEditor.stampPlot(overworld, dims);
-        } else if (model instanceof Template.PortalRoom rm) {
-            games.brennan.dungeontrain.editor.PortalRoomEditor.stampPlot(overworld, rm.name(), dims);
-        } else if (model instanceof Template.Building b) {
-            games.brennan.dungeontrain.editor.BuildingEditor.stampPlot(overworld, b.name());
-        } else if (model instanceof Template.LostCity l) {
-            games.brennan.dungeontrain.editor.LostCityReferenceEditor.stampPlot(overworld, l.name());
-        } else if (model instanceof Template.Staged s) {
-            games.brennan.dungeontrain.editor.WorkbenchEditor.stampPlot(overworld, s.stagedId());
-        }
     }
 
     private static int runEnter(CommandSourceStack source, String raw) {
@@ -3349,9 +3295,6 @@ public final class EditorCommand {
         }
         EditorCategory category = categoryOpt.get();
 
-        BlockPos origin = null;
-        net.minecraft.core.Vec3i size = null;
-
         // Track-side ids use a "kind.name" format mirroring EditorDirtyCheck:
         //   "track.<name>"        — track tile variant
         //   "pillar_<sec>.<name>" — pillar section variant
@@ -3360,33 +3303,27 @@ public final class EditorCommand {
         // Carriages and contents use the bare model id. Dot is used (not
         // colon) so the id parses cleanly as a single Brigadier word()
         // argument — colons aren't allowed in unquoted strings.
+        Template model;
         if (category == EditorCategory.TRACKS && id.contains(".")) {
             int sep = id.indexOf('.');
             String prefix = id.substring(0, sep);
             String name = id.substring(sep + 1);
             if ("track".equals(prefix)) {
-                origin = games.brennan.dungeontrain.editor.TrackSidePlots.plotOrigin(
-                    games.brennan.dungeontrain.track.variant.TrackKind.TILE, name, dims);
-                size = new net.minecraft.core.Vec3i(
-                    games.brennan.dungeontrain.track.TrackPlacer.TILE_LENGTH,
-                    games.brennan.dungeontrain.track.TrackPlacer.HEIGHT,
-                    dims.width());
+                model = new Template.Track(name);
             } else if (prefix.startsWith("pillar_")) {
                 games.brennan.dungeontrain.track.PillarSection sec = tryParseSection(prefix.substring("pillar_".length()));
                 if (sec == null) {
                     source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_pillar_section", id));
                     return 0;
                 }
-                origin = PillarEditor.plotOrigin(new games.brennan.dungeontrain.template.PillarTemplateId(sec, name), dims);
-                size = new net.minecraft.core.Vec3i(1, sec.height(), dims.width());
+                model = new Template.Pillar(sec, name);
             } else if (prefix.startsWith("adjunct_")) {
                 games.brennan.dungeontrain.track.PillarAdjunct adj = tryParseAdjunct(prefix.substring("adjunct_".length()));
                 if (adj == null) {
                     source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_adjunct", id));
                     return 0;
                 }
-                origin = PillarEditor.plotOriginAdjunct(new games.brennan.dungeontrain.template.PillarAdjunctTemplateId(adj, name), dims);
-                size = new net.minecraft.core.Vec3i(adj.xSize(), adj.ySize(), adj.zSize());
+                model = new Template.Adjunct(adj, name);
             } else if (prefix.startsWith("tunnel_")) {
                 TunnelVariant tv;
                 try {
@@ -3395,11 +3332,7 @@ public final class EditorCommand {
                     source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_tunnel_variant", id));
                     return 0;
                 }
-                origin = TunnelEditor.plotOrigin(new games.brennan.dungeontrain.template.TunnelTemplateId(tv, name));
-                size = new net.minecraft.core.Vec3i(
-                    games.brennan.dungeontrain.tunnel.TunnelPlacer.LENGTH,
-                    games.brennan.dungeontrain.tunnel.TunnelPlacer.HEIGHT,
-                    games.brennan.dungeontrain.tunnel.TunnelPlacer.WIDTH);
+                model = new Template.Tunnel(tv, name);
             } else {
                 source.sendFailure(Component.translatable("chat.dungeontrain.editor.unrecognised_track_side_id", id));
                 return 0;
@@ -3415,13 +3348,10 @@ public final class EditorCommand {
                 source.sendFailure(Component.translatable("chat.dungeontrain.editor.unrecognised_portal_id", id));
                 return 0;
             }
-            origin = games.brennan.dungeontrain.editor.PortalRoomEditor.plotOrigin(name, dims);
-            size = games.brennan.dungeontrain.editor.PortalRoomEditor.plotSize(name, dims);
+            model = new Template.PortalRoom(name);
         } else {
-            // Resolve the model by id within the category and read its plot
-            // footprint. The dispatch mirrors stampCategoryModel above —
-            // each editor's plotOrigin signature differs.
-            Template model = null;
+            // Resolve the model by id within the category.
+            model = null;
             for (Template m : category.models()) {
                 if (m.id().equals(id)) { model = m; break; }
             }
@@ -3429,29 +3359,10 @@ public final class EditorCommand {
                 source.sendFailure(Component.translatable("chat.dungeontrain.save.unknown_model_category", id, Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id())));
                 return 0;
             }
-            if (model instanceof Template.Carriage cm) {
-                origin = CarriageEditor.plotOrigin(cm.variant(), dims);
-                CarriageDims cmBox = CarriageEditor.plotDims(cm.variant(), dims);
-                size = new net.minecraft.core.Vec3i(cmBox.length(), cmBox.height(), cmBox.width());
-            } else if (model instanceof Template.Contents cm) {
-                origin = CarriageContentsEditor.plotOrigin(cm.contents(), dims);
-                size = new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width());
-            } else if (model instanceof Template.Pillar pm) {
-                origin = PillarEditor.plotOrigin(pm.section(), dims);
-                size = new net.minecraft.core.Vec3i(1, pm.section().height(), dims.width());
-            } else if (model instanceof Template.Track) {
-                origin = games.brennan.dungeontrain.editor.TrackSidePlots.plotOrigin(
-                    games.brennan.dungeontrain.track.variant.TrackKind.TILE,
-                    games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME, dims);
-                size = new net.minecraft.core.Vec3i(
-                    games.brennan.dungeontrain.track.TrackPlacer.TILE_LENGTH,
-                    games.brennan.dungeontrain.track.TrackPlacer.HEIGHT,
-                    dims.width());
-            } else {
-                source.sendFailure(Component.translatable("chat.dungeontrain.editor.view_not_supported_model", id));
-                return 0;
-            }
         }
+        // Every kind answers for its own plot — no per-editor origin/size signatures to mirror.
+        BlockPos origin = model.editorPlotOrigin(overworld, dims);
+        net.minecraft.core.Vec3i size = model.plotSize(dims);
 
         if (origin == null) {
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_plot_origin", id, Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id())));

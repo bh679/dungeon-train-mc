@@ -11,12 +11,10 @@ import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageGroup;
-import games.brennan.dungeontrain.train.CarriageGroupRegistry;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.train.WholeCarriage;
-import games.brennan.dungeontrain.train.WholeCarriageRegistry;
 import games.brennan.dungeontrain.train.WholeKind;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import net.minecraft.core.BlockPos;
@@ -384,13 +382,8 @@ public final class EditorSaveAsKinds {
             String name = source.variantName();
             TrackVariantStore.invalidate(kind, name);
             TemplateSidecars.invalidateCaches(BuilderPhotoPaths.Kind.TRACK, kind.id(), name);
-            switch (source) {
-                case Template.Track t -> TrackEditor.stampPlot(level, name, dims);
-                case Template.Pillar p -> PillarEditor.stampPlot(level, p.section(), name, dims);
-                case Template.Adjunct a -> PillarEditor.stampPlotAdjunct(level, a.adjunct(), name, dims);
-                case Template.Tunnel t -> TunnelEditor.stampPlot(level, t.variant(), name);
-                default -> { }
-            }
+            // Each track-side kind's restampPlot is its per-name stamp (never the whole row).
+            source.restampPlot(level, dims);
         }
     };
 
