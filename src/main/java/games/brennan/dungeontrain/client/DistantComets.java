@@ -35,8 +35,9 @@ import java.util.List;
  * Scenery comets: each client streaks its own down the far sky of the spheres band,
  * {@value SpheresComets#DISTANT_PER_REAL} for every real one ({@link SpheresComets#distantChancePerTick}). They are
  * never near the train and touch nothing: no packets, sound, shake or explosion, and no particles, just the
- * spinning magma head and one glowing tapered streak behind it. Each burns up in the sky after a few seconds
- * ({@link SpheresComets#distantFade}). Render-thread state only.
+ * spinning magma head and one thin glowing streak behind it. Each burns up in the sky after a few seconds
+ * ({@link SpheresComets#distantFade}). Like stars, they are pinned to the sky around the camera rather than to the
+ * world, so walking or riding never brings one nearer or makes it grow. Render-thread state only.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class DistantComets {
@@ -50,9 +51,12 @@ public final class DistantComets {
     private static final double FALL_MIN = 1.4, FALL_SPAN = 0.6;
     private static final int LIFE_MIN = 60, LIFE_SPAN = 60;
     private static final float HEAD_SCALE = 3.0F;
-    private static final double TAIL_LENGTH = 25.0;
+    private static final double TAIL_LENGTH = 30.0;
+    /** The streak's width where it leaves the head, blocks; it tapers to a point. */
+    private static final double TAIL_WIDTH = 0.6;
     private static final BlockState MAGMA = Blocks.MAGMA_BLOCK.defaultBlockState();
 
+    /** {@code start} is relative to the camera, which carries the comet with it. */
     private record Comet(int id, Vec3 start, Vec3 velocity, int age, int life) {
         Vec3 at(double ticks) {
             return start.add(velocity.scale(ticks));
@@ -76,9 +80,9 @@ public final class DistantComets {
         for (Comet c : live) {
             if (c.age() + 1 < c.life()) next.add(c.older());
         }
-        Vec3 cam = mc.gameRenderer.getMainCamera().getPosition();
-        if (next.size() < MAX_LIVE && level.random.nextDouble() < chanceAt(cam.x)) {
-            next.add(spawn(cam, level.random));
+        double camX = mc.gameRenderer.getMainCamera().getPosition().x;
+        if (next.size() < MAX_LIVE && level.random.nextDouble() < chanceAt(camX)) {
+            next.add(spawn(level.random));
         }
         if (!next.isEmpty() || !live.isEmpty()) live = List.copyOf(next);
     }
@@ -93,7 +97,6 @@ public final class DistantComets {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_ENTITIES || live.isEmpty()) return;
         Minecraft mc = Minecraft.getInstance();
         float partial = event.getPartialTick().getGameTimeDeltaPartialTick(false);
-        Vec3 cam = event.getCamera().getPosition();
         PoseStack ps = event.getPoseStack();
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
         // Past the terrain fog's edge on purpose: these are seen against the far void sky.
@@ -106,13 +109,13 @@ public final class DistantComets {
         for (Comet c : live) {
             double ticks = c.age() + partial;
             float fade = (float) SpheresComets.distantFade(ticks, c.life());
-            if (fade > 0.0F) tail(streak, ps.last().pose(), c.at(ticks).subtract(cam), c.velocity().normalize(), fade);
+            if (fade > 0.0F) tail(streak, ps.last().pose(), c.at(ticks), c.velocity().normalize(), fade);
         }
         buffer.endBatch(RenderType.lightning());
         for (Comet c : live) {
             double ticks = c.age() + partial;
             float fade = (float) SpheresComets.distantFade(ticks, c.life());
-            if (fade > 0.0F) head(mc, ps, buffer, c, c.at(ticks).subtract(cam), ticks, fade);
+            if (fade > 0.0F) head(mc, ps, buffer, c, c.at(ticks), ticks, fade);
         }
         buffer.endBatch(RenderType.solid());
         RenderSystem.setShaderFogStart(fogStart);
@@ -128,10 +131,10 @@ public final class DistantComets {
         return SpheresComets.distantChancePerTick(lap, WindZones.endSkyAt(x), WindZones.spheresVoidAt(x));
     }
 
-    private static Comet spawn(Vec3 cam, RandomSource random) {
+    private static Comet spawn(RandomSource random) {
         double around = random.nextDouble() * Math.PI * 2.0;
         double out = OUT_MIN + random.nextDouble() * OUT_SPAN;
-        Vec3 start = cam.add(Math.cos(around) * out, UP_MIN + random.nextDouble() * UP_SPAN,
+        Vec3 start = new Vec3(Math.cos(around) * out, UP_MIN + random.nextDouble() * UP_SPAN,
             Math.sin(around) * out);
         double heading = random.nextDouble() * Math.PI * 2.0;
         double drift = DRIFT_MIN + random.nextDouble() * DRIFT_SPAN;
@@ -155,11 +158,11 @@ public final class DistantComets {
     }
 
     /**
-     * One camera-facing streak from the head back along the flight line, the head's width tapering to a point and
-     * glowing yellow to clear; both windings, so it shows whichever way it faces.
+     * One thin camera-facing streak from the head back along the flight line, tapering to a point and glowing
+     * yellow to clear; both windings, so it shows whichever way it faces.
      */
     private static void tail(VertexConsumer out, Matrix4f pose, Vec3 head, Vec3 dir, float fade) {
-        Vec3 side = dir.cross(head).normalize().scale(HEAD_SCALE * 0.5 * fade);
+        Vec3 side = dir.cross(head).normalize().scale(TAIL_WIDTH * 0.5 * fade);
         Vec3 end = head.subtract(dir.scale(TAIL_LENGTH * fade));
         Vec3 a = head.add(side), b = head.subtract(side);
         int alpha = (int) (200 * fade);
