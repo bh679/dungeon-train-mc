@@ -36,8 +36,9 @@ public final class SpheresComets {
     public static final double SHAKE_RADIUS_BLOCKS = 40.0;
     /** A comet's roar starts to build once it is this many blocks away; it is a faint rush before that. */
     public static final double ROAR_REACH_BLOCKS = 128.0;
-    /** Distant, purely visual comets drawn by each client for every real one. */
+    /** Distant, purely visual comets drawn by each client for every real one: fewer in the first two laps. */
     public static final double DISTANT_PER_REAL = 3.0;
+    public static final double DISTANT_PER_REAL_EARLY = 1.0;
     private static final int TICKS_PER_SECOND = 20;
 
     private SpheresComets() {}
@@ -68,9 +69,13 @@ public final class SpheresComets {
         return 1.0 / (intervalSeconds(cycleIndex) * TICKS_PER_SECOND);
     }
 
-    /** Chance per tick of a distant comet: {@value #DISTANT_PER_REAL} for each real one, and none where they fall. */
+    /**
+     * Chance per tick of a distant comet: {@value #DISTANT_PER_REAL_EARLY} for each real one in laps 0 and 1,
+     * {@value #DISTANT_PER_REAL} after, and none where real ones don't fall.
+     */
     public static double distantChancePerTick(long cycleIndex, double endSky, double spheresVoid) {
-        return Math.min(1.0, chancePerTick(cycleIndex, endSky, spheresVoid) * DISTANT_PER_REAL);
+        double perReal = cycleIndex <= 1L ? DISTANT_PER_REAL_EARLY : DISTANT_PER_REAL;
+        return Math.min(1.0, chancePerTick(cycleIndex, endSky, spheresVoid) * perReal);
     }
 
     /** Whether a comet at height {@code y} has fallen {@value #MISS_DROP_BLOCKS} blocks below a train whose lowest

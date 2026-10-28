@@ -52,20 +52,22 @@ public final class DistantComets {
     /** Gone once this far below the camera, blocks; or, whatever happens, after {@value #MAX_AGE_TICKS} ticks. */
     private static final double GONE_BELOW = 250.0;
     private static final int MAX_AGE_TICKS = 400;
-    private static final float HEAD_SCALE = 3.0F;
+    /** Head size, blocks: each comet rolls its own, small ones far more often than big ones. */
+    private static final double SIZE_MIN = 1.0, SIZE_MAX = 6.0;
+    /** Streak length and width at a 3-block head; they scale with the head. */
     private static final double TAIL_LENGTH = 30.0;
     /** The streak's width where it leaves the head, blocks; it tapers to a point. */
     private static final double TAIL_WIDTH = 0.6;
     private static final BlockState MAGMA = Blocks.MAGMA_BLOCK.defaultBlockState();
 
     /** {@code start} is relative to the camera, which carries the comet with it. */
-    private record Comet(int id, Vec3 start, Vec3 velocity, int age) {
+    private record Comet(int id, Vec3 start, Vec3 velocity, float size, int age) {
         Vec3 at(double ticks) {
             return start.add(velocity.scale(ticks));
         }
 
         Comet older() {
-            return new Comet(id, start, velocity, age + 1);
+            return new Comet(id, start, velocity, size, age + 1);
         }
 
         boolean gone() {
@@ -115,7 +117,7 @@ public final class DistantComets {
         VertexConsumer streak = buffer.getBuffer(RenderType.lightning());
         for (Comet c : live) {
             double ticks = c.age() + partial;
-            tail(streak, ps.last().pose(), c.at(ticks), c.velocity().normalize());
+            tail(streak, ps.last().pose(), c.at(ticks), c.velocity().normalize(), c.size() / 3.0);
         }
         buffer.endBatch(RenderType.lightning());
         for (Comet c : live) {
@@ -145,7 +147,9 @@ public final class DistantComets {
         double drift = DRIFT_MIN + random.nextDouble() * DRIFT_SPAN;
         Vec3 velocity = new Vec3(Math.cos(heading) * drift, -(FALL_MIN + random.nextDouble() * FALL_SPAN),
             Math.sin(heading) * drift);
-        return new Comet(random.nextInt(), start, velocity, 0);
+        // Squared, so most are small and only a few are big.
+        float size = (float) (SIZE_MIN + Math.pow(random.nextDouble(), 2.0) * (SIZE_MAX - SIZE_MIN));
+        return new Comet(random.nextInt(), start, velocity, size, 0);
     }
 
     private static void head(Minecraft mc, PoseStack ps, MultiBufferSource buffer, Comet c, Vec3 at, double ticks) {
@@ -153,7 +157,7 @@ public final class DistantComets {
         ps.translate(at.x, at.y, at.z);
         ps.mulPose(new Quaternionf().fromAxisAngleRad(SpheresComets.spinAxis(c.id()),
             SpheresComets.spinAngle(c.id(), ticks)));
-        ps.scale(HEAD_SCALE, HEAD_SCALE, HEAD_SCALE);
+        ps.scale(c.size(), c.size(), c.size());
         ps.translate(-0.5, -0.5, -0.5);
         mc.getBlockRenderer().renderSingleBlock(MAGMA, ps, buffer, LightTexture.FULL_BRIGHT,
             OverlayTexture.NO_OVERLAY, ModelData.EMPTY, RenderType.solid());
@@ -164,9 +168,9 @@ public final class DistantComets {
      * One thin camera-facing streak from the head back along the flight line, tapering to a point and glowing
      * yellow to clear; both windings, so it shows whichever way it faces.
      */
-    private static void tail(VertexConsumer out, Matrix4f pose, Vec3 head, Vec3 dir) {
-        Vec3 side = dir.cross(head).normalize().scale(TAIL_WIDTH * 0.5);
-        Vec3 end = head.subtract(dir.scale(TAIL_LENGTH));
+    private static void tail(VertexConsumer out, Matrix4f pose, Vec3 head, Vec3 dir, double scale) {
+        Vec3 side = dir.cross(head).normalize().scale(TAIL_WIDTH * 0.5 * scale);
+        Vec3 end = head.subtract(dir.scale(TAIL_LENGTH * scale));
         Vec3 a = head.add(side), b = head.subtract(side);
         int alpha = 200;
         vertex(out, pose, a, 255, 210, 90, alpha);

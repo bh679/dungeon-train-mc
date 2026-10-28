@@ -89,9 +89,11 @@ class SpheresCometsTest {
     }
 
     @Test
-    void distantCometsFollowTheRealOnesThreeToOne() {
+    void distantCometsFollowTheRealOnesFewerEarly() {
         assertEquals(0.0, SpheresComets.distantChancePerTick(0L, 0.2, 1.0), "none before the void sky");
         assertEquals(0.0, SpheresComets.distantChancePerTick(4L, 1.0, 0.0), "none outside the band");
+        assertEquals(SpheresComets.chancePerTick(1L, 0.0, 1.0) * SpheresComets.DISTANT_PER_REAL_EARLY,
+            SpheresComets.distantChancePerTick(1L, 0.0, 1.0), 1e-12);
         assertEquals(SpheresComets.chancePerTick(2L, 0.0, 1.0) * SpheresComets.DISTANT_PER_REAL,
             SpheresComets.distantChancePerTick(2L, 0.0, 1.0), 1e-12);
     }
