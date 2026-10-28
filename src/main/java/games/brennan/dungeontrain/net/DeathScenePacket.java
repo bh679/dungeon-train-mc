@@ -16,7 +16,7 @@ import java.util.UUID;
  * What the death moment's camera needs to know about this death, sent right after the vanilla
  * death so it is on the client before the camera starts (dead tick 2 to 3).
  *
- * @param voidDeath no death spot to look at: fell out of the world, or stepped off / walked away from the train
+ * @param voidDeath no death spot to look at: fell out of the world
  * @param killerId  entity id of the living thing that killed them, or -1
  * @param contactId entity id of the nearest other creature they recently had to do with, or -1
  * @param targets   features of the train near the body worth a tracking shot, best first (may be empty)

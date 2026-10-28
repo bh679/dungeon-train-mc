@@ -61,7 +61,7 @@ public final class DeathCameraCycle {
     /** An orbit never sweeps more than half a turn. */
     static final double MAX_SWEEP_DEGREES = 180.0;
     /** Radii an orbit tries, widest first. */
-    static final double[] ORBIT_RADII = {6.0, 4.0, 2.5, 1.6};
+    static final double[] ORBIT_RADII = {6.0, 4.0, 2.5, 1.6, 1.0};
     /** Re-test a moving subject's view this often; the arc is recomputed only when the lens is blocked. */
     private static final int ORBIT_RECHECK_TICKS = 20;
     /** Aim a little above the feet so the body sits in the lower middle of the frame. */
@@ -189,9 +189,9 @@ public final class DeathCameraCycle {
                                          boolean hasFeature) {
         List<DeathShot> shots = new ArrayList<>();
         shots.add(DeathShot.pov(40));
-        // Where you died, riding with the carriage (the body stays on it), only as the lead-in to
-        // who killed you; on its own it is a shot of nothing.
-        if (!voidDeath && hasKiller) shots.add(DeathShot.orbit(DeathShot.Target.BODY, 6.0, 3.0, 60, "spot"));
+        // Where you died, riding with the carriage (the body stays on it). Skipped only for a void
+        // death; a blocked arc is answered by a tighter one, never by dropping the shot.
+        if (!voidDeath) shots.add(DeathShot.orbit(DeathShot.Target.BODY, 6.0, 3.0, 60, "spot"));
         if (hasKiller) shots.add(DeathShot.orbit(DeathShot.Target.KILLER, 5.0, 2.5, 60, "killer"));
         if (hasContact) shots.add(DeathShot.orbit(DeathShot.Target.CONTACT, 5.0, 2.5, 60, "mob"));
         // One shot: zoom out from beside the body for DOLLY_TICKS, then the lens stays where it
@@ -628,7 +628,7 @@ public final class DeathCameraCycle {
         if (subject == null) return false;
         double height = shot.offset().y;
         for (double radius : ORBIT_RADII) {
-            for (double h : new double[] {height, height * 0.5, 0.8}) {
+            for (double h : new double[] {height, height * 0.5, 0.8, height * 1.6, 0.3}) {
                 boolean[] clear = clearAngles(subject, radius, h);
                 int[] run = longestClearRun(clear);
                 LOGGER.debug("[DungeonTrain] Death scene orbit {}: radius={} height={} clearRun={} of {} subject=({}, {}, {})",
@@ -645,6 +645,15 @@ public final class DeathCameraCycle {
                 orbitHeight = h;
                 return true;
             }
+        }
+        if (shot.target() == DeathShot.Target.BODY) {
+            // The body stands in air, so a lens just above its head looking down at it is always
+            // clear: the shot of where you died is never dropped for want of an angle.
+            orbitSweep = Math.toRadians(90.0);
+            orbitStart = -orbitSweep / 2.0;
+            orbitRadius = 0.6;
+            orbitHeight = 1.9;
+            return true;
         }
         return false;
     }

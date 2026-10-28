@@ -40,16 +40,17 @@ class DeathCameraCycleTest {
     }
 
     @Test
-    void deathSpotOrbitOnlyLeadsIntoAKiller() {
-        assertEquals(List.of("POV", "carriage"), labels(DeathCameraCycle.buildSequence(false, false, false, true)).subList(0, 2));
+    void deathSpotOrbitSkippedOnlyForAVoidDeath() {
+        assertEquals(List.of("POV", "spot", "carriage"), labels(DeathCameraCycle.buildSequence(false, false, false, true)).subList(0, 3));
         assertEquals(List.of("POV", "spot", "killer"), labels(DeathCameraCycle.buildSequence(false, true, false, true)).subList(0, 3));
+        assertEquals(List.of("POV", "carriage"), labels(DeathCameraCycle.buildSequence(true, false, false, true)).subList(0, 2));
     }
 
     @Test
     void noKillerNoMobOffTrainStillLeavesTheTrainShots() {
         List<DeathShot> seq = DeathCameraCycle.buildSequence(false, false, false, false);
-        assertEquals(List.of("POV", "leaving"), labels(seq).subList(0, 2));
-        assertEquals(2, DeathCameraCycle.loopStart(seq));
+        assertEquals(List.of("POV", "spot", "leaving"), labels(seq).subList(0, 3));
+        assertEquals(3, DeathCameraCycle.loopStart(seq));
         assertEquals("mob-arc", seq.get(seq.size() - 2).label(), "no feature listed: the mob arc closes the loop");
         assertEquals("eyes-forward", seq.get(seq.size() - 1).label(), "then the last resort");
         assertFalse(labels(seq).contains("coupling"));
