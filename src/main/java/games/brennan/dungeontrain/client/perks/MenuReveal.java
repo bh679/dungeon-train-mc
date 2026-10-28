@@ -9,8 +9,12 @@ package games.brennan.dungeontrain.client.perks;
  * time the classes list comes in, then the unlock points one {@link #STEP_MS} later.
  * {@link #skip} brings everything up at once. The menu opened in play uses {@link #allUp()}.
  *
- * <p>A player who has never unlocked a perk gets a guided first time: no skipping, and the classes
- * list (then the unlock points) waits for their first unlock ({@link #onUnlock}).</p>
+ * <p>It opens on {@link #LEAD_IN_MS} of plain night blue, so the stars start only once the death
+ * scene's fade into it has settled; they then fade in slowly ({@link #STAR_FADE_MS}) under the first line.</p>
+ *
+ * <p>A player who has never unlocked a perk gets a guided first time: no skip to the end, but a click
+ * or Space moves on to the next line ({@link #next}); the classes list (then the unlock points) waits
+ * for their first unlock ({@link #onUnlock}).</p>
  *
  * <p>Pure but for the skip, hover and unlock times; times are {@code Util.getMillis()}.</p>
  */
@@ -23,16 +27,24 @@ final class MenuReveal {
 
     /** The steps after the story: the classes list, then the unlock points. */
     static final long STEP_MS = 1000;
-    static final long FADE_MS = 600;
+    /** Plain night blue before anything comes in. */
+    static final long LEAD_IN_MS = 1000;
+    /** Each layer, and each line, fades in over this long... */
+    static final long FADE_MS = 1000;
+    /** ...but the stars take longer. */
+    static final long STAR_FADE_MS = 2500;
     /** A line fades out over this long at the end of its beat. */
     static final long LINE_OUT_MS = 300;
     /** A layer still waiting on the player: it has no start yet. */
     static final long NEVER = Long.MAX_VALUE;
 
     private final long openedAt;
-    /** Each beat's time on screen, ms; {@link #BEAT_ACTIVE} is 0 when there were no points this life. */
+    /** Each beat's time on screen, ms; {@link #BEAT_ACTIVE} is 0 when there were no points this life. Cut short by {@link #next}. */
     private final long[] beats;
+    private final boolean hasActive;
     private final boolean firstTime;
+    /** The lead-in, cut short when the first time moves on during it. */
+    private long leadIn = LEAD_IN_MS;
     private long skippedAt = -1;
     private long hoverAt = NEVER;
     private long unlockAt = NEVER;
@@ -41,6 +53,9 @@ final class MenuReveal {
         if (beats.length != BEATS) throw new IllegalArgumentException("expected " + BEATS + " beats");
         this.openedAt = openedAt;
         this.beats = beats.clone();
+        // the stars' beat lasts at least their fade, so the next layer waits for them
+        this.beats[BEAT_STARS] = Math.max(this.beats[BEAT_STARS], STAR_FADE_MS);
+        this.hasActive = beats[BEAT_ACTIVE] > 0;
         this.firstTime = firstTime;
     }
 
@@ -57,12 +72,12 @@ final class MenuReveal {
     }
 
     private boolean hasActive() {
-        return beats[BEAT_ACTIVE] > 0;
+        return hasActive;
     }
 
     /** When beat {@code i} starts. */
     long beatStart(int i) {
-        long t = openedAt;
+        long t = openedAt + leadIn;
         for (int b = 0; b < i; b++) t += beats[b];
         return t;
     }
@@ -94,13 +109,15 @@ final class MenuReveal {
         long start = startOf(s);
         if (start == NEVER || now <= start) return 0;
         long t = now - start;
-        return t >= FADE_MS ? 1 : t / (double) FADE_MS;
+        long fadeMs = s == Stage.STARS ? STAR_FADE_MS : FADE_MS;
+        return t >= fadeMs ? 1 : t / (double) fadeMs;
     }
 
     /** The story beat whose line shows now, or -1 once the details bar has taken its place. */
     int lineAt(long now) {
         if (hoverAt != NEVER && now >= hoverAt) return -1;
         if (skippedAt >= 0) return BEAT_SELECT;
+        if (now < beatStart(BEAT_STARS)) return -1; // the lead-in: nothing yet
         for (int i = BEATS - 1; i >= 0; i--) {
             if (beats[i] > 0 && now >= beatStart(i)) return i;
         }
@@ -138,6 +155,28 @@ final class MenuReveal {
     /** A click or key during the build-up: everything comes up now. Never on the first time. */
     void skip(long now) {
         if (!firstTime && !done(now)) skippedAt = now;
+    }
+
+    /**
+     * First time: a click or Space moves on to the next line now (cutting the current beat, or the
+     * lead-in, short). Nothing past the select line, which waits for a hover.
+     */
+    void next(long now) {
+        if (!firstTime) return;
+        if (now < beatStart(BEAT_STARS)) {
+            leadIn = Math.max(0, now - openedAt);
+            return;
+        }
+        int i = lineAt(now);
+        if (i < 0 || i >= BEAT_SELECT) return;
+        beats[i] = Math.max(1, now - beatStart(i));
+    }
+
+    /** First time and a line before "select a perk" is up (or still to come): {@link #next} has somewhere to go. */
+    boolean canStepLine(long now) {
+        if (!firstTime || hoverAt != NEVER && now >= hoverAt) return false;
+        int i = lineAt(now);
+        return i < BEAT_SELECT;
     }
 
     /**

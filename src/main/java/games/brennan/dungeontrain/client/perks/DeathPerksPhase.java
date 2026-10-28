@@ -56,9 +56,10 @@ final class DeathPerksPhase {
         return reveal.live(now);
     }
 
-    /** A click or key during the build-up: bring everything up now. */
+    /** A click or key during the build-up: bring everything up now; on the first time, the next line. */
     void advance(long now) {
-        reveal.skip(now);
+        if (reveal.firstTime()) reveal.next(now);
+        else reveal.skip(now);
     }
 
     /** Share of each ring still filled: full through the build-up, then emptying to 0. */

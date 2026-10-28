@@ -611,6 +611,12 @@ public final class PerksScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
+        // first time: a click off the stars moves the story on to its next line
+        if (death != null && reveal.canStepLine(Util.getMillis()) && (deathPage() || starAt(mx, my) == null)) {
+            if (games.brennan.dungeontrain.client.RefocusClickGuard.swallow()) return true;
+            advanceDeath();
+            return true;
+        }
         if (deathPage()) {
             if (games.brennan.dungeontrain.client.RefocusClickGuard.swallow()) return true;
             advanceDeath();
@@ -765,6 +771,15 @@ public final class PerksScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // first time: Space or Enter moves the story on, once the stars have started (not a Space
+        // still held from the death scene, which ends on the lead-in)
+        long nowMs = Util.getMillis();
+        boolean stepKey = keyCode == GLFW.GLFW_KEY_SPACE || keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER;
+        if (death != null && stepKey && reveal.canStepLine(nowMs)
+            && nowMs >= reveal.beatStart(MenuReveal.BEAT_STARS)) {
+            advanceDeath();
+            return true;
+        }
         if (deathPage()) {
             // not Space: it is the jump key, and may still be held from the moment of death
             if (keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) advanceDeath();
