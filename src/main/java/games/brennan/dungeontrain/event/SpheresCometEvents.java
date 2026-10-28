@@ -3,11 +3,11 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.SpheresProgressionConfig;
-import games.brennan.dungeontrain.net.CometShowerPacket;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.wind.EndFrostbite;
 import games.brennan.dungeontrain.wind.WindZones;
+import games.brennan.dungeontrain.worldgen.CometShowerPlan;
 import games.brennan.dungeontrain.worldgen.SpheresComets;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.server.level.ServerLevel;
@@ -21,6 +21,8 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
 
+import javax.annotation.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +30,9 @@ import java.util.UUID;
 
 /**
  * Comets over the spheres band ({@link SpheresComets} decides when and how often; {@link SpheresComet} flies
- * them). Each tick every train with a player near it rolls for a comet at that player's X, aimed at the
- * carriages around them so it is seen; about a third are aimed into the train, the rest streak past. They explode on whatever they meet — a carriage or a sphere —
+ * them). Each tick every train with a player near it rolls, at that player's X, for a comet shower
+ * ({@link CometShowers}, which brings every strike on the train) or, while it has none on, a near miss that
+ * streaks past the carriages around them. They explode on whatever they meet, a carriage or a sphere,
  * breaking blocks and setting fires; a carriage's lost blocks go through Sable's block-change hook like a
  * creeper's ({@code SableBlockChangeGuardMixin}), so the train is not shifted.
  *
@@ -48,12 +51,6 @@ public final class SpheresCometEvents {
     private static List<SpheresComet> live = List.of();
     /** Next comet id, as the client knows it; server thread only. */
     private static int nextId;
-    /** Lap-0 strikes announced by their shower, held back until it is time to fly in; server thread only. */
-    private static List<HeldStrike> held = List.of();
-
-    /** A strike on {@code trainId} by {@code player}, launching along {@code approach} at server tick {@code at}. */
-    private record HeldStrike(UUID trainId, UUID player, Vec3 approach, long at) {}
-
     private SpheresCometEvents() {}
 
     @SubscribeEvent
@@ -63,71 +60,60 @@ public final class SpheresCometEvents {
         List<Trains.Carriage> carriages = live.isEmpty() ? null : Trains.allCarriages(level);
         if (carriages != null) live = stepAll(level, carriages);
         Map<UUID, List<Trains.Carriage>> trains = Trains.byTrainId(level);
-        if (!held.isEmpty()) launchHeld(level, trains);
-        if (live.size() >= MAX_LIVE) return;
+        CometShowers.tick(level, trains);
         for (Map.Entry<UUID, List<Trains.Carriage>> entry : trains.entrySet()) {
+            if (CometShowers.isOn(entry.getKey())) continue;
             List<Trains.Carriage> train = entry.getValue();
             ServerPlayer watcher = watcher(level, train);
             if (watcher == null) continue;
             int x = (int) Math.floor(watcher.getX());
-            double chance = chanceAt(x);
-            if (chance <= 0.0 || level.random.nextDouble() >= chance) continue;
             long lap = lapAt(x);
-            boolean hit = level.random.nextDouble() < SpheresComets.aimedShare(lap, depthAt(x));
-            if (hit && lap <= 0L) {
-                announceStrike(level, entry.getKey(), train, watcher);
-            } else {
-                launch(level, train, watcher.position(), hit ? Aim.HIT : Aim.MISS);
+            double endSky = WindZones.endSkyAt(x), spheresVoid = WindZones.spheresVoidAt(x);
+            if (!SpheresComets.active(lap, endSky, spheresVoid)) continue;
+            double depth = depthAt(x);
+            CometShowerPlan plan = CometShowerPlan.of(lap, depth);
+            if (level.random.nextDouble() < plan.startChancePerTick()) {
+                CometShowers.start(level, entry.getKey(), train, watcher, plan);
+            } else if (live.size() < MAX_LIVE && level.random.nextDouble()
+                    < SpheresComets.nearMissChancePerTick(lap, endSky, spheresVoid, depth)) {
+                launch(level, train, watcher.position(), Aim.MISS);
             }
-            if (live.size() >= MAX_LIVE) return;
         }
     }
 
     /**
-     * Start a shower over {@code watcher}'s part of the train now and hold its strike back, so the sky fills with
-     * comets falling one way and then one of them comes down on the train
-     * {@value SpheresComets#SHOWER_LEAD_TICKS} ticks later, along that same line.
-     * @return true if a strike was set up
+     * Start a shower over {@code watcher}'s part of the train, from the plan where they are, whatever the band.
+     * @return true if one started (false if the train already has one)
      */
-    public static boolean announceStrike(ServerLevel level, UUID trainId, List<Trains.Carriage> train,
-                                         ServerPlayer watcher) {
-        Vec3 approach = SpheresComet.approach(train, level.random);
-        if (approach == null) return false;
-        Vec3 fall = approach.normalize().scale(-1.0);
-        SpheresComet.tell(level, watcher.position(), new CometShowerPacket((float) fall.x, (float) fall.y,
-            (float) fall.z, SpheresComets.SHOWER_LEAD_TICKS + SpheresComets.SHOWER_AFTER_TICKS));
-        long at = level.getGameTime() + SpheresComets.strikeLaunchDelay(SpheresComet.flightTicks(approach));
-        List<HeldStrike> next = new ArrayList<>(held);
-        next.add(new HeldStrike(trainId, watcher.getUUID(), approach, at));
-        held = List.copyOf(next);
-        LOGGER.debug("[DungeonTrain] Comet strike announced on train {}, launching at tick {}", trainId, at);
-        return true;
+    public static boolean startShower(ServerLevel level, UUID trainId, List<Trains.Carriage> train,
+                                      ServerPlayer watcher) {
+        int x = (int) Math.floor(watcher.getX());
+        return CometShowers.start(level, trainId, train, watcher, CometShowerPlan.of(lapAt(x), depthAt(x)));
     }
 
-    /** Fly in the held strikes whose time has come; one whose train or player is gone is dropped. */
-    private static void launchHeld(ServerLevel level, Map<UUID, List<Trains.Carriage>> trains) {
-        long now = level.getGameTime();
-        List<HeldStrike> waiting = new ArrayList<>(held.size());
-        for (HeldStrike strike : held) {
-            if (strike.at() > now) {
-                waiting.add(strike);
-                continue;
-            }
-            List<Trains.Carriage> train = trains.get(strike.trainId());
-            ServerPlayer player = level.getServer().getPlayerList().getPlayer(strike.player());
-            if (train == null || player == null) continue;
-            SpheresComet comet = SpheresComet.launch(level, train, player.position(), Aim.HIT, strike.approach(),
-                nextId++, level.random);
-            if (comet != null) add(comet);
+    /** Fly one of a shower's strikes into the carriages near {@code focus}, along its {@code approach}. */
+    @Nullable
+    static SpheresComet launchStrike(ServerLevel level, List<Trains.Carriage> train, Vec3 focus, Vec3 approach,
+                                     double speedScale) {
+        SpheresComet comet = SpheresComet.launch(level, train, focus, Aim.HIT, approach, speedScale, nextId++,
+            level.random);
+        if (comet != null) add(comet);
+        return comet;
+    }
+
+    /** Whether comet {@code id} is still in the air. */
+    static boolean isLive(int id) {
+        for (SpheresComet c : live) {
+            if (c.id() == id) return true;
         }
-        held = List.copyOf(waiting);
+        return false;
     }
 
-    /** Forget comets and held strikes, so none carries into the next world opened this session. */
+    /** Forget comets and showers, so none carries into the next world opened this session. */
     @SubscribeEvent
     public static void onServerStopping(ServerStoppingEvent event) {
         live = List.of();
-        held = List.of();
+        CometShowers.clear();
     }
 
     /** Throw away a comet display left in a save from before comets were drawn by the client. */

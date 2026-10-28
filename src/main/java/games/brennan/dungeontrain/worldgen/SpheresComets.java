@@ -17,8 +17,9 @@ import java.util.SplittableRandom;
  *   <li><b>Every lap after</b> — the interval halves per lap, never below {@value #MIN_INTERVAL_SECONDS} s.</li>
  * </ul>
  *
- * <p>Arrivals are memoryless: each tick a train rolls {@link #chancePerTick}, so the gaps are random around the
- * mean rather than a metronome.</p>
+ * <p>Arrivals are memoryless: each tick a train rolls, so the gaps are random around the mean rather than a
+ * metronome. Of these comets, the ones aimed at the train ({@link #aimedShare}) come grouped into showers
+ * ({@link CometShowerPlan}); the rest fall as near misses between showers ({@link #nearMissChancePerTick}).</p>
  */
 public final class SpheresComets {
 
@@ -44,11 +45,8 @@ public final class SpheresComets {
     public static final double DISTANT_PER_REAL_EARLY = 2.0;
     /** Ticks a distant comet takes to grow from nothing to full size as it appears. */
     public static final int DISTANT_GROW_TICKS = 20;
-    /** In lap 0 a comet aimed at the train comes inside a shower of far-off ones falling the same way: from this
-     *  many ticks before it arrives to {@link #SHOWER_AFTER_TICKS} after. */
-    public static final int SHOWER_LEAD_TICKS = 200;
-    public static final int SHOWER_AFTER_TICKS = 300;
-    /** Chance per tick of a shower comet while one is on (one a second); the usual distant ones stop meanwhile. */
+    /** Chance per tick of a distant shower comet while a shower ({@link CometShowerPlan}) is on, one a second; the
+     *  usual distant ones stop meanwhile. */
     public static final double SHOWER_CHANCE_PER_TICK = 1.0 / 20.0;
     private static final int TICKS_PER_SECOND = 20;
 
@@ -117,10 +115,12 @@ public final class SpheresComets {
         return t * t * (3.0 - 2.0 * t);
     }
 
-    /** Ticks to hold a strike back so it arrives {@value #SHOWER_LEAD_TICKS} ticks into its shower, given how long
-     *  it takes to fly in. */
-    public static int strikeLaunchDelay(double flightTicks) {
-        return (int) Math.max(0L, Math.round(SHOWER_LEAD_TICKS - flightTicks));
+    /**
+     * Chance per tick of a near miss: every comet that is not aimed at the train ({@link #aimedShare}). Strikes
+     * come only in showers ({@link CometShowerPlan}), and near misses only fall while none is on.
+     */
+    public static double nearMissChancePerTick(long cycleIndex, double endSky, double spheresVoid, double depth) {
+        return chancePerTick(cycleIndex, endSky, spheresVoid) * (1.0 - aimedShare(cycleIndex, depth));
     }
 
     /** Whether a comet at height {@code y} has fallen {@value #MISS_DROP_BLOCKS} blocks below a train whose lowest

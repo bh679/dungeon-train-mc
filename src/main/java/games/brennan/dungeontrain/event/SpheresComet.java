@@ -68,17 +68,18 @@ record SpheresComet(int id, Vec3 pos, Vec3 velocity, int age) {
     @Nullable
     static SpheresComet launch(ServerLevel level, List<Trains.Carriage> train, Vec3 focus,
                                SpheresCometEvents.Aim aim, int id, RandomSource random) {
-        return launch(level, train, focus, aim, null, id, random);
+        return launch(level, train, focus, aim, null, 1.0, id, random);
     }
 
     /**
      * {@link #launch(ServerLevel, List, Vec3, SpheresCometEvents.Aim, int, RandomSource)} along {@code approach}
      * (from the meeting point back to where it starts, from {@link #approach}) when one was picked in advance, so a
-     * strike announced by its shower comes from the direction the shower falls.
+     * shower's strikes come from the direction it falls, and at {@code speedScale} times the usual speed.
      */
     @Nullable
     static SpheresComet launch(ServerLevel level, List<Trains.Carriage> train, Vec3 focus,
-                               SpheresCometEvents.Aim aim, @Nullable Vec3 approach, int id, RandomSource random) {
+                               SpheresCometEvents.Aim aim, @Nullable Vec3 approach, double speedScale, int id,
+                               RandomSource random) {
         if (train.isEmpty()) return null;
         Trains.Carriage carriage = pick(train, focus, random);
         AABBdc bb = carriage.ship().worldAABB();
@@ -98,7 +99,7 @@ record SpheresComet(int id, Vec3 pos, Vec3 velocity, int age) {
             target = target.add(0.0, random.nextBoolean() ? miss * 0.4 : 0.0, random.nextBoolean() ? miss : -miss);
         }
         Vec3 offset = approach != null ? approach : offset(dirX, random);
-        double ticks = offset.length() / SPEED;
+        double ticks = flightTicks(offset, speedScale);
         Vec3 meet = target.add(trainVel.scale(ticks));
         Vec3 start = meet.add(offset);
         Vec3 velocity = offset.scale(-1.0 / ticks);
@@ -109,7 +110,7 @@ record SpheresComet(int id, Vec3 pos, Vec3 velocity, int age) {
 
     /**
      * A comet's way in: from where it meets the train back to where it starts, ahead along the track, up, and to
-     * the side. Picked in advance for a strike that comes with a shower. Null when there is no train.
+     * the side. Picked once per shower, so all its strikes come in the same way. Null when there is no train.
      */
     @Nullable
     static Vec3 approach(List<Trains.Carriage> train, RandomSource random) {
@@ -117,9 +118,9 @@ record SpheresComet(int id, Vec3 pos, Vec3 velocity, int age) {
         return offset(perTick(Trains.lead(train)).x < -1.0E-3 ? -1.0 : 1.0, random);
     }
 
-    /** Ticks a comet takes along {@code approach}. */
-    static double flightTicks(Vec3 approach) {
-        return approach.length() / SPEED;
+    /** Ticks a comet takes along {@code approach} at {@code speedScale} times the usual speed. */
+    static double flightTicks(Vec3 approach, double speedScale) {
+        return approach.length() / (SPEED * Math.max(0.1, speedScale));
     }
 
     private static Vec3 offset(double dirX, RandomSource random) {

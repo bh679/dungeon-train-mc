@@ -208,8 +208,8 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> SphereGravityDebug.setForcedOff(ctx.getSource(), false)))
                 .then(Commands.literal("off").executes(ctx -> SphereGravityDebug.setForcedOff(ctx.getSource(), true))))
             // /dungeontrain debug comet [aimed|miss|ahead|shower] — comet chance where you stand and how many are in
-            // flight; aimed|miss|ahead launch one at the nearest train now, shower starts a shower and strikes the
-            // train 10 s in, whatever the band. Also logged at INFO.
+            // flight; aimed|miss|ahead launch one at the nearest train now, shower starts a comet shower sized for
+            // where you stand, whatever the band. Also logged at INFO.
             .then(Commands.literal("comet").executes(ctx -> SpheresCometDebug.report(ctx.getSource()))
                 .then(Commands.literal("aimed").executes(ctx -> SpheresCometDebug.launch(ctx.getSource(),
                     SpheresCometEvents.Aim.HIT)))

@@ -38,9 +38,9 @@ import java.util.List;
  * never near the train and touch nothing: no packets, sound, shake or explosion, and no particles, just the
  * spinning magma head and one thin glowing streak behind it. Each keeps falling at full size until it is well below
  * the camera and out of sight ({@value #GONE_BELOW} blocks down). Like stars, they are pinned to the sky around the
- * camera rather than to the world, so walking or riding never brings one nearer or makes it grow. In lap 0 a comet
- * about to strike the train brings a shower of them, all parallel to it and in place of the usual ones
- * ({@link CometShowerPacket}).
+ * camera rather than to the world, so walking or riding never brings one nearer or makes it grow. While a comet
+ * shower is on over the train, they come as a shower instead: one a second, all parallel to its strikes and as
+ * fast ({@link CometShowerPacket}).
  * Render-thread state only.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
@@ -82,9 +82,10 @@ public final class DistantComets {
     }
 
     private static List<Comet> live = List.of();
-    /** Ticks left of the shower around a strike on the train ({@link #shower}), and the way it falls. */
+    /** Ticks left of the comet shower on now ({@link #shower}), the way it falls, and how fast. */
     private static int showerTicks;
     private static Vec3 showerFall = new Vec3(0.0, -1.0, 0.0);
+    private static double showerSpeed = 1.0;
 
     private DistantComets() {}
 
@@ -116,11 +117,13 @@ public final class DistantComets {
         showerTicks = 0;
     }
 
-    /** A comet is coming in to strike the train: a shower falling its way for the packet's ticks. */
+    /** A comet shower is on over the train: fill the sky falling its way, at its speed, for the packet's ticks. A
+     *  new shower takes over from one still clearing. */
     public static void shower(CometShowerPacket packet) {
         Vec3 fall = new Vec3(packet.dx(), packet.dy(), packet.dz());
         if (fall.lengthSqr() < 1.0E-6) return;
         showerFall = fall.normalize();
+        showerSpeed = Math.max(0.1, packet.speedScale());
         showerTicks = Math.max(showerTicks, packet.ticks());
     }
 
@@ -162,10 +165,12 @@ public final class DistantComets {
         return SpheresComets.distantChancePerTick(lap, WindZones.endSkyAt(x), WindZones.spheresVoidAt(x));
     }
 
-    /** A shower comet: placed like any distant one, but falling exactly along the shower's line. */
+    /** A shower comet: placed like any distant one, but falling exactly along the shower's line, as fast as its
+     *  strikes. */
     private static Comet spawnShower(RandomSource random) {
         Comet c = spawn(random);
-        double speed = Math.sqrt(DRIFT_MIN * DRIFT_MIN + FALL_MIN * FALL_MIN) + random.nextDouble() * FALL_SPAN;
+        double speed = (Math.sqrt(DRIFT_MIN * DRIFT_MIN + FALL_MIN * FALL_MIN) + random.nextDouble() * FALL_SPAN)
+            * showerSpeed;
         return new Comet(c.id(), c.start(), showerFall.scale(speed), c.size(), 0);
     }
 

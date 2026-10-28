@@ -9,11 +9,12 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
- * Server → client: a comet is on its way to strike the train, so the far sky fills with a shower of comets falling
- * the same way ({@code dx/dy/dz}, a unit vector) for {@code ticks} ticks, starting before it arrives and running on
- * after. Purely visual; the client draws the shower itself ({@link DistantComets}).
+ * Server → client: a comet shower is on, so the far sky fills with comets falling one way ({@code dx/dy/dz}, a unit
+ * vector) at {@code speedScale} times the usual speed for {@code ticks} ticks, while its strikes come down on the
+ * train along that same line. Purely visual; the client draws the shower itself ({@link DistantComets}).
  */
-public record CometShowerPacket(float dx, float dy, float dz, int ticks) implements CustomPacketPayload {
+public record CometShowerPacket(float dx, float dy, float dz, float speedScale, int ticks)
+        implements CustomPacketPayload {
 
     public static final Type<CometShowerPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "comet_shower"));
@@ -25,11 +26,13 @@ public record CometShowerPacket(float dx, float dy, float dz, int ticks) impleme
         buf.writeFloat(p.dx);
         buf.writeFloat(p.dy);
         buf.writeFloat(p.dz);
+        buf.writeFloat(p.speedScale);
         buf.writeVarInt(p.ticks);
     }
 
     private static CometShowerPacket decode(FriendlyByteBuf buf) {
-        return new CometShowerPacket(buf.readFloat(), buf.readFloat(), buf.readFloat(), buf.readVarInt());
+        return new CometShowerPacket(buf.readFloat(), buf.readFloat(), buf.readFloat(), buf.readFloat(),
+            buf.readVarInt());
     }
 
     @Override

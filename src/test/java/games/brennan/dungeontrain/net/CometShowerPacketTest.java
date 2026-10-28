@@ -6,12 +6,12 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/** Wire round-trip for a comet shower: its direction and how long it lasts. */
+/** Wire round-trip for a comet shower: its direction, speed and how long it lasts. */
 final class CometShowerPacketTest {
 
     @Test
     void showerRoundTrips() {
-        CometShowerPacket shower = new CometShowerPacket(-0.48F, -0.8F, 0.36F, 500);
+        CometShowerPacket shower = new CometShowerPacket(-0.48F, -0.8F, 0.36F, 2.5F, 500);
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         CometShowerPacket.STREAM_CODEC.encode(buf, shower);
         assertEquals(shower, CometShowerPacket.STREAM_CODEC.decode(buf));

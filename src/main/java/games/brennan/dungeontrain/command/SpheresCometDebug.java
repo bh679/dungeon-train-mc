@@ -20,7 +20,7 @@ import java.util.UUID;
  * {@code /dungeontrain debug comet [aimed|miss|ahead|shower]} — with no argument, the comet chance at the caller's X
  * and how many are in flight; {@code aimed} / {@code miss} / {@code ahead} launch one at the nearest train, by the
  * caller, whatever the band ({@code ahead}: a miss that comes down beside the track in front); {@code shower} starts
- * a lap-0 strike's shower over the caller and brings the strike in 10 s later.
+ * a comet shower over the caller, its strikes and speed sized for the lap and depth where they stand.
  * Logged at INFO for RCON runs.
  */
 final class SpheresCometDebug {
@@ -63,8 +63,9 @@ final class SpheresCometDebug {
             send(source, "[DungeonTrain] comet shower: needs a player and a loaded train", ChatFormatting.RED);
             return 0;
         }
-        boolean ok = SpheresCometEvents.announceStrike(level, train.getKey(), train.getValue(), player);
-        send(source, "[DungeonTrain] comet shower: " + (ok ? "started, strike in 10 s" : "failed"),
+        boolean ok = SpheresCometEvents.startShower(level, train.getKey(), train.getValue(), player);
+        send(source, "[DungeonTrain] comet shower: " + (ok ? "started, sized for where you stand"
+                : "the train already has one"),
                 ok ? ChatFormatting.GOLD : ChatFormatting.RED);
         return ok ? 1 : 0;
     }
