@@ -31709,7 +31709,7 @@
         "feature",
         "world"
       ],
-      "title": "Something is falling from the sky",
+      "title": "Deeper down the line, the sky gets dangerous",
       "summary": "Out in the stranger stretches of the journey, the sky is no longer empty. Keep an eye above you, and on the roof of your carriage.",
       "highlights": [
         "Fiery visitors streak overhead, and some of them come for the train.",
@@ -31721,7 +31721,11 @@
       "date": "2026-10-27",
       "released": false,
       "released_in": null,
-      "released_at": null
+      "released_at": null,
+      "major": true,
+      "notable": true,
+      "description": "Deeper down the line, the sky is no longer empty. Something has started coming down out of the dark.\n\nListen for it. And when the sky fills up, keep your head down.\n\n*The further you go, the more of it there is.*",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/comet-shower.gif"
     }
   ]
 }
