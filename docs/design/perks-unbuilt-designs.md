@@ -225,3 +225,46 @@ chance easing toward 100% and spread to its pack within a growing range.
 - Emerald payment: count `Items.EMERALD` across the inventory, refuse if short, remove the exact
   amount server-side before rerolling.
 
+---
+
+## Hoarder
+
+### Chest Sense (tier 2) — CONFIRMED 2026-10-29
+
+**How it works**
+- On a timer, no button. Starts at the first point and runs while the player is alive.
+- When it fires: a sound plays and a ring of particles pulses out from the player to the edge of
+  Range; every **unopened, non-empty** container within Range (a sphere) glows through walls for
+  **15 s**. Containers: chests, trapped chests, barrels, shulker boxes, vases, backpack-apple
+  chests; on the ground and on carriages. Containers anyone has opened, and empty ones, do not
+  glow. Nothing shows which has the best loot.
+- Ladder (points 1 to 9 set by hand):
+
+  | r | Range | Every |
+  |---|-------|-------|
+  | 1 | 5 blocks | 6 min |
+  | 2 | 6 | 5 |
+  | 3 | 7 | 4.8 |
+  | 4 | 8 | 4.6 |
+  | 5 | 9 | 4.5 |
+  | 6 | 10 | 4.3 |
+  | 7 | 11 | 4.2 |
+  | 8 | 12 | 4.1 |
+  | 9 | 13 | 4 |
+  | 10+ | +1 block per point | −0.1 min per point; floor 1 min (reached at point 39), never less |
+
+**Details card**
+- Description: "Every few minutes, sense nearby chests through walls."
+- Chips: `Range 6 blocks → 7` (BLOCKS) and `Every 5 min → 4.8 min` (MINUTES, one decimal, as
+  Save Ally).
+
+**Build notes**
+- Server tick per Hoarder with the perk: countdown in a per-life attachment; on fire, collect
+  container block entities in range (main level **and** Sable plots: `CarriageDeck.chunkInPlot`
+  for plot chunks, never a per-block scan), filter by DT's opened-container tracking (loot table
+  still unrolled, or `LootedContainers` if that exists for vases) and non-empty inventory, send
+  one packet with the world-space positions and the range (bump `PROTOCOL_VERSION`).
+- Client: 15 s of a glowing outline per position (render through walls, like the entity glow
+  shader on a block box), an expanding particle ring from the player to Range over ~1 s, and a
+  sound event. Plot positions must be re-transformed each frame as the carriage moves.
+
