@@ -25,6 +25,7 @@ import games.brennan.dungeontrain.narrative.DeathLoreStore;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.DeathScenePacket;
 import games.brennan.dungeontrain.ship.sable.DeadRiderAnchors;
+import games.brennan.dungeontrain.ship.sable.DeathBodyRagdoll;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
@@ -386,7 +387,9 @@ public final class RunStatsEvents {
         List<DeathScenePacket.Target> targets = voidDeath ? List.of()
             : DeathSceneTargets.near(player.serverLevel(), DeadRiderAnchors.anchorPos(player));
         Vec3 hazard = voidDeath ? null : DeathHazard.find(player, source);
-        return new DeathScenePacket(voidDeath, killer, contact, targets, hazard);
+        // The body left where they died (a Sable: Ragdolls ragdoll); the spot and carriage shots track it.
+        UUID body = DeathBodyRagdoll.spawn(player, voidDeath);
+        return new DeathScenePacket(voidDeath, killer, contact, targets, hazard, body);
     }
 
     private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet,

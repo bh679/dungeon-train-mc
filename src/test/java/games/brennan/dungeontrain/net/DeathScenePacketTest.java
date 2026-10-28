@@ -25,6 +25,17 @@ class DeathScenePacketTest {
     }
 
     @Test
+    void bodyRoundTrips() {
+        UUID body = UUID.randomUUID();
+        DeathScenePacket in = new DeathScenePacket(false, 3, -1, List.of(), new net.minecraft.world.phys.Vec3(1.5, 64.0, -2.5), body);
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        in.encode(buf);
+        DeathScenePacket out = DeathScenePacket.decode(buf);
+        assertEquals(in, out);
+        assertEquals(body, out.bodyId());
+    }
+
+    @Test
     void noTargetsRoundTrips() {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         new DeathScenePacket(true, -1, 7).encode(buf);
