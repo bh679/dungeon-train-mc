@@ -189,9 +189,10 @@ public final class DeathCameraCycle {
                                          boolean hasFeature) {
         List<DeathShot> shots = new ArrayList<>();
         shots.add(DeathShot.pov(40));
-        // Where you died, riding with the carriage (the body stays on it). Skipped only for a void
-        // death; a blocked arc is answered by a tighter one, never by dropping the shot.
-        if (!voidDeath) shots.add(DeathShot.orbit(DeathShot.Target.BODY, 6.0, 3.0, 60, "spot"));
+        // Where you died, riding with the carriage (the body stays on it): as the lead-in to who
+        // killed you, or, off the train, in place of the carriage shot. Never for a void death.
+        // A blocked arc is answered by a tighter one, never by dropping the shot.
+        if (!voidDeath && (hasKiller || !onTrain)) shots.add(DeathShot.orbit(DeathShot.Target.BODY, 6.0, 3.0, 60, "spot"));
         if (hasKiller) shots.add(DeathShot.orbit(DeathShot.Target.KILLER, 5.0, 2.5, 60, "killer"));
         if (hasContact) shots.add(DeathShot.orbit(DeathShot.Target.CONTACT, 5.0, 2.5, 60, "mob"));
         // One shot: zoom out from beside the body for DOLLY_TICKS, then the lens stays where it

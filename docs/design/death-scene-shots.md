@@ -8,7 +8,7 @@ train, up, across); along is positive ahead. Carriages are 7 wide.
 | # | Label | Camera | Subject | Position | Hold | Skipped when |
 |---|---|---|---|---|---|---|
 | 0 | POV | own eyes through the carriage render pose, red wash, death tilt | you | eyes | 2 s | never |
-| 1 | spot | orbit riding the carriage | the body where it died | radius 6, height 3; falls back to 4 / 2.5 / 1.6 and lower; lens in open air | 3 s | void death only (a blocked arc falls back to tighter radii, lower or higher lenses, and finally a lens just over the head) |
+| 1 | spot | orbit riding the carriage | the body where it died | radius 6, height 3; falls back to 4 / 2.5 / 1.6 and lower; lens in open air | 3 s | void death; or no killer shot follows while the carriage shot plays (a blocked arc falls back to tighter radii, other lens heights, and finally a lens just over the head) |
 | 2 | killer | orbit following the entity | the killer | radius 5, height 2.5 | 3 s | no killer, gone, no clear arc |
 | 2.5 | mob | orbit following the entity | a creature you fought nearby, a friend (gifts exchanged), else a nearby pet of yours | radius 5, height 2.5 | 3 s | none within 32 blocks, no clear arc |
 | 3 | carriage | zoom out 3 s, blend 1 s, world-locked hold tracking you | you | starts 1.6 outside the carriage wall at eye height on the window side, looking in; ends (-5, 6, wall+9) | 6 s | died off the train (3 s tracking shot from (-3, 2.5, 8) instead) |
