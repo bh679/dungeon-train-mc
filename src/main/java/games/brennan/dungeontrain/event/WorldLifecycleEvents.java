@@ -149,6 +149,7 @@ public final class WorldLifecycleEvents {
         // The shipyard cache holds each ServerLevel strongly and the driver map holds one provider
         // per group ever spawned; neither may outlive the world it describes.
         games.brennan.dungeontrain.ship.Shipyards.clear();
+        games.brennan.dungeontrain.ship.ResidentCarriageBoxes.clear();
         games.brennan.dungeontrain.ship.sable.SableManagedShip.clearDrivers();
         games.brennan.dungeontrain.event.CarriageGroupGapTicker.resetWarnings();
         PillarTemplateStore.clearCache();
