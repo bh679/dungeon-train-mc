@@ -77,6 +77,7 @@ public final class DeathNoteRefreshEvents {
         LAST_REFRESH_CARRIAGE.remove(player.getUUID());
         LAST_SCAN_CARRIAGE.remove(player.getUUID());
         CURSED_STRUCK_THIS_LIFE.remove(player.getUUID());
+        CursedStoryPool.forgetDelivered(player.getUUID());   // a new life: unread stories may come again
         // A new world load counts as a login → re-pull this target's unspawned curses from the relay,
         // and this author's landed curses awaiting their story.
         if (DeathNoteGate.canSync(player)) refresh(player);

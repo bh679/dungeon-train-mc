@@ -13,6 +13,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,8 +34,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * block or touch the network.</p>
  *
  * <p><b>One story per curse.</b> A story leaves the pool when the author <em>reads</em> its book
- * ({@link #consume}); an unread book simply burns and the story is offered again at the next welcome
- * strike. The read is latched twice — locally in {@link PlayerPlayedMarker} (per-installation, so it
+ * ({@link #consume}); an unread book simply burns and the story is offered again next life, but
+ * never twice in the same life ({@link #markDelivered}). The read is latched twice — locally in {@link PlayerPlayedMarker} (per-installation, so it
  * survives the fresh-seed world every death creates) and on the relay — and {@link #peek} honours the
  * local latch, so a slow or failed relay can never re-tell a story that was already read.</p>
  */
@@ -93,22 +94,50 @@ public final class CursedStoryPool {
     private static final Map<UUID, List<Story>> STORIES = new ConcurrentHashMap<>();
     /** Per-player in-flight guard so overlapping refreshes don't stack. */
     private static final Map<UUID, Boolean> IN_FLIGHT = new ConcurrentHashMap<>();
+    /**
+     * authorUuid → ids of the stories already handed to them THIS life (immutable set). A story is
+     * only retired once read, so without this a second strike in the same life (the welcome strike,
+     * then the between-carts one) would hand the same unread story out again. Cleared at each new
+     * life ({@link #forgetDelivered}) so an unread story is still re-offered next life.
+     */
+    private static final Map<UUID, Set<Integer>> DELIVERED = new ConcurrentHashMap<>();
 
     private CursedStoryPool() {}
 
     /**
-     * The oldest story {@code authorUuid} is owed and has not read, or empty. Filters against the
-     * local read latch as well as the snapshot, so a story read moments ago is never re-offered while
-     * the relay catches up.
+     * The oldest story {@code authorUuid} is owed, has not read, and has not already been handed this
+     * life, or empty. Filters against the local read latch as well as the snapshot, so a story read
+     * moments ago is never re-offered while the relay catches up.
      */
     public static Optional<Story> peek(UUID authorUuid) {
         List<Story> stories = STORIES.get(authorUuid);
         if (stories == null || stories.isEmpty()) return Optional.empty();
-        Set<String> read = PlayerPlayedMarker.readCursedStories(authorUuid);
+        return firstUntold(stories, PlayerPlayedMarker.readCursedStories(authorUuid),
+            DELIVERED.getOrDefault(authorUuid, Set.of()));
+    }
+
+    /** Pure scan behind {@link #peek}: the first story neither read nor delivered this life. */
+    static Optional<Story> firstUntold(List<Story> stories, Set<String> read, Set<Integer> delivered) {
         for (Story s : stories) {
-            if (!read.contains(Integer.toString(s.id()))) return Optional.of(s);
+            if (read.contains(Integer.toString(s.id()))) continue;
+            if (delivered.contains(s.id())) continue;
+            return Optional.of(s);
         }
         return Optional.empty();
+    }
+
+    /** Record that story {@code id}'s book was just handed to {@code authorUuid} this life. */
+    public static void markDelivered(UUID authorUuid, int id) {
+        DELIVERED.merge(authorUuid, Set.of(id), (had, add) -> {
+            Set<Integer> next = new HashSet<>(had);
+            next.addAll(add);
+            return Set.copyOf(next);
+        });
+    }
+
+    /** Start a new life for {@code authorUuid}: every unread story may be offered again. */
+    public static void forgetDelivered(UUID authorUuid) {
+        DELIVERED.remove(authorUuid);
     }
 
     /** True when {@code authorUuid} has a story waiting — the cheap gate for the delivery scan. */
@@ -129,6 +158,7 @@ public final class CursedStoryPool {
     public static void forget(UUID authorUuid) {
         STORIES.remove(authorUuid);
         IN_FLIGHT.remove(authorUuid);
+        DELIVERED.remove(authorUuid);
     }
 
     /**
