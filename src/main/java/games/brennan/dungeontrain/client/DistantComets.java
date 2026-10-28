@@ -96,22 +96,25 @@ public final class DistantComets {
         Vec3 cam = event.getCamera().getPosition();
         PoseStack ps = event.getPoseStack();
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
-        VertexConsumer streak = buffer.getBuffer(RenderType.lightning());
-        for (Comet c : live) {
-            double ticks = c.age() + partial;
-            float fade = (float) SpheresComets.distantFade(ticks, c.life());
-            if (fade <= 0.0F) continue;
-            Vec3 at = c.at(ticks).subtract(cam);
-            tail(streak, ps.last().pose(), at, c.velocity().normalize(), fade);
-            head(mc, ps, buffer, c, at, ticks, fade);
-        }
         // Past the terrain fog's edge on purpose: these are seen against the far void sky.
         float fogStart = RenderSystem.getShaderFogStart();
         float fogEnd = RenderSystem.getShaderFogEnd();
         RenderSystem.setShaderFogStart(Float.MAX_VALUE);
         RenderSystem.setShaderFogEnd(Float.MAX_VALUE);
-        buffer.endBatch(RenderType.solid());
+        // Streaks then heads, each flushed on its own: drawing a block can end the shared streak buffer mid-way.
+        VertexConsumer streak = buffer.getBuffer(RenderType.lightning());
+        for (Comet c : live) {
+            double ticks = c.age() + partial;
+            float fade = (float) SpheresComets.distantFade(ticks, c.life());
+            if (fade > 0.0F) tail(streak, ps.last().pose(), c.at(ticks).subtract(cam), c.velocity().normalize(), fade);
+        }
         buffer.endBatch(RenderType.lightning());
+        for (Comet c : live) {
+            double ticks = c.age() + partial;
+            float fade = (float) SpheresComets.distantFade(ticks, c.life());
+            if (fade > 0.0F) head(mc, ps, buffer, c, c.at(ticks).subtract(cam), ticks, fade);
+        }
+        buffer.endBatch(RenderType.solid());
         RenderSystem.setShaderFogStart(fogStart);
         RenderSystem.setShaderFogEnd(fogEnd);
     }
