@@ -7,44 +7,52 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** The death menu builds up one layer per story line, each held for its line's time. */
+/** The death menu builds up one thing at a time: a line, read on its own, then its layer, then a settle. */
 class MenuRevealTest {
 
-    /** Reading times: stars 4000, active 500, centre 800, perks 1500, select 1600 (after the lead-in). Lines 2-4 get 2 s of fades on top. */
-    private static final long[] BEATS = {4000, 500, 800, 1500, 1600};
-    private static final long[] NO_ACTIVE = {4000, 0, 800, 1500, 1600};
+    /** Reading times: stars 4000, active 2500, centre 2800, perks 3500, select 1600. */
+    private static final long[] BEATS = {4000, 2500, 2800, 3500, 1600};
+    private static final long[] NO_ACTIVE = {4000, 0, 2800, 3500, 1600};
     private static final long L = MenuReveal.LEAD_IN_MS;
-    /** A layer starts once its line has faded in and been read on its own. */
-    private static final long T = MenuReveal.LAYER_DELAY_MS;
-    /** What lines 2-4 get on top of their reading time. */
-    private static final long X = MenuReveal.LAYER_DELAY_MS + MenuReveal.FADE_MS;
-    /** The stars' beat: its reading time, or the line and the stars' fade if longer. */
-    private static final long S = Math.max(4000, MenuReveal.LAYER_DELAY_MS + MenuReveal.STAR_FADE_MS);
-    private static final long A = 500 + X, C = 800 + X, P = 1500 + X;
+    private static final long F = MenuReveal.FADE_MS;
+    private static final long SETTLE = MenuReveal.SETTLE_MS;
+    /** Each beat's whole time: read, its layer's fade, the settle. */
+    private static final long S = 4000 + MenuReveal.STAR_FADE_MS + SETTLE;
+    private static final long A = 2500 + F + SETTLE, C = 2800 + F + SETTLE, P = 3500 + F + SETTLE;
 
     @Test
-    @DisplayName("each layer starts when the line before it has had its time")
-    void startsFromLineTimes() {
+    @DisplayName("each layer comes in once its line has been read; the next line once that layer is up")
+    void readThenLayer() {
         MenuReveal r = new MenuReveal(1000, BEATS, false);
-        assertEquals(1000 + L, r.beatStart(MenuReveal.BEAT_STARS), "the first line after the plain lead-in");
-        assertEquals(1000 + L + T, r.startOf(MenuReveal.Stage.STARS), "the stars once the line is up");
-        long sel = 1000 + L + S + A + C + P;
-        assertEquals(1000 + L + S + T, r.startOf(MenuReveal.Stage.ACTIVE));
-        assertEquals(1000 + L + S + A + T, r.startOf(MenuReveal.Stage.UNLOCKED));
-        assertEquals(1000 + L + S + A + C + T, r.startOf(MenuReveal.Stage.CLASSES));
+        long t0 = 1000 + L;
+        assertEquals(t0, r.beatStart(MenuReveal.BEAT_STARS), "the first line after the plain lead-in");
+        assertEquals(t0 + 4000, r.startOf(MenuReveal.Stage.STARS), "the stars once the line has been read");
+        assertEquals(t0 + S, r.beatStart(MenuReveal.BEAT_ACTIVE), "the next line once the stars are up and settled");
+        assertEquals(t0 + S + 2500, r.startOf(MenuReveal.Stage.ACTIVE));
+        assertEquals(t0 + S + A + 2800, r.startOf(MenuReveal.Stage.UNLOCKED));
+        assertEquals(t0 + S + A + C + 3500, r.startOf(MenuReveal.Stage.CLASSES));
+        long sel = t0 + S + A + C + P;
         assertEquals(sel, r.beatStart(MenuReveal.BEAT_SELECT));
         assertEquals(sel + 1600, r.startOf(MenuReveal.Stage.CLASS_LIST), "the list after the select line's time");
         assertEquals(sel + 1600 + MenuReveal.STEP_MS, r.startOf(MenuReveal.Stage.POINTS));
     }
 
     @Test
+    @DisplayName("a line is never followed by its layer before it has faded in")
+    void shortLine() {
+        MenuReveal r = new MenuReveal(0, new long[] {300, 0, 300, 300, 1600}, false);
+        assertEquals(L + F, r.startOf(MenuReveal.Stage.STARS));
+        assertEquals(0.5, r.alpha(MenuReveal.Stage.STARS, L + F + MenuReveal.STAR_FADE_MS / 2), 1e-9, "the stars fade in slowly");
+    }
+
+    @Test
     @DisplayName("no points this life: the active beat is skipped")
     void noActive() {
         MenuReveal r = new MenuReveal(0, NO_ACTIVE, false);
-        assertEquals(S + L + T, r.startOf(MenuReveal.Stage.UNLOCKED));
+        assertEquals(L + S, r.beatStart(MenuReveal.BEAT_CENTRE));
         assertEquals(0.0, r.alpha(MenuReveal.Stage.ACTIVE, 60_000));
-        assertEquals(MenuReveal.BEAT_STARS, r.lineAt(S - 1 + L));
-        assertEquals(MenuReveal.BEAT_CENTRE, r.lineAt(S + L));
+        assertEquals(MenuReveal.BEAT_STARS, r.lineAt(L + S - 1));
+        assertEquals(MenuReveal.BEAT_CENTRE, r.lineAt(L + S));
     }
 
     @Test
@@ -53,17 +61,17 @@ class MenuRevealTest {
         MenuReveal r = new MenuReveal(0, BEATS, false);
         assertEquals(-1, r.lineAt(0), "nothing during the lead-in");
         assertEquals(MenuReveal.BEAT_STARS, r.lineAt(L));
-        assertEquals(MenuReveal.BEAT_ACTIVE, r.lineAt(S + L));
-        assertEquals(MenuReveal.BEAT_PERKS, r.lineAt(S + A + C + L));
-        assertEquals(MenuReveal.BEAT_SELECT, r.lineAt(60_000), "stays");
-        assertTrue(r.lineAlpha(60_000) > 0.99);
-        assertTrue(r.lineAlpha(S + L - 1) < 0.1, "a line fades out at the end of its beat");
+        assertEquals(MenuReveal.BEAT_ACTIVE, r.lineAt(L + S));
+        assertEquals(MenuReveal.BEAT_PERKS, r.lineAt(L + S + A + C));
+        assertEquals(MenuReveal.BEAT_SELECT, r.lineAt(600_000), "stays");
+        assertTrue(r.lineAlpha(600_000) > 0.99);
+        assertTrue(r.lineAlpha(L + S - 1) < 0.1, "a line fades out at the end of its beat");
         assertEquals(MenuReveal.NEVER, r.startOf(MenuReveal.Stage.BAR));
-        r.onHover(4000);
+        r.onHover(L + 10);
         assertEquals(MenuReveal.NEVER, r.startOf(MenuReveal.Stage.BAR), "a hover before the select line does not count");
-        r.onHover(61_000);
-        assertEquals(61_000, r.startOf(MenuReveal.Stage.BAR));
-        assertEquals(-1, r.lineAt(61_000), "the bar has the line's place");
+        r.onHover(610_000);
+        assertEquals(610_000, r.startOf(MenuReveal.Stage.BAR));
+        assertEquals(-1, r.lineAt(610_000), "the bar has the line's place");
     }
 
     @Test
@@ -78,7 +86,7 @@ class MenuRevealTest {
         }
         assertEquals(MenuReveal.BEAT_SELECT, r.lineAt(100));
         r.onHover(200);
-        assertEquals(1.0, r.alpha(MenuReveal.Stage.BAR, 200 + MenuReveal.FADE_MS));
+        assertEquals(1.0, r.alpha(MenuReveal.Stage.BAR, 200 + F));
     }
 
     @Test
@@ -105,43 +113,37 @@ class MenuRevealTest {
         long afterSelect = r.beatStart(MenuReveal.BEAT_SELECT) + NO_ACTIVE[MenuReveal.BEAT_SELECT];
         assertEquals(afterSelect, r.startOf(MenuReveal.Stage.CLASS_LIST), "not before the select line has had its time");
         r = new MenuReveal(0, NO_ACTIVE, true);
-        r.onUnlock(90_000);
-        assertEquals(90_000, r.startOf(MenuReveal.Stage.CLASS_LIST));
-        assertEquals(90_000 + MenuReveal.STEP_MS, r.startOf(MenuReveal.Stage.POINTS));
-        assertTrue(r.done(90_000 + MenuReveal.STEP_MS + MenuReveal.FADE_MS));
+        r.onUnlock(900_000);
+        assertEquals(900_000, r.startOf(MenuReveal.Stage.CLASS_LIST));
+        assertEquals(900_000 + MenuReveal.STEP_MS, r.startOf(MenuReveal.Stage.POINTS));
+        assertTrue(r.done(900_000 + MenuReveal.STEP_MS + F));
     }
 
     @Test
-    @DisplayName("the stars fade in slowly, and their beat lasts at least that long")
-    void starsSlow() {
-        MenuReveal r = new MenuReveal(0, new long[] {500, 0, 500, 500, 1600}, false);
-        assertEquals(0.0, r.alpha(MenuReveal.Stage.STARS, L + T), "the line first, then the stars");
-        assertEquals(0.5, r.alpha(MenuReveal.Stage.STARS, L + T + MenuReveal.STAR_FADE_MS / 2), 1e-9);
-        long centreLine = r.beatStart(MenuReveal.BEAT_CENTRE);
-        assertEquals(L + T + MenuReveal.STAR_FADE_MS, centreLine, "the next line waits until the stars are up");
-        assertEquals(centreLine + X + 500, r.beatStart(MenuReveal.BEAT_PERKS), "the reading time comes after the line and its layer");
-    }
-
-    @Test
-    @DisplayName("first time: next moves on to the following line now, and stops at the select line")
+    @DisplayName("first time: next brings the layer in while its line is read, and the next line once it is in")
     void firstTimeNext() {
         MenuReveal r = new MenuReveal(0, BEATS, true);
         assertTrue(r.canStepLine(100));
         r.next(100);
         assertEquals(100, r.beatStart(MenuReveal.BEAT_STARS), "the lead-in cut short");
-        r.next(500);
-        assertEquals(MenuReveal.BEAT_ACTIVE, r.lineAt(500));
-        r.next(600);
-        assertEquals(MenuReveal.BEAT_CENTRE, r.lineAt(600));
-        r.next(700);
-        assertEquals(MenuReveal.BEAT_PERKS, r.lineAt(700));
-        assertEquals(700 + T, r.startOf(MenuReveal.Stage.CLASSES));
-        r.next(800);
-        assertEquals(MenuReveal.BEAT_SELECT, r.lineAt(800));
-        assertFalse(r.canStepLine(800), "the select line waits for a hover");
-        r.next(900);
-        assertEquals(MenuReveal.BEAT_SELECT, r.lineAt(60_000));
-        assertEquals(1.0, r.alpha(MenuReveal.Stage.ACTIVE, 60_000), "the active perks still show after a quick step");
+        r.next(100 + F + 200);
+        assertEquals(100 + F + 200, r.startOf(MenuReveal.Stage.STARS), "reading cut: the stars come in now");
+        long starsUp = 100 + F + 200 + MenuReveal.STAR_FADE_MS;
+        assertEquals(starsUp + SETTLE, r.beatStart(MenuReveal.BEAT_ACTIVE), "the next line once they are up");
+        r.next(starsUp + 50);
+        assertEquals(starsUp + 50, r.beatStart(MenuReveal.BEAT_ACTIVE), "layer in: the next line now");
+        long a = starsUp + 50;
+        r.next(a + 100);
+        assertEquals(a + F, r.startOf(MenuReveal.Stage.ACTIVE), "never before the line has faded in");
+        assertEquals(MenuReveal.BEAT_SELECT, MenuReveal.BEAT_SELECT);
+        long t = a + 10_000;
+        for (int k = 0; k < 8; k++) {
+            r.next(t);
+            t += 10_000;
+        }
+        assertEquals(MenuReveal.BEAT_SELECT, r.lineAt(t), "steps end on the select line");
+        assertFalse(r.canStepLine(t), "the select line waits for a hover");
+        assertEquals(1.0, r.alpha(MenuReveal.Stage.ACTIVE, t), "the active perks still show after quick steps");
         MenuReveal returning = new MenuReveal(0, BEATS, false);
         assertFalse(returning.canStepLine(L + 10), "returning players skip to the end instead");
     }
