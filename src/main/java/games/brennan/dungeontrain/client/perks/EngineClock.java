@@ -46,7 +46,8 @@ final class EngineClock {
         SkyDraw.disc(g, x, y, radius, SkyDraw.withAlpha(SkyPalette.BG, fade));
         SkyDraw.ring(g, x, y, radius, 1.4, SkyDraw.withAlpha(SkyPalette.GOLD, fade));
         String n = String.valueOf(points);
-        float scale = 1.5f;
+        // large, but never wider than the ring: a big balance shrinks to fit inside it
+        float scale = (float) Math.min(1.5, radius * 1.6 / Math.max(1, font.width(n)));
         g.pose().pushPose();
         g.pose().translate(x, y, 0);
         g.pose().scale(scale, scale, 1);

@@ -411,8 +411,10 @@ public final class PerksScreen extends Screen {
         }
         if (labels) SkyNames.renderLeaders(g, sky(), names, labelFade * reveal.alpha(MenuReveal.Stage.UNLOCKED, now));
 
+        double lowestStar = Double.NEGATIVE_INFINITY;
         for (PerkTree.Perk p : drawn.perks()) {
             if (vis.hidden(p)) continue;
+            lowestStar = Math.max(lowestStar, view.toScreenY(p.y(), skyH()) + SkyPalette.hitRadius(p, view.zoom()));
             double starFade = perkFade.applyAsDouble(p);
             if (starFade <= 0) continue;
             boolean sel = p.id().equals(selected), hov = p.id().equals(hovered) || p.id().equals(cardFor);
@@ -447,7 +449,7 @@ public final class PerksScreen extends Screen {
             bar.mouse(mouseX, mouseY);
             double barFade = layer(MenuReveal.Stage.BAR, fade);
             if (barFade > 0.03) bar.render(g, snap, barFade);
-            renderStoryLine(g, now, fade);
+            renderStoryLine(g, now, fade, gx, lowestStar);
         }
         else card.render(g, now);
         g.flush();
@@ -504,16 +506,30 @@ public final class PerksScreen extends Screen {
         card.open(p, drawn, snap, view, width, skyH(), right, bottom);
     }
 
-    /** The death menu's story line, where the details bar sits until a perk is hovered. */
-    private void renderStoryLine(GuiGraphics g, long now, double fade) {
+    /** Gap between the lowest star and a story line under it. */
+    private static final int STORY_GAP = 10;
+
+    /**
+     * The death menu's story line. The lines that tell what is coming in sit just under the lowest
+     * star drawn ({@code lowestStar}, centred on the sky's middle {@code cx}); "select a perk" sits
+     * where the details bar comes in once a perk is hovered.
+     */
+    private void renderStoryLine(GuiGraphics g, long now, double fade, double cx, double lowestStar) {
         if (death == null) return;
-        Component line = death.story().line(reveal.lineAt(now));
+        int beat = reveal.lineAt(now);
+        Component line = death.story().line(beat);
         double alpha = reveal.lineAlpha(now) * fade;
         if (line == null || alpha <= 0.03) return;
         int top = height - PerkDetailsBar.HEIGHT;
         int lines = font.split(line, width - 40).size();
-        int y = top + (PerkDetailsBar.HEIGHT - lines * (font.lineHeight + 2)) / 2 + 1;
-        games.brennan.dungeontrain.client.LoadingScreenTheme.drawTip(g, font, line, width / 2, y, width - 40, (float) alpha);
+        int block = lines * (font.lineHeight + 2);
+        int y = top + (PerkDetailsBar.HEIGHT - block) / 2 + 1;
+        int x = width / 2;
+        if (beat != MenuReveal.BEAT_SELECT && lowestStar > Double.NEGATIVE_INFINITY) {
+            y = Math.min((int) Math.round(lowestStar) + STORY_GAP, top - block - 4);
+            x = (int) Math.round(cx);
+        }
+        games.brennan.dungeontrain.client.LoadingScreenTheme.drawTip(g, font, line, x, y, width - 40, (float) alpha);
     }
 
     @Override
