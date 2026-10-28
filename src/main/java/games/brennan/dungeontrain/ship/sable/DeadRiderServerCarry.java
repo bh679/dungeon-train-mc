@@ -4,12 +4,17 @@ import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.server.level.TicketType;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
 import java.util.Map;
+import java.util.UUID;
+import java.util.Comparator;
 import java.util.WeakHashMap;
 
 /**
@@ -34,6 +39,13 @@ public final class DeadRiderServerCarry {
 
     private static final Map<ServerPlayer, Pin> PINS = new WeakHashMap<>();
 
+    /** The dead rider's widened chunk view never exceeds this many chunks. */
+    public static final int MAX_VIEW_CHUNKS = 24;
+    /** Chunks held loaded around the death spot (radius, in chunks) until respawn. */
+    private static final int DEATH_SPOT_TICKET_RADIUS = 4;
+    private static final TicketType<UUID> DEATH_SPOT_TICKET =
+        TicketType.create("dungeontrain_death_spot", Comparator.comparing(UUID::toString));
+
     private DeadRiderServerCarry() {}
 
     private record Pin(SubLevel carriage, Vector3d local, Vec3 deathSpot) {}
@@ -46,10 +58,12 @@ public final class DeadRiderServerCarry {
                 pin = pin(player);
                 if (pin == null) continue;
                 PINS.put(player, pin);
+                level.getChunkSource().addRegionTicket(DEATH_SPOT_TICKET, new ChunkPos(BlockPos.containing(pin.deathSpot())),
+                    DEATH_SPOT_TICKET_RADIUS, player.getUUID());
                 continue; // pinned where the body is now; it starts following next tick
             }
             if (!shouldKeep(true, pin.carriage().isRemoved())) {
-                PINS.remove(player);
+                release(player);
                 continue;
             }
             Vector3d world = follow(pin.local(), pin.carriage().logicalPose());
@@ -58,9 +72,25 @@ public final class DeadRiderServerCarry {
         }
     }
 
-    /** Drop the pin for a player who respawned or left. Safe when there is none. */
+    /** Drop the pin (and the death spot's chunk ticket) for a player who respawned or left. Safe when there is none. */
     public static void release(ServerPlayer player) {
-        PINS.remove(player);
+        Pin pin = PINS.remove(player);
+        if (pin != null) {
+            player.serverLevel().getChunkSource().removeRegionTicket(DEATH_SPOT_TICKET,
+                new ChunkPos(BlockPos.containing(pin.deathSpot())), DEATH_SPOT_TICKET_RADIUS, player.getUUID());
+        }
+    }
+
+    /** Extra view chunks so a carried body's view still covers the death spot: 0 when not carried. */
+    public static int extraViewChunks(ServerPlayer player) {
+        Pin pin = PINS.get(player);
+        if (pin == null) return 0;
+        return extraViewChunks(pin.deathSpot().distanceTo(player.position()));
+    }
+
+    /** Pure: chunks to add to the view for a body this far from the death spot, plus one of slack. */
+    static int extraViewChunks(double distance) {
+        return (int) Math.ceil(distance / 16.0) + 1;
     }
 
     /**
