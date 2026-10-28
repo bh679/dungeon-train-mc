@@ -70,12 +70,17 @@ public final class DeathHazard {
         return best;
     }
 
+    /** Pure: a campfire that is lit (no tag lookup, so it also answers in unit tests). */
+    static boolean litCampfire(BlockState state) {
+        return state.getBlock() instanceof CampfireBlock && state.hasProperty(CampfireBlock.LIT) && state.getValue(CampfireBlock.LIT);
+    }
+
     /** Pure: does this block state fit the cause? */
     static boolean matches(DamageSource source, BlockState state) {
         if (state.isAir()) return false;
         if (source.is(DamageTypes.IN_FIRE) || source.is(DamageTypes.ON_FIRE)) {
             return state.is(Blocks.FIRE) || state.is(Blocks.SOUL_FIRE) || state.is(Blocks.MAGMA_BLOCK)
-                || state.is(Blocks.LAVA) || (state.getBlock() instanceof CampfireBlock && CampfireBlock.isLitCampfire(state));
+                || state.is(Blocks.LAVA) || litCampfire(state);
         }
         if (source.is(DamageTypes.HOT_FLOOR)) return state.is(Blocks.MAGMA_BLOCK);
         if (source.is(DamageTypes.LAVA)) return state.is(Blocks.LAVA);

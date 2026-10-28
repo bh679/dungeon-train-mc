@@ -11,7 +11,8 @@ class DeathHazardTest {
 
     @Test
     void onlyALitCampfireCounts() {
-        assertTrue(CampfireBlock.isLitCampfire(Blocks.CAMPFIRE.defaultBlockState().setValue(CampfireBlock.LIT, true)));
-        assertFalse(CampfireBlock.isLitCampfire(Blocks.CAMPFIRE.defaultBlockState().setValue(CampfireBlock.LIT, false)));
+        assertTrue(DeathHazard.litCampfire(Blocks.CAMPFIRE.defaultBlockState().setValue(CampfireBlock.LIT, true)));
+        assertFalse(DeathHazard.litCampfire(Blocks.CAMPFIRE.defaultBlockState().setValue(CampfireBlock.LIT, false)));
+        assertFalse(DeathHazard.litCampfire(Blocks.STONE.defaultBlockState()));
     }
 }
