@@ -188,7 +188,7 @@ public final class DeathCameraCycle {
     static List<DeathShot> buildSequence(boolean voidDeath, boolean hasKiller, boolean hasContact, boolean onTrain,
                                          boolean hasFeature) {
         List<DeathShot> shots = new ArrayList<>();
-        shots.add(DeathShot.pov(40));
+        shots.add(DeathShot.pov(30));
         // Where you died, riding with the carriage (the body stays on it): as the lead-in to who
         // killed you, or, off the train, in place of the carriage shot. Never for a void death.
         // A blocked arc is answered by a tighter one, never by dropping the shot.
