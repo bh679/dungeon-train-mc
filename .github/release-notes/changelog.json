@@ -31448,6 +31448,23 @@
       "released": true,
       "released_in": "v0.1565.0",
       "released_at": "2026-10-27T16:41:08Z"
+    },
+    {
+      "id": "dimensional-carriage-explosion-fix",
+      "version": "0.1566.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage fix",
+      "summary": "Explosions inside a dimensional carriage now leave the same damage everywhere they should, so a wall you blew open stays open.",
+      "highlights": [],
+      "pr": 2376,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
