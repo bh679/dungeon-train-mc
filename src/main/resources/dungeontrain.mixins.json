@@ -121,6 +121,7 @@
     "LevelAcceleratorNoSyncLoadMixin",
     "SubLevelEntityCollisionNoLoadMixin",
     "EntityOnPosNoSyncLoadMixin",
+    "StructureManagerNoSyncLoadMixin",
     "LivingEntityClimbPushMixin",
     "CombatRulesArmorCurveMixin",
     "RapierPipelineNoSyncLoadMixin",
