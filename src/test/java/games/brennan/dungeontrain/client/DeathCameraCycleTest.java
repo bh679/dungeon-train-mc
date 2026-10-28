@@ -229,8 +229,8 @@ class DeathCameraCycleTest {
         assertEquals(DeathCameraCycle.SKY_PITCH, DeathCameraCycle.skyPitch(10.0f, DeathCameraCycle.SKY_TILT_TICKS), 1e-4);
         float mid = DeathCameraCycle.skyPitch(10.0f, DeathCameraCycle.SKY_TILT_TICKS / 2.0);
         assertTrue(mid < 10.0f && mid > DeathCameraCycle.SKY_PITCH, "halfway up: " + mid);
-        assertEquals(0.0f, DeathCameraCycle.skyAlpha((double) DeathCameraCycle.SKY_TILT_TICKS), 1e-6, "no fade during the tilt");
-        assertEquals(0.5f, DeathCameraCycle.skyAlpha(DeathCameraCycle.SKY_TILT_TICKS + DeathCameraCycle.SKY_FADE_TICKS / 2.0), 1e-6);
-        assertEquals(1.0f, DeathCameraCycle.skyAlpha((double) (DeathCameraCycle.SKY_TILT_TICKS + DeathCameraCycle.SKY_FADE_TICKS)), 1e-6);
+        assertEquals(0.0f, DeathCameraCycle.skyFadeAt((double) DeathCameraCycle.SKY_TILT_TICKS), 1e-6, "no fade during the tilt");
+        assertEquals(0.5f, DeathCameraCycle.skyFadeAt(DeathCameraCycle.SKY_TILT_TICKS + DeathCameraCycle.SKY_FADE_TICKS / 2.0), 1e-6);
+        assertEquals(1.0f, DeathCameraCycle.skyFadeAt((double) (DeathCameraCycle.SKY_TILT_TICKS + DeathCameraCycle.SKY_FADE_TICKS)), 1e-6);
     }
 }

@@ -543,20 +543,20 @@ public final class DeathCameraCycle {
     }
 
     /** Pure: the night-blue overlay {@code t} ticks into the sky shot; it rises once the tilt is done. */
-    static float skyAlpha(double t) {
+    static float skyFadeAt(double t) {
         return (float) Mth.clamp((t - SKY_TILT_TICKS) / SKY_FADE_TICKS, 0.0, 1.0);
     }
 
     /** The night-blue overlay for this frame, 0 unless the sky shot is fading out. */
     public static float skyAlpha(float partialTick) {
         DeathShot shot = current();
-        return shot != null && shot.kind() == DeathShot.Kind.SKY_TILT ? skyAlpha(shotTicks + partialTick) : 0.0f;
+        return shot != null && shot.kind() == DeathShot.Kind.SKY_TILT ? skyFadeAt(shotTicks + (double) partialTick) : 0.0f;
     }
 
     /** The sky shot has faded all the way to the menu's blue: time to open it. */
     public static boolean skyDone() {
         DeathShot shot = current();
-        return shot != null && shot.kind() == DeathShot.Kind.SKY_TILT && skyAlpha((double) shotTicks) >= 1.0f;
+        return shot != null && shot.kind() == DeathShot.Kind.SKY_TILT && skyFadeAt(shotTicks) >= 1.0f;
     }
 
     /**
