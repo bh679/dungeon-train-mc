@@ -99,6 +99,15 @@ class SpheresCometsTest {
     }
 
     @Test
+    void distantCometsGrowInRatherThanAppear() {
+        assertEquals(0.0, SpheresComets.distantGrowth(0.0), 1e-12);
+        assertEquals(0.5, SpheresComets.distantGrowth(SpheresComets.DISTANT_GROW_TICKS / 2.0), 1e-12);
+        assertEquals(1.0, SpheresComets.distantGrowth(SpheresComets.DISTANT_GROW_TICKS), 1e-12);
+        assertEquals(1.0, SpheresComets.distantGrowth(500.0), 1e-12);
+        assertTrue(SpheresComets.distantGrowth(5.0) < SpheresComets.distantGrowth(10.0));
+    }
+
+    @Test
     void aStrikeArrivesTenSecondsIntoItsShower() {
         assertEquals(200, SpheresComets.SHOWER_LEAD_TICKS);
         assertEquals(140, SpheresComets.strikeLaunchDelay(60.0), "launched so its flight ends at the lead");

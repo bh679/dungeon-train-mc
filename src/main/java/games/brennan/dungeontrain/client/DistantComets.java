@@ -140,7 +140,8 @@ public final class DistantComets {
         VertexConsumer streak = buffer.getBuffer(RenderType.lightning());
         for (Comet c : live) {
             double ticks = c.age() + partial;
-            tail(streak, ps.last().pose(), c.at(ticks), c.velocity().normalize(), c.size() / 3.0);
+            float grown = (float) SpheresComets.distantGrowth(ticks);
+            tail(streak, ps.last().pose(), c.at(ticks), c.velocity().normalize(), c.size() / 3.0 * grown, grown);
         }
         buffer.endBatch(RenderType.lightning());
         for (Comet c : live) {
@@ -183,11 +184,13 @@ public final class DistantComets {
     }
 
     private static void head(Minecraft mc, PoseStack ps, MultiBufferSource buffer, Comet c, Vec3 at, double ticks) {
+        float size = c.size() * (float) SpheresComets.distantGrowth(ticks);
+        if (size < 0.01F) return;
         ps.pushPose();
         ps.translate(at.x, at.y, at.z);
         ps.mulPose(new Quaternionf().fromAxisAngleRad(SpheresComets.spinAxis(c.id()),
             SpheresComets.spinAngle(c.id(), ticks)));
-        ps.scale(c.size(), c.size(), c.size());
+        ps.scale(size, size, size);
         ps.translate(-0.5, -0.5, -0.5);
         mc.getBlockRenderer().renderSingleBlock(MAGMA, ps, buffer, LightTexture.FULL_BRIGHT,
             OverlayTexture.NO_OVERLAY, ModelData.EMPTY, RenderType.solid());
@@ -198,11 +201,11 @@ public final class DistantComets {
      * One thin camera-facing streak from the head back along the flight line, tapering to a point and glowing
      * yellow to clear; both windings, so it shows whichever way it faces.
      */
-    private static void tail(VertexConsumer out, Matrix4f pose, Vec3 head, Vec3 dir, double scale) {
+    private static void tail(VertexConsumer out, Matrix4f pose, Vec3 head, Vec3 dir, double scale, float glow) {
         Vec3 side = dir.cross(head).normalize().scale(TAIL_WIDTH * 0.5 * scale);
         Vec3 end = head.subtract(dir.scale(TAIL_LENGTH * scale));
         Vec3 a = head.add(side), b = head.subtract(side);
-        int alpha = 200;
+        int alpha = (int) (200 * glow);
         vertex(out, pose, a, 255, 210, 90, alpha);
         vertex(out, pose, b, 255, 210, 90, alpha);
         vertex(out, pose, end, 255, 70, 0, 0);

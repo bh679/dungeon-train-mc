@@ -42,6 +42,8 @@ public final class SpheresComets {
     /** Distant, purely visual comets drawn by each client for every real one: fewer in lap 0. */
     public static final double DISTANT_PER_REAL = 3.0;
     public static final double DISTANT_PER_REAL_EARLY = 2.0;
+    /** Ticks a distant comet takes to grow from nothing to full size as it appears. */
+    public static final int DISTANT_GROW_TICKS = 20;
     /** In lap 0 a comet aimed at the train comes inside a shower of far-off ones falling the same way: from this
      *  many ticks before it arrives to {@link #SHOWER_AFTER_TICKS} after. */
     public static final int SHOWER_LEAD_TICKS = 200;
@@ -106,6 +108,13 @@ public final class SpheresComets {
     public static double distantChancePerTick(long cycleIndex, double endSky, double spheresVoid) {
         double perReal = cycleIndex <= 0L ? DISTANT_PER_REAL_EARLY : DISTANT_PER_REAL;
         return Math.min(1.0, chancePerTick(cycleIndex, endSky, spheresVoid) * perReal);
+    }
+
+    /** How grown a distant comet is {@code ticks} after it appears: 0 to 1 over {@value #DISTANT_GROW_TICKS}
+     *  ticks, eased so it swells in rather than popping up. */
+    public static double distantGrowth(double ticks) {
+        double t = Math.max(0.0, Math.min(1.0, ticks / DISTANT_GROW_TICKS));
+        return t * t * (3.0 - 2.0 * t);
     }
 
     /** Ticks to hold a strike back so it arrives {@value #SHOWER_LEAD_TICKS} ticks into its shower, given how long
