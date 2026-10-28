@@ -63,4 +63,13 @@ class SpheresCometsTest {
         assertEquals(0.0, SpheresComets.spinAngle(2, SpheresComets.SPIN_TICKS_PER_TURN), 1e-5);
         assertEquals(-quarter, SpheresComets.spinAngle(3, SpheresComets.SPIN_TICKS_PER_TURN / 4.0), 1e-5);
     }
+
+    @Test
+    void shakeIsHardestAtTheImpactAndGoneBeyondItsRadius() {
+        assertEquals(1.0, SpheresComets.shakeStrength(0.0), 1e-9);
+        assertTrue(SpheresComets.shakeStrength(5.0) > SpheresComets.shakeStrength(20.0));
+        assertTrue(SpheresComets.shakeStrength(20.0) > SpheresComets.shakeStrength(39.0));
+        assertEquals(0.0, SpheresComets.shakeStrength(SpheresComets.SHAKE_RADIUS_BLOCKS), 1e-9);
+        assertEquals(0.0, SpheresComets.shakeStrength(200.0), 1e-9);
+    }
 }

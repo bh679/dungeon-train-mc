@@ -32,6 +32,8 @@ public final class SpheresComets {
     public static final double MISS_DROP_BLOCKS = 16.0;
     /** Ticks for a comet's block to make one full turn as it falls. */
     public static final int SPIN_TICKS_PER_TURN = 30;
+    /** Beyond this many blocks from where a comet lands, a player feels nothing. */
+    public static final double SHAKE_RADIUS_BLOCKS = 40.0;
     private static final int TICKS_PER_SECOND = 20;
 
     private SpheresComets() {}
@@ -84,5 +86,12 @@ public final class SpheresComets {
         double turns = ticks / SPIN_TICKS_PER_TURN;
         double sign = (id & 1) == 0 ? 1.0 : -1.0;
         return (float) (sign * (turns % 1.0) * Math.PI * 2.0);
+    }
+
+    /** How hard a comet landing {@code distance} blocks away shakes the screen: 1 at the impact, easing to 0 at
+     *  {@value #SHAKE_RADIUS_BLOCKS} blocks, so a hit on your carriage jolts and one down the train only trembles. */
+    public static double shakeStrength(double distance) {
+        double closeness = Math.max(0.0, Math.min(1.0, 1.0 - distance / SHAKE_RADIUS_BLOCKS));
+        return closeness * closeness;
     }
 }

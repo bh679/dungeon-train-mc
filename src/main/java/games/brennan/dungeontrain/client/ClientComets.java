@@ -62,6 +62,7 @@ public final class ClientComets {
         for (Comet c : live) {
             if (c.id() != packet.id()) next.add(c);
         }
+        if (packet.landed()) CometShake.impact(new Vec3(packet.x(), packet.y(), packet.z()));
         if (!packet.ended()) {
             next.add(new Comet(packet.id(), new Vec3(packet.x(), packet.y(), packet.z()),
                 new Vec3(packet.vx(), packet.vy(), packet.vz()), 0));

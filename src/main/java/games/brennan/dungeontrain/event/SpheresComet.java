@@ -118,7 +118,7 @@ record SpheresComet(int id, Vec3 pos, Vec3 velocity, int age) {
         Vec3 hit = firstHit(level, carriages, pos, next);
         if (hit != null) {
             LOGGER.debug("[DungeonTrain] Comet {} hit at {} after {} ticks", id, hit, age + 1);
-            tell(level, pos, CometPacket.ended(id));
+            tell(level, pos, CometPacket.landed(id, hit.x, hit.y, hit.z));
             level.explode(null, hit.x, hit.y, hit.z, EXPLOSION_POWER, true, Level.ExplosionInteraction.TNT);
             return Optional.empty();
         }
