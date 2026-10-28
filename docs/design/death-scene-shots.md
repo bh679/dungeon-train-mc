@@ -1,6 +1,6 @@
 # Death scene: shot table
 
-Branch `dev/train-stays-after-death`, version 0.1561.4. Offsets are from the subject as (along the
+Branch `dev/train-stays-after-death`, version 0.1561.5. Offsets are from the subject as (along the
 train, up, across); along is positive ahead. Carriages are 7 wide.
 
 The body is a Sable: Ragdolls ragdoll wearing your skin and gear, left where you died (server
@@ -18,7 +18,7 @@ position as before.
 | 2 | killer | orbit following the entity | the killer | radius 5, height 2.5 | 3 s | no killer, gone, no clear arc |
 | 2.5 | mob | orbit following the entity | a creature you fought nearby, a friend (gifts exchanged), else a nearby pet of yours | radius 5, height 2.5 | 3 s | none within 32 blocks, no clear arc |
 | 3 | carriage | zoom out 3 s, blend 1 s, world-locked hold tracking you | you | starts 1.6 outside the carriage wall at eye height on the window side, looking in; ends (-5, 6, wall+9) | 6 s | died off the train (3 s tracking shot from (-3, 2.5, 8) instead) |
-| 3b | body-out | zoom out 3 s, blend 1 s, world-locked hold tracking you | you | pulls out from beside the body whichever way is clear, tried in order: straight up (0.5, 2, 0) to (1.5, 12, 0), either side (0, 1.5, +-4) to (-4, 6, +-14), behind (-4, 1.5, 0) to (-14, 5, 0), ahead (4, 1.5, 0) to (14, 5, 0) | 6 s | the spot shot or the carriage/leaving shot played; phase 1 always has one moving shot of the body |
+| 3b | body-out | zoom out 3 s, blend 1 s, world-locked hold tracking you | you | pulls out from beside the body whichever way is clear, tried in order: straight up (0.5, 2, 0) to (1.5, 12, 0), either side (0, 1.5, +-4) to (-4, 6, +-14), behind (-4, 1.5, 0) to (-14, 5, 0), ahead (4, 1.5, 0) to (14, 5, 0) | 6 s | the spot shot or the carriage/leaving shot played. Never skipped otherwise: with no clear pull it takes a close-up, the longest short pull (2.5, 1.8 or 1.2 blocks) with the body in view, up first, then the up-diagonals, then level all round; and failing even that it holds just over the head, unchecked |
 
 ## Phase 2 (loops until Space)
 

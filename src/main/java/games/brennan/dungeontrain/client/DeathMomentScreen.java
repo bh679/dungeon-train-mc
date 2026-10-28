@@ -125,6 +125,7 @@ public final class DeathMomentScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (RefocusClickGuard.swallow()) return true;
         if (maySkip()) handOver();
         return true;
     }

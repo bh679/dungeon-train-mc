@@ -100,6 +100,15 @@ public final class DeathCameraCycle {
         new Vec3[] {new Vec3(-4.0, 1.5, 0.0), new Vec3(-14.0, 5.0, 0.0)},
         new Vec3[] {new Vec3(4.0, 1.5, 0.0), new Vec3(14.0, 5.0, 0.0)}
     );
+    /** Close-up body-out: how far out the short pull reaches, tried longest first (blocks). */
+    static final double[] CLOSE_UP_REACH = {2.5, 1.8, 1.2};
+    /** Close-up body-out directions (unit vectors, carriage space): up, the diagonals up, then level all round. */
+    static final List<Vec3> CLOSE_UP_DIRECTIONS = closeUpDirections();
+    /** The close-up lens rides this far above the body's feet before the pull is added. */
+    static final double CLOSE_UP_LIFT = 0.9;
+    /** The pull of the unchecked last resort: just over the head, barely moving. Never skipped. */
+    static final Vec3 LAST_RESORT_FROM = new Vec3(0.4, 1.6, 0.4);
+    static final Vec3 LAST_RESORT_TO = new Vec3(0.7, 1.9, 0.7);
     /** Subject shots at the end of every loop pass, in the open and in a tunnel alike. */
     static final List<DeathShot> LOOP_TAIL = List.of(
         DeathShot.feature(80, "feature"),
@@ -144,6 +153,8 @@ public final class DeathCameraCycle {
     private static int passCount;
     /** Phase one showed the body (spot, carriage or leaving shot): the body-out safety net stands down. */
     private static boolean bodyShotPlayed;
+    /** The current lens was placed without a path check (the last resort): never cut it for a block. */
+    private static boolean uncheckedLens;
     /** The current shot's lens: carriage space for train-locked shots, world space otherwise. */
     private static Vector3d lens;
     /** Dolly end, carriage space. */
@@ -496,6 +507,7 @@ public final class DeathCameraCycle {
                 Minecraft.getInstance().options.hideGui = shot.kind() != DeathShot.Kind.POV;
                 return;
             }
+            LOGGER.info("[DungeonTrain] Death scene shot {} skipped: no clear lens", shot.label());
             int next = nextIndex(sequence, i);
             if (next == i) break;
             i = next;
@@ -523,6 +535,7 @@ public final class DeathCameraCycle {
         aimWorld = null;
         aimLocal = null;
         aimOffset = null;
+        uncheckedLens = false;
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
@@ -569,7 +582,27 @@ public final class DeathCameraCycle {
                         return true;
                     }
                 }
-                return false;
+                // Nowhere to pull out to (a closed carriage, a tunnel): a close-up instead, the
+                // longest short pull with the body in view, in any direction.
+                for (double reach : CLOSE_UP_REACH) {
+                    for (Vec3 dir : CLOSE_UP_DIRECTIONS) {
+                        Vector3d a = lensFor(bodyLocal, dir.scale(reach * 0.55).add(0.0, CLOSE_UP_LIFT, 0.0));
+                        Vector3d b = lensFor(bodyLocal, dir.scale(reach).add(0.0, CLOSE_UP_LIFT, 0.0));
+                        if (ShotPath.clear(level, player, carriages, ShotPath.samples(f -> toWorld(dollyAt(a, b, f))), aimBody)) {
+                            lens = a;
+                            lensEnd = b;
+                            LOGGER.info("[DungeonTrain] Death scene body-out: close-up, reach {} along ({}, {}, {})",
+                                reach, dir.x, dir.y, dir.z);
+                            return true;
+                        }
+                    }
+                }
+                // Not even that: a lens just over the head, unchecked. This shot is never skipped.
+                lens = lensFor(bodyLocal, LAST_RESORT_FROM);
+                lensEnd = lensFor(bodyLocal, LAST_RESORT_TO);
+                uncheckedLens = true;
+                LOGGER.info("[DungeonTrain] Death scene body-out: no clear pull at all, holding just over the head");
+                return true;
             }
             case ORBIT, ORBIT_LOOP -> {
                 return setUpOrbit(shot);
@@ -680,7 +713,7 @@ public final class DeathCameraCycle {
      * world-locked lens a carriage rolled through, an orbit swept past a wall. Cut away from it.
      */
     private static boolean lensRanIntoBlock(DeathShot shot) {
-        if (shot.kind() == DeathShot.Kind.POV) return false;
+        if (shot.kind() == DeathShot.Kind.POV || uncheckedLens) return false;
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return false;
         CinematicCameraController.Pose now = pose(1.0f);
@@ -913,6 +946,16 @@ public final class DeathCameraCycle {
     }
 
     /** Pure: the lens position for a body position and an offset in the same space. */
+    /** Pure: the close-up search order. Up first (a roof is the common block), then up-diagonals, then level. */
+    static List<Vec3> closeUpDirections() {
+        List<Vec3> out = new ArrayList<>();
+        out.add(new Vec3(0.0, 1.0, 0.0));
+        double[][] ring = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, 1}, {1, -1}, {-1, -1}};
+        for (double[] d : ring) out.add(new Vec3(d[0], 1.0, d[1]).normalize());
+        for (double[] d : ring) out.add(new Vec3(d[0], 0.25, d[1]).normalize());
+        return List.copyOf(out);
+    }
+
     static Vector3d lensFor(Vector3d body, Vec3 offset) {
         return new Vector3d(body.x + offset.x, body.y + offset.y, body.z + offset.z);
     }

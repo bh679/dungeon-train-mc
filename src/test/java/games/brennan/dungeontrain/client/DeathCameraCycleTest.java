@@ -81,6 +81,20 @@ class DeathCameraCycleTest {
     }
 
     @Test
+    void closeUpSearchGoesUpFirstThenAllRoundAndNeverReachesFar() {
+        List<Vec3> dirs = DeathCameraCycle.CLOSE_UP_DIRECTIONS;
+        assertEquals(17, dirs.size());
+        assertEquals(new Vec3(0, 1, 0), dirs.get(0));
+        for (Vec3 d : dirs) {
+            assertEquals(1.0, d.length(), 1e-9, "unit direction " + d);
+            assertTrue(d.y > 0, "never below the body: " + d);
+        }
+        for (double reach : DeathCameraCycle.CLOSE_UP_REACH) assertTrue(reach <= 2.5 && reach >= 1.0);
+        assertTrue(DeathCameraCycle.CLOSE_UP_REACH[0] > DeathCameraCycle.CLOSE_UP_REACH[DeathCameraCycle.CLOSE_UP_REACH.length - 1], "longest first");
+        assertTrue(DeathCameraCycle.LAST_RESORT_TO.distanceTo(DeathCameraCycle.LAST_RESORT_FROM) < 1.0, "the last resort barely moves");
+    }
+
+    @Test
     void sequenceRunsOnceThenLoopsTheTrainShots() {
         List<DeathShot> seq = DeathCameraCycle.buildSequence(false, true, false, true);
         int loop = DeathCameraCycle.loopStart(seq);
