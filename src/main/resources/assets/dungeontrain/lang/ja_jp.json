@@ -262,6 +262,7 @@
   "gui.dungeontrain.live.takeover": "放送カムコーダーを取る",
   "gui.dungeontrain.live.takeover.tip": "チャットかインベントリを開いてクリック。最初にクリックした人が配信を始め、テレビが放送カムコーダーになる。",
   "chat.dungeontrain.live.takeover.offer": "%s が配信中に死んだ。配信を引き継げる：%s",
+  "chat.dungeontrain.live.takeover.offer.removed": "%s が放送カムコーダーを外した。配信を引き継げる：%s",
   "chat.dungeontrain.live.takeover.button": "放送カムコーダーを取る",
   "chat.dungeontrain.live.takeover.button.tip": "最初にクリックした人が配信を始める。頭のテレビが放送カムコーダーになる。",
   "chat.dungeontrain.live.takeover.won": "配信を引き継いだ。配信を開始中…",

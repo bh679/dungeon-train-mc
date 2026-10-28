@@ -262,6 +262,7 @@
   "gui.dungeontrain.live.takeover": "接过直播摄像机",
   "gui.dungeontrain.live.takeover.tip": "打开聊天或物品栏即可点击。最先点击的人开始直播，你的电视会变成直播摄像机。",
   "chat.dungeontrain.live.takeover.offer": "%s 在直播中死亡。直播可以接手：%s",
+  "chat.dungeontrain.live.takeover.offer.removed": "%s 摘下了直播摄像机。直播可以接手：%s",
   "chat.dungeontrain.live.takeover.button": "接过直播摄像机",
   "chat.dungeontrain.live.takeover.button.tip": "最先点击的人开始直播。你头上的电视会变成直播摄像机。",
   "chat.dungeontrain.live.takeover.won": "你接手了直播。正在开播……",

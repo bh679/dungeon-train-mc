@@ -285,6 +285,7 @@
   "gui.dungeontrain.live.takeover": "Prendre le caméscope de diffusion",
   "gui.dungeontrain.live.takeover.tip": "Ouvre le chat ou ton inventaire pour cliquer. Le premier à cliquer passe en direct ; ta télé devient un caméscope de diffusion.",
   "chat.dungeontrain.live.takeover.offer": "%s est mort en direct. Son stream est à prendre : %s",
+  "chat.dungeontrain.live.takeover.offer.removed": "%s a retiré son Caméscope de diffusion. Son stream est à prendre : %s",
   "chat.dungeontrain.live.takeover.button": "Prendre le caméscope de diffusion",
   "chat.dungeontrain.live.takeover.button.tip": "Le premier à cliquer passe en direct. La télé sur ta tête devient un caméscope de diffusion.",
   "chat.dungeontrain.live.takeover.won": "Tu as repris le stream. Passage en direct…",

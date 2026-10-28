@@ -262,6 +262,7 @@
   "gui.dungeontrain.live.takeover": "Ambil Camcorder Siaran",
   "gui.dungeontrain.live.takeover.tip": "Buka sembang atau inventori untuk klik. Yang pertama klik akan live; TV anda menjadi Camcorder Siaran.",
   "chat.dungeontrain.live.takeover.offer": "%s mati semasa live. Siarannya boleh diambil: %s",
+  "chat.dungeontrain.live.takeover.offer.removed": "%s menanggalkan Camcorder Siaran. Siarannya boleh diambil: %s",
   "chat.dungeontrain.live.takeover.button": "Ambil Camcorder Siaran",
   "chat.dungeontrain.live.takeover.button.tip": "Yang pertama klik akan live. TV di kepala anda menjadi Camcorder Siaran.",
   "chat.dungeontrain.live.takeover.won": "Anda mengambil alih siaran. Memulakan live...",

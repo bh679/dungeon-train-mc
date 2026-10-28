@@ -373,6 +373,7 @@
   "gui.dungeontrain.live.takeover": "Ia camera video de transmisie",
   "gui.dungeontrain.live.takeover.tip": "Deschide chatul sau inventarul ca să dai clic. Cine dă clic primul intră live; televizorul tău devine o cameră video de transmisie.",
   "chat.dungeontrain.live.takeover.offer": "%s a murit live. Transmisia e liberă: %s",
+  "chat.dungeontrain.live.takeover.offer.removed": "%s și-a scos Camera video de transmisie. Transmisia e liberă: %s",
   "chat.dungeontrain.live.takeover.button": "Ia camera video de transmisie",
   "chat.dungeontrain.live.takeover.button.tip": "Cine dă clic primul intră live. Televizorul de pe capul tău devine o cameră video de transmisie.",
   "chat.dungeontrain.live.takeover.won": "Ai preluat transmisia. Intri live...",

@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.live;
 import org.junit.jupiter.api.Test;
 
 import static games.brennan.dungeontrain.client.live.LiveTakeoverOffer.eligible;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -22,6 +23,14 @@ class LiveTakeoverOfferTest {
         assertFalse(eligible(true, false, false, true, true), "streaming off or no internet consent");
         assertFalse(eligible(true, false, true, false, true), "no ffmpeg");
         assertFalse(eligible(true, false, true, true, false), "already streaming");
+    }
+
+    @Test
+    void aRemovedLiveEyeIsNotCalledADeath() {
+        assertEquals("chat.dungeontrain.live.takeover.offer",
+            LiveTakeoverOffer.offerKey(new games.brennan.dungeontrain.net.relay.LiveFeedClient.Takeover("ab12cd34", "A", 1000)));
+        assertEquals("chat.dungeontrain.live.takeover.offer.removed",
+            LiveTakeoverOffer.offerKey(new games.brennan.dungeontrain.net.relay.LiveFeedClient.Takeover("ab12cd34", "A", 1000, true)));
     }
 
     @Test

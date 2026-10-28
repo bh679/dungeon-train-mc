@@ -285,6 +285,7 @@
   "gui.dungeontrain.live.takeover": "Uitzendcamcorder pakken",
   "gui.dungeontrain.live.takeover.tip": "Open de chat of je inventaris om te klikken. Wie het eerst klikt, gaat live; je tv wordt een uitzendcamcorder.",
   "chat.dungeontrain.live.takeover.offer": "%s is live doodgegaan. De stream is vrij: %s",
+  "chat.dungeontrain.live.takeover.offer.removed": "%s heeft de Uitzendcamcorder afgezet. De stream is vrij: %s",
   "chat.dungeontrain.live.takeover.button": "Uitzendcamcorder pakken",
   "chat.dungeontrain.live.takeover.button.tip": "Wie het eerst klikt, gaat live. De tv op je hoofd wordt een uitzendcamcorder.",
   "chat.dungeontrain.live.takeover.won": "Je hebt de stream overgenomen. Live gaan...",

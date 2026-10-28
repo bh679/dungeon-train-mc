@@ -15795,6 +15795,21 @@
       ]
     }
   },
+  "chat.dungeontrain.live.takeover.offer.removed": {
+    "1": {
+      "label": "the player name of the streamer who took their Live Eye off",
+      "examples": [
+        "Steve",
+        "brennan_hatton"
+      ]
+    },
+    "2": {
+      "label": "the clickable [Take the Live Eye] button (chat.dungeontrain.live.takeover.button)",
+      "examples": [
+        "[Take the Live Eye]"
+      ]
+    }
+  },
   "chat.dungeontrain.live.took_over": {
     "1": {
       "label": "the player name of the broadcaster who was cut off",

@@ -313,6 +313,7 @@
   "gui.dungeontrain.live.takeover": "Забрать вещательную видеокамеру",
   "gui.dungeontrain.live.takeover.tip": "Открой чат или инвентарь, чтобы нажать. Кто нажмёт первым, тот выходит в эфир; твой телевизор станет вещательной видеокамерой.",
   "chat.dungeontrain.live.takeover.offer": "%s погиб в прямом эфире. Трансляцию можно перехватить: %s",
+  "chat.dungeontrain.live.takeover.offer.removed": "%s снял вещательную видеокамеру. Трансляцию можно перехватить: %s",
   "chat.dungeontrain.live.takeover.button": "Забрать вещательную видеокамеру",
   "chat.dungeontrain.live.takeover.button.tip": "Кто нажмёт первым, тот выходит в эфир. Телевизор на твоей голове станет вещательной видеокамерой.",
   "chat.dungeontrain.live.takeover.won": "Ты перехватил трансляцию. Выход в эфир...",

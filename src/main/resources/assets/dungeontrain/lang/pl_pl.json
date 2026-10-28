@@ -308,6 +308,7 @@
   "gui.dungeontrain.live.takeover": "Weź kamerę transmisyjną",
   "gui.dungeontrain.live.takeover.tip": "Otwórz czat lub ekwipunek, aby kliknąć. Kto kliknie pierwszy, ten zaczyna nadawać; twój telewizor zmienia się w kamerę transmisyjną.",
   "chat.dungeontrain.live.takeover.offer": "%s zginął na żywo. Transmisję można przejąć: %s",
+  "chat.dungeontrain.live.takeover.offer.removed": "%s zdjął kamerę transmisyjną. Transmisję można przejąć: %s",
   "chat.dungeontrain.live.takeover.button": "Weź kamerę transmisyjną",
   "chat.dungeontrain.live.takeover.button.tip": "Kto kliknie pierwszy, ten zaczyna nadawać. Telewizor na twojej głowie zmienia się w kamerę transmisyjną.",
   "chat.dungeontrain.live.takeover.won": "Przejąłeś transmisję. Rozpoczynanie nadawania...",
