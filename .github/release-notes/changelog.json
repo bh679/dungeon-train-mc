@@ -31645,6 +31645,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-template-dispatch",
+      "version": "0.1577.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Editor housekeeping",
+      "summary": "Behind-the-scenes tidy-up of how the Train Editor stamps, enters and views its plots. Nothing changes in how you build; the half-carriage row in the Whole section now fills in with the rest when you open it.",
+      "highlights": [
+        "Editor housekeeping: every plot kind is handled the same way under the hood",
+        "Whole section: half-carriage plots fill in with the rest of the section"
+      ],
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
