@@ -87,4 +87,21 @@ class SpheresCometsTest {
         assertEquals(0.5F, SpheresComets.roarPitch(200.0), 1e-6);
         assertEquals(1.0F, SpheresComets.roarPitch(0.0), 1e-6);
     }
+
+    @Test
+    void distantCometsFollowTheRealOnesThreeToOne() {
+        assertEquals(0.0, SpheresComets.distantChancePerTick(0L, 0.2, 1.0), "none before the void sky");
+        assertEquals(0.0, SpheresComets.distantChancePerTick(4L, 1.0, 0.0), "none outside the band");
+        assertEquals(SpheresComets.chancePerTick(2L, 0.0, 1.0) * SpheresComets.DISTANT_PER_REAL,
+            SpheresComets.distantChancePerTick(2L, 0.0, 1.0), 1e-12);
+    }
+
+    @Test
+    void distantCometsBurnUpOverTheirLastTicks() {
+        assertEquals(1.0, SpheresComets.distantFade(0.0, 80), 1e-9);
+        assertEquals(1.0, SpheresComets.distantFade(80 - SpheresComets.DISTANT_FADE_TICKS, 80), 1e-9);
+        assertEquals(0.5, SpheresComets.distantFade(80 - SpheresComets.DISTANT_FADE_TICKS / 2.0, 80), 1e-9);
+        assertEquals(0.0, SpheresComets.distantFade(80.0, 80), 1e-9);
+        assertEquals(0.0, SpheresComets.distantFade(90.0, 80), 1e-9);
+    }
 }
