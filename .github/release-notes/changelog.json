@@ -31535,6 +31535,57 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "fallen-mobs-stay-on-tracks",
+      "version": "0.1571.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Mobs that fall onto the tracks stay there",
+      "summary": "Mobs knocked off the train onto the tracks near you no longer vanish. They stay down on the rails and get slowly hurt while carriages roll over them.",
+      "highlights": [],
+      "pr": 2384,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "read-one-book-from-stack",
+      "version": "0.1572.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "books"
+      ],
+      "title": "Book stack fix",
+      "summary": "Reading a book from a stack of identical copies now burns only the copy you read. The rest stay in your inventory to read later.",
+      "highlights": [],
+      "pr": 2382,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "note-story-once-per-life",
+      "version": "0.1572.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "books"
+      ],
+      "title": "Note story fix",
+      "summary": "A note's story no longer arrives twice in the same life.",
+      "highlights": [],
+      "pr": 2382,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
