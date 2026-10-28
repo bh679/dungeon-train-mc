@@ -7,6 +7,8 @@ import games.brennan.dungeontrain.editor.CarriagePartEditor;
 import games.brennan.dungeontrain.editor.CarriagePartRegistry;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.editor.EditorPlotArrival;
+import games.brennan.dungeontrain.editor.EditorPlotScope;
 import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
@@ -53,6 +55,7 @@ import games.brennan.dungeontrain.track.TrackPlacer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.Locale;
@@ -202,6 +205,42 @@ public sealed interface Template
     default void restampPlot(ServerLevel level, CarriageDims dims) {}
 
     /**
+     * {@code /dt reset}: put this template's editor plot back to what is saved. Defaults to
+     * {@link #restampPlot}; kinds whose reset means more than a stamp from disk (a dimensional
+     * carriage also reverts its size and forgets its resize memory) override it, so that a plain
+     * category fill — which also goes through {@link #restampPlot} — never does the extra work.
+     */
+    default void resetEditorPlot(ServerLevel level, CarriageDims dims) { restampPlot(level, dims); }
+
+    /**
+     * Put {@code player} on (or in) this template's editor plot — the one dispatch for "enter this
+     * model's editor". Every record answers: {@code /dt editor <category>} lands on the first model
+     * through it, and the plot panel's Enter / Go here go through {@link #enterInside} /
+     * {@link #walkTo} below.
+     *
+     * @param onTop  roof landing in front of the plot's menu; else {@code inside} says where
+     * @param stamp  erase + restamp the plot first. The category entry passes {@code false}: it has
+     *               just stamped (or queued) the plot itself
+     * @param inside where an {@code onTop == false} landing aims. Kinds whose plot has no doorway
+     *               (track-side, parts, buildings, frames) land at the centre regardless
+     */
+    void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside);
+
+    /**
+     * The X menu's Go here: a walk to the plot, not a reload — restamps only when the player is not
+     * already standing in it. Restamping a plot you are standing in would throw away every unsaved
+     * edit for the sake of a few blocks' teleport. Kinds whose walk never restamps override.
+     */
+    default void walkTo(ServerPlayer player, boolean onTop) {
+        enter(player, onTop, !EditorPlotScope.standingIn(player, this), EditorPlotArrival.Inside.FRONT_DOOR);
+    }
+
+    /** The plot panel's Enter button: land inside at {@code inside}, restamping unless already standing in the plot. */
+    default void enterInside(ServerPlayer player, EditorPlotArrival.Inside inside) {
+        enter(player, false, !EditorPlotScope.standingIn(player, this), inside);
+    }
+
+    /**
      * True iff this template has a bundled-tier copy that
      * {@code /dt reset default} can re-stamp from. Distinct from
      * {@link #canPromote()} (which gates writes): both happen to be
@@ -308,6 +347,9 @@ public sealed interface Template
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             CarriageEditor.stampPlot(level, variant, dims);
         }
+        @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
+            CarriageEditor.enter(player, variant, onTop, stamp, inside);
+        }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             // The variant's own box — `/dt reset default` on the portal corridor is asking for a
             // 13-long shipped template, not a carriage-sized one.
@@ -378,6 +420,11 @@ public sealed interface Template
         @Override public String variantName() { return contents.id(); }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             CarriageContentsEditor.stampPlot(level, contents, dims);
+        }
+        @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
+            // Under the contents' natural shell (null): the corridor for the portal contents, a
+            // standard carriage for everything else.
+            CarriageContentsEditor.enter(player, contents, null, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             // Contents have no separate bundled tier — write-through happens
@@ -450,6 +497,9 @@ public sealed interface Template
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             WholeCarriageEditor.stampRoomPlot(level, wholeCarriage, dims);
         }
+        @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
+            WholeCarriageEditor.enter(player, this, onTop, stamp, inside);
+        }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return WholeCarriageTemplateStore.getBundled(level, wholeCarriage, dims);
         }
@@ -507,6 +557,9 @@ public sealed interface Template
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             WholeCarriageEditor.stampHalfPlot(level, wholeCarriage, dims);
         }
+        @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
+            WholeCarriageEditor.enter(player, this, onTop, stamp, inside);
+        }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return games.brennan.dungeontrain.editor.WholeHalfTemplateStore.getBundled(level, wholeCarriage, dims);
         }
@@ -563,6 +616,9 @@ public sealed interface Template
         @Override public String variantName() { return group.id(); }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             WholeCarriageEditor.stampGroupPlot(level, group, dims);
+        }
+        @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
+            WholeCarriageEditor.enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return CarriageGroupTemplateStore.getBundled(level, group, dims, WholeCarriageEditor.groupSize());
@@ -654,6 +710,11 @@ public sealed interface Template
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
             return CarriagePartEditor.plotOrigin(new CarriagePartTemplateId(partKind, name), dims);
         }
+        @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
+            // The part editor decides the stamp itself (a walk into the plot you stand in keeps its
+            // edits; an un-hide restamps the whole grid), and a part has no doorway.
+            CarriagePartEditor.enter(player, partKind, name, onTop);
+        }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return partKind.dims(dims);
         }
@@ -709,7 +770,12 @@ public sealed interface Template
         @Override public String stageId() { String s = TrackVariantWeights.stageIdFor(TrackKind.TILE, name); return s == null ? "" : s; }
         @Override public String variantName() { return name; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            TrackEditor.stampPlot(level, dims);
+            // This tile's own plot, not the whole row — the category fill lists every named tile,
+            // and /dt reset on a named tile should leave the others' unsaved edits alone.
+            TrackEditor.stampPlot(level, name, dims);
+        }
+        @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
+            TrackEditor.enter(player, onTop, stamp);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return TrackTemplateStore.getBundled(level, dims);
@@ -788,6 +854,9 @@ public sealed interface Template
             // would re-stamp every default-named plot instead.
             PillarEditor.stampPlot(level, section, name, dims);
         }
+        @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
+            PillarEditor.enter(player, section, onTop, stamp);
+        }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return PillarTemplateStore.getBundled(level, section, dims);
         }
@@ -860,7 +929,11 @@ public sealed interface Template
         }
         @Override public String variantName() { return name; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            PillarEditor.stampPlot(level, adjunct, dims);
+            // This variant's plot only — the same per-name form Pillar and Tunnel use.
+            PillarEditor.stampPlotAdjunct(level, adjunct, name, dims);
+        }
+        @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
+            PillarEditor.enter(player, adjunct, onTop, stamp);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return PillarTemplateStore.getBundledAdjunct(level, adjunct);
@@ -938,6 +1011,9 @@ public sealed interface Template
             // — fixes the same silent bug as Pillar.restampPlot.
             TunnelEditor.stampPlot(level, variant, name);
         }
+        @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
+            TunnelEditor.enter(player, variant, onTop, stamp);
+        }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             // Tunnel templates have no bundled tier today.
             return Optional.empty();
@@ -1010,7 +1086,15 @@ public sealed interface Template
          * too. Every other kind's plot size is fixed in code and a restamp is the whole reset.
          */
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
+            PortalRoomEditor.stampPlot(level, name, dims);
+        }
+        @Override public void resetEditorPlot(ServerLevel level, CarriageDims dims) {
+            // Reset also reverts the room's size and forgets its resize memory — more than the
+            // category fill's stamp from disk should ever do.
             PortalRoomEditor.resetToSaved(level, name, dims);
+        }
+        @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
+            PortalRoomEditor.enter(player, name, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return Optional.empty();
@@ -1066,6 +1150,18 @@ public sealed interface Template
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             games.brennan.dungeontrain.editor.ChunkFrameEditor.restamp(level, name);
         }
+        @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
+            ServerLevel overworld = player.getServer().overworld();
+            if (stamp) {
+                // The frame editor's own enter: registers the name, stamps from disk, lands on the roof.
+                games.brennan.dungeontrain.editor.ChunkFrameEditor.enter(player, overworld, name, null);
+            } else {
+                games.brennan.dungeontrain.editor.ChunkFrameEditor.walkTo(player, overworld, name, !onTop);
+            }
+        }
+        /** A frame's walk never restamps: the plot panel's Enter and Go here keep unsaved edits. */
+        @Override public void walkTo(ServerPlayer player, boolean onTop) { enter(player, onTop, false, EditorPlotArrival.Inside.CENTRE); }
+        @Override public void enterInside(ServerPlayer player, EditorPlotArrival.Inside inside) { enter(player, false, false, inside); }
 
         /** The bundled frame as a structure — what {@code /dt reset default} puts back. */
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
@@ -1125,6 +1221,18 @@ public sealed interface Template
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             games.brennan.dungeontrain.editor.BuildingEditor.restamp(level, name);
         }
+        @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
+            ServerLevel overworld = player.getServer().overworld();
+            if (stamp) {
+                // The building editor's own enter: registers the name, stamps from disk, lands on the roof.
+                games.brennan.dungeontrain.editor.BuildingEditor.enter(player, overworld, name, null);
+            } else {
+                games.brennan.dungeontrain.editor.BuildingEditor.walkTo(player, overworld, name, !onTop);
+            }
+        }
+        /** A building's walk never restamps: the plot panel's Enter and Go here keep unsaved edits. */
+        @Override public void walkTo(ServerPlayer player, boolean onTop) { enter(player, onTop, false, EditorPlotArrival.Inside.CENTRE); }
+        @Override public void enterInside(ServerPlayer player, EditorPlotArrival.Inside inside) { enter(player, false, false, inside); }
 
         /** The jar's building as a structure — what {@code /dt reset default} puts back. */
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
@@ -1179,6 +1287,10 @@ public sealed interface Template
 
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             games.brennan.dungeontrain.editor.LostCityReferenceEditor.stampPlot(level, name);
+        }
+        @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
+            // View-only: the plot is Big Lost City's own template, so there is nothing to restamp from.
+            games.brennan.dungeontrain.editor.LostCityReferenceEditor.walkTo(player, player.getServer().overworld(), name, !onTop);
         }
 
         /** Never handed out: nothing may copy an official building's blocks. */
@@ -1236,6 +1348,14 @@ public sealed interface Template
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             games.brennan.dungeontrain.editor.WorkbenchEditor.stampPlot(level, stagedId);
         }
+        @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
+            ServerLevel overworld = player.getServer().overworld();
+            if (stamp) games.brennan.dungeontrain.editor.WorkbenchEditor.stampPlot(overworld, stagedId);
+            games.brennan.dungeontrain.editor.WorkbenchEditor.enter(player, overworld, stagedId, onTop, inside);
+        }
+        /** A staged build's walk never restamps: it holds a GUI-staged build the panel must not reload. */
+        @Override public void walkTo(ServerPlayer player, boolean onTop) { enter(player, onTop, false, EditorPlotArrival.Inside.FRONT_DOOR); }
+        @Override public void enterInside(ServerPlayer player, EditorPlotArrival.Inside inside) { enter(player, false, false, inside); }
 
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return Optional.empty();

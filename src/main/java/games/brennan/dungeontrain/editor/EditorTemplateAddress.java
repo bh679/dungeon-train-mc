@@ -94,6 +94,9 @@ public record EditorTemplateAddress(String type, String sub, String name) {
                     ? Optional.of(new Template.Building(name)) : Optional.empty();
             case LOST_CITY -> games.brennan.dungeontrain.building.LostCityReferences.find(name)
                     .map(r -> new Template.LostCity(r.name()));
+            case STAGED -> WorkbenchTemplates.registry().find(name).map(s -> (Template) s);
+            // A String switch cannot be exhaustive; of() above is the side the compiler checks, so a
+            // new record shows up there first — and needs its arm here too, or round trips go empty.
             default -> Optional.empty();
         };
     }
