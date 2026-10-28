@@ -31645,6 +31645,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "note-echo-author-skin",
+      "version": "0.1577.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "books"
+      ],
+      "title": "Note echo fix",
+      "summary": "An echo sent by a Love Note or a Death Note now arrives wearing its author's own skin, not a stand-in.",
+      "highlights": [],
+      "pr": 2388,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
