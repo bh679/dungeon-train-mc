@@ -452,7 +452,7 @@ public final class EditorDetailPane {
             int x = testIconX[i];
             boolean hov = hovered.kind() == HitKind.TEST_ICON && hovered.index() == i;
             g.fill(x, r.y(), x + ICON_CELL, r.y() + ICON_CELL, hov ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
-            if (hov) tint(g, 0xFF000000);
+            if (hov) DetailPainters.tint(g, 0xFF000000);
             g.blitSprite(EditorIcons.forAction(testIcons.get(i).id()), x + (ICON_CELL - ICON_SIZE) / 2,
                 r.y() + (ICON_CELL - ICON_SIZE) / 2, ICON_SIZE, ICON_SIZE);
             g.setColor(1f, 1f, 1f, 1f);
@@ -566,51 +566,36 @@ public final class EditorDetailPane {
     }
 
     private void drawIcons(GuiGraphics g) {
-        InventoryEditorLayout.Rect r = layout.icons();
-        for (int i = 0; i < icons.size(); i++) {
-            EditorScreenActions.Icon icon = icons.get(i);
-            int x = iconX[i];
-            boolean hov = hovered.kind() == HitKind.ICON && hovered.index() == i;
-            boolean danger = "remove".equals(icon.id()) || "clear".equals(icon.id());
-            int fill = !icon.enabled() ? DISABLED
-                : hov ? (danger ? 0xC0FF5544 : MenuRowPainter.CELL_HOVER) : MenuRowPainter.CELL_IDLE;
-            g.fill(x, r.y(), x + iconCell, r.y() + iconCell, fill);
-            if (!icon.enabled()) {
-                tint(g, DISABLED_ICON);
-            } else if ("save".equals(icon.id())) {
-                // Save says the state as well as offering the action: breathing green while this
-                // build has unsaved work, steady blue once it matches what is on disk. It is the
-                // only status the pane cannot show as a number, so it lives on its own button
-                // rather than on a second one beside it.
-                tint(g, EditorSaveStatus.tint(ctx.dirty(), System.currentTimeMillis()));
-            } else if ("submit".equals(icon.id()) || "withdraw".equals(icon.id())) {
-                // The same trick, for the other thing a build's state cannot be read off this pane:
-                // whether it has been offered to the train. Pulsing blue while it is only saved,
-                // steady green once submitted — and kept through the hover, like Save, because the
-                // state is the reason to press it.
-                tint(g, SubmitTint.of("withdraw".equals(icon.id()), System.currentTimeMillis()));
-            } else if (hov) {
-                tint(g, 0xFF000000);
-            }
-            int sprite = Math.min(ICON_SIZE, iconCell);
-            g.blitSprite(EditorIcons.forAction(icon.id()), x + (iconCell - sprite) / 2,
-                r.y() + (iconCell - sprite) / 2, sprite, sprite);
-            g.setColor(1f, 1f, 1f, 1f);
+        DetailPainters.drawIconStrip(g, icons, iconX, iconCell, layout.icons().y(),
+            hovered.kind() == HitKind.ICON ? hovered.index() : -1,
+            i -> "remove".equals(icons.get(i).id()) || "clear".equals(icons.get(i).id()),
+            this::iconTint);
+    }
+
+    /**
+     * What an icon is drawn through. A disabled icon dims; Save says the state as well as offering
+     * the action — breathing green while this build has unsaved work, steady blue once it matches
+     * what is on disk — since it is the only status the pane cannot show as a number, so it lives
+     * on its own button rather than on a second one beside it. Submit / Withdraw do the same for
+     * the other thing a build's state cannot be read off this pane: whether it has been offered to
+     * the train — pulsing blue while only saved, steady green once submitted. Both keep their
+     * colour through the hover, because the state is the reason to press them; any other hovered
+     * icon inks.
+     */
+    private int iconTint(int i) {
+        EditorScreenActions.Icon icon = icons.get(i);
+        boolean hov = hovered.kind() == HitKind.ICON && hovered.index() == i;
+        if (!icon.enabled()) return DISABLED_ICON;
+        if ("save".equals(icon.id())) return EditorSaveStatus.tint(ctx.dirty(), System.currentTimeMillis());
+        if ("submit".equals(icon.id()) || "withdraw".equals(icon.id())) {
+            return SubmitTint.of("withdraw".equals(icon.id()), System.currentTimeMillis());
         }
+        return hov ? DetailPainters.HOVER_INK : 0;
     }
 
     private void drawRows(GuiGraphics g, Font font, EditorScreenTheme theme) {
-        InventoryEditorLayout.Rect r = rowArea();
-        g.enableScissor(r.x(), r.y(), r.right(), r.bottom());
-        int first = pages.first(page);
-        int end = pages.end(page);
-        for (int idx = first; idx < end; idx++) {
-            int top = r.y() + (idx - first) * ROW_H;
-            boolean hov = hovered.kind() == HitKind.ROW && hovered.index() == idx;
-            MenuRowPainter.drawRow(g, font, rows.get(idx), r.x(), top, r.right(), ROW_H - 1,
-                idx, hov, hovered.sub(), null);
-        }
-        g.disableScissor();
+        DetailPainters.drawRowList(g, font, rows, rowArea(), ROW_H, pages.first(page), pages.end(page),
+            hovered.kind() == HitKind.ROW ? hovered.index() : -1, hovered.sub());
     }
 
     /**
@@ -695,8 +680,8 @@ public final class EditorDetailPane {
         String label = testLabel();
         int tw = font.width(label) + 12;
         int x = r.x() + (r.w() - tw) / 2;
-        if (!enabled) tint(g, DISABLED_ICON);
-        else if (hov) tint(g, 0xFF000000);
+        if (!enabled) DetailPainters.tint(g, DISABLED_ICON);
+        else if (hov) DetailPainters.tint(g, 0xFF000000);
         g.blitSprite(testIcon(), x, r.y() + (r.h() - 10) / 2, 10, 10);
         g.setColor(1f, 1f, 1f, 1f);
         g.drawString(font, label, x + 12, r.y() + (r.h() - font.lineHeight) / 2 + 1,
@@ -711,11 +696,6 @@ public final class EditorDetailPane {
 
     private static ResourceLocation testIcon() {
         return PortalTestSessionState.active() ? EditorIcons.EXIT : EditorIcons.PLAY;
-    }
-
-    private static void tint(GuiGraphics g, int argb) {
-        g.setColor(((argb >> 16) & 0xFF) / 255f, ((argb >> 8) & 0xFF) / 255f,
-            (argb & 0xFF) / 255f, ((argb >>> 24) & 0xFF) / 255f);
     }
 
     public Hit hitTest(double mx, double my) {
