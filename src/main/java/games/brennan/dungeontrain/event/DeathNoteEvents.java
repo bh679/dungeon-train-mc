@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.discord.DeathNoteReporter;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.narrative.AuthorSkinRef;
 import games.brennan.dungeontrain.narrative.DeathNoteSigning;
 import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
@@ -63,6 +64,9 @@ public final class DeathNoteEvents {
         boolean canSync = DeathNoteGate.canSync(player);
         Integer deathCarriage = TrainCarriageAppender.lastCarriageIndex(player.getUUID());
         String worldKey = String.valueOf(DungeonTrainWorldData.get(level).getGenerationSeed());
+        // The author's skin, so their echo arrives wearing it rather than the UUID default
+        // (the echo's profile ref needs a captured texture URL; a bare uuid never resolves one).
+        String authorSkinRef = AuthorSkinCapture.capture(player).map(AuthorSkinRef::encode).orElse("");
 
         for (PendingDeathNotes.PendingDeathNote note : pending) {
             if (deathCarriage == null) {
@@ -80,7 +84,8 @@ public final class DeathNoteEvents {
             // orphaned; the relay is pulled by the target in their next world (login + arrival scan).
             // worldKey is still sent (the relay requires it) but is no longer used to scope the pull.
             DeathNoteReporter.submit(player.getUUID(), note.authorName(), note.targetName(),
-                    note.targetUuid(), deathCarriage, worldKey, "", freePlay, note.kind(), note.lines());
+                    note.targetUuid(), deathCarriage, worldKey, authorSkinRef, freePlay, note.kind(),
+                    note.lines());
         }
     }
 

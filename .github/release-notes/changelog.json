@@ -31647,8 +31647,26 @@
       "released_at": null
     },
     {
-      "id": "editor-template-dispatch",
+      "id": "note-echo-author-skin",
       "version": "0.1577.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "books"
+      ],
+      "title": "Note echo fix",
+      "summary": "An echo sent by a Love Note or a Death Note now arrives wearing its author's own skin, not a stand-in.",
+      "highlights": [],
+      "pr": 2388,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-template-dispatch",
+      "version": "0.1578.0",
       "type": "refactor",
       "tags": [
         "editor",
@@ -31660,6 +31678,7 @@
         "Editor housekeeping: every plot kind is handled the same way under the hood",
         "Whole section: half-carriage plots fill in with the rest of the section"
       ],
+      "pr": 2390,
       "date": "2026-10-28",
       "released": false,
       "released_in": null,
