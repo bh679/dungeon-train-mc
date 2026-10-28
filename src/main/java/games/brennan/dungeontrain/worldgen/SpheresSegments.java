@@ -10,7 +10,7 @@ package games.brennan.dungeontrain.worldgen;
  *   1000 ─ 1750   End sky         overworld spheres
  *   1750 ─ 2500   End sky         overworld / Nether
  *   2500 ─ 3250   End sky         overworld / Nether / End
- *   3250 ─ 6250   End sky         overworld / Nether / End, structures ×5 → ×20 → ×5
+ *   3250 ─ 6250   End sky         overworld / Nether / End / Otherside, structures ×5 → ×20 → ×5
  *   5900 ─ 6450   (taper)         spheres rarer + smaller, End sky fading out
  *   6450 ─ 6550   overworld sky   empty void
  * </pre>
@@ -21,44 +21,48 @@ package games.brennan.dungeontrain.worldgen;
  *
  * <p>Pure and immutable; build it with {@link #of}, which clamps the offsets monotonic.</p>
  */
-public record SpheresSegments(long endSkyStart, long netherMixStart, long endMixStart,
+public record SpheresSegments(long endSkyStart, long netherMixStart, long endMixStart, long othersideMixStart,
                               long structureBoostStart, long structureBoostEnd,
                               double structureChance, double structureBoostMultiplier,
                               double structureBoostPeakMultiplier,
-                              int overworldWeight, int netherWeight, int endWeight) {
+                              int overworldWeight, int netherWeight, int endWeight, int othersideWeight) {
 
     /** Build from raw (config) values, clamping every offset and weight non-negative and in order. */
-    public static SpheresSegments of(long endSkyStart, long netherMixStart, long endMixStart,
+    public static SpheresSegments of(long endSkyStart, long netherMixStart, long endMixStart, long othersideMixStart,
                                      long structureBoostStart, long structureBoostEnd,
                                      double structureChance, double structureBoostMultiplier,
                                      double structureBoostPeakMultiplier,
-                                     int overworldWeight, int netherWeight, int endWeight) {
+                                     int overworldWeight, int netherWeight, int endWeight, int othersideWeight) {
         long endSky = Math.max(0L, endSkyStart);
         long netherMix = Math.max(0L, netherMixStart);
+        long endMix = Math.max(netherMix, endMixStart);
         long boostStart = Math.max(0L, structureBoostStart);
-        return new SpheresSegments(endSky, netherMix, Math.max(netherMix, endMixStart),
+        return new SpheresSegments(endSky, netherMix, endMix, Math.max(endMix, othersideMixStart),
                 boostStart, Math.max(boostStart, structureBoostEnd),
                 clamp01(structureChance), Math.max(0.0, structureBoostMultiplier),
                 Math.max(0.0, structureBoostPeakMultiplier),
-                Math.max(0, overworldWeight), Math.max(0, netherWeight), Math.max(0, endWeight));
+                Math.max(0, overworldWeight), Math.max(0, netherWeight), Math.max(0, endWeight),
+                Math.max(0, othersideWeight));
     }
 
     /**
      * The dimension a sphere centred {@code offset} blocks into the core is cut from, given a uniform
      * roll {@code u ∈ [0,1)}. Overworld only before {@link #netherMixStart}; overworld / Nether until
-     * {@link #endMixStart}; all three after. A negative offset (entry fade) is overworld. When every
-     * weight allowed at that offset is zero the sphere is overworld.
+     * {@link #endMixStart}; + End until {@link #othersideMixStart}; all four after. A negative offset (entry
+     * fade) is overworld. When every weight allowed at that offset is zero the sphere is overworld.
      */
     public SphereSource sourceAt(long offset, double u) {
         if (offset < netherMixStart) return SphereSource.OVERWORLD;
-        boolean end = offset >= endMixStart;
-        int ow = overworldWeight, ne = netherWeight, en = end ? endWeight : 0;
-        int total = ow + ne + en;
+        int ow = overworldWeight, ne = netherWeight;
+        int en = offset >= endMixStart ? endWeight : 0;
+        int ot = offset >= othersideMixStart ? othersideWeight : 0;
+        int total = ow + ne + en + ot;
         if (total <= 0) return SphereSource.OVERWORLD;
         double pick = u * total;
         if (pick < ow) return SphereSource.OVERWORLD;
         if (pick < ow + ne) return SphereSource.NETHER;
-        return SphereSource.END;
+        if (pick < ow + ne + en) return SphereSource.END;
+        return SphereSource.OTHERSIDE;
     }
 
     /**
