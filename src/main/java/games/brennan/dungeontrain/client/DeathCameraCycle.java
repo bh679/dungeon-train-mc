@@ -81,13 +81,15 @@ public final class DeathCameraCycle {
 
     /** Played instead of the open-air train shots while none of those has a clear path (a tunnel). */
     static final List<DeathShot> TUNNEL_SHOTS = List.of(
-        DeathShot.tunnel(DeathShot.Kind.TUNNEL_WINDOW_OUT, 100, "window-out"),
         DeathShot.tunnel(DeathShot.Kind.TUNNEL_RISE, 120, "side-rise"),
         DeathShot.tunnel(DeathShot.Kind.TUNNEL_ABOVE_BACK, 120, "above-back"),
         DeathShot.tunnel(DeathShot.Kind.TUNNEL_ROOF, 100, "roof-skim"),
-        DeathShot.tunnel(DeathShot.Kind.TUNNEL_COUPLING, 100, "coupling"),
-        DeathShot.tunnel(DeathShot.Kind.TUNNEL_EYES, 100, "eyes-forward")
+        DeathShot.tunnel(DeathShot.Kind.TUNNEL_WINDOW_OUT, 100, "window-out")
     );
+    /** Plays only when a whole loop pass found nothing else: never with an empty screen. */
+    static final DeathShot LAST_RESORT = DeathShot.tunnel(DeathShot.Kind.TUNNEL_EYES, 100, "eyes-forward");
+    /** The window shot is a filler: it plays only when fewer than this many other loop shots did this pass. */
+    static final int WINDOW_OUT_MAX_OTHERS = 5;
     /** Subject shots at the end of every loop pass, in the open and in a tunnel alike. */
     static final List<DeathShot> LOOP_TAIL = List.of(
         DeathShot.feature(80, "feature"),
@@ -122,6 +124,8 @@ public final class DeathCameraCycle {
     private static Vector3d aimOffset;
     /** Open-air loop shots that played since the loop last started; tunnel shots play only when it is 0. */
     private static int playedInLoop;
+    /** Loop shots of any kind that played since the loop last started (the window and last-resort gates). */
+    private static int passCount;
     /** The current shot's lens: carriage space for train-locked shots, world space otherwise. */
     private static Vector3d lens;
     /** Dolly end, carriage space. */
@@ -185,7 +189,8 @@ public final class DeathCameraCycle {
                                          boolean hasFeature) {
         List<DeathShot> shots = new ArrayList<>();
         shots.add(DeathShot.pov(40));
-        if (!voidDeath) shots.add(DeathShot.orbit(DeathShot.Target.DEATH_SPOT, 6.0, 3.0, 60, "spot"));
+        // Where you died only as the lead-in to who killed you; on its own it is a shot of nothing.
+        if (!voidDeath && hasKiller) shots.add(DeathShot.orbit(DeathShot.Target.DEATH_SPOT, 6.0, 3.0, 60, "spot"));
         if (hasKiller) shots.add(DeathShot.orbit(DeathShot.Target.KILLER, 5.0, 2.5, 60, "killer"));
         if (hasContact) shots.add(DeathShot.orbit(DeathShot.Target.CONTACT, 5.0, 2.5, 60, "mob"));
         // One shot: zoom out from beside the body for DOLLY_TICKS, then the lens stays where it
@@ -200,6 +205,7 @@ public final class DeathCameraCycle {
             if (tail.kind() == DeathShot.Kind.FEATURE_TRACK && !hasFeature) continue;
             shots.add(tail);
         }
+        shots.add(LAST_RESORT);
         return List.copyOf(shots);
     }
 
@@ -239,6 +245,7 @@ public final class DeathCameraCycle {
         savedHideGui = mc.options.hideGui;
         active = true;
         playedInLoop = 0;
+        passCount = 0;
         select(0);
     }
 
@@ -379,14 +386,24 @@ public final class DeathCameraCycle {
     private static void select(int i) {
         int loop = loopStart(sequence);
         for (int hops = 0; hops <= sequence.size() + TUNNEL_SHOTS.size(); hops++) {
-            if (i == loop && hops > 0) playedInLoop = 0;
+            if (i == loop && hops > 0) {
+                playedInLoop = 0;
+                passCount = 0;
+            }
             DeathShot shot = sequence.get(i);
-            if (shot.kind().isTunnel() && playedInLoop > 0) {
+            boolean gated = switch (shot.kind()) {
+                case TUNNEL_WINDOW_OUT -> passCount >= WINDOW_OUT_MAX_OTHERS;
+                case TUNNEL_EYES -> passCount > 0;
+                case TUNNEL_RISE, TUNNEL_ABOVE_BACK, TUNNEL_ROOF, TUNNEL_COUPLING -> playedInLoop > 0;
+                default -> false;
+            };
+            if (gated) {
                 i = nextIndex(sequence, i);
                 continue;
             }
             if (prepare(shot)) {
                 if (shot.kind().isOpenAir()) playedInLoop++;
+                if (shot.kind().isLoop()) passCount++;
                 index = i;
                 shotTicks = 0;
                 Minecraft.getInstance().options.hideGui = shot.kind() != DeathShot.Kind.POV;

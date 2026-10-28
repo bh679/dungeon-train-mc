@@ -8,6 +8,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DeathCameraCycleTest {
@@ -20,9 +21,9 @@ class DeathCameraCycleTest {
     void fullSceneHasEveryShotInOrder() {
         List<DeathShot> seq = DeathCameraCycle.buildSequence(false, true, true, true, true);
         assertEquals(List.of("POV", "spot", "killer", "mob", "carriage"), labels(seq).subList(0, 5));
-        assertEquals(DeathCameraCycle.TRAIN_SHOTS.size() + DeathCameraCycle.TUNNEL_SHOTS.size() + 2, seq.size() - 5);
+        assertEquals(DeathCameraCycle.TRAIN_SHOTS.size() + DeathCameraCycle.TUNNEL_SHOTS.size() + 3, seq.size() - 5);
         assertEquals(5, DeathCameraCycle.loopStart(seq));
-        assertEquals(List.of("feature", "mob-arc"), labels(seq).subList(seq.size() - 2, seq.size()), "subject shots close the loop");
+        assertEquals(List.of("feature", "mob-arc", "eyes-forward"), labels(seq).subList(seq.size() - 3, seq.size()), "subject shots then the last resort close the loop");
     }
 
     @Test
@@ -32,17 +33,24 @@ class DeathCameraCycleTest {
     }
 
     @Test
+    void deathSpotOrbitOnlyLeadsIntoAKiller() {
+        assertEquals(List.of("POV", "carriage"), labels(DeathCameraCycle.buildSequence(false, false, false, true)).subList(0, 2));
+        assertEquals(List.of("POV", "spot", "killer"), labels(DeathCameraCycle.buildSequence(false, true, false, true)).subList(0, 3));
+    }
+
+    @Test
     void noKillerNoMobOffTrainStillLeavesTheTrainShots() {
         List<DeathShot> seq = DeathCameraCycle.buildSequence(false, false, false, false);
-        assertEquals(List.of("POV", "spot", "leaving"), labels(seq).subList(0, 3));
-        assertEquals(3, DeathCameraCycle.loopStart(seq));
-        assertEquals("mob-arc", seq.get(seq.size() - 1).label(), "no feature listed: the mob arc alone closes the loop");
-        assertTrue(labels(seq).contains("eyes-forward"));
+        assertEquals(List.of("POV", "leaving"), labels(seq).subList(0, 2));
+        assertEquals(2, DeathCameraCycle.loopStart(seq));
+        assertEquals("mob-arc", seq.get(seq.size() - 2).label(), "no feature listed: the mob arc closes the loop");
+        assertEquals("eyes-forward", seq.get(seq.size() - 1).label(), "then the last resort");
+        assertFalse(labels(seq).contains("coupling"));
     }
 
     @Test
     void sequenceRunsOnceThenLoopsTheTrainShots() {
-        List<DeathShot> seq = DeathCameraCycle.buildSequence(false, false, false, true);
+        List<DeathShot> seq = DeathCameraCycle.buildSequence(false, true, false, true);
         int loop = DeathCameraCycle.loopStart(seq);
         assertEquals(1, DeathCameraCycle.nextIndex(seq, 0));
         assertEquals(loop, DeathCameraCycle.nextIndex(seq, seq.size() - 1));

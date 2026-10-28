@@ -90,7 +90,6 @@ public final class PhotoAdvancementEvents {
         try {
             ExtraData data = event.getFrame().extraData();
             List<LivingEntity> inFrame = event.getEntitiesInFrame();
-            games.brennan.dungeontrain.event.RecentMobContacts.rememberAll(player, inFrame);
             ModAdvancementTriggers.PHOTO_SUBJECT.get().trigger(player,
                     PhotoSubjects.keys(facts(player, data, inFrame), PhotoScene.of(player, inFrame)));
             SelfieChallengeHints.send(player, event, data.getOrDefault(Frame.SELFIE, false));
