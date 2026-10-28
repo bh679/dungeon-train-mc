@@ -23,6 +23,9 @@ import games.brennan.dungeontrain.discord.DeathManifestFormat;
 import games.brennan.dungeontrain.discord.DeathReportFormat;
 import games.brennan.dungeontrain.narrative.DeathLoreStore;
 import games.brennan.dungeontrain.net.DeathNarrative;
+import games.brennan.dungeontrain.net.DeathScenePacket;
+import games.brennan.dungeontrain.ship.sable.DeadRiderAnchors;
+import games.brennan.dungeontrain.ship.sable.DeathBodyRagdoll;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
@@ -39,6 +42,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -62,6 +66,8 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import net.minecraft.world.phys.Vec3;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -266,6 +272,7 @@ public final class RunStatsEvents {
                 narrative,
                 deathCause);
         DungeonTrainNet.sendTo(player, packet);
+        DungeonTrainNet.sendTo(player, deathScene(player, event.getSource()));
 
         // Relay all ~5 per-death telemetry signals to dp-relay inside ONE RelayOutbox batch window, so
         // the coalescing outbox folds them into a single POST /telemetry/batch instead of one request
@@ -367,6 +374,24 @@ public final class RunStatsEvents {
      * the same stats the death screen shows, and the most-used weapon + worn armor as the
      * composed item image. Discord Presence handles the embed, image, and posting off-thread.
      */
+    /** What the death moment's camera needs: void death, the killer, and the other mob (see DeathScenePacket). */
+    private static DeathScenePacket deathScene(ServerPlayer player, DamageSource source) {
+        // No place to look at: fell out of the world.
+        boolean voidDeath = source.is(DamageTypes.FELL_OUT_OF_WORLD)
+            || player.getY() < player.serverLevel().getMinBuildHeight();
+        int killer = source.getEntity() instanceof LivingEntity living && living != player
+            ? living.getId() : DeathScenePacket.NONE;
+        int contact = RecentMobContacts.nearestAlive(player, killer);
+        LOGGER.info("[DungeonTrain] Death scene for {}: void={} killer={} ({}) contact={}", player.getGameProfile().getName(),
+            voidDeath, killer, source.getEntity() == null ? "none" : source.getEntity().getType().toShortString(), contact);
+        List<DeathScenePacket.Target> targets = voidDeath ? List.of()
+            : DeathSceneTargets.near(player.serverLevel(), DeadRiderAnchors.anchorPos(player));
+        Vec3 hazard = voidDeath ? null : DeathHazard.find(player, source);
+        // The body left where they died (a Sable: Ragdolls ragdoll); the spot and carriage shots track it.
+        UUID body = DeathBodyRagdoll.spawn(player, voidDeath);
+        return new DeathScenePacket(voidDeath, killer, contact, targets, hazard, body);
+    }
+
     private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet,
                                        boolean cheated) {
         String cause = DiscordMarkdown.escape(deathMessage(player));

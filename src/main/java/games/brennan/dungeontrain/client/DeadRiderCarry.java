@@ -34,6 +34,14 @@ public final class DeadRiderCarry {
 
     private DeadRiderCarry() {}
 
+    /** The carriage a dead rider is pinned to and where on it they are (plot space). */
+    public record Pin(SubLevel carriage, Vector3d local) {}
+
+    /** The current pin, or null when the local player is not dead on a carriage. */
+    public static Pin pinned() {
+        return carriage == null || local == null ? null : new Pin(carriage, new Vector3d(local));
+    }
+
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();

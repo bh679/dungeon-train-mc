@@ -30,6 +30,13 @@ class LiveFrameOrderTest {
     }
 
     @Test
+    void streamersOwnLivePillDrawsAfterTheStreamGrabsTheFrame() throws Exception {
+        EventPriority grab = priority(LiveStreamController.class, "onRenderFrameEnd");
+        EventPriority pill = priority(StreamNameTag.class, "onFrameEnd");
+        assertTrue(pill.ordinal() > grab.ordinal(), "baked into the frame, viewers would get a second pill");
+    }
+
+    @Test
     void deathScreenChatDrawsAfterTheStreamGrabsTheFrame() throws Exception {
         EventPriority grab = priority(LiveStreamController.class, "onRenderFrameEnd");
         EventPriority chat = priority(LiveDeathChat.class, "onFrameEnd");

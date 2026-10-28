@@ -30504,129 +30504,6 @@
       "pr": 2297
     },
     {
-      "id": "trader-perks-reduced-reduction-restock",
-      "version": "0.1509.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "mobs",
-        "loot"
-      ],
-      "title": "Trader perks: Reduced Reduction and Restock Villager",
-      "summary": "Two new Trader perks. Reduced Reduction keeps a villager's prices from dropping as fast while you keep selling to it. Restock Villager lets you refresh a villager's sold-out trades a few times each life.",
-      "highlights": [],
-      "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "knight-combat-perks",
-      "version": "0.1509.0",
-      "type": "feat",
-      "tags": [
-        "feature"
-      ],
-      "title": "Knight perks",
-      "summary": "Three new Knight perks. Crits gives your hits a chance to land critical strikes, and past a point they hit even harder. Kill Buff gives you a burst of Strength on every kill, getting stronger as it grows. Vampirism gives each kill a chance to heal you, and enough of it heals you more than once. None of them have a cap.",
-      "highlights": [],
-      "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "perks-archivist",
-      "version": "0.1509.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "community",
-        "balance"
-      ],
-      "title": "Archivist perks",
-      "summary": "New Archivist perks for the perks tree: keep the Live Eye safe for longer, offer the Live Eye to a chosen viewer, give your votes more weight, and get extra shots from a disposable camera.",
-      "highlights": [],
-      "pr": 2299,
-      "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "cosmic-apples",
-      "version": "0.1509.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "loot"
-      ],
-      "title": "Cosmic apples",
-      "summary": "Cosmic apples now turn up in carriage chests. Eat one for perk points to spend this life: a Cosmic Apple gives 1, a Celestial Bite gives 5 and a Violet Core gives 10. The rarer apples only appear further along the train.",
-      "highlights": [
-        "Three apples, each worth more perk points than the last",
-        "The deeper you ride, the better the apples you can find"
-      ],
-      "pr": 2316,
-      "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "perk-points",
-      "version": "0.1509.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "advancements",
-        "ui"
-      ],
-      "title": "Perk points",
-      "summary": "Advancements now earn Advancement Points, which unlock perks and are kept when you die. The advancements screen shows how many you have to spend. Points from cosmic apples buy perk ranks for this life, and each rank costs a little more the more you buy. A perk can be unlocked again to hold more points.",
-      "highlights": [
-        "Advancement Points from advancements unlock perks",
-        "Unlock a perk again to give it room for more points"
-      ],
-      "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "crafter-enchanting-perks",
-      "version": "0.1508.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "loot",
-        "balance"
-      ],
-      "title": "Crafter perks: enchanting and cooking",
-      "summary": "Four new Crafter perks. Enchanting costs fewer levels, food cooks faster, enchantments can climb past their usual maximum, and your gear can act one level stronger than it is.",
-      "highlights": [],
-      "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "perks-lover-pet-health-good-gifter",
-      "version": "0.1509.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "mobs"
-      ],
-      "title": "Lover perks: Pet Health and Good Gifter",
-      "summary": "Two new Lover perks. Pet Health gives your tamed pets an extra half heart for each rank, with no limit. Good Gifter makes animals easier to win over: every rank makes your gifts tame more often, and as it grows animals start taking similar food, then other animals' food, then your own food, then anything at all, until a friendly hand is enough. Player mobs also warm to your gifts faster.",
-      "highlights": [],
-      "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
       "id": "dimensional-carriage-far-exit-landing",
       "version": "0.1509.0",
       "type": "fix",
@@ -31066,6 +30943,564 @@
       "released": true,
       "released_in": "v0.1536.0",
       "released_at": "2026-10-26T10:16:46Z"
+    },
+    {
+      "id": "contents-weight-tuning-2337",
+      "version": "0.1537.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "mobs",
+        "balance"
+      ],
+      "title": "Carriage balance tweaks",
+      "summary": "Some of the toughest creatures deep in the run now show up a little later, and passenger carriages turn up more often.",
+      "highlights": [],
+      "pr": 2337,
+      "date": "2026-10-26",
+      "released": true,
+      "released_in": "v0.1542.0",
+      "released_at": "2026-10-26T14:15:58Z"
+    },
+    {
+      "id": "tv-chat-always-open",
+      "version": "0.1537.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "TV chat, any time",
+      "summary": "Wear a TV and you can chat in Live chat even when nobody is streaming.",
+      "highlights": [
+        "Wear a TV to chat with other TV wearers, Discord and the website, even when nobody is live.",
+        "A streamer who turns Live chat off just stops seeing it. Everyone else can keep talking.",
+        "Turning Live chat off also keeps your chat off your stream.",
+        "Rather not see Live chat on your TV? Switch it off in Options, Stream, Live chat."
+      ],
+      "pr": 2338,
+      "date": "2026-10-26",
+      "released": true,
+      "released_in": "v0.1542.0",
+      "released_at": "2026-10-26T14:15:58Z"
+    },
+    {
+      "id": "reward-time-left",
+      "version": "0.1539.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Community Rewards show how long is left",
+      "summary": "A Community Reward that ends soon now says how long it has left instead of just a date: ON for 11 more hours, then minutes, then seconds, and ON until tomorrow when it ends the next day.",
+      "highlights": [
+        "Rewards ending within a day count down in hours, minutes and seconds",
+        "Rewards ending the next day say ON until tomorrow"
+      ],
+      "date": "2026-10-26",
+      "released": true,
+      "released_in": "v0.1542.0",
+      "released_at": "2026-10-26T14:15:58Z"
+    },
+    {
+      "id": "live-translations-reward",
+      "version": "0.1537.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live Eye Chat Translations",
+      "summary": "Live chat now speaks your language. A new Community Reward translates Live chat into each viewer's own language, for everyone, for a month.",
+      "highlights": [
+        "Chat from the stream, Discord, Twitch and the website shows in your game language, right under the original",
+        "Choose how it shows in Options: under the original, translation only, or translation first",
+        "Live Translations joins the Community Rewards shelf at $90 AUD for a month"
+      ],
+      "pr": 2339,
+      "date": "2026-10-26",
+      "released": true,
+      "released_in": "v0.1542.0",
+      "released_at": "2026-10-26T14:15:58Z",
+      "major": true,
+      "notable": true,
+      "description": "Live chat now speaks your language.\n\n**Live Eye Chat Translations** is a new Community Reward. When one person gives it, Live chat is translated for everyone for a month: messages from the stream, Discord, Twitch and the website show in your own game language, right under the original.\n\nChoose how translations show in Options: under the original, translation only, or translation first.\n\nFind it on the Community Rewards shelf at $90 AUD for a month.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/live-translations.jpg"
+    },
+    {
+      "id": "live-eye-second-channel-free",
+      "version": "0.1542.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "loot",
+        "balance"
+      ],
+      "title": "Live Eyes stay easy to find while a second stream is open",
+      "summary": "When Two Streams is on and only one person is streaming, Live Eyes are as easy to find as when nobody is live, so someone can take the open stream. TVs still turn up more often while a stream is on.",
+      "highlights": [],
+      "date": "2026-10-26",
+      "released": true,
+      "released_in": "v0.1547.0",
+      "released_at": "2026-10-26T17:49:15Z",
+      "pr": 2344
+    },
+    {
+      "id": "empty-long-carriage-fix",
+      "version": "0.1544.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Empty carriage fix",
+      "summary": "A rare long carriage could turn up completely empty. It won't anymore.",
+      "highlights": [],
+      "pr": 2345,
+      "date": "2026-10-26",
+      "released": true,
+      "released_in": "v0.1547.0",
+      "released_at": "2026-10-26T17:49:15Z"
+    },
+    {
+      "id": "live-pill-shows-once",
+      "version": "0.1545.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui"
+      ],
+      "title": "Live stream name tag shows once",
+      "summary": "Viewers of a live stream sometimes saw the streamer's name tag twice, one just under the other. It now shows once.",
+      "highlights": [],
+      "pr": 2346,
+      "date": "2026-10-26",
+      "released": true,
+      "released_in": "v0.1547.0",
+      "released_at": "2026-10-26T17:49:15Z"
+    },
+    {
+      "id": "difficulty-separation-fix",
+      "version": "0.1546.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "multiplayer"
+      ],
+      "title": "Difficulty fix",
+      "summary": "Changing difficulty on a server now keeps each difficulty fully separate, as intended.",
+      "highlights": [],
+      "pr": 2347,
+      "date": "2026-10-26",
+      "released": true,
+      "released_in": "v0.1547.0",
+      "released_at": "2026-10-26T17:49:15Z"
+    },
+    {
+      "id": "advancement-tweaks-reset",
+      "version": "0.1547.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Advancement tweaks",
+      "summary": "One hidden advancement has a new hint, and another hidden one has been retired.",
+      "highlights": [],
+      "pr": 2349,
+      "date": "2026-10-26",
+      "released": true,
+      "released_in": "v0.1547.0",
+      "released_at": "2026-10-26T17:49:15Z"
+    },
+    {
+      "id": "pets-stay-with-owner",
+      "version": "0.1548.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "mobs"
+      ],
+      "title": "Pets stay with you",
+      "summary": "Your pets no longer get left behind on the train or turn up in someone else's world.",
+      "highlights": [
+        "A pet that is not sitting now comes to you when the carriage it is on falls far behind.",
+        "A pet you told to sit stays in its carriage, and is still there when you come back.",
+        "Pets left on the train when you log off are waiting beside you when you return.",
+        "Only sitting pets in a drifting carriage travel with it to other worlds."
+      ],
+      "pr": 2351,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1550.0",
+      "released_at": "2026-10-27T03:23:07Z"
+    },
+    {
+      "id": "editor-test-live-photos",
+      "version": "0.1549.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community"
+      ],
+      "title": "Editor test photos",
+      "summary": "When you test a carriage in the editor, its photo frames now show real community photos instead of a placeholder picture.",
+      "highlights": [],
+      "pr": 2352,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1550.0",
+      "released_at": "2026-10-27T03:23:07Z"
+    },
+    {
+      "id": "vault-keys-on-train",
+      "version": "0.1549.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot"
+      ],
+      "title": "Vault fix",
+      "summary": "Trial keys now open vaults on the train. Vaults in carriages also light up and show their loot as you walk up to them.",
+      "highlights": [],
+      "pr": 2353,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1550.0",
+      "released_at": "2026-10-27T03:23:07Z"
+    },
+    {
+      "id": "enderchest-shulker-photos-keep-pictures",
+      "version": "0.1551.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Photos in shulker boxes keep their pictures",
+      "summary": "Photos you keep in a shulker box or bundle inside your Ender Chest now still show their picture when you start a new run, instead of turning into blank paper.",
+      "highlights": [
+        "Photos in shulker boxes and bundles in the Ender Chest keep their pictures from one run to the next"
+      ],
+      "pr": 2354,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1553.0",
+      "released_at": "2026-10-27T04:59:42Z"
+    },
+    {
+      "id": "tv-inventory-labels",
+      "version": "0.1552.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "TV labels",
+      "summary": "TVs now say whether they're on or off, and which stream they're set to, when you hover them in your inventory, so you can tell your TV stacks apart.",
+      "highlights": [],
+      "pr": 2355,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1553.0",
+      "released_at": "2026-10-27T04:59:42Z"
+    },
+    {
+      "id": "deathnote-echo-head-trophy",
+      "version": "0.1553.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "books"
+      ],
+      "title": "Death Note trophy",
+      "summary": "Kill the echo a Death Note sent after you and you take its author's head as well as the note.",
+      "highlights": [],
+      "pr": 2356,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1553.0",
+      "released_at": "2026-10-27T04:59:42Z"
+    },
+    {
+      "id": "twitch-prompt-mentions-fix",
+      "version": "0.1554.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Twitch prompt fix",
+      "summary": "Tagging the developer or another player in chat no longer asks you to connect a Twitch channel. The Twitch prompt now only appears while you are streaming with the Live Eye.",
+      "highlights": [],
+      "pr": 2357,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1557.0",
+      "released_at": "2026-10-27T07:54:15Z"
+    },
+    {
+      "id": "pets-follow-onto-train",
+      "version": "0.1555.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Pets keep up with you on the train",
+      "summary": "Tamed pets that catch up with you on the train now land on the carriage beside you, instead of getting stuck in the floor or falling off the side.",
+      "highlights": [],
+      "pr": 2359,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1557.0",
+      "released_at": "2026-10-27T07:54:15Z"
+    },
+    {
+      "id": "mob-tick-lag-fix",
+      "version": "0.1556.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance"
+      ],
+      "title": "Lag fix",
+      "summary": "Fixed long freezes that could hit during fights on the train, or right after loading back into a world.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2360,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1557.0",
+      "released_at": "2026-10-27T07:54:15Z"
+    },
+    {
+      "id": "mobs-stay-visible-after-lag",
+      "version": "0.1557.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Mob fix",
+      "summary": "Mobs fighting you on the train no longer sometimes turn invisible after a lag spike while still attacking.",
+      "highlights": [],
+      "pr": 2361,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1557.0",
+      "released_at": "2026-10-27T07:54:15Z"
+    },
+    {
+      "id": "creakings-potion-effects",
+      "version": "0.1558.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Creakings get potion effects",
+      "summary": "Creakings now get potion effects as the run gets harder, just like the other monsters on the train.",
+      "highlights": [],
+      "pr": 2362,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "mob-haste-slower",
+      "version": "0.1559.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Mobs dig more slowly",
+      "summary": "Mobs get Haste later in a run and it grows much more slowly, so digging mobs break through your defences more slowly at high difficulty.",
+      "highlights": [],
+      "pr": 2363,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "advancement-progress-list",
+      "version": "0.1560.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Advancement progress you can check",
+      "summary": "One hidden exploration advancement now remembers your progress for good, across lives and worlds, and clicking it on the advancements screen shows what you have done and what is left.",
+      "highlights": [
+        "Progress toward it is never lost, not even when you die",
+        "Click it to see a full list, with a scrollbar",
+        "If you had earned its earlier version, it is now a bigger goal, and you start with your progress carried over"
+      ],
+      "pr": 2366,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "ragdoll-body-at-death",
+      "version": "0.1561.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Your body stays where you fell",
+      "summary": "When you die on the train, a body in your skin and gear now lies where you fell, and the death scene's shots follow it. Dungeon Train now requires Sable: Ragdolls, which the CurseForge and Modrinth apps install for you.",
+      "highlights": [
+        "The close shot and the carriage shot frame the body, wherever it tumbles",
+        "Your loot drops exactly as before; the body holds nothing and cannot be dragged",
+        "The body goes when you respawn"
+      ],
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "trader-perks-reduced-reduction-restock",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "loot"
+      ],
+      "title": "Trader perks: Reduced Reduction and Restock Villager",
+      "summary": "Two new Trader perks. Reduced Reduction keeps a villager's prices from dropping as fast while you keep selling to it. Restock Villager lets you refresh a villager's sold-out trades a few times each life.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "knight-combat-perks",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Knight perks",
+      "summary": "Three new Knight perks. Crits gives your hits a chance to land critical strikes, and past a point they hit even harder. Kill Buff gives you a burst of Strength on every kill, getting stronger as it grows. Vampirism gives each kill a chance to heal you, and enough of it heals you more than once. None of them have a cap.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perks-archivist",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "balance"
+      ],
+      "title": "Archivist perks",
+      "summary": "New Archivist perks for the perks tree: keep the Live Eye safe for longer, offer the Live Eye to a chosen viewer, give your votes more weight, and get extra shots from a disposable camera.",
+      "highlights": [],
+      "pr": 2299,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "cosmic-apples",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot"
+      ],
+      "title": "Cosmic apples",
+      "summary": "Cosmic apples now turn up in carriage chests. Eat one for perk points to spend this life: a Cosmic Apple gives 1, a Celestial Bite gives 5 and a Violet Core gives 10. The rarer apples only appear further along the train.",
+      "highlights": [
+        "Three apples, each worth more perk points than the last",
+        "The deeper you ride, the better the apples you can find"
+      ],
+      "pr": 2316,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perk-points",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Perk points",
+      "summary": "Advancements now earn Advancement Points, which unlock perks and are kept when you die. The advancements screen shows how many you have to spend. Points from cosmic apples buy perk ranks for this life, and each rank costs a little more the more you buy. A perk can be unlocked again to hold more points.",
+      "highlights": [
+        "Advancement Points from advancements unlock perks",
+        "Unlock a perk again to give it room for more points"
+      ],
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "crafter-enchanting-perks",
+      "version": "0.1508.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Crafter perks: enchanting and cooking",
+      "summary": "Four new Crafter perks. Enchanting costs fewer levels, food cooks faster, enchantments can climb past their usual maximum, and your gear can act one level stronger than it is.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perks-lover-pet-health-good-gifter",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Lover perks: Pet Health and Good Gifter",
+      "summary": "Two new Lover perks. Pet Health gives your tamed pets an extra half heart for each rank, with no limit. Good Gifter makes animals easier to win over: every rank makes your gifts tame more often, and as it grows animals start taking similar food, then other animals' food, then your own food, then anything at all, until a friendly hand is enough. Player mobs also warm to your gifts faster.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     },
     {
       "id": "perks-tree-v18",

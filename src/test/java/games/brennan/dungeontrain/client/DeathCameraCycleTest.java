@@ -1,0 +1,203 @@
+package games.brennan.dungeontrain.client;
+
+import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3d;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class DeathCameraCycleTest {
+
+    private static List<String> labels(List<DeathShot> shots) {
+        return shots.stream().map(DeathShot::label).toList();
+    }
+
+    @Test
+    void fullSceneHasEveryShotInOrder() {
+        List<DeathShot> seq = DeathCameraCycle.buildSequence(false, true, true, true, true);
+        assertEquals(List.of("POV", "spot", "killer", "mob", "carriage", "body-out"), labels(seq).subList(0, 6));
+        assertEquals(DeathCameraCycle.TRAIN_SHOTS.size() + DeathCameraCycle.TUNNEL_SHOTS.size() + 3, seq.size() - 6);
+        assertEquals(6, DeathCameraCycle.loopStart(seq));
+        assertEquals(List.of("feature", "mob-arc", "eyes-forward"), labels(seq).subList(seq.size() - 3, seq.size()), "subject shots then the last resort close the loop");
+    }
+
+    @Test
+    void voidDeathSkipsTheDeathSpot() {
+        assertEquals(List.of("POV", "killer", "carriage"),
+            labels(DeathCameraCycle.buildSequence(true, true, false, true)).subList(0, 3));
+    }
+
+    @Test
+    void deathSpotOrbitRidesWithTheBody() {
+        DeathShot spot = DeathCameraCycle.buildSequence(false, true, false, true).get(1);
+        assertEquals("spot", spot.label());
+        assertEquals(DeathShot.Target.BODY, spot.target());
+    }
+
+    @Test
+    void deathSpotOrbitLeadsIntoAKillerOrStandsInForTheCarriageShot() {
+        assertEquals(List.of("POV", "carriage"), labels(DeathCameraCycle.buildSequence(false, false, false, true)).subList(0, 2), "on the train, no killer: no spot");
+        assertEquals(List.of("POV", "spot", "killer"), labels(DeathCameraCycle.buildSequence(false, true, false, true)).subList(0, 3));
+        assertEquals(List.of("POV", "spot", "leaving"), labels(DeathCameraCycle.buildSequence(false, false, false, false)).subList(0, 3), "off the train: spot instead of the carriage shot");
+        assertEquals(List.of("POV", "leaving"), labels(DeathCameraCycle.buildSequence(true, false, false, false)).subList(0, 2), "void death: never");
+        List<DeathShot> hazard = DeathCameraCycle.buildSequence(false, false, false, true, false, true);
+        assertEquals(List.of("POV", "spot", "carriage"), labels(hazard).subList(0, 3), "a killing block keeps the spot shot");
+        assertEquals(DeathShot.Target.HAZARD, hazard.get(1).target());
+        assertEquals(15, hazard.get(0).holdTicks(), "POV holds 0.75 s");
+    }
+
+    @Test
+    void noKillerNoMobOffTrainStillLeavesTheTrainShots() {
+        List<DeathShot> seq = DeathCameraCycle.buildSequence(false, false, false, false);
+        assertEquals(List.of("POV", "spot", "leaving", "body-out"), labels(seq).subList(0, 4));
+        assertEquals(4, DeathCameraCycle.loopStart(seq));
+        assertEquals("mob-arc", seq.get(seq.size() - 2).label(), "no feature listed: the mob arc closes the loop");
+        assertEquals("eyes-forward", seq.get(seq.size() - 1).label(), "then the last resort");
+        assertFalse(labels(seq).contains("coupling"));
+    }
+
+    @Test
+    void bodyOutIsTheSafetyNetBehindTheSpotAndCarriageShots() {
+        for (boolean onTrain : new boolean[] {true, false}) {
+            List<DeathShot> seq = DeathCameraCycle.buildSequence(true, false, false, onTrain);
+            int loop = DeathCameraCycle.loopStart(seq);
+            assertEquals("body-out", seq.get(loop - 1).label(), "last of phase one, on the train: " + onTrain);
+            assertEquals(DeathShot.Kind.BODY_OUT, seq.get(loop - 1).kind());
+            assertEquals(DeathCameraCycle.DOLLY_TICKS + 60, seq.get(loop - 1).holdTicks(), "zooms out, then holds");
+        }
+        assertTrue(DeathCameraCycle.showsTheBody(DeathShot.orbit(DeathShot.Target.BODY, 6, 3, 60, "spot")));
+        assertTrue(DeathCameraCycle.showsTheBody(DeathShot.orbit(DeathShot.Target.HAZARD, 5, 2.5, 60, "spot")));
+        assertTrue(DeathCameraCycle.showsTheBody(DeathShot.dolly(Vec3.ZERO, Vec3.ZERO, 120, "carriage")));
+        assertTrue(DeathCameraCycle.showsTheBody(DeathShot.transition(0, 0, 0, 60, "leaving")));
+        assertFalse(DeathCameraCycle.showsTheBody(DeathShot.orbit(DeathShot.Target.KILLER, 5, 2.5, 60, "killer")));
+        assertFalse(DeathCameraCycle.showsTheBody(DeathShot.orbit(DeathShot.Target.CONTACT, 5, 2.5, 60, "mob")));
+        assertFalse(DeathCameraCycle.showsTheBody(DeathCameraCycle.TRAIN_SHOTS.get(0)));
+        assertEquals(new Vec3(0.5, 2.0, 0.0), DeathCameraCycle.BODY_OUT_PULLS.get(0)[0], "tries straight up first");
+    }
+
+    @Test
+    void closeUpSearchGoesUpFirstThenAllRoundAndNeverReachesFar() {
+        List<Vec3> dirs = DeathCameraCycle.CLOSE_UP_DIRECTIONS;
+        assertEquals(17, dirs.size());
+        assertEquals(new Vec3(0, 1, 0), dirs.get(0));
+        for (Vec3 d : dirs) {
+            assertEquals(1.0, d.length(), 1e-9, "unit direction " + d);
+            assertTrue(d.y > 0, "never below the body: " + d);
+        }
+        for (double reach : DeathCameraCycle.CLOSE_UP_REACH) assertTrue(reach <= 2.5 && reach >= 1.0);
+        assertTrue(DeathCameraCycle.CLOSE_UP_REACH[0] > DeathCameraCycle.CLOSE_UP_REACH[DeathCameraCycle.CLOSE_UP_REACH.length - 1], "longest first");
+        assertTrue(DeathCameraCycle.LAST_RESORT_TO.distanceTo(DeathCameraCycle.LAST_RESORT_FROM) < 1.0, "the last resort barely moves");
+    }
+
+    @Test
+    void featureAndMobArcTakeTurnsClosingThePass() {
+        DeathShot feature = DeathCameraCycle.LOOP_TAIL.get(0);
+        DeathShot mobArc = DeathCameraCycle.LOOP_TAIL.get(1);
+        assertTrue(DeathCameraCycle.isTail(feature) && DeathCameraCycle.isTail(mobArc));
+        assertFalse(DeathCameraCycle.isTail(DeathCameraCycle.TRAIN_SHOTS.get(0)));
+        assertTrue(DeathCameraCycle.tailTurn(feature, 0));
+        assertFalse(DeathCameraCycle.tailTurn(mobArc, 0));
+        assertFalse(DeathCameraCycle.tailTurn(feature, 1));
+        assertTrue(DeathCameraCycle.tailTurn(mobArc, 1));
+        assertTrue(DeathCameraCycle.tailTurn(feature, 2));
+    }
+
+    @Test
+    void sequenceRunsOnceThenLoopsTheTrainShots() {
+        List<DeathShot> seq = DeathCameraCycle.buildSequence(false, true, false, true);
+        int loop = DeathCameraCycle.loopStart(seq);
+        assertEquals(1, DeathCameraCycle.nextIndex(seq, 0));
+        assertEquals(loop, DeathCameraCycle.nextIndex(seq, seq.size() - 1));
+        assertEquals(seq.size() - 1, DeathCameraCycle.previousIndex(seq, 1), "Left from the first camera shot wraps to the last");
+        assertEquals(1, DeathCameraCycle.previousIndex(seq, 2));
+    }
+
+    @Test
+    void longestClearRunWrapsAroundTheCircle() {
+        assertArrayEquals(new int[] {0, 0}, DeathCameraCycle.longestClearRun(new boolean[] {false, false, false, false}));
+        assertArrayEquals(new int[] {0, 4}, DeathCameraCycle.longestClearRun(new boolean[] {true, true, true, true}));
+        assertArrayEquals(new int[] {1, 2}, DeathCameraCycle.longestClearRun(new boolean[] {false, true, true, false}));
+        // Clear at the end and the start: one run of 2 wrapping from index 5.
+        assertArrayEquals(new int[] {5, 2}, DeathCameraCycle.longestClearRun(new boolean[] {true, false, true, false, false, true}));
+    }
+
+    @Test
+    void orbitsHoldThreeSecondsAndTheCarriageShotZoomsThenHolds() {
+        for (DeathShot shot : DeathCameraCycle.buildSequence(false, true, true, true)) {
+            if (shot.kind() == DeathShot.Kind.ORBIT) assertEquals(60, shot.holdTicks(), shot.label());
+            if (shot.kind() == DeathShot.Kind.DOLLY) assertEquals(DeathCameraCycle.DOLLY_TICKS + 60, shot.holdTicks());
+        }
+    }
+
+    @Test
+    void orbitLensSitsOnTheCircleAtTheGivenHeight() {
+        Vector3d lens = DeathCameraCycle.orbitLens(new Vector3d(10, 64, -5), 6.0, 3.0, Math.PI / 2);
+        assertEquals(10, lens.x, 1e-9);
+        assertEquals(67, lens.y, 1e-9);
+        assertEquals(1, lens.z, 1e-9);
+    }
+
+    @Test
+    void dollyMovesAtConstantSpeedThenSlowsIntoTheEnd() {
+        Vector3d a = new Vector3d(0, 0, 0);
+        Vector3d b = new Vector3d(10, 0, 0);
+        assertEquals(0, DeathCameraCycle.dollyAt(a, b, 0).x, 1e-9);
+        assertEquals(10, DeathCameraCycle.dollyAt(a, b, 1).x, 1e-9);
+        assertEquals(10, DeathCameraCycle.dollyAt(a, b, 2).x, 1e-9);
+        double early = DeathCameraCycle.dollyAt(a, b, 0.1).x - DeathCameraCycle.dollyAt(a, b, 0.0).x;
+        double late = DeathCameraCycle.dollyAt(a, b, 1.0).x - DeathCameraCycle.dollyAt(a, b, 0.9).x;
+        assertTrue(early > 1.5, "no slow start: moved " + early + " in the first tenth");
+        assertTrue(late < early / 5, "slows into the end: " + late + " vs " + early);
+    }
+
+    @Test
+    void arcKeepsRadiusAndHeightAndTurnsTheSweep() {
+        Vector3d centre = new Vector3d(100, 64, 0);
+        Vector3d start = new Vector3d(120, 80, 0);
+        Vector3d end = DeathCameraCycle.arcAt(centre, start, 90.0, 1.0);
+        assertEquals(100, end.x, 1e-6);
+        assertEquals(80, end.y, 1e-9);
+        assertEquals(20, end.z, 1e-6);
+        assertEquals(start.x, DeathCameraCycle.arcAt(centre, start, 90.0, 0.0).x, 1e-9);
+        // Constant speed: halfway through the sweep is 45 degrees round.
+        Vector3d mid = DeathCameraCycle.arcAt(centre, start, 90.0, 0.5);
+        assertEquals(100 + 20 * Math.cos(Math.PI / 4), mid.x, 1e-6);
+        assertEquals(20 * Math.sin(Math.PI / 4), mid.z, 1e-6);
+    }
+
+    @Test
+    void trainShotsAreAllMovingOrAMobArcAndStartTheLoop() {
+        List<DeathShot> seq = DeathCameraCycle.buildSequence(false, false, false, true);
+        int loop = DeathCameraCycle.loopStart(seq);
+        assertTrue(loop > 0);
+        for (DeathShot shot : DeathCameraCycle.TRAIN_SHOTS) {
+            assertTrue(shot.kind() == DeathShot.Kind.WORLD_DOLLY || shot.kind() == DeathShot.Kind.WORLD_ARC, shot.label());
+        }
+        for (DeathShot shot : DeathCameraCycle.LOOP_TAIL) assertTrue(shot.kind().isLoop() && !shot.kind().isOpenAir(), shot.label());
+        for (DeathShot shot : DeathCameraCycle.TUNNEL_SHOTS) assertTrue(shot.kind().isTunnel() && shot.kind().isLoop(), shot.label());
+    }
+
+    @Test
+    void fadeGoesBlackAtTheCutAndClearsAfterIt() {
+        int hold = 60;
+        assertEquals(1.0f, DeathCameraCycle.blackAlpha(0, hold, true), 1e-6);
+        assertEquals(0.0f, DeathCameraCycle.blackAlpha(DeathCameraCycle.FADE_TICKS, hold, true), 1e-6);
+        assertEquals(1.0f, DeathCameraCycle.blackAlpha(hold, hold, true), 1e-6);
+        assertEquals(0.0f, DeathCameraCycle.blackAlpha(0, 40, false), 1e-6, "POV opens on the live world");
+    }
+
+    @Test
+    void trainShotsStandClearOfTheTrainAndLookDown() {
+        for (DeathShot shot : DeathCameraCycle.TRAIN_SHOTS) {
+            assertTrue(Math.abs(shot.offset().z) >= 4.0, shot.label() + " must stand clear of the 7-wide train");
+            Vector3d lens = DeathCameraCycle.lensFor(new Vector3d(), shot.offset());
+            CinematicCameraController.Pose pose = DeathCameraCycle.poseFor(new Vec3(lens.x, lens.y, lens.z), new Vec3(0, 1, 0));
+            assertTrue(pose.pitch() > 0 && pose.pitch() < 80, shot.label() + " pitch " + pose.pitch());
+        }
+    }
+}

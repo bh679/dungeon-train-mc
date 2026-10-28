@@ -18,7 +18,7 @@ import java.util.List;
  * no reward is on. The Live Eye death pages read it to thank a buyer or pitch the next month.
  *
  * <p>Ids are the shelf's: {@link #QUICKER_STREAMS}, {@link #TWO_STREAMS}, {@link #VOICE_ON_STREAM},
- * {@link #HD_STREAMS}, {@link #REPLAYS_KEPT}.</p>
+ * {@link #HD_STREAMS}, {@link #REPLAYS_KEPT}, {@link #LIVE_TRANSLATION}.</p>
  */
 public record LiveRewards(List<Reward> rewards) {
 
@@ -27,6 +27,7 @@ public record LiveRewards(List<Reward> rewards) {
     public static final String VOICE_ON_STREAM = "voice_on_stream";
     public static final String HD_STREAMS = "hd_streams";
     public static final String REPLAYS_KEPT = "replays_kept";
+    public static final String LIVE_TRANSLATION = "live_translation";
 
     public static final LiveRewards NONE = new LiveRewards(List.of());
 

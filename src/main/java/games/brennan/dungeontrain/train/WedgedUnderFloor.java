@@ -1,5 +1,10 @@
 package games.brennan.dungeontrain.train;
 
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.ChunkPos;
+
+import java.util.function.LongPredicate;
+
 /**
  * Finds a mob stuck in a carriage floor (standing on the track bed under the carriage, its head
  * through the deck) and says where to put it instead.
@@ -25,7 +30,26 @@ public final class WedgedUnderFloor {
     /** Gap left between the carriage's side and the moved mob's box. */
     static final double SIDE_CLEARANCE = 0.05;
 
+    /**
+     * The furthest a moved mob may drop to the ground beside the carriage. Vanilla fall damage
+     * starts past 3 blocks; a side spot with nothing that close below it is over a drop (a bridge,
+     * a cliff) and is not used.
+     */
+    static final int MAX_SAFE_DROP_BLOCKS = 3;
+
+    /** Where a wedged mob goes. */
+    public enum Route {
+        /** An owned pet with its owner online: sent to the owner, never over the side. */
+        TO_OWNER,
+        /** Beside the carriage, on ground. */
+        BESIDE
+    }
+
     private WedgedUnderFloor() {}
+
+    public static Route route(boolean ownedPet, boolean ownerOnline) {
+        return ownedPet && ownerOnline ? Route.TO_OWNER : Route.BESIDE;
+    }
 
     /**
      * True when the mob's centre is inside the carriage footprint, its feet are below the deck,
@@ -76,5 +100,26 @@ public final class WedgedUnderFloor {
         double high = cMaxX + out;
         boolean lowFirst = x - cMinX <= cMaxX - x;
         return lowFirst ? new double[] {low, z, high, z} : new double[] {high, z, low, z};
+    }
+
+    /**
+     * True when every chunk a {@code noCollision} check of this box would read is loaded, so the
+     * check can't sync-load one on the server thread (a 5 s freeze in a 0.1547.0 /bug log). Covers
+     * the block range {@code BlockCollisions} walks: one block past each edge.
+     *
+     * @param loaded asked once per chunk, by {@link ChunkPos#asLong} key
+     */
+    public static boolean collisionChunksLoaded(double minX, double minZ, double maxX, double maxZ,
+                                                LongPredicate loaded) {
+        int cMinX = (Mth.floor(minX - 1.0E-7) - 1) >> 4;
+        int cMaxX = (Mth.floor(maxX + 1.0E-7) + 1) >> 4;
+        int cMinZ = (Mth.floor(minZ - 1.0E-7) - 1) >> 4;
+        int cMaxZ = (Mth.floor(maxZ + 1.0E-7) + 1) >> 4;
+        for (int cx = cMinX; cx <= cMaxX; cx++) {
+            for (int cz = cMinZ; cz <= cMaxZ; cz++) {
+                if (!loaded.test(ChunkPos.asLong(cx, cz))) return false;
+            }
+        }
+        return true;
     }
 }
