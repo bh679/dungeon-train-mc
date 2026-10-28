@@ -31628,8 +31628,27 @@
       "released_at": null
     },
     {
-      "id": "note-echo-author-skin",
+      "id": "dh-structure-lookup-no-sync-load",
       "version": "0.1576.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Less lag while Distant Horizons generates far terrain",
+      "summary": "With Distant Horizons on, its far-terrain generation could freeze the game for a second or two at a time while the train rolled. Those freezes are gone.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2387,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "note-echo-author-skin",
+      "version": "0.1577.0",
       "type": "fix",
       "tags": [
         "fix",
