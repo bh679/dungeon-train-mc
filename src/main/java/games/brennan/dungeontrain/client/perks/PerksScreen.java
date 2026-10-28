@@ -124,7 +124,10 @@ public final class PerksScreen extends Screen {
         this.counters = new PerkCounters(mc.font);
         this.bar = new PerkDetailsBar(tree, mc.font, card, this::unlockAction, this::activateAction);
         this.player = mc.player != null ? mc.player.getUUID() : new UUID(0, 0);
-        this.off = ClassChoiceStore.load(player).orElseGet(this::allClasses);
+        // a first-timer (no perk unlocked yet) starts with no class selected, whatever this computer
+        // saved for another world
+        boolean firstTime = PerkMenuSnapshot.current().unlocks().isEmpty();
+        this.off = firstTime ? allClasses() : ClassChoiceStore.load(player).orElseGet(this::allClasses);
         this.drawn = tree;
         this.reveal = death != null ? death.reveal() : MenuReveal.allUp();
         bar.unlockOnly(death != null);

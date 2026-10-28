@@ -24,7 +24,8 @@ import java.util.UUID;
  * The classes each player has hidden in the perks menu, kept on this computer like the web page keeps
  * them per viewer: {@code config/dungeontrain/perks-classes.json}, player UUID to hidden class ids.
  * A player with no entry has never chosen: the menu starts them with every class hidden, so the first
- * time anyone sees the menu (on death included) no class is selected.
+ * time anyone sees the menu (on death included) no class is selected. A player with no perk unlocked
+ * yet starts with every class hidden even when this computer saved a choice (another world, say).
  */
 @OnlyIn(Dist.CLIENT)
 final class ClassChoiceStore {
