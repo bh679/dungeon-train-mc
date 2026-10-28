@@ -31499,6 +31499,26 @@
       "released": true,
       "released_in": "v0.1568.0",
       "released_at": "2026-10-28T05:57:48Z"
+    },
+    {
+      "id": "streamer-box-stream-switching",
+      "version": "0.1569.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Watch the other stream while you stream",
+      "summary": "While you stream and another player is live too, the box in your corner can now show your stream, theirs, both or nothing.",
+      "highlights": [
+        "Click the box in your inventory to switch it, or pick where it starts in Options, Stream.",
+        "In your inventory the box now sits behind your menus and comes to the front when you hover it."
+      ],
+      "pr": 2379,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
