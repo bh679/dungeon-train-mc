@@ -1,40 +1,40 @@
 # Death scene: shot table
 
-Branch `dev/train-stays-after-death`, version 0.1560.10. Offsets are relative to the body: **along**
-the train (+ is ahead, the direction of travel), **up**, **across** (+ is one side of the track,
-- the other). Carriages are 7 wide, so anything within 3.5 across is inside the train.
+Branch `dev/train-stays-after-death`, version 0.1560.20. Offsets are from the subject as (along the
+train, up, across); along is positive ahead. Carriages are 7 wide.
 
-## Sequence
+## Phase 1 (plays once)
 
-| # | Label | Kind | Subject | Offset (along, up, across) | Hold | Skipped when | Description |
-|---|---|---|---|---|---|---|---|
-| 0 | POV | POV | body | own eyes | 40 t (2 s) | never | The player's view, red wash rising, vanilla death tilt. The only shot with the wash. |
-| 1 | spot | ORBIT | death spot (world-locked) | radius 6, height 3; falls back to 4 / 2.5 / 1.6 and lower lens | 60 t (3 s) | void death, or no clear angle at any radius | Circles where you died, aimed at that point. Sweeps the longest clear arc, up to half a turn. |
-| 2 | killer | ORBIT | killer entity (live) | radius 5, height 2.5; same fallbacks | 60 t | no killer entity, or it is gone/dead on the client, or no clear angle | Circles whoever killed you. Re-picks the arc if they walk behind cover. |
-| 2.5 | mob | ORBIT | last creature you had to do with (live) | radius 5, height 2.5; same fallbacks | 60 t | none within 32 blocks, or no clear angle | Circles the last creature you fought, right-clicked, traded with, photographed, exchanged gifts with, or looked at. |
-| 3 | carriage | DOLLY then hold | body | zoom from (3, 2, 5) out to (-6, 8, 14) over 3 s, then the lens stays there in the world for 3 s and tracks the body | 120 t (6 s) | died off the train (a 3 s world-locked tracking shot from (-3, 2.5, 8) plays instead) | Pulls out from beside the body to a high rear view of the carriage, then watches it roll away. |
-| 5 | W-5 | WORLD | the death spot (world-locked) | (0, 24, 14) | 120 t (6 s) | never | High overhead, a little to the side: the train slides through below. |
-| 6 | W-6 | WORLD | the death spot | (0, 3, 26) | 120 t | never | Low and wide from the side: carriages pass left to right. |
-| 7 | W-7 | WORLD | the death spot | (-55, 18, -28) | 120 t | never | Far behind, high, far side: the train pulls away into the distance. |
-| 8 | W-8 | WORLD | the death spot | (45, 4, -24) | 120 t | never | Far ahead, low, far side: the train comes toward the camera and passes. |
-| 9 | W-9 | WORLD | the death spot | (0, 36, 44) | 120 t | never | Very high and wide: the whole line in the landscape. |
-| 10 | W-10 | WORLD | the death spot | (-26, 5, -20) | 120 t | never | Behind, low, far side: the back of the train receding. |
+| # | Label | Camera | Subject | Position | Hold | Skipped when |
+|---|---|---|---|---|---|---|
+| 0 | POV | own eyes through the carriage render pose, red wash, death tilt | you | eyes | 2 s | never |
+| 1 | spot | orbit, world-locked | the death spot | radius 6, height 3; falls back to 4 / 2.5 / 1.6 and lower; lens in open air | 3 s | no killer shot follows, void or stepped off, no clear arc |
+| 2 | killer | orbit following the entity | the killer | radius 5, height 2.5 | 3 s | no killer, gone, no clear arc |
+| 2.5 | mob | orbit following the entity | a creature you fought nearby, a friend (gifts exchanged), else a nearby pet of yours | radius 5, height 2.5 | 3 s | none within 32 blocks, no clear arc |
+| 3 | carriage | zoom out 3 s, blend 1 s, world-locked hold tracking you | you | starts 1.6 outside the carriage wall at eye height on the window side, looking in; ends (-5, 6, wall+9) | 6 s | died off the train (3 s tracking shot from (-3, 2.5, 8) instead) |
 
-Shots 5 to 10 loop until Space. No phase 2 lens is ever inside the train: a lens that lands in a carriage block steps back toward the body until it is in open air. Left and Right step through the list (never back into the POV;
-Left from the first camera shot wraps to the last train shot).
+## Phase 2 (loops until Space)
 
-## Camera kinds
+| # | Label | Camera | Subject | Position / move | Hold | Plays when |
+|---|---|---|---|---|---|---|
+| 5 | W-5 | arc, world-locked | death spot | (0, 24, 14), 50 degree arc | 6 s | path clear |
+| 6 | W-6 | dolly | death spot | (-14, 3, 26) to (14, 3, 26) | 6 s | path clear |
+| 7 | W-7 | dolly | death spot | (-55, 18, -28) to (-42, 15, -22) | 6 s | path clear |
+| 8 | W-8 | arc | death spot | (45, 4, -24), -25 degree arc | 6 s | path clear |
+| 9 | W-9 | arc | death spot | (0, 36, 44), 35 degree arc | 6 s | path clear |
+| 10 | W-10 | dolly | death spot | (-26, 5, -20) to (-18, 4, -15) | 6 s | path clear |
+| T1 | side-rise | train-locked rise | the train's side | beside the carriage 1.2 off the wall, from 0.4 above the deck up to just over the roof, looking along the train | 6 s | no open-air shot played this pass; path clear |
+| T2 | above-back | train-locked drift | the tracks ahead | 2 above the roof, from 2 ahead of you to 8 behind, looking forward | 6 s | same, and a roof |
+| T3 | roof-skim | train-locked | the train ahead | 1.2 above the roof over you, looking forward and down | 5 s | same, and a roof |
+| T4 | window-out | train-locked | the passing wall | just inside the carriage wall at eye height, window side, looking out | 5 s | fewer than 5 other loop shots played this pass |
+| L1 | feature | world-locked, aim tracks it | a contents template, else a carriage group, within the 3 nearest groups | beside it at (0, 4, +-14) for contents, (0, 9, +-26) for a group | 4 s | server listed one and a side is clear |
+| L2 | mob-arc | orbit following the entity | a random creature riding the train within 64 blocks, redrawn each pass | radius 3, height 2 | 5 s | one exists and an arc is clear |
+| last | eyes-forward | train-locked | the train ahead | your eyes, looking forward | 5 s | nothing else at all played this pass |
 
-| Kind | Lens | Aim | Moves with the train |
-|---|---|---|---|
-| POV | player's eyes | player's look | yes |
-| ORBIT | circle around the subject, clear arc only | subject | death spot: no; killer/mob: follows the entity |
-| DOLLY | eased from one carriage-space offset to another | body | yes (re-projected through the carriage render pose each frame) |
-| TRANSITION | fixed in the world where the shot starts | body (live) | no (aim tracks the body) |
-| WORLD | fixed in the world where the shot starts | where the body was at the shot's start | no |
+## Every camera shot
 
-## Every cut
-
-Fade to black: 8 ticks out, 8 ticks in. HUD, first-person hand and death tilt are off on every
-camera shot. Each lens is pulled toward the body to clear terrain and carriage blocks once when
-its shot starts. In dev builds the shot label is drawn top-left.
+Lens path sampled before the shot (9 points on moves, the chosen arc on orbits), every sample in
+open air and the subject in view; terrain in the way skips the shot rather than pulling the lens
+closer; the lens is checked every tick and the shot is cut the moment it is inside a block; fade
+through black 8 ticks each side of a cut; HUD, hand and death tilt off. Left and Right step through
+the list, Space continues. In dev builds the shot label is drawn top-left.
