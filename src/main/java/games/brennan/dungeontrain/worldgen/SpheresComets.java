@@ -24,6 +24,8 @@ public final class SpheresComets {
     static final double MIN_INTERVAL_SECONDS = 2.0;
     /** Share of comets aimed at the train; the rest cross the sky on near-miss lines. */
     public static final double AIMED_SHARE = 1.0 / 3.0;
+    /** A comet this far below the train's lowest carriage (blocks) has missed it for good and ends. */
+    public static final double MISS_DROP_BLOCKS = 16.0;
     private static final int TICKS_PER_SECOND = 20;
 
     private SpheresComets() {}
@@ -52,5 +54,11 @@ public final class SpheresComets {
     public static double chancePerTick(long cycleIndex, double endSky, double spheresVoid) {
         if (!active(cycleIndex, endSky, spheresVoid)) return 0.0;
         return 1.0 / (intervalSeconds(cycleIndex) * TICKS_PER_SECOND);
+    }
+
+    /** Whether a comet at height {@code y} has fallen {@value #MISS_DROP_BLOCKS} blocks below a train whose lowest
+     *  carriage bottom is at {@code trainBottomY}, and so can end without being seen to land. */
+    public static boolean fellPastTrain(double y, double trainBottomY) {
+        return y < trainBottomY - MISS_DROP_BLOCKS;
     }
 }

@@ -38,4 +38,11 @@ class SpheresCometsTest {
         assertEquals(1.0 / 400.0, SpheresComets.chancePerTick(0L, 1.0, 1.0), 1e-12);
         assertEquals(1.0 / 100.0, SpheresComets.chancePerTick(1L, 0.0, 1.0), 1e-12);
     }
+
+    @Test
+    void missesEndOnceWellBelowTheTrain() {
+        assertFalse(SpheresComets.fellPastTrain(70.0, 78.0), "a near miss beside the deck still flies");
+        assertFalse(SpheresComets.fellPastTrain(62.0, 78.0));
+        assertTrue(SpheresComets.fellPastTrain(61.9, 78.0));
+    }
 }

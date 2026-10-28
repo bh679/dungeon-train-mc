@@ -1,0 +1,134 @@
+package games.brennan.dungeontrain.client;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.CometPacket;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.client.model.data.ModelData;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Spheres-band comets as the client sees them: flown from the launch packet alone (start + velocity × ticks since)
+ * and drawn here — a full-bright magma block and a tail of flames and glowing sparks laid along each tick's step.
+ * The server only says when one starts and when it is gone ({@link CometPacket}); the explosion that ends a hit is
+ * an ordinary server explosion. Render-thread state only.
+ */
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
+public final class ClientComets {
+
+    /** Matches the server's longest flight; drops a comet whose end packet never came. */
+    private static final int MAX_AGE_TICKS = 240;
+    private static final float SCALE = 1.6F;
+    /** Points per tick the tail is laid at along the comet's step. */
+    private static final int TAIL_STEPS = 2;
+    private static final BlockState MAGMA = Blocks.MAGMA_BLOCK.defaultBlockState();
+
+    private record Comet(int id, Vec3 start, Vec3 velocity, int age) {
+        Vec3 at(double ticks) {
+            return start.add(velocity.scale(ticks));
+        }
+
+        Comet older() {
+            return new Comet(id, start, velocity, age + 1);
+        }
+    }
+
+    private static List<Comet> live = List.of();
+
+    private ClientComets() {}
+
+    public static void accept(CometPacket packet) {
+        List<Comet> next = new ArrayList<>(live.size() + 1);
+        for (Comet c : live) {
+            if (c.id() != packet.id()) next.add(c);
+        }
+        if (!packet.ended()) {
+            next.add(new Comet(packet.id(), new Vec3(packet.x(), packet.y(), packet.z()),
+                new Vec3(packet.vx(), packet.vy(), packet.vz()), 0));
+        }
+        live = List.copyOf(next);
+    }
+
+    @SubscribeEvent
+    public static void onTick(ClientTickEvent.Post event) {
+        if (live.isEmpty()) return;
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null || Minecraft.getInstance().isPaused()) return;
+        List<Comet> next = new ArrayList<>(live.size());
+        for (Comet c : live) {
+            Comet older = c.older();
+            if (older.age() >= MAX_AGE_TICKS) continue;
+            trail(level, c.at(c.age()), older.at(older.age()), c.velocity());
+            next.add(older);
+        }
+        live = List.copyOf(next);
+    }
+
+    @SubscribeEvent
+    public static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
+        live = List.of();
+    }
+
+    @SubscribeEvent
+    public static void onRender(RenderLevelStageEvent event) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_ENTITIES || live.isEmpty()) return;
+        Minecraft mc = Minecraft.getInstance();
+        float partial = event.getPartialTick().getGameTimeDeltaPartialTick(false);
+        Vec3 cam = event.getCamera().getPosition();
+        PoseStack ps = event.getPoseStack();
+        MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
+        for (Comet c : live) {
+            Vec3 at = c.at(c.age() + partial);
+            ps.pushPose();
+            ps.translate(at.x - cam.x, at.y - cam.y, at.z - cam.z);
+            ps.scale(SCALE, SCALE, SCALE);
+            ps.translate(-0.5, -0.5, -0.5);
+            mc.getBlockRenderer().renderSingleBlock(MAGMA, ps, buffer, LightTexture.FULL_BRIGHT,
+                OverlayTexture.NO_OVERLAY, ModelData.EMPTY, RenderType.solid());
+            ps.popPose();
+        }
+        buffer.endBatch(RenderType.solid());
+    }
+
+    /** Flames blown back off the head and end-rod sparks that hang behind it, so the tail traces the path. */
+    private static void trail(ClientLevel level, Vec3 from, Vec3 to, Vec3 velocity) {
+        RandomSource random = level.random;
+        Vec3 back = velocity.normalize().scale(-1.0);
+        for (int i = 0; i < TAIL_STEPS; i++) {
+            Vec3 at = from.lerp(to, (i + 1.0) / TAIL_STEPS);
+            for (int f = 0; f < 2; f++) {
+                Vec3 dir = back.add(jitter(random, 0.25)).scale(0.25);
+                level.addParticle(ParticleTypes.FLAME, true, at.x, at.y, at.z, dir.x, dir.y, dir.z);
+            }
+            Vec3 drift = back.add(jitter(random, 0.6)).scale(0.04);
+            level.addParticle(ParticleTypes.END_ROD, true, at.x, at.y, at.z, drift.x, drift.y, drift.z);
+        }
+        if (random.nextBoolean()) {
+            level.addParticle(ParticleTypes.LAVA, true, to.x + random.nextGaussian() * 0.3,
+                to.y + random.nextGaussian() * 0.3, to.z + random.nextGaussian() * 0.3, 0.0, 0.0, 0.0);
+        }
+    }
+
+    private static Vec3 jitter(RandomSource random, double spread) {
+        return new Vec3((random.nextDouble() - 0.5) * spread, (random.nextDouble() - 0.5) * spread,
+            (random.nextDouble() - 0.5) * spread);
+    }
+}

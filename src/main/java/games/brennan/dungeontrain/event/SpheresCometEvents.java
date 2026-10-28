@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Comets over the spheres band ({@link SpheresComets} decides when and how often; {@link SpheresComet} flies
@@ -42,6 +41,8 @@ public final class SpheresCometEvents {
 
     /** Comets in flight; server thread only. */
     private static List<SpheresComet> live = List.of();
+    /** Next comet id, as the client knows it; server thread only. */
+    private static int nextId;
 
     private SpheresCometEvents() {}
 
@@ -62,12 +63,10 @@ public final class SpheresCometEvents {
         }
     }
 
-    /** Throw away a comet display left in a save by a server stopped mid-flight. */
+    /** Throw away a comet display left in a save from before comets were drawn by the client. */
     @SubscribeEvent
     public static void onEntityJoin(EntityJoinLevelEvent event) {
-        if (!event.loadedFromDisk() || !event.getEntity().getTags().contains(SpheresComet.TAG)) return;
-        UUID id = event.getEntity().getUUID();
-        if (live.stream().noneMatch(c -> c.displayId().equals(id))) event.setCanceled(true);
+        if (event.getEntity().getTags().contains(SpheresComet.TAG)) event.setCanceled(true);
     }
 
     /**
@@ -75,12 +74,12 @@ public final class SpheresCometEvents {
      * @return true if one was launched
      */
     public static boolean launch(ServerLevel level, List<Trains.Carriage> train, Vec3 focus, boolean aimed) {
-        SpheresComet comet = SpheresComet.launch(level, train, focus, aimed, level.random);
+        SpheresComet comet = SpheresComet.launch(level, train, focus, aimed, nextId++, level.random);
         if (comet == null) return false;
         List<SpheresComet> next = new ArrayList<>(live);
         next.add(comet);
         live = List.copyOf(next);
-        LOGGER.debug("[DungeonTrain] Comet launched {} at {} (aimed={})", comet.displayId(), comet.pos(), aimed);
+        LOGGER.debug("[DungeonTrain] Comet launched {} at {} (aimed={})", comet.id(), comet.pos(), aimed);
         return true;
     }
 
