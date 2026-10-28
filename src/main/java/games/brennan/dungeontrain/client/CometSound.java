@@ -23,6 +23,9 @@ import net.minecraft.world.phys.Vec3;
 final class CometSound {
 
     private static final float RUSH_FLOOR = 0.12F;
+    /** The faint far-off rush fades out between the roar's reach and this distance, so a miss falling away into
+     *  the abyss goes quiet. */
+    private static final double FLOOR_GONE_BLOCKS = 2.0 * SpheresComets.ROAR_REACH_BLOCKS;
     private static final float RUMBLE_SHARE = 0.5F;
     private static final float FIRE_MAX = 0.9F;
     /** Per-tick easing toward the target volume and pitch, so the loops never step. */
@@ -47,7 +50,9 @@ final class CometSound {
     void update(Vec3 at, double distance) {
         float build = (float) SpheresComets.roarBuild(distance);
         float pitch = SpheresComets.roarPitch(distance);
-        float rushVolume = RUSH_FLOOR + (1.0F - RUSH_FLOOR) * build;
+        double reach = SpheresComets.ROAR_REACH_BLOCKS;
+        float far = (float) Math.max(0.0, Math.min(1.0, (FLOOR_GONE_BLOCKS - distance) / (FLOOR_GONE_BLOCKS - reach)));
+        float rushVolume = RUSH_FLOOR * far + (1.0F - RUSH_FLOOR) * build;
         rush.target(at, rushVolume, pitch);
         rumble.target(at, rushVolume * RUMBLE_SHARE, 0.5F);
         fire.target(at, FIRE_MAX * build * build, 0.7F);

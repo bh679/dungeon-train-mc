@@ -42,6 +42,10 @@ public final class SpheresComets {
     /** Distant, purely visual comets drawn by each client for every real one: fewer in lap 0. */
     public static final double DISTANT_PER_REAL = 3.0;
     public static final double DISTANT_PER_REAL_EARLY = 2.0;
+    /** In lap 0, distant comets come this many times as often for {@value #DISTANT_BURST_TICKS} ticks after a real
+     *  one lands or falls past the player, so a near miss or a strike feels like part of a shower. */
+    public static final double DISTANT_BURST_MULTIPLIER = 6.0;
+    public static final int DISTANT_BURST_TICKS = 300;
     private static final int TICKS_PER_SECOND = 20;
 
     private SpheresComets() {}
@@ -98,7 +102,14 @@ public final class SpheresComets {
      * {@value #DISTANT_PER_REAL} after, and none where real ones don't fall.
      */
     public static double distantChancePerTick(long cycleIndex, double endSky, double spheresVoid) {
+        return distantChancePerTick(cycleIndex, endSky, spheresVoid, false);
+    }
+
+    /** {@link #distantChancePerTick(long, double, double)}, {@value #DISTANT_BURST_MULTIPLIER} times as often in lap
+     *  0 while {@code burst} (a real comet just went by). */
+    public static double distantChancePerTick(long cycleIndex, double endSky, double spheresVoid, boolean burst) {
         double perReal = cycleIndex <= 0L ? DISTANT_PER_REAL_EARLY : DISTANT_PER_REAL;
+        if (burst && cycleIndex <= 0L) perReal *= DISTANT_BURST_MULTIPLIER;
         return Math.min(1.0, chancePerTick(cycleIndex, endSky, spheresVoid) * perReal);
     }
 

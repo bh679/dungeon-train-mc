@@ -126,7 +126,9 @@ record SpheresComet(int id, Vec3 pos, Vec3 velocity, int age) {
 
     /**
      * Fly one tick. Empty when the comet is gone: it hit a carriage or a block (and exploded), burnt out, or fell
-     * {@value SpheresComets#MISS_DROP_BLOCKS} blocks below the train; its watchers are told either way.
+     * {@value SpheresComets#MISS_DROP_BLOCKS} blocks below the train. Watchers are told of a hit or burn-out; a
+     * comet that fell past the train is just dropped here, so their clients fly it on down into the abyss until
+     * its age runs out, at no further cost to the server.
      */
     Optional<SpheresComet> step(ServerLevel level, List<Trains.Carriage> carriages) {
         Vec3 next = pos.add(velocity);
@@ -137,7 +139,11 @@ record SpheresComet(int id, Vec3 pos, Vec3 velocity, int age) {
             level.explode(null, hit.x, hit.y, hit.z, EXPLOSION_POWER, true, Level.ExplosionInteraction.TNT);
             return Optional.empty();
         }
-        if (age + 1 >= MAX_AGE_TICKS || SpheresComets.fellPastTrain(next.y, lowestCarriageY(carriages))) {
+        if (SpheresComets.fellPastTrain(next.y, lowestCarriageY(carriages))) {
+            LOGGER.debug("[DungeonTrain] Comet {} fell past the train at {}", id, next);
+            return Optional.empty();
+        }
+        if (age + 1 >= MAX_AGE_TICKS) {
             LOGGER.debug("[DungeonTrain] Comet {} burnt out at {}", id, next);
             tell(level, pos, CometPacket.ended(id));
             return Optional.empty();

@@ -99,6 +99,15 @@ class SpheresCometsTest {
     }
 
     @Test
+    void aRealCometSetsOffAShowerOnlyInTheFirstLap() {
+        assertEquals(SpheresComets.distantChancePerTick(0L, 1.0, 1.0) * SpheresComets.DISTANT_BURST_MULTIPLIER,
+            SpheresComets.distantChancePerTick(0L, 1.0, 1.0, true), 1e-12);
+        assertEquals(SpheresComets.distantChancePerTick(2L, 0.0, 1.0),
+            SpheresComets.distantChancePerTick(2L, 0.0, 1.0, true), 1e-12);
+        assertEquals(0.0, SpheresComets.distantChancePerTick(0L, 0.2, 1.0, true), "still none before the void sky");
+    }
+
+    @Test
     void firstLapAimsMoreAtTheTrainTheDeeperYouGo() {
         assertEquals(1.0 / 60.0, SpheresComets.aimedShare(0L, 0.0), 1e-12);
         assertEquals(1.0 / 6.0, SpheresComets.aimedShare(0L, 1.0), 1e-12);

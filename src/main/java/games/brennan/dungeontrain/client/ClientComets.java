@@ -38,7 +38,8 @@ import java.util.List;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class ClientComets {
 
-    /** Matches the server's longest flight; drops a comet whose end packet never came. */
+    /** Matches the server's longest flight. A miss that fell past the train gets no end packet: it flies on down
+     *  into the abyss until this runs out. */
     private static final int MAX_AGE_TICKS = 240;
     private static final float SCALE = 1.6F;
     /** Points per tick the tail is laid at along the comet's step. */
@@ -65,7 +66,10 @@ public final class ClientComets {
             if (c.id() != packet.id()) next.add(c);
             else c.sound().stop();
         }
-        if (packet.landed()) CometShake.impact(new Vec3(packet.x(), packet.y(), packet.z()));
+        if (packet.landed()) {
+            CometShake.impact(new Vec3(packet.x(), packet.y(), packet.z()));
+            DistantComets.burst();
+        }
         if (!packet.ended()) {
             Vec3 start = new Vec3(packet.x(), packet.y(), packet.z());
             next.add(new Comet(packet.id(), start, new Vec3(packet.vx(), packet.vy(), packet.vz()), 0,
@@ -87,8 +91,10 @@ public final class ClientComets {
                 c.sound().stop();
                 continue;
             }
+            Vec3 was = c.at(c.age());
             Vec3 at = older.at(older.age());
-            trail(level, c.at(c.age()), at, c.velocity());
+            if (was.y >= ear.y && at.y < ear.y) DistantComets.burst();
+            trail(level, was, at, c.velocity());
             older.sound().update(at, at.distanceTo(ear));
             next.add(older);
         }

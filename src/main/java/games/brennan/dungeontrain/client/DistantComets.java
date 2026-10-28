@@ -76,6 +76,8 @@ public final class DistantComets {
     }
 
     private static List<Comet> live = List.of();
+    /** Ticks left of a shower set off by a real comet going by ({@link #burst}). */
+    private static int burstTicks;
 
     private DistantComets() {}
 
@@ -84,6 +86,7 @@ public final class DistantComets {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         if (level == null || mc.isPaused()) return;
+        if (burstTicks > 0) burstTicks--;
         List<Comet> next = new ArrayList<>(live.size() + 1);
         for (Comet c : live) {
             Comet older = c.older();
@@ -99,6 +102,12 @@ public final class DistantComets {
     @SubscribeEvent
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
         live = List.of();
+        burstTicks = 0;
+    }
+
+    /** A real comet just landed or fell past the player: more distant ones for a while (lap 0 only). */
+    static void burst() {
+        burstTicks = SpheresComets.DISTANT_BURST_TICKS;
     }
 
     @SubscribeEvent
@@ -135,7 +144,8 @@ public final class DistantComets {
         int x = (int) Math.floor(worldX);
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
         long lap = cycle.cycleIndex(EndFrostbite.frostX(cycle, x));
-        return SpheresComets.distantChancePerTick(lap, WindZones.endSkyAt(x), WindZones.spheresVoidAt(x));
+        return SpheresComets.distantChancePerTick(lap, WindZones.endSkyAt(x), WindZones.spheresVoidAt(x),
+            burstTicks > 0);
     }
 
     private static Comet spawn(RandomSource random) {
