@@ -52,15 +52,21 @@ record SpheresComet(int id, Vec3 pos, Vec3 velocity, int age) {
     private static final double FOCUS_REACH = 24.0;
     /** How far off the train a near miss passes. */
     private static final double MISS_MIN = 15.0, MISS_SPAN = 25.0;
+    /** Share of near misses that come down ahead of the train, so some are seen landing before it gets there. */
+    private static final double MISS_AHEAD_CHANCE = 1.0 / 3.0;
+    /** How far along the track ahead those cross deck height (they fall on backwards ~10-15 blocks after). */
+    private static final double MISS_AHEAD_MIN = 20.0, MISS_AHEAD_SPAN = 25.0;
+    /** How far out from the carriage's side they pass, so they clear the carriages ahead. */
+    private static final double MISS_AHEAD_SIDE_MIN = 5.0, MISS_AHEAD_SIDE_SPAN = 7.0;
 
     /**
      * Launch a comet at {@code train}: aimed into a carriage near {@code focus} (leading it by the train's
-     * velocity), or on a near-miss line {@value #MISS_MIN}..{@code MISS_MIN + MISS_SPAN} blocks off it. Null when
-     * there is no train.
+     * velocity), or on a near-miss line: {@value #MISS_MIN}..{@code MISS_MIN + MISS_SPAN} blocks beside or over it,
+     * or down beside the track ahead of it. Null when there is no train.
      */
     @Nullable
-    static SpheresComet launch(ServerLevel level, List<Trains.Carriage> train, Vec3 focus, boolean aimed,
-                               int id, RandomSource random) {
+    static SpheresComet launch(ServerLevel level, List<Trains.Carriage> train, Vec3 focus,
+                               SpheresCometEvents.Aim aim, int id, RandomSource random) {
         if (train.isEmpty()) return null;
         Trains.Carriage carriage = pick(train, focus, random);
         AABBdc bb = carriage.ship().worldAABB();
@@ -71,7 +77,11 @@ record SpheresComet(int id, Vec3 pos, Vec3 velocity, int age) {
                 bb.minX() + random.nextDouble() * (bb.maxX() - bb.minX()),
                 bb.maxY() - 0.5,
                 bb.minZ() + random.nextDouble() * (bb.maxZ() - bb.minZ()));
-        if (!aimed) {
+        boolean ahead = aim == SpheresCometEvents.Aim.MISS_AHEAD
+                || (aim == SpheresCometEvents.Aim.MISS && random.nextDouble() < MISS_AHEAD_CHANCE);
+        if (ahead) {
+            target = aheadMiss(bb, target, dirX, random);
+        } else if (aim != SpheresCometEvents.Aim.HIT) {
             double miss = MISS_MIN + random.nextDouble() * MISS_SPAN;
             target = target.add(0.0, random.nextBoolean() ? miss * 0.4 : 0.0, random.nextBoolean() ? miss : -miss);
         }
@@ -86,6 +96,14 @@ record SpheresComet(int id, Vec3 pos, Vec3 velocity, int age) {
 
         tell(level, start, CometPacket.launched(id, start.x, start.y, start.z, velocity.x, velocity.y, velocity.z));
         return new SpheresComet(id, start, velocity, 0);
+    }
+
+    /** A point along the track ahead of {@code target}, out beside the train rather than on the carriages there. */
+    private static Vec3 aheadMiss(AABBdc bb, Vec3 target, double dirX, RandomSource random) {
+        double along = dirX * (MISS_AHEAD_MIN + random.nextDouble() * MISS_AHEAD_SPAN);
+        double out = MISS_AHEAD_SIDE_MIN + random.nextDouble() * MISS_AHEAD_SIDE_SPAN;
+        double z = random.nextBoolean() ? bb.maxZ() + out : bb.minZ() - out;
+        return new Vec3(target.x + along, target.y, z);
     }
 
     /** A random carriage within {@value #FOCUS_REACH} blocks of {@code focus}, else the nearest one. */

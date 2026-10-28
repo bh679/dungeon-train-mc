@@ -58,7 +58,8 @@ public final class SpheresCometEvents {
             if (watcher == null) continue;
             double chance = chanceAt((int) Math.floor(watcher.getX()));
             if (chance <= 0.0 || level.random.nextDouble() >= chance) continue;
-            launch(level, train, watcher.position(), level.random.nextDouble() < SpheresComets.AIMED_SHARE);
+            launch(level, train, watcher.position(),
+                level.random.nextDouble() < SpheresComets.AIMED_SHARE ? Aim.HIT : Aim.MISS);
             if (live.size() >= MAX_LIVE) return;
         }
     }
@@ -69,17 +70,20 @@ public final class SpheresCometEvents {
         if (event.getEntity().getTags().contains(SpheresComet.TAG)) event.setCanceled(true);
     }
 
+    /** Where a comet is sent: into the train, past it (beside, over or ahead, at random), or past it ahead. */
+    public enum Aim { HIT, MISS, MISS_AHEAD }
+
     /**
      * Launch a comet at the part of {@code train} near {@code focus} (a watching player), whatever the band.
      * @return true if one was launched
      */
-    public static boolean launch(ServerLevel level, List<Trains.Carriage> train, Vec3 focus, boolean aimed) {
-        SpheresComet comet = SpheresComet.launch(level, train, focus, aimed, nextId++, level.random);
+    public static boolean launch(ServerLevel level, List<Trains.Carriage> train, Vec3 focus, Aim aim) {
+        SpheresComet comet = SpheresComet.launch(level, train, focus, aim, nextId++, level.random);
         if (comet == null) return false;
         List<SpheresComet> next = new ArrayList<>(live);
         next.add(comet);
         live = List.copyOf(next);
-        LOGGER.debug("[DungeonTrain] Comet launched {} at {} (aimed={})", comet.id(), comet.pos(), aimed);
+        LOGGER.debug("[DungeonTrain] Comet launched {} at {} ({})", comet.id(), comet.pos(), aim);
         return true;
     }
 

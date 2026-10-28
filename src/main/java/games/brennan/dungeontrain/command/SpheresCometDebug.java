@@ -14,8 +14,9 @@ import org.slf4j.Logger;
 import java.util.List;
 
 /**
- * {@code /dungeontrain debug comet [aimed|miss]} — with no argument, the comet chance at the caller's X and how
- * many are in flight; {@code aimed} / {@code miss} launch one at the nearest train, by the caller,, whatever the band.
+ * {@code /dungeontrain debug comet [aimed|miss|ahead]} — with no argument, the comet chance at the caller's X and how
+ * many are in flight; {@code aimed} / {@code miss} / {@code ahead} launch one at the nearest train, by the caller,
+ * whatever the band ({@code ahead}: a miss that comes down beside the track in front).
  * Logged at INFO for RCON runs.
  */
 final class SpheresCometDebug {
@@ -33,15 +34,19 @@ final class SpheresCometDebug {
         return 1;
     }
 
-    static int launch(CommandSourceStack source, boolean aimed) {
+    static int launch(CommandSourceStack source, SpheresCometEvents.Aim aim) {
         ServerLevel level = source.getServer().overworld();
         List<Trains.Carriage> train = nearestTrain(level, source.getPosition());
         if (train == null) {
             send(source, "[DungeonTrain] comet: no train loaded", ChatFormatting.RED);
             return 0;
         }
-        boolean ok = SpheresCometEvents.launch(level, train, source.getPosition(), aimed);
-        send(source, "[DungeonTrain] comet " + (aimed ? "aimed at" : "missing") + " the train: "
+        boolean ok = SpheresCometEvents.launch(level, train, source.getPosition(), aim);
+        send(source, "[DungeonTrain] comet " + switch (aim) {
+                    case HIT -> "aimed at";
+                    case MISS -> "missing";
+                    case MISS_AHEAD -> "missing ahead of";
+                } + " the train: "
                 + (ok ? "launched" : "failed to spawn"), ok ? ChatFormatting.GOLD : ChatFormatting.RED);
         return ok ? 1 : 0;
     }
