@@ -36,7 +36,8 @@ import java.util.WeakHashMap;
  *
  * <p>A mob knocked off the train onto the tracks within {@link WedgedUnderFloor#ROOMS_NEAR_PLAYER}
  * rooms of a player is left there instead, and crushed half a heart per
- * {@link WedgedUnderFloor#CRUSH_INTERVAL_TICKS} ticks it spends under carriages. Before 0.1570.0
+ * {@link WedgedUnderFloor#TICKS_PER_HALF_HEART} ticks it spends under carriages, in small hits every
+ * {@link WedgedUnderFloor#CRUSH_INTERVAL_TICKS}. Before 0.1570.0
  * it was discarded wherever the track was a bridge.</p>
  *
  * <p>A side whose chunk isn't loaded is never checked (that would sync-load it); if one was skipped,
@@ -158,9 +159,9 @@ public final class WedgedMobEjector {
     }
 
     /**
-     * Leaves a mob that fell onto the tracks where it is and hits it for half a heart once it has
-     * been under carriages for {@link WedgedUnderFloor#CRUSH_INTERVAL_TICKS}, then again each time
-     * that much more has passed. Time spent clear of the train is not counted.
+     * Leaves a mob that fell onto the tracks where it is and hits it for
+     * {@link WedgedUnderFloor#CRUSH_DAMAGE} each {@link WedgedUnderFloor#CRUSH_INTERVAL_TICKS} it
+     * spends under carriages. Time spent clear of the train is not counted.
      */
     private static void crush(ServerLevel level, LivingEntity e) {
         long now = level.getGameTime();

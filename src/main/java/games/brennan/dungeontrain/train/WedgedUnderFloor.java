@@ -64,13 +64,16 @@ public final class WedgedUnderFloor {
     static final int MIN_FALLEN_AGE_TICKS = 3;
 
     /**
-     * Ticks spent under carriages between crush hits on a fallen mob: 30 s, so a mob left on the
-     * tracks dies slowly rather than in seconds.
+     * Ticks spent under carriages per half heart of crush damage on a fallen mob: 30 s, so a mob
+     * left on the tracks dies slowly rather than in seconds.
      */
-    static final int CRUSH_INTERVAL_TICKS = 600;
+    static final int TICKS_PER_HALF_HEART = 600;
 
-    /** Each crush hit: half a heart. */
-    static final float CRUSH_DAMAGE = 1.0f;
+    /** Ticks spent under carriages between crush hits: a red flash every 5 s. */
+    static final int CRUSH_INTERVAL_TICKS = 100;
+
+    /** Each crush hit: the half heart spread over the hits in {@link #TICKS_PER_HALF_HEART}. */
+    static final float CRUSH_DAMAGE = 1.0f * CRUSH_INTERVAL_TICKS / TICKS_PER_HALF_HEART;
 
     /** Where a wedged mob goes. */
     public enum Route {

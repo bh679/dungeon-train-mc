@@ -195,14 +195,22 @@ class WedgedUnderFloorTest {
     }
 
     @Test
-    void crushHitsOncePerThirtySecondsUnder() {
-        assertEquals(600, WedgedUnderFloor.CRUSH_INTERVAL_TICKS);
+    void crushFlashesEveryFiveSecondsUnder() {
+        assertEquals(100, WedgedUnderFloor.CRUSH_INTERVAL_TICKS);
         assertFalse(WedgedUnderFloor.crushDue(0));
-        assertFalse(WedgedUnderFloor.crushDue(1));
-        assertFalse(WedgedUnderFloor.crushDue(599));
-        assertTrue(WedgedUnderFloor.crushDue(600));
-        assertFalse(WedgedUnderFloor.crushDue(601));
-        assertTrue(WedgedUnderFloor.crushDue(1200));
-        assertEquals(1.0f, WedgedUnderFloor.CRUSH_DAMAGE); // half a heart
+        assertFalse(WedgedUnderFloor.crushDue(99));
+        assertTrue(WedgedUnderFloor.crushDue(100));
+        assertFalse(WedgedUnderFloor.crushDue(101));
+        assertTrue(WedgedUnderFloor.crushDue(200));
+    }
+
+    @Test
+    void crushAddsUpToHalfAHeartPerThirtySecondsUnder() {
+        int hits = 0;
+        for (int t = 1; t <= 600; t++) {
+            if (WedgedUnderFloor.crushDue(t)) hits++;
+        }
+        assertEquals(6, hits);
+        assertEquals(1.0f, hits * WedgedUnderFloor.CRUSH_DAMAGE, 1e-5f); // half a heart
     }
 }
