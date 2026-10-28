@@ -1,6 +1,6 @@
 # Death scene: shot table
 
-Branch `dev/train-stays-after-death`, version 0.1561.6. Offsets are from the subject as (along the
+Branch `dev/train-stays-after-death`, version 0.1561.7. Offsets are from the subject as (along the
 train, up, across); along is positive ahead. Carriages are 7 wide.
 
 The body is a Sable: Ragdolls ragdoll wearing your skin and gear, left where you died (server
@@ -34,7 +34,7 @@ position as before.
 | T2 | above-back | train-locked drift | the tracks ahead | 2 above the roof, from 2 ahead of you to 8 behind, looking forward | 6 s | same, and a roof |
 | T3 | roof-skim | train-locked | the train ahead | 1.2 above the roof over you, looking forward and down | 5 s | same, and a roof |
 | T4 | window-out | train-locked | the passing wall | from the far side of the carriage: just inside the opposite wall at eye height, looking across the interior and out through the window | 5 s | fewer than 5 other loop shots played this pass; the view across to the window is clear |
-| L1 | feature | world-locked, aim tracks it | a contents template, else a carriage group, within the 3 nearest groups | beside it at (0, 4, +-14) for contents, (0, 9, +-26) for a group | 4 s | server listed one and a side is clear |
+| L1 | feature | world-locked, aim tracks it | a contents template, else a carriage group, within the 3 nearest groups | beside it at (0, 4, +-14) for contents, (0, 9, +-26) for a group | 4 s | server listed one and a side is clear; one tail shot per pass: the feature on even passes, the mob arc on odd, the other standing in when it cannot play |
 | L2 | mob-arc | orbit following the entity | a random creature riding the train within 64 blocks, redrawn each pass | radius 3, height 2 | 5 s | one exists and an arc is clear |
 | last | eyes-forward | train-locked | the train ahead | your eyes, looking forward | 5 s | nothing else at all played this pass |
 

@@ -153,6 +153,12 @@ public final class DeathCameraCycle {
     private static int playedInLoop;
     /** Loop shots of any kind that played since the loop last started (the window and last-resort gates). */
     private static int passCount;
+    /** Loop passes begun so far; the tail's turn alternates on it (even: feature, odd: mob arc). */
+    private static int passNumber;
+    /** A tail shot played this pass: the other stands down until the next pass. */
+    private static boolean tailPlayed;
+    /** The tail shot the turn passed over this pass, retried if the one whose turn it was cannot play. */
+    private static int tailDeferred = -1;
     /** Phase one showed the body (spot, carriage or leaving shot): the body-out safety net stands down. */
     private static boolean bodyShotPlayed;
     /** The current lens was placed without a path check (the last resort): never cut it for a block. */
@@ -297,6 +303,9 @@ public final class DeathCameraCycle {
         active = true;
         playedInLoop = 0;
         passCount = 0;
+        passNumber = 0;
+        tailPlayed = false;
+        tailDeferred = -1;
         bodyShotPlayed = false;
         select(0);
     }
@@ -489,8 +498,12 @@ public final class DeathCameraCycle {
             if (i == loop && hops > 0) {
                 playedInLoop = 0;
                 passCount = 0;
+                passNumber++;
+                tailPlayed = false;
+                tailDeferred = -1;
             }
             DeathShot shot = sequence.get(i);
+            boolean tail = isTail(shot);
             boolean gated = switch (shot.kind()) {
                 case TUNNEL_WINDOW_OUT -> passCount >= WINDOW_OUT_MAX_OTHERS;
                 case BODY_OUT -> bodyShotPlayed;
@@ -498,12 +511,22 @@ public final class DeathCameraCycle {
                 case TUNNEL_RISE, TUNNEL_ABOVE_BACK, TUNNEL_ROOF, TUNNEL_COUPLING -> playedInLoop > 0;
                 default -> false;
             };
+            // One tail shot per pass, feature and mob arc taking turns; the other is only the
+            // stand-in when the one whose turn it is cannot play.
+            if (tail && !gated) {
+                if (tailPlayed) gated = true;
+                else if (!tailTurn(shot, passNumber) && tailDeferred < 0) {
+                    tailDeferred = i;
+                    gated = true;
+                }
+            }
             if (gated) {
                 i = nextIndex(sequence, i);
                 continue;
             }
             if (prepare(shot)) {
                 if (showsTheBody(shot)) bodyShotPlayed = true;
+                if (tail) tailPlayed = true;
                 if (shot.kind().isOpenAir()) playedInLoop++;
                 if (shot.kind().isLoop()) passCount++;
                 index = i;
@@ -512,6 +535,12 @@ public final class DeathCameraCycle {
                 return;
             }
             LOGGER.info("[DungeonTrain] Death scene shot {} skipped: no clear lens", shot.label());
+            if (tail && tailDeferred >= 0) {
+                // Its turn, but it cannot play: the other tail shot stands in.
+                i = tailDeferred;
+                tailDeferred = -1;
+                continue;
+            }
             int next = nextIndex(sequence, i);
             if (next == i) break;
             i = next;
@@ -519,6 +548,17 @@ public final class DeathCameraCycle {
         // Nothing at all could be shown (no carriage, no level): hold the player's own view.
         index = 0;
         shotTicks = 0;
+    }
+
+    /** Pure: one of the two subject shots that close a loop pass. */
+    static boolean isTail(DeathShot shot) {
+        return shot.kind() == DeathShot.Kind.FEATURE_TRACK || shot.kind() == DeathShot.Kind.ORBIT_LOOP;
+    }
+
+    /** Pure: whose turn the pass is. The feature on even passes, the mob arc on odd ones. */
+    static boolean tailTurn(DeathShot shot, int passNumber) {
+        boolean featureTurn = passNumber % 2 == 0;
+        return (shot.kind() == DeathShot.Kind.FEATURE_TRACK) == featureTurn;
     }
 
     /** Pure: a phase-one shot that frames the body or where it died (the spot, carriage and leaving shots). */

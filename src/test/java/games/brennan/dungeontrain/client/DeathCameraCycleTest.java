@@ -95,6 +95,19 @@ class DeathCameraCycleTest {
     }
 
     @Test
+    void featureAndMobArcTakeTurnsClosingThePass() {
+        DeathShot feature = DeathCameraCycle.LOOP_TAIL.get(0);
+        DeathShot mobArc = DeathCameraCycle.LOOP_TAIL.get(1);
+        assertTrue(DeathCameraCycle.isTail(feature) && DeathCameraCycle.isTail(mobArc));
+        assertFalse(DeathCameraCycle.isTail(DeathCameraCycle.TRAIN_SHOTS.get(0)));
+        assertTrue(DeathCameraCycle.tailTurn(feature, 0));
+        assertFalse(DeathCameraCycle.tailTurn(mobArc, 0));
+        assertFalse(DeathCameraCycle.tailTurn(feature, 1));
+        assertTrue(DeathCameraCycle.tailTurn(mobArc, 1));
+        assertTrue(DeathCameraCycle.tailTurn(feature, 2));
+    }
+
+    @Test
     void sequenceRunsOnceThenLoopsTheTrainShots() {
         List<DeathShot> seq = DeathCameraCycle.buildSequence(false, true, false, true);
         int loop = DeathCameraCycle.loopStart(seq);
