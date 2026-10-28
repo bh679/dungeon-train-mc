@@ -130,9 +130,8 @@ public final class TunnelTemplateStore {
             public SaveResult save(ServerPlayer player, Template.Tunnel template) throws Exception {
                 // Phase-4 Bug fix: pass template.name() through so non-default
                 // tunnel variants save correctly via Stores.save.
-                TunnelEditor.SaveResult r = TunnelEditor.save(player,
+                return TunnelEditor.save(player,
                     new games.brennan.dungeontrain.template.TunnelTemplateId(variant, template.name()));
-                return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
             }
 
             @Override

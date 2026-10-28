@@ -219,8 +219,7 @@ public final class TrackTemplateStore {
 
         @Override
         public SaveResult save(ServerPlayer player, Template.Track template) throws Exception {
-            TrackEditor.SaveResult r = TrackEditor.save(player);
-            return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
+            return TrackEditor.save(player);
         }
 
         @Override

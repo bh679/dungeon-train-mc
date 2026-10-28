@@ -17,6 +17,7 @@ import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
+import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Template;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -41,7 +42,7 @@ import java.util.Optional;
  * captured on save.
  *
  * <p>Reuses the {@link CarriageEditor} session map via
- * {@link CarriageEditor#rememberReturn} so a single
+ * {@link EditorSessions#rememberReturn} so a single
  * {@code /dungeontrain editor exit} command restores the player regardless of
  * which editor they entered. Same pattern as {@link PillarEditor}.</p>
  */
@@ -63,16 +64,9 @@ public final class CarriageContentsEditor {
     /** Alias kept for readability — the Z-axis tight gap used inside a sub-variant column. */
     private static final int SUB_VARIANT_GAP = EditorLayout.SUB_VARIANT_GAP;
 
-    private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
 
     /** Fallback shell variant stamped as context when the user doesn't specify one. */
     private static final CarriageVariant DEFAULT_SHELL = CarriageVariant.of(CarriageType.STANDARD);
-
-    public record SaveResult(boolean sourceAttempted, boolean sourceWritten, String sourceError) {
-        public static SaveResult skipped() { return new SaveResult(false, false, null); }
-        public static SaveResult written() { return new SaveResult(true, true, null); }
-        public static SaveResult failed(String error) { return new SaveResult(true, false, error); }
-    }
 
     private CarriageContentsEditor() {}
 
@@ -199,7 +193,7 @@ public final class CarriageContentsEditor {
             new net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings()
                 .setIgnoreEntities(true),
             overworld.getRandom(), CarriageStampGuard.STAMP_FLAGS);
-        setOutline(overworld, origin, OUTLINE_BLOCK, box);
+        setOutline(overworld, origin, EditorPlotCage.OUTLINE_BLOCK, box);
     }
 
     private static void emptyInventories(ServerLevel level, BlockPos origin, Vec3i size) {
@@ -246,7 +240,7 @@ public final class CarriageContentsEditor {
         CarriageContentsPlacer.eraseAt(overworld, origin, box);
         CarriagePlacer.placeAt(overworld, origin, shellFor(contents), dims);
         CarriageContentsPlacer.placeAt(overworld, origin, contents, dims);
-        setOutline(overworld, origin, OUTLINE_BLOCK, box);
+        setOutline(overworld, origin, EditorPlotCage.OUTLINE_BLOCK, box);
 
         // Snapshot the freshly-stamped INTERIOR for the dirty-check baseline.
         // Save's captureTemplate captures only the interior (size = dims-2),
@@ -520,10 +514,7 @@ public final class CarriageContentsEditor {
             BlockPos o = plotOrigin(contents, dims);
             if (o == null) continue;
             CarriageDims box = plotDims(contents, dims);
-            // +2 Y headroom above cage top — see CarriageEditor.plotContaining for rationale.
-            if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + box.length()
-                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + box.height() + 2
-                && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + box.width()) {
+            if (EditorPlotBox.contains(pos, o, new Vec3i(box.length(), box.height(), box.width()))) {
                 return contents;
             }
         }
@@ -599,7 +590,7 @@ public final class CarriageContentsEditor {
         CarriageVariant shell = shellVariant != null ? shellVariant : shellFor(contents);
         CarriageDims box = plotDims(contents, dims);
 
-        CarriageEditor.rememberReturn(player);
+        EditorSessions.rememberReturn(player);
 
         // A template of another size means switching the resident size first — which leaves this
         // plot to be stamped here, whatever the caller asked.
@@ -618,7 +609,7 @@ public final class CarriageContentsEditor {
             CarriagePlacer.placeAt(overworld, origin, shell, dims);
             // Stamp the current contents template on top of the air interior.
             CarriageContentsPlacer.placeAt(overworld, origin, contents, dims);
-            setOutline(overworld, origin, OUTLINE_BLOCK, box);
+            setOutline(overworld, origin, EditorPlotCage.OUTLINE_BLOCK, box);
             // The dirty-check baseline, as stampPlot takes it: a plot restamped here without one
             // could never report an edit as unsaved.
             Vec3i interior = CarriageContentsPlacer.interiorSize(box);
@@ -689,26 +680,14 @@ public final class CarriageContentsEditor {
             player.getName().getString(), contents.id(),
             interiorSnapshotSize.getX(), interiorSnapshotSize.getY(), interiorSnapshotSize.getZ());
 
-        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
-        try {
-            CarriageContentsStore.saveToSource(contents, template);
-            // Promote the variants sidecar too — without this, shift-right-click
-            // variant authoring stayed in run/config and was lost on worktree
-            // delete (the bug PR #79's vase update silently shipped without).
-            Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
-            CarriageContentsVariantBlocks sidecar =
-                CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
-            sidecar.saveToSource(contents);
-            // Promote the container-contents sidecar (per-position links and
-            // pools). Without this, chest→loot-prefab references authored in
-            // the plot stay in run/config and are lost when the template
-            // ships in the next build.
-            ContainerContentsStore.loadFor("contents:" + contents.id()).saveToSource();
-            return SaveResult.written();
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Contents editor save: source write failed for {}: {}", contents.id(), e.toString());
-            return SaveResult.failed(e.getMessage());
-        }
+        // The variants and container-contents sidecars ship too; without them, shift-right-click
+        // variant authoring and chest→loot-prefab links stayed in run/config and were lost when
+        // the template shipped (PR #79's vase update went out without its variants).
+        Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
+        return EditorSave.toSource("Contents editor save: " + contents.id(),
+            () -> CarriageContentsStore.saveToSource(contents, template),
+            () -> CarriageContentsVariantBlocks.loadFor(contents, interiorSize).saveToSource(contents),
+            () -> ContainerContentsStore.loadFor("contents:" + contents.id()).saveToSource());
     }
 
     /**
@@ -786,7 +765,7 @@ public final class CarriageContentsEditor {
         // its box source) is never consulted against the allow-list, so it is left unmarked.
         if (boxSource == null) CarriageContentsWeights.markNewOptIn(target.id());
 
-        setOutline(overworld, targetOrigin, OUTLINE_BLOCK, box);
+        setOutline(overworld, targetOrigin, EditorPlotCage.OUTLINE_BLOCK, box);
 
         games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
             .trigger(player, "made_contents");
@@ -830,7 +809,7 @@ public final class CarriageContentsEditor {
         TemplateCopy.copy(games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.CONTENTS, null,
             source.id(), target.id());
 
-        setOutline(overworld, targetOrigin, OUTLINE_BLOCK, sourceBox);
+        setOutline(overworld, targetOrigin, EditorPlotCage.OUTLINE_BLOCK, sourceBox);
 
         LOGGER.info("[DungeonTrain] Contents editor duplicate: {} created '{}' from '{}' at {}",
             player.getName().getString(), target.id(), source.id(), targetOrigin);
@@ -1009,32 +988,9 @@ public final class CarriageContentsEditor {
         return renamed;
     }
 
-    /**
-     * Barrier cage: 12 edges of a bounding box 1 block outside the
-     * {@code length × height × width} footprint. Matches
-     * {@link CarriageEditor#setOutline} exactly so the cage geometry is
-     * consistent across both editors. Faces are left empty so the player can
-     * fly in and out freely.
-     */
+    /** The plot cage — see {@link EditorPlotCage}. */
     private static void setOutline(ServerLevel level, BlockPos origin, BlockState state, CarriageDims dims) {
-        int x0 = origin.getX() - 1;
-        int y0 = origin.getY() - 1;
-        int z0 = origin.getZ() - 1;
-        int x1 = origin.getX() + dims.length();
-        int y1 = origin.getY() + dims.height();
-        int z1 = origin.getZ() + dims.width();
-
-        for (int x = x0; x <= x1; x++) {
-            for (int y = y0; y <= y1; y++) {
-                for (int z = z0; z <= z1; z++) {
-                    int extremes = (x == x0 || x == x1 ? 1 : 0)
-                        + (y == y0 || y == y1 ? 1 : 0)
-                        + (z == z0 || z == z1 ? 1 : 0);
-                    if (extremes < 2) continue;
-                    level.setBlock(new BlockPos(x, y, z), state, 3);
-                }
-            }
-        }
+        EditorPlotCage.setOutline(level, origin, new Vec3i(dims.length(), dims.height(), dims.width()), state);
     }
 
     /**
