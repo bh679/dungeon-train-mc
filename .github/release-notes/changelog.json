@@ -31586,6 +31586,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-shared-plot-helpers",
+      "version": "0.1573.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Editor housekeeping",
+      "summary": "The Train Editor's plots share one set of plumbing now, whichever kind of template you are working on. Leaving the editor takes you straight back to where you came in, however many areas you wandered through.",
+      "highlights": [
+        "One exit from anywhere in the editor."
+      ],
+      "pr": 2385,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
