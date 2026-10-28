@@ -128,6 +128,30 @@ class MicDspTest {
         assertEquals(0, MicDsp.rms(new short[0], 0), 1e-9);
     }
 
+    @Test
+    void theMeterReadsSilenceAsEmptyAndALoudVoiceAsFull() {
+        assertEquals(0, MicDsp.LevelMeter.normalised(0), 1e-9);
+        assertEquals(0, MicDsp.LevelMeter.normalised(50), 1e-9, "under the floor");
+        assertEquals(1, MicDsp.LevelMeter.normalised(20_000), 1e-9, "over the ceiling");
+        double mid = MicDsp.LevelMeter.normalised(1000);
+        assertTrue(mid > 0.2 && mid < 0.8, "ordinary speech sits mid-scale: " + mid);
+    }
+
+    @Test
+    void theMeterRisesFastAndFallsSlowly() {
+        MicDsp.LevelMeter m = new MicDsp.LevelMeter(48_000);
+        float up = 0;
+        for (int i = 0; i < 4; i++) up = m.update(filled(480, 20_000), 480);
+        assertTrue(up > 0.9f, "40 ms of shouting fills it: " + up);
+        float down = m.update(filled(480, 0), 480);
+        assertTrue(down > 0.9f, "10 ms of quiet barely drops it: " + down);
+        for (int i = 0; i < 40; i++) down = m.update(filled(480, 0), 480);
+        assertEquals(0f, down, "empty 400 ms after the voice stops");
+        m.update(filled(480, 20_000), 480);
+        m.reset();
+        assertEquals(0f, m.update(new short[0], 0));
+    }
+
     private static short[] filled(int n, int v) {
         short[] s = new short[n];
         java.util.Arrays.fill(s, (short) v);

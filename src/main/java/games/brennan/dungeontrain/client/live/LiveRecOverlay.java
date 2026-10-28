@@ -52,7 +52,8 @@ import java.util.function.Consumer;
  * (End Stream moves right of it): crossed out in red while the mic is off, which it is at the start of
  * every stream. In play it is a small icon only; with a screen open, where the mouse can reach it, it
  * is a button that turns the mic on and off (Toggle Mic, {@link LiveMicHotkeys}, works either way).
- * With push to talk set it shows dimmed until the key is held.</p>
+ * With push to talk set it shows dimmed until the key is held. While the mic is heard it fills with
+ * green from the bottom as loud as the voice is ({@link LiveMic#level()}).</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveRecOverlay {
@@ -94,6 +95,10 @@ public final class LiveRecOverlay {
     static final int MIC_ICON = 16;
     /** The mic's state in play, with no screen open: just the sprite, smaller, nothing to press. */
     static final int MIC_HUD_ICON = 10;
+    /** The level fill's tint over the white mic: a clear green, the outline stays dark. */
+    private static final float LEVEL_R = 0.33f;
+    private static final float LEVEL_G = 1f;
+    private static final float LEVEL_B = 0.33f;
     private static final ResourceLocation MIC_ON = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/mic_on");
     private static final ResourceLocation MIC_OFF = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/mic_off");
     private static final int WHITE = 0xF0FFFFFF;
@@ -221,6 +226,24 @@ public final class LiveRecOverlay {
         RenderSystem.enableBlend();
         g.blitSprite(on ? MIC_ON : MIC_OFF, x, y, MIC_HUD_ICON, MIC_HUD_ICON);
         if (dim) g.setColor(1f, 1f, 1f, 1f);
+        levelFill(g, x, y, MIC_HUD_ICON);
+    }
+
+    /**
+     * The voice's loudness ({@link LiveMic#level()}) as green rising up the mic sprite from the bottom:
+     * the sprite drawn again, tinted, cut to the filled rows. Only while the mic is heard; off and push
+     * to talk with the key up keep their plain look.
+     */
+    private static void levelFill(GuiGraphics g, int x, int y, int size) {
+        if (!LiveMic.transmitting()) return;
+        int rows = Math.round(LiveMic.level() * size);
+        if (rows <= 0) return;
+        g.enableScissor(x, y + size - rows, x + size, y + size);
+        g.setColor(LEVEL_R, LEVEL_G, LEVEL_B, 1f);
+        RenderSystem.enableBlend();
+        g.blitSprite(MIC_ON, x, y, size, size);
+        g.setColor(1f, 1f, 1f, 1f);
+        g.disableScissor();
     }
 
     private static void micButton(GuiGraphics g, Font font) {
@@ -239,6 +262,7 @@ public final class LiveRecOverlay {
         RenderSystem.enableBlend();
         g.blitSprite(on ? MIC_ON : MIC_OFF, b.x() + inset, b.y() + inset, MIC_ICON, MIC_ICON);
         if (dim) g.setColor(1f, 1f, 1f, 1f);
+        levelFill(g, b.x() + inset, b.y() + inset, MIC_ICON);
         if (hover) g.renderTooltip(font, micTooltip(on), (int) mx, (int) my);
     }
 

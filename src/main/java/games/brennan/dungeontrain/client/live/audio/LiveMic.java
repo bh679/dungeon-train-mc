@@ -28,6 +28,12 @@ public final class LiveMic {
     @Nullable private static volatile MicCapture capture;
     /** Pump thread only. */
     private static MicDsp.NoiseGate gate = new MicDsp.NoiseGate(GATE_THRESHOLD, GATE_HOLD_SAMPLES);
+    /** Pump thread only; its reading goes out through {@link #level}. */
+    private static final MicDsp.LevelMeter meter = new MicDsp.LevelMeter(MicCapture.RATE);
+    /** The voice's loudness, 0..1, written by the pump thread and read by the render thread. */
+    private static volatile float level;
+    /** Dev screenshots only: a fixed level in place of the meter's, or NaN for the real one. */
+    private static volatile float levelOverride = Float.NaN;
 
     private LiveMic() {}
 
@@ -97,15 +103,38 @@ public final class LiveMic {
         MicCapture c = capture;
         if (c == null) {
             java.util.Arrays.fill(out, 0, n, (short) 0);
+            silenceMeter();
             return;
         }
         c.read(out, n);
         if (!transmitting()) {
             java.util.Arrays.fill(out, 0, n, (short) 0);
+            silenceMeter();
             return;
         }
         if (LiveFeedClientConfig.micNoiseGate()) gate.process(out, n);
+        // Metered after the gate (what the room noise leaves) and before the balance, so the icon
+        // shows the voice itself, whatever the game/mic slider is set to.
+        level = meter.update(out, n);
         MicDsp.applyGain(out, n, MicDsp.micGain(LiveFeedClientConfig.micMixPercent()));
+    }
+
+    private static void silenceMeter() {
+        meter.reset();
+        level = 0;
+    }
+
+    /** Render thread: the voice's loudness for the icon by LIVE, 0 silent to 1 loud; 0 while not heard. */
+    public static float level() {
+        float o = levelOverride;
+        if (!Float.isNaN(o)) return o;
+        return transmitting() ? level : 0f;
+    }
+
+    /** Dev builds only, for screenshots of the meter: pins {@link #level()} to {@code value}; NaN lets go. */
+    public static void setLevelOverride(float value) {
+        if (!games.brennan.dungeontrain.DungeonTrain.isDevBuild()) return;
+        levelOverride = Float.isNaN(value) ? Float.NaN : Math.max(0f, Math.min(1f, value));
     }
 
     /**

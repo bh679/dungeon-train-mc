@@ -152,4 +152,50 @@ public final class MicDsp {
         for (int i = 0; i < n; i++) sum += (double) s[i] * s[i];
         return Math.sqrt(sum / n);
     }
+
+    /**
+     * The mic's loudness for the icon by LIVE, 0 (silent) to 1 (loud): each block's RMS on a decibel
+     * scale between {@link #FLOOR_DB} and {@link #CEIL_DB}, rising fast and falling slowly so the fill
+     * follows speech without flickering. Times are in samples at {@code rate}, so any block size works.
+     */
+    static final class LevelMeter {
+        /** Quieter than this is an empty icon: a quiet room after the gate. */
+        static final double FLOOR_DB = -50;
+        /** Louder than this is a full icon: raised voice close to the mic. */
+        static final double CEIL_DB = -12;
+        static final double ATTACK_S = 0.02;
+        /** Full to empty takes this long once the voice stops. */
+        static final double DECAY_S = 0.4;
+
+        private final int rate;
+        private float level;
+
+        LevelMeter(int rate) {
+            this.rate = rate;
+        }
+
+        /** Feeds one block and returns the smoothed level. */
+        float update(short[] s, int n) {
+            if (n <= 0) return level;
+            float target = (float) normalised(rms(s, n));
+            if (target > level) {
+                float k = (float) Math.min(1.0, n / (rate * ATTACK_S));
+                level += (target - level) * k;
+            } else {
+                level = Math.max(target, level - (float) (n / (rate * DECAY_S)));
+            }
+            return level;
+        }
+
+        void reset() {
+            level = 0;
+        }
+
+        /** An RMS in 16-bit sample units on the meter's 0..1 decibel scale. */
+        static double normalised(double rms) {
+            if (rms <= 0) return 0;
+            double db = 20 * Math.log10(rms / Short.MAX_VALUE);
+            return Math.max(0, Math.min(1, (db - FLOOR_DB) / (CEIL_DB - FLOOR_DB)));
+        }
+    }
 }
