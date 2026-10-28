@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.train.CarriageContentsAllowList;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -12,8 +13,9 @@ import java.util.Optional;
  * portal room may draw when its Contents setting
  * ({@link games.brennan.dungeontrain.portal.PortalRoomContents}) is anything but Off.
  *
- * <p>The room-side counterpart of {@link CarriageVariantContentsAllowStore}, sharing its whole
- * implementation through {@link ContentsAllowStore}. Sits beside the room's other per-name files —
+ * <p>The room-side counterpart of {@link CarriageVariantContentsAllowStore}, the same
+ * {@link ThreeTierStore} shape with the same policies ({@link SourcePolicy#SHIPS_WITH_GAME},
+ * {@link DeleteCachePolicy#REMOVE}). Sits beside the room's other per-name files —
  * {@code <name>.nbt}, {@code <name>.variants.json}, {@code weights.json} — so everything about a
  * room is in one directory.</p>
  *
@@ -30,20 +32,31 @@ import java.util.Optional;
  */
 public final class PortalRoomContentsAllowStore {
 
+    private static final String EXT = CarriageVariantContentsAllowStore.EXT;
+
     /**
      * All three paths come from {@link TrackKind#PORTAL_ROOM} rather than being spelled out, so the
      * sidecar always lands beside the room's {@code .nbt} — if a kind's subdir ever moves, this
      * moves with it instead of quietly writing to a directory nothing reads.
      */
-    private static final ContentsAllowStore STORE = new ContentsAllowStore(
-        TrackKind.PORTAL_ROOM.subdir(),
-        TrackKind.PORTAL_ROOM.bundledResourcePrefix(),
-        TrackKind.PORTAL_ROOM.sourceRelativePath());
+    private static final ThreeTierStore<String, CarriageContentsAllowList> STORE =
+        StoreDescriptor.<String, CarriageContentsAllowList>named("PortalRoomContentsAllowStore")
+            .id(name -> name)
+            .subdir(TrackKind.PORTAL_ROOM.subdir())
+            .fileName(name -> name + EXT)
+            .bundledUnder(TrackKind.PORTAL_ROOM.bundledResourcePrefix())
+            .sourceRelDir(TrackKind.PORTAL_ROOM.sourceRelativePath())
+            .shipMarker(name -> name + ".nbt")
+            .codec(StoreCodecs.json(CarriageContentsAllowList::fromJson, CarriageContentsAllowList::toJson))
+            .logNoun("contents allow-list")
+            .sourcePolicy(SourcePolicy.SHIPS_WITH_GAME)
+            .deleteCachePolicy(DeleteCachePolicy.REMOVE)
+            .build();
 
     private PortalRoomContentsAllowStore() {}
 
     public static Path directory() {
-        return STORE.directory();
+        return UserContentPaths.dir(TrackKind.PORTAL_ROOM.subdir());
     }
 
     public static Path fileFor(String roomName) {
@@ -58,8 +71,9 @@ public final class PortalRoomContentsAllowStore {
         STORE.clearCache();
     }
 
+    /** Lower-cases the name, as the carriage twin always has (inert: names are already lower-case). */
     public static void invalidate(String roomName) {
-        STORE.invalidate(roomName);
+        STORE.invalidateId(roomName.toLowerCase(Locale.ROOT));
     }
 
     /**
@@ -89,6 +103,6 @@ public final class PortalRoomContentsAllowStore {
     }
 
     public static boolean exists(String roomName) {
-        return STORE.exists(roomName);
+        return STORE.existsInActive(roomName);
     }
 }
