@@ -109,6 +109,8 @@ public final class DeathCameraCycle {
     /** The pull of the unchecked last resort: just over the head, barely moving. Never skipped. */
     static final Vec3 LAST_RESORT_FROM = new Vec3(0.4, 1.6, 0.4);
     static final Vec3 LAST_RESORT_TO = new Vec3(0.7, 1.9, 0.7);
+    /** Close-up and last-resort aim: the body itself (a ragdoll lies low), not the point a block above it. */
+    static final double CLOSE_UP_LOOK_LIFT = 0.4;
     /** Subject shots at the end of every loop pass, in the open and in a tunnel alike. */
     static final List<DeathShot> LOOP_TAIL = List.of(
         DeathShot.feature(80, "feature"),
@@ -155,6 +157,8 @@ public final class DeathCameraCycle {
     private static boolean bodyShotPlayed;
     /** The current lens was placed without a path check (the last resort): never cut it for a block. */
     private static boolean uncheckedLens;
+    /** How far above the body's feet this shot aims; {@link #LOOK_Y_OFFSET} unless a close-up lowered it. */
+    private static double lookLift = LOOK_Y_OFFSET;
     /** The current shot's lens: carriage space for train-locked shots, world space otherwise. */
     private static Vector3d lens;
     /** Dolly end, carriage space. */
@@ -536,6 +540,7 @@ public final class DeathCameraCycle {
         aimLocal = null;
         aimOffset = null;
         uncheckedLens = false;
+        lookLift = LOOK_Y_OFFSET;
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
@@ -584,11 +589,13 @@ public final class DeathCameraCycle {
                 }
                 // Nowhere to pull out to (a closed carriage, a tunnel): a close-up instead, the
                 // longest short pull with the body in view, in any direction.
+                lookLift = CLOSE_UP_LOOK_LIFT;
+                Vector3d aimClose = new Vector3d(bodyW.x, bodyW.y + CLOSE_UP_LOOK_LIFT, bodyW.z);
                 for (double reach : CLOSE_UP_REACH) {
                     for (Vec3 dir : CLOSE_UP_DIRECTIONS) {
                         Vector3d a = lensFor(bodyLocal, dir.scale(reach * 0.55).add(0.0, CLOSE_UP_LIFT, 0.0));
                         Vector3d b = lensFor(bodyLocal, dir.scale(reach).add(0.0, CLOSE_UP_LIFT, 0.0));
-                        if (ShotPath.clear(level, player, carriages, ShotPath.samples(f -> toWorld(dollyAt(a, b, f))), aimBody)) {
+                        if (ShotPath.clear(level, player, carriages, ShotPath.samples(f -> toWorld(dollyAt(a, b, f))), aimClose)) {
                             lens = a;
                             lensEnd = b;
                             LOGGER.info("[DungeonTrain] Death scene body-out: close-up, reach {} along ({}, {}, {})",
@@ -992,7 +999,7 @@ public final class DeathCameraCycle {
         if (shot.kind() == DeathShot.Kind.POV) return povPose(partialTick);
         double t = shotTicks + partialTick;
         Vector3d bodyW = bodyRender(partialTick);
-        Vector3d aimBody = new Vector3d(bodyW.x, bodyW.y + LOOK_Y_OFFSET, bodyW.z);
+        Vector3d aimBody = new Vector3d(bodyW.x, bodyW.y + lookLift, bodyW.z);
         Vector3d lensW;
         Vector3d aim = aimBody;
         switch (shot.kind()) {
