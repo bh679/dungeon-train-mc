@@ -1,9 +1,11 @@
 package games.brennan.dungeontrain.worldgen;
 
+import org.joml.Vector3f;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SpheresCometsTest {
@@ -44,5 +46,21 @@ class SpheresCometsTest {
         assertFalse(SpheresComets.fellPastTrain(70.0, 78.0), "a near miss beside the deck still flies");
         assertFalse(SpheresComets.fellPastTrain(62.0, 78.0));
         assertTrue(SpheresComets.fellPastTrain(61.9, 78.0));
+    }
+
+    @Test
+    void eachCometSpinsAboutItsOwnFixedAxis() {
+        Vector3f axis = SpheresComets.spinAxis(7);
+        assertEquals(1.0, axis.length(), 1e-5);
+        assertEquals(axis, SpheresComets.spinAxis(7), "same comet, same axis for every player");
+        assertNotEquals(axis, SpheresComets.spinAxis(8));
+    }
+
+    @Test
+    void oneTurnEverySpinPeriod() {
+        float quarter = SpheresComets.spinAngle(2, SpheresComets.SPIN_TICKS_PER_TURN / 4.0);
+        assertEquals(Math.PI / 2.0, quarter, 1e-5);
+        assertEquals(0.0, SpheresComets.spinAngle(2, SpheresComets.SPIN_TICKS_PER_TURN), 1e-5);
+        assertEquals(-quarter, SpheresComets.spinAngle(3, SpheresComets.SPIN_TICKS_PER_TURN / 4.0), 1e-5);
     }
 }

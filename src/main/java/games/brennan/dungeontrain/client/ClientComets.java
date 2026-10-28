@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.CometPacket;
+import games.brennan.dungeontrain.worldgen.SpheresComets;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.LightTexture;
@@ -21,13 +22,14 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.model.data.ModelData;
+import org.joml.Quaternionf;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Spheres-band comets as the client sees them: flown from the launch packet alone (start + velocity × ticks since)
- * and drawn here — a full-bright magma block and a tail of flames and glowing sparks laid along each tick's step.
+ * and drawn here — a full-bright magma block spinning on its own tilted axis ({@link SpheresComets#spinAxis}) and a tail of flames and glowing sparks laid along each tick's step.
  * The server only says when one starts and when it is gone ({@link CometPacket}); the explosion that ends a hit is
  * an ordinary server explosion. Render-thread state only.
  */
@@ -96,9 +98,12 @@ public final class ClientComets {
         PoseStack ps = event.getPoseStack();
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
         for (Comet c : live) {
-            Vec3 at = c.at(c.age() + partial);
+            double ticks = c.age() + partial;
+            Vec3 at = c.at(ticks);
             ps.pushPose();
             ps.translate(at.x - cam.x, at.y - cam.y, at.z - cam.z);
+            ps.mulPose(new Quaternionf().fromAxisAngleRad(SpheresComets.spinAxis(c.id()),
+                SpheresComets.spinAngle(c.id(), ticks)));
             ps.scale(SCALE, SCALE, SCALE);
             ps.translate(-0.5, -0.5, -0.5);
             mc.getBlockRenderer().renderSingleBlock(MAGMA, ps, buffer, LightTexture.FULL_BRIGHT,

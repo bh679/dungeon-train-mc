@@ -1,5 +1,9 @@
 package games.brennan.dungeontrain.worldgen;
 
+import org.joml.Vector3f;
+
+import java.util.SplittableRandom;
+
 /**
  * When comets fall in the spheres band, as pure math so it can be tested off-thread. The server side that
  * spawns and flies them is {@code event.SpheresCometEvents}.
@@ -26,6 +30,8 @@ public final class SpheresComets {
     public static final double AIMED_SHARE = 1.0 / 3.0;
     /** A comet this far below the train's lowest carriage (blocks) has missed it for good and ends. */
     public static final double MISS_DROP_BLOCKS = 16.0;
+    /** Ticks for a comet's block to make one full turn as it falls. */
+    public static final int SPIN_TICKS_PER_TURN = 30;
     private static final int TICKS_PER_SECOND = 20;
 
     private SpheresComets() {}
@@ -60,5 +66,23 @@ public final class SpheresComets {
      *  carriage bottom is at {@code trainBottomY}, and so can end without being seen to land. */
     public static boolean fellPastTrain(double y, double trainBottomY) {
         return y < trainBottomY - MISS_DROP_BLOCKS;
+    }
+
+    /** The tilted axis comet {@code id} spins about: a random unit vector seeded by the id, so every player who
+     *  sees the comet sees it turn the same way. */
+    public static Vector3f spinAxis(int id) {
+        SplittableRandom random = new SplittableRandom(id);
+        double z = random.nextDouble(-1.0, 1.0);
+        double around = random.nextDouble(0.0, Math.PI * 2.0);
+        double ring = Math.sqrt(1.0 - z * z);
+        return new Vector3f((float) (ring * Math.cos(around)), (float) (ring * Math.sin(around)), (float) z);
+    }
+
+    /** How far comet {@code id} has turned about {@link #spinAxis} after {@code ticks}, in radians: one turn every
+     *  {@value #SPIN_TICKS_PER_TURN} ticks, clockwise or not by the id. */
+    public static float spinAngle(int id, double ticks) {
+        double turns = ticks / SPIN_TICKS_PER_TURN;
+        double sign = (id & 1) == 0 ? 1.0 : -1.0;
+        return (float) (sign * (turns % 1.0) * Math.PI * 2.0);
     }
 }
