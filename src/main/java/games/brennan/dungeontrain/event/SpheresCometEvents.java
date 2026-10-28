@@ -56,10 +56,11 @@ public final class SpheresCometEvents {
         for (List<Trains.Carriage> train : Trains.byTrainId(level).values()) {
             ServerPlayer watcher = watcher(level, train);
             if (watcher == null) continue;
-            double chance = chanceAt((int) Math.floor(watcher.getX()));
+            int x = (int) Math.floor(watcher.getX());
+            double chance = chanceAt(x);
             if (chance <= 0.0 || level.random.nextDouble() >= chance) continue;
             launch(level, train, watcher.position(),
-                level.random.nextDouble() < SpheresComets.AIMED_SHARE ? Aim.HIT : Aim.MISS);
+                level.random.nextDouble() < SpheresComets.aimedShare(lapAt(x)) ? Aim.HIT : Aim.MISS);
             if (live.size() >= MAX_LIVE) return;
         }
     }
@@ -94,9 +95,14 @@ public final class SpheresCometEvents {
 
     /** Chance per tick of a comet for a train whose lead carriage is at {@code x}. */
     public static double chanceAt(int x) {
-        WorldGenCycle cycle = WorldGenCycle.fromConfig();
-        long lap = cycle.cycleIndex(EndFrostbite.frostX(cycle, x));
+        long lap = lapAt(x);
         return SpheresComets.chancePerTick(lap, WindZones.endSkyAt(x), WindZones.spheresVoidAt(x));
+    }
+
+    /** The lap (0-based) of the cycle at world X. */
+    private static long lapAt(int x) {
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        return cycle.cycleIndex(EndFrostbite.frostX(cycle, x));
     }
 
     private static List<SpheresComet> stepAll(ServerLevel level, List<Trains.Carriage> carriages) {
