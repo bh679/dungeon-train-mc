@@ -7,8 +7,6 @@ import games.brennan.dungeontrain.worldgen.SpheresComets;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
@@ -87,7 +85,6 @@ record SpheresComet(int id, Vec3 pos, Vec3 velocity, int age) {
         Vec3 velocity = offset.scale(-1.0 / ticks);
 
         tell(level, start, CometPacket.launched(id, start.x, start.y, start.z, velocity.x, velocity.y, velocity.z));
-        level.playSound(null, start.x, start.y, start.z, SoundEvents.GHAST_SHOOT, SoundSource.AMBIENT, 8.0F, 0.5F);
         return new SpheresComet(id, start, velocity, 0);
     }
 

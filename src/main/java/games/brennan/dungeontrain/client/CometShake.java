@@ -3,6 +3,11 @@ package games.brennan.dungeontrain.client;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.worldgen.SpheresComets;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.client.resources.sounds.SoundInstance;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
@@ -13,8 +18,9 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 
 /**
- * Shakes the camera when a spheres-band comet lands near the player: hardest at the impact, nothing beyond
- * {@value SpheresComets#SHAKE_RADIUS_BLOCKS} blocks ({@link SpheresComets#shakeStrength}). Landings don't stack, the
+ * Shakes the camera, and rolls thunder under the explosion, when a spheres-band comet lands near the player:
+ * hardest at the impact, nothing beyond {@value SpheresComets#SHAKE_RADIUS_BLOCKS} blocks
+ * ({@link SpheresComets#shakeStrength}). Landings don't stack, the
  * strongest one in progress wins, and the shake fades out over {@value #DURATION_TICKS} ticks. Scaled by the
  * Distortion Effects accessibility slider, so players who turn screen effects off feel none. Render-thread state only.
  */
@@ -24,6 +30,9 @@ public final class CometShake {
     private static final int DURATION_TICKS = 15;
     /** Largest yaw/pitch/roll kick, degrees, for a comet landing right on the player. */
     private static final float MAX_DEGREES = 4.0F;
+    /** The thunder roll under a landing right beside the player, and its pitch (lower than a lightning strike). */
+    private static final float THUNDER_VOLUME = 0.7F;
+    private static final float THUNDER_PITCH = 0.8F;
 
     private static double strength;
     private static int ticksLeft;
@@ -36,7 +45,9 @@ public final class CometShake {
         Player player = Minecraft.getInstance().player;
         if (player == null) return;
         double felt = SpheresComets.shakeStrength(player.position().distanceTo(at));
-        if (felt <= 0.0 || felt < strength * fade(0.0, ticksLeft)) return;
+        if (felt <= 0.0) return;
+        thunder(at, felt);
+        if (felt < strength * fade(0.0, ticksLeft)) return;
         strength = felt;
         ticksLeft = DURATION_TICKS;
     }
@@ -65,6 +76,13 @@ public final class CometShake {
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
         ticksLeft = 0;
         strength = 0.0;
+    }
+
+    /** A thunder roll under the explosion, as loud as the landing was close; heard whatever the falloff. */
+    private static void thunder(Vec3 at, double felt) {
+        Minecraft.getInstance().getSoundManager().play(new SimpleSoundInstance(
+            SoundEvents.LIGHTNING_BOLT_THUNDER.getLocation(), SoundSource.WEATHER, (float) (THUNDER_VOLUME * felt),
+            THUNDER_PITCH, RandomSource.create(), false, 0, SoundInstance.Attenuation.NONE, at.x, at.y, at.z, false));
     }
 
     /** 1 as a shake starts, falling linearly to 0 as its ticks run out. */

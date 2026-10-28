@@ -29,7 +29,9 @@ import java.util.List;
 
 /**
  * Spheres-band comets as the client sees them: flown from the launch packet alone (start + velocity × ticks since)
- * and drawn here — a full-bright magma block spinning on its own tilted axis ({@link SpheresComets#spinAxis}) and a tail of flames and glowing sparks laid along each tick's step.
+ * and drawn here — a full-bright magma block spinning on its own tilted axis ({@link SpheresComets#spinAxis}) and a
+ * tail of flames and glowing sparks laid along each tick's step — with a roar that builds as it nears
+ * ({@link CometSound}).
  * The server only says when one starts and when it is gone ({@link CometPacket}); the explosion that ends a hit is
  * an ordinary server explosion. Render-thread state only.
  */
@@ -43,13 +45,13 @@ public final class ClientComets {
     private static final int TAIL_STEPS = 2;
     private static final BlockState MAGMA = Blocks.MAGMA_BLOCK.defaultBlockState();
 
-    private record Comet(int id, Vec3 start, Vec3 velocity, int age) {
+    private record Comet(int id, Vec3 start, Vec3 velocity, int age, CometSound sound) {
         Vec3 at(double ticks) {
             return start.add(velocity.scale(ticks));
         }
 
         Comet older() {
-            return new Comet(id, start, velocity, age + 1);
+            return new Comet(id, start, velocity, age + 1, sound);
         }
     }
 
@@ -61,11 +63,13 @@ public final class ClientComets {
         List<Comet> next = new ArrayList<>(live.size() + 1);
         for (Comet c : live) {
             if (c.id() != packet.id()) next.add(c);
+            else c.sound().stop();
         }
         if (packet.landed()) CometShake.impact(new Vec3(packet.x(), packet.y(), packet.z()));
         if (!packet.ended()) {
-            next.add(new Comet(packet.id(), new Vec3(packet.x(), packet.y(), packet.z()),
-                new Vec3(packet.vx(), packet.vy(), packet.vz()), 0));
+            Vec3 start = new Vec3(packet.x(), packet.y(), packet.z());
+            next.add(new Comet(packet.id(), start, new Vec3(packet.vx(), packet.vy(), packet.vz()), 0,
+                CometSound.start(start)));
         }
         live = List.copyOf(next);
     }
@@ -75,11 +79,17 @@ public final class ClientComets {
         if (live.isEmpty()) return;
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null || Minecraft.getInstance().isPaused()) return;
+        Vec3 ear = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         List<Comet> next = new ArrayList<>(live.size());
         for (Comet c : live) {
             Comet older = c.older();
-            if (older.age() >= MAX_AGE_TICKS) continue;
-            trail(level, c.at(c.age()), older.at(older.age()), c.velocity());
+            if (older.age() >= MAX_AGE_TICKS) {
+                c.sound().stop();
+                continue;
+            }
+            Vec3 at = older.at(older.age());
+            trail(level, c.at(c.age()), at, c.velocity());
+            older.sound().update(at, at.distanceTo(ear));
             next.add(older);
         }
         live = List.copyOf(next);
@@ -87,6 +97,7 @@ public final class ClientComets {
 
     @SubscribeEvent
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
+        for (Comet c : live) c.sound().stop();
         live = List.of();
     }
 

@@ -72,4 +72,19 @@ class SpheresCometsTest {
         assertEquals(0.0, SpheresComets.shakeStrength(SpheresComets.SHAKE_RADIUS_BLOCKS), 1e-9);
         assertEquals(0.0, SpheresComets.shakeStrength(200.0), 1e-9);
     }
+
+    @Test
+    void roarBuildsSteadilyAllTheWayIn() {
+        assertEquals(0.0, SpheresComets.roarBuild(SpheresComets.ROAR_REACH_BLOCKS), 1e-9);
+        assertEquals(0.0, SpheresComets.roarBuild(300.0), 1e-9);
+        assertEquals(1.0, SpheresComets.roarBuild(0.0), 1e-9);
+        double last = -1.0;
+        for (double d = 128.0; d >= 0.0; d -= 8.0) {
+            double now = SpheresComets.roarBuild(d);
+            assertTrue(now > last, "roar keeps rising as the comet closes, at " + d);
+            last = now;
+        }
+        assertEquals(0.5F, SpheresComets.roarPitch(200.0), 1e-6);
+        assertEquals(1.0F, SpheresComets.roarPitch(0.0), 1e-6);
+    }
 }

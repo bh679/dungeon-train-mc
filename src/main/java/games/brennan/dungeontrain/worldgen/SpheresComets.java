@@ -34,6 +34,8 @@ public final class SpheresComets {
     public static final int SPIN_TICKS_PER_TURN = 30;
     /** Beyond this many blocks from where a comet lands, a player feels nothing. */
     public static final double SHAKE_RADIUS_BLOCKS = 40.0;
+    /** A comet's roar starts to build once it is this many blocks away; it is a faint rush before that. */
+    public static final double ROAR_REACH_BLOCKS = 128.0;
     private static final int TICKS_PER_SECOND = 20;
 
     private SpheresComets() {}
@@ -93,5 +95,17 @@ public final class SpheresComets {
     public static double shakeStrength(double distance) {
         double closeness = Math.max(0.0, Math.min(1.0, 1.0 - distance / SHAKE_RADIUS_BLOCKS));
         return closeness * closeness;
+    }
+
+    /** How built-up an incoming comet's roar is at {@code distance} blocks: 0 out past
+     *  {@value #ROAR_REACH_BLOCKS}, swelling steadily to 1 at the comet, so it never cuts in or drops out. */
+    public static double roarBuild(double distance) {
+        double closeness = Math.max(0.0, Math.min(1.0, 1.0 - distance / ROAR_REACH_BLOCKS));
+        return Math.pow(closeness, 1.5);
+    }
+
+    /** The roar's pitch at {@code distance}: low and distant far off, rising to normal as the comet arrives. */
+    public static float roarPitch(double distance) {
+        return (float) (0.5 + 0.5 * roarBuild(distance));
     }
 }
