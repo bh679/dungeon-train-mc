@@ -31496,9 +31496,9 @@
       "highlights": [],
       "pr": 2378,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1568.0",
+      "released_at": "2026-10-28T05:57:48Z"
     }
   ]
 }
