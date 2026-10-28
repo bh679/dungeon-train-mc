@@ -31532,9 +31532,9 @@
       "highlights": [],
       "pr": 2381,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
     },
     {
       "id": "fallen-mobs-stay-on-tracks",
@@ -31549,9 +31549,9 @@
       "highlights": [],
       "pr": 2384,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
     },
     {
       "id": "read-one-book-from-stack",
@@ -31566,9 +31566,9 @@
       "highlights": [],
       "pr": 2382,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
     },
     {
       "id": "note-story-once-per-life",
@@ -31583,9 +31583,9 @@
       "highlights": [],
       "pr": 2382,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
     },
     {
       "id": "fluid-barrier-tick-cache",
@@ -31604,9 +31604,9 @@
       ],
       "pr": 2383,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
     },
     {
       "id": "editor-shared-plot-helpers",
@@ -31623,9 +31623,9 @@
       ],
       "pr": 2385,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
     },
     {
       "id": "dh-structure-lookup-no-sync-load",
@@ -31642,9 +31642,9 @@
       ],
       "pr": 2387,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
     },
     {
       "id": "note-echo-author-skin",
@@ -31660,9 +31660,9 @@
       "highlights": [],
       "pr": 2388,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
     },
     {
       "id": "deeper-dark-wider-reach",
