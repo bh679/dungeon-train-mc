@@ -670,9 +670,11 @@ public final class StartingBookEvents {
 
     /** Starts the burn on an item entity: locks pickup, tracks it, plays the ignition sound. */
     private static void igniteItem(ItemEntity item, FlameVariant variant) {
-        // Lock pickup for the burn window so the player can't snatch the
-        // burning item mid-burn and stash it.
-        item.setPickUpDelay(BURN_DURATION_TICKS);
+        // Lock pickup for the whole burn so the player can't snatch the burning item mid-burn and
+        // stash it. Never-pickup (not a 60-tick delay) also makes it unmergeable: an identical
+        // copy lying beside it (the spared rest of a dropped stack) would otherwise absorb the
+        // burning one and save it. The burn always ends by discarding the entity.
+        item.setNeverPickUp();
         BURN_ENTITIES.put(item.getUUID(), new BurnState(BURN_DURATION_TICKS, variant));
 
         // Ignition atmosphere — a quiet "whoosh" (a soul escape for a Death Note) at the drop point.
