@@ -193,7 +193,7 @@ final class SphereFieldTest {
     private static SphereField.Mixer mixer(double structureChance, int endSurface) {
         return new SphereField.Mixer() {
             @Override public SphereSource sourceAt(int cx, double u) {
-                return SphereSource.values()[(int) (u * 3)];
+                return SphereSource.values()[(int) (u * SphereSource.values().length)];
             }
             @Override public double structureChanceAt(int cx) { return structureChance; }
             @Override public int endSurfaceY(int x, int z) { return endSurface; }
@@ -206,7 +206,7 @@ final class SphereFieldTest {
     }
 
     @Test
-    @DisplayName("with a mixer, sources are deterministic, all three appear, and the default field stays overworld-only")
+    @DisplayName("with a mixer, sources are deterministic, every source appears, and the default field stays overworld-only")
     void mixedSources() {
         SphereField a = mixed(0.0, 60), b = mixed(0.0, 60), plain = field(1.0);
         java.util.EnumMap<SphereSource, Integer> seen = new java.util.EnumMap<>(SphereSource.class);
@@ -219,7 +219,7 @@ final class SphereFieldTest {
                 org.junit.jupiter.api.Assertions.assertFalse(plain.sphereInCell(cx, 1, cz).offline());
             }
         }
-        assertEquals(3, seen.size(), "all three sources should roll: " + seen);
+        assertEquals(SphereSource.values().length, seen.size(), "every source should roll: " + seen);
     }
 
     /** An overworld-only mixer with a fixed exit taper. */

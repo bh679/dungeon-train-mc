@@ -38,7 +38,7 @@ final class MixBandTest {
     @Test
     @DisplayName("every band behind the zone is a candidate once; chuncks and stacks never are")
     void candidateTable() {
-        assertEquals(21, CANDIDATES.size(), CANDIDATES.toString());
+        assertEquals(22, CANDIDATES.size(), CANDIDATES.toString());
         Set<String> tokens = new java.util.HashSet<>();
         for (MixBand.Candidate c : CANDIDATES) {
             assertTrue(tokens.add(c.token()), "duplicate " + c.token());
@@ -47,8 +47,8 @@ final class MixBandTest {
                     || c.type() == CycleLayout.Type.MIX);
         }
         assertTrue(tokens.containsAll(Set.of("ow", "ow_wwoo", "ow_bop", "ow_sunk", "nether", "nether_better",
-                "end", "end_better", "upside_down", "spheres", "amplified", "void")));
-        assertEquals(19, MixBand.candidates(C, Set.of("nether", "beta")).size());
+                "nether_otherside", "end", "end_better", "upside_down", "spheres", "amplified", "void")));
+        assertEquals(20, MixBand.candidates(C, Set.of("nether", "beta")).size());
     }
 
     @Test

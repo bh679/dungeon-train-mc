@@ -21,12 +21,13 @@ final class SpheresSegmentsTest {
         return SpheresSegments.of(1000,
                 SpheresProgressionConfig.DEFAULT_NETHER_MIX_START_BLOCKS,
                 SpheresProgressionConfig.DEFAULT_END_MIX_START_BLOCKS,
+                SpheresProgressionConfig.DEFAULT_OTHERSIDE_MIX_START_BLOCKS,
                 SpheresProgressionConfig.DEFAULT_STRUCTURE_BOOST_START_BLOCKS,
                 SpheresProgressionConfig.DEFAULT_STRUCTURE_BOOST_END_BLOCKS,
                 SpheresProgressionConfig.DEFAULT_STRUCTURE_CHANCE,
                 SpheresProgressionConfig.DEFAULT_STRUCTURE_BOOST_MULTIPLIER,
                 SpheresProgressionConfig.DEFAULT_STRUCTURE_BOOST_PEAK_MULTIPLIER,
-                1, 1, 1);
+                1, 1, 1, 1);
     }
 
     private static Map<SphereSource, Integer> tally(SpheresSegments seg, long offset) {
@@ -49,7 +50,7 @@ final class SpheresSegmentsTest {
     }
 
     @Test
-    @DisplayName("overworld only before the Nether mix; OW + Nether until the End mix; all three after")
+    @DisplayName("overworld only before the Nether mix; OW + Nether until the End mix; + End until the Otherside mix; all four after")
     void sourcesBySegment() {
         SpheresSegments seg = defaults();
         assertEquals(Map.of(SphereSource.OVERWORLD, 3000), tally(seg, -1));      // entry fade
@@ -60,24 +61,32 @@ final class SpheresSegmentsTest {
         assertEquals(1500, two.get(SphereSource.NETHER));
         assertEquals(null, two.get(SphereSource.END));
 
-        for (long offset : new long[] {2500, 4000, 6249}) {
+        for (long offset : new long[] {2500, 3249}) {
             Map<SphereSource, Integer> three = tally(seg, offset);
             assertEquals(1000, three.get(SphereSource.OVERWORLD));
             assertEquals(1000, three.get(SphereSource.NETHER));
             assertEquals(1000, three.get(SphereSource.END));
+            assertEquals(null, three.get(SphereSource.OTHERSIDE));
+        }
+        for (long offset : new long[] {3250, 4000, 6249}) {
+            Map<SphereSource, Integer> four = tally(seg, offset);
+            assertEquals(750, four.get(SphereSource.OVERWORLD));
+            assertEquals(750, four.get(SphereSource.NETHER));
+            assertEquals(750, four.get(SphereSource.END));
+            assertEquals(750, four.get(SphereSource.OTHERSIDE));
         }
     }
 
     @Test
     @DisplayName("weights shape the mix; all-zero weights fall back to overworld")
     void weights() {
-        SpheresSegments noOw = SpheresSegments.of(0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 3);
+        SpheresSegments noOw = SpheresSegments.of(0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 3, 0);
         Map<SphereSource, Integer> t = tally(noOw, 10);
         assertEquals(null, t.get(SphereSource.OVERWORLD));
         assertEquals(750, t.get(SphereSource.NETHER));
         assertEquals(2250, t.get(SphereSource.END));
 
-        SpheresSegments none = SpheresSegments.of(0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0);
+        SpheresSegments none = SpheresSegments.of(0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0);
         assertEquals(SphereSource.OVERWORLD, none.sourceAt(10, 0.5));
     }
 
@@ -129,14 +138,16 @@ final class SpheresSegmentsTest {
     @Test
     @DisplayName("out-of-order offsets are clamped monotonic")
     void clamped() {
-        SpheresSegments seg = SpheresSegments.of(-5, 800, 100, 900, 400, -1, -2, -3, -1, 2, 2);
+        SpheresSegments seg = SpheresSegments.of(-5, 800, 100, 50, 900, 400, -1, -2, -3, -1, 2, 2, -4);
         assertEquals(0, seg.endSkyStart());
         assertEquals(800, seg.endMixStart());        // never before the Nether mix
+        assertEquals(800, seg.othersideMixStart());  // never before the End mix
         assertEquals(900, seg.structureBoostEnd());  // never before the boost start
         assertEquals(0.0, seg.structureChance(), EPS);
         assertEquals(0.0, seg.structureBoostMultiplier(), EPS);
         assertEquals(0.0, seg.structureBoostPeakMultiplier(), EPS);
         assertEquals(0, seg.overworldWeight());
+        assertEquals(0, seg.othersideWeight());
         assertTrue(seg.netherWeight() > 0);
     }
 }
