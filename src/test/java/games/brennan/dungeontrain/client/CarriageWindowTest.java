@@ -37,6 +37,7 @@ class CarriageWindowTest {
         assertTrue(w.window());
         assertTrue(w.start().z < -3.0, "lens starts outside the wall: " + w.start().z);
         assertTrue(w.end().z < w.start().z && w.end().y > w.start().y, "pulls out and up on the same side");
+        assertTrue(w.end().x > 0.0, "and ahead along the train, so the hold sees the body come past: " + w.end().x);
         // The window-out lens stands on the far side: just inside the +z wall (outer face at 3.5 across).
         assertEquals(3.5, w.farAcross(), 1e-9);
         assertTrue(w.farInside().z > 0.0 && w.farInside().z < 2.5, "inside the far wall: " + w.farInside().z);

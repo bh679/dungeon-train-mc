@@ -82,9 +82,15 @@ public record CarriageWindow(int side, double wallAcross, boolean window, double
         return new Vector3d(0.0, 1.2, -side * Math.max(0.0, farAcross - 1.0 - INSIDE_WALL));
     }
 
-    /** Lens end: a little further out and up, on the same side, behind the body along the train. */
+    /** How far ahead of the body (along the train) the zoom ends: the hold then watches the body come past. */
+    static final double END_AHEAD = 10.0;
+
+    /**
+     * Lens end: further out and up on the same side, and ahead of the body along the train, so
+     * when the lens lets go of the carriage the body is still coming towards it, not already gone.
+     */
     public Vector3d end() {
-        return new Vector3d(-5.0, 6.0, side * (wallAcross + 9.0));
+        return new Vector3d(END_AHEAD, 6.0, side * (wallAcross + 9.0));
     }
 
     /** Adapter over a scanned carriage. */

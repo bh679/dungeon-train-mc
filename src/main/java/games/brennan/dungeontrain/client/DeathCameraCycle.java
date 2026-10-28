@@ -243,7 +243,7 @@ public final class DeathCameraCycle {
         if (hasContact) shots.add(DeathShot.orbit(DeathShot.Target.CONTACT, 5.0, 2.5, 60, "mob"));
         // One shot: zoom out from beside the body for DOLLY_TICKS, then the lens stays where it
         // reached, in the world, and tracks the body as the carriage rolls away.
-        if (onTrain) shots.add(DeathShot.dolly(new Vec3(3.0, 2.0, 5.0), new Vec3(-6.0, 8.0, 14.0), DOLLY_TICKS + 60, "carriage"));
+        if (onTrain) shots.add(DeathShot.dolly(new Vec3(3.0, 2.0, 5.0), new Vec3(CarriageWindow.END_AHEAD, 8.0, 14.0), DOLLY_TICKS + 60, "carriage"));
         else shots.add(DeathShot.transition(-3.0, 2.5, 8.0, 60, "leaving"));
         // Safety net: phase one always has one moving shot of the body. Plays only when neither the
         // spot nor the carriage shot did (gated in select), pulling out whichever way is clear.
