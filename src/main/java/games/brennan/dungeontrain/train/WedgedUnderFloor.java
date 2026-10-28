@@ -15,6 +15,10 @@ import java.util.function.LongPredicate;
  * and head poking through the floor, an Enderman staring up from under the deck. This is the
  * safety net for any that still get in: they are moved out to the ground beside the carriage.</p>
  *
+ * <p>A mob knocked off the train lands there too, through the gap between carriage groups. Within
+ * {@link #ROOMS_NEAR_PLAYER} rooms of a player it is not moved or discarded: it stays down on the
+ * tracks and is crushed while a carriage passes over it.</p>
+ *
  * <p>Pure functions over primitives so they can be unit-tested without a game bootstrap. The
  * carriage box is its Sable world box: {@code minY} is the bottom of the floor block, so the deck
  * surface is {@code minY + 1}.</p>
@@ -36,6 +40,33 @@ public final class WedgedUnderFloor {
      * a cliff) and is not used.
      */
     static final int MAX_SAFE_DROP_BLOCKS = 3;
+
+    /**
+     * How many rooms (carriage lengths) from a player a mob that fell onto the tracks is spared.
+     * Players saw mobs knocked through the gap between carriage groups vanish on bridges (0.1569.0
+     * log: pillagers, husks, wither skeletons "Discarded ... no ground beside it"); near a player
+     * it now stays on the rails and is crushed instead.
+     */
+    static final int ROOMS_NEAR_PLAYER = 2;
+
+    /** Across the track, how far outside the carriage box a player still counts as near. */
+    static final double NEAR_PLAYER_ACROSS_BLOCKS = 4.0;
+
+    /** Above or below the mob, how far a player still counts as near (a rider on the roof). */
+    static final double NEAR_PLAYER_VERTICAL_BLOCKS = 12.0;
+
+    /**
+     * Younger than this, a mob under the floor was spawned there, not knocked off the train: it
+     * keeps the old route (beside the carriage, else discarded) even near a player. The 0.1569.0
+     * log's zombified piglins under the floor were all 1 tick old.
+     */
+    static final int MIN_FALLEN_AGE_TICKS = 20;
+
+    /** Ticks between crush hits on a fallen mob while a carriage is over it. */
+    static final int CRUSH_INTERVAL_TICKS = 5;
+
+    /** Each crush hit: half a heart. */
+    static final float CRUSH_DAMAGE = 1.0f;
 
     /** Where a wedged mob goes. */
     public enum Route {
@@ -100,6 +131,44 @@ public final class WedgedUnderFloor {
         double high = cMaxX + out;
         boolean lowFirst = x - cMinX <= cMaxX - x;
         return lowFirst ? new double[] {low, z, high, z} : new double[] {high, z, low, z};
+    }
+
+    /**
+     * True when a mob under the floor fell off the train rather than spawned there; see
+     * {@link #MIN_FALLEN_AGE_TICKS}.
+     */
+    public static boolean fellOffTrain(int ageTicks) {
+        return ageTicks >= MIN_FALLEN_AGE_TICKS;
+    }
+
+    /**
+     * True when the player at ({@code px}, {@code py}, {@code pz}) is within
+     * {@link #ROOMS_NEAR_PLAYER} rooms of the mob at ({@code mx}, {@code my}, {@code mz}) along the
+     * track, and beside or on the carriage across it.
+     *
+     * <p>"Along" is the direction of travel ({@code velX}, {@code velZ}); an idle carriage uses its
+     * box's long axis (a carriage box is a whole group, so it is always the longer one). The mob's
+     * own room plus two either side: up to {@code ROOMS_NEAR_PLAYER + 1} room lengths away.</p>
+     */
+    public static boolean withinRooms(double px, double py, double pz,
+                                      double mx, double my, double mz,
+                                      double cMinX, double cMinZ, double cMaxX, double cMaxZ,
+                                      double velX, double velZ, int roomLength) {
+        boolean alongX = velX == 0 && velZ == 0
+            ? cMaxX - cMinX >= cMaxZ - cMinZ
+            : Math.abs(velX) >= Math.abs(velZ);
+        double along = alongX ? Math.abs(px - mx) : Math.abs(pz - mz);
+        double across = alongX ? pz : px;
+        double acrossMin = (alongX ? cMinZ : cMinX) - NEAR_PLAYER_ACROSS_BLOCKS;
+        double acrossMax = (alongX ? cMaxZ : cMaxX) + NEAR_PLAYER_ACROSS_BLOCKS;
+        return along <= (ROOMS_NEAR_PLAYER + 1) * (double) roomLength
+            && across >= acrossMin && across <= acrossMax
+            && Math.abs(py - my) <= NEAR_PLAYER_VERTICAL_BLOCKS;
+    }
+
+    /** True on the ticks a mob that has been under a carriage this long takes a crush hit. */
+    public static boolean crushDue(int ticksUnder) {
+        return ticksUnder > 0 && ticksUnder % CRUSH_INTERVAL_TICKS == 0;
     }
 
     /**
