@@ -37,6 +37,7 @@ public final class DeadRiderGhostTracking {
     /** What vanilla would have done at death: drop the player from the chunk map and every tracker. */
     public static void release(ServerPlayer player) {
         DeadRiderServerCarry.release(player);
+        DeathBodyRagdoll.release(player);
         if (!GHOSTS.remove(player)) return;
         RELEASING.add(player);
         try {

@@ -56,6 +56,8 @@ public final class DeathCameraCycle {
     static final int DOLLY_BLEND_TICKS = 20;
     /** Candidate angles tested around an orbit subject. */
     static final int ORBIT_SAMPLES = 24;
+    /** The ragdoll's sub-level origin sits in its torso; look a little above it, where a lying body's chest is. */
+    static final double BODY_RAGDOLL_LIFT = 0.3;
     /** An orbit needs at least this much clear arc (degrees) at a radius before it falls back to a tighter one. */
     static final double MIN_ARC_DEGREES = 60.0;
     /** An orbit never sweeps more than half a turn. */
@@ -111,6 +113,10 @@ public final class DeathCameraCycle {
     private static Vector3d bodyLocal;
     /** Where the body was when the scene started, in world space. */
     private static Vector3d deathSpot;
+    /** The ragdoll body left where they died (server {@code DeathBodyRagdoll}), by root sub-level id; null when none. */
+    private static UUID bodyId;
+    /** That ragdoll once this client has it; the body shots follow it instead of the pinned player. */
+    private static ClientSubLevel bodySub;
     private static Entity killer;
     private static Entity contact;
     private static Entity randomMob;
@@ -245,13 +251,16 @@ public final class DeathCameraCycle {
         DeathScenePacket hints = DeathSceneHints.latest();
         killer = livingOnClient(mc, hints.killerId());
         contact = livingOnClient(mc, hints.contactId());
+        bodyId = hints.bodyId();
+        bodySub = null;
+        resolveBody(mc);
         resolveFeature(mc, hints.targets());
         hazardLocal = hints.hazard() == null ? null
             : toLocal(new Vector3d(hints.hazard().x, hints.hazard().y, hints.hazard().z));
         DeathSceneHints.clear();
-        LOGGER.info("[DungeonTrain] Death scene starts: hints={} killer={} contact={} onTrain={}", hints,
+        LOGGER.info("[DungeonTrain] Death scene starts: hints={} killer={} contact={} onTrain={} body={}", hints,
             killer == null ? "none" : killer.getType().toShortString(), contact == null ? "none" : contact.getType().toShortString(),
-            carriage != null);
+            carriage != null, bodySub != null ? "here" : bodyId != null ? "awaited" : "none");
         sequence = reviewSequence != null
             ? reviewSequence
             : buildSequence(hints.voidDeath(), killer != null, contact != null, carriage != null, featureSub != null,
@@ -286,6 +295,50 @@ public final class DeathCameraCycle {
         }
     }
 
+    /**
+     * Find the ragdoll body on this client. Sable can sync a new sub-level a tick or two after the
+     * death scene packet, so {@link #tick} keeps asking until it shows up; once it is gone it stays gone.
+     */
+    private static void resolveBody(Minecraft mc) {
+        if (bodyId == null || mc.level == null) return;
+        if (bodySub != null) {
+            if (bodySub.isRemoved()) {
+                bodySub = null;
+                bodyId = null;
+            }
+            return;
+        }
+        ClientSubLevelContainer container = SubLevelContainer.getContainer(mc.level);
+        if (container == null) return;
+        for (ClientSubLevel sub : container.getAllSubLevels()) {
+            if (!sub.isRemoved() && sub.getUniqueId().equals(bodyId)) {
+                bodySub = sub;
+                LOGGER.info("[DungeonTrain] Death scene body {} is on the client", bodyId);
+                return;
+            }
+        }
+    }
+
+    /** True while the ragdoll body is on this client, so the player's own model should not draw. */
+    public static boolean bodyRagdollLive() {
+        return active && bodySub != null && !bodySub.isRemoved();
+    }
+
+    /** The ragdoll body's world position this frame, or null when there is none to follow. */
+    private static Vector3d bodyRagdollWorld(float partialTick) {
+        if (bodySub == null || bodySub.isRemoved()) return null;
+        Pose3dc pose = bodySub.renderPose(partialTick);
+        if (pose == null) pose = bodySub.logicalPose();
+        org.joml.Vector3dc p = pose.position();
+        return new Vector3d(p.x(), p.y() + BODY_RAGDOLL_LIFT, p.z());
+    }
+
+    /** Where "the body" is this frame: the ragdoll when this client has it, else the pinned player. */
+    private static Vector3d bodyRender(float partialTick) {
+        Vector3d ragdoll = bodyRagdollWorld(partialTick);
+        return ragdoll != null ? ragdoll : toWorldRender(bodyLocal, partialTick);
+    }
+
     private static Vector3d featureWorld(float partialTick) {
         if (featureSub == null || featureSub.isRemoved() || featureLocal == null) return null;
         Pose3dc pose = featureSub.renderPose(partialTick);
@@ -306,6 +359,8 @@ public final class DeathCameraCycle {
         carriage = null;
         bodyLocal = null;
         deathSpot = null;
+        bodyId = null;
+        bodySub = null;
         killer = null;
         contact = null;
         randomMob = null;
@@ -329,6 +384,7 @@ public final class DeathCameraCycle {
             stop();
             return;
         }
+        resolveBody(Minecraft.getInstance());
         if (carriage != null && carriage.isRemoved()) {
             // The carriage under the body is gone: carry on from where the body is, in world space.
             Vector3d world = bodyWorld();
@@ -626,7 +682,7 @@ public final class DeathCameraCycle {
             case RANDOM_MOB -> entityWorld(randomMob, partialTick);
             case FEATURE -> featureWorld(partialTick);
             case HAZARD -> hazardLocal == null ? null : toWorldRender(hazardLocal, partialTick);
-            case BODY -> toWorldRender(bodyLocal, partialTick);
+            case BODY -> bodyRender(partialTick);
         };
     }
 
@@ -850,7 +906,7 @@ public final class DeathCameraCycle {
         if (shot == null) return null;
         if (shot.kind() == DeathShot.Kind.POV) return povPose(partialTick);
         double t = shotTicks + partialTick;
-        Vector3d bodyW = toWorldRender(bodyLocal, partialTick);
+        Vector3d bodyW = bodyRender(partialTick);
         Vector3d aimBody = new Vector3d(bodyW.x, bodyW.y + LOOK_Y_OFFSET, bodyW.z);
         Vector3d lensW;
         Vector3d aim = aimBody;
