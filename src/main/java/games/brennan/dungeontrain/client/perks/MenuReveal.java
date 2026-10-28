@@ -10,7 +10,9 @@ package games.brennan.dungeontrain.client.perks;
  * {@link #skip} brings everything up at once. The menu opened in play uses {@link #allUp()}.
  *
  * <p>It opens on {@link #LEAD_IN_MS} of plain night blue, so the stars start only once the death
- * scene's fade into it has settled; they then fade in slowly ({@link #STAR_FADE_MS}) under the first line.</p>
+ * scene's fade into it has settled. Then one thing at a time: each beat's line fades in first, and only
+ * once it is up does its layer fade in ({@link #STAR_FADE_MS} for the stars, {@link #FADE_MS} for the
+ * rest); the next line waits until that layer is up.</p>
  *
  * <p>A player who has never unlocked a perk gets a guided first time: no skip to the end, but a click
  * or Space moves on to the next line ({@link #next}); the classes list (then the unlock points) waits
@@ -53,8 +55,10 @@ final class MenuReveal {
         if (beats.length != BEATS) throw new IllegalArgumentException("expected " + BEATS + " beats");
         this.openedAt = openedAt;
         this.beats = beats.clone();
-        // the stars' beat lasts at least their fade, so the next layer waits for them
-        this.beats[BEAT_STARS] = Math.max(this.beats[BEAT_STARS], STAR_FADE_MS);
+        // one thing at a time: a beat lasts at least its line's fade-in plus its layer's
+        for (int i = BEAT_STARS; i < BEAT_SELECT; i++) {
+            if (this.beats[i] > 0) this.beats[i] = Math.max(this.beats[i], FADE_MS + layerFadeMs(i));
+        }
         this.hasActive = beats[BEAT_ACTIVE] > 0;
         this.firstTime = firstTime;
     }
@@ -65,6 +69,11 @@ final class MenuReveal {
         r.skippedAt = Long.MIN_VALUE / 2;
         r.hoverAt = Long.MIN_VALUE / 2;
         return r;
+    }
+
+    /** How long beat {@code i}'s layer takes to fade in. */
+    private static long layerFadeMs(int i) {
+        return i == BEAT_STARS ? STAR_FADE_MS : FADE_MS;
     }
 
     boolean firstTime() {
@@ -85,10 +94,11 @@ final class MenuReveal {
     /** When {@code s} starts to fade in, or {@link #NEVER} while it waits on the player. */
     long startOf(Stage s) {
         return switch (s) {
-            case STARS -> beatStart(BEAT_STARS);
-            case ACTIVE -> beatStart(BEAT_ACTIVE);
-            case UNLOCKED -> beatStart(BEAT_CENTRE);
-            case CLASSES -> beatStart(BEAT_PERKS);
+            // each layer once its line has faded in
+            case STARS -> beatStart(BEAT_STARS) + FADE_MS;
+            case ACTIVE -> beatStart(BEAT_ACTIVE) + FADE_MS;
+            case UNLOCKED -> beatStart(BEAT_CENTRE) + FADE_MS;
+            case CLASSES -> beatStart(BEAT_PERKS) + FADE_MS;
             case CLASS_LIST -> {
                 long afterSelect = beatStart(BEAT_SELECT) + beats[BEAT_SELECT];
                 if (!firstTime) yield afterSelect;
