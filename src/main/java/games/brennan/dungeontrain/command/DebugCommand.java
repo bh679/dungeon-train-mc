@@ -207,15 +207,17 @@ public final class DebugCommand {
             .then(Commands.literal("sphere-gravity").executes(ctx -> SphereGravityDebug.report(ctx.getSource()))
                 .then(Commands.literal("on").executes(ctx -> SphereGravityDebug.setForcedOff(ctx.getSource(), false)))
                 .then(Commands.literal("off").executes(ctx -> SphereGravityDebug.setForcedOff(ctx.getSource(), true))))
-            // /dungeontrain debug comet [aimed|miss|ahead] — comet chance where you stand and how many are in flight;
-            // aimed|miss|ahead launch one at the nearest train now, whatever the band. Also logged at INFO.
+            // /dungeontrain debug comet [aimed|miss|ahead|shower] — comet chance where you stand and how many are in
+            // flight; aimed|miss|ahead launch one at the nearest train now, shower starts a shower and strikes the
+            // train 10 s in, whatever the band. Also logged at INFO.
             .then(Commands.literal("comet").executes(ctx -> SpheresCometDebug.report(ctx.getSource()))
                 .then(Commands.literal("aimed").executes(ctx -> SpheresCometDebug.launch(ctx.getSource(),
                     SpheresCometEvents.Aim.HIT)))
                 .then(Commands.literal("miss").executes(ctx -> SpheresCometDebug.launch(ctx.getSource(),
                     SpheresCometEvents.Aim.MISS)))
                 .then(Commands.literal("ahead").executes(ctx -> SpheresCometDebug.launch(ctx.getSource(),
-                    SpheresCometEvents.Aim.MISS_AHEAD))))
+                    SpheresCometEvents.Aim.MISS_AHEAD)))
+                .then(Commands.literal("shower").executes(ctx -> SpheresCometDebug.shower(ctx.getSource()))))
             // /dungeontrain debug spider-jockey — spawn spiders through the carriage variant-mob path
             // at your feet until one rolls a skeleton jockey; reports whether the rider is in the level
             // and carries the contents tag (regression probe for the ghost-passenger bug).

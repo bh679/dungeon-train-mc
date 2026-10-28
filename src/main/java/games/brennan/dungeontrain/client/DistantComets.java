@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.CometShowerPacket;
 import games.brennan.dungeontrain.wind.EndFrostbite;
 import games.brennan.dungeontrain.wind.WindZones;
 import games.brennan.dungeontrain.worldgen.SpheresComets;
@@ -36,13 +37,17 @@ import java.util.List;
  * {@value SpheresComets#DISTANT_PER_REAL} for every real one ({@link SpheresComets#distantChancePerTick}). They are
  * never near the train and touch nothing: no packets, sound, shake or explosion, and no particles, just the
  * spinning magma head and one thin glowing streak behind it. Each keeps falling at full size until it is well below
- * the camera and out of sight ({@value #GONE_BELOW} blocks down). Like stars, they are pinned to the sky around the camera rather than to the
- * world, so walking or riding never brings one nearer or makes it grow. Render-thread state only.
+ * the camera and out of sight ({@value #GONE_BELOW} blocks down). Like stars, they are pinned to the sky around the
+ * camera rather than to the world, so walking or riding never brings one nearer or makes it grow. In lap 0 a comet
+ * about to strike the train brings a shower of them all falling its way ({@link CometShowerPacket}).
+ * Render-thread state only.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class DistantComets {
 
     private static final int MAX_LIVE = 12;
+    /** Room for a shower on top of the usual distant comets. */
+    private static final int MAX_SHOWER_LIVE = 24;
     /** Where one starts: this far out from the camera, and this far above it. */
     private static final double OUT_MIN = 150.0, OUT_SPAN = 200.0;
     private static final double UP_MIN = 80.0, UP_SPAN = 60.0;
@@ -76,8 +81,11 @@ public final class DistantComets {
     }
 
     private static List<Comet> live = List.of();
-    /** Ticks left of a shower set off by a real comet going by ({@link #burst}). */
-    private static int burstTicks;
+    /** Ticks left of the shower around a strike on the train ({@link #shower}), and the way it falls. */
+    private static int showerTicks;
+    private static Vec3 showerFall = new Vec3(0.0, -1.0, 0.0);
+    /** Most a shower comet strays from the shower's line, radians (about 10 degrees). */
+    private static final double SHOWER_WOBBLE = Math.toRadians(10.0);
 
     private DistantComets() {}
 
@@ -86,7 +94,7 @@ public final class DistantComets {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         if (level == null || mc.isPaused()) return;
-        if (burstTicks > 0) burstTicks--;
+        if (showerTicks > 0) showerTicks--;
         List<Comet> next = new ArrayList<>(live.size() + 1);
         for (Comet c : live) {
             Comet older = c.older();
@@ -96,18 +104,25 @@ public final class DistantComets {
         if (next.size() < MAX_LIVE && level.random.nextDouble() < chanceAt(camX)) {
             next.add(spawn(level.random));
         }
+        if (showerTicks > 0 && next.size() < MAX_SHOWER_LIVE
+                && level.random.nextDouble() < SpheresComets.SHOWER_CHANCE_PER_TICK) {
+            next.add(spawnShower(level.random));
+        }
         if (!next.isEmpty() || !live.isEmpty()) live = List.copyOf(next);
     }
 
     @SubscribeEvent
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
         live = List.of();
-        burstTicks = 0;
+        showerTicks = 0;
     }
 
-    /** A real comet just landed or fell past the player: more distant ones for a while (lap 0 only). */
-    static void burst() {
-        burstTicks = SpheresComets.DISTANT_BURST_TICKS;
+    /** A comet is coming in to strike the train: a shower falling its way for the packet's ticks. */
+    public static void shower(CometShowerPacket packet) {
+        Vec3 fall = new Vec3(packet.dx(), packet.dy(), packet.dz());
+        if (fall.lengthSqr() < 1.0E-6) return;
+        showerFall = fall.normalize();
+        showerTicks = Math.max(showerTicks, packet.ticks());
     }
 
     @SubscribeEvent
@@ -144,8 +159,25 @@ public final class DistantComets {
         int x = (int) Math.floor(worldX);
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
         long lap = cycle.cycleIndex(EndFrostbite.frostX(cycle, x));
-        return SpheresComets.distantChancePerTick(lap, WindZones.endSkyAt(x), WindZones.spheresVoidAt(x),
-            burstTicks > 0);
+        return SpheresComets.distantChancePerTick(lap, WindZones.endSkyAt(x), WindZones.spheresVoidAt(x));
+    }
+
+    /** A shower comet: placed like any distant one, but falling along the shower's line, give or take a little. */
+    private static Comet spawnShower(RandomSource random) {
+        Comet c = spawn(random);
+        Vec3 dir = wobble(showerFall, random);
+        double speed = Math.sqrt(DRIFT_MIN * DRIFT_MIN + FALL_MIN * FALL_MIN) + random.nextDouble() * FALL_SPAN;
+        return new Comet(c.id(), c.start(), dir.scale(speed), c.size(), 0);
+    }
+
+    /** {@code dir} turned a random way by up to {@link #SHOWER_WOBBLE}. */
+    private static Vec3 wobble(Vec3 dir, RandomSource random) {
+        Vec3 side = Math.abs(dir.y) < 0.9 ? dir.cross(new Vec3(0.0, 1.0, 0.0)) : dir.cross(new Vec3(1.0, 0.0, 0.0));
+        side = side.normalize();
+        Vec3 up = dir.cross(side).normalize();
+        double around = random.nextDouble() * Math.PI * 2.0;
+        double tilt = Math.tan(random.nextDouble() * SHOWER_WOBBLE);
+        return dir.add(side.scale(Math.cos(around) * tilt)).add(up.scale(Math.sin(around) * tilt)).normalize();
     }
 
     private static Comet spawn(RandomSource random) {

@@ -66,10 +66,7 @@ public final class ClientComets {
             if (c.id() != packet.id()) next.add(c);
             else c.sound().stop();
         }
-        if (packet.landed()) {
-            CometShake.impact(new Vec3(packet.x(), packet.y(), packet.z()));
-            DistantComets.burst();
-        }
+        if (packet.landed()) CometShake.impact(new Vec3(packet.x(), packet.y(), packet.z()));
         if (!packet.ended()) {
             Vec3 start = new Vec3(packet.x(), packet.y(), packet.z());
             next.add(new Comet(packet.id(), start, new Vec3(packet.vx(), packet.vy(), packet.vz()), 0,
@@ -91,10 +88,8 @@ public final class ClientComets {
                 c.sound().stop();
                 continue;
             }
-            Vec3 was = c.at(c.age());
             Vec3 at = older.at(older.age());
-            if (was.y >= ear.y && at.y < ear.y) DistantComets.burst();
-            trail(level, was, at, c.velocity());
+            trail(level, c.at(c.age()), at, c.velocity());
             older.sound().update(at, at.distanceTo(ear));
             next.add(older);
         }

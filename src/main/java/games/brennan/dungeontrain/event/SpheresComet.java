@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.net.CometPacket;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.worldgen.SpheresComets;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
@@ -67,6 +68,17 @@ record SpheresComet(int id, Vec3 pos, Vec3 velocity, int age) {
     @Nullable
     static SpheresComet launch(ServerLevel level, List<Trains.Carriage> train, Vec3 focus,
                                SpheresCometEvents.Aim aim, int id, RandomSource random) {
+        return launch(level, train, focus, aim, null, id, random);
+    }
+
+    /**
+     * {@link #launch(ServerLevel, List, Vec3, SpheresCometEvents.Aim, int, RandomSource)} along {@code approach}
+     * (from the meeting point back to where it starts, from {@link #approach}) when one was picked in advance, so a
+     * strike announced by its shower comes from the direction the shower falls.
+     */
+    @Nullable
+    static SpheresComet launch(ServerLevel level, List<Trains.Carriage> train, Vec3 focus,
+                               SpheresCometEvents.Aim aim, @Nullable Vec3 approach, int id, RandomSource random) {
         if (train.isEmpty()) return null;
         Trains.Carriage carriage = pick(train, focus, random);
         AABBdc bb = carriage.ship().worldAABB();
@@ -85,10 +97,7 @@ record SpheresComet(int id, Vec3 pos, Vec3 velocity, int age) {
             double miss = MISS_MIN + random.nextDouble() * MISS_SPAN;
             target = target.add(0.0, random.nextBoolean() ? miss * 0.4 : 0.0, random.nextBoolean() ? miss : -miss);
         }
-        Vec3 offset = new Vec3(
-                dirX * (AHEAD_MIN + random.nextDouble() * AHEAD_SPAN),
-                UP_MIN + random.nextDouble() * UP_SPAN,
-                (random.nextDouble() * 2.0 - 1.0) * SIDE_SPAN);
+        Vec3 offset = approach != null ? approach : offset(dirX, random);
         double ticks = offset.length() / SPEED;
         Vec3 meet = target.add(trainVel.scale(ticks));
         Vec3 start = meet.add(offset);
@@ -96,6 +105,28 @@ record SpheresComet(int id, Vec3 pos, Vec3 velocity, int age) {
 
         tell(level, start, CometPacket.launched(id, start.x, start.y, start.z, velocity.x, velocity.y, velocity.z));
         return new SpheresComet(id, start, velocity, 0);
+    }
+
+    /**
+     * A comet's way in: from where it meets the train back to where it starts, ahead along the track, up, and to
+     * the side. Picked in advance for a strike that comes with a shower. Null when there is no train.
+     */
+    @Nullable
+    static Vec3 approach(List<Trains.Carriage> train, RandomSource random) {
+        if (train.isEmpty()) return null;
+        return offset(perTick(Trains.lead(train)).x < -1.0E-3 ? -1.0 : 1.0, random);
+    }
+
+    /** Ticks a comet takes along {@code approach}. */
+    static double flightTicks(Vec3 approach) {
+        return approach.length() / SPEED;
+    }
+
+    private static Vec3 offset(double dirX, RandomSource random) {
+        return new Vec3(
+                dirX * (AHEAD_MIN + random.nextDouble() * AHEAD_SPAN),
+                UP_MIN + random.nextDouble() * UP_SPAN,
+                (random.nextDouble() * 2.0 - 1.0) * SIDE_SPAN);
     }
 
     /** A point along the track ahead of {@code target}, out beside the train rather than on the carriages there. */
@@ -158,7 +189,7 @@ record SpheresComet(int id, Vec3 pos, Vec3 velocity, int age) {
     }
 
     /** Send {@code packet} to every player within {@value #VIEW} blocks of {@code at}. */
-    private static void tell(ServerLevel level, Vec3 at, CometPacket packet) {
+    static void tell(ServerLevel level, Vec3 at, CustomPacketPayload packet) {
         for (ServerPlayer player : level.players()) {
             if (player.distanceToSqr(at) <= VIEW * VIEW) PacketDistributor.sendToPlayer(player, packet);
         }

@@ -7,16 +7,20 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
- * {@code /dungeontrain debug comet [aimed|miss|ahead]} — with no argument, the comet chance at the caller's X and how
- * many are in flight; {@code aimed} / {@code miss} / {@code ahead} launch one at the nearest train, by the caller,
- * whatever the band ({@code ahead}: a miss that comes down beside the track in front).
+ * {@code /dungeontrain debug comet [aimed|miss|ahead|shower]} — with no argument, the comet chance at the caller's X
+ * and how many are in flight; {@code aimed} / {@code miss} / {@code ahead} launch one at the nearest train, by the
+ * caller, whatever the band ({@code ahead}: a miss that comes down beside the track in front); {@code shower} starts
+ * a lap-0 strike's shower over the caller and brings the strike in 10 s later.
  * Logged at INFO for RCON runs.
  */
 final class SpheresCometDebug {
@@ -51,17 +55,37 @@ final class SpheresCometDebug {
         return ok ? 1 : 0;
     }
 
+    static int shower(CommandSourceStack source) {
+        ServerLevel level = source.getServer().overworld();
+        ServerPlayer player = source.getPlayer();
+        Map.Entry<UUID, List<Trains.Carriage>> train = nearestTrainEntry(level, source.getPosition());
+        if (player == null || train == null) {
+            send(source, "[DungeonTrain] comet shower: needs a player and a loaded train", ChatFormatting.RED);
+            return 0;
+        }
+        boolean ok = SpheresCometEvents.announceStrike(level, train.getKey(), train.getValue(), player);
+        send(source, "[DungeonTrain] comet shower: " + (ok ? "started, strike in 10 s" : "failed"),
+                ok ? ChatFormatting.GOLD : ChatFormatting.RED);
+        return ok ? 1 : 0;
+    }
+
     private static List<Trains.Carriage> nearestTrain(ServerLevel level, Vec3 at) {
-        List<Trains.Carriage> best = null;
+        Map.Entry<UUID, List<Trains.Carriage>> best = nearestTrainEntry(level, at);
+        return best == null ? null : best.getValue();
+    }
+
+    private static Map.Entry<UUID, List<Trains.Carriage>> nearestTrainEntry(ServerLevel level, Vec3 at) {
+        Map.Entry<UUID, List<Trains.Carriage>> best = null;
         double bestDist = Double.MAX_VALUE;
-        for (List<Trains.Carriage> train : Trains.byTrainId(level).values()) {
+        for (Map.Entry<UUID, List<Trains.Carriage>> entry : Trains.byTrainId(level).entrySet()) {
+            List<Trains.Carriage> train = entry.getValue();
             if (train.isEmpty()) continue;
             AABBdc bb = Trains.lead(train).ship().worldAABB();
             double dx = (bb.minX() + bb.maxX()) / 2 - at.x, dz = (bb.minZ() + bb.maxZ()) / 2 - at.z;
             double d = dx * dx + dz * dz;
             if (d < bestDist) {
                 bestDist = d;
-                best = train;
+                best = entry;
             }
         }
         return best;

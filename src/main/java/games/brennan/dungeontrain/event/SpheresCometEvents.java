@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.SpheresProgressionConfig;
+import games.brennan.dungeontrain.net.CometShowerPacket;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.wind.EndFrostbite;
@@ -15,12 +16,15 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Comets over the spheres band ({@link SpheresComets} decides when and how often; {@link SpheresComet} flies
@@ -44,6 +48,11 @@ public final class SpheresCometEvents {
     private static List<SpheresComet> live = List.of();
     /** Next comet id, as the client knows it; server thread only. */
     private static int nextId;
+    /** Lap-0 strikes announced by their shower, held back until it is time to fly in; server thread only. */
+    private static List<HeldStrike> held = List.of();
+
+    /** A strike on {@code trainId} by {@code player}, launching along {@code approach} at server tick {@code at}. */
+    private record HeldStrike(UUID trainId, UUID player, Vec3 approach, long at) {}
 
     private SpheresCometEvents() {}
 
@@ -53,17 +62,72 @@ public final class SpheresCometEvents {
         if (level == null) return;
         List<Trains.Carriage> carriages = live.isEmpty() ? null : Trains.allCarriages(level);
         if (carriages != null) live = stepAll(level, carriages);
+        Map<UUID, List<Trains.Carriage>> trains = Trains.byTrainId(level);
+        if (!held.isEmpty()) launchHeld(level, trains);
         if (live.size() >= MAX_LIVE) return;
-        for (List<Trains.Carriage> train : Trains.byTrainId(level).values()) {
+        for (Map.Entry<UUID, List<Trains.Carriage>> entry : trains.entrySet()) {
+            List<Trains.Carriage> train = entry.getValue();
             ServerPlayer watcher = watcher(level, train);
             if (watcher == null) continue;
             int x = (int) Math.floor(watcher.getX());
             double chance = chanceAt(x);
             if (chance <= 0.0 || level.random.nextDouble() >= chance) continue;
-            launch(level, train, watcher.position(),
-                level.random.nextDouble() < SpheresComets.aimedShare(lapAt(x), depthAt(x)) ? Aim.HIT : Aim.MISS);
+            long lap = lapAt(x);
+            boolean hit = level.random.nextDouble() < SpheresComets.aimedShare(lap, depthAt(x));
+            if (hit && lap <= 0L) {
+                announceStrike(level, entry.getKey(), train, watcher);
+            } else {
+                launch(level, train, watcher.position(), hit ? Aim.HIT : Aim.MISS);
+            }
             if (live.size() >= MAX_LIVE) return;
         }
+    }
+
+    /**
+     * Start a shower over {@code watcher}'s part of the train now and hold its strike back, so the sky fills with
+     * comets falling one way and then one of them comes down on the train
+     * {@value SpheresComets#SHOWER_LEAD_TICKS} ticks later, along that same line.
+     * @return true if a strike was set up
+     */
+    public static boolean announceStrike(ServerLevel level, UUID trainId, List<Trains.Carriage> train,
+                                         ServerPlayer watcher) {
+        Vec3 approach = SpheresComet.approach(train, level.random);
+        if (approach == null) return false;
+        Vec3 fall = approach.normalize().scale(-1.0);
+        SpheresComet.tell(level, watcher.position(), new CometShowerPacket((float) fall.x, (float) fall.y,
+            (float) fall.z, SpheresComets.SHOWER_LEAD_TICKS + SpheresComets.SHOWER_AFTER_TICKS));
+        long at = level.getGameTime() + SpheresComets.strikeLaunchDelay(SpheresComet.flightTicks(approach));
+        List<HeldStrike> next = new ArrayList<>(held);
+        next.add(new HeldStrike(trainId, watcher.getUUID(), approach, at));
+        held = List.copyOf(next);
+        LOGGER.debug("[DungeonTrain] Comet strike announced on train {}, launching at tick {}", trainId, at);
+        return true;
+    }
+
+    /** Fly in the held strikes whose time has come; one whose train or player is gone is dropped. */
+    private static void launchHeld(ServerLevel level, Map<UUID, List<Trains.Carriage>> trains) {
+        long now = level.getGameTime();
+        List<HeldStrike> waiting = new ArrayList<>(held.size());
+        for (HeldStrike strike : held) {
+            if (strike.at() > now) {
+                waiting.add(strike);
+                continue;
+            }
+            List<Trains.Carriage> train = trains.get(strike.trainId());
+            ServerPlayer player = level.getServer().getPlayerList().getPlayer(strike.player());
+            if (train == null || player == null) continue;
+            SpheresComet comet = SpheresComet.launch(level, train, player.position(), Aim.HIT, strike.approach(),
+                nextId++, level.random);
+            if (comet != null) add(comet);
+        }
+        held = List.copyOf(waiting);
+    }
+
+    /** Forget comets and held strikes, so none carries into the next world opened this session. */
+    @SubscribeEvent
+    public static void onServerStopping(ServerStoppingEvent event) {
+        live = List.of();
+        held = List.of();
     }
 
     /** Throw away a comet display left in a save from before comets were drawn by the client. */
@@ -82,11 +146,15 @@ public final class SpheresCometEvents {
     public static boolean launch(ServerLevel level, List<Trains.Carriage> train, Vec3 focus, Aim aim) {
         SpheresComet comet = SpheresComet.launch(level, train, focus, aim, nextId++, level.random);
         if (comet == null) return false;
+        add(comet);
+        LOGGER.debug("[DungeonTrain] Comet launched {} at {} ({})", comet.id(), comet.pos(), aim);
+        return true;
+    }
+
+    private static void add(SpheresComet comet) {
         List<SpheresComet> next = new ArrayList<>(live);
         next.add(comet);
         live = List.copyOf(next);
-        LOGGER.debug("[DungeonTrain] Comet launched {} at {} ({})", comet.id(), comet.pos(), aim);
-        return true;
     }
 
     /** Comets now in flight. */

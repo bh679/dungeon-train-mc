@@ -99,12 +99,10 @@ class SpheresCometsTest {
     }
 
     @Test
-    void aRealCometSetsOffAShowerOnlyInTheFirstLap() {
-        assertEquals(SpheresComets.distantChancePerTick(0L, 1.0, 1.0) * SpheresComets.DISTANT_BURST_MULTIPLIER,
-            SpheresComets.distantChancePerTick(0L, 1.0, 1.0, true), 1e-12);
-        assertEquals(SpheresComets.distantChancePerTick(2L, 0.0, 1.0),
-            SpheresComets.distantChancePerTick(2L, 0.0, 1.0, true), 1e-12);
-        assertEquals(0.0, SpheresComets.distantChancePerTick(0L, 0.2, 1.0, true), "still none before the void sky");
+    void aStrikeArrivesTenSecondsIntoItsShower() {
+        assertEquals(200, SpheresComets.SHOWER_LEAD_TICKS);
+        assertEquals(140, SpheresComets.strikeLaunchDelay(60.0), "launched so its flight ends at the lead");
+        assertEquals(0, SpheresComets.strikeLaunchDelay(250.0), "a longer flight than the lead goes at once");
     }
 
     @Test

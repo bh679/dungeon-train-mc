@@ -42,10 +42,12 @@ public final class SpheresComets {
     /** Distant, purely visual comets drawn by each client for every real one: fewer in lap 0. */
     public static final double DISTANT_PER_REAL = 3.0;
     public static final double DISTANT_PER_REAL_EARLY = 2.0;
-    /** In lap 0, distant comets come this many times as often for {@value #DISTANT_BURST_TICKS} ticks after a real
-     *  one lands or falls past the player, so a near miss or a strike feels like part of a shower. */
-    public static final double DISTANT_BURST_MULTIPLIER = 6.0;
-    public static final int DISTANT_BURST_TICKS = 300;
+    /** In lap 0 a comet aimed at the train comes inside a shower of far-off ones falling the same way: from this
+     *  many ticks before it arrives to {@link #SHOWER_AFTER_TICKS} after. */
+    public static final int SHOWER_LEAD_TICKS = 200;
+    public static final int SHOWER_AFTER_TICKS = 300;
+    /** Chance per tick of a shower comet while one is on, on top of the usual distant ones. */
+    public static final double SHOWER_CHANCE_PER_TICK = 0.03;
     private static final int TICKS_PER_SECOND = 20;
 
     private SpheresComets() {}
@@ -102,15 +104,14 @@ public final class SpheresComets {
      * {@value #DISTANT_PER_REAL} after, and none where real ones don't fall.
      */
     public static double distantChancePerTick(long cycleIndex, double endSky, double spheresVoid) {
-        return distantChancePerTick(cycleIndex, endSky, spheresVoid, false);
+        double perReal = cycleIndex <= 0L ? DISTANT_PER_REAL_EARLY : DISTANT_PER_REAL;
+        return Math.min(1.0, chancePerTick(cycleIndex, endSky, spheresVoid) * perReal);
     }
 
-    /** {@link #distantChancePerTick(long, double, double)}, {@value #DISTANT_BURST_MULTIPLIER} times as often in lap
-     *  0 while {@code burst} (a real comet just went by). */
-    public static double distantChancePerTick(long cycleIndex, double endSky, double spheresVoid, boolean burst) {
-        double perReal = cycleIndex <= 0L ? DISTANT_PER_REAL_EARLY : DISTANT_PER_REAL;
-        if (burst && cycleIndex <= 0L) perReal *= DISTANT_BURST_MULTIPLIER;
-        return Math.min(1.0, chancePerTick(cycleIndex, endSky, spheresVoid) * perReal);
+    /** Ticks to hold a strike back so it arrives {@value #SHOWER_LEAD_TICKS} ticks into its shower, given how long
+     *  it takes to fly in. */
+    public static int strikeLaunchDelay(double flightTicks) {
+        return (int) Math.max(0L, Math.round(SHOWER_LEAD_TICKS - flightTicks));
     }
 
     /** Whether a comet at height {@code y} has fallen {@value #MISS_DROP_BLOCKS} blocks below a train whose lowest
