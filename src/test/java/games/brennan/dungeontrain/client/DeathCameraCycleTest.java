@@ -200,4 +200,37 @@ class DeathCameraCycleTest {
             assertTrue(pose.pitch() > 0 && pose.pitch() < 80, shot.label() + " pitch " + pose.pitch());
         }
     }
+
+    @Test
+    void loopOnHoldEndsOnTheSky() {
+        assertFalse(DeathCameraCycle.LOOP_ON, "the looping train shots are on hold");
+        List<DeathShot> seq = DeathCameraCycle.buildSequence(false, true, true, true, true, false, false);
+        assertEquals(List.of("POV", "spot", "killer", "mob", "carriage", "body-out", "sky"), labels(seq));
+        assertEquals(-1, DeathCameraCycle.loopStart(seq), "no loop to wrap back into");
+        assertEquals(seq.size() - 1, DeathCameraCycle.nextIndex(seq, seq.size() - 1), "Right on the sky stays there");
+        assertEquals(List.of("POV", "spot", "leaving", "body-out", "sky"),
+            labels(DeathCameraCycle.buildSequence(false, false, false, false, false, false, false)), "off the train");
+    }
+
+    @Test
+    void phaseOneBodyShotsRunStraightIntoTheSky() {
+        List<DeathShot> held = DeathCameraCycle.buildSequence(false, false, false, true, false, false, false);
+        List<DeathShot> looping = DeathCameraCycle.buildSequence(false, false, false, true, false, false, true);
+        for (DeathShot shot : held) {
+            boolean closer = shot.label().equals("carriage") || shot.label().equals("body-out");
+            assertEquals(closer, DeathCameraCycle.leadsIntoSky(shot, held), shot.label());
+        }
+        for (DeathShot shot : looping) assertFalse(DeathCameraCycle.leadsIntoSky(shot, looping), "with the loop: " + shot.label());
+    }
+
+    @Test
+    void skyTiltLooksUpThenFadesToTheMenuBlue() {
+        assertEquals(10.0f, DeathCameraCycle.skyPitch(10.0f, 0), 1e-4);
+        assertEquals(DeathCameraCycle.SKY_PITCH, DeathCameraCycle.skyPitch(10.0f, DeathCameraCycle.SKY_TILT_TICKS), 1e-4);
+        float mid = DeathCameraCycle.skyPitch(10.0f, DeathCameraCycle.SKY_TILT_TICKS / 2.0);
+        assertTrue(mid < 10.0f && mid > DeathCameraCycle.SKY_PITCH, "halfway up: " + mid);
+        assertEquals(0.0f, DeathCameraCycle.skyAlpha((double) DeathCameraCycle.SKY_TILT_TICKS), 1e-6, "no fade during the tilt");
+        assertEquals(0.5f, DeathCameraCycle.skyAlpha(DeathCameraCycle.SKY_TILT_TICKS + DeathCameraCycle.SKY_FADE_TICKS / 2.0), 1e-6);
+        assertEquals(1.0f, DeathCameraCycle.skyAlpha((double) (DeathCameraCycle.SKY_TILT_TICKS + DeathCameraCycle.SKY_FADE_TICKS)), 1e-6);
+    }
 }

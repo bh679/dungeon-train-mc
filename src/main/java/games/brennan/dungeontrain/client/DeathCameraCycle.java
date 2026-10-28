@@ -30,8 +30,9 @@ import java.util.UUID;
 /**
  * The death moment's camera. In order: the player's own view (red wash, death tilt), an orbit of
  * where they died, an orbit of who killed them, an orbit of the other mob they fought, a dolly out
- * from the carriage they died on, a world-locked shot of the carriage leaving, then world-locked
- * shots of the train passing, looping until Space on {@link DeathMomentScreen}. Shots whose
+ * from the carriage they died on, a world-locked shot of the carriage leaving, then a tilt up to the
+ * sky that fades into the perks menu. (The world-locked shots of the train passing, looping until
+ * Space, are on hold behind {@link #LOOP_ON}.) Shots whose
  * subject does not exist are skipped ({@link #buildSequence}). Every cut fades through black;
  * Left/Right step through the shots.
  *
@@ -116,6 +117,18 @@ public final class DeathCameraCycle {
         DeathShot.feature(80, "feature"),
         DeathShot.orbitLoop(DeathShot.Target.RANDOM_MOB, 3.0, 2.0, 100, "mob-arc")
     );
+    /**
+     * The looping second phase is on hold: phase one now ends on {@link DeathShot.Kind#SKY_TILT},
+     * which fades into the perks menu. The loop shots above and all their code are kept for later;
+     * set this true to bring them back in place of the sky.
+     */
+    static final boolean LOOP_ON = false;
+    /** The sky shot tilts the lens up over this long (3 s)... */
+    static final int SKY_TILT_TICKS = 60;
+    /** ...then fades to the perks menu's night blue over this long. */
+    static final int SKY_FADE_TICKS = 30;
+    /** Where the tilt ends: looking almost straight up (Minecraft pitch, negative is up). */
+    static final float SKY_PITCH = -80.0f;
     /** Every shot is re-tested this often for a lens that has run into a block. */
     private static final int TRAIN_LOCKED_RECHECK_TICKS = 1;
     private static final double RANDOM_MOB_RANGE = 64.0;
@@ -178,6 +191,10 @@ public final class DeathCameraCycle {
     private static double orbitSweep;
     private static double orbitRadius;
     private static double orbitHeight;
+    /** The last camera pose drawn; the sky shot starts its tilt from it. */
+    private static CinematicCameraController.Pose lastPose;
+    /** The sky shot's fixed lens and start angles, taken from {@link #lastPose} when it is shown. */
+    private static CinematicCameraController.Pose skyFrom;
     private static boolean savedHideGui;
     private static int waitTicks;
     private static final int PIN_WAIT_TICKS = 3;
@@ -231,6 +248,12 @@ public final class DeathCameraCycle {
 
     static List<DeathShot> buildSequence(boolean voidDeath, boolean hasKiller, boolean hasContact, boolean onTrain,
                                          boolean hasFeature, boolean hasHazard) {
+        return buildSequence(voidDeath, hasKiller, hasContact, onTrain, hasFeature, hasHazard, true);
+    }
+
+    /** {@code withLoop} false (the loop on hold, {@link #LOOP_ON}): phase one, then the sky, and nothing after. */
+    static List<DeathShot> buildSequence(boolean voidDeath, boolean hasKiller, boolean hasContact, boolean onTrain,
+                                         boolean hasFeature, boolean hasHazard, boolean withLoop) {
         List<DeathShot> shots = new ArrayList<>();
         shots.add(DeathShot.pov(15));
         // Where you died, riding with the carriage (the body stays on it): on the block that killed
@@ -248,6 +271,10 @@ public final class DeathCameraCycle {
         // Safety net: phase one always has one moving shot of the body. Plays only when neither the
         // spot nor the carriage shot did (gated in select), pulling out whichever way is clear.
         shots.add(DeathShot.bodyOut(DOLLY_TICKS + 60, "body-out"));
+        if (!withLoop) {
+            shots.add(DeathShot.skyTilt(SKY_TILT_TICKS + SKY_FADE_TICKS));
+            return List.copyOf(shots);
+        }
         shots.addAll(TRAIN_SHOTS);
         shots.addAll(TUNNEL_SHOTS);
         // The feature and the mob arc close every pass, tunnel or not (the feature only when the
@@ -298,7 +325,9 @@ public final class DeathCameraCycle {
         sequence = reviewSequence != null
             ? reviewSequence
             : buildSequence(hints.voidDeath(), killer != null, contact != null, carriage != null, featureSub != null,
-                hazardLocal != null);
+                hazardLocal != null, LOOP_ON);
+        lastPose = null;
+        skyFrom = null;
         savedHideGui = mc.options.hideGui;
         active = true;
         playedInLoop = 0;
@@ -410,6 +439,8 @@ public final class DeathCameraCycle {
         lensEnd = null;
         dollyHold = null;
         aimWorld = null;
+        lastPose = null;
+        skyFrom = null;
         waitTicks = 0;
         Minecraft.getInstance().options.hideGui = savedHideGui;
     }
@@ -432,6 +463,8 @@ public final class DeathCameraCycle {
         }
         shotTicks++;
         DeathShot shot = sequence.get(index);
+        // The sky is the end: it holds on the night blue until the screen hands over to the menu.
+        if (shot.kind() == DeathShot.Kind.SKY_TILT) return;
         if ((shot.kind() == DeathShot.Kind.ORBIT || shot.kind() == DeathShot.Kind.ORBIT_LOOP) && shotTicks % ORBIT_RECHECK_TICKS == 0) recheckOrbit(shot);
         if (shotTicks % TRAIN_LOCKED_RECHECK_TICKS == 0 && lensRanIntoBlock(shot)) {
             select(nextIndex(sequence, index));
@@ -480,11 +513,50 @@ public final class DeathCameraCycle {
         return Math.max(in, out);
     }
 
-    /** Black overlay alpha for this frame, 0 when inactive. */
+    /** Black overlay alpha for this frame, 0 when inactive. No black into or out of the tilt to the sky. */
     public static float blackAlpha(float partialTick) {
         DeathShot shot = current();
-        if (shot == null) return 0.0f;
-        return blackAlpha(shotTicks + partialTick, shot.holdTicks(), shot.kind() != DeathShot.Kind.POV);
+        if (shot == null || shot.kind() == DeathShot.Kind.SKY_TILT) return 0.0f;
+        double t = shotTicks + partialTick;
+        float alpha = blackAlpha(t, shot.holdTicks(), shot.kind() != DeathShot.Kind.POV);
+        if (leadsIntoSky(shot, sequence)) alpha = blackAlpha(t, Integer.MAX_VALUE / 2, true);
+        return alpha;
+    }
+
+    /**
+     * Pure: {@code shot} is phase one's last body shot and the sequence ends on the sky, so the sky
+     * follows it with no cut (the body-out gate stands down once the carriage or leaving shot played).
+     */
+    static boolean leadsIntoSky(DeathShot shot, List<DeathShot> shots) {
+        boolean endsOnSky = !shots.isEmpty() && shots.get(shots.size() - 1).kind() == DeathShot.Kind.SKY_TILT;
+        return endsOnSky && switch (shot.kind()) {
+            case DOLLY, TRANSITION, BODY_OUT -> true;
+            default -> false;
+        };
+    }
+
+    /** Pure: the sky shot's pitch {@code t} ticks in, eased from {@code from} up to {@link #SKY_PITCH}. */
+    static float skyPitch(float from, double t) {
+        double f = Mth.clamp(t / SKY_TILT_TICKS, 0.0, 1.0);
+        double s = f * f * (3.0 - 2.0 * f);
+        return (float) (from + (SKY_PITCH - from) * s);
+    }
+
+    /** Pure: the night-blue overlay {@code t} ticks into the sky shot; it rises once the tilt is done. */
+    static float skyAlpha(double t) {
+        return (float) Mth.clamp((t - SKY_TILT_TICKS) / SKY_FADE_TICKS, 0.0, 1.0);
+    }
+
+    /** The night-blue overlay for this frame, 0 unless the sky shot is fading out. */
+    public static float skyAlpha(float partialTick) {
+        DeathShot shot = current();
+        return shot != null && shot.kind() == DeathShot.Kind.SKY_TILT ? skyAlpha(shotTicks + partialTick) : 0.0f;
+    }
+
+    /** The sky shot has faded all the way to the menu's blue: time to open it. */
+    public static boolean skyDone() {
+        DeathShot shot = current();
+        return shot != null && shot.kind() == DeathShot.Kind.SKY_TILT && skyAlpha((double) shotTicks) >= 1.0f;
     }
 
     /**
@@ -653,6 +725,14 @@ public final class DeathCameraCycle {
             }
             case ORBIT, ORBIT_LOOP -> {
                 return setUpOrbit(shot);
+            }
+            case SKY_TILT -> {
+                // The lens stays where the last shot left it and only turns, so it needs no path
+                // check. Nothing drawn yet (an early skip): start from the player's own eyes.
+                skyFrom = lastPose != null ? lastPose
+                    : new CinematicCameraController.Pose(player.getEyePosition(), player.getYRot(), player.getXRot());
+                uncheckedLens = true;
+                return true;
             }
             case TUNNEL_RISE -> {
                 CarriageWindow window = windowForBody();
@@ -1036,6 +1116,17 @@ public final class DeathCameraCycle {
     public static CinematicCameraController.Pose pose(float partialTick) {
         DeathShot shot = current();
         if (shot == null) return null;
+        if (shot.kind() == DeathShot.Kind.SKY_TILT) {
+            if (skyFrom == null) return null;
+            return new CinematicCameraController.Pose(skyFrom.pos(), skyFrom.yaw(),
+                skyPitch(skyFrom.pitch(), shotTicks + partialTick));
+        }
+        CinematicCameraController.Pose pose = shotPose(shot, partialTick);
+        if (pose != null) lastPose = pose;
+        return pose;
+    }
+
+    private static CinematicCameraController.Pose shotPose(DeathShot shot, float partialTick) {
         if (shot.kind() == DeathShot.Kind.POV) return povPose(partialTick);
         double t = shotTicks + partialTick;
         Vector3d bodyW = bodyRender(partialTick);

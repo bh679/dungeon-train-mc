@@ -15,8 +15,9 @@ import net.minecraft.util.Mth;
 /**
  * The beat between dying and the death recap: the live world keeps drawing, the train still
  * rolling on. First the player's own view under a red wash, then {@link DeathCameraCycle}'s shots
- * (riding the carriage, then watching it leave, then the train passing by on a loop), each cut
- * fading through black, until the player presses Space. Left and Right step through the shots.
+ * (riding the carriage, then watching it leave), each cut fading through black, then a tilt up to
+ * the sky that fades into the perks menu on its own (Space skips there sooner). Left and Right step
+ * through the shots.
  *
  * <p>It also keeps the frame of death smooth. {@link NarrativeDeathScreen} needs this run's
  * ride photos decoded and uploaded to the GPU, and opening it straight away did that work on the
@@ -83,6 +84,8 @@ public final class DeathMomentScreen extends Screen {
         // body is pinned to its carriage (see DeathCameraCycle.ensureStarted).
         if (minecraft != null) DeathCameraCycle.ensureStarted(minecraft.player);
         DeathCameraCycle.tick();
+        // The camera has looked up to the sky and faded to the menu's blue: open it.
+        if (DeathCameraCycle.skyDone() && photosReady()) handOver();
     }
 
     @Override
@@ -162,6 +165,9 @@ public final class DeathMomentScreen extends Screen {
         float black = DeathCameraCycle.blackAlpha(partialTick);
         if (black > 0.0f) g.fill(0, 0, this.width, this.height, scaleAlpha(0xFF000000, black));
         renderPrompt(g, partialTick);
+        // Over the prompt too: the scene ends on the perks menu's night blue, and the menu opens on it.
+        float sky = DeathCameraCycle.skyAlpha(partialTick);
+        if (sky > 0.0f) g.fill(0, 0, this.width, this.height, scaleAlpha(PerksScreen.SKY_BG, sky));
         String label = DeathCameraCycle.reviewLabel();
         if (label != null && minecraft != null) {
             g.fill(4, 4, 8 + minecraft.font.width(label) * 2, 8 + minecraft.font.lineHeight * 2, BACKDROP_COLOR);

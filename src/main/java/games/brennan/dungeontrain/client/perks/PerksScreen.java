@@ -43,6 +43,9 @@ import java.util.function.ToIntFunction;
 @OnlyIn(Dist.CLIENT)
 public final class PerksScreen extends Screen {
 
+    /** The sky's night blue, the colour the menu opens on; the death scene fades into it. */
+    public static final int SKY_BG = SkyPalette.BG;
+
     /**
      * How a perk's details show. {@link DetailsMode#BAR} is on: a permanent bar along the bottom with
      * Unlock and Activate buttons, clicking a star keeps it in the bar. {@link DetailsMode#CARD_STRICT}

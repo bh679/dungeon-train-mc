@@ -54,7 +54,12 @@ public record DeathShot(Kind kind, Target target, Vec3 offset, Vec3 offsetEnd, d
         /** Tunnel set: beside the train at track level, rising to roof height, looking down its side. */
         TUNNEL_RISE,
         /** Tunnel set: above the roof looking up the tracks, drifting slowly backwards. */
-        TUNNEL_ABOVE_BACK;
+        TUNNEL_ABOVE_BACK,
+        /**
+         * Closes phase one while the loop is on hold: the lens stays where the last shot left it and
+         * tilts up to the sky, then the screen fades into the perks menu's night blue.
+         */
+        SKY_TILT;
 
         /** Phase 2 shots that play only when none of the open-air train shots has a clear path. */
         public boolean isTunnel() {
@@ -132,6 +137,10 @@ public record DeathShot(Kind kind, Target target, Vec3 offset, Vec3 offsetEnd, d
 
     public static DeathShot worldArc(double x, double y, double z, double sweepDegrees, int holdTicks, String label) {
         return new DeathShot(Kind.WORLD_ARC, Target.DEATH_SPOT, new Vec3(x, y, z), Vec3.ZERO, sweepDegrees, holdTicks, label);
+    }
+
+    public static DeathShot skyTilt(int holdTicks) {
+        return new DeathShot(Kind.SKY_TILT, Target.BODY, Vec3.ZERO, Vec3.ZERO, 0, holdTicks, "sky");
     }
 
     public static DeathShot tunnel(Kind kind, int holdTicks, String label) {
