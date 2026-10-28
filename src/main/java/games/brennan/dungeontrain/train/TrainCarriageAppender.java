@@ -6899,10 +6899,13 @@ public final class TrainCarriageAppender {
             KinematicDriver.TickInput input = ship.currentTickInput(level.getGameTime());
             KinematicDriver.TickOutput output = driver.nextTransform(input);
             if (output == null) return;
+            // Measured BEFORE the teleport: the input position is the live logical pose, which
+            // applyTickOutput overwrites, so measuring after would always read zero.
+            double movedBlocks = input.currentPosition().distance(output.position());
             ship.applyTickOutput(output);
             RELOAD_SETTLE_LOGGER.info(
                 "[reload-settle] anchor={} trainId={} movedBlocks={} (cull pose -> true slot, settled before any client saw it)",
-                anchor, trainId, String.format("%.2f", input.currentPosition().distance(output.position())));
+                anchor, trainId, String.format("%.2f", movedBlocks));
         } catch (RuntimeException e) {
             // Never let the settle take the appender tick down: without it the group still
             // re-anchors on the ticker's next pass, which is exactly the pre-fix behaviour.
