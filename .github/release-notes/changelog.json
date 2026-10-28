@@ -31629,7 +31629,7 @@
     },
     {
       "id": "sky-falling-comets",
-      "version": "0.1563.0",
+      "version": "0.1576.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -31639,6 +31639,8 @@
       "summary": "Out in the stranger stretches of the journey, the sky is no longer empty. Keep an eye above you, and on the roof of your carriage.",
       "highlights": [
         "Fiery visitors streak overhead, and some of them come for the train.",
+        "You will hear them coming, and feel them land.",
+        "When the sky fills up, keep your head down.",
         "Each time around, they come more often."
       ],
       "pr": 2365,
