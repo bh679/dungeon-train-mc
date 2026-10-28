@@ -35,7 +35,8 @@ public final class DeathNoteReporter {
      * @param targetUuid     the cursed player's dash-stripped UUID if known, else "" (name-matched)
      * @param deathCarriage  the carriage index the author died at (where the echo will lie in wait)
      * @param worldKey       this world's key (train generation seed) — scopes the curse to one world
-     * @param authorSkinRef  optional pre-encoded skin ref for the echo, or "" (spawner encodes from uuid+name)
+     * @param authorSkinRef  the author's skin captured at death ({@code AuthorSkinRef#encode}), or ""
+     *                       when none could be read — the echo then wears the author's default skin
      * @param freePlay       whether the author died on a Free Play (cheated) run — the curse then only
      *                       spawns for a target who is also in Free Play (provenance match)
      * @param kind           which book was signed — decides how the echo feels about the target when
