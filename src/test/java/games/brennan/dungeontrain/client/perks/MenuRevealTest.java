@@ -55,4 +55,46 @@ class MenuRevealTest {
         assertTrue(play.done(0));
         for (MenuReveal.Stage s : MenuReveal.Stage.values()) assertEquals(1.0, play.alpha(s, 0), s.name());
     }
+
+    @Test
+    @DisplayName("first time: slower, no skip, and it waits after the tree")
+    void firstTimeWaits() {
+        MenuReveal r = new MenuReveal(0, false, true);
+        assertEquals(MenuReveal.FIRST_STEP_MS, r.startOf(MenuReveal.Stage.UNLOCKED));
+        assertEquals(2 * MenuReveal.FIRST_STEP_MS, r.startOf(MenuReveal.Stage.CLASSES));
+        r.skip(100);
+        assertEquals(0.0, r.alpha(MenuReveal.Stage.CLASSES, 100), "a click does not skip the first time");
+        for (MenuReveal.Stage s : new MenuReveal.Stage[] {MenuReveal.Stage.CLASS_LIST, MenuReveal.Stage.BAR, MenuReveal.Stage.POINTS}) {
+            assertEquals(MenuReveal.NEVER, r.startOf(s), s.name() + " waits on the player");
+            assertEquals(0.0, r.alpha(s, 600_000), s.name());
+        }
+        assertFalse(r.done(600_000));
+        assertFalse(r.live(r.startOf(MenuReveal.Stage.CLASSES) - 1));
+        assertTrue(r.live(r.startOf(MenuReveal.Stage.CLASSES)), "input once the tree is there to hover");
+    }
+
+    @Test
+    @DisplayName("first time: hovering a perk brings the bar; the first unlock brings the list, then the points")
+    void firstTimeGates() {
+        MenuReveal r = new MenuReveal(0, false, true);
+        long classes = r.startOf(MenuReveal.Stage.CLASSES);
+        r.onHover(classes + 500);
+        assertEquals(classes + 500, r.startOf(MenuReveal.Stage.BAR));
+        assertEquals(MenuReveal.NEVER, r.startOf(MenuReveal.Stage.CLASS_LIST));
+        r.onUnlock(classes + 9000);
+        assertEquals(classes + 9000, r.startOf(MenuReveal.Stage.CLASS_LIST));
+        assertEquals(classes + 9000 + MenuReveal.FIRST_STEP_MS, r.startOf(MenuReveal.Stage.POINTS));
+        assertTrue(r.done(r.startOf(MenuReveal.Stage.POINTS) + MenuReveal.FADE_MS));
+    }
+
+    @Test
+    @DisplayName("first time with no hover: the bar comes after the list, then the points")
+    void firstTimeBarInTurn() {
+        MenuReveal r = new MenuReveal(0, false, true);
+        r.onUnlock(1);
+        long list = r.startOf(MenuReveal.Stage.CLASS_LIST);
+        assertEquals(r.startOf(MenuReveal.Stage.CLASSES) + MenuReveal.FIRST_STEP_MS, list, "not before the step after the tree");
+        assertEquals(list + MenuReveal.FIRST_STEP_MS, r.startOf(MenuReveal.Stage.BAR));
+        assertEquals(list + 2 * MenuReveal.FIRST_STEP_MS, r.startOf(MenuReveal.Stage.POINTS));
+    }
 }

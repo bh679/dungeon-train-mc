@@ -13,8 +13,10 @@ import java.util.function.Supplier;
  * {@link #DRAIN_MS}, leaving the tree as the next life starts it. The menu is unlocking only.
  *
  * <p>The menu takes no input until the build-up is done; a click or Enter during it brings everything
- * up at once. The points shown are the ones held at death, frozen when the screen opens; unlocks are
- * read live, so ones made in the menu show at once.</p>
+ * up at once. A player who has never unlocked a perk gets the guided first time instead
+ * ({@link MenuReveal}): no skipping, and input as soon as the tree is there. The points shown are the
+ * ones held at death, frozen when the screen opens; unlocks are read live, so ones made in the menu
+ * show at once.</p>
  */
 @OnlyIn(Dist.CLIENT)
 final class DeathPerksPhase {
@@ -29,7 +31,8 @@ final class DeathPerksPhase {
     DeathPerksPhase(PerkMenuSnapshot atDeath, Supplier<Screen> next, long openedAt) {
         this.carried = atDeath;
         this.next = next;
-        this.reveal = new MenuReveal(openedAt, atDeath.ranksBought() > 0);
+        // never unlocked a perk: the guided first time
+        this.reveal = new MenuReveal(openedAt, atDeath.ranksBought() > 0, atDeath.unlocks().isEmpty());
     }
 
     /** The points held at death, as the screen opened. */
@@ -41,9 +44,9 @@ final class DeathPerksPhase {
         return reveal;
     }
 
-    /** The menu's controls take input once every layer is up. */
+    /** The menu's controls take input once every layer is up (on the first time, once the tree is there). */
     boolean menuLive(long now) {
-        return reveal.done(now);
+        return reveal.live(now);
     }
 
     /** A click or key during the build-up: bring everything up now. */

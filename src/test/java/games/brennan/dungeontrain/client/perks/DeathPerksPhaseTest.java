@@ -74,4 +74,13 @@ class DeathPerksPhaseTest {
         assertEquals("health", PointsCarriedPanel.topPerk(POINTED));
         assertNull(PointsCarriedPanel.topPerk(NO_POINTS));
     }
+
+    @Test
+    @DisplayName("never unlocked a perk: the guided first time")
+    void firstTime() {
+        DeathPerksPhase fresh = new DeathPerksPhase(PerkMenuSnapshot.EMPTY, () -> null, 0);
+        assertTrue(fresh.reveal().firstTime());
+        assertFalse(new DeathPerksPhase(NO_POINTS, () -> null, 0).reveal().firstTime());
+        assertTrue(fresh.menuLive(fresh.reveal().startOf(MenuReveal.Stage.CLASSES)));
+    }
 }

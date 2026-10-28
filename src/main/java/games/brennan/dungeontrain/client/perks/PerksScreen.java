@@ -227,6 +227,7 @@ public final class PerksScreen extends Screen {
                 int before = last.unlockLevel(id), after = now.unlockLevel(id);
                 if (after <= before) continue;
                 unlockedAt.put(id, ms);
+                reveal.onUnlock(ms);
                 play(SoundEvents.PLAYER_LEVELUP, 0.7F, 1.0F);
                 tree.perk(id).ifPresent(p -> {
                     PerksHud.show(Component.translatable("gui.dungeontrain.perks.hud_unlocked", card.name(p)), colourOf(id));
@@ -369,6 +370,7 @@ public final class PerksScreen extends Screen {
         drawn = tree.withPositions(layout.positions(tree, vis, now));
         hovered = card.contains(mouseX, mouseY) || classesList.rowHover(mouseX, mouseY) != null || headEyeHover
             || titleHover != null ? null : starAt(mouseX, mouseY);
+        if (hovered != null) reveal.onHover(now);
         // a hovered class (in the list or its title) shows, else a hovered star, else the class clicked to stay
         String classShown = classHover != null ? classHover : hovered == null ? selectedClass : null;
         glow = classShown;
@@ -455,6 +457,11 @@ public final class PerksScreen extends Screen {
         String id = hovered != null ? hovered : selected;
         PerkTree.Perk p = id == null ? null : tree.perk(id).orElse(null);
         if (p != null && vis.hidden(p)) p = null;
+        // not in yet (the death menu's build-up): no perk, so no buttons to click unseen
+        if (reveal.alpha(MenuReveal.Stage.BAR, frameAt) <= 0) {
+            p = null;
+            hoveredClass = null;
+        }
         List<net.minecraft.client.gui.components.Button> before = bar.buttons();
         if (bar.update(width, height, hoveredClass == null ? p : null, p != null && p.id().equals(selected), hoveredClass, snap)) {
             before.forEach(this::removeWidget);
