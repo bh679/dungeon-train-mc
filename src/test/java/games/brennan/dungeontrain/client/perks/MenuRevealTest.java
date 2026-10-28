@@ -10,9 +10,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** The death menu builds up one layer per story line, each held for its line's time. */
 class MenuRevealTest {
 
-    /** stars 4000, active 2500, centre 2800, perks 3500, select 1600 (after the lead-in); all past their minimums. */
-    private static final long[] BEATS = {4000, 2500, 2800, 3500, 1600};
-    private static final long[] NO_ACTIVE = {4000, 0, 2800, 3500, 1600};
+    /** Reading times: stars 4000, active 500, centre 800, perks 1500, select 1600 (after the lead-in). Lines 2-4 get 2 s of fades on top. */
+    private static final long[] BEATS = {4000, 500, 800, 1500, 1600};
+    private static final long[] NO_ACTIVE = {4000, 0, 800, 1500, 1600};
     private static final long L = MenuReveal.LEAD_IN_MS;
     /** A layer starts once its line has faded in. */
     private static final long T = MenuReveal.FADE_MS;
@@ -113,7 +113,7 @@ class MenuRevealTest {
         assertEquals(0.5, r.alpha(MenuReveal.Stage.STARS, L + T + MenuReveal.STAR_FADE_MS / 2), 1e-9);
         long centreLine = r.beatStart(MenuReveal.BEAT_CENTRE);
         assertEquals(L + T + MenuReveal.STAR_FADE_MS, centreLine, "the next line waits until the stars are up");
-        assertEquals(centreLine + T + T, r.beatStart(MenuReveal.BEAT_PERKS), "a short beat still covers its line and layer");
+        assertEquals(centreLine + T + T + 500, r.beatStart(MenuReveal.BEAT_PERKS), "the reading time comes after the line and its layer");
     }
 
     @Test

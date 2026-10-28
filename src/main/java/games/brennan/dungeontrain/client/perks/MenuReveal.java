@@ -12,7 +12,8 @@ package games.brennan.dungeontrain.client.perks;
  * <p>It opens on {@link #LEAD_IN_MS} of plain night blue, so the stars start only once the death
  * scene's fade into it has settled. Then one thing at a time: each beat's line fades in first, and only
  * once it is up does its layer fade in ({@link #STAR_FADE_MS} for the stars, {@link #FADE_MS} for the
- * rest); the next line waits until that layer is up.</p>
+ * rest); the next line waits until that layer is up. The first line is read while the stars come in;
+ * every later line gets its full reading time after its layer is up.</p>
  *
  * <p>A player who has never unlocked a perk gets a guided first time: no skip to the end, but a click
  * or Space moves on to the next line ({@link #next}); the classes list (then the unlock points) waits
@@ -55,9 +56,11 @@ final class MenuReveal {
         if (beats.length != BEATS) throw new IllegalArgumentException("expected " + BEATS + " beats");
         this.openedAt = openedAt;
         this.beats = beats.clone();
-        // one thing at a time: a beat lasts at least its line's fade-in plus its layer's
-        for (int i = BEAT_STARS; i < BEAT_SELECT; i++) {
-            if (this.beats[i] > 0) this.beats[i] = Math.max(this.beats[i], FADE_MS + layerFadeMs(i));
+        // one thing at a time. The first line is read while the stars come in (its beat covers both
+        // fades); later lines get their whole reading time once their layer is up.
+        this.beats[BEAT_STARS] = Math.max(this.beats[BEAT_STARS], FADE_MS + STAR_FADE_MS);
+        for (int i = BEAT_ACTIVE; i < BEAT_SELECT; i++) {
+            if (this.beats[i] > 0) this.beats[i] += FADE_MS + layerFadeMs(i);
         }
         this.hasActive = beats[BEAT_ACTIVE] > 0;
         this.firstTime = firstTime;
