@@ -31445,9 +31445,9 @@
       "summary": "Rooms inside a dimensional carriage now stay as you left them, including the parts you changed from the room next door. Step back onto the train and come back, and what you took or broke is still gone.",
       "highlights": [],
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1565.0",
+      "released_at": "2026-10-27T16:41:08Z"
     }
   ]
 }
