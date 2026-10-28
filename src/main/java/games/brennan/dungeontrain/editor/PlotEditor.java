@@ -116,6 +116,9 @@ public abstract class PlotEditor<T extends Template> {
     /** Runs after the player has landed in {@code t}'s plot. */
     protected void afterEnter(ServerPlayer player, T t) {}
 
+    /** Runs after the user-tier write and sidecars of {@code t} have landed, before the source write. */
+    protected void afterSave(ServerPlayer player, T t, CarriageDims dims) {}
+
     // ---- enter -------------------------------------------------------------------------------
 
     /**
@@ -314,6 +317,7 @@ public abstract class PlotEditor<T extends Template> {
 
         // Refresh the dirty-check baseline so the just-saved state reads as clean.
         captureSnapshot(overworld, origin, t, dims);
+        afterSave(player, t, dims);
 
         String advancement = advancement(t);
         if (advancement != null) ModAdvancementTriggers.EDITOR_ACTION.get().trigger(player, advancement);

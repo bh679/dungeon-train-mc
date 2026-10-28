@@ -19,6 +19,10 @@ public final class PlotEditors {
             case Template.Pillar p -> TrackSideEditors.pillar(p.section());
             case Template.Adjunct a -> TrackSideEditors.adjunct(a.adjunct());
             case Template.Tunnel t -> TrackSideEditors.tunnel(t.variant());
+            case Template.Carriage c -> CarriagePlotEditor.get();
+            case Template.WholeCarriage w -> WholePlotEditor.room();
+            case Template.WholeHalf h -> WholePlotEditor.half();
+            case Template.CarriageGroup g -> WholePlotEditor.group();
             default -> null;
         });
     }

@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.template;
 import games.brennan.dungeontrain.editor.CarriageContentsEditor;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageEditor;
+import games.brennan.dungeontrain.editor.CarriagePlotEditor;
 import games.brennan.dungeontrain.editor.CarriagePartEditor;
 import games.brennan.dungeontrain.editor.CarriagePartRegistry;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
@@ -22,6 +23,7 @@ import games.brennan.dungeontrain.editor.TunnelTemplateStore;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
 import games.brennan.dungeontrain.editor.WholeCarriageEditor;
+import games.brennan.dungeontrain.editor.WholePlotEditor;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
@@ -343,10 +345,10 @@ public sealed interface Template
         @Override public String stageId() { String s = CarriageWeights.current().stageIdFor(variant.id()); return s == null ? "" : s; }
         @Override public String variantName() { return variant.id(); }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            CarriageEditor.stampPlot(level, variant, dims);
+            CarriagePlotEditor.get().stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            CarriageEditor.enter(player, variant, onTop, stamp, inside);
+            CarriagePlotEditor.get().enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             // The variant's own box — `/dt reset default` on the portal corridor is asking for a
@@ -493,16 +495,16 @@ public sealed interface Template
         @Override public String stageId() { String s = WholeWeights.stageIdFor(WholeKind.ROOM, wholeCarriage.id()); return s == null ? "" : s; }
         @Override public String variantName() { return wholeCarriage.id(); }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            WholeCarriageEditor.stampRoomPlot(level, wholeCarriage, dims);
+            WholePlotEditor.room().stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            WholeCarriageEditor.enter(player, this, onTop, stamp, inside);
+            WholePlotEditor.room().enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return WholeCarriageTemplateStore.getBundled(level, wholeCarriage, dims);
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return WholeCarriageEditor.roomPlotOrigin(wholeCarriage, dims);
+            return WholePlotEditor.room().origin(this, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return new Vec3i(dims.length(), dims.height(), dims.width());
@@ -553,16 +555,16 @@ public sealed interface Template
         @Override public String stageId() { String s = WholeWeights.stageIdFor(WholeKind.HALF, wholeCarriage.id()); return s == null ? "" : s; }
         @Override public String variantName() { return wholeCarriage.id(); }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            WholeCarriageEditor.stampHalfPlot(level, wholeCarriage, dims);
+            WholePlotEditor.half().stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            WholeCarriageEditor.enter(player, this, onTop, stamp, inside);
+            WholePlotEditor.half().enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return games.brennan.dungeontrain.editor.WholeHalfTemplateStore.getBundled(level, wholeCarriage, dims);
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return WholeCarriageEditor.halfPlotOrigin(wholeCarriage, dims);
+            return WholePlotEditor.half().origin(this, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return WholeCarriageEditor.plotSize(WholeKind.HALF, dims);
@@ -613,16 +615,16 @@ public sealed interface Template
         @Override public String stageId() { String s = WholeWeights.stageIdFor(WholeKind.GROUP, group.id()); return s == null ? "" : s; }
         @Override public String variantName() { return group.id(); }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            WholeCarriageEditor.stampGroupPlot(level, group, dims);
+            WholePlotEditor.group().stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            WholeCarriageEditor.enter(player, this, onTop, stamp, inside);
+            WholePlotEditor.group().enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return CarriageGroupTemplateStore.getBundled(level, group, dims, WholeCarriageEditor.groupSize());
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return WholeCarriageEditor.groupPlotOrigin(group, dims);
+            return WholePlotEditor.group().origin(this, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return CarriageGroupPlacer.sizeOf(dims, WholeCarriageEditor.groupSize());

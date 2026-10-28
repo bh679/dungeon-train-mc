@@ -31700,6 +31700,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-plot-editor-base",
+      "version": "0.1579.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Editor plot lifecycle shared across template kinds",
+      "summary": "Behind the scenes, the Train Editor's track, pillar, stairs, tunnel, carriage and whole-carriage plots now share one enter / stamp / save / clear routine instead of carrying their own copy each. Entering a named track-side variant from the X menu now lands on that variant's own plot rather than the row's default.",
+      "highlights": [
+        "One plot lifecycle for six editor kinds; the old entry points still work",
+        "Go here on a named track, pillar, stairs or tunnel variant lands on that plot"
+      ],
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
