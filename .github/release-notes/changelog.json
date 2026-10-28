@@ -31519,6 +31519,22 @@
       "released": true,
       "released_in": "v0.1569.0",
       "released_at": "2026-10-28T06:41:56Z"
+    },
+    {
+      "id": "echo-text-tweak",
+      "version": "0.1570.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Text fix",
+      "summary": "A small text fix.",
+      "highlights": [],
+      "pr": 2381,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

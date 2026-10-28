@@ -17,20 +17,18 @@ public final class LoveNoteSpawnMessage {
     private LoveNoteSpawnMessage() {}
 
     /**
-     * 20 arrival one-liners; {@code %s} is the author's name (the player whose echo returns).
+     * 18 arrival one-liners; {@code %s} is the author's name (the player whose echo returns).
      *
      * <p>Deliberately <em>not</em> the vengeance pool softened — an earlier draft inverted
      * {@link DeathNoteSpawnMessage} line for line and read as "the same sentence, but nicer".
      * These put the love in the foreground and say what the echo <em>is</em> rather than what it
-     * isn't. The broadcast is server-wide, so a few lines are written for the bystander rather
-     * than the target: the sting for them is that the love is real and it isn't theirs.</p>
+     * isn't. Every line stays warm: none turns the bystander away.</p>
      */
     private static final List<String> LINES = List.of(
         "%s's echo is aboard, and it comes in love.",
         "An echo of %s steps aboard with its arms full.",
         "%s died loving someone. The echo carries it.",
         "An echo of %s walks the carriages, looking for someone it loves.",
-        "%s's echo has waited here a long time to love someone. Not you.",
         "The echo of %s arrives with gifts it will not be talked out of.",
         "%s's echo boards in silence, in love, and looking.",
         "Somewhere ahead, %s's echo has found the one it loved.",
@@ -39,7 +37,6 @@ public final class LoveNoteSpawnMessage {
         "Love outlived %s. Their echo brought it aboard.",
         "%s left love behind instead of a grudge. The echo came to deliver it.",
         "An echo of %s walks the line, giving away everything it has.",
-        "%s's echo wants nothing from you. It already loves someone else.",
         "The echo of %s came a long way to love someone in person.",
         "%s's echo has arrived, and for once the train brought love.",
         "Something of %s stayed on the tracks. Love kept it there.",
