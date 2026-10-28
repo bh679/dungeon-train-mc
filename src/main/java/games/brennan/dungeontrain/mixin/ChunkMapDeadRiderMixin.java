@@ -4,7 +4,6 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import games.brennan.dungeontrain.ship.sable.DeadRiderAnchors;
 import games.brennan.dungeontrain.ship.sable.DeadRiderGhostTracking;
-import games.brennan.dungeontrain.ship.sable.DeadRiderServerCarry;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectCollection;
 import it.unimi.dsi.fastutil.objects.ObjectLists;
@@ -14,8 +13,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 
@@ -49,18 +46,6 @@ public abstract class ChunkMapDeadRiderMixin {
     private ObjectCollection<?> dungeontrain$keepDeadPlayerInTrackers(Int2ObjectMap<?> map, Operation<ObjectCollection<?>> original, Entity entity) {
         if (entity instanceof ServerPlayer player && DeadRiderGhostTracking.isDeferred(player)) return ObjectLists.emptyList();
         return original.call(map);
-    }
-
-    /**
-     * A dead rider's chunk view follows the body as the carriage carries it away, but the death
-     * scene's cameras hang around the death spot. Widen the view so both stay sent to that client
-     * (grown with the distance between them, capped), or the world under the camera is forgotten
-     * about a minute after death.
-     */
-    @Inject(method = "getPlayerViewDistance", at = @At("RETURN"), cancellable = true)
-    private void dungeontrain$deadRiderSeesTheDeathSpot(ServerPlayer player, CallbackInfoReturnable<Integer> cir) {
-        int extra = DeadRiderServerCarry.extraViewChunks(player);
-        if (extra > 0) cir.setReturnValue(Math.min(DeadRiderServerCarry.MAX_VIEW_CHUNKS, cir.getReturnValue() + extra));
     }
 
     @WrapOperation(

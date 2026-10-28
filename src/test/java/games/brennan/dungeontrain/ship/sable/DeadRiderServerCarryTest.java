@@ -27,11 +27,4 @@ class DeadRiderServerCarryTest {
         assertFalse(DeadRiderServerCarry.shouldKeep(false, false));
         assertFalse(DeadRiderServerCarry.shouldKeep(false, true));
     }
-
-    @Test
-    void viewGrowsWithTheBodyDistanceFromTheDeathSpot() {
-        org.junit.jupiter.api.Assertions.assertEquals(1, DeadRiderServerCarry.extraViewChunks(0.0));
-        org.junit.jupiter.api.Assertions.assertEquals(2, DeadRiderServerCarry.extraViewChunks(16.0));
-        org.junit.jupiter.api.Assertions.assertEquals(9, DeadRiderServerCarry.extraViewChunks(120.0));
-    }
 }

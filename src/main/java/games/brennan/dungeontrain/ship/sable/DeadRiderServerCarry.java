@@ -30,17 +30,15 @@ import java.util.WeakHashMap;
  *
  * <p>So, from the first tick the player is a {@link DeadRiderAnchors dead anchor}, this pins their
  * ship-local position on the carriage Sable was tracking at death (the tracking sub-level stays set
- * on the removed entity) and re-projects it through the carriage's live pose every tick, then runs
- * the chunk map's player move so trackers, tickets and the chunk view follow the body exactly as
- * they do for a living rider. Lets go when the carriage is gone or the player is released
+ * on the removed entity) and re-projects it through the carriage's live pose every tick for the entity
+ * trackers. The chunk view and tickets stay at the death spot (the scene's cameras live there),
+ * held by a chunk ticket until respawn. Lets go when the carriage is gone or the player is released
  * ({@link DeadRiderGhostTracking#release}).</p>
  */
 public final class DeadRiderServerCarry {
 
     private static final Map<ServerPlayer, Pin> PINS = new WeakHashMap<>();
 
-    /** The dead rider's widened chunk view never exceeds this many chunks. */
-    public static final int MAX_VIEW_CHUNKS = 24;
     /** Chunks held loaded around the death spot (radius, in chunks) until respawn. */
     private static final int DEATH_SPOT_TICKET_RADIUS = 4;
     private static final TicketType<UUID> DEATH_SPOT_TICKET =
@@ -67,8 +65,9 @@ public final class DeadRiderServerCarry {
                 continue;
             }
             Vector3d world = follow(pin.local(), pin.carriage().logicalPose());
+            // The body rides for the entity trackers; the chunk view and player ticket stay where
+            // they died (no chunk map move), with the death spot ticket below holding its chunks.
             player.setPos(world.x, world.y, world.z);
-            level.getChunkSource().chunkMap.move(player);
         }
     }
 
@@ -79,33 +78,6 @@ public final class DeadRiderServerCarry {
             player.serverLevel().getChunkSource().removeRegionTicket(DEATH_SPOT_TICKET,
                 new ChunkPos(BlockPos.containing(pin.deathSpot())), DEATH_SPOT_TICKET_RADIUS, player.getUUID());
         }
-    }
-
-    /** Extra view chunks so a carried body's view still covers the death spot: 0 when not carried. */
-    public static int extraViewChunks(ServerPlayer player) {
-        Pin pin = PINS.get(player);
-        if (pin == null) return 0;
-        return extraViewChunks(pin.deathSpot().distanceTo(player.position()));
-    }
-
-    /** Pure: chunks to add to the view for a body this far from the death spot, plus one of slack. */
-    static int extraViewChunks(double distance) {
-        return (int) Math.ceil(distance / 16.0) + 1;
-    }
-
-    /**
-     * Where this player died, in world space, while their body is carried: the train's keep-alive
-     * measures from here, so the line behaves as if they still stood at that spot (the train rolls
-     * past and keeps extending behind itself). Null when the body is not carried.
-     */
-    public static Vec3 deathSpot(ServerPlayer player) {
-        Pin pin = PINS.get(player);
-        return pin == null ? null : pin.deathSpot();
-    }
-
-    /** True while this player's body is being carried. */
-    public static boolean isCarried(ServerPlayer player) {
-        return PINS.containsKey(player);
     }
 
     private static Pin pin(ServerPlayer player) {
