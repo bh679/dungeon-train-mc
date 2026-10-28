@@ -19,9 +19,10 @@ class DeathCameraCycleTest {
     @Test
     void fullSceneHasEveryShotInOrder() {
         List<DeathShot> seq = DeathCameraCycle.buildSequence(false, true, true, true, true);
-        assertEquals(List.of("POV", "spot", "killer", "mob", "feature", "carriage"), labels(seq).subList(0, 6));
-        assertEquals(DeathCameraCycle.TRAIN_SHOTS.size() + DeathCameraCycle.TUNNEL_SHOTS.size(), seq.size() - 6);
-        assertEquals(6, DeathCameraCycle.loopStart(seq));
+        assertEquals(List.of("POV", "spot", "killer", "mob", "carriage"), labels(seq).subList(0, 5));
+        assertEquals(DeathCameraCycle.TRAIN_SHOTS.size() + DeathCameraCycle.TUNNEL_SHOTS.size() + 2, seq.size() - 5);
+        assertEquals(5, DeathCameraCycle.loopStart(seq));
+        assertEquals(List.of("feature", "mob-arc"), labels(seq).subList(seq.size() - 2, seq.size()), "subject shots close the loop");
     }
 
     @Test
@@ -35,7 +36,8 @@ class DeathCameraCycleTest {
         List<DeathShot> seq = DeathCameraCycle.buildSequence(false, false, false, false);
         assertEquals(List.of("POV", "spot", "leaving"), labels(seq).subList(0, 3));
         assertEquals(3, DeathCameraCycle.loopStart(seq));
-        assertEquals("eyes-forward", seq.get(seq.size() - 1).label(), "the always-clear tunnel shot ends the loop");
+        assertEquals("mob-arc", seq.get(seq.size() - 1).label(), "no feature listed: the mob arc alone closes the loop");
+        assertTrue(labels(seq).contains("eyes-forward"));
     }
 
     @Test
@@ -60,7 +62,7 @@ class DeathCameraCycleTest {
     @Test
     void orbitsHoldThreeSecondsAndTheCarriageShotZoomsThenHolds() {
         for (DeathShot shot : DeathCameraCycle.buildSequence(false, true, true, true)) {
-            if (shot.kind() == DeathShot.Kind.ORBIT && shot.target() != DeathShot.Target.RANDOM_MOB) assertEquals(60, shot.holdTicks(), shot.label());
+            if (shot.kind() == DeathShot.Kind.ORBIT) assertEquals(60, shot.holdTicks(), shot.label());
             if (shot.kind() == DeathShot.Kind.DOLLY) assertEquals(DeathCameraCycle.DOLLY_TICKS + 60, shot.holdTicks());
         }
     }
@@ -107,10 +109,9 @@ class DeathCameraCycleTest {
         int loop = DeathCameraCycle.loopStart(seq);
         assertTrue(loop > 0);
         for (DeathShot shot : DeathCameraCycle.TRAIN_SHOTS) {
-            boolean moving = shot.kind() == DeathShot.Kind.WORLD_DOLLY || shot.kind() == DeathShot.Kind.WORLD_ARC;
-            boolean mobArc = shot.kind() == DeathShot.Kind.ORBIT && shot.target() == DeathShot.Target.RANDOM_MOB;
-            assertTrue(moving || mobArc, shot.label());
+            assertTrue(shot.kind() == DeathShot.Kind.WORLD_DOLLY || shot.kind() == DeathShot.Kind.WORLD_ARC, shot.label());
         }
+        for (DeathShot shot : DeathCameraCycle.LOOP_TAIL) assertTrue(shot.kind().isLoop() && !shot.kind().isOpenAir(), shot.label());
         for (DeathShot shot : DeathCameraCycle.TUNNEL_SHOTS) assertTrue(shot.kind().isTunnel() && shot.kind().isLoop(), shot.label());
     }
 
@@ -126,7 +127,6 @@ class DeathCameraCycleTest {
     @Test
     void trainShotsStandClearOfTheTrainAndLookDown() {
         for (DeathShot shot : DeathCameraCycle.TRAIN_SHOTS) {
-            if (shot.kind() == DeathShot.Kind.ORBIT) continue;
             assertTrue(Math.abs(shot.offset().z) >= 4.0, shot.label() + " must stand clear of the 7-wide train");
             Vector3d lens = DeathCameraCycle.lensFor(new Vector3d(), shot.offset());
             CinematicCameraController.Pose pose = DeathCameraCycle.poseFor(new Vec3(lens.x, lens.y, lens.z), new Vec3(0, 1, 0));

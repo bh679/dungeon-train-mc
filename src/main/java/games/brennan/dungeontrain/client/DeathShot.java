@@ -25,6 +25,8 @@ public record DeathShot(Kind kind, Target target, Vec3 offset, Vec3 offsetEnd, d
         DOLLY,
         /** Lens circles the target through the longest arc with a clear view of it. */
         ORBIT,
+        /** As ORBIT, but part of the looping second phase (the random mob arc). */
+        ORBIT_LOOP,
         /** Lens fixed in the world where the shot starts, aimed at the body as the carriage rolls away. */
         TRANSITION,
         /** Lens fixed in the world beside a feature of the train, tracking it as it rides past. */
@@ -42,16 +44,26 @@ public record DeathShot(Kind kind, Target target, Vec3 offset, Vec3 offsetEnd, d
         /** Tunnel set: behind the body's carriage, low, looking back along the train. */
         TUNNEL_COUPLING,
         /** Tunnel set: the body's own eyes, looking forward along the train. Always clear. */
-        TUNNEL_EYES;
+        TUNNEL_EYES,
+        /** Tunnel set: beside the train at track level, rising to roof height, looking down its side. */
+        TUNNEL_RISE,
+        /** Tunnel set: above the roof looking up the tracks, drifting slowly backwards. */
+        TUNNEL_ABOVE_BACK;
 
         /** Phase 2 shots that play only when none of the open-air train shots has a clear path. */
         public boolean isTunnel() {
-            return this == TUNNEL_WINDOW_OUT || this == TUNNEL_ROOF || this == TUNNEL_COUPLING || this == TUNNEL_EYES;
+            return this == TUNNEL_WINDOW_OUT || this == TUNNEL_ROOF || this == TUNNEL_COUPLING || this == TUNNEL_EYES
+                || this == TUNNEL_RISE || this == TUNNEL_ABOVE_BACK;
         }
 
-        /** Shots of the looping second phase (open air or tunnel). */
+        /** Open-air shots of the place; the loop falls back to the tunnel set when none of these can play. */
+        public boolean isOpenAir() {
+            return this == WORLD || this == WORLD_DOLLY || this == WORLD_ARC;
+        }
+
+        /** Shots of the looping second phase: open air, tunnel, and the subject shots that play in both. */
         public boolean isLoop() {
-            return this == WORLD || this == WORLD_DOLLY || this == WORLD_ARC || isTunnel();
+            return isOpenAir() || isTunnel() || this == FEATURE_TRACK || this == ORBIT_LOOP;
         }
     }
 
@@ -84,6 +96,10 @@ public record DeathShot(Kind kind, Target target, Vec3 offset, Vec3 offsetEnd, d
 
     public static DeathShot orbit(Target target, double radius, double height, int holdTicks, String label) {
         return new DeathShot(Kind.ORBIT, target, new Vec3(radius, height, 0), Vec3.ZERO, 0, holdTicks, label);
+    }
+
+    public static DeathShot orbitLoop(Target target, double radius, double height, int holdTicks, String label) {
+        return new DeathShot(Kind.ORBIT_LOOP, target, new Vec3(radius, height, 0), Vec3.ZERO, 0, holdTicks, label);
     }
 
     public static DeathShot transition(double x, double y, double z, int holdTicks, String label) {

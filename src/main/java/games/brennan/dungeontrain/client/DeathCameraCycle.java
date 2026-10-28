@@ -73,7 +73,6 @@ public final class DeathCameraCycle {
     static final List<DeathShot> TRAIN_SHOTS = List.of(
         DeathShot.worldArc(0.0, 24.0, 14.0, 50.0, 120, "W-5"),                                     // high overhead, slow arc
         DeathShot.worldDolly(new Vec3(-14.0, 3.0, 26.0), new Vec3(14.0, 3.0, 26.0), 120, "W-6"),   // low side, slide along
-        DeathShot.orbit(DeathShot.Target.RANDOM_MOB, 3.0, 2.0, 100, "mob-arc"),                     // close arc on any mob riding the train
         DeathShot.worldDolly(new Vec3(-55.0, 18.0, -28.0), new Vec3(-42.0, 15.0, -22.0), 120, "W-7"), // far behind high, push in
         DeathShot.worldArc(45.0, 4.0, -24.0, -25.0, 120, "W-8"),                                   // far ahead low, slow arc
         DeathShot.worldArc(0.0, 36.0, 44.0, 35.0, 120, "W-9"),                                     // very high and wide, slow arc
@@ -83,9 +82,16 @@ public final class DeathCameraCycle {
     /** Played instead of the open-air train shots while none of those has a clear path (a tunnel). */
     static final List<DeathShot> TUNNEL_SHOTS = List.of(
         DeathShot.tunnel(DeathShot.Kind.TUNNEL_WINDOW_OUT, 100, "window-out"),
+        DeathShot.tunnel(DeathShot.Kind.TUNNEL_RISE, 120, "side-rise"),
+        DeathShot.tunnel(DeathShot.Kind.TUNNEL_ABOVE_BACK, 120, "above-back"),
         DeathShot.tunnel(DeathShot.Kind.TUNNEL_ROOF, 100, "roof-skim"),
         DeathShot.tunnel(DeathShot.Kind.TUNNEL_COUPLING, 100, "coupling"),
         DeathShot.tunnel(DeathShot.Kind.TUNNEL_EYES, 100, "eyes-forward")
+    );
+    /** Subject shots at the end of every loop pass, in the open and in a tunnel alike. */
+    static final List<DeathShot> LOOP_TAIL = List.of(
+        DeathShot.feature(80, "feature"),
+        DeathShot.orbitLoop(DeathShot.Target.RANDOM_MOB, 3.0, 2.0, 100, "mob-arc")
     );
     /** Every shot is re-tested this often for a lens that has run into a block. */
     private static final int TRAIN_LOCKED_RECHECK_TICKS = 1;
@@ -112,6 +118,8 @@ public final class DeathCameraCycle {
     private static DeathScenePacket.Target.Kind featureKind;
     /** Tunnel shots: where the train-locked lens looks, carriage space. */
     private static Vector3d aimLocal;
+    /** Tunnel dollies: the aim rides with the lens at this carriage-space offset. */
+    private static Vector3d aimOffset;
     /** Open-air loop shots that played since the loop last started; tunnel shots play only when it is 0. */
     private static int playedInLoop;
     /** The current shot's lens: carriage space for train-locked shots, world space otherwise. */
@@ -180,13 +188,18 @@ public final class DeathCameraCycle {
         if (!voidDeath) shots.add(DeathShot.orbit(DeathShot.Target.DEATH_SPOT, 6.0, 3.0, 60, "spot"));
         if (hasKiller) shots.add(DeathShot.orbit(DeathShot.Target.KILLER, 5.0, 2.5, 60, "killer"));
         if (hasContact) shots.add(DeathShot.orbit(DeathShot.Target.CONTACT, 5.0, 2.5, 60, "mob"));
-        if (hasFeature) shots.add(DeathShot.feature(80, "feature"));
         // One shot: zoom out from beside the body for DOLLY_TICKS, then the lens stays where it
         // reached, in the world, and tracks the body as the carriage rolls away.
         if (onTrain) shots.add(DeathShot.dolly(new Vec3(3.0, 2.0, 5.0), new Vec3(-6.0, 8.0, 14.0), DOLLY_TICKS + 60, "carriage"));
         else shots.add(DeathShot.transition(-3.0, 2.5, 8.0, 60, "leaving"));
         shots.addAll(TRAIN_SHOTS);
         shots.addAll(TUNNEL_SHOTS);
+        // The feature and the mob arc close every pass, tunnel or not (the feature only when the
+        // server listed one); they are not "open-air shots" for the tunnel gate.
+        for (DeathShot tail : LOOP_TAIL) {
+            if (tail.kind() == DeathShot.Kind.FEATURE_TRACK && !hasFeature) continue;
+            shots.add(tail);
+        }
         return List.copyOf(shots);
     }
 
@@ -303,7 +316,7 @@ public final class DeathCameraCycle {
         }
         shotTicks++;
         DeathShot shot = sequence.get(index);
-        if (shot.kind() == DeathShot.Kind.ORBIT && shotTicks % ORBIT_RECHECK_TICKS == 0) recheckOrbit(shot);
+        if ((shot.kind() == DeathShot.Kind.ORBIT || shot.kind() == DeathShot.Kind.ORBIT_LOOP) && shotTicks % ORBIT_RECHECK_TICKS == 0) recheckOrbit(shot);
         if (shotTicks % TRAIN_LOCKED_RECHECK_TICKS == 0 && lensRanIntoBlock(shot)) {
             select(nextIndex(sequence, index));
             return;
@@ -373,7 +386,7 @@ public final class DeathCameraCycle {
                 continue;
             }
             if (prepare(shot)) {
-                if (shot.kind().isLoop() && !shot.kind().isTunnel()) playedInLoop++;
+                if (shot.kind().isOpenAir()) playedInLoop++;
                 index = i;
                 shotTicks = 0;
                 Minecraft.getInstance().options.hideGui = shot.kind() != DeathShot.Kind.POV;
@@ -395,6 +408,7 @@ public final class DeathCameraCycle {
         dollyHold = null;
         aimWorld = null;
         aimLocal = null;
+        aimOffset = null;
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
@@ -430,8 +444,34 @@ public final class DeathCameraCycle {
                 Vector3d b = lensEnd;
                 return ShotPath.clear(level, player, carriages, ShotPath.samples(f -> toWorld(dollyAt(a, b, f))), aimBody);
             }
-            case ORBIT -> {
+            case ORBIT, ORBIT_LOOP -> {
                 return setUpOrbit(shot);
+            }
+            case TUNNEL_RISE -> {
+                CarriageWindow window = windowForBody();
+                Double roof = roofAboveBody();
+                if (window == null || carriage == null) return false;
+                double side = window.side();
+                double across = side * (window.wallAcross() + 1.2);
+                double top = roof != null ? roof + 1.0 : bodyLocal.y + 5.0;
+                lens = new Vector3d(bodyLocal.x, bodyLocal.y + 0.4, bodyLocal.z + across);
+                lensEnd = new Vector3d(bodyLocal.x, top, bodyLocal.z + across);
+                aimOffset = new Vector3d(16.0, 0.0, -side * 2.5);
+                Vector3d a = lens;
+                Vector3d b = lensEnd;
+                return ShotPath.clear(level, player, carriages, ShotPath.samples(f -> toWorld(new Vector3d(a).lerp(b, f))),
+                    toWorld(lensFor(b, new Vec3(3.0, 0.0, -side * 0.6))));
+            }
+            case TUNNEL_ABOVE_BACK -> {
+                Double roof = roofAboveBody();
+                if (roof == null || carriage == null) return false;
+                lens = new Vector3d(bodyLocal.x + 2.0, roof + 2.0, bodyLocal.z);
+                lensEnd = new Vector3d(bodyLocal.x - 8.0, roof + 2.0, bodyLocal.z);
+                aimOffset = new Vector3d(18.0, -1.5, 0.0);
+                Vector3d a = lens;
+                Vector3d b = lensEnd;
+                return ShotPath.clear(level, player, carriages, ShotPath.samples(f -> toWorld(new Vector3d(a).lerp(b, f))),
+                    toWorld(lensFor(b, new Vec3(3.0, -0.2, 0.0))));
             }
             case TRANSITION -> {
                 lens = resolveLens(shot.offset(), false, null);
@@ -773,7 +813,7 @@ public final class DeathCameraCycle {
         Vector3d lensW;
         Vector3d aim = aimBody;
         switch (shot.kind()) {
-            case ORBIT -> {
+            case ORBIT, ORBIT_LOOP -> {
                 Vector3d subject = subjectWorld(shot, partialTick);
                 if (subject == null) return null;
                 lensW = orbitLens(subject, orbitRadius, orbitHeight, orbitAngle(t, shot.holdTicks()));
@@ -817,6 +857,12 @@ public final class DeathCameraCycle {
                 if (lens == null || aimLocal == null) return null;
                 lensW = toWorldRender(lens, partialTick);
                 aim = toWorldRender(aimLocal, partialTick);
+            }
+            case TUNNEL_RISE, TUNNEL_ABOVE_BACK -> {
+                if (lens == null || lensEnd == null || aimOffset == null) return null;
+                Vector3d local = new Vector3d(lens).lerp(lensEnd, Mth.clamp(t / Math.max(1.0, shot.holdTicks()), 0.0, 1.0));
+                lensW = toWorldRender(local, partialTick);
+                aim = toWorldRender(new Vector3d(local).add(aimOffset), partialTick);
             }
             case WORLD -> {
                 if (lens == null) return null;
