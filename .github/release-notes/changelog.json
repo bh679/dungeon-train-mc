@@ -31535,6 +31535,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "read-one-book-from-stack",
+      "version": "0.1571.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "books"
+      ],
+      "title": "Book stack fix",
+      "summary": "Reading a book from a stack of identical copies now burns only the copy you read. The rest stay in your inventory to read later.",
+      "highlights": [],
+      "pr": 2382,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
