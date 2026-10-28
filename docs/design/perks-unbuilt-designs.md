@@ -268,3 +268,40 @@ chance easing toward 100% and spread to its pack within a growing range.
   shader on a block box), an expanding particle ring from the player to Range over ~1 s, and a
   sound event. Plot positions must be re-transformed each frame as the carriage moves.
 
+---
+
+## Crafter
+
+### Re-enchant (tier 3) — CONFIRMED 2026-10-29
+
+The table wiring exists behind `CrafterPerks.REENCHANT_ON_HOLD` (`EnchantmentMenuCrafterMixin`:
+enchanted items count as enchantable, clashing rolls dropped, same enchantment only as an
+upgrade). On hold because an all-filtered row still shows and charges, and rank does nothing.
+This design finishes it.
+
+**How it works**
+- An enchanted item or book can go on the enchanting table and keeps every enchantment it has.
+  Rows roll as usual minus anything that clashes; the same enchantment appears only as a higher
+  level. A row with nothing left to add is greyed "Nothing new" and cannot be picked or paid for.
+- **Re-enchants per item:** `1 + floor(r / 5)` (1 at r1–4, 2 at r5–9, 3 at r10–14, …). The count
+  used is stamped on the item (a data component) and shown in its tooltip: "Re-enchanted 1 of 2".
+  A re-enchant row is disabled when the item is out.
+- **Extra cost:** re-enchant rows cost more levels than a fresh enchant (lapis unchanged). Starts
+  at +100% and is multiplied by 0.9 on every point that does **not** add a re-enchant, so each
+  point changes exactly one chip: +100, 90, 81, 73, **73** (r5), 66, 59, 53, 48, **48** (r10), 43,
+  … never reaching +0%. The screen shows the normal price struck through with the real one beside
+  it (the Enchant Cost rendering, in the other direction).
+- Enchant Max / Enchant Bonus apply as to any enchant.
+
+**Details card**
+- Description: "Enchanted items can go back on the table and keep what they have." (unchanged)
+- Chips: `Re-enchants per item 1 → 2` (PLAIN; on a non-step point the preview reads `→ 2 at 5
+  points`) and `Extra cost +73% → +66%` (PERCENT).
+
+**Build notes**
+- Flip `REENCHANT_ON_HOLD`; `allowsReenchant(rank)` also checks the item's stamped count against
+  `1 + rank / 5`. In `EnchantmentMenuCrafterMixin`: when the filtered list is empty, zero that
+  row's cost/clue so vanilla disables it, and sync a "nothing new" flag for the label. Apply the
+  extra cost in `CrafterEnchantCost`'s seam (it already carries the pre-discount price per row to
+  the client). On a successful re-enchant, bump the stamp.
+
