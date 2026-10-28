@@ -938,7 +938,8 @@ public final class LiveStreamController {
         if (wasLive) LiveLifeEvents.stintEnded(ended == null ? null : ended.relayReason);
         if (watchingWithEye()) LiveTakeoverFlow.abandon();
         postMortem.clear();
-        // A pending offer goes with the stream: the relay stop (reason "died") opens it after the final upload.
+        // A pending offer goes with the stream: the relay stop (reason "died", or "removed" when the Live Eye
+        // came off) opens it after the final upload.
         handover = null;
         generation++;
         LOGGER.info("[DungeonTrain] live stream stopping ({}; {} segment(s) uploaded)", clean ? "clean" : "cut off",

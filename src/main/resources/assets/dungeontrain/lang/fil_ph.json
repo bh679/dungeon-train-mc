@@ -262,6 +262,7 @@
   "gui.dungeontrain.live.takeover": "Kunin ang Camcorder ng Broadcast",
   "gui.dungeontrain.live.takeover.tip": "Buksan ang chat o inventory para mag-click. Ang unang mag-click ang magla-live; magiging Camcorder ng Broadcast ang TV mo.",
   "chat.dungeontrain.live.takeover.offer": "Namatay nang live si %s. Bukas ang stream niya: %s",
+  "chat.dungeontrain.live.takeover.offer.removed": "Hinubad ni %s ang Camcorder ng Broadcast niya. Bukas ang stream niya: %s",
   "chat.dungeontrain.live.takeover.button": "Kunin ang Camcorder ng Broadcast",
   "chat.dungeontrain.live.takeover.button.tip": "Ang unang mag-click ang magla-live. Magiging Camcorder ng Broadcast ang TV sa ulo mo.",
   "chat.dungeontrain.live.takeover.won": "Naagaw mo ang stream. Magla-live na...",

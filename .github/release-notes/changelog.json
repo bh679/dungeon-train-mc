@@ -31450,6 +31450,23 @@
       "released_at": "2026-10-27T16:41:08Z"
     },
     {
+      "id": "live-eye-removed-takeover",
+      "version": "0.1566.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Taking off the Live Eye passes the stream on",
+      "summary": "When a streamer takes off their Live Eye, anyone watching with a TV on their head is now offered the stream, just like when a streamer dies. First click wins.",
+      "highlights": [],
+      "pr": 2375,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "dimensional-carriage-explosion-fix",
       "version": "0.1566.0",
       "type": "fix",

@@ -350,6 +350,7 @@
   "gui.dungeontrain.live.takeover": "Take the Live Eye",
   "gui.dungeontrain.live.takeover.tip": "Open chat or your inventory to click. First to click goes live; your TV becomes a Live Eye.",
   "chat.dungeontrain.live.takeover.offer": "%s died live. Their stream is up for grabs: %s",
+  "chat.dungeontrain.live.takeover.offer.removed": "%s took off their Live Eye. Their stream is up for grabs: %s",
   "chat.dungeontrain.live.takeover.button": "Take the Live Eye",
   "chat.dungeontrain.live.takeover.button.tip": "First to click goes live. The TV on your head becomes a Live Eye.",
   "chat.dungeontrain.live.takeover.won": "You took over the stream. Going live...",
