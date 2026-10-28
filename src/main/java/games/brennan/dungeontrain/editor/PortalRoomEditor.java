@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.train.CarriageStampGuard;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalClear;
@@ -9,6 +8,7 @@ import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomResize;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
+import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.track.variant.TrackKind;
@@ -20,32 +20,26 @@ import games.brennan.dungeontrain.world.PortalRoomResizeMemory;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.GameType;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Multi-plot editor for portal pocket rooms — the fourth editor category.
  *
  * <p>Modelled on {@link TunnelEditor}: one plot per registered variant name, laid out along
  * {@code +Z} at the {@link TrackSidePlots#X_PORTALS} column, with a bedrock cage and a dirty-check
- * snapshot per plot. Pre-enter session state is per-player; on exit the dispatcher tries
- * {@link #exit} first, falling back to {@link CarriageEditor#exit}.</p>
+ * snapshot per plot. The return point is recorded in {@link EditorSessions}, shared with every
+ * other editor.</p>
  *
  * <p><b>The one thing that is not like the others: size.</b> Every other plot kind has a footprint
  * fixed in code. A portal room's is the author's — free above a floor on every axis, with length
@@ -58,19 +52,6 @@ import java.util.UUID;
 public final class PortalRoomEditor {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-
-    private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
-
-    public record Session(ResourceKey<Level> dimension, Vec3 pos, float yaw, float pitch,
-                          GameType previousGameType) {}
-
-    public record SaveResult(boolean sourceAttempted, boolean sourceWritten, String sourceError) {
-        public static SaveResult skipped() { return new SaveResult(false, false, null); }
-        public static SaveResult written() { return new SaveResult(true, true, null); }
-        public static SaveResult failed(String error) { return new SaveResult(true, false, error); }
-    }
-
-    private static final Map<UUID, Session> SESSIONS = new HashMap<>();
 
     private PortalRoomEditor() {}
 
@@ -127,12 +108,7 @@ public final class PortalRoomEditor {
         if (!EditorStampedCategoryState.isActive(EditorCategory.PORTALS)) return null;
         for (String name : names()) {
             BlockPos o = plotOrigin(name, dims);
-            Vec3i size = plotSize(name, dims);
-            if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + size.getX()
-                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + size.getY() + 2
-                && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + size.getZ()) {
-                return name;
-            }
+            if (EditorPlotBox.contains(pos, o, plotSize(name, dims))) return name;
         }
         return null;
     }
@@ -198,20 +174,7 @@ public final class PortalRoomEditor {
         BlockPos origin = plotOrigin(name, dims);
         Vec3i size = plotSize(name, dims);
 
-        if (!SESSIONS.containsKey(player.getUUID())) {
-            GameType previous = player.gameMode.getGameModeForPlayer();
-            SESSIONS.put(player.getUUID(), new Session(
-                player.level().dimension(),
-                player.position(),
-                player.getYRot(),
-                player.getXRot(),
-                previous
-            ));
-            if (previous != GameType.CREATIVE) {
-                player.setGameMode(GameType.CREATIVE);
-            }
-        }
-
+        EditorSessions.rememberReturn(player);
         if (stamp) stampAllPlots(overworld, dims);
 
         List<BlockPos> doors = doorBases(name, origin, size, dims);
@@ -349,7 +312,7 @@ public final class PortalRoomEditor {
         EditorPlotEntityClearer.discardNonPlayersIn(level, origin, size);
         PortalCarriageBuilder.stampRoomAt(level, origin, dims, name, size, /*relight*/ true);
         if (outline) {
-            setOutline(level, origin, size, OUTLINE_BLOCK);
+            setOutline(level, origin, size, EditorPlotCage.OUTLINE_BLOCK);
         }
     }
 
@@ -426,7 +389,7 @@ public final class PortalRoomEditor {
         PortalClear.clearBoxRelit(overworld, boxOf(origin, size), PortalCorridorMask.NONE);
         // The cage is outside the cleared box and so is untouched above — re-set anyway, cheaply, so
         // a plot whose cage an author had knocked through comes back separated from its neighbours.
-        setOutline(overworld, origin, size, OUTLINE_BLOCK);
+        setOutline(overworld, origin, size, EditorPlotCage.OUTLINE_BLOCK);
     }
 
     /**
@@ -759,7 +722,7 @@ public final class PortalRoomEditor {
             PortalRoomResizeSlabs.restore(overworld, name, box.origin(), box.size(), step);
         }
 
-        setOutline(overworld, box.origin(), box.size(), OUTLINE_BLOCK);
+        setOutline(overworld, box.origin(), box.size(), EditorPlotCage.OUTLINE_BLOCK);
         captureSnapshot(overworld, box.origin(), box.size(), name);
     }
 
@@ -922,67 +885,16 @@ public final class PortalRoomEditor {
 
         PortalRoomTemplateStore.save(name, template);
 
-        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
-        try {
-            PortalRoomTemplateStore.saveToSource(name, template);
-            try {
-                TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, size)
-                    .saveToSource(TrackKind.PORTAL_ROOM, name);
-            } catch (IOException e) {
-                LOGGER.warn("[DungeonTrain] Portal room save: variant sidecar source write failed for {}: {}",
-                    name, e.toString());
-            }
-            return SaveResult.written();
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Portal room save: source write failed for {}: {}",
-                name, e.toString());
-            return SaveResult.failed(e.getMessage());
-        }
+        return EditorSave.toSource("Portal room save: " + name,
+            () -> PortalRoomTemplateStore.saveToSource(name, template),
+            () -> TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, size)
+                .saveToSource(TrackKind.PORTAL_ROOM, name));
     }
 
-    /**
-     * Restore player to pre-enter position/dimension/game mode. Returns false if no session —
-     * caller should then try {@link CarriageEditor#exit}.
-     */
-    public static boolean exit(ServerPlayer player) {
-        Session session = SESSIONS.remove(player.getUUID());
-        if (session == null) return false;
-        MinecraftServer server = player.getServer();
-        if (server == null) return false;
-        ServerLevel dim = server.getLevel(session.dimension());
-        if (dim == null) return false;
-        player.teleportTo(dim, session.pos().x, session.pos().y, session.pos().z,
-            session.yaw(), session.pitch());
-        if (player.gameMode.getGameModeForPlayer() != session.previousGameType()) {
-            player.setGameMode(session.previousGameType());
-        }
-        return true;
-    }
 
-    /** Draw the bedrock cage along the 12 edges of the plot. */
+    /** The plot cage, guarded: an observer on the template's outer face would see the boundary writes. */
     private static void setOutline(ServerLevel level, BlockPos origin, Vec3i size, BlockState state) {
-        // Flag-3 writes on the plot boundary: an observer on the template's outer face sees them.
-        CarriageStampGuard.run(() -> setOutlineGuarded(level, origin, size, state));
+        EditorPlotCage.setOutlineGuarded(level, origin, size, state);
     }
 
-    private static void setOutlineGuarded(ServerLevel level, BlockPos origin, Vec3i size, BlockState state) {
-        int x0 = origin.getX() - 1;
-        int y0 = origin.getY() - 1;
-        int z0 = origin.getZ() - 1;
-        int x1 = origin.getX() + size.getX();
-        int y1 = origin.getY() + size.getY();
-        int z1 = origin.getZ() + size.getZ();
-
-        for (int x = x0; x <= x1; x++) {
-            for (int y = y0; y <= y1; y++) {
-                for (int z = z0; z <= z1; z++) {
-                    int extremes = (x == x0 || x == x1 ? 1 : 0)
-                        + (y == y0 || y == y1 ? 1 : 0)
-                        + (z == z0 || z == z1 ? 1 : 0);
-                    if (extremes < 2) continue;
-                    level.setBlock(new BlockPos(x, y, z), state, 3);
-                }
-            }
-        }
-    }
 }

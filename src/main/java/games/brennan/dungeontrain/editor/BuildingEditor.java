@@ -18,7 +18,6 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
@@ -58,9 +57,7 @@ public final class BuildingEditor {
      * at 320. Only the resident category is ever stamped, so this row never meets another category's.
      */
     public static final int PLOT_Y = EditorLayout.BUILDINGS_PLOT_Y;
-    private static final BlockState OUTLINE = Blocks.BEDROCK.defaultBlockState();
     private static final BlockState PAD = Blocks.GRASS_BLOCK.defaultBlockState();
-    private static final int QUIET = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
 
     /** What each player last entered, which {@code save} writes when they are not standing in a plot. */
     private static final Map<UUID, String> SESSIONS = new ConcurrentHashMap<>();
@@ -88,16 +85,12 @@ public final class BuildingEditor {
 
     /** The building whose plot (cage included) holds {@code pos}, or empty. Resident category only. */
     public static Optional<String> plotContaining(BlockPos pos) {
-        if (EditorStampedCategoryState.current().orElse(null) != EditorCategory.BUILDINGS) return Optional.empty();
+        if (!EditorStampedCategoryState.isActive(EditorCategory.BUILDINGS)) return Optional.empty();
         List<String> names = BuildingRegistry.names();
         int index = Math.floorDiv(pos.getX() + 1, STRIDE_X);
         if (index < 0 || index >= names.size()) return Optional.empty();
         String name = names.get(index);
-        BlockPos o = slotOrigin(index);
-        Vec3i s = BuildingSizes.sizeOf(name);
-        boolean inside = pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + s.getX()
-            && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + s.getY() + 2
-            && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + s.getZ();
+        boolean inside = EditorPlotBox.contains(pos, slotOrigin(index), BuildingSizes.sizeOf(name));
         return inside ? Optional.of(name) : Optional.empty();
     }
 
@@ -114,7 +107,7 @@ public final class BuildingEditor {
      * existing one; null stamps what is saved, or an empty pad for a new name.
      */
     public static void enter(ServerPlayer player, ServerLevel level, String name, String copyOf) {
-        CarriageEditor.rememberReturn(player);
+        EditorSessions.rememberReturn(player);
         BuildingRegistry.register(name);
         SESSIONS.put(player.getUUID(), name);
         if (copyOf != null) {
@@ -133,7 +126,7 @@ public final class BuildingEditor {
      * the roof in front of its menu, or in the middle of it when {@code centre}.
      */
     public static void walkTo(ServerPlayer player, ServerLevel level, String name, boolean centre) {
-        CarriageEditor.rememberReturn(player);
+        EditorSessions.rememberReturn(player);
         SESSIONS.put(player.getUUID(), name);
         EditorPlotArrival.land(player, level, plotOrigin(name), BuildingSizes.sizeOf(name), !centre,
             EditorPlotArrival.Inside.CENTRE, null);
@@ -196,7 +189,7 @@ public final class BuildingEditor {
         paintCage(level, origin, before, Blocks.AIR.defaultBlockState());
         Vec3i after = BuildingSizes.setPending(name, wanted);
         clearOutside(level, origin, before, after);
-        paintCage(level, origin, after, OUTLINE);
+        paintCage(level, origin, after, EditorPlotCage.OUTLINE_BLOCK);
         return after;
     }
 
@@ -276,7 +269,7 @@ public final class BuildingEditor {
     private static void stampPlot(ServerLevel level, String name, BlockPos origin, CompoundTag structure) {
         Vec3i size = BuildingSizes.sizeOf(name);
         eraseSlot(level, origin);
-        paintCage(level, origin, size, OUTLINE);
+        paintCage(level, origin, size, EditorPlotCage.OUTLINE_BLOCK);
         if (structure == null) {
             fillBox(level, origin, origin.offset(size.getX() - 1, 0, size.getZ() - 1), PAD);
         } else {
@@ -290,9 +283,7 @@ public final class BuildingEditor {
 
     /** The whole slot a building could fill, cage and label headroom included. */
     private static void eraseSlot(ServerLevel level, BlockPos origin) {
-        Vec3i max = Buildings.MAX_SIZE;
-        fillBox(level, origin.offset(-1, -1, -1), origin.offset(max.getX(), max.getY() + 2, max.getZ()),
-            Blocks.AIR.defaultBlockState());
+        EditorPlotBox.eraseWithHeadroom(level, origin, Buildings.MAX_SIZE, EditorPlotCage.QUIET);
     }
 
     private static void captureSnapshot(ServerLevel level, String name, BlockPos origin) {
@@ -309,33 +300,12 @@ public final class BuildingEditor {
         if (after.getZ() < before.getZ()) fillBox(level, origin.offset(0, 0, after.getZ()), far, air);
     }
 
-    /** The twelve edges of the box one block outside the plot, in {@code state}. */
+    /** The plot cage in {@code state} — see {@link EditorPlotCage}. */
     private static void paintCage(ServerLevel level, BlockPos origin, Vec3i size, BlockState state) {
-        int x0 = origin.getX() - 1, y0 = origin.getY() - 1, z0 = origin.getZ() - 1;
-        int x1 = origin.getX() + size.getX(), y1 = origin.getY() + size.getY(), z1 = origin.getZ() + size.getZ();
-        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
-        for (int x = x0; x <= x1; x++) {
-            for (int y = y0; y <= y1; y++) {
-                for (int z = z0; z <= z1; z++) {
-                    int edges = (x == x0 || x == x1 ? 1 : 0) + (y == y0 || y == y1 ? 1 : 0) + (z == z0 || z == z1 ? 1 : 0);
-                    if (edges >= 2) level.setBlock(p.set(x, y, z), state, QUIET);
-                }
-            }
-        }
+        EditorPlotCage.setOutline(level, origin, size, state, EditorPlotCage.QUIET);
     }
 
     private static void fillBox(ServerLevel level, BlockPos min, BlockPos max, BlockState state) {
-        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
-        for (int x = min.getX(); x <= max.getX(); x++) {
-            for (int y = min.getY(); y <= max.getY(); y++) {
-                for (int z = min.getZ(); z <= max.getZ(); z++) {
-                    p.set(x, y, z);
-                    BlockState current = level.getBlockState(p);
-                    if (current == state) continue;
-                    if (current.hasBlockEntity()) level.removeBlockEntity(p);
-                    level.setBlock(p, state, QUIET);
-                }
-            }
-        }
+        EditorPlotBox.fill(level, min, max, state, EditorPlotCage.QUIET);
     }
 }

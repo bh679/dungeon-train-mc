@@ -459,18 +459,14 @@ public final class CarriageTemplateStore {
     /**
      * Phase-2 adapter — exposes carriage save/promote through the unified
      * {@link TemplateStore} surface so {@code SaveCommand} can dispatch
-     * without an {@code instanceof} chain. Wraps the per-editor
-     * {@code CarriageEditor.SaveResult} into the shared
-     * {@link games.brennan.dungeontrain.template.SaveResult} record (same
-     * shape, just hoisted into the {@code template/} package).
+     * without an {@code instanceof} chain.
      */
     private static final TemplateStore<Template.Carriage> ADAPTER = new TemplateStore<>() {
         @Override public TemplateKind kind() { return TemplateKind.CARRIAGE; }
 
         @Override
         public SaveResult save(ServerPlayer player, Template.Carriage template) throws Exception {
-            CarriageEditor.SaveResult r = CarriageEditor.save(player, template.variant());
-            return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
+            return CarriageEditor.save(player, template.variant());
         }
 
         @Override

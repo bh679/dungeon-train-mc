@@ -324,9 +324,8 @@ public final class PillarTemplateStore {
                 // Phase-4 Bug fix: use the explicit-name save so Stores.save
                 // works for non-default-named pillar variants (template label
                 // menu, save-all iteration, save-model command).
-                PillarEditor.SaveResult r = PillarEditor.save(player,
+                return PillarEditor.save(player,
                     new games.brennan.dungeontrain.template.PillarTemplateId(section, template.name()));
-                return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
             }
 
             @Override
@@ -374,9 +373,8 @@ public final class PillarTemplateStore {
             public SaveResult save(ServerPlayer player, Template.Adjunct template) throws Exception {
                 // Phase-4 Bug fix: pass template.name() through so non-default
                 // adjunct variants save correctly via Stores.save.
-                PillarEditor.SaveResult r = PillarEditor.save(player,
+                return PillarEditor.save(player,
                     new games.brennan.dungeontrain.template.PillarAdjunctTemplateId(adjunct, template.name()));
-                return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
             }
 
             @Override

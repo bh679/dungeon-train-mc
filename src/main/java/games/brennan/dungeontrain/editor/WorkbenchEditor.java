@@ -228,6 +228,7 @@ public final class WorkbenchEditor {
                              EditorPlotArrival.Inside inside) {
         BlockPos origin = plotOrigin(overworld, stagedId);
         if (origin == null) return;
+        EditorSessions.rememberReturn(player);
         EditorPlotArrival.land(player, overworld, origin, plotSize(stagedId), onTop, inside, null);
     }
 
