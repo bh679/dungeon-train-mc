@@ -680,6 +680,15 @@ dependencies {
         implementation "maven.modrinth:sable-pathfinder:${sablepathfinder_version}"
     }
 
+    // Sable: Ragdolls — REQUIRED third-party dep (All Rights Reserved in every released jar, so
+    // never jarJar'd; see gradle.properties). The ragdoll body a player leaves where they died:
+    // DT compiles against dev.leo.sableplayerragdoll.api.RagdollAPI behind compat/RagdollBridge,
+    // which no-ops when the mod is absent or its API stops linking.
+    implementation "maven.modrinth:sable-ragdolls:${sableragdolls_version}"
+    // Sable: Ragdoll - Patch — Modrinth-only OPTIONAL (needs Ragdolls 0.7.5, which CurseForge lacks).
+    // Nothing compiles against it; on the dev classpath so runClient behaves like a Modrinth player.
+    runtimeOnly "maven.modrinth:sableragdoll-patch:${sableragdollpatch_version}"
+
     // Second-lap overworld mods (WWOO + Biomes O' Plenty) and their libraries — REQUIRED third-party
     // deps (see gradle.properties). Not bundled. DT names their biomes/features only by registry id,
     // except TerraBlender, whose Regions API builds the BoP-only biome source.
@@ -1053,6 +1062,8 @@ tasks.register('generateModMetadata', ProcessResources) {
         fastpaintings_min_version         : fastpaintings_min_version,
         moonlight_min_version             : moonlight_min_version,
         sablepathfinder_min_version       : sablepathfinder_min_version,
+        sableragdolls_min_version         : sableragdolls_min_version,
+        sableragdollpatch_min_version     : sableragdollpatch_min_version,
         // Second-lap overworld mods — floors only.
         wwoo_min_version                  : wwoo_min_version,
         biomesoplenty_min_version         : biomesoplenty_min_version,

@@ -3,6 +3,12 @@
 Branch `dev/train-stays-after-death`, version 0.1560.20. Offsets are from the subject as (along the
 train, up, across); along is positive ahead. Carriages are 7 wide.
 
+The body is a Sable: Ragdolls ragdoll wearing your skin and gear, left where you died (server
+`ship/sable/DeathBodyRagdoll`, sent as `bodyId` on the death scene packet). Shots whose subject is
+"the body" or "you" follow that ragdoll wherever physics takes it; your own player model is hidden
+while it exists. Without the ragdoll (void death, spawn refused) they frame the pinned player
+position as before.
+
 ## Phase 1 (plays once)
 
 | # | Label | Camera | Subject | Position | Hold | Skipped when |
