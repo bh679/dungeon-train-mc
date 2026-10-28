@@ -31482,6 +31482,23 @@
       "released": true,
       "released_in": "v0.1567.0",
       "released_at": "2026-10-28T04:54:28Z"
+    },
+    {
+      "id": "reload-settle-rider-fling",
+      "version": "0.1568.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "No more sudden jumps when revisiting carriages",
+      "summary": "Walking back along the train and then forward again could suddenly throw you several carriages ahead, into the walls of a carriage you had not reached yet. Carriages you return to now stay exactly where they belong, and so do you.",
+      "highlights": [],
+      "pr": 2378,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
