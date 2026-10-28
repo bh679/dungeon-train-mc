@@ -172,7 +172,7 @@ public final class LiveAudioPump implements AutoCloseable {
                         if (!mixed) for (int i = 0; i < 2 * n; i++) game.put(i, (short) 0);
                         LiveMic.fill(voice, n);
                         out.clear();
-                        MicDsp.mixInterleave4(game, voice, n, out.asShortBuffer());
+                        MicDsp.mixInterleave4(game, voice, n, out.asShortBuffer(), LiveMic.mixGameGain());
                         mixed = true;
                     }
                     LivePerfStats.audioRendered(System.nanoTime() - t0);

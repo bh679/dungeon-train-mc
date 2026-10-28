@@ -104,8 +104,16 @@ public final class LiveMic {
             java.util.Arrays.fill(out, 0, n, (short) 0);
             return;
         }
-        MicDsp.applyGain(out, n, LiveFeedClientConfig.micGainPercent() / 100f);
         if (LiveFeedClientConfig.micNoiseGate()) gate.process(out, n);
+        MicDsp.applyGain(out, n, MicDsp.micGain(LiveFeedClientConfig.micMixPercent()));
+    }
+
+    /**
+     * Pump thread: the game's level in the mix track. The balance only applies while the mic is
+     * switched on, so a stream with the mic off sounds exactly like one without a mic.
+     */
+    static float mixGameGain() {
+        return on() ? MicDsp.gameGain(LiveFeedClientConfig.micMixPercent()) : 1f;
     }
 
     private static void closeCapture() {

@@ -95,11 +95,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: sixty-six rows (five repeated on Performance), none of the conditional rows present")
+    @DisplayName("Plain client: seventy-one rows (five repeated on Performance), none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(66, rows.size());
+        assertEquals(71, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -218,25 +218,38 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        // 66 rows, five of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
-        assertEquals(70, rows.size());
+        // 71 rows (five of them Stream's section titles), five (the Live Feed's frame-rate costs) listed on
+        // Performance as well as Stream.
+        assertEquals(75, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
 
     @Test
-    @DisplayName("The Stream tab holds Livestreaming and the what-viewers-see rows; General no longer does")
+    @DisplayName("The Stream tab holds Livestreaming and the what-viewers-see rows in titled sections; General no longer does")
     void streamTabRows() {
-        assertEquals(List.of(ClientOptionsTab.Row.LIVESTREAM, ClientOptionsTab.Row.STREAM_GUI,
-                        ClientOptionsTab.Row.STREAM_CHAT, ClientOptionsTab.Row.STREAM_AUDIO,
-                        ClientOptionsTab.Row.MIC_SUPPORT, ClientOptionsTab.Row.MIC_DEVICE, ClientOptionsTab.Row.MIC_GAIN, ClientOptionsTab.Row.MIC_MODE,
-                        ClientOptionsTab.Row.STREAM_NAME_TAG,
-                        ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG, ClientOptionsTab.Row.LIVE_CHAT,
-                        ClientOptionsTab.Row.LIVE_CHAT_TRANSLATION, ClientOptionsTab.Row.LIVE_MOMENT_ADVANCEMENTS, ClientOptionsTab.Row.LIVE_MOMENT_PHOTOS,
-                        ClientOptionsTab.Row.LIVE_MOMENT_BOOKS, ClientOptionsTab.Row.TWITCH_HINT, ClientOptionsTab.Row.LIVE_FEED_VIEWING, ClientOptionsTab.Row.WORN_TV_STREAMS, ClientOptionsTab.Row.STREAM_SIZE,
+        assertEquals(List.of(ClientOptionsTab.Row.STREAM_SECTION_BROADCAST, ClientOptionsTab.Row.LIVESTREAM,
+                        ClientOptionsTab.Row.STREAM_GUI, ClientOptionsTab.Row.STREAM_CHAT, ClientOptionsTab.Row.STREAM_NAME_TAG,
+                        ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG, ClientOptionsTab.Row.STREAM_AUDIO,
+                        ClientOptionsTab.Row.STREAM_SECTION_MIC, ClientOptionsTab.Row.MIC_SUPPORT, ClientOptionsTab.Row.MIC_DEVICE,
+                        ClientOptionsTab.Row.MIC_MIX, ClientOptionsTab.Row.MIC_MODE,
+                        ClientOptionsTab.Row.STREAM_SECTION_PICTURE, ClientOptionsTab.Row.STREAM_SIZE,
                         ClientOptionsTab.Row.STREAM_SAVE_BANDWIDTH,
+                        ClientOptionsTab.Row.STREAM_SECTION_CHAT, ClientOptionsTab.Row.LIVE_CHAT,
+                        ClientOptionsTab.Row.LIVE_CHAT_TRANSLATION, ClientOptionsTab.Row.LIVE_MOMENT_ADVANCEMENTS, ClientOptionsTab.Row.LIVE_MOMENT_PHOTOS,
+                        ClientOptionsTab.Row.LIVE_MOMENT_BOOKS, ClientOptionsTab.Row.TWITCH_HINT,
+                        ClientOptionsTab.Row.STREAM_SECTION_WATCHING, ClientOptionsTab.Row.LIVE_FEED_VIEWING,
+                        ClientOptionsTab.Row.WORN_TV_STREAMS,
                         ClientOptionsTab.Row.HEAD_VIEWER_SIZE, ClientOptionsTab.Row.HEAD_VIEWER_SIZE_STREAMING),
                 ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true));
+        // Every section title is a heading, and every heading opens a section that has rows under it.
+        List<ClientOptionsTab.Row> stream = ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true);
+        assertTrue(ClientOptionsTab.isHeading(stream.get(0)));
+        for (int i = 0; i < stream.size(); i++) {
+            if (!ClientOptionsTab.isHeading(stream.get(i))) continue;
+            assertTrue(i + 1 < stream.size() && !ClientOptionsTab.isHeading(stream.get(i + 1)),
+                    stream.get(i) + " has no rows under it");
+        }
         assertFalse(ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, false, true)
                 .contains(ClientOptionsTab.Row.LIVESTREAM));
     }
@@ -401,6 +414,8 @@ final class ClientOptionsTabTest {
             String key = row.captionKey();
             assertNotNull(key, row + " has no caption key");
             assertTrue(en.has(key), row + ": en_us lacks its name " + key);
+            // A section title is a caption alone: no hint.
+            if (ClientOptionsTab.isHeading(row)) continue;
             assertTrue(en.has(key + ".hint"), row + ": en_us lacks its hint " + key + ".hint");
         }
     }
@@ -411,7 +426,7 @@ final class ClientOptionsTabTest {
         JsonObject en = JsonParser.parseString(Files.readString(RepoPaths.langFile("en_us"), StandardCharsets.UTF_8))
                 .getAsJsonObject();
         for (ClientOptionsTab.Row row : ClientOptionsTab.Row.values()) {
-            if (row.captionKey() == null) continue;
+            if (row.captionKey() == null || ClientOptionsTab.isHeading(row)) continue;
             String hint = en.get(row.captionKey() + ".hint").getAsString();
             // ~180px of 5-6px glyphs at GUI scale 1 beside a 100px control; longer reads as cut.
             assertTrue(hint.length() <= 44, row + ": hint too long to fit the row: \"" + hint + "\"");

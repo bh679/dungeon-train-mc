@@ -33,6 +33,28 @@ class MicDspTest {
     }
 
     @Test
+    void theBalanceTurnsTheGameDownInTheMixOnly() {
+        ShortBuffer game = ShortBuffer.wrap(new short[] {1000, -1000});
+        ShortBuffer out = ShortBuffer.allocate(4);
+        MicDsp.mixInterleave4(game, new short[] {100}, 1, out, 0.5f);
+        assertArrayEquals(new short[] {600, -400, 1000, -1000}, out.array());
+    }
+
+    @Test
+    void theBalanceRunsFromGameOnlyToMicOnlyWithBothFullAtHalf() {
+        assertEquals(1f, MicDsp.gameGain(0));
+        assertEquals(0f, MicDsp.micGain(0));
+        assertEquals(1f, MicDsp.gameGain(50));
+        assertEquals(1f, MicDsp.micGain(50));
+        assertEquals(0.5f, MicDsp.gameGain(75), 1e-6);
+        assertEquals(1f, MicDsp.micGain(75));
+        assertEquals(1f, MicDsp.gameGain(25));
+        assertEquals(0.5f, MicDsp.micGain(25), 1e-6);
+        assertEquals(0f, MicDsp.gameGain(100));
+        assertEquals(1f, MicDsp.micGain(100));
+    }
+
+    @Test
     void gainScalesAndClips() {
         short[] s = {1000, -1000, 20_000};
         MicDsp.applyGain(s, 3, 2f);

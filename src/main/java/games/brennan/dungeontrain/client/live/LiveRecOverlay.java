@@ -48,10 +48,11 @@ import java.util.function.Consumer;
  * of LIVE. It is drawn in the same pass, so it never reaches the broadcast either; being outside any
  * screen's widget list, its click is caught in {@link #onMousePressed}.</p>
  *
- * <p>On a stream that carries a mic track ({@link LiveMic#enabled()}) a mic button sits right of LIVE
+ * <p>On a stream that carries a mic track ({@link LiveMic#enabled()}) the mic sits right of LIVE
  * (End Stream moves right of it): crossed out in red while the mic is off, which it is at the start of
- * every stream; clicking it with a screen open (or pressing Toggle Mic, {@link LiveMicHotkeys}) turns it
- * on. With push to talk set it shows dimmed until the key is held.</p>
+ * every stream. In play it is a small icon only; with a screen open, where the mouse can reach it, it
+ * is a button that turns the mic on and off (Toggle Mic, {@link LiveMicHotkeys}, works either way).
+ * With push to talk set it shows dimmed until the key is held.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveRecOverlay {
@@ -91,6 +92,8 @@ public final class LiveRecOverlay {
     /** The mic button: a square vanilla button right of LIVE, the mic sprite inside. */
     static final int MIC_SIZE = 20;
     static final int MIC_ICON = 16;
+    /** The mic's state in play, with no screen open: just the sprite, smaller, nothing to press. */
+    static final int MIC_HUD_ICON = 10;
     private static final ResourceLocation MIC_ON = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/mic_on");
     private static final ResourceLocation MIC_OFF = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/mic_off");
     private static final int WHITE = 0xF0FFFFFF;
@@ -176,7 +179,11 @@ public final class LiveRecOverlay {
         g.pose().scale(BADGE_SCALE, BADGE_SCALE, 1f);
         g.drawString(font, LABEL, 0, 0, 0xFFFFFFFF, true);
         g.pose().popPose();
-        if (LiveMic.enabled()) micButton(g, font);
+        if (LiveMic.enabled()) {
+            // A button only where a mouse can press it; in play, a small state icon.
+            if (Minecraft.getInstance().screen != null) micButton(g, font);
+            else micIcon(g, font);
+        }
         if (LiveStreamController.get().postMortem()) endStreamButton(g, font);
         int viewers = LiveStreamController.get().viewerCount();
         if (viewers >= 0) viewerCount(g, font, left, countTop(font.lineHeight), viewers);
@@ -201,6 +208,19 @@ public final class LiveRecOverlay {
         int left = LiveMic.enabled() ? micBox(font).x() + MIC_SIZE + END_GAP : labelRight(font) + END_GAP;
         int w = font.width(END_STREAM) + 2 * END_PAD_X;
         return new LiveHeadViewer.Box(left, innerTop + (textH - END_H) / 2, w, END_H);
+    }
+
+    /** The in-play mic: the sprite alone, beside LIVE, dimmed while push to talk is up. */
+    private static void micIcon(GuiGraphics g, Font font) {
+        LiveHeadViewer.Box b = micBox(font);
+        int x = b.x() + (MIC_SIZE - MIC_HUD_ICON) / 2;
+        int y = b.y() + (MIC_SIZE - MIC_HUD_ICON) / 2;
+        boolean on = LiveMic.on();
+        boolean dim = on && !LiveMic.transmitting();
+        if (dim) g.setColor(1f, 1f, 1f, 0.45f);
+        RenderSystem.enableBlend();
+        g.blitSprite(on ? MIC_ON : MIC_OFF, x, y, MIC_HUD_ICON, MIC_HUD_ICON);
+        if (dim) g.setColor(1f, 1f, 1f, 1f);
     }
 
     private static void micButton(GuiGraphics g, Font font) {

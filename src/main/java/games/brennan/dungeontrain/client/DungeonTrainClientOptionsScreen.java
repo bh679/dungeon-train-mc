@@ -40,6 +40,7 @@ import games.brennan.ediblebackpacks.client.ClientAutoCollect;
 import games.brennan.ediblebackpacks.config.AutoCollectMode;
 import games.brennan.ediblebackpacks.config.EBClientConfig;
 import net.minecraft.client.Minecraft;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -310,6 +311,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
      * or — for the two rows that stand for several — the expanded lines.
      */
     private void addRow(SettingsRowList list, ClientOptionsTab.Row row) {
+        if (ClientOptionsTab.isHeading(row)) {
+            list.addWidget(caption(Component.translatable(row.captionKey()).withStyle(ChatFormatting.BOLD)));
+            return;
+        }
         switch (row) {
             case PERFORMANCE_TIPS -> addPerformanceTips(list);
             case DISCORD_ACCOUNT -> addDiscordAccount(list);
@@ -701,7 +706,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case STREAM_AUDIO -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.streamAudio(),
                     LiveFeedClientConfig::setStreamAudio), key + ".tip");
 
-            // ---- Microphone (LiveMic): read when the next stream starts, except gain and mode, which apply at once.
+            // ---- Microphone (LiveMic): read when the next stream starts, except the balance and mode, which apply at once.
             case MIC_SUPPORT -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.micSupport(),
                     LiveFeedClientConfig::setMicSupport), key + ".tip");
             case MIC_DEVICE -> {
@@ -719,19 +724,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                         (btn, v) -> LiveFeedClientConfig.setMicDevice(v)),
                         key + ".tip");
             }
-            case MIC_GAIN -> {
-                int current = LiveFeedClientConfig.micGainPercent();
-                List<Integer> steps = new ArrayList<>(MIC_GAIN_STEPS);
-                if (!steps.contains(current)) { steps.add(current); steps.sort(null); }
-                yield Setting.of(
-                        CycleButton.<Integer>builder(v -> Component.literal(v + "%"))
-                                .withValues(steps)
-                                .withInitialValue(current)
-                                .displayOnlyValue()
-                                .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
-                                        (btn, v) -> LiveFeedClientConfig.setMicGainPercent(v)),
-                        key + ".tip");
-            }
+            // One slider for game sound against voice in the mix; applies at once.
+            case MIC_MIX -> Setting.of(slider(micMixOption(key)), key + ".tip");
             case MIC_MODE -> Setting.of(
                     CycleButton.<Boolean>builder(ptt -> Component.translatable(ptt ? key + ".push_to_talk" : key + ".always_on"))
                             .withValues(false, true)
@@ -1079,6 +1073,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // Expanded by addRow() into several rows; there is no single control for them.
             case PERFORMANCE_TIPS -> throw new IllegalStateException("PERFORMANCE_TIPS is expanded, not built");
             case DISCORD_ACCOUNT -> throw new IllegalStateException("DISCORD_ACCOUNT is expanded, not built");
+            case STREAM_SECTION_BROADCAST, STREAM_SECTION_MIC, STREAM_SECTION_PICTURE, STREAM_SECTION_CHAT,
+                 STREAM_SECTION_WATCHING -> throw new IllegalStateException(row + " is a heading, not built");
             case TWITCH_ACCOUNT -> throw new IllegalStateException("TWITCH_ACCOUNT is expanded, not built");
         };
     }
@@ -1228,7 +1224,18 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     }
 
     /** The mic gain choices, percent. */
-    private static final List<Integer> MIC_GAIN_STEPS = List.of(50, 75, 100, 150, 200, 300);
+    /** The game/mic balance in 5% notches: {@code Mic 30%}, with the game at {@code 100 - that}. */
+    private static OptionInstance<Integer> micMixOption(String key) {
+        return new OptionInstance<>(
+                key,
+                OptionInstance.noTooltip(),
+                (caption, notch) -> Component.translatable(key + ".value", notch * MIC_MIX_STEP),
+                new OptionInstance.IntRange(0, 100 / MIC_MIX_STEP),
+                Math.round(LiveFeedClientConfig.micMixPercent() / (float) MIC_MIX_STEP),
+                notch -> LiveFeedClientConfig.setMicMixPercent(notch * MIC_MIX_STEP));
+    }
+
+    private static final int MIC_MIX_STEP = 5;
 
     /** "" is the system default; a device name can be long, so it is cut to fit the button. */
     private static Component micDeviceLabel(String device) {

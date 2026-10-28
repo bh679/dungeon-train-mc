@@ -88,7 +88,7 @@ final class ClientOptionsIcons {
             case STREAM_AUDIO -> Icon.item(Items.JUKEBOX);
             case MIC_SUPPORT -> Icon.item(Items.LIGHTNING_ROD);
             case MIC_DEVICE -> Icon.item(Items.NOTE_BLOCK);
-            case MIC_GAIN -> Icon.item(Items.GOAT_HORN);
+            case MIC_MIX -> Icon.item(Items.GOAT_HORN);
             case MIC_MODE -> Icon.item(Items.STONE_BUTTON);
             case STREAM_NAME_TAG -> Icon.item(Items.NAME_TAG);
             case STREAM_POPUPS_OVER_TAG -> Icon.item(Items.KNOWLEDGE_BOOK);
@@ -104,6 +104,9 @@ final class ClientOptionsIcons {
             case STREAM_SAVE_BANDWIDTH -> Icon.item(Items.PISTON);
             case HEAD_VIEWER_SIZE -> Icon.item(Items.GLASS);
             case HEAD_VIEWER_SIZE_STREAMING -> Icon.item(Items.TINTED_GLASS);
+            // Section titles are drawn as captions; they have no icon.
+            case STREAM_SECTION_BROADCAST, STREAM_SECTION_MIC, STREAM_SECTION_PICTURE, STREAM_SECTION_CHAT,
+                 STREAM_SECTION_WATCHING -> throw new IllegalArgumentException(row + " is a heading");
 
             case SCALE_ALL -> ACCESSIBILITY;
             case SCALE_WORLDSPACE -> Icon.item(Items.FILLED_MAP);

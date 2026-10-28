@@ -30,16 +30,36 @@ public final class MicDsp {
      * {@code mic} mono; both are read from index 0.
      */
     static void mixInterleave4(ShortBuffer game, short[] mic, int n, ShortBuffer out) {
+        mixInterleave4(game, mic, n, out, 1f);
+    }
+
+    /** {@link #mixInterleave4}, with the game turned to {@code gameGain} in the mix only; the game-only pair is untouched. */
+    static void mixInterleave4(ShortBuffer game, short[] mic, int n, ShortBuffer out, float gameGain) {
         for (int i = 0; i < n; i++) {
             short l = game.get(2 * i);
             short r = game.get(2 * i + 1);
             short m = mic[i];
             int o = 4 * i;
-            out.put(o, saturate(l + m));
-            out.put(o + 1, saturate(r + m));
+            int ml = gameGain == 1f ? l : Math.round(l * gameGain);
+            int mr = gameGain == 1f ? r : Math.round(r * gameGain);
+            out.put(o, saturate(ml + m));
+            out.put(o + 1, saturate(mr + m));
             out.put(o + 2, l);
             out.put(o + 3, r);
         }
+    }
+
+    /**
+     * The game's level in the mix for a game/mic balance of {@code percent}: full up to 50, then down to
+     * nothing at 100 (mic only).
+     */
+    static float gameGain(int percent) {
+        return Math.max(0f, Math.min(1f, (100 - percent) / 50f));
+    }
+
+    /** The mic's level for a balance of {@code percent}: nothing at 0 (game only), full from 50. */
+    static float micGain(int percent) {
+        return Math.max(0f, Math.min(1f, percent / 50f));
     }
 
     /**

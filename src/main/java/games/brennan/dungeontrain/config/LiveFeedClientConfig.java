@@ -20,7 +20,7 @@ public final class LiveFeedClientConfig {
     // Microphone (Live Eye mic): grouped here so other live settings merge around them.
     public static final ModConfigSpec.BooleanValue MIC_SUPPORT;
     public static final ModConfigSpec.ConfigValue<String> MIC_DEVICE;
-    public static final ModConfigSpec.IntValue MIC_GAIN_PERCENT;
+    public static final ModConfigSpec.IntValue MIC_MIX_PERCENT;
     public static final ModConfigSpec.BooleanValue MIC_PUSH_TO_TALK;
     public static final ModConfigSpec.BooleanValue MIC_NOISE_GATE;
     public static final ModConfigSpec.EnumValue<NameTag> STREAM_NAME_TAG;
@@ -64,9 +64,8 @@ public final class LiveFeedClientConfig {
     static final List<Integer> CAPTURE_SIZES = List.of(640, 854, 960, 1280, 1920);
     static final int CAPTURE_WIDTH_MIN = 320;
     static final int CAPTURE_WIDTH_MAX = 1920;
-    /** The mic gain's range, percent. */
-    static final int MIC_GAIN_MIN = 0;
-    static final int MIC_GAIN_MAX = 300;
+    /** The game/mic balance's default: both at full volume. */
+    static final int MIC_MIX_DEFAULT = 50;
 
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
@@ -89,9 +88,9 @@ public final class LiveFeedClientConfig {
         MIC_DEVICE = b
             .comment("Which microphone to use, by the name your system gives it. Empty = the system default. A name that is no longer plugged in falls back to the default.")
             .define("micDevice", "");
-        MIC_GAIN_PERCENT = b
-            .comment("Microphone volume on the stream, in percent. 100 = as captured.")
-            .defineInRange("micGainPercent", 100, MIC_GAIN_MIN, MIC_GAIN_MAX);
+        MIC_MIX_PERCENT = b
+            .comment("Game sound versus your voice on the stream, while the mic is on. 0 = game only, 50 = both at full volume, 100 = your voice only. Moving off 50 turns the other one down. Applies at once.")
+            .defineInRange("micMixPercent", MIC_MIX_DEFAULT, 0, 100);
         MIC_PUSH_TO_TALK = b
             .comment("Push to talk: with the mic switched on, you are only heard while the Push to Talk key is held. Off = heard whenever the mic is on.")
             .define("micPushToTalk", false);
@@ -278,13 +277,14 @@ public final class LiveFeedClientConfig {
         MIC_DEVICE.save();
     }
 
-    public static int micGainPercent() { return loaded() ? MIC_GAIN_PERCENT.get() : 100; }
+    /** The game-versus-mic balance on the stream: 0 = game only, 50 = both at full, 100 = mic only. */
+    public static int micMixPercent() { return loaded() ? MIC_MIX_PERCENT.get() : MIC_MIX_DEFAULT; }
 
-    public static void setMicGainPercent(int value) {
-        int v = Math.max(MIC_GAIN_MIN, Math.min(MIC_GAIN_MAX, value));
-        if (!loaded() || MIC_GAIN_PERCENT.get() == v) return;
-        MIC_GAIN_PERCENT.set(v);
-        MIC_GAIN_PERCENT.save();
+    public static void setMicMixPercent(int value) {
+        int v = Math.max(0, Math.min(100, value));
+        if (!loaded() || MIC_MIX_PERCENT.get() == v) return;
+        MIC_MIX_PERCENT.set(v);
+        MIC_MIX_PERCENT.save();
     }
 
     public static boolean micPushToTalk() { return loaded() && MIC_PUSH_TO_TALK.get(); }
