@@ -97,6 +97,26 @@ public final class PerkPointEvents {
         return total;
     }
 
+    /**
+     * The advancements in {@code ids} that earn unlock points, and the points they earn, by the same
+     * rules as {@link #recompute}: {count, points}. The death perks menu tells the player what this
+     * life earned.
+     */
+    public static int[] pointsFor(ServerPlayer player, java.util.Collection<ResourceLocation> ids) {
+        int count = 0, points = 0;
+        for (ResourceLocation id : ids) {
+            if (!counts(id)) continue;
+            AdvancementHolder holder = player.server.getAdvancements().get(id);
+            DisplayInfo display = holder == null ? null : holder.value().display().orElse(null);
+            if (display == null) continue;
+            boolean secretMenuHidden = display.isHidden()
+                && id.getPath().startsWith(BandAdvancements.SECRETE_MENU_PREFIX);
+            count++;
+            points += UnlockPointLedger.weight(display.getType(), secretMenuHidden, isCapstone(id));
+        }
+        return new int[] {count, points};
+    }
+
     /** Everything Burrito, It's Not That Simple and every tab-complete advancement: 10 points each. */
     static boolean isCapstone(ResourceLocation id) {
         return id.equals(CompletionistAdvancement.ID) || id.equals(StartAgainAdvancement.ID)

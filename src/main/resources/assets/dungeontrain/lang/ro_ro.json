@@ -5764,5 +5764,15 @@
   "gui.dungeontrain.perks.death.tile.ranks": "Puncte puse",
   "gui.dungeontrain.perks.death.tile.perks": "Avantaje întărite",
   "gui.dungeontrain.perks.death.tile.top": "Cele mai multe puncte",
-  "gui.dungeontrain.perks.death.unlock_hint": "Deblochează avantaje pentru viața următoare."
+  "gui.dungeontrain.perks.death.unlock_hint": "Deblochează avantaje pentru viața următoare.",
+  "gui.dungeontrain.perks.story.earned": "În această viață ai obținut %s, care ți-au adus %s.",
+  "gui.dungeontrain.perks.story.advancements.one": "%s realizare",
+  "gui.dungeontrain.perks.story.advancements.few": "%s realizări",
+  "gui.dungeontrain.perks.story.advancements.other": "%s de realizări",
+  "gui.dungeontrain.perks.story.points.one": "%s punct de deblocare",
+  "gui.dungeontrain.perks.story.points.few": "%s puncte de deblocare",
+  "gui.dungeontrain.perks.story.points.other": "%s de puncte de deblocare",
+  "gui.dungeontrain.perks.story.next_life": "Puncte care te vor ajuta în viața următoare.",
+  "gui.dungeontrain.perks.story.unlock": "Deblochează avantaje ca să le poți activa în viața următoare.",
+  "gui.dungeontrain.perks.story.select": "Alege acum un avantaj ca să vezi ce face."
 }

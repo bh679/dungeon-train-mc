@@ -21,12 +21,12 @@ class DeathPerksPhaseTest {
     @Test
     @DisplayName("the menu takes input only once every layer is up; a click brings them all up at once")
     void liveOnceBuilt() {
-        DeathPerksPhase phase = new DeathPerksPhase(POINTED, () -> null, 0);
+        DeathPerksPhase phase = new DeathPerksPhase(POINTED, DeathStory.of(null, POINTED, "en_us"), () -> null, 0);
         long done = phase.reveal().doneAt();
         assertFalse(phase.menuLive(0));
         assertFalse(phase.menuLive(done - 1));
         assertTrue(phase.menuLive(done));
-        DeathPerksPhase skipped = new DeathPerksPhase(POINTED, () -> null, 0);
+        DeathPerksPhase skipped = new DeathPerksPhase(POINTED, DeathStory.of(null, POINTED, "en_us"), () -> null, 0);
         skipped.advance(500);
         assertTrue(skipped.menuLive(500));
     }
@@ -35,7 +35,7 @@ class DeathPerksPhaseTest {
     @DisplayName("a life with points shows them through the build-up, then the rings empty")
     void pointsThenDrain() {
         PerkMenuSnapshot live = new PerkMenuSnapshot(Map.of("health", 4, "speed", 2), Map.of("health", 3), 1, 2);
-        DeathPerksPhase phase = new DeathPerksPhase(POINTED, () -> null, 0);
+        DeathPerksPhase phase = new DeathPerksPhase(POINTED, DeathStory.of(null, POINTED, "en_us"), () -> null, 0);
         long done = phase.reveal().doneAt();
         assertEquals(POINTED.active(), phase.view(live, 0).active(), "the points held at death, not the live ones");
         assertEquals(POINTED.active(), phase.view(live, done - 1).active());
@@ -52,9 +52,9 @@ class DeathPerksPhaseTest {
     @Test
     @DisplayName("a life with no points skips the active layer")
     void noPointsNoActiveLayer() {
-        DeathPerksPhase none = new DeathPerksPhase(NO_POINTS, () -> null, 0);
-        DeathPerksPhase some = new DeathPerksPhase(POINTED, () -> null, 0);
-        assertTrue(none.reveal().doneAt() < some.reveal().doneAt());
+        DeathPerksPhase none = new DeathPerksPhase(NO_POINTS, DeathStory.of(null, NO_POINTS, "en_us"), () -> null, 0);
+        DeathPerksPhase some = new DeathPerksPhase(POINTED, DeathStory.of(null, POINTED, "en_us"), () -> null, 0);
+        assertTrue(none.reveal().startOf(MenuReveal.Stage.CLASSES) < some.reveal().startOf(MenuReveal.Stage.CLASSES));
         assertEquals(0.0, none.reveal().alpha(MenuReveal.Stage.ACTIVE, 60_000));
     }
 
@@ -78,9 +78,9 @@ class DeathPerksPhaseTest {
     @Test
     @DisplayName("never unlocked a perk: the guided first time")
     void firstTime() {
-        DeathPerksPhase fresh = new DeathPerksPhase(PerkMenuSnapshot.EMPTY, () -> null, 0);
+        DeathPerksPhase fresh = new DeathPerksPhase(PerkMenuSnapshot.EMPTY, DeathStory.of(null, PerkMenuSnapshot.EMPTY, "en_us"), () -> null, 0);
         assertTrue(fresh.reveal().firstTime());
-        assertFalse(new DeathPerksPhase(NO_POINTS, () -> null, 0).reveal().firstTime());
+        assertFalse(new DeathPerksPhase(NO_POINTS, DeathStory.of(null, NO_POINTS, "en_us"), () -> null, 0).reveal().firstTime());
         assertTrue(fresh.menuLive(fresh.reveal().startOf(MenuReveal.Stage.CLASSES)));
     }
 }

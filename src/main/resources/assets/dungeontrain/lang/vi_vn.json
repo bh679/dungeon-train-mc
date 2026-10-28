@@ -5630,5 +5630,11 @@
   "gui.dungeontrain.perks.death.tile.ranks": "Điểm đã đặt",
   "gui.dungeontrain.perks.death.tile.perks": "Đặc quyền được tăng",
   "gui.dungeontrain.perks.death.tile.top": "Nhiều điểm nhất",
-  "gui.dungeontrain.perks.death.unlock_hint": "Mở khóa đặc quyền cho đời sau."
+  "gui.dungeontrain.perks.death.unlock_hint": "Mở khóa đặc quyền cho đời sau.",
+  "gui.dungeontrain.perks.story.earned": "Đời này bạn đạt được %s, nhận về %s.",
+  "gui.dungeontrain.perks.story.advancements.other": "%s tiến trình",
+  "gui.dungeontrain.perks.story.points.other": "%s điểm mở khóa",
+  "gui.dungeontrain.perks.story.next_life": "Những điểm sẽ giúp bạn ở đời sau.",
+  "gui.dungeontrain.perks.story.unlock": "Mở khóa đặc quyền để có thể kích hoạt chúng ở đời sau.",
+  "gui.dungeontrain.perks.story.select": "Hãy chọn một đặc quyền để xem nó làm gì."
 }

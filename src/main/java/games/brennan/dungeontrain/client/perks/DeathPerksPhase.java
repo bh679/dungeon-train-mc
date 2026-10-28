@@ -27,12 +27,19 @@ final class DeathPerksPhase {
     private final PerkMenuSnapshot carried;
     private final Supplier<Screen> next;
     private final MenuReveal reveal;
+    private final DeathStory story;
 
-    DeathPerksPhase(PerkMenuSnapshot atDeath, Supplier<Screen> next, long openedAt) {
+    DeathPerksPhase(PerkMenuSnapshot atDeath, DeathStory story, Supplier<Screen> next, long openedAt) {
         this.carried = atDeath;
+        this.story = story;
         this.next = next;
         // never unlocked a perk: the guided first time
-        this.reveal = new MenuReveal(openedAt, atDeath.ranksBought() > 0, atDeath.unlocks().isEmpty());
+        this.reveal = new MenuReveal(openedAt, story.beats(), atDeath.unlocks().isEmpty());
+    }
+
+    /** The lines told as the menu builds up. */
+    DeathStory story() {
+        return story;
     }
 
     /** The points held at death, as the screen opened. */

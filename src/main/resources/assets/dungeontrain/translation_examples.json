@@ -17972,5 +17972,55 @@
         "5"
       ]
     }
+  },
+  "gui.dungeontrain.perks.story.earned": {
+    "1": {
+      "label": "how many advancements earned this life, already worded (\"4 advancements\")",
+      "examples": [
+        "1 advancement",
+        "4 advancements"
+      ]
+    },
+    "2": {
+      "label": "the unlock points they earned, already worded (\"7 unlock points\")",
+      "examples": [
+        "1 unlock point",
+        "7 unlock points"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.story.advancements.one": {
+    "1": {
+      "label": "advancements earned this life",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.story.advancements.other": {
+    "1": {
+      "label": "advancements earned this life",
+      "examples": [
+        "0",
+        "4"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.story.points.one": {
+    "1": {
+      "label": "unlock points earned this life",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.story.points.other": {
+    "1": {
+      "label": "unlock points earned this life",
+      "examples": [
+        "0",
+        "7"
+      ]
+    }
   }
 }

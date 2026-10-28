@@ -539,6 +539,8 @@ public final class RunStatsEvents {
         long lifePlayersEncountered = GlobalPlayerStats.playersEncountered(id);
         long lifeEchos = GlobalPlayerStats.totalEchos(id);
         long lifeAdvancements = countDungeonTrainAdvancements(player);
+        // This life's advancements that earn unlock points, and what they earned (the perks menu's opening line).
+        int[] lifeUnlock = games.brennan.dungeontrain.perks.PerkPointEvents.pointsFor(player, run.earnedAdvancements());
         double lifeDamageDealt = GlobalPlayerStats.totalDamageDealt(id);
         double lifeDamageTaken = GlobalPlayerStats.totalDamageTaken(id);
         // Death-screen portrait subject: prefer a befriended mob (drawn left),
@@ -589,7 +591,9 @@ public final class RunStatsEvents {
                 run.photoShots(),
                 run.photosViewed(),
                 run.tributesMade(),
-                run.tributeEmeralds()
+                run.tributeEmeralds(),
+                lifeUnlock[0],
+                lifeUnlock[1]
         );
     }
 

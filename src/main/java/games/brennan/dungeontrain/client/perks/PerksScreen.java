@@ -164,7 +164,11 @@ public final class PerksScreen extends Screen {
             mc.setScreen(next.get());
             return;
         }
-        mc.setScreen(new PerksScreen(false, new DeathPerksPhase(PerkMenuSnapshot.current(), next, Util.getMillis())));
+        PerkMenuSnapshot atDeath = PerkMenuSnapshot.current();
+        games.brennan.dungeontrain.net.DeathStatsPacket stats = games.brennan.dungeontrain.client.DeathStatsCache.get();
+        int[] life = stats == null ? null : new int[] {stats.lifeUnlockAdvancements(), stats.lifeUnlockPoints()};
+        DeathStory story = DeathStory.of(life, atDeath, mc.options.languageCode);
+        mc.setScreen(new PerksScreen(false, new DeathPerksPhase(atDeath, story, next, Util.getMillis())));
         mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.AMETHYST_BLOCK_CHIME, 0.8F, 0.4F));
     }
 
@@ -373,7 +377,7 @@ public final class PerksScreen extends Screen {
         drawn = tree.withPositions(layout.positions(tree, vis, now));
         hovered = card.contains(mouseX, mouseY) || classesList.rowHover(mouseX, mouseY) != null || headEyeHover
             || titleHover != null ? null : starAt(mouseX, mouseY);
-        if (hovered != null) reveal.onHover(now);
+        if (hovered != null && !PerkTree.ROOT.equals(hovered)) reveal.onHover(now); // a perk, not the Engine
         // a hovered class (in the list or its title) shows, else a hovered star, else the class clicked to stay
         String classShown = classHover != null ? classHover : hovered == null ? selectedClass : null;
         glow = classShown;
@@ -414,7 +418,8 @@ public final class PerksScreen extends Screen {
             boolean sel = p.id().equals(selected), hov = p.id().equals(hovered) || p.id().equals(cardFor);
             boolean glows = glow != null && glow.equals(p.cls());
             StarPainter.render(g, font, drawn, p, snap, view, width, skyH(),
-                new StarPainter.Look(hov, sel, names.get(p.id()), spendable, vis.ghost(p), glows), unlockedAt, pointAt, now, starFade);
+                new StarPainter.Look(hov, sel, names.get(p.id()), spendable, vis.ghost(p), glows, death != null ? snap.unlockPoints() : -1),
+                unlockedAt, pointAt, now, starFade);
         }
         // names after every star, so no dot covers a label
         for (PerkTree.Perk p : labels ? drawn.perks() : List.<PerkTree.Perk>of()) {
@@ -442,6 +447,7 @@ public final class PerksScreen extends Screen {
             bar.mouse(mouseX, mouseY);
             double barFade = layer(MenuReveal.Stage.BAR, fade);
             if (barFade > 0.03) bar.render(g, snap, barFade);
+            renderStoryLine(g, now, fade);
         }
         else card.render(g, now);
         g.flush();
@@ -496,6 +502,18 @@ public final class PerksScreen extends Screen {
             return;
         }
         card.open(p, drawn, snap, view, width, skyH(), right, bottom);
+    }
+
+    /** The death menu's story line, where the details bar sits until a perk is hovered. */
+    private void renderStoryLine(GuiGraphics g, long now, double fade) {
+        if (death == null) return;
+        Component line = death.story().line(reveal.lineAt(now));
+        double alpha = reveal.lineAlpha(now) * fade;
+        if (line == null || alpha <= 0.03) return;
+        int top = height - PerkDetailsBar.HEIGHT;
+        int lines = font.split(line, width - 40).size();
+        int y = top + (PerkDetailsBar.HEIGHT - lines * (font.lineHeight + 2)) / 2 + 1;
+        games.brennan.dungeontrain.client.LoadingScreenTheme.drawTip(g, font, line, width / 2, y, width - 40, (float) alpha);
     }
 
     @Override

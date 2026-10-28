@@ -5630,5 +5630,11 @@
   "gui.dungeontrain.perks.death.tile.ranks": "넣은 포인트",
   "gui.dungeontrain.perks.death.tile.perks": "강화한 특성",
   "gui.dungeontrain.perks.death.tile.top": "가장 많은 포인트",
-  "gui.dungeontrain.perks.death.unlock_hint": "다음 생을 위해 특성을 해금하세요."
+  "gui.dungeontrain.perks.death.unlock_hint": "다음 생을 위해 특성을 해금하세요.",
+  "gui.dungeontrain.perks.story.earned": "이번 생에서 발전 과제 %s를 달성해 %s을 얻었습니다.",
+  "gui.dungeontrain.perks.story.advancements.other": "%s개",
+  "gui.dungeontrain.perks.story.points.other": "해금 포인트 %s점",
+  "gui.dungeontrain.perks.story.next_life": "다음 생에 도움이 될 포인트입니다.",
+  "gui.dungeontrain.perks.story.unlock": "특성을 해금하면 다음 생에서 활성화할 수 있습니다.",
+  "gui.dungeontrain.perks.story.select": "지금 특성을 선택해 어떤 효과가 있는지 확인하세요."
 }

@@ -5697,5 +5697,13 @@
   "gui.dungeontrain.perks.death.tile.ranks": "Puntos asignados",
   "gui.dungeontrain.perks.death.tile.perks": "Ventajas activadas",
   "gui.dungeontrain.perks.death.tile.top": "Más puntos",
-  "gui.dungeontrain.perks.death.unlock_hint": "Desbloquea ventajas para la próxima vida."
+  "gui.dungeontrain.perks.death.unlock_hint": "Desbloquea ventajas para la próxima vida.",
+  "gui.dungeontrain.perks.story.earned": "En esta vida has conseguido %s, que te dan %s.",
+  "gui.dungeontrain.perks.story.advancements.one": "%s logro",
+  "gui.dungeontrain.perks.story.advancements.other": "%s logros",
+  "gui.dungeontrain.perks.story.points.one": "%s punto de desbloqueo",
+  "gui.dungeontrain.perks.story.points.other": "%s puntos de desbloqueo",
+  "gui.dungeontrain.perks.story.next_life": "Puntos que te ayudarán en la próxima vida.",
+  "gui.dungeontrain.perks.story.unlock": "Desbloquea ventajas para poder activarlas en la próxima vida.",
+  "gui.dungeontrain.perks.story.select": "Selecciona una ventaja para ver qué hace."
 }

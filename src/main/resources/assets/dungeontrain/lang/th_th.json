@@ -5630,5 +5630,11 @@
   "gui.dungeontrain.perks.death.tile.ranks": "แต้มที่ใส่",
   "gui.dungeontrain.perks.death.tile.perks": "พลังพิเศษที่เสริม",
   "gui.dungeontrain.perks.death.tile.top": "แต้มมากที่สุด",
-  "gui.dungeontrain.perks.death.unlock_hint": "ปลดล็อกพลังพิเศษสำหรับชีวิตหน้า"
+  "gui.dungeontrain.perks.death.unlock_hint": "ปลดล็อกพลังพิเศษสำหรับชีวิตหน้า",
+  "gui.dungeontrain.perks.story.earned": "ชีวิตนี้คุณได้ความก้าวหน้า %s และได้รับ%s",
+  "gui.dungeontrain.perks.story.advancements.other": "%s รายการ",
+  "gui.dungeontrain.perks.story.points.other": "แต้มปลดล็อก %s แต้ม",
+  "gui.dungeontrain.perks.story.next_life": "แต้มที่จะช่วยคุณในชีวิตหน้า",
+  "gui.dungeontrain.perks.story.unlock": "ปลดล็อกพลังพิเศษเพื่อให้เปิดใช้ได้ในชีวิตหน้า",
+  "gui.dungeontrain.perks.story.select": "เลือกพลังพิเศษตอนนี้เพื่อดูว่ามันทำอะไรได้"
 }

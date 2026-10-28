@@ -5644,5 +5644,11 @@
   "gui.dungeontrain.perks.death.tile.ranks": "投入的点数",
   "gui.dungeontrain.perks.death.tile.perks": "强化的特权",
   "gui.dungeontrain.perks.death.tile.top": "点数最多",
-  "gui.dungeontrain.perks.death.unlock_hint": "为下一生解锁特权。"
+  "gui.dungeontrain.perks.death.unlock_hint": "为下一生解锁特权。",
+  "gui.dungeontrain.perks.story.earned": "这一生你达成了%s，获得了%s。",
+  "gui.dungeontrain.perks.story.advancements.other": " %s 项进度",
+  "gui.dungeontrain.perks.story.points.other": " %s 解锁点数",
+  "gui.dungeontrain.perks.story.next_life": "这些点数会在下一生帮助你。",
+  "gui.dungeontrain.perks.story.unlock": "解锁特权，下一生就能激活它们。",
+  "gui.dungeontrain.perks.story.select": "现在选择一项特权，看看它有什么作用。"
 }

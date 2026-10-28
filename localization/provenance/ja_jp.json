@@ -5630,5 +5630,11 @@
   "gui.dungeontrain.perks.death.tile.ranks": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "16163b7f80d26624"},
   "gui.dungeontrain.perks.death.tile.perks": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "d24e47371ec2aeb9"},
   "gui.dungeontrain.perks.death.tile.top": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "9c308d418bfd42a7"},
-  "gui.dungeontrain.perks.death.unlock_hint": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "d510a34cfb9d143d"}
+  "gui.dungeontrain.perks.death.unlock_hint": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "d510a34cfb9d143d"},
+  "gui.dungeontrain.perks.story.earned": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "1bf7798b2c4974ac"},
+  "gui.dungeontrain.perks.story.advancements.other": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "59ab534d5fc7014e"},
+  "gui.dungeontrain.perks.story.points.other": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "a12df9d9d399d0dd"},
+  "gui.dungeontrain.perks.story.next_life": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "3d3551f49d18ec9f"},
+  "gui.dungeontrain.perks.story.unlock": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "68f43376b4a961b8"},
+  "gui.dungeontrain.perks.story.select": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0702e43606b3e541"}
 }
