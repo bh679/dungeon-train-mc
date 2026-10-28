@@ -1006,15 +1006,18 @@ public final class StartingBookEvents {
      * common case) or no cursed book is authored for its outcome. The picked variant is marked seen
      * per-installation so a player who curses repeatedly gets fresh prose; the STORY itself is only
      * retired when the book is actually read ({@link #handleStartingBookClosed}) — an unopened book
-     * burns and the same story is offered again at the next strike.
+     * burns and the same story is offered again next life. Within one life it is handed out once
+     * ({@link CursedStoryPool#markDelivered}), so a later strike moves on to the next unread story.
      */
     private static Optional<ItemStack> rollCursedStory(ServerPlayer player, long seed) {
         UUID uuid = player.getUUID();
         Optional<CursedStoryPool.Story> story = CursedStoryPool.peek(uuid);
         if (story.isEmpty()) return Optional.empty();
-        return CursedBookFactory.roll(seed, story.get(),
+        Optional<ItemStack> book = CursedBookFactory.roll(seed, story.get(),
             PlayerPlayedMarker.seenDimensionVariants(uuid),
             key -> PlayerPlayedMarker.markDimensionVariantSeen(uuid, key));
+        book.ifPresent(b -> CursedStoryPool.markDelivered(uuid, story.get().id()));
+        return book;
     }
 
     /**
