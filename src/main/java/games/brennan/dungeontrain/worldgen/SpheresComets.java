@@ -30,7 +30,7 @@ public final class SpheresComets {
     public static final double AIMED_SHARE = 1.0 / 3.0;
     /** Lower in lap 0, where comets are new: from this at the first comets, climbing to the next by the band's end. */
     public static final double FIRST_LAP_AIMED_START = 1.0 / 60.0;
-    public static final double FIRST_LAP_AIMED_END = 1.0 / 6.0;
+    public static final double FIRST_LAP_AIMED_END = 1.0 / 3.0;
     /** A comet this far below the train's lowest carriage (blocks) has missed it for good and ends. */
     public static final double MISS_DROP_BLOCKS = 16.0;
     /** Ticks for a comet's block to make one full turn as it falls. */
@@ -46,8 +46,8 @@ public final class SpheresComets {
      *  many ticks before it arrives to {@link #SHOWER_AFTER_TICKS} after. */
     public static final int SHOWER_LEAD_TICKS = 200;
     public static final int SHOWER_AFTER_TICKS = 300;
-    /** Chance per tick of a shower comet while one is on, on top of the usual distant ones. */
-    public static final double SHOWER_CHANCE_PER_TICK = 0.03;
+    /** Chance per tick of a shower comet while one is on (one a second); the usual distant ones stop meanwhile. */
+    public static final double SHOWER_CHANCE_PER_TICK = 1.0 / 20.0;
     private static final int TICKS_PER_SECOND = 20;
 
     private SpheresComets() {}

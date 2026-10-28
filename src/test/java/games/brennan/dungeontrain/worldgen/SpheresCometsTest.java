@@ -108,9 +108,9 @@ class SpheresCometsTest {
     @Test
     void firstLapAimsMoreAtTheTrainTheDeeperYouGo() {
         assertEquals(1.0 / 60.0, SpheresComets.aimedShare(0L, 0.0), 1e-12);
-        assertEquals(1.0 / 6.0, SpheresComets.aimedShare(0L, 1.0), 1e-12);
-        assertEquals((1.0 / 60.0 + 1.0 / 6.0) / 2.0, SpheresComets.aimedShare(0L, 0.5), 1e-12);
-        assertEquals(1.0 / 6.0, SpheresComets.aimedShare(0L, 3.0), 1e-12, "clamped past the end");
+        assertEquals(1.0 / 3.0, SpheresComets.aimedShare(0L, 1.0), 1e-12);
+        assertEquals((1.0 / 60.0 + 1.0 / 3.0) / 2.0, SpheresComets.aimedShare(0L, 0.5), 1e-12);
+        assertEquals(1.0 / 3.0, SpheresComets.aimedShare(0L, 3.0), 1e-12, "clamped past the end");
         assertEquals(1.0 / 3.0, SpheresComets.aimedShare(1L, 0.0), 1e-12, "later laps ignore depth");
         assertEquals(1.0 / 3.0, SpheresComets.aimedShare(5L, 1.0), 1e-12);
     }
