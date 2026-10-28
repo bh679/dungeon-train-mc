@@ -31552,6 +31552,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "note-story-once-per-life",
+      "version": "0.1571.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "books"
+      ],
+      "title": "Note story fix",
+      "summary": "A note's story no longer arrives twice in the same life.",
+      "highlights": [],
+      "pr": 2382,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
