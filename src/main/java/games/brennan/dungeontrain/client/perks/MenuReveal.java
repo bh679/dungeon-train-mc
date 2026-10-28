@@ -3,8 +3,9 @@ package games.brennan.dungeontrain.client.perks;
 /**
  * The perks menu opened on death builds up one layer at a time ({@link Stage}, in order) while a line
  * of story ({@link DeathStory}) tells the player what each is. Each story beat holds for its line's
- * time ({@code LoadingStories.lineMs}): the stars, the perks that held points this life (skipped
- * without any), the centre, the rest of the tree, then "select a perk", which stays until they hover
+ * time ({@code LoadingStories.lineMs}): the stars, what this life's advancements earned (a line on its
+ * own), the perks that held points this life (skipped without any), the centre, the rest of the
+ * tree, then "select a perk", which stays until they hover
  * one. That hover brings the details bar in where the line was. After the select line has had its
  * time the classes list comes in, then the unlock points one {@link #STEP_MS} later.
  * {@link #skip} brings everything up at once. The menu opened in play uses {@link #allUp()}.
@@ -26,7 +27,11 @@ final class MenuReveal {
     enum Stage { STARS, ACTIVE, UNLOCKED, CLASSES, CLASS_LIST, BAR, POINTS }
 
     /** The story beats, in order; each is one line. */
-    static final int BEAT_STARS = 0, BEAT_ACTIVE = 1, BEAT_CENTRE = 2, BEAT_PERKS = 3, BEAT_SELECT = 4, BEATS = 5;
+    static final int BEAT_STARS = 0, BEAT_EARNED = 1, BEAT_ACTIVE = 2, BEAT_CENTRE = 3, BEAT_PERKS = 4, BEAT_SELECT = 5, BEATS = 6;
+    /** Beats a life may not have (no stats from the server, no points in perks): 0 time, skipped. */
+    private static boolean optional(int i) {
+        return i == BEAT_EARNED || i == BEAT_ACTIVE;
+    }
 
     /** The steps after the story: the classes list, then the unlock points. */
     static final long STEP_MS = 1000;
@@ -63,7 +68,7 @@ final class MenuReveal {
         this.beats = beats.clone();
         // one thing at a time: the line is read on its own, then its layer comes in, then a settle
         for (int i = BEAT_STARS; i < BEAT_SELECT; i++) {
-            if (i == BEAT_ACTIVE && beats[i] <= 0) continue;
+            if (optional(i) && beats[i] <= 0) continue;
             this.beats[i] = layerDelay(i) + layerFadeMs(i) + SETTLE_MS;
         }
         this.hasActive = beats[BEAT_ACTIVE] > 0;
@@ -72,7 +77,7 @@ final class MenuReveal {
 
     /** Every layer already up and no story: the menu opened in play. */
     static MenuReveal allUp() {
-        MenuReveal r = new MenuReveal(Long.MIN_VALUE / 2, new long[] {1, 1, 1, 1, 1}, false);
+        MenuReveal r = new MenuReveal(Long.MIN_VALUE / 2, new long[] {1, 1, 1, 1, 1, 1}, false);
         r.skippedAt = Long.MIN_VALUE / 2;
         r.hoverAt = Long.MIN_VALUE / 2;
         return r;
@@ -85,6 +90,7 @@ final class MenuReveal {
 
     /** How long beat {@code i}'s layer takes to fade in. */
     private static long layerFadeMs(int i) {
+        if (i == BEAT_EARNED) return 0; // a line on its own: nothing new comes in with it
         return i == BEAT_STARS ? STAR_FADE_MS : FADE_MS;
     }
 

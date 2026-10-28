@@ -5765,14 +5765,15 @@
   "gui.dungeontrain.perks.death.tile.perks": "Усилено перков",
   "gui.dungeontrain.perks.death.tile.top": "Больше всего очков",
   "gui.dungeontrain.perks.death.unlock_hint": "Открой перки для следующей жизни.",
-  "gui.dungeontrain.perks.story.earned": "В этой жизни ты получил %s и заработал %s.",
+  "gui.dungeontrain.perks.story.earned": "В этой жизни ты получил %s.",
+  "gui.dungeontrain.perks.story.earned_points": "Это принесло тебе %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s достижение",
   "gui.dungeontrain.perks.story.advancements.few": "%s достижения",
   "gui.dungeontrain.perks.story.advancements.many": "%s достижений",
   "gui.dungeontrain.perks.story.points.one": "%s очко разблокировки",
   "gui.dungeontrain.perks.story.points.few": "%s очка разблокировки",
   "gui.dungeontrain.perks.story.points.many": "%s очков разблокировки",
-  "gui.dungeontrain.perks.story.next_life": "Очки, которые помогут тебе в следующей жизни.",
-  "gui.dungeontrain.perks.story.unlock": "Открой перки, чтобы активировать их в следующей жизни.",
+  "gui.dungeontrain.perks.story.next_life": "Это поможет тебе в следующей жизни.",
+  "gui.dungeontrain.perks.story.unlock": "Открывай новые стили игры с помощью перков.",
   "gui.dungeontrain.perks.story.select": "Выбери перк, чтобы узнать, что он делает."
 }

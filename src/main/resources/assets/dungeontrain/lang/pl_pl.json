@@ -5765,14 +5765,15 @@
   "gui.dungeontrain.perks.death.tile.perks": "Wzmocnione perki",
   "gui.dungeontrain.perks.death.tile.top": "Najwięcej punktów",
   "gui.dungeontrain.perks.death.unlock_hint": "Odblokuj perki na następne życie.",
-  "gui.dungeontrain.perks.story.earned": "W tym życiu zdobyłeś %s, co dało ci %s.",
+  "gui.dungeontrain.perks.story.earned": "W tym życiu zdobyłeś %s.",
+  "gui.dungeontrain.perks.story.earned_points": "Co dało ci %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s postęp",
   "gui.dungeontrain.perks.story.advancements.few": "%s postępy",
   "gui.dungeontrain.perks.story.advancements.many": "%s postępów",
   "gui.dungeontrain.perks.story.points.one": "%s punkt odblokowania",
   "gui.dungeontrain.perks.story.points.few": "%s punkty odblokowania",
   "gui.dungeontrain.perks.story.points.many": "%s punktów odblokowania",
-  "gui.dungeontrain.perks.story.next_life": "Punkty, które pomogą ci w następnym życiu.",
-  "gui.dungeontrain.perks.story.unlock": "Odblokuj perki, aby móc je aktywować w następnym życiu.",
+  "gui.dungeontrain.perks.story.next_life": "To może pomóc w twoim następnym życiu.",
+  "gui.dungeontrain.perks.story.unlock": "Odblokuj więcej stylów gry dzięki perkom.",
   "gui.dungeontrain.perks.story.select": "Wybierz teraz perk, aby zobaczyć, co robi."
 }

@@ -5631,10 +5631,11 @@
   "gui.dungeontrain.perks.death.tile.perks": "Perk dikuatkan",
   "gui.dungeontrain.perks.death.tile.top": "Mata terbanyak",
   "gui.dungeontrain.perks.death.unlock_hint": "Buka perk untuk hayat seterusnya.",
-  "gui.dungeontrain.perks.story.earned": "Anda mencapai %s dalam hayat ini, dan memperoleh %s.",
+  "gui.dungeontrain.perks.story.earned": "Anda mencapai %s dalam hayat ini.",
+  "gui.dungeontrain.perks.story.earned_points": "Anda memperoleh %s.",
   "gui.dungeontrain.perks.story.advancements.other": "%s pencapaian",
   "gui.dungeontrain.perks.story.points.other": "%s mata buka kunci",
-  "gui.dungeontrain.perks.story.next_life": "Mata yang akan membantu anda dalam hayat seterusnya.",
-  "gui.dungeontrain.perks.story.unlock": "Buka kunci perk supaya boleh diaktifkan dalam hayat seterusnya.",
+  "gui.dungeontrain.perks.story.next_life": "Ini boleh membantu hayat anda seterusnya.",
+  "gui.dungeontrain.perks.story.unlock": "Buka kunci lebih banyak gaya permainan dengan perk.",
   "gui.dungeontrain.perks.story.select": "Pilih satu perk sekarang untuk melihat kesannya."
 }

@@ -13,10 +13,11 @@ import java.util.List;
  * each holds: the loading screen's rule ({@link LoadingStories#lineMs}), longer for a longer line.
  *
  * <ol>
- *   <li>what this life's advancements earned (left out, at the shortest hold, with no stats from the server)</li>
+ *   <li>the advancements earned this life (left out, at the shortest hold, with no stats from the server)</li>
+ *   <li>the unlock points they earned, a line on its own (left out with no stats)</li>
  *   <li>the points put into perks this life (left out, and its beat skipped, with none)</li>
- *   <li>the unlock points, shown in the centre, are for the next life</li>
- *   <li>unlocking perks makes them ready to activate next life</li>
+ *   <li>this can help the next life (the unlock points, shown in the centre)</li>
+ *   <li>perks unlock more play styles</li>
  *   <li>select a perk to see what it does; stays until they hover one</li>
  * </ol>
  *
@@ -37,7 +38,8 @@ record DeathStory(List<Component> lines, long[] beats) {
         Component[] lines = new Component[MenuReveal.BEATS];
         if (stats != null) {
             lines[MenuReveal.BEAT_STARS] = Component.translatable(KEY + "earned",
-                PluralRules.clause(locale, KEY + "advancements", stats[0]),
+                PluralRules.clause(locale, KEY + "advancements", stats[0]));
+            lines[MenuReveal.BEAT_EARNED] = Component.translatable(KEY + "earned_points",
                 PluralRules.clause(locale, KEY + "points", stats[1]));
         }
         int ranks = atDeath.ranksBought();
@@ -51,7 +53,7 @@ record DeathStory(List<Component> lines, long[] beats) {
         long[] beats = new long[MenuReveal.BEATS];
         for (int i = 0; i < beats.length; i++) {
             if (lines[i] != null) beats[i] = LoadingStories.lineMs(lines[i].getString());
-            else beats[i] = i == MenuReveal.BEAT_ACTIVE ? 0 : LoadingStories.minLineMs();
+            else beats[i] = i == MenuReveal.BEAT_ACTIVE || i == MenuReveal.BEAT_EARNED ? 0 : LoadingStories.minLineMs();
         }
         return new DeathStory(java.util.Collections.unmodifiableList(Arrays.asList(lines)), beats);
     }

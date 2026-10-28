@@ -5698,12 +5698,13 @@
   "gui.dungeontrain.perks.death.tile.perks": "Atouts renforcés",
   "gui.dungeontrain.perks.death.tile.top": "Le plus de points",
   "gui.dungeontrain.perks.death.unlock_hint": "Débloque des atouts pour la prochaine vie.",
-  "gui.dungeontrain.perks.story.earned": "Dans cette vie, tu as obtenu %s, ce qui te rapporte %s.",
+  "gui.dungeontrain.perks.story.earned": "Dans cette vie, tu as obtenu %s.",
+  "gui.dungeontrain.perks.story.earned_points": "Ce qui te rapporte %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s progrès",
   "gui.dungeontrain.perks.story.advancements.other": "%s progrès",
   "gui.dungeontrain.perks.story.points.one": "%s point de déblocage",
   "gui.dungeontrain.perks.story.points.other": "%s points de déblocage",
-  "gui.dungeontrain.perks.story.next_life": "Des points qui t'aideront dans ta prochaine vie.",
-  "gui.dungeontrain.perks.story.unlock": "Débloque des atouts pour pouvoir les activer dans ta prochaine vie.",
+  "gui.dungeontrain.perks.story.next_life": "Cela peut aider ta prochaine vie.",
+  "gui.dungeontrain.perks.story.unlock": "Débloque d'autres styles de jeu avec les atouts.",
   "gui.dungeontrain.perks.story.select": "Sélectionne un atout pour voir ce qu'il fait."
 }

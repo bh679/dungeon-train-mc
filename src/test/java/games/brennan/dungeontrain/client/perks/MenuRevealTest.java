@@ -10,9 +10,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** The death menu builds up one thing at a time: a line, read on its own, then its layer, then a settle. */
 class MenuRevealTest {
 
-    /** Reading times: stars 4000, active 2500, centre 2800, perks 3500, select 1600. */
-    private static final long[] BEATS = {4000, 2500, 2800, 3500, 1600};
-    private static final long[] NO_ACTIVE = {4000, 0, 2800, 3500, 1600};
+    /** Reading times: stars 4000, earned (none here), active 2500, centre 2800, perks 3500, select 1600. */
+    private static final long[] BEATS = {4000, 0, 2500, 2800, 3500, 1600};
+    private static final long[] NO_ACTIVE = {4000, 0, 0, 2800, 3500, 1600};
     private static final long L = MenuReveal.LEAD_IN_MS;
     private static final long F = MenuReveal.FADE_MS;
     private static final long SETTLE = MenuReveal.SETTLE_MS;
@@ -40,7 +40,7 @@ class MenuRevealTest {
     @Test
     @DisplayName("a line is never followed by its layer before it has faded in")
     void shortLine() {
-        MenuReveal r = new MenuReveal(0, new long[] {300, 0, 300, 300, 1600}, false);
+        MenuReveal r = new MenuReveal(0, new long[] {300, 0, 0, 300, 300, 1600}, false);
         assertEquals(L + F, r.startOf(MenuReveal.Stage.STARS));
         assertEquals(0.5, r.alpha(MenuReveal.Stage.STARS, L + F + MenuReveal.STAR_FADE_MS / 2), 1e-9, "the stars fade in slowly");
     }
@@ -146,5 +146,16 @@ class MenuRevealTest {
         assertEquals(1.0, r.alpha(MenuReveal.Stage.ACTIVE, t), "the active perks still show after quick steps");
         MenuReveal returning = new MenuReveal(0, BEATS, false);
         assertFalse(returning.canStepLine(L + 10), "returning players skip to the end instead");
+    }
+
+    @Test
+    @DisplayName("the earned line is read on its own: nothing new comes in with it")
+    void earnedLineOnItsOwn() {
+        MenuReveal r = new MenuReveal(0, new long[] {4000, 2000, 0, 2800, 3500, 1600}, false);
+        long earned = r.beatStart(MenuReveal.BEAT_EARNED);
+        assertEquals(L + S, earned, "after the stars are up");
+        assertEquals(MenuReveal.BEAT_EARNED, r.lineAt(earned));
+        assertEquals(earned + 2000 + SETTLE, r.beatStart(MenuReveal.BEAT_CENTRE), "its reading time and a settle, no fade");
+        assertEquals(0.0, r.alpha(MenuReveal.Stage.UNLOCKED, earned + 1999), "the centre waits for its own line");
     }
 }

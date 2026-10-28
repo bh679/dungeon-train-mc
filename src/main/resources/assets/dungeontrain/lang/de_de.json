@@ -5698,12 +5698,13 @@
   "gui.dungeontrain.perks.death.tile.perks": "Gestärkte Perks",
   "gui.dungeontrain.perks.death.tile.top": "Meiste Punkte",
   "gui.dungeontrain.perks.death.unlock_hint": "Schalte Perks für das nächste Leben frei.",
-  "gui.dungeontrain.perks.story.earned": "In diesem Leben hast du %s erreicht und dir damit %s verdient.",
+  "gui.dungeontrain.perks.story.earned": "In diesem Leben hast du %s erreicht.",
+  "gui.dungeontrain.perks.story.earned_points": "Das bringt dir %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s Fortschritt",
   "gui.dungeontrain.perks.story.advancements.other": "%s Fortschritte",
   "gui.dungeontrain.perks.story.points.one": "%s Freischaltpunkt",
   "gui.dungeontrain.perks.story.points.other": "%s Freischaltpunkte",
-  "gui.dungeontrain.perks.story.next_life": "Punkte, die dir im nächsten Leben helfen.",
-  "gui.dungeontrain.perks.story.unlock": "Schalte Perks frei, um sie im nächsten Leben aktivieren zu können.",
+  "gui.dungeontrain.perks.story.next_life": "Das kann deinem nächsten Leben helfen.",
+  "gui.dungeontrain.perks.story.unlock": "Schalte mit Perks neue Spielweisen frei.",
   "gui.dungeontrain.perks.story.select": "Wähle jetzt einen Perk, um zu sehen, was er bewirkt."
 }

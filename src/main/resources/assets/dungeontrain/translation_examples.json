@@ -17980,8 +17980,10 @@
         "1 advancement",
         "4 advancements"
       ]
-    },
-    "2": {
+    }
+  },
+  "gui.dungeontrain.perks.story.earned_points": {
+    "1": {
       "label": "the unlock points they earned, already worded (\"7 unlock points\")",
       "examples": [
         "1 unlock point",

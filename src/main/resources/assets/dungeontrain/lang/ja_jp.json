@@ -5631,10 +5631,11 @@
   "gui.dungeontrain.perks.death.tile.perks": "強化したパーク",
   "gui.dungeontrain.perks.death.tile.top": "最多ポイント",
   "gui.dungeontrain.perks.death.unlock_hint": "次の命のためにパークを解放しよう。",
-  "gui.dungeontrain.perks.story.earned": "この命で%sを達成し、%sを獲得しました。",
+  "gui.dungeontrain.perks.story.earned": "この命で%sを達成しました。",
+  "gui.dungeontrain.perks.story.earned_points": "%sを獲得しました。",
   "gui.dungeontrain.perks.story.advancements.other": "%s 個の進捗",
   "gui.dungeontrain.perks.story.points.other": "解放ポイント %s",
-  "gui.dungeontrain.perks.story.next_life": "次の命で役立つポイントです。",
-  "gui.dungeontrain.perks.story.unlock": "パークを解放すると、次の命で有効にできます。",
+  "gui.dungeontrain.perks.story.next_life": "次の命の助けになります。",
+  "gui.dungeontrain.perks.story.unlock": "パークで新しいプレイスタイルを解放しよう。",
   "gui.dungeontrain.perks.story.select": "パークを選んで、その効果を確かめよう。"
 }

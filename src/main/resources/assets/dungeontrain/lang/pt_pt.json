@@ -5698,12 +5698,13 @@
   "gui.dungeontrain.perks.death.tile.perks": "Vantagens reforçadas",
   "gui.dungeontrain.perks.death.tile.top": "Mais pontos",
   "gui.dungeontrain.perks.death.unlock_hint": "Desbloqueia vantagens para a próxima vida.",
-  "gui.dungeontrain.perks.story.earned": "Nesta vida conquistaste %s, que te renderam %s.",
+  "gui.dungeontrain.perks.story.earned": "Nesta vida conquistaste %s.",
+  "gui.dungeontrain.perks.story.earned_points": "Que te renderam %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s conquista",
   "gui.dungeontrain.perks.story.advancements.other": "%s conquistas",
   "gui.dungeontrain.perks.story.points.one": "%s ponto de desbloqueio",
   "gui.dungeontrain.perks.story.points.other": "%s pontos de desbloqueio",
-  "gui.dungeontrain.perks.story.next_life": "Pontos que te vão ajudar na próxima vida.",
-  "gui.dungeontrain.perks.story.unlock": "Desbloqueia vantagens para as poderes ativar na próxima vida.",
+  "gui.dungeontrain.perks.story.next_life": "Isto pode ajudar a tua próxima vida.",
+  "gui.dungeontrain.perks.story.unlock": "Desbloqueia mais estilos de jogo com vantagens.",
   "gui.dungeontrain.perks.story.select": "Seleciona uma vantagem agora para veres o que faz."
 }
