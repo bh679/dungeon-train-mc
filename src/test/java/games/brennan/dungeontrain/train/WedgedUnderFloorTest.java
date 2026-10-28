@@ -143,4 +143,74 @@ class WedgedUnderFloorTest {
     void safeDropMatchesVanillaFallDamageThreshold() {
         assertEquals(3, WedgedUnderFloor.MAX_SAFE_DROP_BLOCKS);
     }
+    // Near-player rule: room length 9, a group box x 100..137 travelling +X, mob at x 110.
+
+    private static boolean near(double px, double py, double pz, double velX, double velZ) {
+        return WedgedUnderFloor.withinRooms(px, py, pz, 110, 78, 3.5,
+            MIN_X, MIN_Z, MAX_X, MAX_Z, velX, velZ, 9);
+    }
+
+    @Test
+    void playerOnTheDeckRightAboveIsNear() {
+        assertTrue(near(110, 79, 3.5, 1, 0));
+    }
+
+    @Test
+    void twoRoomsAlongTheTrackIsNearThreeIsNot() {
+        assertTrue(near(110 + 27, 79, 3.5, 1, 0));
+        assertTrue(near(110 - 27, 79, 3.5, 1, 0));
+        assertFalse(near(110 + 28, 79, 3.5, 1, 0));
+        assertFalse(near(110 - 40, 79, 3.5, 1, 0));
+    }
+
+    @Test
+    void besideTheTrainCountsFarOffItDoesNot() {
+        assertTrue(near(110, 78, -3.5, 1, 0));
+        assertTrue(near(110, 78, 10.5, 1, 0));
+        assertFalse(near(110, 78, 12, 1, 0));
+        assertFalse(near(110, 78, -5, 1, 0));
+    }
+
+    @Test
+    void farAboveOrBelowIsNotNear() {
+        assertTrue(near(110, 86, 3.5, 1, 0)); // on the roof
+        assertFalse(near(110, 100, 3.5, 1, 0));
+    }
+
+    @Test
+    void travelDirectionSetsTheAxis() {
+        // Backwards along X is the same axis.
+        assertTrue(near(110 + 20, 79, 3.5, -1, 0));
+        // Idle: the group box is longer along X, so X is still "along".
+        assertTrue(near(110 + 20, 79, 3.5, 0, 0));
+        assertFalse(near(110, 79, 3.5 + 20, 0, 0));
+    }
+
+    @Test
+    void onlyMobsSpawnedUnderTheFloorAreTooYoungToHaveFallen() {
+        assertFalse(WedgedUnderFloor.fellOffTrain(1));
+        assertFalse(WedgedUnderFloor.fellOffTrain(2));
+        assertTrue(WedgedUnderFloor.fellOffTrain(5)); // summoned on the deck, knocked through at once
+        assertTrue(WedgedUnderFloor.fellOffTrain(500));
+    }
+
+    @Test
+    void crushFlashesEveryFiveSecondsUnder() {
+        assertEquals(100, WedgedUnderFloor.CRUSH_INTERVAL_TICKS);
+        assertFalse(WedgedUnderFloor.crushDue(0));
+        assertFalse(WedgedUnderFloor.crushDue(99));
+        assertTrue(WedgedUnderFloor.crushDue(100));
+        assertFalse(WedgedUnderFloor.crushDue(101));
+        assertTrue(WedgedUnderFloor.crushDue(200));
+    }
+
+    @Test
+    void crushAddsUpToHalfAHeartPerThirtySecondsUnder() {
+        int hits = 0;
+        for (int t = 1; t <= 600; t++) {
+            if (WedgedUnderFloor.crushDue(t)) hits++;
+        }
+        assertEquals(6, hits);
+        assertEquals(1.0f, hits * WedgedUnderFloor.CRUSH_DAMAGE, 1e-5f); // half a heart
+    }
 }

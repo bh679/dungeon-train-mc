@@ -2,9 +2,11 @@ package games.brennan.dungeontrain.train;
 
 import games.brennan.dungeontrain.event.NetherMobSpawner;
 import games.brennan.dungeontrain.util.DtLogging;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.AABB;
@@ -32,6 +34,12 @@ import java.util.WeakHashMap;
  * deck, when they ride one); one whose owner is offline takes a safe side spot or stays put, and is
  * never discarded.</p>
  *
+ * <p>A mob knocked off the train onto the tracks within {@link WedgedUnderFloor#ROOMS_NEAR_PLAYER}
+ * rooms of a player is left there instead, and crushed half a heart per
+ * {@link WedgedUnderFloor#TICKS_PER_HALF_HEART} ticks it spends under carriages, in small hits every
+ * {@link WedgedUnderFloor#CRUSH_INTERVAL_TICKS}. Before 0.1570.0
+ * it was discarded wherever the track was a bridge.</p>
+ *
  * <p>A side whose chunk isn't loaded is never checked (that would sync-load it); if one was skipped,
  * the mob waits for a later tick instead of being discarded.</p>
  */
@@ -44,6 +52,9 @@ public final class WedgedMobEjector {
 
     /** Same, for a mob left waiting on an unloaded side; kept apart so it never hides a later move's line. */
     private static final Map<ServerLevel, EjectLogThrottle> WAIT_LOG_THROTTLES = new WeakHashMap<>();
+
+    /** Per fallen mob: {last game tick it was under a carriage, ticks it has spent under them}. */
+    private static final Map<Entity, long[]> CRUSH_TICKS = new WeakHashMap<>();
 
     private WedgedMobEjector() {}
 
@@ -61,7 +72,14 @@ public final class WedgedMobEjector {
             if (wedged.isEmpty()) continue;
 
             Vector3dc velocity = carriage.provider().getTargetVelocity();
+            int roomLength = DungeonTrainWorldData.get(level.getServer().overworld()).dims().length();
             for (Entity e : wedged) {
+                // Owned pets keep their own routing (to the owner, or waiting): never crushed.
+                if (e instanceof LivingEntity living && CarriagePets.ownerOf(e) == null
+                        && WedgedUnderFloor.fellOffTrain(e.tickCount) && nearPlayer(level, e, c, velocity, roomLength)) {
+                    crush(level, living);
+                    continue;
+                }
                 moveOut(level, e, c, velocity);
             }
         }
@@ -127,6 +145,40 @@ public final class WedgedMobEjector {
         LOGGER.info("[DungeonTrain] Discarded {} stuck in a carriage floor at ({}, {}, {}): {} source={} ageTicks={} tags={}",
             e.getType().toShortString(), e.getX(), e.getY(), e.getZ(), why, sourceOf(e), e.tickCount, e.getTags());
         e.discard();
+    }
+
+    private static boolean nearPlayer(ServerLevel level, Entity e, AABBdc c, Vector3dc velocity, int roomLength) {
+        for (ServerPlayer p : level.players()) {
+            if (p.isSpectator() || !p.isAlive()) continue;
+            if (WedgedUnderFloor.withinRooms(p.getX(), p.getY(), p.getZ(), e.getX(), e.getY(), e.getZ(),
+                    c.minX(), c.minZ(), c.maxX(), c.maxZ(), velocity.x(), velocity.z(), roomLength)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Leaves a mob that fell onto the tracks where it is and hits it for
+     * {@link WedgedUnderFloor#CRUSH_DAMAGE} each {@link WedgedUnderFloor#CRUSH_INTERVAL_TICKS} it
+     * spends under carriages. Time spent clear of the train is not counted.
+     */
+    private static void crush(ServerLevel level, LivingEntity e) {
+        long now = level.getGameTime();
+        long[] prev = CRUSH_TICKS.get(e);
+        if (prev != null && prev[0] == now) return; // under two overlapping carriage boxes this tick
+        if (prev == null) {
+            int repeats = LOG_THROTTLES.computeIfAbsent(level, l -> new EjectLogThrottle()).record(e.getId(), now);
+            if (repeats >= 0) {
+                LOGGER.info("[DungeonTrain] Left {} on the tracks under a carriage near a player at ({}, {}, {}) source={} ageTicks={} tags={} repeats={}",
+                    e.getType().toShortString(), e.getX(), e.getY(), e.getZ(), sourceOf(e), e.tickCount, e.getTags(), repeats);
+            }
+        }
+        long ticksUnder = prev == null ? 1 : prev[1] + 1;
+        CRUSH_TICKS.put(e, new long[] {now, ticksUnder});
+        if (WedgedUnderFloor.crushDue(ticksUnder)) {
+            e.hurt(level.damageSources().inWall(), WedgedUnderFloor.CRUSH_DAMAGE);
+        }
     }
 
     /**
