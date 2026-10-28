@@ -237,12 +237,6 @@ public final class StartingBookEvents {
      * the burn flow normally.</p>
      */
     private static final String ENTITY_TAG_SPAWN_BOOK = "dt_starting_spawn_book";
-    /**
-     * Item-entity persistent flag: the copies left over when a stack of identical burnable books
-     * was dropped and one of them burned ({@link #spareExtraCopies}). Entity-only, like
-     * {@link #ENTITY_TAG_SPAWN_BOOK}: once picked up and dropped again, one more copy burns.
-     */
-    private static final String ENTITY_TAG_SPARED_COPIES = "dt_burn_spared_copies";
     /** Item-entity persistent flag: dropped by a PlayerMob (hand-over, gift, spill, death loot) — a photo so dropped is never ignited. */
     public static final String ENTITY_TAG_HANDED_PHOTO = "dungeontrain:playermob_drop";
 
@@ -670,11 +664,9 @@ public final class StartingBookEvents {
 
     /** Starts the burn on an item entity: locks pickup, tracks it, plays the ignition sound. */
     private static void igniteItem(ItemEntity item, FlameVariant variant) {
-        // Lock pickup for the whole burn so the player can't snatch the burning item mid-burn and
-        // stash it. Never-pickup (not a 60-tick delay) also makes it unmergeable: an identical
-        // copy lying beside it (the spared rest of a dropped stack) would otherwise absorb the
-        // burning one and save it. The burn always ends by discarding the entity.
-        item.setNeverPickUp();
+        // Lock pickup for the burn window so the player can't snatch the
+        // burning item mid-burn and stash it.
+        item.setPickUpDelay(BURN_DURATION_TICKS);
         BURN_ENTITIES.put(item.getUUID(), new BurnState(BURN_DURATION_TICKS, variant));
 
         // Ignition atmosphere — a quiet "whoosh" (a soul escape for a Death Note) at the drop point.
@@ -753,9 +745,7 @@ public final class StartingBookEvents {
             return;
         }
         if (item.getPersistentData().getBoolean(ENTITY_TAG_SPAWN_BOOK)) return;
-        if (item.getPersistentData().getBoolean(ENTITY_TAG_SPARED_COPIES)) return;
         if (BURN_ENTITIES.containsKey(item.getUUID())) return;
-        stack = spareExtraCopies(item, stack);
 
         // A signed "Death Note" curse book burns with the SOUL variant (ghostly soul-fire + a soul
         // sound) and a "Love Note" with the pink LOVE variant instead of the normal fire — see
@@ -777,34 +767,6 @@ public final class StartingBookEvents {
         if (StartingBookTag.isStartingBook(stack) && item.getOwner() instanceof ServerPlayer owner) {
             markStartingBookBurned(owner);
         }
-    }
-
-    /**
-     * A dropped stack of identical burnable books burns ONE copy, not all of them. Shrinks
-     * {@code item} to a single copy (the one that burns) and, next tick, drops the rest beside it
-     * as a separate entity flagged {@link #ENTITY_TAG_SPARED_COPIES} so it lands intact. Deferred
-     * so no entity is added from inside the entity-join event. Returns the stack that burns.
-     */
-    private static ItemStack spareExtraCopies(ItemEntity item, ItemStack stack) {
-        if (stack.getCount() <= 1) return stack;
-        ItemStack burning = stack.copyWithCount(1);
-        ItemStack spared = stack.copyWithCount(stack.getCount() - 1);
-        item.setItem(burning);
-        ServerLevel level = (ServerLevel) item.level();
-        double x = item.getX(), y = item.getY(), z = item.getZ();
-        Vec3 motion = item.getDeltaMovement();
-        Entity owner = item.getOwner();
-        level.getServer().execute(() -> {
-            ItemEntity rest = new ItemEntity(level, x, y, z, spared);
-            rest.setDeltaMovement(motion);
-            rest.setDefaultPickUpDelay();
-            if (owner != null) rest.setThrower(owner);
-            rest.getPersistentData().putBoolean(ENTITY_TAG_SPARED_COPIES, true);
-            level.addFreshEntity(rest);
-        });
-        LOGGER.info("[DungeonTrain] BurnableBook: stack of {} dropped — burning one, sparing {}",
-            stack.getCount(), spared.getCount());
-        return burning;
     }
 
     /**
