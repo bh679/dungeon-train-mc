@@ -123,10 +123,10 @@ public final class DeathCameraCycle {
      * set this true to bring them back in place of the sky.
      */
     static final boolean LOOP_ON = false;
-    /** The sky shot tilts the lens up over this long (3 s)... */
+    /** The sky shot tilts the lens up over this long (3 s); the menu opens as it reaches the top. */
     static final int SKY_TILT_TICKS = 60;
-    /** ...then fades to the perks menu's night blue over this long. */
-    static final int SKY_FADE_TICKS = 30;
+    /** The last this-long of the tilt also fades to the perks menu's night blue (2 s). */
+    static final int SKY_FADE_TICKS = 40;
     /** Where the tilt ends: looking almost straight up (Minecraft pitch, negative is up). */
     static final float SKY_PITCH = -80.0f;
     /** Every shot is re-tested this often for a lens that has run into a block. */
@@ -272,7 +272,7 @@ public final class DeathCameraCycle {
         // spot nor the carriage shot did (gated in select), pulling out whichever way is clear.
         shots.add(DeathShot.bodyOut(DOLLY_TICKS + 60, "body-out"));
         if (!withLoop) {
-            shots.add(DeathShot.skyTilt(SKY_TILT_TICKS + SKY_FADE_TICKS));
+            shots.add(DeathShot.skyTilt(SKY_TILT_TICKS));
             return List.copyOf(shots);
         }
         shots.addAll(TRAIN_SHOTS);
@@ -542,9 +542,9 @@ public final class DeathCameraCycle {
         return (float) (from + (SKY_PITCH - from) * s);
     }
 
-    /** Pure: the night-blue overlay {@code t} ticks into the sky shot; it rises once the tilt is done. */
+    /** Pure: the night-blue overlay {@code t} ticks into the sky shot; it rises over the end of the tilt. */
     static float skyFadeAt(double t) {
-        return (float) Mth.clamp((t - SKY_TILT_TICKS) / SKY_FADE_TICKS, 0.0, 1.0);
+        return (float) Mth.clamp((t - (SKY_TILT_TICKS - SKY_FADE_TICKS)) / SKY_FADE_TICKS, 0.0, 1.0);
     }
 
     /** The night-blue overlay for this frame, 0 unless the sky shot is fading out. */

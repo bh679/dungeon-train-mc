@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** The perks menu opened on death: the points page, the drain into the menu, and what each phase shows. */
+/** The perks menu opened on death: it builds up, the points held at death show, then drain away. */
 class DeathPerksPhaseTest {
 
     private static final PerkMenuSnapshot POINTED =
@@ -19,53 +19,43 @@ class DeathPerksPhaseTest {
         new PerkMenuSnapshot(Map.of("health", 3), Map.of(), 4, 0);
 
     @Test
-    @DisplayName("a life with points opens on the points page; one without opens on the menu")
-    void opensOnPointsOnlyWithPoints() {
-        assertEquals(DeathPerksPhase.Phase.POINTS, new DeathPerksPhase(POINTED, () -> null, 0).phase(0));
-        assertEquals(DeathPerksPhase.Phase.UNLOCK, new DeathPerksPhase(NO_POINTS, () -> null, 0).phase(0));
-    }
-
-    @Test
-    @DisplayName("the points page waits; Next Screen (after a second) drains the rings into the menu")
-    void drainRunsToUnlock() {
+    @DisplayName("the menu takes input only once every layer is up; a click brings them all up at once")
+    void liveOnceBuilt() {
         DeathPerksPhase phase = new DeathPerksPhase(POINTED, () -> null, 0);
-        assertEquals(1.0, phase.pageAlpha(0));
-        assertEquals(0.0, phase.menuAlpha(0));
+        long done = phase.reveal().doneAt();
         assertFalse(phase.menuLive(0));
-        phase.advance(500);
-        assertEquals(DeathPerksPhase.Phase.POINTS, phase.phase(500));
-        phase.advance(1000);
-        assertEquals(DeathPerksPhase.Phase.DRAIN, phase.phase(1000));
-        assertEquals(1.0, phase.ringsLeft(1000));
-        assertTrue(phase.ringsLeft(1600) < 1 && phase.ringsLeft(1600) > 0);
-        assertEquals(0.0, phase.pageAlpha(1000 + 400));
-        assertEquals(DeathPerksPhase.Phase.UNLOCK, phase.phase(1000 + DeathPerksPhase.DRAIN_MS));
-        assertTrue(phase.menuLive(1000 + DeathPerksPhase.DRAIN_MS));
-        assertEquals(1.0, phase.menuAlpha(1000 + DeathPerksPhase.DRAIN_MS));
+        assertFalse(phase.menuLive(done - 1));
+        assertTrue(phase.menuLive(done));
+        DeathPerksPhase skipped = new DeathPerksPhase(POINTED, () -> null, 0);
+        skipped.advance(500);
+        assertTrue(skipped.menuLive(500));
     }
 
     @Test
-    @DisplayName("a second advance during the drain skips to the menu")
-    void skipDrain() {
-        DeathPerksPhase phase = new DeathPerksPhase(POINTED, () -> null, 0);
-        phase.advance(1000);
-        phase.advance(1100);
-        assertEquals(DeathPerksPhase.Phase.UNLOCK, phase.phase(1100));
-    }
-
-    @Test
-    @DisplayName("the points page shows the points held at death; the menu shows the live tree with none")
-    void viewPerPhase() {
+    @DisplayName("a life with points shows them through the build-up, then the rings empty")
+    void pointsThenDrain() {
         PerkMenuSnapshot live = new PerkMenuSnapshot(Map.of("health", 4, "speed", 2), Map.of("health", 3), 1, 2);
         DeathPerksPhase phase = new DeathPerksPhase(POINTED, () -> null, 0);
-        assertEquals(POINTED, phase.view(live, 0));
-        assertEquals(POINTED, phase.view(live, 60_000)); // never moves on by itself
-        phase.advance(1000);
-        PerkMenuSnapshot unlock = phase.view(live, 1000 + DeathPerksPhase.DRAIN_MS);
+        long done = phase.reveal().doneAt();
+        assertEquals(POINTED.active(), phase.view(live, 0).active(), "the points held at death, not the live ones");
+        assertEquals(POINTED.active(), phase.view(live, done - 1).active());
+        assertEquals(1.0, phase.ringsLeft(done));
+        double mid = phase.ringsLeft(done + DeathPerksPhase.DRAIN_MS / 2);
+        assertTrue(mid > 0 && mid < 1);
+        PerkMenuSnapshot unlock = phase.view(live, done + DeathPerksPhase.DRAIN_MS);
         assertTrue(unlock.active().isEmpty());
         assertEquals(0, unlock.activePoints());
-        assertEquals(4, unlock.unlockLevel("health"));
+        assertEquals(4, unlock.unlockLevel("health"), "unlocks are live");
         assertEquals(1, unlock.unlockPoints());
+    }
+
+    @Test
+    @DisplayName("a life with no points skips the active layer")
+    void noPointsNoActiveLayer() {
+        DeathPerksPhase none = new DeathPerksPhase(NO_POINTS, () -> null, 0);
+        DeathPerksPhase some = new DeathPerksPhase(POINTED, () -> null, 0);
+        assertTrue(none.reveal().doneAt() < some.reveal().doneAt());
+        assertEquals(0.0, none.reveal().alpha(MenuReveal.Stage.ACTIVE, 60_000));
     }
 
     @Test

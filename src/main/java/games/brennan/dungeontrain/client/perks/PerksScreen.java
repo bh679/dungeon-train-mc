@@ -79,7 +79,8 @@ public final class PerksScreen extends Screen {
     private final UUID player;
     /** Set when the menu opened on death, ahead of the recap; null for the menu opened in play. */
     private final DeathPerksPhase death;
-    private final PointsCarriedPanel deathPanel;
+    /** The layers' fade-in: one at a time on death, all up at once in play. */
+    private final MenuReveal reveal;
     private long frameAt;
 
     private SkyView view;
@@ -125,7 +126,7 @@ public final class PerksScreen extends Screen {
         this.player = mc.player != null ? mc.player.getUUID() : new UUID(0, 0);
         this.off = ClassChoiceStore.load(player).orElseGet(this::allClasses);
         this.drawn = tree;
-        this.deathPanel = new PointsCarriedPanel(mc.font);
+        this.reveal = death != null ? death.reveal() : MenuReveal.allUp();
         bar.unlockOnly(death != null);
         counters.unlockOnly(death != null);
     }
@@ -188,19 +189,27 @@ public final class PerksScreen extends Screen {
         else super.onClose();
     }
 
-    /** The death menu takes no input until the points page has drained away. */
+    /** The death menu takes no input while it is still building up. */
     private boolean deathPage() {
         return death != null && !death.menuLive(Util.getMillis());
     }
 
-    /** The points page or the drain: Next Screen (or a click during the drain) moves it on. */
+    /** A click or key while the death menu builds up: everything comes up now. */
     private void advanceDeath() {
         death.advance(Util.getMillis());
         play(SoundEvents.UI_BUTTON_CLICK.value(), 0.3F, 1.0F);
     }
 
-    private double menuAlpha() {
-        return death == null ? 1 : death.menuAlpha(frameAt);
+    /** How far {@code s} has faded in this frame, with the open fade. */
+    private double layer(MenuReveal.Stage s, double fade) {
+        return reveal.alpha(s, frameAt) * fade;
+    }
+
+    /** The layer a perk's star, name and lines come in with: points this life, unlocked, or the rest. */
+    private MenuReveal.Stage stageOf(PerkTree.Perk p, PerkMenuSnapshot snap) {
+        if (death != null && death.carried().points(p.id()) > 0) return MenuReveal.Stage.ACTIVE;
+        if (p.isRoot() || snap.isUnlocked(p.id())) return MenuReveal.Stage.UNLOCKED;
+        return MenuReveal.Stage.CLASSES;
     }
 
 
@@ -341,7 +350,7 @@ public final class PerksScreen extends Screen {
         PerkMenuSnapshot snap = snapshot();
         long now = frameAt;
         double fade = Math.min(1.0, (now - openedAt) / (double) FADE_MS);
-        double menuFade = fade * menuAlpha();
+        java.util.function.ToDoubleFunction<PerkTree.Perk> perkFade = p -> layer(stageOf(p, snap), fade);
 
         int cardRight = classesList.layout(width);
         int countersTop = counters.layout(width, skyH(), snap.unlockPoints(), snap.activePoints());
@@ -356,8 +365,7 @@ public final class PerksScreen extends Screen {
         String classHover = listHover != null ? listHover : titleHover;
         preview = classHover != null && off.contains(classHover) ? classHover : null;
 
-        vis = new ClassVisibility(tree, off, preview, snap.unlocks(), snap.active(), snap.unlockPoints(),
-            death != null && death.onlyPointed(now) ? death.carried().active().keySet() : null);
+        vis = new ClassVisibility(tree, off, preview, snap.unlocks(), snap.active(), snap.unlockPoints());
         drawn = tree.withPositions(layout.positions(tree, vis, now));
         hovered = card.contains(mouseX, mouseY) || classesList.rowHover(mouseX, mouseY) != null || headEyeHover
             || titleHover != null ? null : starAt(mouseX, mouseY);
@@ -370,9 +378,10 @@ public final class PerksScreen extends Screen {
         g.fill(0, 0, width, height, SkyPalette.BG);
         double gx = view.toScreenX(PerkTree.CENTRE, width), gy = view.toScreenY(PerkTree.CENTRE, skyH());
         // the web's soft centre glow (radial, gold, fading out by a third of the sky)
-        SkyDraw.glow(g, gx, gy, 256 * view.zoom(), SkyDraw.withAlpha(SkyPalette.GOLD, 0.07 * fade));
-        stars.render(g, view, width, skyH(), now, fade);
-        LinkPainter.render(g, drawn, snap, vis, view, width, skyH(), fade);
+        double skyFade = layer(MenuReveal.Stage.STARS, fade);
+        SkyDraw.glow(g, gx, gy, 256 * view.zoom(), SkyDraw.withAlpha(SkyPalette.GOLD, 0.07 * skyFade));
+        stars.render(g, view, width, skyH(), now, skyFade);
+        LinkPainter.render(g, drawn, snap, vis, view, width, skyH(), perkFade);
         // perk names take their spots first; the class titles then move around them
         boolean spendable = fromApple && snap.canAffordRank() && spentAt == 0;
         Map<String, int[]> names = layoutNames(List.of());
@@ -384,47 +393,52 @@ public final class PerksScreen extends Screen {
         double labelFade = labelsSettledAt < 0 ? 0 : Math.min(1.0, (now - labelsSettledAt) / (double) LABEL_FADE_MS) * fade;
         boolean labels = labelFade > 0.03; // Minecraft draws near-zero alpha text fully opaque, so skip it
         if (!labels) titles = List.of();
-        if (labels) {
-            titles = ClassTitlePainter.render(g, font, drawn, vis, glow, view, width, skyH(), labelFade, nameBoxes,
+        double titleFade = labelFade * reveal.alpha(MenuReveal.Stage.CLASSES, now);
+        if (labels && titleFade > 0.03) {
+            titles = ClassTitlePainter.render(g, font, drawn, vis, glow, view, width, skyH(), titleFade, nameBoxes,
                 titleHover, titleEyeHover);
-            SkyNames.renderLeaders(g, sky(), names, labelFade);
+        } else {
+            titles = List.of();
         }
+        if (labels) SkyNames.renderLeaders(g, sky(), names, labelFade * reveal.alpha(MenuReveal.Stage.UNLOCKED, now));
 
         for (PerkTree.Perk p : drawn.perks()) {
             if (vis.hidden(p)) continue;
+            double starFade = perkFade.applyAsDouble(p);
+            if (starFade <= 0) continue;
             boolean sel = p.id().equals(selected), hov = p.id().equals(hovered) || p.id().equals(cardFor);
             boolean glows = glow != null && glow.equals(p.cls());
             StarPainter.render(g, font, drawn, p, snap, view, width, skyH(),
-                new StarPainter.Look(hov, sel, names.get(p.id()), spendable, vis.ghost(p), glows), unlockedAt, pointAt, now, fade);
+                new StarPainter.Look(hov, sel, names.get(p.id()), spendable, vis.ghost(p), glows), unlockedAt, pointAt, now, starFade);
         }
         // names after every star, so no dot covers a label
         for (PerkTree.Perk p : labels ? drawn.perks() : List.<PerkTree.Perk>of()) {
             int[] at = names.get(p.id());
             if (at == null || vis.hidden(p)) continue;
-            StarPainter.renderName(g, font, drawn, p, snap, at, glow != null && glow.equals(p.cls()), vis.ghost(p), labelFade);
+            double nameFade = labelFade * reveal.alpha(stageOf(p, snap), now);
+            if (nameFade <= 0.03) continue;
+            StarPainter.renderName(g, font, drawn, p, snap, at, glow != null && glow.equals(p.cls()), vis.ghost(p), nameFade);
         }
 
-        if (menuFade > 0.03) renderHeader(g, snap, now, menuFade, mouseX, mouseY);
+        if (skyFade > 0.03) renderHeader(g, snap, now, skyFade, layer(MenuReveal.Stage.POINTS, fade), mouseX, mouseY);
         // only a class clicked to stay gets the pill; a hovered title or perk, or the kept perk, outlines its class
         String keptPerkClass = selected == null ? null : tree.perk(selected).map(PerkTree.Perk::cls).orElse(null);
         String hoverMarked = titleHover != null ? titleHover
             : hovered != null ? tree.perk(hovered).map(PerkTree.Perk::cls).orElse(null) : keptPerkClass;
         int head = headEyeHover ? 2 : classesList.headingAt(mouseX, mouseY) ? 1 : 0;
-        if (menuFade > 0.03) {
+        double listFade = layer(MenuReveal.Stage.CLASS_LIST, fade), pointsFade = layer(MenuReveal.Stage.POINTS, fade);
+        if (listFade > 0.03) {
             classesList.render(g, snap, off, listHover, selectedClass, hoverMarked,
-                classesList.rowHover(mouseX, mouseY), selectedClass, eyeHover, head, menuFade);
-            counters.render(g, snap.unlockPoints(), snap.activePoints(), now, menuFade);
+                classesList.rowHover(mouseX, mouseY), selectedClass, eyeHover, head, listFade);
         }
+        if (pointsFade > 0.03) counters.render(g, snap.unlockPoints(), snap.activePoints(), now, pointsFade);
         g.flush(); // titles and names are batched: push them out so the card paints over them
         if (DETAILS == DetailsMode.BAR) {
             bar.mouse(mouseX, mouseY);
-            if (menuFade > 0.03) bar.render(g, snap, menuFade);
+            double barFade = layer(MenuReveal.Stage.BAR, fade);
+            if (barFade > 0.03) bar.render(g, snap, barFade);
         }
         else card.render(g, now);
-        if (death != null) {
-            deathPanel.render(g, tree, card, death.carried(), width, height - PerkDetailsBar.HEIGHT, mouseX, mouseY,
-                death.pageAlpha(now) * fade);
-        }
         g.flush();
         super.render(g, mouseX, mouseY, partialTick);
 
@@ -479,7 +493,7 @@ public final class PerksScreen extends Screen {
         // the sky is the background
     }
 
-    private void renderHeader(GuiGraphics g, PerkMenuSnapshot snap, long now, double fade, int mouseX, int mouseY) {
+    private void renderHeader(GuiGraphics g, PerkMenuSnapshot snap, long now, double fade, double nextFade, int mouseX, int mouseY) {
         int alpha = (int) (fade * 255) << 24;
         int x = 8, y = (SkyView.HEADER - font.lineHeight) / 2 + 1;
         g.drawString(font, title, x, y, (SkyPalette.GOLD & 0xFFFFFF) | alpha, true);
@@ -495,7 +509,9 @@ public final class PerksScreen extends Screen {
         if (death != null) {
             g.drawString(font, Component.translatable("gui.dungeontrain.perks.death.unlock_hint"), x, y,
                 (SkyPalette.GOLD & 0xFFFFFF) | alpha, true);
-            PointsCarriedPanel.nextButton(g, font, width - 8 - NEXT_W, NEXT_Y, NEXT_W, NEXT_H, overNext(mouseX, mouseY), fade);
+            if (nextFade > 0.03) {
+                PointsCarriedPanel.nextButton(g, font, width - 8 - NEXT_W, NEXT_Y, NEXT_W, NEXT_H, overNext(mouseX, mouseY), nextFade);
+            }
             return;
         }
         g.drawString(font, "x", width - 8 - font.width("x"), y, (SkyPalette.MUTED & 0xFFFFFF) | alpha, false);
@@ -517,7 +533,6 @@ public final class PerksScreen extends Screen {
             if (p.id().equals(selected)) return 0;
             if (p.id().equals(hovered) || p.id().equals(cardFor)) return 1;
             if (glow != null && glow.equals(p.cls())) return 2;
-            if (death != null && death.onlyPointed(frameAt)) return 2;
             if (last.unlockLevel(p.id()) > 0) return 3;
             return 4;
         };
@@ -553,8 +568,8 @@ public final class PerksScreen extends Screen {
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         if (deathPage()) {
-            boolean draining = death.phase(Util.getMillis()) == DeathPerksPhase.Phase.DRAIN;
-            if (button == 0 && (draining || deathPanel.overButton(mx, my))) advanceDeath();
+            if (games.brennan.dungeontrain.client.RefocusClickGuard.swallow()) return true;
+            advanceDeath();
             return true;
         }
         if (super.mouseClicked(mx, my, button)) return true;

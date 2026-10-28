@@ -303,6 +303,7 @@ final class PerkDetailsBar {
 
     void render(GuiGraphics g, PerkMenuSnapshot snap, double fade) {
         int a = (int) (fade * 255);
+        for (Button b : buttons()) b.setAlpha((float) fade);
         g.fill(0, top, width, top + HEIGHT, (Math.min(a, BG >>> 24) << 24) | (BG & 0xFFFFFF));
         g.fill(0, top, width, top + 1, (a << 24) | (EDGE & 0xFFFFFF));
         if (perk == null && classShown != null) {

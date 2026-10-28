@@ -5,11 +5,14 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import java.util.function.ToDoubleFunction;
+
 /**
  * Lines between stars, the web page's rules: a requirement link is a straight gradient line from
  * A's colour to B's; a chord is a dashed gold quadratic curve bulging away from the Engine; a
  * one-way chord marks its target with a small gold circle. Both ends locked greys a link out;
- * both ends active makes it thick and bright.
+ * both ends active makes it thick and bright. A line fades in with the later of its two stars
+ * ({@code perkFade}), so it draws only once both are there.
  */
 @OnlyIn(Dist.CLIENT)
 final class LinkPainter {
@@ -17,11 +20,13 @@ final class LinkPainter {
     private LinkPainter() {}
 
     static void render(GuiGraphics g, PerkTree tree, PerkMenuSnapshot snap, ClassVisibility vis, SkyView view, int w, int h,
-                       double fade0) {
+                       ToDoubleFunction<PerkTree.Perk> perkFade) {
         double z = view.zoom();
         for (PerkTree.Link l : tree.links()) {
             PerkTree.Perk a = tree.perk(l.a()).orElse(null), b = tree.perk(l.b()).orElse(null);
             if (a == null || b == null || vis.hidden(a) || vis.hidden(b)) continue;
+            double fade0 = Math.min(perkFade.applyAsDouble(a), perkFade.applyAsDouble(b));
+            if (fade0 <= 0) continue;
             double fade = vis.ghost(a) || vis.ghost(b) ? fade0 * 0.4 : fade0;
             PerkMenuSnapshot.StarState sa = snap.stateOf(tree, a.id()), sb = snap.stateOf(tree, b.id());
             boolean locked = isLocked(sa) || isLocked(sb);
