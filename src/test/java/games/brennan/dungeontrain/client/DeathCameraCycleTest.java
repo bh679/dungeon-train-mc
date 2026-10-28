@@ -33,6 +33,13 @@ class DeathCameraCycleTest {
     }
 
     @Test
+    void deathSpotOrbitRidesWithTheBody() {
+        DeathShot spot = DeathCameraCycle.buildSequence(false, true, false, true).get(1);
+        assertEquals("spot", spot.label());
+        assertEquals(DeathShot.Target.BODY, spot.target());
+    }
+
+    @Test
     void deathSpotOrbitOnlyLeadsIntoAKiller() {
         assertEquals(List.of("POV", "carriage"), labels(DeathCameraCycle.buildSequence(false, false, false, true)).subList(0, 2));
         assertEquals(List.of("POV", "spot", "killer"), labels(DeathCameraCycle.buildSequence(false, true, false, true)).subList(0, 3));
