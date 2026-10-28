@@ -10,8 +10,8 @@ package games.brennan.dungeontrain.client.perks;
  * {@link #skip} brings everything up at once. The menu opened in play uses {@link #allUp()}.
  *
  * <p>It opens on {@link #LEAD_IN_MS} of plain night blue, so the stars start only once the death
- * scene's fade into it has settled. Then one thing at a time: each beat's line fades in first, and only
- * once it is up does its layer fade in ({@link #STAR_FADE_MS} for the stars, {@link #FADE_MS} for the
+ * scene's fade into it has settled. Then one thing at a time: each beat's line fades in first and is
+ * read on its own for {@link #READ_FIRST_MS}, and only then does its layer fade in ({@link #STAR_FADE_MS} for the stars, {@link #FADE_MS} for the
  * rest); the next line waits until that layer is up. The first line is read while the stars come in;
  * every later line gets its full reading time after its layer is up.</p>
  *
@@ -36,6 +36,10 @@ final class MenuReveal {
     static final long FADE_MS = 1000;
     /** ...but the stars take longer. */
     static final long STAR_FADE_MS = 2500;
+    /** A line is up on its own this long, to be read, before its layer starts to come in. */
+    static final long READ_FIRST_MS = 800;
+    /** From a beat's start to its layer's: the line fades in, then is read on its own. */
+    static final long LAYER_DELAY_MS = FADE_MS + READ_FIRST_MS;
     /** A line fades out over this long at the end of its beat. */
     static final long LINE_OUT_MS = 300;
     /** A layer still waiting on the player: it has no start yet. */
@@ -58,9 +62,9 @@ final class MenuReveal {
         this.beats = beats.clone();
         // one thing at a time. The first line is read while the stars come in (its beat covers both
         // fades); later lines get their whole reading time once their layer is up.
-        this.beats[BEAT_STARS] = Math.max(this.beats[BEAT_STARS], FADE_MS + STAR_FADE_MS);
+        this.beats[BEAT_STARS] = Math.max(this.beats[BEAT_STARS], LAYER_DELAY_MS + STAR_FADE_MS);
         for (int i = BEAT_ACTIVE; i < BEAT_SELECT; i++) {
-            if (this.beats[i] > 0) this.beats[i] += FADE_MS + layerFadeMs(i);
+            if (this.beats[i] > 0) this.beats[i] += LAYER_DELAY_MS + layerFadeMs(i);
         }
         this.hasActive = beats[BEAT_ACTIVE] > 0;
         this.firstTime = firstTime;
@@ -98,10 +102,10 @@ final class MenuReveal {
     long startOf(Stage s) {
         return switch (s) {
             // each layer once its line has faded in
-            case STARS -> beatStart(BEAT_STARS) + FADE_MS;
-            case ACTIVE -> beatStart(BEAT_ACTIVE) + FADE_MS;
-            case UNLOCKED -> beatStart(BEAT_CENTRE) + FADE_MS;
-            case CLASSES -> beatStart(BEAT_PERKS) + FADE_MS;
+            case STARS -> beatStart(BEAT_STARS) + LAYER_DELAY_MS;
+            case ACTIVE -> beatStart(BEAT_ACTIVE) + LAYER_DELAY_MS;
+            case UNLOCKED -> beatStart(BEAT_CENTRE) + LAYER_DELAY_MS;
+            case CLASSES -> beatStart(BEAT_PERKS) + LAYER_DELAY_MS;
             case CLASS_LIST -> {
                 long afterSelect = beatStart(BEAT_SELECT) + beats[BEAT_SELECT];
                 if (!firstTime) yield afterSelect;
