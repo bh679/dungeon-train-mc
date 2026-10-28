@@ -80,6 +80,21 @@ public final class DeadRiderServerCarry {
         }
     }
 
+    /**
+     * Where this player died, in world space, while their body is carried: the train's keep-alive
+     * measures from here, so the line behaves as if they still stood at that spot (the train rolls
+     * past and keeps extending behind itself). Null when the body is not carried.
+     */
+    public static Vec3 deathSpot(ServerPlayer player) {
+        Pin pin = PINS.get(player);
+        return pin == null ? null : pin.deathSpot();
+    }
+
+    /** True while this player's body is being carried. */
+    public static boolean isCarried(ServerPlayer player) {
+        return PINS.containsKey(player);
+    }
+
     private static Pin pin(ServerPlayer player) {
         SubLevel carriage = Sable.HELPER.getTrackingSubLevel(player);
         if (carriage == null || carriage.isRemoved()) return null;
