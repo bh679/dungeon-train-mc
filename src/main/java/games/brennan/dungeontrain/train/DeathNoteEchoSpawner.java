@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.difficulty.DifficultyApplier;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
 import games.brennan.dungeontrain.event.DeathNoteEchoController;
+import games.brennan.dungeontrain.narrative.AuthorSkinRef;
 import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.narrative.NoteSpokenLines;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
@@ -112,8 +113,9 @@ public final class DeathNoteEchoSpawner {
      * is consumed and no curse is lost.</p>
      */
     public static boolean spawnForTarget(ServerLevel level, ServerPlayer target,
-                                         String authorUuid, String authorName, int deathCarriage,
-                                         int noteId, NoteKind kind, List<String> spokenLines) {
+                                         String authorUuid, String authorName, String authorSkinRef,
+                                         int deathCarriage, int noteId, NoteKind kind,
+                                         List<String> spokenLines) {
         Trains.Carriage group = groupContaining(level, target);
         if (group == null) {
             LOGGER.debug("[DungeonTrain] DeathNote echo: {} not on a resolvable carriage group yet — deferring.",
@@ -136,8 +138,8 @@ public final class DeathNoteEchoSpawner {
             return false;
         }
         BlockPos floorPos = spot.get();
-        return spawn(level, floorPos, deathCarriage, authorUuid, authorName, target, noteId, kind,
-                spokenLines);
+        return spawn(level, floorPos, deathCarriage, authorUuid, authorName, authorSkinRef, target,
+                noteId, kind, spokenLines);
     }
 
     /**
@@ -222,8 +224,9 @@ public final class DeathNoteEchoSpawner {
      * failure logs + returns false so the caller doesn't consume the note on a bad spawn.
      */
     private static boolean spawn(ServerLevel level, BlockPos floorPos, int carriagePIdx,
-                                 String authorUuidStr, String authorNameStr, ServerPlayer target,
-                                 int noteId, NoteKind kind, List<String> spokenLines) {
+                                 String authorUuidStr, String authorNameStr, String authorSkinRef,
+                                 ServerPlayer target, int noteId, NoteKind kind,
+                                 List<String> spokenLines) {
         UUID targetUuid = target.getUUID();
         try {
             Optional<EntityType<?>> typeOpt = EntityType.byString(PLAYER_MOB_ID.toString());
@@ -250,7 +253,7 @@ public final class DeathNoteEchoSpawner {
             UUID authorUuid = parseUuid(authorUuidStr);
             String authorName = (authorNameStr == null || authorNameStr.isBlank()) ? "Unknown" : authorNameStr;
             if (authorUuid != null) {
-                mob.setSkinTextureUrl(SourceProfileSkin.encode(authorUuid, authorName));
+                bakeSkin(mob, authorUuid, authorName, authorSkinRef);
             }
             mob.setCustomName(Component.translatable("echo.dungeontrain.mob_name", authorName));
             mob.setCustomNameVisible(true);
@@ -313,6 +316,23 @@ public final class DeathNoteEchoSpawner {
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Note echo spawn failed at {}: {}", floorPos, t.toString());
             return false;
+        }
+    }
+
+    /**
+     * Give the echo the author's face. With a skin captured at the author's death
+     * ({@link AuthorSkinRef}, via the relay) the profile ref carries the texture URL and the arm
+     * model is set from it; without one (a note uploaded before capture existed, an offline author)
+     * the ref is uuid+name only and PlayerMob draws the author's default skin.
+     */
+    private static void bakeSkin(PlayerMobEntity mob, UUID authorUuid, String authorName,
+                                 String authorSkinRef) {
+        Optional<AuthorSkinRef> captured = AuthorSkinRef.decode(authorSkinRef);
+        if (captured.isPresent()) {
+            mob.setSkinTextureUrl(SourceProfileSkin.encode(authorUuid, authorName, captured.get().url()));
+            mob.setSkinSlim(captured.get().slim());
+        } else {
+            mob.setSkinTextureUrl(SourceProfileSkin.encode(authorUuid, authorName));
         }
     }
 

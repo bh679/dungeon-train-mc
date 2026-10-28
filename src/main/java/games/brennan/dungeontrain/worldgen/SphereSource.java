@@ -8,5 +8,7 @@ package games.brennan.dungeontrain.worldgen;
 public enum SphereSource {
     OVERWORLD,
     NETHER,
-    END
+    END,
+    /** Deeper Darker's Otherside ({@code deeperdarker:otherside}); roofed like the Nether. */
+    OTHERSIDE
 }

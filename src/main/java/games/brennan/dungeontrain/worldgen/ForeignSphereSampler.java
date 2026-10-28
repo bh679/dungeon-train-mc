@@ -24,8 +24,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Generates the terrain of the spheres band's <b>offline</b> spheres — those cut from the Nether or the
- * End, and any sphere built around a structure — one (sphere, chunk) at a time, off the server thread.
+ * Generates the terrain of the spheres band's <b>offline</b> spheres — those cut from the Nether, the
+ * End or Deeper Darker's Otherside, and any sphere built around a structure — one (sphere, chunk) at a time, off the server thread.
  *
  * <p>Each job runs the source dimension's real generator into a throwaway chunk at the display chunk's
  * own X/Z ({@link OfflineChunkSampler}): noise, surface rules, carvers, the sphere's structure if it
@@ -141,6 +141,7 @@ public final class ForeignSphereSampler {
         return switch (source) {
             case NETHER -> Level.NETHER;
             case END -> Level.END;
+            case OTHERSIDE -> OthersideCore.LEVEL;
             case OVERWORLD -> Level.OVERWORLD;
         };
     }

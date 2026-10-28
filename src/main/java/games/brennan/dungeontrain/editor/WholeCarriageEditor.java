@@ -104,35 +104,43 @@ public final class WholeCarriageEditor {
 
     /** Origin of {@code room}'s plot, or null when it is not registered. */
     public static BlockPos roomPlotOrigin(WholeCarriage room, CarriageDims dims) {
-        int index = WholeCarriageRegistry.ids().indexOf(room.id());
-        return index < 0 ? null : slotOrigin(WholeKind.ROOM, index, dims);
+        return plotOrigin(WholeKind.ROOM, room.id(), dims);
     }
 
     /** Origin of {@code group}'s plot, or null when it is not registered. */
     public static BlockPos groupPlotOrigin(CarriageGroup group, CarriageDims dims) {
-        int index = CarriageGroupRegistry.ids().indexOf(group.id());
-        return index < 0 ? null : slotOrigin(WholeKind.GROUP, index, dims);
+        return plotOrigin(WholeKind.GROUP, group.id(), dims);
+    }
+
+    /** Origin of {@code half}'s plot, or null when it is not registered. */
+    public static BlockPos halfPlotOrigin(WholeCarriage half, CarriageDims dims) {
+        return plotOrigin(WholeKind.HALF, half.id(), dims);
     }
 
     /** Origin for any Whole template; null for other kinds or unregistered ids. */
-    public static BlockPos halfPlotOrigin(WholeCarriage half, CarriageDims dims) {
-        int index = games.brennan.dungeontrain.train.WholeHalfRegistry.ids().indexOf(half.id());
-        return index < 0 ? null : slotOrigin(WholeKind.HALF, index, dims);
-    }
-
     public static BlockPos plotOrigin(Template model, CarriageDims dims) {
-        if (model instanceof Template.WholeCarriage w) return roomPlotOrigin(w.wholeCarriage(), dims);
-        if (model instanceof Template.CarriageGroup g) return groupPlotOrigin(g.group(), dims);
-        if (model instanceof Template.WholeHalf h) return halfPlotOrigin(h.wholeCarriage(), dims);
-        return null;
+        WholeKind kind = kindOf(model);
+        return kind == null ? null : plotOrigin(kind, model.id(), dims);
     }
 
-    /** The whole kind {@code model} belongs to, or null for a template of another section. */
+    /** The slot {@code id} holds in {@code kind}'s row, or null when it is not registered. */
+    private static BlockPos plotOrigin(WholeKind kind, String id, CarriageDims dims) {
+        int index = WholeTemplateNew.ids(kind).indexOf(id);
+        return index < 0 ? null : slotOrigin(kind, index, dims);
+    }
+
+    /**
+     * The whole kind {@code model} belongs to, or null for a template of another section. This is
+     * the one place the three Whole records are told apart — everything else here switches on the
+     * {@link WholeKind} it returns, which the compiler checks.
+     */
     public static WholeKind kindOf(Template model) {
-        if (model instanceof Template.WholeCarriage) return WholeKind.ROOM;
-        if (model instanceof Template.CarriageGroup) return WholeKind.GROUP;
-        if (model instanceof Template.WholeHalf) return WholeKind.HALF;
-        return null;
+        return switch (model) {
+            case Template.WholeCarriage w -> WholeKind.ROOM;
+            case Template.CarriageGroup g -> WholeKind.GROUP;
+            case Template.WholeHalf h -> WholeKind.HALF;
+            default -> null;
+        };
     }
 
     /**
@@ -217,10 +225,9 @@ public final class WholeCarriageEditor {
             overworld, origin, box.getX(), box.getY(), box.getZ());
     }
 
+    /** Stamp whichever Whole plot {@code model} is (its own {@code restampPlot}); other kinds are ignored. */
     public static void stampPlot(ServerLevel overworld, Template model, CarriageDims dims) {
-        if (model instanceof Template.WholeCarriage w) stampRoomPlot(overworld, w.wholeCarriage(), dims);
-        else if (model instanceof Template.CarriageGroup g) stampGroupPlot(overworld, g.group(), dims);
-        else if (model instanceof Template.WholeHalf h) stampHalfPlot(overworld, h.wholeCarriage(), dims);
+        if (kindOf(model) != null) model.restampPlot(overworld, dims);
     }
 
     /** Erase the plot and its cage. */
@@ -283,16 +290,20 @@ public final class WholeCarriageEditor {
         if (server == null) return;
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        WholeKind kind = kindOf(model);
         BlockPos origin = plotOrigin(model, dims);
-        if (origin == null) {
+        if (kind == null || origin == null) {
             LOGGER.warn("[DungeonTrain] Whole editor enter: unknown template '{}'", model.id());
             return;
         }
         EditorSessions.rememberReturn(player);
-        if (stamp) stampPlot(overworld, model, dims);
+        if (stamp) model.restampPlot(overworld, dims);
         Vec3i footprint = model.plotSize(dims);
         // A half's doorways sit on its own, longer box.
-        CarriageDims doorBox = model instanceof Template.WholeHalf ? WholeHalfTemplateStore.halfDims(dims) : dims;
+        CarriageDims doorBox = switch (kind) {
+            case HALF -> WholeHalfTemplateStore.halfDims(dims);
+            case ROOM, GROUP -> dims;
+        };
         BlockPos door = EditorPlotArrival.firstOrNull(CarriageDoorCells.doorBases(origin, doorBox));
         EditorPlotArrival.land(player, overworld, origin, footprint, onTop, inside, door);
         LOGGER.info("[DungeonTrain] Whole editor enter: {} -> {} at {} ({})",

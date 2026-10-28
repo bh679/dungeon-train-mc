@@ -19,7 +19,7 @@ import java.util.function.IntPredicate;
 /**
  * The <b>mix zone</b>: a hard-edged {@link CycleLayout.Type#MIX} slot where every chunk, with equal odds,
  * generates as one of the bands the run has already passed — any overworld style, Nether, BetterNether,
- * End, BetterEnd, upside-down, spheres, or a legacy era.
+ * Deeper Dark, End, BetterEnd, upside-down, spheres, or a legacy era.
  *
  * <p>It works by handing each chunk a {@link WorldGenCycle#shifted shifted} cycle. The chunk rolls a
  * {@link Candidate} and a representative chunk inside that candidate's core (same doubling run), and gets
@@ -82,10 +82,14 @@ public final class MixBand {
                     add(out, exclude, token, slot, null, window(cycle, layout, i, x -> cycle.slotIndexAt(x) == slotIndex));
                 }
                 case NETHER -> {
-                    String token = slot.style() == CycleLayout.Style.BETTER ? "nether_better" : "nether";
+                    String token = netherToken(slot.style());
                     if (!seen.add(token)) continue;
+                    // A Deeper Dark slot may be joined to the Nether slot before it (one unbroken range between the
+                    // two cores), so its window is the part of its core that wears the Otherside look.
+                    boolean otherside = slot.style() == CycleLayout.Style.OTHERSIDE;
                     add(out, exclude, token, slot, null, window(cycle, layout, i,
-                            x -> cycle.slotIndexAt(x) == slotIndex && cycle.isNetherCore(x)));
+                            x -> cycle.slotIndexAt(x) == slotIndex && cycle.isNetherCore(x)
+                                    && (!otherside || cycle.netherLookAt(x) == CycleLayout.Style.OTHERSIDE)));
                 }
                 case END -> {
                     String token = slot.style() == CycleLayout.Style.BETTER ? "end_better" : "end";
@@ -124,6 +128,14 @@ public final class MixBand {
                             LegacyBandKind era, long[] window) {
         if (window == null || exclude.contains(token)) return;
         out.add(new Candidate(token, slot.type(), slot.style(), era, window[0], window[1]));
+    }
+
+    static String netherToken(CycleLayout.Style style) {
+        return switch (style) {
+            case BETTER -> "nether_better";
+            case OTHERSIDE -> "nether_otherside";
+            default -> "nether";
+        };
     }
 
     static String overworldToken(CycleLayout.Style style) {

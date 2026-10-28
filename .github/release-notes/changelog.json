@@ -31532,9 +31532,9 @@
       "highlights": [],
       "pr": 2381,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
     },
     {
       "id": "fallen-mobs-stay-on-tracks",
@@ -31549,9 +31549,9 @@
       "highlights": [],
       "pr": 2384,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
     },
     {
       "id": "read-one-book-from-stack",
@@ -31566,9 +31566,9 @@
       "highlights": [],
       "pr": 2382,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
     },
     {
       "id": "note-story-once-per-life",
@@ -31583,9 +31583,9 @@
       "highlights": [],
       "pr": 2382,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
     },
     {
       "id": "fluid-barrier-tick-cache",
@@ -31604,9 +31604,9 @@
       ],
       "pr": 2383,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
     },
     {
       "id": "editor-shared-plot-helpers",
@@ -31623,13 +31623,87 @@
       ],
       "pr": 2385,
       "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
+    },
+    {
+      "id": "dh-structure-lookup-no-sync-load",
+      "version": "0.1576.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Less lag while Distant Horizons generates far terrain",
+      "summary": "With Distant Horizons on, its far-terrain generation could freeze the game for a second or two at a time while the train rolled. Those freezes are gone.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2387,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
+    },
+    {
+      "id": "note-echo-author-skin",
+      "version": "0.1577.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "books"
+      ],
+      "title": "Note echo fix",
+      "summary": "An echo sent by a Love Note or a Death Note now arrives wearing its author's own skin, not a stand-in.",
+      "highlights": [],
+      "pr": 2388,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
+    },
+    {
+      "id": "deeper-dark-wider-reach",
+      "version": "0.1578.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "The deeper dark spreads",
+      "summary": "The deeper dark no longer keeps to its own stretch of the line. Keep an eye out for its sculk and gloom in places you thought you knew.",
+      "highlights": [],
+      "pr": 2389,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-template-dispatch",
+      "version": "0.1578.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Editor housekeeping",
+      "summary": "Behind-the-scenes tidy-up of how the Train Editor stamps, enters and views its plots. Nothing changes in how you build; the half-carriage row in the Whole section now fills in with the rest when you open it.",
+      "highlights": [
+        "Editor housekeeping: every plot kind is handled the same way under the hood",
+        "Whole section: half-carriage plots fill in with the rest of the section"
+      ],
+      "pr": 2390,
+      "date": "2026-10-28",
       "released": false,
       "released_in": null,
       "released_at": null
     },
     {
       "id": "sky-falling-comets",
-      "version": "0.1576.0",
+      "version": "0.1579.0",
       "type": "feat",
       "tags": [
         "feature",
