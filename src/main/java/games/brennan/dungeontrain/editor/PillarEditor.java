@@ -215,7 +215,7 @@ public final class PillarEditor {
 
     /** Snapshot key shared with {@link EditorDirtyCheck} for pillar-section rows. */
     public static String sectionSnapshotKey(PillarSection section, String name) {
-        return EditorPlotSnapshots.key("tracks", "pillar_" + section.id() + ":" + name);
+        return new Template.Pillar(section, name).snapshotKey().orElseThrow();
     }
 
     /**
@@ -396,7 +396,7 @@ public final class PillarEditor {
 
     /** Snapshot key shared with {@link EditorDirtyCheck} for adjunct rows. */
     public static String adjunctSnapshotKey(PillarAdjunct adjunct, String name) {
-        return EditorPlotSnapshots.key("tracks", "adjunct_" + adjunct.id() + ":" + name);
+        return new Template.Adjunct(adjunct, name).snapshotKey().orElseThrow();
     }
 
     /**

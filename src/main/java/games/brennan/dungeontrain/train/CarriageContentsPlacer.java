@@ -697,7 +697,7 @@ public final class CarriageContentsPlacer {
                     }
                     games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
                         level, wWorld, rotated, w.entry().blockEntityNbt(),
-                        "contents:" + contents.id(), w.localPos(), seed, carriageIndex,
+                        games.brennan.dungeontrain.editor.BlockVariantPlot.contentsKey(contents.id()), w.localPos(), seed, carriageIndex,
                         lootId);
                     ConnectPass.note(level, wWorld, w.entry().connect(), rotated);
                     // A Y flip turns the carriage upside down, so an up-growing column grows down.
@@ -730,7 +730,7 @@ public final class CarriageContentsPlacer {
                                           CarriageContents contents,
                                           long seed, int carriageIndex,
                                           PortalCorridorMask mask, Flip flip) {
-        String plotKey = "contents:" + contents.id();
+        String plotKey = games.brennan.dungeontrain.editor.BlockVariantPlot.contentsKey(contents.id());
         games.brennan.dungeontrain.editor.ContainerContentsStore store =
             games.brennan.dungeontrain.editor.ContainerContentsStore.loadFor(plotKey);
         // Skip cells already handled by a variant entry — the variant flow
@@ -994,7 +994,7 @@ public final class CarriageContentsPlacer {
         // this store, keyed by interior-local block pos). Mirrors the block-
         // side applyContentPools pass.
         ContainerContentsStore contentsLinkStore =
-            ContainerContentsStore.loadFor("contents:" + contents.id());
+            ContainerContentsStore.loadFor(games.brennan.dungeontrain.editor.BlockVariantPlot.contentsKey(contents.id()));
         int spawned = 0;
         for (int i = 0; i < entries.size(); i++) {
             CompoundTag entry = entries.getCompound(i);
@@ -1239,7 +1239,7 @@ public final class CarriageContentsPlacer {
     private static void spawnLinkedEntities(ServerLevel level, BlockPos interiorOrigin,
                                              CarriageContents contents,
                                              int carriagePIdx, long seed, Vec3i size, Flip flip) {
-        ContainerContentsStore store = ContainerContentsStore.loadFor("contents:" + contents.id());
+        ContainerContentsStore store = ContainerContentsStore.loadFor(games.brennan.dungeontrain.editor.BlockVariantPlot.contentsKey(contents.id()));
         java.util.Set<BlockPos> allPositions = store.allPositions();
         if (allPositions.isEmpty()) return;
 

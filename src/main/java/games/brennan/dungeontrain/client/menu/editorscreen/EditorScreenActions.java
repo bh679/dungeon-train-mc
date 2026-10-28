@@ -294,26 +294,11 @@ public final class EditorScreenActions {
         String id = sel.modelId();
         String label = EditorScreenLang.text(EditorScreenLang.ICON_RENAME);
         String current = ctx.variant().displayName();
-        return switch (sel.category()) {
-            case CARRIAGES -> new CommandMenuEntry.TypeArg(label, "name",
-                "dungeontrain editor label " + id, "", current);
-            case CONTENTS -> new CommandMenuEntry.TypeArg(label, "name",
-                "dungeontrain editor contents label " + id, "", current);
-            // A room is a track variant under the hood and its key is spelled like one: modelId is
-            // the KIND token (portal_room) and modelName is the room — the same pair the weight and
-            // phase commands beside this one send.
-            case PORTALS -> new CommandMenuEntry.TypeArg(label, "name",
-                "dungeontrain editor portals label " + id + " " + sel.modelName(), "", current);
-            case WHOLE -> new CommandMenuEntry.TypeArg(label, "name",
-                "dungeontrain editor whole label " + id, "", current);
-            case WHOLE_GROUP -> new CommandMenuEntry.TypeArg(label, "name",
-                "dungeontrain editor whole group label " + id, "", current);
-            case WHOLE_HALF -> new CommandMenuEntry.TypeArg(label, "name",
-                "dungeontrain editor whole half label " + id, "", current);
-            case CHUNK_FRAMES -> new CommandMenuEntry.TypeArg(label, "name",
-                "dungeontrain editor chunkframe rename " + sel.modelName(), "", sel.modelName());
-            case PARTS, TRACKS, BUILDINGS, LOST_CITY, ARCHITECTURE, WORKBENCH -> null;
-        };
+        // A frame has no label: its row renames the file, and the field starts on the name.
+        String start = sel.category() == PlotCategory.CHUNK_FRAMES ? sel.modelName() : current;
+        return sel.category().command(PlotCategory.Verb.LABEL, id, sel.modelName())
+            .map(cmd -> (CommandMenuEntry) new CommandMenuEntry.TypeArg(label, "name", cmd, "", start))
+            .orElse(null);
     }
 
     /**
@@ -364,7 +349,7 @@ public final class EditorScreenActions {
             return new CommandMenuEntry.DrillIn(MenuLang.t("common.remove"),
                 new games.brennan.dungeontrain.client.menu.ConfirmScreen(
                     MenuLang.t("confirm.remove", sel.modelName()),
-                    "dungeontrain editor part reset " + sel.modelId() + " " + sel.modelName()));
+                    PlotCategory.PARTS.command(PlotCategory.Verb.REMOVE, sel.modelId(), sel.modelName()).orElseThrow()));
         }
         CommandMenuEntry parent = parentRemoveEntry(ctx);
         if (parent != null) return parent;
@@ -375,19 +360,14 @@ public final class EditorScreenActions {
                 new games.brennan.dungeontrain.client.menu.ConfirmScreen(
                     MenuLang.t("confirm.remove", sel.displayName()), resetCommand(sel)));
         }
-        if (sel.category() == PlotCategory.CHUNK_FRAMES) {
-            return EditorMenuScreen.removeEntryFor(sel.category(), sel.modelId(), sel.modelName());
-        }
-        return EditorMenuScreen.removeEntryFor(sel.category(), sel.modelId(), sel.displayName());
+        return EditorMenuScreen.removeEntryFor(sel.category(), sel.modelId(), sel.modelName(), sel.displayName());
     }
 
     /** The name-addressed reset for a selection, without a mode word; null for categories without one. */
     private static String resetCommand(VariantKey sel) {
-        return switch (sel.category()) {
-            case CONTENTS -> "dungeontrain editor contents reset " + sel.modelId();
-            case PORTALS -> "dungeontrain editor portals reset " + sel.modelId() + " " + sel.modelName();
-            default -> null;
-        };
+        // Only the two categories with sub-variant groups take a mode word.
+        if (sel.category() != PlotCategory.CONTENTS && sel.category() != PlotCategory.PORTALS) return null;
+        return sel.category().command(PlotCategory.Verb.REMOVE, sel.modelId(), sel.modelName()).orElse(null);
     }
 
     /**

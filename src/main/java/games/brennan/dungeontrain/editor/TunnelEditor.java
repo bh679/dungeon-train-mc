@@ -199,8 +199,7 @@ public final class TunnelEditor {
 
     /** Snapshot key shared with {@link EditorDirtyCheck} for tunnel rows. */
     public static String tunnelSnapshotKey(TunnelVariant variant, String name) {
-        return EditorPlotSnapshots.key("tracks",
-            "tunnel_" + variant.name().toLowerCase(java.util.Locale.ROOT) + ":" + name);
+        return new Template.Tunnel(variant, name).snapshotKey().orElseThrow();
     }
 
     /**

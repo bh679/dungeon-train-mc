@@ -265,7 +265,7 @@ public final class CarriageContentsStore {
         Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
         LOGGER.info("[DungeonTrain] Promoted contents template {} from {} to {}", contents.id(), src, dst);
         try {
-            ContainerContentsStore.promoteFor("contents:" + contents.id());
+            ContainerContentsStore.promoteFor(BlockVariantPlot.contentsKey(contents.id()));
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Promoted contents template {} but failed to promote container sidecar: {}",
                 contents.id(), e.toString());

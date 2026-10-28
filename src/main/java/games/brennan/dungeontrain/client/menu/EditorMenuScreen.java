@@ -187,7 +187,7 @@ public final class EditorMenuScreen implements MenuScreen {
                             kindName[0], kindName[1])),
                     new CommandMenuEntry.DrillIn(MenuLang.t("common.remove"),
                         new ConfirmScreen(MenuLang.t("confirm.remove", ctx.model()),
-                            "dungeontrain editor part reset " + kindName[0] + " " + kindName[1])),
+                            PlotCategory.PARTS.command(PlotCategory.Verb.REMOVE, kindName[0], kindName[1]).orElseThrow())),
                     0.50));
             }
         } else {
@@ -196,7 +196,7 @@ public final class EditorMenuScreen implements MenuScreen {
             // architecture the concept doesn't apply, so the row is omitted rather than showing
             // buttons that error on click.
             CommandMenuEntry newEntry = newEntryFor(ctx.category(), ctx.modelId(), ctx.model());
-            CommandMenuEntry removeEntry = removeEntryFor(ctx.category(), ctx.modelId(), ctx.model());
+            CommandMenuEntry removeEntry = removeEntryFor(ctx.category(), ctx.modelId(), ctx.modelName(), ctx.model());
             if (newEntry != null && removeEntry != null) {
                 out.add(new CommandMenuEntry.Split(newEntry, removeEntry, 0.50));
             } else if (ctx.category() == PlotCategory.WORKBENCH && removeEntry != null) {
@@ -729,18 +729,7 @@ public final class EditorMenuScreen implements MenuScreen {
      */
     public static CommandMenuEntry weightRowFor(PlotCategory category, String modelId, String modelName, int currentWeight) {
         if (modelId == null || modelId.isEmpty() || category == null) return null;
-        boolean named = modelName != null && !modelName.isEmpty();
-        String prefix = switch (category) {
-            case CARRIAGES -> "dungeontrain editor weight " + modelId;
-            case TRACKS -> named ? "dungeontrain editor tracks weight " + modelId + " " + modelName : null;
-            case PORTALS -> named ? "dungeontrain editor portals weight " + modelId + " " + modelName : null;
-            case CONTENTS -> "dungeontrain editor contents weight " + modelId;
-            case WHOLE -> "dungeontrain editor whole weight " + modelId;
-            case WHOLE_GROUP -> "dungeontrain editor whole group weight " + modelId;
-            case WHOLE_HALF -> "dungeontrain editor whole half weight " + modelId;
-            case BUILDINGS -> named ? "dungeontrain editor buildings weight " + modelName : null;
-            case PARTS, CHUNK_FRAMES, LOST_CITY, ARCHITECTURE, WORKBENCH -> null; // no weight pool
-        };
+        String prefix = category.command(PlotCategory.Verb.WEIGHT, modelId, modelName).orElse(null);
         if (prefix == null) return null;
         String label = currentWeight >= 0 ? MenuLang.t("editor.weight_n", currentWeight) : MenuLang.t("editor.weight");
         return CommandMenuEntry.Number.of(label, NumberTitle.of("weight"), prefix,
@@ -790,17 +779,7 @@ public final class EditorMenuScreen implements MenuScreen {
     public static CommandMenuEntry levelRowFor(PlotCategory category, String modelId, String modelName,
                                                String sub, String label, int value, int minLevel) {
         if (modelId == null || modelId.isEmpty() || category == null) return null;
-        boolean named = modelName != null && !modelName.isEmpty();
-        String prefix = switch (category) {
-            case CARRIAGES -> "dungeontrain editor " + sub + " " + modelId;
-            case TRACKS -> named ? "dungeontrain editor tracks " + sub + " " + modelId + " " + modelName : null;
-            case PORTALS -> named ? "dungeontrain editor portals " + sub + " " + modelId + " " + modelName : null;
-            case CONTENTS -> "dungeontrain editor contents " + sub + " " + modelId;
-            case WHOLE -> "dungeontrain editor whole " + sub + " " + modelId;
-            case WHOLE_GROUP -> "dungeontrain editor whole group " + sub + " " + modelId;
-            case WHOLE_HALF -> "dungeontrain editor whole half " + sub + " " + modelId;
-            case PARTS, CHUNK_FRAMES, BUILDINGS, LOST_CITY, ARCHITECTURE, WORKBENCH -> null; // no spawn gate
-        };
+        String prefix = category.levelCommand(sub, modelId, modelName).orElse(null);
         if (prefix == null) return null;
         return levelNumber(label, prefix, sub, value, minLevel);
     }
@@ -851,18 +830,10 @@ public final class EditorMenuScreen implements MenuScreen {
                 MenuLang.t("common.new"),
                 new NewSourcePickerScreen(
                     NewSourcePickerScreen.Category.CONTENTS, residentContentsSizeKey(), modelId));
-            case TRACKS -> {
-                if (modelId == null || modelId.isEmpty()) yield null;
-                yield new CommandMenuEntry.TypeArg(
-                    MenuLang.t("common.new"), "name",
-                    "dungeontrain editor tracks new " + modelId);
-            }
-            case PORTALS -> {
-                if (modelId == null || modelId.isEmpty()) yield null;
-                yield new CommandMenuEntry.TypeArg(
-                    MenuLang.t("common.new"), "name",
-                    "dungeontrain editor portals new " + modelId);
-            }
+            // `new <kind>` takes the typed name; a copy of the variant the player stands on.
+            case TRACKS, PORTALS -> category.command(PlotCategory.Verb.NEW, modelId, model)
+                .map(cmd -> (CommandMenuEntry) new CommandMenuEntry.TypeArg(MenuLang.t("common.new"), "name", cmd))
+                .orElse(null);
             case WHOLE -> new CommandMenuEntry.DrillIn(
                 MenuLang.t("common.new"),
                 new NewSourcePickerScreen(NewSourcePickerScreen.Category.WHOLE, null, modelId));
@@ -899,54 +870,25 @@ public final class EditorMenuScreen implements MenuScreen {
      * {@code model} is the friendly path used in the confirm prompt label.</p>
      */
     public static CommandMenuEntry removeEntryFor(PlotCategory category, String modelId, String model) {
+        return removeEntryFor(category, modelId, model, model);
+    }
+
+    /**
+     * As above, with the variant name the command addresses given apart from the label: a portal
+     * room is removed by {@code <kind> <name>} (the row asked for, whether or not the player stands
+     * in it), a frame, building or staged build by its name alone.
+     */
+    public static CommandMenuEntry removeEntryFor(PlotCategory category, String modelId, String modelName, String model) {
         if (modelId == null || modelId.isEmpty() || category == null) return null;
-        return switch (category) {
-            case CARRIAGES -> new CommandMenuEntry.DrillIn(
-                MenuLang.t("common.remove"),
-                new ConfirmScreen(MenuLang.t("confirm.remove", model),
-                    "dungeontrain editor reset " + modelId));
-            case CONTENTS -> new CommandMenuEntry.DrillIn(
-                MenuLang.t("common.remove"),
-                new ConfirmScreen(MenuLang.t("confirm.remove", model),
-                    "dungeontrain editor contents reset " + modelId));
-            case TRACKS -> new CommandMenuEntry.DrillIn(
-                MenuLang.t("common.remove"),
-                new ConfirmScreen(MenuLang.t("confirm.remove_variant", model),
-                    "dungeontrain editor tracks reset " + modelId));
-            case PORTALS -> new CommandMenuEntry.DrillIn(
-                MenuLang.t("common.remove"),
-                new ConfirmScreen(MenuLang.t("confirm.remove_variant", model),
-                    "dungeontrain editor portals reset " + modelId));
-            case WHOLE -> new CommandMenuEntry.DrillIn(
-                MenuLang.t("common.remove"),
-                new ConfirmScreen(MenuLang.t("confirm.remove", model),
-                    "dungeontrain editor whole reset " + modelId));
-            case WHOLE_GROUP -> new CommandMenuEntry.DrillIn(
-                MenuLang.t("common.remove"),
-                new ConfirmScreen(MenuLang.t("confirm.remove", model),
-                    "dungeontrain editor whole group reset " + modelId));
-            case WHOLE_HALF -> new CommandMenuEntry.DrillIn(
-                MenuLang.t("common.remove"),
-                new ConfirmScreen(MenuLang.t("confirm.remove", model),
-                    "dungeontrain editor whole half reset " + modelId));
-            // A frame is addressed by its name; modelId is the shared chunk_frame tag.
-            case CHUNK_FRAMES -> model == null || model.isEmpty() ? null : new CommandMenuEntry.DrillIn(
-                MenuLang.t("common.remove"),
-                new ConfirmScreen(MenuLang.t("confirm.remove", model),
-                    "dungeontrain editor chunkframe delete " + model));
-            // A new building leaves the roster; a shipped one goes back to the jar's.
-            case BUILDINGS -> model == null || model.isEmpty() ? null : new CommandMenuEntry.DrillIn(
-                MenuLang.t("common.remove"),
-                new ConfirmScreen(MenuLang.t("confirm.remove", model),
-                    "dungeontrain editor buildings delete " + model));
-            // A staged build leaves the Workbench and the shelf; nothing else is touched.
-            case WORKBENCH -> model == null || model.isEmpty() ? null : new CommandMenuEntry.DrillIn(
-                MenuLang.t("common.remove"),
-                new ConfirmScreen(MenuLang.t("confirm.remove", model),
-                    "dungeontrain editor workbench remove " + model));
-            // Parts have their own remove flow; architecture has no models yet; official buildings stay.
-            case PARTS, LOST_CITY, ARCHITECTURE -> null;
-        };
+        // Parts have their own remove flow (the in-plot menu's Split row); architecture has no
+        // models yet; official buildings stay.
+        if (category == PlotCategory.PARTS) return null;
+        String confirm = category == PlotCategory.TRACKS || category == PlotCategory.PORTALS
+            ? MenuLang.t("confirm.remove_variant", model) : MenuLang.t("confirm.remove", model);
+        return category.command(PlotCategory.Verb.REMOVE, modelId, modelName)
+            .map(cmd -> (CommandMenuEntry) new CommandMenuEntry.DrillIn(MenuLang.t("common.remove"),
+                new ConfirmScreen(confirm, cmd)))
+            .orElse(null);
     }
 
     /**
@@ -957,14 +899,10 @@ public final class EditorMenuScreen implements MenuScreen {
      */
     public static CommandMenuEntry clearEntryFor(PlotCategory category, String model) {
         if (model == null || model.isEmpty() || category == null) return null;
-        return switch (category) {
-            case CARRIAGES, CONTENTS, PARTS, CHUNK_FRAMES, PORTALS, BUILDINGS, WHOLE, WHOLE_GROUP, WHOLE_HALF, WORKBENCH -> new CommandMenuEntry.DrillIn(
-                MenuLang.t("common.clear"),
-                new ConfirmScreen(MenuLang.t("confirm.clear_blocks", model),
-                    "dungeontrain editor clear"));
-            // No single addressable plot to clear.
-            case TRACKS, LOST_CITY, ARCHITECTURE -> null;
-        };
+        return category.command(PlotCategory.Verb.CLEAR, model, model)
+            .map(cmd -> (CommandMenuEntry) new CommandMenuEntry.DrillIn(MenuLang.t("common.clear"),
+                new ConfirmScreen(MenuLang.t("confirm.clear_blocks", model), cmd)))
+            .orElse(null);
     }
 
     /**

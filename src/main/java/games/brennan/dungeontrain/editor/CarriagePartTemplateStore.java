@@ -148,7 +148,7 @@ public final class CarriagePartTemplateStore {
         Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
         LOGGER.info("[DungeonTrain] Promoted part template {}:{} from {} to {}", kind.id(), name, src, dst);
         try {
-            ContainerContentsStore.promoteFor("part:" + kind.id() + ":" + name);
+            ContainerContentsStore.promoteFor(BlockVariantPlot.partKey(kind, name));
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Promoted part template {}:{} but failed to promote container sidecar: {}",
                 kind.id(), name, e.toString());

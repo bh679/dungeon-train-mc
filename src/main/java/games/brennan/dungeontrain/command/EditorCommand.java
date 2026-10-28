@@ -3288,84 +3288,29 @@ public final class EditorCommand {
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        java.util.Optional<EditorCategory> categoryOpt = EditorCategory.fromId(categoryId);
+        java.util.Optional<games.brennan.dungeontrain.editor.PlotCategory> categoryOpt =
+            games.brennan.dungeontrain.editor.PlotCategory.fromId(categoryId);
         if (categoryOpt.isEmpty()) {
             source.sendFailure(Component.translatable("chat.dungeontrain.save.unknown_category", categoryId));
             return 0;
         }
-        EditorCategory category = categoryOpt.get();
+        games.brennan.dungeontrain.editor.PlotCategory category = categoryOpt.get();
 
-        // Track-side ids use a "kind.name" format mirroring EditorDirtyCheck:
-        //   "track.<name>"        — track tile variant
-        //   "pillar_<sec>.<name>" — pillar section variant
-        //   "adjunct_<id>.<name>" — pillar adjunct variant
-        //   "tunnel_<v>.<name>"   — tunnel variant
-        // Carriages and contents use the bare model id. Dot is used (not
-        // colon) so the id parses cleanly as a single Brigadier word()
-        // argument — colons aren't allowed in unquoted strings.
-        Template model;
-        if (category == EditorCategory.TRACKS && id.contains(".")) {
-            int sep = id.indexOf('.');
-            String prefix = id.substring(0, sep);
-            String name = id.substring(sep + 1);
-            if ("track".equals(prefix)) {
-                model = new Template.Track(name);
-            } else if (prefix.startsWith("pillar_")) {
-                games.brennan.dungeontrain.track.PillarSection sec = tryParseSection(prefix.substring("pillar_".length()));
-                if (sec == null) {
-                    source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_pillar_section", id));
-                    return 0;
-                }
-                model = new Template.Pillar(sec, name);
-            } else if (prefix.startsWith("adjunct_")) {
-                games.brennan.dungeontrain.track.PillarAdjunct adj = tryParseAdjunct(prefix.substring("adjunct_".length()));
-                if (adj == null) {
-                    source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_adjunct", id));
-                    return 0;
-                }
-                model = new Template.Adjunct(adj, name);
-            } else if (prefix.startsWith("tunnel_")) {
-                TunnelVariant tv;
-                try {
-                    tv = TunnelVariant.valueOf(prefix.substring("tunnel_".length()).toUpperCase(Locale.ROOT));
-                } catch (IllegalArgumentException e) {
-                    source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_tunnel_variant", id));
-                    return 0;
-                }
-                model = new Template.Tunnel(tv, name);
-            } else {
-                source.sendFailure(Component.translatable("chat.dungeontrain.editor.unrecognised_track_side_id", id));
-                return 0;
-            }
-        } else if (category == EditorCategory.PORTALS) {
-            // Same "kind.name" shape; one kind, so the prefix is always portal_room and a bare id
-            // means the default room.
-            String prefix = id.contains(".") ? id.substring(0, id.indexOf('.')) : id;
-            String name = id.contains(".")
-                ? id.substring(id.indexOf('.') + 1)
-                : games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME;
-            if (!games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM.id().equals(prefix)) {
-                source.sendFailure(Component.translatable("chat.dungeontrain.editor.unrecognised_portal_id", id));
-                return 0;
-            }
-            model = new Template.PortalRoom(name);
-        } else {
-            // Resolve the model by id within the category.
-            model = null;
-            for (Template m : category.models()) {
-                if (m.id().equals(id)) { model = m; break; }
-            }
-            if (model == null) {
-                source.sendFailure(Component.translatable("chat.dungeontrain.save.unknown_model_category", id, Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id())));
-                return 0;
-            }
+        // The id is the dirty scan's row key ("kind.name" on the track side, the bare id elsewhere);
+        // TemplateDirtyKeys is its one inverse. A bare portals id means the default room, as before.
+        String rowId = category == games.brennan.dungeontrain.editor.PlotCategory.PORTALS && !id.contains(".")
+            ? id + "." + games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME : id;
+        Template model = games.brennan.dungeontrain.editor.TemplateDirtyKeys.parseExisting(categoryId, rowId).orElse(null);
+        if (model == null) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.unknown_model_category", id, Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.owner().id())));
+            return 0;
         }
         // Every kind answers for its own plot — no per-editor origin/size signatures to mirror.
         BlockPos origin = model.editorPlotOrigin(overworld, dims);
         net.minecraft.core.Vec3i size = model.plotSize(dims);
 
         if (origin == null) {
-            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_plot_origin", id, Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id())));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_plot_origin", id, Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.owner().id())));
             return 0;
         }
 
@@ -7625,11 +7570,9 @@ public final class EditorCommand {
         games.brennan.dungeontrain.track.variant.TrackKind kind, String sourceName,
         String targetName
     ) throws IOException {
-        games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind photoKind =
-            kind == games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM
-                ? games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.PORTAL_ROOM
-                : games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.TRACK;
-        games.brennan.dungeontrain.editor.TemplateCopy.copy(photoKind, kind.id(), sourceName, targetName);
+        games.brennan.dungeontrain.editor.TemplateCopy.copy(
+            games.brennan.dungeontrain.editor.RelayTemplates.trackSide(kind, sourceName),
+            games.brennan.dungeontrain.editor.RelayTemplates.trackSide(kind, targetName));
     }
 
     /**

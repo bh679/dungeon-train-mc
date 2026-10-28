@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -153,5 +154,162 @@ public enum PlotCategory {
     /** Whether rows here carry the leading per-plot visibility checkbox. Parts only. */
     public boolean hasVisibilityToggle() {
         return this == PARTS;
+    }
+
+    // ---- the command table (OOP review §4) ----
+
+    /** The per-template verbs the client menus send; see {@link #command}. */
+    public enum Verb {
+        /** {@code … weight <addr>} — the row's number prefix; {@code inc}/{@code dec}/a value follow. */
+        WEIGHT,
+        /** {@code … phase <addr>} — {@code <phase> on|off|others} follows. */
+        PHASE,
+        /** {@code … minlevel|maxlevel <addr>} — the sub word is spliced in by {@link #levelCommand}. */
+        LEVEL,
+        /** Teleport to the plot. The track-side kinds are model-shaped and answer empty here. */
+        ENTER,
+        /** Delete the template's file: {@code reset}, {@code delete} or {@code remove} by kind. */
+        REMOVE,
+        /** Set the display label ({@code label}), or rename where the kind has no label. */
+        LABEL,
+        /** {@code … builder <addr>} — {@code <uuid> [name]} follows. */
+        BUILDER,
+        /** {@code … new <kind>} — the typed name follows. Only the kinds whose New is a command, not a picker. */
+        NEW,
+        /** {@code dungeontrain editor clear} — the plot the player stands in; no address. */
+        CLEAR
+    }
+
+    /** How a category's commands name the template: by id, by id then name, by name, by part kind then name, or not at all. */
+    private enum Address { ID, ID_NAME, NAME, KIND_NAME, NONE }
+
+    /**
+     * One category's row of the table: the command root every verb hangs off, how the template is
+     * addressed, and the verb words that differ from the verb's own name.
+     */
+    private record Commands(String root, Address address, Map<Verb, String> words, boolean clear) {
+        static final String EDITOR = "dungeontrain editor";
+
+        static Commands of(String root, Address address, Verb... verbs) {
+            Map<Verb, String> words = new java.util.EnumMap<>(Verb.class);
+            for (Verb v : verbs) words.put(v, v.name().toLowerCase(Locale.ROOT));
+            return new Commands(root, address, words, false);
+        }
+
+        /** The same row with {@code verb} spelled {@code word} on the wire. */
+        Commands word(Verb verb, String word) {
+            Map<Verb, String> words = new java.util.EnumMap<>(this.words);
+            words.put(verb, word);
+            return new Commands(root, address, words, clear);
+        }
+
+        Commands clearable() {
+            return new Commands(root, address, words, true);
+        }
+    }
+
+    private static final String ROOT = Commands.EDITOR;
+    private static final String RESET = "reset";
+    private static final String DELETE = "delete";
+    private static final String GOTO = "goto";
+
+    /**
+     * The whole table, one row per category. Every string a client menu sends for a template is
+     * built from this row, so the seven screens that used to each spell their own copy of it
+     * cannot disagree — the two that did (TRACKS weight without a name; {@code portals reset}
+     * with and without one) are settled here: the track-side verbs take {@code <kind> <name>},
+     * always, and a portal room is removed by name.
+     */
+    private Commands commands() {
+        return switch (this) {
+            case CARRIAGES -> Commands.of(ROOT, Address.ID,
+                    Verb.WEIGHT, Verb.PHASE, Verb.LEVEL, Verb.ENTER, Verb.LABEL, Verb.BUILDER)
+                    .word(Verb.REMOVE, RESET).clearable();
+            case CONTENTS -> Commands.of(ROOT + " contents", Address.ID,
+                    Verb.WEIGHT, Verb.PHASE, Verb.LEVEL, Verb.ENTER, Verb.LABEL, Verb.BUILDER)
+                    .word(Verb.REMOVE, RESET).clearable();
+            case WHOLE -> Commands.of(ROOT + " whole", Address.ID,
+                    Verb.WEIGHT, Verb.PHASE, Verb.LEVEL, Verb.ENTER, Verb.LABEL, Verb.BUILDER)
+                    .word(Verb.REMOVE, RESET).clearable();
+            case WHOLE_GROUP -> Commands.of(ROOT + " whole group", Address.ID,
+                    Verb.WEIGHT, Verb.PHASE, Verb.LEVEL, Verb.ENTER, Verb.LABEL, Verb.BUILDER)
+                    .word(Verb.REMOVE, RESET).clearable();
+            case WHOLE_HALF -> Commands.of(ROOT + " whole half", Address.ID,
+                    Verb.WEIGHT, Verb.PHASE, Verb.LEVEL, Verb.ENTER, Verb.LABEL, Verb.BUILDER)
+                    .word(Verb.REMOVE, RESET).clearable();
+            // Track-side verbs address <kind> <name>. ENTER is model-shaped (track / pillar / tunnel
+            // each have their own command) and is answered per Template, not here. REMOVE is the
+            // standing form — the plot the player is in (see addressFor) — and there is no single
+            // plot to Clear: a kind's row holds every named variant.
+            case TRACKS -> Commands.of(ROOT + " tracks", Address.ID_NAME,
+                    Verb.WEIGHT, Verb.PHASE, Verb.LEVEL, Verb.NEW)
+                    .word(Verb.REMOVE, RESET);
+            // A room is addressed as <kind> <name> for every verb, enter by name alone (one kind).
+            case PORTALS -> Commands.of(ROOT + " portals", Address.ID_NAME,
+                    Verb.WEIGHT, Verb.PHASE, Verb.LEVEL, Verb.ENTER, Verb.LABEL, Verb.BUILDER, Verb.NEW)
+                    .word(Verb.REMOVE, RESET).clearable();
+            case BUILDINGS -> Commands.of(ROOT + " buildings", Address.NAME, Verb.WEIGHT)
+                    .word(Verb.ENTER, GOTO).word(Verb.REMOVE, DELETE).clearable();
+            case LOST_CITY -> Commands.of(ROOT + " buildings lostcity", Address.NAME)
+                    .word(Verb.ENTER, GOTO);
+            case CHUNK_FRAMES -> Commands.of(ROOT + " chunkframe", Address.NAME, Verb.ENTER)
+                    .word(Verb.REMOVE, DELETE).word(Verb.LABEL, "rename").clearable();
+            case WORKBENCH -> Commands.of(ROOT + " workbench", Address.NAME)
+                    .word(Verb.ENTER, GOTO).word(Verb.REMOVE, "remove").clearable();
+            case PARTS -> Commands.of(ROOT + " part", Address.KIND_NAME, Verb.ENTER)
+                    .word(Verb.REMOVE, RESET).clearable();
+            case ARCHITECTURE -> Commands.of(ROOT, Address.NONE);
+        };
+    }
+
+    /**
+     * The slash command (no leading slash) that {@code verb} sends for the template
+     * {@code (modelId, modelName)} in this category, or empty when the category has no such verb
+     * or the address it needs is missing — a track-side verb without a name, a frame without one.
+     *
+     * <p>{@code modelId} is the bare command token ({@code standard}, {@code portal_room},
+     * {@code pillar_top}, a part kind); {@code modelName} the variant name where the kind has one.
+     * The caller appends what follows the address ({@code inc}, a phase token, a typed name).</p>
+     */
+    public Optional<String> command(Verb verb, String modelId, String modelName) {
+        Commands row = commands();
+        if (verb == Verb.CLEAR) return row.clear() ? Optional.of(ROOT + " clear") : Optional.empty();
+        String word = row.words().get(verb);
+        if (word == null) return Optional.empty();
+        Address address = addressFor(row, verb);
+        return address(address, modelId, modelName).map(addr -> row.root() + " " + word + addr);
+    }
+
+    /** {@link #command} for {@link Verb#LEVEL}, with the bound ({@code minlevel} / {@code maxlevel}) spliced in. */
+    public Optional<String> levelCommand(String sub, String modelId, String modelName) {
+        Commands row = commands();
+        if (!row.words().containsKey(Verb.LEVEL) || sub == null || sub.isEmpty()) return Optional.empty();
+        return address(row.address(), modelId, modelName).map(addr -> row.root() + " " + sub + addr);
+    }
+
+    /**
+     * The address a verb takes: the row's, except that a portal room is entered by name alone
+     * (one kind, so the kind token says nothing), New names the kind alone (the typed name
+     * follows it), and a track-side Remove is the standing form.
+     */
+    private Address addressFor(Commands row, Verb verb) {
+        if (verb == Verb.NEW) return Address.ID;
+        if (this == PORTALS && verb == Verb.ENTER) return Address.NAME;
+        // `tracks reset <kind>` acts on the plot the player stands in: the Tracks editor's rows
+        // are kinds, and the active variant of one is what Remove means there.
+        if (this == TRACKS && verb == Verb.REMOVE) return Address.ID;
+        return row.address();
+    }
+
+    /** The address part, with its leading space, or empty when what the shape needs is missing. */
+    private static Optional<String> address(Address address, String modelId, String modelName) {
+        boolean id = modelId != null && !modelId.isEmpty();
+        boolean name = modelName != null && !modelName.isEmpty();
+        return switch (address) {
+            case ID -> id ? Optional.of(" " + modelId) : Optional.empty();
+            case ID_NAME, KIND_NAME -> id && name ? Optional.of(" " + modelId + " " + modelName) : Optional.empty();
+            case NAME -> name ? Optional.of(" " + modelName) : Optional.empty();
+            case NONE -> Optional.of("");
+        };
     }
 }
