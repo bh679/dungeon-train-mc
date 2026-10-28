@@ -45,6 +45,10 @@ class DeathCameraCycleTest {
         assertEquals(List.of("POV", "spot", "killer"), labels(DeathCameraCycle.buildSequence(false, true, false, true)).subList(0, 3));
         assertEquals(List.of("POV", "spot", "leaving"), labels(DeathCameraCycle.buildSequence(false, false, false, false)).subList(0, 3), "off the train: spot instead of the carriage shot");
         assertEquals(List.of("POV", "leaving"), labels(DeathCameraCycle.buildSequence(true, false, false, false)).subList(0, 2), "void death: never");
+        List<DeathShot> hazard = DeathCameraCycle.buildSequence(false, false, false, true, false, true);
+        assertEquals(List.of("POV", "spot", "carriage"), labels(hazard).subList(0, 3), "a killing block keeps the spot shot");
+        assertEquals(DeathShot.Target.HAZARD, hazard.get(1).target());
+        assertEquals(15, hazard.get(0).holdTicks(), "POV holds 0.75 s");
     }
 
     @Test

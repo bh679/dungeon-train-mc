@@ -66,6 +66,8 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import net.minecraft.world.phys.Vec3;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -384,9 +386,10 @@ public final class RunStatsEvents {
             voidDeath, killer, source.getEntity() == null ? "none" : source.getEntity().getType().toShortString(), contact);
         List<DeathScenePacket.Target> targets = voidDeath ? List.of()
             : DeathSceneTargets.near(player.serverLevel(), DeadRiderAnchors.anchorPos(player));
+        Vec3 hazard = voidDeath ? null : DeathHazard.find(player, source);
         // The body left where they died (a Sable: Ragdolls ragdoll); the spot and carriage shots track it.
         UUID body = DeathBodyRagdoll.spawn(player, voidDeath);
-        return new DeathScenePacket(voidDeath, killer, contact, targets, body);
+        return new DeathScenePacket(voidDeath, killer, contact, targets, hazard, body);
     }
 
     private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet,

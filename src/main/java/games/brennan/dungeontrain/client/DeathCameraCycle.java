@@ -120,6 +120,8 @@ public final class DeathCameraCycle {
     private static Entity killer;
     private static Entity contact;
     private static Entity randomMob;
+    /** The block that killed the player, in carriage space when pinned, else world space. */
+    private static Vector3d hazardLocal;
     /** The feature shot's subject: a point on a sub-level, in that sub-level's plot space. */
     private static ClientSubLevel featureSub;
     private static Vector3d featureLocal;
@@ -193,12 +195,19 @@ public final class DeathCameraCycle {
 
     static List<DeathShot> buildSequence(boolean voidDeath, boolean hasKiller, boolean hasContact, boolean onTrain,
                                          boolean hasFeature) {
+        return buildSequence(voidDeath, hasKiller, hasContact, onTrain, hasFeature, false);
+    }
+
+    static List<DeathShot> buildSequence(boolean voidDeath, boolean hasKiller, boolean hasContact, boolean onTrain,
+                                         boolean hasFeature, boolean hasHazard) {
         List<DeathShot> shots = new ArrayList<>();
-        shots.add(DeathShot.pov(30));
-        // Where you died, riding with the carriage (the body stays on it): as the lead-in to who
-        // killed you, or, off the train, in place of the carriage shot. Never for a void death.
-        // A blocked arc is answered by a tighter one, never by dropping the shot.
-        if (!voidDeath && (hasKiller || !onTrain)) shots.add(DeathShot.orbit(DeathShot.Target.BODY, 6.0, 3.0, 60, "spot"));
+        shots.add(DeathShot.pov(15));
+        // Where you died, riding with the carriage (the body stays on it): on the block that killed
+        // you when one did, else on the body as the lead-in to who killed you, or, off the train, in
+        // place of the carriage shot. Never for a void death. A blocked arc is answered by a tighter
+        // one, never by dropping the shot.
+        if (!voidDeath && hasHazard) shots.add(DeathShot.orbit(DeathShot.Target.HAZARD, 5.0, 2.5, 60, "spot"));
+        else if (!voidDeath && (hasKiller || !onTrain)) shots.add(DeathShot.orbit(DeathShot.Target.BODY, 6.0, 3.0, 60, "spot"));
         if (hasKiller) shots.add(DeathShot.orbit(DeathShot.Target.KILLER, 5.0, 2.5, 60, "killer"));
         if (hasContact) shots.add(DeathShot.orbit(DeathShot.Target.CONTACT, 5.0, 2.5, 60, "mob"));
         // One shot: zoom out from beside the body for DOLLY_TICKS, then the lens stays where it
@@ -246,13 +255,16 @@ public final class DeathCameraCycle {
         bodySub = null;
         resolveBody(mc);
         resolveFeature(mc, hints.targets());
+        hazardLocal = hints.hazard() == null ? null
+            : toLocal(new Vector3d(hints.hazard().x, hints.hazard().y, hints.hazard().z));
         DeathSceneHints.clear();
         LOGGER.info("[DungeonTrain] Death scene starts: hints={} killer={} contact={} onTrain={} body={}", hints,
             killer == null ? "none" : killer.getType().toShortString(), contact == null ? "none" : contact.getType().toShortString(),
             carriage != null, bodySub != null ? "here" : bodyId != null ? "awaited" : "none");
         sequence = reviewSequence != null
             ? reviewSequence
-            : buildSequence(hints.voidDeath(), killer != null, contact != null, carriage != null, featureSub != null);
+            : buildSequence(hints.voidDeath(), killer != null, contact != null, carriage != null, featureSub != null,
+                hazardLocal != null);
         savedHideGui = mc.options.hideGui;
         active = true;
         playedInLoop = 0;
@@ -352,6 +364,7 @@ public final class DeathCameraCycle {
         killer = null;
         contact = null;
         randomMob = null;
+        hazardLocal = null;
         featureSub = null;
         featureLocal = null;
         aimLocal = null;
@@ -668,6 +681,7 @@ public final class DeathCameraCycle {
             case CONTACT -> entityWorld(contact, partialTick);
             case RANDOM_MOB -> entityWorld(randomMob, partialTick);
             case FEATURE -> featureWorld(partialTick);
+            case HAZARD -> hazardLocal == null ? null : toWorldRender(hazardLocal, partialTick);
             case BODY -> bodyRender(partialTick);
         };
     }
@@ -703,7 +717,7 @@ public final class DeathCameraCycle {
                 return true;
             }
         }
-        if (shot.target() == DeathShot.Target.BODY) {
+        if (shot.target() == DeathShot.Target.BODY || shot.target() == DeathShot.Target.HAZARD) {
             // The body stands in air, so a lens just above its head looking down at it is always
             // clear: the shot of where you died is never dropped for want of an angle.
             orbitSweep = Math.toRadians(90.0);

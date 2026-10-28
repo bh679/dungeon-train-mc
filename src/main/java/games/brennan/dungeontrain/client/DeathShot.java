@@ -79,7 +79,9 @@ public record DeathShot(Kind kind, Target target, Vec3 offset, Vec3 offsetEnd, d
         /** Any creature riding the train, drawn afresh each time the shot comes round. */
         RANDOM_MOB,
         /** A contents template or carriage group near the body (from the server's list). */
-        FEATURE
+        FEATURE,
+        /** The block that killed them (fire, magma, cactus, powder snow...), riding with the carriage if on one. */
+        HAZARD
     }
 
     public static DeathShot pov(int holdTicks) {
