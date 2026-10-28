@@ -31588,8 +31588,29 @@
       "released_at": null
     },
     {
-      "id": "editor-shared-plot-helpers",
+      "id": "fluid-barrier-tick-cache",
       "version": "0.1573.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Smoother ride near water",
+      "summary": "Crossing rivers, lakes and oceans is easier on the server: the train no longer costs extra tick time while the water around it settles. Water still stays out of the carriages.",
+      "highlights": [
+        "Fewer freezes when the world around the train fills with water."
+      ],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2383,
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-shared-plot-helpers",
+      "version": "0.1574.0",
       "type": "refactor",
       "tags": [
         "editor",
