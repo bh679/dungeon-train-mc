@@ -38,7 +38,7 @@ public final class SpheresComets {
     public static final double ROAR_REACH_BLOCKS = 128.0;
     /** Distant, purely visual comets drawn by each client for every real one: fewer in the first two laps. */
     public static final double DISTANT_PER_REAL = 3.0;
-    public static final double DISTANT_PER_REAL_EARLY = 1.0;
+    public static final double DISTANT_PER_REAL_EARLY = 2.0;
     private static final int TICKS_PER_SECOND = 20;
 
     private SpheresComets() {}
