@@ -165,14 +165,51 @@ public final class LiveHeadViewer {
         for (int i = 0; i < frames.length; i++) {
             frames[i] = (panes.get(i).second() ? other : own).frame(mc.player.tickCount, partial, false);
         }
+        // In the inventory the box sits behind the inventory's parts unless the cursor is on it (StreamerBoxOcclusion).
+        var behind = behindInventory(mc, panes);
         LiveRecOverlay.guiPass(g -> {
+            // The screen's depth is still in the buffer: without clearing it, its higher layers (the effect
+            // list's text) would show through the box even when the box is meant to be on top.
+            com.mojang.blaze3d.systems.RenderSystem.clear(org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT, Minecraft.ON_OSX);
             for (int i = 0; i < frames.length; i++) {
                 HeadViewerPanes.Pane pane = panes.get(i);
+                LiveFeedSource source = pane.second() ? other : own;
+                LiveFeedSource.Frame frame = frames[i];
                 // Only the streamer's own pane carries the "Live in" countdown.
-                draw(g, pane.second() ? other : own, frames[i], pane.box(), !pane.second(), mc.player.tickCount, partial);
+                clipped(g, StreamerBoxOcclusion.Rect.of(pane.box(), BORDER), behind,
+                    () -> draw(g, source, frame, pane.box(), !pane.second(), mc.player.tickCount, partial));
             }
-            LiveStreamSettingsButton.draw(g, panes.get(panes.size() - 1).box());
+            Box lowest = panes.get(panes.size() - 1).box();
+            clipped(g, StreamerBoxOcclusion.Rect.of(LiveStreamSettingsButton.layout(lowest), 0), behind,
+                () -> LiveStreamSettingsButton.draw(g, lowest));
         });
+    }
+
+    /**
+     * What covers the streamer's box: the inventory's parts while it is open and the cursor is not on the box
+     * (or is on a backpack panel); null when the box is drawn whole, on top.
+     */
+    @Nullable
+    private static java.util.List<StreamerBoxOcclusion.Rect> behindInventory(Minecraft mc, java.util.List<HeadViewerPanes.Pane> panes) {
+        if (!LiveStreamSettingsButton.showsOn(mc.screen)) return null;
+        StreamerBoxOcclusion.Layers layers = StreamerBoxOcclusion.occluders(mc.screen);
+        var window = mc.getWindow();
+        double mx = mc.mouseHandler.xpos() * window.getGuiScaledWidth() / window.getScreenWidth();
+        double my = mc.mouseHandler.ypos() * window.getGuiScaledHeight() / window.getScreenHeight();
+        boolean onBox = LiveStreamSettingsButton.contains(LiveStreamSettingsButton.layout(panes.get(panes.size() - 1).box()), mx, my);
+        for (HeadViewerPanes.Pane pane : panes) onBox |= contains(pane.box(), mx, my);
+        return onBox && !layers.overBackpack(mx, my) ? null : layers.all();
+    }
+
+    /** Runs {@code paint} only over the parts of {@code area} no occluder covers; all of it when there are none. */
+    private static void clipped(GuiGraphics g, StreamerBoxOcclusion.Rect area,
+                                @Nullable java.util.List<StreamerBoxOcclusion.Rect> occluders, Runnable paint) {
+        if (occluders == null) { paint.run(); return; }
+        for (StreamerBoxOcclusion.Rect r : StreamerBoxOcclusion.visible(area, occluders)) {
+            g.enableScissor(r.x0(), r.y0(), r.x1(), r.y1());
+            paint.run();
+            g.disableScissor();
+        }
     }
 
     /** The streamer's panes: their own stream first, the other under it, as {@link StreamerBoxPanes} says. */
@@ -264,6 +301,9 @@ public final class LiveHeadViewer {
         var panes = streamerPanes(mc);
         if (panes.isEmpty()) return; // "None": nothing on screen to click
         double x = event.getMouseX(), y = event.getMouseY();
+        // A backpack panel stays in front of the box, so it gets the click.
+        if (LiveStreamSettingsButton.showsOn(event.getScreen())
+                && StreamerBoxOcclusion.occluders(event.getScreen()).overBackpack(x, y)) return;
         if (LiveStreamSettingsButton.click(event.getScreen(), panes.get(panes.size() - 1).box(), x, y)) {
             event.setCanceled(true);
             return;
