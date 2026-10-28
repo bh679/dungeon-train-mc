@@ -381,7 +381,7 @@ public final class PerksScreen extends Screen {
         // a hovered class (in the list or its title) shows, else a hovered star, else the class clicked to stay
         String classShown = classHover != null ? classHover : hovered == null ? selectedClass : null;
         glow = classShown;
-        if (DETAILS == DetailsMode.BAR) updateBar(snap, deathPage() ? null : classShown, mouseX, mouseY);
+        if (DETAILS == DetailsMode.BAR) updateBar(snap, deathPage() ? null : classShown);
         else updateCard(snap, now, mouseX, mouseY, cardRight, countersTop);
 
         g.fill(0, 0, width, height, SkyPalette.BG);
@@ -463,23 +463,12 @@ public final class PerksScreen extends Screen {
         if (counter != null) g.renderComponentTooltip(font, PerkCounters.tooltip(counter), mouseX, mouseY);
     }
 
-    /** The bar shows the hovered star, else the one clicked to stay; its buttons follow it. */
-    /** The perk last hovered, kept in the bar on the way from its star to the Unlock tab. */
-    private String barHeld;
-    private long barHeldAt;
-    /** How long the bar keeps a perk after the mouse leaves its star, unless the mouse is on the bar. */
-    private static final long BAR_LINGER_MS = 800;
-
-    private void updateBar(PerkMenuSnapshot snap, String hoveredClass, double mx, double my) {
-        if (hovered != null) {
-            barHeld = hovered;
-            barHeldAt = frameAt;
-        } else if (barHeld != null && !bar.contains(mx, my) && !bar.tabContains(mx, my) && frameAt - barHeldAt > BAR_LINGER_MS) {
-            barHeld = null;
-        } else if (barHeld != null && (bar.contains(mx, my) || bar.tabContains(mx, my))) {
-            barHeldAt = frameAt;
-        }
-        String id = hovered != null ? hovered : barHeld != null && hoveredClass == null ? barHeld : selected;
+    /**
+     * The bar shows the hovered star, else the one clicked to stay. Its buttons act only on the one
+     * clicked to stay: a hovered star is shown, never bought.
+     */
+    private void updateBar(PerkMenuSnapshot snap, String hoveredClass) {
+        String id = hovered != null ? hovered : selected;
         PerkTree.Perk p = id == null ? null : tree.perk(id).orElse(null);
         if (p != null && vis.hidden(p)) p = null;
         // not in yet (the death menu's build-up): no perk, so no buttons to click unseen

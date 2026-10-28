@@ -123,11 +123,12 @@ final class PerkDetailsBar {
         perk = shown;
         locked = isLocked;
         classShown = shown == null ? hoveredClass : null;
-        String key = shown == null ? "" : shown.id() + "|" + snap.unlockLevel(shown.id()) + "|" + snap.points(shown.id())
+        String key = shown == null ? "" : shown.id() + "|" + isLocked + "|" + snap.unlockLevel(shown.id()) + "|" + snap.points(shown.id())
             + "|" + snap.unlockPoints() + "|" + snap.activePoints() + "|" + screenW + "x" + screenH;
         if (key.equals(builtFor)) return false;
         builtFor = key;
-        if (shown == null || shown.isRoot()) {
+        // only the perk clicked to stay gets buttons: a hovered one is shown, never bought
+        if (shown == null || shown.isRoot() || !isLocked) {
             unlockButton = null;
             activateButton = null;
             unlockReason = null;
