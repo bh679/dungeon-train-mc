@@ -65,6 +65,8 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import net.minecraft.world.phys.Vec3;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -383,7 +385,8 @@ public final class RunStatsEvents {
             voidDeath, killer, source.getEntity() == null ? "none" : source.getEntity().getType().toShortString(), contact);
         List<DeathScenePacket.Target> targets = voidDeath ? List.of()
             : DeathSceneTargets.near(player.serverLevel(), DeadRiderAnchors.anchorPos(player));
-        return new DeathScenePacket(voidDeath, killer, contact, targets);
+        Vec3 hazard = voidDeath ? null : DeathHazard.find(player, source);
+        return new DeathScenePacket(voidDeath, killer, contact, targets, hazard);
     }
 
     private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet,
