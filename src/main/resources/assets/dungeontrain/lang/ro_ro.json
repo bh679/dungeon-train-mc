@@ -5765,15 +5765,15 @@
   "gui.dungeontrain.perks.death.tile.perks": "Avantaje întărite",
   "gui.dungeontrain.perks.death.tile.top": "Cele mai multe puncte",
   "gui.dungeontrain.perks.death.unlock_hint": "Deblochează avantaje pentru viața următoare.",
-  "gui.dungeontrain.perks.story.earned": "În această viață ai obținut %s.",
-  "gui.dungeontrain.perks.story.earned_points": "Care ți-au adus %s.",
+  "gui.dungeontrain.perks.story.earned": "%s în această viață.",
+  "gui.dungeontrain.perks.story.earned_points": "Care aduc %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s realizare",
   "gui.dungeontrain.perks.story.advancements.few": "%s realizări",
   "gui.dungeontrain.perks.story.advancements.other": "%s de realizări",
   "gui.dungeontrain.perks.story.points.one": "%s punct de deblocare",
   "gui.dungeontrain.perks.story.points.few": "%s puncte de deblocare",
   "gui.dungeontrain.perks.story.points.other": "%s de puncte de deblocare",
-  "gui.dungeontrain.perks.story.next_life": "Asta îți poate ajuta viața următoare.",
-  "gui.dungeontrain.perks.story.unlock": "Deblochează mai multe stiluri de joc cu avantaje.",
-  "gui.dungeontrain.perks.story.select": "Alege acum un avantaj ca să vezi ce face."
+  "gui.dungeontrain.perks.story.next_life": "Ce vei lua cu tine în viața următoare?",
+  "gui.dungeontrain.perks.story.unlock": "Cine vei fi când te vei urca din nou?",
+  "gui.dungeontrain.perks.story.select": "Alege un avantaj ca să vezi ce ascunde."
 }

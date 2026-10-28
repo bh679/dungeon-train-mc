@@ -5762,15 +5762,15 @@
   "gui.dungeontrain.perks.death.tile.perks": "Посилено перків",
   "gui.dungeontrain.perks.death.tile.top": "Найбільше балів",
   "gui.dungeontrain.perks.death.unlock_hint": "Відкрий перки для наступного життя.",
-  "gui.dungeontrain.perks.story.earned": "У цьому житті ти здобув %s.",
-  "gui.dungeontrain.perks.story.earned_points": "Це принесло тобі %s.",
+  "gui.dungeontrain.perks.story.earned": "%s за це життя.",
+  "gui.dungeontrain.perks.story.earned_points": "Це дає %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s досягнення",
   "gui.dungeontrain.perks.story.advancements.few": "%s досягнення",
   "gui.dungeontrain.perks.story.advancements.many": "%s досягнень",
   "gui.dungeontrain.perks.story.points.one": "%s бал розблокування",
   "gui.dungeontrain.perks.story.points.few": "%s бали розблокування",
   "gui.dungeontrain.perks.story.points.many": "%s балів розблокування",
-  "gui.dungeontrain.perks.story.next_life": "Це може допомогти твоєму наступному життю.",
-  "gui.dungeontrain.perks.story.unlock": "Відкривай нові стилі гри за допомогою перків.",
-  "gui.dungeontrain.perks.story.select": "Обери перк, щоб дізнатися, що він робить."
+  "gui.dungeontrain.perks.story.next_life": "Що ти візьмеш у наступне життя?",
+  "gui.dungeontrain.perks.story.unlock": "Ким ти будеш, коли знову сядеш у потяг?",
+  "gui.dungeontrain.perks.story.select": "Обери перк, щоб побачити, що в ньому."
 }

@@ -5645,11 +5645,11 @@
   "gui.dungeontrain.perks.death.tile.perks": "强化的特权",
   "gui.dungeontrain.perks.death.tile.top": "点数最多",
   "gui.dungeontrain.perks.death.unlock_hint": "为下一生解锁特权。",
-  "gui.dungeontrain.perks.story.earned": "这一生你达成了%s。",
-  "gui.dungeontrain.perks.story.earned_points": "为你赢得了%s。",
+  "gui.dungeontrain.perks.story.earned": "这一生，%s。",
+  "gui.dungeontrain.perks.story.earned_points": "赢得%s。",
   "gui.dungeontrain.perks.story.advancements.other": " %s 项进度",
   "gui.dungeontrain.perks.story.points.other": " %s 解锁点数",
-  "gui.dungeontrain.perks.story.next_life": "这能帮助你的下一生。",
-  "gui.dungeontrain.perks.story.unlock": "用特权解锁更多玩法。",
-  "gui.dungeontrain.perks.story.select": "现在选择一项特权，看看它有什么作用。"
+  "gui.dungeontrain.perks.story.next_life": "你会把什么带进下一生？",
+  "gui.dungeontrain.perks.story.unlock": "再次登车时，你会是谁？",
+  "gui.dungeontrain.perks.story.select": "选择一项特权，看看其中有什么。"
 }

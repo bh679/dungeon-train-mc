@@ -5698,13 +5698,13 @@
   "gui.dungeontrain.perks.death.tile.perks": "Vantaggi potenziati",
   "gui.dungeontrain.perks.death.tile.top": "Più punti",
   "gui.dungeontrain.perks.death.unlock_hint": "Sblocca vantaggi per la prossima vita.",
-  "gui.dungeontrain.perks.story.earned": "In questa vita hai ottenuto %s.",
-  "gui.dungeontrain.perks.story.earned_points": "Che ti fruttano %s.",
+  "gui.dungeontrain.perks.story.earned": "%s in questa vita.",
+  "gui.dungeontrain.perks.story.earned_points": "Che fruttano %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s progresso",
   "gui.dungeontrain.perks.story.advancements.other": "%s progressi",
   "gui.dungeontrain.perks.story.points.one": "%s punto sblocco",
   "gui.dungeontrain.perks.story.points.other": "%s punti sblocco",
-  "gui.dungeontrain.perks.story.next_life": "Questo può aiutare la tua prossima vita.",
-  "gui.dungeontrain.perks.story.unlock": "Sblocca altri stili di gioco con i vantaggi.",
-  "gui.dungeontrain.perks.story.select": "Seleziona un vantaggio per vedere cosa fa."
+  "gui.dungeontrain.perks.story.next_life": "Cosa porterai nella prossima vita?",
+  "gui.dungeontrain.perks.story.unlock": "Chi sarai quando salirai di nuovo a bordo?",
+  "gui.dungeontrain.perks.story.select": "Scegli un vantaggio per vedere cosa contiene."
 }

@@ -69,7 +69,7 @@ final class MenuReveal {
         // one thing at a time: the line is read on its own, then its layer comes in, then a settle
         for (int i = BEAT_STARS; i < BEAT_SELECT; i++) {
             if (optional(i) && beats[i] <= 0) continue;
-            this.beats[i] = layerDelay(i) + layerFadeMs(i) + SETTLE_MS;
+            this.beats[i] = beatLength(i);
         }
         this.hasActive = beats[BEAT_ACTIVE] > 0;
         this.firstTime = firstTime;
@@ -86,6 +86,15 @@ final class MenuReveal {
     /** From beat {@code i}'s start to its layer's: the line is read on its own (never less than its fade-in). */
     private long layerDelay(int i) {
         return Math.max(FADE_MS, reading[i]);
+    }
+
+    /**
+     * Beat {@code i}'s whole time: read, its layer fades in, a settle. The stars are slow, so the next
+     * line starts once they are halfway in and they finish under it.
+     */
+    private long beatLength(int i) {
+        if (i == BEAT_STARS) return layerDelay(i) + STAR_FADE_MS / 2;
+        return layerDelay(i) + layerFadeMs(i) + SETTLE_MS;
     }
 
     /** How long beat {@code i}'s layer takes to fade in. */
@@ -201,7 +210,7 @@ final class MenuReveal {
         long start = beatStart(i);
         if (now < start + layerDelay(i)) {
             reading[i] = Math.max(0, now - start);
-            beats[i] = layerDelay(i) + layerFadeMs(i) + SETTLE_MS;
+            beats[i] = beatLength(i);
         } else {
             beats[i] = Math.max(1, now - start);
         }

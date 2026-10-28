@@ -5698,13 +5698,13 @@
   "gui.dungeontrain.perks.death.tile.perks": "Versterkte perks",
   "gui.dungeontrain.perks.death.tile.top": "Meeste punten",
   "gui.dungeontrain.perks.death.unlock_hint": "Ontgrendel perks voor het volgende leven.",
-  "gui.dungeontrain.perks.story.earned": "Je behaalde dit leven %s.",
+  "gui.dungeontrain.perks.story.earned": "%s, dit leven.",
   "gui.dungeontrain.perks.story.earned_points": "Goed voor %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s vooruitgang",
   "gui.dungeontrain.perks.story.advancements.other": "%s vooruitgangen",
   "gui.dungeontrain.perks.story.points.one": "%s ontgrendelpunt",
   "gui.dungeontrain.perks.story.points.other": "%s ontgrendelpunten",
-  "gui.dungeontrain.perks.story.next_life": "Dit kan je volgende leven helpen.",
-  "gui.dungeontrain.perks.story.unlock": "Ontgrendel meer speelstijlen met perks.",
-  "gui.dungeontrain.perks.story.select": "Kies nu een perk om te zien wat die doet."
+  "gui.dungeontrain.perks.story.next_life": "Wat neem je mee naar je volgende leven?",
+  "gui.dungeontrain.perks.story.unlock": "Wie ben je als je weer instapt?",
+  "gui.dungeontrain.perks.story.select": "Kies een perk om te zien wat erin zit."
 }

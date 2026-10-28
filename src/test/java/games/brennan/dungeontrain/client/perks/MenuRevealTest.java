@@ -17,7 +17,8 @@ class MenuRevealTest {
     private static final long F = MenuReveal.FADE_MS;
     private static final long SETTLE = MenuReveal.SETTLE_MS;
     /** Each beat's whole time: read, its layer's fade, the settle. */
-    private static final long S = 4000 + MenuReveal.STAR_FADE_MS + SETTLE;
+    /** The stars' beat: read, then the next line once the stars are halfway in. */
+    private static final long S = 4000 + MenuReveal.STAR_FADE_MS / 2;
     private static final long A = 2500 + F + SETTLE, C = 2800 + F + SETTLE, P = 3500 + F + SETTLE;
 
     @Test
@@ -27,7 +28,7 @@ class MenuRevealTest {
         long t0 = 1000 + L;
         assertEquals(t0, r.beatStart(MenuReveal.BEAT_STARS), "the first line after the plain lead-in");
         assertEquals(t0 + 4000, r.startOf(MenuReveal.Stage.STARS), "the stars once the line has been read");
-        assertEquals(t0 + S, r.beatStart(MenuReveal.BEAT_ACTIVE), "the next line once the stars are up and settled");
+        assertEquals(t0 + S, r.beatStart(MenuReveal.BEAT_ACTIVE), "the next line once the stars are halfway in");
         assertEquals(t0 + S + 2500, r.startOf(MenuReveal.Stage.ACTIVE));
         assertEquals(t0 + S + A + 2800, r.startOf(MenuReveal.Stage.UNLOCKED));
         assertEquals(t0 + S + A + C + 3500, r.startOf(MenuReveal.Stage.CLASSES));
@@ -128,11 +129,11 @@ class MenuRevealTest {
         assertEquals(100, r.beatStart(MenuReveal.BEAT_STARS), "the lead-in cut short");
         r.next(100 + F + 200);
         assertEquals(100 + F + 200, r.startOf(MenuReveal.Stage.STARS), "reading cut: the stars come in now");
-        long starsUp = 100 + F + 200 + MenuReveal.STAR_FADE_MS;
-        assertEquals(starsUp + SETTLE, r.beatStart(MenuReveal.BEAT_ACTIVE), "the next line once they are up");
-        r.next(starsUp + 50);
-        assertEquals(starsUp + 50, r.beatStart(MenuReveal.BEAT_ACTIVE), "layer in: the next line now");
-        long a = starsUp + 50;
+        long starsUp = 100 + F + 200 + MenuReveal.STAR_FADE_MS / 2;
+        assertEquals(starsUp, r.beatStart(MenuReveal.BEAT_ACTIVE), "the next line once they are halfway in");
+        r.next(starsUp - 50);
+        assertEquals(starsUp - 50, r.beatStart(MenuReveal.BEAT_ACTIVE), "layer coming in: the next line now");
+        long a = starsUp - 50;
         r.next(a + 100);
         assertEquals(a + F, r.startOf(MenuReveal.Stage.ACTIVE), "never before the line has faded in");
         assertEquals(MenuReveal.BEAT_SELECT, MenuReveal.BEAT_SELECT);

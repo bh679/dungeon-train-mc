@@ -5631,11 +5631,11 @@
   "gui.dungeontrain.perks.death.tile.perks": "Perks na pinalakas",
   "gui.dungeontrain.perks.death.tile.top": "Pinakamaraming puntos",
   "gui.dungeontrain.perks.death.unlock_hint": "Mag-unlock ng perks para sa susunod na buhay.",
-  "gui.dungeontrain.perks.story.earned": "Nakakuha ka ng %s sa buhay na ito.",
-  "gui.dungeontrain.perks.story.earned_points": "Kaya may %s ka.",
+  "gui.dungeontrain.perks.story.earned": "%s sa buhay na ito.",
+  "gui.dungeontrain.perks.story.earned_points": "Katumbas ng %s.",
   "gui.dungeontrain.perks.story.advancements.other": "%s advancement",
   "gui.dungeontrain.perks.story.points.other": "%s unlock point",
-  "gui.dungeontrain.perks.story.next_life": "Makakatulong ito sa susunod mong buhay.",
-  "gui.dungeontrain.perks.story.unlock": "Mag-unlock ng iba pang paraan ng paglalaro gamit ang perks.",
-  "gui.dungeontrain.perks.story.select": "Pumili ng perk ngayon para makita kung ano ang ginagawa nito."
+  "gui.dungeontrain.perks.story.next_life": "Ano ang dadalhin mo sa susunod na buhay?",
+  "gui.dungeontrain.perks.story.unlock": "Sino ka kapag sumakay ka ulit?",
+  "gui.dungeontrain.perks.story.select": "Pumili ng perk para makita ang laman nito."
 }

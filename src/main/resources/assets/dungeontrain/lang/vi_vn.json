@@ -5631,11 +5631,11 @@
   "gui.dungeontrain.perks.death.tile.perks": "Đặc quyền được tăng",
   "gui.dungeontrain.perks.death.tile.top": "Nhiều điểm nhất",
   "gui.dungeontrain.perks.death.unlock_hint": "Mở khóa đặc quyền cho đời sau.",
-  "gui.dungeontrain.perks.story.earned": "Đời này bạn đạt được %s.",
-  "gui.dungeontrain.perks.story.earned_points": "Nhận về %s.",
+  "gui.dungeontrain.perks.story.earned": "%s trong đời này.",
+  "gui.dungeontrain.perks.story.earned_points": "Mang về %s.",
   "gui.dungeontrain.perks.story.advancements.other": "%s tiến trình",
   "gui.dungeontrain.perks.story.points.other": "%s điểm mở khóa",
-  "gui.dungeontrain.perks.story.next_life": "Điều này có thể giúp đời sau của bạn.",
-  "gui.dungeontrain.perks.story.unlock": "Mở khóa thêm lối chơi với đặc quyền.",
-  "gui.dungeontrain.perks.story.select": "Hãy chọn một đặc quyền để xem nó làm gì."
+  "gui.dungeontrain.perks.story.next_life": "Bạn sẽ mang gì sang đời sau?",
+  "gui.dungeontrain.perks.story.unlock": "Bạn sẽ là ai khi lên tàu lần nữa?",
+  "gui.dungeontrain.perks.story.select": "Chọn một đặc quyền để xem bên trong có gì."
 }

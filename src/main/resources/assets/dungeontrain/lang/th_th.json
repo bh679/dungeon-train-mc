@@ -5631,11 +5631,11 @@
   "gui.dungeontrain.perks.death.tile.perks": "พลังพิเศษที่เสริม",
   "gui.dungeontrain.perks.death.tile.top": "แต้มมากที่สุด",
   "gui.dungeontrain.perks.death.unlock_hint": "ปลดล็อกพลังพิเศษสำหรับชีวิตหน้า",
-  "gui.dungeontrain.perks.story.earned": "ชีวิตนี้คุณได้ความก้าวหน้า %s",
+  "gui.dungeontrain.perks.story.earned": "ชีวิตนี้ ความก้าวหน้า %s",
   "gui.dungeontrain.perks.story.earned_points": "ได้รับ%s",
   "gui.dungeontrain.perks.story.advancements.other": "%s รายการ",
   "gui.dungeontrain.perks.story.points.other": "แต้มปลดล็อก %s แต้ม",
-  "gui.dungeontrain.perks.story.next_life": "สิ่งนี้ช่วยชีวิตหน้าของคุณได้",
-  "gui.dungeontrain.perks.story.unlock": "ปลดล็อกสไตล์การเล่นเพิ่มด้วยพลังพิเศษ",
-  "gui.dungeontrain.perks.story.select": "เลือกพลังพิเศษตอนนี้เพื่อดูว่ามันทำอะไรได้"
+  "gui.dungeontrain.perks.story.next_life": "คุณจะนำอะไรไปสู่ชีวิตหน้า",
+  "gui.dungeontrain.perks.story.unlock": "คุณจะเป็นใครเมื่อขึ้นรถไฟอีกครั้ง",
+  "gui.dungeontrain.perks.story.select": "เลือกพลังพิเศษเพื่อดูว่ามีอะไรอยู่ข้างใน"
 }

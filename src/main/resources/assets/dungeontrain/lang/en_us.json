@@ -5695,13 +5695,13 @@
   "gui.dungeontrain.perks.death.tile.perks": "Perks powered",
   "gui.dungeontrain.perks.death.tile.top": "Most points",
   "gui.dungeontrain.perks.death.unlock_hint": "Unlock perks for the next life.",
-  "gui.dungeontrain.perks.story.earned": "You earnt %s this life.",
-  "gui.dungeontrain.perks.story.earned_points": "Earning you %s.",
+  "gui.dungeontrain.perks.story.earned": "%s, this life.",
+  "gui.dungeontrain.perks.story.earned_points": "Earning %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s advancement",
   "gui.dungeontrain.perks.story.advancements.other": "%s advancements",
   "gui.dungeontrain.perks.story.points.one": "%s unlock point",
   "gui.dungeontrain.perks.story.points.other": "%s unlock points",
-  "gui.dungeontrain.perks.story.next_life": "This can help your next life.",
-  "gui.dungeontrain.perks.story.unlock": "Unlock more play styles with perks.",
-  "gui.dungeontrain.perks.story.select": "Select a perk now to see what it will do."
+  "gui.dungeontrain.perks.story.next_life": "What will you carry into the next life?",
+  "gui.dungeontrain.perks.story.unlock": "Who will you be when you board again?",
+  "gui.dungeontrain.perks.story.select": "Choose a perk to see what it holds."
 }
