@@ -23,6 +23,12 @@ public record DeathShot(Kind kind, Target target, Vec3 offset, Vec3 offsetEnd, d
         TRAIN_LOCKED,
         /** Lens rides the carriage and eases from {@code offset} to {@code offsetEnd}, then holds in the world. */
         DOLLY,
+        /**
+         * As DOLLY, but the direction is chosen at show time: the lens pulls out from beside the body
+         * whichever way is clear (above first). The phase-one safety net when neither the spot nor the
+         * carriage shot could play.
+         */
+        BODY_OUT,
         /** Lens circles the target through the longest arc with a clear view of it. */
         ORBIT,
         /** As ORBIT, but part of the looping second phase (the random mob arc). */
@@ -94,6 +100,10 @@ public record DeathShot(Kind kind, Target target, Vec3 offset, Vec3 offsetEnd, d
 
     public static DeathShot dolly(Vec3 from, Vec3 to, int holdTicks, String label) {
         return new DeathShot(Kind.DOLLY, Target.BODY, from, to, 0, holdTicks, label);
+    }
+
+    public static DeathShot bodyOut(int holdTicks, String label) {
+        return new DeathShot(Kind.BODY_OUT, Target.BODY, Vec3.ZERO, Vec3.ZERO, 0, holdTicks, label);
     }
 
     public static DeathShot orbit(Target target, double radius, double height, int holdTicks, String label) {

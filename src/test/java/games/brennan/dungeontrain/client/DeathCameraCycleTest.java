@@ -20,9 +20,9 @@ class DeathCameraCycleTest {
     @Test
     void fullSceneHasEveryShotInOrder() {
         List<DeathShot> seq = DeathCameraCycle.buildSequence(false, true, true, true, true);
-        assertEquals(List.of("POV", "spot", "killer", "mob", "carriage"), labels(seq).subList(0, 5));
-        assertEquals(DeathCameraCycle.TRAIN_SHOTS.size() + DeathCameraCycle.TUNNEL_SHOTS.size() + 3, seq.size() - 5);
-        assertEquals(5, DeathCameraCycle.loopStart(seq));
+        assertEquals(List.of("POV", "spot", "killer", "mob", "carriage", "body-out"), labels(seq).subList(0, 6));
+        assertEquals(DeathCameraCycle.TRAIN_SHOTS.size() + DeathCameraCycle.TUNNEL_SHOTS.size() + 3, seq.size() - 6);
+        assertEquals(6, DeathCameraCycle.loopStart(seq));
         assertEquals(List.of("feature", "mob-arc", "eyes-forward"), labels(seq).subList(seq.size() - 3, seq.size()), "subject shots then the last resort close the loop");
     }
 
@@ -54,11 +54,30 @@ class DeathCameraCycleTest {
     @Test
     void noKillerNoMobOffTrainStillLeavesTheTrainShots() {
         List<DeathShot> seq = DeathCameraCycle.buildSequence(false, false, false, false);
-        assertEquals(List.of("POV", "spot", "leaving"), labels(seq).subList(0, 3));
-        assertEquals(3, DeathCameraCycle.loopStart(seq));
+        assertEquals(List.of("POV", "spot", "leaving", "body-out"), labels(seq).subList(0, 4));
+        assertEquals(4, DeathCameraCycle.loopStart(seq));
         assertEquals("mob-arc", seq.get(seq.size() - 2).label(), "no feature listed: the mob arc closes the loop");
         assertEquals("eyes-forward", seq.get(seq.size() - 1).label(), "then the last resort");
         assertFalse(labels(seq).contains("coupling"));
+    }
+
+    @Test
+    void bodyOutIsTheSafetyNetBehindTheSpotAndCarriageShots() {
+        for (boolean onTrain : new boolean[] {true, false}) {
+            List<DeathShot> seq = DeathCameraCycle.buildSequence(true, false, false, onTrain);
+            int loop = DeathCameraCycle.loopStart(seq);
+            assertEquals("body-out", seq.get(loop - 1).label(), "last of phase one, on the train: " + onTrain);
+            assertEquals(DeathShot.Kind.BODY_OUT, seq.get(loop - 1).kind());
+            assertEquals(DeathCameraCycle.DOLLY_TICKS + 60, seq.get(loop - 1).holdTicks(), "zooms out, then holds");
+        }
+        assertTrue(DeathCameraCycle.showsTheBody(DeathShot.orbit(DeathShot.Target.BODY, 6, 3, 60, "spot")));
+        assertTrue(DeathCameraCycle.showsTheBody(DeathShot.orbit(DeathShot.Target.HAZARD, 5, 2.5, 60, "spot")));
+        assertTrue(DeathCameraCycle.showsTheBody(DeathShot.dolly(Vec3.ZERO, Vec3.ZERO, 120, "carriage")));
+        assertTrue(DeathCameraCycle.showsTheBody(DeathShot.transition(0, 0, 0, 60, "leaving")));
+        assertFalse(DeathCameraCycle.showsTheBody(DeathShot.orbit(DeathShot.Target.KILLER, 5, 2.5, 60, "killer")));
+        assertFalse(DeathCameraCycle.showsTheBody(DeathShot.orbit(DeathShot.Target.CONTACT, 5, 2.5, 60, "mob")));
+        assertFalse(DeathCameraCycle.showsTheBody(DeathCameraCycle.TRAIN_SHOTS.get(0)));
+        assertEquals(new Vec3(0.5, 2.0, 0.0), DeathCameraCycle.BODY_OUT_PULLS.get(0)[0], "tries straight up first");
     }
 
     @Test

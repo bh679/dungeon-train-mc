@@ -92,6 +92,14 @@ public final class DeathCameraCycle {
     static final DeathShot LAST_RESORT = DeathShot.tunnel(DeathShot.Kind.TUNNEL_EYES, 100, "eyes-forward");
     /** The window shot is a filler: it plays only when fewer than this many other loop shots did this pass. */
     static final int WINDOW_OUT_MAX_OTHERS = 5;
+    /** Where the body-out shot tries to pull out from, in order: above, either side, behind, ahead (carriage space). */
+    static final List<Vec3[]> BODY_OUT_PULLS = List.of(
+        new Vec3[] {new Vec3(0.5, 2.0, 0.0), new Vec3(1.5, 12.0, 0.0)},
+        new Vec3[] {new Vec3(0.0, 1.5, 4.0), new Vec3(-4.0, 6.0, 14.0)},
+        new Vec3[] {new Vec3(0.0, 1.5, -4.0), new Vec3(-4.0, 6.0, -14.0)},
+        new Vec3[] {new Vec3(-4.0, 1.5, 0.0), new Vec3(-14.0, 5.0, 0.0)},
+        new Vec3[] {new Vec3(4.0, 1.5, 0.0), new Vec3(14.0, 5.0, 0.0)}
+    );
     /** Subject shots at the end of every loop pass, in the open and in a tunnel alike. */
     static final List<DeathShot> LOOP_TAIL = List.of(
         DeathShot.feature(80, "feature"),
@@ -134,6 +142,8 @@ public final class DeathCameraCycle {
     private static int playedInLoop;
     /** Loop shots of any kind that played since the loop last started (the window and last-resort gates). */
     private static int passCount;
+    /** Phase one showed the body (spot, carriage or leaving shot): the body-out safety net stands down. */
+    private static boolean bodyShotPlayed;
     /** The current shot's lens: carriage space for train-locked shots, world space otherwise. */
     private static Vector3d lens;
     /** Dolly end, carriage space. */
@@ -214,6 +224,9 @@ public final class DeathCameraCycle {
         // reached, in the world, and tracks the body as the carriage rolls away.
         if (onTrain) shots.add(DeathShot.dolly(new Vec3(3.0, 2.0, 5.0), new Vec3(-6.0, 8.0, 14.0), DOLLY_TICKS + 60, "carriage"));
         else shots.add(DeathShot.transition(-3.0, 2.5, 8.0, 60, "leaving"));
+        // Safety net: phase one always has one moving shot of the body. Plays only when neither the
+        // spot nor the carriage shot did (gated in select), pulling out whichever way is clear.
+        shots.add(DeathShot.bodyOut(DOLLY_TICKS + 60, "body-out"));
         shots.addAll(TRAIN_SHOTS);
         shots.addAll(TUNNEL_SHOTS);
         // The feature and the mob arc close every pass, tunnel or not (the feature only when the
@@ -269,6 +282,7 @@ public final class DeathCameraCycle {
         active = true;
         playedInLoop = 0;
         passCount = 0;
+        bodyShotPlayed = false;
         select(0);
     }
 
@@ -464,6 +478,7 @@ public final class DeathCameraCycle {
             DeathShot shot = sequence.get(i);
             boolean gated = switch (shot.kind()) {
                 case TUNNEL_WINDOW_OUT -> passCount >= WINDOW_OUT_MAX_OTHERS;
+                case BODY_OUT -> bodyShotPlayed;
                 case TUNNEL_EYES -> passCount > 0;
                 case TUNNEL_RISE, TUNNEL_ABOVE_BACK, TUNNEL_ROOF, TUNNEL_COUPLING -> playedInLoop > 0;
                 default -> false;
@@ -473,6 +488,7 @@ public final class DeathCameraCycle {
                 continue;
             }
             if (prepare(shot)) {
+                if (showsTheBody(shot)) bodyShotPlayed = true;
                 if (shot.kind().isOpenAir()) playedInLoop++;
                 if (shot.kind().isLoop()) passCount++;
                 index = i;
@@ -487,6 +503,16 @@ public final class DeathCameraCycle {
         // Nothing at all could be shown (no carriage, no level): hold the player's own view.
         index = 0;
         shotTicks = 0;
+    }
+
+    /** Pure: a phase-one shot that frames the body or where it died (the spot, carriage and leaving shots). */
+    static boolean showsTheBody(DeathShot shot) {
+        if (shot.kind().isLoop()) return false;
+        return switch (shot.kind()) {
+            case ORBIT -> shot.target() == DeathShot.Target.BODY || shot.target() == DeathShot.Target.HAZARD;
+            case DOLLY, TRANSITION, BODY_OUT -> true;
+            default -> false;
+        };
     }
 
     /** Resolve a shot's lens, aim and path; false when it cannot be shown now. */
@@ -531,6 +557,19 @@ public final class DeathCameraCycle {
                 Vector3d a = lens;
                 Vector3d b = lensEnd;
                 return ShotPath.clear(level, player, carriages, ShotPath.samples(f -> toWorld(dollyAt(a, b, f))), aimBody);
+            }
+            case BODY_OUT -> {
+                for (Vec3[] pull : BODY_OUT_PULLS) {
+                    Vector3d a = resolveLens(pull[0], true, null);
+                    Vector3d b = resolveLens(pull[1], true, null);
+                    if (a == null || b == null) continue;
+                    if (ShotPath.clear(level, player, carriages, ShotPath.samples(f -> toWorld(dollyAt(a, b, f))), aimBody)) {
+                        lens = a;
+                        lensEnd = b;
+                        return true;
+                    }
+                }
+                return false;
             }
             case ORBIT, ORBIT_LOOP -> {
                 return setUpOrbit(shot);
@@ -609,12 +648,15 @@ public final class DeathCameraCycle {
                 return ShotPath.clear(level, player, carriages, ShotPath.samples(f -> arcAt(c, a, shot.sweepDegrees(), f)), aimWorld, true);
             }
             case TUNNEL_WINDOW_OUT -> {
+                // From the far side of the carriage: the lens stands just inside the opposite
+                // wall and looks across the whole interior and out through the window.
                 CarriageWindow window = windowForBody();
                 if (window == null || carriage == null) return false;
                 double side = window.side();
-                lens = lensFor(bodyLocal, new Vec3(0.0, 1.2, side * Math.max(0.5, window.wallAcross() - 0.8)));
-                aimLocal = lensFor(lens, new Vec3(0.0, 0.0, side * 12.0));
-                return ShotPath.clear(level, player, carriages, List.of(toWorld(lens)), toWorld(lensFor(lens, new Vec3(0.0, 0.0, side * 1.5))));
+                lens = lensFor(bodyLocal, toVec(window.farInside()));
+                aimLocal = lensFor(lens, new Vec3(0.0, 0.0, side * 14.0));
+                Vector3d atWindow = lensFor(bodyLocal, new Vec3(0.0, 1.2, side * Math.max(0.5, window.wallAcross() - 1.5)));
+                return ShotPath.clear(level, player, carriages, List.of(toWorld(lens)), toWorld(atWindow));
             }
             case TUNNEL_ROOF -> {
                 Double roof = roofAboveBody();
@@ -917,7 +959,7 @@ public final class DeathCameraCycle {
                 lensW = orbitLens(subject, orbitRadius, orbitHeight, orbitAngle(t, shot.holdTicks()));
                 aim = new Vector3d(subject.x, subject.y + LOOK_Y_OFFSET, subject.z);
             }
-            case DOLLY -> {
+            case DOLLY, BODY_OUT -> {
                 if (lens == null || lensEnd == null) return null;
                 if (t < DOLLY_TICKS) {
                     lensW = toWorldRender(dollyAt(lens, lensEnd, t / DOLLY_TICKS), partialTick);
