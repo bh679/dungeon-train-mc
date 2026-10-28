@@ -182,3 +182,46 @@ gives its own buffs.
   (a new life starts ready).
 - `PerkStats` MINUTES unit needs a fractional form for this chip.
 
+---
+
+## Trader
+
+### Persuade Enemy (tier 2) — SKIPPED 2026-10-28
+
+Too complicated for this pass (a per-mob table of anger sources and gift items). Stays "Coming
+soon". The draft that was set aside: point 1 stops every neutral mob starting on you; gifts
+(gold, flower, meat, bamboo, iron, chorus fruit, wheat) calm an angry neutral mob with a Calm
+chance easing toward 100% and spread to its pack within a growing range.
+
+### Reroll Trades (tier 3) — CONFIRMED 2026-10-28
+
+**How it works**
+- A dice button beside Restock Villager's on the villager trade screen. Pressing it rolls the
+  villager's whole trade list again for its profession and level, as if it had just reached that
+  level: all stock full, no demand price rises. Level and XP untouched. Not wandering traders.
+- **Cap:** r rerolls per villager per life (like Restock's charges).
+- **Free ones:** `floor(r / 10)` of those are free and are spent first.
+- **Price:** the paid rerolls cost emeralds taken from the player's inventory: 1 for the first paid
+  reroll of that villager, then doubling (2, 4, 8, 16, …) with no cap. The price is per villager per
+  life and does not depend on points.
+- Example at 10 points: free, 1, 2, 4, 8, 16, 32, 64, 128, 256.
+
+**Details card**
+- Description: "Reroll a villager's trades for emeralds. Each reroll of the same villager costs
+  twice as much."
+- Chips: `Rerolls per villager 2 → 3` (PLAIN) and `Free 0 → 1 at 10 points` (PLAIN; the preview
+  names the point at which the next free one arrives, since most points do not change it).
+- Button on the trade screen: dice glyph, rerolls left on this villager, and the next price with
+  the emerald sprite (`⚄ 8 · 2 [emerald]`), or FREE while free ones remain. Greyed when none are
+  left or the player cannot pay. Hover: "Reroll trades (N left, costs M emeralds)".
+
+**Build notes**
+- Mirror `TraderPerkEvents` / `RestockVillagerButton` / the status + request packets (new packet
+  pair or a widened one; bump `PROTOCOL_VERSION`). Per-villager use counts in the same per-life
+  store Restock uses.
+- Reroll = clear `villager.getOffers()` and re-add `VillagerTrades.TRADES` for the profession,
+  one tier at a time up to the villager's level (what `Villager#updateTrades` does per level),
+  then `setOffers` and resend the menu's offers.
+- Emerald payment: count `Items.EMERALD` across the inventory, refuse if short, remove the exact
+  amount server-side before rerolling.
+
