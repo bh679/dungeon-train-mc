@@ -187,18 +187,22 @@ class WedgedUnderFloorTest {
     }
 
     @Test
-    void onlyMobsOlderThanASecondFellOffTheTrain() {
+    void onlyMobsSpawnedUnderTheFloorAreTooYoungToHaveFallen() {
         assertFalse(WedgedUnderFloor.fellOffTrain(1));
-        assertFalse(WedgedUnderFloor.fellOffTrain(19));
-        assertTrue(WedgedUnderFloor.fellOffTrain(20));
+        assertFalse(WedgedUnderFloor.fellOffTrain(2));
+        assertTrue(WedgedUnderFloor.fellOffTrain(5)); // summoned on the deck, knocked through at once
         assertTrue(WedgedUnderFloor.fellOffTrain(500));
     }
 
     @Test
-    void crushHitsEveryFiveTicksUnder() {
-        for (int t = 0; t <= 20; t++) {
-            assertEquals(t > 0 && t % 5 == 0, WedgedUnderFloor.crushDue(t), "tick " + t);
-        }
+    void crushHitsOncePerThirtySecondsUnder() {
+        assertEquals(600, WedgedUnderFloor.CRUSH_INTERVAL_TICKS);
+        assertFalse(WedgedUnderFloor.crushDue(0));
+        assertFalse(WedgedUnderFloor.crushDue(1));
+        assertFalse(WedgedUnderFloor.crushDue(599));
+        assertTrue(WedgedUnderFloor.crushDue(600));
+        assertFalse(WedgedUnderFloor.crushDue(601));
+        assertTrue(WedgedUnderFloor.crushDue(1200));
         assertEquals(1.0f, WedgedUnderFloor.CRUSH_DAMAGE); // half a heart
     }
 }

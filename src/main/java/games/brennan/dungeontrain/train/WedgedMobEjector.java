@@ -35,8 +35,8 @@ import java.util.WeakHashMap;
  * never discarded.</p>
  *
  * <p>A mob knocked off the train onto the tracks within {@link WedgedUnderFloor#ROOMS_NEAR_PLAYER}
- * rooms of a player is left there instead, and crushed half a heart every
- * {@link WedgedUnderFloor#CRUSH_INTERVAL_TICKS} ticks while a carriage is over it. Before 0.1570.0
+ * rooms of a player is left there instead, and crushed half a heart per
+ * {@link WedgedUnderFloor#CRUSH_INTERVAL_TICKS} ticks it spends under carriages. Before 0.1570.0
  * it was discarded wherever the track was a bridge.</p>
  *
  * <p>A side whose chunk isn't loaded is never checked (that would sync-load it); if one was skipped,
@@ -52,7 +52,7 @@ public final class WedgedMobEjector {
     /** Same, for a mob left waiting on an unloaded side; kept apart so it never hides a later move's line. */
     private static final Map<ServerLevel, EjectLogThrottle> WAIT_LOG_THROTTLES = new WeakHashMap<>();
 
-    /** Per fallen mob: {last game tick it was under a carriage, ticks in a row it has been}. */
+    /** Per fallen mob: {last game tick it was under a carriage, ticks it has spent under them}. */
     private static final Map<Entity, long[]> CRUSH_TICKS = new WeakHashMap<>();
 
     private WedgedMobEjector() {}
@@ -158,26 +158,24 @@ public final class WedgedMobEjector {
     }
 
     /**
-     * Leaves a mob that fell onto the tracks where it is and hits it for half a heart every
-     * {@link WedgedUnderFloor#CRUSH_INTERVAL_TICKS} ticks a carriage is over it. The run restarts
-     * once it has been clear of the train for a tick.
+     * Leaves a mob that fell onto the tracks where it is and hits it for half a heart once it has
+     * been under carriages for {@link WedgedUnderFloor#CRUSH_INTERVAL_TICKS}, then again each time
+     * that much more has passed. Time spent clear of the train is not counted.
      */
     private static void crush(ServerLevel level, LivingEntity e) {
         long now = level.getGameTime();
         long[] prev = CRUSH_TICKS.get(e);
         if (prev != null && prev[0] == now) return; // under two overlapping carriage boxes this tick
-        long ticksUnder = prev != null && prev[0] == now - 1 ? prev[1] + 1 : 1;
-        CRUSH_TICKS.put(e, new long[] {now, ticksUnder});
-        if (ticksUnder == 1) {
+        if (prev == null) {
             int repeats = LOG_THROTTLES.computeIfAbsent(level, l -> new EjectLogThrottle()).record(e.getId(), now);
             if (repeats >= 0) {
                 LOGGER.info("[DungeonTrain] Left {} on the tracks under a carriage near a player at ({}, {}, {}) source={} ageTicks={} tags={} repeats={}",
                     e.getType().toShortString(), e.getX(), e.getY(), e.getZ(), sourceOf(e), e.tickCount, e.getTags(), repeats);
             }
         }
-        if (WedgedUnderFloor.crushDue((int) Math.min(ticksUnder, Integer.MAX_VALUE))) {
-            // Vanilla's 10-tick hurt cooldown would swallow every other hit at this rate.
-            e.invulnerableTime = 0;
+        long ticksUnder = prev == null ? 1 : prev[1] + 1;
+        CRUSH_TICKS.put(e, new long[] {now, ticksUnder});
+        if (WedgedUnderFloor.crushDue(ticksUnder)) {
             e.hurt(level.damageSources().inWall(), WedgedUnderFloor.CRUSH_DAMAGE);
         }
     }

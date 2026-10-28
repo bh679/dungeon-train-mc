@@ -58,12 +58,16 @@ public final class WedgedUnderFloor {
     /**
      * Younger than this, a mob under the floor was spawned there, not knocked off the train: it
      * keeps the old route (beside the carriage, else discarded) even near a player. The 0.1569.0
-     * log's zombified piglins under the floor were all 1 tick old.
+     * log's zombified piglins under the floor were all 1 tick old; a creeper summoned on the deck
+     * and knocked straight through the gap reached the rails at 5 ticks old.
      */
-    static final int MIN_FALLEN_AGE_TICKS = 20;
+    static final int MIN_FALLEN_AGE_TICKS = 3;
 
-    /** Ticks between crush hits on a fallen mob while a carriage is over it. */
-    static final int CRUSH_INTERVAL_TICKS = 5;
+    /**
+     * Ticks spent under carriages between crush hits on a fallen mob: 30 s, so a mob left on the
+     * tracks dies slowly rather than in seconds.
+     */
+    static final int CRUSH_INTERVAL_TICKS = 600;
 
     /** Each crush hit: half a heart. */
     static final float CRUSH_DAMAGE = 1.0f;
@@ -166,8 +170,8 @@ public final class WedgedUnderFloor {
             && Math.abs(py - my) <= NEAR_PLAYER_VERTICAL_BLOCKS;
     }
 
-    /** True on the ticks a mob that has been under a carriage this long takes a crush hit. */
-    public static boolean crushDue(int ticksUnder) {
+    /** True on the tick a mob that has spent this long under carriages takes a crush hit. */
+    public static boolean crushDue(long ticksUnder) {
         return ticksUnder > 0 && ticksUnder % CRUSH_INTERVAL_TICKS == 0;
     }
 
