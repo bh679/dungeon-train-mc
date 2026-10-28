@@ -91,8 +91,7 @@ public final class PortalRoomTemplateStore {
 
         @Override
         public SaveResult save(ServerPlayer player, Template.PortalRoom template) throws Exception {
-            PortalRoomEditor.SaveResult r = PortalRoomEditor.save(player, template.name());
-            return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
+            return PortalRoomEditor.save(player, template.name());
         }
 
         @Override

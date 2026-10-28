@@ -10,26 +10,20 @@ import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
+import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Template;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.GameType;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Editor plots for {@link CarriageVariant}s — fixed high-Y overworld locations
@@ -37,9 +31,8 @@ import java.util.UUID;
  * +X so every variant is visible at once; the list auto-expands as custom
  * variants are registered.
  *
- * Session state (pre-enter position + dimension + look angles) is kept
- * per-player in RAM. Lost on server restart, which is acceptable for an
- * OP-only dev tool.
+ * The return point for {@code /dungeontrain editor exit} is recorded in
+ * {@link EditorSessions}, shared with every other editor.
  */
 public final class CarriageEditor {
 
@@ -47,53 +40,9 @@ public final class CarriageEditor {
 
     private static final int FIRST_PLOT_X = 0;
 
-    private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
-
-    public record Session(ResourceKey<Level> dimension, Vec3 pos, float yaw, float pitch, GameType previousGameType) {}
-
-    private static final Map<UUID, Session> SESSIONS = new HashMap<>();
-
     private CarriageEditor() {}
 
-    /**
-     * Record {@code player}'s current dimension + position + look + game mode
-     * as the return-to state for {@code /dungeontrain editor exit}, then
-     * switch the player to creative for editing. No-op if the player already
-     * has a saved session, so re-entering an editor plot (even across carriage
-     * and pillar editors) keeps the first entry as the anchor.
-     *
-     * <p>Package-private so {@link PillarEditor} can share the session map
-     * without duplicating the exit plumbing.</p>
-     */
-    static void rememberReturn(ServerPlayer player) {
-        if (SESSIONS.containsKey(player.getUUID())) return;
-        GameType previous = player.gameMode.getGameModeForPlayer();
-        SESSIONS.put(player.getUUID(), new Session(
-            player.level().dimension(),
-            player.position(),
-            player.getYRot(),
-            player.getXRot(),
-            previous
-        ));
-        if (previous != GameType.CREATIVE) {
-            player.setGameMode(GameType.CREATIVE);
-        }
-    }
 
-    /**
-     * Outcome of {@link #save} — config-dir write always happens (or throws);
-     * the source-tree write is opt-in via {@link EditorDevMode} and reported
-     * separately so the caller can surface partial success. Source-tree writes
-     * apply to both {@link CarriageVariant.Builtin}s and
-     * {@link CarriageVariant.Custom}s — a custom variant authored in the editor
-     * lands in {@code src/main/resources/data/dungeontrain/templates/} alongside
-     * built-ins and ships in the next build.
-     */
-    public record SaveResult(boolean sourceAttempted, boolean sourceWritten, String sourceError) {
-        public static SaveResult skipped() { return new SaveResult(false, false, null); }
-        public static SaveResult written() { return new SaveResult(true, true, null); }
-        public static SaveResult failed(String error) { return new SaveResult(true, false, error); }
-    }
 
     /**
      * The box a variant's plot occupies.
@@ -197,13 +146,7 @@ public final class CarriageEditor {
             BlockPos o = plotOrigin(variant, dims);
             if (o == null) continue;
             CarriageDims box = plotDims(variant, dims);
-            // Y upper bound includes a couple of blocks of headroom above the
-            // cage top so a player who teleported to "on top" via the new
-            // landing-on-top default still counts as inPlot — same panel
-            // controls (green border, action row, Enter button) stay visible.
-            if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + box.length()
-                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + box.height() + 2
-                && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + box.width()) {
+            if (EditorPlotBox.contains(pos, o, new Vec3i(box.length(), box.height(), box.width()))) {
                 return variant;
             }
         }
@@ -278,7 +221,7 @@ public final class CarriageEditor {
             return;
         }
 
-        rememberReturn(player);
+        EditorSessions.rememberReturn(player);
         if (stamp) stampPlot(overworld, variant, dims);
 
         Vec3i footprint = new Template.Carriage(variant).plotSize(dims);
@@ -317,7 +260,7 @@ public final class CarriageEditor {
         EditorPlotEntityClearer.discardNonPlayersIn(
             overworld, origin, new Vec3i(box.length(), box.height(), box.width()));
         CarriagePlacer.placeAt(overworld, origin, variant, dims);
-        setOutline(overworld, origin, OUTLINE_BLOCK, box);
+        setOutline(overworld, origin, EditorPlotCage.OUTLINE_BLOCK, box);
 
         // Snapshot the freshly-stamped state so EditorDirtyCheck has a
         // baseline to compare against. The stamp pass composes base NBT +
@@ -520,15 +463,9 @@ public final class CarriageEditor {
             player.getName().getString(), variant.id(), box.length(), box.width(), box.height(),
             sidecar.size());
 
-        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
-        try {
-            CarriageTemplateStore.saveToSource(variant, template);
-            sidecar.saveToSource(variant);
-            return SaveResult.written();
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Editor save: source write failed for {}: {}", variant.id(), e.toString());
-            return SaveResult.failed(e.getMessage());
-        }
+        return EditorSave.toSource("Editor save: " + variant.id(),
+            () -> CarriageTemplateStore.saveToSource(variant, template),
+            () -> sidecar.saveToSource(variant));
     }
 
     /**
@@ -592,7 +529,7 @@ public final class CarriageEditor {
         StructureTemplate template = captureTemplate(overworld, targetOrigin, box);
         CarriageTemplateStore.save(target, template);
 
-        setOutline(overworld, targetOrigin, OUTLINE_BLOCK, box);
+        setOutline(overworld, targetOrigin, EditorPlotCage.OUTLINE_BLOCK, box);
 
         games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
             .trigger(player, "made_carriage");
@@ -639,7 +576,7 @@ public final class CarriageEditor {
             source.id(), target.id());
         ShellWinsStore.copy(source.id(), target.id());
 
-        setOutline(overworld, targetOrigin, OUTLINE_BLOCK, box);
+        setOutline(overworld, targetOrigin, EditorPlotCage.OUTLINE_BLOCK, box);
 
         LOGGER.info("[DungeonTrain] Editor duplicate: {} created '{}' from '{}' at {}",
             player.getName().getString(), target.id(), source.id(), targetOrigin);
@@ -786,22 +723,6 @@ public final class CarriageEditor {
         return renamed;
     }
 
-    /** Restore player to pre-enter position/dimension/game mode. Returns false if no session. */
-    public static boolean exit(ServerPlayer player) {
-        Session session = SESSIONS.remove(player.getUUID());
-        if (session == null) return false;
-        MinecraftServer server = player.getServer();
-        if (server == null) return false;
-        ServerLevel dim = server.getLevel(session.dimension());
-        if (dim == null) return false;
-        player.teleportTo(dim, session.pos().x, session.pos().y, session.pos().z,
-            session.yaw(), session.pitch());
-        if (player.gameMode.getGameModeForPlayer() != session.previousGameType()) {
-            player.setGameMode(session.previousGameType());
-        }
-        VariantOverlayRenderer.forget(player);
-        return true;
-    }
 
     /**
      * Capture a carriage-sized region as a template.

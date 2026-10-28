@@ -391,8 +391,7 @@ public final class CarriageContentsStore {
 
         @Override
         public SaveResult save(ServerPlayer player, Template.Contents template) throws Exception {
-            CarriageContentsEditor.SaveResult r = CarriageContentsEditor.save(player, template.contents());
-            return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
+            return CarriageContentsEditor.save(player, template.contents());
         }
 
         @Override

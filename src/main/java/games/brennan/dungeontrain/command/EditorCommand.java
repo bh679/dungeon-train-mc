@@ -13,7 +13,8 @@ import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.TemplateDeletes;
 import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageEditor;
-import games.brennan.dungeontrain.editor.CarriageEditor.SaveResult;
+import games.brennan.dungeontrain.editor.EditorSessions;
+import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.editor.CarriagePartEditor;
 import games.brennan.dungeontrain.editor.CarriagePartRegistry;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
@@ -3755,17 +3756,10 @@ public final class EditorCommand {
     private static int runExit(CommandSourceStack source) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
-        // Three editors keep their own session map — PortalRoomEditor, TunnelEditor and
-        // CarriageEditor — and every one of them has to be in this chain or a player who entered
-        // through it never gets their position, dimension and game mode back. Portal rooms were
-        // missing here, so a direct `/dt editor portals` left the player stuck in the plot, in
-        // creative, told there was "no saved editor session".
-        //
-        // Each session restores its OWN entry point, so stacked sessions unwind one press at a
-        // time: a user who entered a carriage plot, then a tunnel or room plot, runs exit twice.
-        boolean exited = games.brennan.dungeontrain.editor.PortalRoomEditor.exit(player)
-            || TunnelEditor.exit(player)
-            || CarriageEditor.exit(player);
+        // One session map for every editor (EditorSessions): the first entry is the anchor, so a
+        // player who went from a carriage plot into a tunnel or room plot still comes back to where
+        // they left the world in one press.
+        boolean exited = EditorSessions.exit(player);
         if (!exited) {
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_saved_session_nothing"));
             return 0;
@@ -4564,7 +4558,7 @@ public final class EditorCommand {
 
     private static int runPillarSaveSection(CommandSourceStack source, ServerPlayer player, PillarSection section) {
         try {
-            PillarEditor.SaveResult result = PillarEditor.save(player, section);
+            SaveResult result = PillarEditor.save(player, section);
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_pillar_template_config", section.id()), true);
             if (result.sourceAttempted()) {
                 if (result.sourceWritten()) {
@@ -4583,7 +4577,7 @@ public final class EditorCommand {
 
     private static int runPillarSaveAdjunct(CommandSourceStack source, ServerPlayer player, PillarAdjunct adjunct) {
         try {
-            PillarEditor.SaveResult result = PillarEditor.save(player, adjunct);
+            SaveResult result = PillarEditor.save(player, adjunct);
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_pillar_adjunct_template", adjunct.id()), true);
             if (result.sourceAttempted()) {
                 if (result.sourceWritten()) {
@@ -4785,7 +4779,7 @@ public final class EditorCommand {
 
         if (newName == null) {
             try {
-                CarriageContentsEditor.SaveResult result = CarriageContentsEditor.save(player, current);
+                SaveResult result = CarriageContentsEditor.save(player, current);
                 source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_contents_template_config", current.id()), true);
                 if (result.sourceAttempted()) {
                     if (result.sourceWritten()) {
@@ -5213,7 +5207,7 @@ public final class EditorCommand {
             return 0;
         }
         try {
-            TrackEditor.SaveResult result = TrackEditor.save(player);
+            SaveResult result = TrackEditor.save(player);
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_track_template_config"), true);
             if (result.sourceAttempted()) {
                 if (result.sourceWritten()) {
@@ -5402,7 +5396,7 @@ public final class EditorCommand {
             targetName = newName.toLowerCase(Locale.ROOT);
         }
         try {
-            CarriagePartEditor.SaveResult result = CarriagePartEditor.save(player, new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, targetName));
+            SaveResult result = CarriagePartEditor.save(player, new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, targetName));
             final String name = targetName;
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_part_config_dir", kind.id(), name), true);
             if (result.sourceAttempted()) {
@@ -5453,7 +5447,7 @@ public final class EditorCommand {
         }
 
         try {
-            CarriagePartEditor.SaveResult result = CarriagePartEditor.saveAs(player,
+            SaveResult result = CarriagePartEditor.saveAs(player,
                 new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, oldName),
                 new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, target));
             final String oldRef = oldName;
