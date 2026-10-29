@@ -1,31 +1,19 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateAdapters;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateStore;
 import games.brennan.dungeontrain.train.CarriageContents;
-import games.brennan.dungeontrain.train.CarriageDims;
-import net.minecraft.core.HolderGetter;
 import net.minecraft.core.Vec3i;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -48,9 +36,13 @@ import java.util.Optional;
  *       falls back; custom contents with no config-dir file place nothing.</li>
  * </ol>
  *
- * Each tier is filtered against the caller's interior dims; templates whose
+ * Each read is filtered against the caller's interior dims; templates whose
  * recorded footprint doesn't match the world's current interior dims are
  * skipped so the next tier (or the hardcoded generator) gets a turn.
+ *
+ * <p>Policies: {@link SourcePolicy#NEVER} (write-through happens inside
+ * {@link CarriageContentsEditor#save} when devmode is on), {@link DeleteCachePolicy#REMOVE}.
+ * {@link #exists} asks the active package only.</p>
  */
 public final class CarriageContentsStore {
 
@@ -60,7 +52,28 @@ public final class CarriageContentsStore {
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/contents/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/contents";
 
-    private static final Map<String, Optional<StructureTemplate>> CACHE = new HashMap<>();
+    private static final ThreeTierStore<String, StructureTemplate> STORE =
+        StoreDescriptor.<String, StructureTemplate>named("CarriageContentsStore")
+            .id(id -> id)
+            .subdir(SUBDIR)
+            .fileName(id -> id + EXT)
+            .bundledUnder(RESOURCE_PREFIX)
+            .sourceRelDir(SOURCE_REL_PATH)
+            .codec(StoreCodecs.structureTemplate(false))
+            .logNoun("contents template")
+            .sourcePolicy(SourcePolicy.NEVER)
+            .deleteCachePolicy(DeleteCachePolicy.REMOVE)
+            .onSave(id -> ProvenanceCache.invalidateAll())
+            .onDelete(id -> ProvenanceCache.invalidateAll())
+            .onRename((a, b) -> ProvenanceCache.invalidateAll())
+            .onClear(() -> {
+                // Whether a template has a TV baked in is read from the template itself — re-read it too.
+                games.brennan.dungeontrain.compat.vista.LiveTvWeighting.clearCache();
+                // The vertical-flip copies are derived from the templates being dropped here — keeping
+                // them would hand a stale flip back for a template that has just been re-authored.
+                games.brennan.dungeontrain.train.ContentsFlip.clearCache();
+            })
+            .build();
 
     private CarriageContentsStore() {}
 
@@ -69,11 +82,11 @@ public final class CarriageContentsStore {
     }
 
     public static Path fileFor(CarriageContents contents) {
-        return directory().resolve(contents.id() + EXT);
+        return STORE.fileFor(contents.id());
     }
 
     public static Path fileForId(String id) {
-        return directory().resolve(id + EXT);
+        return STORE.fileFor(id);
     }
 
     /**
@@ -100,27 +113,19 @@ public final class CarriageContentsStore {
      * without first having to materialise a {@link CarriageContents}.
      */
     public static Path sourceFileForId(String id) {
-        return sourceDirectory().resolve(id + EXT);
+        return STORE.sourceFileFor(id);
     }
 
     public static boolean sourceTreeAvailable() {
-        Path resources = resourcesRootOrNull();
-        return resources != null && Files.isDirectory(resources) && Files.isWritable(resources);
+        return STORE.sourceTreeAvailable();
     }
 
-    public static synchronized void reload() {
-        CACHE.clear();
-        games.brennan.dungeontrain.train.ContentsFlip.clearCache();
-        games.brennan.dungeontrain.compat.vista.LiveTvWeighting.clearCache();
+    public static void reload() {
+        STORE.clearCache();
     }
 
-    public static synchronized void clearCache() {
-        CACHE.clear();
-        // Whether a template has a TV baked in is read from the template itself — re-read it too.
-        games.brennan.dungeontrain.compat.vista.LiveTvWeighting.clearCache();
-        // The vertical-flip copies are derived from the templates being dropped here — keeping them
-        // would hand a stale flip back for a template that has just been re-authored.
-        games.brennan.dungeontrain.train.ContentsFlip.clearCache();
+    public static void clearCache() {
+        STORE.clearCache();
     }
 
     /**
@@ -130,44 +135,25 @@ public final class CarriageContentsStore {
      * built-in, or places nothing for customs.
      *
      * <p>{@code interiorDims} is the carriage dims with the shell subtracted:
-     * {@code length-2 × height-2 × width-2}. Wrapped in a {@link CarriageDims}
+     * {@code length-2 × height-2 × width-2}. Wrapped in a {@link games.brennan.dungeontrain.train.CarriageDims}
      * only for reuse of the record; the shell minimums ({@code length>=4},
      * {@code width>=3}, {@code height>=3}) guarantee interior dims stay above
-     * the {@link CarriageDims} floors of 4×3×3… except when width=3 (interior
+     * the {@code CarriageDims} floors of 4×3×3… except when width=3 (interior
      * width=1) — see the helper in {@link games.brennan.dungeontrain.train.CarriageContentsPlacer}
-     * which uses a raw {@link Vec3i} instead of {@link CarriageDims} to avoid
+     * which uses a raw {@link Vec3i} instead of {@code CarriageDims} to avoid
      * the invariant.</p>
+     *
+     * <p><b>The cache holds what is on disk; the size question is answered per call.</b> The cache
+     * is keyed by contents id alone and shared by every caller, so a verdict that depends on one
+     * caller's interior size must not be baked into it. Not hypothetical: {@code portal} contents
+     * are authored against the CORRIDOR's box ({@code CarriageContentsPlacer.contentsDims}), so any
+     * sweep over all contents at ordinary carriage dims would otherwise take them out. There are
+     * two gates — this one for a carriage, {@link #getFitting} for a portal room.</p>
      */
-    public static synchronized Optional<StructureTemplate> get(
+    public static Optional<StructureTemplate> get(
         ServerLevel level, CarriageContents contents, Vec3i interiorSize
     ) {
-        return filterForSize(contents, loadUngated(level, contents), interiorSize);
-    }
-
-    /**
-     * The template for {@code contents} as it is on disk, cached, with <b>no size gate applied</b>.
-     *
-     * <p>The cache is keyed by contents id alone and shared by every caller, so a verdict that
-     * depends on one caller's interior size must not be baked into it — otherwise a single lookup at
-     * the wrong size caches {@code Optional.empty()} under this id and defeats every later lookup at
-     * the right one for the rest of the session. Not hypothetical: {@code portal} contents are
-     * authored against the CORRIDOR's box ({@code CarriageContentsPlacer.contentsDims}), so any sweep
-     * over all contents at ordinary carriage dims would otherwise take them out.</p>
-     *
-     * <p>The gate belongs to the caller, and there are two of them — {@link #filterForSize} for a
-     * carriage, {@link #getFitting} for a portal room.</p>
-     */
-    private static Optional<StructureTemplate> loadUngated(ServerLevel level, CarriageContents contents) {
-        String key = contents.id();
-        Optional<StructureTemplate> cached = CACHE.get(key);
-        if (cached == null) {
-            cached = loadFromConfig(level, contents);
-            if (cached.isEmpty()) {
-                cached = loadFromResource(level, contents);
-            }
-            CACHE.put(key, cached);
-        }
-        return cached;
+        return filterForSize(contents, STORE.get(contents.id(), level), interiorSize);
     }
 
     /**
@@ -190,10 +176,10 @@ public final class CarriageContentsStore {
      * outcome here (a room may simply be smaller than a given furnishing), not the misconfiguration
      * a mismatched carriage template is.</p>
      */
-    public static synchronized Optional<StructureTemplate> getFitting(
+    public static Optional<StructureTemplate> getFitting(
         ServerLevel level, CarriageContents contents, Vec3i maxInterior
     ) {
-        Optional<StructureTemplate> cached = loadUngated(level, contents);
+        Optional<StructureTemplate> cached = STORE.get(contents.id(), level);
         if (cached.isEmpty()) return cached;
         return fitsWithin(cached.get().getSize(), maxInterior) ? cached : Optional.empty();
     }
@@ -219,15 +205,8 @@ public final class CarriageContentsStore {
     }
 
     /** Write {@code template} to the per-install config-dir copy. */
-    public static synchronized void save(CarriageContents contents, StructureTemplate template) throws IOException {
-        Path dir = directory();
-        Files.createDirectories(dir);
-        Path file = fileFor(contents);
-        CompoundTag tag = template.save(new CompoundTag());
-        NbtIo.writeCompressed(tag, file);
-        CACHE.put(contents.id(), Optional.of(template));
-        ProvenanceCache.invalidateAll();
-        LOGGER.info("[DungeonTrain] Saved contents template {} to {}", contents.id(), file);
+    public static void save(CarriageContents contents, StructureTemplate template) throws IOException {
+        STORE.save(contents.id(), template);
     }
 
     /**
@@ -235,15 +214,8 @@ public final class CarriageContentsStore {
      * the mod jar at build time. Only succeeds in a dev checkout where the
      * source tree is on disk and writable.
      */
-    public static synchronized void saveToSource(CarriageContents contents, StructureTemplate template) throws IOException {
-        if (!sourceTreeAvailable()) {
-            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
-        }
-        Path file = sourceFileFor(contents);
-        Files.createDirectories(file.getParent());
-        CompoundTag tag = template.save(new CompoundTag());
-        NbtIo.writeCompressed(tag, file);
-        LOGGER.info("[DungeonTrain] Wrote bundled contents template {} to {}", contents.id(), file);
+    public static void saveToSource(CarriageContents contents, StructureTemplate template) throws IOException {
+        STORE.saveToSource(contents.id(), template);
     }
 
     /**
@@ -252,18 +224,8 @@ public final class CarriageContentsStore {
      * customs — unlike shell promotion which is built-in only — because
      * contents customs are first-class shippable assets.
      */
-    public static synchronized void promote(CarriageContents contents) throws IOException {
-        Path src = fileFor(contents);
-        if (!Files.isRegularFile(src)) {
-            throw new IOException("No saved contents template for " + contents.id() + " in " + src);
-        }
-        if (!sourceTreeAvailable()) {
-            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
-        }
-        Path dst = sourceFileFor(contents);
-        Files.createDirectories(dst.getParent());
-        Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
-        LOGGER.info("[DungeonTrain] Promoted contents template {} from {} to {}", contents.id(), src, dst);
+    public static void promote(CarriageContents contents) throws IOException {
+        STORE.promote(contents.id());
         try {
             ContainerContentsStore.promoteFor("contents:" + contents.id());
         } catch (IOException e) {
@@ -272,136 +234,38 @@ public final class CarriageContentsStore {
         }
     }
 
-    public static synchronized boolean delete(CarriageContents contents) throws IOException {
-        Path file = fileFor(contents);
-        boolean existed = Files.deleteIfExists(file);
-        CACHE.put(contents.id(), Optional.empty());
-        ProvenanceCache.invalidateAll();
-        if (existed) LOGGER.info("[DungeonTrain] Deleted contents template {} ({})", contents.id(), file);
-        return existed;
+    public static boolean delete(CarriageContents contents) throws IOException {
+        return STORE.delete(contents.id());
     }
 
     public static boolean exists(CarriageContents contents) {
-        return Files.isRegularFile(fileFor(contents));
+        return STORE.existsInActive(contents.id());
     }
 
     /** True iff the mod jar bundles a default template for {@code contents}. */
     public static boolean bundled(CarriageContents contents) {
-        try (InputStream in = CarriageContentsStore.class.getResourceAsStream(RESOURCE_PREFIX + contents.id() + EXT)) {
-            return in != null;
-        } catch (IOException e) {
-            return false;
-        }
+        return STORE.bundled(contents.id());
     }
 
-    public static synchronized boolean rename(String sourceId, String targetId) throws IOException {
-        Path src = fileForId(sourceId);
-        Path dst = fileForId(targetId);
-        if (!Files.isRegularFile(src)) return false;
-        Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
-        Optional<StructureTemplate> cached = CACHE.remove(sourceId);
-        if (cached != null) CACHE.put(targetId, cached);
-        ProvenanceCache.invalidateAll();
-        LOGGER.info("[DungeonTrain] Renamed contents template file {} -> {}", src, dst);
-        return true;
-    }
-
-    private static Optional<StructureTemplate> loadFromConfig(ServerLevel level, CarriageContents contents) {
-        Path file = UserContentPaths.findFile(SUBDIR, contents.id() + EXT);
-        if (file == null) return Optional.empty();
-        try {
-            CompoundTag tag = NbtIo.readCompressed(file, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
-            return load(level, contents.id(), tag, "config " + file);
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to read config contents template {} at {}: {}", contents.id(), file, e.toString());
-            return Optional.empty();
-        }
-    }
-
-    private static Optional<StructureTemplate> loadFromResource(ServerLevel level, CarriageContents contents) {
-        String resource = RESOURCE_PREFIX + contents.id() + EXT;
-        try (InputStream in = CarriageContentsStore.class.getResourceAsStream(resource)) {
-            if (in == null) return Optional.empty();
-            CompoundTag tag = NbtIo.readCompressed(in, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
-            return load(level, contents.id(), tag, "bundled " + resource);
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to read bundled contents template {} at {}: {}", contents.id(), resource, e.toString());
-            return Optional.empty();
-        }
-    }
-
-    /**
-     * Read a contents template off disk. <b>No size check</b> — that belongs to
-     * {@link #filterForSize}, per caller, because this result is shared through an id-keyed cache.
-     */
-    private static Optional<StructureTemplate> load(
-        ServerLevel level, String id, CompoundTag tag, String origin
-    ) {
-        StructureTemplate template = new StructureTemplate();
-        HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
-        template.load(blocks, DoubleBlockTemplateRepair.repair(tag, id));
-
-        Vec3i size = template.getSize();
-        LOGGER.info("[DungeonTrain] Loaded contents template {} from {} ({}x{}x{})",
-            id, origin, size.getX(), size.getY(), size.getZ());
-        return Optional.of(template);
+    public static boolean rename(String sourceId, String targetId) throws IOException {
+        return STORE.rename(sourceId, targetId);
     }
 
     private static boolean sizeMatches(Vec3i a, Vec3i b) {
         return a.getX() == b.getX() && a.getY() == b.getY() && a.getZ() == b.getZ();
     }
 
-    private static Path sourceDirectory() {
-        Path dir = sourceDirectoryOrNull();
-        if (dir == null) {
-            throw new IllegalStateException(
-                "Cannot resolve source directory — FMLPaths.GAMEDIR has no parent."
-            );
-        }
-        return dir;
-    }
-
-    private static Path sourceDirectoryOrNull() {
-        Path projectRoot = projectRootOrNull();
-        if (projectRoot == null) return null;
-        return projectRoot.resolve(SOURCE_REL_PATH);
-    }
-
-    private static Path resourcesRootOrNull() {
-        Path projectRoot = projectRootOrNull();
-        if (projectRoot == null) return null;
-        return projectRoot.resolve("src/main/resources");
-    }
-
-    private static Path projectRootOrNull() {
-        Path gameDir = FMLPaths.GAMEDIR.get();
-        return gameDir.getParent();
-    }
-
     /**
      * Phase-2 adapter — exposes contents save/promote through the unified
      * {@link TemplateStore} surface. Contents have no separate bundled tier
-     * (write-through happens inside {@link CarriageContentsEditor#save}
-     * when devmode is on), so {@link #canPromote} returns false and
-     * {@link #promote} throws — mirrors the existing {@code SaveCommand}
-     * arm for {@code Template.Contents}.
+     * for {@code /dt save default} (write-through happens inside {@link CarriageContentsEditor#save}
+     * when devmode is on), so {@code canPromote} is false and {@code promote} throws — mirrors the
+     * existing {@code SaveCommand} arm for {@code Template.Contents}.
      */
-    private static final TemplateStore<Template.Contents> ADAPTER = new TemplateStore<>() {
-        @Override public TemplateKind kind() { return TemplateKind.CONTENTS; }
-
-        @Override
-        public SaveResult save(ServerPlayer player, Template.Contents template) throws Exception {
-            return CarriageContentsEditor.save(player, template.contents());
-        }
-
-        @Override
-        public boolean canPromote(Template.Contents template) { return false; }
-
-        @Override
-        public void promote(Template.Contents template) throws Exception {
-            throw new IllegalStateException("Contents have no bundled tier — '/dt save default' does not apply.");
-        }
-    };
+    private static final TemplateStore<Template.Contents> ADAPTER = TemplateAdapters.noBundledTier(
+        TemplateKind.CONTENTS,
+        (player, t) -> CarriageContentsEditor.save(player, t.contents()),
+        "Contents have no bundled tier — '/dt save default' does not apply.");
 
     public static TemplateStore<Template.Contents> adapter() { return ADAPTER; }
 }
