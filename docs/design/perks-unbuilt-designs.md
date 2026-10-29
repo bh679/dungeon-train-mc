@@ -106,44 +106,67 @@ Replaces the review's "Heal Friends" (feeding). Same tree slot; rename the perk 
 
 Brennan may change or remove it. Not designed in this pass; stays "Coming soon".
 
-### Aura (tier 3) — CONFIRMED 2026-10-28
+### Aura (tier 3) — CONFIRMED 2026-10-29 (replaces the 2026-10-28 version)
 
 Replaces the review's "Shared Aura" (mirroring the Lover's own buffs). Rename the perk; the aura
-gives its own buffs.
+gives its own buffs, each with **its own range**.
 
 **How it works**
-- Players, PlayerMobs and tamed pets within Range get the aura's buffs. Not the Lover themself.
+- Players, PlayerMobs and tamed pets within a buff's range get that buff. Not the Lover themself.
 - Reapplied every second while in range, with a 5-second tail so it fades shortly after they leave.
   A friend who already has a stronger version of an effect keeps theirs; the aura never lowers one.
 - **Pool (10):** Regeneration, Speed, Resistance, Strength, Haste, Jump Boost, Fire Resistance,
-  Absorption, Slow Falling, Water Breathing.
-- **Per point:**
-  - Points 1 to 10: one buff drawn at random from the pool entries not yet owned. Point 1 also sets
-    range 4 blocks. The draw order is rolled per life (points reset on death).
-  - Point 11: range 5 blocks.
-  - Points 12 to 19: a random level II among the owned buffs that have one (Fire Resistance and
-    Water Breathing ignore the amplifier, so they are skipped). Point 20: range 6. Then level III
-    the same way, then range, and so on. No cap.
-- **Toggles.** Each owned buff can be switched off by the player. A switched-off buff stays owned
-  (still counts toward "all ten" for the range point), is drawn in grey, and is skipped by the
-  level rounds until switched back on. Toggles are saved with the perk state and survive death.
+  Absorption, Slow Falling, Water Breathing. Draws are random, rolled per life. **The first draw is
+  always one of Strength, Resistance or Absorption**; later draws come from the rest.
+- **Ladder** (ranges in blocks; A is the first buff drawn, B the second, …):
+
+  | r | Ranges after |
+  |---|--------------|
+  | 1 | A 2 |
+  | 2 | A 3 |
+  | 3 | A 4 |
+  | 4 | A 5 |
+  | 5 | A 5, B 2 |
+  | 6 | A 5, B 3 |
+  | 7 | A 5, B 4 |
+  | 8 | A 6, B 5, C 2 |
+  | 9 | A 6, B 5, C 3 |
+  | 10 | A 6, B 5, C 4 |
+  | 11 | A 7, B 6, C 5, D 2 |
+  | 14 | A 8, B 7, C 6, D 5, E 2 |
+  | … | every third point from 8: the newest buff reaches 5, every older buff gains a block, the next buff enters at 2 |
+  | 29 | tenth buff enters |
+  | 32 | J reaches 5, the rest gain a block |
+  | 33+ | alternate: +1 block to all, then a random level II among the eight that have one (Fire Resistance and Water Breathing ignore the amplifier, so skipped), then +1 to all, … then level III. No cap. |
+
+  Rule in words: the first buff grows 2→5 over points 1–4. A new buff enters at 2 and gains a
+  block on each of the next two points (3, 4); the point after that it jumps to 5, each older buff
+  gains 1, and the next buff enters at 2 on the same point. The ranges stay staggered by one block,
+  oldest widest.
+- **Toggles.** Each owned buff can be switched off by the player. A switched-off buff stays owned,
+  keeps its range, is drawn in grey and struck through, and is skipped by the level rounds until
+  switched back on. Toggles are saved with the perk state and survive death; draws do not.
 
 **Details card**
 - Description: "Friends and pets near you get buffs."
-- Chips: `Range 4 blocks` (BLOCKS) first, then one green chip per owned buff with its level
-  (`Resistance`, `Haste II`), switched-off ones greyed and struck through. The last chip is the
-  gold dashed preview for the next point: `→ a new buff`, `→ Range 5 blocks`, or `→ a level II`.
-  No numeric previews; the next chip is the preview.
+- Chips: one green chip per owned buff with its level and range in small text (`Resistance ·
+  6 blocks`, `Haste II · 5 blocks`), switched-off ones greyed and struck. No separate Range chip.
+  The buff that is growing carries the gold preview on its range (`2 blocks → 3`); on a point
+  that does several things the preview reads `→ +1 to all, a new buff`; in the level phase the
+  last chip is the dashed `→ a level II`.
 - Clicking a buff chip toggles it. Hint line under the chips: "Click a buff to turn it off or on."
 
 **Build notes**
-- Perk state needs per-life data beyond the rank: the ordered list of drawn buffs with levels, the
-  range step, and the toggle set (toggles persist across death; draws do not). A new attachment or
-  an extension of `PerkState`; a client→server packet for the toggle (bump `PROTOCOL_VERSION`).
-- Server tick every 20 ticks: for each Lover with the perk, apply `MobEffectInstance(effect,
-  120 ticks, level−1, ambient=true, showParticles=false)` to targets in range unless they already
-  have a higher amplifier. Reuse the friend test from Share Hearts / Good Gifter.
-- Card: `PerksScreen`'s chip row needs a chip kind that lists effects and is clickable.
+- Perk state needs per-life data beyond the rank: the ordered list of drawn buffs with level and
+  range, and the toggle set (toggles persist across death; draws do not). A new attachment or an
+  extension of `PerkState`; a client→server packet for the toggle (bump `PROTOCOL_VERSION`).
+  Ranges are a pure function of (rank, draw index), so only the draw order needs storing.
+- Server tick every 20 ticks: for each Lover with the perk, per owned buff, apply
+  `MobEffectInstance(effect, 120 ticks, level−1, ambient=true, showParticles=false)` to targets
+  within that buff's range unless they already have a higher amplifier. Reuse the friend test from
+  Share Hearts / Good Gifter.
+- Card: `PerksScreen`'s chip row needs a chip kind that lists effects with a sub-label and is
+  clickable. Shared with Knight's Debuff Aura.
 
 ### Save Ally (tier 4) — CONFIRMED 2026-10-28
 
@@ -304,4 +327,56 @@ This design finishes it.
   row's cost/clue so vanilla disables it, and sync a "nothing new" flag for the label. Apply the
   extra cost in `CrafterEnchantCost`'s seam (it already carries the pre-discount price per row to
   the client). On a successful re-enchant, bump the stamp.
+
+---
+
+## Knight
+
+### Debuff Aura (tier 2) — CONFIRMED 2026-10-29
+
+The Lover's Aura turned on enemies, with a range **per debuff**.
+
+**How it works**
+- Hostile mobs and PlayerMobs within a debuff's range get that debuff, reapplied every second
+  with a 6 s tail (so "for a while" after they leave or the Knight backs off). Neutral mobs only
+  while angry at the Knight. Never lowers a stronger effect the mob has. Poison and Wither stop at
+  half a heart (as vanilla Poison) so kills stay the player's. Bosses (Wither, Ender Dragon,
+  Warden) are immune.
+- **Pool (5):** Weakness, Slowness, Poison, Wither, Glowing. Draws are random, per life.
+- **Per point (the cycle):**
+
+  | r | Point | Ranges after |
+  |---|-------|--------------|
+  | 1 | first debuff at 1 block | A 1 |
+  | 2–4 | +1 block to it | A 4 |
+  | 5 | second debuff at 1 block | A 4, B 1 |
+  | 6–8 | +1 to the new one until it matches | A 4, B 4 |
+  | 9 | +1 block to all | 5, 5 |
+  | 10 | third debuff at 1 | 5, 5, 1 |
+  | 11–14 | +1 to C until it matches | all 5 |
+  | 15 | +1 to all | all 6 |
+  | 16 / 17–21 / 22 | fourth debuff; catch up; +1 to all | all 7 |
+  | 23 / 24–29 | fifth debuff; catch up | all 7 |
+  | 30+ | alternate: +1 to all, then a random level II among those with one (not Glowing), then +1 to all, then level II … then level III. No cap. |
+
+  General rule: a new debuff enters at 1; each point after adds 1 to it until it equals the
+  others; then one point adds 1 to all; then the next debuff. Once all five are owned, +1 to all
+  alternates with a level round.
+- **Toggles** as Aura: a switched-off debuff stays owned, keeps its range, is greyed and struck,
+  is skipped by level rounds; toggles survive death, draws do not.
+
+**Details card**
+- Description: "Hostile mobs near you are weakened for a while." (unchanged)
+- Chips: one per owned debuff, red, with its level and range in small text: `Weakness · 4 blocks`,
+  `Poison II · 5 blocks`. No separate Range chip. The debuff that is catching up carries the gold
+  preview on its range (`2 blocks → 3`); otherwise the last chip is the dashed preview:
+  `→ a new debuff`, `→ +1 block to all`, `→ a level II`. Hint: "Click a debuff to turn it off or on."
+
+**Build notes**
+- Same machinery as Aura (per-life attachment: ordered draws with level and range, toggle set;
+  toggle packet; 20-tick server tick). Target filter: `Monster` or PlayerMob, or `NeutralMob`
+  angry at the Knight; skip `MobCategory` bosses / `Entity.getType().is(...)` boss tag. Apply
+  `MobEffectInstance(effect, 140, level−1, ambient=true, showParticles=true)` unless a higher
+  amplifier is present. Poison/Wither floor: cancel the effect's damage tick when health ≤ 1.0 (a
+  `LivingDamageEvent.Pre` check on the magic/wither source with no attacker).
 
