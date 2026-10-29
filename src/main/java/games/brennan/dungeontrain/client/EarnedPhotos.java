@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.EnchiridionAdvancements;
+import games.brennan.dungeontrain.advancement.TerraOmnia;
 import games.brennan.dungeontrain.compat.photo.PhotoPngCodec;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
 import io.github.mortuusars.exposure.ExposureClient;
@@ -35,6 +36,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The photo behind each Enchiridion camera advancement, kept on this computer.
@@ -251,8 +253,10 @@ public final class EarnedPhotos {
         List<Entry> out = new ArrayList<>();
         if (kind == EarnedPhotoAlbumScreen.Kind.COUNT) return countSlots(visible);
         if (kind == EarnedPhotoAlbumScreen.Kind.BIOME) {
-            out.addAll(visible);
-            for (int i = visible.size(); i < biomeTarget(advancement); i++) out.add(new Entry(null, null));
+            Set<ResourceLocation> every = everyBiome(advancement);
+            for (Entry e : visible) if (every == null || every.contains(e.id())) out.add(e);
+            int target = every != null ? every.size() : biomeTarget(advancement);
+            for (int i = out.size(); i < target; i++) out.add(new Entry(null, null));
             return out;
         }
         Map<String, Entry> byId = new LinkedHashMap<>();
@@ -281,10 +285,18 @@ public final class EarnedPhotos {
 
     private static int biomeTarget(ResourceLocation advancement) {
         Integer target = EnchiridionAdvancements.BIOME_TIER_TARGETS.get(advancement.getPath());
-        if (target != null) return target;
+        return target != null ? target : 0;
+    }
+
+    /**
+     * Coffee Table Book's biomes: the ones Terra Omnia asks for ({@link TerraOmnia#ordered}), so a biome no
+     * rider can reach never holds a slot. {@code null} for a biome tier with a target number instead.
+     */
+    private static Set<ResourceLocation> everyBiome(ResourceLocation advancement) {
+        if (EnchiridionAdvancements.BIOME_TIER_TARGETS.containsKey(advancement.getPath())) return null;
         var level = Minecraft.getInstance().level;
-        return level == null ? 0
-                : level.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.BIOME).size();
+        return level == null ? Set.of()
+                : TerraOmnia.ordered(level.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.BIOME)).keySet();
     }
 
     @SubscribeEvent
