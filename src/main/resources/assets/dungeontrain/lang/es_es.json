@@ -877,7 +877,7 @@
   "chat.dungeontrain.own_photo_trash.2": "Quemada. No viajará en el tren.",
   "chat.dungeontrain.own_photo_trash.3": "Esa queda entre tú y el fuego.",
   "chat.dungeontrain.photo_progress.named": "La foto cuenta para %s (%s/%s)",
-  "chat.dungeontrain.photo_progress.hidden": "La foto cuenta para un progreso oculto (%s)",
+  "chat.dungeontrain.photo_progress.named_count": "La foto cuenta para %s (%s)",
   "chat.dungeontrain.selfie_hint.not_selfie": "Impresionante, pero no es un selfi. Pulsa %s para girar la cámara.",
   "chat.dungeontrain.selfie_hint.warden_too_far": "El Warden estaba demasiado lejos para contar. Acércate más.",
   "chat.dungeontrain.selfie_hint.wither_too_far": "El Wither estaba demasiado lejos para contar. Acércate más.",

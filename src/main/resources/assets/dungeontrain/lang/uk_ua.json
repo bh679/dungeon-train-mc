@@ -975,7 +975,7 @@
   "chat.dungeontrain.own_photo_trash.2": "Згоріла. Потягом вона не поїде.",
   "chat.dungeontrain.own_photo_trash.3": "Це залишиться між тобою та вогнем.",
   "chat.dungeontrain.photo_progress.named": "Фото зараховано: %s (%s/%s)",
-  "chat.dungeontrain.photo_progress.hidden": "Фото зараховано для прихованого досягнення (%s)",
+  "chat.dungeontrain.photo_progress.named_count": "Фото зараховано: %s (%s)",
   "chat.dungeontrain.selfie_hint.not_selfie": "Вражає, але це не селфі. Натисни %s, щоб розвернути камеру.",
   "chat.dungeontrain.selfie_hint.warden_too_far": "Наглядач був надто далеко, щоб зарахуватися. Підійди ближче.",
   "chat.dungeontrain.selfie_hint.wither_too_far": "Візер був надто далеко, щоб зарахуватися. Підійди ближче.",

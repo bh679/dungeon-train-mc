@@ -910,7 +910,7 @@
   "chat.dungeontrain.own_photo_trash.2": "Spalone. Nie pojedzie dalej pociągiem.",
   "chat.dungeontrain.own_photo_trash.3": "To zostanie między tobą a ogniem.",
   "chat.dungeontrain.photo_progress.named": "Zdjęcie zaliczone do %s (%s/%s)",
-  "chat.dungeontrain.photo_progress.hidden": "Zdjęcie zaliczone do ukrytego postępu (%s)",
+  "chat.dungeontrain.photo_progress.named_count": "Zdjęcie zaliczone do %s (%s)",
   "chat.dungeontrain.selfie_hint.not_selfie": "Robi wrażenie, ale to nie jest selfie. Naciśnij %s, aby odwrócić aparat.",
   "chat.dungeontrain.selfie_hint.warden_too_far": "Strażnik był za daleko, żeby się liczyć. Podejdź bliżej.",
   "chat.dungeontrain.selfie_hint.wither_too_far": "Wither był za daleko, żeby się liczyć. Podejdź bliżej.",

@@ -915,7 +915,7 @@
   "chat.dungeontrain.own_photo_trash.2": "Сгорела. По поезду она не поедет.",
   "chat.dungeontrain.own_photo_trash.3": "Это останется между тобой и огнём.",
   "chat.dungeontrain.photo_progress.named": "Фото засчитано: %s (%s/%s)",
-  "chat.dungeontrain.photo_progress.hidden": "Фото засчитано для скрытого достижения (%s)",
+  "chat.dungeontrain.photo_progress.named_count": "Фото засчитано: %s (%s)",
   "chat.dungeontrain.selfie_hint.not_selfie": "Впечатляет, но это не селфи. Нажмите %s, чтобы развернуть камеру.",
   "chat.dungeontrain.selfie_hint.warden_too_far": "Хранитель был слишком далеко, чтобы засчитаться. Подойдите ближе.",
   "chat.dungeontrain.selfie_hint.wither_too_far": "Иссушитель был слишком далеко, чтобы засчитаться. Подойдите ближе.",

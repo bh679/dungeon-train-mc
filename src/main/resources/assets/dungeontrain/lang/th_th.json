@@ -844,7 +844,7 @@
   "chat.dungeontrain.own_photo_trash.2": "ไหม้แล้ว มันจะไม่ได้เดินทางไปกับรถไฟ",
   "chat.dungeontrain.own_photo_trash.3": "รูปนั้นจะเป็นความลับระหว่างคุณกับเปลวไฟ",
   "chat.dungeontrain.photo_progress.named": "นับรูปถ่ายให้ %s (%s/%s)",
-  "chat.dungeontrain.photo_progress.hidden": "นับรูปถ่ายให้ความก้าวหน้าที่ซ่อนอยู่ (%s)",
+  "chat.dungeontrain.photo_progress.named_count": "นับรูปถ่ายให้ %s (%s)",
   "chat.dungeontrain.selfie_hint.not_selfie": "น่าทึ่งมาก แต่นั่นไม่ใช่เซลฟี กด %s เพื่อหันกล้องเข้าหาตัว",
   "chat.dungeontrain.selfie_hint.warden_too_far": "วอร์เดนอยู่ไกลเกินไปจึงไม่นับ เข้าไปใกล้อีก",
   "chat.dungeontrain.selfie_hint.wither_too_far": "วิทเธอร์อยู่ไกลเกินไปจึงไม่นับ เข้าไปใกล้อีก",

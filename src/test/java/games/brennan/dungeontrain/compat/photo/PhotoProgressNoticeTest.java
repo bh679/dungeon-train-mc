@@ -9,8 +9,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /** The chat line a shot gets for a camera advancement it moved along. */
@@ -46,22 +47,36 @@ final class PhotoProgressNoticeTest {
     }
 
     @Test
-    @DisplayName("a revealed advancement is named with its target")
-    void namedLine() {
+    @DisplayName("only a count tier's line leaves out its target, as its album does")
+    void showsMax() {
+        assertFalse(PhotoProgressNotice.showsMax(P + "field_guide"));
+        assertFalse(PhotoProgressNotice.showsMax(P + "rogues_gallery"));
+        assertFalse(PhotoProgressNotice.showsMax(P + "those_we_meet"));
+        assertTrue(PhotoProgressNotice.showsMax(P + "nature_documentary"));
+        assertTrue(PhotoProgressNotice.showsMax(P + "most_wanted"));
+        assertTrue(PhotoProgressNotice.showsMax(P + "scenic_route"));
+        assertTrue(PhotoProgressNotice.showsMax(P + "coffee_table_book"));
+    }
+
+    @Test
+    @DisplayName("a count tier's line gives just the count")
+    void countLine() {
         TranslatableContents line = contents(PhotoProgressNotice.line(Component.literal("Field Guide"),
-                new PhotoProgressNotice.Progress(12, 25)));
+                new PhotoProgressNotice.Progress(12, 25), false));
+        assertEquals(PhotoProgressNotice.KEY_NAMED_COUNT, line.getKey());
+        assertEquals(2, line.getArgs().length);
+        assertEquals(12, line.getArgs()[1]);
+    }
+
+    @Test
+    @DisplayName("a collection's line gives its target")
+    void namedLine() {
+        TranslatableContents line = contents(PhotoProgressNotice.line(Component.literal("Nature Documentary"),
+                new PhotoProgressNotice.Progress(12, 25), true));
         assertEquals(PhotoProgressNotice.KEY_NAMED, line.getKey());
         assertEquals(3, line.getArgs().length);
         assertEquals(12, line.getArgs()[1]);
         assertEquals(25, line.getArgs()[2]);
-    }
-
-    @Test
-    @DisplayName("a hidden advancement gives only the count: no name, no target")
-    void hiddenLine() {
-        TranslatableContents line = contents(PhotoProgressNotice.line(null, new PhotoProgressNotice.Progress(4, 12)));
-        assertEquals(PhotoProgressNotice.KEY_HIDDEN, line.getKey());
-        assertArrayEquals(new Object[] {4}, line.getArgs());
     }
 
     private static TranslatableContents contents(Component line) {

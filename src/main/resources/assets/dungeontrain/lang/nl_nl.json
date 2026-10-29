@@ -877,7 +877,7 @@
   "chat.dungeontrain.own_photo_trash.2": "Verbrand. Hij reist niet mee met de trein.",
   "chat.dungeontrain.own_photo_trash.3": "Die blijft tussen jou en het vuur.",
   "chat.dungeontrain.photo_progress.named": "Foto telt mee voor %s (%s/%s)",
-  "chat.dungeontrain.photo_progress.hidden": "Foto telt mee voor een verborgen vooruitgang (%s)",
+  "chat.dungeontrain.photo_progress.named_count": "Foto telt mee voor %s (%s)",
   "chat.dungeontrain.selfie_hint.not_selfie": "Indrukwekkend, maar dat is geen selfie. Druk op %s om de camera om te draaien.",
   "chat.dungeontrain.selfie_hint.warden_too_far": "De Warden was te ver weg om mee te tellen. Kom dichterbij.",
   "chat.dungeontrain.selfie_hint.wither_too_far": "De Wither was te ver weg om mee te tellen. Kom dichterbij.",

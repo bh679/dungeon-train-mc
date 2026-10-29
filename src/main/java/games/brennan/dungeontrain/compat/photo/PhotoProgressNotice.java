@@ -19,9 +19,11 @@ import java.util.function.ToIntFunction;
  * The chat line a shot gets for each camera advancement it moved along without earning it — a new
  * entry in a collection, one more photo towards a count tier, a new biome towards a biome tier.
  *
- * <p>The camera advancements are hidden, so the line names one only once it is on the player's
- * advancement screen ({@link PlayerAdvancementsVisibleAccessor}), and only then gives its target:
- * "Photo counted toward [Nature Documentary] (4/12)". Otherwise it is "a hidden advancement (4)".
+ * <p>The camera advancements are hidden, so a line goes out only once the advancement is on the
+ * player's advancement screen ({@link PlayerAdvancementsVisibleAccessor}): "Photo counted toward
+ * [Nature Documentary] (4/12)". Progress towards one still hidden says nothing. The target is given
+ * only where the advancement's album shows one: a count tier's album lists just the photos kept
+ * ({@code client.EarnedPhotos}), so its line is "[Field Guide] (12)".
  * An advancement the shot earned outright says nothing here; vanilla already announces it.</p>
  *
  * <p>{@link PhotoAdvancementEvents} runs a shot's triggers {@link #during} a notice; the trackers note
@@ -30,7 +32,7 @@ import java.util.function.ToIntFunction;
 final class PhotoProgressNotice {
 
     static final String KEY_NAMED = "chat.dungeontrain.photo_progress.named";
-    static final String KEY_HIDDEN = "chat.dungeontrain.photo_progress.hidden";
+    static final String KEY_NAMED_COUNT = "chat.dungeontrain.photo_progress.named_count";
 
     /** {@code count} of {@code max} towards an advancement. */
     record Progress(int count, int max) {}
@@ -94,10 +96,16 @@ final class PhotoProgressNotice {
         return null;
     }
 
-    /** The line for a named (revealed) advancement, or — {@code name} null — a hidden one. */
-    static Component line(Component name, Progress progress) {
-        if (name == null) return Component.translatable(KEY_HIDDEN, progress.count());
-        return Component.translatable(KEY_NAMED, name, progress.count(), progress.max());
+    /** The line for a revealed advancement, {@code name} its chat link; the target only if {@code showMax}. */
+    static Component line(Component name, Progress progress, boolean showMax) {
+        return showMax
+                ? Component.translatable(KEY_NAMED, name, progress.count(), progress.max())
+                : Component.translatable(KEY_NAMED_COUNT, name, progress.count());
+    }
+
+    /** Whether {@code path}'s album shows a target: every album but a count tier's. */
+    static boolean showsMax(String path) {
+        return !EnchiridionAdvancements.isCountAlbum(EnchiridionAdvancements.albumOf(path));
     }
 
     private static void send(ServerPlayer player, ResourceLocation id, Progress progress) {
@@ -105,9 +113,8 @@ final class PhotoProgressNotice {
         if (server == null) return;
         AdvancementHolder holder = server.getAdvancements().get(id);
         if (holder == null || holder.value().display().isEmpty()) return;
-        if (player.getAdvancements().getOrStartProgress(holder).isDone()) return;
-        Component name = isVisible(player, holder) ? holder.value().name().orElse(null) : null;
-        SelfieChallengeHints.tell(player, line(name, progress));
+        if (player.getAdvancements().getOrStartProgress(holder).isDone() || !isVisible(player, holder)) return;
+        holder.value().name().ifPresent(name -> SelfieChallengeHints.tell(player, line(name, progress, showsMax(id.getPath()))));
     }
 
     private static boolean isVisible(ServerPlayer player, AdvancementHolder holder) {

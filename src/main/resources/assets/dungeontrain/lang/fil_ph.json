@@ -844,7 +844,7 @@
   "chat.dungeontrain.own_photo_trash.2": "Nasunog. Hindi ito maglalakbay sa tren.",
   "chat.dungeontrain.own_photo_trash.3": "Sa pagitan mo at ng apoy na lang iyan.",
   "chat.dungeontrain.photo_progress.named": "Nabilang ang litrato sa %s (%s/%s)",
-  "chat.dungeontrain.photo_progress.hidden": "Nabilang ang litrato sa isang nakatagong advancement (%s)",
+  "chat.dungeontrain.photo_progress.named_count": "Nabilang ang litrato sa %s (%s)",
   "chat.dungeontrain.selfie_hint.not_selfie": "Ang galing nun, pero hindi iyon selfie. Pindutin ang %s para iharap ang camera sa iyo.",
   "chat.dungeontrain.selfie_hint.warden_too_far": "Masyadong malayo ang Warden para mabilang. Lumapit ka pa.",
   "chat.dungeontrain.selfie_hint.wither_too_far": "Masyadong malayo ang Wither para mabilang. Lumapit ka pa.",

@@ -236,11 +236,17 @@
       ]
     }
   },
-  "chat.dungeontrain.photo_progress.hidden": {
+  "chat.dungeontrain.photo_progress.named_count": {
     "1": {
-      "label": "how many the player has so far towards an advancement they have not discovered yet",
+      "label": "the name of the camera advancement the photo counted toward, shown as a hoverable link",
       "examples": [
-        "4"
+        "[Field Guide]"
+      ]
+    },
+    "2": {
+      "label": "how many photos of this kind the player has taken so far (the target is kept secret)",
+      "examples": [
+        "12"
       ]
     }
   },

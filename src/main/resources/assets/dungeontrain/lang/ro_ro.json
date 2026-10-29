@@ -975,7 +975,7 @@
   "chat.dungeontrain.own_photo_trash.2": "Arsă. Nu va călători cu trenul.",
   "chat.dungeontrain.own_photo_trash.3": "Aceea rămâne între tine și foc.",
   "chat.dungeontrain.photo_progress.named": "Fotografia a contat pentru %s (%s/%s)",
-  "chat.dungeontrain.photo_progress.hidden": "Fotografia a contat pentru un progres ascuns (%s)",
+  "chat.dungeontrain.photo_progress.named_count": "Fotografia a contat pentru %s (%s)",
   "chat.dungeontrain.selfie_hint.not_selfie": "Impresionant, dar nu e un selfie. Apasă %s ca să întorci camera.",
   "chat.dungeontrain.selfie_hint.warden_too_far": "Warden era prea departe ca să conteze. Apropie-te.",
   "chat.dungeontrain.selfie_hint.wither_too_far": "Wither era prea departe ca să conteze. Apropie-te.",
