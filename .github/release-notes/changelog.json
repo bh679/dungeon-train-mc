@@ -31868,7 +31868,7 @@
     },
     {
       "id": "editor-plot-editor-base",
-      "version": "0.1579.0",
+      "version": "0.1588.0",
       "type": "refactor",
       "tags": [
         "editor",
