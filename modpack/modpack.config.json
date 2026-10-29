@@ -69,7 +69,7 @@
       "mod_ids": [
         "playermob"
       ],
-      "sha1": "397cc52f483464e09c5fcedf0c9ae35dbc8008cd",
+      "sha1": "c492b4c57fe16e0532d048f489709e67af632c2e",
       "packages": [
         "games.brennan"
       ],
@@ -77,10 +77,10 @@
       "file_id": 9317322,
       "required": true,
       "dependency_type": "required",
-      "version": "0.116.0",
+      "version": "0.117.0",
       "gradle_property": "playermob_min_version",
       "modrinth_project": "interactive-player-mobs",
-      "modrinth_version": "mJh3PVIr"
+      "modrinth_version": "MsaHmki0"
     },
     {
       "name": "Ender Chest Persistence",
