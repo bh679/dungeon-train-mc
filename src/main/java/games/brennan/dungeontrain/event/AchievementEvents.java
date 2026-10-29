@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.AdvancementAwards;
 import games.brennan.dungeontrain.advancement.AdvancementRevocations;
 import games.brennan.dungeontrain.advancement.BurritoClock;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
@@ -1092,6 +1093,9 @@ public final class AchievementEvents {
         TabGateways.sync(player);
         TabCompleteAdvancements.checkAndGrant(player);
         CompletionistAdvancement.checkAndGrant(player);
+        // Advancements the developer gave this player (relay awards): granted as real earns once the
+        // relay answers, after the replay above so one already held elsewhere is just "already done".
+        AdvancementAwards.fetchAndApply(player);
         // Vanilla sent this player's command tree before any of the above ran. If they hold the
         // banked capstone — replayed just now, or granted just now — /advancement revoke @s
         // everything is theirs to run, so send the tree again with it in.
