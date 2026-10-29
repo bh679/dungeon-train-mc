@@ -31677,9 +31677,9 @@
       "highlights": [],
       "pr": 2389,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1580.0",
+      "released_at": "2026-10-29T04:54:43Z"
     },
     {
       "id": "editor-template-dispatch",
@@ -31697,9 +31697,9 @@
       ],
       "pr": 2390,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1580.0",
+      "released_at": "2026-10-29T04:54:43Z"
     },
     {
       "id": "sky-falling-comets",
@@ -31719,9 +31719,9 @@
       ],
       "pr": 2365,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1580.0",
+      "released_at": "2026-10-29T04:54:43Z",
       "major": true,
       "notable": true,
       "description": "Deeper down the line, the sky is no longer empty. Something has started coming down out of the dark.\n\nListen for it. And when the sky fills up, keep your head down.\n\n*The further you go, the more of it there is.*",
@@ -31740,9 +31740,9 @@
       "highlights": [],
       "pr": 2391,
       "date": "2026-10-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1580.0",
+      "released_at": "2026-10-29T04:54:43Z"
     },
     {
       "id": "deathnote-echo-head-skin",
