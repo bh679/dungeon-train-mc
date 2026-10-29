@@ -31901,6 +31901,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-variant-doc-store",
+      "version": "0.1590.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Train Editor variant saving",
+      "summary": "Block variants now save the same way in every Train Editor plot. Variant pools in carriage plots keep all their settings when saved, and clearing every variant from a plot removes the leftover file.",
+      "highlights": [],
+      "pr": 2403,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
