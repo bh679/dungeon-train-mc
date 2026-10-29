@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageGroup;
@@ -24,7 +26,8 @@ import java.util.Optional;
  * {@code EditorCategory}.</p>
  *
  * <p>Pure: records are built, not looked up, so an id that is not registered still parses — the
- * caller that needs the template to exist asks its registry ({@link #parseExisting}). Empty for a
+ * caller that needs the template to exist asks its registry ({@link #parseExisting}), which every
+ * kind answers — the old track-side parsers built a record for any name. Empty for a
  * category the scan never emits rows for and for an id in the wrong shape.</p>
  */
 public final class TemplateDirtyKeys {
@@ -80,18 +83,18 @@ public final class TemplateDirtyKeys {
             case Template.WholeCarriage w -> WholeCarriageRegistry.find(w.id()).isPresent();
             case Template.WholeHalf h -> WholeHalfRegistry.find(h.id()).isPresent();
             case Template.CarriageGroup g -> CarriageGroupRegistry.find(g.id()).isPresent();
-            // Named by name alone: the dirty row is the proof the plot stands, and a save of a
-            // name that has no file yet is exactly how a new one is written.
-            case Template.Part p -> true;
-            case Template.Track t -> true;
-            case Template.Pillar p -> true;
-            case Template.Adjunct a -> true;
-            case Template.Tunnel t -> true;
-            case Template.PortalRoom r -> true;
-            case Template.ChunkFrame f -> true;
-            case Template.Building b -> true;
-            case Template.LostCity l -> true;
-            case Template.Staged s -> true;
+            // Every named kind asks its own registry: a save by id must never mint a template out
+            // of a typo (a stray `save model chunk_frames chunk_frame.x` wrote a new frame).
+            case Template.Part p -> CarriagePartRegistry.isKnown(p.partKind(), p.name());
+            case Template.Track t -> TrackVariantRegistry.contains(TrackKind.TILE, t.name());
+            case Template.Pillar p -> TrackVariantRegistry.contains(p.trackKind().orElseThrow(), p.name());
+            case Template.Adjunct a -> TrackVariantRegistry.contains(a.trackKind().orElseThrow(), a.name());
+            case Template.Tunnel t -> TrackVariantRegistry.contains(t.trackKind().orElseThrow(), t.name());
+            case Template.PortalRoom r -> TrackVariantRegistry.contains(TrackKind.PORTAL_ROOM, r.name());
+            case Template.ChunkFrame f -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names().contains(f.name());
+            case Template.Building b -> games.brennan.dungeontrain.building.BuildingRegistry.contains(b.name());
+            case Template.LostCity l -> games.brennan.dungeontrain.building.LostCityReferences.find(l.name()).isPresent();
+            case Template.Staged s -> WorkbenchTemplates.registry().find(s.stagedId()).isPresent();
         };
     }
 
