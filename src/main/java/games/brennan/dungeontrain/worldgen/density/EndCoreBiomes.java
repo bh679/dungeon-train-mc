@@ -24,8 +24,8 @@ import org.slf4j.Logger;
  * does: by sampling the live End dimension's {@link BiomeSource} with the
  * End's own {@link Climate.Sampler}. Unlike the Nether ({@link NetherCoreBiomes}, climate-based), End
  * biome selection is radius-from-the-End's-origin based, so successive core passes are swept outward
- * from the real End's origin instead of sampled at a single fixed offset: pass 0 lands on the main
- * island (always {@code the_end} — vanilla resolves that biome by a fixed radius check, not noise),
+ * from the real End's origin instead of sampled at a single fixed offset: pass 0 is {@code the_end}
+ * with the island field's {@code end_highlands} and {@code small_end_islands} patches let through,
  * and every later pass advances {@link EndBandStyle#PASS_STEP_X} blocks further into the outer noise field
  * (the same field {@code DisintegrationFeature} samples for chorus placement), which mixes
  * {@code end_highlands}/{@code end_midlands}/{@code end_barrens}/{@code small_end_islands} — so a
@@ -78,8 +78,8 @@ public final class EndCoreBiomes {
      * The End biome for a core column at this world XZ. {@code passIndex} (which repeat of the
      * world-gen cycle this End-band occurrence is — see
      * {@link games.brennan.dungeontrain.worldgen.WorldGenCycle#endPassIndex}) selects where in the
-     * real End we sample: pass 0 (or earlier/unknown, {@code <= 0}) always resolves to the real End's
-     * main island; later passes sweep further into the outer noise field. BetterEnd passes sample the
+     * real End we sample: pass 0 (or earlier/unknown, {@code <= 0}) resolves to {@code the_end} with
+     * highlands / small-islands patches ({@link VanillaEndBiomes#firstPassBiomeAtQuart}); later passes sweep further into the outer noise field. BetterEnd passes sample the
      * live (BetterEnd) End at the same spot {@code EndBandSampler} copies terrain from, so label and
      * terrain agree; Biomes O' Plenty passes sample {@link BopEnd}'s layout (vanilla + BoP End biomes),
      * which is also what their terrain is copied from; vanilla passes sample the vanilla layout.
@@ -90,9 +90,10 @@ public final class EndCoreBiomes {
         if (endBiomeSource == null || vanilla == null || endSampler == null) return fallback;
         try {
             if (passIndex <= 0L) {
-                // The real End's main-island check is a fixed radius around its origin — sampling
-                // the origin itself always resolves to `the_end`, matching a player's first arrival.
-                return vanilla.biomeAtQuart(0, SAMPLE_QUART_Y, 0);
+                // First crossing: `the_end`, with the island field's highlands and small-islands patches
+                // (the same spot islandFieldBiomeAt reads, so highlands labels sit where chorus grows).
+                return vanilla.firstPassBiomeAtQuart(QuartPos.fromBlock(worldX + OUTER_SAMPLE_OFFSET_X),
+                        SAMPLE_QUART_Y, QuartPos.fromBlock(worldZ));
             }
             int sampleX = (int) Math.min(Integer.MAX_VALUE, EndBandStyle.endSampleX(worldX, passIndex));
             if (bopEnd != null && style == CycleLayout.Style.BOP) {

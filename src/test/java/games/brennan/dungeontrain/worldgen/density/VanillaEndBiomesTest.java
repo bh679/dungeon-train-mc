@@ -27,4 +27,12 @@ class VanillaEndBiomesTest {
         assertEquals(SMALL_ISLANDS, VanillaEndBiomes.classify(-0.2187501));
         assertEquals(SMALL_ISLANDS, VanillaEndBiomes.classify(-1.0));
     }
+
+    @Test
+    void firstPassKeepsHighlandsAndSmallIslandsOnly() {
+        assertEquals(HIGHLANDS, VanillaEndBiomes.firstPassPick(0.5));
+        assertEquals(SMALL_ISLANDS, VanillaEndBiomes.firstPassPick(-0.5));
+        assertEquals(0, VanillaEndBiomes.firstPassPick(0.0));   // midlands -> the_end
+        assertEquals(0, VanillaEndBiomes.firstPassPick(-0.1));  // barrens -> the_end
+    }
 }

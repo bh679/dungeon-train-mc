@@ -67,16 +67,36 @@ public final class VanillaEndBiomes {
         };
     }
 
+    /**
+     * The first End crossing's biome at quart coordinates: {@code the_end}, with the vanilla layout's
+     * highlands and small-islands patches let through (midlands and barrens stay {@code the_end}). No
+     * main-island check, so callers sample out in the island field.
+     */
+    public Holder<Biome> firstPassBiomeAtQuart(int quartX, int quartY, int quartZ) {
+        return switch (firstPassPick(erosionAtQuart(quartX, quartY, quartZ))) {
+            case 1 -> highlands;
+            case 3 -> smallIslands;
+            default -> end;
+        };
+    }
+
+    /** {@link #classify} narrowed to the first crossing: 1 highlands, 3 small islands, else 0 ({@code the_end}). */
+    static int firstPassPick(double erosion) {
+        int c = classify(erosion);
+        return c == 1 || c == 3 ? c : 0;
+    }
+
+    private double erosionAtQuart(int quartX, int quartY, int quartZ) {
+        int cx = (SectionPos.blockToSectionCoord(QuartPos.toBlock(quartX)) * 2 + 1) * 8;
+        int cz = (SectionPos.blockToSectionCoord(QuartPos.toBlock(quartZ)) * 2 + 1) * 8;
+        return erosion.compute(new DensityFunction.SinglePointContext(cx, QuartPos.toBlock(quartY), cz));
+    }
+
     private int pick(int quartX, int quartY, int quartZ) {
-        int blockX = QuartPos.toBlock(quartX);
-        int blockY = QuartPos.toBlock(quartY);
-        int blockZ = QuartPos.toBlock(quartZ);
-        long sx = SectionPos.blockToSectionCoord(blockX);
-        long sz = SectionPos.blockToSectionCoord(blockZ);
+        long sx = SectionPos.blockToSectionCoord(QuartPos.toBlock(quartX));
+        long sz = SectionPos.blockToSectionCoord(QuartPos.toBlock(quartZ));
         if (sx * sx + sz * sz <= MAIN_ISLAND_SECTIONS_SQ) return 0;
-        int cx = (SectionPos.blockToSectionCoord(blockX) * 2 + 1) * 8;
-        int cz = (SectionPos.blockToSectionCoord(blockZ) * 2 + 1) * 8;
-        return classify(erosion.compute(new DensityFunction.SinglePointContext(cx, blockY, cz)));
+        return classify(erosionAtQuart(quartX, quartY, quartZ));
     }
 
     /** Vanilla's erosion thresholds: 1 highlands, 2 midlands, 3 small islands, 4 barrens. */
