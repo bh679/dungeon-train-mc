@@ -27,6 +27,8 @@ public final class HeadViewerPanes {
 
     /** Space between the two panes; the same as the gap to the screen edge. */
     static final int GAP = LiveHeadViewer.EDGE;
+    /** Space between the first pane's caption and the second pane. */
+    static final int CAPTION_GAP = 2;
     /** How long a click is held waiting for the server to write it onto the worn TV. */
     static final long PENDING_MS = 2_000L;
     /** {@link #wornMemory} for a head item that is not a Vista TV (the Live Eye): it has no memory to follow. */
@@ -103,8 +105,14 @@ public final class HeadViewerPanes {
     /** {@link #current(int, int, int, boolean, boolean)} with each stream's own shape (width over height). */
     public static List<Pane> current(int guiWidth, int guiHeight, int boxWidth, boolean secondLive, boolean atMaxSize,
                                      float mainRatio, float secondRatio) {
+        return current(guiWidth, guiHeight, boxWidth, secondLive, atMaxSize, mainRatio, secondRatio, 0);
+    }
+
+    /** {@link #current(int, int, int, boolean, boolean, float, float)} with {@code caption} GUI pixels kept under each pane. */
+    public static List<Pane> current(int guiWidth, int guiHeight, int boxWidth, boolean secondLive, boolean atMaxSize,
+                                     float mainRatio, float secondRatio, int caption) {
         if (!secondLive) reset(); // the worn TV's memory applies again when a second returns
-        return panes(guiWidth, guiHeight, boxWidth, secondLive, atMaxSize, choice, mainRatio, secondRatio);
+        return panes(guiWidth, guiHeight, boxWidth, secondLive, atMaxSize, choice, mainRatio, secondRatio, caption);
     }
 
     /**
@@ -112,9 +120,15 @@ public final class HeadViewerPanes {
      * the takeover button under it, ends on screen. Pure.
      */
     public static boolean twoFit(int guiWidth, int guiHeight, int boxWidth, boolean atMaxSize, float mainRatio, float secondRatio) {
+        return twoFit(guiWidth, guiHeight, boxWidth, atMaxSize, mainRatio, secondRatio, 0);
+    }
+
+    /** {@link #twoFit(int, int, int, boolean, float, float)} with {@code caption} GUI pixels under each pane. Pure. */
+    public static boolean twoFit(int guiWidth, int guiHeight, int boxWidth, boolean atMaxSize, float mainRatio, float secondRatio,
+                                 int caption) {
         if (atMaxSize) return false;
-        LiveHeadViewer.Box second = stacked(guiWidth, boxWidth, mainRatio, secondRatio);
-        int bottom = second.y() + second.h() + LiveHeadViewer.BORDER + LiveTakeoverButton.GAP + LiveTakeoverButton.H;
+        LiveHeadViewer.Box second = stacked(guiWidth, boxWidth, mainRatio, secondRatio, caption);
+        int bottom = second.y() + second.h() + LiveHeadViewer.BORDER + caption + LiveTakeoverButton.GAP + LiveTakeoverButton.H;
         return bottom <= guiHeight;
     }
 
@@ -130,20 +144,36 @@ public final class HeadViewerPanes {
     /** {@link #panes(int, int, int, boolean, boolean, Choice)} with each pane as tall as its own stream's shape needs. */
     static List<Pane> panes(int guiWidth, int guiHeight, int boxWidth, boolean secondLive, boolean atMaxSize, Choice choice,
                             float mainRatio, float secondRatio) {
+        return panes(guiWidth, guiHeight, boxWidth, secondLive, atMaxSize, choice, mainRatio, secondRatio, 0);
+    }
+
+    /** {@link #panes(int, int, int, boolean, boolean, Choice, float, float)} with {@code caption} GUI pixels under each pane. */
+    static List<Pane> panes(int guiWidth, int guiHeight, int boxWidth, boolean secondLive, boolean atMaxSize, Choice choice,
+                            float mainRatio, float secondRatio, int caption) {
         LiveHeadViewer.Box first = LiveHeadViewer.layout(guiWidth, boxWidth, mainRatio);
         if (!secondLive) return List.of(new Pane(false, first));
         if (choice == Choice.SECOND_ONLY) return List.of(new Pane(true, LiveHeadViewer.layout(guiWidth, boxWidth, secondRatio)));
-        if (choice == Choice.MAIN_ONLY || !twoFit(guiWidth, guiHeight, boxWidth, atMaxSize, mainRatio, secondRatio)) {
+        if (choice == Choice.MAIN_ONLY || !twoFit(guiWidth, guiHeight, boxWidth, atMaxSize, mainRatio, secondRatio, caption)) {
             return List.of(new Pane(false, first));
         }
-        return List.of(new Pane(false, first), new Pane(true, stacked(guiWidth, boxWidth, mainRatio, secondRatio)));
+        return List.of(new Pane(false, first), new Pane(true, stacked(guiWidth, boxWidth, mainRatio, secondRatio, caption)));
     }
 
-    /** The second pane's box when it sits under the first. */
-    private static LiveHeadViewer.Box stacked(int guiWidth, int boxWidth, float mainRatio, float secondRatio) {
+    /** The second pane's box when it sits under the first (and the first's {@code caption}). */
+    private static LiveHeadViewer.Box stacked(int guiWidth, int boxWidth, float mainRatio, float secondRatio, int caption) {
         LiveHeadViewer.Box first = LiveHeadViewer.layout(guiWidth, boxWidth, mainRatio);
         LiveHeadViewer.Box secondAlone = LiveHeadViewer.layout(guiWidth, boxWidth, secondRatio);
-        return new LiveHeadViewer.Box(first.x(), first.y() + first.h() + 2 * LiveHeadViewer.BORDER + GAP, boxWidth, secondAlone.h());
+        return new LiveHeadViewer.Box(first.x(), first.y() + first.h() + 2 * LiveHeadViewer.BORDER + between(caption), boxWidth,
+            secondAlone.h());
+    }
+
+    /**
+     * Space between the two panes: the plain {@link #GAP}, or the first pane's caption sitting in it with
+     * {@link #CAPTION_GAP} under it. The caption fills the gap rather than adding to it, so both panes and
+     * their captions still fit a 240-GUI-pixel-tall screen at the normal box size. Pure.
+     */
+    static int between(int caption) {
+        return caption == 0 ? GAP : Math.max(GAP, caption + CAPTION_GAP);
     }
 
     /**

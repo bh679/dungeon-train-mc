@@ -423,13 +423,13 @@ public final class PortalRoomEditor {
         // had just cleared came back on the very next stamp. An empty file in the active package is
         // what shadows the bundled one; it is the same shape as the contents-pool wipe below, which
         // saves an emptied store for exactly this reason.
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, size);
+        VariantDoc sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, size);
         int variants = sidecar.size();
         // entries() hands back a copy, so removing as we walk it is safe.
         for (CarriageVariantBlocks.Entry entry : sidecar.entries()) {
             sidecar.remove(entry.localPos());
         }
-        sidecar.save(TrackKind.PORTAL_ROOM, name);
+        sidecar.save();
         cleared += variants;
 
         // Same reasoning as the pools: a cleared room has nothing left to restore, and a remembered
@@ -888,7 +888,7 @@ public final class PortalRoomEditor {
         return EditorSave.toSource("Portal room save: " + name,
             () -> PortalRoomTemplateStore.saveToSource(name, template),
             () -> TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, size)
-                .saveToSource(TrackKind.PORTAL_ROOM, name));
+                .saveToSource());
     }
 
 

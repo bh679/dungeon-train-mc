@@ -106,7 +106,7 @@ public abstract class WholePlotEditor<T extends Template> extends PlotEditor<T> 
      */
     @Override protected final void sidecars(T t, CarriageDims dims, boolean toSource) throws IOException {
         if (toSource) return;
-        WholeVariantBlocks.loadFor(kind, t.id(), size(t, dims)).save(kind, t.id());
+        WholeVariantBlocks.loadFor(kind, t.id(), size(t, dims)).save();
         ContainerContentsStore.loadFor(BlockVariantPlot.wholeKey(kind, t.id())).save();
     }
 

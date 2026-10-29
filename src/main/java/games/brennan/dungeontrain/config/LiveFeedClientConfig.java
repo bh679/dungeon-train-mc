@@ -41,6 +41,7 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.BooleanValue TVS_SPAWN_ON;
     public static final ModConfigSpec.IntValue VIEWER_WIDTH;
     public static final ModConfigSpec.BooleanValue HEAD_VIEWER_ENABLED;
+    public static final ModConfigSpec.BooleanValue HEAD_VIEWER_NAMES;
     public static final ModConfigSpec.IntValue HEAD_VIEWER_WIDTH;
     public static final ModConfigSpec.IntValue HEAD_VIEWER_SIZE_WATCHING;
     public static final ModConfigSpec.IntValue HEAD_VIEWER_SIZE_STREAMING;
@@ -141,6 +142,9 @@ public final class LiveFeedClientConfig {
         HEAD_VIEWER_ENABLED = b
             .comment("Pin the live feed to the top-right of your screen while you wear the camcorder or a TV. The Live Viewer hotkey flips this.")
             .define("headViewerEnabled", true);
+        HEAD_VIEWER_NAMES = b
+            .comment("Show who is live in a line under the pinned live feed while you watch (wearing a TV). Off = the feed alone.")
+            .define("headViewerNames", true);
         HEAD_VIEWER_WIDTH = b
             .comment("Width of the pinned live feed at its normal size, in GUI pixels (16:9). Clicking the feed in the inventory or chat cycles half, three-quarter, normal and one-and-a-half of this.")
             .defineInRange("headViewerWidth", 160, 80, 480);
@@ -171,6 +175,13 @@ public final class LiveFeedClientConfig {
     public static boolean tvsSpawnOn() { return viewingEnabled() && (!loaded() || TVS_SPAWN_ON.get()); }
     public static int viewerWidth() { return loaded() ? VIEWER_WIDTH.get() : 640; }
     public static boolean headViewerEnabled() { return !loaded() || HEAD_VIEWER_ENABLED.get(); }
+    public static boolean headViewerNames() { return !loaded() || HEAD_VIEWER_NAMES.get(); }
+
+    public static void setHeadViewerNames(boolean value) {
+        if (!loaded() || HEAD_VIEWER_NAMES.get() == value) return;
+        HEAD_VIEWER_NAMES.set(value);
+        HEAD_VIEWER_NAMES.save();
+    }
     public static int headViewerWidth() { return loaded() ? HEAD_VIEWER_WIDTH.get() : 160; }
 
     /**

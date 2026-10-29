@@ -94,17 +94,17 @@ public final class CarriagePlotEditor extends PlotEditor<Template.Carriage> {
      * then the contents store's deferred loot-prefab links. In dev mode the sidecar is promoted too.
      */
     @Override protected void sidecars(Template.Carriage t, CarriageDims dims, boolean toSource) throws IOException {
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(t.variant(), CarriageEditor.plotDims(t.variant(), dims));
+        VariantDoc sidecar = CarriageVariantBlocks.loadFor(t.variant(), CarriageEditor.plotDims(t.variant(), dims));
         if (toSource) {
-            sidecar.saveToSource(t.variant());
+            sidecar.saveToSource();
             return;
         }
-        sidecar.save(t.variant());
+        sidecar.save();
         ContainerContentsStore.loadFor(BlockVariantPlot.carriageKey(t.variant().id())).save();
     }
 
     @Override protected void afterSave(ServerPlayer player, Template.Carriage t, CarriageDims dims) {
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(t.variant(), CarriageEditor.plotDims(t.variant(), dims));
+        VariantDoc sidecar = CarriageVariantBlocks.loadFor(t.variant(), CarriageEditor.plotDims(t.variant(), dims));
         VariantConditionWarnings.afterSave(player, t.variant().id(), sidecar.entries(), sidecar::lockIdAt);
     }
 

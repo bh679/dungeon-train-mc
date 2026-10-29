@@ -153,7 +153,7 @@ public final class VariantBlockInteractions {
 
         BlockState baseState = level.getBlockState(clicked);
         VariantState baseVariant = captureBaseVariant(level, clicked, baseState);
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(
+        VariantDoc sidecar = CarriageVariantBlocks.loadFor(
             plotVariant, CarriageEditor.plotDims(plotVariant, dims));
         List<VariantState> existing = sidecar.statesAt(local);
 
@@ -203,14 +203,14 @@ public final class VariantBlockInteractions {
 
         BlockState baseState = level.getBlockState(clicked);
         VariantState baseVariant = captureBaseVariant(level, clicked, baseState);
-        CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
+        VariantDoc sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
         List<VariantState> existing = sidecar.statesAt(local);
         List<VariantState> updated = buildUpdatedList(existing, baseVariant, newVariant, baseState, local, partSize, player, event);
         if (updated == null) return;
 
         try {
             sidecar.put(local, updated);
-            sidecar.save(kind, name);
+            sidecar.save();
         } catch (IllegalArgumentException e) {
             player.displayClientMessage(
                 Component.translatable("chat.dungeontrain.editor_bar.common.variant_add_failed",
@@ -260,14 +260,14 @@ public final class VariantBlockInteractions {
 
         BlockState baseState = level.getBlockState(clicked);
         VariantState baseVariant = captureBaseVariant(level, clicked, baseState);
-        CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
+        VariantDoc sidecar = CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
         List<VariantState> existing = sidecar.statesAt(local);
         List<VariantState> updated = buildUpdatedList(existing, baseVariant, newVariant, baseState, local, interiorSize, player, event);
         if (updated == null) return;
 
         try {
             sidecar.put(local, updated);
-            sidecar.save(contents);
+            sidecar.save();
         } catch (IllegalArgumentException e) {
             player.displayClientMessage(
                 Component.translatable("chat.dungeontrain.editor_bar.common.variant_add_failed",
@@ -312,7 +312,7 @@ public final class VariantBlockInteractions {
 
         BlockState baseState = level.getBlockState(clicked);
         VariantState baseVariant = captureBaseVariant(level, clicked, baseState);
-        games.brennan.dungeontrain.track.variant.TrackVariantBlocks sidecar =
+        games.brennan.dungeontrain.editor.VariantDoc sidecar =
             games.brennan.dungeontrain.track.variant.TrackVariantBlocks.loadFor(
                 loc.kind(), loc.name(), footprint);
         List<VariantState> existing = sidecar.statesAt(local);
@@ -321,7 +321,7 @@ public final class VariantBlockInteractions {
 
         try {
             sidecar.put(local, updated);
-            sidecar.save(loc.kind(), loc.name());
+            sidecar.save();
         } catch (IllegalArgumentException e) {
             player.displayClientMessage(
                 Component.translatable("chat.dungeontrain.editor_bar.common.variant_add_failed",
