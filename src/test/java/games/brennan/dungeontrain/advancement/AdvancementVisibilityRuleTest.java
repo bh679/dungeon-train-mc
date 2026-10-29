@@ -50,6 +50,17 @@ class AdvancementVisibilityRuleTest {
     }
 
     @Test
+    @DisplayName("a child earned before its unearned head: the child shows, and so does the head (vanilla's answer)")
+    void childEarnedBeforeHead() {
+        // The Secrete Menu: Slimed (d) earned before the tab root. Vanilla answers true for a head with a
+        // done descendant, so the tab opens with its root unearned; its other children stay hidden.
+        Set<String> done = Set.of("d");
+        assertTrue(visible("d", done, Map.of(), true));
+        assertTrue(visible("root", done, Map.of(), true));
+        assertFalse(visible("a", done, Map.of(), true));
+    }
+
+    @Test
     @DisplayName("a tab head keeps vanilla's answer unless a mode is set")
     void rootModes() {
         assertTrue(visible("root", Set.of(), Map.of(), true));

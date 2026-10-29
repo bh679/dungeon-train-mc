@@ -259,7 +259,7 @@ public final class ModItems {
 
     /**
      * Single-use slimeball that hits like Knockback X and is spent on the hit
-     * ({@link KnockbackSlimeItem}). Creative/editor only: no loot table or recipe places it.
+     * ({@link KnockbackSlimeItem}). Found in the slimes carriage's loot ({@code prefabs/loot/slimes.json}); no recipe.
      */
     public static final DeferredItem<Item> KNOCKBACK_SLIME = ITEMS.register(
         "knockback_slime",

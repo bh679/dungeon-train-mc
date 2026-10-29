@@ -813,6 +813,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // preview outlines the streaming one).
             case HEAD_VIEWER_SIZE -> headViewerSize(key, false);
             case HEAD_VIEWER_SIZE_STREAMING -> headViewerSize(key, true);
+            // Who is live, under each pane of the pinned feed (HeadViewerCaption).
+            case HEAD_VIEWER_NAMES -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.headViewerNames(),
+                    LiveFeedClientConfig::setHeadViewerNames), key + ".tip");
 
             // The consent card's Developer chat switch. Inert (greyed) in Kid mode, where the Kid rule
             // keeps developer chat off whatever this says; flipping it re-syncs the inbound gate.

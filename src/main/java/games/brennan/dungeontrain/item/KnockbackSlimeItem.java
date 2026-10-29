@@ -1,12 +1,8 @@
 package games.brennan.dungeontrain.item;
 
-import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.advancement.BandAdvancements;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import net.minecraft.ChatFormatting;
-import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
@@ -64,16 +60,12 @@ public class KnockbackSlimeItem extends Item {
     }
 
     /**
-     * The Secret Menu's "hit something with a Knockback Slime". Only counts once the player has opened
-     * that tab: earned before its root, it would have no visible parent and the client would draw it as
-     * a stray tab of its own (same gate as {@code ReverseJourneyAdvancements#grantAfterPredecessor}).
+     * The Secret Menu's "hit something with a Knockback Slime". Earned whether or not the player has opened
+     * that tab yet: earned first, it opens The Secrete Menu tab itself, with the tab's own first advancement
+     * shown unearned (vanilla reveals a tab head once any child is done) and its description masked
+     * ({@code AdvancementHintText#shouldMask}).
      */
     private static void grantHitAdvancement(ServerPlayer player) {
-        AdvancementHolder root = player.server.getAdvancements().get(ResourceLocation.fromNamespaceAndPath(
-            DungeonTrain.MOD_ID, BandAdvancements.SECRETE_MENU_PREFIX + BandAdvancements.REVERSE_ANCHOR));
-        if (root == null || !player.getAdvancements().getOrStartProgress(root).isDone()) {
-            return;
-        }
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, HIT_ADVANCEMENT_ACTION);
     }
 
