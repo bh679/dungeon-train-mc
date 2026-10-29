@@ -135,7 +135,7 @@ public final class CarriagePartTemplateStore {
     public static void promote(CarriagePartKind kind, String name) throws IOException {
         STORE.promote(new Key(kind, name));
         try {
-            ContainerContentsStore.promoteFor("part:" + kind.id() + ":" + name);
+            ContainerContentsStore.promoteFor(BlockVariantPlot.partKey(kind, name));
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Promoted part template {}:{} but failed to promote container sidecar: {}",
                 kind.id(), name, e.toString());

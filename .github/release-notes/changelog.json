@@ -31851,8 +31851,24 @@
       "released_at": null
     },
     {
+      "id": "editor-kind-facts",
+      "version": "0.1586.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Editor menu fixes",
+      "summary": "Train Editor menus now send the same commands everywhere. Setting a track weight now needs a variant name. Removing a portal room removes the room you picked even when you are not standing in it. Unsaved chunk frames can now be saved by name with the save command.",
+      "highlights": [],
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "live-eye-pickup-swap",
-      "version": "0.1587.0",
+      "version": "0.1588.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -31861,6 +31877,7 @@
       "title": "Swap your Live Eye for one you find",
       "summary": "Already carrying a Live Eye? You can now pick up another one you find on the ground. The new one is yours and your old one turns into a TV. Wearing yours or live? Then it stays where it is for someone else.",
       "highlights": [],
+      "pr": 2399,
       "date": "2026-10-29",
       "released": false,
       "released_in": null,

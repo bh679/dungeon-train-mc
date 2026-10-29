@@ -1015,7 +1015,7 @@ public final class CarriagePlacer {
                     } else {
                         games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
                             level, world, w.state(), w.entry().blockEntityNbt(),
-                            "carriage:" + variant.id(), w.localPos(), seed, carriageIndex,
+                            games.brennan.dungeontrain.editor.BlockVariantPlot.carriageKey(variant.id()), w.localPos(), seed, carriageIndex,
                             w.entry().linkedLootPrefabId());
                         ConnectPass.note(level, world, w.entry().connect(), w.state());
                         GrowthPass.note(level, world, w.entry(), w.state(), w.localPos(), seed, carriageIndex, within);

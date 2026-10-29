@@ -227,7 +227,7 @@ public final class CarriageContentsStore {
     public static void promote(CarriageContents contents) throws IOException {
         STORE.promote(contents.id());
         try {
-            ContainerContentsStore.promoteFor("contents:" + contents.id());
+            ContainerContentsStore.promoteFor(BlockVariantPlot.contentsKey(contents.id()));
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Promoted contents template {} but failed to promote container sidecar: {}",
                 contents.id(), e.toString());

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.variant.TrackKind;
@@ -68,16 +69,22 @@ public final class EditorTemplateJump {
      */
     public static String enterCommandFor(BuilderPhotoPaths.Kind kind, String id, String subKind) {
         if (kind == null || id == null || id.isEmpty()) return null;
+        // A TRACK build may be a portal room under its TrackKind; every other kind maps straight
+        // onto a PlotCategory row. Parts and groups have no plot to send the player to.
         return switch (kind) {
-            case CARRIAGE -> "dungeontrain editor enter " + id;
-            case CONTENTS -> "dungeontrain editor contents enter " + id;
-            case PORTAL_ROOM -> "dungeontrain editor portals enter " + id;
-            case CHUNK_FRAME -> "dungeontrain editor chunkframe enter " + id;
-            case BUILDING -> "dungeontrain editor buildings goto " + id;
-            case LOST_CITY -> "dungeontrain editor buildings lostcity goto " + id;
+            case CARRIAGE -> enter(PlotCategory.CARRIAGES, id, id);
+            case CONTENTS -> enter(PlotCategory.CONTENTS, id, id);
+            case PORTAL_ROOM -> enter(PlotCategory.PORTALS, TrackKind.PORTAL_ROOM.id(), id);
+            case CHUNK_FRAME -> enter(PlotCategory.CHUNK_FRAMES, id, id);
+            case BUILDING -> enter(PlotCategory.BUILDINGS, id, id);
+            case LOST_CITY -> enter(PlotCategory.LOST_CITY, id, id);
             case TRACK -> trackEnterCommandFor(TrackKind.fromId(subKind), id);
             case PART, CARRIAGE_GROUP -> null;
         };
+    }
+
+    private static String enter(PlotCategory category, String modelId, String modelName) {
+        return category.command(PlotCategory.Verb.ENTER, modelId, modelName).orElse(null);
     }
 
     /**
@@ -100,7 +107,7 @@ public final class EditorTemplateJump {
             case ADJUNCT_STAIRS -> "dungeontrain editor pillar enter " + PillarAdjunct.STAIRS.id();
             case ADJUNCT_STAIRS_ENTRANCE ->
                     "dungeontrain editor pillar enter " + PillarAdjunct.STAIRS_ENTRANCE.id();
-            case PORTAL_ROOM -> "dungeontrain editor portals enter " + id;
+            case PORTAL_ROOM -> enter(PlotCategory.PORTALS, kind.id(), id);
         };
     }
 }

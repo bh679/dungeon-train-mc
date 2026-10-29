@@ -245,7 +245,7 @@ public final class CarriagePartPlacer {
                     BlockState toPlace = games.brennan.dungeontrain.editor.PaintingPass.mirror(w.state(), p.mirror());
                     games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
                         level, world, toPlace, w.entry().blockEntityNbt(),
-                        "part:" + kind.id() + ":" + name, w.localPos(), seed, carriageIndex,
+                        games.brennan.dungeontrain.editor.BlockVariantPlot.partKey(kind, name), w.localPos(), seed, carriageIndex,
                         w.entry().linkedLootPrefabId());
                     ConnectPass.note(level, world, w.entry().connect(), toPlace);
                     GrowthPass.note(level, world, w.entry(), toPlace, w.localPos(), seed, carriageIndex, within);

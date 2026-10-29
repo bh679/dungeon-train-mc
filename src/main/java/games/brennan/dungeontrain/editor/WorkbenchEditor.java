@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.template.Template;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.workbench.WorkbenchPlacement;
 import games.brennan.dungeontrain.editor.workbench.WorkbenchStagedBuild;
@@ -260,6 +261,6 @@ public final class WorkbenchEditor {
 
     /** The {@link EditorPlotSnapshots} key for {@code stagedId}'s plot. */
     public static String snapshotKey(String stagedId) {
-        return EditorPlotSnapshots.key(EditorCategory.WORKBENCH.id(), stagedId);
+        return new Template.Staged(stagedId).snapshotKey().orElseThrow();
     }
 }
