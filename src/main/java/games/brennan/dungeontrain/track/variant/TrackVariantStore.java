@@ -1,26 +1,26 @@
 package games.brennan.dungeontrain.track.variant;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.DeleteCachePolicy;
+import games.brennan.dungeontrain.editor.ProvenanceCache;
+import games.brennan.dungeontrain.editor.SourcePolicy;
+import games.brennan.dungeontrain.editor.StoreCodecs;
+import games.brennan.dungeontrain.editor.StoreDescriptor;
+import games.brennan.dungeontrain.editor.TemplateNbt;
+import games.brennan.dungeontrain.editor.ThreeTierStore;
+import games.brennan.dungeontrain.editor.UserContentPaths;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.train.CarriageDims;
-import net.minecraft.core.HolderGetter;
 import net.minecraft.core.Vec3i;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -41,23 +41,47 @@ import java.util.Optional;
  *       identically to the pre-feature world until templates are authored.</li>
  * </ol>
  *
- * <p>Each load is filtered against {@link TrackKind#dims(CarriageDims)} —
- * a template authored at one world's dims can't poison a different world.</p>
+ * <p>Each read is filtered against {@link TrackKind#dims(CarriageDims)} — a template authored at
+ * one world's dims can't poison a different world. The gate runs <i>per call</i>, outside the
+ * cache; a rejection at one caller's dims used to be cached as "absent" for every later caller
+ * until the next reload.</p>
+ *
+ * <p>Policies: {@link SourcePolicy#NEVER} (editors promote explicitly), {@link DeleteCachePolicy#REMOVE}.
+ * {@link #exists} asks the active package only.</p>
  */
 public final class TrackVariantStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Key = {@code "<kind>/<name>"} — small flat map across all kinds. */
-    private static final Map<String, Optional<StructureTemplate>> CACHE = new HashMap<>();
+    /** A variant's address. */
+    private record Key(TrackKind kind, String name) {
+        String id() {
+            return kind.id() + "/" + name;
+        }
+    }
+
+    private static final ThreeTierStore<Key, StructureTemplate> STORE =
+        StoreDescriptor.<Key, StructureTemplate>named("TrackVariantStore")
+            .id(Key::id)
+            .subdir(k -> k.kind().subdir())
+            .fileName(k -> k.name() + TrackKind.NBT_EXT)
+            .bundledResource(k -> k.kind().bundledResourcePrefix() + k.name() + TrackKind.NBT_EXT)
+            .sourceRelDir(k -> k.kind().sourceRelativePath())
+            .codec(StoreCodecs.structureTemplate(false))
+            .logNoun("track template")
+            .sourcePolicy(SourcePolicy.NEVER)
+            .deleteCachePolicy(DeleteCachePolicy.REMOVE)
+            .onSave(k -> ProvenanceCache.invalidateAll())
+            .onDelete(k -> ProvenanceCache.invalidateAll())
+            .onRename((a, b) -> ProvenanceCache.invalidateAll())
+            .build();
 
     private TrackVariantStore() {}
 
     /**
      * Write target for {@code kind} — the <i>active package's</i>
      * {@code <workingDir>/<subdir>/}, matching the directory
-     * {@link games.brennan.dungeontrain.editor.UserContentPaths#findFile} reads
-     * from first.
+     * {@link UserContentPaths#findFile} reads from first.
      *
      * <p>This used to resolve straight to {@code config/dungeontrain/user/},
      * which is fine only while the unsaved package is active. Once a player
@@ -69,38 +93,37 @@ public final class TrackVariantStore {
      * the old path.</p>
      */
     public static Path directory(TrackKind kind) {
-        return games.brennan.dungeontrain.editor.UserContentPaths.activeSubDir(kind.subdir());
+        return UserContentPaths.activeSubDir(kind.subdir());
     }
 
     public static Path fileFor(TrackKind kind, String name) {
-        return directory(kind).resolve(name + TrackKind.NBT_EXT);
+        return STORE.fileFor(new Key(kind, name));
     }
 
     public static String bundledResourceFor(TrackKind kind, String name) {
-        return kind.bundledResourcePrefix() + name + TrackKind.NBT_EXT;
+        return STORE.bundledResourceFor(new Key(kind, name));
     }
 
     /**
      * This variant's raw NBT, with no dims gate — for showing the template rather than stamping
-     * it. See {@link games.brennan.dungeontrain.editor.TemplateNbt} for why the gate is skipped.
+     * it. See {@link TemplateNbt} for why the gate is skipped.
      */
     public static Optional<CompoundTag> rawTag(TrackKind kind, String name) {
-        return games.brennan.dungeontrain.editor.TemplateNbt.read(
+        return TemplateNbt.read(
             kind.subdir(), name + TrackKind.NBT_EXT, bundledResourceFor(kind, name),
             "track template " + kind.id() + ":" + name);
     }
 
     public static Path sourceFileFor(TrackKind kind, String name) {
-        return sourceDirectory(kind).resolve(name + TrackKind.NBT_EXT);
+        return STORE.sourceFileFor(new Key(kind, name));
     }
 
     public static boolean sourceTreeAvailable() {
-        Path resources = resourcesRootOrNull();
-        return resources != null && Files.isDirectory(resources) && Files.isWritable(resources);
+        return STORE.sourceTreeAvailable();
     }
 
-    public static synchronized void clearCache() {
-        CACHE.clear();
+    public static void clearCache() {
+        STORE.clearCache();
     }
 
     /**
@@ -161,78 +184,43 @@ public final class TrackVariantStore {
         }
     }
 
-    public static synchronized void invalidate(TrackKind kind, String name) {
-        CACHE.remove(key(kind, name));
+    public static void invalidate(TrackKind kind, String name) {
+        STORE.invalidate(new Key(kind, name));
     }
 
     /**
      * Load the NBT for {@code (kind, name)} — config dir first, then bundled
      * resource. Returns empty if neither tier has a template at the expected
-     * footprint for {@code dims}. Cached per {@code (kind, name)} —
-     * dim-mismatch rebuilds drop the cache entry on the next get.
+     * footprint for {@code dims}. Cached per {@code (kind, name)}, ungated; the
+     * footprint is judged on every call.
      */
-    public static synchronized Optional<StructureTemplate> get(
+    public static Optional<StructureTemplate> get(
         ServerLevel level, TrackKind kind, String name, CarriageDims dims
     ) {
-        String key = key(kind, name);
-        Optional<StructureTemplate> cached = CACHE.get(key);
-        if (cached != null) return filterForDims(kind, name, cached, dims);
-        Optional<StructureTemplate> loaded = loadFromConfig(level, kind, name, dims);
-        if (loaded.isEmpty()) loaded = loadFromResource(level, kind, name, dims);
-        CACHE.put(key, loaded);
-        return loaded;
+        return filterForDims(kind, name, STORE.get(new Key(kind, name), level), dims);
     }
 
     /** Bundled-only load — used by {@code /dt reset} to revert a config-dir override. */
     public static Optional<StructureTemplate> getBundled(
         ServerLevel level, TrackKind kind, String name, CarriageDims dims
     ) {
-        return loadFromResource(level, kind, name, dims);
+        return filterForDims(kind, name, STORE.getBundled(new Key(kind, name), level), dims);
     }
 
-    public static synchronized void save(TrackKind kind, String name, StructureTemplate template) throws IOException {
-        Path dir = directory(kind);
-        Files.createDirectories(dir);
-        Path file = fileFor(kind, name);
-        CompoundTag tag = template.save(new CompoundTag());
-        NbtIo.writeCompressed(tag, file);
-        CACHE.put(key(kind, name), Optional.of(template));
-        games.brennan.dungeontrain.editor.ProvenanceCache.invalidateAll();
-        LOGGER.info("[DungeonTrain] Saved track template {}:{} to {}", kind.id(), name, file);
+    public static void save(TrackKind kind, String name, StructureTemplate template) throws IOException {
+        STORE.save(new Key(kind, name), template);
     }
 
-    public static synchronized void saveToSource(TrackKind kind, String name, StructureTemplate template) throws IOException {
-        if (!sourceTreeAvailable()) {
-            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
-        }
-        Path file = sourceFileFor(kind, name);
-        Files.createDirectories(file.getParent());
-        CompoundTag tag = template.save(new CompoundTag());
-        NbtIo.writeCompressed(tag, file);
-        LOGGER.info("[DungeonTrain] Wrote bundled track template {}:{} to {}", kind.id(), name, file);
+    public static void saveToSource(TrackKind kind, String name, StructureTemplate template) throws IOException {
+        STORE.saveToSource(new Key(kind, name), template);
     }
 
-    public static synchronized void promote(TrackKind kind, String name) throws IOException {
-        Path src = fileFor(kind, name);
-        if (!Files.isRegularFile(src)) {
-            throw new IOException("No saved track template for " + kind.id() + ":" + name + " in " + src);
-        }
-        if (!sourceTreeAvailable()) {
-            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
-        }
-        Path dst = sourceFileFor(kind, name);
-        Files.createDirectories(dst.getParent());
-        Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
-        LOGGER.info("[DungeonTrain] Promoted track template {}:{} from {} to {}", kind.id(), name, src, dst);
+    public static void promote(TrackKind kind, String name) throws IOException {
+        STORE.promote(new Key(kind, name));
     }
 
-    public static synchronized boolean delete(TrackKind kind, String name) throws IOException {
-        Path file = fileFor(kind, name);
-        boolean existed = Files.deleteIfExists(file);
-        CACHE.put(key(kind, name), Optional.empty());
-        games.brennan.dungeontrain.editor.ProvenanceCache.invalidateAll();
-        if (existed) LOGGER.info("[DungeonTrain] Deleted track template {}:{} ({})", kind.id(), name, file);
-        return existed;
+    public static boolean delete(TrackKind kind, String name) throws IOException {
+        return STORE.delete(new Key(kind, name));
     }
 
     /**
@@ -243,86 +231,17 @@ public final class TrackVariantStore {
      * copy to move, which is what a bundled-only template looks like: those are shadowed rather than
      * renamed, and moving nothing is the honest answer.</p>
      */
-    public static synchronized boolean rename(TrackKind kind, String sourceName, String targetName)
+    public static boolean rename(TrackKind kind, String sourceName, String targetName)
             throws IOException {
-        Path src = fileFor(kind, sourceName);
-        Path dst = fileFor(kind, targetName);
-        if (!Files.isRegularFile(src)) return false;
-        Files.createDirectories(dst.getParent());
-        Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
-        Optional<StructureTemplate> cached = CACHE.remove(key(kind, sourceName));
-        if (cached != null) CACHE.put(key(kind, targetName), cached);
-        games.brennan.dungeontrain.editor.ProvenanceCache.invalidateAll();
-        LOGGER.info("[DungeonTrain] Renamed track template {}:{} -> {}:{}", kind.id(), sourceName,
-                kind.id(), targetName);
-        return true;
+        return STORE.rename(new Key(kind, sourceName), new Key(kind, targetName));
     }
 
     public static boolean exists(TrackKind kind, String name) {
-        return Files.isRegularFile(fileFor(kind, name));
+        return STORE.existsInActive(new Key(kind, name));
     }
 
     public static boolean bundled(TrackKind kind, String name) {
-        try (InputStream in = TrackVariantStore.class.getResourceAsStream(bundledResourceFor(kind, name))) {
-            return in != null;
-        } catch (IOException e) {
-            return false;
-        }
-    }
-
-    private static Optional<StructureTemplate> loadFromConfig(
-        ServerLevel level, TrackKind kind, String name, CarriageDims dims
-    ) {
-        // Search user/<kind.subdir>/ first, then each imported/<pkg>/<kind.subdir>/.
-        Path file = games.brennan.dungeontrain.editor.UserContentPaths.findFile(
-            kind.subdir(), name + TrackKind.NBT_EXT);
-        if (file == null) return Optional.empty();
-        try {
-            CompoundTag tag = NbtIo.readCompressed(file, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
-            return loadAndValidate(level, kind, name, dims, tag, "config " + file);
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to read config track template {}:{} at {}: {}",
-                kind.id(), name, file, e.toString());
-            return Optional.empty();
-        }
-    }
-
-    private static Optional<StructureTemplate> loadFromResource(
-        ServerLevel level, TrackKind kind, String name, CarriageDims dims
-    ) {
-        String resource = bundledResourceFor(kind, name);
-        try (InputStream in = TrackVariantStore.class.getResourceAsStream(resource)) {
-            if (in == null) return Optional.empty();
-            CompoundTag tag = NbtIo.readCompressed(in, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
-            return loadAndValidate(level, kind, name, dims, tag, "bundled " + resource);
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to read bundled track template {}: {}",
-                resource, e.toString());
-            return Optional.empty();
-        }
-    }
-
-    private static Optional<StructureTemplate> loadAndValidate(
-        ServerLevel level, TrackKind kind, String name, CarriageDims dims,
-        CompoundTag tag, String origin
-    ) {
-        StructureTemplate template = new StructureTemplate();
-        HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
-        template.load(blocks, games.brennan.dungeontrain.editor.DoubleBlockTemplateRepair.repair(tag, kind + ":" + name));
-
-        Vec3i bounds = acceptableBounds(kind, dims);
-        Vec3i size = template.getSize();
-        if (!boundsMatch(kind, size, bounds)) {
-            LOGGER.warn(
-                "[DungeonTrain] Track template {}:{} ({}) has bounds {}x{}x{}, expected {}x{}x{}{} — ignoring.",
-                kind.id(), name, origin, size.getX(), size.getY(), size.getZ(),
-                bounds.getX(), bounds.getY(), bounds.getZ(),
-                kind.freeSizeAboveFloor() ? " (minimum; larger is allowed)" : ""
-            );
-            return Optional.empty();
-        }
-        LOGGER.info("[DungeonTrain] Loaded track template {}:{} from {}", kind.id(), name, origin);
-        return Optional.of(template);
+        return STORE.bundled(new Key(kind, name));
     }
 
     /**
@@ -357,40 +276,20 @@ public final class TrackVariantStore {
         return size.equals(bounds);
     }
 
+    /** The size gate — per call, never cached. */
     private static Optional<StructureTemplate> filterForDims(
-        TrackKind kind, String name, Optional<StructureTemplate> cached, CarriageDims dims
+        TrackKind kind, String name, Optional<StructureTemplate> loaded, CarriageDims dims
     ) {
-        if (cached.isEmpty()) return cached;
-        if (boundsMatch(kind, cached.get().getSize(), acceptableBounds(kind, dims))) return cached;
+        if (loaded.isEmpty()) return loaded;
+        Vec3i bounds = acceptableBounds(kind, dims);
+        Vec3i size = loaded.get().getSize();
+        if (boundsMatch(kind, size, bounds)) return loaded;
         LOGGER.warn(
-            "[DungeonTrain] Cached track template {}:{} no longer matches dims {}x{}x{} — falling back.",
-            kind.id(), name, dims.length(), dims.width(), dims.height()
+            "[DungeonTrain] Track template {}:{} has bounds {}x{}x{}, expected {}x{}x{}{} — ignoring.",
+            kind.id(), name, size.getX(), size.getY(), size.getZ(),
+            bounds.getX(), bounds.getY(), bounds.getZ(),
+            kind.freeSizeAboveFloor() ? " (minimum; larger is allowed)" : ""
         );
         return Optional.empty();
-    }
-
-    private static String key(TrackKind kind, String name) {
-        return kind.id() + "/" + name;
-    }
-
-    private static Path sourceDirectory(TrackKind kind) {
-        Path projectRoot = projectRootOrNull();
-        if (projectRoot == null) {
-            throw new IllegalStateException(
-                "Cannot resolve source directory — FMLPaths.GAMEDIR has no parent."
-            );
-        }
-        return projectRoot.resolve(kind.sourceRelativePath());
-    }
-
-    private static Path resourcesRootOrNull() {
-        Path projectRoot = projectRootOrNull();
-        if (projectRoot == null) return null;
-        return projectRoot.resolve("src/main/resources");
-    }
-
-    private static Path projectRootOrNull() {
-        Path gameDir = FMLPaths.GAMEDIR.get();
-        return gameDir.getParent();
     }
 }

@@ -108,7 +108,7 @@ public final class TemplateSidecars {
                 out.add(new Sidecar("parts", CarriageVariantPartsStore.SUBDIR,
                         at + CarriageVariantPartsStore.EXT));
                 out.add(new Sidecar("contents-allow", CarriageVariantBlocks.SUBDIR,
-                        at + ContentsAllowStore.EXT));
+                        at + CarriageVariantContentsAllowStore.EXT));
             }
             case CONTENTS -> out.add(new Sidecar(ROLE_VARIANTS, CarriageContentsVariantBlocks.SUBDIR,
                     id + CarriageContentsVariantBlocks.EXT));
@@ -127,7 +127,7 @@ public final class TemplateSidecars {
             case PORTAL_ROOM -> {
                 TrackKind room = TrackKind.PORTAL_ROOM;
                 out.add(new Sidecar(ROLE_VARIANTS, room.subdir(), id + TrackKind.VARIANTS_EXT));
-                out.add(new Sidecar("contents-allow", room.subdir(), id + ContentsAllowStore.EXT));
+                out.add(new Sidecar("contents-allow", room.subdir(), id + CarriageVariantContentsAllowStore.EXT));
                 out.add(new Sidecar("copies", room.subdir(), id + PortalRoomCopiesVariant.COPIES_EXT));
             }
             // A new building's roster weight travels with it.

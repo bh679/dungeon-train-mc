@@ -1,9 +1,9 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateAdapters;
 import games.brennan.dungeontrain.template.TemplateStore;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
@@ -11,7 +11,6 @@ import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.neoforged.fml.loading.FMLPaths;
@@ -316,26 +315,12 @@ public final class PillarTemplateStore {
     }
 
     private static TemplateStore<Template.Pillar> makeSectionAdapter(PillarSection section) {
-        return new TemplateStore<>() {
-            @Override public TemplateKind kind() { return TemplateKind.PILLAR; }
-
-            @Override
-            public SaveResult save(ServerPlayer player, Template.Pillar template) throws Exception {
-                // Phase-4 Bug fix: use the explicit-name save so Stores.save
-                // works for non-default-named pillar variants (template label
-                // menu, save-all iteration, save-model command).
-                return PillarEditor.save(player,
-                    new games.brennan.dungeontrain.template.PillarTemplateId(section, template.name()));
-            }
-
-            @Override
-            public boolean canPromote(Template.Pillar template) { return sourceTreeAvailable(); }
-
-            @Override
-            public void promote(Template.Pillar template) throws Exception {
-                PillarTemplateStore.promote(section);
-            }
-        };
+        // The explicit-name save so Stores.save works for non-default-named pillar variants
+        // (template label menu, save-all iteration, save-model command).
+        return TemplateAdapters.of(TemplateKind.PILLAR,
+            (player, t) -> PillarEditor.save(player,
+                new games.brennan.dungeontrain.template.PillarTemplateId(section, t.name())),
+            TemplateAdapters.whenSourceWritable(t -> PillarTemplateStore.promote(section)));
     }
 
     public static TemplateStore<Template.Pillar> adapter(PillarSection section) {
@@ -366,25 +351,10 @@ public final class PillarTemplateStore {
     }
 
     private static TemplateStore<Template.Adjunct> makeAdjunctAdapter(PillarAdjunct adjunct) {
-        return new TemplateStore<>() {
-            @Override public TemplateKind kind() { return TemplateKind.STAIRS; }
-
-            @Override
-            public SaveResult save(ServerPlayer player, Template.Adjunct template) throws Exception {
-                // Phase-4 Bug fix: pass template.name() through so non-default
-                // adjunct variants save correctly via Stores.save.
-                return PillarEditor.save(player,
-                    new games.brennan.dungeontrain.template.PillarAdjunctTemplateId(adjunct, template.name()));
-            }
-
-            @Override
-            public boolean canPromote(Template.Adjunct template) { return sourceTreeAvailable(); }
-
-            @Override
-            public void promote(Template.Adjunct template) throws Exception {
-                PillarTemplateStore.promoteAdjunct(adjunct);
-            }
-        };
+        return TemplateAdapters.of(TemplateKind.STAIRS,
+            (player, t) -> PillarEditor.save(player,
+                new games.brennan.dungeontrain.template.PillarAdjunctTemplateId(adjunct, t.name())),
+            TemplateAdapters.whenSourceWritable(t -> PillarTemplateStore.promoteAdjunct(adjunct)));
     }
 
     public static TemplateStore<Template.Adjunct> adapterForAdjunct(PillarAdjunct adjunct) {
