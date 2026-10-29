@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.menu.containercontents;
 import games.brennan.dungeontrain.client.menu.MenuLang;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
+import games.brennan.dungeontrain.client.menu.WorldPanelInput;
 import games.brennan.dungeontrain.client.menu.MenuClickModifiers;
 import games.brennan.dungeontrain.client.menu.number.NumberField;
 import games.brennan.dungeontrain.client.menu.number.NumberPad;
@@ -14,8 +15,6 @@ import games.brennan.dungeontrain.net.ContainerContentsEditPacket;
 import games.brennan.dungeontrain.net.ContainerContentsMenuTogglePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.Direction;
-import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
@@ -47,11 +46,6 @@ import java.util.List;
 )
 public final class ContainerContentsMenuInputHandler {
 
-    private static boolean pressArmed;
-    private static boolean pressShift;
-    /** Which mouse button armed the press — only its own release dispatches. */
-    private static int pressButton;
-
     /** The chance cells step in fives. */
     private static final int CHANCE_STEP = 5;
 
@@ -61,57 +55,28 @@ public final class ContainerContentsMenuInputHandler {
      */
     private static final int TYPED_WEIGHT_MAX = 1000;
 
+    private static final WorldPanelInput<ContainerContentsMenu.Hit> INPUT = new WorldPanelInput<>(
+        ContainerContentsMenu::hovered, hit -> hit.kind() == ContainerContentsMenu.CellKind.NONE,
+        ContainerContentsMenuInputHandler::shouldHandle, true, ContainerContentsMenuInputHandler::dispatch);
+
     private ContainerContentsMenuInputHandler() {}
 
+    /** The press: cancels the world interaction and arms when the crosshair is on a panel cell. */
     @SubscribeEvent
     public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
-        if (!shouldHandle()) return;
-        ContainerContentsMenu.Hit hit = ContainerContentsMenu.hovered();
-        if (hit.kind() == ContainerContentsMenu.CellKind.NONE) return;
-        event.setCanceled(true);
-        event.setSwingHand(false);
-        pressArmed = true;
-        pressButton = event.isUseItem() ? GLFW.GLFW_MOUSE_BUTTON_RIGHT : GLFW.GLFW_MOUSE_BUTTON_LEFT;
-        pressShift = Minecraft.getInstance().screen == null
-            && (GLFW.glfwGetKey(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS
-                || GLFW.glfwGetKey(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS);
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player != null) {
-            mc.hitResult = BlockHitResult.miss(
-                mc.player.getEyePosition(),
-                Direction.UP,
-                mc.player.blockPosition()
-            );
-        }
-        if (mc.gameMode != null) mc.gameMode.stopDestroyBlock();
+        INPUT.onInteraction(event);
     }
 
+    /** The release of the armed button fires the hit under the crosshair. */
     @SubscribeEvent
     public static void onMouseButton(InputEvent.MouseButton.Pre event) {
-        if (!shouldHandle()) {
-            pressArmed = false;
-            return;
-        }
-        if (Minecraft.getInstance().screen != null) return;
-        int btn = event.getButton();
-        if (btn != GLFW.GLFW_MOUSE_BUTTON_LEFT && btn != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
-        if (event.getAction() != GLFW.GLFW_RELEASE) return;
-        if (!pressArmed || btn != pressButton) return;
-        pressArmed = false;
-        boolean shift = pressShift
-            || (event.getModifiers() & GLFW.GLFW_MOD_SHIFT) != 0;
-
-        ContainerContentsMenu.Hit hit = ContainerContentsMenu.hovered();
-        if (hit.kind() == ContainerContentsMenu.CellKind.NONE) return;
-        dispatch(hit, shift, btn);
+        INPUT.onMouseButton(event);
     }
 
+    /** Belt and braces: a left-click-block that slipped past the press cancel must not start block damage. */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        if (!shouldHandle()) return;
-        ContainerContentsMenu.Hit hit = ContainerContentsMenu.hovered();
-        if (hit.kind() == ContainerContentsMenu.CellKind.NONE) return;
-        event.setCanceled(true);
+        INPUT.onLeftClickBlock(event);
     }
 
     @SubscribeEvent

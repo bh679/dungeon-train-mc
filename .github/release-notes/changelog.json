@@ -31677,9 +31677,9 @@
       "highlights": [],
       "pr": 2389,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1580.0",
+      "released_at": "2026-10-29T04:54:43Z"
     },
     {
       "id": "editor-template-dispatch",
@@ -31697,9 +31697,9 @@
       ],
       "pr": 2390,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1580.0",
+      "released_at": "2026-10-29T04:54:43Z"
     },
     {
       "id": "sky-falling-comets",
@@ -31719,9 +31719,9 @@
       ],
       "pr": 2365,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1580.0",
+      "released_at": "2026-10-29T04:54:43Z",
       "major": true,
       "notable": true,
       "description": "Deeper down the line, the sky is no longer empty. Something has started coming down out of the dark.\n\nListen for it. And when the sky fills up, keep your head down.\n\n*The further you go, the more of it there is.*",
@@ -31740,9 +31740,9 @@
       "highlights": [],
       "pr": 2391,
       "date": "2026-10-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1580.0",
+      "released_at": "2026-10-29T04:54:43Z"
     },
     {
       "id": "deathnote-echo-head-skin",
@@ -31763,8 +31763,78 @@
       "released_at": null
     },
     {
-      "id": "note-echo-author-gear",
+      "id": "coffee-table-book-terra-omnia-biomes",
       "version": "0.1582.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Coffee Table Book fix",
+      "summary": "Coffee Table Book now asks for the same biomes as Terra Omnia, so every photo slot can be filled.",
+      "highlights": [
+        "Biomes you had already photographed now count towards Terra Omnia."
+      ],
+      "pr": 2394,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-menu-controller-base",
+      "version": "0.1583.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Editor tidy-up",
+      "summary": "Behind-the-scenes cleanup of the train editor's menus. Editor menus now close properly when you leave the world.",
+      "highlights": [],
+      "pr": 2393,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "no-rewards-on-advancement-replay",
+      "version": "0.1584.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "Starting a new world is a little tidier with advancements you have already earned.",
+      "highlights": [],
+      "pr": 2397,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "ai-translation-review-pass",
+      "version": "0.1581.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations"
+      ],
+      "title": "Translation fixes",
+      "summary": "Some translated text now reads more clearly.",
+      "highlights": [],
+      "pr": 2395,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "note-echo-author-gear",
+      "version": "0.1586.0",
       "type": "fix",
       "tags": [
         "fix",
