@@ -32006,8 +32006,25 @@
       "pr": 2408
     },
     {
+      "id": "ain-053-supporter-names",
+      "version": "0.1595.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot"
+      ],
+      "title": "Name update",
+      "summary": "More names.",
+      "highlights": [],
+      "pr": 2407,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "crystal-fix",
-      "version": "0.1596.0",
+      "version": "0.1597.0",
       "type": "fix",
       "tags": [
         "fix"
