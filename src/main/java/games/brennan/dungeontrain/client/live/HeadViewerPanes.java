@@ -103,8 +103,14 @@ public final class HeadViewerPanes {
     /** {@link #current(int, int, int, boolean, boolean)} with each stream's own shape (width over height). */
     public static List<Pane> current(int guiWidth, int guiHeight, int boxWidth, boolean secondLive, boolean atMaxSize,
                                      float mainRatio, float secondRatio) {
+        return current(guiWidth, guiHeight, boxWidth, secondLive, atMaxSize, mainRatio, secondRatio, 0);
+    }
+
+    /** {@link #current(int, int, int, boolean, boolean, float, float)} with {@code caption} GUI pixels kept under each pane. */
+    public static List<Pane> current(int guiWidth, int guiHeight, int boxWidth, boolean secondLive, boolean atMaxSize,
+                                     float mainRatio, float secondRatio, int caption) {
         if (!secondLive) reset(); // the worn TV's memory applies again when a second returns
-        return panes(guiWidth, guiHeight, boxWidth, secondLive, atMaxSize, choice, mainRatio, secondRatio);
+        return panes(guiWidth, guiHeight, boxWidth, secondLive, atMaxSize, choice, mainRatio, secondRatio, caption);
     }
 
     /**
@@ -112,9 +118,15 @@ public final class HeadViewerPanes {
      * the takeover button under it, ends on screen. Pure.
      */
     public static boolean twoFit(int guiWidth, int guiHeight, int boxWidth, boolean atMaxSize, float mainRatio, float secondRatio) {
+        return twoFit(guiWidth, guiHeight, boxWidth, atMaxSize, mainRatio, secondRatio, 0);
+    }
+
+    /** {@link #twoFit(int, int, int, boolean, float, float)} with {@code caption} GUI pixels under each pane. Pure. */
+    public static boolean twoFit(int guiWidth, int guiHeight, int boxWidth, boolean atMaxSize, float mainRatio, float secondRatio,
+                                 int caption) {
         if (atMaxSize) return false;
-        LiveHeadViewer.Box second = stacked(guiWidth, boxWidth, mainRatio, secondRatio);
-        int bottom = second.y() + second.h() + LiveHeadViewer.BORDER + LiveTakeoverButton.GAP + LiveTakeoverButton.H;
+        LiveHeadViewer.Box second = stacked(guiWidth, boxWidth, mainRatio, secondRatio, caption);
+        int bottom = second.y() + second.h() + LiveHeadViewer.BORDER + caption + LiveTakeoverButton.GAP + LiveTakeoverButton.H;
         return bottom <= guiHeight;
     }
 
@@ -130,20 +142,27 @@ public final class HeadViewerPanes {
     /** {@link #panes(int, int, int, boolean, boolean, Choice)} with each pane as tall as its own stream's shape needs. */
     static List<Pane> panes(int guiWidth, int guiHeight, int boxWidth, boolean secondLive, boolean atMaxSize, Choice choice,
                             float mainRatio, float secondRatio) {
+        return panes(guiWidth, guiHeight, boxWidth, secondLive, atMaxSize, choice, mainRatio, secondRatio, 0);
+    }
+
+    /** {@link #panes(int, int, int, boolean, boolean, Choice, float, float)} with {@code caption} GUI pixels under each pane. */
+    static List<Pane> panes(int guiWidth, int guiHeight, int boxWidth, boolean secondLive, boolean atMaxSize, Choice choice,
+                            float mainRatio, float secondRatio, int caption) {
         LiveHeadViewer.Box first = LiveHeadViewer.layout(guiWidth, boxWidth, mainRatio);
         if (!secondLive) return List.of(new Pane(false, first));
         if (choice == Choice.SECOND_ONLY) return List.of(new Pane(true, LiveHeadViewer.layout(guiWidth, boxWidth, secondRatio)));
-        if (choice == Choice.MAIN_ONLY || !twoFit(guiWidth, guiHeight, boxWidth, atMaxSize, mainRatio, secondRatio)) {
+        if (choice == Choice.MAIN_ONLY || !twoFit(guiWidth, guiHeight, boxWidth, atMaxSize, mainRatio, secondRatio, caption)) {
             return List.of(new Pane(false, first));
         }
-        return List.of(new Pane(false, first), new Pane(true, stacked(guiWidth, boxWidth, mainRatio, secondRatio)));
+        return List.of(new Pane(false, first), new Pane(true, stacked(guiWidth, boxWidth, mainRatio, secondRatio, caption)));
     }
 
-    /** The second pane's box when it sits under the first. */
-    private static LiveHeadViewer.Box stacked(int guiWidth, int boxWidth, float mainRatio, float secondRatio) {
+    /** The second pane's box when it sits under the first (and the first's {@code caption}). */
+    private static LiveHeadViewer.Box stacked(int guiWidth, int boxWidth, float mainRatio, float secondRatio, int caption) {
         LiveHeadViewer.Box first = LiveHeadViewer.layout(guiWidth, boxWidth, mainRatio);
         LiveHeadViewer.Box secondAlone = LiveHeadViewer.layout(guiWidth, boxWidth, secondRatio);
-        return new LiveHeadViewer.Box(first.x(), first.y() + first.h() + 2 * LiveHeadViewer.BORDER + GAP, boxWidth, secondAlone.h());
+        return new LiveHeadViewer.Box(first.x(), first.y() + first.h() + 2 * LiveHeadViewer.BORDER + caption + GAP, boxWidth,
+            secondAlone.h());
     }
 
     /**

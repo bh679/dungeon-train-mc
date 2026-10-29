@@ -49,6 +49,17 @@ final class HeadViewerPanesTest {
     }
 
     @Test
+    @DisplayName("captions: the second pane drops under the first pane's caption, and two must fit with both")
+    void captionMakesRoomUnderEachPane() {
+        int caption = HeadViewerCaption.HEIGHT;
+        List<HeadViewerPanes.Pane> panes = HeadViewerPanes.panes(480, H, 160, true, false, BOTH, 16f / 9f, 16f / 9f, caption);
+        LiveHeadViewer.Box first = panes.get(0).box();
+        assertEquals(first.y() + first.h() + 2 * LiveHeadViewer.BORDER + caption + HeadViewerPanes.GAP, panes.get(1).box().y());
+        assertTrue(HeadViewerPanes.twoFit(480, 222 + 2 * caption, 160, false, 16f / 9f, 16f / 9f, caption));
+        assertFalse(HeadViewerPanes.twoFit(480, 221 + 2 * caption, 160, false, 16f / 9f, 16f / 9f, caption));
+    }
+
+    @Test
     @DisplayName("at the largest box size only one pane shows, the chosen stream or the first")
     void maxSizeShowsOnePane() {
         assertEquals(1, HeadViewerPanes.current(480, H, 240, true, true).size());
