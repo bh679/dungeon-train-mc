@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.PackageListClient;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
+import games.brennan.dungeontrain.client.menu.WorldPanelInput;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
 import games.brennan.dungeontrain.client.menu.MenuClickModifiers;
 import games.brennan.dungeontrain.client.menu.number.NumberField;
@@ -24,9 +25,7 @@ import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -61,13 +60,6 @@ public final class EditorTypeMenuInputHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** True only when a press fired while a menu cell was hovered and we're awaiting its release. */
-    private static boolean pressArmed;
-    /** Captured at press time so the release knows whether it was a shift-click. */
-    private static boolean pressShift;
-    /** Which mouse button armed the press — only its own release dispatches. */
-    private static int pressButton;
-
     /**
      * Range offered by the typed-weight pad. Every weight pool behind these cells is 0-100
      * ({@code CarriageWeights}, {@code CarriageContentsWeights}, {@code TrackVariantWeights} and
@@ -77,58 +69,28 @@ public final class EditorTypeMenuInputHandler {
     private static final int TYPED_WEIGHT_MIN = 0;
     private static final int TYPED_WEIGHT_MAX = 100;
 
+    private static final WorldPanelInput<Hovered> INPUT = new WorldPanelInput<>(
+        EditorTypeMenuRenderer::hovered, hit -> hit.cell() == CellKind.NONE,
+        EditorTypeMenuInputHandler::shouldHandle, true, EditorTypeMenuInputHandler::dispatch);
+
     private EditorTypeMenuInputHandler() {}
 
+    /** The press: cancels the world interaction and arms when the crosshair is on a panel cell. */
     @SubscribeEvent
     public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
-        if (!shouldHandle()) return;
-        Hovered hit = EditorTypeMenuRenderer.hovered();
-        if (hit.cell() == CellKind.NONE) return;
-        event.setCanceled(true);
-        event.setSwingHand(false);
-        pressArmed = true;
-        pressButton = event.isUseItem() ? GLFW.GLFW_MOUSE_BUTTON_RIGHT : GLFW.GLFW_MOUSE_BUTTON_LEFT;
-        Minecraft mc = Minecraft.getInstance();
-        long win = mc.getWindow().getWindow();
-        pressShift = mc.screen == null
-            && (GLFW.glfwGetKey(win, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS
-                || GLFW.glfwGetKey(win, GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS);
-        if (mc.player != null) {
-            mc.hitResult = BlockHitResult.miss(
-                mc.player.getEyePosition(),
-                Direction.UP,
-                mc.player.blockPosition()
-            );
-        }
-        if (mc.gameMode != null) mc.gameMode.stopDestroyBlock();
+        INPUT.onInteraction(event);
     }
 
+    /** The release of the armed button fires the hit under the crosshair. */
     @SubscribeEvent
     public static void onMouseButton(InputEvent.MouseButton.Pre event) {
-        if (!shouldHandle()) {
-            pressArmed = false;
-            return;
-        }
-        if (Minecraft.getInstance().screen != null) return;
-        int btn = event.getButton();
-        if (btn != GLFW.GLFW_MOUSE_BUTTON_LEFT && btn != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
-        if (event.getAction() != GLFW.GLFW_RELEASE) return;
-        if (!pressArmed || btn != pressButton) return;
-        pressArmed = false;
-        boolean shift = pressShift || (event.getModifiers() & GLFW.GLFW_MOD_SHIFT) != 0;
-
-        Hovered hit = EditorTypeMenuRenderer.hovered();
-        if (hit.cell() == CellKind.NONE) return;
-        // Right-click is a number cell's step-down and nothing else.
-        if (btn == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !isNumberCell(hit.cell())) return;
-        dispatch(hit, shift, btn);
+        INPUT.onMouseButton(event);
     }
 
+    /** Belt and braces: a left-click-block that slipped past the press cancel must not start block damage. */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        if (!shouldHandle()) return;
-        if (EditorTypeMenuRenderer.hovered().cell() == CellKind.NONE) return;
-        event.setCanceled(true);
+        INPUT.onLeftClickBlock(event);
     }
 
     @SubscribeEvent
@@ -169,6 +131,8 @@ public final class EditorTypeMenuInputHandler {
     }
 
     private static void dispatch(Hovered hit, boolean shift, int button) {
+        // Right-click is a number cell's step-down and nothing else.
+        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !isNumberCell(hit.cell())) return;
         List<EditorTypeMenusPacket.Menu> menus = EditorTypeMenuRenderer.menus();
         if (hit.menuIdx() < 0 || hit.menuIdx() >= menus.size()) return;
         EditorTypeMenusPacket.Menu menu = menus.get(hit.menuIdx());

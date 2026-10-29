@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import java.util.List;
+
 /**
- * The body cut into pages.
+ * The template detail pane's body cut into pages — a {@link SectionPages} of five sections.
  *
  * <p>The first page is always the model and its data sheet — path, size, blocks, weight, stage,
  * levels. The room's rows come after, as many per page as the whole body holds less the pager's
@@ -19,6 +21,9 @@ package games.brennan.dungeontrain.client.menu.editorscreen;
  */
 public record DetailPages(int count, int perPage, int blockPages, int lootPages, int submitPages) {
     public static final DetailPages NONE = new DetailPages(0, 0, 0, 0, 0);
+
+    /** The sections, in page order. */
+    public enum Kind { MODEL, ROWS, BLOCKS, LOOT, SUBMIT }
 
     public static DetailPages of(int count, int bodySlots) {
         return of(count, bodySlots, 0);
@@ -40,18 +45,27 @@ public record DetailPages(int count, int perPage, int blockPages, int lootPages,
         return new DetailPages(count, perPage, Math.max(0, n), lootPages, submitPages);
     }
 
-    /** True when there is anything past the model page. */
-    public boolean paged() {
-        return hasRows() || blockPages > 0 || lootPages > 0 || submitPages > 0;
+    /**
+     * The same pages as sections. A row section with no slots is left out: a layout that gives the
+     * list no room must not invent a page the rows would never draw on.
+     */
+    public SectionPages<Kind> sections() {
+        return new SectionPages<>(List.of(
+            SectionPages.Section.always(Kind.MODEL, 1, 1),
+            SectionPages.Section.when(Kind.ROWS, perPage > 0 ? count : 0, Math.max(1, perPage)),
+            SectionPages.Section.when(Kind.BLOCKS, blockPages, 1),
+            SectionPages.Section.when(Kind.LOOT, lootPages, 1),
+            SectionPages.Section.when(Kind.SUBMIT, submitPages, 1)));
     }
 
-    private boolean hasRows() {
-        return count > 0 && perPage > 0;
+    /** True when there is anything past the model page. */
+    public boolean paged() {
+        return pageCount() > 1;
     }
 
     /** How many row pages follow the model page. */
     public int rowPages() {
-        return hasRows() ? (count + perPage - 1) / perPage : 0;
+        return sections().pagesOf(Kind.ROWS);
     }
 
     /** The first Blocks page: straight after the last row page. */
@@ -71,21 +85,19 @@ public record DetailPages(int count, int perPage, int blockPages, int lootPages,
 
     /** The model page, the row pages, the Loot pages, then the Submitted answers page; at least one. */
     public int pageCount() {
-        return 1 + rowPages() + blockPages + lootPages + submitPages;
+        return sections().pageCount();
     }
 
     public int clamp(int page) {
-        return Math.max(0, Math.min(page, pageCount() - 1));
+        return sections().clamp(page);
     }
 
     public boolean isLootPage(int page) {
-        int p = clamp(page);
-        return lootPages > 0 && p >= firstLootPage() && p < firstSubmitPage();
+        return sections().isOf(page, Kind.LOOT);
     }
 
     public boolean isBlockPage(int page) {
-        int p = clamp(page);
-        return blockPages > 0 && p >= firstBlockPage() && p < firstLootPage();
+        return sections().isOf(page, Kind.BLOCKS);
     }
 
     /** Which Blocks page {@code page} is, from 0; meaningless off one. */
@@ -94,7 +106,7 @@ public record DetailPages(int count, int perPage, int blockPages, int lootPages,
     }
 
     public boolean isSubmitPage(int page) {
-        return submitPages > 0 && clamp(page) >= firstSubmitPage();
+        return sections().isOf(page, Kind.SUBMIT);
     }
 
     /** Which Loot page {@code page} is, from 0; meaningless off one. */
@@ -104,8 +116,7 @@ public record DetailPages(int count, int perPage, int blockPages, int lootPages,
 
     /** True when {@code page} is one of rows rather than the model or a Loot page. */
     public boolean isRowPage(int page) {
-        int p = clamp(page);
-        return p >= 1 && p < firstBlockPage();
+        return sections().isOf(page, Kind.ROWS);
     }
 
     /** The first row index on {@code page}; meaningless off a row page. */
@@ -115,7 +126,7 @@ public record DetailPages(int count, int perPage, int blockPages, int lootPages,
 
     /** One past the last row index on {@code page}. */
     public int end(int page) {
-        return isRowPage(page) ? Math.min(count, first(page) + perPage) : 0;
+        return isRowPage(page) ? sections().endRow(page) : 0;
     }
 
     /** True when the pager is drawn — only when there is a page to turn to. */
