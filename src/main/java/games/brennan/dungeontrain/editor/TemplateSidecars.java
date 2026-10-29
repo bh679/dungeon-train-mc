@@ -114,7 +114,7 @@ public final class TemplateSidecars {
         return List.of(
                 new Sidecar(ROLE_VARIANTS, CarriageVariantBlocks.SUBDIR, at + CarriageVariantBlocks.EXT),
                 new Sidecar("parts", CarriageVariantPartsStore.SUBDIR, at + CarriageVariantPartsStore.EXT),
-                new Sidecar("contents-allow", CarriageVariantBlocks.SUBDIR, at + ContentsAllowStore.EXT),
+                new Sidecar("contents-allow", CarriageVariantBlocks.SUBDIR, at + CarriageVariantContentsAllowStore.EXT),
                 containers(BlockVariantPlot.carriageKey(id)));
     }
 
@@ -142,7 +142,7 @@ public final class TemplateSidecars {
         TrackKind room = TrackKind.PORTAL_ROOM;
         return List.of(
                 new Sidecar(ROLE_VARIANTS, room.subdir(), name + TrackKind.VARIANTS_EXT),
-                new Sidecar("contents-allow", room.subdir(), name + ContentsAllowStore.EXT),
+                new Sidecar("contents-allow", room.subdir(), name + CarriageVariantContentsAllowStore.EXT),
                 new Sidecar("copies", room.subdir(), name + PortalRoomCopiesVariant.COPIES_EXT),
                 containers(BlockVariantPlot.trackKey(room, name)));
     }
