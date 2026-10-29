@@ -31814,6 +31814,41 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ai-translation-review-pass",
+      "version": "0.1581.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations"
+      ],
+      "title": "Translation fixes",
+      "summary": "Some translated text now reads more clearly.",
+      "highlights": [],
+      "pr": 2395,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "note-echo-author-gear",
+      "version": "0.1586.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "books"
+      ],
+      "title": "Note echo fix",
+      "summary": "A fix for echoes sent by Love Notes and Death Notes.",
+      "highlights": [],
+      "pr": 2396,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
