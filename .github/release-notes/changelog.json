@@ -31770,8 +31770,8 @@
         "fix",
         "advancements"
       ],
-      "title": "Advancement rewards stay with the world that earned them",
-      "summary": "Starting a new world no longer hands you the rewards of advancements you earned before, like a music disc in your hand or a burst of experience.",
+      "title": "Advancement fix",
+      "summary": "Starting a new world is a little tidier with advancements you have already earned.",
       "highlights": [],
       "pr": 2397,
       "date": "2026-10-29",
