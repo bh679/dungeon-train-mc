@@ -157,7 +157,7 @@ public final class DeathNoteRefreshEvents {
             if (enforce && note.freePlay() != targetFreePlay) continue; // provenance mismatch — wait for a matching life
             boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
                     note.authorUuid(), note.authorName(), note.authorSkinRef(), note.deathCarriage(),
-                    note.id(), note.kind(), note.lines());
+                    note.id(), note.kind(), note.lines(), note.authorGear());
             if (!ok) continue;                                       // not on a carriage yet — retry next scan
             DeathNotePool.remove(targetUuid, note.id());
             DeathNoteReporter.markUsed(note.id());

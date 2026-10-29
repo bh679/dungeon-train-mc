@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.narrative.AuthorSkinRef;
 import games.brennan.dungeontrain.narrative.DeathNoteSigning;
+import games.brennan.dungeontrain.narrative.NoteAuthorGear;
 import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
 import games.brennan.dungeontrain.world.PendingDeathNotes;
@@ -67,6 +68,9 @@ public final class DeathNoteEvents {
         // The author's skin, so their echo arrives wearing it rather than the UUID default
         // (the echo's profile ref needs a captured texture URL; a bare uuid never resolves one).
         String authorSkinRef = AuthorSkinCapture.capture(player).map(AuthorSkinRef::encode).orElse("");
+        // …and what they were carrying as they died, so the echo comes back with THIS life's gear.
+        // LivingDeathEvent fires before the inventory drops, so it is all still on them here.
+        String authorGear = NoteAuthorGear.captureEncoded(player);
 
         for (PendingDeathNotes.PendingDeathNote note : pending) {
             if (deathCarriage == null) {
@@ -85,7 +89,7 @@ public final class DeathNoteEvents {
             // worldKey is still sent (the relay requires it) but is no longer used to scope the pull.
             DeathNoteReporter.submit(player.getUUID(), note.authorName(), note.targetName(),
                     note.targetUuid(), deathCarriage, worldKey, authorSkinRef, freePlay, note.kind(),
-                    note.lines());
+                    note.lines(), authorGear);
         }
     }
 

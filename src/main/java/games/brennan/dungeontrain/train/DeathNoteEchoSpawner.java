@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
 import games.brennan.dungeontrain.event.DeathNoteEchoController;
 import games.brennan.dungeontrain.narrative.AuthorSkinRef;
+import games.brennan.dungeontrain.narrative.NoteAuthorGear;
 import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.narrative.NoteSpokenLines;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
@@ -111,11 +112,16 @@ public final class DeathNoteEchoSpawner {
      * {@code DeathNoteRefreshEvents.spawnArrivedEchoes} leaves the note in the pool and tries again on
      * the next scan, so the echo simply waits until the target has walked out of the portal. Nothing
      * is consumed and no curse is lost.</p>
+     *
+     * <p>{@code authorGear} is what the author carried as they died ({@link NoteAuthorGear}); the echo
+     * wears exactly that — an author who died empty-handed sends an empty-handed echo. Blank (a note
+     * submitted before gear was captured, or gear that could not be captured) falls back to the
+     * difficulty-scaled gear every echo used to get.</p>
      */
     public static boolean spawnForTarget(ServerLevel level, ServerPlayer target,
                                          String authorUuid, String authorName, String authorSkinRef,
                                          int deathCarriage, int noteId, NoteKind kind,
-                                         List<String> spokenLines) {
+                                         List<String> spokenLines, String authorGear) {
         Trains.Carriage group = groupContaining(level, target);
         if (group == null) {
             LOGGER.debug("[DungeonTrain] DeathNote echo: {} not on a resolvable carriage group yet — deferring.",
@@ -139,7 +145,7 @@ public final class DeathNoteEchoSpawner {
         }
         BlockPos floorPos = spot.get();
         return spawn(level, floorPos, deathCarriage, authorUuid, authorName, authorSkinRef, target,
-                noteId, kind, spokenLines);
+                noteId, kind, spokenLines, authorGear);
     }
 
     /**
@@ -226,7 +232,7 @@ public final class DeathNoteEchoSpawner {
     private static boolean spawn(ServerLevel level, BlockPos floorPos, int carriagePIdx,
                                  String authorUuidStr, String authorNameStr, String authorSkinRef,
                                  ServerPlayer target, int noteId, NoteKind kind,
-                                 List<String> spokenLines) {
+                                 List<String> spokenLines, String authorGear) {
         UUID targetUuid = target.getUUID();
         try {
             Optional<EntityType<?>> typeOpt = EntityType.byString(PLAYER_MOB_ID.toString());
@@ -258,9 +264,16 @@ public final class DeathNoteEchoSpawner {
             mob.setCustomName(Component.translatable("echo.dungeontrain.mob_name", authorName));
             mob.setCustomNameVisible(true);
 
-            // Difficulty-scaled gear. For a curse this lands its FIGHT/FLEE self-assessment on FIGHT
-            // (an armed threat); for a Love Note the same gear arms it FOR the target instead.
-            if (DungeonTrainConfig.getDifficultyEnabled()
+            // The author's own gear from the death that armed this note — an exact copy, nothing added.
+            // Only a note without captured gear (older jar / relay) falls back to difficulty gear,
+            // which lands a curse's FIGHT/FLEE self-assessment on FIGHT (a Love Note: armed FOR them).
+            CompoundTag gear = NoteAuthorGear.decode(authorGear);
+            if (gear != null) {
+                int placed = NoteAuthorGear.applyTo(mob, gear, level.registryAccess());
+                mob.addTag(DifficultyApplier.APPLIED_TAG); // nothing may roll difficulty gear onto it later
+                LOGGER.debug("[DungeonTrain] Note echo of {} wears the author's death gear ({} stack(s)).",
+                        authorName, placed);
+            } else if (DungeonTrainConfig.getDifficultyEnabled()
                     && DifficultyApplier.isEligible(mob, DungeonTrainConfig.getDifficultyAffectsBabyMobs())) {
                 int progression = DifficultyProgression.maxTravelledCarriageIndex(level);
                 DifficultyApplier.apply(mob, progression, rng, false, DifficultyApplier.StatScaling.FULL);

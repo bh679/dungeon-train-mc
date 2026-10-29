@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
 import games.brennan.dungeontrain.event.AuthorSkinCapture;
 import games.brennan.dungeontrain.event.DeathNoteRefreshEvents;
 import games.brennan.dungeontrain.narrative.AuthorSkinRef;
+import games.brennan.dungeontrain.narrative.NoteAuthorGear;
 import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
@@ -288,9 +289,11 @@ public final class EchoEncounterTestCommand {
         // The dev player's own skin, captured the way a real death does it, so the dev spawn
         // exercises the same path players see.
         String skinRef = AuthorSkinCapture.capture(player).map(AuthorSkinRef::encode).orElse("");
+        // Likewise the dev player's current loadout, as if they had died carrying it.
+        String gear = NoteAuthorGear.captureEncoded(player);
         boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
             player.getUUID().toString(), player.getGameProfile().getName(), skinRef, deathCarriage,
-            0, kind, DEV_SCRIPT);
+            0, kind, DEV_SCRIPT, gear);
         source.sendSuccess(() -> Component.literal(
                 "[echotest] " + kind.englishTitle() + " spawnForTarget -> "
                     + (ok ? "TRUE" : "FALSE (deferred/failed)")

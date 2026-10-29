@@ -262,7 +262,7 @@ public final class BuildingEditor {
 
     /** The dirty-check baseline key for {@code name}'s plot. */
     public static String snapshotKey(String name) {
-        return EditorPlotSnapshots.key(PlotCategory.BUILDINGS.id(), Buildings.MODEL_ID + ":" + name);
+        return new Template.Building(name).snapshotKey().orElseThrow();
     }
 
     /** Stamp {@code structure} (or a bare pad when null) on {@code name}'s plot, and take it as the saved baseline. */

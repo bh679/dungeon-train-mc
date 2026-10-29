@@ -452,7 +452,7 @@ public final class CarriagePartEditor {
         // accumulated since enter (PrefabUseHandler defers its writes until
         // /save). Failure is logged but doesn't fail the whole save.
         try {
-            ContainerContentsStore.loadFor("part:" + kind.id() + ":" + name).save();
+            ContainerContentsStore.loadFor(BlockVariantPlot.partKey(kind, name)).save();
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Part editor save: contents-store save failed for {}:{}: {}",
                 kind.id(), name, e.toString());
@@ -474,7 +474,7 @@ public final class CarriagePartEditor {
         return EditorSave.toSource("Part editor save: " + kind.id() + ":" + name,
             () -> CarriagePartTemplateStore.saveToSource(kind, name, template),
             () -> sidecar.saveToSource(kind, name),
-            () -> ContainerContentsStore.loadFor("part:" + kind.id() + ":" + name).saveToSource());
+            () -> ContainerContentsStore.loadFor(BlockVariantPlot.partKey(kind, name)).saveToSource());
     }
 
     /**
@@ -564,7 +564,7 @@ public final class CarriagePartEditor {
         // Drop in-session contents-store changes (loot-prefab links) so the
         // re-stamp reads the last-saved disk state; placement writes only
         // touch the in-memory cache until /save.
-        ContainerContentsStore.invalidate("part:" + kind.id() + ":" + name);
+        ContainerContentsStore.invalidate(BlockVariantPlot.partKey(kind, name));
         EditorSidecarBaseline.forgetFile(CarriagePartVariantBlocks.configPathFor(kind, name));
         CarriagePartPlacer.eraseAt(level, origin, kind, dims);
         stampCurrent(level, origin, kind, name, dims);

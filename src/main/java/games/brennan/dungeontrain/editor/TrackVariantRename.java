@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.portal.PortalRoomCopiesVariant;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.track.variant.TrackKind;
@@ -114,10 +113,8 @@ public final class TrackVariantRename {
      * document, whose basename is derived from the plot key and not from the id.</p>
      */
     private static void moveSidecars(TrackKind kind, String from, String to, boolean devMode) throws IOException {
-        BuilderPhotoPaths.Kind photoKind = kind == TrackKind.PORTAL_ROOM
-            ? BuilderPhotoPaths.Kind.PORTAL_ROOM : BuilderPhotoPaths.Kind.TRACK;
-        List<TemplateSidecars.Sidecar> before = TemplateSidecars.filesFor(photoKind, kind.id(), from);
-        List<TemplateSidecars.Sidecar> after = TemplateSidecars.filesFor(photoKind, kind.id(), to);
+        List<TemplateSidecars.Sidecar> before = RelayTemplates.trackSide(kind, from).sidecars();
+        List<TemplateSidecars.Sidecar> after = RelayTemplates.trackSide(kind, to).sidecars();
         if (before.size() != after.size()) {
             LOGGER.warn("[DungeonTrain] Rename {}:{}: sidecar lists differ in size ({} vs {}) — skipping",
                 kind.id(), from, before.size(), after.size());
@@ -198,15 +195,10 @@ public final class TrackVariantRename {
      * report the renamed template as having no variants at all.</p>
      */
     private static void invalidateCaches(TrackKind kind, String from, String to) {
-        TrackVariantBlocks.invalidate(kind, from);
-        TrackVariantBlocks.invalidate(kind, to);
-        ContainerContentsStore.invalidate(ContainerContentsStore.trackPlotKey(kind, from));
-        ContainerContentsStore.invalidate(ContainerContentsStore.trackPlotKey(kind, to));
+        // Both names' stores, through each template's own list of what it caches.
+        RelayTemplates.trackSide(kind, from).invalidateSidecarCaches();
+        RelayTemplates.trackSide(kind, to).invalidateSidecarCaches();
         if (kind == TrackKind.PORTAL_ROOM) {
-            PortalRoomContentsAllowStore.invalidate(from);
-            PortalRoomContentsAllowStore.invalidate(to);
-            PortalRoomCopiesVariant.invalidate(from);
-            PortalRoomCopiesVariant.invalidate(to);
             // The room's size is filed under its name; drop the stale entry so the next read measures
             // the template rather than trusting a number left behind by the old one.
             PortalRoomSizes.forget(from);
