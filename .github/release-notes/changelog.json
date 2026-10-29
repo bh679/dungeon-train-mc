@@ -31989,6 +31989,23 @@
       "released_at": "2026-10-29T09:41:21Z"
     },
     {
+      "id": "trapped-dimensional-carriages",
+      "version": "0.1595.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "Two new dimensional carriages",
+      "summary": "Two new dimensional carriages can turn up further along the line. Watch your step.",
+      "highlights": [],
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 2408
+    },
+    {
       "id": "ain-053-supporter-names",
       "version": "0.1595.0",
       "type": "content",
