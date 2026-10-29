@@ -32021,6 +32021,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "crystal-fix",
+      "version": "0.1597.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Crystal fix",
+      "summary": "Fixed an issue with End Crystals.",
+      "highlights": [],
+      "pr": 2401,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
