@@ -54,9 +54,13 @@ final class HeadViewerPanesTest {
         int caption = HeadViewerCaption.HEIGHT;
         List<HeadViewerPanes.Pane> panes = HeadViewerPanes.panes(480, H, 160, true, false, BOTH, 16f / 9f, 16f / 9f, caption);
         LiveHeadViewer.Box first = panes.get(0).box();
-        assertEquals(first.y() + first.h() + 2 * LiveHeadViewer.BORDER + caption + HeadViewerPanes.GAP, panes.get(1).box().y());
-        assertTrue(HeadViewerPanes.twoFit(480, 222 + 2 * caption, 160, false, 16f / 9f, 16f / 9f, caption));
-        assertFalse(HeadViewerPanes.twoFit(480, 221 + 2 * caption, 160, false, 16f / 9f, 16f / 9f, caption));
+        int between = caption + HeadViewerPanes.CAPTION_GAP; // the caption fills the plain gap, plus a little
+        assertEquals(first.y() + first.h() + 2 * LiveHeadViewer.BORDER + between, panes.get(1).box().y());
+        int extra = between - HeadViewerPanes.GAP + caption;
+        assertTrue(HeadViewerPanes.twoFit(480, 222 + extra, 160, false, 16f / 9f, 16f / 9f, caption));
+        assertFalse(HeadViewerPanes.twoFit(480, 221 + extra, 160, false, 16f / 9f, 16f / 9f, caption));
+        assertTrue(HeadViewerPanes.twoFit(480, 240, 160, false, 16f / 9f, 16f / 9f, caption),
+            "normal size still stacks both, captions and all, on a 240-tall GUI");
     }
 
     @Test

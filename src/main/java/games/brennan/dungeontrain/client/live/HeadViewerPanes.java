@@ -27,6 +27,8 @@ public final class HeadViewerPanes {
 
     /** Space between the two panes; the same as the gap to the screen edge. */
     static final int GAP = LiveHeadViewer.EDGE;
+    /** Space between the first pane's caption and the second pane. */
+    static final int CAPTION_GAP = 2;
     /** How long a click is held waiting for the server to write it onto the worn TV. */
     static final long PENDING_MS = 2_000L;
     /** {@link #wornMemory} for a head item that is not a Vista TV (the Live Eye): it has no memory to follow. */
@@ -161,8 +163,17 @@ public final class HeadViewerPanes {
     private static LiveHeadViewer.Box stacked(int guiWidth, int boxWidth, float mainRatio, float secondRatio, int caption) {
         LiveHeadViewer.Box first = LiveHeadViewer.layout(guiWidth, boxWidth, mainRatio);
         LiveHeadViewer.Box secondAlone = LiveHeadViewer.layout(guiWidth, boxWidth, secondRatio);
-        return new LiveHeadViewer.Box(first.x(), first.y() + first.h() + 2 * LiveHeadViewer.BORDER + caption + GAP, boxWidth,
+        return new LiveHeadViewer.Box(first.x(), first.y() + first.h() + 2 * LiveHeadViewer.BORDER + between(caption), boxWidth,
             secondAlone.h());
+    }
+
+    /**
+     * Space between the two panes: the plain {@link #GAP}, or the first pane's caption sitting in it with
+     * {@link #CAPTION_GAP} under it. The caption fills the gap rather than adding to it, so both panes and
+     * their captions still fit a 240-GUI-pixel-tall screen at the normal box size. Pure.
+     */
+    static int between(int caption) {
+        return caption == 0 ? GAP : Math.max(GAP, caption + CAPTION_GAP);
     }
 
     /**
