@@ -353,7 +353,10 @@ public final class PerksScreen extends Screen {
     // ---- render ----------------------------------------------------------------------------------------
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    public void render(GuiGraphics g, int rawX, int rawY, float partialTick) {
+        // over the Unlock tab, nothing behind it is hovered: the sky, titles, names and lists see no mouse
+        boolean onTab = bar.tabContains(rawX, rawY);
+        int mouseX = onTab ? -10_000 : rawX, mouseY = onTab ? -10_000 : rawY;
         frameAt = Util.getMillis();
         PerkMenuSnapshot snap = snapshot();
         long now = frameAt;
@@ -446,14 +449,14 @@ public final class PerksScreen extends Screen {
         if (pointsFade > 0.03) counters.render(g, snap.unlockPoints(), snap.activePoints(), now, pointsFade);
         g.flush(); // titles and names are batched: push them out so the card paints over them
         if (DETAILS == DetailsMode.BAR) {
-            bar.mouse(mouseX, mouseY);
+            bar.mouse(rawX, rawY);
             double barFade = layer(MenuReveal.Stage.BAR, fade);
             if (barFade > 0.03) bar.render(g, snap, barFade);
             renderStoryLine(g, now, fade, gx, lowestStar);
         }
         else card.render(g, now);
         g.flush();
-        super.render(g, mouseX, mouseY, partialTick);
+        super.render(g, rawX, rawY, partialTick);
 
         if (deathPage()) return;
         if (zoomHover >= 0) g.renderTooltip(font, zoomControl.tooltip(zoomHover), mouseX, mouseY);
@@ -626,6 +629,7 @@ public final class PerksScreen extends Screen {
             return true;
         }
         if (super.mouseClicked(mx, my, button)) return true;
+        if (bar.tabContains(mx, my)) return true; // a greyed or outlined tab: nothing behind it takes the click
         if (button == 0 && overNext(mx, my)) {
             play(SoundEvents.UI_BUTTON_CLICK.value(), 0.3F, 1.0F);
             onClose();
@@ -655,6 +659,10 @@ public final class PerksScreen extends Screen {
     public boolean mouseReleased(double mx, double my, int button) {
         if (deathPage()) return true;
         if (super.mouseReleased(mx, my, button)) return true;
+        if (bar.tabContains(mx, my)) { // never a star behind the Unlock tab
+            dragging = false;
+            return true;
+        }
         boolean wasDrag = dragging && dragMoved > 3;
         dragging = false;
         // right-click a star: unlock it (again, once full)

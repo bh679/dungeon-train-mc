@@ -430,7 +430,9 @@ final class PerkDetailsBar {
 
     /** The mouse moved: light the graph block under it. */
     void mouse(double mx, double my) {
-        graphHover = overGraph(mx, my) ? graph.indexAt(graphW, mx - graphX) : -1;
+        // lit only where a click acts: a block that takes a point, never one that would need unlocking
+        boolean acts = !unlockOnly && overGraph(mx, my) && graph.at(graphW, mx - graphX) != PointsGraph.Kind.LOCKED;
+        graphHover = acts ? graph.indexAt(graphW, mx - graphX) : -1;
     }
 
     private boolean overGraph(double mx, double my) {
@@ -439,16 +441,14 @@ final class PerkDetailsBar {
     }
 
     /**
-     * A click in the bar: on the graph, a filled or outlined block adds a point and a dark block unlocks
-     * one more; on a bar, it does whichever the perk needs next. Returns true when it acted.
+     * A click in the bar: on the graph, a filled or outlined block adds a point (never while unlocking
+     * only). Unlocking is the Unlock tab's alone: a dark block does nothing. Returns true when it acted.
      */
     boolean click(double mx, double my) {
-        if (!overGraph(mx, my)) return false;
+        if (unlockOnly || !overGraph(mx, my)) return false;
         PointsGraph.Kind k = graph.at(graphW, mx - graphX);
-        if (k == null && !graph.layout(graphW).bar()) return false;
-        boolean full = graph.open == 0;
-        if (unlockOnly || k == PointsGraph.Kind.LOCKED || k == null && full) unlock.accept(perk);
-        else activate.accept(perk);
+        if (k == PointsGraph.Kind.LOCKED || k == null && (!graph.layout(graphW).bar() || graph.open == 0)) return false;
+        activate.accept(perk);
         return true;
     }
 }
