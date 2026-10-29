@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
@@ -63,24 +62,9 @@ public final class EditorSaveAsKinds {
         void restoreAndRestamp(ServerLevel level, Template source, CarriageDims dims) throws IOException;
     }
 
+    /** The adapter for {@code model} — {@link Template#saveAs()}. */
     public static Adapter of(Template model) {
-        return switch (model) {
-            case Template.Carriage ignored -> CARRIAGE;
-            case Template.Contents ignored -> CONTENTS;
-            case Template.WholeCarriage ignored -> WHOLE;
-            case Template.CarriageGroup ignored -> WHOLE;
-            case Template.WholeHalf ignored -> WHOLE;
-            case Template.Part ignored -> PART;
-            case Template.PortalRoom ignored -> PORTAL_ROOM;
-            case Template.Track ignored -> TRACK_SIDE;
-            case Template.Pillar ignored -> TRACK_SIDE;
-            case Template.Adjunct ignored -> TRACK_SIDE;
-            case Template.Tunnel ignored -> TRACK_SIDE;
-            case Template.ChunkFrame ignored -> CHUNK_FRAME;
-            case Template.Building ignored -> BUILDING;
-            case Template.LostCity ignored -> LOST_CITY;
-            case Template.Staged ignored -> STAGED;
-        };
+        return model.saveAs();
     }
 
     // ---- shared ----
@@ -97,11 +81,11 @@ public final class EditorSaveAsKinds {
         return Optional.of(Component.translatable("chat.dungeontrain.editor.name_already_taken", name));
     }
 
-    /** The template's own file plus every sidecar {@link TemplateSidecars} lists, in the user tier. */
-    private static List<Path> withSidecars(Path nbt, BuilderPhotoPaths.Kind kind, String subKind, String id) {
+    /** The template's own file plus every sidecar {@link Template#sidecars()} lists, in the user tier. */
+    private static List<Path> withSidecars(Path nbt, Template model) {
         List<Path> out = new ArrayList<>();
         out.add(nbt);
-        for (TemplateSidecars.Sidecar s : TemplateSidecars.filesFor(kind, subKind, id)) {
+        for (TemplateSidecars.Sidecar s : model.sidecars()) {
             out.add(UserContentPaths.dir(s.subdir()).resolve(s.basename()));
         }
         return out;
@@ -109,7 +93,7 @@ public final class EditorSaveAsKinds {
 
     // ---- carriages ----
 
-    private static final Adapter CARRIAGE = new Adapter() {
+    public static final Adapter CARRIAGE = new Adapter() {
         @Override public String categoryId(Template source) { return "carriages"; }
 
         @Override public Optional<Component> validate(Template source, String name) {
@@ -132,7 +116,7 @@ public final class EditorSaveAsKinds {
 
         @Override public List<Path> userFiles(Template source) {
             String id = source.id();
-            return withSidecars(CarriageTemplateStore.fileForId(id), BuilderPhotoPaths.Kind.CARRIAGE, "", id);
+            return withSidecars(CarriageTemplateStore.fileForId(id), source);
         }
 
         @Override public Template copy(ServerPlayer player, Template source, String name) throws IOException {
@@ -148,14 +132,14 @@ public final class EditorSaveAsKinds {
 
         @Override public void restoreAndRestamp(ServerLevel level, Template source, CarriageDims dims) {
             CarriageTemplateStore.clearCache();
-            TemplateSidecars.invalidateCaches(BuilderPhotoPaths.Kind.CARRIAGE, "", source.id());
+            source.invalidateSidecarCaches();
             CarriageEditor.stampPlot(level, ((Template.Carriage) source).variant(), dims);
         }
     };
 
     // ---- contents ----
 
-    private static final Adapter CONTENTS = new Adapter() {
+    public static final Adapter CONTENTS = new Adapter() {
         @Override public String categoryId(Template source) { return "contents"; }
 
         @Override public Optional<Component> validate(Template source, String name) {
@@ -188,7 +172,7 @@ public final class EditorSaveAsKinds {
 
         @Override public List<Path> userFiles(Template source) {
             String id = source.id();
-            return withSidecars(CarriageContentsStore.fileForId(id), BuilderPhotoPaths.Kind.CONTENTS, "", id);
+            return withSidecars(CarriageContentsStore.fileForId(id), source);
         }
 
         @Override public Template copy(ServerPlayer player, Template source, String name) throws IOException {
@@ -220,7 +204,7 @@ public final class EditorSaveAsKinds {
 
         @Override public void restoreAndRestamp(ServerLevel level, Template source, CarriageDims dims) {
             CarriageContentsStore.clearCache();
-            TemplateSidecars.invalidateCaches(BuilderPhotoPaths.Kind.CONTENTS, "", source.id());
+            source.invalidateSidecarCaches();
             CarriageContentsEditor.stampPlot(level, ((Template.Contents) source).contents(), dims);
         }
 
@@ -231,7 +215,7 @@ public final class EditorSaveAsKinds {
 
     // ---- whole rooms and groups ----
 
-    private static final Adapter WHOLE = new Adapter() {
+    public static final Adapter WHOLE = new Adapter() {
         @Override public String categoryId(Template source) {
             return WholeCarriageEditor.categoryIdOf(kindOf(source));
         }
@@ -279,8 +263,7 @@ public final class EditorSaveAsKinds {
                 case HALF -> WholeHalfTemplateStore.clearCache();
                 case ROOM -> WholeCarriageTemplateStore.clearCache();
             }
-            WholeVariantBlocks.invalidate(kind, source.id());
-            ContainerContentsStore.invalidate(BlockVariantPlot.wholeKey(kind, source.id()));
+            source.invalidateSidecarCaches();
             WholeCarriageEditor.stampPlot(level, source, dims);
         }
 
@@ -292,7 +275,7 @@ public final class EditorSaveAsKinds {
 
     // ---- parts ----
 
-    private static final Adapter PART = new Adapter() {
+    public static final Adapter PART = new Adapter() {
         /** Part plots are not in the dirty scan. */
         @Override public String categoryId(Template source) { return null; }
 
@@ -315,8 +298,7 @@ public final class EditorSaveAsKinds {
 
         @Override public List<Path> userFiles(Template source) {
             Template.Part part = (Template.Part) source;
-            return withSidecars(CarriagePartTemplateStore.fileFor(part.partKind(), part.name()),
-                BuilderPhotoPaths.Kind.PART, part.partKind().id(), part.name());
+            return withSidecars(CarriagePartTemplateStore.fileFor(part.partKind(), part.name()), source);
         }
 
         @Override public Template copy(ServerPlayer player, Template source, String name) throws IOException {
@@ -328,7 +310,7 @@ public final class EditorSaveAsKinds {
         @Override public void restoreAndRestamp(ServerLevel level, Template source, CarriageDims dims) {
             Template.Part part = (Template.Part) source;
             CarriagePartTemplateStore.clearCache();
-            TemplateSidecars.invalidateCaches(BuilderPhotoPaths.Kind.PART, part.partKind().id(), part.name());
+            source.invalidateSidecarCaches();
             EditorSidecarBaseline.forgetFile(CarriagePartVariantBlocks.configPathFor(part.partKind(), part.name()));
             CarriagePartEditor.stampPlot(level, part.partKind(), part.name(), dims);
         }
@@ -336,7 +318,7 @@ public final class EditorSaveAsKinds {
 
     // ---- track tiles, pillars, adjuncts, tunnels ----
 
-    private static final Adapter TRACK_SIDE = new Adapter() {
+    public static final Adapter TRACK_SIDE = new Adapter() {
         @Override public String categoryId(Template source) { return "tracks"; }
 
         @Override public Optional<Component> validate(Template source, String name) {
@@ -360,7 +342,7 @@ public final class EditorSaveAsKinds {
         @Override public List<Path> userFiles(Template source) {
             TrackKind kind = trackKindOf(source);
             String name = source.variantName();
-            return withSidecars(TrackVariantStore.fileFor(kind, name), BuilderPhotoPaths.Kind.TRACK, kind.id(), name);
+            return withSidecars(TrackVariantStore.fileFor(kind, name), source);
         }
 
         @Override public Template copy(ServerPlayer player, Template source, String name) throws IOException {
@@ -370,7 +352,7 @@ public final class EditorSaveAsKinds {
             var template = TrackVariantStore.get(level, kind, source.variantName(), dims)
                 .orElseThrow(() -> new IOException("'" + source.variantName() + "' has no saved template to copy."));
             TrackVariantStore.save(kind, name, template);
-            TemplateCopy.copy(BuilderPhotoPaths.Kind.TRACK, kind.id(), source.variantName(), name);
+            TemplateCopy.copy(source, withName(source, name));
             TrackVariantRegistry.register(kind, name);
             restampKind(level, kind, dims);
             teleportTo(player, level, kind, name, dims);
@@ -381,34 +363,22 @@ public final class EditorSaveAsKinds {
             TrackKind kind = trackKindOf(source);
             String name = source.variantName();
             TrackVariantStore.invalidate(kind, name);
-            TemplateSidecars.invalidateCaches(BuilderPhotoPaths.Kind.TRACK, kind.id(), name);
+            source.invalidateSidecarCaches();
             // Each track-side kind's restampPlot is its per-name stamp (never the whole row).
             source.restampPlot(level, dims);
         }
     };
 
-    /** The track-side kind a template's variants live under. */
+    /** The track-side kind a template's variants live under — {@link Template#trackKind()}. */
     static TrackKind trackKindOf(Template source) {
-        return switch (source) {
-            case Template.Track t -> TrackKind.TILE;
-            case Template.Pillar p -> TrackPlotLocator.pillarKind(p.section());
-            case Template.Adjunct a -> PillarTemplateStore.adjunctKind(a.adjunct());
-            case Template.Tunnel t -> TrackPlotLocator.tunnelKind(t.variant());
-            case Template.PortalRoom r -> TrackKind.PORTAL_ROOM;
-            default -> throw new IllegalArgumentException("not a track-side template: " + source.id());
-        };
+        return source.trackKind()
+            .orElseThrow(() -> new IllegalArgumentException("not a track-side template: " + source.id()));
     }
 
     /** The same kind of track-side template as {@code source}, called {@code name}. */
     private static Template withName(Template source, String name) {
-        return switch (source) {
-            case Template.Track t -> new Template.Track(name);
-            case Template.Pillar p -> new Template.Pillar(p.section(), name);
-            case Template.Adjunct a -> new Template.Adjunct(a.adjunct(), name);
-            case Template.Tunnel t -> new Template.Tunnel(t.variant(), name);
-            case Template.PortalRoom r -> new Template.PortalRoom(name);
-            default -> throw new IllegalArgumentException("not a track-side template: " + source.id());
-        };
+        if (source instanceof Template.TrackSide trackSide) return trackSide.withName(name);
+        throw new IllegalArgumentException("not a track-side template: " + source.id());
     }
 
     /** Restamp every plot of {@code kind} — what a new name in the kind's row needs. */
@@ -440,7 +410,7 @@ public final class EditorSaveAsKinds {
 
     // ---- dimensional carriages (portal rooms) ----
 
-    private static final Adapter PORTAL_ROOM = new Adapter() {
+    public static final Adapter PORTAL_ROOM = new Adapter() {
         @Override public String categoryId(Template source) { return "portals"; }
 
         @Override public Optional<Component> validate(Template source, String name) {
@@ -454,8 +424,7 @@ public final class EditorSaveAsKinds {
 
         @Override public List<Path> userFiles(Template source) {
             String name = ((Template.PortalRoom) source).name();
-            return withSidecars(TrackVariantStore.fileFor(TrackKind.PORTAL_ROOM, name),
-                BuilderPhotoPaths.Kind.PORTAL_ROOM, TrackKind.PORTAL_ROOM.id(), name);
+            return withSidecars(TrackVariantStore.fileFor(TrackKind.PORTAL_ROOM, name), source);
         }
 
         @Override public Template copy(ServerPlayer player, Template source, String name) throws IOException {
@@ -475,7 +444,7 @@ public final class EditorSaveAsKinds {
                         name, games.brennan.dungeontrain.track.variant.TrackVariantGroup.DEFAULT_WEIGHT)));
             }
             PortalRoomTemplateStore.save(name, template);
-            TemplateCopy.copy(BuilderPhotoPaths.Kind.PORTAL_ROOM, TrackKind.PORTAL_ROOM.id(), from, name);
+            TemplateCopy.copy(source, new Template.PortalRoom(name));
             Vec3i size = games.brennan.dungeontrain.portal.PortalRoomSizes.sizeOf(from, dims);
             PortalRoomEditor.relayout(level, dims, () -> {
                 games.brennan.dungeontrain.portal.PortalRoomSizes.pending(name, size);
@@ -488,7 +457,7 @@ public final class EditorSaveAsKinds {
         @Override public void restoreAndRestamp(ServerLevel level, Template source, CarriageDims dims) {
             String name = ((Template.PortalRoom) source).name();
             TrackVariantStore.invalidate(TrackKind.PORTAL_ROOM, name);
-            TemplateSidecars.invalidateCaches(BuilderPhotoPaths.Kind.PORTAL_ROOM, TrackKind.PORTAL_ROOM.id(), name);
+            source.invalidateSidecarCaches();
             // Measured again from the restored file on the next ask; the save settled it at the
             // edited size.
             games.brennan.dungeontrain.portal.PortalRoomSizes.forget(name);
@@ -497,7 +466,7 @@ public final class EditorSaveAsKinds {
     };
 
     /** A frame is one structure plus its variant sidecar, both under {@code chunk_frames/}. */
-    private static final Adapter CHUNK_FRAME = new Adapter() {
+    public static final Adapter CHUNK_FRAME = new Adapter() {
         @Override public String categoryId(Template source) { return null; }
 
         @Override public Optional<Component> validate(Template source, String name) {
@@ -549,7 +518,7 @@ public final class EditorSaveAsKinds {
 
     /** Refuses at validation, so nothing below it ever runs: Big Lost City's buildings are All Rights Reserved. */
     /** A staged build is not yet a template of any kind; save-as has nothing to copy it into. Commit it instead. */
-    private static final Adapter STAGED = new Adapter() {
+    public static final Adapter STAGED = new Adapter() {
         @Override public String categoryId(Template source) { return EditorCategory.WORKBENCH.id(); }
 
         @Override public Optional<Component> validate(Template source, String name) {
@@ -569,7 +538,7 @@ public final class EditorSaveAsKinds {
         }
     };
 
-    private static final Adapter LOST_CITY = new Adapter() {
+    public static final Adapter LOST_CITY = new Adapter() {
         @Override public String categoryId(Template source) { return null; }
 
         @Override public Optional<Component> validate(Template source, String name) {
@@ -591,7 +560,7 @@ public final class EditorSaveAsKinds {
 
     // ---- buildings ----
 
-    private static final Adapter BUILDING = new Adapter() {
+    public static final Adapter BUILDING = new Adapter() {
         @Override public String categoryId(Template source) { return null; }
 
         @Override public Optional<Component> validate(Template source, String name) {

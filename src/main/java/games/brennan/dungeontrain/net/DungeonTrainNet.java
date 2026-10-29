@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "166";
+    public static final String PROTOCOL_VERSION = "169";
 
     private DungeonTrainNet() {}
 
@@ -424,6 +424,10 @@ public final class DungeonTrainNet {
         registrar.playToClient(AdvancementGapsPacket.TYPE, AdvancementGapsPacket.STREAM_CODEC, AdvancementGapsPacket::handle);
         // Train wind: profile + seed + start X, so the client computes the wind itself. See wind/WindServer.
         registrar.playToClient(WindProfilePacket.TYPE, WindProfilePacket.STREAM_CODEC, WindProfilePacket::handle);
+        // Spheres-band comets: launch + end only, the client flies and draws them. See event/SpheresComet.
+        registrar.playToClient(CometPacket.TYPE, CometPacket.STREAM_CODEC, CometPacket::handle);
+        // A shower of far-off comets around one about to strike the train (lap 0). See client/DistantComets.
+        registrar.playToClient(CometShowerPacket.TYPE, CometShowerPacket.STREAM_CODEC, CometShowerPacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

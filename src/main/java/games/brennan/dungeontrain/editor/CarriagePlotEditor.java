@@ -37,7 +37,7 @@ public final class CarriagePlotEditor extends PlotEditor<Template.Carriage> {
     }
 
     @Override public String snapshotKey(Template.Carriage t) {
-        return EditorPlotSnapshots.key("carriages", t.variant().id());
+        return t.snapshotKey().orElseThrow();
     }
 
     @Override public BlockPos origin(Template.Carriage t, CarriageDims dims) {
@@ -63,7 +63,7 @@ public final class CarriagePlotEditor extends PlotEditor<Template.Carriage> {
         // Drop any stale cached sidecar so each stamp picks up manual JSON edits made since the
         // last load, and in-session contents-store changes so the re-stamp reads disk state.
         CarriageVariantBlocks.invalidate(t.variant().id());
-        ContainerContentsStore.invalidate("carriage:" + t.variant().id());
+        ContainerContentsStore.invalidate(BlockVariantPlot.carriageKey(t.variant().id()));
     }
 
     @Override protected void erase(ServerLevel level, BlockPos origin, Template.Carriage t, CarriageDims dims) {
@@ -100,7 +100,7 @@ public final class CarriagePlotEditor extends PlotEditor<Template.Carriage> {
             return;
         }
         sidecar.save(t.variant());
-        ContainerContentsStore.loadFor("carriage:" + t.variant().id()).save();
+        ContainerContentsStore.loadFor(BlockVariantPlot.carriageKey(t.variant().id())).save();
     }
 
     @Override protected void afterSave(ServerPlayer player, Template.Carriage t, CarriageDims dims) {

@@ -60,10 +60,13 @@ final class EditorDirtyKeyTest {
     @Test
     @DisplayName("a kind with no plot of its own asks no question")
     void noPlotNoKey() {
-        // A part is stamped inside the carriages plots and a group is a builder-world build, so
-        // neither has a plot whose unsaved edits a download could destroy.
+        // A part is stamped inside the carriages plots, so it has no plot whose unsaved edits a
+        // download could destroy.
         assertNull(EditorDirtyCheck.dirtyKeyFor(BuilderPhotoPaths.Kind.PART, "door", "brass_door"));
-        assertNull(EditorDirtyCheck.dirtyKeyFor(BuilderPhotoPaths.Kind.CARRIAGE_GROUP, "", "my_run"));
+        // A group answers the same key as its Whole-section row (the scan does emit group rows);
+        // the download path still never asks, because BuilderRelayKinds.categoryIdFor has no editor
+        // category for a group — see keyAndCategoryAgree.
+        assertEquals("my_run", EditorDirtyCheck.dirtyKeyFor(BuilderPhotoPaths.Kind.CARRIAGE_GROUP, "", "my_run"));
         // Nothing to look up, rather than a key built out of nothing.
         assertNull(EditorDirtyCheck.dirtyKeyFor(BuilderPhotoPaths.Kind.CARRIAGE, "", ""));
         assertNull(EditorDirtyCheck.dirtyKeyFor(null, "", "brick_cabin"));
@@ -72,12 +75,16 @@ final class EditorDirtyKeyTest {
     }
 
     @Test
-    @DisplayName("every kind with a key also has a category to look it up in")
+    @DisplayName("every kind with a key also has a category to look it up in — except a group, which the editor cannot jump to")
     void keyAndCategoryAgree() {
         for (BuilderPhotoPaths.Kind kind : BuilderPhotoPaths.Kind.values()) {
             String subKind = kind == BuilderPhotoPaths.Kind.TRACK ? TrackKind.TILE.id() : "";
             String key = EditorDirtyCheck.dirtyKeyFor(kind, subKind, "thing");
             if (key == null) continue;
+            // The one kind with a key and no category: categoryIdFor also drives EditorTemplateJump,
+            // and `/dt editor whole_group` is not a command. A download over an edited group plot
+            // therefore installs without asking, as it always has.
+            if (kind == BuilderPhotoPaths.Kind.CARRIAGE_GROUP) continue;
             assertNotNull(BuilderRelayKinds.categoryIdFor(kind, subKind),
                     kind + " has a dirty key but no editor category to find it in");
         }

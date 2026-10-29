@@ -99,13 +99,9 @@ public final class TrackSidePlotEditor<T extends Template> extends PlotEditor<T>
         return EditorCategory.TRACKS;
     }
 
-    /**
-     * {@code tracks:<id>:<name>} — the records' {@code id()} already spell the kind prefixes the
-     * four editors used ({@code track}, {@code pillar_top}, {@code adjunct_stairs},
-     * {@code tunnel_section}), so the key is unchanged from theirs.
-     */
+    /** The record's own baseline key — the one the dirty scan reads. */
     @Override public String snapshotKey(T t) {
-        return EditorPlotSnapshots.key(category().id(), t.id() + ":" + t.variantName());
+        return t.snapshotKey().orElseThrow();
     }
 
     @Override public BlockPos origin(T t, CarriageDims dims) {
@@ -190,7 +186,7 @@ public final class TrackSidePlotEditor<T extends Template> extends PlotEditor<T>
     }
 
     private String contentsKey(T t) {
-        return "track:" + spec.kind().id() + ":" + t.variantName();
+        return BlockVariantPlot.trackKey(spec.kind(), t.variantName());
     }
 
     @Override protected String advancement(T t) {

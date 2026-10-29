@@ -8,12 +8,12 @@ import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.relay.BuildCredits;
 import games.brennan.dungeontrain.portal.PortalRoomCopiesVariant;
 import games.brennan.dungeontrain.template.TemplateGate;
+import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateMeta;
+import games.brennan.dungeontrain.template.TemplateWeightStore;
 import games.brennan.dungeontrain.template.TemplateWeightCodec;
 import games.brennan.dungeontrain.track.variant.TrackKind;
-import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
-import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageWeights;
 import games.brennan.dungeontrain.train.WholeKind;
@@ -89,7 +89,9 @@ public final class TemplateSidecars {
     // ---- what a kind's sidecars are ----
 
     /**
-     * Every sidecar file template {@code id} of {@code kind} could have, whether or not it exists.
+     * Every sidecar file template {@code id} of {@code kind} could have, whether or not it exists —
+     * {@link Template#sidecars()} of the template the relay's three strings name
+     * ({@link RelayTemplates#resolve}).
      *
      * <p>Empty for a kind with none, and for a {@link BuilderPhotoPaths.Kind#PART} or
      * {@link BuilderPhotoPaths.Kind#TRACK} whose {@code subKind} does not name a real id-space —
@@ -97,80 +99,82 @@ public final class TemplateSidecars {
      * for the same reason: {@code standard} is both a floor and a door.</p>
      */
     public static List<Sidecar> filesFor(BuilderPhotoPaths.Kind kind, String subKind, String id) {
-        List<Sidecar> out = new ArrayList<>();
-        if (kind == null || id == null || id.isEmpty()) return out;
-        switch (kind) {
-            case CARRIAGE -> {
-                // Beside the template, in its pool's folder (ShellPool).
-                String at = games.brennan.dungeontrain.train.ShellPool.path(id);
-                out.add(new Sidecar(ROLE_VARIANTS, CarriageVariantBlocks.SUBDIR,
-                        at + CarriageVariantBlocks.EXT));
-                out.add(new Sidecar("parts", CarriageVariantPartsStore.SUBDIR,
-                        at + CarriageVariantPartsStore.EXT));
-                out.add(new Sidecar("contents-allow", CarriageVariantBlocks.SUBDIR,
-                        at + ContentsAllowStore.EXT));
-            }
-            case CONTENTS -> out.add(new Sidecar(ROLE_VARIANTS, CarriageContentsVariantBlocks.SUBDIR,
-                    id + CarriageContentsVariantBlocks.EXT));
-            case PART -> {
-                CarriagePartKind partKind = CarriagePartKind.fromId(subKind);
-                if (partKind == null) return out;
-                out.add(new Sidecar(ROLE_VARIANTS,
-                        CarriagePartVariantBlocks.SUBDIR_BASE + "/" + partKind.id(),
-                        id + CarriagePartVariantBlocks.EXT));
-            }
-            case TRACK -> {
-                TrackKind trackKind = TrackKind.fromId(subKind);
-                if (trackKind == null) return out;
-                out.add(new Sidecar(ROLE_VARIANTS, trackKind.subdir(), id + TrackKind.VARIANTS_EXT));
-            }
-            case PORTAL_ROOM -> {
-                TrackKind room = TrackKind.PORTAL_ROOM;
-                out.add(new Sidecar(ROLE_VARIANTS, room.subdir(), id + TrackKind.VARIANTS_EXT));
-                out.add(new Sidecar("contents-allow", room.subdir(), id + ContentsAllowStore.EXT));
-                out.add(new Sidecar("copies", room.subdir(), id + PortalRoomCopiesVariant.COPIES_EXT));
-            }
-            // A new building's roster weight travels with it.
-            case BUILDING -> out.add(new Sidecar("meta", games.brennan.dungeontrain.building.Buildings.SUBDIR,
-                    id + games.brennan.dungeontrain.building.BuildingMeta.EXT));
-            // An official Lost City building has no file of the player's at all.
-            case LOST_CITY -> { }
-            // One document for the whole run, beside the group's .nbt — the file the editor's Group
-            // plot writes and the train's overlay reads.
-            case CARRIAGE_GROUP -> out.add(new Sidecar(ROLE_VARIANTS, WholeKind.GROUP.userSubdir(),
-                    id + WholeVariantBlocks.EXT));
-        }
-        // Every kind with sidecars at all has a containers store, keyed by the same plot key the
-        // editor uses — shared with TemplateLootPrefabs, which follows that store's links outward.
-        String plotKey = plotKeyFor(kind, subKind, id);
-        if (plotKey != null) out.add(containers(plotKey));
-        return out;
+        return RelayTemplates.resolve(kind, subKind, id).map(Template::sidecars).orElse(List.of());
+    }
+
+    // The per-kind lists. Each is reached only through its record's Template.sidecars(): the record
+    // says which list is its own, and the list is spelled here because the stores' subdirectory and
+    // extension constants are this package's. Every list ends with the containers store, keyed by
+    // the same plot key the editor uses — shared with TemplateLootPrefabs, which follows that store's
+    // links outward.
+
+    /** Beside the template, in its pool's folder (ShellPool): variants, parts, contents-allow, containers. */
+    public static List<Sidecar> carriageSidecars(String id) {
+        String at = games.brennan.dungeontrain.train.ShellPool.path(id);
+        return List.of(
+                new Sidecar(ROLE_VARIANTS, CarriageVariantBlocks.SUBDIR, at + CarriageVariantBlocks.EXT),
+                new Sidecar("parts", CarriageVariantPartsStore.SUBDIR, at + CarriageVariantPartsStore.EXT),
+                new Sidecar("contents-allow", CarriageVariantBlocks.SUBDIR, at + CarriageVariantContentsAllowStore.EXT),
+                containers(BlockVariantPlot.carriageKey(id)));
+    }
+
+    public static List<Sidecar> contentsSidecars(String id) {
+        return List.of(
+                new Sidecar(ROLE_VARIANTS, CarriageContentsVariantBlocks.SUBDIR, id + CarriageContentsVariantBlocks.EXT),
+                containers(BlockVariantPlot.contentsKey(id)));
+    }
+
+    public static List<Sidecar> partSidecars(CarriagePartKind partKind, String name) {
+        return List.of(
+                new Sidecar(ROLE_VARIANTS, CarriagePartVariantBlocks.SUBDIR_BASE + "/" + partKind.id(),
+                        name + CarriagePartVariantBlocks.EXT),
+                containers(BlockVariantPlot.partKey(partKind, name)));
+    }
+
+    /** A track tile, pillar section, adjunct or tunnel: its variants file in the kind's folder, and its containers. */
+    public static List<Sidecar> trackSideSidecars(TrackKind trackKind, String name) {
+        return List.of(
+                new Sidecar(ROLE_VARIANTS, trackKind.subdir(), name + TrackKind.VARIANTS_EXT),
+                containers(BlockVariantPlot.trackKey(trackKind, name)));
+    }
+
+    public static List<Sidecar> portalRoomSidecars(String name) {
+        TrackKind room = TrackKind.PORTAL_ROOM;
+        return List.of(
+                new Sidecar(ROLE_VARIANTS, room.subdir(), name + TrackKind.VARIANTS_EXT),
+                new Sidecar("contents-allow", room.subdir(), name + CarriageVariantContentsAllowStore.EXT),
+                new Sidecar("copies", room.subdir(), name + PortalRoomCopiesVariant.COPIES_EXT),
+                containers(BlockVariantPlot.trackKey(room, name)));
+    }
+
+    /**
+     * One document for the whole room, half or run, beside the template's .nbt — the file the editor's
+     * Whole plot writes and the train's overlay reads — and its containers.
+     */
+    public static List<Sidecar> wholeSidecars(WholeKind kind, String id) {
+        return List.of(
+                new Sidecar(ROLE_VARIANTS, kind.userSubdir(), id + WholeVariantBlocks.EXT),
+                containers(BlockVariantPlot.wholeKey(kind, id)));
+    }
+
+    /** A frame's chests only: its variants file is the frame store's own and never travels. */
+    public static List<Sidecar> chunkFrameSidecars(String name) {
+        return List.of(containers(ChunkFramePlot.KEY_PREFIX + name));
+    }
+
+    /** A new building's roster weight travels with it. No containers store: a building's plot has none. */
+    public static List<Sidecar> buildingSidecars(String name) {
+        return List.of(new Sidecar("meta", games.brennan.dungeontrain.building.Buildings.SUBDIR,
+                name + games.brennan.dungeontrain.building.BuildingMeta.EXT));
     }
 
     /**
      * The {@link ContainerContentsStore} plot key for template {@code id} of {@code kind}, or null
-     * for a sub kind this install cannot resolve.
-     * The one place these are spelled: the store keys its files by them, and a key spelled
-     * differently here would upload one build's chests and install another's.
+     * for a sub kind this install cannot resolve or a kind whose plot has no containers store —
+     * {@link Template#plotKey()} of the template the relay's three strings name.
      */
     public static String plotKeyFor(BuilderPhotoPaths.Kind kind, String subKind, String id) {
-        if (kind == null || id == null || id.isEmpty()) return null;
-        return switch (kind) {
-            case CARRIAGE -> "carriage:" + id;
-            case CONTENTS -> "contents:" + id;
-            case PART -> {
-                CarriagePartKind partKind = CarriagePartKind.fromId(subKind);
-                yield partKind == null ? null : "part:" + partKind.id() + ":" + id;
-            }
-            case TRACK -> {
-                TrackKind trackKind = TrackKind.fromId(subKind);
-                yield trackKind == null ? null : ContainerContentsStore.trackPlotKey(trackKind, id);
-            }
-            case PORTAL_ROOM -> ContainerContentsStore.trackPlotKey(TrackKind.PORTAL_ROOM, id);
-            case CHUNK_FRAME -> ChunkFramePlot.KEY_PREFIX + id;
-            case CARRIAGE_GROUP -> BlockVariantPlot.wholeKey(WholeKind.GROUP, id);
-            case BUILDING, LOST_CITY -> null;
-        };
+        return RelayTemplates.resolve(kind, subKind, id).flatMap(Template::plotKey).orElse(null);
     }
 
     /** The role name under which the containers store travels in the document. */
@@ -324,9 +328,7 @@ public final class TemplateSidecars {
 
     /** The whole room's variants and containers files, under a carriage document's role names. */
     static List<Sidecar> wholeRoomFiles(String id) {
-        return List.of(
-                new Sidecar(ROLE_VARIANTS, WholeKind.ROOM.userSubdir(), id + WholeVariantBlocks.EXT),
-                containers(wholeRoomPlotKey(id)));
+        return wholeSidecars(WholeKind.ROOM, id);
     }
 
     /** The {@link ContainerContentsStore} plot key whole room {@code id}'s chest links are filed under. */
@@ -456,33 +458,10 @@ public final class TemplateSidecars {
 
     /** What the kind's weight store currently holds for {@code id}, or null when it keeps none. */
     private static TemplateMeta metaOf(BuilderPhotoPaths.Kind kind, String subKind, String id) {
-        TrackKind trackKind = trackKindOf(kind, subKind);
-        if (trackKind != null) {
-            return new TemplateMeta(
-                    TrackVariantWeights.weightFor(trackKind, id),
-                    TrackVariantWeights.gateFor(trackKind, id),
-                    TrackVariantWeights.stageIdFor(trackKind, id),
-                    TrackVariantWeights.modeFor(trackKind, id))
-                    // Tunnel group memberships travel with the build, so a grouped set installs grouped.
-                    .withGroups(TrackVariantWeights.groupsFor(trackKind, id))
-                    .withGroupWeights(TrackVariantWeights.groupWeightsFor(trackKind, id));
-        }
-        return switch (kind) {
-            case CARRIAGE -> new TemplateMeta(CarriageWeights.current().weightFor(id),
-                    CarriageWeights.current().gateFor(id), CarriageWeights.current().stageIdFor(id));
-            case CONTENTS -> new TemplateMeta(CarriageContentsWeights.current().weightFor(id),
-                    CarriageContentsWeights.current().gateFor(id),
-                    CarriageContentsWeights.current().stageIdFor(id));
-            // Parts are weighted inside the carriage's own .parts.json, and a group is not weighted
-            // at all — neither has an entry of its own to carry.
-            default -> null;
-        };
-    }
-
-    /** The {@link TrackKind} whose weights file holds this build, or null when it is not track-side. */
-    private static TrackKind trackKindOf(BuilderPhotoPaths.Kind kind, String subKind) {
-        if (kind == BuilderPhotoPaths.Kind.PORTAL_ROOM) return TrackKind.PORTAL_ROOM;
-        return kind == BuilderPhotoPaths.Kind.TRACK ? TrackKind.fromId(subKind) : null;
+        return RelayTemplates.resolve(kind, subKind, id)
+                .flatMap(Template::weightStore)
+                .map(store -> store.meta(id))
+                .orElse(null);
     }
 
     // ---- apply (install side) ----
@@ -606,35 +585,10 @@ public final class TemplateSidecars {
             return;
         }
         if (meta == null) return;
+        Optional<TemplateWeightStore> store = RelayTemplates.resolve(kind, subKind, id).flatMap(Template::weightStore);
+        if (store.isEmpty()) return;
         try {
-            TrackKind trackKind = trackKindOf(kind, subKind);
-            if (trackKind != null) {
-                TrackVariantWeights.set(trackKind, id, meta.weight());
-                TrackVariantWeights.setGate(trackKind, id, meta.gate());
-                // Only a build that carries groups sets them — one uploaded before groups existed must
-                // not wipe memberships this install already gave the template.
-                if (meta.hasGroups()) {
-                    TrackVariantWeights.setGroups(trackKind, id, meta.groups());
-                    for (java.util.Map.Entry<String, Integer> w : meta.groupWeights().entrySet()) {
-                        TrackVariantWeights.setGroupWeight(trackKind, id, w.getKey(), w.getValue());
-                    }
-                }
-                // The last of the three on purpose: this is the one carrying a portal room's door
-                // position, and the two above rewrite the same entry.
-                TrackVariantWeights.setMode(trackKind, id, meta.mode());
-                return;
-            }
-            switch (kind) {
-                case CARRIAGE -> {
-                    CarriageWeights.set(id, meta.weight());
-                    CarriageWeights.setGate(id, meta.gate());
-                }
-                case CONTENTS -> {
-                    CarriageContentsWeights.set(id, meta.weight());
-                    CarriageContentsWeights.setGate(id, meta.gate());
-                }
-                default -> { }
-            }
+            store.get().apply(id, meta);
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Template sidecars: could not write the weights entry for "
                     + "'{}': {}", id, e.toString());
@@ -650,38 +604,7 @@ public final class TemplateSidecars {
      * rather than a cache-wide clear — nothing else on this install changed.</p>
      */
     static void invalidateCaches(BuilderPhotoPaths.Kind kind, String subKind, String id) {
-        TrackKind trackKind = trackKindOf(kind, subKind);
-        if (trackKind != null) {
-            TrackVariantBlocks.invalidate(trackKind, id);
-            ContainerContentsStore.invalidate(ContainerContentsStore.trackPlotKey(trackKind, id));
-        }
-        switch (kind) {
-            case CARRIAGE -> {
-                CarriageVariantBlocks.invalidate(id);
-                CarriageVariantPartsStore.invalidate(id);
-                CarriageVariantContentsAllowStore.invalidate(id);
-                ContainerContentsStore.invalidate("carriage:" + id);
-            }
-            case CONTENTS -> {
-                CarriageContentsVariantBlocks.invalidate(id);
-                ContainerContentsStore.invalidate("contents:" + id);
-            }
-            case PART -> {
-                CarriagePartKind partKind = CarriagePartKind.fromId(subKind);
-                if (partKind == null) return;
-                CarriagePartVariantBlocks.invalidate(partKind, id);
-                ContainerContentsStore.invalidate("part:" + partKind.id() + ":" + id);
-            }
-            case PORTAL_ROOM -> {
-                PortalRoomContentsAllowStore.invalidate(id);
-                PortalRoomCopiesVariant.invalidate(id);
-            }
-            case CARRIAGE_GROUP -> {
-                WholeVariantBlocks.invalidate(WholeKind.GROUP, id);
-                ContainerContentsStore.invalidate(BlockVariantPlot.wholeKey(WholeKind.GROUP, id));
-            }
-            case TRACK -> { }
-        }
+        RelayTemplates.resolve(kind, subKind, id).ifPresent(Template::invalidateSidecarCaches);
     }
 
     /**

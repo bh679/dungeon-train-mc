@@ -59,89 +59,13 @@ final class EditorStageDetailPane {
     /** The pane's sections, in page order. */
     enum SectionKind { OVERVIEW, PALETTE, STONE, BLOCKS, TEMPLATES }
 
-    /** One section: how many rows it has and how many a page of it holds. */
-    record Section(SectionKind kind, int rows, int perPage) {
-        Section {
-            perPage = Math.max(1, perPage);
-        }
-
-        /** A section always has a page, even with nothing in it, so the pager can say so. */
-        int pages() {
-            return Math.max(1, (rows + perPage - 1) / perPage);
-        }
-    }
-
-    /**
-     * The pane's pages as its sections laid end to end. Pure, so the split can be pinned: which
-     * section a page belongs to, and which of that section's rows it shows.
-     */
-    record Pages(List<Section> sections) {
-        Pages {
-            sections = List.copyOf(sections);
-        }
-
-        int pageCount() {
-            int n = 0;
-            for (Section s : sections) n += s.pages();
-            return n;
-        }
-
-        boolean hasPager() {
-            return pageCount() > 1;
-        }
-
-        int clamp(int page) {
-            return Math.max(0, Math.min(page, pageCount() - 1));
-        }
-
-        /** The section {@code page} falls in. */
-        Section sectionOf(int page) {
-            int p = clamp(page);
-            for (Section s : sections) {
-                if (p < s.pages()) return s;
-                p -= s.pages();
-            }
-            return sections.get(sections.size() - 1);
-        }
-
-        SectionKind kindOf(int page) {
-            return sectionOf(page).kind();
-        }
-
-        /** The first row of its section shown on {@code page}. */
-        int firstRow(int page) {
-            int p = clamp(page);
-            for (Section s : sections) {
-                if (p < s.pages()) return p * s.perPage();
-                p -= s.pages();
-            }
-            return 0;
-        }
-
-        /** One past the last row of its section shown on {@code page}. */
-        int endRow(int page) {
-            Section s = sectionOf(page);
-            return Math.min(s.rows(), firstRow(page) + s.perPage());
-        }
-
-        /** The first page of a section kind, or 0 when the pane has none. */
-        int firstPageOf(SectionKind kind) {
-            int p = 0;
-            for (Section s : sections) {
-                if (s.kind() == kind) return p;
-                p += s.pages();
-            }
-            return 0;
-        }
-    }
-
     private InventoryEditorLayout layout;
     private EditorRosterPacket.StageEntry stage;
     private List<EditorStageTemplates.Row> templates = List.of();
     private List<EditorStagePalettePage.Row> paletteRows = List.of();
     private List<EditorStagePalettePage.Row> stoneRows = List.of();
     private int blockCols = 1;
-    private Pages pages = new Pages(List.of(new Section(SectionKind.OVERVIEW, 1, 1)));
+    private SectionPages<SectionKind> pages = new SectionPages<>(List.of(SectionPages.Section.always(SectionKind.OVERVIEW, 1, 1)));
     private int page;
     private Hit hovered = Hit.NONE;
 
@@ -217,12 +141,13 @@ final class EditorStageDetailPane {
         paletteRows = stage == null ? List.of() : EditorStagePalettePage.paletteRows(palette, blockCols);
         stoneRows = stage == null ? List.of() : EditorStagePalettePage.stoneRows(palette);
         int blockRows = stage == null ? 0 : (stage.blocks().size() + blockCols - 1) / blockCols;
-        pages = new Pages(List.of(
-            new Section(SectionKind.OVERVIEW, 1, 1),
-            new Section(SectionKind.PALETTE, paletteRows.size(), cellRows),
-            new Section(SectionKind.STONE, stoneRows.size(), cellRows),
-            new Section(SectionKind.BLOCKS, blockRows, grid.rows()),
-            new Section(SectionKind.TEMPLATES, templates.size(), r.h() / ROW_H)));
+        // Every section keeps a page even when empty, so the pager can say so.
+        pages = new SectionPages<>(List.of(
+            SectionPages.Section.always(SectionKind.OVERVIEW, 1, 1),
+            SectionPages.Section.always(SectionKind.PALETTE, paletteRows.size(), cellRows),
+            SectionPages.Section.always(SectionKind.STONE, stoneRows.size(), cellRows),
+            SectionPages.Section.always(SectionKind.BLOCKS, blockRows, grid.rows()),
+            SectionPages.Section.always(SectionKind.TEMPLATES, templates.size(), r.h() / ROW_H)));
         page = pages.clamp(page);
 
         carriages = carriagesOf(index);
@@ -403,27 +328,11 @@ final class EditorStageDetailPane {
     }
 
     private void drawIcons(GuiGraphics g) {
-        InventoryEditorLayout.Rect r = layout.icons();
-        for (int i = 0; i < icons.size(); i++) {
-            EditorScreenActions.Icon icon = icons.get(i);
-            int x = iconX[i];
-            boolean hov = hovered.kind() == HitKind.ICON && hovered.index() == i;
-            boolean danger = EditorStageActions.DELETE.equals(icon.id());
-            int fill = !icon.enabled() ? EditorDetailPane.DISABLED
-                : hov ? (danger ? 0xC0FF5544 : MenuRowPainter.CELL_HOVER) : MenuRowPainter.CELL_IDLE;
-            g.fill(x, r.y(), x + iconCell, r.y() + iconCell, fill);
-            if (!icon.enabled()) tint(g, EditorDetailPane.DISABLED_ICON);
-            else if (hov) tint(g, 0xFF000000);
-            int sprite = Math.min(EditorDetailPane.ICON_SIZE, iconCell);
-            g.blitSprite(EditorIcons.forAction(icon.id()), x + (iconCell - sprite) / 2,
-                r.y() + (iconCell - sprite) / 2, sprite, sprite);
-            g.setColor(1f, 1f, 1f, 1f);
-        }
-    }
-
-    private static void tint(GuiGraphics g, int argb) {
-        g.setColor(((argb >> 16) & 0xFF) / 255f, ((argb >> 8) & 0xFF) / 255f,
-            (argb & 0xFF) / 255f, ((argb >>> 24) & 0xFF) / 255f);
+        DetailPainters.drawIconStrip(g, icons, iconX, iconCell, layout.icons().y(),
+            hovered.kind() == HitKind.ICON ? hovered.index() : -1,
+            i -> EditorStageActions.DELETE.equals(icons.get(i).id()),
+            i -> !icons.get(i).enabled() ? EditorDetailPane.DISABLED_ICON
+                : hovered.kind() == HitKind.ICON && hovered.index() == i ? DetailPainters.HOVER_INK : 0);
     }
 
     /** The palette page's rows: headings as text, cells as the placeholder icons resolved for this stage. */
@@ -513,15 +422,10 @@ final class EditorStageDetailPane {
                 r.x() + 2, r.y() + 2, EditorDetailPane.DIM_TEXT, false);
             return;
         }
-        g.enableScissor(r.x(), r.y(), r.right(), r.bottom());
-        int first = pages.firstRow(page);
-        for (int idx = first; idx < pages.endRow(page); idx++) {
-            int top = r.y() + (idx - first) * ROW_H;
-            boolean hov = hovered.kind() == HitKind.ROW && hovered.index() == idx;
-            CommandMenuEntry entry = new CommandMenuEntry.Label(templates.get(idx).label());
-            MenuRowPainter.drawRow(g, font, entry, r.x(), top, r.right(), ROW_H - 1, idx, hov, hov ? 0 : -1, null);
-        }
-        g.disableScissor();
+        List<CommandMenuEntry> rows = templates.stream()
+            .map(t -> (CommandMenuEntry) new CommandMenuEntry.Label(t.label())).toList();
+        DetailPainters.drawRowList(g, font, rows, r, ROW_H, pages.firstRow(page), pages.endRow(page),
+            hovered.kind() == HitKind.ROW ? hovered.index() : -1, 0);
     }
 
     Hit hitTest(double mx, double my) {

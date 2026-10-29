@@ -31677,9 +31677,9 @@
       "highlights": [],
       "pr": 2389,
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1580.0",
+      "released_at": "2026-10-29T04:54:43Z"
     },
     {
       "id": "editor-template-dispatch",
@@ -31697,6 +31697,171 @@
       ],
       "pr": 2390,
       "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1580.0",
+      "released_at": "2026-10-29T04:54:43Z"
+    },
+    {
+      "id": "sky-falling-comets",
+      "version": "0.1579.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Deeper down the line, the sky gets dangerous",
+      "summary": "Out in the stranger stretches of the journey, the sky is no longer empty. Keep an eye above you, and on the roof of your carriage.",
+      "highlights": [
+        "Fiery visitors streak overhead, and some of them come for the train.",
+        "You will hear them coming, and feel them land.",
+        "When the sky fills up, keep your head down.",
+        "Each time around, they come more often."
+      ],
+      "pr": 2365,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1580.0",
+      "released_at": "2026-10-29T04:54:43Z",
+      "major": true,
+      "notable": true,
+      "description": "Deeper down the line, the sky is no longer empty. Something has started coming down out of the dark.\n\nListen for it. And when the sky fills up, keep your head down.\n\n*The further you go, the more of it there is.*",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/comet-shower.gif"
+    },
+    {
+      "id": "editor-three-tier-store",
+      "version": "0.1580.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Editor housekeeping",
+      "summary": "Behind-the-scenes tidy-up of how the editor stores templates. Removing your own edit of a built-in template now brings the original back straight away.",
+      "highlights": [],
+      "pr": 2391,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1580.0",
+      "released_at": "2026-10-29T04:54:43Z"
+    },
+    {
+      "id": "deathnote-echo-head-skin",
+      "version": "0.1581.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "books"
+      ],
+      "title": "Death Note trophy fix",
+      "summary": "The head you take from a Death Note echo now wears its author's skin, the same face the echo wore, even on offline servers.",
+      "highlights": [],
+      "pr": 2392,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "coffee-table-book-terra-omnia-biomes",
+      "version": "0.1582.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Coffee Table Book fix",
+      "summary": "Coffee Table Book now asks for the same biomes as Terra Omnia, so every photo slot can be filled.",
+      "highlights": [
+        "Biomes you had already photographed now count towards Terra Omnia."
+      ],
+      "pr": 2394,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-menu-controller-base",
+      "version": "0.1583.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Editor tidy-up",
+      "summary": "Behind-the-scenes cleanup of the train editor's menus. Editor menus now close properly when you leave the world.",
+      "highlights": [],
+      "pr": 2393,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "no-rewards-on-advancement-replay",
+      "version": "0.1584.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "Starting a new world is a little tidier with advancements you have already earned.",
+      "highlights": [],
+      "pr": 2397,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "ai-translation-review-pass",
+      "version": "0.1581.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations"
+      ],
+      "title": "Translation fixes",
+      "summary": "Some translated text now reads more clearly.",
+      "highlights": [],
+      "pr": 2395,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "note-echo-author-gear",
+      "version": "0.1586.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "books"
+      ],
+      "title": "Note echo fix",
+      "summary": "A fix for echoes sent by Love Notes and Death Notes.",
+      "highlights": [],
+      "pr": 2396,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-kind-facts",
+      "version": "0.1586.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Editor menu fixes",
+      "summary": "Train Editor menus now send the same commands everywhere. Setting a track weight now needs a variant name. Removing a portal room removes the room you picked even when you are not standing in it. Unsaved chunk frames can now be saved by name with the save command.",
+      "highlights": [],
+      "date": "2026-10-29",
       "released": false,
       "released_in": null,
       "released_at": null
