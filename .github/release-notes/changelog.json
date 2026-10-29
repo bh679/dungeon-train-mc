@@ -32037,6 +32037,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "photo-progress-chat",
+      "version": "0.1598.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Photo progress in chat",
+      "summary": "When a photo counts toward an advancement you have already discovered, chat now tells you how far along you are.",
+      "highlights": [],
+      "pr": 2409,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
