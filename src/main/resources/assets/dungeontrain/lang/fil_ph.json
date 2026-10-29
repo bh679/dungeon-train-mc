@@ -716,6 +716,7 @@
   "chat.dungeontrain.live.watching.other": "%s ang nanonood",
   "chat.dungeontrain.live.viewers.other": "May %s manonood ka",
   "chat.dungeontrain.live.one_eye": "Isang Camcorder ng Broadcast lang ang puwede mong dalhin. Naging TV ang sobra.",
+  "chat.dungeontrain.live.eye_swapped": "Nakapulot ka ng bagong Camcorder ng Broadcast. Naging TV ang dati mong hawak.",
   "chat.dungeontrain.live.free_play": "Hindi maaaring mag-live ang mga Free Play na run.",
   "chat.dungeontrain.live.took_over": "Naputol si %s.",
   "chat.dungeontrain.live.second_stream": "Naka-on ang Dalawang Stream: live ka sa ikalawang stream, kasabay ng una.",

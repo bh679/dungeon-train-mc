@@ -748,6 +748,7 @@
   "chat.dungeontrain.live.viewers.one": "Je hebt %s kijker",
   "chat.dungeontrain.live.viewers.other": "Je hebt %s kijkers",
   "chat.dungeontrain.live.one_eye": "Je kunt maar één uitzendcamcorder bij je hebben. De extra is een tv geworden.",
+  "chat.dungeontrain.live.eye_swapped": "Je hebt een nieuwe uitzendcamcorder opgepakt. Je oude is een tv geworden.",
   "chat.dungeontrain.live.free_play": "Vrij Spel-runs kunnen niet live gaan.",
   "chat.dungeontrain.live.took_over": "%s is afgesneden.",
   "chat.dungeontrain.live.second_stream": "Twee streams staat aan: je bent live op de tweede stream, naast de eerste.",

@@ -748,6 +748,7 @@
   "chat.dungeontrain.live.viewers.one": "Tienes %s espectador",
   "chat.dungeontrain.live.viewers.other": "Tienes %s espectadores",
   "chat.dungeontrain.live.one_eye": "Solo puedes llevar una videocámara de transmisión. La de sobra se convirtió en una tele.",
+  "chat.dungeontrain.live.eye_swapped": "Recogiste una videocámara de transmisión nueva. La que tenías se convirtió en una tele.",
   "chat.dungeontrain.live.free_play": "Las partidas de Juego Libre no pueden transmitir en vivo.",
   "chat.dungeontrain.live.took_over": "%s fue cortado.",
   "chat.dungeontrain.live.second_stream": "Dos streams está activo: estás en vivo en el segundo stream, junto al primero.",

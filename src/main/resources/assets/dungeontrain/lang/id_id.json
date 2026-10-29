@@ -716,6 +716,7 @@
   "chat.dungeontrain.live.watching.other": "%s orang menonton",
   "chat.dungeontrain.live.viewers.other": "Kamu punya %s penonton",
   "chat.dungeontrain.live.one_eye": "Kamu hanya bisa membawa satu Camcorder Siaran. Yang lebih berubah menjadi TV.",
+  "chat.dungeontrain.live.eye_swapped": "Kamu memungut Camcorder Siaran baru. Yang lama berubah menjadi TV.",
   "chat.dungeontrain.live.free_play": "Permainan Free Play tidak bisa siaran langsung.",
   "chat.dungeontrain.live.took_over": "%s terputus.",
   "chat.dungeontrain.live.second_stream": "Dua Stream aktif: kamu siaran langsung di stream kedua, berdampingan dengan yang pertama.",

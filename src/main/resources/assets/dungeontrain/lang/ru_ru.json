@@ -785,6 +785,7 @@
   "chat.dungeontrain.live.viewers.few": "У тебя %s зрителя",
   "chat.dungeontrain.live.viewers.many": "У тебя %s зрителей",
   "chat.dungeontrain.live.one_eye": "Можно носить только одну вещательную видеокамеру. Лишняя превратилась в телевизор.",
+  "chat.dungeontrain.live.eye_swapped": "Вы подобрали новую вещательную видеокамеру. Старая превратилась в телевизор.",
   "chat.dungeontrain.live.free_play": "В свободной игре нельзя выйти в прямой эфир.",
   "chat.dungeontrain.live.took_over": "Трансляция %s прервана.",
   "chat.dungeontrain.live.second_stream": "Две трансляции включены: ты в эфире на второй трансляции, рядом с первой.",

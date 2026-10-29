@@ -716,6 +716,7 @@
   "chat.dungeontrain.live.watching.other": "%s orang menonton",
   "chat.dungeontrain.live.viewers.other": "Anda ada %s penonton",
   "chat.dungeontrain.live.one_eye": "Anda hanya boleh membawa satu Camcorder Siaran. Yang lebih telah menjadi TV.",
+  "chat.dungeontrain.live.eye_swapped": "Anda telah mengutip Camcorder Siaran baharu. Yang lama telah menjadi TV.",
   "chat.dungeontrain.live.free_play": "Larian Main Bebas tidak boleh bersiaran langsung.",
   "chat.dungeontrain.live.took_over": "%s telah diputuskan.",
   "chat.dungeontrain.live.second_stream": "Dua Strim sedang aktif: anda bersiaran langsung di strim kedua, bersama yang pertama.",

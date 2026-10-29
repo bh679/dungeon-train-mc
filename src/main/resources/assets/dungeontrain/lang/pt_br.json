@@ -748,6 +748,7 @@
   "chat.dungeontrain.live.viewers.one": "Você tem %s espectador",
   "chat.dungeontrain.live.viewers.other": "Você tem %s espectadores",
   "chat.dungeontrain.live.one_eye": "Você só pode carregar uma filmadora de transmissão. A extra virou uma TV.",
+  "chat.dungeontrain.live.eye_swapped": "Você pegou uma filmadora de transmissão nova. A antiga virou uma TV.",
   "chat.dungeontrain.live.free_play": "Partidas em Jogo Livre não podem transmitir ao vivo.",
   "chat.dungeontrain.live.took_over": "%s foi cortado.",
   "chat.dungeontrain.live.second_stream": "Duas transmissões está ativo: você está ao vivo na segunda transmissão, junto com a primeira.",

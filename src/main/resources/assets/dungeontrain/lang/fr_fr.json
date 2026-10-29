@@ -748,6 +748,7 @@
   "chat.dungeontrain.live.viewers.one": "Vous avez %s spectateur",
   "chat.dungeontrain.live.viewers.other": "Vous avez %s spectateurs",
   "chat.dungeontrain.live.one_eye": "Tu ne peux porter qu'un seul caméscope de diffusion. Celui en trop est devenu une télé.",
+  "chat.dungeontrain.live.eye_swapped": "Tu as ramassé un nouveau caméscope de diffusion. L'ancien est devenu une télé.",
   "chat.dungeontrain.live.free_play": "Les parties en Jeu Libre ne peuvent pas passer en direct.",
   "chat.dungeontrain.live.took_over": "%s a été coupé.",
   "chat.dungeontrain.live.second_stream": "Deux streams est actif : tu es en direct sur le second stream, aux côtés du premier.",
