@@ -31859,7 +31859,7 @@
         "internal"
       ],
       "title": "Editor menu fixes",
-      "summary": "Train Editor menus now send the same commands everywhere. Setting a track weight now needs a variant name. Removing a portal room removes the room you picked even when you are not standing in it. Saving an unsaved chunk frame from the unsaved list now works.",
+      "summary": "Train Editor menus now send the same commands everywhere. Setting a track weight now needs a variant name. Removing a portal room removes the room you picked even when you are not standing in it. Unsaved chunk frames can now be saved by name with the save command.",
       "highlights": [],
       "date": "2026-10-29",
       "released": false,
