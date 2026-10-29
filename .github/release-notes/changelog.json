@@ -31752,14 +31752,9 @@
         "fix",
         "translations"
       ],
-      "title": "Translation polish in every language",
-      "summary": "Every language the game ships in has had a careful review pass. Text that had fallen behind the English now matches it again, and wording is more natural and consistent.",
-      "highlights": [
-        "Item, reward and feature names now stay the same from one screen to the next within each language",
-        "Fixed sentences that came out ungrammatical once a number or name was filled in",
-        "Fixed lines that said the wrong thing, or the opposite of the English",
-        "Text written by community translators was left exactly as they wrote it"
-      ],
+      "title": "Translation fixes",
+      "summary": "Some translated text now reads more clearly.",
+      "highlights": [],
       "pr": 2395,
       "date": "2026-10-29",
       "released": false,
