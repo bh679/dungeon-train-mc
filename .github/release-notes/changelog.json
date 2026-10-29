@@ -31951,6 +31951,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "slimed-fix",
+      "version": "0.1593.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Slimed fix",
+      "summary": "Slimed now counts every time, and a few missed advancements can now be handed back to the players who earned them.",
+      "highlights": [],
+      "pr": 2406,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
