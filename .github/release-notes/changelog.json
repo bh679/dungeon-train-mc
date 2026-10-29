@@ -31771,8 +31771,8 @@
         "mobs",
         "books"
       ],
-      "title": "Note echo gear fix",
-      "summary": "An echo sent by a Love Note or a Death Note now carries exactly what its author had when they died, instead of gear it was never given.",
+      "title": "Note echo fix",
+      "summary": "A fix for echoes sent by Love Notes and Death Notes.",
       "highlights": [],
       "pr": 2396,
       "date": "2026-10-29",
