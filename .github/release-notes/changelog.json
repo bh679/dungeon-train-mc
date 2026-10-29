@@ -31936,8 +31936,61 @@
       "released_at": null
     },
     {
-      "id": "crystal-fix",
+      "id": "worn-tv-who-is-live",
       "version": "0.1592.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "See who is live on your TV",
+      "summary": "Wearing a TV now shows who is live in a line under the picture. With two streams on, each picture names its own streamer. Turn it off in Options, Stream, Who's live.",
+      "highlights": [],
+      "pr": 2404,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "slimed-fix",
+      "version": "0.1593.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "A small advancement fix.",
+      "highlights": [],
+      "pr": 2406,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "train-tree-breakoff",
+      "version": "0.1594.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "Trees on the train snap off",
+      "summary": "Trees you grow on top of the train now break off when they hit a hill or tunnel, just like bamboo, dropping their wood instead of carving through the world.",
+      "highlights": [
+        "Works for trees, huge mushrooms and huge fungi grown on a carriage"
+      ],
+      "pr": 2405,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "crystal-fix",
+      "version": "0.1595.0",
       "type": "fix",
       "tags": [
         "fix"

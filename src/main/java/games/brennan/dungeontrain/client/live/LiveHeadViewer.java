@@ -53,7 +53,7 @@ import java.util.Random;
  * <p>While two streams are live (the Two Streams reward) a viewer's box becomes two panes, the
  * second stream under the first ({@link HeadViewerPanes}), unless the box is at its largest size;
  * in the inventory a click on a pane makes that stream the only one and a click on the lone pane
- * brings both back. The streamer's own preview does the same with their stream and the other one
+ * brings both back. Under each pane a caption says who is live on it ({@link HeadViewerCaption}). The streamer's own preview does the same with their stream and the other one
  * ({@link StreamerBoxPanes}): their own by default, and the setting can also pick the other, both or none.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
@@ -138,9 +138,10 @@ public final class LiveHeadViewer {
                     LiveFeedSource source = pane.second() ? LiveFeedSource.SECOND : LiveFeedSource.MAIN;
                     draw(g, source, source.frame(mc.player.tickCount, partial, false), pane.box(), !pane.second(),
                         mc.player.tickCount, partial);
+                    HeadViewerCaption.draw(g, pane.box(), pane.second());
                 }
-                // The takeover button hangs under the lowest pane, so a second pane never covers it.
-                LiveTakeoverButton.draw(g, panes.get(panes.size() - 1).box());
+                // The takeover button hangs under the lowest pane and its caption, so neither covers it.
+                LiveTakeoverButton.draw(g, HeadViewerCaption.withCaption(panes.get(panes.size() - 1).box()));
             } else {
                 // Box switched off: a running takeover vote's countdown still shows where it would be.
                 voteBanner(g, layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth(false), LiveFeedSource.MAIN.ratio()), mc.font);
@@ -226,17 +227,17 @@ public final class LiveHeadViewer {
         return own == LiveFeedSource.SECOND ? LiveFeedSource.MAIN : LiveFeedSource.SECOND;
     }
 
-    /** The lowest pane's box (the first stream's box {@code b} unless a second pane sits under it). */
+    /** The lowest pane's box (the first stream's box {@code b} unless a second pane sits under it), caption included. */
     private static Box lowestPane(Minecraft mc, Box b) {
         var panes = panes(mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight(), b.w(), secondLive(),
             LiveFeedClientConfig.headViewerAtMaxSize(false));
-        return panes.get(panes.size() - 1).box();
+        return HeadViewerCaption.withCaption(panes.get(panes.size() - 1).box());
     }
 
-    /** The watching panes, each as tall as its own stream's shape needs. */
+    /** The watching panes, each as tall as its own stream's shape needs, with room for a caption under each. */
     private static java.util.List<HeadViewerPanes.Pane> panes(int guiWidth, int guiHeight, int boxWidth, boolean secondLive, boolean atMaxSize) {
         return HeadViewerPanes.current(guiWidth, guiHeight, boxWidth, secondLive, atMaxSize,
-            LiveFeedSource.MAIN.ratio(), LiveFeedSource.SECOND.ratio());
+            LiveFeedSource.MAIN.ratio(), LiveFeedSource.SECOND.ratio(), HeadViewerCaption.height());
     }
 
     /** The streamer's own picture: the second stream's while they hold the relay's second channel. */
@@ -275,7 +276,7 @@ public final class LiveHeadViewer {
         int guiWidth = mc.getWindow().getGuiScaledWidth(), guiHeight = mc.getWindow().getGuiScaledHeight();
         if (secondLive() && LiveStreamSettingsButton.showsOn(event.getScreen())
                 && HeadViewerPanes.twoFit(guiWidth, guiHeight, b.w(), LiveFeedClientConfig.headViewerAtMaxSize(false),
-                    LiveFeedSource.MAIN.ratio(), LiveFeedSource.SECOND.ratio())) {
+                    LiveFeedSource.MAIN.ratio(), LiveFeedSource.SECOND.ratio(), HeadViewerCaption.height())) {
             var panes = panes(guiWidth, guiHeight, b.w(), true, false);
             if (HeadViewerPanes.apply(panes, event.getMouseX(), event.getMouseY(), System.currentTimeMillis())) {
                 event.setCanceled(true);
