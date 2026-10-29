@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.template;
 import games.brennan.dungeontrain.editor.CarriageContentsEditor;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageEditor;
+import games.brennan.dungeontrain.editor.CarriagePlotEditor;
 import games.brennan.dungeontrain.editor.CarriagePartEditor;
 import games.brennan.dungeontrain.editor.CarriagePartRegistry;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
@@ -16,21 +17,20 @@ import games.brennan.dungeontrain.editor.TemplateSidecars;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.PlotCategory;
-import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
 import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
-import games.brennan.dungeontrain.editor.TrackEditor;
+import games.brennan.dungeontrain.editor.TrackSideEditors;
 import games.brennan.dungeontrain.editor.TrackPlotLocator;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
-import games.brennan.dungeontrain.editor.TunnelEditor;
 import games.brennan.dungeontrain.editor.TunnelTemplateStore;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
 import games.brennan.dungeontrain.editor.WholeCarriageEditor;
+import games.brennan.dungeontrain.editor.WholePlotEditor;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
@@ -427,10 +427,10 @@ public sealed interface Template
         @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.CARRIAGE, "", variant.id()); }
         @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.CARRIAGE; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            CarriageEditor.stampPlot(level, variant, dims);
+            CarriagePlotEditor.get().stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            CarriageEditor.enter(player, variant, onTop, stamp, inside);
+            CarriagePlotEditor.get().enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             // The variant's own box — `/dt reset default` on the portal corridor is asking for a
@@ -602,16 +602,16 @@ public sealed interface Template
         @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.WHOLE, "", id()); }
         @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.WHOLE; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            WholeCarriageEditor.stampRoomPlot(level, wholeCarriage, dims);
+            WholePlotEditor.room().stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            WholeCarriageEditor.enter(player, this, onTop, stamp, inside);
+            WholePlotEditor.room().enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return WholeCarriageTemplateStore.getBundled(level, wholeCarriage, dims);
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return WholeCarriageEditor.roomPlotOrigin(wholeCarriage, dims);
+            return WholePlotEditor.room().origin(this, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return new Vec3i(dims.length(), dims.height(), dims.width());
@@ -675,16 +675,16 @@ public sealed interface Template
         @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.HALF, "", id()); }
         @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.WHOLE; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            WholeCarriageEditor.stampHalfPlot(level, wholeCarriage, dims);
+            WholePlotEditor.half().stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            WholeCarriageEditor.enter(player, this, onTop, stamp, inside);
+            WholePlotEditor.half().enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return games.brennan.dungeontrain.editor.WholeHalfTemplateStore.getBundled(level, wholeCarriage, dims);
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return WholeCarriageEditor.halfPlotOrigin(wholeCarriage, dims);
+            return WholePlotEditor.half().origin(this, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return WholeCarriageEditor.plotSize(WholeKind.HALF, dims);
@@ -748,16 +748,16 @@ public sealed interface Template
         @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.GROUP, "", id()); }
         @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.WHOLE; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            WholeCarriageEditor.stampGroupPlot(level, group, dims);
+            WholePlotEditor.group().stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            WholeCarriageEditor.enter(player, this, onTop, stamp, inside);
+            WholePlotEditor.group().enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return CarriageGroupTemplateStore.getBundled(level, group, dims, WholeCarriageEditor.groupSize());
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return WholeCarriageEditor.groupPlotOrigin(group, dims);
+            return WholePlotEditor.group().origin(this, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return CarriageGroupPlacer.sizeOf(dims, WholeCarriageEditor.groupSize());
@@ -933,17 +933,17 @@ public sealed interface Template
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             // This tile's own plot, not the whole row — the category fill lists every named tile,
             // and /dt reset on a named tile should leave the others' unsaved edits alone.
-            TrackEditor.stampPlot(level, name, dims);
+            TrackSideEditors.tile().stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            TrackEditor.enter(player, onTop, stamp);
+            TrackSideEditors.tile().enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return TrackTemplateStore.getBundled(level, dims);
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
             // This tile's own slot — every named tile past the default stacks along +Z.
-            return TrackEditor.plotOrigin(name, dims);
+            return TrackSideEditors.tile().origin(this, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return new Vec3i(TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width());
@@ -1027,16 +1027,16 @@ public sealed interface Template
             // this variant's plot using the named (section, name, dims) form
             // — fixes a silent bug where /dt reset on a custom pillar variant
             // would re-stamp every default-named plot instead.
-            PillarEditor.stampPlot(level, section, name, dims);
+            TrackSideEditors.pillar(section).stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            PillarEditor.enter(player, section, onTop, stamp);
+            TrackSideEditors.pillar(section).enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return PillarTemplateStore.getBundled(level, section, dims);
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return PillarEditor.plotOrigin(new PillarTemplateId(section, name), dims);
+            return TrackSideEditors.pillar(section).origin(this, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return new Vec3i(1, section.height(), dims.width());
@@ -1119,16 +1119,16 @@ public sealed interface Template
         @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.TRACK_SIDE; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             // This variant's plot only — the same per-name form Pillar and Tunnel use.
-            PillarEditor.stampPlotAdjunct(level, adjunct, name, dims);
+            TrackSideEditors.adjunct(adjunct).stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            PillarEditor.enter(player, adjunct, onTop, stamp);
+            TrackSideEditors.adjunct(adjunct).enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return PillarTemplateStore.getBundledAdjunct(level, adjunct);
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return PillarEditor.plotOriginAdjunct(new PillarAdjunctTemplateId(adjunct, name), dims);
+            return TrackSideEditors.adjunct(adjunct).origin(this, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return new Vec3i(adjunct.xSize(), adjunct.ySize(), adjunct.zSize());
@@ -1212,17 +1212,17 @@ public sealed interface Template
             // the tunnel kind via the (variant) overload. Now stamps just
             // this variant's plot using the named (variant, name) form
             // — fixes the same silent bug as Pillar.restampPlot.
-            TunnelEditor.stampPlot(level, variant, name);
+            TrackSideEditors.tunnel(variant).stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            TunnelEditor.enter(player, variant, onTop, stamp);
+            TrackSideEditors.tunnel(variant).enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             // Tunnel templates have no bundled tier today.
             return Optional.empty();
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return TunnelEditor.plotOrigin(new TunnelTemplateId(variant, name));
+            return TrackSideEditors.tunnel(variant).origin(this, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);

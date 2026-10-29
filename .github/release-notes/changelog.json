@@ -31884,8 +31884,60 @@
       "released_at": null
     },
     {
-      "id": "crystal-fix",
+      "id": "editor-plot-editor-base",
       "version": "0.1589.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Editor plot lifecycle shared across template kinds",
+      "summary": "Behind the scenes, the Train Editor's track, pillar, stairs, tunnel, carriage and whole-carriage plots now share one enter / stamp / save / clear routine instead of carrying their own copy each. Entering a named track-side variant from the X menu now lands on that variant's own plot rather than the row's default.",
+      "highlights": [
+        "One plot lifecycle for six editor kinds; the old entry points still work",
+        "Go here on a named track, pillar, stairs or tunnel variant lands on that plot"
+      ],
+      "date": "2026-10-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "piglin-fix",
+      "version": "0.1590.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Piglin fix",
+      "summary": "Piglin fix.",
+      "highlights": [],
+      "pr": 2402,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-variant-doc-store",
+      "version": "0.1590.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Train Editor variant saving",
+      "summary": "Block variants now save the same way in every Train Editor plot. Variant pools in carriage plots keep all their settings when saved, and clearing every variant from a plot removes the leftover file.",
+      "highlights": [],
+      "pr": 2403,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "crystal-fix",
+      "version": "0.1592.0",
       "type": "fix",
       "tags": [
         "fix"
