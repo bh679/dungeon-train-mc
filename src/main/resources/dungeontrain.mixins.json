@@ -26,6 +26,7 @@
     "AdvancementTreeOrderMixin",
     "PlayerAdvancementsRehomeMixin",
     "PlayerAdvancementsAfkGateMixin",
+    "AdvancementRewardsReplayMixin",
     "PlayerAdvancementsMultiplayerGateMixin",
     "ServerAdvancementManagerRequirementsMixin",
     "BedBlockMixin",
