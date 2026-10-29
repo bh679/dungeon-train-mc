@@ -35,14 +35,31 @@ final class DeathNoteEchoHeadTest {
     @DisplayName("reads the author's uuid and name off the echo's skin ref")
     void identityFor_skinRef() {
         String ref = SourceProfileSkin.encode(AUTHOR, "Ranboo");
-        assertEquals(Optional.of(new DeathNoteEchoHead.Identity("Ranboo", Optional.of(AUTHOR))),
+        assertEquals(Optional.of(new DeathNoteEchoHead.Identity("Ranboo", Optional.of(AUTHOR), Optional.empty())),
+                DeathNoteEchoHead.identityFor(ref, "Other"));
+    }
+
+    @Test
+    @DisplayName("carries the author's captured skin URL so the head wears the echo's face")
+    void identityFor_capturedSkin() {
+        String url = "http://textures.minecraft.net/texture/0123456789abcdef0123456789abcdef";
+        String ref = SourceProfileSkin.encode(AUTHOR, "Ranboo", url);
+        assertEquals(Optional.of(new DeathNoteEchoHead.Identity("Ranboo", Optional.of(AUTHOR), Optional.of(url))),
+                DeathNoteEchoHead.identityFor(ref, "Other"));
+    }
+
+    @Test
+    @DisplayName("a skin URL off Mojang's CDN is dropped, leaving the name-only head")
+    void identityFor_foreignSkinUrl() {
+        String ref = SourceProfileSkin.encode(AUTHOR, "Ranboo", "https://example.com/skin.png");
+        assertEquals(Optional.of(new DeathNoteEchoHead.Identity("Ranboo", Optional.of(AUTHOR), Optional.empty())),
                 DeathNoteEchoHead.identityFor(ref, "Other"));
     }
 
     @Test
     @DisplayName("falls back to the stored author name when the echo has no skin ref")
     void identityFor_nameFallback() {
-        assertEquals(Optional.of(new DeathNoteEchoHead.Identity("Ranboo", Optional.empty())),
+        assertEquals(Optional.of(new DeathNoteEchoHead.Identity("Ranboo", Optional.empty(), Optional.empty())),
                 DeathNoteEchoHead.identityFor("", "Ranboo"));
     }
 
