@@ -440,7 +440,7 @@ public final class CarriagePartEditor {
         if (origin == null) origin = nextFreePlotOrigin(kind, dims);
 
         Vec3i partSize = kind.dims(dims);
-        CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
+        VariantDoc sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
 
         StructureTemplate template = captureTemplate(overworld, origin, kind, dims);
         CarriagePartTemplateStore.save(kind, name, template);
@@ -473,7 +473,7 @@ public final class CarriagePartEditor {
         // the part shipped.
         return EditorSave.toSource("Part editor save: " + kind.id() + ":" + name,
             () -> CarriagePartTemplateStore.saveToSource(kind, name, template),
-            () -> sidecar.saveToSource(kind, name),
+            () -> sidecar.saveToSource(),
             () -> ContainerContentsStore.loadFor(BlockVariantPlot.partKey(kind, name)).saveToSource());
     }
 
@@ -543,7 +543,7 @@ public final class CarriagePartEditor {
         Vec3i partSize = kind.dims(dims);
         return EditorSave.toSource("Part editor saveAs: " + kind.id() + ":" + newName,
             () -> CarriagePartTemplateStore.saveToSource(kind, newName, template),
-            () -> CarriagePartVariantBlocks.loadFor(kind, newName, partSize).saveToSource(kind, newName),
+            () -> CarriagePartVariantBlocks.loadFor(kind, newName, partSize).saveToSource(),
             () -> Files.deleteIfExists(CarriagePartTemplateStore.sourceFileFor(kind, oldName)),
             () -> {
                 java.nio.file.Path oldVariantsSrc = CarriagePartVariantBlocks.sourcePathFor(kind, oldName);

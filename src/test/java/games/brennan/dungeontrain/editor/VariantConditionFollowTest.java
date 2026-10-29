@@ -58,8 +58,8 @@ final class VariantConditionFollowTest {
     }
 
     /** The Library Long chain in miniature: 13 → 11 → 9, with 9 gated on 8 and 11 gated on 10. */
-    private static CarriageVariantBlocks libraryChain() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+    private static VariantDoc libraryChain() {
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(G8, List.of(of(Blocks.OAK_STAIRS), of(Blocks.BOOKSHELF)));
         sc.setLockId(G8, 8);
         List<VariantState> nine = List.of(
@@ -84,7 +84,7 @@ final class VariantConditionFollowTest {
     @Test
     @DisplayName("following a gated group places exactly what that group placed")
     void referenceFollowsTheGatedRoll() {
-        CarriageVariantBlocks sc = libraryChain();
+        VariantDoc sc = libraryChain();
         int shelves = 0;
         for (int seed = 0; seed < SEEDS; seed++) {
             for (int idx = 0; idx < INDICES; idx++) {
@@ -109,7 +109,7 @@ final class VariantConditionFollowTest {
     @Test
     @DisplayName("the roll is the same whichever cell is asked first")
     void orderOfAskingDoesNotMatter() {
-        CarriageVariantBlocks sc = libraryChain();
+        VariantDoc sc = libraryChain();
         for (int seed = 0; seed < SEEDS; seed++) {
             for (int idx = 0; idx < INDICES; idx++) {
                 long worldSeed = seed * 31L + 7;
@@ -132,7 +132,7 @@ final class VariantConditionFollowTest {
     @Test
     @DisplayName("a referencing cell ranks after the anchor of the group it follows")
     void referenceRanksAfterItsGroup() {
-        CarriageVariantBlocks sc = libraryChain();
+        VariantDoc sc = libraryChain();
         VariantGroupResolver view = sc.groupRefs();
         assertTrue(view.rankOf(G10) > view.rankOf(G9), "group 10 follows group 9");
         assertTrue(view.rankOf(G13) > view.rankOf(G11), "group 13 follows group 11");
@@ -169,7 +169,7 @@ final class VariantConditionFollowTest {
     void negateTurnsTheGateRound() {
         BlockPos cell = new BlockPos(2, 2, 2);
         BlockPos below = cell.below();
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(below, List.of(of(Blocks.OAK_PLANKS), of(Blocks.COBBLESTONE)));
         VariantCondition notPlanks = VariantCondition.NONE.withDirection(Direction.DOWN)
             .withValueAdded(BuiltInRegistries.BLOCK.getKey(Blocks.OAK_PLANKS)).withNegate(true);

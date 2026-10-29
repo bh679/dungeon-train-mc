@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.track;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.compat.PaintingTransformProcessor;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
@@ -437,18 +438,18 @@ public final class TrackGenerator {
      */
     record TilePaint(
         Optional<BlockState[][][]> cells,
-        TrackVariantBlocks sidecar,
+        VariantDoc sidecar,
         long worldSeed,
         long tileIndex,
         // Second (Nether-dark) source for the per-block crossfade composite — null/absent for tiles
         // outside the crossfade, where {@link #resolveComposite} degrades to the Overworld variant.
         Optional<BlockState[][][]> netherCells,
-        TrackVariantBlocks netherSidecar,
+        VariantDoc netherSidecar,
         ServerLevel fadeOverworld,
         long genSeed
     ) {
         /** Single-variant tile (no crossfade composite) — Nether source absent. */
-        TilePaint(Optional<BlockState[][][]> cells, TrackVariantBlocks sidecar,
+        TilePaint(Optional<BlockState[][][]> cells, VariantDoc sidecar,
                   long worldSeed, long tileIndex) {
             this(cells, sidecar, worldSeed, tileIndex, Optional.empty(), null, null, 0L);
         }
@@ -479,7 +480,7 @@ public final class TrackGenerator {
             return picked != null && (!picked.growth().isDefault() || !picked.painting().isDefault()) ? picked : null;
         }
 
-        private BlockState resolveSidecar(TrackVariantBlocks sc, BlockState base, int xMod, int y, int zOff) {
+        private BlockState resolveSidecar(VariantDoc sc, BlockState base, int xMod, int y, int zOff) {
             if (sc == null || sc.isEmpty() || base == null) return base;
             BlockPos local = new BlockPos(xMod, y, zOff);
             games.brennan.dungeontrain.editor.VariantState picked;
@@ -776,7 +777,7 @@ public final class TrackGenerator {
      */
     record PillarPaint(
         Optional<BlockState[][]> column,
-        TrackVariantBlocks sidecar,
+        VariantDoc sidecar,
         long worldSeed,
         int pillarIndex
     ) {
@@ -832,7 +833,7 @@ public final class TrackGenerator {
     ) {
         TrackKind kind = PillarTemplateStore.pillarKind(section);
         Optional<BlockState[][]> col = PillarTemplateStore.getColumnFor(level, section, dims, name);
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(
+        VariantDoc sidecar = TrackVariantBlocks.loadFor(
             kind, name, new Vec3i(1, section.height(), dims.width()));
         return new PillarPaint(col, sidecar, worldSeed, pillarIndex);
     }
@@ -1524,7 +1525,7 @@ public final class TrackGenerator {
         LOGGER.info("[stairs] candidate centerX={} pillarBaseY={} flipped={} template={}",
             centerX, pillarBaseY, flipped, stairsName);
         StructureTemplate template = templateOpt.get();
-        TrackVariantBlocks stairsSidecar = stairsSidecar(stairsName);
+        VariantDoc stairsSidecar = stairsSidecar(stairsName);
 
         int topInclusive = upStairsTopInclusive(g);
         int originX = centerX - 1;                 // centred 3-wide on centerX
@@ -1612,7 +1613,7 @@ public final class TrackGenerator {
     }
 
     /** The per-block variants of the stairs adjunct named {@code name}, at the adjunct's own footprint. */
-    static TrackVariantBlocks stairsSidecar(String name) {
+    static VariantDoc stairsSidecar(String name) {
         return TrackVariantBlocks.loadFor(TrackKind.ADJUNCT_STAIRS, name, new Vec3i(STAIRS_X, STAIRS_Y, STAIRS_Z));
     }
 
@@ -1634,7 +1635,7 @@ public final class TrackGenerator {
     static void stampStairsBesidePillarWorldgen(
         WorldGenLevel level,
         StructureTemplate template,
-        TrackVariantBlocks stairsSidecar,
+        VariantDoc stairsSidecar,
         int centerX,
         int groundY,
         TrackGeometry g,
@@ -1669,7 +1670,7 @@ public final class TrackGenerator {
     private static void stampStairsDescendingWorldgen(
         WorldGenLevel level,
         StructureTemplate template,
-        TrackVariantBlocks stairsSidecar,
+        VariantDoc stairsSidecar,
         int originX, int originZ,
         int topInclusive, int floorY,
         boolean flipped,
@@ -2000,7 +2001,7 @@ public final class TrackGenerator {
         WorldGenLevel level,
         ServerLevel serverLevel,
         StructureTemplate template,
-        TrackVariantBlocks stairsSidecar,
+        VariantDoc stairsSidecar,
         String entranceName,
         int centerX,
         boolean flipped,
@@ -2173,7 +2174,7 @@ public final class TrackGenerator {
                 PillarAdjunct.STAIRS_ENTRANCE, entranceName);
         if (templateOpt.isPresent()) {
             StructureTemplate template = templateOpt.get();
-            TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(
+            VariantDoc sidecar = TrackVariantBlocks.loadFor(
                 TrackKind.ADJUNCT_STAIRS_ENTRANCE, entranceName,
                 new Vec3i(PillarAdjunct.STAIRS_ENTRANCE.xSize(),
                           PillarAdjunct.STAIRS_ENTRANCE.ySize(),
@@ -2432,7 +2433,7 @@ public final class TrackGenerator {
                     String name = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx,
                         GateContext.atWorldX(level, (int) (idx * TrackPlacer.TILE_LENGTH), dims.length()));
                     Optional<BlockState[][][]> cells = TrackTemplateStore.getCellsFor(level, dims, name);
-                    TrackVariantBlocks sidecar =
+                    VariantDoc sidecar =
                         TrackVariantBlocks.loadFor(TrackKind.TILE, name, tileFootprint);
                     return new TilePaint(cells, sidecar, worldSeed, idx);
                 }

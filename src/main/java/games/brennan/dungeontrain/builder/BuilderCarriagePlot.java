@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
@@ -149,7 +150,7 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
      * <p>Resolved lazily rather than in the constructor: {@link #of} runs on every plot resolve,
      * including the ones that only want the origin or the mirror flags.</p>
      */
-    private TrackVariantBlocks doc() {
+    private VariantDoc doc() {
         return BuilderVariantStore.loadFor(level, volumeIndex, footprint);
     }
 
