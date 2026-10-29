@@ -822,6 +822,7 @@
   "command.dungeontrain.live_report.kept": "你先前對%s的檢舉仍然有效。",
   "command.dungeontrain.live_report.nothing_pending": "沒有等待你回覆的檢舉。",
   "command.dungeontrain.live_report.not_live": "%s已經不在直播了。",
+  "command.dungeontrain.live_report.not_found": "在該直播中找不到%s。",
   "command.dungeontrain.live_report.banned": "你被禁止直播期間不能檢舉實況主。",
   "command.dungeontrain.live_report.rate_limited": "檢舉次數過多。請幾分鐘後再試。",
   "command.dungeontrain.live_report.failed": "檢舉送出失敗。請稍後再試。",

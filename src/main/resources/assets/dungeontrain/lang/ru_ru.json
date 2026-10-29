@@ -891,6 +891,7 @@
   "command.dungeontrain.live_report.kept": "Ваша прежняя жалоба на %s остаётся открытой.",
   "command.dungeontrain.live_report.nothing_pending": "Нет жалоб, ожидающих вашего ответа.",
   "command.dungeontrain.live_report.not_live": "%s больше не в эфире.",
+  "command.dungeontrain.live_report.not_found": "Не удалось найти %s в этой трансляции.",
   "command.dungeontrain.live_report.banned": "Нельзя жаловаться на стримеров, пока вам заблокированы трансляции.",
   "command.dungeontrain.live_report.rate_limited": "Слишком много жалоб. Попробуйте через несколько минут.",
   "command.dungeontrain.live_report.failed": "Не удалось отправить жалобу. Попробуйте позже.",

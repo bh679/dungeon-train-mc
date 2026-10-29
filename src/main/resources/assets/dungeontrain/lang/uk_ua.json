@@ -951,6 +951,7 @@
   "command.dungeontrain.live_report.kept": "Ваша попередня скарга на %s залишається відкритою.",
   "command.dungeontrain.live_report.nothing_pending": "Немає скарг, що чекають на вашу відповідь.",
   "command.dungeontrain.live_report.not_live": "%s більше не в ефірі.",
+  "command.dungeontrain.live_report.not_found": "Не вдалося знайти %s у цій трансляції.",
   "command.dungeontrain.live_report.banned": "Не можна скаржитися на стрімерів, поки вам заблоковано трансляції.",
   "command.dungeontrain.live_report.rate_limited": "Забагато скарг. Спробуйте за кілька хвилин.",
   "command.dungeontrain.live_report.failed": "Не вдалося надіслати скаргу. Спробуйте пізніше.",

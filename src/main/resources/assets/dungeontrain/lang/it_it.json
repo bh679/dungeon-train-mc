@@ -854,6 +854,7 @@
   "command.dungeontrain.live_report.kept": "La tua segnalazione precedente su %s resta aperta.",
   "command.dungeontrain.live_report.nothing_pending": "Nessuna segnalazione attende la tua risposta.",
   "command.dungeontrain.live_report.not_live": "%s non è più in diretta.",
+  "command.dungeontrain.live_report.not_found": "Impossibile trovare %s in quella diretta.",
   "command.dungeontrain.live_report.banned": "Non puoi segnalare streamer finché sei bloccato dalle dirette.",
   "command.dungeontrain.live_report.rate_limited": "Troppe segnalazioni. Riprova tra qualche minuto.",
   "command.dungeontrain.live_report.failed": "Impossibile inviare la segnalazione. Riprova più tardi.",

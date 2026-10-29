@@ -822,6 +822,7 @@
   "command.dungeontrain.live_report.kept": "你之前对%s的举报仍然有效。",
   "command.dungeontrain.live_report.nothing_pending": "没有等待你答复的举报。",
   "command.dungeontrain.live_report.not_live": "%s已经不在直播了。",
+  "command.dungeontrain.live_report.not_found": "在该直播中找不到%s。",
   "command.dungeontrain.live_report.banned": "你被禁止直播期间不能举报主播。",
   "command.dungeontrain.live_report.rate_limited": "举报过多。请几分钟后再试。",
   "command.dungeontrain.live_report.failed": "举报发送失败。请稍后再试。",

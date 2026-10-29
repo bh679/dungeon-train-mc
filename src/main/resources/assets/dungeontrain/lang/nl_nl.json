@@ -854,6 +854,7 @@
   "command.dungeontrain.live_report.kept": "Je eerdere melding over %s blijft open.",
   "command.dungeontrain.live_report.nothing_pending": "Er wacht geen melding op je antwoord.",
   "command.dungeontrain.live_report.not_live": "%s is niet meer live.",
+  "command.dungeontrain.live_report.not_found": "%s is niet gevonden op die stream.",
   "command.dungeontrain.live_report.banned": "Je kunt geen streamers melden zolang je geblokkeerd bent voor streamen.",
   "command.dungeontrain.live_report.rate_limited": "Te veel meldingen. Probeer het over een paar minuten opnieuw.",
   "command.dungeontrain.live_report.failed": "Je melding kon niet worden verstuurd. Probeer het later opnieuw.",

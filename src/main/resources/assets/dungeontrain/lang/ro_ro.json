@@ -951,6 +951,7 @@
   "command.dungeontrain.live_report.kept": "Raportul tău anterior despre %s rămâne deschis.",
   "command.dungeontrain.live_report.nothing_pending": "Niciun raport nu așteaptă răspunsul tău.",
   "command.dungeontrain.live_report.not_live": "%s nu mai este live.",
+  "command.dungeontrain.live_report.not_found": "%s nu a fost găsit pe acel stream.",
   "command.dungeontrain.live_report.banned": "Nu poți raporta streameri cât timp ești blocat de la streaming.",
   "command.dungeontrain.live_report.rate_limited": "Prea multe rapoarte. Încearcă din nou peste câteva minute.",
   "command.dungeontrain.live_report.failed": "Raportul tău nu a putut fi trimis. Încearcă mai târziu.",

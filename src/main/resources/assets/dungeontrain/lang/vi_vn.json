@@ -822,6 +822,7 @@
   "command.dungeontrain.live_report.kept": "Báo cáo trước đó của bạn về %s vẫn mở.",
   "command.dungeontrain.live_report.nothing_pending": "Không có báo cáo nào đang chờ câu trả lời của bạn.",
   "command.dungeontrain.live_report.not_live": "%s không còn phát trực tiếp nữa.",
+  "command.dungeontrain.live_report.not_found": "Không tìm thấy %s trên luồng đó.",
   "command.dungeontrain.live_report.banned": "Bạn không thể báo cáo streamer khi đang bị chặn phát trực tiếp.",
   "command.dungeontrain.live_report.rate_limited": "Quá nhiều báo cáo. Hãy thử lại sau vài phút.",
   "command.dungeontrain.live_report.failed": "Không gửi được báo cáo của bạn. Hãy thử lại sau.",

@@ -197,6 +197,7 @@ public final class LiveReportCommand {
                     .append(button(KEY + "keep", "/livereport keep", ChatFormatting.GRAY));
             }
             case NOT_LIVE -> Component.translatable(KEY + "not_live", who).withStyle(ChatFormatting.RED);
+            case NOT_FOUND -> Component.translatable(KEY + "not_found", who).withStyle(ChatFormatting.RED);
             case SELF -> Component.translatable(KEY + "self").withStyle(ChatFormatting.RED);
             case BANNED -> Component.translatable(KEY + "banned").withStyle(ChatFormatting.RED);
             case RATE_LIMITED -> Component.translatable(KEY + "rate_limited").withStyle(ChatFormatting.RED);

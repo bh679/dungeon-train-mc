@@ -155,7 +155,7 @@ public final class LiveModerationClient {
 
     /** What the relay said to a report. {@code existing*} are set for {@link Kind#OPEN} (createdAt 0 when unknown). */
     public record ReportReply(Kind kind, long existingCreatedAt, String existingStreamerName) {
-        public enum Kind { SENT, OPEN, NOT_LIVE, SELF, BANNED, RATE_LIMITED, FAILED }
+        public enum Kind { SENT, OPEN, NOT_LIVE, NOT_FOUND, SELF, BANNED, RATE_LIMITED, FAILED }
 
         static ReportReply of(Kind kind) {
             return new ReportReply(kind, 0L, "");
@@ -164,13 +164,15 @@ public final class LiveModerationClient {
 
     /**
      * A {@code /live/report} answer, from its status and body. A 400 is read by its {@code error}: only
-     * {@code not_live} says the stream ended ({@code self_report} is the player's own stream); any other 400
+     * {@code not_live} says the stream ended ({@code streamer_not_found}: someone else holds that channel,
+     * {@code self_report}: the player's own stream); any other 400
      * ({@code bad_uuid}, {@code bad_channel}, ...) and anything unexpected is FAILED. Pure.
      */
     public static ReportReply parseReportReply(int status, String body) {
         switch (status) {
             case 400: return switch (errorOf(body)) {
                 case "not_live" -> ReportReply.of(ReportReply.Kind.NOT_LIVE);
+                case "streamer_not_found" -> ReportReply.of(ReportReply.Kind.NOT_FOUND);
                 case "self_report" -> ReportReply.of(ReportReply.Kind.SELF);
                 default -> ReportReply.of(ReportReply.Kind.FAILED);
             };

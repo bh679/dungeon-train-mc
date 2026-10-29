@@ -854,6 +854,7 @@
   "command.dungeontrain.live_report.kept": "Tu denuncia anterior sobre %s sigue abierta.",
   "command.dungeontrain.live_report.nothing_pending": "No hay ninguna denuncia esperando tu respuesta.",
   "command.dungeontrain.live_report.not_live": "%s ya no está en directo.",
+  "command.dungeontrain.live_report.not_found": "No se encontró a %s en ese directo.",
   "command.dungeontrain.live_report.banned": "No puedes denunciar a streamers mientras tengas bloqueado el directo.",
   "command.dungeontrain.live_report.rate_limited": "Demasiadas denuncias. Inténtalo de nuevo en unos minutos.",
   "command.dungeontrain.live_report.failed": "No se pudo enviar tu denuncia. Inténtalo más tarde.",

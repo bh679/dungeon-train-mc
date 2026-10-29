@@ -854,6 +854,7 @@
   "command.dungeontrain.live_report.kept": "Deine frühere Meldung zu %s bleibt offen.",
   "command.dungeontrain.live_report.nothing_pending": "Keine Meldung wartet auf deine Antwort.",
   "command.dungeontrain.live_report.not_live": "%s ist nicht mehr live.",
+  "command.dungeontrain.live_report.not_found": "%s wurde auf diesem Stream nicht gefunden.",
   "command.dungeontrain.live_report.banned": "Du kannst keine Streamer melden, solange du vom Streamen gesperrt bist.",
   "command.dungeontrain.live_report.rate_limited": "Zu viele Meldungen. Versuch es in ein paar Minuten noch einmal.",
   "command.dungeontrain.live_report.failed": "Deine Meldung konnte nicht gesendet werden. Versuch es später noch einmal.",

@@ -17635,6 +17635,15 @@
       ]
     }
   },
+  "command.dungeontrain.live_report.not_found": {
+    "1": {
+      "label": "the reported streamer's Minecraft player name, or \"the streamer\" when unknown",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
   "command.dungeontrain.live_report.ago.minutes": {
     "1": {
       "label": "a number of minutes",

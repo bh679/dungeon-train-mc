@@ -822,6 +822,7 @@
   "command.dungeontrain.live_report.kept": "%sへの以前の通報はそのまま残ります。",
   "command.dungeontrain.live_report.nothing_pending": "回答待ちの通報はありません。",
   "command.dungeontrain.live_report.not_live": "%sはもう配信していません。",
+  "command.dungeontrain.live_report.not_found": "その配信で%sが見つかりませんでした。",
   "command.dungeontrain.live_report.banned": "配信をブロックされている間は配信者を通報できません。",
   "command.dungeontrain.live_report.rate_limited": "通報が多すぎます。数分後にもう一度お試しください。",
   "command.dungeontrain.live_report.failed": "通報を送信できませんでした。後でもう一度お試しください。",

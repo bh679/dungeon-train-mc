@@ -81,6 +81,8 @@ final class LiveModerationClientReportTest {
     @Test
     void refusals() {
         assertEquals(Kind.NOT_LIVE, LiveModerationClient.parseReportReply(400, "{\"error\":\"not_live\"}").kind());
+        assertEquals(Kind.NOT_FOUND, LiveModerationClient.parseReportReply(400,
+            "{\"error\":\"streamer_not_found\"}").kind());
         assertEquals(Kind.SELF, LiveModerationClient.parseReportReply(400, "{\"error\":\"self_report\"}").kind());
         // Any other 400 is a bad request, not a stream that ended.
         assertEquals(Kind.FAILED, LiveModerationClient.parseReportReply(400, "{\"error\":\"bad_uuid\"}").kind());

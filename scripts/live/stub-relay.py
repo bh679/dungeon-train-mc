@@ -33,7 +33,8 @@ GET /ctl?throttle=N changes it while running (0 = no cap).
 POST /live/report plays the relay's report-a-streamer contract: 200 {ok, reportId, status: "open"} the first
 time a reporter reports a streamer, then 409 {error: "open_report", existing: {reportId, createdAt, streamerName}}
 until a resend carries abandon: true (the old report is abandoned and a new one opens). --report-status N
-answers every report with N instead (400 not live, 403 blocked, 429 rate limited).
+answers every report with N instead (403 blocked, 429 rate limited); --report-error CODE answers 400 {error: CODE}
+(not_live, streamer_not_found, self_report).
 
 The segments' wall-clock start (PDT) comes from the encoder's #EXT-X-PROGRAM-DATE-TIME tags.
 Dev tool only; never exposed beyond loopback.
@@ -183,6 +184,9 @@ class Handler(BaseHTTPRequestHandler):
         if ARGS.report_status:
             print("[stub] report -> forced %d" % ARGS.report_status, flush=True)
             return self._send(ARGS.report_status, {"error": "forced"})
+        if ARGS.report_error:
+            print("[stub] report -> forced 400 %s" % ARGS.report_error, flush=True)
+            return self._send(400, {"error": ARGS.report_error})
         reporter = str(body.get("uuid", ""))
         streamer = str(body.get("streamerName", ""))
         if "streamerUuid" in body and not body["streamerUuid"]:
@@ -385,6 +389,7 @@ def main():
     p.add_argument("--two-streams", action="store_true", help="every status says the Two Streams reward is on (twoStreams: true)")
     p.add_argument("--prev-name", default="", help="main-slot claims take over from this streamer (prevName)")
     p.add_argument("--report-status", type=int, default=0, help="answer every POST /live/report with this status (400/403/429)")
+    p.add_argument("--report-error", default="", help="answer every POST /live/report with 400 and this error code")
     p.add_argument("--throttle-kbps", type=int, default=0, help="cap PUT upload speed (kbit/s); /ctl?throttle=N changes it")
     ARGS = p.parse_args()
     STATE["throttle_kbps"] = max(0, ARGS.throttle_kbps)

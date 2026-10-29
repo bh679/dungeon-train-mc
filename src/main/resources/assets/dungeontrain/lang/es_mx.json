@@ -854,6 +854,7 @@
   "command.dungeontrain.live_report.kept": "Tu reporte anterior sobre %s sigue abierto.",
   "command.dungeontrain.live_report.nothing_pending": "No hay ningún reporte esperando tu respuesta.",
   "command.dungeontrain.live_report.not_live": "%s ya no está en vivo.",
+  "command.dungeontrain.live_report.not_found": "No se encontró a %s en esa transmisión.",
   "command.dungeontrain.live_report.banned": "No puedes reportar streamers mientras tengas bloqueadas las transmisiones.",
   "command.dungeontrain.live_report.rate_limited": "Demasiados reportes. Intenta de nuevo en unos minutos.",
   "command.dungeontrain.live_report.failed": "No se pudo enviar tu reporte. Intenta más tarde.",

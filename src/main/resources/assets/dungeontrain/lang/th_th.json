@@ -822,6 +822,7 @@
   "command.dungeontrain.live_report.kept": "รายงานก่อนหน้าของคุณเกี่ยวกับ %s ยังเปิดอยู่",
   "command.dungeontrain.live_report.nothing_pending": "ไม่มีรายงานที่รอคำตอบของคุณ",
   "command.dungeontrain.live_report.not_live": "%s ไม่ได้ไลฟ์แล้ว",
+  "command.dungeontrain.live_report.not_found": "ไม่พบ %s ในสตรีมนั้น",
   "command.dungeontrain.live_report.banned": "คุณรายงานสตรีมเมอร์ไม่ได้ระหว่างที่ถูกบล็อกจากการสตรีม",
   "command.dungeontrain.live_report.rate_limited": "รายงานมากเกินไป ลองใหม่อีกครั้งในอีกไม่กี่นาที",
   "command.dungeontrain.live_report.failed": "ส่งรายงานของคุณไม่ได้ ลองใหม่ภายหลัง",

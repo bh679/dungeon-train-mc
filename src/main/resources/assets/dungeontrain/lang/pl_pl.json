@@ -886,6 +886,7 @@
   "command.dungeontrain.live_report.kept": "Twoje wcześniejsze zgłoszenie dotyczące %s pozostaje otwarte.",
   "command.dungeontrain.live_report.nothing_pending": "Żadne zgłoszenie nie czeka na twoją odpowiedź.",
   "command.dungeontrain.live_report.not_live": "%s nie nadaje już na żywo.",
+  "command.dungeontrain.live_report.not_found": "Nie znaleziono %s na tym streamie.",
   "command.dungeontrain.live_report.banned": "Nie możesz zgłaszać streamerów, dopóki masz blokadę transmisji.",
   "command.dungeontrain.live_report.rate_limited": "Za dużo zgłoszeń. Spróbuj ponownie za kilka minut.",
   "command.dungeontrain.live_report.failed": "Nie udało się wysłać zgłoszenia. Spróbuj ponownie później.",

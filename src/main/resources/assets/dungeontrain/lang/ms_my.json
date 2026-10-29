@@ -822,6 +822,7 @@
   "command.dungeontrain.live_report.kept": "Laporan anda sebelum ini tentang %s kekal terbuka.",
   "command.dungeontrain.live_report.nothing_pending": "Tiada laporan yang menunggu jawapan anda.",
   "command.dungeontrain.live_report.not_live": "%s tidak lagi live.",
+  "command.dungeontrain.live_report.not_found": "%s tidak ditemui dalam strim itu.",
   "command.dungeontrain.live_report.banned": "Anda tidak boleh melaporkan penstrim semasa anda disekat daripada menstrim.",
   "command.dungeontrain.live_report.rate_limited": "Terlalu banyak laporan. Cuba lagi dalam beberapa minit.",
   "command.dungeontrain.live_report.failed": "Laporan anda tidak dapat dihantar. Cuba lagi nanti.",

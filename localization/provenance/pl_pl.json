@@ -886,6 +886,7 @@
   "command.dungeontrain.live_report.kept": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "b3370926c1ee03cd"},
   "command.dungeontrain.live_report.nothing_pending": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "cb8c8b7f72d63de1"},
   "command.dungeontrain.live_report.not_live": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "826c835bbffd752e"},
+  "command.dungeontrain.live_report.not_found": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "90beef3d640bb6d8"},
   "command.dungeontrain.live_report.banned": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "bbfa3b9d99499880"},
   "command.dungeontrain.live_report.rate_limited": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0862133e7fb3a4a4"},
   "command.dungeontrain.live_report.failed": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "1c6caad950c3aa56"},

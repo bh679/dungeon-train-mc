@@ -854,6 +854,7 @@
   "command.dungeontrain.live_report.kept": "Ton signalement précédent concernant %s reste ouvert.",
   "command.dungeontrain.live_report.nothing_pending": "Aucun signalement n'attend ta réponse.",
   "command.dungeontrain.live_report.not_live": "%s n'est plus en direct.",
+  "command.dungeontrain.live_report.not_found": "Impossible de trouver %s sur ce stream.",
   "command.dungeontrain.live_report.banned": "Tu ne peux pas signaler de streamers tant que tu es bloqué du streaming.",
   "command.dungeontrain.live_report.rate_limited": "Trop de signalements. Réessaie dans quelques minutes.",
   "command.dungeontrain.live_report.failed": "Ton signalement n'a pas pu être envoyé. Réessaie plus tard.",
