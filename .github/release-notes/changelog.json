@@ -31934,6 +31934,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "worn-tv-who-is-live",
+      "version": "0.1592.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "See who is live on your TV",
+      "summary": "Wearing a TV now shows who is live in a line under the picture. With two streams on, each picture names its own streamer. Turn it off in Options, Stream, Who's live.",
+      "highlights": [],
+      "pr": 2404,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
