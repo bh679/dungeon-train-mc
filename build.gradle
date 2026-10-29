@@ -236,6 +236,13 @@ neoForge {
             if (project.hasProperty('tvPoseSwap')) {
                 systemProperty 'dungeontrain.tvPoseSwap', 'true'
             }
+            // Client-freeze seam: ./gradlew runClient -PquickWorld=… -PclientFreeze=3000 hangs the render
+            // thread once, 10 s into the world, so client/perf/ClientStallWatchdog's dump can be checked
+            // without typing /dt-client-freeze. Dev builds only (client/perf/ClientFreezeCommand).
+            def clientFreeze = project.findProperty('clientFreeze')
+            if (clientFreeze) {
+                systemProperty 'dungeontrain.clientFreezeMs', clientFreeze.toString()
+            }
             // Muted-launch seam: CLI / agent-driven dev clients start at master volume 0 on every
             // launch (client/DevFirstLaunchDefaults). On automatically when an agent shell launched
             // Gradle (CLAUDECODE / AI_AGENT env) or a headless seam is in use; -PmuteSound forces it
