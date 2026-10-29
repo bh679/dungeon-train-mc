@@ -7,6 +7,8 @@ import games.brennan.dungeontrain.portal.PortalEditMirror;
 import games.brennan.dungeontrain.ship.sable.CarriagePivotPin;
 import games.brennan.dungeontrain.ship.sable.CarriagePlotResolver;
 import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
+import games.brennan.dungeontrain.ship.sable.SableManagedShip;
+import games.brennan.dungeontrain.train.GrowthContext;
 import games.brennan.dungeontrain.train.PlayerPlacedTrainBlocks;
 import games.brennan.dungeontrain.train.SharedCarriageChangeFilter;
 import games.brennan.dungeontrain.train.MobBreakContext;
@@ -50,7 +52,8 @@ import java.util.UUID;
  *       {@code SignBlockEntityEditMixin}.</li>
  *   <li><b>Player-block unmark (TAIL)</b> — a change of block type ends a player-added block's
  *       claim on its cell ({@link PlayerPlacedTrainBlocks}); whatever fills the cell next is judged
- *       afresh, and a player's own placement re-marks it when its place event fires.</li>
+ *       afresh, and a player's own placement re-marks it when its place event fires. A cell filled
+ *       by a tree growing on a carriage ({@link GrowthContext}) is marked here.</li>
  * </ol>
  *
  * <p>{@code remap = false}: {@code SableCommonEvents} and {@code handleBlockChange} are Sable's own
@@ -95,6 +98,11 @@ public abstract class SableBlockChangeGuardMixin {
         // A player-added block that is broken or replaced — by anything — stops being the player's.
         // Runs before the place event of a player's own placement, which then re-marks the cell.
         PlayerPlacedTrainBlocks.onBlockChanged(serverSub, x, y, z, oldState.getBlock() != newState.getBlock());
+        // A tree growing on a carriage is a passenger's addition, like bamboo: claim each cell it fills
+        // so a branch past the roof breaks off on terrain instead of ploughing it.
+        if (GrowthContext.isActive() && !newState.isAir() && SableManagedShip.isDungeonTrainManaged(serverSub)) {
+            PlayerPlacedTrainBlocks.mark(serverSub, new BlockPos(x, y, z));
+        }
         // Likewise a forced fence / wall connect mode: replace the block and it is an ordinary one.
         games.brennan.dungeontrain.train.ForcedConnectCells.onBlockChanged(
             serverSub, x, y, z, oldState.getBlock() != newState.getBlock());

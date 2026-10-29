@@ -31968,6 +31968,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "train-tree-breakoff",
+      "version": "0.1594.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "Trees on the train snap off",
+      "summary": "Trees you grow on top of the train now break off when they hit a hill or tunnel, just like bamboo, dropping their wood instead of carving through the world.",
+      "highlights": [
+        "Works for trees, huge mushrooms and huge fungi grown on a carriage"
+      ],
+      "pr": 2405,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
