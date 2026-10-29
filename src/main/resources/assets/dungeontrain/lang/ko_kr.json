@@ -843,6 +843,8 @@
   "chat.dungeontrain.own_photo_trash.1": "사라졌다. 본 건 너뿐이다.",
   "chat.dungeontrain.own_photo_trash.2": "불탔다. 이 사진은 열차를 떠돌지 않는다.",
   "chat.dungeontrain.own_photo_trash.3": "그건 너와 불꽃만의 비밀로 남는다.",
+  "chat.dungeontrain.photo_progress.named": "사진이 %s에 집계되었습니다 (%s/%s)",
+  "chat.dungeontrain.photo_progress.named_count": "사진이 %s에 집계되었습니다 (%s)",
   "chat.dungeontrain.selfie_hint.not_selfie": "대단한 사진이지만 셀카가 아닙니다. %s 키를 눌러 카메라를 돌리세요.",
   "chat.dungeontrain.selfie_hint.warden_too_far": "워든이 너무 멀리 있어서 인정되지 않습니다. 더 가까이 가세요.",
   "chat.dungeontrain.selfie_hint.wither_too_far": "위더가 너무 멀리 있어서 인정되지 않습니다. 더 가까이 가세요.",

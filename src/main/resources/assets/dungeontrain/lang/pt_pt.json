@@ -876,6 +876,8 @@
   "chat.dungeontrain.own_photo_trash.1": "Desapareceu. Só tu a chegaste a ver.",
   "chat.dungeontrain.own_photo_trash.2": "Queimada. Não vai viajar pelo comboio.",
   "chat.dungeontrain.own_photo_trash.3": "Essa fica entre ti e o fogo.",
+  "chat.dungeontrain.photo_progress.named": "A fotografia contou para %s (%s/%s)",
+  "chat.dungeontrain.photo_progress.named_count": "A fotografia contou para %s (%s)",
   "chat.dungeontrain.selfie_hint.not_selfie": "Impressionante, mas isso não é uma selfie. Carrega em %s para virar a câmara.",
   "chat.dungeontrain.selfie_hint.warden_too_far": "O Warden estava demasiado longe para contar. Aproxima-te.",
   "chat.dungeontrain.selfie_hint.wither_too_far": "O Wither estava demasiado longe para contar. Aproxima-te.",

@@ -843,6 +843,8 @@
   "chat.dungeontrain.own_photo_trash.1": "Hilang. Hanya anda yang pernah melihatnya.",
   "chat.dungeontrain.own_photo_trash.2": "Terbakar. Ia tidak akan mengembara di kereta api.",
   "chat.dungeontrain.own_photo_trash.3": "Yang itu kekal antara anda dan api.",
+  "chat.dungeontrain.photo_progress.named": "Foto dikira untuk %s (%s/%s)",
+  "chat.dungeontrain.photo_progress.named_count": "Foto dikira untuk %s (%s)",
   "chat.dungeontrain.selfie_hint.not_selfie": "Hebat, tetapi itu bukan swafoto. Tekan %s untuk memusingkan kamera.",
   "chat.dungeontrain.selfie_hint.warden_too_far": "Warden terlalu jauh untuk dikira. Dekatkan diri.",
   "chat.dungeontrain.selfie_hint.wither_too_far": "Wither terlalu jauh untuk dikira. Dekatkan diri.",

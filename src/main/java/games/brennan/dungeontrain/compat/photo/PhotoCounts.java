@@ -48,9 +48,13 @@ final class PhotoCounts {
         for (String category : categories) {
             int count = counts.getInt(category) + 1;
             counts.putInt(category, count);
+            String album = EnchiridionAdvancements.COUNT_ALBUM_BY_CATEGORY.get(category);
+            if (album != null) {
+                PhotoProgressNotice.noteNextTier(player, EnchiridionAdvancements.countTiersOf(album),
+                        tier -> count, EnchiridionAdvancements.COUNT_TIER_TARGETS::get);
+            }
             ModAdvancementTriggers.PHOTO_COUNT.get().trigger(player, category, count);
             String entry = albumEntry(count);
-            String album = EnchiridionAdvancements.COUNT_ALBUM_BY_CATEGORY.get(category);
             // The shot's frame is current here (PhotoAdvancementEvents runs this inside its capture).
             if (entry != null && album != null) {
                 AdvancementPhotoCapture.sendEntry(player,
