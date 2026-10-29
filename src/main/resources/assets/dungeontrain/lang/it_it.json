@@ -876,6 +876,8 @@
   "chat.dungeontrain.own_photo_trash.1": "Sparita. Solo tu l'hai mai vista.",
   "chat.dungeontrain.own_photo_trash.2": "Bruciata. Non viaggerà sul treno.",
   "chat.dungeontrain.own_photo_trash.3": "Quella resta tra te e il fuoco.",
+  "chat.dungeontrain.photo_progress.named": "Foto conteggiata per %s (%s/%s)",
+  "chat.dungeontrain.photo_progress.hidden": "Foto conteggiata per un progresso nascosto (%s)",
   "chat.dungeontrain.selfie_hint.not_selfie": "Impressionante, ma non è un selfie. Premi %s per girare la fotocamera.",
   "chat.dungeontrain.selfie_hint.warden_too_far": "Il Custode era troppo lontano per contare. Avvicinati.",
   "chat.dungeontrain.selfie_hint.wither_too_far": "Il Wither era troppo lontano per contare. Avvicinati.",

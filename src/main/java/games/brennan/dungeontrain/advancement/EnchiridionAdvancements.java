@@ -81,8 +81,11 @@ public final class EnchiridionAdvancements {
     /** The biome tiers share one album of photos, one per biome, kept under the first tier. */
     public static final String BIOME_ALBUM = PATH_PREFIX + "scenic_route";
 
-    private static final Set<String> BIOME_TIERS = Set.of(
+    /** The biome tiers, lowest first. Coffee Table Book is last: it asks for every biome. */
+    public static final java.util.List<String> BIOME_TIER_ORDER = java.util.List.of(
             PATH_PREFIX + "scenic_route", PATH_PREFIX + "travel_brochure", PATH_PREFIX + "coffee_table_book");
+
+    private static final Set<String> BIOME_TIERS = Set.copyOf(BIOME_TIER_ORDER);
 
     /**
      * How many biomes each photo tier asks for — the album shows that many slots. Kept here because a
@@ -177,6 +180,16 @@ public final class EnchiridionAdvancements {
             if (e.getValue().equals(album)) return e.getKey();
         }
         return null;
+    }
+
+    /** The count tiers kept in {@code album} ({@link #COUNT_ALBUM_BY_CATEGORY}), lowest target first. */
+    public static java.util.List<String> countTiersOf(String album) {
+        java.util.List<String> tiers = new java.util.ArrayList<>();
+        COUNT_TIERS.forEach((tier, tierAlbum) -> {
+            if (tierAlbum.equals(album)) tiers.add(tier);
+        });
+        tiers.sort(java.util.Comparator.comparingInt(COUNT_TIER_TARGETS::get));
+        return java.util.List.copyOf(tiers);
     }
 
     /** {@code photo_007}: the entry path for a category's {@code n}th counted photo. */

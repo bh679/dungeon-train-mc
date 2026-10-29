@@ -941,6 +941,8 @@
   "chat.dungeontrain.own_photo_trash.1": "Gone. Only you ever saw it.",
   "chat.dungeontrain.own_photo_trash.2": "Burned. It won't travel the train.",
   "chat.dungeontrain.own_photo_trash.3": "That one stays between you and the fire.",
+  "chat.dungeontrain.photo_progress.named": "Photo counted toward %s (%s/%s)",
+  "chat.dungeontrain.photo_progress.hidden": "Photo counted toward a hidden advancement (%s)",
   "chat.dungeontrain.selfie_hint.not_selfie": "That was impressive, but it's not a selfie. Press %s to turn the camera around.",
   "chat.dungeontrain.selfie_hint.warden_too_far": "The Warden was too far away to count. Get closer.",
   "chat.dungeontrain.selfie_hint.wither_too_far": "The Wither was too far away to count. Get closer.",

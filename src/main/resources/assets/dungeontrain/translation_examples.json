@@ -216,6 +216,34 @@
       ]
     }
   },
+  "chat.dungeontrain.photo_progress.named": {
+    "1": {
+      "label": "the name of the camera advancement the photo counted toward, shown as a hoverable link",
+      "examples": [
+        "[Nature Documentary]"
+      ]
+    },
+    "2": {
+      "label": "how many the player has so far",
+      "examples": [
+        "4"
+      ]
+    },
+    "3": {
+      "label": "how many the advancement needs",
+      "examples": [
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_progress.hidden": {
+    "1": {
+      "label": "how many the player has so far towards an advancement they have not discovered yet",
+      "examples": [
+        "4"
+      ]
+    }
+  },
   "chat.dungeontrain.selfie_hint.not_selfie": {
     "1": {
       "label": "the key the player has bound to Toggle Perspective, which flips the camera into selfie mode",

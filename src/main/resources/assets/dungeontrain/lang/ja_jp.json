@@ -843,6 +843,8 @@
   "chat.dungeontrain.own_photo_trash.1": "消えた。見たのは君だけだ。",
   "chat.dungeontrain.own_photo_trash.2": "燃えた。この写真は列車を旅しない。",
   "chat.dungeontrain.own_photo_trash.3": "それは君と炎だけの秘密だ。",
+  "chat.dungeontrain.photo_progress.named": "写真が%sにカウントされました（%s/%s）",
+  "chat.dungeontrain.photo_progress.hidden": "写真が隠された進捗にカウントされました（%s）",
   "chat.dungeontrain.selfie_hint.not_selfie": "すごい一枚だけど、自撮りじゃない。%sでカメラを自分に向けよう。",
   "chat.dungeontrain.selfie_hint.warden_too_far": "ウォーデンが遠すぎて写ったことにならない。もっと近づこう。",
   "chat.dungeontrain.selfie_hint.wither_too_far": "ウィザーが遠すぎて写ったことにならない。もっと近づこう。",

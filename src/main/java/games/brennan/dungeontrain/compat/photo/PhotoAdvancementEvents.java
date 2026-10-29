@@ -83,7 +83,9 @@ public final class PhotoAdvancementEvents {
         rememberSubjects(player, event);
         LiveMomentPhotos.onFrameAdded(player, event.getFrame());
         // Every advancement this shot earns remembers it — see AdvancementPhotoCapture.
-        AdvancementPhotoCapture.during(event.getFrame(), () -> photoTriggers(player, event));
+        // and each one it moved along without earning gets a line in chat — see PhotoProgressNotice.
+        AdvancementPhotoCapture.during(event.getFrame(),
+                () -> PhotoProgressNotice.during(player, () -> photoTriggers(player, event)));
     }
 
     private static void photoTriggers(ServerPlayer player, FrameAddedEvent event) {
@@ -184,6 +186,7 @@ public final class PhotoAdvancementEvents {
         if (event.getProgressType() != AdvancementEvent.AdvancementProgressEvent.ProgressType.GRANT) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         AdvancementPhotoCapture.onCriterion(player, event.getAdvancement(), event.getCriterionName());
+        PhotoProgressNotice.noteCollection(player, event.getAdvancement());
     }
 
     /** A print a PlayerMob took and tossed to its subject: whoever catches it earned "Candid". */
@@ -271,11 +274,35 @@ public final class PhotoAdvancementEvents {
         updated.add(StringTag.valueOf(id));
         player.getPersistentData().put(PHOTO_BIOMES_KEY, updated);
         mirrorTally(player);
+        noteBiomeTier(player, updated, biome);
         // A new biome: its photo joins the biome tiers' album (the frame is current — see onFrameAdded).
         AdvancementPhotoCapture.sendEntry(player,
                 ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, EnchiridionAdvancements.BIOME_ALBUM), id);
         ModAdvancementTriggers.PHOTO_BIOMES.get().trigger(player, updated.size());
         checkEveryBiome(player, updated);
+    }
+
+    /**
+     * A new biome's line in chat: the next biome tier it counts toward. Coffee Table Book counts only
+     * the biomes Terra Omnia asks for, so a biome outside that list moves nothing once it is the next tier.
+     */
+    private static void noteBiomeTier(ServerPlayer player, ListTag photographed, ResourceLocation biome) {
+        Set<ResourceLocation> wanted = TerraOmnia.ordered(player.registryAccess().registryOrThrow(Registries.BIOME)).keySet();
+        String everyBiome = EnchiridionAdvancements.BIOME_TIER_ORDER.get(EnchiridionAdvancements.BIOME_TIER_ORDER.size() - 1);
+        PhotoProgressNotice.noteNextTier(player, EnchiridionAdvancements.BIOME_TIER_ORDER,
+                tier -> tier.equals(everyBiome) ? countWanted(photographed, wanted) : photographed.size(),
+                tier -> tier.equals(everyBiome)
+                        ? (wanted.contains(biome) ? wanted.size() : 0)
+                        : EnchiridionAdvancements.BIOME_TIER_TARGETS.getOrDefault(tier, 0));
+    }
+
+    private static int countWanted(ListTag photographed, Set<ResourceLocation> wanted) {
+        int n = 0;
+        for (Tag t : photographed) {
+            ResourceLocation id = ResourceLocation.tryParse(t.getAsString());
+            if (id != null && wanted.contains(id)) n++;
+        }
+        return n;
     }
 
     /** "Coffee Table Book": a photo taken in every biome Terra Omnia asks for ({@link TerraOmnia#ordered}). */
