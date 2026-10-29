@@ -32000,9 +32000,9 @@
       "summary": "Two new dimensional carriages can turn up further along the line. Watch your step.",
       "highlights": [],
       "date": "2026-10-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1598.0",
+      "released_at": "2026-10-29T11:48:20Z",
       "pr": 2408
     },
     {
@@ -32018,9 +32018,9 @@
       "highlights": [],
       "pr": 2407,
       "date": "2026-10-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1598.0",
+      "released_at": "2026-10-29T11:48:20Z"
     },
     {
       "id": "crystal-fix",
@@ -32034,9 +32034,9 @@
       "highlights": [],
       "pr": 2401,
       "date": "2026-10-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1598.0",
+      "released_at": "2026-10-29T11:48:20Z"
     },
     {
       "id": "photo-progress-chat",
@@ -32051,9 +32051,9 @@
       "highlights": [],
       "pr": 2409,
       "date": "2026-10-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1598.0",
+      "released_at": "2026-10-29T11:48:20Z"
     }
   ]
 }
