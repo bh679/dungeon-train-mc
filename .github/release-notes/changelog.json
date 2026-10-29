@@ -31745,8 +31745,26 @@
       "released_at": null
     },
     {
-      "id": "editor-menu-controller-base",
+      "id": "deathnote-echo-head-skin",
       "version": "0.1581.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "books"
+      ],
+      "title": "Death Note trophy fix",
+      "summary": "The head you take from a Death Note echo now wears its author's skin, the same face the echo wore, even on offline servers.",
+      "highlights": [],
+      "pr": 2392,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-menu-controller-base",
+      "version": "0.1582.0",
       "type": "refactor",
       "tags": [
         "editor",
