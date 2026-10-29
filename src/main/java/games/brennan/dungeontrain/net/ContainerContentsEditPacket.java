@@ -97,7 +97,6 @@ public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localP
         ctx.enqueueWork(() -> {
             Player p = ctx.player();
             if (p instanceof ServerPlayer sender) {
-                games.brennan.dungeontrain.editor.EditorEditRecorder.notePendingConfig(sender, "container contents");
                 ContainerContentsMenuController.applyEdit(sender, packet);
             }
         });

@@ -1,91 +1,67 @@
 package games.brennan.dungeontrain.editor;
 
-import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.template.TemplateDecor;
-import games.brennan.dungeontrain.track.variant.TrackKind;
-import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
-import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
-import games.brennan.dungeontrain.track.variant.TrackVariantStore;
-import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.tunnel.LegacyTunnelPaint;
-import games.brennan.dungeontrain.tunnel.TunnelGeometry;
-import games.brennan.dungeontrain.tunnel.TunnelPlacer;
-import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
-import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
 import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TunnelTemplateId;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Vec3i;
-import net.minecraft.network.chat.Component;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.util.Optional;
 
 /**
- * Multi-plot editor for tunnel kinds. Layout follows
- * {@link TrackSidePlots}: SECTION at the {@link TrackSidePlots#X_TUNNELS}
- * column, PORTAL stacked above SECTION on Y; each kind's registered
- * variant names lay out along {@code +Z} with
- * {@link EditorLayout#GAP}-block spacing.
+ * Editor plots for the two tunnel kinds: the static entry points the commands and packets still
+ * call, each a thin delegate to {@link TrackSideEditors#tunnel}. The lifecycle lives in
+ * {@link PlotEditor}; new code should call the instance.
  *
- * <p>The return point is recorded in {@link EditorSessions}, shared with every other
- * editor, so one {@code /dungeontrain editor exit} restores the player.</p>
+ * <p>Tunnel dims are fixed, so the world's {@link CarriageDims} only feed the layout lookup; the
+ * origins here are computed with the minimum dims, which give the same answer.</p>
  */
 public final class TunnelEditor {
-
-    private static final Logger LOGGER = LogUtils.getLogger();
-
-    /** Every tunnel plot is this box: tunnel dims are fixed. */
-    private static final Vec3i PLOT_SIZE = new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);
 
     /** Resolved variant + name pair for a player position. */
     public record TunnelPlot(TunnelVariant variant, String name) {}
 
     private TunnelEditor() {}
 
+    private static TrackSidePlotEditor<Template.Tunnel> editor(TunnelVariant variant) {
+        return TrackSideEditors.tunnel(variant);
+    }
+
+    private static CarriageDims fixedDims() {
+        return CarriageDims.clamp(CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT);
+    }
+
     /** Plot origin for {@code (variant, default)}. */
     public static BlockPos plotOrigin(TunnelVariant variant) {
-        CarriageDims dims = CarriageDims.clamp(
-            CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT);
-        return TrackSidePlots.plotOriginDefault(TunnelTemplateStore.tunnelKind(variant), dims);
+        return plotOrigin(variant, TrackKind.DEFAULT_NAME);
     }
 
-    /** Plot origin for an id-record-shaped tunnel template. Tunnel dims are fixed; CarriageDims is computed internally. */
-    public static BlockPos plotOrigin(games.brennan.dungeontrain.template.TunnelTemplateId id) {
-        CarriageDims dims = CarriageDims.clamp(
-            CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT);
-        return TrackSidePlots.plotOrigin(TunnelTemplateStore.tunnelKind(id.variant()), id.name(), dims);
+    /** Plot origin for an id-record-shaped tunnel template. */
+    public static BlockPos plotOrigin(TunnelTemplateId id) {
+        return plotOrigin(id.variant(), id.name());
     }
 
-    /** Plot origin for {@code (variant, name)} — bare-tuple wrapper over the id-record form. */
+    /** Plot origin for {@code (variant, name)}. */
     public static BlockPos plotOrigin(TunnelVariant variant, String name) {
-        return plotOrigin(new games.brennan.dungeontrain.template.TunnelTemplateId(variant, name));
+        return TrackSidePlots.plotOrigin(TunnelTemplateStore.tunnelKind(variant), name, fixedDims());
     }
 
-    /** Returns the variant whose plot contains {@code pos}, or null. Legacy entry point. */
+    /** Returns the variant whose plot contains {@code pos}, or null. */
     public static TunnelVariant plotContaining(BlockPos pos) {
         TunnelPlot loc = plotContainingNamed(pos);
         return loc != null ? loc.variant() : null;
     }
 
-    /**
-     * Returns the {@code (variant, name)} pair whose plot contains
-     * {@code pos}, or null. Includes the 1-block outline-cage margin.
-     */
+    /** Returns the {@code (variant, name)} pair whose plot contains {@code pos}, or null. */
     public static TunnelPlot plotContainingNamed(BlockPos pos) {
-        // Answers only while TRACKS is the resident category — every category shares the origin.
-        if (!EditorStampedCategoryState.isActive(EditorCategory.TRACKS)) return null;
         for (TunnelVariant variant : TunnelVariant.values()) {
-            for (String name : TrackVariantRegistry.namesFor(TunnelTemplateStore.tunnelKind(variant))) {
-                BlockPos o = plotOrigin(variant, name);
-                if (EditorPlotBox.contains(pos, o, PLOT_SIZE)) return new TunnelPlot(variant, name);
-            }
+            Optional<Template.Tunnel> hit = editor(variant).plotContaining(pos, fixedDims());
+            if (hit.isPresent()) return new TunnelPlot(variant, hit.get().name());
         }
         return null;
     }
@@ -95,173 +71,58 @@ public final class TunnelEditor {
         enter(player, variant, true);
     }
 
-    /**
-     * Always restamps: this is the reload every command and post-download jump means, whether or
-     * not the player is already standing in the default plot — a relay Load that installed a new
-     * variant arrives here and its plot must be stamped. The walk that keeps unsaved edits is
-     * {@link #walkTo}.
-     */
+    /** Always restamps — see {@link PlotEditor#enter(ServerPlayer, Template, boolean)}. */
     public static void enter(ServerPlayer player, TunnelVariant variant, boolean onTop) {
-        enter(player, variant, onTop, true);
+        editor(variant).enter(player, new Template.Tunnel(variant), onTop);
     }
 
-    /**
-     * Go here / the panel's Enter: a walk to the variant's default plot, not a reload — restamps
-     * only when the player is not already standing in it.
-     */
+    /** Go here / the panel's Enter: a walk to the variant's default plot, not a reload. */
     public static void walkTo(ServerPlayer player, TunnelVariant variant, boolean onTop) {
-        enter(player, variant, onTop, !EditorPlotScope.standingIn(player, new Template.Tunnel(variant)));
+        editor(variant).walkTo(player, new Template.Tunnel(variant), onTop);
     }
 
-    /**
-     * @param stamp whether to erase + restamp the plots before teleporting. The category entry
-     *              passes {@code false}: it has stamped, or queued, every plot itself.
-     */
+    /** @param stamp whether to erase + restamp the plots before teleporting. */
     public static void enter(ServerPlayer player, TunnelVariant variant, boolean onTop, boolean stamp) {
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
-        ServerLevel overworld = server.overworld();
-        BlockPos origin = plotOrigin(variant, TrackKind.DEFAULT_NAME);
-
-        EditorSessions.rememberReturn(player);
-        if (stamp) stampPlot(overworld, variant);
-
-        // Tunnel dims are fixed, so the world's CarriageDims only feed the kind lookup — the label
-        // uses the same one, so the roof landing sits in front of the panel it draws.
-        Vec3i footprint = TrackSidePlots.footprint(TunnelTemplateStore.tunnelKind(variant),
-            DungeonTrainWorldData.get(overworld).dims());
-        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, EditorPlotArrival.Inside.CENTRE, null);
-
-        // Edits mirror live across the enabled axes — author one master octant.
-        player.sendSystemMessage(Component.literal(
-            "[DungeonTrain] Tunnel editor: edits mirror live across the enabled axes. "
-            + "Toggle Mirror X / Y / Z in the X menu."));
-
-        LOGGER.info("[DungeonTrain] Editor enter: {} -> tunnel_{} default plot at {} ({} variants, {})",
-            player.getName().getString(), variant.name().toLowerCase(java.util.Locale.ROOT), origin,
-            TrackVariantRegistry.namesFor(TunnelTemplateStore.tunnelKind(variant)).size(),
-            onTop ? "top" : "inside");
+        editor(variant).enter(player, new Template.Tunnel(variant), onTop, stamp);
     }
 
     /** Erase + restamp every registered variant for {@code variant}. Idempotent. */
     public static void stampPlot(ServerLevel overworld, TunnelVariant variant) {
-        // A category fill still in flight must land before a whole-kind restamp walks the same plots.
-        EditorStampQueue.flush();
-        for (String name : TrackVariantRegistry.namesFor(TunnelTemplateStore.tunnelKind(variant))) {
-            stampPlot(overworld, variant, name);
-        }
+        editor(variant).stampAll(overworld, fixedDims());
     }
 
     /** Erase + restamp the single plot for {@code (variant, name)}. */
     public static void stampPlot(ServerLevel overworld, TunnelVariant variant, String name) {
-        BlockPos origin = plotOrigin(variant, name);
-        TunnelPlacer.eraseAt(overworld, origin);
-        EditorPlotEntityClearer.discardNonPlayersIn(overworld, origin, PLOT_SIZE);
-        if (variant == TunnelVariant.SECTION) {
-            TunnelPlacer.placeSectionNamed(overworld, origin, name);
-        } else {
-            // Always render the unmirrored (entrance) orientation in the editor;
-            // the exit variant at world paint time is the same template with
-            // StructurePlaceSettings.setMirror(Mirror.FRONT_BACK).
-            TunnelPlacer.placePortalNamed(overworld, origin, false, name);
-        }
-        // STRUCTURE_VOID corner-wedge overlay so saved templates strip those
-        // positions and in-world stamps leave the surrounding rock alone.
-        TunnelGeometry tg = LegacyTunnelPaint.geometryForPlot(origin);
-        LegacyTunnelPaint.fillCornersWithVoid(overworld, origin.getX(), tg);
-        EditorPlotCage.setOutline(overworld, origin, PLOT_SIZE, EditorPlotCage.OUTLINE_BLOCK);
-        captureTunnelSnapshot(overworld, origin, variant, name);
+        editor(variant).stampPlot(overworld, new Template.Tunnel(variant, name), fixedDims());
     }
 
     /** Erase every variant plot for {@code variant}. */
     public static void clearPlot(ServerLevel overworld, TunnelVariant variant) {
-        for (String name : TrackVariantRegistry.namesFor(TunnelTemplateStore.tunnelKind(variant))) {
-            BlockPos origin = plotOrigin(variant, name);
-            TunnelPlacer.eraseAt(overworld, origin);
-            EditorPlotCage.setOutline(overworld, origin, PLOT_SIZE, Blocks.AIR.defaultBlockState());
-            EditorPlotSnapshots.clear(tunnelSnapshotKey(variant, name));
-        }
+        editor(variant).clearAll(overworld, fixedDims());
     }
 
-    /** Erase a single named variant plot for {@code variant} — interior + outline cleared to air. */
+    /** Erase a single named variant plot for {@code variant}. */
     public static void clearPlot(ServerLevel overworld, TunnelVariant variant, String name) {
-        BlockPos origin = plotOrigin(variant, name);
-        TunnelPlacer.eraseAt(overworld, origin);
-        EditorPlotCage.setOutline(overworld, origin, PLOT_SIZE, Blocks.AIR.defaultBlockState());
-        EditorPlotSnapshots.clear(tunnelSnapshotKey(variant, name));
-    }
-
-    /** Snapshot the freshly-stamped tunnel region for {@link EditorDirtyCheck}'s baseline. */
-    private static void captureTunnelSnapshot(ServerLevel overworld, BlockPos origin, TunnelVariant variant, String name) {
-        EditorPlotSnapshots.capture(tunnelSnapshotKey(variant, name), overworld, origin,
-            TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);
+        editor(variant).clearPlot(overworld, new Template.Tunnel(variant, name), fixedDims());
     }
 
     /** Snapshot key shared with {@link EditorDirtyCheck} for tunnel rows. */
     public static String tunnelSnapshotKey(TunnelVariant variant, String name) {
-        return EditorPlotSnapshots.key("tracks",
-            "tunnel_" + variant.name().toLowerCase(java.util.Locale.ROOT) + ":" + name);
+        return editor(variant).snapshotKey(new Template.Tunnel(variant, name));
     }
 
-    /**
-     * Save the captured 10×14×13 region for the {@code (variant, name)}
-     * the player is currently standing in. When {@link EditorDevMode} is on,
-     * also writes the captured template (and its variant-blocks sidecar) into
-     * the source tree at {@code src/main/resources/data/dungeontrain/tunnels/...}
-     * so authored tunnels ship with the next build — parity with
-     * {@link TrackEditor#save} and {@link PillarEditor#save}.
-     */
+    /** Save the {@code variant} plot the player is standing in. */
     public static SaveResult save(ServerPlayer player, TunnelVariant variant) throws IOException {
-        // Player-position-resolved overload — see save(player, TunnelTemplateId)
-        // for the explicit-name version used by the template label menu and
-        // save-all iteration.
-        MinecraftServer server = player.getServer();
-        if (server == null) throw new IOException("No server context.");
-
         TunnelPlot loc = plotContainingNamed(player.blockPosition());
         if (loc == null || loc.variant() != variant) {
             throw new IOException("Player is not inside any tunnel_"
                 + variant.name().toLowerCase(java.util.Locale.ROOT) + " plot.");
         }
-        return save(player, new games.brennan.dungeontrain.template.TunnelTemplateId(variant, loc.name()));
+        return save(player, new TunnelTemplateId(variant, loc.name()));
     }
 
-    /**
-     * Save the captured template for the explicitly-named tunnel variant.
-     * Does NOT consult player position — the caller has already resolved
-     * the {@code (variant, name)} pair.
-     */
-    public static SaveResult save(ServerPlayer player, games.brennan.dungeontrain.template.TunnelTemplateId id) throws IOException {
-        MinecraftServer server = player.getServer();
-        if (server == null) throw new IOException("No server context.");
-        ServerLevel overworld = server.overworld();
-
-        TunnelVariant variant = id.variant();
-        String name = id.name();
-        BlockPos origin = plotOrigin(id);
-        TrackKind kind = TunnelTemplateStore.tunnelKind(variant);
-        StructureTemplate template = TemplateDecor.capture(overworld, origin, PLOT_SIZE, Blocks.STRUCTURE_VOID);
-
-        TrackVariantStore.save(kind, name, template);
-
-        // Refresh the dirty-check baseline.
-        captureTunnelSnapshot(overworld, origin, variant, name);
-
-        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
-            .trigger(player, "made_tunnel");
-        // …and, when they have opted in, to the player's relay profile. Hooked here rather than at
-        // the callers because both ways in land on this method — see EditorRelaySave.
-        EditorRelaySave.afterSave(player, new Template.Tunnel(variant, name));
-        LOGGER.info("[DungeonTrain] Editor save: {} -> tunnel_{}/{} template",
-            player.getName().getString(),
-            variant.name().toLowerCase(java.util.Locale.ROOT), name);
-
-        return EditorSave.toSource("Tunnel editor save: " + variant.name().toLowerCase(java.util.Locale.ROOT) + "/" + name,
-            () -> TunnelTemplateStore.saveToSource(variant, name, template),
-            () -> {
-                Vec3i footprint = kind.dims(CarriageDims.clamp(
-                    CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT));
-                TrackVariantBlocks.loadFor(kind, name, footprint).saveToSource();
-            });
+    /** Save the explicitly-named tunnel variant; does not consult player position. */
+    public static SaveResult save(ServerPlayer player, TunnelTemplateId id) throws IOException {
+        return editor(id.variant()).save(player, new Template.Tunnel(id.variant(), id.name()));
     }
 }

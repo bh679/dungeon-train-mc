@@ -3,27 +3,34 @@ package games.brennan.dungeontrain.template;
 import games.brennan.dungeontrain.editor.CarriageContentsEditor;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageEditor;
+import games.brennan.dungeontrain.editor.CarriagePlotEditor;
 import games.brennan.dungeontrain.editor.CarriagePartEditor;
 import games.brennan.dungeontrain.editor.CarriagePartRegistry;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.EditorPlotArrival;
 import games.brennan.dungeontrain.editor.EditorPlotScope;
-import games.brennan.dungeontrain.editor.PillarEditor;
+import games.brennan.dungeontrain.editor.EditorPlotSnapshots;
+import games.brennan.dungeontrain.editor.EditorSaveAsKinds;
+import games.brennan.dungeontrain.editor.EditorTemplateAddress;
+import games.brennan.dungeontrain.editor.TemplateSidecars;
+import games.brennan.dungeontrain.editor.BlockVariantPlot;
+import games.brennan.dungeontrain.editor.ContainerContentsStore;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
 import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
-import games.brennan.dungeontrain.editor.TrackEditor;
+import games.brennan.dungeontrain.editor.TrackSideEditors;
 import games.brennan.dungeontrain.editor.TrackPlotLocator;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
-import games.brennan.dungeontrain.editor.TunnelEditor;
 import games.brennan.dungeontrain.editor.TunnelTemplateStore;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
 import games.brennan.dungeontrain.editor.WholeCarriageEditor;
+import games.brennan.dungeontrain.editor.WholePlotEditor;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
@@ -58,6 +65,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
@@ -96,11 +104,7 @@ public sealed interface Template
             Template.WholeHalf,
             Template.CarriageGroup,
             Template.Part,
-            Template.Track,
-            Template.Pillar,
-            Template.Adjunct,
-            Template.Tunnel,
-            Template.PortalRoom,
+            Template.TrackSide,
             Template.ChunkFrame,
             Template.Building,
             Template.LostCity,
@@ -303,6 +307,70 @@ public sealed interface Template
      */
     default void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {}
 
+
+    // ---- per-kind facts (OOP review §4) ----
+    //
+    // Every string or store that used to be re-encoded in a switch somewhere else is answered here,
+    // by the record, so a new kind has to answer each one to compile. The spellings themselves stay
+    // with the store that reads them (BlockVariantPlot's key helpers, TemplateSidecars' lists); the
+    // record is the one place that says which spelling is its own.
+
+    /**
+     * The {@link ContainerContentsStore} / {@link BlockVariantPlot} plot key — {@code carriage:<id>},
+     * {@code part:<kind>:<name>}, {@code track:<kind>:<name>} … — or empty for a kind whose plot has
+     * no containers store (buildings, official Lost City buildings).
+     */
+    Optional<String> plotKey();
+
+    /**
+     * The {@code modelId} the dirty scan ({@code EditorDirtyCheck.findDirty}) files this template
+     * under, within {@link #plotCategory()}'s rows — what {@code /dt save model <category> <id>} and
+     * the relay download's "has unsaved edits?" question compare against. Empty for a kind the scan
+     * does not cover (parts, official Lost City buildings). Inverted by
+     * {@code editor.TemplateDirtyKeys}.
+     */
+    Optional<String> dirtyKey();
+
+    /** The {@link EditorPlotSnapshots} key this plot's saved baseline is remembered under, or empty for kinds without one. */
+    Optional<String> snapshotKey();
+
+    /** The addressable category this template's rows file under. */
+    PlotCategory plotCategory();
+
+    /**
+     * Every sidecar file this template could have beside its {@code .nbt}, whether or not it exists
+     * — the containers store last. What the relay document, the New copy and a rename enumerate.
+     */
+    List<TemplateSidecars.Sidecar> sidecars();
+
+    /**
+     * Drop whatever the sidecar stores have cached for this template — a file written underneath a
+     * store (a download's Replace, a save-as restore) has to be announced. Explicitly nothing for
+     * kinds whose stores read disk each time.
+     */
+    void invalidateSidecarCaches();
+
+    /** The {@code weights.json} entry this kind keeps per id, or empty for kinds with none of their own. */
+    Optional<TemplateWeightStore> weightStore();
+
+    /** The {@link TrackKind} whose row, weights file and variant store hold this template; empty off the track side. */
+    default Optional<TrackKind> trackKind() { return Optional.empty(); }
+
+    /** The three-string wire form of this template — the Save-as round trip; see {@link EditorTemplateAddress#resolve}. */
+    EditorTemplateAddress address();
+
+    /** The Save-as steps for this kind. */
+    EditorSaveAsKinds.Adapter saveAs();
+
+    /**
+     * The five kinds whose variants live under a {@link TrackKind}: a name can be swapped for another
+     * of the same kind. Sealed so a switch over it is exhaustive without a default.
+     */
+    sealed interface TrackSide extends Template permits Track, Pillar, Adjunct, Tunnel, PortalRoom {
+        /** The same kind of template, called {@code name}. */
+        TrackSide withName(String name);
+    }
+
     record Carriage(CarriageVariant variant) implements Template {
         public Carriage {
             Objects.requireNonNull(variant, "variant");
@@ -344,11 +412,25 @@ public sealed interface Template
         @Override public TemplateGate gate() { return CarriageWeights.current().gateFor(variant.id()); }
         @Override public String stageId() { String s = CarriageWeights.current().stageIdFor(variant.id()); return s == null ? "" : s; }
         @Override public String variantName() { return variant.id(); }
+        @Override public Optional<String> plotKey() { return Optional.of(BlockVariantPlot.carriageKey(variant.id())); }
+        @Override public Optional<String> dirtyKey() { return Optional.of(variant.id()); }
+        @Override public Optional<String> snapshotKey() { return Optional.of(EditorPlotSnapshots.key(PlotCategory.CARRIAGES.id(), variant.id())); }
+        @Override public PlotCategory plotCategory() { return PlotCategory.CARRIAGES; }
+        @Override public List<TemplateSidecars.Sidecar> sidecars() { return TemplateSidecars.carriageSidecars(variant.id()); }
+        @Override public void invalidateSidecarCaches() {
+            games.brennan.dungeontrain.editor.CarriageVariantBlocks.invalidate(variant.id());
+            games.brennan.dungeontrain.editor.CarriageVariantPartsStore.invalidate(variant.id());
+            games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore.invalidate(variant.id());
+            ContainerContentsStore.invalidate(plotKey().orElseThrow());
+        }
+        @Override public Optional<TemplateWeightStore> weightStore() { return Optional.of(TemplateWeightStore.carriages()); }
+        @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.CARRIAGE, "", variant.id()); }
+        @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.CARRIAGE; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            CarriageEditor.stampPlot(level, variant, dims);
+            CarriagePlotEditor.get().stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            CarriageEditor.enter(player, variant, onTop, stamp, inside);
+            CarriagePlotEditor.get().enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             // The variant's own box — `/dt reset default` on the portal corridor is asking for a
@@ -418,6 +500,18 @@ public sealed interface Template
         @Override public TemplateGate gate() { return CarriageContentsWeights.current().gateFor(contents.id()); }
         @Override public String stageId() { String s = CarriageContentsWeights.current().stageIdFor(contents.id()); return s == null ? "" : s; }
         @Override public String variantName() { return contents.id(); }
+        @Override public Optional<String> plotKey() { return Optional.of(BlockVariantPlot.contentsKey(contents.id())); }
+        @Override public Optional<String> dirtyKey() { return Optional.of(contents.id()); }
+        @Override public Optional<String> snapshotKey() { return Optional.of(EditorPlotSnapshots.key(PlotCategory.CONTENTS.id(), contents.id())); }
+        @Override public PlotCategory plotCategory() { return PlotCategory.CONTENTS; }
+        @Override public List<TemplateSidecars.Sidecar> sidecars() { return TemplateSidecars.contentsSidecars(contents.id()); }
+        @Override public void invalidateSidecarCaches() {
+            games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks.invalidate(contents.id());
+            ContainerContentsStore.invalidate(plotKey().orElseThrow());
+        }
+        @Override public Optional<TemplateWeightStore> weightStore() { return Optional.of(TemplateWeightStore.contents()); }
+        @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.CONTENTS, "", contents.id()); }
+        @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.CONTENTS; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             CarriageContentsEditor.stampPlot(level, contents, dims);
         }
@@ -494,17 +588,30 @@ public sealed interface Template
         @Override public TemplateGate gate() { return WholeWeights.gateFor(WholeKind.ROOM, wholeCarriage.id()); }
         @Override public String stageId() { String s = WholeWeights.stageIdFor(WholeKind.ROOM, wholeCarriage.id()); return s == null ? "" : s; }
         @Override public String variantName() { return wholeCarriage.id(); }
+        @Override public Optional<String> plotKey() { return Optional.of(BlockVariantPlot.wholeKey(WholeKind.ROOM, id())); }
+        @Override public Optional<String> dirtyKey() { return Optional.of(id()); }
+        @Override public Optional<String> snapshotKey() { return Optional.of(WholeCarriageEditor.snapshotKey(WholeKind.ROOM, id())); }
+        @Override public PlotCategory plotCategory() { return PlotCategory.WHOLE; }
+        @Override public List<TemplateSidecars.Sidecar> sidecars() { return TemplateSidecars.wholeSidecars(WholeKind.ROOM, id()); }
+        @Override public void invalidateSidecarCaches() {
+            games.brennan.dungeontrain.editor.WholeVariantBlocks.invalidate(WholeKind.ROOM, id());
+            ContainerContentsStore.invalidate(plotKey().orElseThrow());
+        }
+        /** Whole weights live in WholeWeights but travel nowhere: neither the relay document nor a copy carries them. */
+        @Override public Optional<TemplateWeightStore> weightStore() { return Optional.empty(); }
+        @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.WHOLE, "", id()); }
+        @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.WHOLE; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            WholeCarriageEditor.stampRoomPlot(level, wholeCarriage, dims);
+            WholePlotEditor.room().stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            WholeCarriageEditor.enter(player, this, onTop, stamp, inside);
+            WholePlotEditor.room().enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return WholeCarriageTemplateStore.getBundled(level, wholeCarriage, dims);
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return WholeCarriageEditor.roomPlotOrigin(wholeCarriage, dims);
+            return WholePlotEditor.room().origin(this, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return new Vec3i(dims.length(), dims.height(), dims.width());
@@ -554,17 +661,30 @@ public sealed interface Template
         @Override public TemplateGate gate() { return WholeWeights.gateFor(WholeKind.HALF, wholeCarriage.id()); }
         @Override public String stageId() { String s = WholeWeights.stageIdFor(WholeKind.HALF, wholeCarriage.id()); return s == null ? "" : s; }
         @Override public String variantName() { return wholeCarriage.id(); }
+        @Override public Optional<String> plotKey() { return Optional.of(BlockVariantPlot.wholeKey(WholeKind.HALF, id())); }
+        @Override public Optional<String> dirtyKey() { return Optional.of(id()); }
+        @Override public Optional<String> snapshotKey() { return Optional.of(WholeCarriageEditor.snapshotKey(WholeKind.HALF, id())); }
+        @Override public PlotCategory plotCategory() { return PlotCategory.WHOLE_HALF; }
+        @Override public List<TemplateSidecars.Sidecar> sidecars() { return TemplateSidecars.wholeSidecars(WholeKind.HALF, id()); }
+        @Override public void invalidateSidecarCaches() {
+            games.brennan.dungeontrain.editor.WholeVariantBlocks.invalidate(WholeKind.HALF, id());
+            ContainerContentsStore.invalidate(plotKey().orElseThrow());
+        }
+        /** Whole weights live in WholeWeights but travel nowhere: neither the relay document nor a copy carries them. */
+        @Override public Optional<TemplateWeightStore> weightStore() { return Optional.empty(); }
+        @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.HALF, "", id()); }
+        @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.WHOLE; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            WholeCarriageEditor.stampHalfPlot(level, wholeCarriage, dims);
+            WholePlotEditor.half().stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            WholeCarriageEditor.enter(player, this, onTop, stamp, inside);
+            WholePlotEditor.half().enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return games.brennan.dungeontrain.editor.WholeHalfTemplateStore.getBundled(level, wholeCarriage, dims);
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return WholeCarriageEditor.halfPlotOrigin(wholeCarriage, dims);
+            return WholePlotEditor.half().origin(this, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return WholeCarriageEditor.plotSize(WholeKind.HALF, dims);
@@ -614,17 +734,30 @@ public sealed interface Template
         @Override public TemplateGate gate() { return WholeWeights.gateFor(WholeKind.GROUP, group.id()); }
         @Override public String stageId() { String s = WholeWeights.stageIdFor(WholeKind.GROUP, group.id()); return s == null ? "" : s; }
         @Override public String variantName() { return group.id(); }
+        @Override public Optional<String> plotKey() { return Optional.of(BlockVariantPlot.wholeKey(WholeKind.GROUP, id())); }
+        @Override public Optional<String> dirtyKey() { return Optional.of(id()); }
+        @Override public Optional<String> snapshotKey() { return Optional.of(WholeCarriageEditor.snapshotKey(WholeKind.GROUP, id())); }
+        @Override public PlotCategory plotCategory() { return PlotCategory.WHOLE_GROUP; }
+        @Override public List<TemplateSidecars.Sidecar> sidecars() { return TemplateSidecars.wholeSidecars(WholeKind.GROUP, id()); }
+        @Override public void invalidateSidecarCaches() {
+            games.brennan.dungeontrain.editor.WholeVariantBlocks.invalidate(WholeKind.GROUP, id());
+            ContainerContentsStore.invalidate(plotKey().orElseThrow());
+        }
+        /** Whole weights live in WholeWeights but travel nowhere: neither the relay document nor a copy carries them. */
+        @Override public Optional<TemplateWeightStore> weightStore() { return Optional.empty(); }
+        @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.GROUP, "", id()); }
+        @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.WHOLE; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            WholeCarriageEditor.stampGroupPlot(level, group, dims);
+            WholePlotEditor.group().stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            WholeCarriageEditor.enter(player, this, onTop, stamp, inside);
+            WholePlotEditor.group().enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return CarriageGroupTemplateStore.getBundled(level, group, dims, WholeCarriageEditor.groupSize());
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return WholeCarriageEditor.groupPlotOrigin(group, dims);
+            return WholePlotEditor.group().origin(this, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return CarriageGroupPlacer.sizeOf(dims, WholeCarriageEditor.groupSize());
@@ -702,6 +835,20 @@ public sealed interface Template
             return EditorStatusPacket.NO_WEIGHT;
         }
         @Override public String variantName() { return name; }
+        @Override public Optional<String> plotKey() { return Optional.of(BlockVariantPlot.partKey(partKind, name)); }
+        /** Part plots are not in the dirty scan. */
+        @Override public Optional<String> dirtyKey() { return Optional.empty(); }
+        @Override public Optional<String> snapshotKey() { return Optional.empty(); }
+        @Override public PlotCategory plotCategory() { return PlotCategory.PARTS; }
+        @Override public List<TemplateSidecars.Sidecar> sidecars() { return TemplateSidecars.partSidecars(partKind, name); }
+        @Override public void invalidateSidecarCaches() {
+            games.brennan.dungeontrain.editor.CarriagePartVariantBlocks.invalidate(partKind, name);
+            ContainerContentsStore.invalidate(plotKey().orElseThrow());
+        }
+        /** Parts are weighted inside the carriage's own .parts.json — no entry of their own. */
+        @Override public Optional<TemplateWeightStore> weightStore() { return Optional.empty(); }
+        @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.PART, partKind.id(), name); }
+        @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.PART; }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             // Parts have no shipped bundled tier today — every part exists
             // as a user-authored template under config/dungeontrain/user/parts/.
@@ -730,7 +877,7 @@ public sealed interface Template
      * {@code track / <name>} so the HUD shows the variant the player is
      * standing on.
      */
-    record Track(String name) implements Template {
+    record Track(String name) implements TrackSide {
         public Track {
             Objects.requireNonNull(name, "name");
         }
@@ -769,20 +916,34 @@ public sealed interface Template
         @Override public TemplateGate gate() { return TrackVariantWeights.gateFor(TrackKind.TILE, name); }
         @Override public String stageId() { String s = TrackVariantWeights.stageIdFor(TrackKind.TILE, name); return s == null ? "" : s; }
         @Override public String variantName() { return name; }
+        @Override public Optional<TrackKind> trackKind() { return Optional.of(TrackKind.TILE); }
+        @Override public TrackSide withName(String other) { return new Track(other); }
+        @Override public Optional<String> plotKey() { return Optional.of(BlockVariantPlot.trackKey(TrackKind.TILE, name)); }
+        @Override public Optional<String> dirtyKey() { return Optional.of("track." + name); }
+        @Override public Optional<String> snapshotKey() { return Optional.of(EditorPlotSnapshots.key(PlotCategory.TRACKS.id(), "track:" + name)); }
+        @Override public PlotCategory plotCategory() { return PlotCategory.TRACKS; }
+        @Override public List<TemplateSidecars.Sidecar> sidecars() { return TemplateSidecars.trackSideSidecars(TrackKind.TILE, name); }
+        @Override public void invalidateSidecarCaches() {
+            games.brennan.dungeontrain.track.variant.TrackVariantBlocks.invalidate(TrackKind.TILE, name);
+            ContainerContentsStore.invalidate(plotKey().orElseThrow());
+        }
+        @Override public Optional<TemplateWeightStore> weightStore() { return Optional.of(TemplateWeightStore.trackSide(TrackKind.TILE)); }
+        @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.TRACK, "", name); }
+        @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.TRACK_SIDE; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             // This tile's own plot, not the whole row — the category fill lists every named tile,
             // and /dt reset on a named tile should leave the others' unsaved edits alone.
-            TrackEditor.stampPlot(level, name, dims);
+            TrackSideEditors.tile().stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            TrackEditor.enter(player, onTop, stamp);
+            TrackSideEditors.tile().enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return TrackTemplateStore.getBundled(level, dims);
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
             // This tile's own slot — every named tile past the default stacks along +Z.
-            return TrackEditor.plotOrigin(name, dims);
+            return TrackSideEditors.tile().origin(this, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return new Vec3i(TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width());
@@ -794,7 +955,7 @@ public sealed interface Template
      * {@code pillar_<section>} for command dispatch; {@code displayName()}
      * is {@code pillar / <section> / <name>}.
      */
-    record Pillar(PillarSection section, String name) implements Template {
+    record Pillar(PillarSection section, String name) implements TrackSide {
         public Pillar {
             Objects.requireNonNull(section, "section");
             Objects.requireNonNull(name, "name");
@@ -846,22 +1007,36 @@ public sealed interface Template
             return s == null ? "" : s;
         }
         @Override public String variantName() { return name; }
+        @Override public Optional<TrackKind> trackKind() { return Optional.of(TrackPlotLocator.pillarKind(section)); }
+        @Override public TrackSide withName(String other) { return new Pillar(section, other); }
+        @Override public Optional<String> plotKey() { return Optional.of(BlockVariantPlot.trackKey(TrackPlotLocator.pillarKind(section), name)); }
+        @Override public Optional<String> dirtyKey() { return Optional.of(id() + "." + name); }
+        @Override public Optional<String> snapshotKey() { return Optional.of(EditorPlotSnapshots.key(PlotCategory.TRACKS.id(), id() + ":" + name)); }
+        @Override public PlotCategory plotCategory() { return PlotCategory.TRACKS; }
+        @Override public List<TemplateSidecars.Sidecar> sidecars() { return TemplateSidecars.trackSideSidecars(TrackPlotLocator.pillarKind(section), name); }
+        @Override public void invalidateSidecarCaches() {
+            games.brennan.dungeontrain.track.variant.TrackVariantBlocks.invalidate(TrackPlotLocator.pillarKind(section), name);
+            ContainerContentsStore.invalidate(plotKey().orElseThrow());
+        }
+        @Override public Optional<TemplateWeightStore> weightStore() { return Optional.of(TemplateWeightStore.trackSide(TrackPlotLocator.pillarKind(section))); }
+        @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.PILLAR, section.id(), name); }
+        @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.TRACK_SIDE; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             // Pre-Phase-4 this dropped `name` and re-stamped every variant for
             // the section via the (section, dims) overload. Now stamps just
             // this variant's plot using the named (section, name, dims) form
             // — fixes a silent bug where /dt reset on a custom pillar variant
             // would re-stamp every default-named plot instead.
-            PillarEditor.stampPlot(level, section, name, dims);
+            TrackSideEditors.pillar(section).stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            PillarEditor.enter(player, section, onTop, stamp);
+            TrackSideEditors.pillar(section).enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return PillarTemplateStore.getBundled(level, section, dims);
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return PillarEditor.plotOrigin(new PillarTemplateId(section, name), dims);
+            return TrackSideEditors.pillar(section).origin(this, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return new Vec3i(1, section.height(), dims.width());
@@ -876,7 +1051,7 @@ public sealed interface Template
      * shows {@code Tracks / stairs / default} when standing in the
      * stairs default plot.
      */
-    record Adjunct(PillarAdjunct adjunct, String name) implements Template {
+    record Adjunct(PillarAdjunct adjunct, String name) implements TrackSide {
         public Adjunct {
             Objects.requireNonNull(adjunct, "adjunct");
             Objects.requireNonNull(name, "name");
@@ -928,18 +1103,32 @@ public sealed interface Template
             return s == null ? "" : s;
         }
         @Override public String variantName() { return name; }
+        @Override public Optional<TrackKind> trackKind() { return Optional.of(PillarTemplateStore.adjunctKind(adjunct)); }
+        @Override public TrackSide withName(String other) { return new Adjunct(adjunct, other); }
+        @Override public Optional<String> plotKey() { return Optional.of(BlockVariantPlot.trackKey(PillarTemplateStore.adjunctKind(adjunct), name)); }
+        @Override public Optional<String> dirtyKey() { return Optional.of(id() + "." + name); }
+        @Override public Optional<String> snapshotKey() { return Optional.of(EditorPlotSnapshots.key(PlotCategory.TRACKS.id(), id() + ":" + name)); }
+        @Override public PlotCategory plotCategory() { return PlotCategory.TRACKS; }
+        @Override public List<TemplateSidecars.Sidecar> sidecars() { return TemplateSidecars.trackSideSidecars(PillarTemplateStore.adjunctKind(adjunct), name); }
+        @Override public void invalidateSidecarCaches() {
+            games.brennan.dungeontrain.track.variant.TrackVariantBlocks.invalidate(PillarTemplateStore.adjunctKind(adjunct), name);
+            ContainerContentsStore.invalidate(plotKey().orElseThrow());
+        }
+        @Override public Optional<TemplateWeightStore> weightStore() { return Optional.of(TemplateWeightStore.trackSide(PillarTemplateStore.adjunctKind(adjunct))); }
+        @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.ADJUNCT, adjunct.id(), name); }
+        @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.TRACK_SIDE; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             // This variant's plot only — the same per-name form Pillar and Tunnel use.
-            PillarEditor.stampPlotAdjunct(level, adjunct, name, dims);
+            TrackSideEditors.adjunct(adjunct).stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            PillarEditor.enter(player, adjunct, onTop, stamp);
+            TrackSideEditors.adjunct(adjunct).enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return PillarTemplateStore.getBundledAdjunct(level, adjunct);
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return PillarEditor.plotOriginAdjunct(new PillarAdjunctTemplateId(adjunct, name), dims);
+            return TrackSideEditors.adjunct(adjunct).origin(this, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return new Vec3i(adjunct.xSize(), adjunct.ySize(), adjunct.zSize());
@@ -951,7 +1140,7 @@ public sealed interface Template
      * {@code tunnel_<variant>} for command dispatch; {@code displayName()}
      * is {@code tunnel / <variant> / <name>}.
      */
-    record Tunnel(TunnelVariant variant, String name) implements Template {
+    record Tunnel(TunnelVariant variant, String name) implements TrackSide {
         public Tunnel {
             Objects.requireNonNull(variant, "variant");
             Objects.requireNonNull(name, "name");
@@ -1004,22 +1193,36 @@ public sealed interface Template
             return s == null ? "" : s;
         }
         @Override public String variantName() { return name; }
+        @Override public Optional<TrackKind> trackKind() { return Optional.of(TrackPlotLocator.tunnelKind(variant)); }
+        @Override public TrackSide withName(String other) { return new Tunnel(variant, other); }
+        @Override public Optional<String> plotKey() { return Optional.of(BlockVariantPlot.trackKey(TrackPlotLocator.tunnelKind(variant), name)); }
+        @Override public Optional<String> dirtyKey() { return Optional.of(id() + "." + name); }
+        @Override public Optional<String> snapshotKey() { return Optional.of(EditorPlotSnapshots.key(PlotCategory.TRACKS.id(), id() + ":" + name)); }
+        @Override public PlotCategory plotCategory() { return PlotCategory.TRACKS; }
+        @Override public List<TemplateSidecars.Sidecar> sidecars() { return TemplateSidecars.trackSideSidecars(TrackPlotLocator.tunnelKind(variant), name); }
+        @Override public void invalidateSidecarCaches() {
+            games.brennan.dungeontrain.track.variant.TrackVariantBlocks.invalidate(TrackPlotLocator.tunnelKind(variant), name);
+            ContainerContentsStore.invalidate(plotKey().orElseThrow());
+        }
+        @Override public Optional<TemplateWeightStore> weightStore() { return Optional.of(TemplateWeightStore.trackSide(TrackPlotLocator.tunnelKind(variant))); }
+        @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.TUNNEL, variant.name().toLowerCase(Locale.ROOT), name); }
+        @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.TRACK_SIDE; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             // Pre-Phase-4 this dropped `name` and re-stamped every variant for
             // the tunnel kind via the (variant) overload. Now stamps just
             // this variant's plot using the named (variant, name) form
             // — fixes the same silent bug as Pillar.restampPlot.
-            TunnelEditor.stampPlot(level, variant, name);
+            TrackSideEditors.tunnel(variant).stampPlot(level, this, dims);
         }
         @Override public void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
-            TunnelEditor.enter(player, variant, onTop, stamp);
+            TrackSideEditors.tunnel(variant).enter(player, this, onTop, stamp, inside);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             // Tunnel templates have no bundled tier today.
             return Optional.empty();
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return TunnelEditor.plotOrigin(new TunnelTemplateId(variant, name));
+            return TrackSideEditors.tunnel(variant).origin(this, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);
@@ -1045,7 +1248,7 @@ public sealed interface Template
      * whole point of the portal. {@link #plotSize} reads it back from
      * {@link PortalRoomSizes}.</p>
      */
-    record PortalRoom(String name) implements Template {
+    record PortalRoom(String name) implements TrackSide {
         public PortalRoom {
             Objects.requireNonNull(name, "name");
         }
@@ -1079,6 +1282,22 @@ public sealed interface Template
             return s == null ? "" : s;
         }
         @Override public String variantName() { return name; }
+        @Override public Optional<TrackKind> trackKind() { return Optional.of(TrackKind.PORTAL_ROOM); }
+        @Override public TrackSide withName(String other) { return new PortalRoom(other); }
+        @Override public Optional<String> plotKey() { return Optional.of(BlockVariantPlot.trackKey(TrackKind.PORTAL_ROOM, name)); }
+        @Override public Optional<String> dirtyKey() { return Optional.of("portal_room." + name); }
+        @Override public Optional<String> snapshotKey() { return Optional.of(EditorPlotSnapshots.key(PlotCategory.PORTALS.id(), "portal_room:" + name)); }
+        @Override public PlotCategory plotCategory() { return PlotCategory.PORTALS; }
+        @Override public List<TemplateSidecars.Sidecar> sidecars() { return TemplateSidecars.portalRoomSidecars(name); }
+        @Override public void invalidateSidecarCaches() {
+            games.brennan.dungeontrain.track.variant.TrackVariantBlocks.invalidate(TrackKind.PORTAL_ROOM, name);
+            ContainerContentsStore.invalidate(plotKey().orElseThrow());
+            games.brennan.dungeontrain.editor.PortalRoomContentsAllowStore.invalidate(name);
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.invalidate(name);
+        }
+        @Override public Optional<TemplateWeightStore> weightStore() { return Optional.of(TemplateWeightStore.trackSide(TrackKind.PORTAL_ROOM)); }
+        @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.PORTAL_ROOM, "", name); }
+        @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.PORTAL_ROOM; }
 
         /**
          * Through {@link PortalRoomEditor#resetToSaved} rather than a bare restamp: a room's
@@ -1144,6 +1363,21 @@ public sealed interface Template
         @Override public int weight() { return games.brennan.dungeontrain.net.EditorStatusPacket.NO_WEIGHT; }
 
         @Override public String variantName() { return name; }
+        @Override public Optional<String> plotKey() { return Optional.of(games.brennan.dungeontrain.editor.ChunkFramePlot.KEY_PREFIX + name); }
+        @Override public Optional<String> dirtyKey() { return Optional.of(id() + "." + name); }
+        @Override public Optional<String> snapshotKey() { return Optional.of(EditorPlotSnapshots.key(PlotCategory.CHUNK_FRAMES.id(), id() + ":" + name)); }
+        @Override public PlotCategory plotCategory() { return PlotCategory.CHUNK_FRAMES; }
+        /** Frames do not ride the relay; the containers store is the one sidecar a copy or a rename carries. */
+        @Override public List<TemplateSidecars.Sidecar> sidecars() { return TemplateSidecars.chunkFrameSidecars(name); }
+        @Override public void invalidateSidecarCaches() {
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.clearCache();
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.clearCache();
+            ContainerContentsStore.invalidate(plotKey().orElseThrow());
+        }
+        /** A frame has no weight of its own: a room weights the frames it draws from. */
+        @Override public Optional<TemplateWeightStore> weightStore() { return Optional.empty(); }
+        @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.CHUNK_FRAME, "", name); }
+        @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.CHUNK_FRAME; }
 
         @Override public boolean hasBundledTier() { return isBuiltin(); }
 
@@ -1215,6 +1449,18 @@ public sealed interface Template
         }
 
         @Override public String variantName() { return name; }
+        /** A building's plot has no containers store. */
+        @Override public Optional<String> plotKey() { return Optional.empty(); }
+        @Override public Optional<String> dirtyKey() { return Optional.of(id() + "." + name); }
+        @Override public Optional<String> snapshotKey() { return Optional.of(EditorPlotSnapshots.key(PlotCategory.BUILDINGS.id(), id() + ":" + name)); }
+        @Override public PlotCategory plotCategory() { return PlotCategory.BUILDINGS; }
+        @Override public List<TemplateSidecars.Sidecar> sidecars() { return TemplateSidecars.buildingSidecars(name); }
+        /** BuildingMeta reads its file on every load — nothing is cached to drop. */
+        @Override public void invalidateSidecarCaches() { }
+        /** A new building's weight is its sidecar's ({@code BuildingMeta}); a shipped one's is its structure-set entry. */
+        @Override public Optional<TemplateWeightStore> weightStore() { return Optional.empty(); }
+        @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.BUILDING, "", name); }
+        @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.BUILDING; }
 
         @Override public boolean hasBundledTier() { return isBuiltin(); }
 
@@ -1282,6 +1528,16 @@ public sealed interface Template
         @Override public int weight() { return games.brennan.dungeontrain.net.EditorStatusPacket.NO_WEIGHT; }
 
         @Override public String variantName() { return name; }
+        /** View-only: no containers store, no dirty row, no baseline, no file of the player's. */
+        @Override public Optional<String> plotKey() { return Optional.empty(); }
+        @Override public Optional<String> dirtyKey() { return Optional.empty(); }
+        @Override public Optional<String> snapshotKey() { return Optional.empty(); }
+        @Override public PlotCategory plotCategory() { return PlotCategory.LOST_CITY; }
+        @Override public List<TemplateSidecars.Sidecar> sidecars() { return List.of(); }
+        @Override public void invalidateSidecarCaches() { }
+        @Override public Optional<TemplateWeightStore> weightStore() { return Optional.empty(); }
+        @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.LOST_CITY, "", name); }
+        @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.LOST_CITY; }
 
         @Override public boolean hasBundledTier() { return false; }
 
@@ -1342,6 +1598,19 @@ public sealed interface Template
         @Override public int weight() { return games.brennan.dungeontrain.net.EditorStatusPacket.NO_WEIGHT; }
 
         @Override public String variantName() { return stagedId; }
+        @Override public Optional<String> plotKey() { return Optional.of(games.brennan.dungeontrain.editor.workbench.WorkbenchVariantPlot.keyFor(stagedId)); }
+        @Override public Optional<String> dirtyKey() { return Optional.of(stagedId); }
+        @Override public Optional<String> snapshotKey() { return Optional.of(EditorPlotSnapshots.key(PlotCategory.WORKBENCH.id(), stagedId)); }
+        @Override public PlotCategory plotCategory() { return PlotCategory.WORKBENCH; }
+        /** A staged build's sidecars travel inside its staging document, not as files beside an .nbt. */
+        @Override public List<TemplateSidecars.Sidecar> sidecars() { return List.of(); }
+        @Override public void invalidateSidecarCaches() {
+            games.brennan.dungeontrain.editor.workbench.WorkbenchVariantStore.invalidate(stagedId);
+            ContainerContentsStore.invalidate(plotKey().orElseThrow());
+        }
+        @Override public Optional<TemplateWeightStore> weightStore() { return Optional.empty(); }
+        @Override public EditorTemplateAddress address() { return new EditorTemplateAddress(EditorTemplateAddress.STAGED, "", stagedId); }
+        @Override public EditorSaveAsKinds.Adapter saveAs() { return EditorSaveAsKinds.STAGED; }
 
         @Override public boolean hasBundledTier() { return false; }
 

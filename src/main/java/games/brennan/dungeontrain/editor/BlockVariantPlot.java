@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.template.Template;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
@@ -297,11 +298,11 @@ public interface BlockVariantPlot {
         return "contents:" + contentsId;
     }
 
-    static String partKey(CarriagePartKind kind, String name) {
+    public static String partKey(CarriagePartKind kind, String name) {
         return "part:" + kind.id() + ":" + name;
     }
 
-    static String trackKey(TrackKind kind, String name) {
+    public static String trackKey(TrackKind kind, String name) {
         return "track:" + kind.id() + ":" + name;
     }
 
@@ -603,7 +604,7 @@ public interface BlockVariantPlot {
 
         @Override public boolean supportsConnectMode() { return true; }
         @Override public String key() { return carriageKey(variant.id()); }
-        @Override public String dirtySnapshotKey() { return EditorPlotSnapshots.key("carriages", variant.id()); }
+        @Override public String dirtySnapshotKey() { return new Template.Carriage(variant).snapshotKey().orElseThrow(); }
         /** Built-in only — custom variants live in config alone. */
         @Override protected boolean writesThroughToSource() { return variant instanceof CarriageVariant.Builtin; }
     }
@@ -635,7 +636,7 @@ public interface BlockVariantPlot {
 
         @Override public boolean supportsConnectMode() { return true; }
         @Override public String key() { return contentsKey(contents.id()); }
-        @Override public String dirtySnapshotKey() { return EditorPlotSnapshots.key("contents", contents.id()); }
+        @Override public String dirtySnapshotKey() { return new Template.Contents(contents).snapshotKey().orElseThrow(); }
     }
 
     /** A part plot — {@link CarriagePartVariantBlocks}' sidecar. */

@@ -2,31 +2,21 @@ package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
-import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
 import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.train.CarriageDoorCells;
 import games.brennan.dungeontrain.train.CarriageGroup;
 import games.brennan.dungeontrain.train.CarriageGroupPlacer;
-import games.brennan.dungeontrain.train.CarriageGroupRegistry;
-import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.WholeCarriage;
-import games.brennan.dungeontrain.train.WholeCarriagePlacer;
-import games.brennan.dungeontrain.train.WholeCarriageRegistry;
 import games.brennan.dungeontrain.train.WholeKind;
-import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Optional;
 
 /**
  * The Whole section's plot editor — rooms ({@link WholeCarriage}) on one row and groups
@@ -124,7 +114,7 @@ public final class WholeCarriageEditor {
     }
 
     /** The slot {@code id} holds in {@code kind}'s row, or null when it is not registered. */
-    private static BlockPos plotOrigin(WholeKind kind, String id, CarriageDims dims) {
+    public static BlockPos plotOrigin(WholeKind kind, String id, CarriageDims dims) {
         int index = WholeTemplateNew.ids(kind).indexOf(id);
         return index < 0 ? null : slotOrigin(kind, index, dims);
     }
@@ -148,81 +138,28 @@ public final class WholeCarriageEditor {
      * headroom), or null. Answers only while WHOLE is the resident category.
      */
     public static PlotLocation plotContaining(BlockPos pos, CarriageDims dims) {
-        if (!EditorStampedCategoryState.isActive(EditorCategory.WHOLE)) return null;
-        List<String> rooms = WholeCarriageRegistry.ids();
-        Vec3i roomBox = plotSize(WholeKind.ROOM, dims);
-        for (int i = 0; i < rooms.size(); i++) {
-            if (EditorPlotBox.contains(pos, slotOrigin(WholeKind.ROOM, i, dims), roomBox)) {
-                return new PlotLocation(WholeKind.ROOM, rooms.get(i),
-                    new Template.WholeCarriage(new WholeCarriage(rooms.get(i))));
-            }
-        }
-        List<String> groups = CarriageGroupRegistry.ids();
-        Vec3i groupBox = plotSize(WholeKind.GROUP, dims);
-        for (int i = 0; i < groups.size(); i++) {
-            if (EditorPlotBox.contains(pos, slotOrigin(WholeKind.GROUP, i, dims), groupBox)) {
-                return new PlotLocation(WholeKind.GROUP, groups.get(i),
-                    new Template.CarriageGroup(new CarriageGroup(groups.get(i))));
-            }
-        }
-        List<String> halves = games.brennan.dungeontrain.train.WholeHalfRegistry.ids();
-        Vec3i halfBox = plotSize(WholeKind.HALF, dims);
-        for (int i = 0; i < halves.size(); i++) {
-            if (EditorPlotBox.contains(pos, slotOrigin(WholeKind.HALF, i, dims), halfBox)) {
-                return new PlotLocation(WholeKind.HALF, halves.get(i),
-                    new Template.WholeHalf(new WholeCarriage(halves.get(i))));
-            }
+        for (WholeKind kind : WholeKind.values()) {
+            Optional<? extends Template> hit = WholePlotEditor.forKind(kind).plotContaining(pos, dims);
+            if (hit.isPresent()) return new PlotLocation(kind, hit.get().id(), hit.get());
         }
         return null;
     }
 
-    // ---- stamp / clear --------------------------------------------------------------------------
+    // ---- lifecycle: delegates to WholePlotEditor ------------------------------------------------
 
     /** Erase, place and cage {@code room}'s plot. Idempotent. */
     public static void stampRoomPlot(ServerLevel overworld, WholeCarriage room, CarriageDims dims) {
-        BlockPos origin = roomPlotOrigin(room, dims);
-        if (origin == null) return;
-        Vec3i box = plotSize(WholeKind.ROOM, dims);
-        // Re-read the Z/C sidecars from disk on every stamp, like every other plot editor.
-        WholeVariantBlocks.invalidate(WholeKind.ROOM, room.id());
-        ContainerContentsStore.invalidate(BlockVariantPlot.wholeKey(WholeKind.ROOM, room.id()));
-        CarriagePlacer.eraseAt(overworld, origin, dims);
-        EditorPlotEntityClearer.discardNonPlayersIn(overworld, origin, box);
-        WholeCarriagePlacer.placeAt(overworld, origin, room, dims);
-        EditorPlotCage.setOutline(overworld, origin, box, EditorPlotCage.OUTLINE_BLOCK);
-        EditorPlotSnapshots.capture(snapshotKey(WholeKind.ROOM, room.id()),
-            overworld, origin, box.getX(), box.getY(), box.getZ());
+        WholePlotEditor.room().stampPlot(overworld, new Template.WholeCarriage(room), dims);
     }
 
     /** Erase, place and cage {@code group}'s plot. A group of the wrong length stamps empty. */
     public static void stampGroupPlot(ServerLevel overworld, CarriageGroup group, CarriageDims dims) {
-        BlockPos origin = groupPlotOrigin(group, dims);
-        if (origin == null) return;
-        int n = groupSize();
-        Vec3i box = plotSize(WholeKind.GROUP, dims);
-        WholeVariantBlocks.invalidate(WholeKind.GROUP, group.id());
-        ContainerContentsStore.invalidate(BlockVariantPlot.wholeKey(WholeKind.GROUP, group.id()));
-        CarriageGroupPlacer.eraseAt(overworld, origin, dims, n);
-        EditorPlotEntityClearer.discardNonPlayersIn(overworld, origin, box);
-        CarriageGroupPlacer.placeAt(overworld, origin, group, dims, n);
-        EditorPlotCage.setOutline(overworld, origin, box, EditorPlotCage.OUTLINE_BLOCK);
-        EditorPlotSnapshots.capture(snapshotKey(WholeKind.GROUP, group.id()),
-            overworld, origin, box.getX(), box.getY(), box.getZ());
+        WholePlotEditor.group().stampPlot(overworld, new Template.CarriageGroup(group), dims);
     }
 
-    /** Stamp whichever Whole plot {@code model} is; other kinds are ignored. */
+    /** Erase, place and cage {@code half}'s plot. */
     public static void stampHalfPlot(ServerLevel overworld, WholeCarriage half, CarriageDims dims) {
-        BlockPos origin = halfPlotOrigin(half, dims);
-        if (origin == null) return;
-        Vec3i box = plotSize(WholeKind.HALF, dims);
-        WholeVariantBlocks.invalidate(WholeKind.HALF, half.id());
-        ContainerContentsStore.invalidate(BlockVariantPlot.wholeKey(WholeKind.HALF, half.id()));
-        CarriagePlacer.eraseAt(overworld, origin, WholeHalfTemplateStore.halfDims(dims));
-        EditorPlotEntityClearer.discardNonPlayersIn(overworld, origin, box);
-        WholeCarriagePlacer.placeHalfAt(overworld, origin, half, dims);
-        EditorPlotCage.setOutline(overworld, origin, box, EditorPlotCage.OUTLINE_BLOCK);
-        EditorPlotSnapshots.capture(snapshotKey(WholeKind.HALF, half.id()),
-            overworld, origin, box.getX(), box.getY(), box.getZ());
+        WholePlotEditor.half().stampPlot(overworld, new Template.WholeHalf(half), dims);
     }
 
     /** Stamp whichever Whole plot {@code model} is (its own {@code restampPlot}); other kinds are ignored. */
@@ -232,18 +169,12 @@ public final class WholeCarriageEditor {
 
     /** Erase the plot and its cage. */
     public static void clearPlot(ServerLevel overworld, Template model, CarriageDims dims) {
-        BlockPos origin = plotOrigin(model, dims);
-        if (origin == null) return;
-        WholeKind kind = kindOf(model);
-        if (kind == null) return;
-        Vec3i box = plotSize(kind, dims);
-        switch (kind) {
-            case GROUP -> CarriageGroupPlacer.eraseAt(overworld, origin, dims, groupSize());
-            case HALF -> CarriagePlacer.eraseAt(overworld, origin, WholeHalfTemplateStore.halfDims(dims));
-            case ROOM -> CarriagePlacer.eraseAt(overworld, origin, dims);
+        switch (model) {
+            case Template.WholeCarriage w -> WholePlotEditor.room().clearPlot(overworld, w, dims);
+            case Template.CarriageGroup g -> WholePlotEditor.group().clearPlot(overworld, g, dims);
+            case Template.WholeHalf h -> WholePlotEditor.half().clearPlot(overworld, h, dims);
+            default -> { }
         }
-        EditorPlotCage.setOutline(overworld, origin, box, Blocks.AIR.defaultBlockState());
-        EditorPlotSnapshots.clear(snapshotKey(kind, model.id()));
     }
 
     /** The dirty-check snapshot key for a Whole plot. */
@@ -260,8 +191,6 @@ public final class WholeCarriageEditor {
         };
     }
 
-    // ---- enter ----------------------------------------------------------------------------------
-
     /** Teleport to {@code room}'s plot, restamping first when {@code stamp}. */
     public static void enterRoom(ServerPlayer player, WholeCarriage room, boolean onTop, boolean stamp,
                                  EditorPlotArrival.Inside inside) {
@@ -276,117 +205,37 @@ public final class WholeCarriageEditor {
 
     /** The X menu's Go here — a walk, restamping only when the player is not already inside. */
     public static void walkTo(ServerPlayer player, Template model, boolean onTop) {
-        enter(player, model, onTop, !EditorPlotScope.standingIn(player, model), EditorPlotArrival.Inside.FRONT_DOOR);
+        model.walkTo(player, onTop);
     }
 
     /** The panel's Enter button — land inside, restamping unless already standing in the plot. */
     public static void enterInside(ServerPlayer player, Template model, EditorPlotArrival.Inside inside) {
-        enter(player, model, false, !EditorPlotScope.standingIn(player, model), inside);
+        model.enterInside(player, inside);
     }
 
+    /** Enter whichever Whole plot {@code model} is; other kinds are logged and ignored. */
     public static void enter(ServerPlayer player, Template model, boolean onTop, boolean stamp,
                              EditorPlotArrival.Inside inside) {
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
-        ServerLevel overworld = server.overworld();
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-        WholeKind kind = kindOf(model);
-        BlockPos origin = plotOrigin(model, dims);
-        if (kind == null || origin == null) {
-            LOGGER.warn("[DungeonTrain] Whole editor enter: unknown template '{}'", model.id());
-            return;
+        switch (model) {
+            case Template.WholeCarriage w -> WholePlotEditor.room().enter(player, w, onTop, stamp, inside);
+            case Template.CarriageGroup g -> WholePlotEditor.group().enter(player, g, onTop, stamp, inside);
+            case Template.WholeHalf h -> WholePlotEditor.half().enter(player, h, onTop, stamp, inside);
+            default -> LOGGER.warn("[DungeonTrain] Whole editor enter: unknown template '{}'", model.id());
         }
-        EditorSessions.rememberReturn(player);
-        if (stamp) model.restampPlot(overworld, dims);
-        Vec3i footprint = model.plotSize(dims);
-        // A half's doorways sit on its own, longer box.
-        CarriageDims doorBox = switch (kind) {
-            case HALF -> WholeHalfTemplateStore.halfDims(dims);
-            case ROOM, GROUP -> dims;
-        };
-        BlockPos door = EditorPlotArrival.firstOrNull(CarriageDoorCells.doorBases(origin, doorBox));
-        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, inside, door);
-        LOGGER.info("[DungeonTrain] Whole editor enter: {} -> {} at {} ({})",
-            player.getName().getString(), model.displayName(), origin, onTop ? "top" : "inside");
     }
-
-    // ---- save -----------------------------------------------------------------------------------
 
     /** Capture {@code room}'s plot and persist it (user tier, plus the source tree in dev mode). */
     public static SaveResult saveRoom(ServerPlayer player, WholeCarriage room) throws IOException {
-        ServerLevel overworld = overworldOf(player);
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-        BlockPos origin = roomPlotOrigin(room, dims);
-        if (origin == null) throw new IOException("Unknown whole room '" + room.id() + "'.");
-        StructureTemplate template = WholeCarriagePlacer.captureTemplate(overworld, origin, dims);
-        WholeCarriageTemplateStore.save(room, template);
-        WholeCarriageRegistry.register(room);
-        Vec3i box = plotSize(WholeKind.ROOM, dims);
-        saveSidecars(WholeKind.ROOM, room.id(), box);
-        EditorPlotSnapshots.capture(snapshotKey(WholeKind.ROOM, room.id()),
-            overworld, origin, box.getX(), box.getY(), box.getZ());
-        EditorRelaySave.afterSave(player, new Template.WholeCarriage(room));
-        LOGGER.info("[DungeonTrain] Whole editor save: {} -> room {}", player.getName().getString(), room.id());
-        return EditorSave.toSource("Whole editor save: room " + room.id(),
-            () -> WholeCarriageTemplateStore.saveToSource(room, template));
+        return WholePlotEditor.room().save(player, new Template.WholeCarriage(room));
+    }
+
+    /** Capture {@code half}'s plot and persist it. */
+    public static SaveResult saveHalf(ServerPlayer player, WholeCarriage half) throws IOException {
+        return WholePlotEditor.half().save(player, new Template.WholeHalf(half));
     }
 
     /** Capture {@code group}'s plot and persist it. */
-    public static SaveResult saveHalf(ServerPlayer player, WholeCarriage half) throws IOException {
-        ServerLevel overworld = overworldOf(player);
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-        BlockPos origin = halfPlotOrigin(half, dims);
-        if (origin == null) throw new IOException("Unknown whole half '" + half.id() + "'.");
-        StructureTemplate template = WholeCarriagePlacer.captureTemplate(overworld, origin, WholeHalfTemplateStore.halfDims(dims));
-        WholeHalfTemplateStore.save(half, template);
-        games.brennan.dungeontrain.train.WholeHalfRegistry.register(half);
-        Vec3i box = plotSize(WholeKind.HALF, dims);
-        saveSidecars(WholeKind.HALF, half.id(), box);
-        EditorPlotSnapshots.capture(snapshotKey(WholeKind.HALF, half.id()),
-            overworld, origin, box.getX(), box.getY(), box.getZ());
-        EditorRelaySave.afterSave(player, new Template.WholeHalf(half));
-        LOGGER.info("[DungeonTrain] Whole editor save: {} -> half {}", player.getName().getString(), half.id());
-        return EditorSave.toSource("Whole editor save: half " + half.id(),
-            () -> WholeHalfTemplateStore.saveToSource(half, template));
-    }
-
     public static SaveResult saveGroup(ServerPlayer player, CarriageGroup group) throws IOException {
-        ServerLevel overworld = overworldOf(player);
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-        BlockPos origin = groupPlotOrigin(group, dims);
-        if (origin == null) throw new IOException("Unknown whole group '" + group.id() + "'.");
-        int n = groupSize();
-        StructureTemplate template = CarriageGroupPlacer.captureTemplate(overworld, origin, dims, n);
-        CarriageGroupTemplateStore.save(group, template);
-        CarriageGroupRegistry.register(group);
-        Vec3i box = plotSize(WholeKind.GROUP, dims);
-        saveSidecars(WholeKind.GROUP, group.id(), box);
-        EditorPlotSnapshots.capture(snapshotKey(WholeKind.GROUP, group.id()),
-            overworld, origin, box.getX(), box.getY(), box.getZ());
-        EditorRelaySave.afterSave(player, new Template.CarriageGroup(group));
-        LOGGER.info("[DungeonTrain] Whole editor save: {} -> group {} ({} carriages)",
-            player.getName().getString(), group.id(), n);
-        return EditorSave.toSource("Whole editor save: group " + group.id(),
-            () -> CarriageGroupTemplateStore.saveToSource(group, template));
-    }
-
-    /**
-     * Persist the Z menu's variant pools and the C menu's container links for a whole plot — the
-     * in-session edits both menus accumulate until Save, as {@link CarriageEditor#save} does.
-     */
-    private static void saveSidecars(WholeKind kind, String id, Vec3i box) throws IOException {
-        WholeVariantBlocks.loadFor(kind, id, box).save();
-        try {
-            ContainerContentsStore.loadFor(BlockVariantPlot.wholeKey(kind, id)).save();
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Whole editor save: contents-store save failed for {} {}: {}",
-                kind.id(), id, e.toString());
-        }
-    }
-
-    private static ServerLevel overworldOf(ServerPlayer player) throws IOException {
-        MinecraftServer server = player.getServer();
-        if (server == null) throw new IOException("No server context.");
-        return server.overworld();
+        return WholePlotEditor.group().save(player, new Template.CarriageGroup(group));
     }
 }

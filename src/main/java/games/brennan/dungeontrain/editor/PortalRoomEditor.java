@@ -832,7 +832,7 @@ public final class PortalRoomEditor {
 
     /** Snapshot key shared with {@link EditorDirtyCheck}. */
     public static String snapshotKey(String name) {
-        return EditorPlotSnapshots.key("portals", "portal_room:" + name);
+        return new Template.PortalRoom(name).snapshotKey().orElseThrow();
     }
 
     /**

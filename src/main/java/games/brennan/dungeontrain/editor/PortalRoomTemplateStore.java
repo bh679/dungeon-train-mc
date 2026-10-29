@@ -1,16 +1,15 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
-import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateAdapters;
 import games.brennan.dungeontrain.template.TemplateStore;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.io.IOException;
@@ -86,23 +85,10 @@ public final class PortalRoomTemplateStore {
      * Adapter exposing room save through the unified {@link TemplateStore} surface. Rooms have no
      * bundled tier, so promote is unavailable — same as tunnels.
      */
-    private static final TemplateStore<Template.PortalRoom> ADAPTER = new TemplateStore<>() {
-        @Override public TemplateKind kind() { return TemplateKind.PORTAL_ROOM; }
-
-        @Override
-        public SaveResult save(ServerPlayer player, Template.PortalRoom template) throws Exception {
-            return PortalRoomEditor.save(player, template.name());
-        }
-
-        @Override
-        public boolean canPromote(Template.PortalRoom template) { return false; }
-
-        @Override
-        public void promote(Template.PortalRoom template) {
-            throw new IllegalStateException(
-                "Dimensional carriage templates have no bundled tier — '/dt save default' does not apply.");
-        }
-    };
+    private static final TemplateStore<Template.PortalRoom> ADAPTER = TemplateAdapters.noBundledTier(
+        TemplateKind.PORTAL_ROOM,
+        (player, t) -> PortalRoomEditor.save(player, t.name()),
+        "Dimensional carriage templates have no bundled tier — '/dt save default' does not apply.");
 
     public static TemplateStore<Template.PortalRoom> adapter() {
         return ADAPTER;
