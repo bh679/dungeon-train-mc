@@ -380,3 +380,43 @@ The Lover's Aura turned on enemies, with a range **per debuff**.
   amplifier is present. Poison/Wither floor: cancel the effect's damage tick when health ≤ 1.0 (a
   `LivingDamageEvent.Pre` check on the magic/wither source with no attacker).
 
+
+## Builder
+
+### Bonus Blocks (tier 2) — CONFIRMED 2026-10-29
+
+**Mechanics**
+- When another player's drifting (shared) carriage joins the train, a plain chest named
+  "Bonus Blocks" is set down at the first free floor spot by that carriage's door.
+- The chest holds that carriage's own most-used blocks: the top `Kinds` block types by count in
+  its template (full blocks and stairs/slabs/fences alike; no containers, no air, no rails).
+  Each kind is one stack of a random size in the current `Stack size` range.
+- Once per carriage per life, tracked by carriage id in a per-life attachment. Never for the
+  Builder's own builds, never for rooms. The chest is an ordinary chest: break it, keep it.
+- Ladder (no cap on kinds; stack size doubles every 5 points, 64 is the limit):
+
+  | Pts | Kinds | Stack size (random, per kind) |
+  |---|---|---|
+  | 1 | 4 | 2 to 8 |
+  | 2–4 | 5–7 | 2 to 8 |
+  | 5 | 8 | 4 to 16 |
+  | 10 | 13 | 8 to 32 |
+  | 15 | 18 | 16 to 64 |
+  | 20+ | +1 per point | 16 to 64 |
+
+  Kinds = 3 + r. Stack range = (2, 8) × 2^floor((r−1)/5), both ends capped at 64.
+
+**Details card**
+- Description: "A chest of building blocks waits in each drifting carriage you find, once per
+  carriage each life." (existing key `perk.dungeontrain.bonus-blocks.desc`)
+- Chips: `Kinds 6 → 7` (PLAIN); `Stack size 2 to 8 → 4 to 16` with "at 5 points" in muted text on
+  non-step points (new range unit or a PLAIN pair stat, `gui.dungeontrain.perks.stat.stack-size`).
+
+**Build notes**
+- Hook the shared-carriage join (where a drifting carriage is attached to a player's train);
+  check the owner is not the Builder and the per-life id set does not hold the carriage.
+- Palette: count block states in the carriage's template, collapse to block, drop containers /
+  air / rails / fluids, take the top `Kinds`.
+- Door spot: scan deck floor cells outward from the door for a solid block with two air above
+  (`CarriageDeck.chunkInPlot` for the Sable plot); place `Blocks.CHEST` and set a custom name
+  component on the block entity. Fill via `ChestBlockEntity.setItem`.
