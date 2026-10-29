@@ -31780,6 +31780,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-menu-controller-base",
+      "version": "0.1583.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Editor tidy-up",
+      "summary": "Behind-the-scenes cleanup of the train editor's menus. Editor menus now close properly when you leave the world.",
+      "highlights": [],
+      "pr": 2393,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
