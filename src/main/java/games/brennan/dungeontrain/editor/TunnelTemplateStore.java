@@ -1,16 +1,15 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateAdapters;
 import games.brennan.dungeontrain.template.TemplateStore;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
 
@@ -123,25 +122,10 @@ public final class TunnelTemplateStore {
     }
 
     private static TemplateStore<Template.Tunnel> makeAdapter(TunnelVariant variant) {
-        return new TemplateStore<>() {
-            @Override public TemplateKind kind() { return TemplateKind.TUNNEL; }
-
-            @Override
-            public SaveResult save(ServerPlayer player, Template.Tunnel template) throws Exception {
-                // Phase-4 Bug fix: pass template.name() through so non-default
-                // tunnel variants save correctly via Stores.save.
-                return TunnelEditor.save(player,
-                    new games.brennan.dungeontrain.template.TunnelTemplateId(variant, template.name()));
-            }
-
-            @Override
-            public boolean canPromote(Template.Tunnel template) { return false; }
-
-            @Override
-            public void promote(Template.Tunnel template) throws Exception {
-                throw new IllegalStateException("Tunnel templates have no bundled tier — '/dt save default' does not apply.");
-            }
-        };
+        return TemplateAdapters.noBundledTier(TemplateKind.TUNNEL,
+            (player, t) -> TunnelEditor.save(player,
+                new games.brennan.dungeontrain.template.TunnelTemplateId(variant, t.name())),
+            "Tunnel templates have no bundled tier — '/dt save default' does not apply.");
     }
 
     public static TemplateStore<Template.Tunnel> adapter(TunnelVariant variant) {
