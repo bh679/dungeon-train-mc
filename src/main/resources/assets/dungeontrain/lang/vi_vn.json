@@ -716,6 +716,7 @@
   "chat.dungeontrain.live.watching.other": "%s người đang xem",
   "chat.dungeontrain.live.viewers.other": "Bạn có %s người xem",
   "chat.dungeontrain.live.one_eye": "Bạn chỉ có thể mang một máy quay phát sóng. Chiếc thừa đã biến thành TV.",
+  "chat.dungeontrain.live.eye_swapped": "Bạn đã nhặt một máy quay phát sóng mới. Chiếc cũ đã biến thành TV.",
   "chat.dungeontrain.live.free_play": "Lượt Chơi Tự do không thể phát trực tiếp.",
   "chat.dungeontrain.live.took_over": "%s đã bị cắt sóng.",
   "chat.dungeontrain.live.second_stream": "Hai stream đang bật: bạn đang phát trực tiếp trên stream thứ hai, song song với stream thứ nhất.",

@@ -716,6 +716,7 @@
   "chat.dungeontrain.live.watching.other": "มีผู้ชม %s คน",
   "chat.dungeontrain.live.viewers.other": "คุณมีผู้ชม %s คน",
   "chat.dungeontrain.live.one_eye": "พกกล้องวิดีโอถ่ายทอดได้แค่ตัวเดียว ตัวที่เกินกลายเป็นทีวีแล้ว",
+  "chat.dungeontrain.live.eye_swapped": "เก็บกล้องวิดีโอถ่ายทอดตัวใหม่แล้ว ตัวเก่ากลายเป็นทีวีแล้ว",
   "chat.dungeontrain.live.free_play": "การเล่นแบบเล่นอิสระไม่สามารถถ่ายทอดสดได้",
   "chat.dungeontrain.live.took_over": "%s ถูกตัดสัญญาณแล้ว",
   "chat.dungeontrain.live.second_stream": "สองสตรีมเปิดอยู่: คุณกำลังถ่ายทอดสดบนสตรีมที่สอง ควบคู่กับสตรีมแรก",
