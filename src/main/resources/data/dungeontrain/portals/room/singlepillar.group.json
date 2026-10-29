@@ -5,6 +5,11 @@
     {
       "id": "singlepillar2",
       "weight": 12
+    },
+    {
+      "id": "singlepillar_trapped",
+      "weight": 10,
+      "minLevel": 55
     }
   ]
 }
