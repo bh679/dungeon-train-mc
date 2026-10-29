@@ -748,6 +748,7 @@
   "chat.dungeontrain.live.viewers.one": "Du hast %s Zuschauer",
   "chat.dungeontrain.live.viewers.other": "Du hast %s Zuschauer",
   "chat.dungeontrain.live.one_eye": "Du kannst nur einen Sende-Camcorder tragen. Der zweite wurde zu einem Fernseher.",
+  "chat.dungeontrain.live.eye_swapped": "Du hast einen neuen Sende-Camcorder aufgehoben. Dein alter wurde zu einem Fernseher.",
   "chat.dungeontrain.live.free_play": "Partien im Freien Spiel können nicht live gehen.",
   "chat.dungeontrain.live.took_over": "%s wurde abgeschnitten.",
   "chat.dungeontrain.live.second_stream": "„Zwei Streams“ ist aktiv: Du bist auf dem zweiten Stream live, neben dem ersten.",

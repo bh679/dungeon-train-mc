@@ -845,6 +845,7 @@
   "chat.dungeontrain.live.viewers.few": "Ai %s spectatori",
   "chat.dungeontrain.live.viewers.other": "Ai %s de spectatori",
   "chat.dungeontrain.live.one_eye": "Poți avea la tine o singură cameră video de transmisie. Cea în plus a devenit un televizor.",
+  "chat.dungeontrain.live.eye_swapped": "Ai luat o cameră video de transmisie nouă. Cea veche a devenit un televizor.",
   "chat.dungeontrain.live.free_play": "Rundele de Joc Liber nu pot transmite live.",
   "chat.dungeontrain.live.took_over": "%s a fost întrerupt.",
   "chat.dungeontrain.live.second_stream": "Două streamuri este activ: ești în direct pe al doilea stream, alături de primul.",

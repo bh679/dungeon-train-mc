@@ -780,6 +780,7 @@
   "chat.dungeontrain.live.viewers.few": "Masz %s widzów",
   "chat.dungeontrain.live.viewers.many": "Masz %s widzów",
   "chat.dungeontrain.live.one_eye": "Możesz mieć przy sobie tylko jedną kamerę transmisyjną. Dodatkowa zamieniła się w telewizor.",
+  "chat.dungeontrain.live.eye_swapped": "Podniesiono nową kamerę transmisyjną. Poprzednia zamieniła się w telewizor.",
   "chat.dungeontrain.live.free_play": "Rozgrywki w Swobodnej Grze nie mogą nadawać na żywo.",
   "chat.dungeontrain.live.took_over": "%s został odcięty.",
   "chat.dungeontrain.live.second_stream": "Dwie transmisje są włączone: nadajesz na drugiej transmisji, obok pierwszej.",

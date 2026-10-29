@@ -716,6 +716,7 @@
   "chat.dungeontrain.live.watching.other": "%s 人正在觀看",
   "chat.dungeontrain.live.viewers.other": "你有 %s 名觀眾",
   "chat.dungeontrain.live.one_eye": "你只能攜帶一台直播攝影機。多出的那台變成了電視。",
+  "chat.dungeontrain.live.eye_swapped": "你撿起了一台新的直播攝影機。原來那台變成了電視。",
   "chat.dungeontrain.live.free_play": "自由模式的遊戲無法直播。",
   "chat.dungeontrain.live.took_over": "%s 的直播被切斷了。",
   "chat.dungeontrain.live.second_stream": "雙路直播已開啟：你正在第二路直播中，與第一路同時進行。",
