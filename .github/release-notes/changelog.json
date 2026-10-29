@@ -31901,6 +31901,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "piglin-brutes-no-buckler-drop",
+      "version": "0.1590.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "loot"
+      ],
+      "title": "Bucklers stay with their brutes",
+      "summary": "Piglin Brutes no longer drop their Buckler when they die.",
+      "highlights": [],
+      "pr": 2402,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
