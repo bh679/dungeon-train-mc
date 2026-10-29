@@ -411,12 +411,17 @@
   "singlepillar": {
     "weight": 4,
     "minLevel": 2,
-    "maxLevel": 40,
     "mode": "endless_open"
   },
   "singlepillar2": {
     "weight": 1,
     "mode": "endless_open"
+  },
+  "singlepillar_trapped": {
+    "weight": 4,
+    "minLevel": 2,
+    "maxLevel": 40,
+    "mode": "endless_open/exact/off/off/off/none/sealed/0/1"
   },
   "singlesomething": {
     "weight": 1,
@@ -521,6 +526,10 @@
     "weight": 1,
     "minLevel": 10,
     "mode": "bedrock"
+  },
+  "trapped_default2": {
+    "weight": 1,
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/1"
   },
   "upsidedown": {
     "weight": 1,
