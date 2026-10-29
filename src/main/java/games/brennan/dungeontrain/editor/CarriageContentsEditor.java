@@ -668,7 +668,7 @@ public final class CarriageContentsEditor {
             interiorSnapshotSize.getX(), interiorSnapshotSize.getY(), interiorSnapshotSize.getZ()
         );
 
-        CarriageContentsVariantBlocks variants = CarriageContentsVariantBlocks.loadFor(contents, interiorSnapshotSize);
+        VariantDoc variants = CarriageContentsVariantBlocks.loadFor(contents, interiorSnapshotSize);
         VariantConditionWarnings.afterSave(player, contents.id(), variants.entries(), variants::lockIdAt);
 
         games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
@@ -686,7 +686,7 @@ public final class CarriageContentsEditor {
         Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
         return EditorSave.toSource("Contents editor save: " + contents.id(),
             () -> CarriageContentsStore.saveToSource(contents, template),
-            () -> CarriageContentsVariantBlocks.loadFor(contents, interiorSize).saveToSource(contents),
+            () -> CarriageContentsVariantBlocks.loadFor(contents, interiorSize).saveToSource(),
             () -> ContainerContentsStore.loadFor(BlockVariantPlot.contentsKey(contents.id())).saveToSource());
     }
 
@@ -971,9 +971,9 @@ public final class CarriageContentsEditor {
             try {
                 CarriageContentsStore.saveToSource(renamed, template);
                 Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(current, dims);
-                CarriageContentsVariantBlocks newSidecar =
+                VariantDoc newSidecar =
                     CarriageContentsVariantBlocks.loadFor(renamed, interiorSize);
-                newSidecar.saveToSource(renamed);
+                newSidecar.saveToSource();
 
                 java.nio.file.Path oldNbtSrc = CarriageContentsStore.sourceFileForId(oldId);
                 java.nio.file.Files.deleteIfExists(oldNbtSrc);

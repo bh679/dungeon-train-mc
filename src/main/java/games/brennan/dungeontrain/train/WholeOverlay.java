@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import games.brennan.dungeontrain.editor.GrowthPass;
 import games.brennan.dungeontrain.editor.VariantConditions;
 import games.brennan.dungeontrain.editor.ConnectPass;
@@ -30,7 +31,7 @@ public final class WholeOverlay {
 
     public static void apply(ServerLevel level, BlockPos origin, WholeKind kind, String id, Vec3i footprint,
                              long seed, int carriageIndex) {
-        WholeVariantBlocks sidecar = WholeVariantBlocks.loadFor(kind, id, footprint);
+        VariantDoc sidecar = WholeVariantBlocks.loadFor(kind, id, footprint);
         if (sidecar.isEmpty()) return;
         String plotKey = BlockVariantPlot.wholeKey(kind, id);
         java.util.function.Predicate<BlockPos> within =

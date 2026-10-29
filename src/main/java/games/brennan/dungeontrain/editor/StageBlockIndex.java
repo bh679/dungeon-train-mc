@@ -220,7 +220,7 @@ public final class StageBlockIndex {
      */
     private static void scorePart(ServerLevel level, PartRef ref, CarriageDims dims,
                                   Map<String, Double> into) {
-        CarriagePartVariantBlocks sidecar =
+        VariantDoc sidecar =
             CarriagePartVariantBlocks.loadFor(ref.kind(), ref.name(), ref.kind().dims(dims));
 
         // Flagged (variant-cell) local positions — skipped in the structural pass below.

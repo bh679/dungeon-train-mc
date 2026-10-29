@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.track.variant;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import games.brennan.dungeontrain.editor.VariantState;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
@@ -46,8 +47,8 @@ final class TrackVariantBlocksCopyTest {
             VariantState.of(Blocks.MOSSY_STONE_BRICKS.defaultBlockState()));
     }
 
-    private static TrackVariantBlocks authored() {
-        TrackVariantBlocks src = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
+    private static VariantDoc authored() {
+        VariantDoc src = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
         src.put(CELL_A, states());
         src.put(CELL_B, states());
         src.put(CELL_TALL, states());
@@ -59,11 +60,11 @@ final class TrackVariantBlocksCopyTest {
     @Test
     @DisplayName("copyOf carries every cell, its lock id, and the mirror flags")
     void copiesTheWholePayload() {
-        TrackVariantBlocks src = authored();
+        VariantDoc src = authored();
         src.setMirrorAxes(true, true, false);
         src.setMirrorVariants(true);
 
-        TrackVariantBlocks copy = TrackVariantBlocks.copyOf(src);
+        VariantDoc copy = TrackVariantBlocks.copyOf(src);
 
         assertEquals(src.size(), copy.size(), "cell count");
         for (BlockPos pos : List.of(CELL_A, CELL_B, CELL_TALL)) {
@@ -82,10 +83,10 @@ final class TrackVariantBlocksCopyTest {
     @Test
     @DisplayName("copyOf of a mirror-only sidecar keeps the axes and stays empty")
     void copiesMirrorOnlySidecar() {
-        TrackVariantBlocks src = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
+        VariantDoc src = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
         src.setMirrorAxes(true, false, false);
 
-        TrackVariantBlocks copy = TrackVariantBlocks.copyOf(src);
+        VariantDoc copy = TrackVariantBlocks.copyOf(src);
 
         assertTrue(copy.isEmpty(), "no cells were authored");
         assertFalse(copy.isDefaultMirror(), "…but the axes are not this kind's default, so it matters");
@@ -95,7 +96,7 @@ final class TrackVariantBlocksCopyTest {
     @Test
     @DisplayName("an untouched sidecar reports default mirror — the 'nothing to copy' signal")
     void untouchedSidecarIsDefault() {
-        TrackVariantBlocks src = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
+        VariantDoc src = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
         assertTrue(src.isEmpty());
         assertTrue(src.isDefaultMirror());
         assertTrue(TrackVariantBlocks.copyOf(src).isDefaultMirror());
@@ -104,8 +105,8 @@ final class TrackVariantBlocksCopyTest {
     @Test
     @DisplayName("the copy is independent — editing it never writes through to the source")
     void copyIsIndependent() {
-        TrackVariantBlocks src = authored();
-        TrackVariantBlocks copy = TrackVariantBlocks.copyOf(src);
+        VariantDoc src = authored();
+        VariantDoc copy = TrackVariantBlocks.copyOf(src);
         assertNotSame(src, copy);
 
         copy.put(new BlockPos(9, 9, 9), states());
