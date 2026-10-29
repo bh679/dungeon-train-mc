@@ -46,15 +46,17 @@ public final class DeathNoteReporter {
      *                       This is player-written text bound for another player's chat, so the relay
      *                       screens it and serves it back only once approved — a withheld body costs
      *                       the echo its voice, never the curse itself.
+     * @param authorGear     what the author carried as they died ({@code NoteAuthorGear}), or "" — the
+     *                       echo arrives wearing exactly this. Omitted from the body when empty.
      */
     public static void submit(UUID authorId, String authorName, String targetName, String targetUuid,
                               int deathCarriage, String worldKey, String authorSkinRef, boolean freePlay,
-                              NoteKind kind, List<String> body) {
+                              NoteKind kind, List<String> body, String authorGear) {
         try {
             if (authorId == null) return;
             String uuid = authorId.toString().replace("-", "");
             JsonObject payload = buildPayload(uuid, authorName, targetName, targetUuid,
-                    deathCarriage, worldKey, authorSkinRef, freePlay, kind, body);
+                    deathCarriage, worldKey, authorSkinRef, freePlay, kind, body, authorGear);
             RelayOutbox.get().enqueue("/deathnotes/submit", payload.toString());
             LOGGER.debug("[DungeonTrain] DeathNote submit (target {}, carriage {}) queued to the relay outbox.",
                     targetName, deathCarriage);
@@ -159,7 +161,7 @@ public final class DeathNoteReporter {
      */
     static JsonObject buildPayload(String authorUuid, String authorName, String targetName, String targetUuid,
                                    int deathCarriage, String worldKey, String authorSkinRef, boolean freePlay,
-                                   NoteKind kind, List<String> spokenLines) {
+                                   NoteKind kind, List<String> spokenLines, String authorGear) {
         JsonObject body = new JsonObject();
         body.addProperty("kind", (kind == null ? NoteKind.DEATH : kind).id());
         body.addProperty("authorUuid", authorUuid == null ? "" : authorUuid);
@@ -177,6 +179,8 @@ public final class DeathNoteReporter {
             for (String line : spokenLines) if (line != null && !line.isBlank()) lines.add(line);
             if (!lines.isEmpty()) body.add("body", lines);
         }
+        // Likewise omitted when nothing was captured — the echo then falls back to difficulty gear.
+        if (authorGear != null && !authorGear.isBlank()) body.addProperty("authorGear", authorGear);
         return body;
     }
 }
