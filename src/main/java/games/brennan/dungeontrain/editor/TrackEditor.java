@@ -200,7 +200,7 @@ public final class TrackEditor {
 
         BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
         Vec3i footprint = TrackKind.TILE.dims(dims);
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.TILE, name, footprint);
+        VariantDoc sidecar = TrackVariantBlocks.loadFor(TrackKind.TILE, name, footprint);
         StructureTemplate template = captureTemplate(overworld, origin, dims);
         TrackVariantStore.save(TrackKind.TILE, name, template);
 
@@ -229,7 +229,7 @@ public final class TrackEditor {
 
         return EditorSave.toSource("Track editor save: tile/" + name,
             () -> TrackVariantStore.saveToSource(TrackKind.TILE, name, template),
-            () -> sidecar.saveToSource(TrackKind.TILE, name));
+            () -> sidecar.saveToSource());
     }
 
     private static void stampAllPlots(ServerLevel overworld, CarriageDims dims) {

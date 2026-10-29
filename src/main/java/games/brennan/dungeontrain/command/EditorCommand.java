@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.command;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
@@ -1300,7 +1301,7 @@ public final class EditorCommand {
     }
 
     /** Apply one {@code x|y|z} axis (or the {@code v} variant-mirror flag) to a track sidecar, preserving the rest. */
-    private static void applyMirrorAxis(games.brennan.dungeontrain.track.variant.TrackVariantBlocks cfg,
+    private static void applyMirrorAxis(games.brennan.dungeontrain.editor.VariantDoc cfg,
                                         String axis, boolean on) {
         if (axis.equals("v")) {
             cfg.setMirrorVariants(on);
@@ -1341,12 +1342,12 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.PortalRoomTemplateStore.sizeOf(source.getLevel(), name, dims);
         }
         Vec3i footprint = games.brennan.dungeontrain.editor.TrackSidePlots.footprint(kind, name, dims);
-        games.brennan.dungeontrain.track.variant.TrackVariantBlocks cfg =
+        games.brennan.dungeontrain.editor.VariantDoc cfg =
             games.brennan.dungeontrain.track.variant.TrackVariantBlocks.loadFor(kind, name, footprint);
         applyMirrorAxis(cfg, axis, on);
         try {
-            cfg.save(kind, name);
-            if (EditorDevMode.isEnabled()) cfg.saveToSource(kind, name);
+            cfg.save();
+            if (EditorDevMode.isEnabled()) cfg.saveToSource();
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.mirror", kind.id(), name, axis.toUpperCase(Locale.ROOT), Component.translatable(on ? "chat.dungeontrain.common.on" : "chat.dungeontrain.common.off")).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (IOException e) {
@@ -2847,7 +2848,7 @@ public final class EditorCommand {
         VariantTarget target = resolveTarget(source, player);
         if (target == null) return 0;
 
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(target.variant(), target.dims());
+        VariantDoc sidecar = CarriageVariantBlocks.loadFor(target.variant(), target.dims());
         boolean removed = sidecar.remove(target.localPos());
         final String pos = target.localPos().getX() + "," + target.localPos().getY() + "," + target.localPos().getZ();
         if (removed) {
@@ -2874,12 +2875,12 @@ public final class EditorCommand {
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_part", local.toShortString()));
             return 0;
         }
-        CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(
+        VariantDoc sidecar = CarriagePartVariantBlocks.loadFor(
             partLoc.kind(), partLoc.name(), partSize);
         boolean removed = sidecar.remove(local);
         if (removed) {
             try {
-                sidecar.save(partLoc.kind(), partLoc.name());
+                sidecar.save();
             } catch (IOException e) {
                 source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_save_failed", e.getMessage()));
                 return 0;
@@ -2911,11 +2912,11 @@ public final class EditorCommand {
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_interior", local.toShortString()));
             return 0;
         }
-        CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contentsPlot, interiorSize);
+        VariantDoc sidecar = CarriageContentsVariantBlocks.loadFor(contentsPlot, interiorSize);
         boolean removed = sidecar.remove(local);
         if (removed) {
             try {
-                sidecar.save(contentsPlot);
+                sidecar.save();
             } catch (IOException e) {
                 source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_save_failed", e.getMessage()));
                 return 0;
@@ -2939,7 +2940,7 @@ public final class EditorCommand {
         CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(player.blockPosition(), dims);
         if (partLoc != null) {
             Vec3i partSize = partLoc.kind().dims(dims);
-            CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(
+            VariantDoc sidecar = CarriagePartVariantBlocks.loadFor(
                 partLoc.kind(), partLoc.name(), partSize);
             sendVariantsListing(source,
                 "part '" + partLoc.kind().id() + ":" + partLoc.name() + "'",
@@ -2950,7 +2951,7 @@ public final class EditorCommand {
         CarriageContents contentsPlot = CarriageContentsEditor.plotContaining(player.blockPosition(), dims);
         if (contentsPlot != null) {
             Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contentsPlot, dims);
-            CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contentsPlot, interiorSize);
+            VariantDoc sidecar = CarriageContentsVariantBlocks.loadFor(contentsPlot, interiorSize);
             sendVariantsListing(source,
                 "contents '" + contentsPlot.id() + "'",
                 sidecar.entries(), sidecar.isEmpty(), sidecar.size());
@@ -2962,7 +2963,7 @@ public final class EditorCommand {
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_plot_use_dungeontrain"));
             return 0;
         }
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(
+        VariantDoc sidecar = CarriageVariantBlocks.loadFor(
             plotVariant, CarriageEditor.plotDims(plotVariant, dims));
         sendVariantsListing(source,
             "'" + plotVariant.id() + "'",
@@ -3878,12 +3879,12 @@ public final class EditorCommand {
                     new games.brennan.dungeontrain.template.CarriagePartTemplateId(partLoc.kind(), partLoc.name()), dims);
                 CarriagePartPlacer.eraseAt(overworld, origin, partLoc.kind(), dims);
                 Vec3i partSize = partLoc.kind().dims(dims);
-                CarriagePartVariantBlocks partSidecar = CarriagePartVariantBlocks.loadFor(
+                VariantDoc partSidecar = CarriagePartVariantBlocks.loadFor(
                     partLoc.kind(), partLoc.name(), partSize);
                 int cleared = partSidecar.clearAll();
                 if (cleared > 0) {
                     try {
-                        partSidecar.save(partLoc.kind(), partLoc.name());
+                        partSidecar.save();
                     } catch (IOException e) {
                         source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_save_failed", e.getMessage()).withStyle(ChatFormatting.RED));
                         return 0;
@@ -3911,12 +3912,12 @@ public final class EditorCommand {
                 // contents' own box: a Half/Full plot is a whole group long, not one carriage.
                 CarriageContentsPlacer.eraseAt(overworld, origin, CarriageContentsEditor.plotDims(contents, dims));
                 Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
-                CarriageContentsVariantBlocks contentsSidecar =
+                VariantDoc contentsSidecar =
                     CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
                 int cleared = contentsSidecar.clearAll();
                 if (cleared > 0) {
                     try {
-                        contentsSidecar.save(contents);
+                        contentsSidecar.save();
                     } catch (IOException e) {
                         source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_save_failed", e.getMessage()).withStyle(ChatFormatting.RED));
                         return 0;
@@ -3939,7 +3940,7 @@ public final class EditorCommand {
                 BlockPos origin = CarriageEditor.plotOrigin(carriage, dims);
                 CarriageDims carriageBox = CarriageEditor.plotDims(carriage, dims);
                 CarriagePlacer.eraseAt(overworld, origin, carriageBox);
-                CarriageVariantBlocks carriageSidecar = CarriageVariantBlocks.loadFor(carriage, carriageBox);
+                VariantDoc carriageSidecar = CarriageVariantBlocks.loadFor(carriage, carriageBox);
                 int cleared = carriageSidecar.clearAll();
                 final String id = carriage.id();
                 final int n = cleared;

@@ -375,7 +375,7 @@ public final class WholeCarriageEditor {
      * in-session edits both menus accumulate until Save, as {@link CarriageEditor#save} does.
      */
     private static void saveSidecars(WholeKind kind, String id, Vec3i box) throws IOException {
-        WholeVariantBlocks.loadFor(kind, id, box).save(kind, id);
+        WholeVariantBlocks.loadFor(kind, id, box).save();
         try {
             ContainerContentsStore.loadFor(BlockVariantPlot.wholeKey(kind, id)).save();
         } catch (IOException e) {

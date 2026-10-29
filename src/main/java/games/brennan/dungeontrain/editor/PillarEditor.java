@@ -258,7 +258,7 @@ public final class PillarEditor {
 
         TrackKind kind = PillarTemplateStore.pillarKind(section);
         Vec3i footprint = kind.dims(dims);
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
+        VariantDoc sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
 
         StructureTemplate template = captureTemplate(overworld, origin, section, dims);
         TrackVariantStore.save(kind, name, template);
@@ -277,7 +277,7 @@ public final class PillarEditor {
 
         return EditorSave.toSource("Pillar editor save: " + section.id() + "/" + name,
             () -> TrackVariantStore.saveToSource(kind, name, template),
-            () -> sidecar.saveToSource(kind, name));
+            () -> sidecar.saveToSource());
     }
 
     private static void stampAllSectionPlots(ServerLevel overworld, PillarSection section, CarriageDims dims) {
@@ -436,7 +436,7 @@ public final class PillarEditor {
 
         TrackKind kind = PillarTemplateStore.adjunctKind(adjunct);
         Vec3i footprint = kind.dims(dims);
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
+        VariantDoc sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
 
         StructureTemplate template = captureAdjunctTemplate(overworld, origin, adjunct);
         TrackVariantStore.save(kind, name, template);
@@ -455,7 +455,7 @@ public final class PillarEditor {
 
         return EditorSave.toSource("Pillar editor save adjunct: " + adjunct.id() + "/" + name,
             () -> TrackVariantStore.saveToSource(kind, name, template),
-            () -> sidecar.saveToSource(kind, name));
+            () -> sidecar.saveToSource());
     }
 
     private static void stampAllAdjunctPlots(ServerLevel overworld, PillarAdjunct adjunct, CarriageDims dims) {

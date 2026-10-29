@@ -94,7 +94,7 @@ public final class EntityVariantApplicator {
      * of the template entry's NBT.</p>
      */
     public static void applyTo(CompoundTag entityNbt, BlockPos localPos, long seed, int carriageIndex,
-                                @Nullable CarriageContentsVariantBlocks sidecar,
+                                @Nullable VariantDoc sidecar,
                                 @Nullable ContainerContentsStore contentsStore,
                                 ServerLevel level) {
         if (entityNbt == null) return;
@@ -123,7 +123,7 @@ public final class EntityVariantApplicator {
      */
     @Nullable
     private static ContainerContentsPool resolvePool(BlockPos localPos, long seed, int carriageIndex,
-                                                      @Nullable CarriageContentsVariantBlocks sidecar,
+                                                      @Nullable VariantDoc sidecar,
                                                       @Nullable ContainerContentsStore contentsStore) {
         if (sidecar != null && !sidecar.isEmpty()) {
             VariantState picked = sidecar.resolve(localPos, seed, carriageIndex);

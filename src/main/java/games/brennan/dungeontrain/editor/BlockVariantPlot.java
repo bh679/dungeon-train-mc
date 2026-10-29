@@ -15,9 +15,6 @@ import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -377,7 +374,7 @@ public interface BlockVariantPlot {
                     // The variant's own box — longer than a carriage for the portal corridor.
                     CarriageDims box = CarriageEditor.plotDims(v, dims);
                     return new CarriagePlot(v, origin,
-                        new net.minecraft.core.Vec3i(box.length(), box.height(), box.width()), dims);
+                        new net.minecraft.core.Vec3i(box.length(), box.height(), box.width()));
                 })
                 .orElse(null);
         }
@@ -498,7 +495,7 @@ public interface BlockVariantPlot {
             // inside() tests against — a carriage-sized footprint on the longer portal corridor
             // would mirror around x=4 instead of x=6 and reject every edit past x=8.
             CarriageDims box = CarriageEditor.plotDims(carriage, dims);
-            return new CarriagePlot(carriage, origin, new Vec3i(box.length(), box.height(), box.width()), dims);
+            return new CarriagePlot(carriage, origin, new Vec3i(box.length(), box.height(), box.width()));
         }
         CarriageContents contents = CarriageContentsEditor.plotContaining(pos, dims);
         if (contents != null) {
@@ -530,320 +527,153 @@ public interface BlockVariantPlot {
 
     // ---------- Implementations ----------
 
-    /** Wraps a {@link CarriageVariantBlocks} sidecar. */
-    final class CarriagePlot implements BlockVariantPlot {
-        @Override public boolean supportsConnectMode() { return true; }
-        private final CarriageVariant variant;
-        private final BlockPos origin;
-        private final Vec3i footprint;
-        private final CarriageVariantBlocks sidecar;
-        private final CarriageDims dims;
+    /**
+     * A plot whose sidecar is a {@link VariantDoc} held by {@link VariantSidecarStore} under a
+     * {@link VariantAddress} — every editor plot. Carries the whole of the document API; what a
+     * subclass adds is its key, its dirty-scan row, and which menu features its spawn path honours.
+     *
+     * <p>Copy roll / scope are stored for every kind but offered by the menu only where
+     * {@link #supportsCopySettings} is true (a dimensional carriage room): the interface defaults
+     * answer {@code DEFAULT} / {@code BOTH} there, which is what a plot stamped once means.</p>
+     */
+    abstract class StoredPlot implements BlockVariantPlot {
+        protected final VariantAddress address;
+        protected final BlockPos origin;
+        protected final Vec3i footprint;
+        protected final VariantDoc sidecar;
 
-        CarriagePlot(CarriageVariant variant, BlockPos origin, Vec3i footprint, CarriageDims dims) {
-            this.variant = variant;
+        StoredPlot(VariantAddress address, BlockPos origin, Vec3i footprint) {
+            this.address = address;
             this.origin = origin;
             this.footprint = footprint;
-            this.dims = dims;
-            // Bounds-checked against this variant's own box, not the world's carriage dims:
-            // CarriageVariantBlocks drops any entry outside the dims it is handed, which on the
-            // longer portal corridor would silently discard everything authored past x=8.
-            this.sidecar = CarriageVariantBlocks.loadFor(variant, CarriageEditor.plotDims(variant, dims));
+            this.sidecar = VariantSidecarStore.loadFor(address, footprint);
         }
 
+        /** Whether the dev-mode write-through applies to this plot's template. Built-in carriages only say no for customs. */
+        protected boolean writesThroughToSource() { return true; }
+
+        @Override public java.nio.file.Path sidecarFile() { return address.userPath(); }
+        @Override public BlockPos origin() { return origin; }
+        @Override public Vec3i footprint() { return footprint; }
+        @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
+        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); noteEdit(this, l); }
+        @Override public boolean remove(BlockPos l) { noteEdit(this, l); return sidecar.remove(l); }
+        @Override public void save() throws IOException {
+            noteEdit(this, null);
+            VariantSidecarStore.save(address, sidecar);
+            // Dev-mode write-through: shift-right-click edits should ship in the next build, not
+            // stay trapped in run/config. Source-tree errors are best-effort.
+            if (EditorDevMode.isEnabled() && writesThroughToSource()) {
+                try {
+                    VariantSidecarStore.saveToSource(address, sidecar);
+                } catch (IOException e) {
+                    LOGGER.warn("[DungeonTrain] BlockVariantPlot: source write failed for {}: {}",
+                        address.contextId(), e.toString());
+                }
+            }
+        }
+        @Override public String snapshotJson() { return sidecar.toJsonText(); }
+        @Override public void restoreJson(String json) throws IOException { VariantSidecarStore.restore(address, json); }
+        @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
+        @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
+        @Override public VariantSpan spanAt(BlockPos l) { return sidecar.spanAt(l); }
+        @Override public void setSpan(BlockPos l, VariantSpan span) { sidecar.setSpan(l, span); }
+        @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
+        @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
+        @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
+        @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
+        @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
+        @Override public boolean mirrorX() { return sidecar.mirrorX(); }
+        @Override public boolean mirrorY() { return sidecar.mirrorY(); }
+        @Override public boolean mirrorZ() { return sidecar.mirrorZ(); }
+        @Override public boolean mirrorVariants() { return sidecar.mirrorVariants(); }
+        @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
+        @Override public void setMirrorVariants(boolean v) { sidecar.setMirrorVariants(v); }
+    }
+
+    /** A carriage variant plot — {@link CarriageVariantBlocks}' sidecar. */
+    final class CarriagePlot extends StoredPlot {
+        private final CarriageVariant variant;
+
+        /** {@code footprint} is the variant's own box ({@link CarriageEditor#plotDims}), longer than a carriage for the portal corridor. */
+        CarriagePlot(CarriageVariant variant, BlockPos origin, Vec3i footprint) {
+            super(CarriageVariantBlocks.address(variant), origin, footprint);
+            this.variant = variant;
+        }
+
+        @Override public boolean supportsConnectMode() { return true; }
         @Override public String key() { return carriageKey(variant.id()); }
         @Override public String dirtySnapshotKey() { return EditorPlotSnapshots.key("carriages", variant.id()); }
-        @Override public java.nio.file.Path sidecarFile() { return CarriageVariantBlocks.configPathFor(variant); }
-        @Override public BlockPos origin() { return origin; }
-        @Override public Vec3i footprint() { return footprint; }
-        @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
-        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); noteEdit(this, l); }
-        @Override public boolean remove(BlockPos l) { noteEdit(this, l); return sidecar.remove(l); }
-        @Override public void save() throws IOException {
-            noteEdit(this, null);
-            sidecar.save(variant);
-            // Dev-mode write-through: shift-right-click edits should ship in
-            // the next build, not stay trapped in run/config. Mirrors PR #75
-            // for part-assignments. Built-in only — custom variants live in
-            // config alone. Source-tree errors are best-effort.
-            if (EditorDevMode.isEnabled() && variant instanceof CarriageVariant.Builtin builtin) {
-                try {
-                    sidecar.saveToSource(builtin.type());
-                } catch (IOException e) {
-                    LOGGER.warn("[DungeonTrain] BlockVariantPlot: source write failed for carriage {}: {}",
-                        variant.id(), e.toString());
-                }
-            }
-        }
-        @Override public String snapshotJson() { return sidecar.toJson(); }
-        @Override public void restoreJson(String json) throws IOException {
-            Path file = CarriageVariantBlocks.configPathFor(variant);
-            Files.createDirectories(file.getParent());
-            Files.writeString(file, json, StandardCharsets.UTF_8);
-            CarriageVariantBlocks.invalidate(variant.id());
-        }
-        @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
-        @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
-        @Override public VariantSpan spanAt(BlockPos l) { return sidecar.spanAt(l); }
-        @Override public void setSpan(BlockPos l, VariantSpan span) { sidecar.setSpan(l, span); }
-        @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
-        @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
-        @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
-        @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
-        @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
-        @Override public boolean mirrorX() { return sidecar.mirrorX(); }
-        @Override public boolean mirrorY() { return sidecar.mirrorY(); }
-        @Override public boolean mirrorZ() { return sidecar.mirrorZ(); }
-        @Override public boolean mirrorVariants() { return sidecar.mirrorVariants(); }
-        @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
-        @Override public void setMirrorVariants(boolean v) { sidecar.setMirrorVariants(v); }
+        /** Built-in only — custom variants live in config alone. */
+        @Override protected boolean writesThroughToSource() { return variant instanceof CarriageVariant.Builtin; }
     }
 
-    /** Wraps a {@link CarriageContentsVariantBlocks} sidecar. */
     /** A whole room or group plot — one {@link WholeVariantBlocks} sidecar over the whole build. */
-    final class WholePlot implements BlockVariantPlot {
-        @Override public boolean supportsConnectMode() { return true; }
+    final class WholePlot extends StoredPlot {
         private final games.brennan.dungeontrain.train.WholeKind kind;
         private final String id;
-        private final BlockPos origin;
-        private final Vec3i footprint;
-        private final WholeVariantBlocks sidecar;
 
         WholePlot(games.brennan.dungeontrain.train.WholeKind kind, String id, BlockPos origin, Vec3i footprint) {
+            super(WholeVariantBlocks.address(kind, id), origin, footprint);
             this.kind = kind;
             this.id = id;
-            this.origin = origin;
-            this.footprint = footprint;
-            this.sidecar = WholeVariantBlocks.loadFor(kind, id, footprint);
         }
 
+        @Override public boolean supportsConnectMode() { return true; }
         @Override public String key() { return wholeKey(kind, id); }
         @Override public String dirtySnapshotKey() { return WholeCarriageEditor.snapshotKey(kind, id); }
-        @Override public java.nio.file.Path sidecarFile() { return WholeVariantBlocks.configPathFor(kind, id); }
-        @Override public BlockPos origin() { return origin; }
-        @Override public Vec3i footprint() { return footprint; }
-        @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
-        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); noteEdit(this, l); }
-        @Override public boolean remove(BlockPos l) { noteEdit(this, l); return sidecar.remove(l); }
-        @Override public void save() throws IOException {
-            noteEdit(this, null);
-            sidecar.save(kind, id);
-            if (EditorDevMode.isEnabled()) {
-                try {
-                    sidecar.saveToSource(kind, id);
-                } catch (IOException e) {
-                    LOGGER.warn("[DungeonTrain] BlockVariantPlot: source write failed for whole {} {}: {}",
-                        kind.id(), id, e.toString());
-                }
-            }
-        }
-        @Override public String snapshotJson() { return sidecar.toJsonText(); }
-        @Override public void restoreJson(String json) throws IOException {
-            Path file = WholeVariantBlocks.configPathFor(kind, id);
-            Files.createDirectories(file.getParent());
-            Files.writeString(file, json, StandardCharsets.UTF_8);
-            WholeVariantBlocks.invalidate(kind, id);
-        }
-        @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
-        @Override public void setLockId(BlockPos l, int lockId) { sidecar.setLockId(l, lockId); }
-        @Override public VariantSpan spanAt(BlockPos l) { return sidecar.spanAt(l); }
-        @Override public void setSpan(BlockPos l, VariantSpan span) { sidecar.setSpan(l, span); }
-        @Override public java.util.Set<BlockPos> positionsWithLockId(int lockId) { return sidecar.positionsWithLockId(lockId); }
-        @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
-        @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
-        @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
-        @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
-        @Override public boolean mirrorX() { return sidecar.mirrorX(); }
-        @Override public boolean mirrorY() { return sidecar.mirrorY(); }
-        @Override public boolean mirrorZ() { return sidecar.mirrorZ(); }
-        @Override public boolean mirrorVariants() { return sidecar.mirrorVariants(); }
-        @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
-        @Override public void setMirrorVariants(boolean v) { sidecar.setMirrorVariants(v); }
     }
 
-    final class ContentsPlot implements BlockVariantPlot {
-        @Override public boolean supportsConnectMode() { return true; }
+    /** A contents plot — {@link CarriageContentsVariantBlocks}' sidecar over the interior. */
+    final class ContentsPlot extends StoredPlot {
         private final CarriageContents contents;
-        private final BlockPos origin;
-        private final Vec3i footprint;
-        private final CarriageContentsVariantBlocks sidecar;
 
         ContentsPlot(CarriageContents contents, BlockPos interiorOrigin, Vec3i interiorSize) {
+            super(CarriageContentsVariantBlocks.address(contents), interiorOrigin, interiorSize);
             this.contents = contents;
-            this.origin = interiorOrigin;
-            this.footprint = interiorSize;
-            this.sidecar = CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
         }
 
+        @Override public boolean supportsConnectMode() { return true; }
         @Override public String key() { return contentsKey(contents.id()); }
         @Override public String dirtySnapshotKey() { return EditorPlotSnapshots.key("contents", contents.id()); }
-        @Override public java.nio.file.Path sidecarFile() { return CarriageContentsVariantBlocks.configPathFor(contents); }
-        @Override public BlockPos origin() { return origin; }
-        @Override public Vec3i footprint() { return footprint; }
-        @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
-        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); noteEdit(this, l); }
-        @Override public boolean remove(BlockPos l) { noteEdit(this, l); return sidecar.remove(l); }
-        @Override public void save() throws IOException {
-            noteEdit(this, null);
-            sidecar.save(contents);
-            if (EditorDevMode.isEnabled()) {
-                try {
-                    sidecar.saveToSource(contents);
-                } catch (IOException e) {
-                    LOGGER.warn("[DungeonTrain] BlockVariantPlot: source write failed for contents {}: {}",
-                        contents.id(), e.toString());
-                }
-            }
-        }
-        @Override public String snapshotJson() { return sidecar.toJsonText(); }
-        @Override public void restoreJson(String json) throws IOException {
-            Path file = CarriageContentsVariantBlocks.configPathFor(contents);
-            Files.createDirectories(file.getParent());
-            Files.writeString(file, json, StandardCharsets.UTF_8);
-            CarriageContentsVariantBlocks.invalidate(contents.id());
-        }
-        @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
-        @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
-        @Override public VariantSpan spanAt(BlockPos l) { return sidecar.spanAt(l); }
-        @Override public void setSpan(BlockPos l, VariantSpan span) { sidecar.setSpan(l, span); }
-        @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
-        @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
-        @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
-        @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
-        @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
-        @Override public boolean mirrorX() { return sidecar.mirrorX(); }
-        @Override public boolean mirrorY() { return sidecar.mirrorY(); }
-        @Override public boolean mirrorZ() { return sidecar.mirrorZ(); }
-        @Override public boolean mirrorVariants() { return sidecar.mirrorVariants(); }
-        @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
-        @Override public void setMirrorVariants(boolean v) { sidecar.setMirrorVariants(v); }
     }
 
-    /** Wraps a {@link CarriagePartVariantBlocks} sidecar. */
-    final class PartPlot implements BlockVariantPlot {
-        @Override public boolean supportsConnectMode() { return true; }
+    /** A part plot — {@link CarriagePartVariantBlocks}' sidecar. */
+    final class PartPlot extends StoredPlot {
         private final CarriagePartKind kind;
         private final String name;
-        private final BlockPos origin;
-        private final Vec3i footprint;
-        private final CarriagePartVariantBlocks sidecar;
 
         PartPlot(CarriagePartKind kind, String name, BlockPos origin, Vec3i partSize) {
+            super(CarriagePartVariantBlocks.address(kind, name), origin, partSize);
             this.kind = kind;
             this.name = name;
-            this.origin = origin;
-            this.footprint = partSize;
-            this.sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
         }
 
+        @Override public boolean supportsConnectMode() { return true; }
         @Override public String key() { return partKey(kind, name); }
         /** Parts are stamped inside carriage plots and have no scan row of their own. */
         @Override public @Nullable String dirtySnapshotKey() { return null; }
-        @Override public java.nio.file.Path sidecarFile() { return CarriagePartVariantBlocks.configPathFor(kind, name); }
-        @Override public BlockPos origin() { return origin; }
-        @Override public Vec3i footprint() { return footprint; }
-        @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
-        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); noteEdit(this, l); }
-        @Override public boolean remove(BlockPos l) { noteEdit(this, l); return sidecar.remove(l); }
-        @Override public void save() throws IOException {
-            noteEdit(this, null);
-            sidecar.save(kind, name);
-            if (EditorDevMode.isEnabled()) {
-                try {
-                    sidecar.saveToSource(kind, name);
-                } catch (IOException e) {
-                    LOGGER.warn("[DungeonTrain] BlockVariantPlot: source write failed for part {}:{}: {}",
-                        kind.id(), name, e.toString());
-                }
-            }
-        }
-        @Override public String snapshotJson() { return sidecar.toJsonText(); }
-        @Override public void restoreJson(String json) throws IOException {
-            Path file = CarriagePartVariantBlocks.configPathFor(kind, name);
-            Files.createDirectories(file.getParent());
-            Files.writeString(file, json, StandardCharsets.UTF_8);
-            CarriagePartVariantBlocks.invalidate(kind, name);
-        }
-        @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
-        @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
-        @Override public VariantSpan spanAt(BlockPos l) { return sidecar.spanAt(l); }
-        @Override public void setSpan(BlockPos l, VariantSpan span) { sidecar.setSpan(l, span); }
-        @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
-        @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
-        @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
-        @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
-        @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
-        @Override public boolean mirrorX() { return sidecar.mirrorX(); }
-        @Override public boolean mirrorY() { return sidecar.mirrorY(); }
-        @Override public boolean mirrorZ() { return sidecar.mirrorZ(); }
-        @Override public boolean mirrorVariants() { return sidecar.mirrorVariants(); }
-        @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
-        @Override public void setMirrorVariants(boolean v) { sidecar.setMirrorVariants(v); }
     }
 
-    /** Wraps a {@link TrackVariantBlocks} sidecar. */
-    final class TrackPlot implements BlockVariantPlot {
+    /** A track-side plot — {@link TrackVariantBlocks}' sidecar. */
+    final class TrackPlot extends StoredPlot {
         private final TrackKind kind;
         private final String name;
-        private final BlockPos origin;
-        private final Vec3i footprint;
-        private final TrackVariantBlocks sidecar;
 
         /**
          * Public because the origin is a parameter, and the Train Builder authors these track
          * templates somewhere else entirely — on a plot at ground level rather than in the editor's
-         * Y=250 grid. {@link #forKey} can't serve it: that resolver asks {@link TrackSidePlots} where
-         * the plot is, which is the one thing a builder plot answers differently.
+         * Y=250 grid. {@link #resolveByKey} can't serve it: that resolver asks {@link TrackSidePlots}
+         * where the plot is, which is the one thing a builder plot answers differently.
          */
         public TrackPlot(TrackKind kind, String name, BlockPos origin, Vec3i footprint) {
+            super(TrackVariantBlocks.address(kind, name), origin, footprint);
             this.kind = kind;
             this.name = name;
-            this.origin = origin;
-            this.footprint = footprint;
-            this.sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
         }
 
         @Override public String key() { return trackKey(kind, name); }
         @Override public String dirtySnapshotKey() { return EditorDirtyCheck.snapshotKeyFor(kind, name); }
-        @Override public java.nio.file.Path sidecarFile() { return TrackVariantBlocks.configPathFor(kind, name); }
-        @Override public BlockPos origin() { return origin; }
-        @Override public Vec3i footprint() { return footprint; }
-        @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
-        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); noteEdit(this, l); }
-        @Override public boolean remove(BlockPos l) { noteEdit(this, l); return sidecar.remove(l); }
-        @Override public void save() throws IOException {
-            noteEdit(this, null);
-            sidecar.save(kind, name);
-            if (EditorDevMode.isEnabled()) {
-                try {
-                    sidecar.saveToSource(kind, name);
-                } catch (IOException e) {
-                    LOGGER.warn("[DungeonTrain] BlockVariantPlot: source write failed for track {}:{}: {}",
-                        kind.id(), name, e.toString());
-                }
-            }
-        }
-        @Override public String snapshotJson() { return sidecar.toJsonText(); }
-        @Override public void restoreJson(String json) throws IOException {
-            Path file = TrackVariantBlocks.configPathFor(kind, name);
-            Files.createDirectories(file.getParent());
-            Files.writeString(file, json, StandardCharsets.UTF_8);
-            TrackVariantBlocks.invalidate(kind, name);
-        }
-        @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
-        @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
-        @Override public VariantSpan spanAt(BlockPos l) { return sidecar.spanAt(l); }
-        @Override public void setSpan(BlockPos l, VariantSpan span) { sidecar.setSpan(l, span); }
-        @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
-        @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
-        @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
-        @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
-        @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
-        @Override public boolean mirrorX() { return sidecar.mirrorX(); }
-        @Override public boolean mirrorY() { return sidecar.mirrorY(); }
-        @Override public boolean mirrorZ() { return sidecar.mirrorZ(); }
-        @Override public boolean mirrorVariants() { return sidecar.mirrorVariants(); }
-        @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
-        @Override public void setMirrorVariants(boolean v) { sidecar.setMirrorVariants(v); }
         // A portal room is the one track template that repeats — see PortalRoomCopies.
         @Override public boolean supportsCopySettings() { return kind == TrackKind.PORTAL_ROOM; }
         @Override public VariantCopyRoll copyRollAt(BlockPos l) { return sidecar.copyRollAt(l); }
@@ -852,11 +682,7 @@ public interface BlockVariantPlot {
         @Override public void setCopyScope(BlockPos l, VariantCopyScope s) { sidecar.setCopyScope(l, s); }
     }
 
-    /**
-     * Helper used by all four wrapper classes — flatten a sidecar's
-     * {@code List<Entry>} into a set of localPos. Defensive copy; callers
-     * may iterate freely.
-     */
+    /** Flatten a sidecar's {@code List<Entry>} into a set of localPos. Defensive copy. */
     private static java.util.Set<BlockPos> collectPositions(List<CarriageVariantBlocks.Entry> entries) {
         java.util.LinkedHashSet<BlockPos> out = new java.util.LinkedHashSet<>(entries.size());
         for (CarriageVariantBlocks.Entry e : entries) {

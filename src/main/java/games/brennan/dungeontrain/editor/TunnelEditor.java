@@ -261,7 +261,7 @@ public final class TunnelEditor {
             () -> {
                 Vec3i footprint = kind.dims(CarriageDims.clamp(
                     CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT));
-                TrackVariantBlocks.loadFor(kind, name, footprint).saveToSource(kind, name);
+                TrackVariantBlocks.loadFor(kind, name, footprint).saveToSource();
             });
     }
 }

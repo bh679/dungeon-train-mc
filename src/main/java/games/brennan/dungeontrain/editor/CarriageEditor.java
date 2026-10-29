@@ -427,7 +427,7 @@ public final class CarriageEditor {
         // saves the whole corridor rather than its first nine blocks, and the sidecar keeps entries
         // authored in the part of the plot that is past a carriage's length.
         CarriageDims box = plotDims(variant, dims);
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, box);
+        VariantDoc sidecar = CarriageVariantBlocks.loadFor(variant, box);
 
         StructureTemplate template = captureTemplate(overworld, origin, box);
         CarriageTemplateStore.save(variant, template);
@@ -436,7 +436,7 @@ public final class CarriageEditor {
         // `editor variant set/clear` commands mutate it eagerly during the
         // session). Empty maps are written as a deleted file so removing every
         // entry doesn't leave a stale sidecar on disk.
-        sidecar.save(variant);
+        sidecar.save();
         VariantConditionWarnings.afterSave(player, variant.id(), sidecar.entries(), sidecar::lockIdAt);
 
         // Contents store: persist any in-session loot-prefab link changes
@@ -465,7 +465,7 @@ public final class CarriageEditor {
 
         return EditorSave.toSource("Editor save: " + variant.id(),
             () -> CarriageTemplateStore.saveToSource(variant, template),
-            () -> sidecar.saveToSource(variant));
+            () -> sidecar.saveToSource());
     }
 
     /**
