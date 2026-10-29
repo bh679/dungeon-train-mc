@@ -58,23 +58,36 @@ public final class LiveReportCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("livereport")
                 .requires(s -> true)
-                .executes(ctx -> report(ctx.getSource(), 0, ""))
+                .executes(ctx -> report(ctx.getSource(), 0, "", true))
                 .then(Commands.literal("abandon").executes(ctx -> abandon(ctx.getSource())))
                 .then(Commands.literal("keep").executes(ctx -> keep(ctx.getSource())))
                 .then(Commands.literal("stream")
                         .then(Commands.argument("n", IntegerArgumentType.integer(1, 2))
-                                .executes(ctx -> report(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "n"), ""))
+                                .executes(ctx -> report(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "n"), "", true))
                                 .then(Commands.argument("reason", StringArgumentType.greedyString())
                                         .executes(ctx -> report(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "n"),
-                                            StringArgumentType.getString(ctx, "reason"))))))
+                                            StringArgumentType.getString(ctx, "reason"), true)))))
                 .then(Commands.argument("reason", StringArgumentType.greedyString())
-                        .executes(ctx -> report(ctx.getSource(), 0, StringArgumentType.getString(ctx, "reason")))));
+                        .executes(ctx -> report(ctx.getSource(), 0, StringArgumentType.getString(ctx, "reason"), true))));
     }
 
-    /** {@code index} 0: whichever stream is on air (or ask); 1 / 2: that one. */
-    private static int report(CommandSourceStack source, int index, String typed) {
+    /**
+     * {@code index} 0: whichever stream is on air (or ask); 1 / 2: that one. {@code mayRefresh}: when the
+     * server's view of the relay is too old (a server that just started has not polled yet), ask the relay
+     * first and answer once it replies.
+     */
+    private static int report(CommandSourceStack source, int index, String typed, boolean mayRefresh) {
         ServerPlayer player = playerOf(source);
         if (player == null) return 0;
+        if (mayRefresh && ServerLiveStatus.needsRefresh()) {
+            MinecraftServer server = source.getServer();
+            UUID id = player.getUUID();
+            ServerLiveStatus.refresh(server, () -> {
+                ServerPlayer p = server.getPlayerList().getPlayer(id);
+                if (p != null) report(p.createCommandSourceStack(), index, typed, false);
+            });
+            return 1;
+        }
         String name = player.getGameProfile().getName();
         List<LiveReport.Stream> live = ServerLiveStatus.liveStreams(source.getServer());
         LiveReport.Target target = LiveReport.resolve(live, player.getUUID(), name);
@@ -88,7 +101,7 @@ public final class LiveReportCommand {
                 if (target.kind() != LiveReport.Target.Kind.ONE && target.kind() != LiveReport.Target.Kind.PICK) {
                     return refuse(player, target);
                 }
-                return report(source, 0, typed);
+                return report(source, 0, typed, false);
             }
         } else {
             switch (target.kind()) {
@@ -184,6 +197,7 @@ public final class LiveReportCommand {
                     .append(button(KEY + "keep", "/livereport keep", ChatFormatting.GRAY));
             }
             case NOT_LIVE -> Component.translatable(KEY + "not_live", who).withStyle(ChatFormatting.RED);
+            case SELF -> Component.translatable(KEY + "self").withStyle(ChatFormatting.RED);
             case BANNED -> Component.translatable(KEY + "banned").withStyle(ChatFormatting.RED);
             case RATE_LIMITED -> Component.translatable(KEY + "rate_limited").withStyle(ChatFormatting.RED);
             case FAILED -> Component.translatable(KEY + "failed").withStyle(ChatFormatting.RED);

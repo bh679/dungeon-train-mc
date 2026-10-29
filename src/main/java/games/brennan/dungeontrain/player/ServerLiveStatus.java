@@ -235,7 +235,33 @@ public final class ServerLiveStatus {
         MinecraftServer server = event.getServer();
         if (server.getTickCount() % POLL_TICKS != 0 && !pollRequested) return;
         if (server.getPlayerCount() == 0) return;
-        if (!IN_FLIGHT.compareAndSet(false, true)) return;
+        poll(null);
+    }
+
+    /**
+     * Whether the relay's view is too old (or was never fetched) to answer a player now: right after a
+     * server start the first poll is up to {@link #POLL_TICKS} away. Pure form for the tests.
+     */
+    static boolean needsRefresh(long atMs, long nowMs) {
+        return atMs <= 0 || nowMs - atMs >= STALE_MS;
+    }
+
+    /** True when the relay's view is too old to answer a player now ({@link #needsRefresh(long, long)}). */
+    public static boolean needsRefresh() {
+        return needsRefresh(relayAtMs, System.currentTimeMillis());
+    }
+
+    /**
+     * Ask the relay now and run {@code then} on the server thread once it answers (or fails). A poll
+     * already in flight runs {@code then} straight away on what is known.
+     */
+    public static void refresh(MinecraftServer server, Runnable then) {
+        if (!poll(() -> server.execute(then))) then.run();
+    }
+
+    /** One status poll; {@code after} runs once it settles. False when a poll was already in flight. */
+    private static boolean poll(@Nullable Runnable after) {
+        if (!IN_FLIGHT.compareAndSet(false, true)) return false;
         pollRequested = false;
         long askedAt = System.currentTimeMillis();
         LiveFeedClient.status(null, LiveFeedClient.Channel.LIVE).whenComplete((result, error) -> {
@@ -254,8 +280,10 @@ public final class ServerLiveStatus {
                 }
             } finally {
                 IN_FLIGHT.set(false);
+                if (after != null) after.run();
             }
         });
+        return true;
     }
 
     @SubscribeEvent

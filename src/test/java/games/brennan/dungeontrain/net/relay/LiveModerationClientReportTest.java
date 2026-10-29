@@ -35,7 +35,7 @@ final class LiveModerationClientReportTest {
     void unknownStreamerUuidAndOddChannel() {
         JsonObject o = JsonParser.parseString(LiveModerationClient.reportBody(ME, null, null, null, "dev",
             null, false)).getAsJsonObject();
-        assertEquals("", o.get("streamerUuid").getAsString());
+        assertFalse(o.has("streamerUuid"), "an unknown streamer uuid is left out, never sent empty");
         assertEquals("", o.get("streamerName").getAsString());
         assertEquals("main", o.get("channel").getAsString());
         assertEquals("", o.get("reason").getAsString());
@@ -81,6 +81,10 @@ final class LiveModerationClientReportTest {
     @Test
     void refusals() {
         assertEquals(Kind.NOT_LIVE, LiveModerationClient.parseReportReply(400, "{\"error\":\"not_live\"}").kind());
+        assertEquals(Kind.SELF, LiveModerationClient.parseReportReply(400, "{\"error\":\"self_report\"}").kind());
+        // Any other 400 is a bad request, not a stream that ended.
+        assertEquals(Kind.FAILED, LiveModerationClient.parseReportReply(400, "{\"error\":\"bad_uuid\"}").kind());
+        assertEquals(Kind.FAILED, LiveModerationClient.parseReportReply(400, "").kind());
         assertEquals(Kind.BANNED, LiveModerationClient.parseReportReply(403, "").kind());
         assertEquals(Kind.RATE_LIMITED, LiveModerationClient.parseReportReply(429, "nope").kind());
     }

@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The streams /livereport can name: the relay's view first, this server's own streamers as the fallback. */
 final class ServerLiveStatusLiveStreamsTest {
@@ -38,5 +40,13 @@ final class ServerLiveStatusLiveStreamsTest {
         List<Stream> s = ServerLiveStatus.liveStreams(false, "Alice", "main", false, null, "second", local(BO, "Bo", CY, "Cy"));
         assertEquals(List.of(new Stream(1, "main", "Bo", BO), new Stream(2, "second", "Cy", CY)), s);
         assertEquals(List.of(), ServerLiveStatus.liveStreams(false, null, "main", false, null, "second", local()));
+    }
+
+    @Test
+    void reportAsksTheRelayWhenItsViewIsOldOrMissing() {
+        long now = 1_000_000L;
+        assertTrue(ServerLiveStatus.needsRefresh(0L, now));
+        assertTrue(ServerLiveStatus.needsRefresh(now - ServerLiveStatus.STALE_MS, now));
+        assertFalse(ServerLiveStatus.needsRefresh(now - 30_000L, now));
     }
 }

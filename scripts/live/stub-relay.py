@@ -185,6 +185,9 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(ARGS.report_status, {"error": "forced"})
         reporter = str(body.get("uuid", ""))
         streamer = str(body.get("streamerName", ""))
+        if "streamerUuid" in body and not body["streamerUuid"]:
+            # As the relay: an empty uuid is a bad request; a missing one means "whoever holds the channel".
+            return self._send(400, {"error": "bad_uuid"})
         key = (reporter, (str(body.get("streamerUuid", "")) or streamer).lower())
         with LOCK:
             old = REPORTS.get(key)

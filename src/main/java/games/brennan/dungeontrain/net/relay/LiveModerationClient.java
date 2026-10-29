@@ -128,13 +128,17 @@ public final class LiveModerationClient {
     /** The path a report on a streamer goes out on ({@code /livereport}). Sent directly: the 409 answer matters. */
     public static final String REPORT_PATH = "/live/report";
 
-    /** The {@code /live/report} body. {@code streamerUuid} may be null (a streamer on another server). Pure. */
+    /**
+     * The {@code /live/report} body. {@code streamerUuid} may be null (a streamer on another server: the relay's
+     * status names them but carries no uuid); it is then left out, never sent empty, and the relay takes the
+     * holder of {@code channel}. Pure.
+     */
     public static String reportBody(UUID player, String name, @org.jetbrains.annotations.Nullable UUID streamerUuid,
                                     String streamerName, String channel, String reason, boolean abandon) {
         JsonObject o = new JsonObject();
         o.addProperty("uuid", player.toString().replace("-", ""));
         o.addProperty("name", name == null ? "" : name);
-        o.addProperty("streamerUuid", streamerUuid == null ? "" : streamerUuid.toString().replace("-", ""));
+        if (streamerUuid != null) o.addProperty("streamerUuid", streamerUuid.toString().replace("-", ""));
         o.addProperty("streamerName", streamerName == null ? "" : streamerName);
         o.addProperty("channel", LiveFeedClient.CHANNEL_SECOND.equals(channel) ? LiveFeedClient.CHANNEL_SECOND : LiveFeedClient.CHANNEL_MAIN);
         o.addProperty("reason", reason == null ? "" : reason);
@@ -151,17 +155,25 @@ public final class LiveModerationClient {
 
     /** What the relay said to a report. {@code existing*} are set for {@link Kind#OPEN} (createdAt 0 when unknown). */
     public record ReportReply(Kind kind, long existingCreatedAt, String existingStreamerName) {
-        public enum Kind { SENT, OPEN, NOT_LIVE, BANNED, RATE_LIMITED, FAILED }
+        public enum Kind { SENT, OPEN, NOT_LIVE, SELF, BANNED, RATE_LIMITED, FAILED }
 
         static ReportReply of(Kind kind) {
             return new ReportReply(kind, 0L, "");
         }
     }
 
-    /** A {@code /live/report} answer, from its status and body. Anything unexpected is FAILED. Pure. */
+    /**
+     * A {@code /live/report} answer, from its status and body. A 400 is read by its {@code error}: only
+     * {@code not_live} says the stream ended ({@code self_report} is the player's own stream); any other 400
+     * ({@code bad_uuid}, {@code bad_channel}, ...) and anything unexpected is FAILED. Pure.
+     */
     public static ReportReply parseReportReply(int status, String body) {
         switch (status) {
-            case 400: return ReportReply.of(ReportReply.Kind.NOT_LIVE);
+            case 400: return switch (errorOf(body)) {
+                case "not_live" -> ReportReply.of(ReportReply.Kind.NOT_LIVE);
+                case "self_report" -> ReportReply.of(ReportReply.Kind.SELF);
+                default -> ReportReply.of(ReportReply.Kind.FAILED);
+            };
             case 403: return ReportReply.of(ReportReply.Kind.BANNED);
             case 429: return ReportReply.of(ReportReply.Kind.RATE_LIMITED);
             default: break;
@@ -181,6 +193,16 @@ public final class LiveModerationClient {
             LOGGER.debug("[DungeonTrain] live report reply unreadable (HTTP {}): {}", status, e.toString());
         }
         return ReportReply.of(ReportReply.Kind.FAILED);
+    }
+
+    /** A reply body's {@code error} code; "" when absent or unreadable. */
+    static String errorOf(String body) {
+        try {
+            JsonObject o = com.google.gson.JsonParser.parseString(body).getAsJsonObject();
+            return o.has("error") && o.get("error").isJsonPrimitive() ? o.get("error").getAsString() : "";
+        } catch (RuntimeException e) {
+            return "";
+        }
     }
 
     /** {@code createdAt} as epoch ms: a number (seconds or ms) or an ISO-8601 string; 0 when absent or unreadable. */
@@ -216,7 +238,7 @@ public final class LiveModerationClient {
                         } else {
                             reply = parseReportReply(resp.statusCode(), resp.body());
                             if (reply.kind() == ReportReply.Kind.FAILED) {
-                                LOGGER.warn("[DungeonTrain] live report -> HTTP {}", resp.statusCode());
+                                LOGGER.warn("[DungeonTrain] live report -> HTTP {} {}", resp.statusCode(), errorOf(resp.body()));
                             }
                         }
                         callback.accept(reply);
