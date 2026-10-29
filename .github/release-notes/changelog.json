@@ -31700,6 +31700,32 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sky-falling-comets",
+      "version": "0.1579.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Deeper down the line, the sky gets dangerous",
+      "summary": "Out in the stranger stretches of the journey, the sky is no longer empty. Keep an eye above you, and on the roof of your carriage.",
+      "highlights": [
+        "Fiery visitors streak overhead, and some of them come for the train.",
+        "You will hear them coming, and feel them land.",
+        "When the sky fills up, keep your head down.",
+        "Each time around, they come more often."
+      ],
+      "pr": 2365,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "major": true,
+      "notable": true,
+      "description": "Deeper down the line, the sky is no longer empty. Something has started coming down out of the dark.\n\nListen for it. And when the sky fills up, keep your head down.\n\n*The further you go, the more of it there is.*",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/comet-shower.gif"
     }
   ]
 }
