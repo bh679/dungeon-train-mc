@@ -31879,9 +31879,9 @@
       "highlights": [],
       "pr": 2399,
       "date": "2026-10-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
     },
     {
       "id": "editor-plot-editor-base",
@@ -31898,9 +31898,9 @@
         "Go here on a named track, pillar, stairs or tunnel variant lands on that plot"
       ],
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
     },
     {
       "id": "piglin-fix",
@@ -31914,9 +31914,9 @@
       "highlights": [],
       "pr": 2402,
       "date": "2026-10-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
     },
     {
       "id": "editor-variant-doc-store",
@@ -31931,9 +31931,9 @@
       "highlights": [],
       "pr": 2403,
       "date": "2026-10-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
     },
     {
       "id": "worn-tv-who-is-live",
@@ -31948,9 +31948,9 @@
       "highlights": [],
       "pr": 2404,
       "date": "2026-10-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
     },
     {
       "id": "slimed-fix",
@@ -31965,9 +31965,9 @@
       "highlights": [],
       "pr": 2406,
       "date": "2026-10-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
     },
     {
       "id": "train-tree-breakoff",
@@ -31984,9 +31984,9 @@
       ],
       "pr": 2405,
       "date": "2026-10-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
     },
     {
       "id": "crystal-fix",
