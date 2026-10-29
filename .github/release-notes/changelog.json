@@ -31960,8 +31960,8 @@
         "fix",
         "advancements"
       ],
-      "title": "Slimed fix",
-      "summary": "Slimed now counts every time, and a few missed advancements can now be handed back to the players who earned them.",
+      "title": "Advancement fix",
+      "summary": "A small advancement fix.",
       "highlights": [],
       "pr": 2406,
       "date": "2026-10-29",
