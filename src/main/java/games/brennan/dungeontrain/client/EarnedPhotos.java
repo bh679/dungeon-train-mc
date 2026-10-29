@@ -244,7 +244,8 @@ public final class EarnedPhotos {
     /**
      * Every slot of {@code advancement}'s album: the photos this run counts, then an empty slot
      * ({@code file} null) for each still missing. A creature collection lists its criteria in order; a
-     * biome tier asks for its target number, Coffee Table Book for every biome there is. A count tier
+     * biome tier asks for its target number, Coffee Table Book for every biome there is; a biome album's
+     * photos are grouped by mod ({@link #BIOME_ORDER}), its missing slots last. A count tier
      * lists only the photos kept, never its missing ones ({@link #countSlots}).
      */
     static List<Entry> albumSlots(ResourceLocation advancement, AdvancementProgress progress,
@@ -255,6 +256,7 @@ public final class EarnedPhotos {
         if (kind == EarnedPhotoAlbumScreen.Kind.BIOME) {
             Set<ResourceLocation> every = everyBiome(advancement);
             for (Entry e : visible) if (every == null || every.contains(e.id())) out.add(e);
+            out.sort(BIOME_ORDER);
             int target = every != null ? every.size() : biomeTarget(advancement);
             for (int i = out.size(); i < target; i++) out.add(new Entry(null, null));
             return out;
@@ -272,6 +274,11 @@ public final class EarnedPhotos {
         }
         return out;
     }
+
+    /** A biome album's photos: grouped by mod, alphabetically, then by biome within each mod. */
+    static final java.util.Comparator<Entry> BIOME_ORDER = java.util.Comparator
+            .comparing((Entry e) -> e.id().getNamespace())
+            .thenComparing(e -> e.id().getPath());
 
     /**
      * Only the photos kept, in the order they were counted — no empty slots, so a count album never

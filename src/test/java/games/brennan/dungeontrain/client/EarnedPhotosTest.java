@@ -28,6 +28,20 @@ final class EarnedPhotosTest {
     }
 
     @Test
+    @DisplayName("biome photos group by mod, alphabetically")
+    void biomeOrderGroupsByMod() {
+        var shuffled = new java.util.ArrayList<EarnedPhotos.Entry>();
+        for (String id : new String[] {"minecraft:plains", "wythersoverhauled:old_growth_taiga",
+                "biomesoplenty:lavender_field", "minecraft:desert", "biomesoplenty:bayou"}) {
+            shuffled.add(new EarnedPhotos.Entry(ResourceLocation.parse(id), null));
+        }
+        shuffled.sort(EarnedPhotos.BIOME_ORDER);
+        assertEquals(java.util.List.of("biomesoplenty:bayou", "biomesoplenty:lavender_field",
+                        "minecraft:desert", "minecraft:plains", "wythersoverhauled:old_growth_taiga"),
+                shuffled.stream().map(e -> e.id().toString()).toList());
+    }
+
+    @Test
     void slotsEarnedByOneShotShareOnePhoto() {
         var regular = ResourceLocation.fromNamespaceAndPath("exposure", "regular");
         var a = new EarnedPhotos.Pending("AshSeven_1", regular, 100, 0);
