@@ -31761,6 +31761,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "coffee-table-book-terra-omnia-biomes",
+      "version": "0.1582.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Coffee Table Book fix",
+      "summary": "Coffee Table Book now asks for the same biomes as Terra Omnia, so every photo slot can be filled.",
+      "highlights": [
+        "Biomes you had already photographed now count towards Terra Omnia."
+      ],
+      "pr": 2394,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
