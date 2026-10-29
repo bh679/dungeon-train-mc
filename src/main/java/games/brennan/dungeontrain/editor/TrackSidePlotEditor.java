@@ -177,7 +177,7 @@ public final class TrackSidePlotEditor<T extends Template> extends PlotEditor<T>
             // only the dev-mode promotion is left to the save.
             Vec3i footprint = spec.kind().dims(storeDims(dims));
             TrackVariantBlocks.loadFor(spec.kind(), t.variantName(), footprint)
-                .saveToSource(spec.kind(), t.variantName());
+                .saveToSource();
         } else if (spec.containerLinks()) {
             // Persist any in-session loot-prefab link changes accumulated since enter
             // (PrefabUseHandler defers its writes until /save).

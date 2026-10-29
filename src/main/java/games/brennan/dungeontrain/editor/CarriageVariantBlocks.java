@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.editor;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
@@ -20,24 +19,19 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Random;
 
 /**
  * Sidecar JSON ({@code <id>.variants.json}) that pairs with each carriage
- * variant's {@code .nbt} template. Each entry maps a carriage-local
+ * variant's {@code .nbt} template — the <b>codec</b> every kind's sidecar shares
+ * ({@link #parseCellValue} / {@link #appendCellJson} per cell, {@link #parseVariantElement} /
+ * {@link #appendVariantJson} per candidate, the deterministic {@code pickIndex*} mixers and the
+ * empty-placeholder sentinel), plus the carriage kind's entry points onto {@link VariantSidecarStore}.
+ * The document itself is a {@link VariantDoc}. Each entry maps a carriage-local
  * {@link BlockPos} to a list of candidate {@link BlockState}s — one of which
  * is picked deterministically at spawn time based on the world seed and the
  * carriage index.
@@ -229,9 +223,6 @@ public final class CarriageVariantBlocks {
             || state.is(Blocks.REPEATING_COMMAND_BLOCK);
     }
 
-    // Session cache keyed by variant id. Invalidated on save and on editor
-    // enter (re-read from disk so a manual edit picks up immediately).
-    private static final Map<String, CarriageVariantBlocks> CACHE = new HashMap<>();
 
     /** Local position + candidate variants. Ordering of {@code states} is preserved as written. */
     public record Entry(BlockPos localPos, List<VariantState> states) {
@@ -248,120 +239,47 @@ public final class CarriageVariantBlocks {
         }
     }
 
-    /** pos → candidate variants. {@link LinkedHashMap} keeps insertion order for deterministic JSON output. */
-    private final Map<BlockPos, List<VariantState>> entries;
+    // ---------- Store facade ----------
+    //
+    // The document itself is a VariantDoc, persisted by VariantSidecarStore under a
+    // CarriageAddress; the statics below keep this class's entry points for the carriage kind.
 
-    /**
-     * pos → lock-id (≥1 means locked, 0/missing means unlocked). Cells
-     * with the same non-zero lock-id share a runtime random pick at
-     * spawn — the picker hashes the lock-id instead of the local
-     * position, so all cells in the group land on the same index. The
-     * lock-id space is local to this sidecar (per template).
-     */
-    private final Map<BlockPos, Integer> lockIds;
-
-    /** v9 lock-group reference resolution over {@link #entries} / {@link #lockIds}. */
-    private final VariantGroupResolver groupRefs;
-
-    /**
-     * Per-template editor mirror axes, applied live and as a save-time
-     * backstop by {@link EditorMirror}. Stored as the optional top-level
-     * {@code "mirror": {"x":…,"y":…,"z":…}} field; all default false (carriages
-     * are not inherently symmetric — mirroring is opt-in per template).
-     */
-    private boolean mirrorX;
-    private boolean mirrorY;
-    private boolean mirrorZ;
-    /** Opt-in flag (the "V" toggle): mirror the variant pools, not just structural blocks. */
-    private boolean mirrorVariants;
-
-    /**
-     * The whole sidecar this instance is a bounded <em>view</em> of, or null when this <em>is</em>
-     * the whole sidecar — see
-     * {@link games.brennan.dungeontrain.track.variant.TrackVariantBlocks#source}. Mutations and both
-     * write paths go through to it, so a bounded read can never become a truncated write.
-     */
-    private final CarriageVariantBlocks source;
-
-    /**
-     * pos → per-cell {@link VariantSpan} — how a single block fills a two-space cell (door /
-     * bed / tall plant). Only non-default values are stored; see {@link #spanAt}.
-     */
-    private final Map<BlockPos, VariantSpan> spans = new LinkedHashMap<>();
-
-    private CarriageVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds) {
-        this(entries, lockIds, false, false, false, false);
+    /** Where carriage {@code id}'s sidecar lives: {@code templates/<pool path>.variants.json}. */
+    public record CarriageAddress(String id) implements VariantAddress {
+        @Override public String cacheKey() { return "carriage:" + id; }
+        @Override public String contextId() { return id; }
+        @Override public String userSubdir() { return SUBDIR; }
+        @Override public String fileName() { return games.brennan.dungeontrain.train.ShellPool.path(id) + EXT; }
+        @Override public Path userPath() { return UserContentPaths.dir(SUBDIR).resolve(fileName()); }
+        @Override public String bundledResource() { return RESOURCE_PREFIX + fileName(); }
+        @Override public Path sourcePath() {
+            Path projectRoot = net.neoforged.fml.loading.FMLPaths.GAMEDIR.get().getParent();
+            if (projectRoot == null) return null;
+            return projectRoot.resolve(SOURCE_REL_PATH).resolve(fileName());
+        }
     }
 
-    private CarriageVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
-                                  boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
-        this(entries, lockIds, mirrorX, mirrorY, mirrorZ, mirrorVariants, null);
+    public static VariantAddress address(CarriageVariant variant) {
+        return new CarriageAddress(variant.id());
     }
 
-    private CarriageVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
-                                  boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants,
-                                  CarriageVariantBlocks source) {
-        this.source = source;
-        this.entries = entries;
-        this.lockIds = lockIds;
-        this.groupRefs = new VariantGroupResolver(entries, lockIds);
-        this.mirrorX = mirrorX;
-        this.mirrorY = mirrorY;
-        this.mirrorZ = mirrorZ;
-        this.mirrorVariants = mirrorVariants;
+    public static VariantAddress address(String id) {
+        return new CarriageAddress(id);
     }
 
-    public static CarriageVariantBlocks empty() {
-        return new CarriageVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>());
-    }
-
-    /** Editor mirror X (length) axis. False unless the sidecar sets {@code mirror.x=true}. */
-    public boolean mirrorX() { return mirrorX; }
-
-    /** Editor mirror Y (height) axis. False unless the sidecar sets {@code mirror.y=true}. */
-    public boolean mirrorY() { return mirrorY; }
-
-    /** Editor mirror Z (width) axis. False unless the sidecar sets {@code mirror.z=true}. */
-    public boolean mirrorZ() { return mirrorZ; }
-
-    /** Editor mirror-variants ("V") opt-in. False unless the sidecar sets {@code mirror.v=true}. */
-    public boolean mirrorVariants() { return mirrorVariants; }
-
-    /** True when no axis/flag is enabled — the absent-{@code mirror}-field state (carriage default). */
-    private boolean isDefaultMirror() {
-        return !mirrorX && !mirrorY && !mirrorZ && !mirrorVariants;
-    }
-
-    /** Set all three editor mirror axes — used by the {@code editor mirror} command before {@link #save}. */
-    public synchronized void setMirrorAxes(boolean x, boolean y, boolean z) {
-        if (source != null) source.setMirrorAxes(x, y, z);
-        this.mirrorX = x;
-        this.mirrorY = y;
-        this.mirrorZ = z;
-    }
-
-    /** Set the mirror-variants ("V") opt-in — used by {@code editor mirror v on|off} before {@link #save}. */
-    public synchronized void setMirrorVariants(boolean v) {
-        if (source != null) source.setMirrorVariants(v);
-        this.mirrorVariants = v;
+    /** Detached empty document — tests and paths with no variant behind them. */
+    public static VariantDoc empty() {
+        return VariantDoc.empty();
     }
 
     /** On-disk path for the config-dir sidecar matching {@code variant}. */
     public static Path configPathFor(CarriageVariant variant) {
-        return configPathForId(variant.id());
-    }
-
-    private static Path configPathForId(String id) {
-        return UserContentPaths.dir(SUBDIR).resolve(games.brennan.dungeontrain.train.ShellPool.path(id) + EXT);
+        return address(variant).userPath();
     }
 
     /** Classpath resource for the bundled sidecar matching {@code variant} (only exists for shipped variants). */
     public static String bundledResourceFor(CarriageVariant variant) {
-        return bundledResourceForId(variant.id());
-    }
-
-    private static String bundledResourceForId(String id) {
-        return RESOURCE_PREFIX + games.brennan.dungeontrain.train.ShellPool.path(id) + EXT;
+        return address(variant).bundledResource();
     }
 
     /** Source-tree path for the bundled sidecar — only writable in a {@code ./gradlew runClient} dev checkout. */
@@ -371,176 +289,51 @@ public final class CarriageVariantBlocks {
 
     /** Variant-keyed source-tree path — works for both built-ins and customs. */
     public static Path sourcePathForVariant(CarriageVariant variant) {
-        Path gameDir = net.neoforged.fml.loading.FMLPaths.GAMEDIR.get();
-        Path projectRoot = gameDir.getParent();
-        if (projectRoot == null) {
+        Path p = address(variant).sourcePath();
+        if (p == null) {
             throw new IllegalStateException("Cannot resolve source directory — FMLPaths.GAMEDIR has no parent.");
         }
-        return projectRoot.resolve(SOURCE_REL_PATH).resolve(games.brennan.dungeontrain.train.ShellPool.path(variant.id()) + EXT);
+        return p;
     }
 
     /**
-     * Load the sidecar for {@code variant} — per-install config dir first,
-     * then bundled resource. Returns an empty instance if neither exists (or
-     * both fail to parse). Result is cached by variant id until {@link #save}
-     * or {@link #clearCache} is called. Entries outside the {@code dims}
-     * footprint are dropped with a warning.
+     * Load the sidecar for {@code variant} — per-install config dir first, then bundled resource —
+     * bounded to {@code dims}. Cached by variant id until a save or {@link #clearCache}.
      */
-    public static synchronized CarriageVariantBlocks loadFor(CarriageVariant variant, CarriageDims dims) {
-        String id = variant.id();
-        CarriageVariantBlocks cached = CACHE.get(id);
-        if (cached == null) {
-            cached = loadFromDisk(variant);
-            CACHE.put(id, cached);
-        }
-        return cached.croppedTo(id, dims);
+    public static VariantDoc loadFor(CarriageVariant variant, CarriageDims dims) {
+        net.minecraft.core.Vec3i footprint = dims == null ? null
+            : new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width());
+        return VariantSidecarStore.loadFor(address(variant), footprint);
     }
 
-    /**
-     * This sidecar bounded to {@code dims} — {@code this} when every cell already fits, otherwise a
-     * detached, unsaveable copy without the out-of-bounds cells. The bound is applied per caller so
-     * one caller's dims cannot prune what the rest of the session sees.
-     */
-    private synchronized CarriageVariantBlocks croppedTo(String id, CarriageDims dims) {
-        if (dims == null) return this;
-        List<BlockPos> outside = null;
-        for (BlockPos pos : entries.keySet()) {
-            if (inBounds(pos, dims)) continue;
-            if (outside == null) outside = new ArrayList<>();
-            outside.add(pos);
-        }
-        if (outside == null) return this;
-
-        Map<BlockPos, List<VariantState>> kept = new LinkedHashMap<>(entries);
-        Map<BlockPos, Integer> keptLocks = new LinkedHashMap<>(lockIds);
-        for (BlockPos pos : outside) {
-            kept.remove(pos);
-            keptLocks.remove(pos);
-            LOGGER.warn("[DungeonTrain] Variant sidecar {}: position {} outside dims {}x{}x{}, skipping.",
-                id, pos, dims.length(), dims.height(), dims.width());
-        }
-        return withSpans(new CarriageVariantBlocks(kept, keptLocks, mirrorX, mirrorY, mirrorZ, mirrorVariants, this), spans);
+    /** Delete the config-dir sidecar and invalidate the cache. Used by the editor reset path. */
+    public static boolean delete(CarriageVariant variant) throws IOException {
+        return VariantSidecarStore.delete(address(variant));
     }
 
-    /** True when this instance is a bounded view — see {@link #cropped}. */
-    public boolean isCropped() { return source != null; }
-
-
-    private static CarriageVariantBlocks loadFromDisk(CarriageVariant variant) {
-        return loadFromDisk(variant.id());
+    /** Move-or-carry the sidecar from {@code sourceId} to {@code targetId} — {@link VariantSidecarStore#rename}. */
+    public static boolean rename(String sourceId, String targetId) throws IOException {
+        return VariantSidecarStore.rename(address(sourceId), address(targetId));
     }
 
-    /** Id-keyed {@link #loadFromDisk(CarriageVariant)} — the loader only ever needs the id. */
-    private static CarriageVariantBlocks loadFromDisk(String id) {
-        Path cfg = UserContentPaths.findFile(SUBDIR, games.brennan.dungeontrain.train.ShellPool.path(id) + EXT);
-        if (cfg != null) {
-            try (Reader r = Files.newBufferedReader(cfg, StandardCharsets.UTF_8)) {
-                return parse(r, id, "config " + cfg);
-            } catch (IOException e) {
-                LOGGER.error("[DungeonTrain] Failed to read variant sidecar {}: {}", cfg, e.toString());
-            }
-        }
-        String resource = bundledResourceForId(id);
-        try (InputStream in = CarriageVariantBlocks.class.getResourceAsStream(resource)) {
-            if (in == null) return empty();
-            try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-                return parse(r, id, "bundled " + resource);
-            }
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to read bundled variant sidecar {}: {}", resource, e.toString());
-            return empty();
-        }
+    /** Invalidate the per-variant cache entry so the next {@link #loadFor} re-reads disk. */
+    public static void invalidate(String variantId) {
+        VariantSidecarStore.invalidate(address(variantId));
     }
 
-    /**
-     * Parse the whole sidecar, keeping every cell however far outside any dims — bounding is
-     * {@link #croppedTo}'s job.
-     */
-    private static CarriageVariantBlocks parse(Reader reader, String id, String origin) {
-        JsonElement root = JsonParser.parseReader(reader);
-        if (!root.isJsonObject()) {
-            LOGGER.warn("[DungeonTrain] Variant sidecar {} ({}) is not a JSON object — ignoring.", id, origin);
-            return empty();
-        }
-        JsonObject obj = root.getAsJsonObject();
-        if (obj.has("schemaVersion")) {
-            int v = obj.get("schemaVersion").getAsInt();
-            if (v > CURRENT_SCHEMA_VERSION) {
-                LOGGER.warn("[DungeonTrain] Variant sidecar {} ({}) has schemaVersion {} (newer than {}) — attempting best-effort parse.",
-                    id, origin, v, CURRENT_SCHEMA_VERSION);
-            }
-        }
-        // Optional top-level editor mirror axes — all default false (carriages
-        // are opt-in). A mirror-only sidecar (axes set, no cells) is still valid.
-        boolean mirrorX = false;
-        boolean mirrorY = false;
-        boolean mirrorZ = false;
-        boolean mirrorVariants = false;
-        if (obj.has("mirror") && obj.get("mirror").isJsonObject()) {
-            JsonObject m = obj.getAsJsonObject("mirror");
-            if (m.has("x")) mirrorX = m.get("x").getAsBoolean();
-            if (m.has("y")) mirrorY = m.get("y").getAsBoolean();
-            if (m.has("z")) mirrorZ = m.get("z").getAsBoolean();
-            if (m.has("v")) mirrorVariants = m.get("v").getAsBoolean();
-        }
-        if (!obj.has("variants") || !obj.get("variants").isJsonObject()) {
-            return new CarriageVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), mirrorX, mirrorY, mirrorZ, mirrorVariants);
-        }
-        HolderLookup.RegistryLookup<net.minecraft.world.level.block.Block> blocks =
-            BuiltInRegistries.BLOCK.asLookup();
+    /** Drop all cached sidecars — wired to {@code ServerStoppedEvent} by the template store. */
+    public static void clearCache() {
+        VariantSidecarStore.clearCache();
+    }
 
-        JsonObject variants = obj.getAsJsonObject("variants");
-        Map<BlockPos, List<VariantState>> out = new LinkedHashMap<>();
-        Map<BlockPos, Integer> outLocks = new LinkedHashMap<>();
-        Map<BlockPos, VariantSpan> outSpans = new LinkedHashMap<>();
-        for (Map.Entry<String, JsonElement> field : variants.entrySet()) {
-            BlockPos pos = parsePos(field.getKey());
-            if (pos == null) {
-                LOGGER.warn("[DungeonTrain] Variant sidecar {}: bad position key '{}', skipping.", id, field.getKey());
-                continue;
-            }
-            JsonArray arr;
-            int lockId = 0;
-            VariantSpan span = VariantSpan.NONE;
-            JsonElement value = field.getValue();
-            if (value.isJsonArray()) {
-                arr = value.getAsJsonArray();
-            } else if (value.isJsonObject()) {
-                JsonObject cellObj = value.getAsJsonObject();
-                if (!cellObj.has("states") || !cellObj.get("states").isJsonArray()) {
-                    LOGGER.warn("[DungeonTrain] Variant sidecar {}: cell at {} missing 'states' array, skipping.",
-                        id, pos);
-                    continue;
-                }
-                arr = cellObj.getAsJsonArray("states");
-                if (cellObj.has("lockId") && cellObj.get("lockId").isJsonPrimitive()
-                    && cellObj.get("lockId").getAsJsonPrimitive().isNumber()) {
-                    int raw = cellObj.get("lockId").getAsInt();
-                    lockId = raw < 0 ? 0 : raw;
-                }
-                span = parseSpan(cellObj);
-            } else {
-                LOGGER.warn("[DungeonTrain] Variant sidecar {}: value for {} is neither array nor object, skipping.",
-                    id, pos);
-                continue;
-            }
-            List<VariantState> states = new ArrayList<>(arr.size());
-            for (JsonElement el : arr) {
-                VariantState parsed = parseVariantElement(el, blocks, id, pos);
-                if (parsed != null) states.add(parsed);
-            }
-            if (states.size() < MIN_STATES_PER_ENTRY) {
-                LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: fewer than {} valid states, dropping entry.",
-                    id, pos, MIN_STATES_PER_ENTRY);
-                continue;
-            }
-            BlockPos posI = pos.immutable();
-            out.put(posI, List.copyOf(states));
-            if (lockId > 0) outLocks.put(posI, lockId);
-            if (!span.isDefault()) outSpans.put(posI, span);
-        }
-        LOGGER.info("[DungeonTrain] Loaded {} variant entries for {} from {}", out.size(), id, origin);
-        return withSpans(new CarriageVariantBlocks(out, outLocks, mirrorX, mirrorY, mirrorZ, mirrorVariants), outSpans);
+    /** {@link VariantDoc#parsePos}. */
+    public static BlockPos parsePos(String key) {
+        return VariantDoc.parsePos(key);
+    }
+
+    /** {@link VariantDoc#formatPos}. */
+    static String formatPos(BlockPos p) {
+        return VariantDoc.formatPos(p);
     }
 
     /**
@@ -722,203 +515,6 @@ public final class CarriageVariantBlocks {
         }
     }
 
-    /** Package-private for test access — parses a {@code "x,y,z"} key back into a {@link BlockPos}, or null. */
-    public static BlockPos parsePos(String key) {
-        String[] parts = key.split(",");
-        if (parts.length != 3) return null;
-        try {
-            return new BlockPos(
-                Integer.parseInt(parts[0].trim()),
-                Integer.parseInt(parts[1].trim()),
-                Integer.parseInt(parts[2].trim())
-            );
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private static boolean inBounds(BlockPos p, CarriageDims dims) {
-        return p.getX() >= 0 && p.getX() < dims.length()
-            && p.getY() >= 0 && p.getY() < dims.height()
-            && p.getZ() >= 0 && p.getZ() < dims.width();
-    }
-
-    /** Package-private for tests — renders a {@link BlockPos} as the {@code "x,y,z"} JSON key. */
-    static String formatPos(BlockPos p) {
-        return p.getX() + "," + p.getY() + "," + p.getZ();
-    }
-
-    /** Iterable snapshot of all entries. */
-    public List<Entry> entries() {
-        List<Entry> out = new ArrayList<>(entries.size());
-        for (Map.Entry<BlockPos, List<VariantState>> e : entries.entrySet()) {
-            out.add(new Entry(e.getKey(), e.getValue()));
-        }
-        return Collections.unmodifiableList(out);
-    }
-
-    public boolean isEmpty() {
-        return entries.isEmpty();
-    }
-
-    public int size() {
-        return entries.size();
-    }
-
-    /** Candidate variants at {@code localPos}, or {@code null} if no entry. */
-    public List<VariantState> statesAt(BlockPos localPos) {
-        return entries.get(localPos);
-    }
-
-    /**
-     * Replace the candidate list at {@code localPos}. Requires
-     * {@link #MIN_STATES_PER_ENTRY} or more entries. v2 supports block-entity
-     * states with optional {@link CompoundTag} payload — see {@link VariantState}.
-     */
-    public synchronized void put(BlockPos localPos, List<VariantState> states) {
-        if (states == null || states.size() < MIN_STATES_PER_ENTRY) {
-            throw new IllegalArgumentException(
-                "need at least " + MIN_STATES_PER_ENTRY + " states, got "
-                    + (states == null ? 0 : states.size()));
-        }
-        for (VariantState s : states) {
-            if (s == null) throw new IllegalArgumentException("null state");
-        }
-        if (source != null) source.put(localPos, states);
-        entries.put(localPos.immutable(), List.copyOf(states));
-        invalidateGroupRefCache();
-    }
-
-    /** Remove the entry at {@code localPos}. Returns true if one was present. */
-    /** The cell's multi-space {@link VariantSpan}; {@code AUTO} when unset or no cell. */
-    public synchronized VariantSpan spanAt(BlockPos localPos) {
-        return spans.getOrDefault(localPos, VariantSpan.NONE);
-    }
-
-    /** Set the cell's multi-space span (default clears it). Throws if no cell exists at {@code localPos}. */
-    public synchronized void setSpan(BlockPos localPos, VariantSpan span) {
-        if (source != null) source.setSpan(localPos, span);
-        if (!entries.containsKey(localPos)) {
-            throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
-        }
-        if (span == null || span.isDefault()) spans.remove(localPos);
-        else spans.put(localPos.immutable(), span);
-    }
-
-    /** Copy {@code from}'s spans for the cells {@code target} holds — parse and crop both end here. */
-    private static CarriageVariantBlocks withSpans(CarriageVariantBlocks target, Map<BlockPos, VariantSpan> from) {
-        for (Map.Entry<BlockPos, VariantSpan> e : from.entrySet()) {
-            if (target.entries.containsKey(e.getKey())) target.spans.put(e.getKey(), e.getValue());
-        }
-        return target;
-    }
-
-    public synchronized boolean remove(BlockPos localPos) {
-        spans.remove(localPos);
-        if (source != null) source.remove(localPos);
-        lockIds.remove(localPos);
-        invalidateGroupRefCache();
-        return entries.remove(localPos) != null;
-    }
-
-    /**
-     * Wipe every entry and every lock-id. Returns the number of entries that
-     * were present before the call. Used by {@code /editor clear} so a plot
-     * wipe doesn't leave orphaned variant metadata pointing at now-air cells.
-     */
-    public synchronized int clearAll() {
-        spans.clear();
-        int n = entries.size();
-        entries.clear();
-        lockIds.clear();
-        invalidateGroupRefCache();
-        return n;
-    }
-
-    /** Lock-id at {@code localPos}; 0 if unlocked or no entry. */
-    public synchronized int lockIdAt(BlockPos localPos) {
-        return lockIds.getOrDefault(localPos, 0);
-    }
-
-    /**
-     * Set the lock-id for an existing cell. Pass 0 to unlock. Throws if
-     * no cell exists at {@code localPos} — only cells with state lists
-     * can be locked.
-     */
-    public synchronized void setLockId(BlockPos localPos, int lockId) {
-        if (source != null) source.setLockId(localPos, lockId);
-        if (!entries.containsKey(localPos)) {
-            throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
-        }
-        if (lockId < 0) lockId = 0;
-        if (lockId == 0) {
-            lockIds.remove(localPos);
-        } else {
-            lockIds.put(localPos.immutable(), lockId);
-        }
-        invalidateGroupRefCache();
-    }
-
-    /**
-     * Snapshot of every {@code (localPos, lockId)} pair with {@code lockId > 0}.
-     * Returned map is a defensive copy — callers may iterate freely.
-     */
-    public synchronized Map<BlockPos, Integer> allLockIds() {
-        return new LinkedHashMap<>(lockIds);
-    }
-
-    /** Positions in this sidecar that share the given lock-id. Empty for {@code lockId == 0}. */
-    public synchronized java.util.Set<BlockPos> positionsWithLockId(int lockId) {
-        if (lockId <= 0) return java.util.Set.of();
-        java.util.Set<BlockPos> out = new java.util.LinkedHashSet<>();
-        for (Map.Entry<BlockPos, Integer> e : lockIds.entrySet()) {
-            if (e.getValue() == lockId) out.add(e.getKey());
-        }
-        return out;
-    }
-
-    /**
-     * Smallest positive integer not currently used by any cell as a
-     * lock-id. Used by the menu's Lock-cycle button to allocate a new
-     * group id; the only way two cells end up with the same id is via
-     * Copy / Paste of a clipboard item.
-     */
-    public synchronized int nextFreeLockId() {
-        // Includes groups kept alive only by a reference, so a new lock never takes over one.
-        java.util.Set<Integer> used = groupRefs.lockIdsInUse();
-        int n = 1;
-        while (used.contains(n)) n++;
-        return n;
-    }
-
-    /**
-     * Deterministic pick at {@code localPos}. Seeds a fresh {@link Random}
-     * with the world seed XOR'd through the carriage index and either the
-     * local position (unlocked cells) or the cell's lock-id (locked cells).
-     * Returns {@code null} if no entry.
-     *
-     * <p>Lock-group pick: when the cell has a non-zero lock-id, every
-     * cell in the group hashes the same {@code (seed, carriageIndex,
-     * lockId)} so they all draw the same index — combined with the
-     * group's shared state list, every cell renders the same block.</p>
-     *
-     * <p>Weighted pick: respects each entry's {@link VariantState#weight}.
-     * Determinism contract is unchanged — same inputs → same index.</p>
-     */
-    public VariantState resolve(BlockPos localPos, long worldSeed, int carriageIndex) {
-        return groupRefs.resolve(localPos, lockIdAt(localPos), entries.get(localPos),
-            worldSeed, carriageIndex);
-    }
-
-    /** This sidecar's lock groups, for callers that need to follow references themselves (e.g. the editor preview). */
-    public VariantGroupResolver groupRefs() {
-        return groupRefs;
-    }
-
-    /** Drop the reference-graph cache — called by every mutator. */
-    private void invalidateGroupRefCache() {
-        groupRefs.invalidate();
-    }
 
     /**
      * Uniform-distribution index picker (legacy / test surface). Kept for
@@ -1057,151 +653,6 @@ public final class CarriageVariantBlocks {
             if (draw < acc) return i;
         }
         return weights.length - 1;
-    }
-
-    /**
-     * Persist this sidecar to {@code <config>/dungeontrain/templates/<id>.variants.json}.
-     * If the map is empty, any existing file is deleted so empty variants don't
-     * leave stale sidecars on disk.
-     */
-    public synchronized void save(CarriageVariant variant) throws IOException {
-        if (source != null) { source.save(variant); return; }
-        Path file = configPathFor(variant);
-        if (entries.isEmpty() && isDefaultMirror()) {
-            Files.deleteIfExists(file);
-            CACHE.put(variant.id(), this);
-            LOGGER.info("[DungeonTrain] Cleared variant sidecar for {} (no entries, default mirror)", variant.id());
-            return;
-        }
-        Files.createDirectories(file.getParent());
-        String json = toJson();
-        Files.writeString(file, json, StandardCharsets.UTF_8);
-        CACHE.put(variant.id(), this);
-        LOGGER.info("[DungeonTrain] Saved {} variant entries for {} to {}", entries.size(), variant.id(), file);
-    }
-
-    /**
-     * Dev-mode write-through: copy the sidecar into the project source tree
-     * so it ships with the next build. Built-in entry point — see the
-     * {@link #saveToSource(CarriageVariant) variant-keyed overload} for the
-     * path that also handles custom variants.
-     */
-    public synchronized void saveToSource(CarriageType type) throws IOException {
-        saveToSource(CarriageVariant.of(type));
-    }
-
-    /**
-     * Variant-keyed dev-mode write-through — works for both
-     * {@link CarriageVariant.Builtin}s and {@link CarriageVariant.Custom}s.
-     * Mirrors {@link CarriageTemplateStore#saveToSource(CarriageVariant, net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate)}.
-     */
-    public synchronized void saveToSource(CarriageVariant variant) throws IOException {
-        if (source != null) { source.saveToSource(variant); return; }
-        Path file = sourcePathForVariant(variant);
-        if (entries.isEmpty() && isDefaultMirror()) {
-            Files.deleteIfExists(file);
-            LOGGER.info("[DungeonTrain] Cleared bundled variant sidecar for {} (no entries, default mirror)", variant.id());
-            return;
-        }
-        Files.createDirectories(file.getParent());
-        Files.writeString(file, toJson(), StandardCharsets.UTF_8);
-        LOGGER.info("[DungeonTrain] Wrote bundled variant sidecar for {} to {}", variant.id(), file);
-    }
-
-    /** Delete both the config-dir sidecar and invalidate cache. Used by the editor reset path. */
-    public static synchronized boolean delete(CarriageVariant variant) throws IOException {
-        Path file = configPathFor(variant);
-        boolean existed = Files.deleteIfExists(file);
-        CACHE.remove(variant.id());
-        if (existed) LOGGER.info("[DungeonTrain] Deleted variant sidecar for {} ({})", variant.id(), file);
-        return existed;
-    }
-
-    /**
-     * Carry the sidecar from {@code sourceId} to {@code targetId} so a save-as / rename keeps its
-     * variants. A config-dir file is moved; a sidecar that only exists in the session cache, an
-     * imported package or the bundled resource is written out under the new id instead — a save-as
-     * of a bundled variant used to lose every entry here, because there was no file to move.
-     * Returns false when there was nothing to carry.
-     */
-    public static synchronized boolean rename(String sourceId, String targetId) throws IOException {
-        Path src = configPathForId(sourceId);
-        Path dst = configPathForId(targetId);
-        if (Files.isRegularFile(src)) {
-            Files.createDirectories(dst.getParent());
-            Files.move(src, dst, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            CarriageVariantBlocks cached = CACHE.remove(sourceId);
-            if (cached != null) CACHE.put(targetId, cached);
-            LOGGER.info("[DungeonTrain] Renamed variant sidecar {} -> {}", src, dst);
-            return true;
-        }
-        CarriageVariantBlocks carried = CACHE.remove(sourceId);
-        if (carried == null) carried = loadFromDisk(sourceId);
-        if (carried.entries.isEmpty() && carried.isDefaultMirror()) return false;
-        Files.createDirectories(dst.getParent());
-        Files.writeString(dst, carried.toJson(), StandardCharsets.UTF_8);
-        CACHE.put(targetId, carried);
-        LOGGER.info("[DungeonTrain] Carried {} variant entries {} -> {} (no config-dir file to move)",
-            carried.entries.size(), sourceId, targetId);
-        return true;
-    }
-
-    /** Invalidate the per-variant cache entry so the next {@link #loadFor} re-reads disk. */
-    public static synchronized void invalidate(String variantId) {
-        CACHE.remove(variantId);
-    }
-
-    /** Drop all cached sidecars — wired to {@code ServerStoppedEvent} by the template store. */
-    public static synchronized void clearCache() {
-        CACHE.clear();
-    }
-
-    /**
-     * Deterministic JSON serialisation — entries ordered by insertion
-     * (LinkedHashMap), states in the order the editor recorded them. The
-     * hand-rolled writer produces indented output that a human can diff,
-     * without pulling in {@code GsonBuilder} for a tiny file.
-     *
-     * <p>Each candidate writes as a bare BlockState string when it has no
-     * BlockEntity NBT (v1-compatible), or as {@code {"state": ..., "nbt": ...}}
-     * when NBT is present.</p>
-     */
-    /** Serialised form of this sidecar as {@link #save} would write it. Used by the editor undo history. */
-    String toJson() {
-        StringBuilder sb = new StringBuilder(256);
-        sb.append("{\n");
-        sb.append("  \"schemaVersion\": ").append(CURRENT_SCHEMA_VERSION).append(",\n");
-        // Only emit the mirror field when non-default (some axis on) so existing
-        // sidecars stay byte-identical on resave — absent reads back as all-off.
-        if (!isDefaultMirror()) {
-            sb.append("  \"mirror\": { \"x\": ").append(mirrorX)
-              .append(", \"y\": ").append(mirrorY)
-              .append(", \"z\": ").append(mirrorZ)
-              .append(", \"v\": ").append(mirrorVariants).append(" },\n");
-        }
-        sb.append("  \"variants\": {");
-        boolean first = true;
-        for (Map.Entry<BlockPos, List<VariantState>> e : entries.entrySet()) {
-            if (!first) sb.append(",");
-            int lockId = lockIds.getOrDefault(e.getKey(), 0);
-            sb.append("\n    \"").append(formatPos(e.getKey())).append("\": ");
-            // Cell-object form for locked / spanned cells, bare array (v3 shape) otherwise —
-            // byte-identical to the old writer for every cell without a span.
-            appendCellJson(sb, groupRefs.refreshed(e.getValue(), lockId), lockId, VariantCopyRoll.DEFAULT, VariantCopyScope.BOTH,
-                spanAt(e.getKey()));
-            first = false;
-        }
-        sb.append("\n  }\n}\n");
-        return sb.toString();
-    }
-
-    private static void appendStateArray(StringBuilder sb, List<VariantState> states) {
-        boolean firstState = true;
-        for (VariantState s : states) {
-            if (!firstState) sb.append(", ");
-            appendVariantJson(sb, s);
-            firstState = false;
-        }
     }
 
     /**
