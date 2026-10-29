@@ -31987,6 +31987,23 @@
       "released": true,
       "released_in": "v0.1594.0",
       "released_at": "2026-10-29T09:41:21Z"
+    },
+    {
+      "id": "ain-053-supporter-names",
+      "version": "0.1595.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot"
+      ],
+      "title": "More community names on gear and mobs",
+      "summary": "Adventure Item Names 0.53.0 brings nine more Discord community members into the name pool, including players helping tune item trade values: Goingforlong, Mr_agah, Collapseofsmth, Kyrielle, Lyraluithin, LitniR, AshSeven, AshSeven7 and Ash7. Queen Sppongy, the slimey also joins as a full name, and Choo Choo joins the random names.",
+      "highlights": [],
+      "pr": 2407,
+      "date": "2026-10-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
