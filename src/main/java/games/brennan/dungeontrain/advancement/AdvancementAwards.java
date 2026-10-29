@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.advancement;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.net.relay.AdvancementAwardClient;
 import games.brennan.dungeontrain.net.relay.AdvancementAwardClient.Award;
 import net.minecraft.advancements.AdvancementHolder;
@@ -19,8 +20,10 @@ import java.util.UUID;
  *
  * <p><b>A real earn.</b> Each is granted with {@link PlayerAdvancements#award}, criterion by criterion,
  * so {@code AdvancementEarnEvent} fires exactly as for an earn in play: the toast and chat line, the
- * profile bank, and the relay's first-ever claim (with its passenger-log post when it is a first). A
- * Free Play run still gets it in that world but, as for any Free Play earn, never banks or claims it.</p>
+ * profile bank, and the relay's first-ever claim (with its passenger-log post when it is a first).</p>
+ *
+ * <p><b>Clean runs only.</b> A Free Play run would earn it in that world but never bank or claim it, and
+ * the ack would spend the award. So in Free Play nothing is granted and it stays pending for a clean run.</p>
  *
  * <p><b>Acked once earned.</b> The relay serves an award until it is acked, then stops. An award is acked
  * only when this world now holds the advancement — granted just now or already done. One the game refused
@@ -51,6 +54,11 @@ public final class AdvancementAwards {
         try {
             ServerPlayer player = server.getPlayerList().getPlayer(uuid);
             if (player == null) return;
+            if (RunIntegrity.isCheated(player)) {
+                LOGGER.info("[DungeonTrain] Advancement awards: {} pending for {}, held for a clean run (Free Play)",
+                    awards.size(), player.getName().getString());
+                return;
+            }
             List<String> held = applyTo(player, awards);
             if (!held.isEmpty()) TabGateways.sync(player);
             AdvancementAwardClient.ack(uuid, held);
