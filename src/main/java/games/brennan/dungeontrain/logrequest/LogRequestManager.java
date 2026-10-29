@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.compat.DiscordCommandHooks;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.discord.DiscordMarkdown;
 import games.brennan.dungeontrain.event.ContentModeMirror;
 import games.brennan.dungeontrain.event.DevMessageConsent;
 import games.brennan.dungeontrain.logrequest.DeliveryFailureReport.Reason;
@@ -219,7 +220,7 @@ public final class LogRequestManager {
 
     /** After an approved upload is posted: tag Brennan in the player's thread. */
     public static void pingDeveloper(ServerPlayer player) {
-        ping(player, "📎 Logs sent at your request — " + name(player),
+        ping(player, "📎 Logs sent at your request — " + DiscordMarkdown.escape(name(player)),
                 "They approved the developer log request; the files are in the bug report above.");
     }
 
@@ -229,7 +230,7 @@ public final class LogRequestManager {
      * one-line answer under his {@code /bug}, like every other outcome.
      */
     static void pingDeveloperUploadFailed(ServerPlayer player, Pending p) {
-        ping(player, "📎 Logs approved but didn't arrive — " + name(player),
+        ping(player, "📎 Logs approved but didn't arrive — " + DiscordMarkdown.escape(name(player)),
                 "They approved the developer log request, but the upload dropped before it reached "
                         + "Discord (a network drop or timeout on their side). Ask them to try /bug again.");
         if (p.reply() != null) {

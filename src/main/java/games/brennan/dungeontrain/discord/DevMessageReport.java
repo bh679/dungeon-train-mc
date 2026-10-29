@@ -30,7 +30,7 @@ public final class DevMessageReport {
     public static void postConsentRequested(ServerPlayer player) {
         if (!DungeonTrainConfig.isDevMessageConsentToDiscord()) return;
         try {
-            String title = "✉️ Consent requested — " + player.getGameProfile().getName();
+            String title = "✉️ Consent requested — " + DiscordMarkdown.escape(player.getGameProfile().getName());
             String description = "The Developer has a message waiting; the in-game consent prompt was shown.";
             List<DeathField> fields = List.of(new DeathField(
                     "Next", "The message appears in their in-game chat once they type @Dev to accept."));
@@ -44,7 +44,7 @@ public final class DevMessageReport {
     public static void postConsentAccepted(ServerPlayer player) {
         if (!DungeonTrainConfig.isDevMessageConsentToDiscord()) return;
         try {
-            String title = "✅ Consent accepted — " + player.getGameProfile().getName();
+            String title = "✅ Consent accepted — " + DiscordMarkdown.escape(player.getGameProfile().getName());
             String description = "They typed @Dev; the held Developer message(s) were delivered to their in-game chat.";
             DiscordService.get().postSurveyResponse(player, title, description, List.of());
         } catch (Throwable t) {

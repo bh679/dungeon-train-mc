@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu.blockvariant;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
+import games.brennan.dungeontrain.client.menu.WorldPanelInput;
 import games.brennan.dungeontrain.client.menu.MenuClickModifiers;
 import games.brennan.dungeontrain.client.menu.number.NumberField;
 import games.brennan.dungeontrain.client.menu.number.NumberPad;
@@ -18,7 +19,6 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -56,60 +56,34 @@ import java.util.List;
 )
 public final class BlockVariantMenuInputHandler {
 
-    private static boolean pressArmed;
-    private static boolean pressShift;
-    /** Which mouse button armed the press — only its own release dispatches. */
-    private static int pressButton;
-
     /**
      * Ceiling for a typed weight. The stepper has no cap of its own — this is a sanity bound on
      * the number pad so a mistyped digit run can't drown every other entry in the pool.
      */
     private static final int TYPED_WEIGHT_MAX = 1000;
 
+    private static final WorldPanelInput<BlockVariantMenu.Hit> INPUT = new WorldPanelInput<>(
+        BlockVariantMenu::hovered, hit -> hit.kind() == BlockVariantMenu.CellKind.NONE,
+        BlockVariantMenuInputHandler::shouldHandle, true, BlockVariantMenuInputHandler::dispatch);
+
     private BlockVariantMenuInputHandler() {}
 
+    /** The press: cancels the world interaction and arms when the crosshair is on a panel cell. */
     @SubscribeEvent
     public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
-        if (!shouldHandle()) return;
-        BlockVariantMenu.Hit hit = BlockVariantMenu.hovered();
-        if (hit.kind() == BlockVariantMenu.CellKind.NONE) return;
-        event.setCanceled(true);
-        event.setSwingHand(false);
-        pressArmed = true;
-        pressButton = event.isUseItem() ? GLFW.GLFW_MOUSE_BUTTON_RIGHT : GLFW.GLFW_MOUSE_BUTTON_LEFT;
-        pressShift = Minecraft.getInstance().screen == null
-            && (GLFW.glfwGetKey(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS
-                || GLFW.glfwGetKey(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS);
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player != null) {
-            mc.hitResult = BlockHitResult.miss(
-                mc.player.getEyePosition(),
-                Direction.UP,
-                mc.player.blockPosition()
-            );
-        }
-        if (mc.gameMode != null) mc.gameMode.stopDestroyBlock();
+        INPUT.onInteraction(event);
     }
 
+    /** The release of the armed button fires the hit under the crosshair. */
     @SubscribeEvent
     public static void onMouseButton(InputEvent.MouseButton.Pre event) {
-        if (!shouldHandle()) {
-            pressArmed = false;
-            return;
-        }
-        if (Minecraft.getInstance().screen != null) return;
-        int btn = event.getButton();
-        if (btn != GLFW.GLFW_MOUSE_BUTTON_LEFT && btn != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
-        if (event.getAction() != GLFW.GLFW_RELEASE) return;
-        if (!pressArmed || btn != pressButton) return;
-        pressArmed = false;
-        boolean shift = pressShift
-            || (event.getModifiers() & GLFW.GLFW_MOD_SHIFT) != 0;
+        INPUT.onMouseButton(event);
+    }
 
-        BlockVariantMenu.Hit hit = BlockVariantMenu.hovered();
-        if (hit.kind() == BlockVariantMenu.CellKind.NONE) return;
-        dispatch(hit, shift, btn);
+    /** Belt and braces: a left-click-block that slipped past the press cancel must not start block damage. */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
+        INPUT.onLeftClickBlock(event);
     }
 
     /**
@@ -148,14 +122,6 @@ public final class BlockVariantMenuInputHandler {
                  ENTRY_HALF_MODE, ENTRY_ACTIVE_MODE, ENTRY_DIFF_MIN, ENTRY_DIFF_MAX -> true;
             default -> false;
         };
-    }
-
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        if (!shouldHandle()) return;
-        BlockVariantMenu.Hit hit = BlockVariantMenu.hovered();
-        if (hit.kind() == BlockVariantMenu.CellKind.NONE) return;
-        event.setCanceled(true);
     }
 
     @SubscribeEvent
@@ -525,6 +491,11 @@ public final class BlockVariantMenuInputHandler {
             packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
                 games.brennan.dungeontrain.editor.VariantConditionEdits.MATCH_PREFIX
                     + (option == ConditionPopupLayout.MATCH_ALL ? "all" : "any"), 0);
+        } else if (section == ConditionPopupLayout.SECTION_NEGATE) {
+            // Is | Is not: place the entry when the target is one of the values, or when it is not.
+            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
+                games.brennan.dungeontrain.editor.VariantConditionEdits.NOT_PREFIX
+                    + (option == ConditionPopupLayout.NEGATE_NOT ? "on" : "off"), 0);
         } else if (section == ConditionPopupLayout.SECTION_GROUP) {
             packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
                 ConditionPopupLayout.groupToken(option), 0);

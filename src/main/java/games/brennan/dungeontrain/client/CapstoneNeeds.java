@@ -182,6 +182,6 @@ public final class CapstoneNeeds {
         String tabRoot = layout.complete().get(capstone.toString());
         if (tabRoot == null) return false;
         return tabRoot.equals(node.root().holder().id().toString())
-            && !TabCompleteAdvancements.completeCopies(layout).contains(id.toString());
+            && !TabCompleteAdvancements.leftOut(layout).contains(id.toString());
     }
 }

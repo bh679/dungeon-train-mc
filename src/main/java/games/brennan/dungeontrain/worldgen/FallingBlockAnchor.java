@@ -101,6 +101,18 @@ public final class FallingBlockAnchor {
     }
 
     /**
+     * The stable equivalent of {@code state} when it is {@link Fallable} and {@code below} would let it
+     * fall ({@link FallingBlock#isFree}, the same test {@code FallingBlock.tick} makes); {@code null}
+     * otherwise. Used by the fade erosion passes, which crumble terrain from below and would otherwise
+     * leave whole layers of sand and gravel hanging over the void, to collapse into a burst of
+     * falling-block entities once the chunks tick.
+     */
+    @Nullable
+    public static BlockState anchorIfUnsupported(BlockState state, BlockState below) {
+        return FallingBlock.isFree(below) ? stableEquivalent(state) : null;
+    }
+
+    /**
      * Runtime anchor — checks {@link Shipyards#of(ServerLevel)} to avoid
      * overwriting ship-owned voxels. No-op when the block at {@code pos}
      * isn't a {@link FallingBlock}.

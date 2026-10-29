@@ -95,11 +95,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: fifty-seven rows (five repeated on Performance), none of the conditional rows present")
+    @DisplayName("Plain client: sixty-three rows (five repeated on Performance), none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(57, rows.size());
+        assertEquals(63, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -124,6 +124,7 @@ final class ClientOptionsTabTest {
                         ClientOptionsTab.Row.BOOK_AUTHOR_CHAT,
                         ClientOptionsTab.Row.UPDATE_NOTICE_CHAT,
                         ClientOptionsTab.Row.OTHER_ADVANCEMENT_TABS,
+                        ClientOptionsTab.Row.OTHER_ADVANCEMENT_CARDS,
                         ClientOptionsTab.Row.PROTECT_OWN_PETS,
                         ClientOptionsTab.Row.CINEMATIC_HOTKEY,
                         ClientOptionsTab.Row.BACKPACK_BUTTON,
@@ -217,8 +218,8 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        // 56 rows, five of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
-        assertEquals(61, rows.size());
+        // 63 rows, five of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
+        assertEquals(67, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
@@ -229,10 +230,10 @@ final class ClientOptionsTabTest {
         assertEquals(List.of(ClientOptionsTab.Row.LIVESTREAM, ClientOptionsTab.Row.STREAM_GUI,
                         ClientOptionsTab.Row.STREAM_CHAT, ClientOptionsTab.Row.STREAM_AUDIO, ClientOptionsTab.Row.STREAM_NAME_TAG,
                         ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG, ClientOptionsTab.Row.LIVE_CHAT,
-                        ClientOptionsTab.Row.LIVE_MOMENT_ADVANCEMENTS, ClientOptionsTab.Row.LIVE_MOMENT_PHOTOS,
-                        ClientOptionsTab.Row.LIVE_MOMENT_BOOKS, ClientOptionsTab.Row.TWITCH_HINT, ClientOptionsTab.Row.LIVE_FEED_VIEWING, ClientOptionsTab.Row.STREAM_SIZE,
+                        ClientOptionsTab.Row.LIVE_CHAT_TRANSLATION, ClientOptionsTab.Row.LIVE_MOMENT_ADVANCEMENTS, ClientOptionsTab.Row.LIVE_MOMENT_PHOTOS,
+                        ClientOptionsTab.Row.LIVE_MOMENT_BOOKS, ClientOptionsTab.Row.TWITCH_HINT, ClientOptionsTab.Row.LIVE_FEED_VIEWING, ClientOptionsTab.Row.WORN_TV_STREAMS, ClientOptionsTab.Row.STREAMER_BOX_STREAMS, ClientOptionsTab.Row.STREAM_SIZE,
                         ClientOptionsTab.Row.STREAM_SAVE_BANDWIDTH,
-                        ClientOptionsTab.Row.HEAD_VIEWER_SIZE),
+                        ClientOptionsTab.Row.HEAD_VIEWER_SIZE, ClientOptionsTab.Row.HEAD_VIEWER_SIZE_STREAMING),
                 ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true));
         assertFalse(ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, false, true)
                 .contains(ClientOptionsTab.Row.LIVESTREAM));
@@ -279,6 +280,7 @@ final class ClientOptionsTabTest {
         // The two volumes lead, adjacent, so the width-aware packing pairs them on one line; Chat Log follows.
         List<ClientOptionsTab.Row> train = List.of(ClientOptionsTab.Row.TRAIN_VOLUME,
                 ClientOptionsTab.Row.WIND_VOLUME,
+                ClientOptionsTab.Row.WIND_EFFECTS,
                 ClientOptionsTab.Row.SNAPSHOT_CHAT_LOG,
                 ClientOptionsTab.Row.CUSTOM_CONTENT,
                 ClientOptionsTab.Row.SNAPSHOT_MAX_RES,

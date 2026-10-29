@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.EnchiridionAdvancements;
+import games.brennan.dungeontrain.advancement.TerraOmnia;
 import games.brennan.dungeontrain.compat.photo.PhotoPngCodec;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
 import io.github.mortuusars.exposure.ExposureClient;
@@ -18,6 +19,7 @@ import games.brennan.dungeontrain.discord.PhotoPaperComposite;
 import java.io.InputStream;
 import java.util.Optional;
 import net.minecraft.advancements.AdvancementProgress;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
@@ -34,6 +36,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The photo behind each Enchiridion camera advancement, kept on this computer.
@@ -56,9 +59,9 @@ public final class EarnedPhotos {
     private static final int RETRY_TICKS = 20;
 
     /** Where a photo goes: an advancement's own photo ({@code entry} empty), or one entry of its album. */
-    private record Slot(ResourceLocation advancement, String entry) {}
+    record Slot(ResourceLocation advancement, String entry) {}
 
-    private record Pending(String exposureId, ResourceLocation type, int ticksLeft, int nextTry) {}
+    record Pending(String exposureId, ResourceLocation type, int ticksLeft, int nextTry) {}
 
     private static final Map<Slot, Pending> PENDING = new LinkedHashMap<>();
 
@@ -75,6 +78,7 @@ public final class EarnedPhotos {
         if (advancement == null || exposureId == null || exposureId.isBlank()) return;
         ResourceLocation album = entry == null || entry.isEmpty() ? null : albumOf(advancement);
         if (album != null && EnchiridionAdvancements.isBiomeAlbum(album.getPath())) PHOTOGRAPHED_BIOMES.add(entry);
+        if (album != null && EnchiridionAdvancements.isCountAlbum(album.getPath())) countLogged(album.getPath(), entry);
         PENDING.put(new Slot(advancement, entry == null ? "" : entry),
                 new Pending(exposureId, type, FETCH_TIMEOUT_TICKS, RETRY_TICKS));
     }
@@ -140,20 +144,29 @@ public final class EarnedPhotos {
 
     /**
      * The album entries this run's progress backs: an animal or mob counts once its criterion is ticked,
-     * a biome once this world's photographed set has it. The album folder outlives worlds (and Free Play
+     * a biome once this world's photographed set has it, a counted photo while its number is within this
+     * world's count for its category (a later run reaching that number overwrites it). The album folder outlives worlds (and Free Play
      * runs, which never carry progress over), so a photo from a run that no longer counts stays hidden
      * until the subject is photographed again here.
      */
     public static List<Entry> visibleEntries(ResourceLocation advancement, AdvancementProgress progress) {
         List<Entry> all = entries(advancement);
         if (all.isEmpty()) return all;
-        boolean biomes = EnchiridionAdvancements.isBiomeAlbum(albumOf(advancement).getPath());
+        String album = albumOf(advancement).getPath();
+        boolean biomes = EnchiridionAdvancements.isBiomeAlbum(album);
+        String category = EnchiridionAdvancements.countCategoryOf(album);
         List<Entry> out = new ArrayList<>(all.size());
         for (Entry e : all) {
-            boolean counts = biomes
-                    ? PHOTOGRAPHED_BIOMES.contains(e.id().toString())
-                    : progress != null && progress.getCriterion(e.id().toString()) != null
-                            && progress.getCriterion(e.id().toString()).isDone();
+            boolean counts;
+            if (category != null) {
+                int n = EnchiridionAdvancements.countEntryNumber(e.id().getPath());
+                counts = n >= 1 && n <= PHOTO_COUNTS.getOrDefault(category, 0);
+            } else {
+                counts = biomes
+                        ? PHOTOGRAPHED_BIOMES.contains(e.id().toString())
+                        : progress != null && progress.getCriterion(e.id().toString()) != null
+                                && progress.getCriterion(e.id().toString()).isDone();
+            }
             if (counts) out.add(e);
         }
         return out;
@@ -166,6 +179,24 @@ public final class EarnedPhotos {
     public static void setPhotographedBiomes(List<String> biomes) {
         PHOTOGRAPHED_BIOMES.clear();
         PHOTOGRAPHED_BIOMES.addAll(biomes);
+    }
+
+    /** Photos counted per category in this world, from the server ({@code PhotoBiomesPacket}) plus each one logged. */
+    private static final Map<String, Integer> PHOTO_COUNTS = new java.util.HashMap<>();
+
+    /** The server's photo counts for this world — sent on join and respawn. */
+    public static void setPhotoCounts(Map<String, Integer> counts) {
+        PHOTO_COUNTS.clear();
+        PHOTO_COUNTS.putAll(counts);
+    }
+
+    /** A counted photo arrived for {@code album}: this world's count is at least its number now. */
+    private static void countLogged(String album, String entry) {
+        String category = EnchiridionAdvancements.countCategoryOf(album);
+        ResourceLocation id = ResourceLocation.tryParse(entry);
+        if (category == null || id == null) return;
+        int n = EnchiridionAdvancements.countEntryNumber(id.getPath());
+        if (n > 0) PHOTO_COUNTS.merge(category, n, Math::max);
     }
 
     /** The picture for {@code advancement}'s tooltip: its own photo once earned, else the album's latest that counts. */
@@ -187,12 +218,25 @@ public final class EarnedPhotos {
         Screen parent = mc.screen;
         ResourceLocation album = albumOf(advancement);
         if (album != null) {
-            boolean biomes = EnchiridionAdvancements.isBiomeAlbum(album.getPath());
-            List<Entry> slots = albumSlots(advancement, progress, biomes);
-            mc.execute(() -> mc.setScreen(new EarnedPhotoAlbumScreen(parent, title, slots, biomes)));
+            EarnedPhotoAlbumScreen.Kind kind = EnchiridionAdvancements.isBiomeAlbum(album.getPath())
+                    ? EarnedPhotoAlbumScreen.Kind.BIOME
+                    : EnchiridionAdvancements.isCountAlbum(album.getPath())
+                            ? EarnedPhotoAlbumScreen.Kind.COUNT : EarnedPhotoAlbumScreen.Kind.ENTITY;
+            List<Entry> slots = albumSlots(advancement, progress, kind);
+            // A count album with nothing kept yet (photos from before albums) falls back to the tier's own photo.
+            if (kind == EarnedPhotoAlbumScreen.Kind.COUNT && slots.isEmpty()) return openOwn(advancement, title, progress);
+            mc.execute(() -> mc.setScreen(new EarnedPhotoAlbumScreen(parent, title, slots, kind)));
             return true;
         }
+        return openOwn(advancement, title, progress);
+    }
+
+    /** Open {@code advancement}'s own photo once earned; false when there is none. */
+    private static boolean openOwn(ResourceLocation advancement, net.minecraft.network.chat.Component title,
+                                   AdvancementProgress progress) {
         if (progress == null || !progress.isDone() || !has(advancement)) return false;
+        Minecraft mc = Minecraft.getInstance();
+        Screen parent = mc.screen;
         mc.execute(() -> mc.setScreen(new EarnedPhotoScreen(parent, title, file(advancement))));
         return true;
     }
@@ -200,14 +244,19 @@ public final class EarnedPhotos {
     /**
      * Every slot of {@code advancement}'s album: the photos this run counts, then an empty slot
      * ({@code file} null) for each still missing. A creature collection lists its criteria in order; a
-     * biome tier asks for its target number, Coffee Table Book for every biome there is.
+     * biome tier asks for its target number, Coffee Table Book for every biome there is. A count tier
+     * lists only the photos kept, never its missing ones ({@link #countSlots}).
      */
-    static List<Entry> albumSlots(ResourceLocation advancement, AdvancementProgress progress, boolean biomes) {
+    static List<Entry> albumSlots(ResourceLocation advancement, AdvancementProgress progress,
+                                  EarnedPhotoAlbumScreen.Kind kind) {
         List<Entry> visible = visibleEntries(advancement, progress);
         List<Entry> out = new ArrayList<>();
-        if (biomes) {
-            out.addAll(visible);
-            for (int i = visible.size(); i < biomeTarget(advancement); i++) out.add(new Entry(null, null));
+        if (kind == EarnedPhotoAlbumScreen.Kind.COUNT) return countSlots(visible);
+        if (kind == EarnedPhotoAlbumScreen.Kind.BIOME) {
+            Set<ResourceLocation> every = everyBiome(advancement);
+            for (Entry e : visible) if (every == null || every.contains(e.id())) out.add(e);
+            int target = every != null ? every.size() : biomeTarget(advancement);
+            for (int i = out.size(); i < target; i++) out.add(new Entry(null, null));
             return out;
         }
         Map<String, Entry> byId = new LinkedHashMap<>();
@@ -224,18 +273,37 @@ public final class EarnedPhotos {
         return out;
     }
 
+    /**
+     * Only the photos kept, in the order they were counted — no empty slots, so a count album never
+     * gives away how many photos its hidden tiers ask for.
+     */
+    private static List<Entry> countSlots(List<Entry> visible) {
+        List<Entry> out = new ArrayList<>(visible);
+        out.sort(java.util.Comparator.comparingInt(e -> EnchiridionAdvancements.countEntryNumber(e.id().getPath())));
+        return out;
+    }
+
     private static int biomeTarget(ResourceLocation advancement) {
         Integer target = EnchiridionAdvancements.BIOME_TIER_TARGETS.get(advancement.getPath());
-        if (target != null) return target;
+        return target != null ? target : 0;
+    }
+
+    /**
+     * Coffee Table Book's biomes: the ones Terra Omnia asks for ({@link TerraOmnia#ordered}), so a biome no
+     * rider can reach never holds a slot. {@code null} for a biome tier with a target number instead.
+     */
+    private static Set<ResourceLocation> everyBiome(ResourceLocation advancement) {
+        if (EnchiridionAdvancements.BIOME_TIER_TARGETS.containsKey(advancement.getPath())) return null;
         var level = Minecraft.getInstance().level;
-        return level == null ? 0
-                : level.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.BIOME).size();
+        return level == null ? Set.of()
+                : TerraOmnia.ordered(level.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.BIOME)).keySet();
     }
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         if (PENDING.isEmpty()) return;
         List<Slot> done = new ArrayList<>();
+        Map<Photo, List<Slot>> ready = new LinkedHashMap<>();
         for (Map.Entry<Slot, Pending> e : new ArrayList<>(PENDING.entrySet())) {
             Pending p = e.getValue();
             if (p.ticksLeft() <= 1) {
@@ -247,64 +315,121 @@ public final class EarnedPhotos {
                 PENDING.put(e.getKey(), new Pending(p.exposureId(), p.type(), p.ticksLeft() - 1, p.nextTry() - 1));
                 continue;
             }
-            if (trySave(e.getKey(), p.exposureId(), p.type())) {
-                done.add(e.getKey());
-            } else {
-                PENDING.put(e.getKey(), new Pending(p.exposureId(), p.type(), p.ticksLeft() - 1, RETRY_TICKS));
+            ready.computeIfAbsent(photoOf(p), k -> new ArrayList<>()).add(e.getKey());
+        }
+        for (Map.Entry<Photo, List<Slot>> group : ready.entrySet()) {
+            // One photo may back several advancements at once: it is read and encoded once for all of them.
+            if (tryKeep(group.getKey(), group.getValue())) {
+                done.addAll(group.getValue());
+                continue;
+            }
+            for (Slot slot : group.getValue()) {
+                Pending p = PENDING.get(slot);
+                PENDING.put(slot, new Pending(p.exposureId(), p.type(), p.ticksLeft() - 1, RETRY_TICKS));
             }
         }
         done.forEach(PENDING::remove);
     }
 
+    /** One exposure on one paper: the unit of work, however many slots want it. */
+    record Photo(String exposureId, ResourceLocation type) {}
+
+    /** The photo a pending slot waits for; two slots earned by one shot share it. */
+    static Photo photoOf(Pending pending) {
+        return new Photo(pending.exposureId(), pending.type() == null ? PhotographType.REGULAR.id() : pending.type());
+    }
+
+    /** The pixels read off the render thread, ready to lay on paper and encode anywhere. */
+    private record Picture(int width, int height, int[] argb, Optional<int[]> paper) {}
+
     /**
-     * Try to fetch and keep the image; false while it isn't there yet. The shot reaches the server a
-     * moment after the advancement is earned, so an early ask comes back "not found" — Exposure caches
-     * that answer, so it is cleared before the next ask.
+     * Try to read the image and hand it off to be kept for every slot in {@code slots}; false while it
+     * isn't there yet. The shot reaches the server a moment after the advancement is earned, so an
+     * early ask comes back "not found" — Exposure caches that answer, so it is cleared before the next
+     * ask. Only the read touches Exposure's caches, so only the read runs here, on the render thread;
+     * laying the picture on its paper, encoding the PNG and writing it took a few hundred milliseconds a
+     * frame and now run in the background.
      */
-    private static boolean trySave(Slot slot, String exposureId, ResourceLocation type) {
-        ResourceLocation advancement = slot.advancement();
+    private static boolean tryKeep(Photo photo, List<Slot> slots) {
+        Picture picture;
         try {
-            RequestedPalettedExposure requested = ExposureClient.exposureStore().getOrRequest(exposureId);
-            if (requested.isError()) {
-                ExposureClient.exposureStore().refresh(exposureId);
-                ExposureClient.renderedExposures().clearCacheOf(exposureId);
-                return false;
-            }
-            if (requested.getData().isEmpty()) return false;
-            Frame frame = Frame.create().setIdentifier(ExposureIdentifier.id(exposureId)).toImmutable();
-            RenderableImage image = ExposureClient.renderedExposures().getOrCreate(frame);
-            if (image == RenderableImage.MISSING) {
-                ExposureClient.renderedExposures().clearCacheOf(exposureId);
-                return false;
-            }
-            if (image.isEmpty() || image.width() <= 0 || image.height() <= 0) return false;
-            PhotographStyle style = PhotographStyles.get(new PhotographType(type == null ? PhotographType.REGULAR.id() : type));
-            RenderableImage styled = style.process(image);
-            int w = styled.width(), h = styled.height();
-            int[] argb = new int[w * h];
-            for (int y = 0; y < h; y++) {
-                for (int x = 0; x < w; x++) argb[y * w + x] = styled.getPixelARGB(x, y) | 0xFF000000;
-            }
-            Optional<int[]> paper = paper(style.paperTexture());
-            if (paper.isPresent()) {
-                PhotoPaperComposite.Composite print = PhotoPaperComposite.compose(paper.get(), argb, w, h);
+            picture = read(photo);
+        } catch (RuntimeException ex) {
+            LOGGER.warn("[DungeonTrain] Couldn't read the photo {} yet: {}", photo.exposureId(), ex.toString());
+            return false;
+        }
+        if (picture == null) return false;
+        List<Slot> copy = List.copyOf(slots);
+        Util.backgroundExecutor().execute(() -> keepInBackground(photo, picture, copy));
+        return true;
+    }
+
+    /** The styled pixels and paper for {@code photo}, or {@code null} while Exposure has no image yet. */
+    private static Picture read(Photo photo) {
+        String exposureId = photo.exposureId();
+        RequestedPalettedExposure requested = ExposureClient.exposureStore().getOrRequest(exposureId);
+        if (requested.isError()) {
+            ExposureClient.exposureStore().refresh(exposureId);
+            ExposureClient.renderedExposures().clearCacheOf(exposureId);
+            return null;
+        }
+        if (requested.getData().isEmpty()) return null;
+        Frame frame = Frame.create().setIdentifier(ExposureIdentifier.id(exposureId)).toImmutable();
+        RenderableImage image = ExposureClient.renderedExposures().getOrCreate(frame);
+        if (image == RenderableImage.MISSING) {
+            ExposureClient.renderedExposures().clearCacheOf(exposureId);
+            return null;
+        }
+        if (image.isEmpty() || image.width() <= 0 || image.height() <= 0) return null;
+        ResourceLocation type = photo.type();
+        PhotographStyle style = PhotographStyles.get(new PhotographType(type == null ? PhotographType.REGULAR.id() : type));
+        RenderableImage styled = style.process(image);
+        int w = styled.width(), h = styled.height();
+        int[] argb = new int[w * h];
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) argb[y * w + x] = styled.getPixelARGB(x, y) | 0xFF000000;
+        }
+        return new Picture(w, h, argb, paper(style.paperTexture()));
+    }
+
+    /** Off the render thread: lay the picture on its paper, encode it once, write it for every slot. */
+    private static void keepInBackground(Photo photo, Picture picture, List<Slot> slots) {
+        Minecraft mc = Minecraft.getInstance();
+        try {
+            int w = picture.width(), h = picture.height();
+            int[] argb = picture.argb();
+            if (picture.paper().isPresent()) {
+                PhotoPaperComposite.Composite print = PhotoPaperComposite.compose(picture.paper().get(), argb, w, h);
                 w = print.width();
                 h = print.height();
                 argb = print.argb();
             }
+            byte[] png = PhotoPngCodec.encodeArgb(w, h, argb);
+            List<Slot> written = new ArrayList<>(slots.size());
+            for (Slot slot : slots) {
+                Path target = slot.entry().isEmpty() ? file(slot.advancement()) : entryFile(slot.advancement(), slot.entry());
+                if (target == null) continue;
+                Files.createDirectories(target.getParent());
+                Files.write(target, png);
+                written.add(slot);
+            }
+            int width = w, height = h;
+            mc.execute(() -> noteKept(photo.exposureId(), width, height, written));
+        } catch (IOException | RuntimeException ex) {
+            LOGGER.warn("[DungeonTrain] Couldn't keep the photo {} for {}: {}", photo.exposureId(), slots, ex.toString());
+        }
+    }
+
+    /** Back on the client thread: the listings and thumbnails learn about each file written. */
+    private static void noteKept(String exposureId, int w, int h, List<Slot> written) {
+        for (Slot slot : written) {
+            ResourceLocation advancement = slot.advancement();
             Path target = slot.entry().isEmpty() ? file(advancement) : entryFile(advancement, slot.entry());
-            if (target == null) return true;
-            Files.createDirectories(target.getParent());
-            Files.write(target, PhotoPngCodec.encodeArgb(w, h, argb));
             if (slot.entry().isEmpty()) kept().add(fileName(advancement));
             else ALBUMS.remove(albumOf(advancement));
             EarnedPhotoThumbnails.forget(target);
             LOGGER.info("[DungeonTrain] Kept photo {} ({}x{}) for {}{}", exposureId, w, h, advancement,
                     slot.entry().isEmpty() ? "" : " [" + slot.entry() + "]");
-            return true;
-        } catch (IOException | RuntimeException ex) {
-            LOGGER.warn("[DungeonTrain] Couldn't keep the photo for {} yet: {}", advancement, ex.toString());
-            return false;
         }
     }
 

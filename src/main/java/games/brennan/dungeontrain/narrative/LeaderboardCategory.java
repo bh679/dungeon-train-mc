@@ -135,7 +135,11 @@ public enum LeaderboardCategory {
     // The least time aboard a player took to earn Everything Burrito, since first played or their last
     // reset (BurritoClock). The one board where LOWER wins: the relay sends it fastest first, and the
     // book renders rows in the order given. Scope.NONE because an attempt spans many lives.
-    BURRITO_FASTEST("burrito_fastest", "burrito_fastest", "Fastest Everything Burrito", Scope.NONE, Format.DURATION);
+    BURRITO_FASTEST("burrito_fastest", "burrito_fastest", "Fastest Everything Burrito", Scope.NONE, Format.DURATION),
+    // The least time aboard a player took to earn The Challenge (AllAtOnceAdvancement), timed over the
+    // one life that earned it: the life's own clock (PlayerRunState#trainTimeTicks). Lower wins like
+    // the burrito. Scope.NONE, not RUN: it is the time of a single feat, not a counter a life builds.
+    CHALLENGE_FASTEST("challenge_fastest", "challenge_fastest", "Fastest Challenge", Scope.NONE, Format.DURATION);
 
     /**
      * Which span of play a board measures — the flag that turns a pair of boards into one subject

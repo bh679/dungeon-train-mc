@@ -117,6 +117,7 @@ public final class AdvancementRevocations {
                 // First time on this install: strike the id from every profile partition. Counts as
                 // applied even if no partition held it, so the ack says this install has caught up.
                 GlobalAchievementStore.removeEverywhere(player.getUUID(), r.adv());
+                GlobalCriteriaProgress.removeEverywhere(player.getUUID(), r.adv());
                 markApplied(dir, r.id());
                 changed = true;
             }

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import games.brennan.dungeontrain.editor.GrowthPass;
 import games.brennan.dungeontrain.editor.ConnectPass;
 import com.mojang.logging.LogUtils;
@@ -435,7 +436,7 @@ public final class CarriagePlacer {
             // returns "portal", "portal_middle" and null, and all three used to fall through both
             // arms in silence — which is how a 264-cell portal sidecar sat unapplied without ever
             // saying so. If a sidecar was authored and nothing laid it, that is worth a line.
-            CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, variantDims(variant, dims));
+            VariantDoc sidecar = CarriageVariantBlocks.loadFor(variant, variantDims(variant, dims));
             if (!sidecar.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] Variant sidecar for '{}' ignored — {} basis has no "
                         + "per-position overlay ({} cells dropped).",
@@ -801,7 +802,7 @@ public final class CarriagePlacer {
                                                CarriageVariant variant, CarriageDims dims,
                                                long seed, int carriageIndex) {
         CarriageDims sidecarDims = variantDims(variant, dims);
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, sidecarDims);
+        VariantDoc sidecar = CarriageVariantBlocks.loadFor(variant, sidecarDims);
         if (sidecar.isEmpty()) return;
         int spawned = 0;
         try (VariantConditions.Scope conds = VariantConditions.open(
@@ -993,7 +994,7 @@ public final class CarriagePlacer {
         CarriageDims dims, long seed, int carriageIndex
     ) {
         CarriageDims sidecarDims = variantDims(variant, dims);
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, sidecarDims);
+        VariantDoc sidecar = CarriageVariantBlocks.loadFor(variant, sidecarDims);
         if (sidecar.isEmpty()) return;
         java.util.function.Predicate<BlockPos> within = GrowthPass.inside(origin,
             sidecarDims.length(), sidecarDims.height(), sidecarDims.width());
@@ -1015,7 +1016,7 @@ public final class CarriagePlacer {
                     } else {
                         games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
                             level, world, w.state(), w.entry().blockEntityNbt(),
-                            "carriage:" + variant.id(), w.localPos(), seed, carriageIndex,
+                            games.brennan.dungeontrain.editor.BlockVariantPlot.carriageKey(variant.id()), w.localPos(), seed, carriageIndex,
                             w.entry().linkedLootPrefabId());
                         ConnectPass.note(level, world, w.entry().connect(), w.state());
                         GrowthPass.note(level, world, w.entry(), w.state(), w.localPos(), seed, carriageIndex, within);

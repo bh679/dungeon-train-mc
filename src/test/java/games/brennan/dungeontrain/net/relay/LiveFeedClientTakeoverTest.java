@@ -20,6 +20,20 @@ class LiveFeedClientTakeoverTest {
     }
 
     @Test
+    void readsARemovedOffer() {
+        LiveFeedClient.Takeover t = parse(200, "{\"takeover\":{\"id\":\"0123456789abcdef\",\"from\":\"Alice\",\"untilMs\":42000,\"reason\":\"removed\"}}");
+        assertEquals(new LiveFeedClient.Takeover("0123456789abcdef", "Alice", 42000, true), t);
+        LiveFeedClient.Takeover died = parse(200, "{\"takeover\":{\"id\":\"0123456789abcdef\",\"from\":\"Alice\",\"untilMs\":42000,\"reason\":\"died\"}}");
+        assertEquals(false, died.removed());
+    }
+
+    @Test
+    void statusAsksForRemovedOffers() {
+        assertEquals("/live/status?removedOffer=1", LiveFeedClient.withRemovedOffer("/live/status"));
+        assertEquals("/live/status?viewer=x&lb=1&removedOffer=1", LiveFeedClient.withRemovedOffer("/live/status?viewer=x&lb=1"));
+    }
+
+    @Test
     void noOfferFromAnOlderRelayOrABadOne() {
         assertNull(parse(200, "{\"ok\":true,\"live\":true}"));
         assertNull(parse(200, "{\"takeover\":{\"id\":\"../x\",\"from\":\"A\",\"untilMs\":5}}"));

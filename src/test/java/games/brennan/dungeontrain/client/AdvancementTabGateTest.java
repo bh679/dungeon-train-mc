@@ -29,6 +29,15 @@ class AdvancementTabGateTest {
     }
 
     @Test
+    @DisplayName("cards: only advancements in a dungeontrain tab keep their card while the option is on")
+    void hidesOtherCards() {
+        assertTrue(AdvancementTabGate.isHiddenOtherCard(rl("minecraft:story/root"), true));
+        assertTrue(AdvancementTabGate.isHiddenOtherCard(rl("adventureitemnames:root"), true));
+        assertFalse(AdvancementTabGate.isHiddenOtherCard(rl("dungeontrain:dungeon_train/root"), true));
+        assertFalse(AdvancementTabGate.isHiddenOtherCard(rl("minecraft:story/root"), false));
+    }
+
+    @Test
     @DisplayName("the editor tree is recognised by its path")
     void editorTree() {
         assertTrue(AdvancementTabGate.isEditorAdvancement(rl("dungeontrain:editor/root")));

@@ -372,14 +372,13 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
             if (!live.by().isEmpty()) {
                 byGiver.computeIfAbsent(live.by(), k -> new ArrayList<>()).add(Component.translatable(r.nameKey()));
             }
-            long from = live.activeUntilMs();
-            for (String who : live.queuedBy()) {
+            for (int i = 0; i < live.queuedBy().size(); i++) {
+                String who = live.queuedBy().get(i);
                 if (!who.isEmpty()) {
                     byGiver.computeIfAbsent(who, k -> new ArrayList<>()).add(Component.translatable(
                             "gui.dungeontrain.rewards.thanks.later", Component.translatable(r.nameKey()),
-                            ContributePanel.shortDate(from)));
+                            ContributePanel.shortDate(CommunityRewards.queuedStartMs(live.activeUntilMs(), r, i))));
                 }
-                from += CommunityRewards.MONTH_MS;
             }
         }
         if (byGiver.isEmpty()) return Component.translatable("gui.dungeontrain.rewards.thanks.none");

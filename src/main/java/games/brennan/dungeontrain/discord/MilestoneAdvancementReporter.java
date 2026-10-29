@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.discord;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.AllAtOnceAdvancement;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
@@ -19,9 +20,10 @@ import java.util.Set;
 /**
  * Announces the rarest advancements in the public passenger log — and pings the maintainer.
  *
- * <p>Three earns are worth hearing about the moment they happen: the "Everything Burrito"
+ * <p>Four earns are worth hearing about the moment they happen: the "Everything Burrito"
  * capstone ({@link CompletionistAdvancement}), "It's Not That Simple" — the one after it
- * ({@link StartAgainAdvancement}) — and "The Long Run", 250,000 m in a single life. Each posts a
+ * ({@link StartAgainAdvancement}) — "The Long Run", 250,000 m in a single life, and "The
+ * Challenge", every challenge kept at once for a whole life ({@link AllAtOnceAdvancement}). Each posts a
  * top-level report to the same public feed as the death manifest and remote-echo stories
  * ({@link DungeonTrain#manifestWebhookOverride()}), carrying an @-mention of
  * {@link DungeonTrain#BRENNAN_DISCORD_ID} through Discord Presence's trusted allow-list.</p>
@@ -41,14 +43,15 @@ public final class MilestoneAdvancementReporter {
 
     /** The advancements the passenger log hears about. */
     static final Set<ResourceLocation> MILESTONES = Set.of(
-            CompletionistAdvancement.ID, StartAgainAdvancement.ID, THE_LONG_RUN_ID);
+            CompletionistAdvancement.ID, StartAgainAdvancement.ID, THE_LONG_RUN_ID,
+            AllAtOnceAdvancement.THE_CHALLENGE);
 
     /** Gold, like a challenge frame — distinct from the death-report red and the echo story's blue. */
     static final int EMBED_COLOR = 0xFFC107;
 
     private MilestoneAdvancementReporter() {}
 
-    /** Is {@code id} one of the three announced advancements? */
+    /** Is {@code id} one of the four announced advancements? */
     static boolean isMilestone(ResourceLocation id) {
         return MILESTONES.contains(id);
     }
@@ -109,7 +112,8 @@ public final class MilestoneAdvancementReporter {
 
     /** {@code "🥇 Steve — first passenger ever to earn Cross-Country"}. */
     static String firstEverTitle(String playerName, String advancementTitle) {
-        return "🥇 " + playerName + " — first passenger ever to earn " + advancementTitle;
+        return "🥇 " + DiscordMarkdown.escape(playerName) + " — first passenger ever to earn "
+                + DiscordMarkdown.escape(advancementTitle);
     }
 
     /** The lang key of an advancement's hint — {@code dungeon_train/the_long_run} → {@code advancements.dungeontrain.dungeon_train.the_long_run.hint}. */
@@ -126,7 +130,7 @@ public final class MilestoneAdvancementReporter {
 
     /** {@code "🏆 Steve earned Everything Burrito"}. */
     static String title(String playerName, String advancementTitle) {
-        return "🏆 " + playerName + " earned " + advancementTitle;
+        return "🏆 " + DiscordMarkdown.escape(playerName) + " earned " + DiscordMarkdown.escape(advancementTitle);
     }
 
     /** The advancement's hint alone, stripped — {@code ""} when it has none. */

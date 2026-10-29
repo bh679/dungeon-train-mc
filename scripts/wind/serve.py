@@ -117,8 +117,16 @@ def validate_profile(profile: object) -> dict:
         "visualLeadTicks": int(_number(profile, "visualLeadTicks", "profile")),
         "multipliers": {k: _number(mult, k, "multipliers") for k in MULT_FIELDS},
         "weight": {k: _number(profile.get("weight") or {}, k, "weight") for k in WEIGHT_FIELDS},
+        "reverseBandShift": _reverse_band_shift(profile.get("reverseBandShift", 7)),
         "curves": {name: _curve(curves.get(name), name) for name in CURVE_NAMES},
     }
+
+
+def _reverse_band_shift(raw: object) -> int:
+    """Behind spawn, the Nth band met walking -X plays the wind of forward band N + this."""
+    if isinstance(raw, bool) or not isinstance(raw, (int, float)) or raw < 0 or raw != int(raw):
+        raise ValueError("profile.reverseBandShift must be a whole number >= 0")
+    return int(raw)
 
 
 def render_profile(profile: dict) -> str:

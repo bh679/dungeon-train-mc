@@ -5,15 +5,8 @@ import games.brennan.dungeontrain.client.menu.MenuEntryDispatcher;
 import games.brennan.dungeontrain.client.menu.number.NumberStepper;
 
 import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
-import games.brennan.dungeontrain.client.builder.BuildRenderCapture;
-import games.brennan.dungeontrain.client.builder.BuilderProfilePrefabConflictScreen;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.builder.BuilderMode;
-import games.brennan.dungeontrain.builder.BuilderNewOptions;
-import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
-import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
-import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
-import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.builder.BuilderTilePreviews;
 import games.brennan.dungeontrain.client.builder.RelayBuildPreviews;
@@ -22,17 +15,12 @@ import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.ConfirmScreen;
 import games.brennan.dungeontrain.client.menu.CommandMenuKeyBindings;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
-import games.brennan.dungeontrain.client.menu.CreatorParentPickerScreen;
 import games.brennan.dungeontrain.client.menu.EditorSaveStatus;
 import games.brennan.dungeontrain.client.menu.HotbarPassthrough;
 import games.brennan.dungeontrain.client.menu.MenuClickModifiers;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
-import games.brennan.dungeontrain.net.BuilderProfileDownloadPacket;
-import games.brennan.dungeontrain.client.builder.BuilderSubmitNoteScreen;
-import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
-import games.brennan.dungeontrain.net.BuilderProfileDownloadResultPacket;
 import games.brennan.dungeontrain.net.BuilderProfileRequestPacket;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -47,7 +35,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -73,8 +60,6 @@ public final class EditorGuiScreen extends Screen {
      * the editor. Running out is not a failure to report — it is the screen admitting it cannot
      * tell whether the player got there, and handing the button back so they can try again.</p>
      */
-    /** Long enough for the server to have asked the relay and been answered. */
-    private static final int SUBMIT_REFRESH_TICKS = 20;
     static final int GOING_TIMEOUT_TICKS = 200;
     /**
      * How long a Load is given before the button comes back and the note says it did not land.
@@ -99,6 +84,7 @@ public final class EditorGuiScreen extends Screen {
     private final InlineEdit inlineEdit = new InlineEdit();
     private final EditorModalHost modal = new EditorModalHost(this::onClose, this::afterCommand);
     private final EditorCreatorSearch search = new EditorCreatorSearch();
+    private final EditorCreatorLoadController creator = new EditorCreatorLoadController(new CreatorHost());
 
     private EditBox filterBox;
     private InventoryEditorLayout layout;
@@ -109,29 +95,6 @@ public final class EditorGuiScreen extends Screen {
     private long lastClickMillis;
     private VariantKey previewKey;
     private int refreshTicks;
-    /** What the last press of Load came back with, already worded for the player. */
-    private String creatorNote;
-    /** Whether the next press should bring the build down under a name this install is not using. */
-    private boolean loadAsCopy;
-    private List<String> takenNames = List.of();
-    /** The build being walked to, while the walk is under way. */
-    private EditorCreatorBuilds.Landed goingTo;
-    private int goingTicks;
-    /** Whether a Load has gone out and not yet been answered — the button is greyed meanwhile. */
-    private boolean loading;
-    private int loadingTicks;
-    /**
-     * Ticks until the listing is asked for again after a submit or a withdraw.
-     *
-     * <p>Not immediate: the press goes to the server, which asks the relay, which answers — a re-read
-     * fired in the same frame comes back with the row exactly as it was and reads as the button
-     * having done nothing.</p>
-     */
-    private int submitTicks;
-    /** Which version of the selected build the preview shows: 0 is the build as it is now. */
-    private int previewSeq;
-    /** The relay row the preview is paging, so a change of selection can reset the paging. */
-    private int previewRelayId;
     /**
      * The selection as of the last frame, and whether it had unsaved work then — so a save of it
      * (dirty turning clean) can drop its baked model. The model is baked from the file once per
@@ -184,7 +147,7 @@ public final class EditorGuiScreen extends Screen {
         // The toolbar's Submit icon says whether the selected build is on the train, which only the
         // player's own listing knows. Asked on the way in so the icon is right before it is pressed.
         DungeonTrainNet.sendToServer(new BuilderProfileRequestPacket());
-        BuilderProfileState.listenForDownloads(this::onDownloadResult);
+        BuilderProfileState.listenForDownloads(creator::onDownloadResult);
     }
 
     @Override
@@ -245,51 +208,9 @@ public final class EditorGuiScreen extends Screen {
     public void tick() {
         super.tick();
         search.tick();
-        tickWalk();
-        tickLoad();
+        creator.tick();
         if (refreshTicks > 0 && --refreshTicks == 0) {
             EditorSaveStatus.request();
-        }
-        if (submitTicks > 0 && --submitTicks == 0) {
-            EditorCreatorBuilds.refresh();
-        }
-    }
-
-    /**
-     * Watch a walk that is under way: close the screen the moment the player is standing in the
-     * build, and hand the button back if they never arrive.
-     *
-     * <p>Closing is the point of pressing Go here — the build is a plot in the world and the menu is
-     * in front of it. Watching where the player actually is, rather than closing on the press,
-     * means the menu stays up when the walk did not happen (no permission, a plot that would not
-     * stamp) instead of leaving them looking at the wrong place with nothing said.</p>
-     */
-    private void tickWalk() {
-        if (goingTo == null) return;
-        if (EditorTemplateJumpBridge.arrived(goingTo.kind(), goingTo.id(), goingTo.subKind())) {
-            goingTo = null;
-            this.onClose();
-            return;
-        }
-        if (--goingTicks <= 0) goingTo = null;
-    }
-
-    /**
-     * Watch a Load that is under way: hand the button back, and say so, if the server never answers.
-     *
-     * <p>Every server path answers with an outcome — this only fires when that answer was lost (a
-     * disconnect, a server that crashed mid-install). Without it the button would stay greyed for
-     * the life of the screen with nothing to say why.</p>
-     */
-    private void tickLoad() {
-        if (!loading) return;
-        if (--loadingTicks <= 0) {
-            loading = false;
-            // Given up on: an answer that turns up after this is dropped rather than replayed.
-            lastDownload = null;
-            lastStageRelayId = -1;
-            autoloadPending.clear();
-            creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_LOAD_FAILED);
         }
     }
 
@@ -393,13 +314,13 @@ public final class EditorGuiScreen extends Screen {
         } else if (EditorCreatorBuilds.active()) {
             // A relay row is not a template: none of the detail pane's controls apply to one, so
             // the pane that has no controls stands in for it rather than eight disabled buttons.
-            BuilderProfilePacket.Entry picked = selectedCreatorBuild();
-            trackVersionsOf(picked == null ? 0 : picked.relayId(),
+            BuilderProfilePacket.Entry picked = EditorCreatorLoadController.selected();
+            creator.trackVersionsOf(picked == null ? 0 : picked.relayId(),
                 EditorCreatorBuilds.ownerOf(picked));
             creatorPane.workbenchTab(EditorScreenState.onWorkbenchTab(), browser.creatorTiles().size());
             creatorPane.render(g, this.font, layout, theme, picked, orbit.yaw(),
-                creatorNote, loadAsCopy, EditorCreatorBuilds.here(index, picked), goingTo != null,
-                loading, previewSeq, mx, my);
+                creator.note(), creator.loadAsCopy(), EditorCreatorBuilds.here(index, picked), creator.going(),
+                creator.loading(), creator.previewSeq(), mx, my);
         } else if (onStages()) {
             stageDetail.layout(layout, EditorScreenState.effectiveStage(index), index);
             stageDetail.render(g, this.font, theme, orbit.yaw(), mx, my);
@@ -410,8 +331,8 @@ public final class EditorGuiScreen extends Screen {
             TemplateSummary summary = staged
                 ? games.brennan.dungeontrain.client.builder.WorkbenchPreviews.summary(ctx.selection().modelName())
                 : art == null ? null : art.summary();
-            trackVersionsOf(tile == null ? 0 : tile.relayId(), "");
-            detail.showVersion(tile == null ? 0 : tile.relayId(), previewSeq);
+            creator.trackVersionsOf(tile == null ? 0 : tile.relayId(), "");
+            detail.showVersion(tile == null ? 0 : tile.relayId(), creator.previewSeq());
             detail.showSummary(summary);
             detail.layout(layout, ctx, System.currentTimeMillis());
             detail.render(g, this.font, theme, art, summary, tile,
@@ -495,246 +416,6 @@ public final class EditorGuiScreen extends Screen {
     }
 
     /**
-     * Bring the selected relay build down into this install's library.
-     *
-     * <p>The same download My Builds runs, and the reason a preview is not the end of the story: a
-     * mesh can be turned around in the pane, but only a template on disk can be stood in, tested and
-     * ridden. Once it lands the roster picks it up like any other template.</p>
-     *
-     * <p>A first press asks for the build under its own name. If that name is already spoken for
-     * here, the press after it loads a copy instead — the build is somebody else's work and this
-     * screen will not write over whatever is already wearing the name.</p>
-     */
-    private void loadSelectedCreatorBuild() {
-        BuilderProfilePacket.Entry entry = selectedCreatorBuild();
-        // One fetch at a time: the pane withholds the button while a Load is out, and nothing else
-        // should get to send the same build down twice either.
-        if (entry == null || loading) return;
-        boolean live = BuilderProfileState.live();
-        // The row's own owner, not the builder being viewed: the pooled listing spans them.
-        String owner = EditorCreatorBuilds.ownerOf(entry);
-        // The name this screen has been showing over their builds, so the install can caption the
-        // template with whose work it is — the fetch itself never answers that. In the pooled
-        // listing the viewed name is nobody's, so the row's own is what carries it.
-        String ownerName = entry.ownerName() == null || entry.ownerName().isEmpty()
-            ? EditorCreatorBuilds.viewedName()
-            : entry.ownerName();
-        // Where it lands in the roster: under the chosen variant parent for the kinds that have
-        // sub-variants, at top level (blank) for the rest — carriages have no parents to land under.
-        String parent = CreatorLoadParent.supports(entry.kind())
-            ? CreatorLoadParent.parentFor(EditorCreatorBuilds.categoryOf(entry.kind())) : "";
-        // A copy when the last answer said the name is taken — or when this screen can already see
-        // the build is here (Shift on the loaded slot): asking AS_IS would only earn that answer.
-        boolean copy = loadAsCopy || EditorCreatorBuilds.here(EditorRosterClient.index(), entry) != null;
-        sendDownload(copy
-            ? new BuilderProfileDownloadPacket(entry.relayId(), BuilderRelayInstall.Resolution.LOAD_AS_NEW,
-                BuilderNewOptions.firstFreeName(entry.buildName(), takenNames), owner, ownerName, live, false,
-                parent)
-            : new BuilderProfileDownloadPacket(entry.relayId(), BuilderRelayInstall.Resolution.AS_IS, "",
-                owner, ownerName, live, false, parent));
-    }
-
-    /** The press most recently sent, so the loot-prefab question can replay it with the answer attached. */
-    private BuilderProfileDownloadPacket lastDownload;
-    /** The relay row the last "To Workbench" press asked about, or -1; its answer comes back as a download result. */
-    private int lastStageRelayId = -1;
-    /** The relay rows an Autoload is still waiting on; each answer comes back as a download result. */
-    private final java.util.Set<Integer> autoloadPending = new java.util.HashSet<>();
-    private int autoloadTotal;
-
-    /**
-     * Stage every build the grid lists — one server round trip, which enters the Workbench first when
-     * another category is resident. Answers arrive one per build and are counted in
-     * {@link #onDownloadResult}; the note reads the count up.
-     */
-    private void autoloadWorkbench() {
-        List<BuilderProfilePacket.Entry> listed = browser.creatorTiles();
-        if (listed.isEmpty() || loading) return;
-        List<games.brennan.dungeontrain.net.WorkbenchAutoloadPacket.Item> items = new ArrayList<>();
-        autoloadPending.clear();
-        for (BuilderProfilePacket.Entry entry : listed) {
-            if (items.size() >= games.brennan.dungeontrain.net.WorkbenchAutoloadPacket.MAX_ITEMS) break;
-            String ownerName = entry.ownerName() == null || entry.ownerName().isEmpty()
-                ? EditorCreatorBuilds.viewedName() : entry.ownerName();
-            items.add(new games.brennan.dungeontrain.net.WorkbenchAutoloadPacket.Item(entry.relayId(),
-                EditorCreatorBuilds.ownerOf(entry), ownerName));
-            autoloadPending.add(entry.relayId());
-        }
-        autoloadTotal = items.size();
-        lastDownload = null;
-        lastStageRelayId = -1;
-        DungeonTrainNet.sendToServer(new games.brennan.dungeontrain.net.WorkbenchAutoloadPacket(items, BuilderProfileState.live()));
-        creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_AUTOLOADING, 0, autoloadTotal);
-        loading = true;
-        loadingTicks = LOAD_TIMEOUT_TICKS * Math.max(1, autoloadTotal);
-    }
-
-    /**
-     * Stage the selected build on the Workbench: the same fetch as a Load, landing on the shelf instead
-     * of in a store — and never a category switch. What comes back is read by {@link #onDownloadResult}.
-     */
-    private void stageSelectedCreatorBuild() {
-        BuilderProfilePacket.Entry entry = selectedCreatorBuild();
-        if (entry == null || loading) return;
-        String ownerName = entry.ownerName() == null || entry.ownerName().isEmpty()
-            ? EditorCreatorBuilds.viewedName()
-            : entry.ownerName();
-        lastDownload = null;
-        lastStageRelayId = entry.relayId();
-        DungeonTrainNet.sendToServer(new games.brennan.dungeontrain.net.WorkbenchStagePacket(entry.relayId(),
-            EditorCreatorBuilds.ownerOf(entry), ownerName, BuilderProfileState.live()));
-        creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_LOADING_BUILD);
-        loading = true;
-        loadingTicks = LOAD_TIMEOUT_TICKS;
-    }
-
-    private void sendDownload(BuilderProfileDownloadPacket packet) {
-        this.lastDownload = packet;
-        DungeonTrainNet.sendToServer(packet);
-        creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_LOADING_BUILD);
-        loading = true;
-        loadingTicks = LOAD_TIMEOUT_TICKS;
-    }
-
-    /**
-     * Put the selected build on the train, or take it back off.
-     *
-     * <p>The same packet My Builds sends, and authorised the same way — by the owner secret in this
-     * world's saved data, looked up server-side from the id. Nothing is assumed to have worked: the
-     * server re-reads the profile once the relay answers, and the label follows what comes back
-     * rather than what was asked for, because the relay can refuse (a build another world is holding).</p>
-     */
-    private void submitSelectedCreatorBuild() {
-        BuilderProfilePacket.Entry entry = selectedCreatorBuild();
-        if (entry == null || !BuilderRelayKinds.canSubmitForReview(entry.kind())) return;
-        if (entry.published()) {
-            sendCreatorAction(new BuilderProfileActionPacket(entry.relayId(), false));
-            return;
-        }
-        // A submit first asks what the reviewer should know; the send happens on that screen's
-        // Submit, and its Cancel comes back here with nothing sent.
-        BuilderSubmitNoteScreen.open(entry.relayId(), Component.literal(entry.buildName()),
-                note -> sendCreatorAction(new BuilderProfileActionPacket(entry.relayId(), true, note,
-                    BuildRenderCapture.png(entry))));
-    }
-
-    private void sendCreatorAction(BuilderProfileActionPacket packet) {
-        DungeonTrainNet.sendToServer(packet);
-        // The server's own re-read is addressed to the player's OWN profile, so this listing has to
-        // ask again itself — and after a moment, once the relay has actually answered the action.
-        creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_SUBMITTING);
-        submitTicks = SUBMIT_REFRESH_TICKS;
-    }
-
-    /**
-     * Drop what the last Load said — it was about a build that is no longer the one on screen.
-     *
-     * <p>Not the button: {@code loading} belongs to the press, not the row. It stays greyed on
-     * whichever row is looked at until the answer or the timeout hands it back, so a second build
-     * cannot be sent down while the first is still on its way.</p>
-     */
-    private void forgetLastLoad() {
-        creatorNote = null;
-        loadAsCopy = false;
-        takenNames = List.of();
-    }
-
-    /**
-     * Walk to the plot the selected build was loaded onto.
-     *
-     * <p>The header's answer to "it is here now": a category switch when it is not the one being
-     * stood in, then the enter command for the template — the same walk My Builds makes after a
-     * download, through the same helper.</p>
-     */
-    private void goToLoadedBuild() {
-        BuilderProfilePacket.Entry entry = selectedCreatorBuild();
-        EditorCreatorBuilds.Landed landed = EditorCreatorBuilds.here(EditorRosterClient.index(), entry);
-        if (landed == null) return;
-        if (!EditorTemplateJumpBridge.go(landed.kind(), landed.id(), landed.subKind())) return;
-        goingTo = landed;
-        goingTicks = GOING_TIMEOUT_TICKS;
-        afterCommand();
-    }
-
-    /** A download finished: say what happened, and pick up what landed. */
-    private void onDownloadResult(BuilderProfileDownloadResultPacket packet) {
-        // Only the press this screen is waiting on: an answer to one it never made, or gave up on,
-        // says nothing about the row in front of the player.
-        if (autoloadPending.remove(packet.relayId())) {
-            // One of a batch: count it, and stay greyed until the last one is in.
-            int done = autoloadTotal - autoloadPending.size();
-            creatorNote = autoloadPending.isEmpty()
-                ? EditorScreenLang.text(EditorScreenLang.CREATOR_AUTOLOADED, done)
-                : EditorScreenLang.text(EditorScreenLang.CREATOR_AUTOLOADING, done, autoloadTotal);
-            if (autoloadPending.isEmpty()) {
-                loading = false;
-                afterCommand();
-            }
-            return;
-        }
-        boolean stagePress = lastStageRelayId >= 0 && packet.relayId() == lastStageRelayId;
-        if (!stagePress && (lastDownload == null || packet.relayId() != lastDownload.relayId())) return;
-        if (stagePress) lastStageRelayId = -1;
-        // Answered, whatever the answer: the button is back. A prefab question below re-sends and
-        // greys it again.
-        loading = false;
-        creatorNote = EditorScreenLang.text(BuilderProfileScreen.noteKeyFor(packet.outcome()));
-        // The build brought loot prefabs this install already has, with different contents: put both
-        // versions in front of the player, and replay the same press with their choices attached.
-        if (packet.outcome() == BuilderRelayDownload.Outcome.PREFAB_CONFLICT && lastDownload != null) {
-            BuilderProfileDownloadPacket sent = lastDownload;
-            this.minecraft.setScreen(new BuilderProfilePrefabConflictScreen(this, packet.id(),
-                packet.conflicts(), (useTheirs, renames) -> sendDownload(sent.answeringPrefabs(useTheirs, renames))));
-            return;
-        }
-        boolean nameInUse = packet.outcome() == BuilderRelayDownload.Outcome.ALREADY_HERE
-            || packet.outcome() == BuilderRelayDownload.Outcome.NAME_TAKEN;
-        takenNames = nameInUse ? List.copyOf(packet.takenNames()) : List.of();
-        loadAsCopy = nameInUse;
-        if (packet.outcome() == BuilderRelayDownload.Outcome.INSTALLED) {
-            // Remembered against the build that was asked for — the packet's row, not whichever is
-            // selected now: the pane stops offering to load it and offers the walk to it instead.
-            EditorCreatorBuilds.landed(packet.relayId(), packet.kindId(), packet.id(), packet.subKind());
-            // It is a template now, so the roster has to be asked again before it will show one.
-            afterCommand();
-        }
-    }
-
-    /**
-     * Keep the previewer's paging pointed at the selected build, and ask the relay what versions it
-     * has of it.
-     *
-     * <p>A change of selection resets to the build as it is now, because a seq belongs to one relay
-     * row and means nothing in another's history. The index ask goes out once per build — the cache
-     * remembers the answer, including "no versions", so this costs a map lookup a frame after
-     * that.</p>
-     */
-    private void trackVersionsOf(int relayId, String ownerUuid) {
-        if (relayId != previewRelayId) {
-            previewRelayId = relayId;
-            previewSeq = 0;
-        }
-        if (relayId > 0 && RelayBuildPreviews.versions(relayId) == null) {
-            // -1: the newest recorded frame, and the index of every seq with it.
-            RelayBuildPreviews.request(relayId, ownerUuid, BuilderProfileState.live(), -1);
-        }
-    }
-
-    /** Step the preview one version older or newer, and fetch it if it is not here yet. */
-    private void pageVersion(boolean older) {
-        int[] seqs = RelayBuildPreviews.versions(previewRelayId);
-        if (seqs == null || seqs.length == 0) return;
-        int next = older ? VersionStrip.older(seqs, previewSeq) : VersionStrip.newer(seqs, previewSeq);
-        if (next == previewSeq) return;
-        previewSeq = next;
-        if (next != 0) {
-            RelayBuildPreviews.request(previewRelayId,
-                EditorCreatorBuilds.active() ? EditorCreatorBuilds.ownerOf(selectedCreatorBuild()) : "",
-                BuilderProfileState.live(), next);
-        }
-    }
-
-    /**
      * Load all: every template of the chosen category into the world, the plots cleared first.
      *
      * <p>The category switch is exactly that — it tears down every plot of every category and
@@ -747,77 +428,6 @@ public final class EditorGuiScreen extends Screen {
         if (category == null) return;
         CommandRunner.run("dungeontrain editor " + category.owner().id());
         afterCommand();
-    }
-
-    /** Choose the variant parent the selected build will be filed under when it is loaded. */
-    private void pickLoadParent() {
-        BuilderProfilePacket.Entry entry = selectedCreatorBuild();
-        if (entry == null || !CreatorLoadParent.supports(entry.kind())) return;
-        PlotCategory category = EditorCreatorBuilds.categoryOf(entry.kind());
-        if (category == null) return;
-        modal.open(new CreatorParentPickerScreen(category, modal::pop));
-    }
-
-    /** The builder's upload the browser has selected, or null. */
-    private static BuilderProfilePacket.Entry selectedCreatorBuild() {
-        return EditorCreatorBuilds.byId(EditorCreatorBuilds.selectedId());
-    }
-
-    private void drawTooltips(GuiGraphics g, int mouseX, int mouseY) {
-        // Nothing under an open stage dropdown speaks through it.
-        if (onStages() && stagesPane.overDropdown(mouseX, mouseY)) return;
-        if (search.isOpen()) {
-            // The one hover text the panel carries: which relay its light is showing.
-            String lightTip = search.tooltipAt(mouseX, mouseY);
-            if (lightTip != null) g.renderTooltip(this.font, Component.literal(lightTip), mouseX, mouseY);
-            return;
-        }
-        if (modal.isOpen() || inlineEdit.active()) return;
-        String tip = null;
-        if (hoveredTab != null && hoveredTab.kind() == EditorTabBar.Kind.EXIT) {
-            tip = EditorScreenLang.text(EditorScreenLang.TAB_EXIT);
-        } else if (hasFilterBar() && filterBar.hovered().kind() != EditorFilterBar.HitKind.NONE) {
-            tip = filterBar.tooltipAt(filterBar.hovered());
-        } else if (EditorScreenState.page().isBrowser()) {
-            tip = browser.tooltipAt(browser.hovered());
-        } else if (EditorScreenState.page() == EditorScreenPage.LAYOUT) {
-            tip = layoutPane.tooltipAt(layout, EditorRosterClient.index(), mouseX, mouseY);
-        } else if (onStages()) {
-            tip = stagesPane.tooltipAt(layout, EditorRosterClient.index(), mouseX, mouseY);
-        } else if (onGroups()) {
-            tip = groupsTab.tooltipAt(mouseX, mouseY);
-            if (tip != null) {
-                g.renderTooltip(this.font, Component.literal(tip), mouseX, mouseY);
-            }
-            return;
-        }
-        if (tip == null && onNav()) {
-            List<String> nav = navPane.tooltipAt(mouseX, mouseY, EditorRosterClient.index());
-            if (!nav.isEmpty()) tip = nav.get(0);
-        }
-        if (tip != null) {
-            g.renderTooltip(this.font, Component.literal(tip), mouseX, mouseY);
-            return;
-        }
-        // The template pane's hover is only refreshed while it renders, so on the Stages tab its
-        // last frame must not answer for the stage pane that replaced it.
-        List<String> lines = onNav() ? List.<String>of()
-            : onStages() ? stageDetail.tooltipAt(stageDetail.hovered())
-            : detail.tooltipAt(detail.hovered());
-        if (!lines.isEmpty()) {
-            List<net.minecraft.network.chat.Component> text =
-                lines.stream().map(l -> (net.minecraft.network.chat.Component) Component.literal(l)).toList();
-            List<net.minecraft.world.item.ItemStack> icons = onNav() || onStages()
-                ? List.of() : detail.tooltipIconsAt(detail.hovered());
-            if (icons.isEmpty()) {
-                g.renderComponentTooltip(this.font, text, mouseX, mouseY);
-            } else {
-                // The same icon grid a prefab's tooltip uses, under the text.
-                g.renderTooltip(this.font, text, java.util.Optional.of(
-                    new games.brennan.dungeontrain.client.tooltip.PrefabIconsTooltipData(icons, icons.size())),
-                    mouseX, mouseY);
-            }
-        }
     }
 
     private EditorScreenActions.Ctx context(EditorRosterIndex index) {
@@ -856,175 +466,403 @@ public final class EditorGuiScreen extends Screen {
      */
     private int clickButton;
 
+    private ScreenInputGate.State inputState() {
+        return new ScreenInputGate.State(modal.isOpen(), modal.isTyping(), search.isOpen(), inlineEdit.active(),
+            filterBox != null && filterBox.isFocused() && filterBox.visible,
+            onStages() && stagesPane.dropdownOpen());
+    }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         clickButton = button == GLFW.GLFW_MOUSE_BUTTON_RIGHT ? 1 : 0;
-        if (modal.isOpen()) {
-            return modal.mouseClicked(mouseX, mouseY, clickButton);
+        ScreenInputGate.State state = inputState();
+        switch (ScreenInputGate.click(state)) {
+            case MODAL -> { return modal.mouseClicked(mouseX, mouseY, clickButton); }
+            case SEARCH -> {
+                onSearchClick(search.mouseClicked(mouseX, mouseY));
+                return true;
+            }
+            default -> { }
         }
-        if (search.isOpen()) {
-            onSearchClick(search.mouseClicked(mouseX, mouseY));
-            return true;
-        }
-        // A click anywhere else abandons a half-typed value rather than leaving it hanging over
-        // a cell whose row may be about to change underneath it.
-        if (inlineEdit.active()) inlineEdit.cancel();
+        if (ScreenInputGate.clickCancelsInlineEdit(state)) inlineEdit.cancel();
         if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && rightClickNumber(mouseX, mouseY)) return true;
         if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             return super.mouseClicked(mouseX, mouseY, button);
         }
         if (layout == null) return super.mouseClicked(mouseX, mouseY, button);
         // An open stage dropdown takes the next click, wherever it lands: a member picks, the rest shuts it.
-        if (onStages() && stagesPane.dropdownOpen()) {
+        if (ScreenInputGate.click(state) == ScreenInputGate.Layer.STAGE_DROPDOWN) {
             click();
             stagesPane.dropdownClicked(mouseX, mouseY);
             return true;
         }
+        for (EditorPane pane : panes) {
+            if (pane.active() && pane.mouseClicked(mouseX, mouseY, button)) return true;
+        }
+        setFocused(null);
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
 
-        EditorTabBar.Tab tab = EditorTabBar.hit(tabs, layout.tabs(), mouseX, mouseY);
-        if (tab != null) {
+    /**
+     * A right-click: the step-down of whichever number cell is under the cursor — a sheet number, a
+     * Layout weight, a number row in a pane — and nothing anywhere else. Probed without acting on
+     * what is not a number, so a right-click never selects, opens or toggles.
+     */
+    private boolean rightClickNumber(double mouseX, double mouseY) {
+        if (layout == null) return false;
+        for (EditorPane pane : panes) {
+            if (pane.active() && pane.rightClickNumber(mouseX, mouseY)) return true;
+        }
+        return false;
+    }
+
+    /** The wheel scrolls whichever list is under it; anywhere else it reaches the hotbar. */
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (scrollY == 0) return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        int dir = scrollY > 0 ? -1 : 1;
+        switch (ScreenInputGate.scroll(inputState())) {
+            case MODAL -> { return modal.mouseScrolled(mouseX, mouseY, scrollY); }
+            case SEARCH -> { return search.scrollBy(dir); }
+            default -> { }
+        }
+        if (layout != null) {
+            for (EditorPane pane : panes) {
+                if (pane.active() && pane.scrollBy(mouseX, mouseY, dir)) return true;
+            }
+        }
+        if (HotbarPassthrough.scroll(this.minecraft, scrollY)) return true;
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    private void drawTooltips(GuiGraphics g, int mouseX, int mouseY) {
+        // Nothing under an open stage dropdown speaks through it.
+        if (onStages() && stagesPane.overDropdown(mouseX, mouseY)) return;
+        if (search.isOpen()) {
+            // The one hover text the panel carries: which relay its light is showing.
+            String lightTip = search.tooltipAt(mouseX, mouseY);
+            if (lightTip != null) g.renderTooltip(this.font, Component.literal(lightTip), mouseX, mouseY);
+            return;
+        }
+        if (modal.isOpen() || inlineEdit.active()) return;
+        for (EditorPane pane : panes) {
+            if (!pane.active()) continue;
+            EditorPane.Tooltip tip = pane.tooltipAt(mouseX, mouseY);
+            if (tip.isEmpty()) continue;
+            List<Component> text = tip.lines().stream().map(l -> (Component) Component.literal(l)).toList();
+            if (tip.icons().isEmpty()) {
+                g.renderComponentTooltip(this.font, text, mouseX, mouseY);
+            } else {
+                // The same icon grid a prefab's tooltip uses, under the text.
+                g.renderTooltip(this.font, text, java.util.Optional.of(
+                    new games.brennan.dungeontrain.client.tooltip.PrefabIconsTooltipData(tip.icons(), tip.icons().size())),
+                    mouseX, mouseY);
+            }
+            return;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Panes, in router order
+    // ------------------------------------------------------------------
+
+    /**
+     * Every region of the screen in the order the routers try them: the tab bar and the filter bar,
+     * the left column's page pane (browser / settings / layout / stages list / groups / nav), then
+     * the right column's (creator / stage detail / template detail). Groups and Nav own both
+     * columns, so the right-column panes stand down while either is up.
+     */
+    private final List<EditorPane> panes = List.of(
+        new TabsPane(), new FilterPane(),
+        new BrowserPane(), new SettingsPanePane(), new LayoutPanePane(), new StagesListPane(),
+        new GroupsPane(), new NavPane(),
+        new CreatorPanePane(), new StageDetailPane(), new DetailPanePane());
+
+    /** Whether the right column shows a pane of its own — not under Groups or Nav. */
+    private static boolean rightColumnShown() {
+        return !onGroups() && !onNav();
+    }
+
+    private final class TabsPane implements EditorPane {
+        @Override public boolean active() { return true; }
+
+        @Override
+        public boolean mouseClicked(double mx, double my, int button) {
+            EditorTabBar.Tab tab = EditorTabBar.hit(tabs, layout.tabs(), mx, my);
+            if (tab == null) return false;
             click();
             onTab(tab);
             return true;
         }
-        if (hasFilterBar()) {
-            if (filterBox.mouseClicked(mouseX, mouseY, button)) {
+
+        @Override
+        public Tooltip tooltipAt(double mx, double my) {
+            return hoveredTab != null && hoveredTab.kind() == EditorTabBar.Kind.EXIT
+                ? Tooltip.of(EditorScreenLang.text(EditorScreenLang.TAB_EXIT)) : Tooltip.NONE;
+        }
+    }
+
+    private final class FilterPane implements EditorPane {
+        @Override public boolean active() { return hasFilterBar(); }
+
+        @Override
+        public boolean mouseClicked(double mx, double my, int button) {
+            if (filterBox.mouseClicked(mx, my, button)) {
                 setFocused(filterBox);
                 return true;
             }
-            EditorFilterBar.Hit filterHit = filterBar.hitTest(mouseX, mouseY);
-            if (filterHit.kind() != EditorFilterBar.HitKind.NONE) {
-                click();
-                onFilterHit(filterHit);
-                return true;
-            }
+            EditorFilterBar.Hit filterHit = filterBar.hitTest(mx, my);
+            if (filterHit.kind() == EditorFilterBar.HitKind.NONE) return false;
+            click();
+            onFilterHit(filterHit);
+            return true;
         }
-        if (EditorScreenState.page().isBrowser()) {
-            EditorBrowserPane.Hit hit = browser.hitTest(mouseX, mouseY);
-            if (hit.kind() != EditorBrowserPane.HitKind.NONE) {
-                click();
-                onBrowserHit(hit);
+
+        @Override
+        public Tooltip tooltipAt(double mx, double my) {
+            return filterBar.hovered().kind() != EditorFilterBar.HitKind.NONE
+                ? Tooltip.of(filterBar.tooltipAt(filterBar.hovered())) : Tooltip.NONE;
+        }
+    }
+
+    private final class BrowserPane implements EditorPane {
+        @Override public boolean active() { return EditorScreenState.page().isBrowser(); }
+
+        @Override
+        public boolean mouseClicked(double mx, double my, int button) {
+            EditorBrowserPane.Hit hit = browser.hitTest(mx, my);
+            if (hit.kind() == EditorBrowserPane.HitKind.NONE) return false;
+            click();
+            onBrowserHit(hit);
+            return true;
+        }
+
+        @Override
+        public boolean scrollBy(double mx, double my, int dir) {
+            return browser.overGrid(mx, my) && browser.scrollBy(dir);
+        }
+
+        @Override
+        public Tooltip tooltipAt(double mx, double my) {
+            return Tooltip.of(browser.tooltipAt(browser.hovered()));
+        }
+    }
+
+    private final class SettingsPanePane implements EditorPane {
+        @Override public boolean active() { return EditorScreenState.page() == EditorScreenPage.SETTINGS; }
+
+        @Override
+        public boolean mouseClicked(double mx, double my, int button) {
+            EditorSettingsPane.Hit hit = settingsPane.hitTest(layout, mx, my);
+            if (hit == null) return false;
+            click();
+            dispatchAt(hit.entry(), hit.sub());
+            return true;
+        }
+
+        @Override
+        public boolean rightClickNumber(double mx, double my) {
+            EditorSettingsPane.Hit hit = settingsPane.hitTest(layout, mx, my);
+            if (hit == null || !MenuEntryDispatcher.isNumber(hit.entry(), hit.sub())) return false;
+            click();
+            modal.dispatch(hit.entry(), hit.sub(), 1);
+            return true;
+        }
+
+        @Override
+        public boolean scrollBy(double mx, double my, int dir) {
+            if (!EditorSettingsPane.rect(layout).contains(mx, my)) return false;
+            settingsPane.scrollBy(dir);
+            return true;
+        }
+    }
+
+    private final class LayoutPanePane implements EditorPane {
+        @Override public boolean active() { return EditorScreenState.page() == EditorScreenPage.LAYOUT; }
+
+        @Override
+        public boolean mouseClicked(double mx, double my, int button) {
+            if (!layoutPane.mouseClicked(layout, EditorRosterClient.index(), mx, my, modal, inlineEdit)) return false;
+            click();
+            setFocused(null);
+            return true;
+        }
+
+        @Override
+        public boolean rightClickNumber(double mx, double my) {
+            if (!layoutPane.mouseClicked(layout, EditorRosterClient.index(), mx, my, modal, inlineEdit, 1)) return false;
+            click();
+            return true;
+        }
+
+        @Override
+        public boolean scrollBy(double mx, double my, int dir) {
+            if (!layoutPane.over(layout, mx, my)) return false;
+            // A half-typed value must not float over a list that just moved under it.
+            inlineEdit.cancel();
+            layoutPane.scrollBy(dir);
+            return true;
+        }
+
+        @Override
+        public Tooltip tooltipAt(double mx, double my) {
+            return Tooltip.of(layoutPane.tooltipAt(layout, EditorRosterClient.index(), (int) mx, (int) my));
+        }
+    }
+
+    /** The Stages tab's left column: the stage tiles and a family's dropdown over them. */
+    private final class StagesListPane implements EditorPane {
+        @Override public boolean active() { return onStages(); }
+
+        @Override
+        public boolean mouseClicked(double mx, double my, int button) {
+            if (!stagesPane.mouseClicked(layout, EditorRosterClient.index(), mx, my)) return false;
+            click();
+            setFocused(null);
+            return true;
+        }
+
+        @Override
+        public boolean scrollBy(double mx, double my, int dir) {
+            if (stagesPane.overDropdown(mx, my)) {
+                stagesPane.scrollDropdown(dir);
                 return true;
             }
-        } else if (EditorScreenState.page() == EditorScreenPage.SETTINGS) {
-            EditorSettingsPane.Hit hit = settingsPane.hitTest(layout, mouseX, mouseY);
-            if (hit != null) {
-                click();
-                dispatchAt(hit.entry(), hit.sub());
-                return true;
-            }
-        } else if (EditorScreenState.page() == EditorScreenPage.LAYOUT) {
-            if (layoutPane.mouseClicked(layout, EditorRosterClient.index(), mouseX, mouseY, modal, inlineEdit)) {
-                click();
-                setFocused(null);
-                return true;
-            }
-        } else if (onStages()) {
-            if (stagesPane.mouseClicked(layout, EditorRosterClient.index(), mouseX, mouseY)) {
-                click();
-                setFocused(null);
-                return true;
-            }
-        } else if (onGroups()) {
-            return onGroupsClick(groupsTab.click(mouseX, mouseY), mouseX, mouseY, button);
-        } else if (onNav()) {
-            EditorNavPane.Hit hit = navPane.hitTest(mouseX, mouseY);
-            if (hit.kind() != EditorNavPane.Kind.NONE) {
-                click();
-                onNavHit(hit);
-                return true;
+            if (!stagesPane.over(layout, mx, my)) return false;
+            stagesPane.scrollBy(dir);
+            return true;
+        }
+
+        @Override
+        public Tooltip tooltipAt(double mx, double my) {
+            return Tooltip.of(stagesPane.tooltipAt(layout, EditorRosterClient.index(), mx, my));
+        }
+    }
+
+    /** The Groups tab owns both columns: whatever it does not take falls to the screen's children. */
+    private final class GroupsPane implements EditorPane {
+        @Override public boolean active() { return onGroups(); }
+
+        @Override
+        public boolean mouseClicked(double mx, double my, int button) {
+            EditorGroupsTab.Click hit = groupsTab.click(mx, my);
+            if (hit == null) return false;
+            switch (hit) {
+                case EditorGroupsTab.Click.Consumed c -> click();
+                case EditorGroupsTab.Click.Entry e -> {
+                    click();
+                    dispatch(e.entry());
+                }
+                case EditorGroupsTab.Click.Open o -> {
+                    click();
+                    modal.open(o.screen());
+                }
+                case EditorGroupsTab.Click.Sheet s -> {
+                    if (onSheetCell(s.placed())) click();
+                }
+                case EditorGroupsTab.Click.Preview p -> orbit.beginDrag();
             }
             setFocused(null);
-            return super.mouseClicked(mouseX, mouseY, button);
+            return true;
         }
-        if (EditorCreatorBuilds.active()) {
-            switch (creatorPane.hitTest(mouseX, mouseY)) {
-                case OLDER -> {
-                    click();
-                    pageVersion(true);
-                    return true;
-                }
-                case NEWER -> {
-                    click();
-                    pageVersion(false);
-                    return true;
-                }
-                case LOAD -> {
-                    click();
-                    loadSelectedCreatorBuild();
-                    return true;
-                }
-                case PARENT -> {
-                    click();
-                    pickLoadParent();
-                    return true;
-                }
-                case WORKBENCH -> {
-                    click();
-                    stageSelectedCreatorBuild();
-                    return true;
-                }
-                case AUTOLOAD -> {
-                    click();
-                    autoloadWorkbench();
-                    return true;
-                }
-                case SUBMIT -> {
-                    click();
-                    submitSelectedCreatorBuild();
-                    return true;
-                }
-                case GO_HERE -> {
-                    click();
-                    goToLoadedBuild();
-                    return true;
-                }
-                case PAGE_PREV -> {
-                    click();
-                    creatorPane.turnSheet(-1);
-                    return true;
-                }
-                case PAGE_NEXT -> {
-                    click();
-                    creatorPane.turnSheet(1);
-                    return true;
-                }
-                case EDIT_NOTE -> {
-                    click();
-                    creatorPane.openNoteEditor(selectedCreatorBuild());
-                    return true;
-                }
-                case REVIEW_ACCEPT -> {
-                    click();
-                    creatorPane.openReview(selectedCreatorBuild(), BuilderReviewState.ACCEPTED);
-                    return true;
-                }
-                case REVIEW_FEEDBACK -> {
-                    click();
-                    creatorPane.openReview(selectedCreatorBuild(), BuilderReviewState.FEEDBACK);
-                    return true;
-                }
-                case REVIEW_DECLINE -> {
-                    click();
-                    creatorPane.openReview(selectedCreatorBuild(), BuilderReviewState.DECLINED);
-                    return true;
-                }
-                case REVIEW_RESUBMIT -> {
-                    click();
-                    creatorPane.openReview(selectedCreatorBuild(), BuilderReviewState.RESUBMIT);
-                    return true;
-                }
-                case PREVIEW -> {
-                    orbit.beginDrag();
-                    return true;
-                }
-                case NONE -> { }
+
+        @Override
+        public boolean rightClickNumber(double mx, double my) {
+            EditorGroupsTab.Click hit = groupsTab.numberAt(mx, my);
+            if (hit instanceof EditorGroupsTab.Click.Sheet s) return rightClickSheet(s.placed());
+            if (hit instanceof EditorGroupsTab.Click.Entry e) {
+                click();
+                modal.dispatch(e.entry(), 0, 1);
+                return true;
             }
-            setFocused(null);
-            return super.mouseClicked(mouseX, mouseY, button);
+            return false;
         }
-        if (onStages()) {
-            EditorStageDetailPane.Hit stageHit = stageDetail.hitTest(mouseX, mouseY);
+
+        @Override
+        public boolean scrollBy(double mx, double my, int dir) {
+            if (!groupsTab.over(mx, my)) return false;
+            groupsTab.scrollBy(mx, my, dir);
+            return true;
+        }
+
+        @Override
+        public Tooltip tooltipAt(double mx, double my) {
+            return Tooltip.of(groupsTab.tooltipAt(mx, my));
+        }
+    }
+
+    /** The Nav tab owns both columns. */
+    private final class NavPane implements EditorPane {
+        @Override public boolean active() { return onNav(); }
+
+        @Override
+        public boolean mouseClicked(double mx, double my, int button) {
+            EditorNavPane.Hit hit = navPane.hitTest(mx, my);
+            if (hit.kind() == EditorNavPane.Kind.NONE) return false;
+            click();
+            onNavHit(hit);
+            return true;
+        }
+
+        @Override
+        public Tooltip tooltipAt(double mx, double my) {
+            List<String> nav = navPane.tooltipAt(mx, my, EditorRosterClient.index());
+            return nav.isEmpty() ? Tooltip.NONE : Tooltip.of(nav.get(0));
+        }
+    }
+
+    /**
+     * A relay row is not a template: none of the detail pane's controls apply to one, so the pane
+     * that has no controls stands in for it rather than eight disabled buttons.
+     */
+    private final class CreatorPanePane implements EditorPane {
+        @Override public boolean active() { return rightColumnShown() && EditorCreatorBuilds.active(); }
+
+        @Override
+        public boolean mouseClicked(double mx, double my, int button) {
+            EditorCreatorPane.HitKind hit = creatorPane.hitTest(mx, my);
+            if (hit == EditorCreatorPane.HitKind.NONE) return false;
+            if (hit == EditorCreatorPane.HitKind.PREVIEW) {
+                orbit.beginDrag();
+                return true;
+            }
+            click();
+            BuilderProfilePacket.Entry selected = EditorCreatorLoadController.selected();
+            switch (hit) {
+                case OLDER -> creator.pageVersion(true);
+                case NEWER -> creator.pageVersion(false);
+                case LOAD -> creator.loadSelected();
+                case PARENT -> creator.pickLoadParent();
+                case WORKBENCH -> creator.stageSelected();
+                case AUTOLOAD -> creator.autoloadWorkbench(browser.creatorTiles());
+                case SUBMIT -> creator.submitSelected();
+                case GO_HERE -> creator.goToLoadedBuild();
+                case PAGE_PREV -> creatorPane.turnSheet(-1);
+                case PAGE_NEXT -> creatorPane.turnSheet(1);
+                case EDIT_NOTE -> creatorPane.openNoteEditor(selected);
+                case REVIEW_ACCEPT -> creatorPane.openReview(selected, BuilderReviewState.ACCEPTED);
+                case REVIEW_FEEDBACK -> creatorPane.openReview(selected, BuilderReviewState.FEEDBACK);
+                case REVIEW_DECLINE -> creatorPane.openReview(selected, BuilderReviewState.DECLINED);
+                case REVIEW_RESUBMIT -> creatorPane.openReview(selected, BuilderReviewState.RESUBMIT);
+                default -> { }
+            }
+            return true;
+        }
+
+        @Override
+        public boolean scrollBy(double mx, double my, int dir) {
+            if (!creatorPane.overSheet(mx, my)) return false;
+            creatorPane.turnSheet(dir);
+            return true;
+        }
+    }
+
+    private final class StageDetailPane implements EditorPane {
+        @Override public boolean active() { return rightColumnShown() && !EditorCreatorBuilds.active() && onStages(); }
+
+        @Override
+        public boolean mouseClicked(double mx, double my, int button) {
+            EditorStageDetailPane.Hit stageHit = stageDetail.hitTest(mx, my);
             switch (stageHit.kind()) {
                 case PAGE_PREV -> { if (stageDetail.scrollBy(-1)) click(); return true; }
                 case PAGE_NEXT -> { if (stageDetail.scrollBy(+1)) click(); return true; }
@@ -1067,22 +905,70 @@ public final class EditorGuiScreen extends Screen {
                     browser.resetScroll();
                     return true;
                 }
-                default -> { }
+                default -> { return false; }
             }
-            setFocused(null);
-            return super.mouseClicked(mouseX, mouseY, button);
         }
-        EditorDetailPane.Hit hit = detail.hitTest(mouseX, mouseY);
-        if (hit.kind() == EditorDetailPane.HitKind.PREVIEW) {
-            orbit.beginDrag();
-            return true;
+
+        @Override
+        public boolean rightClickNumber(double mx, double my) {
+            EditorStageDetailPane.Hit stageHit = stageDetail.hitTest(mx, my);
+            if (stageHit.kind() != EditorStageDetailPane.HitKind.SHEET) return false;
+            return rightClickSheet(stageDetail.sheetCell(stageHit.index()));
         }
-        if (hit.kind() != EditorDetailPane.HitKind.NONE) {
+
+        @Override
+        public boolean scrollBy(double mx, double my, int dir) {
+            return stageDetail.over(mx, my) && stageDetail.scrollBy(dir);
+        }
+
+        @Override
+        public Tooltip tooltipAt(double mx, double my) {
+            return Tooltip.of(stageDetail.tooltipAt(stageDetail.hovered()));
+        }
+    }
+
+    private final class DetailPanePane implements EditorPane {
+        @Override public boolean active() { return rightColumnShown() && !EditorCreatorBuilds.active() && !onStages(); }
+
+        @Override
+        public boolean mouseClicked(double mx, double my, int button) {
+            EditorDetailPane.Hit hit = detail.hitTest(mx, my);
+            if (hit.kind() == EditorDetailPane.HitKind.PREVIEW) {
+                orbit.beginDrag();
+                return true;
+            }
+            if (hit.kind() == EditorDetailPane.HitKind.NONE) return false;
             if (onDetailHit(hit)) click();
             return true;
         }
-        setFocused(null);
-        return super.mouseClicked(mouseX, mouseY, button);
+
+        @Override
+        public boolean rightClickNumber(double mx, double my) {
+            // As it always was: the browser tab's right-click reaches no number in the detail pane.
+            if (EditorScreenState.page().isBrowser()) return false;
+            EditorDetailPane.Hit hit = detail.hitTest(mx, my);
+            if (hit.kind() == EditorDetailPane.HitKind.SHEET) return rightClickSheet(detail.sheetCell(hit.index()));
+            if (hit.kind() == EditorDetailPane.HitKind.ROW) {
+                CommandMenuEntry row = detail.rows().get(hit.index());
+                if (!MenuEntryDispatcher.isNumber(row, hit.sub())) return false;
+                click();
+                modal.dispatch(row, hit.sub(), 1);
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean scrollBy(double mx, double my, int dir) {
+            return detail.overSettings(mx, my) && detail.scrollBy(dir);
+        }
+
+        @Override
+        public Tooltip tooltipAt(double mx, double my) {
+            List<String> lines = detail.tooltipAt(detail.hovered());
+            if (lines.isEmpty()) return Tooltip.NONE;
+            return new Tooltip(lines, detail.tooltipIconsAt(detail.hovered()));
+        }
     }
 
     /**
@@ -1163,9 +1049,8 @@ public final class EditorGuiScreen extends Screen {
             case TILE -> selectOrEnter(browser.tiles().get(hit.index()).key());
             case CREATOR_TILE -> {
                 EditorCreatorBuilds.select(browser.creatorTiles().get(hit.index()).relayId());
-                goingTo = null;
-                // The note and the copy offer belonged to the build that was selected before.
-                forgetLastLoad();
+                // The walk, the note and the copy offer belonged to the build that was selected before.
+                creator.onSelectionChanged();
             }
             // Starring is not selecting: pressing the corner of a tile you are not looking at should
             // keep it for later without moving the previewer off whatever you were reading.
@@ -1210,21 +1095,21 @@ public final class EditorGuiScreen extends Screen {
                 }
                 click();
                 EditorCreatorBuilds.show(result.creator().uuid(), result.creator().name());
-                forgetLastLoad();
+                creator.forgetLastLoad();
                 browser.resetScroll();
                 search.close();
             }
             case ALL -> {
                 click();
                 EditorCreatorBuilds.showAll();
-                forgetLastLoad();
+                creator.forgetLastLoad();
                 browser.resetScroll();
                 search.close();
             }
             case CLEARED -> {
                 click();
                 EditorCreatorBuilds.clear();
-                forgetLastLoad();
+                creator.forgetLastLoad();
                 browser.resetScroll();
                 search.close();
             }
@@ -1235,7 +1120,7 @@ public final class EditorGuiScreen extends Screen {
                 EditorSettingsPage.setRelay(!BuilderProfileState.live());
                 EditorCreatorBuilds.requestFavourites();
                 EditorCreatorBuilds.refresh();
-                forgetLastLoad();
+                creator.forgetLastLoad();
                 search.rearm();
             }
             case PICKED_ME -> {
@@ -1351,90 +1236,15 @@ public final class EditorGuiScreen extends Screen {
                 return detail.scrollBy(+1);
             }
             case OLDER -> {
-                pageVersion(true);
+                creator.pageVersion(true);
                 return true;
             }
             case NEWER -> {
-                pageVersion(false);
+                creator.pageVersion(false);
                 return true;
             }
             default -> { return false; }
         }
-    }
-
-    /** Carry out what a click on the Groups tab asked for. */
-    private boolean onGroupsClick(EditorGroupsTab.Click hit, double mouseX, double mouseY, int button) {
-        if (hit == null) {
-            setFocused(null);
-            return super.mouseClicked(mouseX, mouseY, button);
-        }
-        switch (hit) {
-            case EditorGroupsTab.Click.Consumed c -> click();
-            case EditorGroupsTab.Click.Entry e -> {
-                click();
-                dispatch(e.entry());
-            }
-            case EditorGroupsTab.Click.Open o -> {
-                click();
-                modal.open(o.screen());
-            }
-            case EditorGroupsTab.Click.Sheet s -> {
-                if (onSheetCell(s.placed())) click();
-            }
-            case EditorGroupsTab.Click.Preview p -> orbit.beginDrag();
-        }
-        setFocused(null);
-        return true;
-    }
-
-    /**
-     * A right-click: the step-down of whichever number cell is under the cursor — a sheet number, a
-     * Layout weight, a number row in a pane — and nothing anywhere else. Probed without acting on
-     * what is not a number, so a right-click never selects, opens or toggles.
-     */
-    private boolean rightClickNumber(double mouseX, double mouseY) {
-        if (layout == null) return false;
-        EditorScreenPage page = EditorScreenState.page();
-        if (page.isBrowser() || onNav() || EditorCreatorBuilds.active()) return false;
-        if (page == EditorScreenPage.SETTINGS) {
-            EditorSettingsPane.Hit hit = settingsPane.hitTest(layout, mouseX, mouseY);
-            if (hit == null || !MenuEntryDispatcher.isNumber(hit.entry(), hit.sub())) return false;
-            click();
-            modal.dispatch(hit.entry(), hit.sub(), 1);
-            return true;
-        }
-        if (page == EditorScreenPage.LAYOUT) {
-            if (!layoutPane.mouseClicked(layout, EditorRosterClient.index(), mouseX, mouseY, modal, inlineEdit, 1)) {
-                return false;
-            }
-            click();
-            return true;
-        }
-        if (onStages()) {
-            EditorStageDetailPane.Hit stageHit = stageDetail.hitTest(mouseX, mouseY);
-            if (stageHit.kind() != EditorStageDetailPane.HitKind.SHEET) return false;
-            return rightClickSheet(stageDetail.sheetCell(stageHit.index()));
-        }
-        if (onGroups()) {
-            EditorGroupsTab.Click hit = groupsTab.numberAt(mouseX, mouseY);
-            if (hit instanceof EditorGroupsTab.Click.Sheet s) return rightClickSheet(s.placed());
-            if (hit instanceof EditorGroupsTab.Click.Entry e) {
-                click();
-                modal.dispatch(e.entry(), 0, 1);
-                return true;
-            }
-            return false;
-        }
-        EditorDetailPane.Hit hit = detail.hitTest(mouseX, mouseY);
-        if (hit.kind() == EditorDetailPane.HitKind.SHEET) return rightClickSheet(detail.sheetCell(hit.index()));
-        if (hit.kind() == EditorDetailPane.HitKind.ROW) {
-            CommandMenuEntry row = detail.rows().get(hit.index());
-            if (!MenuEntryDispatcher.isNumber(row, hit.sub())) return false;
-            click();
-            modal.dispatch(row, hit.sub(), 1);
-            return true;
-        }
-        return false;
     }
 
     /** A right-click on a sheet cell: steps a number down; anything else is left alone. */
@@ -1534,46 +1344,6 @@ public final class EditorGuiScreen extends Screen {
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
-    /** The wheel scrolls whichever list is under it; anywhere else it reaches the hotbar. */
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (scrollY == 0) return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
-        if (modal.isOpen()) return modal.mouseScrolled(mouseX, mouseY, scrollY);
-        int dir = scrollY > 0 ? -1 : 1;
-        if (search.isOpen()) return search.scrollBy(dir);
-        if (EditorScreenState.page().isBrowser() && browser.overGrid(mouseX, mouseY)) {
-            if (browser.scrollBy(dir)) return true;
-        }
-        if (EditorScreenState.page() == EditorScreenPage.SETTINGS && layout != null
-                && EditorSettingsPane.rect(layout).contains(mouseX, mouseY)) {
-            return settingsPane.scrollBy(dir);
-        }
-        if (EditorScreenState.page() == EditorScreenPage.LAYOUT && layout != null
-                && layoutPane.over(layout, mouseX, mouseY)) {
-            // A half-typed value must not float over a list that just moved under it.
-            inlineEdit.cancel();
-            return layoutPane.scrollBy(dir);
-        }
-        if (onGroups() && groupsTab.over(mouseX, mouseY)) {
-            return groupsTab.scrollBy(mouseX, mouseY, dir);
-        }
-        if (onStages()) {
-            if (stagesPane.overDropdown(mouseX, mouseY)) {
-                stagesPane.scrollDropdown(dir);
-                return true;
-            }
-            if (stagesPane.over(layout, mouseX, mouseY)) return stagesPane.scrollBy(dir);
-            if (stageDetail.over(mouseX, mouseY) && stageDetail.scrollBy(dir)) return true;
-        } else if (!onNav() && EditorCreatorBuilds.active() && creatorPane.overSheet(mouseX, mouseY)) {
-            creatorPane.turnSheet(dir);
-            return true;
-        } else if (!onNav() && detail.overSettings(mouseX, mouseY) && detail.scrollBy(dir)) {
-            return true;
-        }
-        if (HotbarPassthrough.scroll(this.minecraft, scrollY)) return true;
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
-    }
-
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (inlineEdit.active()) {
@@ -1661,6 +1431,14 @@ public final class EditorGuiScreen extends Screen {
         search.close();
         modal.closeAll();
         super.onClose();
+    }
+
+    /** What the creator-build controller needs of this screen. */
+    private final class CreatorHost implements EditorCreatorLoadController.Host {
+        @Override public EditorModalHost modal() { return modal; }
+        @Override public void afterCommand() { EditorGuiScreen.this.afterCommand(); }
+        @Override public void close() { EditorGuiScreen.this.onClose(); }
+        @Override public Screen screen() { return EditorGuiScreen.this; }
     }
 
     /** Whether any plot anywhere has unsaved edits — the header icon's colour. */

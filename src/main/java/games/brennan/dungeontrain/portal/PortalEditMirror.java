@@ -6,8 +6,13 @@ import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Keeps a portal corridor and its twin block-for-block identical while players build in them.
@@ -98,6 +103,56 @@ public final class PortalEditMirror {
         int[] local = entry.localOfTwin(pos);
         if (local == null) return false;
 
+        BlockPos target = mirrorTwinCell(level, entry, local, pos, newState);
+
+        LOGGER.info("[DungeonTrain] Portal edit mirrored twin→carriage: {} at local ({},{},{}) → shipyard {}",
+            newState.isAir() ? "cleared" : newState.getBlock().getName().getString(),
+            local[0], local[1], local[2], target);
+        return true;
+    }
+
+    /**
+     * An explosion is about to clear {@code blown} in the world: clear every twin-corridor cell among
+     * them from the carriage as well.
+     *
+     * <p>Explosions fire no break event, so without this a blast inside a pocket room — a TNT room
+     * above all — holed the twin and left the carriage whole, and the breach never severed the pair.
+     * Logs once per blast rather than per cell: a chain of TNT can clear hundreds.</p>
+     *
+     * @param blown the positions the explosion will destroy, as {@code ExplosionEvent.Detonate} lists
+     *              them; cells that are already air are skipped
+     * @return how many corridor cells were mirrored
+     */
+    public static int onTwinExploded(ServerLevel level, List<BlockPos> blown) {
+        if (MIRRORING.get() || PortalPairIndex.isEmpty()) return 0;
+
+        BlockState air = Blocks.AIR.defaultBlockState();
+        Set<Integer> corridors = new HashSet<>();
+        int mirrored = 0;
+        for (BlockPos pos : blown) {
+            PortalPairIndex.Entry entry = PortalPairIndex.findByTwinPos(pos);
+            if (entry == null || level.getBlockState(pos).isAir()) continue;
+            int[] local = entry.localOfTwin(pos);
+            if (local == null) continue;
+            mirrorTwinCell(level, entry, local, pos, air);
+            corridors.add(entry.carriageIndex());
+            mirrored++;
+        }
+
+        if (mirrored > 0) {
+            LOGGER.info("[DungeonTrain] Portal explosion mirrored twin→carriage: {} cell(s) cleared across {} corridor(s) {}",
+                mirrored, corridors.size(), corridors);
+        }
+        return mirrored;
+    }
+
+    /** Sever-check then copy one twin cell into the carriage's plot; returns the shipyard target. */
+    private static BlockPos mirrorTwinCell(ServerLevel level, PortalPairIndex.Entry entry, int[] local,
+                                           BlockPos pos, BlockState newState) {
+
+        // Before the mirror, as on the carriage side: a side wall broken from the room severs too.
+        PortalSever.onTwinBlockChanged(level, entry, local, newState, pos);
+
         BlockPos target = entry.plotPosOf(local);
 
         MIRRORING.set(true);
@@ -117,11 +172,7 @@ public final class PortalEditMirror {
         } finally {
             MIRRORING.set(false);
         }
-
-        LOGGER.info("[DungeonTrain] Portal edit mirrored twin→carriage: {} at local ({},{},{}) → shipyard {}",
-            newState.isAir() ? "cleared" : newState.getBlock().getName().getString(),
-            local[0], local[1], local[2], target);
-        return true;
+        return target;
     }
 
     /** The plot chunk owning a shipyard position, mirroring {@code CarriageBlockSnapshot.chunkAt}. */

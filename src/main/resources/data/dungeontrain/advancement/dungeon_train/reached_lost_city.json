@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_better_nether",
+  "parent": "dungeontrain:dungeon_train/reached_deeper_dark",
   "display": {
     "icon": { "id": "minecraft:cracked_stone_bricks" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_lost_city.title" },

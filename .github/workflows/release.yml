@@ -58,6 +58,11 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      # The commit this release is built from. "Mark changelog entries released" reads the
+      # shipped entries from its changelog.json, since main has usually moved on by then.
+      - name: Record release commit
+        run: echo "RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -300,6 +305,7 @@ jobs:
             vanillabackport(required)
             platform(required)
             deeperdarker(required)
+            piglin-proliferation(required)
             exposure(required)
             exposure-polaroid(required)
             vista_tv(required)
@@ -350,6 +356,7 @@ jobs:
             vanillabackport(required)
             platform(required)
             deeperdarker(required)
+            piglin-proliferation(required)
             exposure(required)
             exposure-polaroid(required)
             windy-configurable(required)
@@ -474,37 +481,23 @@ jobs:
       # entries — they describe features that haven't reached players yet, and
       # marking them shipped would leave the following real release with empty
       # notes and no obvious cause.
+      #
+      # main usually moves during the ~6 min run (parallel merges). The script marks
+      # only the entries unreleased in RELEASE_SHA's ledger (what this release shipped),
+      # and on a rejected push starts again from a fresh main instead of rebasing (the
+      # rebase conflicted in changelog.json on v0.1471.0 and was rejected again on
+      # v0.1478.0). Leaves the checkout on the pushed commit, so the update.json step and
+      # notify-highlights.py below see the stamped entries.
       - name: Mark changelog entries released
         if: ${{ success() && inputs.auto == false && inputs.test_release == false }}
         env:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          RELEASE_SHA: ${{ env.RELEASE_SHA }}
         run: |
           set -euo pipefail
-          python3 scripts/release-notes/mark-released.py --released-in "$RELEASE_TAG"
-          if git diff --quiet -- .github/release-notes/changelog.json; then
-            echo "No changelog entries to mark — nothing to commit."
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/release-notes/changelog.json
-          git commit -m "chore(release-notes): mark $RELEASE_TAG released [skip ci]"
-          # The release built from main HEAD; a scheduled cascade tick could have
-          # pushed in the meantime. Rebase our one-line flag flip on top and retry
-          # the push once before failing.
-          for attempt in 1 2; do
-            if git push origin HEAD:main; then
-              echo "Pushed changelog update on attempt $attempt."
-              exit 0
-            fi
-            if [ "$attempt" = "2" ]; then
-              echo "::error::Failed to push changelog update after rebase retry."
-              exit 1
-            fi
-            echo "Push rejected — fetching and rebasing before retry."
-            git fetch origin main
-            git rebase origin/main
-          done
+          bash scripts/release-notes/mark-released-and-push.sh "$RELEASE_TAG" "$RELEASE_SHA"
 
       # Repoint the NeoForge in-game update notifier at this release. Unlike the
       # changelog-mark step above, this runs on EVERY release — manual AND the ~22
@@ -612,7 +605,9 @@ jobs:
 
       # The same release, told to the live chat (relay: live-chat.js#announceRelease) — the website's
       # chat panel, the Discord live room, and Twitch while someone is on air. Never the game: in-game
-      # players get the mod's own update notice (LiveUpdateNotice), so they see it once. Same gate as
+      # players get the mod's own update notice (LiveUpdateNotice), so they see it once. The line is
+      # shaped like that notice (named after the lead changelog entry; notable/major add the summary,
+      # major a banner), read from the ledger the mark step above stamped. Same gate as
       # #highlights. Never blocks a release; re-send by hand with
       #   python3 scripts/relay/announce-release-live-chat.py --tag vX   (--dry-run to preview)
       - name: Announce the release in the live chat

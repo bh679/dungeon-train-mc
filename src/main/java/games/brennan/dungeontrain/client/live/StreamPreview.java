@@ -93,20 +93,28 @@ public final class StreamPreview {
         if (capturedThisFrame) return;
         capturedThisFrame = true;
         graphics.flush();
-        int w = LiveFeedClientConfig.captureWidth();
-        int h = LiveFeedClientConfig.heightFor(w);
+        RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
+        int[] size = frameSize(main);
+        int w = size[0];
+        int h = size[1];
         if (target == null || target.width != w || target.height != h) {
             release();
             target = new TextureTarget(w, h, false, Minecraft.ON_OSX);
             target.setFilterMode(GL11C.GL_NEAREST); // show the broadcast's pixels, not a smoothed upscale
         }
-        RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
+        int[] crop = LiveAspect.cropRect(main.width, main.height, w, h);
         GlStateManager._glBindFramebuffer(GL30C.GL_READ_FRAMEBUFFER, main.frameBufferId);
         GlStateManager._glBindFramebuffer(GL30C.GL_DRAW_FRAMEBUFFER, target.frameBufferId);
-        GL30C.glBlitFramebuffer(0, 0, main.width, main.height, 0, 0, w, h,
+        GL30C.glBlitFramebuffer(crop[0], crop[1], crop[2], crop[3], 0, 0, w, h,
             GL11C.GL_COLOR_BUFFER_BIT, GL11C.GL_LINEAR);
         StreamNameTag.drawInto(target); // rebinds the main target
         hasFrame = true;
+    }
+
+    /** The size a stream started now would go out at: this window's shape in the chosen size (LiveAspect). */
+    static int[] frameSize(RenderTarget main) {
+        int boxW = LiveFeedClientConfig.captureWidth();
+        return LiveAspect.frameSize(boxW, LiveFeedClientConfig.heightFor(boxW), main.width, main.height);
     }
 
     private static void release() {

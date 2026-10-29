@@ -12,12 +12,14 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
- * The album advancements. Keepsake (a photo in your album) and No Room Left (every page holds one) are
+ * The album advancements. Keepsake (a page holding both a photo and a note) and No Room Left (every page
+ * holds a photo) are
  * checked each time your album is saved ({@link PlayerAlbums#save}), the one place every edit lands — placing
  * a photo, and closing the album after changing it. Memory Lane is finding <em>someone else's</em> album: a
  * found album ({@link AlbumOwnership#foundOwner}) whose owner is not you, spotted by an inventory check every
@@ -57,7 +59,7 @@ public final class AlbumAdvancements {
 
     /** Award what {@code content} has earned. Re-firing an earned advancement is a no-op. */
     static void onSaved(ServerPlayer player, AlbumContent content) {
-        for (String action : actionsFor(photos(content))) {
+        for (String action : actionsFor(photos(content), captionedPhotos(content))) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, action);
         }
     }
@@ -67,10 +69,21 @@ public final class AlbumAdvancements {
         return (int) content.pages().stream().filter(p -> !p.photograph().isEmpty()).count();
     }
 
-    /** The {@code gameplay_action} ids an album holding {@code photos} photographs fires. Pure; package-private for tests. */
-    static List<String> actionsFor(int photos) {
-        if (photos >= FULL) return List.of(EnchiridionAdvancements.ALBUM_PHOTO, EnchiridionAdvancements.ALBUM_FULL);
-        if (photos > 0) return List.of(EnchiridionAdvancements.ALBUM_PHOTO);
-        return List.of();
+    /** Pages holding a photograph with a note written beside it — what Keepsake asks for. */
+    static int captionedPhotos(AlbumContent content) {
+        return (int) content.pages().stream()
+            .filter(p -> !p.photograph().isEmpty() && !p.note().isBlank())
+            .count();
+    }
+
+    /**
+     * The {@code gameplay_action} ids an album holding {@code photos} photographs, {@code captioned} of them
+     * with a note, fires. Pure; package-private for tests.
+     */
+    static List<String> actionsFor(int photos, int captioned) {
+        List<String> actions = new ArrayList<>(2);
+        if (captioned > 0) actions.add(EnchiridionAdvancements.ALBUM_PHOTO);
+        if (photos >= FULL) actions.add(EnchiridionAdvancements.ALBUM_FULL);
+        return List.copyOf(actions);
     }
 }

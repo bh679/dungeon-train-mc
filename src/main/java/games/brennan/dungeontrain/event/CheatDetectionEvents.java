@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.AisDataIntegrity;
 import games.brennan.dungeontrain.cheat.CheatModIntegrity;
@@ -7,6 +8,7 @@ import games.brennan.dungeontrain.cheat.CommandAllowlist;
 import games.brennan.dungeontrain.cheat.DtConfigIntegrity;
 import games.brennan.dungeontrain.cheat.KeepInventoryIntegrity;
 import games.brennan.dungeontrain.cheat.OperatorIntegrity;
+import games.brennan.dungeontrain.cheat.PlayerFreePlayIntegrity;
 import games.brennan.dungeontrain.cheat.PortalTuningIntegrity;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.cheat.UnapprovedModIntegrity;
@@ -28,6 +30,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.CommandEvent;
 import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import org.slf4j.Logger;
 
 import java.util.Map;
 import java.util.UUID;
@@ -83,14 +86,20 @@ public final class CheatDetectionEvents {
      * {@code null} for a cause that cannot be replayed — a creative-mod action
      * ({@link #requestFreePlayConfirm}) was cancelled outright, so the player simply
      * repeats the click after confirming.</p>
+     *
+     * <p>A held world setting ({@link #requestFreePlayConfirm(ServerPlayer, String, Component, Runnable)})
+     * is neither: it carries its own {@code cause} and a {@code replay} that applies the setting
+     * once the player confirms.</p>
      */
-    private record Pending(String rawCommand, String label) {
+    private record Pending(String rawCommand, String label, Component cause, Runnable replay) {
 
         /** A non-replayable cause: nothing is re-run on confirm. */
         static Pending action(String label) {
-            return new Pending(null, label);
+            return new Pending(null, label, null, null);
         }
     }
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final Map<UUID, Pending> PENDING = new ConcurrentHashMap<>();
 
@@ -119,7 +128,7 @@ public final class CheatDetectionEvents {
         event.setCanceled(true);
         String raw = event.getParseResults().getReader().getString();
         String label = CommandAllowlist.label(event.getParseResults());
-        PENDING.put(player.getUUID(), new Pending(raw, label));
+        PENDING.put(player.getUUID(), new Pending(raw, label, null, null));
         DungeonTrainNet.sendTo(player, new ShowFreePlayConfirmPacket(label));
     }
 
@@ -152,11 +161,61 @@ public final class CheatDetectionEvents {
         return true;
     }
 
+    /**
+     * Ask the player to confirm Free Play before a <b>world setting</b> changes — cheats turned on,
+     * or the world's game mode set to creative/spectator, from a screen that writes straight to the
+     * server (Essential's world panel, vanilla Open to LAN) rather than through a command. The
+     * caller has already held the change; {@code replay} applies it once the player confirms, and
+     * backing out drops it, so the setting never moves without an answer.
+     *
+     * <p>Mirrors {@link #requestFreePlayConfirm(ServerPlayer, String)}: an already-cheated run, or a
+     * session that is already visibly Free Play, has nothing to confirm, so the setting applies
+     * straight away (the latter recording the permanent taint quietly first).</p>
+     *
+     * @param label  what is changing, shown on the confirm screen — a lang key or literal text
+     * @param cause  the Free Play cause recorded on confirm (the chat line and the badge tooltip)
+     * @param replay applies the held setting; runs on the server thread
+     */
+    public static void requestFreePlayConfirm(ServerPlayer player, String label, Component cause, Runnable replay) {
+        if (RunIntegrity.isPermanentlyCheated(player)) {
+            replay.run();
+            return;
+        }
+        if (RunIntegrity.isVisiblySessionFreePlay()) {
+            RunIntegrity.markCheated(player, cause);
+            replay.run();
+            return;
+        }
+        // Opening a world to LAN with cheats AND creative/spectator holds two settings in one go.
+        // Fold the second into the first rather than replacing it, so one answer settles both: the
+        // first cause is the one recorded, and both changes apply on confirm (or neither on cancel).
+        Pending previous = PENDING.get(player.getUUID());
+        Pending held = previous != null && previous.replay() != null
+            ? new Pending(null, label, previous.cause(), () -> {
+                previous.replay().run();
+                replay.run();
+            })
+            : new Pending(null, label, cause, replay);
+        if (held.cause() != cause) {
+            LOGGER.info("[DungeonTrain] Free Play confirm for {}: {} joins the setting already held ({})",
+                player.getName().getString(), label, previous.label());
+        }
+        PENDING.put(player.getUUID(), held);
+        DungeonTrainNet.sendTo(player, new ShowFreePlayConfirmPacket(label));
+    }
+
     /** Called from {@code FreePlayConfirmResponsePacket} on the server thread. */
     public static void onConfirmResponse(ServerPlayer player, boolean confirmed) {
         Pending pending = PENDING.remove(player.getUUID());
         if (pending == null) return;
         if (!confirmed) return; // backed out — the action stayed canceled
+        if (pending.replay() != null) {
+            // A held world setting: record why, lock the chest, then apply what was held.
+            RunIntegrity.markCheated(player, pending.cause());
+            EnderChestLockBridge.engage(player);
+            pending.replay().run();
+            return;
+        }
         boolean replayable = pending.rawCommand() != null;
         RunIntegrity.markCheated(player, Component.translatable(
             replayable ? "chat.dungeontrain.free_play.cause.command"
@@ -305,6 +364,17 @@ public final class CheatDetectionEvents {
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.keep_inventory_on")
                 .withStyle(ChatFormatting.GRAY));
         }
+        // A player already Free Play on a world that doesn't know it yet marks the world first, so
+        // the block below and everyone already online follow.
+        RunIntegrity.spreadToWorld(player);
+        if (PlayerFreePlayIntegrity.isWorldFreePlay() && !RunIntegrity.isPermanentlyCheated(player)) {
+            // World-wide Free Play from another player. Permanent and world-owned like the two
+            // blocks above, and it reaches players who did nothing themselves, so it explains itself
+            // on every join, naming who and why. The player who caused it has their own recorded
+            // cause and is skipped.
+            RunIntegrity.applyFreePlayEffect(player);
+            RunIntegrity.sendFreePlayNotice(player, PlayerFreePlayIntegrity.cause());
+        }
         if (RunIntegrity.isPermanentlyCheated(player)) {
             RunIntegrity.applyFreePlayEffect(player); // re-apply across relog
             return;
@@ -320,6 +390,15 @@ public final class CheatDetectionEvents {
         // for the life of the save and read, correctly enough, as "still stuck in Free Play".
         // Reconciling here means those saves heal themselves on the next login.
         RunIntegrity.reconcileFreePlayEffect(player);
+    }
+
+    /**
+     * A player who leaves mid-prompt has nothing held for them any more: the action stays cancelled,
+     * and a held world setting must not survive to be folded into some later prompt and applied.
+     */
+    @SubscribeEvent
+    public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        PENDING.remove(event.getEntity().getUUID());
     }
 
     @SubscribeEvent

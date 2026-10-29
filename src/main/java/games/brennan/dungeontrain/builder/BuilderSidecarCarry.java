@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
@@ -64,7 +65,7 @@ public final class BuilderSidecarCarry {
 
         BlockVariantPlot source = BlockVariantPlot.resolveByKey(templatePlotKey, dims);
         if (source != null) {
-            TrackVariantBlocks target = BuilderVariantStore.loadFor(level, footprint);
+            VariantDoc target = BuilderVariantStore.loadFor(level, footprint);
             try {
                 clearCells(target);
                 for (BlockPos pos : source.allFlaggedPositions()) {
@@ -109,7 +110,7 @@ public final class BuilderSidecarCarry {
         Vec3i footprint = buildFootprint(level);
         if (footprint == null) return;
 
-        TrackVariantBlocks doc = BuilderVariantStore.loadFor(level, footprint);
+        VariantDoc doc = BuilderVariantStore.loadFor(level, footprint);
         BlockVariantPlot target = BlockVariantPlot.resolveByKey(templatePlotKey, dims);
         if (target == null) {
             LOGGER.warn("[DungeonTrain] Builder save: no plot for {} — variant pools not carried.",
@@ -174,7 +175,7 @@ public final class BuilderSidecarCarry {
             Vec3i toVolume = negate(runOffset(i, dims));
             if (source != null) {
                 try {
-                    TrackVariantBlocks target = BuilderVariantStore.loadFor(level, i, footprint);
+                    VariantDoc target = BuilderVariantStore.loadFor(level, i, footprint);
                     clearCells(target);
                     for (BlockPos pos : source.allFlaggedPositions()) {
                         BlockPos local = pos.offset(toVolume);
@@ -210,7 +211,7 @@ public final class BuilderSidecarCarry {
                 target.remove(pos);
             }
             for (int i = 0; i < volumes.size(); i++) {
-                TrackVariantBlocks doc = BuilderVariantStore.loadFor(level, i, BuilderBounds.sizeOf(volumes.get(i)));
+                VariantDoc doc = BuilderVariantStore.loadFor(level, i, BuilderBounds.sizeOf(volumes.get(i)));
                 Vec3i toRun = runOffset(i, dims);
                 for (CarriageVariantBlocks.Entry entry : doc.entries()) {
                     BlockPos local = entry.localPos().offset(toRun);
@@ -249,7 +250,7 @@ public final class BuilderSidecarCarry {
         return new Vec3i(Math.max(0, volume) * dims.length(), 0, 0);
     }
 
-    private static void copyCell(BlockVariantPlot source, BlockPos from, TrackVariantBlocks target, BlockPos to) {
+    private static void copyCell(BlockVariantPlot source, BlockPos from, VariantDoc target, BlockPos to) {
         List<VariantState> states = source.statesAt(from);
         if (states == null) return;
         target.put(to, states);
@@ -395,7 +396,7 @@ public final class BuilderSidecarCarry {
     }
 
     /** Remove every cell from the builder's working sidecar, leaving its mirror flags alone. */
-    private static void clearCells(TrackVariantBlocks doc) {
+    private static void clearCells(VariantDoc doc) {
         for (CarriageVariantBlocks.Entry entry : List.copyOf(doc.entries())) {
             doc.remove(entry.localPos());
         }

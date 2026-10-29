@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.wind;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.Trains;
@@ -36,8 +37,9 @@ import org.joml.primitives.AABBdc;
  *
  * <p><b>Pace.</b> Where the cold first appears (the start of lap {@value #FIRST_FREEZING_CYCLE}) a player takes
  * {@value #SECONDS_TO_FREEZE_AT_START} s out on the roof to freeze solid; the gap to powder snow's
- * {@value #SECONDS_TO_FREEZE_FLOOR} s halves every {@link WorldGenCycle#period() cycle} travelled, so it creeps
- * toward that floor and never quite reaches it (cycle 2 ≈ 30 s, 3 ≈ 18.5 s, 4 ≈ 13 s, 5 ≈ 10 s, …). The counter is
+ * {@value #SECONDS_TO_FREEZE_FLOOR} s halves every {@value #HALF_LIFE_CYCLES} {@link WorldGenCycle#period() cycles}
+ * travelled, so it creeps toward that floor and never quite reaches it. Cycle 2 is a doubled run, so on the shipped
+ * layout its first End band freezes in ≈ 26 s, its BetterEnd band in ≈ 17 s, and cycle 3's first End in ≈ 9 s. The counter is
  * an int, so fractional rates are applied with a stateless step on the level's game time
  * ({@link #frostThisTick}) that averages exactly the rate over time. Scaled by the End-sky intensity so it fades
  * in and out with the band's edges, netting a thaw below about two-thirds sky.</p>
@@ -46,6 +48,9 @@ import org.joml.primitives.AABBdc;
  * carriage blocks on every side ({@link TrainExposure#enclosed}) saves you. A flatbed, a coupling pad, an open
  * roof or standing in a doorway all leave you freezing, and a tunnel does not help: the End has no wind to hide
  * from, and no warmth to find outside four walls.</p>
+ *
+ * <p>No frost in a dimensional carriage (portal twin space): it is somewhere else entirely, so a player there
+ * thaws at vanilla's pace.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class EndFrostbite {
@@ -54,11 +59,11 @@ public final class EndFrostbite {
     static final long FIRST_FREEZING_CYCLE = 1L;
     static final int VANILLA_THAW = 2;
     /** Seconds on the roof to freeze solid where the cold first appears. */
-    static final double SECONDS_TO_FREEZE_AT_START = 30.0;
+    static final double SECONDS_TO_FREEZE_AT_START = 32.0;
     /** Seconds the pace approaches but never reaches: powder snow's. */
     static final double SECONDS_TO_FREEZE_FLOOR = 7.0;
     /** Cycles travelled per halving of the gap between the current pace and the floor. */
-    static final double HALF_LIFE_CYCLES = 1.0;
+    static final double HALF_LIFE_CYCLES = 0.62;
     /** How far past the fully-frozen mark the counter may climb, so a step out of the cold doesn't thaw at once. */
     static final int OVERSHOOT = 20;
     /** Ticks between fully-frozen hits: vanilla's {@code Entity.FREEZE_HURT_FREQUENCY}. */
@@ -142,9 +147,11 @@ public final class EndFrostbite {
         if (!(player.level() instanceof ServerLevel level) || level.dimension() != Level.OVERWORLD) return;
         if (player.isSpectator() || player.isCreative() || !player.isAlive()) return;
         hurtIfVanillaWont(player);
+        if (PortalTwinSpace.isInside(level, player.getBlockX(), player.getY())) return;
         int x = (int) Math.floor(player.getX());
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
-        double rate = frostRate(WindZones.endSkyAt(x), cycle.cycleIndex(x), blocksIn(cycle, x), halfLife(cycle),
+        int fx = frostX(cycle, x);
+        double rate = frostRate(WindZones.endSkyAt(x), cycle.cycleIndex(fx), blocksIn(cycle, fx), halfLife(cycle),
                 player.getTicksRequiredToFreeze(), leatherPieces(player));
         int frost = frostThisTick(rate, level.getGameTime());
         if (frost == 0 || !inTheCold(level, player)) return;
@@ -160,6 +167,19 @@ public final class EndFrostbite {
     static void hurtIfVanillaWont(ServerPlayer player) {
         if (player.canFreeze() || player.tickCount % FREEZE_HURT_PERIOD != 0 || !player.isFullyFrozen()) return;
         player.hurt(player.damageSources().freeze(), FREEZE_HURT_AMOUNT);
+    }
+
+    /**
+     * The X whose lap and distance set the frost pace at {@code x}: {@code x} itself, except behind spawn, where
+     * the train counts as already on lap 2 ({@link #FIRST_FREEZING_CYCLE}) with every block travelled -X past the
+     * buffer added on, so the first backward End freezes and the pace tightens the further back it goes. The
+     * End-sky check still uses the real {@code x}.
+     */
+    public static int frostX(WorldGenCycle cycle, int x) {
+        long back = cycle.reverseDistance(x);
+        long lapTwo = cycle.lapStartX((int) FIRST_FREEZING_CYCLE);
+        if (back < 0L || lapTwo < 0L) return x;
+        return (int) Math.min(Integer.MAX_VALUE, lapTwo + back);
     }
 
     /** Blocks past the start of the first freezing cycle (0 before it, or when the cycle cannot say). */

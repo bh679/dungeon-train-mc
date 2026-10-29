@@ -52,7 +52,9 @@ public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localP
          * Typed values from the cmd-click number pad — {@code delta} is the value outright, and the
          * fill max takes {@code FILL_ALL} for "all". Same clamps as their BUMP twins.
          */
-        SET_FILL_MIN, SET_FILL_MAX, SET_COUNT, SET_DUR_CHANCE, SET_ENCH_CHANCE
+        SET_FILL_MIN, SET_FILL_MAX, SET_COUNT, SET_DUR_CHANCE, SET_ENCH_CHANCE,
+        /** Step a vault's unlock key (Trial Key → Ominous Trial Key), which also sets the vault type. */
+        CYCLE_VAULT_KEY
     }
 
     public static final Type<ContainerContentsEditPacket> TYPE =
@@ -95,7 +97,6 @@ public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localP
         ctx.enqueueWork(() -> {
             Player p = ctx.player();
             if (p instanceof ServerPlayer sender) {
-                games.brennan.dungeontrain.editor.EditorEditRecorder.notePendingConfig(sender, "container contents");
                 ContainerContentsMenuController.applyEdit(sender, packet);
             }
         });

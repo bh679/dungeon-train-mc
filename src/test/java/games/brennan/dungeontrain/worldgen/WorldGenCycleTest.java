@@ -581,7 +581,7 @@ final class WorldGenCycleTest {
         // Core [4690,5090), len 400. End sky from 100, fade in 40, fade out 70, closing void 20 → spheres end at 5070.
         WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
                 100, 40, 200, 50, 200, 150, 0, 500, 200, 300, 0.12, 0.5, 400, 200, 100, 0);
-        SpheresSegments seg = SpheresSegments.of(100, 200, 250, 0, 0, 0.0, 1.0, 1.0, 1, 1, 1);
+        SpheresSegments seg = SpheresSegments.of(100, 200, 250, 300, 0, 0, 0.0, 1.0, 1.0, 1, 1, 1, 1);
 
         assertEquals(0.0, SpheresSky.endSky(c, seg, 4600, 40, 70, 20), EPS);        // entry fade
         assertEquals(0.0, SpheresSky.endSky(c, seg, 4789, 40, 70, 20), EPS);        // overworld sky

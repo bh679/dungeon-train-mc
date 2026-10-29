@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.portal;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -1875,6 +1876,8 @@ public final class PortalCarriageBuilder {
         PortalRoomPools.apply(level, roomOrigin, roomName, size, writeMask, variantIndex, pairKey);
         applyRoomVariants(level, roomOrigin, roomName, size, writeMask, variantIndex, exactIndex,
             pairKey, tile, liveMobCount);
+        // Template-baked chest contents were never rolled: fingerprint them as stamped (difficulty swap).
+        games.brennan.dungeontrain.event.DifficultyWorldLootEvents.fingerprintRoom(level, roomOrigin, size);
         // Last, and only a registration: the shelves are stocked by PortalRoomLibrarian on a later
         // tick, because the relay has not said who has written what by the time a room is stamped.
         PortalRoomLibrarian.register(pairKey, roomOrigin, size, books);
@@ -1992,7 +1995,7 @@ public final class PortalCarriageBuilder {
                                           Vec3i size, PortalCorridorMask mask, int variantIndex,
                                           int exactIndex, int pairKey, PortalRoomTiling.Tile tile,
                                           int liveMobCount) {
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, roomName, size);
+        VariantDoc sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, roomName, size);
         if (sidecar.isEmpty()) return;
 
         long worldSeed = level.getSeed();
@@ -2254,6 +2257,34 @@ public final class PortalCarriageBuilder {
                     TemplateDecor.Rule.ROOM);
             }
             PortalRoomMobs.markDecor(level, roomOrigin, size, pairKey, PortalRoomTiling.Tile.BASE, 0);
+        });
+    }
+
+    /**
+     * Lay copy {@code tile} of a tiled room back as a player left it ({@link PortalRoomMemory}).
+     *
+     * <p>{@link #stampRoomFromBlob} for a copy, made through the copy's own masks: a copy on the
+     * corridor row stands around the twin corridors, and the snapshot captured their cells too, so an
+     * unclipped stamp would lay a stale corridor over the live one. Like that path it rolls no loot
+     * and spawns no mobs — what stands in the copy is what its last visitor left.</p>
+     */
+    public static void stampTileFromBlob(ServerLevel level, BlockPos origin, Vec3i size,
+                                         PortalRoomBlob blob, PortalCorridorMask clearMask,
+                                         PortalCorridorMask writeMask,
+                                         java.util.function.Predicate<BlockPos> keepFluid,
+                                         int pairKey, PortalRoomTiling.Tile tile) {
+        CarriageStampGuard.run(() -> {
+            clearRoomBox(level, origin, size, clearMask, /*relight*/ true);
+            clearIntruders(level, origin, size);
+            plugFluidsAround(level, origin, size, keepFluid);
+            StructureTemplate template = games.brennan.dungeontrain.train.CarriageSnapshotTemplate.toTemplate(
+                blob.snapshot(), level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BLOCK));
+            if (!template.getSize().equals(size)) {
+                warnSizeMismatch("<remembered copy>", size, template.getSize());
+            }
+            CarriagePlacer.stampTemplateAt(level, origin, template, clipTo(origin, size, writeMask),
+                /*relight*/ true, boxOf(origin, size), TemplateDecor.Rule.ROOM);
+            PortalRoomMobs.markDecor(level, origin, size, pairKey, tile, 0);
         });
     }
 

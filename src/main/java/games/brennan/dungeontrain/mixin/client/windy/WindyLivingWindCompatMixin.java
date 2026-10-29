@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *       (Windy's own is a fixed 0.055/0.1 blocks/tick);</li>
  *   <li>{@code spawnRateMultiplier} — DT's density, which rises with the wind past Windy's 4× cap.</li>
  * </ul>
- * Calm before the Upside-down end, rising after it. {@code @Pseudo} + string target, so DT neither compiles
+ * Calm before the Upside-down end, rising after it; held calm whenever DT's wind is off in a train world. {@code @Pseudo} + string target, so DT neither compiles
  * against Windy nor needs it installed; gated by {@code WindyMixinPlugin}, which checks the methods exist.
  */
 @Pseudo

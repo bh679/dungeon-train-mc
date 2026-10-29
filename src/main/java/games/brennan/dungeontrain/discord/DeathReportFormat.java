@@ -42,7 +42,7 @@ public final class DeathReportFormat {
         if (total == 0 || names == null || names.isEmpty()) {
             return Integer.toString(total);
         }
-        String listed = String.join(", ", names);
+        String listed = String.join(", ", names.stream().map(DiscordMarkdown::escape).toList());
         return total > names.size()
                 ? total + " (" + listed + ", …)"
                 : total + " (" + listed + ")";

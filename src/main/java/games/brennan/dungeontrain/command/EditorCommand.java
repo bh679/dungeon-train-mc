@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.command;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
@@ -13,7 +14,8 @@ import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.TemplateDeletes;
 import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageEditor;
-import games.brennan.dungeontrain.editor.CarriageEditor.SaveResult;
+import games.brennan.dungeontrain.editor.EditorSessions;
+import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.editor.CarriagePartEditor;
 import games.brennan.dungeontrain.editor.CarriagePartRegistry;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
@@ -1299,7 +1301,7 @@ public final class EditorCommand {
     }
 
     /** Apply one {@code x|y|z} axis (or the {@code v} variant-mirror flag) to a track sidecar, preserving the rest. */
-    private static void applyMirrorAxis(games.brennan.dungeontrain.track.variant.TrackVariantBlocks cfg,
+    private static void applyMirrorAxis(games.brennan.dungeontrain.editor.VariantDoc cfg,
                                         String axis, boolean on) {
         if (axis.equals("v")) {
             cfg.setMirrorVariants(on);
@@ -1340,12 +1342,12 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.PortalRoomTemplateStore.sizeOf(source.getLevel(), name, dims);
         }
         Vec3i footprint = games.brennan.dungeontrain.editor.TrackSidePlots.footprint(kind, name, dims);
-        games.brennan.dungeontrain.track.variant.TrackVariantBlocks cfg =
+        games.brennan.dungeontrain.editor.VariantDoc cfg =
             games.brennan.dungeontrain.track.variant.TrackVariantBlocks.loadFor(kind, name, footprint);
         applyMirrorAxis(cfg, axis, on);
         try {
-            cfg.save(kind, name);
-            if (EditorDevMode.isEnabled()) cfg.saveToSource(kind, name);
+            cfg.save();
+            if (EditorDevMode.isEnabled()) cfg.saveToSource();
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.mirror", kind.id(), name, axis.toUpperCase(Locale.ROOT), Component.translatable(on ? "chat.dungeontrain.common.on" : "chat.dungeontrain.common.off")).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (IOException e) {
@@ -2378,8 +2380,7 @@ public final class EditorCommand {
             String baseStage = m.stageIds().isEmpty() ? null : m.stageIds().get(0);
             TemplateGate current = games.brennan.dungeontrain.editor.StageStore.effectiveGate(m.gate(), baseStage);
             TemplateGate next = op.apply(current);
-            CarriageContentsGroup.Member updated = new CarriageContentsGroup.Member(
-                m.id(), m.weight(), next, java.util.List.of());
+            CarriageContentsGroup.Member updated = m.withGate(next).withStages(java.util.List.of());
             CarriageContentsGroupStore.save(parent.id(), existing.get().withMember(updated));
             // The member was just detached to Custom above (by design), so it is unlinked now.
             gateSuccess(source, parent.id() + ":" + member.id(), next,
@@ -2425,7 +2426,7 @@ public final class EditorCommand {
                 if (m.stageIds().size() == 1) {
                     inline = games.brennan.dungeontrain.editor.StageStore.effectiveGate(inline, m.stageIds().get(0));
                 }
-                updated = new CarriageContentsGroup.Member(m.id(), m.weight(), inline, java.util.List.of());
+                updated = m.withGate(inline).withStages(java.util.List.of());
             } else {
                 updated = m.withStageToggled(link);
             }
@@ -2847,7 +2848,7 @@ public final class EditorCommand {
         VariantTarget target = resolveTarget(source, player);
         if (target == null) return 0;
 
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(target.variant(), target.dims());
+        VariantDoc sidecar = CarriageVariantBlocks.loadFor(target.variant(), target.dims());
         boolean removed = sidecar.remove(target.localPos());
         final String pos = target.localPos().getX() + "," + target.localPos().getY() + "," + target.localPos().getZ();
         if (removed) {
@@ -2874,12 +2875,12 @@ public final class EditorCommand {
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_part", local.toShortString()));
             return 0;
         }
-        CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(
+        VariantDoc sidecar = CarriagePartVariantBlocks.loadFor(
             partLoc.kind(), partLoc.name(), partSize);
         boolean removed = sidecar.remove(local);
         if (removed) {
             try {
-                sidecar.save(partLoc.kind(), partLoc.name());
+                sidecar.save();
             } catch (IOException e) {
                 source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_save_failed", e.getMessage()));
                 return 0;
@@ -2911,11 +2912,11 @@ public final class EditorCommand {
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_interior", local.toShortString()));
             return 0;
         }
-        CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contentsPlot, interiorSize);
+        VariantDoc sidecar = CarriageContentsVariantBlocks.loadFor(contentsPlot, interiorSize);
         boolean removed = sidecar.remove(local);
         if (removed) {
             try {
-                sidecar.save(contentsPlot);
+                sidecar.save();
             } catch (IOException e) {
                 source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_save_failed", e.getMessage()));
                 return 0;
@@ -2939,7 +2940,7 @@ public final class EditorCommand {
         CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(player.blockPosition(), dims);
         if (partLoc != null) {
             Vec3i partSize = partLoc.kind().dims(dims);
-            CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(
+            VariantDoc sidecar = CarriagePartVariantBlocks.loadFor(
                 partLoc.kind(), partLoc.name(), partSize);
             sendVariantsListing(source,
                 "part '" + partLoc.kind().id() + ":" + partLoc.name() + "'",
@@ -2950,7 +2951,7 @@ public final class EditorCommand {
         CarriageContents contentsPlot = CarriageContentsEditor.plotContaining(player.blockPosition(), dims);
         if (contentsPlot != null) {
             Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contentsPlot, dims);
-            CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contentsPlot, interiorSize);
+            VariantDoc sidecar = CarriageContentsVariantBlocks.loadFor(contentsPlot, interiorSize);
             sendVariantsListing(source,
                 "contents '" + contentsPlot.id() + "'",
                 sidecar.entries(), sidecar.isEmpty(), sidecar.size());
@@ -2962,7 +2963,7 @@ public final class EditorCommand {
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_plot_use_dungeontrain"));
             return 0;
         }
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(
+        VariantDoc sidecar = CarriageVariantBlocks.loadFor(
             plotVariant, CarriageEditor.plotDims(plotVariant, dims));
         sendVariantsListing(source,
             "'" + plotVariant.id() + "'",
@@ -3222,9 +3223,10 @@ public final class EditorCommand {
                 LOGGER.info("[DungeonTrain] Editor: '{}' overlaps the landing plot — erasing it first", job.label());
                 job.work().run();
             }
-            // The landing plot, stamped now so the teleport puts the player on something real.
-            stampCategoryModel(overworld, head, dims);
-            enterFirstModel(player, head);
+            // The landing plot, stamped now so the teleport puts the player on something real, then
+            // the teleport itself via the model's own editor — without a second stamp.
+            head.restampPlot(overworld, dims);
+            head.enter(player, true, false, games.brennan.dungeontrain.editor.EditorPlotArrival.Inside.FRONT_DOOR);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor enter-category failed", t);
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.enter_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
@@ -3239,7 +3241,7 @@ public final class EditorCommand {
         for (Template model : category.models()) {
             if (model.equals(head) || model instanceof Template.Part) continue;   // parts: below
             queued.add(new EditorStampQueue.Job("stamp " + model.displayName(),
-                () -> stampCategoryModel(overworld, model, dims)));
+                () -> model.restampPlot(overworld, dims)));
         }
         // CARRIAGES also paints the parts grid — floor / walls / roof / doors
         // templates laid out on new Z rows past the carriage plots so every
@@ -3257,61 +3259,6 @@ public final class EditorCommand {
         final int pending = queued.size();
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered", Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id()), head.displayName(), (pending > 0 ? Component.translatable("chat.dungeontrain.editor.entered_pending") : Component.empty())), true);
         return 1;
-    }
-
-    /** Teleport onto {@code head}'s plot via its editor's enter path, without restamping it. */
-    private static void enterFirstModel(ServerPlayer player, Template head) {
-        if (head instanceof Template.WholeCarriage || head instanceof Template.CarriageGroup) {
-            games.brennan.dungeontrain.editor.WholeCarriageEditor.enter(player, head, true, false,
-                games.brennan.dungeontrain.editor.EditorPlotArrival.Inside.FRONT_DOOR);
-        } else if (head instanceof Template.Carriage cm) {
-            CarriageEditor.enter(player, cm.variant(), true, false);
-        } else if (head instanceof Template.Contents cm) {
-            CarriageContentsEditor.enter(player, cm.contents(), null, true, false);
-        } else if (head instanceof Template.Pillar pm) {
-            PillarEditor.enter(player, pm.section(), true, false);
-        } else if (head instanceof Template.Adjunct am) {
-            PillarEditor.enter(player, am.adjunct(), true, false);
-        } else if (head instanceof Template.Tunnel tm) {
-            TunnelEditor.enter(player, tm.variant(), true, false);
-        } else if (head instanceof Template.Track) {
-            TrackEditor.enter(player, true, false);
-        } else if (head instanceof Template.PortalRoom rm) {
-            games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, rm.name(), true, false);
-        } else if (head instanceof Template.Building b) {
-            games.brennan.dungeontrain.editor.BuildingEditor.walkTo(player, player.serverLevel(), b.name(), false);
-        } else if (head instanceof Template.LostCity l) {
-            games.brennan.dungeontrain.editor.LostCityReferenceEditor.walkTo(player, player.serverLevel(), l.name(), false);
-        } else if (head instanceof Template.Staged s) {
-            games.brennan.dungeontrain.editor.WorkbenchEditor.enter(player, player.getServer().overworld(), s.stagedId(), true,
-                games.brennan.dungeontrain.editor.EditorPlotArrival.Inside.FRONT_DOOR);
-        }
-    }
-
-    private static void stampCategoryModel(ServerLevel overworld, Template model, CarriageDims dims) {
-        if (model instanceof Template.WholeCarriage || model instanceof Template.CarriageGroup) {
-            games.brennan.dungeontrain.editor.WholeCarriageEditor.stampPlot(overworld, model, dims);
-        } else if (model instanceof Template.Carriage cm) {
-            CarriageEditor.stampPlot(overworld, cm.variant(), dims);
-        } else if (model instanceof Template.Contents cm) {
-            CarriageContentsEditor.stampPlot(overworld, cm.contents(), dims);
-        } else if (model instanceof Template.Pillar pm) {
-            PillarEditor.stampPlot(overworld, pm.section(), dims);
-        } else if (model instanceof Template.Adjunct am) {
-            PillarEditor.stampPlot(overworld, am.adjunct(), dims);
-        } else if (model instanceof Template.Tunnel tm) {
-            TunnelEditor.stampPlot(overworld, tm.variant());
-        } else if (model instanceof Template.Track) {
-            TrackEditor.stampPlot(overworld, dims);
-        } else if (model instanceof Template.PortalRoom rm) {
-            games.brennan.dungeontrain.editor.PortalRoomEditor.stampPlot(overworld, rm.name(), dims);
-        } else if (model instanceof Template.Building b) {
-            games.brennan.dungeontrain.editor.BuildingEditor.stampPlot(overworld, b.name());
-        } else if (model instanceof Template.LostCity l) {
-            games.brennan.dungeontrain.editor.LostCityReferenceEditor.stampPlot(overworld, l.name());
-        } else if (model instanceof Template.Staged s) {
-            games.brennan.dungeontrain.editor.WorkbenchEditor.stampPlot(overworld, s.stagedId());
-        }
     }
 
     private static int runEnter(CommandSourceStack source, String raw) {
@@ -3342,119 +3289,29 @@ public final class EditorCommand {
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        java.util.Optional<EditorCategory> categoryOpt = EditorCategory.fromId(categoryId);
+        java.util.Optional<games.brennan.dungeontrain.editor.PlotCategory> categoryOpt =
+            games.brennan.dungeontrain.editor.PlotCategory.fromId(categoryId);
         if (categoryOpt.isEmpty()) {
             source.sendFailure(Component.translatable("chat.dungeontrain.save.unknown_category", categoryId));
             return 0;
         }
-        EditorCategory category = categoryOpt.get();
+        games.brennan.dungeontrain.editor.PlotCategory category = categoryOpt.get();
 
-        BlockPos origin = null;
-        net.minecraft.core.Vec3i size = null;
-
-        // Track-side ids use a "kind.name" format mirroring EditorDirtyCheck:
-        //   "track.<name>"        — track tile variant
-        //   "pillar_<sec>.<name>" — pillar section variant
-        //   "adjunct_<id>.<name>" — pillar adjunct variant
-        //   "tunnel_<v>.<name>"   — tunnel variant
-        // Carriages and contents use the bare model id. Dot is used (not
-        // colon) so the id parses cleanly as a single Brigadier word()
-        // argument — colons aren't allowed in unquoted strings.
-        if (category == EditorCategory.TRACKS && id.contains(".")) {
-            int sep = id.indexOf('.');
-            String prefix = id.substring(0, sep);
-            String name = id.substring(sep + 1);
-            if ("track".equals(prefix)) {
-                origin = games.brennan.dungeontrain.editor.TrackSidePlots.plotOrigin(
-                    games.brennan.dungeontrain.track.variant.TrackKind.TILE, name, dims);
-                size = new net.minecraft.core.Vec3i(
-                    games.brennan.dungeontrain.track.TrackPlacer.TILE_LENGTH,
-                    games.brennan.dungeontrain.track.TrackPlacer.HEIGHT,
-                    dims.width());
-            } else if (prefix.startsWith("pillar_")) {
-                games.brennan.dungeontrain.track.PillarSection sec = tryParseSection(prefix.substring("pillar_".length()));
-                if (sec == null) {
-                    source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_pillar_section", id));
-                    return 0;
-                }
-                origin = PillarEditor.plotOrigin(new games.brennan.dungeontrain.template.PillarTemplateId(sec, name), dims);
-                size = new net.minecraft.core.Vec3i(1, sec.height(), dims.width());
-            } else if (prefix.startsWith("adjunct_")) {
-                games.brennan.dungeontrain.track.PillarAdjunct adj = tryParseAdjunct(prefix.substring("adjunct_".length()));
-                if (adj == null) {
-                    source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_adjunct", id));
-                    return 0;
-                }
-                origin = PillarEditor.plotOriginAdjunct(new games.brennan.dungeontrain.template.PillarAdjunctTemplateId(adj, name), dims);
-                size = new net.minecraft.core.Vec3i(adj.xSize(), adj.ySize(), adj.zSize());
-            } else if (prefix.startsWith("tunnel_")) {
-                TunnelVariant tv;
-                try {
-                    tv = TunnelVariant.valueOf(prefix.substring("tunnel_".length()).toUpperCase(Locale.ROOT));
-                } catch (IllegalArgumentException e) {
-                    source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_tunnel_variant", id));
-                    return 0;
-                }
-                origin = TunnelEditor.plotOrigin(new games.brennan.dungeontrain.template.TunnelTemplateId(tv, name));
-                size = new net.minecraft.core.Vec3i(
-                    games.brennan.dungeontrain.tunnel.TunnelPlacer.LENGTH,
-                    games.brennan.dungeontrain.tunnel.TunnelPlacer.HEIGHT,
-                    games.brennan.dungeontrain.tunnel.TunnelPlacer.WIDTH);
-            } else {
-                source.sendFailure(Component.translatable("chat.dungeontrain.editor.unrecognised_track_side_id", id));
-                return 0;
-            }
-        } else if (category == EditorCategory.PORTALS) {
-            // Same "kind.name" shape; one kind, so the prefix is always portal_room and a bare id
-            // means the default room.
-            String prefix = id.contains(".") ? id.substring(0, id.indexOf('.')) : id;
-            String name = id.contains(".")
-                ? id.substring(id.indexOf('.') + 1)
-                : games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME;
-            if (!games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM.id().equals(prefix)) {
-                source.sendFailure(Component.translatable("chat.dungeontrain.editor.unrecognised_portal_id", id));
-                return 0;
-            }
-            origin = games.brennan.dungeontrain.editor.PortalRoomEditor.plotOrigin(name, dims);
-            size = games.brennan.dungeontrain.editor.PortalRoomEditor.plotSize(name, dims);
-        } else {
-            // Resolve the model by id within the category and read its plot
-            // footprint. The dispatch mirrors stampCategoryModel above —
-            // each editor's plotOrigin signature differs.
-            Template model = null;
-            for (Template m : category.models()) {
-                if (m.id().equals(id)) { model = m; break; }
-            }
-            if (model == null) {
-                source.sendFailure(Component.translatable("chat.dungeontrain.save.unknown_model_category", id, Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id())));
-                return 0;
-            }
-            if (model instanceof Template.Carriage cm) {
-                origin = CarriageEditor.plotOrigin(cm.variant(), dims);
-                CarriageDims cmBox = CarriageEditor.plotDims(cm.variant(), dims);
-                size = new net.minecraft.core.Vec3i(cmBox.length(), cmBox.height(), cmBox.width());
-            } else if (model instanceof Template.Contents cm) {
-                origin = CarriageContentsEditor.plotOrigin(cm.contents(), dims);
-                size = new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width());
-            } else if (model instanceof Template.Pillar pm) {
-                origin = PillarEditor.plotOrigin(pm.section(), dims);
-                size = new net.minecraft.core.Vec3i(1, pm.section().height(), dims.width());
-            } else if (model instanceof Template.Track) {
-                origin = games.brennan.dungeontrain.editor.TrackSidePlots.plotOrigin(
-                    games.brennan.dungeontrain.track.variant.TrackKind.TILE,
-                    games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME, dims);
-                size = new net.minecraft.core.Vec3i(
-                    games.brennan.dungeontrain.track.TrackPlacer.TILE_LENGTH,
-                    games.brennan.dungeontrain.track.TrackPlacer.HEIGHT,
-                    dims.width());
-            } else {
-                source.sendFailure(Component.translatable("chat.dungeontrain.editor.view_not_supported_model", id));
-                return 0;
-            }
+        // The id is the dirty scan's row key ("kind.name" on the track side, the bare id elsewhere);
+        // TemplateDirtyKeys is its one inverse. A bare portals id means the default room, as before.
+        String rowId = category == games.brennan.dungeontrain.editor.PlotCategory.PORTALS && !id.contains(".")
+            ? id + "." + games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME : id;
+        Template model = games.brennan.dungeontrain.editor.TemplateDirtyKeys.parseExisting(categoryId, rowId).orElse(null);
+        if (model == null) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.unknown_model_category", id, Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.owner().id())));
+            return 0;
         }
+        // Every kind answers for its own plot — no per-editor origin/size signatures to mirror.
+        BlockPos origin = model.editorPlotOrigin(overworld, dims);
+        net.minecraft.core.Vec3i size = model.plotSize(dims);
 
         if (origin == null) {
-            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_plot_origin", id, Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id())));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_plot_origin", id, Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.owner().id())));
             return 0;
         }
 
@@ -3756,17 +3613,10 @@ public final class EditorCommand {
     private static int runExit(CommandSourceStack source) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
-        // Three editors keep their own session map — PortalRoomEditor, TunnelEditor and
-        // CarriageEditor — and every one of them has to be in this chain or a player who entered
-        // through it never gets their position, dimension and game mode back. Portal rooms were
-        // missing here, so a direct `/dt editor portals` left the player stuck in the plot, in
-        // creative, told there was "no saved editor session".
-        //
-        // Each session restores its OWN entry point, so stacked sessions unwind one press at a
-        // time: a user who entered a carriage plot, then a tunnel or room plot, runs exit twice.
-        boolean exited = games.brennan.dungeontrain.editor.PortalRoomEditor.exit(player)
-            || TunnelEditor.exit(player)
-            || CarriageEditor.exit(player);
+        // One session map for every editor (EditorSessions): the first entry is the anchor, so a
+        // player who went from a carriage plot into a tunnel or room plot still comes back to where
+        // they left the world in one press.
+        boolean exited = EditorSessions.exit(player);
         if (!exited) {
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_saved_session_nothing"));
             return 0;
@@ -3974,12 +3824,12 @@ public final class EditorCommand {
                     new games.brennan.dungeontrain.template.CarriagePartTemplateId(partLoc.kind(), partLoc.name()), dims);
                 CarriagePartPlacer.eraseAt(overworld, origin, partLoc.kind(), dims);
                 Vec3i partSize = partLoc.kind().dims(dims);
-                CarriagePartVariantBlocks partSidecar = CarriagePartVariantBlocks.loadFor(
+                VariantDoc partSidecar = CarriagePartVariantBlocks.loadFor(
                     partLoc.kind(), partLoc.name(), partSize);
                 int cleared = partSidecar.clearAll();
                 if (cleared > 0) {
                     try {
-                        partSidecar.save(partLoc.kind(), partLoc.name());
+                        partSidecar.save();
                     } catch (IOException e) {
                         source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_save_failed", e.getMessage()).withStyle(ChatFormatting.RED));
                         return 0;
@@ -4007,12 +3857,12 @@ public final class EditorCommand {
                 // contents' own box: a Half/Full plot is a whole group long, not one carriage.
                 CarriageContentsPlacer.eraseAt(overworld, origin, CarriageContentsEditor.plotDims(contents, dims));
                 Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
-                CarriageContentsVariantBlocks contentsSidecar =
+                VariantDoc contentsSidecar =
                     CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
                 int cleared = contentsSidecar.clearAll();
                 if (cleared > 0) {
                     try {
-                        contentsSidecar.save(contents);
+                        contentsSidecar.save();
                     } catch (IOException e) {
                         source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_save_failed", e.getMessage()).withStyle(ChatFormatting.RED));
                         return 0;
@@ -4035,7 +3885,7 @@ public final class EditorCommand {
                 BlockPos origin = CarriageEditor.plotOrigin(carriage, dims);
                 CarriageDims carriageBox = CarriageEditor.plotDims(carriage, dims);
                 CarriagePlacer.eraseAt(overworld, origin, carriageBox);
-                CarriageVariantBlocks carriageSidecar = CarriageVariantBlocks.loadFor(carriage, carriageBox);
+                VariantDoc carriageSidecar = CarriageVariantBlocks.loadFor(carriage, carriageBox);
                 int cleared = carriageSidecar.clearAll();
                 final String id = carriage.id();
                 final int n = cleared;
@@ -4565,7 +4415,7 @@ public final class EditorCommand {
 
     private static int runPillarSaveSection(CommandSourceStack source, ServerPlayer player, PillarSection section) {
         try {
-            PillarEditor.SaveResult result = PillarEditor.save(player, section);
+            SaveResult result = PillarEditor.save(player, section);
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_pillar_template_config", section.id()), true);
             if (result.sourceAttempted()) {
                 if (result.sourceWritten()) {
@@ -4584,7 +4434,7 @@ public final class EditorCommand {
 
     private static int runPillarSaveAdjunct(CommandSourceStack source, ServerPlayer player, PillarAdjunct adjunct) {
         try {
-            PillarEditor.SaveResult result = PillarEditor.save(player, adjunct);
+            SaveResult result = PillarEditor.save(player, adjunct);
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_pillar_adjunct_template", adjunct.id()), true);
             if (result.sourceAttempted()) {
                 if (result.sourceWritten()) {
@@ -4786,7 +4636,7 @@ public final class EditorCommand {
 
         if (newName == null) {
             try {
-                CarriageContentsEditor.SaveResult result = CarriageContentsEditor.save(player, current);
+                SaveResult result = CarriageContentsEditor.save(player, current);
                 source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_contents_template_config", current.id()), true);
                 if (result.sourceAttempted()) {
                     if (result.sourceWritten()) {
@@ -5214,7 +5064,7 @@ public final class EditorCommand {
             return 0;
         }
         try {
-            TrackEditor.SaveResult result = TrackEditor.save(player);
+            SaveResult result = TrackEditor.save(player);
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_track_template_config"), true);
             if (result.sourceAttempted()) {
                 if (result.sourceWritten()) {
@@ -5403,7 +5253,7 @@ public final class EditorCommand {
             targetName = newName.toLowerCase(Locale.ROOT);
         }
         try {
-            CarriagePartEditor.SaveResult result = CarriagePartEditor.save(player, new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, targetName));
+            SaveResult result = CarriagePartEditor.save(player, new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, targetName));
             final String name = targetName;
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_part_config_dir", kind.id(), name), true);
             if (result.sourceAttempted()) {
@@ -5454,7 +5304,7 @@ public final class EditorCommand {
         }
 
         try {
-            CarriagePartEditor.SaveResult result = CarriagePartEditor.saveAs(player,
+            SaveResult result = CarriagePartEditor.saveAs(player,
                 new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, oldName),
                 new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, target));
             final String oldRef = oldName;
@@ -7721,11 +7571,9 @@ public final class EditorCommand {
         games.brennan.dungeontrain.track.variant.TrackKind kind, String sourceName,
         String targetName
     ) throws IOException {
-        games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind photoKind =
-            kind == games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM
-                ? games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.PORTAL_ROOM
-                : games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.TRACK;
-        games.brennan.dungeontrain.editor.TemplateCopy.copy(photoKind, kind.id(), sourceName, targetName);
+        games.brennan.dungeontrain.editor.TemplateCopy.copy(
+            games.brennan.dungeontrain.editor.RelayTemplates.trackSide(kind, sourceName),
+            games.brennan.dungeontrain.editor.RelayTemplates.trackSide(kind, targetName));
     }
 
     /**

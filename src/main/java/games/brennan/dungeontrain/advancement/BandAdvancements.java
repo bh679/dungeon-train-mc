@@ -52,6 +52,8 @@ public final class BandAdvancements {
 
     public static final String NETHER = "reached_nether";
     public static final String BETTER_NETHER = "reached_better_nether";
+    /** The Deeper Dark: a Nether slot wearing the Otherside ({@link CycleLayout.Style#OTHERSIDE}). Not the Nether. */
+    public static final String DEEPER_DARK = "reached_deeper_dark";
     public static final String VOID = "reached_void";
     public static final String END_ISLANDS = "reached_end_islands";
     public static final String BETTER_END = "reached_better_end";
@@ -105,7 +107,7 @@ public final class BandAdvancements {
      */
     public static final List<String> ALL = List.of(
             NETHER, WWOO, VOID, END_ISLANDS, UPSIDE_DOWN, REASSEMBLY,
-            BOP, BETTER_NETHER, legacyId(LegacyBandKind.LOST_CITY), BETTER_END, SPHERES,
+            BOP, BETTER_NETHER, DEEPER_DARK, legacyId(LegacyBandKind.LOST_CITY), BETTER_END, SPHERES,
             legacyId(LegacyBandKind.AMPLIFIED), legacyId(LegacyBandKind.BETA), legacyId(LegacyBandKind.FAR_LANDS), legacyId(LegacyBandKind.CAVES_OF_CHAOS),
             legacyId(LegacyBandKind.SKYLANDS),
             legacyId(LegacyBandKind.FLOATING), legacyId(LegacyBandKind.ALPHA), legacyId(LegacyBandKind.INFDEV),
@@ -244,9 +246,12 @@ public final class BandAdvancements {
                 if (bop) out.add(BOP);
             }
             case NETHER -> {
-                // The Deeper Dark (a Nether slot wearing the Otherside) has no band advancement of its own yet,
-                // and is not the Nether, so it adds nothing — the plain Nether stays the first one met.
-                if (slot.style() == CycleLayout.Style.OTHERSIDE) break;
+                // The Deeper Dark (a Nether slot wearing the Otherside) is not the Nether: it adds only its own
+                // advancement, so the plain Nether stays the first one met.
+                if (slot.style() == CycleLayout.Style.OTHERSIDE) {
+                    out.add(DEEPER_DARK);
+                    break;
+                }
                 out.add(NETHER);
                 if (better) out.add(BETTER_NETHER);
             }
@@ -393,6 +398,8 @@ public final class BandAdvancements {
         t.add(entry(WWOO, (l, x) -> overworldStyle(l, x) == CycleLayout.Style.WWOO));
         t.add(entry(BETTER_NETHER, (l, x) -> NetherBand.isInNetherBiome(l, x)
                 && cycle(l).isBetterNetherAt(x)));
+        t.add(entry(DEEPER_DARK, (l, x) -> NetherBand.isInNetherBiome(l, x)
+                && NetherBand.isOthersideAt(l, x)));
         t.add(entry(BOP, (l, x) -> overworldStyle(l, x) == CycleLayout.Style.BOP));
         t.add(entry(BETTER_END, (l, x) -> isInEndIslands(l, x)
                 && cycle(l).isBetterEndAt(x)));

@@ -12,12 +12,13 @@ import java.util.Set;
 
 /**
  * The sorted list of every <b>vanilla</b> structure-piece template id ({@code minecraft:village/...},
- * {@code minecraft:bastion/...}, {@code minecraft:end_city/...}, …) the running server can load through
+ * {@code minecraft:bastion/...}, {@code minecraft:end_city/...}, …) — plus Deeper Darker's
+ * ({@code deeperdarker:ancient_temple/...}, its ancient-city walls, the gloomaze) — the running server can load through
  * its {@code StructureTemplateManager}. The stacks band ({@link StacksBand}) picks one per tower from
  * this list, so the catalogue must be identical on every worldgen worker and across reloads: it is
  * built once per server from {@code StructureTemplateManager#listTemplates()} (which walks
- * {@code data/<ns>/structure/**.nbt} across all loaded resource packs), filtered to the
- * {@code minecraft} namespace, and sorted by string. Another mod adding {@code minecraft:}-namespaced
+ * {@code data/<ns>/structure/**.nbt} across all loaded resource packs), filtered to
+ * {@link #INCLUDED_NAMESPACES}, and sorted by string. Another mod adding {@code minecraft:}-namespaced
  * templates would shift the picks — a datapack-dependent layout, like every vanilla structure.
  *
  * <p>Only ids are catalogued (~1180 strings). Templates themselves are loaded lazily per pick by the
@@ -33,6 +34,8 @@ public final class VanillaTemplateCatalogue {
 
     /** Template-path prefixes (after the namespace) excluded from the catalogue. */
     static final Set<String> EXCLUDED_PREFIXES = Set.of("trial_chambers/");
+    /** Template namespaces the catalogue draws from: vanilla and Deeper Darker (a hard dependency). */
+    static final Set<String> INCLUDED_NAMESPACES = Set.of(ResourceLocation.DEFAULT_NAMESPACE, OthersideCore.NAMESPACE);
 
     private static volatile MinecraftServer cachedServer;
     private static volatile List<ResourceLocation> cachedIds = List.of();
@@ -60,16 +63,20 @@ public final class VanillaTemplateCatalogue {
             ServerLevel overworld = server.overworld();
             if (overworld == null) return List.of();
             List<ResourceLocation> ids = overworld.getStructureManager().listTemplates()
-                    .filter(id -> ResourceLocation.DEFAULT_NAMESPACE.equals(id.getNamespace()))
-                    .filter(id -> !excluded(id.getPath()))
+                    .filter(VanillaTemplateCatalogue::included)
                     .sorted(Comparator.comparing(ResourceLocation::toString))
                     .toList();
-            LOGGER.info("[DungeonTrain] stacks band: catalogued {} vanilla structure templates", ids.size());
+            LOGGER.info("[DungeonTrain] stacks band: catalogued {} vanilla + Deeper Darker structure templates", ids.size());
             return ids;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] stacks band: failed to list vanilla structure templates", t);
             return List.of();
         }
+    }
+
+    /** Pure: an included namespace and not an excluded path. */
+    static boolean included(ResourceLocation id) {
+        return INCLUDED_NAMESPACES.contains(id.getNamespace()) && !excluded(id.getPath());
     }
 
     /** Pure exclusion test on the template path (no namespace). */

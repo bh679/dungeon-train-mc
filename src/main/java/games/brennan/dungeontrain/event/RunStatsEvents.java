@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.discord.DeathDetailReporter;
 import games.brennan.dungeontrain.discord.DeathEquipmentReporter;
 import games.brennan.dungeontrain.discord.DeathInventoryReporter;
 import games.brennan.dungeontrain.discord.DeathReporter;
+import games.brennan.dungeontrain.discord.DiscordMarkdown;
 import games.brennan.dungeontrain.discord.PortalStatsReporter;
 import games.brennan.dungeontrain.portal.PortalConnectionStats;
 import games.brennan.dungeontrain.discord.RunPosition;
@@ -368,8 +369,8 @@ public final class RunStatsEvents {
      */
     private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet,
                                        boolean cheated) {
-        String cause = deathMessage(player);
-        String title = "💀 " + player.getGameProfile().getName() + " — Run Ended";
+        String cause = DiscordMarkdown.escape(deathMessage(player));
+        String title = "💀 " + DiscordMarkdown.escape(player.getGameProfile().getName()) + " — Run Ended";
         List<DeathField> fields = runFields(packet);
         List<ItemStack> icons = runIcons(packet);
         DiscordService.get().postDeathReport(player, title, cause, fields, icons);
@@ -486,7 +487,7 @@ public final class RunStatsEvents {
                     GlobalPlayerStats.trainTicks(id),
                     DeathNarrative.EMPTY, "");
             DiscordService.get().postDisconnectReport(player,
-                    "👋 " + player.getGameProfile().getName() + " left the game", "",
+                    "👋 " + DiscordMarkdown.escape(player.getGameProfile().getName()) + " left the game", "",
                     runFields(packet), runIcons(packet));
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] disconnect report to Discord failed: {}", t.toString());

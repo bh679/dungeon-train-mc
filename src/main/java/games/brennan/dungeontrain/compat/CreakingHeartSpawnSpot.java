@@ -2,6 +2,9 @@ package games.brennan.dungeontrain.compat;
 
 import com.blackgear.vanillabackport.core.data.tags.ModBlockTags;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.difficulty.DifficultyApplier;
+import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -55,6 +58,7 @@ public final class CreakingHeartSpawnSpot {
             T mob = type.create(level, null, spot, spawnType, false, false);
             if (mob == null) continue;
             if (mob.checkSpawnRules(level, spawnType) && mob.checkSpawnObstruction(level)) {
+                if (room != null) applyCarriageDifficulty(level, mob);
                 level.addFreshEntityWithPassengers(mob);
                 mob.playAmbientSound();
                 LOGGER.debug("[DungeonTrain] creaking heart {} spawned {} at {} ({} spots, room {})",
@@ -66,6 +70,18 @@ public final class CreakingHeartSpawnSpot {
         LOGGER.debug("[DungeonTrain] creaking heart {} found no spawn spot ({} spots)",
             heart.toShortString(), spots.size());
         return Optional.empty();
+    }
+
+    /**
+     * A carriage heart's Creaking gets the same difficulty potion buffs as the room's other hostiles
+     * (it never carries the carriage spawn marker {@code MobDifficultyEvents} looks for). Effects
+     * only: gear would not render on a Creaking. Only DT-stamped hearts get here (they know their
+     * {@code room}), so natural hearts out in the world stay vanilla.
+     */
+    private static void applyCarriageDifficulty(ServerLevel level, Mob mob) {
+        if (!DungeonTrainConfig.getDifficultyEnabled()) return;
+        int travelled = DifficultyProgression.maxTravelledCarriageIndex(level);
+        DifficultyApplier.applyEffects(mob, travelled, mob.getRandom());
     }
 
     /**

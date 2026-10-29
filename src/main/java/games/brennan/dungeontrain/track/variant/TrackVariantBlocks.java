@@ -1,781 +1,122 @@
 package games.brennan.dungeontrain.track.variant;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
-import games.brennan.dungeontrain.editor.VariantState;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
+import games.brennan.dungeontrain.editor.MirrorDefaults;
+import games.brennan.dungeontrain.editor.UserContentPaths;
+import games.brennan.dungeontrain.editor.VariantAddress;
+import games.brennan.dungeontrain.editor.VariantDoc;
+import games.brennan.dungeontrain.editor.VariantPick;
+import games.brennan.dungeontrain.editor.VariantSidecarStore;
 import net.minecraft.core.Vec3i;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.level.block.Block;
-import net.neoforged.fml.loading.FMLPaths;
-import org.slf4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
- * Per-{@code (TrackKind, name)} sidecar of {@code localPos → [VariantState, ...]}
- * candidate lists — track-side analogue of
- * {@link games.brennan.dungeontrain.editor.CarriagePartVariantBlocks}. Enables
- * shift-right-click variant authoring inside track-side editor plots and
- * deterministic per-tile randomization at stamp time.
+ * The track-side kinds' entry points onto {@link VariantSidecarStore}: per-{@code (TrackKind, name)}
+ * sidecar of {@code localPos → [VariantState, ...]} candidate lists, enabling shift-right-click
+ * variant authoring inside track-side editor plots and deterministic per-tile randomisation at
+ * stamp time. The document is a {@link VariantDoc}.
  *
- * <p>Storage: {@code config/dungeontrain/user/<kind.subdir>/<name>.variants.json}
- * alongside the template NBT. Schema mirrors the carriage sidecar — the v2
- * object form supports a per-entry {@code nbt} payload for block-entity
- * round-trip (chests, signs, banners). Schema parsing delegates to
- * {@link CarriageVariantBlocks#parseVariantElement} so both code paths stay
- * in lockstep.</p>
+ * <p>Storage: {@code config/dungeontrain/user/<kind.subdir>/<name>.variants.json} alongside the
+ * template NBT; writes land in the active package's folder (see
+ * {@link TrackVariantStore#directory}). The absent-{@code mirror} default is kind-aware
+ * ({@link #defaultMirror}): tunnels X+Z on, every other kind all-off.</p>
  *
- * <p>Local coordinates are clamped to the footprint the caller asks for —
- * entries outside that box are dropped with a warning so a kind-renamed
- * template doesn't poison neighbouring blocks. The clamp produces a
- * {@link #croppedTo view}; the cache always holds the whole sidecar, and a
- * view's edits and saves go through to it. Views are memoised per footprint on
- * the sidecar they bound, and the skip is logged once per footprint, not once
- * per call. See {@link #loadFor}.</p>
+ * <p>Detached documents with no track template behind them — the Train Builder's per-world
+ * sidecar, a Workbench build, a chunk frame — come from {@link #fromJsonText} with a null kind.</p>
  */
 public final class TrackVariantBlocks {
-
-    private static final Logger LOGGER = LogUtils.getLogger();
 
     public static final int CURRENT_SCHEMA_VERSION = CarriageVariantBlocks.CURRENT_SCHEMA_VERSION;
     public static final int MIN_STATES_PER_ENTRY = CarriageVariantBlocks.MIN_STATES_PER_ENTRY;
 
-    /** Session cache keyed on {@code <kind>:<name>}. Invalidated on save and on editor enter. */
-    private static final Map<String, TrackVariantBlocks> CACHE = new HashMap<>();
+    private TrackVariantBlocks() {}
 
-    /**
-     * Footprints already warned about, keyed {@code <kind>:<name>@WxHxD}. One line per sidecar
-     * and footprint per session: a stamp re-reads its room's sidecar on every placement, and a
-     * line per cell per read was 6,400 WARN lines across 92 player bug reports (2026-10-20),
-     * each one a synchronous log flush. Cleared with {@link #CACHE}.
-     */
-    private static final java.util.Set<String> WARNED_FOOTPRINTS = new java.util.HashSet<>();
-
-    /** How many out-of-footprint positions the one warning lists before trailing off. */
-    private static final int WARN_POSITIONS_SHOWN = 8;
-
-    private final Map<BlockPos, List<VariantState>> entries;
-
-    /** pos → lock-id (≥1 = locked, 0/missing = unlocked). See {@link CarriageVariantBlocks#lockIdAt}. */
-    private final Map<BlockPos, Integer> lockIds;
-
-    /**
-     * How each cell rolls across a repeating room's copies — the v10 {@code "roll"} field.
-     *
-     * <p>Only the cells that override their room appear here. Only a
-     * {@link TrackKind#PORTAL_ROOM} repeats, so only a room's sidecar ever holds
-     * anything at all; it is stored on this class rather than on a portal-only
-     * one because a room's cells live in this document (and in the Train
-     * Builder's working copy of it, which is the same class again).</p>
-     */
-    private final Map<BlockPos, games.brennan.dungeontrain.editor.VariantCopyRoll> copyRolls;
-
-    /**
-     * Which tiles of a repeating room each cell applies in — the v10 {@code "scope"} field.
-     *
-     * <p>Only the cells that are not {@link games.brennan.dungeontrain.editor.VariantCopyScope#BOTH}
-     * appear here, for the same reason {@link #rerollPerCopy} is a set: the default is the answer
-     * for all but a handful of cells in any room, and absent is that default.</p>
-     */
-    private final Map<BlockPos, games.brennan.dungeontrain.editor.VariantCopyScope> copyScopes;
-
-    /** v9 lock-group reference resolution over {@link #entries} / {@link #lockIds}. */
-    private final games.brennan.dungeontrain.editor.VariantGroupResolver groupRefs;
-
-    /**
-     * Per-template mirror axes, applied live while editing and as a save-time
-     * backstop by {@link games.brennan.dungeontrain.editor.EditorMirror}.
-     * Stored as the optional top-level {@code "mirror": {"x":…,"y":…,"z":…}}
-     * field. The absent-field default is {@link #defaultMirror kind-aware}:
-     * tunnels default X+Z on (they are symmetric on both horizontals — matches
-     * the pre-existing behaviour and every shipped tunnel sidecar with no
-     * {@code mirror} field); track tiles / pillars / adjuncts default all-off
-     * (mirroring is opt-in). Y defaults off for every kind.
-     */
-    private boolean mirrorX;
-    private boolean mirrorY;
-    private boolean mirrorZ;
-    /** Opt-in flag (the "V" toggle): mirror the variant pools, not just structural blocks. Off by default for every kind. */
-    private boolean mirrorVariants;
-
-    /** Owning kind — selects this template's default mirror axes. Null only for the bare {@link #empty}. */
-    private final TrackKind kind;
-
-    /**
-     * The whole sidecar this instance is a bounded <em>view</em> of, or null when this <em>is</em>
-     * the whole sidecar (everything the cache holds, and everything a caller whose footprint fits
-     * receives).
-     *
-     * <p>A view exists so a caller that asks with a small footprint reads only the cells inside it —
-     * a stamp must never paint outside its own room. It must not become a second, truncated copy of
-     * the sidecar, though: callers like {@code VariantBlockInteractions} and {@code BlockVariantPlot}
-     * edit and then save whatever {@link #loadFor} handed them. So every mutation and both write
-     * paths go through to the source, and only reads are bounded. Writing the view's own cells
-     * instead would delete every cell the bound removed — the failure that emptied four portal
-     * rooms' sidecars on 2026-09-02.</p>
-     */
-    private final TrackVariantBlocks source;
-
-    /**
-     * Bounded views of this sidecar by footprint, so repeated {@link #loadFor} calls at one size
-     * share a view rather than re-cropping on every call. Only a source ever holds any (a view is
-     * never asked to crop); every mutator clears it, so no view outlives an edit. Session-only,
-     * like {@link #CACHE}, and dropped with the source when the cache evicts it.
-     */
-    private final Map<Vec3i, TrackVariantBlocks> views = new HashMap<>();
-
-    /**
-     * pos → per-cell {@link games.brennan.dungeontrain.editor.VariantSpan} — how a single block fills a two-space cell (door /
-     * bed / tall plant). Only non-default values are stored; see {@link #spanAt}.
-     */
-    private final Map<BlockPos, games.brennan.dungeontrain.editor.VariantSpan> spans = new LinkedHashMap<>();
-
-    private TrackVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
-                               TrackKind kind, boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
-        this(entries, lockIds, new LinkedHashMap<>(), new LinkedHashMap<>(),
-            kind, mirrorX, mirrorY, mirrorZ, mirrorVariants, null);
+    /** Where track {@code (kind, name)}'s sidecar lives. */
+    public record TrackAddress(TrackKind kind, String name) implements VariantAddress {
+        @Override public String cacheKey() { return "track:" + kind.id() + ":" + name; }
+        @Override public String contextId() { return kind.id() + ":" + name; }
+        @Override public String userSubdir() { return kind.subdir(); }
+        @Override public String fileName() { return name + TrackKind.VARIANTS_EXT; }
+        @Override public Path userPath() { return UserContentPaths.activeSubDir(kind.subdir()).resolve(fileName()); }
+        @Override public String bundledResource() { return kind.bundledResourcePrefix() + fileName(); }
+        @Override public Path sourcePath() {
+            return CarriageContentsVariantBlocks.sourceTreePath(kind.sourceRelativePath(), fileName());
+        }
+        @Override public MirrorDefaults defaultMirror() { return TrackVariantBlocks.defaultMirror(kind); }
     }
 
-    private TrackVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
-                               Map<BlockPos, games.brennan.dungeontrain.editor.VariantCopyRoll> copyRolls,
-                               Map<BlockPos, games.brennan.dungeontrain.editor.VariantCopyScope> copyScopes,
-                               TrackKind kind,
-                               boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
-        this(entries, lockIds, copyRolls, copyScopes, kind, mirrorX, mirrorY, mirrorZ,
-            mirrorVariants, null);
-    }
-
-    private TrackVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
-                               Map<BlockPos, games.brennan.dungeontrain.editor.VariantCopyRoll> copyRolls,
-                               Map<BlockPos, games.brennan.dungeontrain.editor.VariantCopyScope> copyScopes,
-                               TrackKind kind,
-                               boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants,
-                               TrackVariantBlocks source) {
-        this.source = source;
-        this.entries = entries;
-        this.lockIds = lockIds;
-        this.copyRolls = copyRolls;
-        this.copyScopes = copyScopes;
-        this.groupRefs = new games.brennan.dungeontrain.editor.VariantGroupResolver(entries, lockIds);
-        this.kind = kind;
-        this.mirrorX = mirrorX;
-        this.mirrorY = mirrorY;
-        this.mirrorZ = mirrorZ;
-        this.mirrorVariants = mirrorVariants;
+    public static VariantAddress address(TrackKind kind, String name) {
+        return new TrackAddress(kind, name);
     }
 
     /**
-     * Default mirror axes {@code [x, y, z]} for a track kind: tunnels default
-     * X+Z on, every other kind all-off; Y always off. Null kind → all-off.
+     * Default mirror axes for a track kind: tunnels X+Z on, every other kind all-off; Y always off.
+     * Null kind (a detached document) → all-off.
      */
-    static boolean[] defaultMirror(TrackKind kind) {
+    public static MirrorDefaults defaultMirror(@Nullable TrackKind kind) {
         boolean tunnel = kind == TrackKind.TUNNEL_SECTION || kind == TrackKind.TUNNEL_PORTAL;
-        return new boolean[]{ tunnel, false, tunnel };
+        return tunnel ? MirrorDefaults.TUNNEL : MirrorDefaults.NONE;
     }
 
-    /** Bare empty sidecar, all axes off — only for paths with no kind context. */
-    public static TrackVariantBlocks empty() {
-        return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), null, false, false, false, false);
+    /** Bare empty document, all axes off — only for paths with no kind context. */
+    public static VariantDoc empty() {
+        return VariantDoc.empty();
     }
 
-    /** Empty sidecar carrying {@code kind}'s default mirror axes — the missing-sidecar state. */
-    public static TrackVariantBlocks emptyFor(TrackKind kind) {
-        boolean[] d = defaultMirror(kind);
-        return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), kind, d[0], d[1], d[2], false);
+    /** Empty document carrying {@code kind}'s default mirror axes — the missing-sidecar state. */
+    public static VariantDoc emptyFor(@Nullable TrackKind kind) {
+        return VariantDoc.emptyWith(defaultMirror(kind), VariantPick.PLAIN, kind == null ? null : kind.id());
     }
 
-    /**
-     * Deep copy of {@code source} — every cell, its lock id, the mirror axes and the
-     * mirror-variants flag. Used by the editor's "new from current" paths so a duplicate keeps
-     * the whole of the source's authoring data rather than just its cells.
-     *
-     * <p>The result is a genuinely distinct instance on purpose: {@link #save} puts {@code this}
-     * into the name-keyed cache, so persisting the source object under a second name would leave
-     * both names aliased to one mutable sidecar.</p>
-     */
-    public static synchronized TrackVariantBlocks copyOf(TrackVariantBlocks source) {
-        return withSpans(new TrackVariantBlocks(
-            new LinkedHashMap<>(source.entries), new LinkedHashMap<>(source.lockIds),
-            new LinkedHashMap<>(source.copyRolls), new LinkedHashMap<>(source.copyScopes),
-            source.kind, source.mirrorX, source.mirrorY, source.mirrorZ, source.mirrorVariants,
-            null), source.spans);
+    /** {@link VariantDoc#copyOf}. */
+    public static VariantDoc copyOf(VariantDoc source) {
+        return VariantDoc.copyOf(source);
     }
 
-    /** Mirror X (length) axis. True unless the sidecar sets {@code mirror.x=false}. */
-    public boolean mirrorX() { return mirrorX; }
-
-    /** Mirror Y (height) axis. False unless the sidecar sets {@code mirror.y=true}. */
-    public boolean mirrorY() { return mirrorY; }
-
-    /** Mirror Z (width) axis. True unless the sidecar sets {@code mirror.z=false}. */
-    public boolean mirrorZ() { return mirrorZ; }
-
-    /** Mirror-variants ("V") opt-in. False unless the sidecar sets {@code mirror.v=true}. */
-    public boolean mirrorVariants() { return mirrorVariants; }
-
-    /** Set all three mirror axes — used by the {@code editor mirror} command before {@link #save}. */
-    public synchronized void setMirrorAxes(boolean x, boolean y, boolean z) {
-        if (source != null) source.setMirrorAxes(x, y, z);
-        views.clear();
-        this.mirrorX = x;
-        this.mirrorY = y;
-        this.mirrorZ = z;
-    }
-
-    /** Set the mirror-variants ("V") opt-in — used by {@code editor mirror v on|off} before {@link #save}. */
-    public synchronized void setMirrorVariants(boolean v) {
-        if (source != null) source.setMirrorVariants(v);
-        views.clear();
-        this.mirrorVariants = v;
-    }
-
-    /**
-     * Write target for the sidecar — the active package's folder, so it lands
-     * where {@link #loadFromDisk} looks first. See
-     * {@link games.brennan.dungeontrain.track.variant.TrackVariantStore#directory}
-     * for why this can't be the fixed {@code user/} path.
-     */
+    /** Write target for the sidecar — the active package's folder, where a load looks first. */
     public static Path configPathFor(TrackKind kind, String name) {
-        return games.brennan.dungeontrain.editor.UserContentPaths.activeSubDir(kind.subdir()).resolve(name + TrackKind.VARIANTS_EXT);
+        return address(kind, name).userPath();
     }
 
     public static String bundledResourceFor(TrackKind kind, String name) {
-        return kind.bundledResourcePrefix() + name + TrackKind.VARIANTS_EXT;
-    }
-
-    private static String cacheKey(TrackKind kind, String name) {
-        return kind.id() + ":" + name;
+        return address(kind, name).bundledResource();
     }
 
     /**
-     * Load the sidecar for {@code (kind, name)} — config first, then bundled.
-     * Returns {@link #empty} if neither exists. Entries outside
-     * {@code expectedSize} are dropped with a warning.
-     *
-     * <p><b>The crop is a view, not the cached object.</b> {@code expectedSize} is not part of the
-     * cache key, and for a portal room it is resolved from {@link
-     * games.brennan.dungeontrain.portal.PortalRoomSizes}, which answers with the built-in room's
-     * footprint until that room's template has been loaded. Caching the cropped parse therefore let
-     * one early wrong-size read — a dirty-check scan before the templates load — prune the sidecar
-     * for the rest of the session, and the next editor save wrote that pruned form over the source
-     * tree. So the cache holds the whole sidecar and each caller gets {@link #croppedTo its own
-     * bounded view}; a view cannot be saved. See {@link #cropped}.</p>
-     *
-     * <p>The view is memoised on the sidecar per footprint ({@link #views}), so the common case of
-     * one room stamped many times at one size crops once, not once per stamp.</p>
+     * Load the sidecar for {@code (kind, name)} — config first, then bundled — bounded to
+     * {@code expectedSize}. The cache holds the whole sidecar; the crop is a per-caller view.
      */
-    public static synchronized TrackVariantBlocks loadFor(TrackKind kind, String name, Vec3i expectedSize) {
-        String key = cacheKey(kind, name);
-        TrackVariantBlocks cached = CACHE.get(key);
-        if (cached == null) {
-            cached = loadFromDisk(kind, name);
-            CACHE.put(key, cached);
-        }
-        return cached.croppedTo(name, expectedSize);
+    public static VariantDoc loadFor(TrackKind kind, String name, Vec3i expectedSize) {
+        return VariantSidecarStore.loadFor(address(kind, name), expectedSize);
     }
 
     /**
-     * This sidecar bounded to {@code size} — {@code this} when every cell already fits (the common
-     * path, and the only one that yields a saveable instance), otherwise the memoised view for that
-     * footprint: a detached copy without the out-of-bounds cells, flagged {@link #cropped}.
+     * Parse a detached document from text produced by {@link VariantDoc#asJsonText}, bounded to
+     * {@code size}. Never enters the cache.
      */
-    private synchronized TrackVariantBlocks croppedTo(String name, Vec3i size) {
-        if (size == null) return this;
-        Vec3i footprint = new Vec3i(size.getX(), size.getY(), size.getZ());
-        TrackVariantBlocks memoised = views.get(footprint);
-        if (memoised != null) return memoised;
-        List<BlockPos> outside = null;
-        for (BlockPos pos : entries.keySet()) {
-            if (inBounds(pos, size)) continue;
-            if (outside == null) outside = new ArrayList<>();
-            outside.add(pos);
-        }
-        if (outside == null) return this;
-
-        Map<BlockPos, List<VariantState>> kept = new LinkedHashMap<>(entries);
-        Map<BlockPos, Integer> keptLocks = new LinkedHashMap<>(lockIds);
-        Map<BlockPos, games.brennan.dungeontrain.editor.VariantCopyRoll> keptRolls = new LinkedHashMap<>(copyRolls);
-        Map<BlockPos, games.brennan.dungeontrain.editor.VariantCopyScope> keptScopes = new LinkedHashMap<>(copyScopes);
+    public static VariantDoc fromJsonText(@Nullable String json, @Nullable TrackKind kind, String name, @Nullable Vec3i size) {
         String contextId = (kind == null ? "builder" : kind.id()) + ":" + name;
-        for (BlockPos pos : outside) {
-            kept.remove(pos);
-            keptLocks.remove(pos);
-            keptRolls.remove(pos);
-            keptScopes.remove(pos);
-        }
-        warnOutsideOnce(contextId, footprint, outside);
-        TrackVariantBlocks view = withSpans(new TrackVariantBlocks(kept, keptLocks, keptRolls, keptScopes, kind,
-            mirrorX, mirrorY, mirrorZ, mirrorVariants, this), spans);
-        views.put(footprint, view);
-        return view;
+        return VariantDoc.fromJsonText(json, defaultMirror(kind), contextId, size);
     }
 
-    /** One WARN per sidecar and footprint per session, listing the dropped cells — see {@link #WARNED_FOOTPRINTS}. */
-    private static void warnOutsideOnce(String contextId, Vec3i size, List<BlockPos> outside) {
-        String key = contextId + "@" + size.getX() + "x" + size.getY() + "x" + size.getZ();
-        if (!WARNED_FOOTPRINTS.add(key)) return;
-        int shown = Math.min(outside.size(), WARN_POSITIONS_SHOWN);
-        LOGGER.warn("[DungeonTrain] Track variant sidecar {}: {} cell(s) outside footprint {}x{}x{}, skipping: {}{}",
-            contextId, outside.size(), size.getX(), size.getY(), size.getZ(),
-            outside.subList(0, shown), outside.size() > shown ? " ..." : "");
-    }
-
-    /** Forget the warned footprints of one sidecar, so a re-authored file warns afresh. */
-    private static void forgetWarnings(TrackKind kind, String name) {
-        String prefix = cacheKey(kind, name) + "@";
-        WARNED_FOOTPRINTS.removeIf(k -> k.startsWith(prefix));
-    }
-
-    private static TrackVariantBlocks loadFromDisk(TrackKind kind, String name) {
-        Path cfg = games.brennan.dungeontrain.editor.UserContentPaths.findFile(
-            kind.subdir(), name + TrackKind.VARIANTS_EXT);
-        if (cfg != null) {
-            try (Reader r = Files.newBufferedReader(cfg, StandardCharsets.UTF_8)) {
-                return parse(r, kind, name, "config " + cfg);
-            } catch (IOException e) {
-                LOGGER.error("[DungeonTrain] Failed to read track variant sidecar {}: {}", cfg, e.toString());
-            }
-        }
-        String resource = bundledResourceFor(kind, name);
-        try (InputStream in = TrackVariantBlocks.class.getResourceAsStream(resource)) {
-            if (in == null) return emptyFor(kind);
-            try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-                return parse(r, kind, name, "bundled " + resource);
-            }
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to read bundled track variant sidecar {}: {}",
-                resource, e.toString());
-            return emptyFor(kind);
-        }
-    }
-
-    /**
-     * Parse the whole sidecar. Deliberately keeps every cell, however far outside any footprint:
-     * bounding is {@link #croppedTo}'s job, applied per caller, so no one caller's footprint can
-     * prune what the rest of the session sees.
-     */
-    private static TrackVariantBlocks parse(Reader reader, TrackKind kind, String name,
-                                             String origin) {
-        // Null kind is a detached document with no track template behind it — the Train Builder's
-        // per-world sidecar (see BuilderVariantStore). Only the log context and the default mirror
-        // axes read the kind, and both have an answer without one.
-        String kindId = kind == null ? "builder" : kind.id();
-        JsonElement root = JsonParser.parseReader(reader);
-        if (!root.isJsonObject()) {
-            LOGGER.warn("[DungeonTrain] Track variant sidecar {}:{} ({}) is not a JSON object — ignoring.",
-                kindId, name, origin);
-            return emptyFor(kind);
-        }
-        JsonObject obj = root.getAsJsonObject();
-        if (obj.has("schemaVersion")) {
-            int v = obj.get("schemaVersion").getAsInt();
-            if (v > CURRENT_SCHEMA_VERSION) {
-                LOGGER.warn("[DungeonTrain] Track variant sidecar {}:{} ({}) schemaVersion {} (newer than {}) — best-effort parse.",
-                    kindId, name, origin, v, CURRENT_SCHEMA_VERSION);
-            }
-        }
-        // Optional top-level mirror axes. Absent → this kind's default (tunnels
-        // X/Z on, others all-off; Y always off).
-        boolean[] def = defaultMirror(kind);
-        boolean mirrorX = def[0];
-        boolean mirrorY = def[1];
-        boolean mirrorZ = def[2];
-        boolean mirrorVariants = false;
-        if (obj.has("mirror") && obj.get("mirror").isJsonObject()) {
-            JsonObject m = obj.getAsJsonObject("mirror");
-            if (m.has("x")) mirrorX = m.get("x").getAsBoolean();
-            if (m.has("y")) mirrorY = m.get("y").getAsBoolean();
-            if (m.has("z")) mirrorZ = m.get("z").getAsBoolean();
-            if (m.has("v")) mirrorVariants = m.get("v").getAsBoolean();
-        }
-        if (!obj.has("variants") || !obj.get("variants").isJsonObject()) {
-            // Mirror-only sidecar (e.g. a portal toggled off X) carries no cells.
-            return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), kind, mirrorX, mirrorY, mirrorZ, mirrorVariants);
-        }
-
-        HolderLookup.RegistryLookup<Block> blocks = BuiltInRegistries.BLOCK.asLookup();
-        JsonObject variants = obj.getAsJsonObject("variants");
-        Map<BlockPos, List<VariantState>> out = new LinkedHashMap<>();
-        Map<BlockPos, Integer> outLocks = new LinkedHashMap<>();
-        Map<BlockPos, games.brennan.dungeontrain.editor.VariantSpan> outSpans = new LinkedHashMap<>();
-        Map<BlockPos, games.brennan.dungeontrain.editor.VariantCopyRoll> outRolls = new LinkedHashMap<>();
-        Map<BlockPos, games.brennan.dungeontrain.editor.VariantCopyScope> outScopes = new LinkedHashMap<>();
-        String contextId = kindId + ":" + name;
-        for (Map.Entry<String, JsonElement> field : variants.entrySet()) {
-            BlockPos pos = CarriageVariantBlocks.parsePos(field.getKey());
-            if (pos == null) {
-                LOGGER.warn("[DungeonTrain] Track variant sidecar {}: bad pos '{}', skipping.",
-                    contextId, field.getKey());
-                continue;
-            }
-            CarriageVariantBlocks.ParsedCell cell = CarriageVariantBlocks.parseCellValue(
-                field.getValue(), blocks, contextId, pos);
-            if (cell == null) continue;
-            if (cell.states().size() < MIN_STATES_PER_ENTRY) {
-                LOGGER.warn("[DungeonTrain] Track variant sidecar {} pos {}: fewer than {} valid states, dropped.",
-                    contextId, pos, MIN_STATES_PER_ENTRY);
-                continue;
-            }
-            BlockPos posI = pos.immutable();
-            out.put(posI, List.copyOf(cell.states()));
-            if (!cell.span().isDefault()) outSpans.put(posI, cell.span());
-            if (cell.lockId() > 0) outLocks.put(posI, cell.lockId());
-            if (!cell.roll().isDefault()) outRolls.put(posI, cell.roll());
-            if (!cell.scope().isDefault()) outScopes.put(posI, cell.scope());
-        }
-        LOGGER.info("[DungeonTrain] Loaded {} track variant entries for {} from {}",
-            out.size(), contextId, origin);
-        return withSpans(new TrackVariantBlocks(out, outLocks, outRolls, outScopes, kind,
-            mirrorX, mirrorY, mirrorZ, mirrorVariants), outSpans);
-    }
-
-    private static boolean inBounds(BlockPos p, Vec3i size) {
-        return p.getX() >= 0 && p.getX() < size.getX()
-            && p.getY() >= 0 && p.getY() < size.getY()
-            && p.getZ() >= 0 && p.getZ() < size.getZ();
-    }
-
-    static String formatPos(BlockPos p) {
-        return p.getX() + "," + p.getY() + "," + p.getZ();
-    }
-
-    public List<CarriageVariantBlocks.Entry> entries() {
-        List<CarriageVariantBlocks.Entry> out = new ArrayList<>(entries.size());
-        for (Map.Entry<BlockPos, List<VariantState>> e : entries.entrySet()) {
-            out.add(new CarriageVariantBlocks.Entry(e.getKey(), e.getValue()));
-        }
-        return Collections.unmodifiableList(out);
-    }
-
-    public boolean isEmpty() { return entries.isEmpty(); }
-
-    public int size() { return entries.size(); }
-
-    public List<VariantState> statesAt(BlockPos localPos) {
-        return entries.get(localPos);
-    }
-
-    /**
-     * True when any candidate at {@code localPos} has growth or a painting option on — the cheap gate the hot worldgen
-     * paths check before re-rolling a cell for {@link games.brennan.dungeontrain.editor.GrowthPass}.
-     */
-    public boolean growsAt(BlockPos localPos) {
-        List<VariantState> states = entries.get(localPos);
-        if (states == null) return false;
-        for (VariantState s : states) {
-            if (!s.growth().isDefault() || !s.painting().isDefault()) return true;
-        }
-        return false;
-    }
-
-    public synchronized void put(BlockPos localPos, List<VariantState> states) {
-        if (states == null || states.size() < MIN_STATES_PER_ENTRY) {
-            throw new IllegalArgumentException(
-                "need at least " + MIN_STATES_PER_ENTRY + " states, got "
-                    + (states == null ? 0 : states.size()));
-        }
-        for (VariantState s : states) {
-            if (s == null) throw new IllegalArgumentException("null state");
-        }
-        if (source != null) source.put(localPos, states);
-        views.clear();
-        entries.put(localPos.immutable(), List.copyOf(states));
-        groupRefs.invalidate();
-    }
-
-    /** The cell's multi-space {@link games.brennan.dungeontrain.editor.VariantSpan}; {@code AUTO} when unset or no cell. */
-    public synchronized games.brennan.dungeontrain.editor.VariantSpan spanAt(BlockPos localPos) {
-        return spans.getOrDefault(localPos, games.brennan.dungeontrain.editor.VariantSpan.NONE);
-    }
-
-    /** Set the cell's multi-space span (default clears it). Throws if no cell exists at {@code localPos}. */
-    public synchronized void setSpan(BlockPos localPos, games.brennan.dungeontrain.editor.VariantSpan span) {
-        if (source != null) source.setSpan(localPos, span);
-        views.clear();
-        if (!entries.containsKey(localPos)) {
-            throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
-        }
-        if (span == null || span.isDefault()) spans.remove(localPos);
-        else spans.put(localPos.immutable(), span);
-    }
-
-    /** Copy {@code from}'s spans for the cells {@code target} holds — parse and crop both end here. */
-    private static TrackVariantBlocks withSpans(TrackVariantBlocks target, Map<BlockPos, games.brennan.dungeontrain.editor.VariantSpan> from) {
-        for (Map.Entry<BlockPos, games.brennan.dungeontrain.editor.VariantSpan> e : from.entrySet()) {
-            if (target.entries.containsKey(e.getKey())) target.spans.put(e.getKey(), e.getValue());
-        }
-        return target;
-    }
-
-    public synchronized boolean remove(BlockPos localPos) {
-        spans.remove(localPos);
-        if (source != null) source.remove(localPos);
-        views.clear();
-        lockIds.remove(localPos);
-        copyRolls.remove(localPos);
-        copyScopes.remove(localPos);
-        groupRefs.invalidate();
-        return entries.remove(localPos) != null;
-    }
-
-    public synchronized int lockIdAt(BlockPos localPos) {
-        return lockIds.getOrDefault(localPos, 0);
-    }
-
-    public synchronized void setLockId(BlockPos localPos, int lockId) {
-        if (source != null) source.setLockId(localPos, lockId);
-        views.clear();
-        if (!entries.containsKey(localPos)) {
-            throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
-        }
-        if (lockId < 0) lockId = 0;
-        if (lockId == 0) lockIds.remove(localPos);
-        else lockIds.put(localPos.immutable(), lockId);
-        groupRefs.invalidate();
-    }
-
-    /**
-     * How the cell at {@code localPos} rolls across a repeating room's copies.
-     * {@link games.brennan.dungeontrain.editor.VariantCopyRoll#DEFAULT} — follow the room — for
-     * every cell that has not overridden it, and for every template that does not repeat.
-     */
-    public synchronized games.brennan.dungeontrain.editor.VariantCopyRoll copyRollAt(BlockPos localPos) {
-        return copyRolls.getOrDefault(localPos, games.brennan.dungeontrain.editor.VariantCopyRoll.DEFAULT);
-    }
-
-    /**
-     * Set that override on an existing cell.
-     *
-     * <p>Rejects a position with no cell for the same reason {@link #setLockId}
-     * does: a setting on nothing would be written to a file that has no cell to
-     * hang it on, and would then be silently dropped on the next load.</p>
-     */
-    public synchronized void setCopyRoll(BlockPos localPos,
-                                         games.brennan.dungeontrain.editor.VariantCopyRoll roll) {
-        if (source != null) source.setCopyRoll(localPos, roll);
-        views.clear();
-        if (!entries.containsKey(localPos)) {
-            throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
-        }
-        if (roll == null || roll.isDefault()) copyRolls.remove(localPos);
-        else copyRolls.put(localPos.immutable(), roll);
-    }
-
-    /**
-     * Which tiles of a repeating room the cell at {@code localPos} applies in.
-     * {@link games.brennan.dungeontrain.editor.VariantCopyScope#BOTH} for every cell that has not
-     * been given a scope, and for every template that does not repeat.
-     */
-    public synchronized games.brennan.dungeontrain.editor.VariantCopyScope copyScopeAt(BlockPos localPos) {
-        return copyScopes.getOrDefault(localPos, games.brennan.dungeontrain.editor.VariantCopyScope.BOTH);
-    }
-
-    /**
-     * Set that scope. Refuses a position with no cell, like {@link #setLockId} and
-     * {@link #setCopyRoll}: a setting on nothing has no cell to be written beside.
-     */
-    public synchronized void setCopyScope(BlockPos localPos,
-                                          games.brennan.dungeontrain.editor.VariantCopyScope scope) {
-        if (source != null) source.setCopyScope(localPos, scope);
-        views.clear();
-        if (!entries.containsKey(localPos)) {
-            throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
-        }
-        if (scope == null || scope.isDefault()) copyScopes.remove(localPos);
-        else copyScopes.put(localPos.immutable(), scope);
-    }
-
-    public synchronized java.util.Set<BlockPos> positionsWithLockId(int lockId) {
-        if (lockId <= 0) return java.util.Set.of();
-        java.util.Set<BlockPos> out = new java.util.LinkedHashSet<>();
-        for (Map.Entry<BlockPos, Integer> e : lockIds.entrySet()) {
-            if (e.getValue() == lockId) out.add(e.getKey());
-        }
-        return out;
-    }
-
-    /** Snapshot of every {@code (localPos, lockId)} pair with {@code lockId > 0}. Defensive copy. */
-    public synchronized Map<BlockPos, Integer> allLockIds() {
-        return new LinkedHashMap<>(lockIds);
-    }
-
-    public synchronized int nextFreeLockId() {
-        // Includes groups kept alive only by a reference, so a new lock never takes over one.
-        java.util.Set<Integer> used = groupRefs.lockIdsInUse();
-        int n = 1;
-        while (used.contains(n)) n++;
-        return n;
-    }
-
-    /**
-     * Deterministic pick — locked cells share a single roll across the group.
-     * Shares the {@link CarriageVariantBlocks#pickIndexWeighted} /
-     * {@link CarriageVariantBlocks#pickIndexFromLockGroup} mixers, and the v9
-     * lock-group reference filter/follow, with the carriage path.
-     */
-    public VariantState resolve(BlockPos localPos, long worldSeed, int tileIndex) {
-        return groupRefs.resolve(localPos, lockIdAt(localPos), entries.get(localPos),
-            worldSeed, tileIndex);
-    }
-
-    /** This sidecar's lock groups, for callers that follow references themselves (e.g. the editor preview). */
-    public games.brennan.dungeontrain.editor.VariantGroupResolver groupRefs() {
-        return groupRefs;
-    }
-
-    public synchronized void save(TrackKind kind, String name) throws IOException {
-        if (source != null) { source.save(kind, name); return; }
-        Path file = configPathFor(kind, name);
-        Files.createDirectories(file.getParent());
-        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            w.write(toJsonText());
-        }
-        CACHE.put(cacheKey(kind, name), this);
-        LOGGER.info("[DungeonTrain] Saved track variant sidecar for {}:{} ({} entries) to {}",
-            kind.id(), name, entries.size(), file);
-    }
-
-    /**
-     * Dev-mode write-through: copy the sidecar into the project source tree
-     * so it ships with the next build. Mirrors
-     * {@link games.brennan.dungeontrain.editor.CarriagePartVariantBlocks#saveToSource}.
-     * An empty sidecar deletes the source file so removing every entry doesn't
-     * leave a stale bundled resource.
-     */
-    public synchronized void saveToSource(TrackKind kind, String name) throws IOException {
-        if (source != null) { source.saveToSource(kind, name); return; }
-        Path file = sourcePathFor(kind, name);
-        if (file == null) {
-            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
-        }
-        // Delete only when there is genuinely nothing to persist — no cells AND
-        // default mirror (X/Z on, Y off). A mirror-only sidecar (empty cells,
-        // non-default axes, e.g. a portal with X off) must still be written.
-        if (entries.isEmpty() && isDefaultMirror()) {
-            Files.deleteIfExists(file);
-            LOGGER.info("[DungeonTrain] Cleared bundled track variant sidecar for {}:{} (no entries, default mirror)",
-                kind.id(), name);
-            return;
-        }
-        Files.createDirectories(file.getParent());
-        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            w.write(toJsonText());
-        }
-        LOGGER.info("[DungeonTrain] Wrote bundled track variant sidecar for {}:{} to {}",
-            kind.id(), name, file);
-    }
-
-    /** True when this instance is a bounded view of a larger sidecar — see {@link #source}. */
-    public boolean isCropped() { return source != null; }
-
-    /** True when the axes match this kind's defaults — the absent-{@code mirror}-field state. */
-    public boolean isDefaultMirror() {
-        boolean[] d = defaultMirror(kind);
-        return mirrorX == d[0] && mirrorY == d[1] && mirrorZ == d[2] && !mirrorVariants;
-    }
-
-    /**
-     * This sidecar as the JSON text {@link #save} would write.
-     *
-     * <p>Public so a detached sidecar can be carried somewhere other than a file — the portal-room
-     * resize memory files the cells a shrink cropped this way, in the schema they already round-trip
-     * through, rather than inventing a second encoding for the same {@link VariantState}s.</p>
-     */
-    public synchronized String asJsonText() {
-        return toJsonText();
-    }
-
-    /**
-     * Parse a detached sidecar from text produced by {@link #asJsonText}.
-     *
-     * <p>Never enters {@link #CACHE}: the result belongs to whoever asked for it, and putting a
-     * fragment under {@code (kind, name)} would shadow the real sidecar for the rest of the
-     * session.</p>
-     */
-    public static TrackVariantBlocks fromJsonText(String json, TrackKind kind, String name,
-                                                  Vec3i size) {
-        if (json == null || json.isBlank()) return emptyFor(kind);
-        // Cropped here on purpose, unlike the cached load path: the portal-room resize memory files
-        // a slab at one size and restores it after the other two axes may have shrunk, and relies on
-        // this bound to drop the cells that no longer fit (PortalRoomResizeSlabs#restore).
-        return parse(new java.io.StringReader(json), kind, name, "memory").croppedTo(name, size);
-    }
-
-    /** Serialised form of this sidecar as {@link #save} would write it. Used by the editor undo history. */
-    public String toJsonText() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\n  \"schemaVersion\": ").append(CURRENT_SCHEMA_VERSION).append(",\n");
-        // Only emit the mirror field when non-default so existing sidecars stay
-        // byte-identical on resave — absent reads back as X/Z on, Y off.
-        if (!isDefaultMirror()) {
-            sb.append("  \"mirror\": { \"x\": ").append(mirrorX)
-              .append(", \"y\": ").append(mirrorY)
-              .append(", \"z\": ").append(mirrorZ)
-              .append(", \"v\": ").append(mirrorVariants).append(" },\n");
-        }
-        sb.append("  \"variants\": {");
-        boolean firstEntry = true;
-        for (Map.Entry<BlockPos, List<VariantState>> e : entries.entrySet()) {
-            if (!firstEntry) sb.append(",");
-            firstEntry = false;
-            int lockId = lockIds.getOrDefault(e.getKey(), 0);
-            sb.append("\n    \"").append(formatPos(e.getKey())).append("\": ");
-            CarriageVariantBlocks.appendCellJson(sb, groupRefs.refreshed(e.getValue(), lockId), lockId,
-                copyRollAt(e.getKey()), copyScopeAt(e.getKey()), spanAt(e.getKey()));
-        }
-        sb.append("\n  }\n}\n");
-        return sb.toString();
-    }
-
-    /**
-     * Resolves the source-tree path for {@code (kind, name)}. Returns null
-     * when the source tree isn't present or writable (production install) so
-     * callers can soft-fail. Reuses {@link TrackKind#sourceRelativePath} so
-     * the layout matches {@link TrackVariantStore#sourceFileFor}.
-     */
+    /** Source-tree path for {@code (kind, name)}; null when the source tree isn't present or writable. */
     public static Path sourcePathFor(TrackKind kind, String name) {
-        Path projectRoot = FMLPaths.GAMEDIR.get().getParent();
-        if (projectRoot == null) return null;
-        Path resources = projectRoot.resolve("src/main/resources");
-        if (!Files.isDirectory(resources) || !Files.isWritable(resources)) return null;
-        return projectRoot.resolve(kind.sourceRelativePath()).resolve(name + TrackKind.VARIANTS_EXT);
+        return address(kind, name).sourcePath();
     }
 
-    public static synchronized boolean delete(TrackKind kind, String name) throws IOException {
-        Path file = configPathFor(kind, name);
-        boolean existed = Files.deleteIfExists(file);
-        CACHE.remove(cacheKey(kind, name));
-        forgetWarnings(kind, name);
-        if (existed) LOGGER.info("[DungeonTrain] Deleted track variant sidecar {}:{} ({})",
-            kind.id(), name, file);
-        return existed;
+    public static boolean delete(TrackKind kind, String name) throws IOException {
+        return VariantSidecarStore.delete(address(kind, name));
     }
 
-    public static synchronized void invalidate(TrackKind kind, String name) {
-        CACHE.remove(cacheKey(kind, name));
-        forgetWarnings(kind, name);
+    public static void invalidate(TrackKind kind, String name) {
+        VariantSidecarStore.invalidate(address(kind, name));
     }
 
-    public static synchronized void clearCache() {
-        CACHE.clear();
-        WARNED_FOOTPRINTS.clear();
+    public static void clearCache() {
+        VariantSidecarStore.clearCache();
     }
 }

@@ -86,7 +86,7 @@ public final class ContainerContentsPlacement {
                              @Nullable String variantLinkedLootPrefabId) {
         CompoundTag finalNbt = rollForPlacement(level, state, baseBeNbt, plotKey,
             localPos, worldSeed, carriageIndex, diffIndex, variantLinkedLootPrefabId, level);
-        SilentBlockOps.setBlockSilent(level, worldPos, state, finalNbt);
+        SilentBlockOps.setBlockSilent(level, worldPos, VaultLoot.stateForNbt(state, finalNbt), finalNbt);
     }
 
     /**
@@ -123,7 +123,7 @@ public final class ContainerContentsPlacement {
         // context (used only by the furnace-slot path for recipe lookups).
         CompoundTag finalNbt = rollForPlacement(level, state, baseBeNbt, plotKey,
             localPos, worldSeed, carriageIndex, diffIndex, variantLinkedLootPrefabId, null);
-        level.setBlock(worldPos, state, Block.UPDATE_CLIENTS);
+        level.setBlock(worldPos, VaultLoot.stateForNbt(state, finalNbt), Block.UPDATE_CLIENTS);
         if (finalNbt == null || !state.hasBlockEntity()) return;
         BlockEntity be = level.getBlockEntity(worldPos);
         if (be == null) return;
@@ -187,6 +187,11 @@ public final class ContainerContentsPlacement {
         // archaeology loot table, so brushing yields loot like world gen.
         if (brushable && pool.isEmpty()) {
             return ContainerContentsRoller.stampArchaeologyLoot(state, baseBeNbt, localPos, worldSeed, carriageIndex);
+        }
+        // A vault with no loot of its own takes vanilla's trial reward, always: an empty vault
+        // would just refuse the key.
+        if (pool.isEmpty() && VaultLoot.isVault(state)) {
+            pool = VaultLoot.defaultPool(ContainerContentsPool.DEFAULT_VAULT_KEY);
         }
         if (pool.isEmpty()) {
             pool = BlockLootDefaults.resolveDefaultPool(state, localPos, worldSeed, carriageIndex)

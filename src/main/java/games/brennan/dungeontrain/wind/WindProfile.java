@@ -29,9 +29,12 @@ import com.google.gson.JsonParser;
  * @param multipliers      push multiplier per entity category
  * @param weight           how an entity's size (its stand-in for mass) changes the push — see {@link Weight}
  * @param curves           how each quantity grows with distance; {@code null} = no wind
+ * @param reverseBandShift behind spawn, the Nth band met walking -X plays the wind of the (N + this)th band
+ *                         reached walking +X (see {@code WorldGenCycle#reverseWindTwinX})
  */
 public record WindProfile(boolean enabled, double headingDeg, double sneakFactor, double airFactor,
-                          int visualLeadTicks, Multipliers multipliers, Weight weight, Curves curves) {
+                          int visualLeadTicks, Multipliers multipliers, Weight weight, Curves curves,
+                          int reverseBandShift) {
 
     /** Bundled resource path (classpath) of the default profile. */
     public static final String RESOURCE_PATH = "/data/dungeontrain/wind/profile.json";
@@ -40,7 +43,16 @@ public record WindProfile(boolean enabled, double headingDeg, double sneakFactor
     public static final double MAX_GUSTS_PER_MIN = 60.0;
 
     /** A profile that never blows — used when the file is missing or malformed. */
-    public static final WindProfile CALM = new WindProfile(false, 90.0, 1.0, 1.0, 20, Multipliers.UNIT, Weight.NONE, null);
+    public static final WindProfile CALM = new WindProfile(false, 90.0, 1.0, 1.0, 20, Multipliers.UNIT, Weight.NONE, null, 7);
+
+    /** Default {@link #reverseBandShift}: backward Stacks plays forward BetterNether, so it already blows. */
+    public static final int DEFAULT_REVERSE_BAND_SHIFT = 7;
+
+    public WindProfile(boolean enabled, double headingDeg, double sneakFactor, double airFactor,
+                       int visualLeadTicks, Multipliers multipliers, Weight weight, Curves curves) {
+        this(enabled, headingDeg, sneakFactor, airFactor, visualLeadTicks, multipliers, weight, curves,
+                DEFAULT_REVERSE_BAND_SHIFT);
+    }
 
     /**
      * The curves, one per quantity. Strengths are horizontal accelerations in blocks/tick² at multiplier 1.
@@ -168,7 +180,15 @@ public record WindProfile(boolean enabled, double headingDeg, double sneakFactor
                 num(o, "sneakFactor", 0.35),
                 Math.max(0, num(o, "airFactor", 1.0)),
                 (int) Math.max(0, num(o, "visualLeadTicks", 20)),
-                mult, weight, curves);
+                mult, weight, curves, reverseBandShift(o));
+    }
+
+    private static int reverseBandShift(JsonObject o) {
+        double v = num(o, "reverseBandShift", DEFAULT_REVERSE_BAND_SHIFT);
+        if (v < 0 || v != Math.rint(v)) {
+            throw new IllegalArgumentException("wind profile 'reverseBandShift' must be a whole number >= 0");
+        }
+        return (int) v;
     }
 
     /** Serialise back to the same shape {@link #parse} reads (used by the sync packet). */
@@ -199,6 +219,7 @@ public record WindProfile(boolean enabled, double headingDeg, double sneakFactor
             for (int i = 0; i < all.length; i++) c.add(Curves.NAMES[i], all[i].toJson());
             o.add("curves", c);
         }
+        o.addProperty("reverseBandShift", reverseBandShift);
         return o.toString();
     }
 

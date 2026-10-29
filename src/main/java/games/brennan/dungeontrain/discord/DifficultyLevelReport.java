@@ -35,7 +35,7 @@ public final class DifficultyLevelReport {
     public static void post(ServerPlayer player, int tier) {
         if (!DungeonTrainConfig.isDifficultyLevelNoticeToDiscord()) return;
         try {
-            String title = "⚔ " + player.getGameProfile().getName() + " reached Difficulty Level " + tier;
+            String title = "⚔ " + DiscordMarkdown.escape(player.getGameProfile().getName()) + " reached Difficulty Level " + tier;
             String description = "Enemies are toughening up.";
             List<DeathField> fields = new ArrayList<>();
             Integer carriage = TrainCarriageAppender.lastCarriageIndex(player.getUUID());

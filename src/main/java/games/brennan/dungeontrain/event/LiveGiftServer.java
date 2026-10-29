@@ -68,7 +68,9 @@ public final class LiveGiftServer {
             if (t != null || r == null || !r.ok()) {
                 int status = r == null ? 0 : r.status();
                 LOGGER.info("[DungeonTrain] Live Eye gift {} not redeemed for {} (status {})", giftId, p.getGameProfile().getName(), status);
-                p.sendSystemMessage(Component.translatable(status == 404 || status == 409 ? KEY + "expired" : KEY + "failed")
+                String key = status == 409 && "taken".equals(r.str("error")) ? KEY + "taken"
+                    : status == 404 || status == 409 ? KEY + "expired" : KEY + "failed";
+                p.sendSystemMessage(Component.translatable(key)
                     .withStyle(ChatFormatting.GRAY));
                 return;
             }
@@ -77,15 +79,21 @@ public final class LiveGiftServer {
         }));
     }
 
+    /** Why {@code player} couldn't take a gifted Live Eye right now, or null when they could. Server thread. */
+    @Nullable
+    public static Refusal refusalFor(ServerPlayer player) {
+        return refusal(ContentModeMirror.isKid(player), ContentModeMirror.isLivestreamOn(player),
+            LiveModeration.isBanned(player.getUUID()), LiveEyeLootResolver.countRealLiveEyes(player.getInventory()) > 0,
+            LiveFeedEvents.streamBlocked(player),
+            LiveFeedEvents.needsInternet(NetworkConsentMirror.isKnown(player.getUUID()), NetworkConsentMirror.isGranted(player)));
+    }
+
     /**
      * The backstop: true (logged, and told to the player) when {@code player} couldn't go live with a Live
      * Eye — the same blockers {@code LiveFeedEvents#startStreaming} applies once it is on.
      */
     private static boolean refused(ServerPlayer player) {
-        Refusal why = refusal(ContentModeMirror.isKid(player), ContentModeMirror.isLivestreamOn(player),
-            LiveModeration.isBanned(player.getUUID()), LiveEyeLootResolver.countRealLiveEyes(player.getInventory()) > 0,
-            LiveFeedEvents.streamBlocked(player),
-            LiveFeedEvents.needsInternet(NetworkConsentMirror.isKnown(player.getUUID()), NetworkConsentMirror.isGranted(player)));
+        Refusal why = refusalFor(player);
         if (why == null) return false;
         LOGGER.info("[DungeonTrain] Live Eye gift accept from {} refused ({}); the gift stays unspent",
             player.getGameProfile().getName(), why);

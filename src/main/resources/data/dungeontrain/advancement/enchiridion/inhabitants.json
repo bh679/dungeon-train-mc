@@ -10,7 +10,7 @@
     "description": {
       "translate": "advancements.dungeontrain.enchiridion.photo_count.passenger.description",
       "with": [
-        200
+        25
       ]
     },
     "frame": "goal",
@@ -23,7 +23,7 @@
       "trigger": "dungeontrain:photo_count",
       "conditions": {
         "category": "passenger",
-        "threshold": 200
+        "threshold": 25
       }
     }
   },

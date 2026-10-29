@@ -86,7 +86,7 @@ final class TemplateSidecarsTest {
         assertEquals(List.of("containers", "variants"), sorted(byRole.keySet()),
                 "a group is stamped verbatim — no parts or contents-allow to carry");
         assertEquals(games.brennan.dungeontrain.train.WholeKind.GROUP.userSubdir(), byRole.get("variants").subdir(),
-                "beside the group's own .nbt, where WholeVariantBlocks looks");
+                "beside the group's own .nbt, where VariantDoc looks");
         assertEquals("night_mail.variants.json", byRole.get("variants").basename());
         assertEquals("whole_group:night_mail",
                 TemplateSidecars.plotKeyFor(BuilderPhotoPaths.Kind.CARRIAGE_GROUP, "", "night_mail"));

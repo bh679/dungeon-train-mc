@@ -41,8 +41,8 @@ public final class FreePlayReport {
     public static void post(ServerPlayer player, Component cause) {
         if (!DungeonTrainConfig.isFreePlayNoticeToDiscord()) return;
         try {
-            String title = "🎮 " + player.getGameProfile().getName() + " entered Free Play";
-            String description = cause.getString();
+            String title = "🎮 " + DiscordMarkdown.escape(player.getGameProfile().getName()) + " entered Free Play";
+            String description = DiscordMarkdown.escape(cause.getString());
             List<DeathField> fields = List.of(new DeathField(
                     "Note", "Cross-world progress and global stats are paused for this run."));
             DiscordService.get().postSurveyResponse(player, title, description, fields);

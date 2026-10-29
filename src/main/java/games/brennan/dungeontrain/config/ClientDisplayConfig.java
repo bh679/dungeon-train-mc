@@ -172,6 +172,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue DEVELOPER_POPUP_SHOWN_BEFORE;
     public static final ModConfigSpec.BooleanValue DEVELOPER_POPUP_OPTED_OUT;
     public static final ModConfigSpec.BooleanValue FREE_PLAY_CONFIRM_OPTED_OUT;
+    public static final ModConfigSpec.BooleanValue OWN_BOOK_BOOST_CONFIRM_OPTED_OUT;
     public static final ModConfigSpec.BooleanValue DEV_CONSENT_GRANTED;
     public static final ModConfigSpec.DoubleValue DEV_CONSENT_GRANT_SESSION;
     public static final ModConfigSpec.DoubleValue DEV_CONSENT_LAST_MSG_TO_DEV;
@@ -220,6 +221,12 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue CHUNCKS_HIDE_DISTANT_HORIZONS;
     public static final ModConfigSpec.BooleanValue SPHERES_HIDE_DISTANT_HORIZONS;
     public static final ModConfigSpec.BooleanValue STACKS_HIDE_DISTANT_HORIZONS;
+    /**
+     * Whether Distant Horizons leaves the sunk zone's attic (dimensional carriages over the invisible
+     * barrier lid) out of its LODs. DH keeps drawing everything else there. See
+     * {@code compat.DistantHorizonsSunkAttic}.
+     */
+    public static final ModConfigSpec.BooleanValue SUNK_ATTIC_HIDE_DISTANT_HORIZONS;
 
     /** How many blocks either side of a void band DH stays hidden — the approach, and past its far edge. */
     public static final ModConfigSpec.IntValue VOID_BANDS_DISTANT_HORIZONS_MARGIN;
@@ -231,6 +238,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.DoubleValue TRAIN_ENGINE_VOLUME;
     /** How loud the train wind plays. See {@link #getWindVolume()}. */
     public static final ModConfigSpec.DoubleValue WIND_VOLUME;
+    /** How strongly the wind's on-screen effects draw, 0 (off) to 6. See {@link #getWindScreenEffects()}. */
+    public static final ModConfigSpec.IntValue WIND_SCREEN_EFFECTS;
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
     /** Tiles per row in the Train Builder's Open screen grid. See {@link #getBuilderTilesPerRow()}. */
     public static final ModConfigSpec.IntValue BUILDER_TILES_PER_ROW;
@@ -322,6 +331,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue DEV_HUD;
     /** Only Dungeon Train's tabs show on the advancements screen — see {@link #isHideOtherAdvancementTabs()}. */
     public static final ModConfigSpec.BooleanValue HIDE_OTHER_ADVANCEMENT_TABS;
+    /** Only advancements in Dungeon Train's tabs pop a card — see {@link #isHideOtherAdvancementCards()}. */
+    public static final ModConfigSpec.BooleanValue HIDE_OTHER_ADVANCEMENT_CARDS;
 
     /**
      * Where each of the editor's three author-facing menus draws — see {@link EditorMenuSpace}.
@@ -343,6 +354,8 @@ public final class ClientDisplayConfig {
     public static final EditorScreenTheme DEFAULT_EDITOR_SCREEN_THEME = EditorScreenTheme.LIGHT;
     /** How the inventory-style editor X menu is painted. See {@link #DEFAULT_EDITOR_SCREEN_THEME}. */
     public static final ModConfigSpec.EnumValue<EditorScreenTheme> EDITOR_SCREEN_THEME;
+    /** How solid the block-variant editor's empty-cell markers are. See {@link #getPlaceholderCollision()}. */
+    public static final ModConfigSpec.EnumValue<PlaceholderCollision> PLACEHOLDER_COLLISION;
 
     /**
      * Remembered answer to the custom-Train-Editor-content prompt — see
@@ -399,6 +412,7 @@ public final class ClientDisplayConfig {
         DEVELOPER_POPUP_SHOWN_BEFORE = pair.getLeft().developerPopupShownBefore;
         DEVELOPER_POPUP_OPTED_OUT = pair.getLeft().developerPopupOptedOut;
         FREE_PLAY_CONFIRM_OPTED_OUT = pair.getLeft().freePlayConfirmOptedOut;
+        OWN_BOOK_BOOST_CONFIRM_OPTED_OUT = pair.getLeft().ownBookBoostConfirmOptedOut;
         DEV_CONSENT_GRANTED = pair.getLeft().devConsentGranted;
         DEV_CONSENT_GRANT_SESSION = pair.getLeft().devConsentGrantSession;
         DEV_CONSENT_LAST_MSG_TO_DEV = pair.getLeft().devConsentLastMsgToDev;
@@ -420,12 +434,14 @@ public final class ClientDisplayConfig {
         CHUNCKS_HIDE_DISTANT_HORIZONS = pair.getLeft().chuncksHideDistantHorizons;
         SPHERES_HIDE_DISTANT_HORIZONS = pair.getLeft().spheresHideDistantHorizons;
         STACKS_HIDE_DISTANT_HORIZONS = pair.getLeft().stacksHideDistantHorizons;
+        SUNK_ATTIC_HIDE_DISTANT_HORIZONS = pair.getLeft().sunkAtticHideDistantHorizons;
         VOID_BANDS_DISTANT_HORIZONS_MARGIN = pair.getLeft().voidBandsDistantHorizonsMargin;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         AFK_PAUSE_ENABLED = pair.getLeft().afkPauseEnabled;
         TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
         WIND_VOLUME = pair.getLeft().windVolume;
+        WIND_SCREEN_EFFECTS = pair.getLeft().windScreenEffects;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
         BUILDER_TILES_PER_ROW = pair.getLeft().builderTilesPerRow;
         MENU_RENDER_DISTANCE = pair.getLeft().menuRenderDistance;
@@ -468,11 +484,13 @@ public final class ClientDisplayConfig {
         LOW_MEMORY_NOTICE_CHAT = pair.getLeft().lowMemoryNoticeChat;
         DEV_HUD = pair.getLeft().devHud;
         HIDE_OTHER_ADVANCEMENT_TABS = pair.getLeft().hideOtherAdvancementTabs;
+        HIDE_OTHER_ADVANCEMENT_CARDS = pair.getLeft().hideOtherAdvancementCards;
         COMMAND_MENU_SPACE = pair.getLeft().commandMenuSpace;
         TEMPLATE_BLOCKS_MENU_SPACE = pair.getLeft().templateBlocksMenuSpace;
         CONTAINER_CONTENTS_MENU_SPACE = pair.getLeft().containerContentsMenuSpace;
         BLOCK_VARIANT_MENU_SPACE = pair.getLeft().blockVariantMenuSpace;
         EDITOR_SCREEN_THEME = pair.getLeft().editorScreenTheme;
+        PLACEHOLDER_COLLISION = pair.getLeft().placeholderCollision;
     }
 
     private ClientDisplayConfig() {}
@@ -502,6 +520,12 @@ public final class ClientDisplayConfig {
         b.push("freePlayConfirm");
         ModConfigSpec.BooleanValue freePlayConfirmOptedOut = b
                 .comment("Whether the player has ticked \"Don't show this again\" on the Free Play confirmation. When true, switching to creative/spectator or running a cheat command starts Free Play immediately, with no confirm screen. Reset by editing this back to false.")
+                .define("optedOut", false);
+        b.pop();
+
+        b.push("ownBookBoostConfirm");
+        ModConfigSpec.BooleanValue ownBookBoostConfirmOptedOut = b
+                .comment("Whether the player has ticked \"Don't show this again\" on the confirmation shown before boosting their own book (which costs 10 Book Boosts). When true, the star spends at once. Reset by editing this back to false.")
                 .define("optedOut", false);
         b.pop();
 
@@ -579,6 +603,9 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue stacksHideDistantHorizons = b
                 .comment("Stop Distant Horizons drawing while you are in, or approaching, the stacks section of the track - the void standing with towers of terrain. Set false to let DH draw there anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
                 .define("hideInStacks", true);
+        ModConfigSpec.BooleanValue sunkAtticHideDistantHorizons = b
+                .comment("Fixes a Distant Horizons sky glitch on one stretch of the track. Leave this on; set false only to troubleshoot. Chunks DH stored before this was on keep the glitch until DH processes them again. Does nothing if Distant Horizons is not installed, and never touches DH's own settings.")
+                .define("hideSunkAttic", true);
         ModConfigSpec.IntValue voidBandsDistantHorizonsMargin = b
                 .comment("How many blocks either side of the chunks, spheres and stacks sections DH stays hidden. A section comes into DH's draw distance well before you reach it, so this covers the way in (and the same distance past its far end). Raise it if you run a very large DH render distance; 0 cuts DH out exactly at the sections' edges.")
                 .defineInRange("strangeBandsHideMarginBlocks", DEFAULT_DISTANT_HORIZONS_HIDE_MARGIN,
@@ -610,6 +637,12 @@ public final class ClientDisplayConfig {
                 .comment("How loud the wind on the train plays, 0.0 (off) to 1.0 (unscaled). Scales the breeze and the gusts together. Separate from vanilla's Ambient slider. Also settable in Options -> Music & Sounds and in Options -> Dungeon Train...")
                 .defineInRange("windVolume", DEFAULT_TRAIN_ENGINE_VOLUME,
                         MIN_TRAIN_ENGINE_VOLUME, MAX_TRAIN_ENGINE_VOLUME);
+        b.pop();
+
+        b.push("wind");
+        ModConfigSpec.IntValue windScreenEffects = b
+                .comment("How strongly the wind's on-screen effects (streaks at the screen edges while the wind is on you) draw: 0 = off, 1 (faint) to 6 (strongest). 3 is the default. Also settable in Options -> Dungeon Train... -> Train.")
+                .defineInRange("screenEffects", DEFAULT_WIND_SCREEN_EFFECTS, 0, MAX_WIND_SCREEN_EFFECTS);
         b.pop();
 
         b.push("skybox");
@@ -736,6 +769,13 @@ public final class ClientDisplayConfig {
                          "translucent black the other Dungeon Train menus use. Set in-game from the X menu's",
                          "Settings tab.")
                 .defineEnum("editorScreenTheme", DEFAULT_EDITOR_SCREEN_THEME);
+        ModConfigSpec.EnumValue<PlaceholderCollision> placeholderCollision = b
+                .comment("How solid the block variant editor's see-through empty-cell markers are. HALF_SOLID: stand on",
+                         "top, walk through from the side, sneak to drop through. SOLID: a full block. AIR: no collision.",
+                         "They always draw and can always be built against. An authoring convenience: on a multiplayer",
+                         "server the server keeps HALF_SOLID, so another choice there will push you back. Set in-game",
+                         "from the X menu's Settings tab.")
+                .defineEnum("placeholderCollision", PlaceholderCollision.DEFAULT);
         b.pop();
 
         b.push("sharedBooks");
@@ -920,6 +960,11 @@ public final class ClientDisplayConfig {
                          "every other mod's are hidden; their advancements are still earned and still pop up.",
                          "Toggle in-game via Options > Dungeon Train. On by default.")
                 .define("hideOtherTabs", true);
+        ModConfigSpec.BooleanValue hideOtherAdvancementCards = b
+                .comment("Only advancements in Dungeon Train's tabs pop up a card when earned. Minecraft's own and",
+                         "every other mod's are still earned and still announced in chat, just without the card.",
+                         "Toggle in-game via Options > Dungeon Train. On by default.")
+                .define("hideOtherCards", true);
         b.pop();
 
         b.push("run");
@@ -935,7 +980,7 @@ public final class ClientDisplayConfig {
         b.pop();
 
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
-                devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
+                ownBookBoostConfirmOptedOut, devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
@@ -943,8 +988,9 @@ public final class ClientDisplayConfig {
                 upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
                 portalRoomHideDistantHorizons,
                 chuncksHideDistantHorizons, spheresHideDistantHorizons, stacksHideDistantHorizons,
+                sunkAtticHideDistantHorizons,
                 voidBandsDistantHorizonsMargin,
-                framerateThrottleEnabled, framerateThrottleFps, afkPauseEnabled, trainEngineVolume, windVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, scribbleFileButtonsVisible, scribbleInsertPageButtonVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
+                framerateThrottleEnabled, framerateThrottleFps, afkPauseEnabled, trainEngineVolume, windVolume, windScreenEffects, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, scribbleFileButtonsVisible, scribbleInsertPageButtonVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
                 creativeModBlockTabs, creativeModBlocksInSearch, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
@@ -954,10 +1000,10 @@ public final class ClientDisplayConfig {
                 politicalFilter, contentMode, devChatEnabled, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, bookCopyButton, protectOwnPets, updateNoticeChat,
-                lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs,
+                lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs, hideOtherAdvancementCards,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
-                editorScreenTheme,
+                editorScreenTheme, placeholderCollision,
                 confirmBuildRestore, humanOnlyTranslations, newRunDifficulty);
     }
 
@@ -1071,6 +1117,19 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         FREE_PLAY_CONFIRM_OPTED_OUT.set(value);
         FREE_PLAY_CONFIRM_OPTED_OUT.save();
+    }
+
+    // ----- Own-book boost confirmation opt-out (see client/BookBoostConfirm) -----
+
+    /** Has the player ticked "Don't show this again" on the own-book boost confirmation? */
+    public static boolean isOwnBookBoostConfirmOptedOut() {
+        return isLoaded() && OWN_BOOK_BOOST_CONFIRM_OPTED_OUT.get();
+    }
+
+    public static void setOwnBookBoostConfirmOptedOut(boolean value) {
+        if (!isLoaded()) return;
+        OWN_BOOK_BOOST_CONFIRM_OPTED_OUT.set(value);
+        OWN_BOOK_BOOST_CONFIRM_OPTED_OUT.save();
     }
 
     // ----- Config deviation prompt (see client/ConfigDeviationPromptHandler) -----
@@ -1425,6 +1484,20 @@ public final class ClientDisplayConfig {
         HIDE_OTHER_ADVANCEMENT_TABS.save();
     }
 
+    /**
+     * Whether advancements outside Dungeon Train's tabs skip the earned card (the chat line stays). On
+     * by default, pre-load included. Read on every earn — see {@code AdvancementTabGate#shouldSuppressCard}.
+     */
+    public static boolean isHideOtherAdvancementCards() {
+        return !isLoaded() || HIDE_OTHER_ADVANCEMENT_CARDS.get();
+    }
+
+    public static void setHideOtherAdvancementCards(boolean value) {
+        if (!isLoaded()) return;
+        HIDE_OTHER_ADVANCEMENT_CARDS.set(value);
+        HIDE_OTHER_ADVANCEMENT_CARDS.save();
+    }
+
     public static boolean isLowMemoryNoticeChatEnabled() {
         return isLoaded() && LOW_MEMORY_NOTICE_CHAT.get();
     }
@@ -1597,6 +1670,30 @@ public final class ClientDisplayConfig {
         if (WIND_VOLUME.get() == snapped) return;
         WIND_VOLUME.set(snapped);
         WIND_VOLUME.save();
+    }
+
+    // ----- Wind screen effects (see client/wind/WindFeelOverlay) -----
+
+    /** Default and top tier of {@link #getWindScreenEffects()}. */
+    public static final int DEFAULT_WIND_SCREEN_EFFECTS = 3;
+    public static final int MAX_WIND_SCREEN_EFFECTS = 6;
+
+    /**
+     * How strongly the wind's on-screen effects draw: {@code 0} off, {@code 1} (faint) to
+     * {@link #MAX_WIND_SCREEN_EFFECTS}; {@link #DEFAULT_WIND_SCREEN_EFFECTS} before the config loads.
+     */
+    public static int getWindScreenEffects() {
+        if (!isLoaded()) return DEFAULT_WIND_SCREEN_EFFECTS;
+        return Math.max(0, Math.min(MAX_WIND_SCREEN_EFFECTS, WIND_SCREEN_EFFECTS.get()));
+    }
+
+    /** Persist the wind screen-effects tier, clamped; skips unchanged writes (sliders call this live). */
+    public static void setWindScreenEffects(int tier) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(0, Math.min(MAX_WIND_SCREEN_EFFECTS, tier));
+        if (WIND_SCREEN_EFFECTS.get() == clamped) return;
+        WIND_SCREEN_EFFECTS.set(clamped);
+        WIND_SCREEN_EFFECTS.save();
     }
 
     // ----- Delete old world on reboard (death-screen trash toggle) -----
@@ -2150,6 +2247,22 @@ public final class ClientDisplayConfig {
         return isLoaded() ? EDITOR_SCREEN_THEME.get() : DEFAULT_EDITOR_SCREEN_THEME;
     }
 
+    /**
+     * How solid the block-variant editor's empty-cell markers are. Pre-load, and on a dedicated
+     * server (which never loads the client config), {@link PlaceholderCollision#DEFAULT}.
+     */
+    public static PlaceholderCollision getPlaceholderCollision() {
+        return isLoaded() ? PLACEHOLDER_COLLISION.get() : PlaceholderCollision.DEFAULT;
+    }
+
+    /** Persist the empty-marker collision mode. Idempotent: skips the TOML write when unchanged. */
+    public static void setPlaceholderCollision(PlaceholderCollision value) {
+        if (!isLoaded() || value == null) return;
+        if (PLACEHOLDER_COLLISION.get() == value) return;
+        PLACEHOLDER_COLLISION.set(value);
+        PLACEHOLDER_COLLISION.save();
+    }
+
     /** Persist the editor screen's theme. Idempotent: skips the TOML write when unchanged. */
     public static void setEditorScreenTheme(EditorScreenTheme value) {
         if (!isLoaded() || value == null) return;
@@ -2193,6 +2306,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue developerPopupShownBefore,
             ModConfigSpec.BooleanValue developerPopupOptedOut,
             ModConfigSpec.BooleanValue freePlayConfirmOptedOut,
+            ModConfigSpec.BooleanValue ownBookBoostConfirmOptedOut,
             ModConfigSpec.BooleanValue devConsentGranted,
             ModConfigSpec.DoubleValue devConsentGrantSession,
             ModConfigSpec.DoubleValue devConsentLastMsgToDev,
@@ -2214,12 +2328,14 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue chuncksHideDistantHorizons,
             ModConfigSpec.BooleanValue spheresHideDistantHorizons,
             ModConfigSpec.BooleanValue stacksHideDistantHorizons,
+            ModConfigSpec.BooleanValue sunkAtticHideDistantHorizons,
             ModConfigSpec.IntValue voidBandsDistantHorizonsMargin,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.BooleanValue afkPauseEnabled,
             ModConfigSpec.DoubleValue trainEngineVolume,
             ModConfigSpec.DoubleValue windVolume,
+            ModConfigSpec.IntValue windScreenEffects,
             ModConfigSpec.BooleanValue skyboxPunchEnabled,
             ModConfigSpec.BooleanValue skyboxBlocksOn,
             ModConfigSpec.BooleanValue portalCrossingFade,
@@ -2259,11 +2375,13 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue lowMemoryNoticeChat,
             ModConfigSpec.BooleanValue devHud,
             ModConfigSpec.BooleanValue hideOtherAdvancementTabs,
+            ModConfigSpec.BooleanValue hideOtherAdvancementCards,
             ModConfigSpec.EnumValue<EditorMenuSpace> commandMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace,
             ModConfigSpec.EnumValue<EditorScreenTheme> editorScreenTheme,
+            ModConfigSpec.EnumValue<PlaceholderCollision> placeholderCollision,
             ModConfigSpec.BooleanValue confirmBuildRestore,
             ModConfigSpec.BooleanValue humanOnlyTranslations,
             ModConfigSpec.ConfigValue<String> newRunDifficulty

@@ -555,6 +555,11 @@ public record WorldGenCycle(long startX, int owGap,
         return d < 0L ? -1L : d;
     }
 
+    /** Public read of {@link #backDist}: blocks travelled -X past the overworld buffer behind spawn, or {@code -1}. */
+    public long reverseDistance(long worldX) {
+        return layout == null ? -1L : backDist(worldX);
+    }
+
     /** Lowest world X of reversed run {@code k} behind the anchor — it ends at {@code startX − buffer}, less the later runs. Layout only. */
     public long reversedRunLowX(int k) {
         return startX - mirrorBuffer() - CycleLayout.runStart(k + 1, layout.period());
@@ -563,6 +568,73 @@ public record WorldGenCycle(long startX, int owGap,
     /** True when {@code worldX} lies in the reversed cycle behind the anchor (past the overworld buffer). */
     public boolean isMirroredAt(long worldX) {
         return layout != null && backDist(worldX) >= 0L;
+    }
+
+    /** Band starts of the last layout asked about (records cannot cache per instance). */
+    private record BandCache(CycleLayout layout, long[] starts) {}
+
+    private static volatile BandCache bandCache;
+
+    /**
+     * Base start of every band a player sees on one lap, in forward order, plus the period at the end. A slot
+     * is one band, except a legacy run, which is one band per era: each era starts at its own entry fade (or
+     * crossfade) and the run's exit fade belongs to its last era.
+     */
+    private long[] bandStarts() {
+        BandCache c = bandCache;
+        if (c != null && c.layout() == layout) return c.starts();
+        java.util.List<Long> out = new java.util.ArrayList<>();
+        for (int i = 0; i < layout.count(); i++) {
+            if (layout.length(i) <= 0L) continue;
+            long at = layout.start(i);
+            if (layout.slot(i).type() != CycleLayout.Type.LEGACY_RUN) {
+                out.add(at);
+                continue;
+            }
+            LegacySpan[] eras = layout.eras(i);
+            if (eras.length == 0) {
+                out.add(at);
+                continue;
+            }
+            for (int e = 0; e < eras.length; e++) {
+                out.add(at);
+                at += layout.fadeBefore(i, e) + eras[e].holdLen();
+            }
+        }
+        long[] starts = new long[out.size() + 1];
+        for (int i = 0; i < out.size(); i++) starts[i] = out.get(i);
+        starts[out.size()] = layout.period();
+        bandCache = new BandCache(layout, starts);
+        return starts;
+    }
+
+    /** Bands a player passes on one lap (a legacy run counts once per era); 0 without a layout. */
+    public int bandsPerLap() {
+        return layout == null ? 0 : bandStarts().length - 1;
+    }
+
+    /**
+     * The forward world X whose wind the reversed column {@code worldX} plays. Counting bands from spawn both
+     * ways, the Nth band met walking -X takes the (N + {@code shift})th band reached walking +X, at the same
+     * fraction through it (measured from where each is entered). {@link Double#NaN} outside the reversed cycle.
+     */
+    public double reverseWindTwinX(double worldX, int shift) {
+        long column = (long) Math.floor(worldX);
+        if (!isMirroredAt(column)) return Double.NaN;
+        long[] starts = bandStarts();
+        int bands = starts.length - 1;
+        int k = runAt(column);
+        double u = (worldX - runLowX(column)) / (double) (1L << k);
+        int q0 = java.util.Arrays.binarySearch(starts, 0, bands, (long) Math.floor(u));
+        if (q0 < 0) q0 = -q0 - 2;
+        q0 = Math.max(0, Math.min(bands - 1, q0));
+        double f = (starts[q0 + 1] - u) / (double) (starts[q0 + 1] - starts[q0]);
+        long n = (long) k * bands + (bands - q0);           // 1-based backward position
+        long m = n + shift - 1;                              // 0-based forward position
+        int lap = (int) (m / bands);
+        int q = (int) (m % bands);
+        double base = starts[q] + Math.max(0.0, Math.min(1.0, f)) * (starts[q + 1] - starts[q]);
+        return startX + CycleLayout.runStart(lap, layout.period()) + base * (double) (1L << lap);
     }
 
     /** Doubling run index at {@code worldX} (0 inside the buffer). Layout only. */

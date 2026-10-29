@@ -46,7 +46,7 @@ final class BandAdvancementsTest {
         assertEquals(List.of(
                 "reached_nether", "reached_wwoo", "reached_void", "reached_end_islands",
                 "the_upside_down", "reassembly_required",
-                "reached_bop", "reached_better_nether", "reached_lost_city", "reached_better_end", "reached_spheres",
+                "reached_bop", "reached_better_nether", "reached_deeper_dark", "reached_lost_city", "reached_better_end", "reached_spheres",
                 "reached_amplified", "reached_beta", "reached_far_lands", "reached_caves_of_chaos", "reached_skylands", "reached_floating",
                 "reached_alpha", "reached_infdev", "reached_classic", "reached_superflat",
                 "reached_chuncks", "reached_stacks",
@@ -88,6 +88,17 @@ final class BandAdvancementsTest {
         assertEquals("reached_nether", chain.get(0));
         assertEquals("reached_better_nether", chain.get(1));
         assertEquals(1, chain.stream().filter("reached_nether"::equals).count());
+    }
+
+    @Test
+    @DisplayName("the Deeper Dark adds its own advancement, never the Nether's, even met before any Nether")
+    void deeperDarkOccurrence() {
+        List<String> chain = BandAdvancements.chain(parse("ow:1000, nether:otherside:3000, nether:4000"));
+        assertEquals("reached_deeper_dark", chain.get(0));
+        assertEquals("reached_nether", chain.get(1));
+        assertTrue(BandAdvancements.reachable(parse("ow:1000, nether:better:4000, nether:otherside:3000"))
+                .contains("reached_deeper_dark"));
+        assertFalse(BandAdvancements.reachable(parse("ow:1000, nether:better:4000")).contains("reached_deeper_dark"));
     }
 
     @Test

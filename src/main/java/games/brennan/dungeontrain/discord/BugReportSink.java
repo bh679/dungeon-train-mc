@@ -58,9 +58,9 @@ public final class BugReportSink {
             }
         }
         StringBuilder content = new StringBuilder("🐛 Bug report — **")
-                .append(sanitizeInline(optionLabel)).append("**");
+                .append(DiscordMarkdown.escape(sanitizeInline(optionLabel))).append("**");
         if (hasFiles) {
-            String filenames = files.stream().map(LogBlob::filename).collect(Collectors.joining(", "));
+            String filenames = files.stream().map(LogBlob::filename).map(DiscordMarkdown::escape).collect(Collectors.joining(", "));
             content.append("\nAttached logs: ").append(filenames)
                     .append("\nArchived on server: `").append(pathNote).append("`");
         }

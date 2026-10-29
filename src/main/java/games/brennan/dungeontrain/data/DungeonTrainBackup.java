@@ -8,6 +8,7 @@ import games.brennan.dungeonbackup.core.FileTrees;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.compat.EnderChestResetBridge;
+import games.brennan.dungeontrain.compat.EnderChestResetBridge.EcpDirs;
 import games.brennan.dungeontrain.editor.UserContentMigration;
 import games.brennan.dungeontrain.template.TemplateStores;
 import org.slf4j.Logger;
@@ -45,13 +46,20 @@ public final class DungeonTrainBackup {
     /** The archive label DT's data root is written under. Existing archives depend on it. */
     public static final String ROOT_LABEL = PlayerDataPaths.ROOT_DIR;
 
+    /** Archive label for ECP's instance folder. Existing archives depend on it. */
+    static final String ECP_INSTANCE_LABEL = "enderchestpersistence";
+
+    /** Archive label for ECP's store when it lives outside the instance. */
+    static final String ECP_STORE_LABEL = "enderchestpersistence-store";
+
     private static Registration registration;
 
     private DungeonTrainBackup() {}
 
     /** Register once. Safe to call again — the library replaces the earlier entry. */
     public static synchronized Registration register() {
-        registration = describe(PlayerDataPaths.root(), PlayerDataPaths.dtpacksRoot()).register();
+        registration = describe(PlayerDataPaths.root(), PlayerDataPaths.dtpacksRoot(),
+            EnderChestResetBridge.storeDirs()).register();
         return registration;
     }
 
@@ -59,7 +67,7 @@ public final class DungeonTrainBackup {
      * Everything DT tells the library, against explicit roots — the only {@code FMLPaths}-free
      * seam, and therefore the one {@code DungeonTrainBackupTest} drives with {@code @TempDir}.
      */
-    static Registration.Builder describe(Path dataRoot, Path dtpacks) {
+    static Registration.Builder describe(Path dataRoot, Path dtpacks, Optional<EcpDirs> enderChest) {
         Registration.Builder builder = DungeonBackup.register(DungeonTrain.MOD_ID)
             .displayName("Dungeon Train")
             .modVersion(() -> VersionInfo.VERSION)
@@ -90,11 +98,16 @@ public final class DungeonTrainBackup {
             .legacyOverrideNames("dungeontrain.backups", "DUNGEONTRAIN_BACKUPS")
             .backupOn(Trigger.WORLD_LOAD, Trigger.PLAYER_DEATH, Trigger.SESSION_END);
 
-        // ECP's per-player stash lives in config/enderchestpersistence/ — INSIDE the folder
-        // launchers wipe — and survives a new world, which is exactly the loss this system exists
-        // for. Pulled in as an extra tree until ECP registers itself. Optional: an ECP that moved
-        // its seam degrades to "not backed up", never to a failed registration.
-        EnderChestResetBridge.stashDir().ifPresent(dir -> builder.alsoBackUp("enderchestpersistence", dir));
+        // ECP's per-player stash survives a new world, which is exactly the loss this system exists
+        // for. Pulled in as extra trees until ECP registers itself. Optional: an ECP that moved its
+        // seam degrades to "not backed up", never to a failed registration.
+        enderChest.ifPresent(dirs -> {
+            // Always config/enderchestpersistence/: every archive already on disk wrote that folder
+            // under this label, so it must keep restoring there (never into the live store).
+            builder.alsoBackUp(ECP_INSTANCE_LABEL, dirs.instance());
+            // Where the chest actually is on a client since ECP 0.3.0: the OS's app-data folder.
+            if (dirs.storesOutside()) builder.alsoBackUp(ECP_STORE_LABEL, dirs.store());
+        });
         return builder;
     }
 

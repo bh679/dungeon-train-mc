@@ -12,19 +12,19 @@ final class BuildReviewReporterTest {
     @Test
     @DisplayName("the title names reviewer, build and author, and copes with either name missing")
     void title() {
-        assertEquals("Brennan accepted brick_cabin by Ada", BuildReviewReporter.title("Brennan", "brick_cabin", "Ada"));
+        assertEquals("Brennan accepted brick\\_cabin by Ada", BuildReviewReporter.title("Brennan", "brick_cabin", "Ada"));
         assertEquals("Brennan accepted a build by Ada", BuildReviewReporter.title("Brennan", "", "Ada"));
-        assertEquals("Brennan accepted brick_cabin", BuildReviewReporter.title("Brennan", "brick_cabin", null));
+        assertEquals("Brennan accepted brick\\_cabin", BuildReviewReporter.title("Brennan", "brick_cabin", null));
     }
 
     @Test
     @DisplayName("feedback and resubmit get their own headline, colour and stock body; decline is never announced")
     void perVerdict() {
-        assertEquals("Brennan sent feedback on brick_cabin by Ada",
+        assertEquals("Brennan sent feedback on brick\\_cabin by Ada",
                 BuildReviewReporter.title("Brennan", "brick_cabin", "Ada", "feedback", "", ""));
-        assertEquals("Brennan sent brick_cabin by Ada back for Dungeon Train 0.1130.0 or above",
+        assertEquals("Brennan sent brick\\_cabin by Ada back for Dungeon Train 0.1130.0 or above",
                 BuildReviewReporter.title("Brennan", "brick_cabin", "Ada", "resubmit", "0.1130.0", "gte"));
-        assertEquals("Brennan sent brick_cabin back for Dungeon Train 1.0.0 exactly",
+        assertEquals("Brennan sent brick\\_cabin back for Dungeon Train 1.0.0 exactly",
                 BuildReviewReporter.title("Brennan", "brick_cabin", "", "resubmit", "1.0.0", "exact"));
         assertEquals("a newer version or above", BuildReviewReporter.ruleText("", "gte"));
         assertEquals(BuildReviewReporter.EMBED_FEEDBACK, BuildReviewReporter.colour("feedback"));
@@ -45,7 +45,7 @@ final class BuildReviewReporterTest {
         var fields = BuildSubmitReporter.fields(155, "carriage", "");
         assertEquals(1, fields.size());
         assertEquals("#155 \u00B7 carriage", fields.get(0).value());
-        assertEquals("#7 \u00B7 portal_room / library", BuildSubmitReporter.fields(7, "portal_room", "library").get(0).value());
+        assertEquals("#7 \u00B7 portal\\_room / library", BuildSubmitReporter.fields(7, "portal_room", "library").get(0).value());
         assertEquals("#9", BuildSubmitReporter.fields(9, "", "").get(0).value());
     }
 

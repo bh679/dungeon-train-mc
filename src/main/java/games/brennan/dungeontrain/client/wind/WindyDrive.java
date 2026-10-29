@@ -16,7 +16,8 @@ import net.minecraft.client.particle.Particle;
  *       late steady wind (~0.014) just under the strong streak, and gusts cross it.</li>
  *   <li><b>Speed</b>: streaks fly at {@link #SPEED_BASE} + push × {@link #SPEED_PER_PUSH} blocks/tick (2.5 b/s
  *       in a breath of wind, ~5 b/s in a late steady wind, 15+ b/s in a gust); strong streaks a bit faster.</li>
- *   <li><b>Density</b>: push / {@link #DENSITY_PUSH} × Windy's base rate, capped at {@link #MAX_DENSITY}.</li>
+ *   <li><b>Density</b>: push / {@link #DENSITY_PUSH} × Windy's base rate, capped at {@link #MAX_DENSITY}, and
+ *       faded to nothing in a near-calm wind ({@link WindFeelMath#calmFade}).</li>
  *   <li><b>Past the cap</b>: wind that would want more than {@link #MAX_DENSITY} draws extra copies of each streak
  *       instead of spawning more ({@link #copiesFor}) — up to {@link #MAX_COPIES} per streak, rising smoothly. A
  *       copy costs one more quad to draw and no path check, which is where the cost of a streak is.</li>
@@ -87,7 +88,11 @@ public final class WindyDrive {
 
     private WindyDrive() {}
 
-    /** True while DT is driving Windy (a train world, in the Overworld). Calm still counts — that's the point. */
+    /**
+     * True while DT is driving Windy (a train world, in the Overworld). Calm still counts — that's the point: with
+     * DT's wind off, before the wind start, or in a dimensional carriage, DT holds Windy at no wind ({@link #calm}),
+     * so Windy's own wind never shows in a train world.
+     */
     public static boolean owns() {
         return owns;
     }
@@ -142,13 +147,21 @@ public final class WindyDrive {
         dirZ = Math.sin(headingRad);
         speed = SPEED_BASE + Math.max(0.0, push) * SPEED_PER_PUSH;
         double wanted = Math.max(0.0, push) / DENSITY_PUSH;
-        density = Math.min(MAX_DENSITY, wanted);
+        // Nothing at all in a near-calm wind (not a trickle); the fade is done by DENSITY_PUSH x 2 (FADE_FULL).
+        density = Math.min(MAX_DENSITY, wanted * WindFeelMath.calmFade(push));
         overflow = Math.min(MAX_COPIES - 1, Math.max(0.0, wanted / MAX_DENSITY - 1.0));
         trainVx = carriageVx;
         trainVz = carriageVz;
         owns = true;
     }
 
+    /** DT's wind isn't blowing here: keep hold of Windy, at no wind, so Windy spawns nothing of its own. */
+    static void calm() {
+        release();
+        owns = true;
+    }
+
+    /** Hand Windy back its own wind (not a train world, or another dimension, or logged out). */
     static void release() {
         owns = false;
         strength = 0.0f;

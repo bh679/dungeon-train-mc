@@ -428,7 +428,7 @@
   },
   "slime": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic/off/on/off/day/repeated/0/1"
+    "mode": "endless_repetition/dynamic/off/on:30/off/day/repeated/0/1"
   },
   "sloped": {
     "weight": 1,
@@ -511,6 +511,11 @@
       "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
       "name": "Firefly_on_ytb"
     }
+  },
+  "tntlong": {
+    "weight": 1,
+    "minLevel": 10,
+    "mode": "bedrock"
   },
   "trap": {
     "weight": 1,

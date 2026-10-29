@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.echo;
 
+import games.brennan.dungeontrain.discord.DiscordMarkdown;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,6 +14,9 @@ import java.util.List;
  * <p>The feed is public, so everything is third person: the player by name, the echo as "the echo".
  * The opener (the spawn) and the closer (the outcome) bracket the middle beats, which are joined into
  * one flowing paragraph in the order they happened.</p>
+ *
+ * <p>Every player-supplied piece (names, item names, the chat line) goes through
+ * {@link DiscordMarkdown#escape} so a name like {@code ashy_} can't underline the rest of the post.</p>
  */
 final class EchoEncounterFormat {
 
@@ -19,13 +24,15 @@ final class EchoEncounterFormat {
 
     /** Embed title, e.g. "👁 Brennan met the echo of Steve". */
     static String title(String playerName, String sourceName) {
-        return "👁 " + playerName + " met the echo of " + sourceName;
+        return "👁 " + DiscordMarkdown.escape(playerName) + " met the echo of " + DiscordMarkdown.escape(sourceName);
     }
 
     /** The full story body: opener · the beats · closer, separated by blank lines. */
-    static String story(String playerName, EchoEncounter enc, EndReason reason) {
+    static String story(String rawPlayerName, EchoEncounter enc, EndReason reason) {
+        String playerName = DiscordMarkdown.escape(rawPlayerName);
+        String source = DiscordMarkdown.escape(enc.sourceName);
         StringBuilder out = new StringBuilder();
-        out.append(opener(playerName, enc));
+        out.append(opener(playerName, source, enc));
 
         String items = items(enc);
         if (items != null) {
@@ -46,15 +53,15 @@ final class EchoEncounterFormat {
             out.append("\n\n").append(String.join(" ", action));
         }
 
-        out.append("\n\n").append(closer(playerName, enc, reason));
+        out.append("\n\n").append(closer(playerName, source, reason));
         return out.toString();
     }
 
-    private static String opener(String playerName, EchoEncounter enc) {
+    private static String opener(String playerName, String source, EchoEncounter enc) {
         String where = enc.sourceCarriage >= 0
                 ? " — a soul lost around carriage " + enc.sourceCarriage
                 : "";
-        return "A remote echo of " + enc.sourceName + where
+        return "A remote echo of " + source + where
                 + " stepped aboard " + playerName + "'s train.";
     }
 
@@ -64,7 +71,7 @@ final class EchoEncounterFormat {
      * scene-setting before the action.
      */
     private static String items(EchoEncounter enc) {
-        List<String> items = enc.bestItems;
+        List<String> items = enc.bestItems.stream().map(DiscordMarkdown::escape).toList();
         if (items.isEmpty()) {
             return null;
         }
@@ -80,7 +87,7 @@ final class EchoEncounterFormat {
      * the beats.
      */
     private static String acquired(EchoEncounter enc) {
-        List<String> gained = enc.acquiredItems;
+        List<String> gained = enc.acquiredItems.stream().map(DiscordMarkdown::escape).toList();
         if (gained.isEmpty()) {
             return null;
         }
@@ -96,7 +103,7 @@ final class EchoEncounterFormat {
     private static String middle(String playerName, EchoEncounter enc) {
         List<String> lines = new ArrayList<>();
         for (EchoEvent beat : enc.beats()) {
-            String s = beat == EchoEvent.CHAT ? chat(playerName, enc) : sentence(beat, playerName, enc.sourceName);
+            String s = beat == EchoEvent.CHAT ? chat(playerName, enc) : sentence(beat, playerName);
             if (s != null) {
                 lines.add(s);
             }
@@ -111,13 +118,13 @@ final class EchoEncounterFormat {
      */
     private static String chat(String playerName, EchoEncounter enc) {
         if (enc.chatLine != null) {
-            return playerName + " spoke up: “" + enc.chatLine + "”";
+            return playerName + " spoke up: “" + DiscordMarkdown.escape(enc.chatLine) + "”";
         }
         return playerName + " spoke as the echo listened.";
     }
 
     /** One sentence per middle beat; {@code null} for beats handled by the opener/closer. */
-    private static String sentence(EchoEvent beat, String playerName, String sourceName) {
+    private static String sentence(EchoEvent beat, String playerName) {
         return switch (beat) {
             case SPAWNED -> null; // the opener
             case MET -> "They crossed paths.";
@@ -135,8 +142,7 @@ final class EchoEncounterFormat {
         };
     }
 
-    private static String closer(String playerName, EchoEncounter enc, EndReason reason) {
-        String source = enc.sourceName;
+    private static String closer(String playerName, String source, EndReason reason) {
         return switch (reason) {
             case ECHO_SLAIN_BY_YOU -> "And there, by " + playerName + "'s hand, the echo of " + source + " fell once more.";
             case ECHO_SLAIN -> "The echo of " + source + " fell.";

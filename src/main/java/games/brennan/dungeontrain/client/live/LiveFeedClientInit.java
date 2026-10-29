@@ -20,7 +20,7 @@ public final class LiveFeedClientInit {
 
     @SubscribeEvent
     static void onClientSetup(FMLClientSetupEvent event) {
-        LiveBroadcastSource.setClientSource(() -> LiveFeedSource.MAIN);
+        LiveBroadcastSource.setClientSource(() -> LiveFeedSource.MAIN, () -> LiveFeedSource.SECOND);
         // ItemProperties is not thread-safe; registration belongs on the main thread like the rest
         event.enqueueWork(LiveHeadpieceAntenna::register);
     }
@@ -33,6 +33,9 @@ public final class LiveFeedClientInit {
         public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
             Minecraft.getInstance().execute(() -> {
                 LiveFeedSource.MAIN.dropAll();
+                LiveFeedSource.SECOND.dropAll();
+                HeadViewerPanes.reset();
+                StreamerBoxPanes.reset();
                 LiveStatusPoller.reset();
                 LiveChatBridge.reset();
                 LiveHeadpieceAntenna.reset();

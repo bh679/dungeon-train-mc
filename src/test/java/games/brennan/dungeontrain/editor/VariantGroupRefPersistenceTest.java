@@ -61,7 +61,7 @@ final class VariantGroupRefPersistenceTest {
     @Test
     @DisplayName("a group only a reference knows about is live and rolls like a real group")
     void referenceOnlyGroupIsLive() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), refWithCopy(1, groupOnePool())));
         sc.setLockId(CELL_2, 2);
 
@@ -87,7 +87,7 @@ final class VariantGroupRefPersistenceTest {
     @Test
     @DisplayName("removing a group's last cell keeps it alive for the reference, with its latest options")
     void lastCellRemovedKeepsLatestOptions() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_1, groupOnePool());
         sc.setLockId(CELL_1, 1);
         sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), refWithCopy(1, groupOnePool())));
@@ -108,7 +108,7 @@ final class VariantGroupRefPersistenceTest {
     @Test
     @DisplayName("a cell carrying the lock-id beats the reference's copy")
     void cellBeatsCopy() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), refWithCopy(1, List.of(of(Blocks.GLASS), of(Blocks.SAND)))));
         sc.put(CELL_1, groupOnePool());
         sc.setLockId(CELL_1, 1);
@@ -123,7 +123,7 @@ final class VariantGroupRefPersistenceTest {
     @Test
     @DisplayName("a group nobody refers to still disappears with its last cell")
     void unreferencedGroupDisappears() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_1, groupOnePool());
         sc.setLockId(CELL_1, 1);
         sc.remove(CELL_1);
@@ -135,7 +135,7 @@ final class VariantGroupRefPersistenceTest {
     @Test
     @DisplayName("a new lock never takes the id of a group kept alive by a reference")
     void nextFreeLockIdSkipsReferencedGroups() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), refWithCopy(1, groupOnePool())));
         assertEquals(2, sc.nextFreeLockId());
     }
@@ -143,7 +143,7 @@ final class VariantGroupRefPersistenceTest {
     @Test
     @DisplayName("refreshed() nests copies but never the group a list sits in")
     void refreshedStopsAtOwnGroup() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_1, List.of(of(Blocks.STONE), of(Blocks.ANDESITE)));
         sc.setLockId(CELL_1, 1);
         sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), VariantState.ofGroupRef(1, Blocks.BEDROCK.defaultBlockState())));

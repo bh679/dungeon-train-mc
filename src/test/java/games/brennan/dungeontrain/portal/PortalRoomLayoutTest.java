@@ -522,17 +522,14 @@ class PortalRoomLayoutTest {
         assertEquals(new Vec3i(64, 80, 9), PortalRoomLayout.heldForAuthoring(terrarium, new Vec3i(90, 80, 9)));
     }
 
-    private static final int SLACK = 8;   // PortalCarriageEvents.POCKET_ROOM_SLACK
-
     @Test
-    @DisplayName("A room standing at its lane keeps exactly the ceiling its structure box always had")
-    void structureCeiling_unsunkenRoomIsUnchanged() {
+    @DisplayName("A room standing at its lane tops its box one row over the higher of its two roofs")
+    void structureCeiling_unsunkenRoomIsOneOverItsRoof() {
         int lane = 11;
         int carriage = DEFAULT_DIMS.height();
         for (int roomHeight = 4; roomHeight <= 80; roomHeight++) {
-            int oldSlackY = Math.max(SLACK, roomHeight - carriage + 1);
-            assertEquals(lane + carriage + oldSlackY,
-                PortalRoomLayout.structureCeilingY(lane, lane, roomHeight, carriage, SLACK),
+            assertEquals(lane + Math.max(carriage, roomHeight) + 1,
+                PortalRoomLayout.structureCeilingY(lane, lane, roomHeight, carriage),
                 "room height " + roomHeight);
         }
     }
@@ -541,15 +538,35 @@ class PortalRoomLayoutTest {
     @DisplayName("A sunken room's box stops at its own ceiling, well under the train deck overhead")
     void structureCeiling_sunkenRoomStopsBelowTheDeck() {
         // The terrarium from the 2026-09-30 report: 80 tall, floor at -62, lane at 11, deck at ~78.
-        int ceiling = PortalRoomLayout.structureCeilingY(11, -62, 80, DEFAULT_DIMS.height(), SLACK);
-        assertEquals(26, ceiling, "lane + carriage + slack binds: the room itself tops out at 17");
+        int ceiling = PortalRoomLayout.structureCeilingY(11, -62, 80, DEFAULT_DIMS.height());
+        assertEquals(19, ceiling, "the corridor lane's roof binds: the room itself tops out at 17");
         assertTrue(ceiling < 78, "the box must not reach the deck — got " + ceiling);
     }
 
     @Test
-    @DisplayName("The ceiling never drops below the lane's carriage height plus slack")
-    void structureCeiling_neverBelowTheLaneSlack() {
-        assertEquals(11 + 7 + SLACK, PortalRoomLayout.structureCeilingY(11, 5, 7, 7, SLACK));
-        assertEquals(11 + 7 + SLACK, PortalRoomLayout.structureCeilingY(11, 11, 4, 7, SLACK));
+    @DisplayName("Stacked lanes' boxes never reach anybody standing in the other lane")
+    void structureCeiling_stackedLanesDoNotOverlap() {
+        // 2026-10-21: a dead pair's room one lane under a working one had a box reaching eight rows
+        // over its roof, so a player walking the upper room was "in" the lower one and its rescue
+        // carried them back to the train. Box minY is one under the lane (PortalCarriageEvents).
+        int carriage = DEFAULT_DIMS.height();
+        for (int roomHeight = 4; roomHeight <= 80; roomHeight++) {
+            int structureHeight = Math.max(carriage, roomHeight);
+            int lower = -54;
+            int upper = lower + PortalTwinLanes.laneHeight(structureHeight);
+            int lowerCeiling = PortalRoomLayout.structureCeilingY(lower, lower, roomHeight, carriage);
+            int upperMinY = upper - 1;
+
+            // Lowest feet in the upper room: on its floor block. Highest feet in the lower room: the
+            // row under its roof.
+            int lowestUpperFeet = upper + 1;
+            int highestLowerFeet = lower + structureHeight - 2;
+            assertTrue(lowestUpperFeet >= lowerCeiling,
+                "room height " + roomHeight + ": upper-lane player inside lower box (ceiling "
+                    + lowerCeiling + ", feet " + lowestUpperFeet + ")");
+            assertTrue(highestLowerFeet < upperMinY,
+                "room height " + roomHeight + ": lower-lane player inside upper box (minY "
+                    + upperMinY + ", feet " + highestLowerFeet + ")");
+        }
     }
 }

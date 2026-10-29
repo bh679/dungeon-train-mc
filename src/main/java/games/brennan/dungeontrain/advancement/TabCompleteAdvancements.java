@@ -30,7 +30,8 @@ import java.util.function.Predicate;
  * tab's members are read from the live advancement tree on every check — the root and every descendant
  * — so the band journey's load-time re-parenting and any move made in the advancement editor are
  * followed without an id list here. Skipped: the tab-complete copies themselves (a copy would otherwise
- * need itself), band advancements the world's layout never visits ({@link BandAdvancements#reachable}),
+ * need itself), the ones {@code advancement_tabs.json} → {@code notForTabComplete} lists (hidden extras such
+ * as Bigger Picture, shown only once earned), band advancements the world's layout never visits ({@link BandAdvancements#reachable}),
  * which no player there can earn, and any the relay operator marked not required, the same escape hatch
  * the Everything Burrito honours.</p>
  */
@@ -74,13 +75,23 @@ public final class TabCompleteAdvancements {
         return out;
     }
 
+    /**
+     * Never needed by any tab: the tab-complete copies ({@link #completeCopies}) and the layout's
+     * {@code notForTabComplete} list. Also read by the client's "what you still need" halo.
+     */
+    public static Set<String> leftOut(TabGateways.Layout layout) {
+        Set<String> out = completeCopies(layout);
+        out.addAll(layout.notForTabComplete());
+        return out;
+    }
+
     /** Grant {@code player} every tab-complete advancement whose tab is now done. Idempotent. */
     public static void checkAndGrant(ServerPlayer player) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         TabGateways.Layout layout = TabGateways.layout();
         if (layout.complete().isEmpty()) return;
-        Predicate<ResourceLocation> skip = skipRule(completeCopies(layout));
+        Predicate<ResourceLocation> skip = skipRule(leftOut(layout));
         for (Map.Entry<String, String> e : layout.complete().entrySet()) {
             checkOne(player, server.getAdvancements(), e.getKey(), e.getValue(), skip);
         }
@@ -109,12 +120,12 @@ public final class TabCompleteAdvancements {
         }
     }
 
-    /** What not to require in this world: tab-complete copies, unreachable bands and the relay's not-required list. */
-    private static Predicate<ResourceLocation> skipRule(Set<String> completeCopies) {
+    /** What not to require in this world: {@link #leftOut}, unreachable bands and the relay's not-required list. */
+    private static Predicate<ResourceLocation> skipRule(Set<String> leftOut) {
         Set<ResourceLocation> notRequired = AdvancementRequirementOverrides.notRequired();
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
         Set<String> reachable = cycle.hasLayout() ? BandAdvancements.reachable(cycle.layout()) : null;
-        return id -> completeCopies.contains(id.toString()) || notRequired.contains(id)
+        return id -> leftOut.contains(id.toString()) || notRequired.contains(id)
             || (reachable != null && isUnreachableBand(id, reachable));
     }
 

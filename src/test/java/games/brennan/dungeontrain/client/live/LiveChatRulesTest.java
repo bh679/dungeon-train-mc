@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.live;
 
+import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Source;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Via;
@@ -23,14 +24,13 @@ class LiveChatRulesTest {
     private static final UUID OTHER = UUID.fromString("66666666-2222-3333-4444-555555555555");
 
     @Test
-    @DisplayName("granted: the switch, not Kid mode, and streaming or a worn TV with someone live")
+    @DisplayName("granted: the switch, not Kid mode, and streaming or a worn TV, live or not")
     void granted() {
-        assertTrue(LiveChatRules.granted(true, false, true, false, false), "streaming");
-        assertTrue(LiveChatRules.granted(true, false, false, true, true), "TV + someone live");
-        assertFalse(LiveChatRules.granted(true, false, false, true, false), "TV but nobody live");
-        assertFalse(LiveChatRules.granted(true, false, false, false, true), "no TV, not streaming");
-        assertFalse(LiveChatRules.granted(false, false, true, true, true), "switch off");
-        assertFalse(LiveChatRules.granted(true, true, true, true, true), "Kid mode wins");
+        assertTrue(LiveChatRules.granted(true, false, true, false), "streaming");
+        assertTrue(LiveChatRules.granted(true, false, false, true), "TV, with or without anyone live");
+        assertFalse(LiveChatRules.granted(true, false, false, false), "no TV, not streaming");
+        assertFalse(LiveChatRules.granted(false, false, true, true), "switch off");
+        assertFalse(LiveChatRules.granted(true, true, true, true), "Kid mode wins");
     }
 
     @Test
@@ -171,5 +171,33 @@ class LiveChatRulesTest {
         assertFalse(LiveChatRules.isVoidWhisper(Component.translatable(LiveChatRules.CONNECTED_KEY)));
         assertFalse(LiveChatRules.isVoidWhisper(Component.literal("Steve whispers into the void, will anyone answer?")));
         assertFalse(LiveChatRules.isVoidWhisper(null));
+    }
+
+    @Test
+    @DisplayName("showDeath: not on the dying player's own client, nor for a player in their world")
+    void showDeath() {
+        LiveFeedClient.Death steve = new LiveFeedClient.Death("Steve", null);
+        assertTrue(LiveChatRules.showDeath(steve, "Me", Set.of("Alex")));
+        assertFalse(LiveChatRules.showDeath(steve, "steve", Set.of()), "my own death");
+        assertFalse(LiveChatRules.showDeath(steve, "Me", Set.of("Alex", "STEVE")), "a world-mate saw vanilla's message");
+    }
+
+    @Test
+    @DisplayName("deathFallback: the relay's English suffix comes off so the line isn't doubled")
+    void deathFallback() {
+        assertEquals("Steve was slain by Zombie", LiveChatRules.deathFallback("Steve was slain by Zombie while watching the stream"));
+        assertEquals("Steve died", LiveChatRules.deathFallback("Steve died"));
+        assertEquals("", LiveChatRules.deathFallback(null));
+    }
+
+    @Test
+    @DisplayName("deathLine: [Live] then the key with the cause as a plain cleaned literal")
+    void deathLine() {
+        Component line = LiveChatRules.deathLine("chat.dungeontrain.live.viewer_died", "Steve \u00a7kwas slain");
+        Component body = line.getSiblings().get(1);
+        net.minecraft.network.chat.contents.TranslatableContents t =
+            (net.minecraft.network.chat.contents.TranslatableContents) body.getContents();
+        assertEquals("chat.dungeontrain.live.viewer_died", t.getKey());
+        assertEquals("Steve was slain", ((Component) t.getArgs()[0]).getString());
     }
 }

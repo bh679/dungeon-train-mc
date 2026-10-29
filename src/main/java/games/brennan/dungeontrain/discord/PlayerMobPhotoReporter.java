@@ -51,13 +51,13 @@ public final class PlayerMobPhotoReporter {
 
     /** {@code "📸 Shutterbug took a photo of Steve"}; a nameless mob is "a fellow passenger". */
     static String title(String photographer, String subject) {
-        String by = photographer == null || photographer.isBlank() ? "A fellow passenger" : photographer;
-        return "📸 " + by + " took a photo of " + subject;
+        String by = photographer == null || photographer.isBlank() ? "A fellow passenger" : DiscordMarkdown.escape(photographer);
+        return "📸 " + by + " took a photo of " + DiscordMarkdown.escape(subject);
     }
 
     /** {@code "Steve handed over a camera · Shutterbug handed back the print"}. */
     static String description(String photographer, String subject) {
-        String by = photographer == null || photographer.isBlank() ? "They" : photographer;
-        return subject + " handed over a camera · " + by + " handed back the print";
+        String by = photographer == null || photographer.isBlank() ? "They" : DiscordMarkdown.escape(photographer);
+        return DiscordMarkdown.escape(subject) + " handed over a camera · " + by + " handed back the print";
     }
 }

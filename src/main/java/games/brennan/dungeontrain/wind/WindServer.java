@@ -5,6 +5,7 @@ import dev.ryanhcode.sable.sublevel.SubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.WindProfilePacket;
+import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.Trains;
@@ -71,7 +72,7 @@ public final class WindServer {
 
         public WindSample sampleAt(double worldX, long tick) {
             if (!active()) return WindSample.CALM;
-            return WindField.sample(profile, worldX - startX, tick, seed, WindZones.styleAt(worldX))
+            return WindField.sample(profile, WindDistance.at(profile, worldX, startX), tick, seed, WindZones.styleAt(worldX))
                     .scaled(WindZones.bandFactor(worldX));
         }
 
@@ -251,13 +252,15 @@ public final class WindServer {
                                 Map<Entity, List<Trains.Carriage>> candidates) {
         ManagedShip ship = carriage.ship();
         AABBdc bb = ship.worldAABB();
-        if (bb.maxX() < s.startX()) return; // whole carriage still before the wind
+        if (WindDistance.at(s.profile(), bb.maxX(), s.startX()) < 0 && WindDistance.at(s.profile(), bb.minX(), s.startX()) < 0) return; // whole carriage before the wind
         if (!(ship instanceof SableManagedShip sable) || sable.subLevel() == null) return;
         AABB box = new AABB(bb.minX() - SIDE_REACH, bb.minY(), bb.minZ() - SIDE_REACH,
                 bb.maxX() + SIDE_REACH, bb.maxY() + ABOVE_REACH, bb.maxZ() + SIDE_REACH);
         for (Entity e : level.getEntities((Entity) null, box, WindServer::pushable)) {
             // Only entities that will actually move this tick: a non-ticking one would just bank velocity.
             if (!level.isPositionEntityTicking(e.blockPosition())) continue;
+            // A dimensional carriage is somewhere else entirely: no wind there.
+            if (PortalTwinSpace.isInside(level, e.getBlockX(), e.getY())) continue;
             candidates.computeIfAbsent(e, k -> new ArrayList<>(2)).add(carriage);
         }
     }

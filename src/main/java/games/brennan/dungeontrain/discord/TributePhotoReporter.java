@@ -76,7 +76,7 @@ public final class TributePhotoReporter {
 
     /** {@code "📸 Steve tributed their photo. Was it worth it?"} */
     static String ownTitle(String tributer) {
-        return "📸 " + tributer + " tributed their photo. Was it worth it?";
+        return "📸 " + DiscordMarkdown.escape(tributer) + " tributed their photo. Was it worth it?";
     }
 
     /** {@code "Tribute #2 this life · 9 emeralds"}. */
@@ -88,8 +88,10 @@ public final class TributePhotoReporter {
     static String title(String tributer, String photographer) {
         boolean known = photographer != null && !photographer.isBlank();
         boolean own = known && photographer.equals(tributer);
-        if (own) return "📸 " + tributer + " paid tribute to their own photo";
-        return "📸 " + tributer + " paid tribute to a photo by " + (known ? photographer : "a fellow passenger");
+        String who = DiscordMarkdown.escape(tributer);
+        if (own) return "📸 " + who + " paid tribute to their own photo";
+        return "📸 " + who + " paid tribute to a photo by "
+                + (known ? DiscordMarkdown.escape(photographer) : "a fellow passenger");
     }
 
     /**

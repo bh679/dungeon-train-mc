@@ -5,7 +5,6 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Status;
 import net.mehvahdjukaar.moonlight.api.util.math.Vec2i;
-import net.mehvahdjukaar.vista.VistaModClient;
 import net.mehvahdjukaar.vista.client.CrtOverlay;
 import net.mehvahdjukaar.vista.client.textures.TvScreenVertexConsumers;
 import net.mehvahdjukaar.vista.client.video_source.IVideoSource;
@@ -23,32 +22,121 @@ import org.jetbrains.annotations.Nullable;
  * Vista {@link IVideoSource} that is the Live Feed: the picture every TV holding a Live Feed Cassette
  * ({@code compat/vista/LiveBroadcastLocation} → {@code LiveBroadcastSource}) shows.
  *
- * <p>Static when nobody is live (or the viewer cap is full), Vista's "downloading" bars while its
- * ffmpeg is fetched, the waiting pattern while the first frames decode, then the stream. One
- * {@link LiveHlsSession} per playlist URL is shared by every TV; a new session id in the relay's
- * status (a takeover) swaps to a fresh session, which is how viewers follow the new streamer.</p>
+ * <p>Two of them: {@link #MAIN} is the first stream (what every TV showed before the Two Streams
+ * reward), {@link #SECOND} the second stream a TV holding the second cassette shows. Each keeps its
+ * own decode and texture, so a world with both kinds of TV in view runs two decoders; {@link #SECOND}
+ * falls back to the first stream while there is no second, so no TV goes dark over which cassette it
+ * holds.</p>
+ *
+ * <p>Static when nobody is live (or the viewer cap is full), the "needs FFmpeg" card when there is a
+ * broadcast but this client has no ffmpeg, Vista's "downloading" bars while its ffmpeg is fetched, the waiting pattern while the first frames decode, then the stream. One
+ * {@link LiveHlsSession} per playlist URL is shared by every TV of a source; a new session id in the
+ * relay's status (a takeover) swaps to a fresh session, which is how viewers follow the new streamer.</p>
  */
 public final class LiveFeedSource implements IVideoSource {
 
-    public static final LiveFeedSource MAIN = new LiveFeedSource();
+    public static final LiveFeedSource MAIN = new LiveFeedSource("live/main", false);
+    public static final LiveFeedSource SECOND = new LiveFeedSource("live/second", true);
 
-    private static final ResourceLocation TEXTURE =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live/main");
+    /** How long after a TV asked this source for a frame it still counts as shown ({@link #interested}). */
+    private static final long INTEREST_MS = 15_000;
+    /** The card a TV shows when there is something to play but no ffmpeg ({@link Kind#NO_FFMPEG}). */
+    public static final ResourceLocation NO_FFMPEG_SCREEN =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "no_ffmpeg");
+    /** The same card as a plain texture, for GUI blits ({@code LiveHeadViewer}). */
+    public static final ResourceLocation NO_FFMPEG_TEXTURE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "textures/cassette_tape/no_ffmpeg.png");
+
+    private final ResourceLocation texture;
+    private final ResourceLocation pendingTextureId;
+    /** The whole picture at its real shape, for the pinned box ({@link #fullPicture}). */
+    private final ResourceLocation fullTextureId;
+    /** This source shows the second stream (falling back to the first). */
+    private final boolean second;
+    private volatile long lastInterestMs;
 
     @Nullable private LiveHlsSession session;
-    @Nullable private LiveFeedTexture texture;
+    @Nullable private LiveFeedTexture view;
+    /** {@link #session}'s whole frame at its real size; made on first ask, again when the shape changes. */
+    @Nullable private LiveFeedTexture fullView;
     /** The next session, decoding in the background; it replaces {@link #session} at its first frame. */
     @Nullable private LiveHlsSession pending;
     @Nullable private LiveFeedTexture pendingTexture;
     /** The stopped stream's playlist this viewer already played to its ENDLIST; never rejoined. */
     @Nullable private String finishedUrl;
-    private static final ResourceLocation PENDING_TEXTURE =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live/main_next");
 
-    private LiveFeedSource() {}
+    private LiveFeedSource(String textureName, boolean second) {
+        this.texture = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, textureName);
+        this.pendingTextureId = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, textureName + "_next");
+        this.fullTextureId = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, textureName + "_full");
+        this.second = second;
+    }
+
+    /** Whether this source is the second stream's. */
+    public boolean isSecond() {
+        return second;
+    }
+
+    /** True while a TV asked this source for a frame within the last 15 s (the poll's {@code slot=second} flag). */
+    public boolean interested() {
+        return System.currentTimeMillis() - lastInterestMs < INTEREST_MS;
+    }
+
+    /**
+     * The status this source shows for a poll: the second stream for {@link #SECOND} while there is
+     * one, else the first (the poll's own body). Pure, for the tests.
+     */
+    static Status statusFor(Status polled, boolean second) {
+        return statusFor(polled, second, null, null);
+    }
+
+    /**
+     * {@link #statusFor(Status, boolean)}, knowing this client streams on the relay's second channel at
+     * {@code ownSecondUrl} (null when it does not): until a poll names the second stream, {@link #SECOND}
+     * shows our own playlist rather than falling back to the first stream, so a streamer just handed the
+     * second channel sees their own picture in the pinned box, not someone else's. Pure, for the tests.
+     */
+    static Status statusFor(Status polled, boolean second, @Nullable String ownSecondUrl, @Nullable String ownName) {
+        if (!second) return polled;
+        if (ownSecondUrl != null && !hasLiveSecond(polled)) {
+            return new Status(true, null, ownSecondUrl, ownName, 0, 0, true, null, false, java.util.List.of());
+        }
+        return polled.secondOrThis();
+    }
+
+    private static boolean hasLiveSecond(Status polled) {
+        return polled.second() != null && polled.second().live();
+    }
+
+    /** Our own broadcast's playlist while it went out on the relay's second channel, else null. */
+    @Nullable
+    private static String ownSecondUrl() {
+        LiveStreamController c = LiveStreamController.get();
+        return c.onSecondChannel() ? c.playlistUrl() : null;
+    }
+
+    @Nullable
+    private static String ownName() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.getUser() != null ? mc.getUser().getName() : null;
+    }
 
     /** What the feed has to show this frame, for a TV screen or the pinned head viewer. */
-    public enum Kind { STATIC, DOWNLOADING, WAITING, PICTURE }
+    public enum Kind { STATIC, NO_FFMPEG, DOWNLOADING, WAITING, PICTURE }
+
+    /**
+     * What a feed with something to play shows before decoding, by ffmpeg state: the "needs FFmpeg"
+     * card when it is off or failed (never snow, which reads as "nobody is live"), the download bars
+     * while it is fetched, null once it is ready. Pure, for the tests.
+     */
+    @Nullable
+    static Kind kindBeforeDecode(FfmpegSupport.State ffmpeg) {
+        return switch (ffmpeg) {
+            case OFF, FAILED -> Kind.NO_FFMPEG;
+            case DOWNLOADING -> Kind.DOWNLOADING;
+            case READY -> null;
+        };
+    }
 
     /**
      * One frame's answer. {@code url} is the playlist being shown (null for static); {@code progress}
@@ -59,14 +147,29 @@ public final class LiveFeedSource implements IVideoSource {
         static final Frame STATIC = new Frame(Kind.STATIC, null, false, -1, false);
     }
 
+    /**
+     * The source that actually decodes for this one: {@link #MAIN} while {@link #SECOND} has no second
+     * stream to show, so a TV left on the second cassette shares the first stream's decoder and texture
+     * instead of running a second one of the same stream (and never asks the relay for the second slot).
+     * While this client holds the second channel it keeps its own: there is a second stream, ours.
+     */
+    private LiveFeedSource delegate() {
+        if (!second || LiveStatusPoller.current().second() != null || ownSecondUrl() != null) return this;
+        // Borrowing the first stream: let go of our own decoder and texture, so nothing idles behind the picture.
+        if (session != null || pending != null) dropAll();
+        return MAIN;
+    }
+
     @Override
     public @NotNull VertexConsumer getVideoFrameBuilder(TVBlockEntity tv, float partialTick, MultiBufferSource buffer,
                                                         boolean shouldUpdate, Vec2i screenSize, Vec2i pixelEffectRes,
                                                         int videoAnimationTick, boolean paused,
                                                         IntAnimationState switchAnim, IntAnimationState staticAnim,
                                                         boolean showsTime) {
-        return screenConsumer(frame(videoAnimationTick, partialTick, paused, true),
-            buffer, pixelEffectRes, videoAnimationTick, switchAnim, staticAnim);
+        LiveFeedSource d = delegate();
+        Frame f = d.frame(videoAnimationTick, partialTick, paused, true);
+        if (f.kind() == Kind.NO_FFMPEG) FfmpegHint.shown(tv.getBlockPos());
+        return d.screenConsumer(f, buffer, pixelEffectRes, videoAnimationTick, switchAnim, staticAnim);
     }
 
     /**
@@ -76,27 +179,30 @@ public final class LiveFeedSource implements IVideoSource {
     public VertexConsumer screenConsumer(MultiBufferSource buffer, Vec2i pixelEffectRes, int videoAnimationTick,
                                          float partialTick, boolean paused,
                                          IntAnimationState switchAnim, IntAnimationState staticAnim) {
-        return screenConsumer(frame(videoAnimationTick, partialTick, paused),
-            buffer, pixelEffectRes, videoAnimationTick, switchAnim, staticAnim);
+        LiveFeedSource d = delegate();
+        Frame f = d.frame(videoAnimationTick, partialTick, paused);
+        if (f.kind() == Kind.NO_FFMPEG) FfmpegHint.shown(null);
+        return d.screenConsumer(f, buffer, pixelEffectRes, videoAnimationTick, switchAnim, staticAnim);
     }
 
-    private static VertexConsumer screenConsumer(Frame f, MultiBufferSource buffer, Vec2i pixelEffectRes,
-                                                 int videoAnimationTick,
-                                                 IntAnimationState switchAnim, IntAnimationState staticAnim) {
+    private VertexConsumer screenConsumer(Frame f, MultiBufferSource buffer, Vec2i pixelEffectRes,
+                                          int videoAnimationTick,
+                                          IntAnimationState switchAnim, IntAnimationState staticAnim) {
         return switch (f.kind()) {
             case STATIC -> TvScreenVertexConsumers.getNoiseVC(buffer, pixelEffectRes, switchAnim);
+            case NO_FFMPEG -> TvScreenVertexConsumers.getErrorVc(buffer, pixelEffectRes, NO_FFMPEG_SCREEN, switchAnim);
             case DOWNLOADING -> f.progress() >= 0
                 ? TvScreenVertexConsumers.getDownloadingVc(buffer, pixelEffectRes, f.progress(), switchAnim)
                 : TvScreenVertexConsumers.getWaitingVc(buffer, pixelEffectRes, videoAnimationTick, switchAnim);
             case WAITING -> TvScreenVertexConsumers.getWaitingVc(buffer, pixelEffectRes, videoAnimationTick, switchAnim);
-            case PICTURE -> TvScreenVertexConsumers.getSingleTextureVC(buffer, TEXTURE,
+            case PICTURE -> TvScreenVertexConsumers.getSingleTextureVC(buffer, texture,
                 f.buffering() ? CrtOverlay.LOADING : CrtOverlay.NONE, pixelEffectRes, switchAnim, staticAnim);
         };
     }
 
-    /** The texture a {@link Kind#PICTURE} frame is in — the same one every TV draws. */
-    public static ResourceLocation texture() {
-        return TEXTURE;
+    /** The texture a {@link Kind#PICTURE} frame is in — the same one every TV of this source draws. */
+    public ResourceLocation texture() {
+        return texture;
     }
 
     /**
@@ -104,13 +210,62 @@ public final class LiveFeedSource implements IVideoSource {
      * its newest frame. TVs and the head viewer both call this; they share one session.
      */
     public Frame frame(int animationTick, float partialTick, boolean paused) {
-        return frame(animationTick, partialTick, paused, false);
+        return delegate().frame(animationTick, partialTick, paused, false);
+    }
+
+    /** The texture a caller must draw a {@link #frame} of this source with: the first stream's while this one borrows it. */
+    public ResourceLocation frameTexture() {
+        return delegate().texture;
+    }
+
+    /** The whole picture, uncropped: its texture and real size. */
+    public record Picture(ResourceLocation texture, LiveFrameShape.Size size) {}
+
+    /**
+     * Render thread, after {@link #frame}: the picture on screen whole, at the stream's own shape, for a
+     * view that resizes to fit it (the pinned box) rather than cropping like a TV. Null until a frame is in.
+     */
+    @Nullable
+    public Picture fullPicture(int animationTick, float partialTick) {
+        return delegate().ownFullPicture(animationTick, partialTick);
+    }
+
+    @Nullable
+    private Picture ownFullPicture(int animationTick, float partialTick) {
+        LiveHlsSession s = session;
+        if (s == null || s.frameSequence() == 0) return null;
+        LiveFrameShape.Size size = s.shape();
+        LiveFeedTexture f = fullView;
+        if (f == null || f.getSession() != s || f.getPixels() == null
+                || f.getPixels().getWidth() != size.width() || f.getPixels().getHeight() != size.height()) {
+            dropFullView();
+            f = s.createFullView(fullTextureId);
+            f.register();
+            fullView = f;
+        }
+        f.uploadFrameAtTime(animationTick, partialTick, false);
+        return f.hasPicture() ? new Picture(fullTextureId, size) : null;
+    }
+
+    /** Width over height of the picture on screen, kept within what a stream may be ({@link LiveAspect}); 16:9 until known. */
+    public float ratio() {
+        LiveHlsSession s = delegate().session;
+        float r = s == null || s.frameSequence() == 0 ? 16f / 9f : s.shape().ratio();
+        return LiveAspect.clampRatio(r);
+    }
+
+    private void dropFullView() {
+        LiveFeedTexture f = fullView;
+        if (f != null) { f.unregister(); f.close(); fullView = null; }
     }
 
     /** {@code tvBlock}: a TV block is asking, which keeps the decode at full width for a streamer too. */
     private Frame frame(int animationTick, float partialTick, boolean paused, boolean tvBlock) {
         if (!LiveFeedClientConfig.viewingEnabled()) return Frame.STATIC;
-        Status status = tvBlock ? LiveStatusPoller.tvWanted() : LiveStatusPoller.wanted();
+        lastInterestMs = System.currentTimeMillis();
+        Status polled = tvBlock ? LiveStatusPoller.tvWanted() : LiveStatusPoller.wanted();
+        String own = second ? ownSecondUrl() : null;
+        Status status = statusFor(polled, second, own, own != null ? ownName() : null);
         boolean replay = false;
         String url;
         if (status.live() && status.slot() && status.playlistUrl() != null && !playedToEnd(status.playlistUrl())) {
@@ -127,16 +282,12 @@ public final class LiveFeedSource implements IVideoSource {
         } else {
             return Frame.STATIC;
         }
-        switch (FfmpegSupport.state()) {
-            case DOWNLOADING -> {
-                FfmpegSupport.watch();
-                return new Frame(Kind.DOWNLOADING, url, replay, VistaModClient.getFFmpegDownloadProgress(), false);
-            }
-            case OFF, FAILED -> {
-                return Frame.STATIC;
-            }
-            default -> { /* ready */ }
+        Kind early = kindBeforeDecode(FfmpegSupport.state());
+        if (early == Kind.DOWNLOADING) {
+            FfmpegSupport.watch();
+            return new Frame(Kind.DOWNLOADING, url, replay, FfmpegSupport.downloadProgress(), false);
         }
+        if (early == Kind.NO_FFMPEG) return new Frame(Kind.NO_FFMPEG, url, replay, -1, false);
         FFmpeg ffmpeg = FfmpegSupport.get();
         if (ffmpeg == null) return Frame.STATIC;
         LiveHlsSession s = sessionFor(url, replay, status, ffmpeg);
@@ -144,7 +295,7 @@ public final class LiveFeedSource implements IVideoSource {
         LiveHlsSession next = pending;
         // A playlist listing anything but its own segments is never shown (LiveHlsSession#safePlaylist).
         if (s.refused() || (next != null && next.refused())) return Frame.STATIC;
-        LiveFeedTexture tex = texture;
+        LiveFeedTexture tex = view;
         if (tex == null) return new Frame(Kind.WAITING, url, replay, -1, false);
         MediaStatus st = tex.uploadFrameAtTime(animationTick, partialTick, paused);
         if (!tex.hasPicture()) return new Frame(Kind.WAITING, url, replay, -1, false);
@@ -177,28 +328,28 @@ public final class LiveFeedSource implements IVideoSource {
             dropPending();
             return s;
         }
-        if (s == null || texture == null || !texture.hasPicture()) {
+        if (s == null || view == null || !view.hasPicture()) {
             dropSession();
             session = newSession(url, media, replay, width);
-            texture = (LiveFeedTexture) session.createTextureView(TEXTURE);
-            texture.register();
+            view = (LiveFeedTexture) session.createTextureView(texture);
+            view.register();
             return session;
         }
         LiveHlsSession p = pending;
         if (p == null || !matches(p, url, media, replay, width)) {
             dropPending();
             pending = newSession(url, media, replay, width);
-            pendingTexture = (LiveFeedTexture) pending.createTextureView(PENDING_TEXTURE);
+            pendingTexture = (LiveFeedTexture) pending.createTextureView(pendingTextureId);
             pendingTexture.register();
             p = pending;
         }
         p.touch(ffmpeg);
         if (p.frameSequence() > 0) {
-            // The new picture is here: promote it. The texture id the TV draws stays TEXTURE.
+            // The new picture is here: promote it. The texture id the TV draws stays the same.
             dropSession();
             session = p;
-            texture = (LiveFeedTexture) p.createTextureView(TEXTURE);
-            texture.register();
+            view = (LiveFeedTexture) p.createTextureView(texture);
+            view.register();
             LiveFeedTexture pt = pendingTexture;
             if (pt != null) { pt.unregister(); pt.close(); }
             pending = null;
@@ -247,8 +398,9 @@ public final class LiveFeedSource implements IVideoSource {
 
     /** Render thread: forget the current session and its texture (world unload, takeover). */
     public void dropSession() {
-        LiveFeedTexture t = texture;
-        if (t != null) { t.unregister(); t.close(); texture = null; }
+        dropFullView();
+        LiveFeedTexture t = view;
+        if (t != null) { t.unregister(); t.close(); view = null; }
         LiveHlsSession s = session;
         if (s != null) { s.close(); session = null; }
     }

@@ -22,6 +22,7 @@ import games.brennan.dungeontrain.portal.PortalExitBindings;
 import games.brennan.dungeontrain.portal.PortalExitTransit;
 import games.brennan.dungeontrain.portal.PortalFacing;
 import games.brennan.dungeontrain.portal.PortalFrames;
+import games.brennan.dungeontrain.portal.PortalGroupOrigin;
 import games.brennan.dungeontrain.portal.PortalPrewarmHints;
 import games.brennan.dungeontrain.portal.PortalCorridorEntities;
 import games.brennan.dungeontrain.portal.PortalEntityTransit;
@@ -41,9 +42,11 @@ import games.brennan.dungeontrain.portal.PortalRoomTiler;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalSever;
 import games.brennan.dungeontrain.portal.PortalStampRecord;
+import games.brennan.dungeontrain.portal.PortalStranding;
 import games.brennan.dungeontrain.portal.PortalSwapDiagnostics;
 import games.brennan.dungeontrain.portal.PortalSwapDrift;
 import games.brennan.dungeontrain.portal.PortalStructure;
+import games.brennan.dungeontrain.portal.PortalArrivalHold;
 import games.brennan.dungeontrain.portal.PortalTrainFreeze;
 import games.brennan.dungeontrain.portal.PortalTripTracker;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
@@ -53,7 +56,9 @@ import games.brennan.dungeontrain.net.PortalRoomDepthPacket;
 import games.brennan.dungeontrain.net.PortalRoomFogPacket;
 import games.brennan.dungeontrain.net.PortalCrossingPacket;
 import games.brennan.dungeontrain.net.PortalRoomSkyPacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalSwapPacket;
+import games.brennan.dungeontrain.net.SpawnDeckHoldPacket;
 import games.brennan.dungeontrain.net.PortalTrainAudioPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.ShipAabbs;
@@ -86,6 +91,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import org.joml.Vector3d;
 import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
 
@@ -215,13 +221,16 @@ public final class PortalCarriageEvents {
     private static final Map<Integer, Long> OVERLAP_WARNED_AT = new HashMap<>();
 
     /**
-     * How far outside the corridor's own cross-section the room extends, for the "is anyone in this
-     * structure" test. The room is wider and taller than a corridor, and a player standing in it
+     * How far outside the corridor's own cross-section the room extends <b>sideways</b>, for the "is
+     * anyone in this structure" test. The room is wider than a corridor, and a player standing in it
      * must still pin the structure against being re-stamped.
      *
      * <p>A floor, not the figure: {@link #structureBox} takes the larger of this and what the
      * pair's actual room needs, so an authored room bigger than the built-in one widens the box
      * rather than falling outside it.</p>
+     *
+     * <p>Z only. It used to pad the box's top as well, eight rows over a lane that is only one row
+     * clear of the next — see {@link PortalRoomLayout#structureCeilingY} for what that did.</p>
      */
     private static final int POCKET_ROOM_SLACK = 8;
 
@@ -646,6 +655,7 @@ public final class PortalCarriageEvents {
         STRUCTURES.clear();
         STAMPED_AT.clear();
         EVICTED.clear();
+        games.brennan.dungeontrain.portal.PortalTwinChunkHold.clear();
         OVERLAP_WARNED_AT.clear();
         PortalRoomMemory.clearSession();
         games.brennan.dungeontrain.portal.PortalCorridorResync.clear();
@@ -661,6 +671,7 @@ public final class PortalCarriageEvents {
         ACTIVE_PAIRS.clear();
         PortalSwapDrift.clear();
         PortalTrainFreeze.clear();
+        PortalArrivalHold.clear();
         LAST_FOG.clear();
         games.brennan.dungeontrain.portal.PlayerSkyRegions.clearAll();
         LAST_CROSSING.clear();
@@ -759,6 +770,9 @@ public final class PortalCarriageEvents {
             PortalPairResidency.syncTo(level, Set.of());
             // No walk this tick means no pairing is live; the entries hold carriage plots.
             games.brennan.dungeontrain.portal.PortalPairIndex.clear();
+            // Nothing below will restate a held player's room ticket, so hand them back to vanilla
+            // loading before it lapses under them.
+            games.brennan.dungeontrain.portal.PortalTwinChunkHold.releaseLevel(level);
             return;
         }
 
@@ -846,8 +860,11 @@ public final class PortalCarriageEvents {
                     if (!anyPlayerWithin(players, bb.minX(), bb.minY(), bb.minZ(), CONFIRM_RANGE)) {
                         continue;
                     }
+                    // The shell corner, not the box's: see PortalGroupOrigin — a block built onto
+                    // the outside of the train grows the box and would slide every frame with it.
+                    Vector3d shell = PortalGroupOrigin.of(ship, bb);
                     PortalStampRecord.Proof proof = PortalStampRecord.confirmGroup(
-                        level, ship, dims, anchorPIdx, groupSize, bb.minX(), bb.minY(), bb.minZ());
+                        level, ship, dims, anchorPIdx, groupSize, shell.x, shell.y, shell.z);
                     // REFUTED is the disagreement worth reporting. UNREADABLE is "ask again in a
                     // moment" — the plot has not loaded — and saying so would be the same line at
                     // the same rate for a state that resolves itself.
@@ -857,8 +874,9 @@ public final class PortalCarriageEvents {
                     if (proof != PortalStampRecord.Proof.CONFIRMED) continue;
                 }
 
+                Vector3d origin = PortalGroupOrigin.of(ship, bb);
                 handleGroup(level, players, dims, anchorPIdx, ship,
-                    bb.minX(), bb.minY(), bb.minZ(), groupSize, padLen, puppets);
+                    origin.x, origin.y, origin.z, groupSize, padLen, puppets);
             }
         }
 
@@ -1005,12 +1023,32 @@ public final class PortalCarriageEvents {
         if (STRUCTURES.isEmpty()) return;
 
         // Snapshot: handlePortalCarriage can relocate a structure, which replaces the entry.
-        for (Map.Entry<Integer, PortalStructure> entry : new ArrayList<>(STRUCTURES.entrySet())) {
+        List<Map.Entry<Integer, PortalStructure>> entries = new ArrayList<>(STRUCTURES.entrySet());
+
+        // Every room whose corridors ran this tick. A player inside one of them is that pair's, not
+        // stranded — even when a dead pair's room one lane below shares their X and its box reaches
+        // them. See PortalStranding.
+        List<AABB> liveBoxes = new ArrayList<>();
+        for (Map.Entry<Integer, PortalStructure> entry : entries) {
+            if (LIVE_PAIRS.contains(entry.getKey())) {
+                liveBoxes.add(structureBox(dims, entry.getValue()));
+            }
+        }
+
+        for (Map.Entry<Integer, PortalStructure> entry : entries) {
             int pairKey = entry.getKey();
             if (LIVE_PAIRS.contains(pairKey)) continue;
             // Only for somebody who is actually in there. A pair the train has simply rolled away
             // from is not stranding anybody, and reviving it would pin a sub-level for nothing.
-            if (!anyPlayerInStructure(players, dims, entry.getValue())) continue;
+            List<ServerPlayer> stranded = PortalStranding.strandedIn(players, Entity::position,
+                structureBox(dims, entry.getValue()), liveBoxes);
+            if (stranded.isEmpty()) {
+                // Nobody left inside, so whatever this pair was waiting for, nobody is waiting on it.
+                // Left running, the clock made the NEXT visit start already past the grace: a player
+                // who stepped back in three seconds later was carried out on their first tick.
+                WAITING_SINCE.remove(pairKey);
+                continue;
+            }
 
             ManagedShip ship = PortalPairResidency.groupFor(pairKey);
             PortalCarriageRevival.Status status =
@@ -1022,8 +1060,9 @@ public final class PortalCarriageEvents {
                     warnSkippedGroup(level, pairKey, PortalSwapDiagnostics.Reason.DEGENERATE_AABB);
                     continue;
                 }
+                Vector3d origin = PortalGroupOrigin.of(ship, bb);
                 handleGroup(level, players, dims, pairKey, ship,
-                    bb.minX(), bb.minY(), bb.minZ(), groupSize, padLen, puppets);
+                    origin.x, origin.y, origin.z, groupSize, padLen, puppets);
                 continue;
             }
 
@@ -1040,11 +1079,11 @@ public final class PortalCarriageEvents {
             // beats being teleported.
             long inertFor = inertTicks(level, pairKey);
             long grace = reviving ? RESCUE_DELAY_REVIVING_TICKS : RESCUE_DELAY_TICKS;
-            if (inertFor >= grace && rescueOccupants(level, players, dims, structure, pairKey)) {
+            if (inertFor >= grace && rescueOccupants(level, stranded, structure, pairKey)) {
                 continue;
             }
 
-            tellWaiting(level, players, dims, structure, pairKey,
+            tellWaiting(level, stranded, pairKey,
                 reviving
                     ? PortalSwapDiagnostics.Reason.GROUP_REVIVING
                     : PortalSwapDiagnostics.Reason.PAIR_NOT_WALKED,
@@ -1066,25 +1105,18 @@ public final class PortalCarriageEvents {
     }
 
     /**
-     * Put everybody in this room back on the train.
+     * Put everybody stranded in this room back on the train.
      *
-     * <p>The occupants are gathered before any of them is moved. {@code players} is the level's live
-     * list, and a teleport is exactly the kind of thing that has no business happening while
-     * something is walking it — it holds today only because the destination is the same level, which
-     * is a fact about the train, not about this loop.</p>
+     * <p>{@code occupants} is gathered by the caller, before any of them is moved, and is already a
+     * copy rather than the level's live list — a teleport is exactly the kind of thing that has no
+     * business happening while something is walking it. It is also already only the players this pair
+     * is stranding: one inside a live pair's room is left alone (see {@link PortalStranding}).</p>
      *
      * @return true if anybody was moved — false when there is no settled carriage anywhere to land
      *         on, which is the one case where saying so is still all that can be done
      */
-    private static boolean rescueOccupants(ServerLevel level, List<ServerPlayer> players,
-                                           CarriageDims dims, PortalStructure structure, int pairKey) {
-        AABB box = structureBox(dims, structure);
-        List<ServerPlayer> occupants = new ArrayList<>();
-        for (ServerPlayer player : players) {
-            if (box.contains(player.getX(), player.getY(), player.getZ())) occupants.add(player);
-        }
-        // Nobody in the box is not a failure — the caller only reaches here with somebody inside, but
-        // they can leave between the two tests, and there is nothing left to tell them either way.
+    private static boolean rescueOccupants(ServerLevel level, List<ServerPlayer> occupants,
+                                           PortalStructure structure, int pairKey) {
         if (occupants.isEmpty()) return false;
 
         for (ServerPlayer player : occupants) {
@@ -1115,8 +1147,7 @@ public final class PortalCarriageEvents {
      * so re-sending it twenty times a second is a packet per player per tick for no visible
      * difference.</p>
      */
-    private static void tellWaiting(ServerLevel level, List<ServerPlayer> players, CarriageDims dims,
-                                    PortalStructure structure, int pairKey,
+    private static void tellWaiting(ServerLevel level, List<ServerPlayer> occupants, int pairKey,
                                     PortalSwapDiagnostics.Reason reason, String messageKey) {
         if (PortalSwapDiagnostics.due(level, reason, pairKey)) {
             PortalSwapDiagnostics.refused(reason, "pair " + pairKey,
@@ -1134,9 +1165,7 @@ public final class PortalCarriageEvents {
 
         long now = level.getGameTime();
         if (now % WAITING_MESSAGE_PERIOD_TICKS != 0) return;
-        AABB box = structureBox(dims, structure);
-        for (ServerPlayer player : players) {
-            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
+        for (ServerPlayer player : occupants) {
             player.displayClientMessage(
                 Component.translatable(messageKey).withStyle(ChatFormatting.GRAY), true);
         }
@@ -1167,6 +1196,8 @@ public final class PortalCarriageEvents {
             // Still called with nothing occupied: this is what un-freezes a train whose last
             // structure has just gone, and the tick that advances a frozen train's counter.
             PortalTrainFreeze.tick(level, players, dims, Set.of(), PortalCarriageEvents::isInRoom);
+            games.brennan.dungeontrain.portal.PortalTwinChunkHold.tick(
+                level, dims, players, Map.of(), List.of(), List.of());
             return;
         }
 
@@ -1182,6 +1213,10 @@ public final class PortalCarriageEvents {
         Set<UUID> inStructure = new HashSet<>();
         Set<UUID> depthed = new HashSet<>();
         Set<Integer> occupiedPairs = new HashSet<>();
+        // What PortalTwinChunkHold needs: how far each occupant's room reaches, and which rooms have
+        // somebody in them (as they stand after this tick's tiling).
+        Map<UUID, Integer> roomRadii = new HashMap<>();
+        List<PortalStructure> occupiedStructures = new ArrayList<>();
 
         for (Map.Entry<Integer, PortalStructure> pair : pairs) {
             PortalStructure structure = pair.getValue();
@@ -1206,7 +1241,18 @@ public final class PortalCarriageEvents {
             // them — that is what turns every corridor in the room, copies included, into a dead
             // end with nowhere else to walk. Read here because the occupancy has just been measured
             // against the same box anyPlayerInStructure uses.
-            if (!standingIn.isEmpty()) occupiedPairs.add(pair.getKey());
+            if (!standingIn.isEmpty()) {
+                occupiedPairs.add(pair.getKey());
+                recordRoomRadii(level, dims, structure, players, roomRadii);
+            }
+            // A copy somebody stands in is one they can mine or loot, so it is captured before the
+            // tiler erases it and laid back as they left it (PortalRoomMemory). Real occupants only —
+            // not the approach ring below, which nobody has set foot in.
+            if (!games.brennan.dungeontrain.portal.PortalTestSession.isTestStamp(pair.getKey())) {
+                for (PortalRoomTiling.Tile tile : standingIn) {
+                    PortalRoomMemory.markTileTouched(pair.getKey(), tile);
+                }
+            }
             int radius = PortalRoomTiling.MAX_RADIUS;
             if (standingIn.isEmpty() && ACTIVE_PAIRS.contains(pair.getKey())) {
                 standingIn = Set.of(PortalRoomTiling.Tile.BASE);
@@ -1216,6 +1262,7 @@ public final class PortalCarriageEvents {
             PortalStructure next =
                 PortalRoomTiler.tick(level, dims, structure, standingIn, radius, others, pair.getKey());
             if (next != structure) STRUCTURES.put(pair.getKey(), next);
+            if (occupiedPairs.contains(pair.getKey())) occupiedStructures.add(next);
 
             sendFogFor(players, dims, layout, next, fogged);
             sendSkyFor(players, dims, layout, next, skied);
@@ -1232,6 +1279,10 @@ public final class PortalCarriageEvents {
         // And stop the trains whose rooms those are, when nobody is left outside to see it. The
         // ticket above keeps the group loaded; this is what stops it going anywhere.
         PortalTrainFreeze.tick(level, players, dims, occupiedPairs, PortalCarriageEvents::isInRoom);
+        // Players in twin space stop loading the overworld above them; the room's own chunks are held
+        // instead. After the tiling, so the copies it holds are the ones now standing.
+        games.brennan.dungeontrain.portal.PortalTwinChunkHold.tick(
+            level, dims, players, roomRadii, STRUCTURES.values(), occupiedStructures);
         // Stock any library room still waiting on its author. Costs one map check on a world where
         // every library has been filled, which is every world after the first few seconds: a room
         // leaves the pending set the moment its shelves are dealt.
@@ -1422,6 +1473,44 @@ public final class PortalCarriageEvents {
     private static void sendDepthFor(List<ServerPlayer> players, CarriageDims dims,
                                      PortalStructure structure, int groundY, Set<UUID> inStructure) {
         AABB box = structureBox(dims, structure);
+        PortalRoomDepthPacket region = depthRegion(dims, structure, box, groundY);
+
+        for (ServerPlayer player : players) {
+            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
+            inStructure.add(player.getUUID());
+            sendDepthIfChanged(player, region);
+        }
+    }
+
+    /**
+     * Send a player walking into a structure its depth region <b>before</b> the swap moves them.
+     *
+     * <p><b>Why ahead.</b> The region is not only the debug screen's: it is the one "inside a
+     * dimensional carriage" box every client has, and {@code DistantHorizonsSuppression} cancels DH's
+     * frame on it. Sent by {@link #sendDepthFor} it goes out at the end of the tick, after the room
+     * tiler — behind the position packet the swap sent earlier in the same tick. Measured on twenty
+     * walk-ins the gap was 0.2 to 3.5 ms and never straddled a frame, but nothing guaranteed it: a
+     * frame drawn between the two would put DH's surface horizon in the room. Sent here, the client
+     * holds the box before it holds the position.</p>
+     *
+     * <p>Recorded in {@link #LAST_DEPTH}, so the end-of-tick pass sends nothing unless the tiler grew
+     * the box this tick, in which case the bigger box replaces it.</p>
+     */
+    private static void sendDepthAhead(ServerPlayer player, CarriageDims dims,
+                                       PortalStructure structure, int groundY) {
+        sendDepthIfChanged(player,
+            depthRegion(dims, structure, structureBox(dims, structure), groundY));
+    }
+
+    private static void sendDepthIfChanged(ServerPlayer player, PortalRoomDepthPacket region) {
+        if (region.equals(LAST_DEPTH.get(player.getUUID()))) return;
+        LAST_DEPTH.put(player.getUUID(), region);
+        PacketDistributor.sendToPlayer(player, region);
+    }
+
+    /** A structure's depth region: its box, and the shift that disguises it. */
+    private static PortalRoomDepthPacket depthRegion(CarriageDims dims, PortalStructure structure,
+                                                     AABB box, int groundY) {
         // The entry twin's minimum corner is the corridor's floor; the exit twin shares that Y — it
         // is offset along X only — so one shift covers the whole structure.
         // X and Z centre on the base room, so standing in its middle reads 0, 0; its tiled copies
@@ -1429,20 +1518,12 @@ public final class PortalCarriageEvents {
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         Vec3i room = structure.roomSize();
-        PortalRoomDepthPacket region = new PortalRoomDepthPacket(
+        return new PortalRoomDepthPacket(
             (int) Math.floor(box.minX), (int) Math.floor(box.minY), (int) Math.floor(box.minZ),
             (int) Math.ceil(box.maxX), (int) Math.ceil(box.maxY), (int) Math.ceil(box.maxZ),
             -(roomOrigin.getX() + room.getX() / 2),
             groundY - structure.origin().getY(),
             -(roomOrigin.getZ() + room.getZ() / 2));
-
-        for (ServerPlayer player : players) {
-            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
-            inStructure.add(player.getUUID());
-            if (region.equals(LAST_DEPTH.get(player.getUUID()))) continue;
-            LAST_DEPTH.put(player.getUUID(), region);
-            PacketDistributor.sendToPlayer(player, region);
-        }
     }
 
     /** Hand the debug screen back its honest numbers for anyone who has left a structure. */
@@ -1703,6 +1784,49 @@ public final class PortalCarriageEvents {
      * into a doorway is already enough to open the window, and it opens centred on where they are
      * rather than on the room they have not reached yet.</p>
      */
+    /** Each player inside {@code structure}'s box gets its chunk-hold radius, the widest if two rooms claim them. */
+    private static void recordRoomRadii(ServerLevel level, CarriageDims dims, PortalStructure structure,
+                                        List<ServerPlayer> players, Map<UUID, Integer> radii) {
+        AABB box = structureBox(dims, structure);
+        int radius = -1;
+        for (ServerPlayer player : players) {
+            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
+            if (radius < 0) {
+                radius = games.brennan.dungeontrain.portal.PortalTwinChunkHold.roomRadius(level, dims, structure);
+            }
+            radii.merge(player.getUUID(), radius, Math::max);
+        }
+    }
+
+    /**
+     * A player did something to the block at {@code pos}: broke it, placed one, or opened what stands
+     * there. The copy it is in is marked as visited so it is captured before it is erased.
+     *
+     * <p>{@link #occupiedTiles} marks the copies players <b>stand</b> in, and that is not the same
+     * set: a player can reach across a seam and mine a barrel in the next copy over, or loot a chest
+     * through an authored opening, without ever setting foot in it. That copy was never captured, so
+     * it came back whole from its template on the next visit (reported by Dowl and Akazuki_ruru on
+     * v0.1494.0, reproduced by Brennan). The base tile goes through {@link PortalRoomMemory#markTouched}
+     * for the same reason.</p>
+     */
+    public static void markTouchedAt(ServerLevel level, BlockPos pos) {
+        if (STRUCTURES.isEmpty()) return;
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        for (Map.Entry<Integer, PortalStructure> pair : STRUCTURES.entrySet()) {
+            PortalStructure structure = pair.getValue();
+            if (!structureBox(dims, structure).contains(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5)) continue;
+            if (games.brennan.dungeontrain.portal.PortalTestSession.isTestStamp(pair.getKey())) return;
+            PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+            PortalRoomTiling.Tile tile = structure.tileAt(dims, layout, pos.getX(), pos.getZ());
+            if (PortalRoomTiling.Tile.BASE.equals(tile)) {
+                PortalRoomMemory.markTouched(level, pair.getKey(), dims);
+            } else {
+                PortalRoomMemory.markTileTouched(pair.getKey(), tile);
+            }
+            return;
+        }
+    }
+
     private static Set<PortalRoomTiling.Tile> occupiedTiles(List<ServerPlayer> players,
                                                             CarriageDims dims,
                                                             PortalCarriageLayout layout,
@@ -2149,12 +2273,12 @@ public final class PortalCarriageEvents {
                 continue;
             }
 
-            // A player who was standing goes to the destination's floor surface rather than to the
-            // carried-across local Y — the two frames' block grids differ by the ship's fractional
-            // pose, and landing a fraction inside a twin that hangs in open air drops them through it.
-            double targetY = player.onGround()
-                ? frames.floorSurfaceY(move.toFrame(), boundTwin)
-                : move.y();
+            // Never below the destination's floor surface — the two frames' block grids differ by the
+            // ship's fractional pose, and landing a fraction inside a twin that hangs in open air
+            // drops them through it. Never pulled DOWN to it either: this used to snap anyone the
+            // server thought was on the ground, and for a rider on a Sable carriage that flag is
+            // wrong often enough that a player swapped mid-jump landed on the room's floor.
+            double targetY = Math.max(move.y(), frames.floorSurfaceY(move.toFrame(), boundTwin));
 
             // Last line of defence: never put anybody where there is nothing to stand on. The
             // guards above establish that the destination corridor is not severed and its chunks
@@ -2188,6 +2312,14 @@ public final class PortalCarriageEvents {
             // a player who deliberately walked back to it has asked for.
             if (move.toFrame() == PortalFrames.FRAME_CARRIAGE) {
                 PortalExitBindings.bind(player.getUUID(), pairKey, tile);
+                // Asked before anything below can thaw it: a train that is standing still for this
+                // room keeps standing until this player is aboard. From a far exit copy their client
+                // has neither the chunks nor the carriage yet, and a train that started this tick
+                // would slide out from under them. See PortalArrivalHold.
+                UUID trainId = PortalTrainFreeze.trainIdOf(pairKey);
+                if (TrainMotionFreeze.isFrozen(trainId)) {
+                    PortalArrivalHold.noteArrival(player, trainId, level.getGameTime());
+                }
                 // Back to being somebody who can see the train. While they were in the room their
                 // carriages may have been parked (PhysicsFreezeController counts a secluded tracker
                 // as nobody); wake the one they are stepping onto now rather than on the next
@@ -2215,6 +2347,12 @@ public final class PortalCarriageEvents {
             if (move.toFrame() == PortalFrames.FRAME_TWIN && !copyOnly) {
                 PortalConnectionStats.noteConnected(player.getUUID());
             }
+            // Going in, the client must know it is inside before it learns where it is. See
+            // sendDepthAhead.
+            if (move.toFrame() == PortalFrames.FRAME_TWIN) {
+                sendDepthAhead(player, dims, structure,
+                    DungeonTrainWorldData.get(level).getTrainY());
+            }
             player.connection.teleport(move.x(), targetY, move.z(),
                 player.getYRot(), player.getXRot(), RELATIVE_ALL);
             // Off the train and into a room that is not moving: the carriage's own motion is no
@@ -2241,6 +2379,16 @@ public final class PortalCarriageEvents {
             // client/portal/ClientPortalSwap) — and so the client sheds the carry after
             // handleMovePlayer has kept the momentum the relative teleport preserved.
             PacketDistributor.sendToPlayer(player, new PortalSwapPacket(leftCarrier));
+            // Back onto the train: the client may not have this carriage yet. Out of a far exit
+            // copy it arrives four or five ticks after the player does, and until then they fall
+            // through the deck they were put on and land on the track bed under it, where nothing
+            // ever carries them (repro, 24 Oct 2026). Hold them at the deck surface until Sable
+            // picks them up; for a carriage the client already has, that is a tick or two.
+            if (!leftCarrier) {
+                DungeonTrainNet.sendTo(player, new SpawnDeckHoldPacket(
+                    frames.floorSurfaceY(PortalFrames.FRAME_CARRIAGE, boundTwin),
+                    SpawnDeckHoldPacket.DEFAULT_HOLD_TICKS));
+            }
             COOLDOWNS.put(player.getUUID(), level.getGameTime() + SWAP_COOLDOWN_TICKS);
             LAST_SWAP.put(player.getUUID(), level.getGameTime());
 
@@ -2663,6 +2811,7 @@ public final class PortalCarriageEvents {
         // Remembered before the erase, so the stamp it gets when its carriage next wants a twin lays
         // the room as it was left. Before the mob reap too: a living mob is part of how it was left.
         rememberIfTouched(level, dims, pairKey, structure);
+        rememberTouchedCopies(level, dims, pairKey, structure);
         PortalRoomMobs.reapPair(level, PortalCarriageBuilder.footprintOf(level, structure, dims), pairKey);
         PortalCarriageBuilder.eraseTwin(level, structure, dims);
         EVICTED.put(pairKey, structure.withBlob(null));
@@ -2679,8 +2828,9 @@ public final class PortalCarriageEvents {
     /**
      * Capture and remember {@code structure}'s room box when a player has been inside it, and hand the
      * capture back as the blob its next stamp should lay; null for an untouched room (its template is
-     * what it still is) or one whose chunks are not loaded — reading those would load them, and a room
-     * nobody can see has not changed since it was last captured anyway.
+     * what it still is). Chunks that have unloaded are loaded for the read: the eviction that calls this
+     * erases the room next and loads them regardless, and a skipped capture meant the room came back
+     * from its template (see {@link PortalRoomMemory} "Unloaded chunks").
      */
     private static games.brennan.dungeontrain.portal.PortalRoomBlob rememberIfTouched(
             ServerLevel level, CarriageDims dims, int pairKey, PortalStructure structure) {
@@ -2688,8 +2838,8 @@ public final class PortalCarriageEvents {
         BlockPos roomOrigin = structure.roomOrigin(dims,
             PortalCarriageBuilder.layoutFor(dims, structure.kind()));
         net.minecraft.core.Vec3i size = structure.roomSize();
-        BlockPos far = roomOrigin.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1);
-        if (!level.hasChunksAt(roomOrigin, far)) return null;
+        if (!PortalRoomMemory.ensureLoaded(level, roomOrigin, size,
+                "portal pair " + pairKey + "'s room '" + structure.roomName() + "'")) return null;
         long started = System.nanoTime();
         net.minecraft.nbt.CompoundTag snapshot = PortalRoomMemory.capture(level, roomOrigin, size);
         if (snapshot == null) return null;
@@ -2697,6 +2847,18 @@ public final class PortalCarriageEvents {
         LOGGER.info("[DungeonTrain] Portal pair {} room '{}' remembered as it was left ({} ms)",
             pairKey, structure.roomName(), fmt((System.nanoTime() - started) / 1_000_000.0));
         return games.brennan.dungeontrain.portal.PortalRoomBlob.live(snapshot);
+    }
+
+    /**
+     * Capture every copy of {@code structure}'s room a player has stood in that is still standing —
+     * for the erases that do not go through the tiler (an eviction, the server stopping), which would
+     * otherwise take those copies with them unremembered.
+     */
+    private static void rememberTouchedCopies(ServerLevel level, CarriageDims dims, int pairKey,
+                                              PortalStructure structure) {
+        for (PortalRoomTiling.Tile tile : structure.tiling().tiles()) {
+            games.brennan.dungeontrain.portal.PortalRoomTiler.rememberTile(level, dims, structure, tile, pairKey);
+        }
     }
 
     /** Pair {@code pairKey}'s remembered room as a blob for {@code planned}, or null to use the template. */
@@ -2722,6 +2884,7 @@ public final class PortalCarriageEvents {
             if (touch == null) continue;
             try {
                 rememberIfTouched(touch.level(), touch.dims(), entry.getKey(), entry.getValue());
+                rememberTouchedCopies(touch.level(), touch.dims(), entry.getKey(), entry.getValue());
             } catch (Throwable t) {
                 LOGGER.warn("[DungeonTrain] Could not remember portal pair {} at shutdown: {}",
                     entry.getKey(), t.toString());
@@ -2871,7 +3034,7 @@ public final class PortalCarriageEvents {
         // sunken room's box reached the train deck overhead (see structureCeilingY).
         int minY = Math.min(origin.getY(), roomOrigin.getY()) - 1;
         int maxY = PortalRoomLayout.structureCeilingY(origin.getY(), roomOrigin.getY(), room.getY(),
-            dims.height(), POCKET_ROOM_SLACK);
+            dims.height());
         if (corridors != null) {
             minX = Math.min(minX, corridors.minX() - 1);
             maxX = Math.max(maxX, corridors.maxX() + 2);
@@ -3030,6 +3193,9 @@ public final class PortalCarriageEvents {
         }
         out.add("  sub-level: resident, AABB minX=" + fmt(bb.minX()) + " minY=" + fmt(bb.minY())
             + " minZ=" + fmt(bb.minZ()));
+        // The corner the tick builds its frames from — PortalGroupOrigin, not the box above.
+        Vector3d shell = PortalGroupOrigin.of(ship, bb);
+        out.add("  shell corner: (" + fmt(shell.x) + ", " + fmt(shell.y) + ", " + fmt(shell.z) + ")");
 
         int pairKey = PortalCarriageRole.entryIndexOf(anchor, groupSize);
         PortalStructure structure = STRUCTURES.get(pairKey);
@@ -3088,9 +3254,9 @@ public final class PortalCarriageEvents {
             // The same helper the tick uses, not a second copy of the arithmetic: a diagnosis that
             // derived the origin itself would agree with working code and disagree with broken code,
             // which is the wrong way round.
-            double originX = corridorOriginX(bb.minX(), padLen, slot, dims, role, kind);
-            double originY = bb.minY();
-            double originZ = bb.minZ();
+            double originX = corridorOriginX(shell.x, padLen, slot, dims, role, kind);
+            double originY = shell.y;
+            double originZ = shell.z;
 
             out.add("  carriage " + carriageIndex + " (" + role + ", slot " + slot + "): origin ("
                 + fmt(originX) + ", " + fmt(originY) + ", " + fmt(originZ) + ")");

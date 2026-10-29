@@ -4,32 +4,24 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.ContentsSize;
-import games.brennan.dungeontrain.train.CarriageDoorCells;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
+import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Template;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.GameType;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Editor plots for {@link CarriageVariant}s — fixed high-Y overworld locations
@@ -37,9 +29,8 @@ import java.util.UUID;
  * +X so every variant is visible at once; the list auto-expands as custom
  * variants are registered.
  *
- * Session state (pre-enter position + dimension + look angles) is kept
- * per-player in RAM. Lost on server restart, which is acceptable for an
- * OP-only dev tool.
+ * The return point for {@code /dungeontrain editor exit} is recorded in
+ * {@link EditorSessions}, shared with every other editor.
  */
 public final class CarriageEditor {
 
@@ -47,53 +38,9 @@ public final class CarriageEditor {
 
     private static final int FIRST_PLOT_X = 0;
 
-    private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
-
-    public record Session(ResourceKey<Level> dimension, Vec3 pos, float yaw, float pitch, GameType previousGameType) {}
-
-    private static final Map<UUID, Session> SESSIONS = new HashMap<>();
-
     private CarriageEditor() {}
 
-    /**
-     * Record {@code player}'s current dimension + position + look + game mode
-     * as the return-to state for {@code /dungeontrain editor exit}, then
-     * switch the player to creative for editing. No-op if the player already
-     * has a saved session, so re-entering an editor plot (even across carriage
-     * and pillar editors) keeps the first entry as the anchor.
-     *
-     * <p>Package-private so {@link PillarEditor} can share the session map
-     * without duplicating the exit plumbing.</p>
-     */
-    static void rememberReturn(ServerPlayer player) {
-        if (SESSIONS.containsKey(player.getUUID())) return;
-        GameType previous = player.gameMode.getGameModeForPlayer();
-        SESSIONS.put(player.getUUID(), new Session(
-            player.level().dimension(),
-            player.position(),
-            player.getYRot(),
-            player.getXRot(),
-            previous
-        ));
-        if (previous != GameType.CREATIVE) {
-            player.setGameMode(GameType.CREATIVE);
-        }
-    }
 
-    /**
-     * Outcome of {@link #save} — config-dir write always happens (or throws);
-     * the source-tree write is opt-in via {@link EditorDevMode} and reported
-     * separately so the caller can surface partial success. Source-tree writes
-     * apply to both {@link CarriageVariant.Builtin}s and
-     * {@link CarriageVariant.Custom}s — a custom variant authored in the editor
-     * lands in {@code src/main/resources/data/dungeontrain/templates/} alongside
-     * built-ins and ships in the next build.
-     */
-    public record SaveResult(boolean sourceAttempted, boolean sourceWritten, String sourceError) {
-        public static SaveResult skipped() { return new SaveResult(false, false, null); }
-        public static SaveResult written() { return new SaveResult(true, true, null); }
-        public static SaveResult failed(String error) { return new SaveResult(true, false, error); }
-    }
 
     /**
      * The box a variant's plot occupies.
@@ -186,148 +133,45 @@ public final class CarriageEditor {
         return CarriageVariantRegistry.allVariants().size();
     }
 
-    /**
-     * Returns the variant whose plot contains {@code pos} (within the
-     * footprint plus 1-block outline margin), or {@code null} if none.
-     */
+    /** The variant whose plot contains {@code pos} (footprint + cage + roof headroom), or null. */
     public static CarriageVariant plotContaining(BlockPos pos, CarriageDims dims) {
-        // Answers only while CARRIAGES is the resident category — every category shares the origin.
-        if (!EditorStampedCategoryState.isActive(EditorCategory.CARRIAGES)) return null;
-        for (CarriageVariant variant : CarriageVariantRegistry.allVariants()) {
-            BlockPos o = plotOrigin(variant, dims);
-            if (o == null) continue;
-            CarriageDims box = plotDims(variant, dims);
-            // Y upper bound includes a couple of blocks of headroom above the
-            // cage top so a player who teleported to "on top" via the new
-            // landing-on-top default still counts as inPlot — same panel
-            // controls (green border, action row, Enter button) stay visible.
-            if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + box.length()
-                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + box.height() + 2
-                && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + box.width()) {
-                return variant;
-            }
-        }
-        return null;
+        return CarriagePlotEditor.get().plotContaining(pos, dims).map(Template.Carriage::variant).orElse(null);
     }
 
-    /**
-     * Teleport {@code player} to the plot for {@code variant}: save return
-     * position, clear the footprint, stamp the current template (or fallback
-     * geometry) so the player sees what would spawn today, then place the
-     * barrier-block cage around the footprint.
-     *
-     * <p>Defaults to landing the player <b>on top</b> of the cage so they
-     * can see the template from above without immediately being inside it
-     * — use {@link #enter(ServerPlayer, CarriageVariant, boolean)} with
-     * {@code onTop=false} to land on the floor instead (the per-plot
-     * panel's "Enter" button uses that path).</p>
-     */
+    /** Teleport {@code player} to {@code variant}'s plot on the roof, restamping first. */
     public static void enter(ServerPlayer player, CarriageVariant variant) {
         enter(player, variant, true);
     }
 
-    /**
-     * Always restamps: this is the reload every command and post-download jump means, whether or
-     * not the player is already standing in the plot — a relay Load that replaced the file on disk
-     * arrives here and must show the new blocks. The walk that keeps unsaved edits is
-     * {@link #walkTo} / {@link #enterInside}.
-     */
+    /** Always restamps — see {@link PlotEditor#enter(ServerPlayer, Template, boolean)}. */
     public static void enter(ServerPlayer player, CarriageVariant variant, boolean onTop) {
-        enter(player, variant, onTop, true);
+        CarriagePlotEditor.get().enter(player, new Template.Carriage(variant), onTop);
     }
 
-    /**
-     * The X menu's Go here: a walk to the plot, not a reload — restamps only when the player is
-     * not already standing in it. Restamping a plot you are standing in would throw away
-     * every unsaved edit for the sake of a few blocks' teleport.
-     */
+    /** The X menu's Go here: a walk, restamping only when the player is not already inside. */
     public static void walkTo(ServerPlayer player, CarriageVariant variant, boolean onTop) {
-        enter(player, variant, onTop, !EditorPlotScope.standingIn(player, new Template.Carriage(variant)));
+        CarriagePlotEditor.get().walkTo(player, new Template.Carriage(variant), onTop);
     }
 
-    /**
-     * The panel's Enter button: land inside at {@code inside}, restamping unless the player is
-     * already standing in this plot.
-     */
+    /** The panel's Enter: land inside at {@code inside}, restamping unless already standing in the plot. */
     public static void enterInside(ServerPlayer player, CarriageVariant variant, EditorPlotArrival.Inside inside) {
-        enter(player, variant, false, !EditorPlotScope.standingIn(player, new Template.Carriage(variant)), inside);
+        CarriagePlotEditor.get().enterInside(player, new Template.Carriage(variant), inside);
     }
 
-    /**
-     * @param stamp whether to erase + restamp the plot before teleporting. The category entry
-     *              passes {@code false}: it has just stamped this plot itself, and a second stamp
-     *              would double the one synchronous cost it kept.
-     */
+    /** @param stamp whether to erase + restamp the plot before teleporting. */
     public static void enter(ServerPlayer player, CarriageVariant variant, boolean onTop, boolean stamp) {
-        enter(player, variant, onTop, stamp, EditorPlotArrival.Inside.FRONT_DOOR);
+        CarriagePlotEditor.get().enter(player, new Template.Carriage(variant), onTop, stamp);
     }
 
-    /**
-     * @param inside where an {@code onTop == false} landing aims: the -X doorway facing in, or the
-     *               centre. Either way it steps to the nearest free column if that cell is built up.
-     */
+    /** @param inside where an {@code onTop == false} landing aims: the -X doorway facing in, or the centre. */
     public static void enter(ServerPlayer player, CarriageVariant variant, boolean onTop, boolean stamp,
                              EditorPlotArrival.Inside inside) {
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
-        ServerLevel overworld = server.overworld();
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-        BlockPos origin = plotOrigin(variant, dims);
-        if (origin == null) {
-            LOGGER.warn("[DungeonTrain] Editor enter: unknown variant '{}'", variant.id());
-            return;
-        }
-
-        rememberReturn(player);
-        if (stamp) stampPlot(overworld, variant, dims);
-
-        Vec3i footprint = new Template.Carriage(variant).plotSize(dims);
-        BlockPos door = EditorPlotArrival.firstOrNull(CarriageDoorCells.doorBases(origin, plotDims(variant, dims)));
-        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, inside, door);
-
-        LOGGER.info("[DungeonTrain] Editor enter: {} -> {} plot at {} dims={}x{}x{} ({})",
-            player.getName().getString(), variant.id(), origin,
-            dims.length(), dims.width(), dims.height(), onTop ? "top" : "inside");
+        CarriagePlotEditor.get().enter(player, new Template.Carriage(variant), onTop, stamp, inside);
     }
 
-    /**
-     * Erase, place, and cage the plot for {@code variant} without teleporting
-     * anyone. Used by {@link #enter} and by category-wide stamps
-     * ({@code /dt editor carriages}) that need every plot visible at once.
-     * Idempotent — calling it twice against the same variant re-applies the
-     * current stored template.
-     */
+    /** Erase, place, cage and snapshot the plot for {@code variant} without teleporting anyone. Idempotent. */
     public static void stampPlot(ServerLevel overworld, CarriageVariant variant, CarriageDims dims) {
-        BlockPos origin = plotOrigin(variant, dims);
-        if (origin == null) return;
-
-        // Drop any stale cached sidecar so each stamp picks up manual JSON
-        // edits made since the last load. Session editing then works against
-        // the freshly-loaded map; `editor save` persists the result.
-        CarriageVariantBlocks.invalidate(variant.id());
-        // Drop in-session contents-store changes (loot-prefab links) so the
-        // re-stamp reads the last-saved disk state; placement writes only
-        // touch the in-memory cache until /save.
-        ContainerContentsStore.invalidate("carriage:" + variant.id());
-
-        // Box operations use the PLOT's dims (longer for the portal corridor); the placer keeps the
-        // world's carriage dims and derives the corridor length itself — see plotDims.
-        CarriageDims box = plotDims(variant, dims);
-        CarriagePlacer.eraseAt(overworld, origin, box);
-        EditorPlotEntityClearer.discardNonPlayersIn(
-            overworld, origin, new Vec3i(box.length(), box.height(), box.width()));
-        CarriagePlacer.placeAt(overworld, origin, variant, dims);
-        setOutline(overworld, origin, OUTLINE_BLOCK, box);
-
-        // Snapshot the freshly-stamped state so EditorDirtyCheck has a
-        // baseline to compare against. The stamp pass composes base NBT +
-        // parts overlay + sidecar variants — comparing live to saved NBT
-        // misses the parts/sidecar contributions, so we record the actual
-        // post-composition state here.
-        EditorPlotSnapshots.capture(
-            EditorPlotSnapshots.key("carriages", variant.id()),
-            overworld, origin, box.length(), box.height(), box.width()
-        );
+        CarriagePlotEditor.get().stampPlot(overworld, new Template.Carriage(variant), dims);
     }
 
     /**
@@ -336,11 +180,7 @@ public final class CarriageEditor {
      * category being stamped; see {@code EditorCommand.restampCarriagePlotsForStage}.
      */
     public static void stampAllPlots(ServerLevel overworld, CarriageDims dims) {
-        // A category fill still in flight must land before a whole-kind restamp walks the same plots.
-        EditorStampQueue.flush();
-        for (CarriageVariant variant : CarriageVariantRegistry.allVariants()) {
-            stampPlot(overworld, variant, dims);
-        }
+        CarriagePlotEditor.get().stampAll(overworld, dims);
     }
 
     /**
@@ -442,93 +282,18 @@ public final class CarriageEditor {
         return index == null ? -1 : index;
     }
 
-    /**
-     * Erase the plot for {@code variant} — footprint cleared to air and the
-     * barrier cage around it removed. Used when switching categories (leaves
-     * no stale carriages visible once the player moves on to tracks) and on
-     * {@code /dt editor exit} (tidy the sky-plots when nobody is editing).
-     */
+    /** Erase the plot for {@code variant} — footprint and cage to air, dirty-check baseline dropped. */
     public static void clearPlot(ServerLevel overworld, CarriageVariant variant, CarriageDims dims) {
-        BlockPos origin = plotOrigin(variant, dims);
-        if (origin == null) return;
-        CarriageDims box = plotDims(variant, dims);
-        CarriagePlacer.eraseAt(overworld, origin, box);
-        setOutline(overworld, origin, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), box);
-        // Drop the dirty-check baseline — the plot is no longer stamped, so
-        // comparing a future live read (all air) to a stamped snapshot would
-        // report every carriage as dirty when the player switches categories.
-        EditorPlotSnapshots.clear(EditorPlotSnapshots.key("carriages", variant.id()));
+        CarriagePlotEditor.get().clearPlot(overworld, new Template.Carriage(variant), dims);
     }
 
     /**
-     * Capture the {@code length × height × width} region at the plot for
-     * {@code variant} into a fresh {@link StructureTemplate} and persist it
-     * via {@link CarriageTemplateStore}. Air positions are excluded so the
-     * saved template only describes placed blocks. When {@link EditorDevMode}
-     * is on, the same template is also written through to the source tree so
-     * it ships with the next mod build — applies to built-ins AND customs
-     * (custom variants get a slot in the source tree the first time they save
-     * in dev mode, which then unlocks the cascading sidecar promotes in
-     * {@link CarriageVariantPartsStore} and
-     * {@link CarriageVariantContentsAllowStore}).
+     * Capture the plot for {@code variant} into a fresh template and persist it via
+     * {@link CarriageTemplateStore}, with its sidecars; in dev mode also written through to the
+     * source tree. See {@link CarriagePlotEditor}.
      */
     public static SaveResult save(ServerPlayer player, CarriageVariant variant) throws IOException {
-        MinecraftServer server = player.getServer();
-        if (server == null) throw new IOException("No server context.");
-        ServerLevel overworld = server.overworld();
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-        BlockPos origin = plotOrigin(variant, dims);
-        if (origin == null) throw new IOException("Unknown variant '" + variant.id() + "'.");
-
-        // The plot's own box — longer than a carriage for the portal corridor, so the capture below
-        // saves the whole corridor rather than its first nine blocks, and the sidecar keeps entries
-        // authored in the part of the plot that is past a carriage's length.
-        CarriageDims box = plotDims(variant, dims);
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, box);
-
-        StructureTemplate template = captureTemplate(overworld, origin, box);
-        CarriageTemplateStore.save(variant, template);
-
-        // Variant sidecar: snapshot whatever the in-memory cache holds (the
-        // `editor variant set/clear` commands mutate it eagerly during the
-        // session). Empty maps are written as a deleted file so removing every
-        // entry doesn't leave a stale sidecar on disk.
-        sidecar.save(variant);
-        VariantConditionWarnings.afterSave(player, variant.id(), sidecar.entries(), sidecar::lockIdAt);
-
-        // Contents store: persist any in-session loot-prefab link changes
-        // accumulated since enter (PrefabUseHandler defers its writes until
-        // /save). Failure is logged but doesn't fail the whole save.
-        try {
-            ContainerContentsStore.loadFor("carriage:" + variant.id()).save();
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Editor save: contents-store save failed for {}: {}",
-                variant.id(), e.toString());
-        }
-
-        // Refresh the dirty-check baseline so the just-saved state reads as
-        // clean on the next /dt editor unsaved-list query.
-        EditorPlotSnapshots.capture(
-            EditorPlotSnapshots.key("carriages", variant.id()),
-            overworld, origin, box.length(), box.height(), box.width()
-        );
-
-        // …and, when they have opted in, to the player's relay profile. Hooked here rather than at
-        // the callers because both ways in land on this method — see EditorRelaySave.
-        EditorRelaySave.afterSave(player, new Template.Carriage(variant));
-        LOGGER.info("[DungeonTrain] Editor save: {} -> {} template dims={}x{}x{} ({} variant entries)",
-            player.getName().getString(), variant.id(), box.length(), box.width(), box.height(),
-            sidecar.size());
-
-        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
-        try {
-            CarriageTemplateStore.saveToSource(variant, template);
-            sidecar.saveToSource(variant);
-            return SaveResult.written();
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Editor save: source write failed for {}: {}", variant.id(), e.toString());
-            return SaveResult.failed(e.getMessage());
-        }
+        return CarriagePlotEditor.get().save(player, new Template.Carriage(variant));
     }
 
     /**
@@ -592,7 +357,7 @@ public final class CarriageEditor {
         StructureTemplate template = captureTemplate(overworld, targetOrigin, box);
         CarriageTemplateStore.save(target, template);
 
-        setOutline(overworld, targetOrigin, OUTLINE_BLOCK, box);
+        setOutline(overworld, targetOrigin, EditorPlotCage.OUTLINE_BLOCK, box);
 
         games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
             .trigger(player, "made_carriage");
@@ -639,7 +404,7 @@ public final class CarriageEditor {
             source.id(), target.id());
         ShellWinsStore.copy(source.id(), target.id());
 
-        setOutline(overworld, targetOrigin, OUTLINE_BLOCK, box);
+        setOutline(overworld, targetOrigin, EditorPlotCage.OUTLINE_BLOCK, box);
 
         LOGGER.info("[DungeonTrain] Editor duplicate: {} created '{}' from '{}' at {}",
             player.getName().getString(), target.id(), source.id(), targetOrigin);
@@ -786,22 +551,6 @@ public final class CarriageEditor {
         return renamed;
     }
 
-    /** Restore player to pre-enter position/dimension/game mode. Returns false if no session. */
-    public static boolean exit(ServerPlayer player) {
-        Session session = SESSIONS.remove(player.getUUID());
-        if (session == null) return false;
-        MinecraftServer server = player.getServer();
-        if (server == null) return false;
-        ServerLevel dim = server.getLevel(session.dimension());
-        if (dim == null) return false;
-        player.teleportTo(dim, session.pos().x, session.pos().y, session.pos().z,
-            session.yaw(), session.pitch());
-        if (player.gameMode.getGameModeForPlayer() != session.previousGameType()) {
-            player.setGameMode(session.previousGameType());
-        }
-        VariantOverlayRenderer.forget(player);
-        return true;
-    }
 
     /**
      * Capture a carriage-sized region as a template.

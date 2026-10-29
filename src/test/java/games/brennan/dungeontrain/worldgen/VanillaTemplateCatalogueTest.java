@@ -30,6 +30,16 @@ final class VanillaTemplateCatalogueTest {
     }
 
     @Test
+    @DisplayName("vanilla and Deeper Darker templates are catalogued; other namespaces and excluded paths are not")
+    void namespaces() {
+        assertTrue(VanillaTemplateCatalogue.included(ResourceLocation.withDefaultNamespace("igloo/top")));
+        assertTrue(VanillaTemplateCatalogue.included(ResourceLocation.fromNamespaceAndPath("deeperdarker", "ancient_temple/upper/rooms/room_0")));
+        assertTrue(VanillaTemplateCatalogue.included(ResourceLocation.fromNamespaceAndPath("deeperdarker", "gloomaze/north")));
+        assertFalse(VanillaTemplateCatalogue.included(ResourceLocation.fromNamespaceAndPath("dungeontrain", "lost_city/hotel")));
+        assertFalse(VanillaTemplateCatalogue.included(ResourceLocation.withDefaultNamespace("trial_chambers/corridor/end_1")));
+    }
+
+    @Test
     @DisplayName("pick is deterministic, in range, null on an empty catalogue")
     void pick() {
         List<ResourceLocation> ids = List.of(

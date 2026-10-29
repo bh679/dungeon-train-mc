@@ -124,6 +124,11 @@ public final class DifficultyChangeConfirmScreen extends Screen {
             loss.addAll(this.font.split(Component.translatable(runWorld
                 ? "gui.dungeontrain.difficulty_confirm.loss_run"
                 : "gui.dungeontrain.difficulty_confirm.loss"), innerW));
+            if (!runWorld) {
+                // Changed in place, this world's dropped and stored loot goes too (DifficultyWorldLootEvents).
+                loss.addAll(this.font.split(
+                    Component.translatable("gui.dungeontrain.difficulty_confirm.world_loot"), innerW));
+            }
             if (targetEmpty) {
                 loss.addAll(this.font.split(
                     Component.translatable("gui.dungeontrain.difficulty_confirm.empty", to.getDisplayName()), innerW));

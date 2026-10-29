@@ -166,6 +166,20 @@ public final class NetherMobSpawner {
 
     private NetherMobSpawner() {}
 
+    /**
+     * Every type this spawner places from its own rosters, ghasts included (the BetterNether biome
+     * lists are read at runtime and not counted). The photo collections list these as
+     * {@code extra_spawns} in {@code scripts/advancements/mob-photos/categories.json}; a test pins it.
+     */
+    static java.util.Set<EntityType<?>> rosterTypes() {
+        java.util.Set<EntityType<?>> out = new java.util.LinkedHashSet<>();
+        for (EntityType<?>[] roster : List.of(GROUND_MOBS, SOUL_SAND_MOBS, WARPED_MOBS, CRIMSON_MOBS, BASALT_MOBS)) {
+            out.addAll(List.of(roster));
+        }
+        out.add(EntityType.GHAST);
+        return java.util.Set.copyOf(out);
+    }
+
     /** Ground roster for the Nether biome at the spawn column (non-converting mobs only). */
     private static EntityType<? extends Mob>[] groundMobsFor(Holder<Biome> biome) {
         if (biome.is(Biomes.SOUL_SAND_VALLEY)) return SOUL_SAND_MOBS;

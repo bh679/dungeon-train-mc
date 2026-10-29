@@ -1,12 +1,18 @@
 package games.brennan.dungeontrain.block;
 
 import com.mojang.serialization.MapCodec;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.PlaceholderCollision;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.EntityCollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
  * The block-variant editor's <b>empty-placeholder sentinel</b> — the block that stands in a
@@ -15,8 +21,12 @@ import net.minecraft.world.level.block.state.BlockState;
  *
  * <p>It replaced the vanilla command block in that role. A command block looked like a real
  * block and, worse, opened its GUI on right-click, so placing a block against a placeholder cell
- * meant holding shift. This block is a translucent ghost cube with full collision and <em>no</em>
- * {@code useWithoutItem} — right-click falls straight through to vanilla item placement.
+ * meant holding shift. This block is a translucent ghost cube with a full outline (so it can be
+ * targeted and built against) and <em>no</em> {@code useWithoutItem} — right-click falls straight
+ * through to vanilla item placement. How solid it is to walk into is the author's choice
+ * ({@link PlaceholderCollision}, from the X menu's Settings tab); the default is scaffolding-style,
+ * solid only to something standing on top of it, so the author can walk on placeholders but
+ * straight through them from the side, and sneaking on one drops through.
  * It has no FACING property either, so the menu shows no rotation cells for a "nothing" row.</p>
  *
  * <p>It must never reach a live carriage: the variant appliers overwrite every sentinel cell with
@@ -36,6 +46,34 @@ public class VariantPlaceholderBlock extends Block {
     @Override
     protected MapCodec<? extends Block> codec() {
         return CODEC;
+    }
+
+    /**
+     * The author's {@link PlaceholderCollision} setting. Half solid is solid only under an entity
+     * whose feet are on or above the top face and that isn't sneaking to drop — the
+     * {@code ScaffoldingBlock} test — so walking in from the side, or standing inside one, passes
+     * through. Once an entity is inside one it stays air for that entity until it has stepped out
+     * sideways ({@link PlaceholderPassThrough}), so jumping inside a marker falls back into it
+     * rather than landing on top. Client config, read the way {@code SkyboxBlock} reads its
+     * switch: in single player that is the server's answer too, and a dedicated server keeps the
+     * default. The outline ({@code getShape}) stays a full cube in every mode.
+     */
+    @Override
+    protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return switch (ClientDisplayConfig.getPlaceholderCollision()) {
+            case SOLID -> Shapes.block();
+            case AIR -> Shapes.empty();
+            case HALF_SOLID -> isHalfSolidFloor(pos, context) ? Shapes.block() : Shapes.empty();
+        };
+    }
+
+    /** Half solid: a floor to whoever is on top and not sneaking, unless they are passing through it. */
+    private static boolean isHalfSolidFloor(BlockPos pos, CollisionContext context) {
+        if (context instanceof EntityCollisionContext entityContext && entityContext.getEntity() != null
+                && PlaceholderPassThrough.isPassingThrough(entityContext.getEntity(), pos)) {
+            return false;
+        }
+        return context.isAbove(Shapes.block(), pos, true) && !context.isDescending();
     }
 
     /** Adjacent placeholders share no inner faces — the glass rule — so a run of them reads as one slab of ghost. */

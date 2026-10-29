@@ -14,12 +14,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MilestoneAdvancementReporterTest {
 
     @Test
-    @DisplayName("the burrito, the one after it, and the 250k run are the milestones — nothing else")
+    @DisplayName("the burrito, the one after it, the 250k run and The Challenge are the milestones — nothing else")
     void milestoneSet() {
         assertTrue(MilestoneAdvancementReporter.isMilestone(CompletionistAdvancement.ID));
         assertTrue(MilestoneAdvancementReporter.isMilestone(StartAgainAdvancement.ID));
         assertTrue(MilestoneAdvancementReporter.isMilestone(
                 ResourceLocation.fromNamespaceAndPath("dungeontrain", "dungeon_train/the_long_run")));
+        assertTrue(MilestoneAdvancementReporter.isMilestone(
+                ResourceLocation.fromNamespaceAndPath("dungeontrain", "dungeon_train/the_challenge")));
+        assertFalse(MilestoneAdvancementReporter.isMilestone(
+                ResourceLocation.fromNamespaceAndPath("dungeontrain", "dungeon_train/all_at_once")));
         assertFalse(MilestoneAdvancementReporter.isMilestone(
                 ResourceLocation.fromNamespaceAndPath("dungeontrain", "dungeon_train/cross_country")));
         assertFalse(MilestoneAdvancementReporter.isMilestone(
@@ -32,6 +36,10 @@ class MilestoneAdvancementReporterTest {
         assertEquals("advancements.dungeontrain.dungeon_train.the_long_run.hint",
                 MilestoneAdvancementReporter.hintKey(
                         ResourceLocation.fromNamespaceAndPath("dungeontrain", "dungeon_train/the_long_run")));
+        assertTrue(MilestoneAdvancementReporter.isMilestone(
+                ResourceLocation.fromNamespaceAndPath("dungeontrain", "dungeon_train/the_challenge")));
+        assertFalse(MilestoneAdvancementReporter.isMilestone(
+                ResourceLocation.fromNamespaceAndPath("dungeontrain", "dungeon_train/all_at_once")));
     }
 
     @Test

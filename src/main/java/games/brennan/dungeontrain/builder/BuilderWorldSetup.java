@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriagePartRegistry;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
@@ -1062,7 +1063,7 @@ public final class BuilderWorldSetup {
      * on a pillar.</p>
      */
     private static BuilderMirrorFlags trackMirrorOf(TrackKind kind, String name, Vec3i size) {
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(kind, name, size);
+        VariantDoc sidecar = TrackVariantBlocks.loadFor(kind, name, size);
         return new BuilderMirrorFlags(sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
                 sidecar.mirrorVariants());
     }
@@ -1299,7 +1300,7 @@ public final class BuilderWorldSetup {
      */
     private static BuilderMirrorFlags mirrorOf(CarriageVariant variant, CarriageDims dims) {
         try {
-            CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
+            VariantDoc sidecar = CarriageVariantBlocks.loadFor(variant, dims);
             return new BuilderMirrorFlags(sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
                     sidecar.mirrorVariants());
         } catch (Throwable t) {

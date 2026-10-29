@@ -67,7 +67,9 @@ public final class ContainerContentsMenu {
         /** Whole link sub-row hover (informational). */
         LINK_INDICATOR,
         /** The 'X' on the link sub-row — click to unlink. */
-        LINK_UNLINK
+        LINK_UNLINK,
+        /** The Key row on a vault — click to step the key that unlocks it. */
+        VAULT_KEY
     }
 
     public record Hit(CellKind kind, int index) {
@@ -94,6 +96,8 @@ public final class ContainerContentsMenu {
     private static Vec3 anchorUp = new Vec3(0, 1, 0);
     private static Vec3 anchorNormal = new Vec3(0, 0, 1);
     @Nullable private static String linkedPrefabId;
+    /** The vault's unlock key, or null when the target is not a vault. */
+    @Nullable private static String vaultKey;
 
     /**
      * Entry indices whose name is currently revealed beside the icon. Cleared
@@ -131,6 +135,7 @@ public final class ContainerContentsMenu {
     public static Vec3 anchorUp() { return anchorUp; }
     public static Vec3 anchorNormal() { return anchorNormal; }
     @Nullable public static String linkedPrefabId() { return linkedPrefabId; }
+    @Nullable public static String vaultKey() { return vaultKey; }
     public static Screen screen() { return screen; }
     public static String searchBuffer() { return searchBuffer; }
     public static Hit hovered() { return hovered; }
@@ -152,6 +157,7 @@ public final class ContainerContentsMenu {
             localPos = null;
             entries = Collections.emptyList();
             linkedPrefabId = null;
+            vaultKey = null;
             screen = Screen.ROOT;
             searchBuffer = "";
             hovered = Hit.NONE;
@@ -177,6 +183,7 @@ public final class ContainerContentsMenu {
         anchorUp = packet.anchorUp();
         anchorNormal = anchorRight.cross(anchorUp).normalize();
         linkedPrefabId = packet.linkedPrefabId();
+        vaultKey = packet.vaultKey();
         if (newCell) {
             screen = Screen.ROOT;
             searchBuffer = "";

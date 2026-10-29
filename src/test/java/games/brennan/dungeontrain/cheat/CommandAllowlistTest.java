@@ -137,6 +137,8 @@ class CommandAllowlistTest {
     void bugCommandAllowed() {
         assertFalse(CommandAllowlist.taints("bug"));
         assertFalse(CommandAllowlist.taints("/bug"));
+        assertFalse(CommandAllowlist.taints("log"));
+        assertFalse(CommandAllowlist.taints("/log"));
     }
 
     @Test
@@ -298,7 +300,8 @@ class CommandAllowlistTest {
     void clientOnlyCommandsAreClean() {
         for (String root : new String[] {
                 "streamer", "dungeontrain-options", "dungeontrain-rewards", "framerate-throttle", "twitch",
-                "discord", "dt-ledger-preview", "dungeontrain-debug-contribute", "dungeontrain-debug-death-pages"}) {
+                "discord", "dt-ledger-preview", "dungeontrain-debug-contribute", "dungeontrain-debug-death-pages",
+                "offereye"}) {
             assertFalse(CommandAllowlist.taints(root), root);
             assertFalse(CommandAllowlist.taints("/" + root), "/" + root);
             assertFalse(CommandAllowlist.taints(root + " abc123"), root + " abc123");

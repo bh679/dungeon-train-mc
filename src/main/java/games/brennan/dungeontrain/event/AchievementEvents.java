@@ -7,11 +7,15 @@ import games.brennan.dungeontrain.advancement.AdvancementRevocations;
 import games.brennan.dungeontrain.advancement.BurritoClock;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
+import games.brennan.dungeontrain.advancement.GlobalBiomeProgress;
+import games.brennan.dungeontrain.advancement.TerraOmnia;
+import games.brennan.dungeontrain.advancement.TerraOmniaMigration;
 import games.brennan.dungeontrain.advancement.TabGateways;
 import games.brennan.dungeontrain.advancement.TabCompleteAdvancements;
 import games.brennan.dungeontrain.advancement.FarStartAdvancement;
 import games.brennan.dungeontrain.advancement.FirstEverAdvancements;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
+import games.brennan.dungeontrain.advancement.GlobalCriteriaProgress;
 import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
@@ -39,11 +43,13 @@ import games.brennan.dungeontrain.narrative.StoryFile;
 import games.brennan.dungeontrain.narrative.StoryRegistry;
 import games.brennan.dungeontrain.net.AdvancementsHintPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.RiddenBiomesPacket;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.portal.PortalTripTracker;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerAdvancementManager;
@@ -350,11 +356,10 @@ public final class AchievementEvents {
      * same leader delta.</p>
      *
      * <p>{@link ModAdvancementTriggers#CARTS_BOTH_DIRECTIONS} ("The Long Way
-     * Back") uses the per-life forward / backward subtotals (absolute deltas)
-     * tracked in {@link PlayerRunState#cartsForwardSinceDeath} /
-     * {@link PlayerRunState#cartsBackwardSinceDeath} — backward travel
-     * contributes positively there, while it subtracts from the signed
-     * {@code travelledCarriageIndex} used above.</p>
+     * Back") reads the highest and lowest signed {@code travelledCarriageIndex}
+     * of this life ({@link ModDataAttachments#LONG_WAY_BACK_MAX_CARRIAGE} /
+     * {@link ModDataAttachments#LONG_WAY_BACK_MIN_CARRIAGE}): reach carriage
+     * +100 and carriage -100, in either order.</p>
      *
      * <p>{@link PacifistAdvancement} (100 / 250 / 1000 tiers) uses the same
      * travelled-carriage counter as {@code carts_100}, gated on
@@ -374,8 +379,7 @@ public final class AchievementEvents {
         int effectiveTravelled = Math.abs(DifficultyProgression.effectiveTravelled(travelled));
         ModAdvancementTriggers.CARTS_IN_RUN.get()
             .trigger(player, effectiveTravelled);
-        ModAdvancementTriggers.CARTS_BOTH_DIRECTIONS.get()
-            .trigger(player, run.cartsForwardSinceDeath(), run.cartsBackwardSinceDeath());
+        recordLongWayBackEnds(player, travelled);
         // "The Far Start" — same travelled-carriage counter as carts_100 but a
         // longer haul, reached while still carrying the (unread, unburned)
         // starting book. Gated cheaply, so the inventory scan only runs past the threshold.
@@ -447,10 +451,36 @@ public final class AchievementEvents {
      * distinct-biome count grows. {@code distinctBiomes} is the player's
      * single-life {@link games.brennan.dungeontrain.player.PlayerBiomeProgress#biomeCount()}.
      * Drives the exploration count tiers ("Far Afield", "Many Lands", "World
-     * Without End", "Terra Omnia").
+     * Without End"). Terra Omnia keeps its own, permanent list: {@link #recordLifetimeBiomes}.
      */
     public static void notifyBiomesVisited(ServerPlayer player, int distinctBiomes) {
         ModAdvancementTriggers.BIOMES_VISITED.get().trigger(player, distinctBiomes);
+    }
+
+    /**
+     * Add {@code biomes} to the biomes {@code player} has ever ridden through ({@link GlobalBiomeProgress}),
+     * which Terra Omnia asks to hold every biome. That list is kept for good: across deaths and worlds, and
+     * nothing removes from it. A cheated run adds nothing, as with the other cross-world stats.
+     */
+    public static void recordLifetimeBiomes(ServerPlayer player, Set<ResourceLocation> biomes) {
+        if (biomes.isEmpty() || RunIntegrity.isCheated(player)) return;
+        if (!GlobalBiomeProgress.addAll(player.getUUID(), biomes)) return;
+        checkTerraOmnia(player);
+        syncRiddenBiomes(player);
+    }
+
+    /** Award Terra Omnia once {@code player}'s permanent list holds every biome. Re-firing an earned one is a no-op. */
+    public static void checkTerraOmnia(ServerPlayer player) {
+        Set<ResourceLocation> ridden = GlobalBiomeProgress.biomes(player.getUUID());
+        if (TerraOmnia.isComplete(ridden, player.registryAccess().registryOrThrow(Registries.BIOME))) {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, TerraOmnia.ACTION);
+        }
+    }
+
+    /** Send {@code player} every biome they have ever ridden through, for Terra Omnia's checklist. */
+    public static void syncRiddenBiomes(ServerPlayer player) {
+        DungeonTrainNet.sendTo(player, new RiddenBiomesPacket(
+            GlobalBiomeProgress.biomes(player.getUUID()).stream().map(ResourceLocation::toString).toList()));
     }
 
     // ---------------- Train-time milestones ----------------
@@ -484,6 +514,7 @@ public final class AchievementEvents {
      */
     public static void notifyRunDistance(ServerPlayer player, double runMeters) {
         ModAdvancementTriggers.RUN_DISTANCE.get().trigger(player, runMeters);
+        LiveCloseCallEvents.onProgress(player, runMeters);
     }
 
     /**
@@ -936,6 +967,18 @@ public final class AchievementEvents {
         return anyRules;
     }
 
+    /**
+     * "The Long Way Back": widen this life's furthest-forward / furthest-back carriage marks with the raw
+     * {@code travelled} index (real travel, not the admin difficulty offset), then test both ends.
+     */
+    private static void recordLongWayBackEnds(ServerPlayer player, int travelled) {
+        int max = Math.max(player.getData(ModDataAttachments.LONG_WAY_BACK_MAX_CARRIAGE.get()), travelled);
+        int min = Math.min(player.getData(ModDataAttachments.LONG_WAY_BACK_MIN_CARRIAGE.get()), travelled);
+        player.setData(ModDataAttachments.LONG_WAY_BACK_MAX_CARRIAGE.get(), max);
+        player.setData(ModDataAttachments.LONG_WAY_BACK_MIN_CARRIAGE.get(), min);
+        ModAdvancementTriggers.CARTS_BOTH_DIRECTIONS.get().trigger(player, max, min);
+    }
+
     // ---------------- Respawn reset ----------------
 
     @SubscribeEvent
@@ -944,14 +987,16 @@ public final class AchievementEvents {
         if (event.isEndConquered()) return; // End → overworld portal, not a death.
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         run.resetAll();
-        // Exploration progress is per-life too — clear distinct biomes so the
-        // count tiers (and "Terra Omnia") restart for the new run.
+        // The count tiers' biomes are per-life — clear them for the new run. Terra Omnia's
+        // list (GlobalBiomeProgress) is kept for good and is not touched here.
         player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get()).clear();
         player.getData(ModDataAttachments.AFK_LIFE_STATS.get()).clear();
         // Per-life container markers. Neither attachment is copyOnDeath, so the
         // respawn clone already starts clean — cleared explicitly for the same
         // defensive reason PlayerRunState is.
         player.setData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get(), 0);
+        player.setData(ModDataAttachments.LONG_WAY_BACK_MAX_CARRIAGE.get(), 0);
+        player.setData(ModDataAttachments.LONG_WAY_BACK_MIN_CARRIAGE.get(), 0);
         player.setData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get(), Boolean.FALSE);
         player.setData(ModDataAttachments.STARTING_BOOK_BURNED_THIS_LIFE.get(), Boolean.FALSE);
         LifeChallengeAdvancements.resetForNewLife(player);
@@ -1023,7 +1068,17 @@ public final class AchievementEvents {
         // updated player's complete vanilla / other-mod trees, which will never
         // re-fire AdvancementEarnEvent — is captured before the replay below
         // mirrors the store back onto this world.
+        // Terra Omnia keeps every biome ever ridden: fold in this life's, then (once) retire its old
+        // 150-biome version, crediting its earners up to 150. Before the replay below, which would only
+        // warn about the retired id.
+        recordLifetimeBiomes(player, player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get()).biomes());
+        TerraOmniaMigration.apply(player);
+        checkTerraOmnia(player);
+        syncRiddenBiomes(player);
         AdvancementProfiles.absorb(player, AdvancementProfiles.currentKey(player));
+        // Half-finished collections too (Most Wanted's 34 mobs): the store above only holds
+        // finished advancements, so without this a new world started them from zero.
+        AdvancementProfiles.absorbCriteria(player, AdvancementProfiles.currentKey(player));
         // Replay the cross-world sidecar onto this world's advancements, then
         // re-evaluate the "Everything Burrito" capstone. The capstone check runs
         // last and unconditionally: a player who finished every other advancement
@@ -1032,6 +1087,7 @@ public final class AchievementEvents {
         // place that backfill can happen. It reads this world's restored
         // (post-replay) progress and grants normally (replaying is false here).
         AdvancementProfiles.replay(player, AdvancementProfiles.currentKey(player));
+        AdvancementProfiles.replayCriteria(player, AdvancementProfiles.currentKey(player));
         // Tab copies follow their originals as restored above (or revoked by Start Again).
         TabGateways.sync(player);
         TabCompleteAdvancements.checkAndGrant(player);
@@ -1068,9 +1124,11 @@ public final class AchievementEvents {
         GlobalPlayerStats.evict(uuid);
         GlobalBookBurnStats.flush(uuid);
         GlobalBookBurnStats.evict(uuid);
+        GlobalBiomeProgress.evict(uuid);   // every biome was written when it was added
         AdvancementProfiles.reconcileRevokes(player);
         // After the reconcile, which may still strike ids. Queued writes finish in the background.
         GlobalAchievementStore.evict(uuid);
+        GlobalCriteriaProgress.evict(uuid);
     }
 
     /**
@@ -1083,6 +1141,7 @@ public final class AchievementEvents {
         GlobalPlayerStats.flushAll();
         GlobalBookBurnStats.flushAll();
         GlobalAchievementStore.flushAndClearAll();
+        GlobalCriteriaProgress.flushAndClearAll();
     }
 
     /**
@@ -1171,6 +1230,18 @@ public final class AchievementEvents {
                 "commands.advancement.revoke.many.to.one.success", cleared, player.getDisplayName()), true);
     }
 
+    /**
+     * Bank each criterion of a half-finished collection as it lands (or strike it when revoked), so
+     * the next world carries the progress on — see {@link GlobalCriteriaProgress}.
+     */
+    @SubscribeEvent
+    public static void onAdvancementProgress(AdvancementEvent.AdvancementProgressEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        AdvancementProfiles.recordProgress(player, event.getAdvancement(), event.getAdvancementProgress(),
+            event.getCriterionName(),
+            event.getProgressType() == AdvancementEvent.AdvancementProgressEvent.ProgressType.GRANT);
+    }
+
     @SubscribeEvent
     public static void onAdvancementEarn(AdvancementEvent.AdvancementEarnEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
@@ -1217,7 +1288,11 @@ public final class AchievementEvents {
             // The burrito's play time (since first played or the last reset) is recorded here and rides
             // the relay claim below, for the fastest-burrito board.
             BurritoClock.Completion burrito = id.equals(CompletionistAdvancement.ID) ? BurritoClock.recordEarn(player) : null;
-            FirstEverAdvancements.onEarn(player, advancement, burrito);
+            // The Challenge is a one-life feat, so its time is this life's time aboard — the
+            // fastest-challenge board.
+            long challengeTicks = id.equals(AllAtOnceAdvancement.THE_CHALLENGE)
+                    ? player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).trainTimeTicks() : 0L;
+            FirstEverAdvancements.onEarn(player, advancement, burrito, challengeTicks);
             // Re-evaluate the "Everything Burrito" capstone (every non-editor
             // advancement earned). Skip its own earn: the award inside
             // checkAndGrant re-fires this event, and the id guard avoids the

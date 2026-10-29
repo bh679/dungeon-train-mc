@@ -62,6 +62,13 @@ public final class DisabledModContent {
     private static final Set<String> HIDDEN_TAB_NAMESPACES =
         Set.of("betternether", "betterend", "biomesoplenty", "vanillabackport", "exposure", "exposure_polaroid");
 
+    /**
+     * Items from a {@link #HIDDEN_TAB_NAMESPACES} tab that recipe viewers still list. Hiding a mod's tab takes its
+     * contents out of JEI too (JEI builds its list from the tabs), so these are handed back to it as extra
+     * ingredients by {@code compat.jei.DungeonTrainJeiPlugin}: BetterNether's Cincinnasite Forge.
+     */
+    public static final Set<String> JEI_EXTRA_ITEMS = Set.of("betternether:cincinnasite_forge");
+
     /** Ore blocks and ore placed features: {@code cincinnasite_ore}, {@code nether_ruby_large_ore}, … */
     private static final Pattern ORE = Pattern.compile("(?:^|.*_)ore$");
 
@@ -117,6 +124,13 @@ public final class DisabledModContent {
         "vista:cassette",
         "vista:hollow_cassette",
         "deeperdarker:sonorous_staff");
+
+    /**
+     * Mob-only items: hidden from players like {@link #HIDDEN_ITEMS} (recipes, loot, creative tabs, JEI), but
+     * left in mobs' hands by {@link DisabledModMobGear}, and taken out of their death drops and refused at
+     * pickup by {@link MobOnlyItems}. Piglin Proliferation's Buckler: brutes charge with it, players never hold one.
+     */
+    static final Set<String> MOB_ONLY_ITEMS = Set.of("piglinproliferation:buckler");
 
     /** Deeper Darker's Sculk Transmitter and every dyed one ({@code <dye>_sculk_transmitter}): off for now. */
     static final Pattern SCULK_TRANSMITTER = Pattern.compile("^(\\w+_)?sculk_transmitter$");
@@ -191,6 +205,15 @@ public final class DisabledModContent {
         return isDisabledItem(stack.getItem());
     }
 
+    /** True for an item only mobs may hold ({@link #MOB_ONLY_ITEMS}). */
+    public static boolean isMobOnlyItem(ItemStack stack) {
+        return !stack.isEmpty() && isMobOnlyItem(BuiltInRegistries.ITEM.getKey(stack.getItem()));
+    }
+
+    static boolean isMobOnlyItem(ResourceLocation id) {
+        return id != null && MOB_ONLY_ITEMS.contains(id.toString());
+    }
+
     /** Any enchantment a mod adds — vanilla's {@code minecraft:} ones and {@link #KEPT_MOD_ENCHANTMENTS} are the ones DT keeps. */
     public static boolean isDisabledEnchantment(ResourceLocation id) {
         return id != null && !ResourceLocation.DEFAULT_NAMESPACE.equals(id.getNamespace())
@@ -250,7 +273,8 @@ public final class DisabledModContent {
         if (id == null) {
             return false;
         }
-        if (HIDDEN_ITEMS.contains(id.toString()) || DISABLED_BLOCKS.contains(id.toString())) {
+        if (HIDDEN_ITEMS.contains(id.toString()) || DISABLED_BLOCKS.contains(id.toString())
+            || MOB_ONLY_ITEMS.contains(id.toString())) {
             return true;
         }
         if (GEAR_ONLY_NAMESPACES.contains(id.getNamespace())) {

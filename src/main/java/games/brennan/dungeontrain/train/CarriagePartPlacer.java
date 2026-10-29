@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import games.brennan.dungeontrain.editor.GrowthPass;
 import games.brennan.dungeontrain.compat.PaintingTransformProcessor;
 import games.brennan.dungeontrain.editor.ConnectPass;
@@ -205,7 +206,7 @@ public final class CarriagePartPlacer {
                                                        long seed, int carriageIndex,
                                                        CarriagePartKind.Placement p) {
         Vec3i partSize = kind.dims(dims);
-        CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
+        VariantDoc sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
         if (sidecar.isEmpty()) return;
 
         BlockPos stampOrigin = carriageOrigin.offset(p.originOffset());
@@ -245,7 +246,7 @@ public final class CarriagePartPlacer {
                     BlockState toPlace = games.brennan.dungeontrain.editor.PaintingPass.mirror(w.state(), p.mirror());
                     games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
                         level, world, toPlace, w.entry().blockEntityNbt(),
-                        "part:" + kind.id() + ":" + name, w.localPos(), seed, carriageIndex,
+                        games.brennan.dungeontrain.editor.BlockVariantPlot.partKey(kind, name), w.localPos(), seed, carriageIndex,
                         w.entry().linkedLootPrefabId());
                     ConnectPass.note(level, world, w.entry().connect(), toPlace);
                     GrowthPass.note(level, world, w.entry(), toPlace, w.localPos(), seed, carriageIndex, within);
@@ -303,7 +304,7 @@ public final class CarriagePartPlacer {
         for (int i = 0; i < placements.size(); i++) {
             String name = i < names.size() ? names.get(i) : null;
             if (name == null || name.isBlank() || CarriagePartKind.NONE.equals(name)) continue;
-            CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
+            VariantDoc sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
             if (sidecar.isEmpty()) continue;
             CarriagePartKind.Placement p = placements.get(i);
             BlockPos stampOrigin = carriageOrigin.offset(p.originOffset());

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import games.brennan.dungeontrain.editor.GrowthPass;
 import games.brennan.dungeontrain.editor.ConnectPass;
 import com.mojang.logging.LogUtils;
@@ -24,6 +25,7 @@ import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.narrative.block.NarrativeLecternBlock;
 import games.brennan.dungeontrain.template.FlipOptions;
 import games.brennan.dungeontrain.compat.PaintingTransformProcessor;
+import games.brennan.dungeontrain.compat.vista.TvSpawnPower;
 import games.brennan.dungeontrain.compat.vista.TvTemplateJoin;
 import games.brennan.dungeontrain.train.ContentsFlip.Flip;
 import games.brennan.dungeontrain.train.CarriageContents.ContentsType;
@@ -283,7 +285,7 @@ public final class CarriageContentsPlacer {
                 seed, carriageIndex, mask, flip);
             games.brennan.dungeontrain.compat.photo.RandomFramePhotos.resolveIn(level, interiorOrigin(carriageOrigin),
                 interiorSizeFor(contents, dims), seed, carriageIndex, mask, flip);
-            joinTvs(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), carriageIndex);
+            joinTvs(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), seed, carriageIndex);
             gateCreakingHearts(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), carriageIndex);
         });
     }
@@ -291,12 +293,14 @@ public final class CarriageContentsPlacer {
     /**
      * Joins the stamped Vista TVs into whole screens — see {@link TvTemplateJoin}. Last, so it sees the
      * template, variant and pool cells together. Not in the editor: an author's plot keeps exactly the
-     * screens they built, and the editor never flips, so they are already right there.
+     * screens they built, and the editor never flips, so they are already right there. Then some of the
+     * joined screens come on ({@link TvSpawnPower}), also not in the editor.
      */
-    private static void joinTvs(ServerLevel level, BlockPos origin, Vec3i size, int carriageIndex) {
+    private static void joinTvs(ServerLevel level, BlockPos origin, Vec3i size, long seed, int carriageIndex) {
         if (carriageIndex == EDITOR_SENTINEL_PIDX) return;
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
         TvTemplateJoin.rejoin(level, origin, size);
+        TvSpawnPower.apply(level, origin, size, seed, carriageIndex);
     }
 
     /**
@@ -393,7 +397,7 @@ public final class CarriageContentsPlacer {
                 seed, carriageIndex, mask, flip);
             games.brennan.dungeontrain.compat.photo.RandomFramePhotos.resolveIn(level, interiorOrigin(carriageOrigin),
                 interiorSizeFor(contents, dims), seed, carriageIndex, mask, flip);
-            joinTvs(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), carriageIndex);
+            joinTvs(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), seed, carriageIndex);
             gateCreakingHearts(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), carriageIndex);
         });
     }
@@ -436,7 +440,7 @@ public final class CarriageContentsPlacer {
             applyContentPools(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
             games.brennan.dungeontrain.compat.photo.RandomFramePhotos.resolveIn(level, anchor, box, seed, carriageIndex,
                 safeMask, flip);
-            joinTvs(level, anchor, box, carriageIndex);
+            joinTvs(level, anchor, box, seed, carriageIndex);
             gateCreakingHearts(level, anchor, box, carriageIndex);
         });
         LOGGER.info("[DungeonTrain] Placed contents {} at {} source=stored box={}x{}x{} target=portal_room",
@@ -629,7 +633,7 @@ public final class CarriageContentsPlacer {
                                             long seed, int carriageIndex,
                                             PortalCorridorMask mask, Flip flip) {
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
-        CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contents, size);
+        VariantDoc sidecar = CarriageContentsVariantBlocks.loadFor(contents, size);
         if (sidecar.isEmpty()) return;
 
         // Difficulty gate: drop out-of-band eggs from each cell's candidate pool
@@ -694,7 +698,7 @@ public final class CarriageContentsPlacer {
                     }
                     games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
                         level, wWorld, rotated, w.entry().blockEntityNbt(),
-                        "contents:" + contents.id(), w.localPos(), seed, carriageIndex,
+                        games.brennan.dungeontrain.editor.BlockVariantPlot.contentsKey(contents.id()), w.localPos(), seed, carriageIndex,
                         lootId);
                     ConnectPass.note(level, wWorld, w.entry().connect(), rotated);
                     // A Y flip turns the carriage upside down, so an up-growing column grows down.
@@ -727,12 +731,12 @@ public final class CarriageContentsPlacer {
                                           CarriageContents contents,
                                           long seed, int carriageIndex,
                                           PortalCorridorMask mask, Flip flip) {
-        String plotKey = "contents:" + contents.id();
+        String plotKey = games.brennan.dungeontrain.editor.BlockVariantPlot.contentsKey(contents.id());
         games.brennan.dungeontrain.editor.ContainerContentsStore store =
             games.brennan.dungeontrain.editor.ContainerContentsStore.loadFor(plotKey);
         // Skip cells already handled by a variant entry — the variant flow
         // already rolled into them.
-        games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks variants =
+        games.brennan.dungeontrain.editor.VariantDoc variants =
             games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks.loadFor(contents, size);
         java.util.Set<BlockPos> variantPositions = new java.util.HashSet<>();
         if (!variants.isEmpty()) {
@@ -778,10 +782,15 @@ public final class CarriageContentsPlacer {
                         brushBe.setChanged();
                         continue;
                     }
-                    if (!games.brennan.dungeontrain.editor.ContainerContentsRoller.isContainerState(state)
+                    boolean vault = games.brennan.dungeontrain.editor.VaultLoot.isVault(state);
+                    if (!vault
+                        && !games.brennan.dungeontrain.editor.ContainerContentsRoller.isContainerState(state)
                         && !games.brennan.dungeontrain.editor.ContainerContentsRoller.isDecoratedPot(state)) continue;
-                    java.util.Optional<games.brennan.dungeontrain.editor.ContainerContentsPool> defaultPool =
-                        games.brennan.dungeontrain.editor.BlockLootDefaults.resolveDefaultPool(
+                    // A vault baked into a content .nbt takes vanilla's trial reward, always.
+                    java.util.Optional<games.brennan.dungeontrain.editor.ContainerContentsPool> defaultPool = vault
+                        ? java.util.Optional.of(games.brennan.dungeontrain.editor.VaultLoot.defaultPool(
+                            games.brennan.dungeontrain.editor.ContainerContentsPool.DEFAULT_VAULT_KEY))
+                        : games.brennan.dungeontrain.editor.BlockLootDefaults.resolveDefaultPool(
                             state, localPos, seed, carriageIndex);
                     if (defaultPool.isEmpty()) continue;
                     rollAndApplyPool(level, worldPos, localPos, defaultPool.get(), seed, carriageIndex);
@@ -813,6 +822,7 @@ public final class CarriageContentsPlacer {
         be.loadCustomOnly(rolled, level.registryAccess());
         be.setChanged();
         games.brennan.dungeontrain.editor.ChiseledBookshelfSync.syncIfNeeded(level, worldPos);
+        games.brennan.dungeontrain.editor.VaultLoot.syncState(level, worldPos);
     }
 
     /**
@@ -972,7 +982,7 @@ public final class CarriageContentsPlacer {
         // same linkedLootPrefabId machinery as block-side container loot.
         // loadFor is cached + size-validated; null result means no variants
         // for this contents id — the applicator no-ops on null/empty.
-        CarriageContentsVariantBlocks variantSidecar =
+        VariantDoc variantSidecar =
             CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
         // Cells whose variant entry includes an entity candidate are owned by
         // the variant roll — skip the always-on template-baked entity there so
@@ -985,7 +995,7 @@ public final class CarriageContentsPlacer {
         // this store, keyed by interior-local block pos). Mirrors the block-
         // side applyContentPools pass.
         ContainerContentsStore contentsLinkStore =
-            ContainerContentsStore.loadFor("contents:" + contents.id());
+            ContainerContentsStore.loadFor(games.brennan.dungeontrain.editor.BlockVariantPlot.contentsKey(contents.id()));
         int spawned = 0;
         for (int i = 0; i < entries.size(); i++) {
             CompoundTag entry = entries.getCompound(i);
@@ -1198,7 +1208,7 @@ public final class CarriageContentsPlacer {
      * baked / linked stand at such a cell still spawns and can be equipped via
      * the variant link.
      */
-    private static java.util.Set<BlockPos> entityVariantCells(CarriageContentsVariantBlocks sidecar) {
+    private static java.util.Set<BlockPos> entityVariantCells(VariantDoc sidecar) {
         if (sidecar == null || sidecar.isEmpty()) return java.util.Collections.emptySet();
         java.util.Set<BlockPos> out = new java.util.HashSet<>();
         for (var e : sidecar.entries()) {
@@ -1230,7 +1240,7 @@ public final class CarriageContentsPlacer {
     private static void spawnLinkedEntities(ServerLevel level, BlockPos interiorOrigin,
                                              CarriageContents contents,
                                              int carriagePIdx, long seed, Vec3i size, Flip flip) {
-        ContainerContentsStore store = ContainerContentsStore.loadFor("contents:" + contents.id());
+        ContainerContentsStore store = ContainerContentsStore.loadFor(games.brennan.dungeontrain.editor.BlockVariantPlot.contentsKey(contents.id()));
         java.util.Set<BlockPos> allPositions = store.allPositions();
         if (allPositions.isEmpty()) return;
 
@@ -1478,7 +1488,7 @@ public final class CarriageContentsPlacer {
         if (carriagePIdx == EDITOR_SENTINEL_PIDX) return;
         Vec3i size = interiorSizeFor(contents, dims);
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
-        CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contents, size);
+        VariantDoc sidecar = CarriageContentsVariantBlocks.loadFor(contents, size);
         if (sidecar.isEmpty()) return;
         BlockPos origin = interiorOrigin(carriageOrigin);
         // Same carriage-positional tier the block pass used (offset-aware), so both

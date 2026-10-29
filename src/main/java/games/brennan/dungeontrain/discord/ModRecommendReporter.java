@@ -58,8 +58,8 @@ public final class ModRecommendReporter {
 
     private static void postToDiscord(ServerPlayer player, ModRecommendPacket packet) {
         try {
-            String name = displayName(packet);
-            String who = player.getGameProfile().getName();
+            String name = DiscordMarkdown.escape(displayName(packet));
+            String who = DiscordMarkdown.escape(player.getGameProfile().getName());
             String title = packet.hack()
                     ? "🚩 " + who + " reported a mod as a hack"
                     : packet.requested()
@@ -72,7 +72,7 @@ public final class ModRecommendReporter {
                     : "Running it now — recommended from the death screen.";
             List<DeathField> fields = List.of(
                     new DeathField("Mod", name),
-                    new DeathField(packet.hack() ? "What it does" : "Why", packet.comment()));
+                    new DeathField(packet.hack() ? "What it does" : "Why", DiscordMarkdown.escape(packet.comment())));
             DiscordService.get().postSurveyAnswer(player, title, description, fields, List.of());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] mod recommendation to Discord failed: {}", t.toString());

@@ -68,8 +68,8 @@ public final class BuildSubmitReporter {
 
     /** "Ada submitted brick_cabin for review" — a nameless build is still announced. */
     static String title(String author, String buildName) {
-        String name = buildName == null || buildName.isBlank() ? "a build" : buildName;
-        return author + " submitted " + name + " for review";
+        String name = buildName == null || buildName.isBlank() ? "a build" : DiscordMarkdown.escape(buildName);
+        return DiscordMarkdown.escape(author) + " submitted " + name + " for review";
     }
 
     /** The author's answers, one bold-labelled line each; a build with none says so. */
@@ -110,15 +110,20 @@ public final class BuildSubmitReporter {
 
     /** "#155 · carriage / roof · 🟢 DT 0.1149.0"; parts that are unknown are left out. */
     private static String buildValue(int relayId, String kind, String subKind, String versionLine) {
-        String what = kind == null ? "" : kind;
-        if (subKind != null && !subKind.isEmpty()) what = what.isEmpty() ? subKind : what + " / " + subKind;
+        String what = kind == null ? "" : DiscordMarkdown.escape(kind);
+        if (subKind != null && !subKind.isEmpty()) {
+            String sub = DiscordMarkdown.escape(subKind);
+            what = what.isEmpty() ? sub : what + " / " + sub;
+        }
         StringBuilder value = new StringBuilder("#").append(relayId);
         if (!what.isEmpty()) value.append(" \u00B7 ").append(what);
         if (versionLine != null && !versionLine.isEmpty()) value.append(" \u00B7 ").append(versionLine);
         return value.toString();
     }
 
+    /** Clipped first, then escaped, so the cut can never strand a lone backslash. */
     private static String clip(String s) {
-        return s.length() <= ANSWER_MAX ? s : s.substring(0, ANSWER_MAX).stripTrailing() + "…";
+        String c = s.length() <= ANSWER_MAX ? s : s.substring(0, ANSWER_MAX).stripTrailing() + "…";
+        return DiscordMarkdown.escape(c);
     }
 }

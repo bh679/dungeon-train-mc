@@ -153,11 +153,11 @@ public final class VariantBlockInteractions {
 
         BlockState baseState = level.getBlockState(clicked);
         VariantState baseVariant = captureBaseVariant(level, clicked, baseState);
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(
+        VariantDoc sidecar = CarriageVariantBlocks.loadFor(
             plotVariant, CarriageEditor.plotDims(plotVariant, dims));
         List<VariantState> existing = sidecar.statesAt(local);
 
-        List<VariantState> updated = buildUpdatedList(existing, baseVariant, newVariant, baseState, player, event);
+        List<VariantState> updated = buildUpdatedList(existing, baseVariant, newVariant, baseState, local, new Vec3i(dims.length(), dims.height(), dims.width()), player, event);
         if (updated == null) return;
 
         try {
@@ -203,14 +203,14 @@ public final class VariantBlockInteractions {
 
         BlockState baseState = level.getBlockState(clicked);
         VariantState baseVariant = captureBaseVariant(level, clicked, baseState);
-        CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
+        VariantDoc sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
         List<VariantState> existing = sidecar.statesAt(local);
-        List<VariantState> updated = buildUpdatedList(existing, baseVariant, newVariant, baseState, player, event);
+        List<VariantState> updated = buildUpdatedList(existing, baseVariant, newVariant, baseState, local, partSize, player, event);
         if (updated == null) return;
 
         try {
             sidecar.put(local, updated);
-            sidecar.save(kind, name);
+            sidecar.save();
         } catch (IllegalArgumentException e) {
             player.displayClientMessage(
                 Component.translatable("chat.dungeontrain.editor_bar.common.variant_add_failed",
@@ -260,14 +260,14 @@ public final class VariantBlockInteractions {
 
         BlockState baseState = level.getBlockState(clicked);
         VariantState baseVariant = captureBaseVariant(level, clicked, baseState);
-        CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
+        VariantDoc sidecar = CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
         List<VariantState> existing = sidecar.statesAt(local);
-        List<VariantState> updated = buildUpdatedList(existing, baseVariant, newVariant, baseState, player, event);
+        List<VariantState> updated = buildUpdatedList(existing, baseVariant, newVariant, baseState, local, interiorSize, player, event);
         if (updated == null) return;
 
         try {
             sidecar.put(local, updated);
-            sidecar.save(contents);
+            sidecar.save();
         } catch (IllegalArgumentException e) {
             player.displayClientMessage(
                 Component.translatable("chat.dungeontrain.editor_bar.common.variant_add_failed",
@@ -312,16 +312,16 @@ public final class VariantBlockInteractions {
 
         BlockState baseState = level.getBlockState(clicked);
         VariantState baseVariant = captureBaseVariant(level, clicked, baseState);
-        games.brennan.dungeontrain.track.variant.TrackVariantBlocks sidecar =
+        games.brennan.dungeontrain.editor.VariantDoc sidecar =
             games.brennan.dungeontrain.track.variant.TrackVariantBlocks.loadFor(
                 loc.kind(), loc.name(), footprint);
         List<VariantState> existing = sidecar.statesAt(local);
-        List<VariantState> updated = buildUpdatedList(existing, baseVariant, newVariant, baseState, player, event);
+        List<VariantState> updated = buildUpdatedList(existing, baseVariant, newVariant, baseState, local, footprint, player, event);
         if (updated == null) return;
 
         try {
             sidecar.put(local, updated);
-            sidecar.save(loc.kind(), loc.name());
+            sidecar.save();
         } catch (IllegalArgumentException e) {
             player.displayClientMessage(
                 Component.translatable("chat.dungeontrain.editor_bar.common.variant_add_failed",
@@ -420,24 +420,8 @@ public final class VariantBlockInteractions {
                     .withStyle(ChatFormatting.YELLOW), true);
             return null;
         }
-        // Optional entity NBT — preserves anvil-renamed / NBT-tagged eggs.
-        // Vanilla stores the spawn payload in BLOCK_ENTITY_DATA on the egg
-        // (ID:"<entity>" + extra fields like CustomName / Tags / ArmorItems);
-        // we strip the ID since the entity type is the authoritative source
-        // and avoid stamping a redundant id mismatch onto the spawned mob.
-        net.minecraft.nbt.CompoundTag mobNbt = null;
-        net.minecraft.world.item.component.CustomData beData =
-            held.get(net.minecraft.core.component.DataComponents.BLOCK_ENTITY_DATA);
-        if (beData != null && !beData.isEmpty()) {
-            net.minecraft.nbt.CompoundTag raw = beData.copyTag();
-            if (raw.contains("EntityTag", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
-                mobNbt = raw.getCompound("EntityTag").copy();
-            } else if (!raw.isEmpty()) {
-                mobNbt = raw;
-            }
-            if (mobNbt != null) mobNbt.remove("id"); // EntityType.create writes its own
-        }
-        return VariantState.ofMob(eid, mobNbt, 1, VariantRotation.NONE);
+        // Optional entity NBT — preserves anvil-renamed / NBT-tagged eggs and eggs that ship a payload.
+        return VariantState.ofMob(eid, SpawnEggMobNbt.read(held), 1, VariantRotation.NONE);
     }
 
     /**
@@ -479,6 +463,7 @@ public final class VariantBlockInteractions {
      */
     private static List<VariantState> buildUpdatedList(List<VariantState> existing, @Nullable VariantState baseVariant,
                                                       VariantState newVariant, BlockState baseState,
+                                                      BlockPos local, Vec3i footprint,
                                                       ServerPlayer player,
                                                       PlayerInteractEvent.RightClickBlock event) {
         List<VariantState> updated = new ArrayList<>();
@@ -500,7 +485,8 @@ public final class VariantBlockInteractions {
                     return null;
                 }
             } else {
-                updated.add(baseVariant);
+                // A player head joining a cell looks into the room (HeadAim).
+                updated.add(HeadAim.aim(baseVariant, local, footprint));
             }
         } else {
             if (existing.size() >= MAX_VARIANTS_PER_POSITION) {
@@ -526,9 +512,9 @@ public final class VariantBlockInteractions {
         // matches the world-space block-variant menu's ADD behavior.
         RotationApplier.OrientedState oriented =
             RotationApplier.orientToPredecessors(newVariant.state(), updated);
-        updated.add(new VariantState(
+        updated.add(HeadAim.aim(new VariantState(
             oriented.state(), newVariant.blockEntityNbt(),
-            newVariant.weight(), oriented.rotation()));
+            newVariant.weight(), oriented.rotation()), local, footprint));
         return updated;
     }
 

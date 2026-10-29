@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.logrequest;
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.compat.DiscordCommandHooks;
 import games.brennan.discordpresence.discord.DiscordService;
+import games.brennan.dungeontrain.discord.DiscordMarkdown;
 import net.minecraft.server.level.ServerPlayer;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -47,7 +48,7 @@ public final class DeliveryFailureReport {
 
     /** The reply line, e.g. {@code "Message didn't land (Steve) — Kid mode is on"}. */
     public static String line(@Nullable String playerName, Reason reason) {
-        String who = playerName == null || playerName.isBlank() ? "" : " (" + playerName + ")";
+        String who = playerName == null || playerName.isBlank() ? "" : " (" + DiscordMarkdown.escape(playerName) + ")";
         return "Message didn't land" + who + " — " + reason.text();
     }
 

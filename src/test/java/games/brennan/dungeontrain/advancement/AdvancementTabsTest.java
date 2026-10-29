@@ -74,6 +74,16 @@ class AdvancementTabsTest {
     }
 
     @Test
+    @DisplayName("every advancement left out of a tab-complete is a real advancement")
+    void notForTabCompleteListsRealAdvancements() throws IOException {
+        TabGateways.Layout layout = shippedLayout();
+        Map<String, JsonObject> all = advancements();
+        for (String id : layout.notForTabComplete()) {
+            assertTrue(all.containsKey(id.substring(id.indexOf(':') + 1)), "notForTabComplete names a missing advancement: " + id);
+        }
+    }
+
+    @Test
     @DisplayName("no advancement that existed before the tab split was renamed or removed")
     void everyOldIdStillExists() throws IOException {
         Map<String, JsonObject> all = advancements();
@@ -103,7 +113,7 @@ class AdvancementTabsTest {
                 Map.entry(DT + "carts_10000", TRAIN_EXPLORER),
                 Map.entry(DT + "the_long_run", TRAIN_EXPLORER),
                 Map.entry(DT + "reached_nether", TRAIN_EXPLORER),
-                Map.entry(DT + "ridden_biomes_150", TRAIN_EXPLORER),
+                Map.entry(DT + "ridden_biomes_all", TRAIN_EXPLORER),
                 Map.entry(DT + "help_i_cant_get_off", TRAIN_EXPLORER),
                 Map.entry(DT + "echo_kill", OTHERS),
                 Map.entry(DT + "encountered_1000_players", OTHERS),
@@ -131,7 +141,9 @@ class AdvancementTabsTest {
         Map<String, JsonObject> all = advancements();
         TabGateways.Layout layout = shippedLayout();
         Set<String> expected = new java.util.HashSet<>(Set.of("dungeontrain:" + TRAIN_EXPLORER, "dungeontrain:" + OTHERS,
-                "dungeontrain:" + DT + "gate_enchiridion", "dungeontrain:" + DT + "gate_darkroom"));
+                "dungeontrain:" + DT + "gate_enchiridion", "dungeontrain:" + DT + "gate_darkroom",
+                "dungeontrain:" + DT + "memory_lane_link", "dungeontrain:" + DT + "keepsake_link",
+                "dungeontrain:" + DT + "no_room_left_link")); // the photo album, linked into The Enchiridion
         layout.complete().keySet().forEach(self -> expected.add(self + "_tab")); // each tab-complete's in-tab copy
         assertEquals(expected, layout.copies().keySet());
         layout.copies().forEach((copyId, originalId) -> {
