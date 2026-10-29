@@ -231,7 +231,7 @@ public final class CarriageContentsEditor {
         // Drop in-session contents-store changes (loot-prefab links) so the
         // re-stamp reads the last-saved disk state; placement writes only
         // touch the in-memory cache until /save.
-        ContainerContentsStore.invalidate("contents:" + contents.id());
+        ContainerContentsStore.invalidate(BlockVariantPlot.contentsKey(contents.id()));
         // The plot's own box — longer than a carriage for the portal corridor's contents.
         // The two placers take the WORLD's dims and resolve their own box from the variant /
         // contents id; only the box operations take the resolved one. See plotDims.
@@ -652,7 +652,7 @@ public final class CarriageContentsEditor {
         // accumulated since enter (PrefabUseHandler defers its writes until
         // /save). Failure is logged but doesn't fail the whole save.
         try {
-            ContainerContentsStore.loadFor("contents:" + contents.id()).save();
+            ContainerContentsStore.loadFor(BlockVariantPlot.contentsKey(contents.id())).save();
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Contents editor save: contents-store save failed for {}: {}",
                 contents.id(), e.toString());
@@ -687,7 +687,7 @@ public final class CarriageContentsEditor {
         return EditorSave.toSource("Contents editor save: " + contents.id(),
             () -> CarriageContentsStore.saveToSource(contents, template),
             () -> CarriageContentsVariantBlocks.loadFor(contents, interiorSize).saveToSource(contents),
-            () -> ContainerContentsStore.loadFor("contents:" + contents.id()).saveToSource());
+            () -> ContainerContentsStore.loadFor(BlockVariantPlot.contentsKey(contents.id())).saveToSource());
     }
 
     /**

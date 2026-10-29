@@ -147,7 +147,7 @@ public final class TrackEditor {
         // Drop in-session contents-store changes (loot-prefab links) so the
         // re-stamp reads the last-saved disk state; placement writes only
         // touch the in-memory cache until /save.
-        ContainerContentsStore.invalidate("track:" + TrackKind.TILE.id() + ":" + name);
+        ContainerContentsStore.invalidate(BlockVariantPlot.trackKey(TrackKind.TILE, name));
         eraseAt(overworld, origin, dims);
         EditorPlotEntityClearer.discardNonPlayersIn(
             overworld, origin.offset(-1, -1, -1),
@@ -181,7 +181,7 @@ public final class TrackEditor {
 
     /** Snapshot key shared by {@link EditorDirtyCheck} for track-tile rows. */
     public static String snapshotKey(String name) {
-        return EditorPlotSnapshots.key("tracks", "track:" + name);
+        return new Template.Track(name).snapshotKey().orElseThrow();
     }
 
     /**
@@ -208,7 +208,7 @@ public final class TrackEditor {
         // accumulated since enter (PrefabUseHandler defers its writes until
         // /save). Failure is logged but doesn't fail the whole save.
         try {
-            ContainerContentsStore.loadFor("track:" + TrackKind.TILE.id() + ":" + name).save();
+            ContainerContentsStore.loadFor(BlockVariantPlot.trackKey(TrackKind.TILE, name)).save();
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Track editor save: contents-store save failed for {}: {}",
                 name, e.toString());

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.template.Template;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.chunkframe.ChunkFrame;
 import games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry;
@@ -230,7 +231,7 @@ public final class ChunkFrameEditor {
 
     /** The dirty-check baseline key for {@code name}'s plot. */
     public static String snapshotKey(String name) {
-        return EditorPlotSnapshots.key(PlotCategory.CHUNK_FRAMES.id(), MODEL_ID + ":" + name);
+        return new Template.ChunkFrame(name).snapshotKey().orElseThrow();
     }
 
     /** Stamp {@code frame} on {@code name}'s plot and take that as the plot's saved baseline. */
