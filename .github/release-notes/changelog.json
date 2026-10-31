@@ -32144,6 +32144,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "lag-report-prompt",
+      "version": "0.1604.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "performance",
+        "ui"
+      ],
+      "title": "Send a lag report from chat",
+      "summary": "If the game freezes for a few seconds, a line in chat offers to send your log to the developer so the freeze can be tracked down. It only asks after you've played for a while, at most every half hour, and No stops it for the session.",
+      "highlights": [],
+      "pr": 2419,
+      "date": "2026-10-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
