@@ -577,7 +577,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      */
     private static int coreTopY(NetherBandContext bandCtx, ChunkPos cp, int bedY) {
         boolean otherside = NetherCoreStamp.isOthersideColumn(bandCtx, cp.getMiddleBlockX(), cp.getMiddleBlockZ());
-        return otherside ? OthersideCore.slabTop(bedY) : bedY + (NETHER_SAMPLE_Y_MAX - NETHER_CENTER_Y);
+        return otherside ? OthersideCore.slabTop(bedY) : NetherCoreGeometry.coreTopY(bedY);
     }
 
     /**

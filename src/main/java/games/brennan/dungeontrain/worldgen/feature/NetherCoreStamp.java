@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.worldgen.MixBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
+import games.brennan.dungeontrain.worldgen.NetherRoofCap;
 import games.brennan.dungeontrain.worldgen.CellDensityGeometry;
 import games.brennan.dungeontrain.worldgen.CycleLayout;
 import games.brennan.dungeontrain.worldgen.OthersideCore;
@@ -40,8 +41,8 @@ import java.util.Set;
 /**
  * Stamps the Nether band's real-Nether <b>core</b> terrain into a chunk at the end of the
  * {@code CARVERS} status — netherrack / lava / air sampled from the Nether's density router
- * ({@link #fillNetherColumn}), the per-biome surface skin, and the one-block caps over the sampled slab
- * ({@link #coverCoreCaps}).
+ * ({@link #fillNetherColumn}), the per-biome surface skin, the one-block floor cap under the sampled slab
+ * ({@link #coverCoreCaps}) and the Nether's bedrock roof over it ({@link #stampRoofCap}).
  *
  * <p><b>Why here and not in {@link NetherTransitionFeature}.</b> The core is decorated with the real
  * Nether's placed features in the FEATURES step, and those features spill into the 3×3
@@ -77,6 +78,7 @@ public final class NetherCoreStamp {
 
     private static final BlockState NETHERRACK = Blocks.NETHERRACK.defaultBlockState();
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
+    private static final BlockState BEDROCK = Blocks.BEDROCK.defaultBlockState();
 
     private NetherCoreStamp() {}
 
@@ -178,6 +180,7 @@ public final class NetherCoreStamp {
                 changed |= fillNetherColumn(w, dx, dz, worldX, worldZ, g, tg, sampleX, coreGeom, seed, coreBiome);
                 GenProfiler.add(GenProfiler.Bucket.CORE_REPLACE, coreT0);
                 changed |= coverCoreCaps(w, dx, dz, sampleX, worldZ, coreGeom);
+                changed |= stampRoofCap(w, dx, dz, worldX, worldZ, coreGeom, bedY, seed, overworld.getMaxBuildHeight() - 1);
                 columns++;
             }
         }
@@ -377,19 +380,41 @@ public final class NetherCoreStamp {
     }
 
     /**
-     * The core restamps only its sampled Y band, so where the band's top or bottom row is open the
-     * overworld rock just beyond it shows through as a stone roof/floor. Repaint that single capping
-     * block netherrack; the mountain further up/down stays as it is.
+     * The core restamps only its sampled Y band, so where the band's bottom row is open the overworld rock
+     * just beneath it shows through as a stone floor. Repaint that single capping block netherrack; the
+     * mountain further down stays as it is. The top is closed by {@link #stampRoofCap} instead.
      */
     private static boolean coverCoreCaps(ColumnWriter w, int dx, int dz, int sampleX, int worldZ,
                                          NetherCoreGeometry coreGeom) {
         NetherCoreGeometry.Column col = coreGeom.column(sampleX, worldZ);
         boolean changed = false;
-        int[][] caps = {{coreGeom.maxCoreY(), coreGeom.maxCoreY() + 1}, {coreGeom.minCoreY(), coreGeom.minCoreY() - 1}};
+        int[][] caps = {{coreGeom.minCoreY(), coreGeom.minCoreY() - 1}};
         for (int[] cap : caps) {
             if (col.isSolid(cap[0])) continue;                       // band edge is rock — nothing shows through
             if (!NetherRockCover.isOverworldRock(w.state(dx, cap[1], dz))) continue;
             w.set(dx, cap[1], dz, NETHERRACK);
+            changed = true;
+        }
+        return changed;
+    }
+
+    /**
+     * Close the slab with the Nether's own ceiling: the rows above the sampled top (Nether y121..127) become
+     * netherrack under vanilla's ragged bedrock roof ({@link NetherRoofCap}). Every core column gets it, so a
+     * cavern that reaches the slab's top row is sealed the way the real Nether seals it, and nothing stands on
+     * an open roof. Skipped when the slab was clamped short of its full height (a world too low to hold it).
+     */
+    private static boolean stampRoofCap(ColumnWriter w, int dx, int dz, int worldX, int worldZ,
+                                        NetherCoreGeometry coreGeom, int bedY, long seed, int worldTop) {
+        int top = coreGeom.maxCoreY();
+        if (top != NetherCoreGeometry.coreTopY(bedY)) return false;
+        int lastY = Math.min(top + NetherRoofCap.ROWS, worldTop);
+        boolean changed = false;
+        for (int y = top + 1; y <= lastY; y++) {
+            int netherY = NetherCoreGeometry.NETHER_Y_SAMPLE_MAX + (y - top);
+            BlockState target = NetherRoofCap.isBedrock(seed, worldX, y, worldZ, netherY) ? BEDROCK : NETHERRACK;
+            if (w.isSame(dx, y, dz, target)) continue;
+            w.set(dx, y, dz, target);
             changed = true;
         }
         return changed;
