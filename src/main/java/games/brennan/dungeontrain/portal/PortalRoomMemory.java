@@ -1,17 +1,24 @@
 package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.compat.vista.TvBlocks;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.player.DifficultyPartition;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.LeaseSnapshots;
+import games.brennan.dungeontrain.world.DifficultyLootClear;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderGetter;
 import net.minecraft.core.Vec3i;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.NbtUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.storage.LevelResource;
 import org.slf4j.Logger;
 
@@ -79,12 +86,20 @@ public final class PortalRoomMemory {
     private static final String EXT = ".nbt";
     private static final String TAG_ROOM = "room";
     private static final String TAG_SNAPSHOT = "snap";
+    private static final String TAG_DIFFICULTY = "difficulty";
 
     /** Where a touched pair's room stands, so a shutdown can capture every one still standing. */
     public record Touch(ServerLevel level, CarriageDims dims) {}
 
-    /** A remembered room: the room it was rolled as, and its captured snapshot. */
-    public record Entry(String roomName, CompoundTag snapshot) {}
+    /**
+     * A remembered room: the room it was rolled as, its captured snapshot, and the difficulty profile it
+     * was captured under ({@code ""} for rooms remembered before that was recorded).
+     */
+    public record Entry(String roomName, CompoundTag snapshot, String difficulty) {
+        public Entry(String roomName, CompoundTag snapshot) {
+            this(roomName, snapshot, "");
+        }
+    }
 
     /** Pairs a player has stood inside this session — the rooms worth capturing before an erase. */
     private static final Map<Integer, Touch> TOUCHED = new HashMap<>();
@@ -150,7 +165,7 @@ public final class PortalRoomMemory {
     /** Remember {@code snapshot} as pair {@code pairKey}'s room, on disk, then trim the store. */
     public static void remember(ServerLevel level, int pairKey, String roomName, CompoundTag snapshot) {
         Path file = fileFor(level, pairKey);
-        if (write(file, new Entry(roomName, snapshot), "portal pair " + pairKey + "'s room")) {
+        if (write(file, new Entry(roomName, snapshot, DifficultyPartition.keyFor(level)), "portal pair " + pairKey + "'s room")) {
             prune(file.getParent(), MAX_REMEMBERED);
         }
     }
@@ -160,7 +175,7 @@ public final class PortalRoomMemory {
      * {@code size}; null otherwise. A stale entry (another room, another size) is deleted on the way.
      */
     public static CompoundTag recall(ServerLevel level, int pairKey, String roomName, Vec3i size) {
-        return read(fileFor(level, pairKey), roomName, size, "portal pair " + pairKey + "'s room");
+        return read(level, fileFor(level, pairKey), roomName, size, "portal pair " + pairKey + "'s room");
     }
 
     /** Drop pair {@code pairKey}'s remembered room, if any. */
@@ -172,7 +187,7 @@ public final class PortalRoomMemory {
     public static void rememberTile(ServerLevel level, int pairKey, PortalRoomTiling.Tile tile,
                                     String roomName, CompoundTag snapshot) {
         Path file = tileFileFor(level, pairKey, tile);
-        if (write(file, new Entry(roomName, snapshot), describeTile(pairKey, tile))) {
+        if (write(file, new Entry(roomName, snapshot, DifficultyPartition.keyFor(level)), describeTile(pairKey, tile))) {
             prune(file.getParent(), MAX_REMEMBERED_TILES);
         }
     }
@@ -180,7 +195,7 @@ public final class PortalRoomMemory {
     /** As {@link #recall}, for copy {@code tile} of pair {@code pairKey}'s room. */
     public static CompoundTag recallTile(ServerLevel level, int pairKey, PortalRoomTiling.Tile tile,
                                          String roomName, Vec3i size) {
-        return read(tileFileFor(level, pairKey, tile), roomName, size, describeTile(pairKey, tile));
+        return read(level, tileFileFor(level, pairKey, tile), roomName, size, describeTile(pairKey, tile));
     }
 
     private static String describeTile(int pairKey, PortalRoomTiling.Tile tile) {
@@ -198,7 +213,7 @@ public final class PortalRoomMemory {
         }
     }
 
-    private static CompoundTag read(Path file, String roomName, Vec3i size, String what) {
+    private static CompoundTag read(ServerLevel level, Path file, String roomName, Vec3i size, String what) {
         if (!Files.isRegularFile(file)) return null;
         Entry entry;
         try {
@@ -214,7 +229,27 @@ public final class PortalRoomMemory {
             delete(file, what);
             return null;
         }
-        return entry.snapshot();
+        return forCurrentDifficulty(level, entry, what);
+    }
+
+    /**
+     * The snapshot to lay, minus the loot it held if it was captured under another difficulty: a room
+     * looted on one difficulty and stocked by the player must not hand that stock to the next
+     * ({@code DifficultyWorldLootEvents}). Untouched rolled containers keep their loot.
+     */
+    private static CompoundTag forCurrentDifficulty(ServerLevel level, Entry entry, String what) {
+        String current = DifficultyPartition.keyFor(level);
+        if (!DungeonTrainConfig.getDifficultyIsolatedStash()
+                || !DifficultyLootClear.isStale(entry.difficulty(), current)) {
+            return entry.snapshot();
+        }
+        CompoundTag snapshot = entry.snapshot().copy();
+        HolderGetter<Block> blocks = level.holderLookup(Registries.BLOCK);
+        DifficultyLootClear.scrubSnapshot(snapshot, level.registryAccess(),
+            stateTag -> TvBlocks.isTelevision(NbtUtils.readBlockState(blocks, stateTag)));
+        LOGGER.info("[DungeonTrain] {} was remembered on {}; its loot was cleared for {}",
+            what, entry.difficulty(), current);
+        return snapshot;
     }
 
     private static void delete(Path file, String what) {
@@ -238,13 +273,14 @@ public final class PortalRoomMemory {
         CompoundTag tag = new CompoundTag();
         tag.putString(TAG_ROOM, entry.roomName());
         tag.put(TAG_SNAPSHOT, entry.snapshot());
+        if (!entry.difficulty().isEmpty()) tag.putString(TAG_DIFFICULTY, entry.difficulty());
         return tag;
     }
 
     /** Null for a tag that does not hold an entry. */
     static Entry decode(CompoundTag tag) {
         if (tag == null || !tag.contains(TAG_ROOM) || !tag.contains(TAG_SNAPSHOT)) return null;
-        return new Entry(tag.getString(TAG_ROOM), tag.getCompound(TAG_SNAPSHOT));
+        return new Entry(tag.getString(TAG_ROOM), tag.getCompound(TAG_SNAPSHOT), tag.getString(TAG_DIFFICULTY));
     }
 
     /** The files to delete so at most {@code keep} remain: the oldest by write time. */

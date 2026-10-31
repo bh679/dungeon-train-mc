@@ -2363,6 +2363,9 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
+        // The click that re-activates the window is not a click on a control (Board anew sits
+        // at the top right, where a window is grabbed to bring it back).
+        if (RefocusClickGuard.swallow()) return true;
         // While the chrome is mid-fade, any click fast-tracks it rather than acting
         // on the fading / hidden controls beneath. Once settled (incl. the slow image
         // rise) clicks fall through, so only the Continue button advances — not empty space.

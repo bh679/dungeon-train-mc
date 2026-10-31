@@ -1107,11 +1107,12 @@ public final class LiveStreamController {
     }
 
     /**
-     * The Stream chat switch as it applies to this player — always off in Kid mode, and off while a
-     * Discord/Twitch link code may be on the HUD ({@link LinkCodeGuard}).
+     * The Stream chat switch as it applies to this player — always off in Kid mode or with Live chat off,
+     * and off while a Discord/Twitch link code may be on the HUD ({@link LinkCodeGuard}).
      */
     public static boolean streamChatShown() {
-        return StreamCapture.chatShown(LiveFeedClientConfig.streamChat(), ClientDisplayConfig.getContentMode().isKid())
+        return StreamCapture.chatShown(LiveFeedClientConfig.streamChat(), LiveFeedClientConfig.liveChat(),
+                ClientDisplayConfig.getContentMode().isKid())
             && !LinkCodeGuard.onHud();
     }
 

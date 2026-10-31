@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.net.relay.LiveFeedClient.Via;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
@@ -47,11 +48,12 @@ public final class LiveChatRules {
     private LiveChatRules() {}
 
     /**
-     * In the chat: the switch is on, not Kid mode, and this client is either streaming or wearing a TV
-     * while someone is on air. A TV with nobody live is silent — the chat belongs to a stream.
+     * In the chat: the switch is on, not Kid mode, and this client is either streaming or wearing a TV.
+     * A TV is in the room whether or not anyone is on air: TV wearers, Discord and the website keep
+     * talking between streams, and a streamer with chat off only stops reading it.
      */
-    public static boolean granted(boolean setting, boolean kid, boolean streaming, boolean wearingTv, boolean someoneLive) {
-        return setting && !kid && (streaming || (wearingTv && someoneLive));
+    public static boolean granted(boolean setting, boolean kid, boolean streaming, boolean wearingTv) {
+        return setting && !kid && (streaming || wearingTv);
     }
 
     /**
@@ -116,6 +118,11 @@ public final class LiveChatRules {
      * built elsewhere.
      */
     public static MutableComponent line(ChatLine line) {
+        return line(line, line.content(), Style.EMPTY.withColor(ChatFormatting.WHITE));
+    }
+
+    /** {@link #line(ChatLine)} with {@code content} in place of the line's text, in {@code contentStyle} (a translation, the original on hover). */
+    public static MutableComponent line(ChatLine line, String content, Style contentStyle) {
         MutableComponent out = Component.translatable(PREFIX_KEY).withStyle(ChatFormatting.DARK_GRAY);
         Icon icon = icon(line);
         if (icon != null) {
@@ -127,7 +134,7 @@ public final class LiveChatRules {
         return out
             .append(Component.literal(" " + clean(line.author(), MAX_AUTHOR)).withStyle(nameColour(line.source())))
             .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
-            .append(Component.literal(clean(line.content(), MAX_CONTENT)).withStyle(ChatFormatting.WHITE));
+            .append(Component.literal(clean(content, MAX_CONTENT)).withStyle(contentStyle));
     }
 
     /** The English the relay adds after a death message ({@code POST /live/chat/died}). */

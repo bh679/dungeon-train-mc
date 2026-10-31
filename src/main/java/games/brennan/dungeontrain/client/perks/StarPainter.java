@@ -27,7 +27,9 @@ final class StarPainter {
 
     /** How this star is lit beyond its own state. */
     /** {@code namePos}: where the name goes (top-left, screen px), or null to leave it out. */
-    record Look(boolean hovered, boolean selected, int[] namePos, boolean spendable, boolean ghost, boolean glow) {}
+    /** {@code centrePoints}: the Engine shows this many unlock points instead of its clock (the death menu); -1 for the clock. */
+    record Look(boolean hovered, boolean selected, int[] namePos, boolean spendable, boolean ghost, boolean glow,
+                int centrePoints) {}
 
     static void render(GuiGraphics g, Font font, PerkTree tree, PerkTree.Perk p, PerkMenuSnapshot snap, SkyView view,
                        int w, int h, Look look, Map<String, Long> unlockedAt, Map<String, Long> pointAt, long now, double fade) {
@@ -154,7 +156,8 @@ final class StarPainter {
                                      double halo, Look look, double fade) {
         SkyDraw.ring(g, x, y, halo, 1.0, SkyDraw.withAlpha(look.selected() ? SkyPalette.GOLD : SkyPalette.GOLD,
             (look.selected() || look.hovered() ? 1.0 : 0.35) * fade));
-        EngineClock.render(g, font, x, y, core, snap.ranksBought(), fade);
+        if (look.centrePoints() >= 0) EngineClock.renderPoints(g, font, x, y, core, look.centrePoints(), fade);
+        else EngineClock.render(g, font, x, y, core, snap.ranksBought(), fade);
     }
 
     private static long age(Map<String, Long> at, String id, long now) {

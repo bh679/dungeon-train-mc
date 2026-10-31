@@ -1432,6 +1432,43 @@
       "modrinth_version": "U5bZr5zH"
     },
     {
+      "name": "Sable: Ragdolls",
+      "slug": "sable-ragdolls",
+      "mod_ids": [
+        "sable_player_ragdoll"
+      ],
+      "sha1": "114a953a830673ebfe2af154f5a1ce535fc4d90c",
+      "packages": [
+        "dev.leo"
+      ],
+      "project_id": 1572492,
+      "file_id": 8295399,
+      "required": true,
+      "dependency_type": "required",
+      "version": "0.7.5",
+      "gradle_property": "sableragdolls_min_version",
+      "modrinth_project": "sable-ragdolls",
+      "modrinth_version": "CyKh8XSr"
+    },
+    {
+      "name": "Sable: Ragdoll - Patch",
+      "slug": "sableragdoll-patch",
+      "mod_ids": [
+        "sable_player_ragdoll_patch"
+      ],
+      "sha1": "27d49608a81a96c58c600090547b7caefe7fc1be",
+      "packages": [
+        "twtlinmiao.sableplayerragdollpatch"
+      ],
+      "required": true,
+      "dependency_type": "required",
+      "version": "1.9.1",
+      "gradle_property": "sableragdollpatch_min_version",
+      "modrinth_only": true,
+      "modrinth_project": "sableragdoll-patch",
+      "modrinth_version": "BHDjulA9"
+    },
+    {
       "name": "Advanced Shulkerboxes",
       "slug": "advanced-shulkerboxes",
       "mod_ids": [

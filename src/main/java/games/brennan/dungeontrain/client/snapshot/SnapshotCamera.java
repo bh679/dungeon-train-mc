@@ -161,7 +161,7 @@ public final class SnapshotCamera {
      * {@code want}. Blocked → return a point just short of the hit so the camera
      * sits in open air on the subject's side (nothing between it and the subject).
      */
-    private static Vec3 clipTowardOpenAir(ClientLevel level, Entity subject, Vec3 from, Vec3 want) {
+    public static Vec3 clipTowardOpenAir(ClientLevel level, Entity subject, Vec3 from, Vec3 want) {
         double len = want.subtract(from).length();
         if (len < 1.0e-6) return from;
         BlockHitResult hit = level.clip(new ClipContext(

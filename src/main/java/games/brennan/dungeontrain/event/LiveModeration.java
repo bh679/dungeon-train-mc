@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
+import games.brennan.dungeontrain.compat.vista.TvItems;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.moderation.LiveModerationLadder;
 import games.brennan.dungeontrain.moderation.LiveModerationLadder.Action;
@@ -22,6 +23,7 @@ import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -196,11 +198,12 @@ public final class LiveModeration {
         record(player, source, hits, text);
     }
 
-    /** The player's client says it masked a word as they typed. Counted only while the filter is on for them. */
+    /** The player's client says it masked a word as they typed. Counted while anyone is live, or they wear a TV. */
     public static void strikeFromClient(ServerPlayer player, LiveModerationStrikePacket.Source source, String text, List<String> hits) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
-        if (!LiveModerationScope.serverActive(ServerLiveStatus.isAnyoneLive(server))) return;
+        boolean wearingTv = TvItems.isTv(player.getItemBySlot(EquipmentSlot.HEAD));
+        if (!LiveModerationScope.clientStrikeActive(ServerLiveStatus.isAnyoneLive(server), wearingTv)) return;
         record(player, source.relayName(), hits, text);
     }
 

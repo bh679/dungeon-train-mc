@@ -34,9 +34,19 @@ final class PerkCounters {
     private final int[] bx = new int[2], bw = new int[2];
     private int by, bh;
     private final long[] shookAt = {-1, -1};
+    /** The death screen's menu: the Advancement Points counter alone. */
+    private boolean unlockOnly;
 
     PerkCounters(Font font) {
         this.font = font;
+    }
+
+    void unlockOnly(boolean on) {
+        unlockOnly = on;
+    }
+
+    private boolean shown(Kind k) {
+        return k == Kind.UNLOCK || !unlockOnly;
     }
 
     void shake(Kind k, long now) {
@@ -50,6 +60,10 @@ final class PerkCounters {
         int[] counts = {unlock, active};
         int x = screenW - MARGIN;
         for (int i = 1; i >= 0; i--) {
+            if (!shown(Kind.values()[i])) {
+                bw[i] = 0;
+                continue;
+            }
             bw[i] = PAD_X + ICON + 4 + font.width(String.valueOf(counts[i])) + PAD_X;
             x -= bw[i];
             bx[i] = x;
@@ -62,6 +76,7 @@ final class PerkCounters {
         if (my < by || my > by + bh) return null;
         for (Kind k : Kind.values()) {
             int i = k.ordinal();
+            if (!shown(k)) continue;
             if (mx >= bx[i] && mx <= bx[i] + bw[i]) return k;
         }
         return null;
@@ -71,6 +86,7 @@ final class PerkCounters {
         int[] counts = {unlock, active};
         int a = (int) (fade * 255);
         for (Kind k : Kind.values()) {
+            if (!shown(k)) continue;
             int i = k.ordinal();
             long age = shookAt[i] < 0 ? -1 : now - shookAt[i];
             boolean nope = age >= 0 && age < SHAKE_MS;

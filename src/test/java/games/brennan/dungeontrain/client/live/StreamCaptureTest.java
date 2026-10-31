@@ -16,10 +16,16 @@ class StreamCaptureTest {
 
     @Test
     void kidModeNeverShowsChat() {
-        assertFalse(chatShown(true, true));
-        assertFalse(chatShown(false, true));
-        assertTrue(chatShown(true, false));
-        assertFalse(chatShown(false, false));
+        assertFalse(chatShown(true, true, true));
+        assertFalse(chatShown(false, true, true));
+        assertTrue(chatShown(true, true, false));
+        assertFalse(chatShown(false, true, false));
+    }
+
+    @Test
+    void liveChatOffHidesChatFromTheStream() {
+        assertFalse(chatShown(true, false, false));
+        assertFalse(chatShown(false, false, false));
     }
 
     @Test

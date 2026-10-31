@@ -10,7 +10,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 /**
- * The community rewards shelf: the five gifts that keep something on for everyone for a month,
+ * The community rewards shelf: the six gifts that keep something on for everyone for a month,
  * and the rules every screen showing them shares (which one the Contribute panel features, when
  * the next free month starts, what the status lines say).
  *
@@ -41,22 +41,31 @@ public final class CommunityRewards {
         TWO_STREAMS(LiveRewards.TWO_STREAMS, Group.STREAMS, 140),
         VOICE_ON_STREAM(LiveRewards.VOICE_ON_STREAM, Group.STREAMS, 160),
         HD_STREAMS(LiveRewards.HD_STREAMS, Group.EXTRA, 90),
-        REPLAYS_KEPT(LiveRewards.REPLAYS_KEPT, Group.EXTRA, 80);
+        REPLAYS_KEPT(LiveRewards.REPLAYS_KEPT, Group.EXTRA, 80),
+        LIVE_TRANSLATION(LiveRewards.LIVE_TRANSLATION, Group.EXTRA, 90);
 
         private final String id;
         private final Group group;
         private final int costAud;
+        private final int months;
 
         Reward(String id, Group group, int costAud) {
+            this(id, group, costAud, 1);
+        }
+
+        Reward(String id, Group group, int costAud, int months) {
             this.id = id;
             this.group = group;
             this.costAud = costAud;
+            this.months = months;
         }
 
         public String id() { return id; }
         public Group group() { return group; }
         /** Whole AUD: the figure converted into the player's chosen currency. Must match {@link #amountKey()}. */
         public int costAud() { return costAud; }
+        /** How many {@link #MONTH_MS} months one gift keeps it on; the relay's rewards.js must agree. */
+        public int months() { return months; }
 
         public String nameKey() { return KEY + id + ".name"; }
         /** One line: "Reduce delay, from 30s to 5s. For EVERYONE, 1 month." */
@@ -93,13 +102,18 @@ public final class CommunityRewards {
 
     /**
      * When the next gift to {@code reward} would start: now when it is off, else after its current
-     * month and every month already queued behind it. Mirrors the relay's stacking
-     * ({@code from = max(now, until)}, each gift adding 30 days).
+     * term and every term already queued behind it. Mirrors the relay's stacking
+     * ({@code from = max(now, until)}, each gift adding 30 days per {@link Reward#months()}).
      */
     static long nextFreeMs(LiveRewards state, Reward reward, long now) {
         LiveRewards.Reward live = state.find(reward.id());
         if (live == null || live.activeUntilMs() <= now) return now;
-        return live.activeUntilMs() + MONTH_MS * live.queuedBy().size();
+        return queuedStartMs(live.activeUntilMs(), reward, live.queuedBy().size());
+    }
+
+    /** When the {@code index}th gift queued behind a term ending {@code activeUntilMs} starts (0 = right after it). */
+    static long queuedStartMs(long activeUntilMs, Reward reward, int index) {
+        return activeUntilMs + MONTH_MS * reward.months() * index;
     }
 
     /**
@@ -108,11 +122,11 @@ public final class CommunityRewards {
      */
     static final List<Reward> FEATURE_ORDER = List.of(
             Reward.QUICKER_STREAMS, Reward.VOICE_ON_STREAM, Reward.TWO_STREAMS,
-            Reward.HD_STREAMS, Reward.REPLAYS_KEPT);
+            Reward.HD_STREAMS, Reward.REPLAYS_KEPT, Reward.LIVE_TRANSLATION);
 
     /**
      * The reward the Contribute panel features: the first in {@link #FEATURE_ORDER} that is off now,
-     * so there is always something a giver can switch on today; when all five are on, the one whose
+     * so there is always something a giver can switch on today; when all six are on, the one whose
      * next free month comes soonest (ties in {@link #FEATURE_ORDER}).
      */
     static Reward featured(LiveRewards state, long now) {
@@ -121,7 +135,7 @@ public final class CommunityRewards {
 
     /**
      * {@link #featured(LiveRewards, long)} among the rewards {@code open} accepts gifts for, so the
-     * card leads with one a giver can actually give; all five when none are open yet.
+     * card leads with one a giver can actually give; all six when none are open yet.
      */
     static Reward featured(LiveRewards state, long now, java.util.function.Predicate<Reward> open) {
         List<Reward> order = FEATURE_ORDER.stream().filter(open).toList();

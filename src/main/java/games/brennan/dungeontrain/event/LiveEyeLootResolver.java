@@ -25,7 +25,8 @@ import net.neoforged.neoforge.items.ItemStackHandler;
  *   <li>one at a time — a player already holding a Live Eye (inventory, worn, or ender chest) gets a TV;</li>
  *   <li>after seeing a Live Eye in a container, none for {@link #COOLDOWN_TICKS} (15 min);</li>
  *   <li>while anyone is broadcasting on the Live Feed only {@link #LIVE_KEEP_CHANCE} of slots stay a
- *       Live Eye ({@link ServerLiveStatus#isAnyoneLive}).</li>
+ *       Live Eye ({@link ServerLiveStatus#isAnyoneLive}) — unless the Two Streams reward has its second
+ *       channel free, which counts as nobody live ({@link ServerLiveStatus#isLiveForEyes}).</li>
  * </ul>
  * A granted eye stays {@link LiveHeadpiecePendingTag#isUnclaimed unclaimed} until a player takes it, and
  * is checked again on every sighting: anyone already holding a Live Eye sees it become a TV. A player
@@ -74,7 +75,7 @@ public final class LiveEyeLootResolver {
             ContentModeMirror.mayLootLiveHeadpiece(player),
             holdsLiveEye(player),
             onCooldown(player),
-            ServerLiveStatus.isAnyoneLive(player.server),
+            ServerLiveStatus.isLiveForEyes(player.server),
             LiveModeration.isBanned(player.getUUID()),
             player.getRandom().nextFloat());
         if (outcome == Outcome.LIVE_EYE) {

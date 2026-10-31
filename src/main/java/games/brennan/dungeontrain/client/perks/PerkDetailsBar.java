@@ -54,8 +54,12 @@ final class PerkDetailsBar {
     private String refusedFor;
     private long refusedAt;
     private static final long REFUSAL_MS = 2000;
-    private Button unlockButton;
+    private UnlockTab unlockButton;
+    /** Why the Unlock tab can't be pressed, said in the bar under it; null when it can. */
+    private Component unlockReason;
     private Button activateButton;
+    /** The death screen's menu: Unlock only, no Activate and no Active Points. */
+    private boolean unlockOnly;
     private String builtFor = "";
     private PointsGraph graph;
     private int graphX, graphY, graphW, graphHover = -1;
@@ -88,9 +92,29 @@ final class PerkDetailsBar {
         return my >= top;
     }
 
-    /** The two buttons, rebuilt when the perk or its state changes; null while nothing is shown. */
+    /** Unlock only: the Activate button and every Active Points line drop out. */
+    void unlockOnly(boolean on) {
+        if (on == unlockOnly) return;
+        unlockOnly = on;
+        builtFor = "";
+    }
+
+    /** The buttons, rebuilt when the perk or its state changes; empty while nothing is shown. */
     List<Button> buttons() {
-        return unlockButton == null ? List.of() : List.of(unlockButton, activateButton);
+        if (unlockButton == null) return List.of();
+        return activateButton == null ? List.of(unlockButton) : List.of(unlockButton, activateButton);
+    }
+
+    /** How many buttons sit at the right of the bar: Activate, unless unlocking only (Unlock is the tab above). */
+    private int buttonCount() {
+        return unlockOnly ? 0 : 1;
+    }
+
+    /** Over the Unlock tab standing on the bar's top edge. */
+    boolean tabContains(double mx, double my) {
+        // by bounds, not isMouseOver, which ignores a greyed tab
+        Button t = unlockButton;
+        return t != null && mx >= t.getX() && mx < t.getX() + t.getWidth() && my >= t.getY() && my < t.getY() + t.getHeight();
     }
 
     /**
@@ -102,25 +126,39 @@ final class PerkDetailsBar {
         perk = shown;
         locked = isLocked;
         classShown = shown == null ? hoveredClass : null;
-        String key = shown == null ? "" : shown.id() + "|" + snap.unlockLevel(shown.id()) + "|" + snap.points(shown.id())
+        String key = shown == null ? "" : shown.id() + "|" + isLocked + "|" + snap.unlockLevel(shown.id()) + "|" + snap.points(shown.id())
             + "|" + snap.unlockPoints() + "|" + snap.activePoints() + "|" + screenW + "x" + screenH;
         if (key.equals(builtFor)) return false;
         builtFor = key;
         if (shown == null || shown.isRoot()) {
             unlockButton = null;
             activateButton = null;
+            unlockReason = null;
             return true;
         }
-        int bx = screenW - PAD - BUTTON_W * 2 - GAP, by = top + (HEIGHT - BUTTON_H) / 2;
-        unlockButton = new CostButton(bx, by, BUTTON_W, BUTTON_H, CostButton.Currency.ADVANCEMENT, shown.unlockCost(),
-            Component.translatable(KEY + "unlock"), b -> unlock.accept(shown));
-        activateButton = new CostButton(bx + BUTTON_W + GAP, by, BUTTON_W, BUTTON_H, CostButton.Currency.APPLE, snap.nextRankCost(),
+        // Unlock: the tab centred on the bar's top edge, naming the level it buys; why not, under it in the bar
+        unlockButton = UnlockTab.centred(font, screenW / 2, top, Component.translatable(KEY + "unlock"),
+            snap.unlockLevel(shown.id()) + 1, shown.unlockCost(), b -> unlock.accept(shown));
+        Component why = unlockBlocked(shown, snap);
+        if (!isLocked) {
+            // a hovered perk is shown, never bought: an outline when it could be unlocked once
+            // selected, grey when it couldn't; Activate stays away
+            unlockButton.look(why == null ? UnlockTab.Look.AVAILABLE : UnlockTab.Look.BLOCKED);
+            unlockReason = null;
+            activateButton = null;
+            return true;
+        }
+        unlockReason = why;
+        unlockButton.look(why == null ? UnlockTab.Look.READY : UnlockTab.Look.BLOCKED);
+        if (unlockOnly) {
+            activateButton = null;
+            return true;
+        }
+        int bx = screenW - PAD - BUTTON_W, by = top + (HEIGHT - BUTTON_H) / 2;
+        activateButton = new CostButton(bx, by, BUTTON_W, BUTTON_H, CostButton.Currency.APPLE, snap.nextRankCost(),
             Component.translatable(KEY + "activate"), b -> activate.accept(shown));
-        Component unlockWhy = unlockBlocked(shown, snap);
         Component activateWhy = activateBlocked(shown, snap);
-        unlockButton.active = unlockWhy == null;
         activateButton.active = activateWhy == null;
-        if (unlockWhy != null) unlockButton.setTooltip(Tooltip.create(unlockWhy));
         if (activateWhy != null) activateButton.setTooltip(Tooltip.create(activateWhy));
         return true;
     }
@@ -131,7 +169,8 @@ final class PerkDetailsBar {
         if (!PerkRegistry.isBuilt(p.id())) return Component.translatable("gui.dungeontrain.perks.not_built");
         int level = s.unlockLevel(p.id());
         if (level <= 0 && !tree.reachableNow(p.id(), s::isUnlocked)) return Component.translatable("gui.dungeontrain.perks.card.needs_path");
-        if (level > 0 && s.points(p.id()) < level) return Component.translatable(KEY + "fill_first");
+        // points are gone at death, so the death screen's menu raises a level without filling it first
+        if (!unlockOnly && level > 0 && s.points(p.id()) < level) return Component.translatable(KEY + "fill_first");
         int spent = s.unlockSpent(tree);
         if (level > 0 && !PerkUnlocks.allowed(level + 1, spent)) {
             return Component.translatable("gui.dungeontrain.perks.card.gate", PerkCard.ap(PerkUnlocks.spentNeeded(level + 1) - spent),
@@ -261,6 +300,13 @@ final class PerkDetailsBar {
         int holds = 0;
         for (int level : snap.unlocks().values()) holds += Math.max(0, level);
         int x = PAD + STRIPE, y = top + PAD - 1, icon = 8, tx = x + icon + 5;
+        if (unlockOnly) {
+            g.blit(PerkCounters.ADVANCEMENT_ICON, x, y + LINE + 1, icon, icon, 0, 0, PerkCounters.ICON_TEX, PerkCounters.ICON_TEX,
+                PerkCounters.ICON_TEX, PerkCounters.ICON_TEX);
+            g.drawString(font, Component.translatable(KEY + "engine.advancements"), tx, y + LINE + 2,
+                ((int) (a * 0.85) << 24) | (SkyPalette.FG & 0xFFFFFF), false);
+            return;
+        }
         g.drawString(font, Component.translatable(KEY + "engine.active", snap.ranksBought(), holds), x, y,
             (a << 24) | (SkyPalette.FG & 0xFFFFFF), false);
         int y2 = y + LINE + 2, y3 = y2 + LINE + 1;
@@ -277,6 +323,7 @@ final class PerkDetailsBar {
 
     void render(GuiGraphics g, PerkMenuSnapshot snap, double fade) {
         int a = (int) (fade * 255);
+        for (Button b : buttons()) b.setAlpha((float) fade);
         g.fill(0, top, width, top + HEIGHT, (Math.min(a, BG >>> 24) << 24) | (BG & 0xFFFFFF));
         g.fill(0, top, width, top + 1, (a << 24) | (EDGE & 0xFFFFFF));
         if (perk == null && classShown != null) {
@@ -297,10 +344,15 @@ final class PerkDetailsBar {
         boolean comingSoon = !PerkRegistry.isBuilt(p.id());
         int colour = comingSoon ? SkyPalette.MUTED : SkyPalette.classColour(tree, p);
         g.fill(0, top + 1, STRIPE, top + HEIGHT, (a << 24) | (colour & 0xFFFFFF));
+        if (unlockReason != null) {
+            // why the Unlock tab is greyed, centred under it at the foot of the bar
+            g.drawString(font, unlockReason, (width - font.width(unlockReason)) / 2, top + HEIGHT - font.lineHeight - 3,
+                ((int) (a * 0.9) << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
+        }
 
         // top row: the name, the points graph across the row, then the class and tier
         int x = PAD + STRIPE, y = top + 5;
-        int contentRight = width - PAD - BUTTON_W * 2 - GAP - 10;
+        int contentRight = width - PAD - (BUTTON_W + GAP) * buttonCount() - 6;
         String name = text.name(p);
         g.drawString(font, name, x, y, (a << 24) | (colour & 0xFFFFFF), true);
         String cls = tree.perkClass(p.cls()).map(PerkTree.PerkClass::name).orElse("").toUpperCase(Locale.ROOT)
@@ -365,7 +417,9 @@ final class PerkDetailsBar {
 
     /** The mouse moved: light the graph block under it. */
     void mouse(double mx, double my) {
-        graphHover = overGraph(mx, my) ? graph.indexAt(graphW, mx - graphX) : -1;
+        // lit only where a click acts: a block that takes a point, never one that would need unlocking
+        boolean acts = !unlockOnly && overGraph(mx, my) && graph.at(graphW, mx - graphX) != PointsGraph.Kind.LOCKED;
+        graphHover = acts ? graph.indexAt(graphW, mx - graphX) : -1;
     }
 
     private boolean overGraph(double mx, double my) {
@@ -374,16 +428,14 @@ final class PerkDetailsBar {
     }
 
     /**
-     * A click in the bar: on the graph, a filled or outlined block adds a point and a dark block unlocks
-     * one more; on a bar, it does whichever the perk needs next. Returns true when it acted.
+     * A click in the bar: on the graph, a filled or outlined block adds a point (never while unlocking
+     * only). Unlocking is the Unlock tab's alone: a dark block does nothing. Returns true when it acted.
      */
     boolean click(double mx, double my) {
-        if (!overGraph(mx, my)) return false;
+        if (unlockOnly || !overGraph(mx, my)) return false;
         PointsGraph.Kind k = graph.at(graphW, mx - graphX);
-        if (k == null && !graph.layout(graphW).bar()) return false;
-        boolean full = graph.open == 0;
-        if (k == PointsGraph.Kind.LOCKED || k == null && full) unlock.accept(perk);
-        else activate.accept(perk);
+        if (k == PointsGraph.Kind.LOCKED || k == null && (!graph.layout(graphW).bar() || graph.open == 0)) return false;
+        activate.accept(perk);
         return true;
     }
 }

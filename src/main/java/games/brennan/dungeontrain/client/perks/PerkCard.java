@@ -215,8 +215,13 @@ final class PerkCard {
         return translated("perk.dungeontrain." + p.id() + ".point", p.point());
     }
 
+    /**
+     * Perk text as written: it takes no arguments, so it is read straight from the language, never
+     * formatted ({@code I18n.get} would read a "%" in "X% slower" as a format code and print a
+     * format error).
+     */
     private static String translated(String key, String fallback) {
-        return I18n.exists(key) ? I18n.get(key) : fallback;
+        return I18n.exists(key) ? net.minecraft.locale.Language.getInstance().getOrDefault(key) : fallback;
     }
 
     /** The linked perks' names joined with a middle dot, as the web card's hint line. */

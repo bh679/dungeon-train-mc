@@ -90,7 +90,11 @@ public record DeathStatsPacket(
         int photoShots,
         int photosViewed,
         int tributesMade,
-        int tributeEmeralds
+        int tributeEmeralds,
+        // This life's advancements that earn unlock points, and the unlock points they earned: the
+        // death perks menu's opening line.
+        int lifeUnlockAdvancements,
+        int lifeUnlockPoints
 ) implements CustomPacketPayload {
 
     public static final Type<DeathStatsPacket> TYPE =
@@ -164,6 +168,8 @@ public record DeathStatsPacket(
         buf.writeVarInt(photosViewed);
         buf.writeVarInt(tributesMade);
         buf.writeVarInt(tributeEmeralds);
+        buf.writeVarInt(lifeUnlockAdvancements);
+        buf.writeVarInt(lifeUnlockPoints);
     }
 
     public static DeathStatsPacket decode(RegistryFriendlyByteBuf buf) {
@@ -229,6 +235,8 @@ public record DeathStatsPacket(
         int photosViewed = buf.readVarInt();
         int tributesMade = buf.readVarInt();
         int tributeEmeralds = buf.readVarInt();
+        int lifeUnlockAdvancements = buf.readVarInt();
+        int lifeUnlockPoints = buf.readVarInt();
         return new DeathStatsPacket(mobKills, cartsTravelled, distanceBlocks, trainTimeTicks,
                 containersOpened, booksRead, booksWritten, weapon, head, chest, legs, feet,
                 playersEncountered, playersKilled, playersBefriended, damageDealt, damageTaken,
@@ -236,7 +244,8 @@ public record DeathStatsPacket(
                 lifeBooksWritten, lifeContainers, lifeMobKills, lifePlayersKilled,
                 lifePlayersEncountered, lifeEchos, lifeAdvancements, lifeDamageDealt, lifeDamageTaken,
                 narrative, deathCause, side, portrait, earnedAdvancements, tamedCount, tamedAnimals,
-                cameraFrames, photoShots, photosViewed, tributesMade, tributeEmeralds);
+                cameraFrames, photoShots, photosViewed, tributesMade, tributeEmeralds,
+                lifeUnlockAdvancements, lifeUnlockPoints);
     }
 
     @Override

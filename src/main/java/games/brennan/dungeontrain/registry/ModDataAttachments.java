@@ -86,6 +86,19 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Per-chunk difficulty profile ({@code DifficultyPartition.keyFor}) that the loot stored in this chunk
+     * belongs to. Stamped on every loaded chunk when the difficulty changes, and when a chunk is first seen;
+     * a chunk that loads with a different key still holds the old difficulty's loot, which
+     * {@code DifficultyWorldLootEvents} clears before re-stamping it. Serialized only while set.
+     */
+    public static final Supplier<AttachmentType<String>> DIFFICULTY_LOOT_KEY =
+        TYPES.register("difficulty_loot_key",
+            () -> AttachmentType.<String>builder(() -> "")
+                .serialize(Codec.STRING, key -> !key.isEmpty())
+                .build()
+        );
+
+    /**
      * Per-chunk flag: this chunk sits in a BetterEnd End-band pass and is still owed its real-End terrain,
      * which is generated off-thread and written in a moment after the chunk loads
      * ({@code WorldEndBandEvents}). Persisted so a chunk that unloads first is filled on its next load;
