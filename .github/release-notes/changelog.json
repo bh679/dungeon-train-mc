@@ -32068,9 +32068,9 @@
       "highlights": [],
       "pr": 2410,
       "date": "2026-10-31",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1601.0",
+      "released_at": "2026-10-31T06:36:47Z"
     },
     {
       "id": "word-list-off-words",
@@ -32085,9 +32085,9 @@
       "highlights": [],
       "pr": 2411,
       "date": "2026-10-31",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1601.0",
+      "released_at": "2026-10-31T06:36:47Z"
     },
     {
       "id": "retire-unreachable-hidden-advancement",
@@ -32102,9 +32102,9 @@
       "highlights": [],
       "pr": 2413,
       "date": "2026-10-31",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1601.0",
+      "released_at": "2026-10-31T06:36:47Z"
     }
   ]
 }
