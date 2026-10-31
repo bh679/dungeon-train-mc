@@ -37,6 +37,14 @@ Worktrees: `.claude/worktrees/nervous-chatterjee-4681c3`, `xenodochial-lamport-7
 Wire contract between mod and relay is in the PR #978 description. Packet changes on the mod
 side mean a `PROTOCOL_VERSION` bump.
 
+Order across repos: deploy the relay first. `dev/live-eye-mic-capture` sends `mic` on claim and
+`micOn` on heartbeat, which only #978 reads; `dev/live-report-streamer` posts to the endpoint
+#975 adds. Shipping either mod branch before its relay PR is live means the feature silently
+does nothing.
+
+CI on the three relay PRs was pending after the main merges (2026-10-29). #975 once hit the
+known live-chat-translate fence-id flake; rerun that job rather than reading it as a failure.
+
 ### Prod box state (checked 2026-10-29)
 
 - ffmpeg at /usr/bin/ffmpeg. No whisper.cpp, no ggml models, no `LIVE_REPORT_*` env.
