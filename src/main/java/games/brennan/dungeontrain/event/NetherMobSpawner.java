@@ -12,6 +12,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BiomeTags;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
@@ -350,11 +351,33 @@ public final class NetherMobSpawner {
     public static void onSpawnPlacementCheck(MobSpawnEvent.SpawnPlacementCheck event) {
         MobSpawnType type = event.getSpawnType();
         if (type != MobSpawnType.NATURAL && type != MobSpawnType.CHUNK_GENERATION) return;
-        if (event.getEntityType().getCategory() != MobCategory.MONSTER) return;
         ServerLevel level = event.getLevel().getLevel();
-        if (BandStructureSpawns.inMonsterSpawningStructure(level, event.getPos())) {
+        BlockPos pos = event.getPos();
+        if (event.getEntityType() == EntityType.GLOW_SQUID) {
+            if (!level.dimension().equals(Level.OVERWORLD)) return;
+            boolean inBand = NetherBand.heightRampAt(level, pos.getX()) > 0.0
+                    && DisintegrationBand.middleRampAt(level, pos.getX()) <= 0.0;
+            if (allowsGlowSquid(inBand, level.getBiome(pos).is(Biomes.LUSH_CAVES),
+                    level.getFluidState(pos).is(FluidTags.WATER), level.getRawBrightness(pos, 0))) {
+                event.setResult(MobSpawnEvent.SpawnPlacementCheck.Result.SUCCEED);
+            }
+            return;
+        }
+        if (event.getEntityType().getCategory() != MobCategory.MONSTER) return;
+        if (BandStructureSpawns.inMonsterSpawningStructure(level, pos)) {
             event.setResult(MobSpawnEvent.SpawnPlacementCheck.Result.SUCCEED);
         }
+    }
+
+    /**
+     * Whether a glow squid may spawn here despite vanilla's height rule.
+     *
+     * <p>Vanilla wants water at {@code y <= seaLevel - 33} (y 30), but the default world's floor is y 32,
+     * so the band's lush caves, which list glow squid like lush caves everywhere, never got one. Only the
+     * height is waived: the water and the full darkness vanilla asks for still apply.</p>
+     */
+    static boolean allowsGlowSquid(boolean inNetherBand, boolean lushCave, boolean water, int rawBrightness) {
+        return inNetherBand && lushCave && water && rawBrightness == 0;
     }
 
     private static void trySpawnNear(ServerLevel level, ServerPlayer player, RandomSource rng,
