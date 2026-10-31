@@ -78,4 +78,27 @@ final class NetherBandBiomesTest {
         assertTrue(lush && drip);
         assertEquals(2, NetherBandBiomes.CAVE_PRE.size());
     }
+
+    @Test
+    @DisplayName("caveIsLush is exactly the region pick landing on lush caves, both sides of the core")
+    void caveIsLushMatchesThePick() {
+        assertEquals(Biomes.LUSH_CAVES, NetherBandBiomes.CAVE_PRE.get(NetherBandBiomes.CAVE_LUSH));
+        assertEquals(Biomes.LUSH_CAVES, NetherBandBiomes.CAVE_POST.get(NetherBandBiomes.CAVE_LUSH));
+        boolean sawLush = false, sawOther = false;
+        for (long seed : new long[] {1L, 0xBEEFL, -42L}) {
+            for (int x = -4096; x < 4096; x += 37) {
+                for (int z = -1024; z < 1024; z += 53) {
+                    boolean pre = NetherBandBiomes.pickCave(seed, x, z, NetherBandBiomes.CAVE_PRE.size())
+                            == NetherBandBiomes.CAVE_LUSH;
+                    assertEquals(pre, NetherBandBiomes.caveIsLush(seed, x, z, false, true));
+                    for (boolean sulfur : new boolean[] {true, false}) {
+                        boolean post = NetherBandBiomes.pickCavePost(seed, x, z, sulfur) == NetherBandBiomes.CAVE_LUSH;
+                        assertEquals(post, NetherBandBiomes.caveIsLush(seed, x, z, true, sulfur));
+                    }
+                    if (pre) sawLush = true; else sawOther = true;
+                }
+            }
+        }
+        assertTrue(sawLush && sawOther, "sweep should cover both lush and non-lush regions");
+    }
 }

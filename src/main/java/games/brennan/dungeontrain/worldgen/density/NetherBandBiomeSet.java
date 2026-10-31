@@ -56,6 +56,19 @@ public final class NetherBandBiomeSet {
                 : NetherBandBiomes.pickCave(seed, worldX, worldZ, palette.length)];
     }
 
+    /**
+     * Whether {@link #caveBiomeFor} gives this column lush caves — the region pick, less the fall side's
+     * ancient-city region (always deep dark). Index-only, so it costs a hash rather than a holder lookup.
+     */
+    public boolean isLushCave(NetherBandContext ctx, int worldX, int worldZ, boolean pastCore) {
+        if (!NetherBandBiomes.caveIsLush(seed, worldX, worldZ, pastCore, sulfurAvailable)) return false;
+        if (pastCore && (worldZ >> NetherBandBiomes.CAVE_REGION_SHIFT) == AncientCitySite.REGION_Z) {
+            long cell = ancientCityCell(ctx, ctx.cycle().netherPassIndex(worldX));
+            return cell == AncientCitySite.NONE || cell != (worldX >> NetherBandBiomes.CAVE_REGION_SHIFT);
+        }
+        return true;
+    }
+
     /** Per-pass ancient-city region, memoised per published context (the site walk costs a few noise samples). */
     private final java.util.concurrent.ConcurrentHashMap<Long, Long> cityCells = new java.util.concurrent.ConcurrentHashMap<>();
     private volatile NetherBandContext cityCtx;
