@@ -32178,6 +32178,43 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "hidden-advancement-unlock-fix",
+      "version": "0.1606.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "A hidden advancement that some players had earned was not unlocking. It does now.",
+      "highlights": [],
+      "pr": 2421,
+      "date": "2026-10-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "community-reward-dynamic-amounts",
+      "version": "0.1606.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Community Rewards: first gift is the smallest",
+      "summary": "Each Community Reward now starts at its own amount and only goes up while another reward that costs more to run alongside it is on, so whichever is given first is the smaller gift. A grey line on the card says which reward is raising it.",
+      "highlights": [
+        "Two Streams now starts at $100 AUD.",
+        "The Contribute page's gift header is shorter."
+      ],
+      "pr": 2420,
+      "date": "2026-10-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

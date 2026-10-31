@@ -17,7 +17,9 @@ import java.util.List;
  * <p>A reward is a donation with a thank-you attached, not a product: the copy says "Give" and
  * "keeps it on a month", never buy or price. Amounts live in lang keys
  * ({@code gui.dungeontrain.rewards.<id>.amount}); {@link Reward#costAud} is a reference copy and must
- * match those keys.</p>
+ * match those keys. They are each reward's amount on its own: while other rewards that cost it more to
+ * run are on, the relay quotes it higher ({@link LiveRewards#quote}) and {@link #amountShort},
+ * {@link #amountFull} and {@link #raisedLine} show that instead.</p>
  *
  * <p>Live state ({@code activeUntil}, who kept it on, queued months) comes from the relay's
  * {@code rewards[]} block, already parsed by {@link LiveRewards}. Pure apart from the lang-key and
@@ -38,7 +40,7 @@ public final class CommunityRewards {
     /** The shelf, in its display order. */
     public enum Reward {
         QUICKER_STREAMS(LiveRewards.QUICKER_STREAMS, Group.STREAMS, 94),
-        TWO_STREAMS(LiveRewards.TWO_STREAMS, Group.STREAMS, 140),
+        TWO_STREAMS(LiveRewards.TWO_STREAMS, Group.STREAMS, 100),
         VOICE_ON_STREAM(LiveRewards.VOICE_ON_STREAM, Group.STREAMS, 160),
         HD_STREAMS(LiveRewards.HD_STREAMS, Group.EXTRA, 90),
         REPLAYS_KEPT(LiveRewards.REPLAYS_KEPT, Group.EXTRA, 80),
@@ -168,6 +170,54 @@ public final class CommunityRewards {
         LiveRewards.Reward live = state.find(reward.id());
         return live != null && live.activeUntilMs() > now ? live.by() : "";
     }
+
+    // ---- amounts ----------------------------------------------------------------------------------
+
+    /** The relay's raised amount for {@code reward}, or empty when nothing raises it (or no quote came). */
+    static java.util.OptionalInt raisedAud(@Nullable LiveRewards.Quote quote) {
+        return quote != null && quote.raised() ? java.util.OptionalInt.of(quote.aud()) : java.util.OptionalInt.empty();
+    }
+
+    /** The rewards raising {@code quote}, in shelf order; ids this jar does not know are left out. */
+    static List<Reward> raisedBy(@Nullable LiveRewards.Quote quote) {
+        if (quote == null || !quote.raised()) return List.of();
+        List<Reward> out = new java.util.ArrayList<>();
+        for (Reward r : Reward.values()) if (quote.raisedBy().contains(r.id())) out.add(r);
+        return List.copyOf(out);
+    }
+
+    /** "$94", or the relay's raised amount: the Give buttons. */
+    public static net.minecraft.network.chat.Component amountShort(Reward reward) {
+        java.util.OptionalInt raised = raisedAud(LiveRewards.quote(reward.id()));
+        return raised.isPresent()
+                ? games.brennan.dungeontrain.client.support.currency.CurrencyFormat.amount(raised.getAsInt())
+                : games.brennan.dungeontrain.client.support.currency.CurrencyFormat.amount(reward.costAud(), reward.amountShortKey());
+    }
+
+    /** "$94 AUD", or the relay's raised amount in AUD: the payment confirm, which always names AUD. */
+    public static net.minecraft.network.chat.Component amountFull(Reward reward) {
+        java.util.OptionalInt raised = raisedAud(LiveRewards.quote(reward.id()));
+        return raised.isPresent()
+                ? net.minecraft.network.chat.Component.literal(
+                        games.brennan.dungeontrain.client.support.currency.DisplayCurrency.AUD.format(raised.getAsInt()) + " AUD")
+                : net.minecraft.network.chat.Component.translatable(reward.amountKey());
+    }
+
+    /** "Higher while Two Streams is on" under a raised reward's Give button, or null when nothing raises it. */
+    @Nullable
+    public static net.minecraft.network.chat.Component raisedLine(Reward reward) {
+        List<Reward> by = raisedBy(LiveRewards.quote(reward.id()));
+        if (by.isEmpty()) return null;
+        net.minecraft.network.chat.MutableComponent names = net.minecraft.network.chat.Component.empty();
+        for (int i = 0; i < by.size(); i++) {
+            if (i > 0) names.append(", ");
+            names.append(net.minecraft.network.chat.Component.translatable(by.get(i).nameKey()));
+        }
+        return net.minecraft.network.chat.Component.translatable(by.size() == 1 ? RAISED_ONE : RAISED_MANY, names);
+    }
+
+    static final String RAISED_ONE = KEY + "raised";
+    static final String RAISED_MANY = KEY + "raised_many";
 
     // ---- links ------------------------------------------------------------------------------------
 
