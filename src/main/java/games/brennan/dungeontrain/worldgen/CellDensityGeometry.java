@@ -163,11 +163,12 @@ public final class CellDensityGeometry {
         /**
          * World Y of the highest solid block at or below {@code startY} whose immediate neighbour above is
          * open — a floor something can stand on — or {@link Integer#MIN_VALUE} if there is none down to
-         * {@link #minY()}.
+         * {@link #minY()}. The top sampled row is the roof and never counts.
          */
         public int floorBelow(int startY) {
             int from = Math.min(startY, yHi);
-            boolean openAbove = from >= yHi || !isSolid(from + 1);
+            // The top row is the slab's roof: what lies above it is not sampled, so it is never a floor.
+            boolean openAbove = from < yHi && !isSolid(from + 1);
             for (int y = from; y >= yLo; y--) {
                 boolean solid = isSolid(y);
                 if (solid && openAbove) return y;

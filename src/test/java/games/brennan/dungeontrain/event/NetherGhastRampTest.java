@@ -163,4 +163,13 @@ final class NetherGhastRampTest {
         assertEquals(3, NetherMobSpawner.ghastCapFor(-1));
         assertEquals(3, NetherMobSpawner.ghastCapFor(Long.MIN_VALUE));
     }
+
+    @Test
+    @DisplayName("nothing spawns above the core roof: the top row is the last allowed height")
+    void noSpawnsAboveRoof() {
+        assertFalse(NetherMobSpawner.isAboveRoof(156, 156));
+        assertFalse(NetherMobSpawner.isAboveRoof(80, 156));
+        assertTrue(NetherMobSpawner.isAboveRoof(157, 156));
+        assertTrue(NetherMobSpawner.isAboveRoof(185, 156));
+    }
 }

@@ -32237,6 +32237,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-roof-ceiling",
+      "version": "0.1610.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Nether fix",
+      "summary": "A few small fixes in the Nether.",
+      "highlights": [],
+      "pr": 2424,
+      "date": "2026-10-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

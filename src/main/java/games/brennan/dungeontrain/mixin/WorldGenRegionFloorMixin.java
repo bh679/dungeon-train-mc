@@ -31,7 +31,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * way, so one guard here covers all of them. {@code addFreshEntity} covers structure-spawned mobs.</p>
  *
  * <p>The same seam keeps overworld decoration out of the Nether core ({@link OverworldDecorationGuard}) and,
- * inside the core's own feature pass, keeps standing blocks under incoming decoration ({@link StandingBlockKeep}).</p>
+ * inside the core's own feature pass, keeps standing blocks under incoming decoration ({@link StandingBlockKeep})
+ * and keeps decoration off the top of the core slab's roof ({@link NetherCoreDecoration#isAboveRoof}).</p>
  *
  * <p><b>A no-op wherever there is no basement.</b> In Compatible Terrain mode, the nether, the end and
  * any other mod's dimension the generator reaches the build floor, so {@code bedrockY} <i>is</i>
@@ -81,6 +82,10 @@ public abstract class WorldGenRegionFloorMixin {
         } else if (OverworldDecorationGuard.blocksWrite(pos.getX(), pos.getZ())) {
             cir.setReturnValue(false); // an overworld feature writing into the Nether core
         } else if (NetherCoreDecoration.isActive()) {
+            if (NetherCoreDecoration.isAboveRoof(pos.getY())) {
+                cir.setReturnValue(false); // Nether decoration landing on top of the core slab's roof
+                return;
+            }
             WorldGenRegion region = (WorldGenRegion) (Object) this;
             if (StandingBlockKeep.keeps(region.getBlockState(pos), state, region, pos)) {
                 cir.setReturnValue(false); // Nether decoration landing on a tree's vine anchor or chain
