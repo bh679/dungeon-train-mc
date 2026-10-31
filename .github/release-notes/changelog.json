@@ -32247,11 +32247,8 @@
         "world"
       ],
       "title": "Nether fix",
-      "summary": "The Nether's ceiling now looks and behaves like the real thing.",
-      "highlights": [
-        "Nothing grows on top of it any more.",
-        "No more ghasts drifting above it."
-      ],
+      "summary": "A few small fixes in the Nether.",
+      "highlights": [],
       "pr": 2424,
       "date": "2026-10-31",
       "released": false,
