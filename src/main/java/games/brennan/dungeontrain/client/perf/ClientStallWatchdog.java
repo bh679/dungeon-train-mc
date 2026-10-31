@@ -37,11 +37,16 @@ import java.util.Map;
  * manager has dropped it, so the sound system is the first suspect — and a render thread waiting on
  * the sound executor shows only the wait, not what the sound thread is doing.</p>
  *
+ * <h2>Getting the log home</h2>
+ * <p>When a dumped freeze ends, {@link LagReportPrompt} may offer in chat to send the log to the
+ * developer.</p>
+ *
  * <h2>Budget</h2>
  * <p>The same rules as the server's, for the same reason (the 512 KB log tail a bug report attaches):
  * a freeze from {@link #LONG_STALL_MS} is always dumped; a shorter one at most once per
- * {@link #SHORT_DUMP_COOLDOWN_MS} and {@link #MAX_SHORT_DUMPS} times per session; a freeze that
- * persists is re-dumped every {@link #REDUMP_COOLDOWN_MS}. See {@link #mayDump}.</p>
+ * {@link #SHORT_DUMP_COOLDOWN_MS} (only in-world dumps start that cooldown: a join's loading-screen
+ * freezes would otherwise hide the first in-world minute) and {@link #MAX_SHORT_DUMPS} times per
+ * session; a freeze that persists is re-dumped every {@link #REDUMP_COOLDOWN_MS}. See {@link #mayDump}.</p>
  *
  * <p>Cost: one volatile write per frame, and a sampler that sleeps 250 ms between reads of it. Stacks
  * are taken only inside a freeze already two seconds old. Never interrupts, never touches game state.
@@ -98,6 +103,8 @@ public final class ClientStallWatchdog {
 
     private static void sampleLoop(Thread render) {
         long frozenFrame = 0;      // lastFrameNanos of the frame the current report is about; 0 = none
+        long frozenSince = 0;      // wall clock the reported freeze began
+        boolean frozenInWorld = false;
         long lastProbeAt = 0;
         long lastShortDumpAt = NEVER;
         int shortDumps = 0;
@@ -109,8 +116,9 @@ public final class ClientStallWatchdog {
                 long stalled = (System.nanoTime() - frame) / 1_000_000L;
                 if (frozenFrame != 0 && frame != frozenFrame) {
                     // Both stamps are frame starts, so this is the frozen frame's length to the frame.
-                    LOGGER.warn("[DT-ClientStallWatchdog] render thread recovered after ~{} ms freeze",
-                        (frame - frozenFrame) / 1_000_000L);
+                    long freezeMs = (frame - frozenFrame) / 1_000_000L;
+                    LOGGER.warn("[DT-ClientStallWatchdog] render thread recovered after ~{} ms freeze", freezeMs);
+                    LagReportPrompt.onFreezeRecovered(freezeMs, frozenSince, frozenInWorld);
                     frozenFrame = 0;
                     lastProbeAt = 0;
                 }
@@ -120,11 +128,17 @@ public final class ClientStallWatchdog {
                 StackTraceElement[] stack = render.getStackTrace();
                 // The frame may have started between reading the clock and taking the stack.
                 if (lastFrameNanos != frame) continue;
-                dump(render, stack, stalled);
+                boolean inWorld = dump(render, stack, stalled);
                 lastProbeAt = now;
+                if (frozenFrame != frame) {
+                    frozenSince = now - stalled;
+                    frozenInWorld = inWorld;
+                }
                 frozenFrame = frame;
                 if (stalled < LONG_STALL_MS) {
-                    lastShortDumpAt = now;
+                    // Loading-screen freezes are routine on every join; letting them start the
+                    // cooldown would leave the first in-world minute, and its lag prompt, undumped.
+                    if (inWorld) lastShortDumpAt = now;
                     shortDumps++;
                     if (shortDumps == MAX_SHORT_DUMPS) {
                         LOGGER.warn("[DT-ClientStallWatchdog] {} short-freeze dumps written; freezes under {} ms are no longer dumped this session",
@@ -168,15 +182,17 @@ public final class ClientStallWatchdog {
         return false;
     }
 
-    private static void dump(Thread render, StackTraceElement[] stack, long stalledMs) {
+    /** Logs the dump; returns whether a world was loaded (the label's {@code inWorld}). */
+    private static boolean dump(Thread render, StackTraceElement[] stack, long stalledMs) {
         Minecraft mc = Minecraft.getInstance();
         // Racy reads from another thread, for the label only: the render thread is stuck, so these
         // are not changing under us, and a stale value costs nothing but a slightly wrong label.
         Screen screen = mc.screen;
+        boolean inWorld = mc.level != null;
         StringBuilder sb = new StringBuilder(4096);
         sb.append("[DT-ClientStallWatchdog] render thread frozen for ~").append(stalledMs)
             .append(" ms — state=").append(render.getState())
-            .append(", inWorld=").append(mc.level != null)
+            .append(", inWorld=").append(inWorld)
             .append(", screen=").append(screen == null ? "none" : screen.getClass().getSimpleName())
             .append(", osEventLoop=").append(isOsEventLoop(stack))
             .append(", stack:");
@@ -185,6 +201,7 @@ public final class ClientStallWatchdog {
         }
         appendSoundThread(sb);
         LOGGER.warn(sb.toString());
+        return inWorld;
     }
 
     private static void appendSoundThread(StringBuilder sb) {

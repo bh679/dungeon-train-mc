@@ -35,7 +35,8 @@ public final class ClientFreezeCommand {
 
     /** Headless seam ({@code -PclientFreeze=<ms>}): freeze once, this many ticks into the world. */
     private static final String SEAM_PROPERTY = "dungeontrain.clientFreezeMs";
-    private static final int SEAM_DELAY_TICKS = 200;
+    /** 40 s: past {@link LagReportPrompt#JOIN_GRACE_MS}, so the seam's freeze is offered for sending. */
+    private static final int SEAM_DELAY_TICKS = 800;
     private static int seamTicksInWorld;
     private static boolean seamFired;
 
