@@ -32054,6 +32054,23 @@
       "released": true,
       "released_in": "v0.1598.0",
       "released_at": "2026-10-29T11:48:20Z"
+    },
+    {
+      "id": "mild-words-no-strike",
+      "version": "0.1599.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Gentler stream chat filter",
+      "summary": "Everyday swearing like \"shit\" or \"bastard\" is still hidden from the stream, but it no longer earns a warning, mute or Live Eye ban. Slurs and the stronger words are filtered exactly as before.",
+      "highlights": [],
+      "pr": 2410,
+      "date": "2026-10-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
