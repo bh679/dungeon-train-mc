@@ -32237,6 +32237,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-roof-ceiling",
+      "version": "0.1610.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Nether fix",
+      "summary": "The Nether's ceiling now looks and behaves like the real thing.",
+      "highlights": [
+        "Nothing grows on top of it any more.",
+        "No more ghasts drifting above it."
+      ],
+      "pr": 2424,
+      "date": "2026-10-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
