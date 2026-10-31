@@ -1381,7 +1381,7 @@
   "gui.dungeontrain.support.tier.server_costs.name": "Serverkosten",
   "gui.dungeontrain.contribute.title": "Beitragen",
   "gui.dungeontrain.contribute.subtitle": "Jede Spende hält die Schienen beleuchtet und den Zug am Laufen.",
-  "gui.dungeontrain.contribute.group.dev": "EIN GESCHENK AN DEN DEV · DEIN NAME AN BORD",
+  "gui.dungeontrain.contribute.group.dev": "EIN GESCHENK AN DEN DEV",
   "gui.dungeontrain.contribute.group.everyone": "EIN GESCHENK AN ALLE",
   "gui.dungeontrain.contribute.keeps_on": "Für alle",
   "gui.dungeontrain.contribute.see_all": "Alle Belohnungen ansehen",

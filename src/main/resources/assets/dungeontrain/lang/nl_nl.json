@@ -1381,7 +1381,7 @@
   "gui.dungeontrain.support.tier.server_costs.name": "Serverkosten",
   "gui.dungeontrain.contribute.title": "Bijdragen",
   "gui.dungeontrain.contribute.subtitle": "Elke gift houdt de rails verlicht en de trein op gang.",
-  "gui.dungeontrain.contribute.group.dev": "EEN GIFT AAN DE DEV · JOUW NAAM AAN BOORD",
+  "gui.dungeontrain.contribute.group.dev": "EEN GIFT AAN DE DEV",
   "gui.dungeontrain.contribute.group.everyone": "EEN GIFT AAN IEDEREEN",
   "gui.dungeontrain.contribute.keeps_on": "Voor iedereen",
   "gui.dungeontrain.contribute.see_all": "Alle beloningen bekijken",

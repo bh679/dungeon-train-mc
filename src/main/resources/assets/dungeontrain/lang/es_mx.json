@@ -1381,7 +1381,7 @@
   "gui.dungeontrain.support.tier.server_costs.name": "Costos del servidor",
   "gui.dungeontrain.contribute.title": "Contribuir",
   "gui.dungeontrain.contribute.subtitle": "Cada regalo mantiene las vías encendidas y el tren en marcha.",
-  "gui.dungeontrain.contribute.group.dev": "UN REGALO PARA EL DEV · TU NOMBRE A BORDO",
+  "gui.dungeontrain.contribute.group.dev": "UN REGALO PARA EL DEV",
   "gui.dungeontrain.contribute.group.everyone": "UN REGALO PARA TODOS",
   "gui.dungeontrain.contribute.keeps_on": "Para todos",
   "gui.dungeontrain.contribute.see_all": "Ver todas las recompensas",

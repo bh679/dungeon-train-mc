@@ -1336,7 +1336,7 @@
   "gui.dungeontrain.support.tier.server_costs.name": "Gastos sa Server",
   "gui.dungeontrain.contribute.title": "Mag-ambag",
   "gui.dungeontrain.contribute.subtitle": "Bawat regalo ay nagpapanatiling maliwanag ang riles at tumatakbo ang tren.",
-  "gui.dungeontrain.contribute.group.dev": "REGALO SA DEV · ANG PANGALAN MO SA TREN",
+  "gui.dungeontrain.contribute.group.dev": "REGALO SA DEV",
   "gui.dungeontrain.contribute.group.everyone": "REGALO PARA SA LAHAT",
   "gui.dungeontrain.contribute.keeps_on": "Para sa lahat",
   "gui.dungeontrain.contribute.see_all": "Tingnan Lahat ng Gantimpala",

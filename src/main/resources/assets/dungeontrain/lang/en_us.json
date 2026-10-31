@@ -1557,7 +1557,7 @@
   "gui.dungeontrain.support.tier.server_costs.name": "Server Costs",
   "gui.dungeontrain.contribute.title": "Contribute",
   "gui.dungeontrain.contribute.subtitle": "Every gift keeps the rails lit and the train running.",
-  "gui.dungeontrain.contribute.group.dev": "A GIFT TO THE DEV · YOUR NAME ABOARD",
+  "gui.dungeontrain.contribute.group.dev": "A GIFT TO THE DEV",
   "gui.dungeontrain.contribute.group.everyone": "A GIFT TO EVERYONE",
   "gui.dungeontrain.contribute.keeps_on": "For everyone",
   "gui.dungeontrain.contribute.see_all": "See All Rewards",

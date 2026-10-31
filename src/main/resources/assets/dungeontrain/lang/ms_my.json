@@ -1336,7 +1336,7 @@
   "gui.dungeontrain.support.tier.server_costs.name": "Kos Pelayan",
   "gui.dungeontrain.contribute.title": "Sumbang",
   "gui.dungeontrain.contribute.subtitle": "Setiap hadiah memastikan landasan terus bercahaya dan kereta api terus bergerak.",
-  "gui.dungeontrain.contribute.group.dev": "HADIAH UNTUK DEV · NAMA ANDA DI ATAS KERETA API",
+  "gui.dungeontrain.contribute.group.dev": "HADIAH UNTUK DEV",
   "gui.dungeontrain.contribute.group.everyone": "HADIAH UNTUK SEMUA ORANG",
   "gui.dungeontrain.contribute.keeps_on": "Untuk semua",
   "gui.dungeontrain.contribute.see_all": "Lihat Semua Ganjaran",
