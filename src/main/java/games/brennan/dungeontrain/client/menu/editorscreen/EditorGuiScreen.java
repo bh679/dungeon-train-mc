@@ -157,6 +157,7 @@ public final class EditorGuiScreen extends Screen {
         RelayBuildPreviews.clear();
         games.brennan.dungeontrain.client.builder.WorkbenchPreviews.clear();
         games.brennan.dungeontrain.client.builder.StagePreviews.clear();
+        games.brennan.dungeontrain.client.builder.LivePlotPreview.clear();
         search.close();
         EditorCreatorBuilds.detach();
         BuilderProfileState.listenForDownloads(null);
@@ -1163,6 +1164,8 @@ public final class EditorGuiScreen extends Screen {
                 EditorScreenActions.Icon icon = detail.icons().get(hit.index());
                 if (!icon.enabled()) return false;
                 dispatch(icon.entry());
+                // Undo and redo move the blocks the model is showing once an offset has been pressed.
+                if (OffsetControls.movesBlocks(icon.id())) refreshLivePreview();
                 return true;
             }
             case ROW -> {
@@ -1171,6 +1174,18 @@ public final class EditorGuiScreen extends Screen {
             }
             case TEST_ICON -> {
                 dispatch(detail.testIcons().get(hit.index()).entry());
+                return true;
+            }
+            case OFFSET_ICON -> {
+                EditorScreenActions.Icon icon = detail.offsetIcons().get(hit.index());
+                if (!icon.enabled()) return false;
+                dispatch(icon.entry());
+                refreshLivePreview();
+                return true;
+            }
+            case OFFSET_DISTANCE -> {
+                inlineEdit.beginLocal(EditorScreenState::setOffsetDistance,
+                    String.valueOf(EditorScreenState.offsetDistance()), detail.offsetDistanceRect());
                 return true;
             }
             case TEST_ROW -> {
@@ -1288,6 +1303,16 @@ public final class EditorGuiScreen extends Screen {
         CommandRunner.run(uuid == null ? prefix + " none" : prefix + " " + uuid + " " + name);
         search.close();
         afterCommand();
+    }
+
+    /**
+     * Ask for the selected plot as its blocks now stand, after a press that moved them. Sent after
+     * the press's command, so the server captures the blocks where the command left them.
+     */
+    private void refreshLivePreview() {
+        EditorScreenActions.Ctx ctx = detail.ctx();
+        if (ctx == null || !ctx.standingInSelection()) return;
+        games.brennan.dungeontrain.client.builder.LivePlotPreview.request(ctx.selection().templateKey());
     }
 
     private void dispatch(CommandMenuEntry entry) {

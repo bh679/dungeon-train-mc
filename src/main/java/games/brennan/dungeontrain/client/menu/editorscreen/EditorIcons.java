@@ -30,6 +30,14 @@ public final class EditorIcons {
     public static final ResourceLocation TEST_RELOAD = mod("icon/test_reload");
     public static final ResourceLocation TEST_REROLL_MAIN = mod("icon/test_reroll_main");
     public static final ResourceLocation TEST_REROLL_OTHERS = mod("icon/test_reroll_others");
+    /** The toolbar's offset toggle, and the six directions of the row it opens. */
+    public static final ResourceLocation OFFSET = mod("icon/offset");
+    public static final ResourceLocation OFFSET_X_NEG = mod("icon/offset_x_neg");
+    public static final ResourceLocation OFFSET_X_POS = mod("icon/offset_x_pos");
+    public static final ResourceLocation OFFSET_Y_NEG = mod("icon/offset_y_neg");
+    public static final ResourceLocation OFFSET_Y_POS = mod("icon/offset_y_pos");
+    public static final ResourceLocation OFFSET_Z_NEG = mod("icon/offset_z_neg");
+    public static final ResourceLocation OFFSET_Z_POS = mod("icon/offset_z_pos");
     public static final ResourceLocation SEARCH = ResourceLocation.withDefaultNamespace("icon/search");
 
     private EditorIcons() {}
@@ -52,6 +60,13 @@ public final class EditorIcons {
             case "package", "open_files" -> PACKAGE;
             // Re-parenting is a group operation, so it wears the group sprite.
             case "move" -> GROUP;
+            case OffsetControls.TOGGLE -> OFFSET;
+            case "offset_x_neg" -> OFFSET_X_NEG;
+            case "offset_x_pos" -> OFFSET_X_POS;
+            case "offset_y_neg" -> OFFSET_Y_NEG;
+            case "offset_y_pos" -> OFFSET_Y_POS;
+            case "offset_z_neg" -> OFFSET_Z_NEG;
+            case "offset_z_pos" -> OFFSET_Z_POS;
             case "submit" -> SUBMIT;
             case "withdraw" -> WITHDRAW;
             // The stage overview: Refresh re-rolls like Reset re-rolls, Delete is the same bin.

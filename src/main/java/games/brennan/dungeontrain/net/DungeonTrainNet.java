@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "169";
+    public static final String PROTOCOL_VERSION = "170";
 
     private DungeonTrainNet() {}
 
@@ -325,6 +325,10 @@ public final class DungeonTrainNet {
         // composed on the server and drawn on the client. See StagePreviewRequestPacket.
         registrar.playToServer(StagePreviewRequestPacket.TYPE, StagePreviewRequestPacket.STREAM_CODEC, StagePreviewRequestPacket::handle);
         registrar.playToClient(StagePreviewPacket.TYPE, StagePreviewPacket.STREAM_CODEC, StagePreviewPacket::handle);
+        // The editor screen's model after an offset, undo or redo: the plot's blocks as they stand,
+        // not the saved file. See EditorPlotPreviewRequestPacket.
+        registrar.playToServer(EditorPlotPreviewRequestPacket.TYPE, EditorPlotPreviewRequestPacket.STREAM_CODEC, EditorPlotPreviewRequestPacket::handle);
+        registrar.playToClient(EditorPlotPreviewPacket.TYPE, EditorPlotPreviewPacket.STREAM_CODEC, EditorPlotPreviewPacket::handle);
         // Builds the relay has lost, asked for from in-world (/dtrebuild). The title-screen card
         // does the same work client-side, where there is no server to ask.
         registrar.playToServer(BuilderReconcileStartPacket.TYPE, BuilderReconcileStartPacket.STREAM_CODEC, BuilderReconcileStartPacket::handle);
