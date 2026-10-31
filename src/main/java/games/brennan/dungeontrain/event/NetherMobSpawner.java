@@ -358,7 +358,8 @@ public final class NetherMobSpawner {
             boolean inBand = NetherBand.heightRampAt(level, pos.getX()) > 0.0
                     && DisintegrationBand.middleRampAt(level, pos.getX()) <= 0.0;
             if (allowsGlowSquid(inBand, level.getBiome(pos).is(Biomes.LUSH_CAVES),
-                    level.getFluidState(pos).is(FluidTags.WATER), level.getRawBrightness(pos, 0))) {
+                    level.getFluidState(pos).is(FluidTags.WATER), level.getFluidState(pos.below()).is(FluidTags.WATER),
+                    level.getRawBrightness(pos, 0))) {
                 event.setResult(MobSpawnEvent.SpawnPlacementCheck.Result.SUCCEED);
             }
             return;
@@ -375,9 +376,13 @@ public final class NetherMobSpawner {
      * <p>Vanilla wants water at {@code y <= seaLevel - 33} (y 30), but the default world's floor is y 32,
      * so the band's lush caves, which list glow squid like lush caves everywhere, never got one. Only the
      * height is waived: the water and the full darkness vanilla asks for still apply.</p>
+     *
+     * <p>Vanilla is content with one block of water. The band's lush caves are full of shallow pools a squid
+     * flops out of, so here the block below must be water too: at least two deep.</p>
      */
-    static boolean allowsGlowSquid(boolean inNetherBand, boolean lushCave, boolean water, int rawBrightness) {
-        return inNetherBand && lushCave && water && rawBrightness == 0;
+    static boolean allowsGlowSquid(boolean inNetherBand, boolean lushCave, boolean water, boolean waterBelow,
+                                   int rawBrightness) {
+        return inNetherBand && lushCave && water && waterBelow && rawBrightness == 0;
     }
 
     private static void trySpawnNear(ServerLevel level, ServerPlayer player, RandomSource rng,
