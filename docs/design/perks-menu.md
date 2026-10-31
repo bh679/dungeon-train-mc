@@ -51,6 +51,26 @@ the older sections below disagree, this section wins.
 - **The Unlock Points counter** carries the web page's advancement icon; clicking it opens the
   advancements screen, and closing that comes back to the menu.
 
+## 0.1 Update 2026-10-27: the menu opens first on death
+
+Brennan's direction: the perks menu is the first thing a player sees after dying, before the death
+recap, and it only unlocks.
+
+- `DeathMomentScreen` hands over to `PerksScreen.openForDeath(NarrativeDeathScreen::new)`.
+- **Points page.** A life that put points into perks opens on a death page over the sky: only the stars
+  that held points, with full rings, "The points you carried" in the recap's voice, and
+  tiles along the bottom (points put in, perks powered, the perk with the most).
+  It never moves on by itself; Next Screen, Enter or Esc leave it (not Space, the jump key, and nothing
+  in its first second). Next Screen plays the **drain** (`DeathPerksPhase`): the framing fades, the rings empty, the rest of
+  the tree swings in and the menu fades in, all on the same sky. A click skips it.
+- **Unlock menu.** The tree as the next life starts it (no points): Unlock only, no Activate button and
+  no Active Points counter; a level can be raised without filling it first, since the points are gone.
+  Next Screen (top right) or Esc opens the recap; closing to the game is not possible while dead.
+- **Unlocks travel with Board anew.** Unlocks live on the player in the world's save, so
+  `DeathScreenLayoutHandler.launchWorld` captures them (`player/PendingPerks`) and
+  `perks/PerkCarryEvents` lands them on the new world's first login, on the same difficulty profile
+  only (Advancement Points are earned per profile).
+
 ## 1. What the game copies from the web page
 
 The web page is the look. The game menu is the same picture drawn with `GuiGraphics`, so the numbers
@@ -388,7 +408,7 @@ Supporting pieces, each its own small file (coding-style rule: many small files)
 - Pause menu entry: a "Perks" `DarkTintedButton` added in `ScreenEvent.Init.Post` for `PauseScreen`, the
   same hook `TitleScreenSupportButton` uses for the title screen. Hidden in Free Play? No: shown, the
   screen explains.
-- Death screens never open the menu (the UI handover note's decision stands).
+- Death screens open the menu first, unlocking only (section 0.1 withdraws the old "never").
 
 ### 8.2 Data read from PerkState **(assumes** the foundation's shape)
 

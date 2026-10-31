@@ -147,6 +147,25 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Sable: Ragdolls — third-party, REQUIRED. The ragdoll body a player leaves where they died
+# (ship/sable/DeathBodyRagdoll); a Sable sub-level, so both sides need it. All Rights Reserved in
+# every released jar, so never bundled. Floor = CurseForge's newest file (see gradle.properties).
+[[dependencies.${mod_id}]]
+    modId="sable_player_ragdoll"
+    type="required"
+    versionRange="[${sableragdolls_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+# Sable: Ragdoll - Patch — third-party, OPTIONAL. Render/compat fixes for Sable: Ragdolls; it needs
+# Ragdolls 0.7.5, which CurseForge does not carry, so it ships in the Modrinth pack only.
+[[dependencies.${mod_id}]]
+    modId="sable_player_ragdoll_patch"
+    type="optional"
+    versionRange="[${sableragdollpatch_min_version},)"
+    ordering="NONE"
+    side="BOTH"
+
 # Vista — third-party, REQUIRED. The TVs the Live Feed plays on; DT's antenna block implements its
 # broadcast seam and the viewer carriage template carries its blocks, so both sides need it.
 [[dependencies.${mod_id}]]

@@ -1,13 +1,11 @@
 package games.brennan.dungeontrain.compat;
 
 import games.brennan.dungeontrain.editor.TestCopyMobs;
-import games.brennan.dungeontrain.ship.ManagedShip;
-import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.ship.PlotWorldPositions;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Vector3d;
 
 /**
  * Where a VanillaBackport creaking heart really is, and whether it may wake its Creaking.
@@ -26,28 +24,19 @@ public final class CreakingHeartPositions {
 
     private CreakingHeartPositions() {}
 
-    /**
-     * World-space point of {@code pos} offset by ({@code dx},{@code dy},{@code dz}) within the block:
-     * the carriage's current position of it when {@code pos} is a plot block, else the point itself.
-     * {@code shipToWorld} mutates its argument, so it is handed a throwaway vector.
-     */
+    /** {@link PlotWorldPositions#worldPoint} for the heart. */
     public static Vec3 worldPoint(Level level, BlockPos pos, double dx, double dy, double dz) {
-        double x = pos.getX() + dx, y = pos.getY() + dy, z = pos.getZ() + dz;
-        if (!(level instanceof ServerLevel server)) return new Vec3(x, y, z);
-        ManagedShip ship = Shipyards.of(server).findAt(pos);
-        if (ship == null) return new Vec3(x, y, z);
-        Vector3d world = ship.shipToWorld(new Vector3d(x, y, z));
-        return new Vec3(world.x, world.y, world.z);
+        return PlotWorldPositions.worldPoint(level, pos, dx, dy, dz);
     }
 
-    /** {@link #worldPoint} at the block's centre. */
+    /** {@link PlotWorldPositions#worldCenter} for the heart. */
     public static Vec3 worldCenter(Level level, BlockPos pos) {
-        return worldPoint(level, pos, 0.5, 0.5, 0.5);
+        return PlotWorldPositions.worldCenter(level, pos);
     }
 
     /** The block containing the heart's world-space centre. */
     public static BlockPos worldBlock(Level level, BlockPos pos) {
-        return BlockPos.containing(worldCenter(level, pos));
+        return PlotWorldPositions.worldBlock(level, pos);
     }
 
     /** Whether the heart's {@code doMobSpawning} gate passes at {@code pos}. */

@@ -39,6 +39,7 @@ public final class PlayerMobSocialBridge {
         PlayerMobSocialHooks.install(new PlayerMobSocialHooks.GiftObserver() {
             @Override
             public void onMobGift(ServerPlayer recipient, UUID mobId) {
+                games.brennan.dungeontrain.event.RecentMobContacts.remember(recipient, mobId);
                 // A PlayerMob gifted the player an item (tossGift). mob -> player.
                 PlayerMobSocialTracker.recordMobGift(recipient, mobId);
                 RemoteEchoEncounters.onReceivedGift(recipient, mobId);
@@ -46,6 +47,7 @@ public final class PlayerMobSocialBridge {
 
             @Override
             public void onPlayerGift(ServerPlayer giver, UUID mobId) {
+                games.brennan.dungeontrain.event.RecentMobContacts.remember(giver, mobId);
                 // The player gave a PlayerMob an item it picked up (creditGift). player -> mob.
                 PlayerMobSocialTracker.recordPlayerGift(giver, mobId);
                 RemoteEchoEncounters.onGaveGift(giver, mobId);

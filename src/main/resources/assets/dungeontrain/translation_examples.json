@@ -17866,5 +17866,219 @@
         "7"
       ]
     }
+  },
+  "chat.dungeontrain.live_chat.translation": {
+    "1": {
+      "label": "the chat line's translation into the reader's language, as typed by the relay",
+      "examples": [
+        "the creeper got me again"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_chat.translation.named": {
+    "1": {
+      "label": "the name of the player or viewer who wrote the line",
+      "examples": [
+        "Alice"
+      ]
+    },
+    "2": {
+      "label": "the chat line's translation into the reader's language",
+      "examples": [
+        "the creeper got me again"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_chat.translation.original": {
+    "1": {
+      "label": "the line as it was typed, in its own language",
+      "examples": [
+        "苦力怕又炸了我一次"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_chat.translation.on": {
+    "1": {
+      "label": "the reader's language, named in itself",
+      "examples": [
+        "Deutsch"
+      ]
+    },
+    "2": {
+      "label": "the clickable settings path, already translated (chat.dungeontrain.live_chat.translation.path)",
+      "examples": [
+        "Options / Dungeon Train / Stream / Chat translations"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_for_seconds.one": {
+    "1": {
+      "label": "how many seconds the reward has left (1)",
+      "examples": [
+        "1"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_for_seconds.other": {
+    "1": {
+      "label": "how many seconds the reward has left",
+      "examples": [
+        "42",
+        "5"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_for_minutes.one": {
+    "1": {
+      "label": "how many minutes the reward has left (1)",
+      "examples": [
+        "1"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_for_minutes.other": {
+    "1": {
+      "label": "how many minutes the reward has left",
+      "examples": [
+        "35",
+        "5"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_for_hours.one": {
+    "1": {
+      "label": "how many hours the reward has left (1)",
+      "examples": [
+        "1"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_for_hours.other": {
+    "1": {
+      "label": "how many hours the reward has left",
+      "examples": [
+        "11",
+        "5"
+      ]
+    },
+    "2": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.on_until_tomorrow": {
+    "1": {
+      "label": "the name of the player who gave",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.death.question": {
+    "1": {
+      "label": "points put into perks this life",
+      "examples": [
+        "3",
+        "24"
+      ]
+    },
+    "2": {
+      "label": "how many perks held those points",
+      "examples": [
+        "1",
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.story.earned": {
+    "1": {
+      "label": "how many advancements earned this life, already worded (\"4 advancements\")",
+      "examples": [
+        "1 advancement",
+        "4 advancements"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.story.earned_points": {
+    "1": {
+      "label": "the unlock points they earned, already worded (\"7 unlock points\")",
+      "examples": [
+        "1 unlock point",
+        "7 unlock points"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.story.advancements.one": {
+    "1": {
+      "label": "advancements earned this life",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.story.advancements.other": {
+    "1": {
+      "label": "advancements earned this life",
+      "examples": [
+        "0",
+        "4"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.story.points.one": {
+    "1": {
+      "label": "unlock points earned this life",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.perks.story.points.other": {
+    "1": {
+      "label": "unlock points earned this life",
+      "examples": [
+        "0",
+        "7"
+      ]
+    }
   }
 }

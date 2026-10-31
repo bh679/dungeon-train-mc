@@ -19,6 +19,7 @@ import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.ship.sable.DeadRiderAnchors;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreeze;
 import games.brennan.dungeontrain.ship.sable.SableHoldingIndex;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
@@ -28,6 +29,7 @@ import games.brennan.dungeontrain.util.ThrottledLog;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -2162,7 +2164,9 @@ public final class TrainCarriageAppender {
     }
 
     public static void onLevelTick(ServerLevel level) {
-        List<ServerPlayer> players = level.players();
+        // Dead players on the death screen count as riders standing where they fell (world
+        // space) until they respawn, so the train carries on around them (DeadRiderAnchors).
+        List<ServerPlayer> players = DeadRiderAnchors.withDead(level);
         if (players.isEmpty()) return;
 
         // First, so every reader of the registry this tick (portal walk included) sees live
@@ -2347,12 +2351,15 @@ public final class TrainCarriageAppender {
             // enough backward travel, places the player outside the hold window
             // of the very group they stand in — Sable then culls the train from
             // under them (the "walked to the end of the train" report).
-            NearestGroup nearest = nearestGroup(train, player.getX(), player.getY(), player.getZ());
+            // A dead rider's body rides on with its carriage (for the client's trackers), but the
+            // line is measured from where they died, as if they still stood there.
+            Vec3 at = DeadRiderAnchors.anchorPos(player);
+            NearestGroup nearest = nearestGroup(train, at.x, at.y, at.z);
             boolean aabbNear = nearest != null && nearest.distSq() <= NEAR_RADIUS_SQ;
             boolean remote = false;
             int pIdx;
             if (aabbNear) {
-                pIdx = pIdxWithinGroup(nearest.carriage(), player, dims, groupSize);
+                pIdx = pIdxAt(nearest.carriage(), at, dims, groupSize);
             } else {
                 // Not within reach of any VISIBLE group — but are they on the line? A player
                 // who left the train and came back to the track elsewhere is exactly this:
@@ -2360,9 +2367,9 @@ public final class TrainCarriageAppender {
                 // their index from the line fix and let the lanes bring the train to them,
                 // as long as they are within the catch-up cap of what exists.
                 if (fix == null || corridor == null) continue;
-                if (!isCorridorNear(player.getY(), player.getZ(), corridor.railY() + 1, corridor.trackCenterZ())) continue;
+                if (!isCorridorNear(at.y, at.z, corridor.railY() + 1, corridor.trackCenterZ())) continue;
                 double minXNow = extrapolatedMinX(fix, tickNow, TrainMotionFreeze.frozenTicks(trainId));
-                int est = estimatePIdx(fix.anchor(), minXNow, player.getX(), groupSize, length, halfPadLen, TARGET_GAP_BLOCKS);
+                int est = estimatePIdx(fix.anchor(), minXNow, at.x, groupSize, length, halfPadLen, TARGET_GAP_BLOCKS);
                 Integer nearestAnchor = nearestRegisteredAnchor(registeredAnchors, est);
                 if (nearestAnchor == null) nearestAnchor = leadAnchorPIdx;
                 if (!withinRemoteCap(est, nearestAnchor, groupSize, REMOTE_CATCH_UP_MAX_GROUPS)) {
@@ -2376,7 +2383,7 @@ public final class TrainCarriageAppender {
 
             // Feeds the rider's pace and the train's lead for timed transition flatbeds — remote too, so a
             // player who has outrun the generated train still drives the claims ahead of them.
-            TransitionFlatbeds.observe(trainId, player.getUUID(), pIdx, player.getX(), tickNow);
+            TransitionFlatbeds.observe(trainId, player.getUUID(), pIdx, at.x, tickNow);
             if (!remote) {
                 UUID uuid = player.getUUID();
                 seenThisTick.add(uuid);
@@ -3903,7 +3910,7 @@ public final class TrainCarriageAppender {
     public static void holdWholeTrainForResume(ServerLevel level, UUID trainId, List<Trains.Carriage> train) {
         if (train == null || train.isEmpty()) return;
         Shipyard shipyard = Shipyards.of(level);
-        List<ServerPlayer> players = level.players();
+        List<ServerPlayer> players = DeadRiderAnchors.withDead(level);
         Set<UUID> current = FORCELOADED_BY_TRAIN.computeIfAbsent(trainId, k -> new HashSet<>());
         int held = 0;
         int skipped = 0;
@@ -3998,7 +4005,7 @@ public final class TrainCarriageAppender {
     public static boolean anyPlayerNearLoadedTrain(MinecraftServer server) {
         ServerLevel trainLevel = trainLevelOf(server);
         if (trainLevel == null) return false;
-        List<ServerPlayer> players = trainLevel.players();
+        List<ServerPlayer> players = DeadRiderAnchors.withDead(trainLevel);
         if (players.isEmpty()) return false;
         for (List<Trains.Carriage> train : Trains.byTrainId(trainLevel).values()) {
             for (Trains.Carriage c : train) {
@@ -4085,7 +4092,10 @@ public final class TrainCarriageAppender {
      * anchor first because the anchor itself is the ghost, while {@link #sweepDuplicateAnchors}
      * must NOT, because that anchor is legitimately registered to the surviving twin.</p>
      *
-     * <p>Known gap, pre-existing: world-space contents entities belonging to the deleted
+     * <p>Pets aboard are settled first ({@link CarriagePets}): sitting ones in a drifting carriage
+     * leave with its upload, the rest are sent to their owner.</p>
+     *
+     * <p>Known gap, pre-existing: other world-space contents entities belonging to the deleted
      * sub-level are not swept. A duplicated group already spawned duplicate mobs, and deleting
      * one twin leaves its mobs standing on the survivor — same behaviour as the ghost cleanup
      * has always had.</p>
@@ -4100,20 +4110,30 @@ public final class TrainCarriageAppender {
         // synchronous on the server thread (reading the still-live plot); only the return POST is
         // async. This plugs the SharedCarriageRegistry leak (removeSubLevel finally has a caller)
         // and frees the lease promptly instead of at the ~1h TTL.
+        Set<Entity> driftedPets = new HashSet<>();
+        List<CarriagePets.DriftFootprint> driftFootprints = new ArrayList<>();
         if (SharedCarriageRegistry.hasSubLevel(shipId)) {
             for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.bySubLevel(shipId)) {
                 boolean allowCapture = sharedCaptured < captureBudget;
+                CarriagePets.DriftFootprint footprint = CarriagePets.DriftFootprint.of(inst);
+                if (footprint != null) driftFootprints.add(footprint);
+                List<Entity> drifters = CarriagePets.sittingDrifters(level, ship, inst);
                 if (games.brennan.dungeontrain.event.SharedCarriageEvents.finalFlushAndReturn(inst, allowCapture)) {
                     sharedCaptured++;
+                    driftedPets.addAll(drifters);
                 } else if (!allowCapture && inst.hasPending()) {
                     sharedDeferred++;
                 }
             }
             SharedCarriageRegistry.removeSubLevel(shipId);
         }
+        // Sitting pets that just uploaded with their drifting carriage go with it; every other pet
+        // aboard goes to its owner rather than being stranded where the carriage was.
+        CarriagePets.settleBeforeRemoval(level, ship, driftedPets);
         // Drop any despawn snapshot this group was holding. The group is about to stop
         // existing, so its swept mobs have nowhere to come back to — leaving the file would
-        // strand it on disk until the next train wipe.
+        // strand it on disk until the next train wipe. Pets frozen in it go to their owner first.
+        CarriagePets.rescueFromSnapshot(level, shipId, driftFootprints);
         ContentsSnapshotStore.delete(level, shipId);
         // Tear down any force-load ticket on this anchor (mirror + Sable
         // ticket together) before deleting it.
@@ -5985,8 +6005,13 @@ public final class TrainCarriageAppender {
      */
     private static int pIdxWithinGroup(Trains.Carriage group, ServerPlayer player,
                                        CarriageDims dims, int groupSize) {
+        return pIdxAt(group, player.position(), dims, groupSize);
+    }
+
+    private static int pIdxAt(Trains.Carriage group, Vec3 at,
+                                       CarriageDims dims, int groupSize) {
         int enclosedStartOffset = (groupSize > 1) ? CarriagePlacer.halfPadLen(dims) : 0;
-        Vector3d local = new Vector3d(player.getX(), player.getY(), player.getZ());
+        Vector3d local = new Vector3d(at.x, at.y, at.z);
         group.ship().worldToShip(local);
         int slot = (int) Math.floor(
             (local.x - group.provider().getShipyardOrigin().getX() - enclosedStartOffset)
@@ -6603,8 +6628,9 @@ public final class TrainCarriageAppender {
             Integer bestEst = null;
             int bestDist = Integer.MAX_VALUE;
             for (ServerPlayer player : players) {
-                if (!isCorridorNear(player.getY(), player.getZ(), corridor.railY() + 1, corridor.trackCenterZ())) continue;
-                int est = estimatePIdx(fix.anchor(), minXNow, player.getX(), groupSize, dims.length(), halfPadLen, TARGET_GAP_BLOCKS);
+                Vec3 at = DeadRiderAnchors.anchorPos(player);
+                if (!isCorridorNear(at.y, at.z, corridor.railY() + 1, corridor.trackCenterZ())) continue;
+                int est = estimatePIdx(fix.anchor(), minXNow, at.x, groupSize, dims.length(), halfPadLen, TARGET_GAP_BLOCKS);
                 Integer nearestAnchor = nearestRegisteredAnchor(anchors, est);
                 if (nearestAnchor == null) continue;
                 if (!withinRemoteCap(est, nearestAnchor, groupSize, REMOTE_CATCH_UP_MAX_GROUPS)) continue;

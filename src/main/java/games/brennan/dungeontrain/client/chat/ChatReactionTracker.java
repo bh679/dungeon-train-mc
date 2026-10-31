@@ -49,7 +49,7 @@ public final class ChatReactionTracker {
 
     /** A tracked line: what it was printed from, what it shows now, and its reactions. */
     private static final class Line {
-        final Component source;
+        Component source; // swapped once by replaceLive: a live line's translation in place of it
         final boolean mine;
         final String snippet;
         Component shown;
@@ -166,6 +166,17 @@ public final class ChatReactionTracker {
         Component notice = Component.translatable(NOTICE_KEY, event.userName(), emoji, line.snippet)
             .withStyle(ChatFormatting.GRAY);
         mc.gui.getChat().addMessage(EmojiText.convert(notice).component());
+    }
+
+    /**
+     * A live line's source replaced in place — its translation swapped in (LiveChatTranslations) — and
+     * redrawn with its reaction chips kept. False when seq {@code seq} was never printed here, or fell out.
+     */
+    public static boolean replaceLive(long seq, Component next) {
+        Line line = LINES.get("live:" + seq);
+        if (line == null) return false;
+        line.source = next;
+        return redraw(line) >= 0;
     }
 
     /** Re-draws {@code line} from its source; returns the line's age in GUI ticks, -1 if gone. */

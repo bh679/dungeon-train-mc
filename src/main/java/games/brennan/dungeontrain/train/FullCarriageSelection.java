@@ -59,13 +59,16 @@ public final class FullCarriageSelection {
     }
 
     /**
-     * The Full shell for this run, or null when there is none to place — no Full shell with a
-     * weight, every one gated out, or a Full box this world cannot build.
+     * The Full shell for this run, or null when there is none to place — a portal group, no Full
+     * shell with a weight, every one gated out, or a Full box this world cannot build.
      */
     public static FullPick pick(ServerLevel level, int anchorPIdx, int groupSize, CarriageDims dims,
                                 long worldSeed, GateContext anchorGate) {
         Optional<CarriageDims> box = ContentsSize.FULL.shellDims(dims, groupSize);
         if (box.isEmpty() || groupSize != DungeonTrainConfig.getGroupSize()) return null;
+        // The layout draw doesn't know about portals. A Full shell stamped over a portal group buries
+        // its corridor, and its contents never roll (portal parts get none): an empty hall.
+        if (PortalCarriageSelection.isPortalGroup(level, anchorPIdx)) return null;
         CarriageWeights weights = CarriageWeights.current();
         List<String> fits = new ArrayList<>();
         for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {

@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.player.PendingInventory;
+import games.brennan.dungeontrain.player.PendingPerks;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.client.worldgen.PendingStartingDimension;
@@ -418,10 +419,15 @@ public final class DeathScreenLayoutHandler {
                 } else {
                     PendingInventory.clear();
                 }
+                // perk unlocks always travel to the next run (the points in them never do)
+                ServerPlayer perksOwner = localId == null ? null : server.getPlayerList().getPlayer(localId);
+                if (perksOwner != null) PendingPerks.capture(perksOwner);
+                else PendingPerks.clear();
                 result.complete(new CarriedRules(keep, immediateRespawn));
             } catch (Throwable t) {
                 LOGGER.warn("DeathScreenLayout: game-rule capture failed; new world will use defaults", t);
                 PendingInventory.clear();
+                PendingPerks.clear();
                 result.complete(CarriedRules.NONE);
             }
         });
@@ -483,6 +489,7 @@ public final class DeathScreenLayoutHandler {
         // prior (failed/abandoned) launchWorld may have left so it can't leak
         // into the next world the player loads from the title screen.
         PendingInventory.clear();
+        PendingPerks.clear();
         Minecraft mc = Minecraft.getInstance();
         MinecraftServer server = mc.getSingleplayerServer();
         String deadLevelId = deadRunLevelId(mc, server);
@@ -515,6 +522,7 @@ public final class DeathScreenLayoutHandler {
      */
     public static void quitToDesktop() {
         PendingInventory.clear();
+        PendingPerks.clear();
         Minecraft mc = Minecraft.getInstance();
         MinecraftServer server = mc.getSingleplayerServer();
         String deadLevelId = deadRunLevelId(mc, server);

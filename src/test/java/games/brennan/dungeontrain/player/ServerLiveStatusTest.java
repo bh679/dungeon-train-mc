@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.player;
 
+import com.google.gson.JsonObject;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -79,5 +80,29 @@ final class ServerLiveStatusTest {
         assertFalse(ServerLiveStatus.secondStreamLive(1, 0L, true, false, at, at - 200L, now), "one streamer");
         // The relay's own second always counts, whatever the local pair.
         assertTrue(ServerLiveStatus.secondStreamLive(2, at - 5_000L, true, true, at, at - 200L, now), "relay names the second");
+    }
+
+    @Test
+    void secondChannelFreeNeedsAFreshTwoStreamsAnswerAndNoSecondStream() {
+        long at = 1_000_000L, now = at + 1_000L, stale = at + ServerLiveStatus.STALE_MS + 1L;
+        assertTrue(ServerLiveStatus.secondChannelFree(1, true, false, at, now), "one streamer, Two Streams on");
+        assertTrue(ServerLiveStatus.secondChannelFree(0, true, false, at, now), "nobody here, Two Streams on");
+        assertFalse(ServerLiveStatus.secondChannelFree(1, false, false, at, now), "Two Streams off (or an older relay)");
+        assertFalse(ServerLiveStatus.secondChannelFree(1, true, true, at, now), "second stream on air");
+        assertFalse(ServerLiveStatus.secondChannelFree(2, true, false, at, now), "two streaming here");
+        assertFalse(ServerLiveStatus.secondChannelFree(1, true, false, at, stale), "stale answer");
+        assertFalse(ServerLiveStatus.secondChannelFree(1, true, false, 0L, now), "never answered");
+    }
+
+    @Test
+    void twoStreamsFlagReadsDefensively() {
+        JsonObject on = new JsonObject();
+        on.addProperty("twoStreams", true);
+        JsonObject bad = new JsonObject();
+        bad.add("twoStreams", new JsonObject());
+        assertTrue(ServerLiveStatus.twoStreamsIn(on));
+        assertFalse(ServerLiveStatus.twoStreamsIn(new JsonObject()), "absent");
+        assertFalse(ServerLiveStatus.twoStreamsIn(bad), "malformed");
+        assertFalse(ServerLiveStatus.twoStreamsIn(null));
     }
 }

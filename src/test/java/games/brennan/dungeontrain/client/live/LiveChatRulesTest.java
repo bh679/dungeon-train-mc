@@ -24,14 +24,13 @@ class LiveChatRulesTest {
     private static final UUID OTHER = UUID.fromString("66666666-2222-3333-4444-555555555555");
 
     @Test
-    @DisplayName("granted: the switch, not Kid mode, and streaming or a worn TV with someone live")
+    @DisplayName("granted: the switch, not Kid mode, and streaming or a worn TV, live or not")
     void granted() {
-        assertTrue(LiveChatRules.granted(true, false, true, false, false), "streaming");
-        assertTrue(LiveChatRules.granted(true, false, false, true, true), "TV + someone live");
-        assertFalse(LiveChatRules.granted(true, false, false, true, false), "TV but nobody live");
-        assertFalse(LiveChatRules.granted(true, false, false, false, true), "no TV, not streaming");
-        assertFalse(LiveChatRules.granted(false, false, true, true, true), "switch off");
-        assertFalse(LiveChatRules.granted(true, true, true, true, true), "Kid mode wins");
+        assertTrue(LiveChatRules.granted(true, false, true, false), "streaming");
+        assertTrue(LiveChatRules.granted(true, false, false, true), "TV, with or without anyone live");
+        assertFalse(LiveChatRules.granted(true, false, false, false), "no TV, not streaming");
+        assertFalse(LiveChatRules.granted(false, false, true, true), "switch off");
+        assertFalse(LiveChatRules.granted(true, true, true, true), "Kid mode wins");
     }
 
     @Test

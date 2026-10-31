@@ -302,8 +302,7 @@ public final class ContributePanel {
             ty += lh + 1;
         }
         if (CommunityRewards.active(state, reward, now)) {
-            Component status = Component.translatable("gui.dungeontrain.rewards.status.on_by",
-                    shortDate(state.find(reward.id()).activeUntilMs()),
+            Component status = onStatus(state.find(reward.id()).activeUntilMs(), now,
                     CommunityRewards.keptOnBy(state, reward, now));
             for (FormattedCharSequence l : font.split(status, textW)) {
                 out.add(new Text(l, textX, ty, COLOUR_ON, false));
@@ -500,6 +499,24 @@ public final class ContributePanel {
             return Component.translatable(reward.lineKey(), d.normal(), d.quick());
         }
         return Component.translatable(reward.lineKey());
+    }
+
+    /**
+     * The green "ON …" line of an active reward kept on by {@code by}: time left when it ends within a
+     * day ("ON for 11 more hours"), "ON until tomorrow" when it ends the next day, else its date
+     * ({@link RewardTimeLeft}). The card redraws every frame, so a short count ticks down live.
+     */
+    static Component onStatus(long untilMs, long now, String by) {
+        RewardTimeLeft.Left left = RewardTimeLeft.of(untilMs, now, ZoneId.systemDefault());
+        String countKey = RewardTimeLeft.countKey(left.kind());
+        if (countKey != null) {
+            return Component.translatable(countKey + "." + games.brennan.dungeontrain.narrative.PluralRules.category(locale(), left.count()),
+                    left.count(), by);
+        }
+        if (left.kind() == RewardTimeLeft.Kind.TOMORROW) {
+            return Component.translatable("gui.dungeontrain.rewards.status.on_until_tomorrow", by);
+        }
+        return Component.translatable("gui.dungeontrain.rewards.status.on_by", shortDate(untilMs), by);
     }
 
     static String shortDate(long ms) {
