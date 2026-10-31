@@ -377,10 +377,11 @@ public final class LiveModeration {
     public static Component evidenceLines(List<LiveModerationLadder.Evidence> evidence) {
         MutableComponent out = Component.empty();
         var words = LiveWordList.effective();
+        var mild = LiveWordList.mild();
         for (int i = 0; i < evidence.size(); i++) {
             final int n = i + 1;
             LiveModerationLadder.Evidence e = evidence.get(i);
-            String shown = games.brennan.dungeontrain.moderation.TextCensor.censor(e.text(), words).text();
+            String shown = games.brennan.dungeontrain.moderation.TextCensor.censor(e.text(), words, mild).text();
             if (shown.isBlank()) shown = String.join(", ", e.terms());
             out.append("\n").append(Component.literal(n + ". ").withStyle(ChatFormatting.DARK_GRAY))
                .append(Component.literal(shown).withStyle(ChatFormatting.GRAY))
