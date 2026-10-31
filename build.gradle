@@ -237,7 +237,7 @@ neoForge {
                 systemProperty 'dungeontrain.tvPoseSwap', 'true'
             }
             // Client-freeze seam: ./gradlew runClient -PquickWorld=… -PclientFreeze=3000 hangs the render
-            // thread once, 40 s into the world, so client/perf/ClientStallWatchdog's dump can be checked
+            // thread once, 10 min 10 s into the world, so client/perf/ClientStallWatchdog's dump can be checked
             // without typing /dt-client-freeze. Dev builds only (client/perf/ClientFreezeCommand).
             // -PlagReportClick=send|decline answers the "Lag detected" chat prompt that follows
             // (client/perf/LagReportPrompt).

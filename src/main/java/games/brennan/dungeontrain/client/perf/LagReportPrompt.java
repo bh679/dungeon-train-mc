@@ -34,7 +34,7 @@ import java.util.List;
  * told from a death-screen one. The server side ({@code BugReportSink}) is unchanged.</p>
  *
  * <p>It asks sparingly ({@link #shouldPrompt}): only for a freeze that began in a world the player
- * has been in for {@link #JOIN_GRACE_MS} (joining hitches are the norm, not news), at most once per
+ * has been in for {@link #JOIN_GRACE_MS} (ten minutes: joining hitches are the norm, not news), at most once per
  * {@link #PROMPT_COOLDOWN_MS}, and never again this session after a [No]. The buttons are
  * {@link ChatClick} actions, so there is no command to type.</p>
  */
@@ -44,10 +44,10 @@ public final class LagReportPrompt {
     private static final Logger LOGGER = LogUtils.getLogger();
     /** The buttons' action ({@link ChatClick}): {@code lag-log/send|decline/<prompt id>}. */
     static final String CLICK_ACTION = "lag-log";
-    /** No prompt for a freeze in the first this-many ms of a world: loading hitches are expected. */
-    static final long JOIN_GRACE_MS = 30_000;
+    /** No prompt until the player has been in the world this long: a short visit is not asked about. */
+    static final long JOIN_GRACE_MS = 10 * 60_000;
     /** At most one prompt this often. */
-    static final long PROMPT_COOLDOWN_MS = 10 * 60_000;
+    static final long PROMPT_COOLDOWN_MS = 30 * 60_000;
     /** {@code lastPromptAt} / {@code joinedAt} before the first. */
     static final long NEVER = -1;
     /** The upload's label; "Lag" so the server folds the spec in, as for a death-screen Lag answer. */
