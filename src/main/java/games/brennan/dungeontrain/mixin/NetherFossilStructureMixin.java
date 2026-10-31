@@ -13,8 +13,9 @@ import java.util.Optional;
 /**
  * Lets {@code minecraft:nether_fossil} generate in the Nether band's core. Vanilla finds its resting place
  * by walking down the chunk generator's noise column; in the band that column is the overworld mountain the
- * core replaces, so {@link BandFossilSiting#site} walks the core terrain instead. Outside the band this
- * returns untouched and vanilla's own siting runs.
+ * core replaces, so {@link BandFossilSiting#site} walks the core terrain instead, and its "no fossil here"
+ * stands (vanilla's walk would lay it on the slab's roof). Outside the band this returns untouched and
+ * vanilla's own siting runs.
  */
 @Mixin(NetherFossilStructure.class)
 public abstract class NetherFossilStructureMixin extends Structure {
@@ -28,6 +29,6 @@ public abstract class NetherFossilStructureMixin extends Structure {
                                          CallbackInfoReturnable<Optional<GenerationStub>> cir) {
         NetherFossilStructure self = (NetherFossilStructure) (Object) this;
         Optional<GenerationStub> banded = BandFossilSiting.site(context, self.height, this.biomes());
-        if (banded.isPresent()) cir.setReturnValue(banded);
+        if (banded != null) cir.setReturnValue(banded);   // in the core, even "no fossil" is the band's call
     }
 }

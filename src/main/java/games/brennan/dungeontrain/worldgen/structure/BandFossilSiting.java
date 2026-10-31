@@ -33,18 +33,25 @@ public final class BandFossilSiting {
 
     /** A fossil is a handful of blocks; it barely leaves its own chunk. */
     private static final int FOOTPRINT_RADIUS = 16;
+    /**
+     * Rows a fossil stands above the floor it is sited on (the tallest of vanilla's skeletons is 7). The walk
+     * starts this far under the slab's top, so no skeleton sticks out of the band's roof into the sky.
+     */
+    private static final int FOSSIL_HEADROOM = 8;
 
     private BandFossilSiting() {}
 
     /**
-     * The band's generation point for a fossil, or {@link Optional#empty()} to let vanilla's own siting
-     * run — which is what happens everywhere outside the band core, including the real Nether.
+     * The band's answer for a fossil: a generation point, {@link Optional#empty()} for "no fossil here", or
+     * {@code null} to let vanilla's own siting run — which is what happens everywhere outside the band core,
+     * including the real Nether. Inside the core a decline is final: vanilla's walk would read the overworld
+     * noise column the core replaces and lay the skeleton on the slab's roof.
      */
     public static Optional<Structure.GenerationStub> site(Structure.GenerationContext context,
                                                           HeightProvider height, HolderSet<Biome> biomes) {
         try {
             BandNetherStructures.Site band = BandNetherStructures.open(context, FOOTPRINT_RADIUS);
-            if (band == null) return Optional.empty();
+            if (band == null) return null;
 
             // Vanilla's draws, in vanilla's order.
             WorldgenRandom random = context.random();
@@ -56,7 +63,9 @@ public final class BandFossilSiting {
             if (!band.biomeAllows(biomes, worldX, worldZ)) return Optional.empty();
 
             // Vanilla's downward walk for open air resting on solid ground, run against the core terrain.
-            int groundY = band.column(worldX, worldZ).floorBelow(band.bandYInCore(netherY));
+            int startY = Math.min(band.bandYInCore(netherY),
+                    NetherStructureSiting.maxStructureY(band.bedY()) - FOSSIL_HEADROOM);
+            int groundY = band.column(worldX, worldZ).floorBelow(startY);
             if (groundY == Integer.MIN_VALUE) return Optional.empty();
 
             BlockPos start = new BlockPos(worldX, groundY, worldZ);
@@ -64,7 +73,7 @@ public final class BandFossilSiting {
                     NetherFossilPieces.addPieces(context.structureTemplateManager(), builder, random, start)));
         } catch (Throwable t) {
             SITE_ERRORS.error(LOGGER, "[DungeonTrain] Nether-fossil siting failed; leaving it to vanilla", t);
-            return Optional.empty();
+            return null;
         }
     }
 }
