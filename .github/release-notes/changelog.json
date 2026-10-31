@@ -32144,6 +32144,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "lush-cave-underground-lakes",
+      "version": "0.1604.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Underground lakes in some caves",
+      "summary": "Some lush caves deep inside the mountains were nearly dry. They now fill with proper underground lakes, deep in places, the way lush caves should. Only newly explored areas change.",
+      "highlights": [],
+      "date": "2026-10-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
