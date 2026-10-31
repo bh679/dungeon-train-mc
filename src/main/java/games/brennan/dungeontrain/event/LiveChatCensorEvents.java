@@ -48,12 +48,13 @@ public final class LiveChatCensorEvents {
             MinecraftServer server = event.getPlayer().getServer();
             if (!LiveModerationScope.serverActive(ServerLiveStatus.isAnyoneLive(server))) return;
             String raw = event.getMessage().getString();
-            TextCensor.Result r = TextCensor.censor(raw, LiveWordList.effective());
+            // Mild words are masked too, but only strike-list hits count against the player.
+            TextCensor.Result r = TextCensor.censor(raw, LiveWordList.effective(), LiveWordList.mild());
             // Links and phone numbers: hidden on the same scope, but never a strike.
             TextCensor.Result p = PatternCensor.censor(r.text());
             if (!r.changed() && !p.changed()) return;
             event.setMessage(Component.literal(p.text()));
-            if (r.changed()) LiveModeration.strike(event.getPlayer(), "chat_server", r.hits(), raw);
+            if (!r.hits().isEmpty()) LiveModeration.strike(event.getPlayer(), "chat_server", r.hits(), raw);
             if (p.changed()) LiveModeration.warnLinkHidden(event.getPlayer());
         } catch (Throwable t) {
             // Fail open: a filter fault must never eat a chat line.

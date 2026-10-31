@@ -37,9 +37,10 @@ import java.util.UUID;
  * everything is cleared at server stop, so the map cannot grow without bound.
  *
  * <p>What sets a mark: a player placing a block ({@code PlayerPlacedTrainBlockEvents}), and bamboo
- * growing on a carriage ({@code BambooStalkGrowthMixin}, {@code BambooSaplingGrowthMixin}) — growth is
- * not part of the train's build, so a stalk that grows out past the carriage breaks off like a
- * passenger's block instead of ploughing terrain. What clears
+ * growing on a carriage ({@code BambooStalkGrowthMixin}, {@code BambooSaplingGrowthMixin}), and a tree,
+ * huge fungus or huge mushroom growing on one ({@link GrowthContext}) — growth is not part of the
+ * train's build, so a stalk or branch that grows out past the carriage breaks off like a passenger's
+ * block instead of ploughing terrain. What clears
  * one: any change of block <em>type</em> at that cell, whatever caused it
  * ({@code SableBlockChangeGuardMixin}). A property flip — a door opening, a lamp lighting — keeps
  * the mark. Server thread only.</p>

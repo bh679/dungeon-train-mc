@@ -31879,9 +31879,9 @@
       "highlights": [],
       "pr": 2399,
       "date": "2026-10-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
     },
     {
       "id": "editor-plot-editor-base",
@@ -31898,9 +31898,9 @@
         "Go here on a named track, pillar, stairs or tunnel variant lands on that plot"
       ],
       "date": "2026-10-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
     },
     {
       "id": "piglin-fix",
@@ -31914,9 +31914,9 @@
       "highlights": [],
       "pr": 2402,
       "date": "2026-10-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
     },
     {
       "id": "editor-variant-doc-store",
@@ -31931,9 +31931,9 @@
       "highlights": [],
       "pr": 2403,
       "date": "2026-10-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
     },
     {
       "id": "worn-tv-who-is-live",
@@ -31948,9 +31948,9 @@
       "highlights": [],
       "pr": 2404,
       "date": "2026-10-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
     },
     {
       "id": "slimed-fix",
@@ -31965,6 +31965,143 @@
       "highlights": [],
       "pr": 2406,
       "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
+    },
+    {
+      "id": "train-tree-breakoff",
+      "version": "0.1594.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "Trees on the train snap off",
+      "summary": "Trees you grow on top of the train now break off when they hit a hill or tunnel, just like bamboo, dropping their wood instead of carving through the world.",
+      "highlights": [
+        "Works for trees, huge mushrooms and huge fungi grown on a carriage"
+      ],
+      "pr": 2405,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
+    },
+    {
+      "id": "trapped-dimensional-carriages",
+      "version": "0.1595.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "Two new dimensional carriages",
+      "summary": "Two new dimensional carriages can turn up further along the line. Watch your step.",
+      "highlights": [],
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1598.0",
+      "released_at": "2026-10-29T11:48:20Z",
+      "pr": 2408
+    },
+    {
+      "id": "ain-053-supporter-names",
+      "version": "0.1595.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot"
+      ],
+      "title": "Name update",
+      "summary": "More names.",
+      "highlights": [],
+      "pr": 2407,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1598.0",
+      "released_at": "2026-10-29T11:48:20Z"
+    },
+    {
+      "id": "crystal-fix",
+      "version": "0.1597.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Crystal fix",
+      "summary": "Fixed an issue with End Crystals.",
+      "highlights": [],
+      "pr": 2401,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1598.0",
+      "released_at": "2026-10-29T11:48:20Z"
+    },
+    {
+      "id": "photo-progress-chat",
+      "version": "0.1598.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Photo progress in chat",
+      "summary": "When a photo counts toward an advancement you have already discovered, chat now tells you how far along you are.",
+      "highlights": [],
+      "pr": 2409,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1598.0",
+      "released_at": "2026-10-29T11:48:20Z"
+    },
+    {
+      "id": "mild-words-no-strike",
+      "version": "0.1599.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Gentler stream chat filter",
+      "summary": "Everyday swearing like \"shit\" or \"bastard\" is still hidden from the stream, but it no longer earns a warning, mute or Live Eye ban. Slurs and the stronger words are filtered exactly as before.",
+      "highlights": [],
+      "pr": 2410,
+      "date": "2026-10-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "word-list-off-words",
+      "version": "0.1600.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Stream chat filter stays current",
+      "summary": "When a word is retired from the stream chat filter, it stops being hidden straight away, with no mod update needed.",
+      "highlights": [],
+      "pr": 2411,
+      "date": "2026-10-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "retire-unreachable-hidden-advancement",
+      "version": "0.1601.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Advancement cleanup",
+      "summary": "One hidden advancement that was out of reach in practice has been retired. It no longer counts toward completing the advancements.",
+      "highlights": [],
+      "pr": 2413,
+      "date": "2026-10-31",
       "released": false,
       "released_in": null,
       "released_at": null

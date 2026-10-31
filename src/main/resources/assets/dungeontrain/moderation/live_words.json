@@ -1,5 +1,5 @@
 {
-  "_note": "Baked floor for the Live Eye text filter (moderation/LiveWordList). Hand-curated for Twitch Hateful Conduct / adult-content risk plus the profanity a streamer would not want read out on air. Not taken from LDNOOBW or any other CC-BY list, so no attribution is owed; keep it that way. Kept deliberately small: the relay's GET /live/moderation/words overlay (same shape) carries the tunable bulk and never ships in the jar.",
+  "_note": "Baked floor for the Live Eye text filter (moderation/LiveWordList). Hand-curated for Twitch Hateful Conduct / adult-content risk plus the profanity a streamer would not want read out on air. Not taken from LDNOOBW or any other CC-BY list, so no attribution is owed; keep it that way. Kept deliberately small: the relay's GET /live/moderation/words overlay (same shape) carries the tunable bulk and never ships in the jar. mild[] is masked on the same scope but never a strike: profanity Twitch allows that a streamer would still rather not have on air.",
   "version": 1,
   "hard": [
     "nigger",
@@ -54,22 +54,12 @@
     "fucker",
     "fucking",
     "motherfucker",
-    "shit",
-    "bullshit",
     "cunt",
     "bitch",
-    "bastard",
-    "asshole",
-    "dick",
-    "dickhead",
-    "piss",
     "whore",
     "slut",
     "wanker",
     "cock",
-    "jackass",
-    "penis",
-    "vagina",
     "pussy",
     "cum"
   ],
@@ -88,6 +78,18 @@
   "phrases": [
     "anal sex",
     "oral sex"
+  ],
+  "mild": [
+    "shit",
+    "bullshit",
+    "piss",
+    "bastard",
+    "jackass",
+    "asshole",
+    "dick",
+    "dickhead",
+    "penis",
+    "vagina"
   ],
   "allow": [
     "nigeria",
