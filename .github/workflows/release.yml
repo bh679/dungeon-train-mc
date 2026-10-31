@@ -405,6 +405,7 @@ jobs:
             prickle(optional)
             durability-tooltip(optional)
             supermartijn642s-config-lib(optional)
+            potionlevelfix(optional)
             crash-assistant(optional)
             particle-effects(optional)
             advanced-shulkerboxes(optional)
