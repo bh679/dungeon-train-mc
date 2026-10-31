@@ -32215,6 +32215,28 @@
       "released": true,
       "released_in": "v0.1608.0",
       "released_at": "2026-10-31T11:52:46Z"
+    },
+    {
+      "id": "editor-offset-buttons",
+      "version": "0.1609.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Offset buttons in the editor",
+      "summary": "The editor's template toolbar has a new Offset button. It opens a row of arrows that slide every block in the plot you are standing in, with a box to set how far each press moves. The preview model updates as you press.",
+      "highlights": [
+        "Six arrows: left/right, down/up, and the two depth directions",
+        "Type a distance from 1 to 64 blocks per press",
+        "Blocks pushed past one side come back in on the other, and every press can be undone"
+      ],
+      "pr": 2423,
+      "date": "2026-10-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
