@@ -32234,9 +32234,9 @@
       ],
       "pr": 2423,
       "date": "2026-10-31",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1610.0",
+      "released_at": "2026-10-31T15:56:47Z"
     },
     {
       "id": "nether-roof-ceiling",
@@ -32251,9 +32251,9 @@
       "highlights": [],
       "pr": 2424,
       "date": "2026-10-31",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1610.0",
+      "released_at": "2026-10-31T15:56:47Z"
     }
   ]
 }
