@@ -351,9 +351,10 @@ public final class NetherCoreStamp {
         // (nylium / soul_sand-soil / basalt-blackstone). nether_wastes keeps plain netherrack. The whole
         // corridor lane is skipped so the train tunnel stays clean netherrack. Every upward-facing
         // netherrack surface in the column is skinned (like real Nether nylium); cells under lava/with no
-        // air above are left as netherrack.
+        // air above are left as netherrack. The band's top row is the roof, not a floor, so it is never
+        // skinned even where the sky is open above it.
         if (NetherSurfacePalette.hasSurface(coreBiome) && !inCorridorLane(worldZ, tg)) {
-            boolean airAbove = true;                 // the sampled band is open above yHi
+            boolean airAbove = false;                // yHi is the roof: its top face is never a floor
             int depth = SURFACE_SKIN_DEPTH;          // >= depth ⇒ not currently skinning a floor
             for (int y = yHi; y >= yLo; y--) {
                 boolean air = w.isAir(dx, y, dz);

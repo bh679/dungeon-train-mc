@@ -490,7 +490,8 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                                                      NetherBandContext bandCtx) {
         List<Holder<Biome>> biomes = coreChunkBiomes(server, cp, bandCtx);
         if (biomes.isEmpty()) return; // no biome resolvable (data pack stripped?) — never fail worldgen
-        NetherCoreDecoration.begin();   // decoration in here never replaces a standing block (StandingBlockKeep)
+        // Decoration in here never replaces a standing block (StandingBlockKeep) and never lands on the roof.
+        NetherCoreDecoration.begin(coreTopY(bandCtx, cp, bedY));
         try {
             placeCoreFeatures(level, generator, cp, bedY, bandCtx, biomes);
         } finally {
@@ -506,7 +507,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         // A Deeper Dark core is the whole Otherside slab instead (its features are calibrated to y0..128 too).
         boolean otherside = NetherCoreStamp.isOthersideColumn(bandCtx, cp.getMiddleBlockX(), cp.getMiddleBlockZ());
         int coreBottom = otherside ? OthersideCore.slabBottom(bedY) : bedY + (NETHER_SAMPLE_Y_MIN - NETHER_CENTER_Y);
-        int coreTop = otherside ? OthersideCore.slabTop(bedY) : bedY + (NETHER_SAMPLE_Y_MAX - NETHER_CENTER_Y);
+        int coreTop = coreTopY(bandCtx, cp, bedY);
         BlockPos origin = cp.getWorldPosition(); // chunk min corner; placement modifiers spread/raise from here
         WorldgenRandom random = new WorldgenRandom(new XoroshiroRandomSource(level.getSeed()));
         long decoSeed = random.setDecorationSeed(level.getSeed(), origin.getX(), origin.getZ());
@@ -568,6 +569,15 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             GenDeterminismLog.log("deco", "chunk=(%d,%d) biomes=%s decoSeed=%016x featureCount=%d placed=%d bedY=%d",
                     cp.x, cp.z, biomeKeys, decoSeed, featureIndex, placed, bedY);
         }
+    }
+
+    /**
+     * Top world Y of the stamped core slab over this chunk — the Nether band's roof (the Otherside's bedrock
+     * roof in a Deeper Dark pass). The feature pass is retargeted up to here, and nothing it writes may land above.
+     */
+    private static int coreTopY(NetherBandContext bandCtx, ChunkPos cp, int bedY) {
+        boolean otherside = NetherCoreStamp.isOthersideColumn(bandCtx, cp.getMiddleBlockX(), cp.getMiddleBlockZ());
+        return otherside ? OthersideCore.slabTop(bedY) : bedY + (NETHER_SAMPLE_Y_MAX - NETHER_CENTER_Y);
     }
 
     /**
