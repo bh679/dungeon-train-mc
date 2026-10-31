@@ -98,6 +98,19 @@ final class LiveWordListTest {
     }
 
     @Test
+    @DisplayName("a relay off[] term leaves the baked strike and mild lists, and round-trips through the cache")
+    void relayOffRetiresBakedWords() {
+        LiveWordList.Payload p = LiveWordList.parse("{\"ok\":true,\"word\":[\"zorp\"],\"off\":[\"Fuck\",\"shit\"]}");
+        assertEquals(List.of("Fuck", "shit"), p.off());
+        assertEquals(p, LiveWordList.parse(LiveWordList.toJson(p)));
+        LiveWordList.setRelayForTest(p);
+        TextCensor.Result r = TextCensor.censor("fuck shit zorp bitch", LiveWordList.effective(), LiveWordList.mild());
+        assertEquals("fuck shit **** ****", r.text());
+        assertEquals(List.of("zorp", "bitch"), r.hits());
+        assertEquals(List.of(), LiveWordList.parse("{\"ok\":true,\"word\":[\"zorp\"]}").off());
+    }
+
+    @Test
     @DisplayName("garbage, a non-ok body and an impossible ladder are dropped, never thrown")
     void defensiveParse() {
         assertEquals(LiveWordList.Payload.EMPTY, LiveWordList.parse("not json"));

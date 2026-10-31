@@ -39,6 +39,10 @@ import java.util.Set;
  * <p>{@code mild[]} is the profanity Twitch allows but a streamer would rather not have on air: {@link #mild()}
  * masks it on the same scope, but it is never a strike. A mild term wins over every other bucket, so a word
  * still listed under {@code word[]} by an older relay or cache stays strike-free.</p>
+ *
+ * <p>{@code off[]} (relay only) names words an operator switched off or took off the Live Eye on the relay's
+ * word-list page: they are dropped from every bucket, the baked floor included, so a jar never keeps
+ * masking or striking a word the relay has retired.</p>
  */
 public final class LiveWordList {
 
@@ -60,8 +64,8 @@ public final class LiveWordList {
 
     /** One parsed list body. */
     public record Payload(int version, List<String> hard, List<String> word, List<String> cjk,
-                          List<String> phrases, List<String> mild, List<String> allow, Ladder ladder) {
-        public static final Payload EMPTY = new Payload(0, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null);
+                          List<String> phrases, List<String> mild, List<String> off, List<String> allow, Ladder ladder) {
+        public static final Payload EMPTY = new Payload(0, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null);
 
         boolean hasTerms() {
             return !hard.isEmpty() || !word.isEmpty() || !cjk.isEmpty() || !phrases.isEmpty();
@@ -155,21 +159,28 @@ public final class LiveWordList {
         }
     }
 
-    /** The strike list of {@code a} merged with {@code b}, every mild term of either left out. */
+    /** The strike list of {@code a} merged with {@code b}, every mild or off term of either left out. */
     static CompiledWords compile(Payload a, Payload b) {
         return compileBoth(a, b).strike();
     }
 
     static Compiled compileBoth(Payload a, Payload b) {
-        List<String> mild = concat(a.mild(), b.mild());
-        Set<String> mildFolded = new HashSet<>();
-        for (String t : mild) mildFolded.add(TextNormalizer.normalizeTerm(t));
+        Set<String> off = folded(concat(a.off(), b.off()));
+        List<String> mild = without(concat(a.mild(), b.mild()), off);
+        Set<String> notStrike = folded(mild);
+        notStrike.addAll(off);
         List<String> allow = concat(a.allow(), b.allow());
         CompiledWords strike = new CompiledWords(
-            without(concat(a.word(), b.word()), mildFolded), without(concat(a.hard(), b.hard()), mildFolded),
-            concat(a.cjk(), b.cjk()), concat(a.phrases(), b.phrases()), allow);
+            without(concat(a.word(), b.word()), notStrike), without(concat(a.hard(), b.hard()), notStrike),
+            without(concat(a.cjk(), b.cjk()), off), without(concat(a.phrases(), b.phrases()), off), allow);
         CompiledWords mildWords = new CompiledWords(mild, List.of(), List.of(), List.of(), allow);
         return new Compiled(strike, mildWords);
+    }
+
+    private static Set<String> folded(List<String> terms) {
+        Set<String> out = new HashSet<>();
+        for (String t : terms) out.add(TextNormalizer.normalizeTerm(t));
+        return out;
     }
 
     private static List<String> without(List<String> terms, Set<String> folded) {
@@ -197,7 +208,7 @@ public final class LiveWordList {
             if (o.has("ok") && o.get("ok").isJsonPrimitive() && !o.get("ok").getAsBoolean()) return Payload.EMPTY;
             int version = o.has("version") && o.get("version").isJsonPrimitive() ? o.get("version").getAsInt() : 0;
             return new Payload(version, terms(o, "hard"), terms(o, "word"), terms(o, "cjk"),
-                terms(o, "phrases"), terms(o, "mild"), terms(o, "allow"), ladder(o));
+                terms(o, "phrases"), terms(o, "mild"), terms(o, "off"), terms(o, "allow"), ladder(o));
         } catch (Exception e) {
             return Payload.EMPTY;
         }
@@ -252,6 +263,7 @@ public final class LiveWordList {
         o.add("cjk", array(p.cjk()));
         o.add("phrases", array(p.phrases()));
         o.add("mild", array(p.mild()));
+        o.add("off", array(p.off()));
         o.add("allow", array(p.allow()));
         if (p.ladder() != null) {
             JsonObject l = new JsonObject();
