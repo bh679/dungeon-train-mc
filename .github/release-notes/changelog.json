@@ -32120,9 +32120,9 @@
       "highlights": [],
       "pr": 2415,
       "date": "2026-10-31",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1608.0",
+      "released_at": "2026-10-31T11:52:46Z"
     },
     {
       "id": "potionlevelfix-modpack",
@@ -32141,9 +32141,9 @@
       ],
       "pr": 2417,
       "date": "2026-10-31",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1608.0",
+      "released_at": "2026-10-31T11:52:46Z"
     },
     {
       "id": "lush-cave-underground-lakes",
@@ -32157,9 +32157,9 @@
       "summary": "Some lush caves deep inside the mountains were nearly dry. They now fill with proper underground lakes, deep in places, the way lush caves should. Only newly explored areas change.",
       "highlights": [],
       "date": "2026-10-31",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1608.0",
+      "released_at": "2026-10-31T11:52:46Z"
     },
     {
       "id": "lag-report-prompt",
@@ -32175,9 +32175,9 @@
       "highlights": [],
       "pr": 2419,
       "date": "2026-10-31",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1608.0",
+      "released_at": "2026-10-31T11:52:46Z"
     },
     {
       "id": "hidden-advancement-unlock-fix",
@@ -32192,9 +32192,9 @@
       "highlights": [],
       "pr": 2421,
       "date": "2026-10-31",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1608.0",
+      "released_at": "2026-10-31T11:52:46Z"
     },
     {
       "id": "community-reward-dynamic-amounts",
@@ -32212,9 +32212,9 @@
       ],
       "pr": 2420,
       "date": "2026-10-31",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1608.0",
+      "released_at": "2026-10-31T11:52:46Z"
     }
   ]
 }
