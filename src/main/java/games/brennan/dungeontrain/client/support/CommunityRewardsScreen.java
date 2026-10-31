@@ -347,6 +347,9 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         ty += 2;
         ty += 2;
         ty = wrap(ContributePanel.lineOf(r), tx, ty, tw, COLOUR_LINE);
+        // Other rewards being on cost this one more to run, so the relay asked more: say which.
+        Component raised = CommunityRewards.raisedLine(r);
+        if (raised != null) ty = wrap(raised, tx, ty + 2, tw, COLOUR_SUB);
         return ty - y + 4 + GIVE_H + PAD;
     }
 

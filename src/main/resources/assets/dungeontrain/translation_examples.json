@@ -17528,7 +17528,25 @@
       "label": "the gift amount, figure only",
       "examples": [
         "$94",
-        "$140"
+        "$100"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.raised": {
+    "1": {
+      "label": "a Community Reward's name",
+      "examples": [
+        "Two Streams",
+        "Quicker Streams"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.raised_many": {
+    "1": {
+      "label": "two or more Community Reward names, comma separated",
+      "examples": [
+        "Two Streams, Quicker Streams",
+        "Two Streams, HD Streams"
       ]
     }
   },
