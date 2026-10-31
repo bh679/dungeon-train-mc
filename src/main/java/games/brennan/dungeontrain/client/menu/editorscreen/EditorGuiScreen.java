@@ -1173,6 +1173,12 @@ public final class EditorGuiScreen extends Screen {
                 dispatch(detail.testIcons().get(hit.index()).entry());
                 return true;
             }
+            case OFFSET_ICON -> {
+                EditorScreenActions.Icon icon = detail.offsetIcons().get(hit.index());
+                if (!icon.enabled()) return false;
+                dispatch(icon.entry());
+                return true;
+            }
             case TEST_ROW -> {
                 dispatchAt(detail.testRows().get(hit.index()), hit.sub());
                 return true;

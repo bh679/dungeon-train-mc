@@ -43,9 +43,11 @@ public final class EditorDetailPane {
     static final int DIM_TEXT = 0xB0FFFFFF;
     static final int DISABLED = 0x30FFFFFF;
     static final int DISABLED_ICON = 0x60FFFFFF;
+    /** The offset arrow while its row is open: a warm gold, unlike any state colour the toolbar uses. */
+    static final int OFFSET_OPEN_TINT = 0xFFFFD35C;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT, LOOT_ITEM, EDIT_NOTE, BLOCK_GROUP, TEST_ICON, TEST_ROW }
+    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT, LOOT_ITEM, EDIT_NOTE, BLOCK_GROUP, TEST_ICON, TEST_ROW, OFFSET_ICON }
 
     private final VersionStrip versions = new VersionStrip();
     /** The relay row of the selected template, and the version of it being shown (0 = as it is now). */
@@ -118,12 +120,16 @@ public final class EditorDetailPane {
     private List<EditorScreenActions.Icon> testIcons = List.of();
     private List<CommandMenuEntry> testRows = List.of();
     private int[] testIconX = new int[0];
+    /** While the toolbar's arrow has it open: the offset row, one button per direction. */
+    private List<EditorScreenActions.Icon> offsetIcons = List.of();
+    private int[] offsetIconX = new int[0];
 
     public Hit hovered() { return hovered; }
     public List<EditorScreenActions.Icon> icons() { return icons; }
     public List<CommandMenuEntry> rows() { return rows; }
     public List<EditorScreenActions.Icon> testIcons() { return testIcons; }
     public List<CommandMenuEntry> testRows() { return testRows; }
+    public List<EditorScreenActions.Icon> offsetIcons() { return offsetIcons; }
     public CommandMenuEntry testEntry() { return test; }
 
     /** The Reseed cell beside the test button — the world switch, or in a test the re-roll button. */
@@ -142,8 +148,13 @@ public final class EditorDetailPane {
     public void layout(InventoryEditorLayout layout, EditorScreenActions.Ctx ctx, long nowMillis) {
         // A running test takes a row under the editing toolbar for its own; the model gives it room.
         testing = PortalTestSessionState.active();
-        this.layout = testing ? layout.withTestRow() : layout;
+        // The offset row gives way to a test: the author stands in the test copy, not the plot, and
+        // the floor-size pane has no room for both rows above the sheet.
+        boolean offsetOpen = EditorScreenState.offsetRowOpen() && ctx.hasSelection() && !testing;
+        this.layout = testing ? layout.withTestRow() : offsetOpen ? layout.withOffsetRow() : layout;
         layout = this.layout;
+        offsetIcons = offsetOpen ? OffsetControls.icons(ctx.standingInSelection()) : List.of();
+        offsetIconX = layoutOffsetIcons(offsetIcons.size(), layout.offsetIcons().x());
         testIcons = testing ? TestModeControls.icons() : List.of();
         testRows = testing ? TestModeControls.rows() : List.of();
         testIconX = layoutTestIcons(testIcons.size(), layout.testIcons().x());
@@ -229,6 +240,18 @@ public final class EditorDetailPane {
         int x = x0;
         for (int i = 0; i < count; i++) {
             if (i == 2) x += ICON_GROUP_GAP;
+            xs[i] = x;
+            x += ICON_CELL + ICON_GAP;
+        }
+        return xs;
+    }
+
+    /** Where each offset button starts: full-size cells, the three axes' pairs apart from each other. */
+    static int[] layoutOffsetIcons(int count, int x0) {
+        int[] xs = new int[count];
+        int x = x0;
+        for (int i = 0; i < count; i++) {
+            if (i > 0 && i % 2 == 0) x += ICON_GROUP_GAP;
             xs[i] = x;
             x += ICON_CELL + ICON_GAP;
         }
@@ -440,8 +463,18 @@ public final class EditorDetailPane {
         }
         if (pages.hasPager()) drawPager(g, font);
         drawIcons(g);
+        drawOffsetIcons(g);
         drawTestIcons(g);
         drawTest(g, font);
+    }
+
+    /** The offset row, drawn like the editing toolbar it opens from; off while not standing in the plot. */
+    private void drawOffsetIcons(GuiGraphics g) {
+        if (offsetIcons.isEmpty()) return;
+        int hov = hovered.kind() == HitKind.OFFSET_ICON ? hovered.index() : -1;
+        DetailPainters.drawIconStrip(g, offsetIcons, offsetIconX, ICON_CELL, layout.offsetIcons().y(), hov,
+            i -> false,
+            i -> !offsetIcons.get(i).enabled() ? DISABLED_ICON : i == hov ? DetailPainters.HOVER_INK : 0);
     }
 
     /** The test toolbar, drawn like the editing one above it. */
@@ -586,6 +619,8 @@ public final class EditorDetailPane {
         boolean hov = hovered.kind() == HitKind.ICON && hovered.index() == i;
         if (!icon.enabled()) return DISABLED_ICON;
         if ("save".equals(icon.id())) return EditorSaveStatus.tint(ctx.dirty(), System.currentTimeMillis());
+        // Lit while its row is open, so the arrow says what pressing it again will do.
+        if (OffsetControls.TOGGLE.equals(icon.id()) && !offsetIcons.isEmpty()) return OFFSET_OPEN_TINT;
         if ("submit".equals(icon.id()) || "withdraw".equals(icon.id())) {
             return SubmitTint.of("withdraw".equals(icon.id()), System.currentTimeMillis());
         }
@@ -717,6 +752,12 @@ public final class EditorDetailPane {
                 case NONE -> Hit.NONE;
             };
         }
+        InventoryEditorLayout.Rect or = layout.offsetIcons();
+        if (!offsetIcons.isEmpty() && my >= or.y() && my < or.y() + ICON_CELL) {
+            for (int i = 0; i < offsetIconX.length; i++) {
+                if (mx >= offsetIconX[i] && mx < offsetIconX[i] + ICON_CELL) return new Hit(HitKind.OFFSET_ICON, i, 0);
+            }
+        }
         InventoryEditorLayout.Rect tr = layout.testIcons();
         if (testing && my >= tr.y() && my < tr.y() + ICON_CELL) {
             for (int i = 0; i < testIconX.length; i++) {
@@ -795,6 +836,12 @@ public final class EditorDetailPane {
                 yield List.of(EditorScreenLang.text(icon.labelKey()), icon.detail());
             }
             case TEST_ROW -> List.of(EditorScreenLang.text(EditorScreenLang.TEST_SETTINGS_TIP));
+            case OFFSET_ICON -> {
+                if (hit.index() < 0 || hit.index() >= offsetIcons.size()) yield List.of();
+                EditorScreenActions.Icon icon = offsetIcons.get(hit.index());
+                String label = EditorScreenLang.text(icon.labelKey());
+                yield List.of(label, icon.enabled() ? icon.detail() : EditorScreenLang.text(icon.disabledKey()));
+            }
             case BLOCK_GROUP -> {
                 var player = net.minecraft.client.Minecraft.getInstance().player;
                 yield BlocksPage.tooltip(blockEntries, hit.index(), blocksLive,

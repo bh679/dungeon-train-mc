@@ -109,7 +109,7 @@ final class EditorScreenActionsTest {
         VariantKey k = VariantKey.of(PlotCategory.CARRIAGES, "windowed", "windowed");
         EditorScreenActions.Ctx c = ctx(k, gated("CARRIAGES", "windowed", "windowed", 20, List.of()), k, PlotCategory.CARRIAGES);
         Map<String, EditorScreenActions.Icon> icons = iconsById(c, new ArrayList<>());
-        assertEquals(List.of("save", "rename", "move", "remove", "undo", "redo", "open_files", "reset", "clear", "submit"),
+        assertEquals(List.of("save", "rename", "move", "remove", "undo", "redo", "offset", "open_files", "reset", "clear", "submit"),
             new ArrayList<>(icons.keySet()));
         assertEquals("dungeontrain save", command(icons.get("save").entry()));
         assertInstanceOf(CommandMenuEntry.TypeArg.class, icons.get("rename").entry());

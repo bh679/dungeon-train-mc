@@ -132,7 +132,7 @@ public final class EditorScreenActions {
     }
 
     /**
-     * Save · Rename · Move · Remove | Undo · Redo | Open files | (contents: Reroll carriage) | Reset ·
+     * Save · Rename · Move · Remove | Undo · Redo · Offset | Open files | (contents: Reroll carriage) | Reset ·
      * Clear | Submit, in that order.
      *
      * <p>{@code relayId} is the selected template's row on the relay, which the pane it is drawn in
@@ -166,6 +166,8 @@ public final class EditorScreenActions {
             EditorHistoryState.undoLabel(), EditorScreenLang.UNDO_NOTHING));
         out.add(historyIcon("redo", EditorScreenLang.ICON_REDO, "dungeontrain editor redo",
             EditorHistoryState.redoLabel(), EditorScreenLang.REDO_NOTHING));
+        // Sliding the build is an edit like the two before it; the arrow only opens the row of directions.
+        out.add(OffsetControls.toggleIcon(ctx.hasSelection()));
 
         out.add(openFilesIcon(ctx));
 
