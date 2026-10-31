@@ -143,12 +143,14 @@ public record InventoryEditorLayout(
     }
 
     /**
-     * This layout with the offset row the toolbar's arrow opens, straight under the editing row so
-     * it reads as that button's, made room for the way {@link #withTestRow} is. Never both: the
-     * offset row gives way while a test runs.
+     * This layout with the offset row the toolbar's arrow opens, straight under the editing row's
+     * {@code cell}-sized buttons and as tall as them, so it reads as that button's; made room for
+     * the way {@link #withTestRow} is. Never both: the offset row gives way while a test runs.
      */
-    public InventoryEditorLayout withOffsetRow() {
-        Rect row = rowUnder(icons);
+    public InventoryEditorLayout withOffsetRow(int cell) {
+        // Under the buttons as drawn, not the row's full height: a toolbar squeezed to smaller
+        // buttons would otherwise leave a gap between the arrow and the row it opened.
+        Rect row = new Rect(icons.x(), icons.y() + cell + 1, icons.w(), cell);
         return new InventoryEditorLayout(tabs, panel, filter, categoryStrip, typeStrip, grid,
             header, previewUnder(row), sheet, icons, settings, test, tile, testIcons, row);
     }

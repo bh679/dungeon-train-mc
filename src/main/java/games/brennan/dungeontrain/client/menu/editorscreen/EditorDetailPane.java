@@ -45,9 +45,11 @@ public final class EditorDetailPane {
     static final int DISABLED_ICON = 0x60FFFFFF;
     /** The offset arrow while its row is open: a warm gold, unlike any state colour the toolbar uses. */
     static final int OFFSET_OPEN_TINT = 0xFFFFD35C;
+    /** The offset row's distance box: never narrower than a two-digit step. */
+    static final int OFFSET_DISTANCE_MIN_W = 16;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT, LOOT_ITEM, EDIT_NOTE, BLOCK_GROUP, TEST_ICON, TEST_ROW, OFFSET_ICON }
+    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT, LOOT_ITEM, EDIT_NOTE, BLOCK_GROUP, TEST_ICON, TEST_ROW, OFFSET_ICON, OFFSET_DISTANCE }
 
     private final VersionStrip versions = new VersionStrip();
     /** The relay row of the selected template, and the version of it being shown (0 = as it is now). */
@@ -123,6 +125,8 @@ public final class EditorDetailPane {
     /** While the toolbar's arrow has it open: the offset row, one button per direction. */
     private List<EditorScreenActions.Icon> offsetIcons = List.of();
     private int[] offsetIconX = new int[0];
+    /** The offset row's distance box, or null while the row is shut. */
+    private InventoryEditorLayout.Rect offsetDistanceRect;
 
     public Hit hovered() { return hovered; }
     public List<EditorScreenActions.Icon> icons() { return icons; }
@@ -130,6 +134,7 @@ public final class EditorDetailPane {
     public List<EditorScreenActions.Icon> testIcons() { return testIcons; }
     public List<CommandMenuEntry> testRows() { return testRows; }
     public List<EditorScreenActions.Icon> offsetIcons() { return offsetIcons; }
+    public InventoryEditorLayout.Rect offsetDistanceRect() { return offsetDistanceRect; }
     public CommandMenuEntry testEntry() { return test; }
 
     /** The Reseed cell beside the test button — the world switch, or in a test the re-roll button. */
@@ -151,17 +156,23 @@ public final class EditorDetailPane {
         // The offset row gives way to a test: the author stands in the test copy, not the plot, and
         // the floor-size pane has no room for both rows above the sheet.
         boolean offsetOpen = EditorScreenState.offsetRowOpen() && ctx.hasSelection() && !testing;
-        this.layout = testing ? layout.withTestRow() : offsetOpen ? layout.withOffsetRow() : layout;
+        // The editing row first: the offset row under it takes the size its buttons came out at.
+        icons = EditorScreenActions.icons(ctx, DungeonTrainNet::sendToServer, relayId);
+        IconRow row = layoutIcons(icons.size(), layout.icons().x(), layout.icons().w());
+        iconX = row.x();
+        iconCell = row.cell();
+        this.layout = testing ? layout.withTestRow() : offsetOpen ? layout.withOffsetRow(iconCell) : layout;
         layout = this.layout;
-        offsetIcons = offsetOpen ? OffsetControls.icons(ctx.standingInSelection()) : List.of();
-        offsetIconX = layoutOffsetIcons(offsetIcons.size(), layout.offsetIcons().x());
+        offsetIcons = offsetOpen
+            ? OffsetControls.icons(ctx.standingInSelection(), EditorScreenState.offsetDistance()) : List.of();
+        int[] offsetX = layoutOffsetIcons(offsetIcons.size(), layout.offsetIcons().x(), iconCell);
+        offsetIconX = java.util.Arrays.copyOf(offsetX, offsetIcons.size());
+        offsetDistanceRect = offsetOpen ? new InventoryEditorLayout.Rect(offsetX[offsetIcons.size()],
+            layout.offsetIcons().y(), offsetDistanceWidth(iconCell), iconCell) : null;
         testIcons = testing ? TestModeControls.icons() : List.of();
         testRows = testing ? TestModeControls.rows() : List.of();
         testIconX = layoutTestIcons(testIcons.size(), layout.testIcons().x());
         this.ctx = ctx;
-        // The relay row of what is selected, which showVersion has already handed this pane for the
-        // version strip — it is what the Submit icon acts on.
-        icons = EditorScreenActions.icons(ctx, DungeonTrainNet::sendToServer, relayId);
         // Read once: the Size line takes the room's own dimensions from these, and the rows below
         // take everything else. Reading them twice could show two different numbers for one axis.
         roomRows = EditorScreenActions.roomRows(ctx);
@@ -201,10 +212,6 @@ public final class EditorDetailPane {
         pages = DetailPages.of(rows.size(), Math.max(0, body().h() / ROW_H), lootPages, submitPages)
             .withBlockPages(blockPages);
         page = pages.clamp(page);
-
-        IconRow row = layoutIcons(icons.size(), layout.icons().x(), layout.icons().w());
-        iconX = row.x();
-        iconCell = row.cell();
     }
 
     /**
@@ -246,16 +253,25 @@ public final class EditorDetailPane {
         return xs;
     }
 
-    /** Where each offset button starts: full-size cells, the three axes' pairs apart from each other. */
-    static int[] layoutOffsetIcons(int count, int x0) {
-        int[] xs = new int[count];
+    /**
+     * Where each offset button starts, at the editing row's {@code cell} size so the row reads as
+     * that toolbar's: the three axes' pairs apart from each other, then one more entry — where the
+     * distance box starts, set apart the same way.
+     */
+    static int[] layoutOffsetIcons(int count, int x0, int cell) {
+        int[] xs = new int[count + 1];
         int x = x0;
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i <= count; i++) {
             if (i > 0 && i % 2 == 0) x += ICON_GROUP_GAP;
             xs[i] = x;
-            x += ICON_CELL + ICON_GAP;
+            x += cell + ICON_GAP;
         }
         return xs;
+    }
+
+    /** The distance box's width beside buttons of {@code cell}. */
+    static int offsetDistanceWidth(int cell) {
+        return Math.max(cell, OFFSET_DISTANCE_MIN_W);
     }
 
     /** Icon-row geometry: how big each button is, and where each one starts. */
@@ -431,6 +447,11 @@ public final class EditorDetailPane {
                 // A staged build's picture is its own snapshot on the shelf; the relay's copy of the
                 // same row stands in when the file is not on this machine (a dedicated server).
                 PreviewPane.drawStaged(g, font, layout.preview(), staged, name, yaw, theme, relayId);
+            } else if (seq == 0 && ctx.hasSelection()
+                && games.brennan.dungeontrain.client.builder.LivePlotPreview.has(ctx.selection().templateKey())) {
+                // An offset, undo or redo press moved the plot's blocks since the file was saved:
+                // draw the plot as it stands, which is what the press is being watched for.
+                PreviewPane.drawLive(g, font, layout.preview(), ctx.selection().templateKey(), name, yaw, theme);
             } else {
                 PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, seq == 0 ? 0 : relayId, seq);
             }
@@ -463,18 +484,25 @@ public final class EditorDetailPane {
         }
         if (pages.hasPager()) drawPager(g, font);
         drawIcons(g);
-        drawOffsetIcons(g);
+        drawOffsetIcons(g, font);
         drawTestIcons(g);
         drawTest(g, font);
     }
 
     /** The offset row, drawn like the editing toolbar it opens from; off while not standing in the plot. */
-    private void drawOffsetIcons(GuiGraphics g) {
+    private void drawOffsetIcons(GuiGraphics g, Font font) {
         if (offsetIcons.isEmpty()) return;
         int hov = hovered.kind() == HitKind.OFFSET_ICON ? hovered.index() : -1;
-        DetailPainters.drawIconStrip(g, offsetIcons, offsetIconX, ICON_CELL, layout.offsetIcons().y(), hov,
+        DetailPainters.drawIconStrip(g, offsetIcons, offsetIconX, iconCell, layout.offsetIcons().y(), hov,
             i -> false,
             i -> !offsetIcons.get(i).enabled() ? DISABLED_ICON : i == hov ? DetailPainters.HOVER_INK : 0);
+        // The distance box: the step each button moves, typed over by clicking it.
+        InventoryEditorLayout.Rect d = offsetDistanceRect;
+        boolean dHov = hovered.kind() == HitKind.OFFSET_DISTANCE;
+        g.fill(d.x(), d.y(), d.right(), d.bottom(), dHov ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
+        String step = String.valueOf(EditorScreenState.offsetDistance());
+        g.drawString(font, step, d.x() + (d.w() - font.width(step) + 1) / 2, d.y() + (d.h() - font.lineHeight + 2) / 2,
+            dHov ? MenuRowPainter.TEXT_ON_HOVER : MenuRowPainter.TEXT_NORMAL, false);
     }
 
     /** The test toolbar, drawn like the editing one above it. */
@@ -753,10 +781,11 @@ public final class EditorDetailPane {
             };
         }
         InventoryEditorLayout.Rect or = layout.offsetIcons();
-        if (!offsetIcons.isEmpty() && my >= or.y() && my < or.y() + ICON_CELL) {
+        if (!offsetIcons.isEmpty() && my >= or.y() && my < or.y() + iconCell) {
             for (int i = 0; i < offsetIconX.length; i++) {
-                if (mx >= offsetIconX[i] && mx < offsetIconX[i] + ICON_CELL) return new Hit(HitKind.OFFSET_ICON, i, 0);
+                if (mx >= offsetIconX[i] && mx < offsetIconX[i] + iconCell) return new Hit(HitKind.OFFSET_ICON, i, 0);
             }
+            if (offsetDistanceRect.contains(mx, my)) return new Hit(HitKind.OFFSET_DISTANCE, 0, 0);
         }
         InventoryEditorLayout.Rect tr = layout.testIcons();
         if (testing && my >= tr.y() && my < tr.y() + ICON_CELL) {
@@ -842,6 +871,8 @@ public final class EditorDetailPane {
                 String label = EditorScreenLang.text(icon.labelKey());
                 yield List.of(label, icon.enabled() ? icon.detail() : EditorScreenLang.text(icon.disabledKey()));
             }
+            case OFFSET_DISTANCE -> List.of(EditorScreenLang.text(EditorScreenLang.OFFSET_DISTANCE),
+                EditorScreenLang.text(EditorScreenLang.OFFSET_DISTANCE_TIP));
             case BLOCK_GROUP -> {
                 var player = net.minecraft.client.Minecraft.getInstance().player;
                 yield BlocksPage.tooltip(blockEntries, hit.index(), blocksLive,

@@ -6,7 +6,7 @@ import java.util.List;
 
 /**
  * The offset row the toolbar's arrow button opens: one button per direction, each sliding every
- * block of the plot one block that way.
+ * block of the plot that way by the distance in the box at the row's end.
  *
  * <p>Every button runs {@code /dungeontrain editor offset}, so the undo history, the plot guards and
  * the wrap at the edges are the command's — blocks pushed past one side come back in at the other.
@@ -19,10 +19,15 @@ public final class OffsetControls {
 
     static final String COMMAND = "dungeontrain editor offset ";
 
-    /** One direction: its icon id, its lang key, and the one-block step it runs. */
+    /** What a press moves before the author types anything else. */
+    static final int DEFAULT_DISTANCE = 1;
+    /** The longest step the box takes: past a plot's length a step only wraps round again. */
+    static final int MAX_DISTANCE = 64;
+
+    /** One direction: its icon id, its lang key, and its unit step. */
     record Direction(String id, String labelKey, int dx, int dy, int dz) {
-        String command() {
-            return COMMAND + dx + " " + dy + " " + dz;
+        String command(int distance) {
+            return COMMAND + dx * distance + " " + dy * distance + " " + dz * distance;
         }
     }
 
@@ -37,6 +42,16 @@ public final class OffsetControls {
 
     private OffsetControls() {}
 
+    /** Whether {@code distance} is a step the buttons take. */
+    static boolean isDistance(int distance) {
+        return distance >= 1 && distance <= MAX_DISTANCE;
+    }
+
+    /** Whether a toolbar button moves the plot's blocks too, so the live model should follow it. */
+    static boolean movesBlocks(String iconId) {
+        return "undo".equals(iconId) || "redo".equals(iconId);
+    }
+
     /**
      * The toolbar button. Live whenever something is selected, standing in it or not: it only opens
      * the row, and the row says why its buttons are off.
@@ -49,12 +64,12 @@ public final class OffsetControls {
     }
 
     /**
-     * The row's buttons. They stay on the screen after a click — moving a build into place is
-     * several presses in a row, watched in the plot behind the menu.
+     * The row's buttons, each moving {@code distance} blocks. They stay on the screen after a
+     * click — moving a build into place is several presses in a row, watched in the model.
      */
-    public static List<EditorScreenActions.Icon> icons(boolean standingHere) {
+    public static List<EditorScreenActions.Icon> icons(boolean standingHere, int distance) {
         return DIRECTIONS.stream().map(d -> new EditorScreenActions.Icon(d.id(), d.labelKey(),
-                standingHere ? new CommandMenuEntry.Stay(EditorScreenLang.text(d.labelKey()), d.command()) : null,
+                standingHere ? new CommandMenuEntry.Stay(EditorScreenLang.text(d.labelKey()), d.command(distance)) : null,
                 EditorScreenLang.DISABLED_STAND_HERE, EditorScreenLang.text(EditorScreenLang.OFFSET_TIP)))
             .toList();
     }

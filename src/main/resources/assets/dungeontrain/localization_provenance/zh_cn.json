@@ -1116,6 +1116,8 @@
       "gui.dungeontrain.editor_screen.offset.z_neg",
       "gui.dungeontrain.editor_screen.offset.z_pos",
       "gui.dungeontrain.editor_screen.offset.tip",
+      "gui.dungeontrain.editor_screen.offset.distance",
+      "gui.dungeontrain.editor_screen.offset.distance.tip",
       "gui.dungeontrain.editor_screen.test.reload",
       "gui.dungeontrain.editor_screen.test.reroll_main",
       "gui.dungeontrain.editor_screen.test.reseed_all",
