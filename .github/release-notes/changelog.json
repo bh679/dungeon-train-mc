@@ -32071,6 +32071,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "word-list-off-words",
+      "version": "0.1600.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Stream chat filter stays current",
+      "summary": "When a word is retired from the stream chat filter, it stops being hidden straight away, with no mod update needed.",
+      "highlights": [],
+      "pr": 2411,
+      "date": "2026-10-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
