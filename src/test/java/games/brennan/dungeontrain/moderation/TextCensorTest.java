@@ -20,6 +20,37 @@ final class TextCensorTest {
         List.of("red flannel"),           // phrase
         List.of("blarnexia", "zorpington")); // allow
 
+    /** A mild list: masked like the strike list, never a hit. */
+    private static final CompiledWords MILD = new CompiledWords(
+        List.of("flib"), List.of(), List.of(), List.of(), List.of("flibber"));
+
+    @Test
+    @DisplayName("a mild word is masked but is never a hit, so it never costs a strike")
+    void mildMaskedNoHit() {
+        TextCensor.Result r = TextCensor.censor("oh flib, missed again", WORDS, MILD);
+        assertTrue(r.changed());
+        assertEquals("oh ****, missed again", r.text());
+        assertTrue(r.hits().isEmpty());
+        assertFalse(TextCensor.censor("the flibber jumped", WORDS, MILD).changed());
+    }
+
+    @Test
+    @DisplayName("a mild word beside a strike word: both masked, only the strike word is a hit")
+    void mildBesideStrike() {
+        TextCensor.Result r = TextCensor.censor("flib you zorp", WORDS, MILD);
+        assertEquals("**** you ****", r.text());
+        assertEquals(List.of("zorp"), r.hits());
+    }
+
+    @Test
+    @DisplayName("as typed, a mild word waits for its boundary like any whole-word term")
+    void mildTail() {
+        assertFalse(TextCensor.censorTail("flib", WORDS, MILD).changed());
+        TextCensor.Result r = TextCensor.censorTail("flib ", WORDS, MILD);
+        assertEquals("**** ", r.text());
+        assertTrue(r.hits().isEmpty());
+    }
+
     @Test
     @DisplayName("a whole-word term is masked; the rest of the line is untouched")
     void wholeWord() {

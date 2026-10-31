@@ -35,7 +35,7 @@ public final class EnchiridionAdvancements {
             "dungeon_train/deathnote_self_target",
             "dungeon_train/submitted_love_note",
             "dungeon_train/lovenote_self_target",
-            "dungeon_train/read_all_rules",
+            "dungeon_train/read_all_rules", // switched off (read_all_rules.json.disabled): needed ~155 random-book reads; kept so a rename re-enables it
             "dungeon_train/i_must_know",
             "dungeon_train/faulthursts_favourite",
             "dungeon_train/burned_stat_book",
