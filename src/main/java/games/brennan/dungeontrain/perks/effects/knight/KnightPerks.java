@@ -1,5 +1,9 @@
 package games.brennan.dungeontrain.perks.effects.knight;
 
+import games.brennan.dungeontrain.perks.BuiltPerks;
+import games.brennan.dungeontrain.perks.PerkStats;
+import games.brennan.dungeontrain.perks.PerkStats.Unit;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.RandomSource;
 
 /**
@@ -28,11 +32,21 @@ public final class KnightPerks {
     static final int STRENGTH_BASE_TICKS = 60;
     static final int RANKS_PER_STRENGTH_LEVEL = 10;
 
-    static final int VAMPIRISM_BASE_PERCENT = 25;
     static final int VAMPIRISM_PERCENT_PER_RANK = 5;
     static final float HALF_HEART = 1.0f;
 
     private KnightPerks() {}
+
+    /** Marks the built Knight perks and registers their menu stats. */
+    public static void declare() {
+        BuiltPerks.markBuilt(CRITS, KILL_BUFF, VAMPIRISM);
+        PerkStats.register(CRITS, "crit_chance", r -> PerkStats.num(critPercent(r), Unit.PERCENT));
+        PerkStats.register(CRITS, "crit", r -> PerkStats.num(critMultiplier(Math.max(1, critPercent(r) / 100)), Unit.MULTIPLIER));
+        PerkStats.register(KILL_BUFF, "strength",
+            r -> new PerkStats.Text(Component.translatable("enchantment.level." + (strengthAmplifier(r) + 1))));
+        PerkStats.register(KILL_BUFF, "duration", r -> PerkStats.num(strengthDurationTicks(r) / 20.0, Unit.SECONDS));
+        PerkStats.register(VAMPIRISM, "heal_chance", r -> PerkStats.num(vampirismPercent(r), Unit.PERCENT));
+    }
 
     /**
      * Rolls an overflow percentage: {@code percent / 100} guaranteed steps plus a
@@ -90,10 +104,10 @@ public final class KnightPerks {
         return newAmplifier == currentAmplifier && newTicks > remainingTicks;
     }
 
-    /** Vampirism percentage at {@code rank}: 25%, +5% per rank past the first, uncapped. */
+    /** Vampirism percentage at {@code rank}: 5% per rank, uncapped (past 100% it overflows into extra halves). */
     public static int vampirismPercent(int rank) {
         if (rank <= 0) return 0;
-        return VAMPIRISM_BASE_PERCENT + (rank - 1) * VAMPIRISM_PERCENT_PER_RANK;
+        return rank * VAMPIRISM_PERCENT_PER_RANK;
     }
 
     /** One Vampirism roll at {@code rank}: health to heal (half a heart per step). */

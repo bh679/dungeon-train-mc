@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin;
 
 import games.brennan.dungeontrain.perks.effects.crafter.CrafterPerks;
 import games.brennan.dungeontrain.perks.effects.crafter.EnchantContext;
+import games.brennan.dungeontrain.perks.effects.crafter.EnchantGroups;
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
@@ -24,8 +25,8 @@ import java.util.stream.Stream;
 /**
  * Crafter perks inside the static enchantment helper, which knows no player:
  * <ul>
- *   <li><b>Enchant Max</b>: a table roll that landed on an enchantment's vanilla max climbs by the
- *       bonus {@code EnchantmentMenuCrafterMixin} put on {@link EnchantContext} for the roll.</li>
+ *   <li><b>Enchant Max</b>: a table roll that landed on an enchantment's vanilla max climbs by its
+ *       group's bonus at the rank {@code EnchantmentMenuCrafterMixin} put on {@link EnchantContext}.</li>
  *   <li><b>Enchant Bonus</b>: the paths that read a known entity's gear (attack damage, knockback,
  *       fall damage, post-attack effects, equipment iteration, the per-entity level lookup) push that
  *       entity as the owner for their duration, so {@code CrafterEnchantBonus} can raise the levels.</li>
@@ -37,12 +38,13 @@ public abstract class EnchantmentHelperCrafterMixin {
     @Inject(method = "getAvailableEnchantmentResults", at = @At("RETURN"))
     private static void dungeontrain$rollPastMax(int level, ItemStack stack, Stream<Holder<Enchantment>> possible,
                                                  CallbackInfoReturnable<List<EnchantmentInstance>> cir) {
-        int bonus = EnchantContext.maxLevelBonus();
-        if (bonus <= 0) return;
+        int rank = EnchantContext.enchantMaxRank();
+        if (rank <= 0) return;
         List<EnchantmentInstance> list = cir.getReturnValue();
         if (list == null || list.isEmpty()) return;
         for (int i = 0; i < list.size(); i++) {
             EnchantmentInstance rolled = list.get(i);
+            int bonus = CrafterPerks.groupBonus(rank, EnchantGroups.indexOf(rolled.enchantment));
             int raised = CrafterPerks.rolledLevel(rolled.level, rolled.enchantment.value().getMaxLevel(), bonus);
             if (raised != rolled.level) list.set(i, new EnchantmentInstance(rolled.enchantment, raised));
         }

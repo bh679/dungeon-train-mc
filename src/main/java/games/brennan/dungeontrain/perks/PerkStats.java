@@ -1,92 +1,92 @@
 package games.brennan.dungeontrain.perks;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.mojang.logging.LogUtils;
-import org.slf4j.Logger;
+import net.minecraft.network.chat.Component;
 
-import java.io.InputStream;
-import java.io.Reader;
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.function.IntFunction;
 
 /**
- * The key stats each perk moves, read from {@code data/dungeontrain/perks/stats.json}: per perk id, a
- * list of stats, each worth {@code per_point} for every point in the perk. Kept apart from
- * {@code tree.json} so regenerating the tree from the editor leaves them alone. The menu shows them
- * as chips and previews a point's value on hover.
+ * The key stats each perk moves, as the menu's details bar shows them: per perk id, a list of stats,
+ * each a function of the perk's points. The functions are the effect code's own maths, registered by
+ * that code ({@link BuiltPerks}), so a chip can never say something the perk doesn't do. The bar
+ * shows each stat at the perk's points and previews a point's value on hover.
  */
 public final class PerkStats {
 
-    private static final Logger LOGGER = LogUtils.getLogger();
-    static final String RESOURCE = "/data/dungeontrain/perks/stats.json";
-    /** Units a stat can be shown in; each has a lang key {@code gui.dungeontrain.perks.stat.unit.<unit>}. */
-    public static final Set<String> UNITS = Set.of("", "seconds");
+    /** How a number is shown; each has a lang key {@code gui.dungeontrain.perks.stat.unit.<name>}. */
+    public enum Unit {
+        PLAIN, PERCENT, SECONDS, MINUTES, MULTIPLIER, BLOCKS,
+        /** Drawn as heart sprites, two hit points to a heart. The value is in hit points. */
+        HEARTS,
+        /** Drawn as armour sprites, two armour points to an icon. The value is in armour points. */
+        ARMOUR,
+        /** Drawn as an emerald, rounded down to whole emeralds. */
+        EMERALDS;
 
-    /** One stat: its lang id ({@code gui.dungeontrain.perks.stat.<id>}), value per point, and unit. */
-    public record Stat(String id, double perPoint, String unit) {
-        public double at(int points) {
-            return perPoint * Math.max(0, points);
+        /** Units the bar draws as sprites rather than a lang key. */
+        public boolean isIcon() {
+            return this == HEARTS || this == ARMOUR || this == EMERALDS;
+        }
+
+        public String key() {
+            return name().toLowerCase(java.util.Locale.ROOT);
         }
     }
 
-    private static volatile Map<String, List<Stat>> loaded;
+    /** A stat's value at some number of points. */
+    public sealed interface Value permits Num, Text {}
+
+    /** A number in a unit; {@code signed} shows a leading + on positive values. */
+    public record Num(double value, Unit unit, boolean signed) implements Value {}
+
+    /** A value only words can say, like a Strength level. */
+    public record Text(Component text) implements Value {}
+
+    /** One stat: its lang id ({@code gui.dungeontrain.perks.stat.<id>}) and its value by points. */
+    public record Stat(String id, IntFunction<Value> at) {
+        public Value valueAt(int points) {
+            return at.apply(Math.max(0, points));
+        }
+    }
+
+    private static final Map<String, List<Stat>> STATS = Collections.synchronizedMap(new LinkedHashMap<>());
 
     private PerkStats() {}
 
+    /** Add a stat to a perk, after any it already has. Registering the same stat id twice replaces it. */
+    public static void register(String perkId, String statId, IntFunction<Value> at) {
+        if (!statId.matches("[a-z0-9_]+")) throw new IllegalArgumentException("bad stat id " + statId);
+        synchronized (STATS) {
+            List<Stat> list = new ArrayList<>(STATS.getOrDefault(perkId, List.of()));
+            list.removeIf(s -> s.id().equals(statId));
+            list.add(new Stat(statId, at));
+            STATS.put(perkId, List.copyOf(list));
+        }
+    }
+
     /** A perk's stats; empty when it has none. */
     public static List<Stat> of(String perkId) {
-        return all().getOrDefault(perkId, List.of());
+        BuiltPerks.bootstrap();
+        return STATS.getOrDefault(perkId, List.of());
     }
 
-    static Map<String, List<Stat>> all() {
-        Map<String, List<Stat>> m = loaded;
-        if (m == null) {
-            synchronized (PerkStats.class) {
-                m = loaded;
-                if (m == null) {
-                    m = loadBundled();
-                    loaded = m;
-                }
-            }
-        }
-        return m;
-    }
-
-    private static Map<String, List<Stat>> loadBundled() {
-        try (InputStream in = PerkStats.class.getResourceAsStream(RESOURCE)) {
-            if (in == null) return Map.of();
-            return parse(new StringReader(new String(in.readAllBytes(), StandardCharsets.UTF_8)));
-        } catch (Exception e) {
-            LOGGER.error("[DungeonTrain] perk stats invalid; perks show no stats", e);
-            return Map.of();
+    /** Every perk id that has stats. */
+    static java.util.Set<String> perkIds() {
+        BuiltPerks.bootstrap();
+        synchronized (STATS) {
+            return java.util.Set.copyOf(STATS.keySet());
         }
     }
 
-    /** Parse and validate; throws {@link IllegalArgumentException} on a bad file. */
-    public static Map<String, List<Stat>> parse(Reader reader) {
-        JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
-        Map<String, List<Stat>> out = new LinkedHashMap<>();
-        for (Map.Entry<String, JsonElement> e : root.entrySet()) {
-            if (e.getKey().startsWith("_")) continue; // _comment
-            List<Stat> stats = new ArrayList<>();
-            for (JsonElement s : e.getValue().getAsJsonArray()) {
-                JsonObject o = s.getAsJsonObject();
-                if (!o.has("stat") || !o.has("per_point")) throw new IllegalArgumentException("stat on " + e.getKey() + " needs stat and per_point");
-                String id = o.get("stat").getAsString();
-                if (!id.matches("[a-z0-9_]+")) throw new IllegalArgumentException("bad stat id " + id);
-                String unit = o.has("unit") ? o.get("unit").getAsString() : "";
-                if (!UNITS.contains(unit)) throw new IllegalArgumentException("unknown unit " + unit + " on " + e.getKey());
-                stats.add(new Stat(id, o.get("per_point").getAsDouble(), unit));
-            }
-            out.put(e.getKey(), List.copyOf(stats));
-        }
-        return Map.copyOf(out);
+    public static Value num(double value, Unit unit) {
+        return new Num(value, unit, false);
+    }
+
+    public static Value plus(double value, Unit unit) {
+        return new Num(value, unit, true);
     }
 }

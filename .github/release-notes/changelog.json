@@ -30504,6 +30504,129 @@
       "pr": 2297
     },
     {
+      "id": "trader-perks-reduced-reduction-restock",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "loot"
+      ],
+      "title": "Trader perks: Reduced Reduction and Restock Villager",
+      "summary": "Two new Trader perks. Reduced Reduction keeps a villager's prices from dropping as fast while you keep selling to it. Restock Villager lets you refresh a villager's sold-out trades a few times each life.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "knight-combat-perks",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Knight perks",
+      "summary": "Three new Knight perks. Crits gives your hits a chance to land critical strikes, and past a point they hit even harder. Kill Buff gives you a burst of Strength on every kill, getting stronger as it grows. Vampirism gives each kill a chance to heal you, and enough of it heals you more than once. None of them have a cap.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perks-archivist",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "balance"
+      ],
+      "title": "Archivist perks",
+      "summary": "New Archivist perks for the perks tree: keep the Live Eye safe for longer, give your votes more weight, and get extra shots from a disposable camera.",
+      "highlights": [],
+      "pr": 2299,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "cosmic-apples",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot"
+      ],
+      "title": "Cosmic apples",
+      "summary": "Cosmic apples now turn up in carriage chests. Eat one for perk points to spend this life: a Cosmic Apple gives 1, a Celestial Bite gives 5 and a Violet Core gives 10. The rarer apples only appear further along the train.",
+      "highlights": [
+        "Three apples, each worth more perk points than the last",
+        "The deeper you ride, the better the apples you can find"
+      ],
+      "pr": 2316,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perk-points",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Perk points",
+      "summary": "Advancements now earn Advancement Points, which unlock perks and are kept when you die. The advancements screen shows how many you have to spend. Points from cosmic apples buy perk ranks for this life, and each rank costs a little more the more you buy. A perk can be unlocked again to hold more points.",
+      "highlights": [
+        "Advancement Points from advancements unlock perks",
+        "Unlock a perk again to give it room for more points"
+      ],
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "crafter-enchanting-perks",
+      "version": "0.1508.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Crafter perks: enchanting and cooking",
+      "summary": "Four new Crafter perks. Enchanting costs fewer levels, food cooks faster, enchantments can climb past their usual maximum, and the enchantments on your gear can work stronger than they are.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perks-lover-pet-health-good-gifter",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Lover perks: Pet Health and Good Gifter",
+      "summary": "Two new Lover perks. Pet Health gives your tamed pets an extra half heart for each rank, with no limit. Good Gifter makes animals easier to win over: every rank makes your gifts tame more often, and as it grows animals start taking similar food, then other animals' food, then your own food, then anything at all, until a friendly hand is enough. Player mobs also warm to your gifts faster.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "dimensional-carriage-far-exit-landing",
       "version": "0.1509.0",
       "type": "fix",
@@ -30945,6 +31068,109 @@
       "released_at": "2026-10-26T10:16:46Z"
     },
     {
+      "id": "perks-tree-v18",
+      "version": "0.1539.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Perks tree update",
+      "summary": "The perks tree gains a new Archivist perk and a few links and positions are tidied.",
+      "highlights": [],
+      "date": "2026-10-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perks-menu-constellation",
+      "version": "0.1540.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Perks menu",
+      "summary": "Press P (or use the button on the pause menu) to open your perks as a sky of stars. Unlock perks with Advancement Points and activate them with Cosmic Apples, all from the bar along the bottom.",
+      "highlights": [
+        "Hover or click a star to see what it does, its points and its key stats",
+        "Right-click a star to unlock it, double-click to add a point",
+        "Show, hide and pick classes from the list on the right"
+      ],
+      "date": "2026-10-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perks-stats-and-descriptions",
+      "version": "0.1548.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations",
+        "ui"
+      ],
+      "title": "Perk numbers and clearer descriptions",
+      "summary": "The bar along the bottom of the perks menu now shows each perk's key numbers, with hearts drawn as hearts, and hovering a point shows what it would change. Every perk has a clearer description, in every language. Perks that aren't ready yet show as Coming soon, and anyone can now offer their Live Eye to a viewer by name.",
+      "highlights": [
+        "Key numbers for every perk in the perks bar",
+        "Clearer perk descriptions in every language",
+        "Perks that aren't ready yet show as Coming soon",
+        "Offer your Live Eye to a chosen viewer, no perk needed"
+      ],
+      "pr": 2358,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perks-effect-rework",
+      "version": "0.1559.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Perk reworks",
+      "summary": "Enchant Max and Enchant Bonus now grow with every point: each point brings more of your enchantments along, starting with Protection, and every ten points add another level. Extra Cam-Shots no longer leaves it to chance: one point gives every second camera an extra shot. Vampirism and Cooking Time keep getting better with every point. Pet Health now takes effect on your pets straight away, and Live Eye Safe Duration lengthens both stages of your protection.",
+      "highlights": [
+        "Enchant Max and Enchant Bonus grow with every point",
+        "Extra camera shots without the luck",
+        "Pet Health applies to your pets straight away",
+        "Live Eye Safe Duration lengthens both stages of protection"
+      ],
+      "pr": 2364,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perks-button-advancements",
+      "version": "0.1562.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "advancements",
+        "ui"
+      ],
+      "title": "Perks button on the advancements screen",
+      "summary": "A star button beside Done on the advancements screen opens your perks, with your Advancement Points shown on it. Cosmic Apples now start turning up once you've unlocked your first perk.",
+      "highlights": [
+        "Open your perks straight from the advancements screen",
+        "Your Advancement Points sit on the button",
+        "Cosmic Apples appear after your first perk unlock"
+      ],
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "contents-weight-tuning-2337",
       "version": "0.1537.0",
       "type": "content",
@@ -31380,159 +31606,23 @@
       "released_at": null
     },
     {
-      "id": "trader-perks-reduced-reduction-restock",
-      "version": "0.1509.0",
+      "id": "perks-menu-on-death",
+      "version": "0.1566.0",
       "type": "feat",
       "tags": [
         "feature",
-        "mobs",
-        "loot"
-      ],
-      "title": "Trader perks: Reduced Reduction and Restock Villager",
-      "summary": "Two new Trader perks. Reduced Reduction keeps a villager's prices from dropping as fast while you keep selling to it. Restock Villager lets you refresh a villager's sold-out trades a few times each life.",
-      "highlights": [],
-      "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "knight-combat-perks",
-      "version": "0.1509.0",
-      "type": "feat",
-      "tags": [
-        "feature"
-      ],
-      "title": "Knight perks",
-      "summary": "Three new Knight perks. Crits gives your hits a chance to land critical strikes, and past a point they hit even harder. Kill Buff gives you a burst of Strength on every kill, getting stronger as it grows. Vampirism gives each kill a chance to heal you, and enough of it heals you more than once. None of them have a cap.",
-      "highlights": [],
-      "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "perks-archivist",
-      "version": "0.1509.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "community",
-        "balance"
-      ],
-      "title": "Archivist perks",
-      "summary": "New Archivist perks for the perks tree: keep the Live Eye safe for longer, offer the Live Eye to a chosen viewer, give your votes more weight, and get extra shots from a disposable camera.",
-      "highlights": [],
-      "pr": 2299,
-      "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "cosmic-apples",
-      "version": "0.1509.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "loot"
-      ],
-      "title": "Cosmic apples",
-      "summary": "Cosmic apples now turn up in carriage chests. Eat one for perk points to spend this life: a Cosmic Apple gives 1, a Celestial Bite gives 5 and a Violet Core gives 10. The rarer apples only appear further along the train.",
-      "highlights": [
-        "Three apples, each worth more perk points than the last",
-        "The deeper you ride, the better the apples you can find"
-      ],
-      "pr": 2316,
-      "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "perk-points",
-      "version": "0.1509.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "advancements",
+        "translations",
         "ui"
       ],
-      "title": "Perk points",
-      "summary": "Advancements now earn Advancement Points, which unlock perks and are kept when you die. The advancements screen shows how many you have to spend. Points from cosmic apples buy perk ranks for this life, and each rank costs a little more the more you buy. A perk can be unlocked again to hold more points.",
+      "title": "Perks menu when you die",
+      "summary": "When you die the camera tilts up to the night sky and your perks menu fades in, one piece at a time, while the train tells you what this life earned. First time here? It walks you through it at your own pace. Unlocking now has its own button on the details bar, showing the level you are buying and what it costs.",
       "highlights": [
-        "Advancement Points from advancements unlock perks",
-        "Unlock a perk again to give it room for more points"
+        "The death camera pans up into the stars and the perks menu builds up layer by layer",
+        "A few lines from the train count this life's advancements and the points they earned",
+        "A guided first visit: click or press Space to move on, and nothing is picked for you",
+        "A new Unlock button shows the level and the cost, and only acts on the perk you selected"
       ],
-      "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "crafter-enchanting-perks",
-      "version": "0.1508.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "loot",
-        "balance"
-      ],
-      "title": "Crafter perks: enchanting and cooking",
-      "summary": "Four new Crafter perks. Enchanting costs fewer levels, food cooks faster, enchantments can climb past their usual maximum, and your gear can act one level stronger than it is.",
-      "highlights": [],
-      "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "perks-lover-pet-health-good-gifter",
-      "version": "0.1509.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "mobs"
-      ],
-      "title": "Lover perks: Pet Health and Good Gifter",
-      "summary": "Two new Lover perks. Pet Health gives your tamed pets an extra half heart for each rank, with no limit. Good Gifter makes animals easier to win over: every rank makes your gifts tame more often, and as it grows animals start taking similar food, then other animals' food, then your own food, then anything at all, until a friendly hand is enough. Player mobs also warm to your gifts faster.",
-      "highlights": [],
-      "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "perks-tree-v18",
-      "version": "0.1539.0",
-      "type": "chore",
-      "tags": [
-        "internal"
-      ],
-      "title": "Perks tree update",
-      "summary": "The perks tree gains a new Archivist perk and a few links and positions are tidied.",
-      "highlights": [],
-      "date": "2026-10-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "perks-menu-constellation",
-      "version": "0.1540.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "ui"
-      ],
-      "title": "Perks menu",
-      "summary": "Press P (or use the button on the pause menu) to open your perks as a sky of stars. Unlock perks with Advancement Points and activate them with Cosmic Apples, all from the bar along the bottom.",
-      "highlights": [
-        "Hover or click a star to see what it does, its points and its key stats",
-        "Right-click a star to unlock it, double-click to add a point",
-        "Show, hide and pick classes from the list on the right"
-      ],
-      "date": "2026-10-26",
+      "date": "2026-10-31",
       "released": false,
       "released_in": null,
       "released_at": null

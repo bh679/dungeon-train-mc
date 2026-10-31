@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.perks.effects.archivist;
 
 import games.brennan.dungeontrain.compat.FineInstantSlide;
 import games.brennan.dungeontrain.perks.Perks;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import io.github.mortuusars.exposure_polaroid.world.item.camera.InstantCameraAttachment;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
@@ -12,9 +13,10 @@ import net.minecraft.world.item.component.CustomData;
 
 /**
  * The Extra Cam-Shots perk on a disposable camera: how many reloads it still has, kept on the camera
- * stack as {@value #NBT_EXTRA_SHOTS} so it survives the camera changing hands. Rolled once, at the
- * camera's first shot, with the rank its holder has then; {@code DisposableCameraEvents} reloads the
- * camera instead of burning it while shots remain.
+ * stack as {@value #NBT_EXTRA_SHOTS} so it survives the camera changing hands. Decided once, at the
+ * camera's first shot, from the rank its holder has then and how many cameras they have shot with this
+ * life ({@code PERK_CAMERAS_USED}); {@code DisposableCameraEvents} reloads the camera instead of burning
+ * it while shots remain.
  */
 public final class ArchivistCamera {
 
@@ -22,11 +24,13 @@ public final class ArchivistCamera {
 
     private ArchivistCamera() {}
 
-    /** Rolls the camera's extra shots if it has not been rolled yet. Server side. */
+    /** Decides the camera's extra shots if it has none yet, and counts it as one of this life's cameras. Server side. */
     public static void rollIfNew(ServerPlayer player, ItemStack camera) {
         if (tag(camera).contains(NBT_EXTRA_SHOTS, Tag.TAG_INT)) return;
         int rank = Perks.rank(player, ArchivistPerks.EXTRA_CAM_SHOTS);
-        int extra = ExtraCamShots.extraShots(rank, player.getRandom().nextFloat());
+        int used = player.getData(ModDataAttachments.PERK_CAMERAS_USED);
+        int extra = ExtraCamShots.extraShots(rank, used);
+        player.setData(ModDataAttachments.PERK_CAMERAS_USED, used + 1);
         CustomData.update(DataComponents.CUSTOM_DATA, camera, t -> t.putInt(NBT_EXTRA_SHOTS, extra));
     }
 

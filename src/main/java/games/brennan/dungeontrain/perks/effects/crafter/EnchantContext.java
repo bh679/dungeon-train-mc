@@ -11,7 +11,7 @@ import java.util.ArrayDeque;
  * <p>{@link #pushOwner}/{@link #popOwner} bracket a vanilla call that reads enchantments on behalf of
  * a known entity (an attack, a durability hit, an equipment refresh, a block drop). While a player
  * owner is on the stack, {@link CrafterEnchantBonus} raises the levels of that player's worn and
- * held gear. {@link #pushMaxLevelBonus}/{@link #popMaxLevelBonus} do the same for the enchanting
+ * held gear. {@link #pushEnchantMaxRank}/{@link #popEnchantMaxRank} do the same for the enchanting
  * table roll, and {@link #pushEnchantMenu}/{@link #popEnchantMenu} name the menu whose
  * {@code slotsChanged} is running. All three are stacks so nested calls restore what they found.</p>
  */
@@ -21,7 +21,7 @@ public final class EnchantContext {
     private static final Object NO_OWNER = new Object();
 
     private static final ThreadLocal<ArrayDeque<Object>> OWNER = ThreadLocal.withInitial(ArrayDeque::new);
-    private static final ThreadLocal<ArrayDeque<Integer>> MAX_LEVEL_BONUS = ThreadLocal.withInitial(ArrayDeque::new);
+    private static final ThreadLocal<ArrayDeque<Integer>> ENCHANT_MAX_RANK = ThreadLocal.withInitial(ArrayDeque::new);
     private static final ThreadLocal<ArrayDeque<Object>> ENCHANT_MENU = ThreadLocal.withInitial(ArrayDeque::new);
 
     private EnchantContext() {}
@@ -41,17 +41,18 @@ public final class EnchantContext {
         return top instanceof Player player ? player : null;
     }
 
-    public static void pushMaxLevelBonus(int bonus) {
-        MAX_LEVEL_BONUS.get().push(Math.max(0, bonus));
+    /** The roller's Enchant Max rank for the table roll in progress; each enchantment's levels follow its group. */
+    public static void pushEnchantMaxRank(int rank) {
+        ENCHANT_MAX_RANK.get().push(Math.max(0, rank));
     }
 
-    public static void popMaxLevelBonus() {
-        ArrayDeque<Integer> stack = MAX_LEVEL_BONUS.get();
+    public static void popEnchantMaxRank() {
+        ArrayDeque<Integer> stack = ENCHANT_MAX_RANK.get();
         if (!stack.isEmpty()) stack.pop();
     }
 
-    public static int maxLevelBonus() {
-        Integer top = MAX_LEVEL_BONUS.get().peek();
+    public static int enchantMaxRank() {
+        Integer top = ENCHANT_MAX_RANK.get().peek();
         return top == null ? 0 : top;
     }
 

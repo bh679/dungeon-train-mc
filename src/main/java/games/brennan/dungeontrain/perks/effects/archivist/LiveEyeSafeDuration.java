@@ -11,10 +11,11 @@ package games.brennan.dungeontrain.perks.effects.archivist;
  *   <li>after that it keeps shrinking, slowly: {@code 5 s * sqrt(46 / rank)} (3.4 s at rank 100,
  *       1 s at rank 1000). No cap: the total never stops growing.</li>
  * </ul>
- * The relay keeps two windows, the protected minutes a takeover needs a vote for
- * ({@code takeoverMinMs}) and the minutes the holder may still vote in ({@code holderVoteMs}); half
- * of the extra goes to each. The claim carries both halves and the relay adds them to its defaults,
- * so an older relay simply ignores them. Pure.
+ * The relay keeps two deadlines, both counted from the start of the hold: until {@code holderVoteMs}
+ * the holder votes on a takeover (Protected), and until {@code takeoverMinMs} a takeover still needs
+ * a community vote (Community Vote). Half of the extra lengthens each window, so the holder's
+ * deadline moves by half and the takeover deadline by the whole extra. The claim carries both and the
+ * relay adds them to its defaults, so an older relay simply ignores them. Pure.
  */
 public final class LiveEyeSafeDuration {
 
@@ -54,14 +55,18 @@ public final class LiveEyeSafeDuration {
         return Math.round(minutes * MINUTE_MS);
     }
 
-    /** The first window's share: half, rounded up. */
-    public static long firstWindowExtraMs(int rank) {
-        long extra = extraMs(rank);
-        return extra - extra / 2;
+    /** How far the takeover deadline ({@code takeoverMinMs}) moves: the whole extra. */
+    public static long takeoverExtraMs(int rank) {
+        return extraMs(rank);
     }
 
-    /** The second window's share: the rest. */
-    public static long secondWindowExtraMs(int rank) {
+    /** How far the holder's vote deadline ({@code holderVoteMs}) moves: half the extra, rounded down. */
+    public static long holderVoteExtraMs(int rank) {
         return extraMs(rank) / 2;
+    }
+
+    /** How much longer the Community Vote window lasts: the takeover deadline's move less the holder's. */
+    public static long communityVoteExtraMs(int rank) {
+        return takeoverExtraMs(rank) - holderVoteExtraMs(rank);
     }
 }

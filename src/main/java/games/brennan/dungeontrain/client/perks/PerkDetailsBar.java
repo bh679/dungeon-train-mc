@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.perks.PerkRegistry;
 import games.brennan.dungeontrain.perks.PerkStats;
 import games.brennan.dungeontrain.perks.PerkTree;
 import games.brennan.dungeontrain.perks.PerkUnlocks;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -165,9 +166,9 @@ final class PerkDetailsBar {
     /** Why Unlock can't be pressed now, or null when it can. Unlocks a locked perk, or again once full. */
     private Component unlockBlocked(PerkTree.Perk p, PerkMenuSnapshot s) {
         PerkRegistry.bootstrap();
-        if (!PerkRegistry.isKnown(p.id())) return Component.translatable("gui.dungeontrain.perks.not_built");
+        if (!PerkRegistry.isBuilt(p.id())) return Component.translatable("gui.dungeontrain.perks.not_built");
         int level = s.unlockLevel(p.id());
-        if (level <= 0 && !tree.reachable(p.id(), s::isUnlocked)) return Component.translatable("gui.dungeontrain.perks.card.needs_path");
+        if (level <= 0 && !tree.reachableNow(p.id(), s::isUnlocked)) return Component.translatable("gui.dungeontrain.perks.card.needs_path");
         // points are gone at death, so the death screen's menu raises a level without filling it first
         if (!unlockOnly && level > 0 && s.points(p.id()) < level) return Component.translatable(KEY + "fill_first");
         int spent = s.unlockSpent(tree);
@@ -182,7 +183,7 @@ final class PerkDetailsBar {
     /** Why Activate can't be pressed now, or null when it can. Adds a point while below the unlock level. */
     private Component activateBlocked(PerkTree.Perk p, PerkMenuSnapshot s) {
         PerkRegistry.bootstrap();
-        if (!PerkRegistry.isKnown(p.id())) return Component.translatable("gui.dungeontrain.perks.not_built");
+        if (!PerkRegistry.isBuilt(p.id())) return Component.translatable("gui.dungeontrain.perks.not_built");
         int level = s.unlockLevel(p.id());
         if (level <= 0) return Component.translatable("gui.dungeontrain.perks.refused.locked");
         if (s.points(p.id()) >= level) return Component.translatable(KEY + "full");
@@ -340,7 +341,8 @@ final class PerkDetailsBar {
             renderEngine(g, snap, a);
             return;
         }
-        int colour = SkyPalette.classColour(tree, p);
+        boolean comingSoon = !PerkRegistry.isBuilt(p.id());
+        int colour = comingSoon ? SkyPalette.MUTED : SkyPalette.classColour(tree, p);
         g.fill(0, top + 1, STRIPE, top + HEIGHT, (a << 24) | (colour & 0xFFFFFF));
         if (unlockReason != null) {
             // why the Unlock tab is greyed, centred under it at the foot of the bar
@@ -365,7 +367,14 @@ final class PerkDetailsBar {
         graphY = y;
         graphW = Math.max(0, contentRight - clsW - 8 - graphX);
         graph = perkGraph(p, snap);
-        if (graphW > 0) graph.render(g, font, graphX, graphY, graphW, GRAPH_H, colour, a / 255.0, graphHover, 1F);
+        if (comingSoon) {
+            // no points to show: a perk that isn't built yet carries a tag where its graph would be
+            Component tag = Component.translatable("gui.dungeontrain.perks.coming_soon").withStyle(ChatFormatting.ITALIC);
+            g.drawString(font, tag, graphX, y, (a << 24) | (SkyPalette.MUTED & 0xFFFFFF), false);
+            graphW = 0;
+        } else if (graphW > 0) {
+            graph.render(g, font, graphX, graphY, graphW, GRAPH_H, colour, a / 255.0, graphHover, 1F);
+        }
 
         // below: the description, then the per-point line; a refusal takes the last line, in red;
         // the perk's key stats as chips along the bottom
@@ -393,33 +402,11 @@ final class PerkDetailsBar {
         if (!stats.isEmpty()) renderStats(g, stats, snap.points(p.id()), x, chipY, contentRight, a);
     }
 
-    /**
-     * One chip per stat: its name and its value at the perk's points now; with a graph block hovered,
-     * an arrow and the value that block's point would give, in gold.
-     */
+    /** The stat chips; with a graph block hovered, each previews that block's value in gold ({@link StatChips}). */
     private void renderStats(GuiGraphics g, List<PerkStats.Stat> stats, int points, int x, int y, int right, int a) {
         int preview = graphHover >= 0 && graph != null && graphHover < graph.layout(graphW).segments() ? graphHover + 1 : -1;
-        int cx = x;
-        for (PerkStats.Stat s : stats) {
-            String now = Component.translatable("gui.dungeontrain.perks.stat." + s.id()).getString() + " " + statValue(s, points);
-            String then = preview >= 0 && preview != points ? " → " + statValue(s, preview) : "";
-            int w = CHIP_PAD * 2 + font.width(now) + font.width(then);
-            if (cx + w > right) break;
-            g.fill(cx, y, cx + w, y + CHIP_H, ((int) (a * 0.9) << 24) | (CHIP_BG & 0xFFFFFF));
-            int ty = y + (CHIP_H - font.lineHeight) / 2 + 1;
-            g.drawString(font, now, cx + CHIP_PAD, ty, (a << 24) | (SkyPalette.FG & 0xFFFFFF), false);
-            if (!then.isEmpty()) {
-                g.drawString(font, then, cx + CHIP_PAD + font.width(now), ty, (a << 24) | (SkyPalette.GOLD & 0xFFFFFF), false);
-            }
-            cx += w + CHIP_GAP;
-        }
-    }
-
-    /** A stat's value at {@code points}: whole numbers plain, others to one place, in its unit. */
-    private static String statValue(PerkStats.Stat s, int points) {
-        double v = s.at(points);
-        String n = v == Math.rint(v) ? Long.toString((long) v) : String.format(Locale.ROOT, "%.1f", v);
-        return s.unit().isEmpty() ? n : Component.translatable("gui.dungeontrain.perks.stat.unit." + s.unit(), n).getString();
+        StatChips.render(g, font, stats, points, preview, x, y, right, CHIP_H, CHIP_PAD, CHIP_GAP, CHIP_BG,
+            SkyPalette.FG, SkyPalette.GOLD, a);
     }
 
     /** A perk's points, its empty room, and one dark block for the next unlock. */

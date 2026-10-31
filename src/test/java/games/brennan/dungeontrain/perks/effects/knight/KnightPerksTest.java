@@ -88,13 +88,14 @@ class KnightPerksTest {
     @Test
     void vampirismChanceClimbsAndOverflows() {
         assertEquals(0, KnightPerks.vampirismPercent(0));
-        assertEquals(25, KnightPerks.vampirismPercent(1));
-        assertEquals(30, KnightPerks.vampirismPercent(2));
-        assertEquals(100, KnightPerks.vampirismPercent(16));
-        assertEquals(105, KnightPerks.vampirismPercent(17));
+        assertEquals(5, KnightPerks.vampirismPercent(1));
+        assertEquals(10, KnightPerks.vampirismPercent(2));
+        assertEquals(50, KnightPerks.vampirismPercent(10));
+        assertEquals(100, KnightPerks.vampirismPercent(20));
+        assertEquals(105, KnightPerks.vampirismPercent(21));
         RandomSource random = RandomSource.create(3L);
         for (int i = 0; i < 1000; i++) {
-            assertEquals(1f, KnightPerks.rollVampirismHeal(16, random));
+            assertEquals(1f, KnightPerks.rollVampirismHeal(20, random));
             assertFalse(KnightPerks.rollVampirismHeal(0, random) > 0f);
         }
     }

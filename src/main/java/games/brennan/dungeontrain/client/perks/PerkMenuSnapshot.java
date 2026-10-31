@@ -91,6 +91,7 @@ public record PerkMenuSnapshot(Map<String, Integer> unlocks, Map<String, Integer
     public StarState stateOf(PerkTree tree, String id) {
         if (PerkTree.ROOT.equals(id)) return StarState.ACTIVE;
         if (unlocks.containsKey(id)) return points(id) > 0 ? StarState.ACTIVE : StarState.UNLOCKED;
-        return tree.reachable(id, this::isUnlocked) ? StarState.REACHABLE : StarState.LOCKED;
+        if (!games.brennan.dungeontrain.perks.PerkRegistry.isBuilt(id)) return StarState.LOCKED; // Coming soon
+        return tree.reachableNow(id, this::isUnlocked) ? StarState.REACHABLE : StarState.LOCKED;
     }
 }
