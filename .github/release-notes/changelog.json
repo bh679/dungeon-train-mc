@@ -32088,6 +32088,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "retire-unreachable-hidden-advancement",
+      "version": "0.1601.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Advancement cleanup",
+      "summary": "One hidden advancement that was out of reach in practice has been retired. It no longer counts toward completing the advancements.",
+      "highlights": [],
+      "pr": 2413,
+      "date": "2026-10-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
