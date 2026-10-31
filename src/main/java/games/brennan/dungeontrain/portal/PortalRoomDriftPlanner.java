@@ -111,7 +111,9 @@ public final class PortalRoomDriftPlanner {
             return false;
         }
         if (PortalTestSession.isTestStamp(pairKey)) return false;
-        double chance = DungeonTrainConfig.getSharedRoomChance();
+        // Drift Chance perk (Builder): the best rank on the level raises the room chance.
+        double chance = games.brennan.dungeontrain.perks.tier1.DriftChance.boostedFor(level,
+            DungeonTrainConfig.getSharedRoomChance());
         boolean drifts = SharedCarriageRolls.roomDrifts(level.getSeed(), pairKey, chance);
         // Logged either way, at the same rate as pairs stamp: a session in which every pair lost the
         // roll is otherwise silent, and "no room ever drifted" reads exactly like "the feature is

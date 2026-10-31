@@ -31626,6 +31626,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "perks-tier-one",
+      "version": "0.1562.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "First perks unlock",
+      "summary": "Eight of the starting perks can now be unlocked, and each shows its key numbers in the perks menu.",
+      "highlights": [
+        "Health, Speed, Damage, Stackable Book and Quill, Friendliness, See Trade Values, Bigger Backpacks and Craft Level Stats now work.",
+        "Each one shows what it gives now and what your next point adds.",
+        "Friendliness also helps when you tame animals with gifts."
+      ],
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

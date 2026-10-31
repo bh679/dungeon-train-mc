@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.perks.effects.lover;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.perks.Perks;
+import games.brennan.dungeontrain.perks.TierOnePerks;
+import games.brennan.dungeontrain.perks.tier1.Friendliness;
 import games.brennan.dungeontrain.perks.effects.lover.GoodGifterMath.Offering;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -55,7 +57,10 @@ public final class GoodGifterEffects {
 
         boolean handled;
         if (animal instanceof TamableAnimal tamable && !tamable.isTame()) {
-            handled = tryTame(player, tamable, stack, GoodGifterMath.tameChance(offering, rank, baseTameChance(tamable)));
+            double chance = GoodGifterMath.tameChance(offering, rank, baseTameChance(tamable));
+            // Good Gifter skips the vanilla roll, so Friendliness's extra rolls are applied here.
+            chance = Friendliness.withExtraRolls(chance, Perks.rank(player, TierOnePerks.FRIENDLINESS));
+            handled = tryTame(player, tamable, stack, chance);
         } else if (offering == Offering.RIGHT_FOOD) {
             return; // vanilla feeds, breeds and tempers with the right food
         } else if (animal instanceof AbstractHorse horse && !horse.isTamed()) {

@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.perks.effects.knight.KnightPerks;
 import games.brennan.dungeontrain.perks.effects.lover.LoverPerkIds;
 import games.brennan.dungeontrain.perks.effects.trader.ReducedReduction;
 import games.brennan.dungeontrain.perks.effects.trader.RestockVillager;
+import games.brennan.dungeontrain.perks.tier1.TierOneEffects;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -50,6 +51,7 @@ public final class BuiltPerks {
             LoverPerkIds.declare();
             ReducedReduction.declare();
             RestockVillager.declare();
+            TierOneEffects.declare();
             declared = true;
         }
     }
