@@ -61,6 +61,8 @@
       "gui.dungeontrain.rewards.explain.priority_books.name",
       "gui.dungeontrain.rewards.explain.priority_books",
       "gui.dungeontrain.rewards.two_streams.line",
+      "gui.dungeontrain.rewards.two_streams.amount",
+      "gui.dungeontrain.rewards.two_streams.amount_short",
       "gui.dungeontrain.rewards.voice_on_stream.line",
       "gui.dungeontrain.rewards.hd_streams.line",
       "gui.dungeontrain.rewards.replays_kept.line",

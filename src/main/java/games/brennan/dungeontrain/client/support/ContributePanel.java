@@ -81,6 +81,7 @@ public final class ContributePanel {
     private static final int COLOUR_ON = 0xFF8FE08A;
     private static final int COLOUR_REWARDS_TITLE = 0xB99BF0;
     private static final int COLOUR_GIVE_NOTE = 0xFFF0B35A;
+    private static final int COLOUR_RAISED = 0xFFA0A0A0;
     private static final int COLOUR_CARD = 0x306D4B9C;
     private static final int COLOUR_CARD_EDGE = 0xFF4A3F66;
     private static final int COLOUR_FEATURED_EDGE = 0xFF8FE08A;
@@ -309,6 +310,14 @@ public final class ContributePanel {
                 ty += lh + 1;
             }
         }
+        // Other rewards being on cost this one more to run, so the relay asked more: say which.
+        Component raised = CommunityRewards.raisedLine(reward);
+        if (raised != null) {
+            for (FormattedCharSequence l : font.split(raised, textW)) {
+                out.add(new Text(l, textX, ty, COLOUR_RAISED, false));
+                ty += lh + 1;
+            }
+        }
         return new CardLines(out, ty - top);
     }
 
@@ -332,11 +341,11 @@ public final class ContributePanel {
                 label = Component.translatable("gui.dungeontrain.rewards.give.month", month);
             } else {
                 label = Component.translatable("gui.dungeontrain.rewards.give.amount",
-                        CurrencyFormat.amount(reward.costAud(), reward.amountShortKey()));
+                        CommunityRewards.amountShort(reward));
             }
         } else {
             // The rewards page carries the amount only here: "Give $94", or "Give $94 · Dec" when it would queue.
-            Component amount = CurrencyFormat.amount(reward.costAud(), reward.amountShortKey());
+            Component amount = CommunityRewards.amountShort(reward);
             if (on) {
                 String month = CommunityRewards.nextFreeMonth(state, reward, now, ZoneId.systemDefault())
                         .getMonth().getDisplayName(TextStyle.SHORT, javaLocale());
