@@ -32105,6 +32105,24 @@
       "released": true,
       "released_in": "v0.1601.0",
       "released_at": "2026-10-31T06:36:47Z"
+    },
+    {
+      "id": "lush-caves-nether-mobs",
+      "version": "0.1602.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world",
+        "mobs"
+      ],
+      "title": "Lush caves come alive",
+      "summary": "Lush caves inside some of the mountains along the line were strangely empty. They now fill with axolotls, glow squid, fish, bats and the usual cave monsters, like lush caves anywhere else.",
+      "highlights": [],
+      "pr": 2415,
+      "date": "2026-10-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
