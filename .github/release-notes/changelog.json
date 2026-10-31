@@ -32064,7 +32064,7 @@
         "community"
       ],
       "title": "Gentler stream chat filter",
-      "summary": "Everyday swearing like \"shit\" or \"bastard\" is still hidden from the stream, but it no longer earns a warning, mute or Live Eye ban. Slurs and the stronger words are filtered exactly as before.",
+      "summary": "The Live Eye filter is less extreme to everyday swearing. Slurs and the stronger words are filtered exactly as before.",
       "highlights": [],
       "pr": 2410,
       "date": "2026-10-31",
