@@ -16,6 +16,7 @@ import games.brennan.dungeontrain.client.live.LiveTakeoverChat;
 import games.brennan.dungeontrain.client.live.LiveGiftClient;
 import games.brennan.dungeontrain.client.live.LiveOptionsCommand;
 import games.brennan.dungeontrain.logrequest.LogRequestClient;
+import games.brennan.dungeontrain.client.perf.LagReportPrompt;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import games.brennan.dungeontrain.registry.ModMenuTypes;
 import games.brennan.dungeontrain.worldgen.UpsideDownGravity;
@@ -45,6 +46,7 @@ public final class DungeonTrainClient {
         LiveGiftClient.registerClicks();
         LiveOptionsCommand.registerClicks();
         LogRequestClient.registerClicks();
+        LagReportPrompt.registerClicks();
         BugResponseChatNotifier.registerClicks();
         LowMemoryNotice.registerClicks();
         FfmpegHint.registerClicks();

@@ -75,7 +75,9 @@ import java.util.List;
  * <p><b>Only into a Nether biome.</b> The band's mountains are hollowed into overworld cave biomes
  * (lush, dripstone, sulfur, deep dark) that can sit beneath a column already past the ramp threshold.
  * Every spawn block must itself read as a Nether biome ({@link #isNetherSpawnBiome}), and the ground
- * roster comes from that block's biome, so the caves stay free of zombified piglins and magma cubes.</p>
+ * roster comes from that block's biome, so the caves stay free of zombified piglins and magma cubes.
+ * Lush caves are also exempt from the ambient cancel ({@link #onFinalizeSpawn}), so they fill with
+ * their vanilla mobs (axolotls, glow squid, tropical fish, bats, dark-cave monsters).</p>
  *
  * <p><b>Never below the world floor, never in a portal room.</b> Candidate heights come from the
  * player's own Y, so a player who steps through a portal mid-band would otherwise have the band
@@ -327,6 +329,9 @@ public final class NetherMobSpawner {
             // A Deeper Dark core spawns from its Otherside biomes' own lists (snappers, shattered, centipedes),
             // as the Otherside does; only the overworld mountains around it stay empty.
             if (games.brennan.dungeontrain.worldgen.OthersideCore.isOthersideBiome(level.getBiome(pos))) return;
+            // The mountains' lush caves spawn their own vanilla roster (axolotls, glow squid, tropical fish,
+            // bats, dark-cave monsters), as lush caves do anywhere in the overworld.
+            if (level.getBiome(pos).is(Biomes.LUSH_CAVES)) return;
             event.setSpawnCancelled(true);
         }
     }
