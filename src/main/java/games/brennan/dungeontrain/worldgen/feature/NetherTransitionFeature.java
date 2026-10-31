@@ -19,6 +19,7 @@ import games.brennan.dungeontrain.worldgen.OthersideCore;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
+import games.brennan.dungeontrain.worldgen.density.NetherBandFloodednessDensityFunction;
 import games.brennan.dungeontrain.worldgen.density.NetherCoreBiomes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -672,7 +673,8 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * <p>It also <b>drains worldgen water</b> from the column (aquifer pools, springs, surface lakes):
      * the recoloured skin is only the top few blocks, so the mountain body underneath is still overworld
      * terrain and {@code aquifers_enabled} can leave water in it. The real Nether is bone-dry, so any
-     * water in the netherrack crossfade is replaced with air. This runs during chunk generation (no
+     * water in the netherrack crossfade is replaced with air — except inside the mountain's lush caves,
+     * which keep their pools and aquifer lakes as in a vanilla lush cave (outside the track's dry corridor). This runs during chunk generation (no
      * fluid-cascade hazard) and only for crossfade columns — overworld gaps, the green approach mountains,
      * the ocean beach/shore and the End band all keep their water. The Nether core needs no drain: its
      * whole band is already overwritten with netherrack/lava/air by {@link NetherCoreStamp}.</p>
@@ -704,13 +706,23 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         }
         // Drain any worldgen water in the column. Scan from the motion-blocking surface (the top of any
         // water) down to the build floor; only water cells are cleared, so solid terrain is untouched.
+        // Lush caves inside the mountain keep their pools and lakes, away from the track (a pool over the
+        // track tunnel would be left floating above the rails).
+        boolean keepLushWater = !NetherBandFloodednessDensityFunction.inTrackDryCorridor(worldZ);
         int waterTop = Math.min(worldTop, chunk.getHeight(Heightmap.Types.MOTION_BLOCKING, dx, dz));
         for (int y = waterTop; y >= minY; y--) {
             if (!w.isWater(dx, y, dz)) continue;
+            if (keepLushWater && isLushCave(chunk, worldX, y, worldZ)) continue;
             w.set(dx, y, dz, AIR);
             changed = true;
         }
         return changed;
+    }
+
+    /** Whether the chunk's biome at this block is lush caves (the mountain interior's cave label). */
+    private static boolean isLushCave(ChunkAccess chunk, int worldX, int worldY, int worldZ) {
+        return chunk.getNoiseBiome(QuartPos.fromBlock(worldX), QuartPos.fromBlock(worldY), QuartPos.fromBlock(worldZ))
+                .is(Biomes.LUSH_CAVES);
     }
 
     /**
