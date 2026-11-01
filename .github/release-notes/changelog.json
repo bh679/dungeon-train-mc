@@ -32271,22 +32271,6 @@
       "released": false,
       "released_in": null,
       "released_at": null
-    },
-    {
-      "id": "playermobs-no-digging",
-      "version": "0.1612.0",
-      "type": "fix",
-      "tags": [
-        "fix",
-        "mobs"
-      ],
-      "title": "Player mobs fight instead of digging",
-      "summary": "Player mobs no longer get stuck mining the ground mid-fight. They come straight for you again.",
-      "highlights": [],
-      "date": "2026-11-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
     }
   ]
 }

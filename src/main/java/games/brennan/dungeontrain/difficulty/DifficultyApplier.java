@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.adventureitemnames.api.NameComposer;
 import games.brennan.adventureitemstats.api.StatsModifier;
 import games.brennan.dungeontrain.combat.MobDigGoal;
+import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.HolderSet;
@@ -317,12 +318,13 @@ public final class DifficultyApplier {
         MobDigGoal.attach(mob);
     }
 
-    /** Mobs with hands that show and swing a held tool. PlayerMobs are left out: they never dig. */
+    /** Mobs with hands that show and swing a held tool. */
     static boolean canHoldTools(Mob mob) {
         return mob instanceof Zombie
                 || mob instanceof AbstractSkeleton
                 || mob instanceof AbstractPiglin
-                || mob instanceof AbstractIllager;
+                || mob instanceof AbstractIllager
+                || mob instanceof PlayerMobEntity;
     }
 
     /**

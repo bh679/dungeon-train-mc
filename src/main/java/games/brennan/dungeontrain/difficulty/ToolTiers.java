@@ -32,7 +32,7 @@ public final class ToolTiers {
     /** Levels at which break tiers 1-4 unlock. */
     static final int[] TIER_LEVELS = {TOOL_START_LEVEL, 100, 150, 200};
 
-    /** Top break tier: anything except floors. */
+    /** Top break tier: anything except floors. PlayerMobs always dig at this tier. */
     public static final int MAX_TIER = 4;
 
     /** No break tier: the mob has no tool, or the level is below {@link #TOOL_START_LEVEL}. */
