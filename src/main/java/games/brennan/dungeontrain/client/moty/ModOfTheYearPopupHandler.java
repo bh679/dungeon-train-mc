@@ -80,6 +80,8 @@ public final class ModOfTheYearPopupHandler {
             schedule(mc.screen, false);
         }
         if (openDelayRemaining < 0) return;
+        // Hold the countdown while the resource-loading splash is still over the title screen.
+        if (mc.getOverlay() != null) return;
         // The title screen is rebuilt more than once while the game finishes loading, so the launch
         // ask follows whichever title screen is up; the after-answer ask needs the same screen.
         if (pendingIsLaunch && mc.screen instanceof TitleScreen title) {
