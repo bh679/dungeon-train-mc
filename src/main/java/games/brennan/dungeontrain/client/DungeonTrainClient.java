@@ -4,6 +4,8 @@ import games.brennan.discordpresence.client.SurveySubmitClientHook;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.bugresponse.BugResponseChatNotifier;
+import games.brennan.dungeontrain.client.moty.ModOfTheYearPopupHandler;
+import games.brennan.discordpresence.survey.SurveyRegistry;
 import org.slf4j.Logger;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -71,6 +73,13 @@ public final class DungeonTrainClient {
                 BugResponseChatNotifier.onSurveySubmit(entry, score);
             } catch (Exception ex) {
                 LOGGER.warn("[DungeonTrain] Bug-report chat response failed: {}", ex.toString());
+            }
+            try {
+                if (entry.scaleMax() >= entry.scaleMin() && SurveyRegistry.NPS_ID.equals(entry.id())) {
+                    ModOfTheYearPopupHandler.onNpsAnswered(score);
+                }
+            } catch (Exception ex) {
+                LOGGER.warn("[DungeonTrain] Recording the NPS answer failed: {}", ex.toString());
             }
         });
 
