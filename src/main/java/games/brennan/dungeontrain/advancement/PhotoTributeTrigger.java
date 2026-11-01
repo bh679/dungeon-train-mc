@@ -20,7 +20,7 @@ import java.util.Optional;
  * { "trigger": "dungeontrain:photo_tribute",
  *   "conditions": { "whose": "own", "min_cost": 180 } }
  * { "trigger": "dungeontrain:photo_tribute",
- *   "conditions": { "whose": "others", "min_total": 500 } }
+ *   "conditions": { "whose": "others", "min_total": 100 } }
  * }</pre>
  */
 public final class PhotoTributeTrigger extends SimpleCriterionTrigger<PhotoTributeTrigger.Instance> {

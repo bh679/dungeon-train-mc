@@ -81,11 +81,11 @@ final class PhotoTierAdvancementsTest {
     }
 
     @Test
-    @DisplayName("Big Spender asks for 500 emeralds paid to others' photos in total, whatever one Tribute cost")
+    @DisplayName("Big Spender asks for 100 emeralds paid to others' photos in total, whatever one Tribute cost")
     void bigSpenderTotal() throws IOException {
         JsonObject c = conditions("big_spender");
         assertEquals(PhotoTributeTrigger.OTHERS, c.get("whose").getAsString());
-        assertEquals(500, c.get("min_total").getAsInt());
+        assertEquals(100, c.get("min_total").getAsInt());
         assertFalse(c.has("min_cost"));
     }
 
