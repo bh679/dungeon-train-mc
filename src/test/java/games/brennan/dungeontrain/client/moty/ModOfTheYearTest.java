@@ -103,10 +103,10 @@ class ModOfTheYearTest {
     }
 
     @Test
-    @DisplayName("each ask links its own listing")
-    void projectLinks() {
-        assertEquals(ModOfTheYear.MODPACK_URL, Ask.NOMINATE_MODPACK.projectUrl());
-        assertEquals(ModOfTheYear.MOD_URL, Ask.NOMINATE_MOD.projectUrl());
+    @DisplayName("nominating goes to the nomination form, voting to the contest page")
+    void contestLinks() {
+        assertEquals(ModOfTheYear.NOMINATION_URL, Ask.NOMINATE_MODPACK.contestUrl());
+        assertEquals(ModOfTheYear.VOTE_URL, Ask.VOTE_MODPACK.contestUrl());
         assertEquals(ModOfTheYear.VOTE_URL, Ask.VOTE_MOD.contestUrl());
         assertEquals(ModOfTheYear.NOMINATION_URL, Ask.NOMINATE_MOD.contestUrl());
     }

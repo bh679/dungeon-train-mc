@@ -24,8 +24,7 @@ import java.util.Optional;
  *
  * <p>The main button and "Already did" both mark the ask done, so it is never asked again, and the
  * next ask (the mod, once the modpack is done) takes its place straight away. "Not now" and Esc just
- * close, and the next launch asks again while the phase is open. Nominating also copies the project's
- * link to the clipboard, ready to paste into the form.</p>
+ * close, and the next launch asks again while the phase is open.</p>
  */
 public final class ModOfTheYearPopupScreen extends Screen {
 
@@ -60,7 +59,7 @@ public final class ModOfTheYearPopupScreen extends Screen {
     private int bodyY;
 
     public ModOfTheYearPopupScreen(Screen parent, ModOfTheYear.Ask ask) {
-        super(Component.translatable(KEY + (ask.modpack() ? "title_modpack" : "title")));
+        super(Component.translatable(KEY + "title"));
         this.parent = parent;
         this.ask = ask;
     }
@@ -115,9 +114,6 @@ public final class ModOfTheYearPopupScreen extends Screen {
     /** The contest page behind vanilla's "open this link?" confirmation; then the next ask, if any. */
     private void openContest() {
         String url = ask.contestUrl();
-        if (!ask.voting()) {
-            this.minecraft.keyboardHandler.setClipboard(ask.projectUrl());
-        }
         ClientDisplayConfig.markMotyDone(ask);
         LOGGER.info("ModOfTheYearPopup: {} clicked — opening {}", ask, url);
         this.minecraft.setScreen(new ConfirmLinkScreen(yes -> {

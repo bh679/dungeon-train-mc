@@ -50,11 +50,6 @@ public final class ModOfTheYear {
         public String contestUrl() {
             return voting ? VOTE_URL : NOMINATION_URL;
         }
-
-        /** The listing being nominated or voted for — copied so it can be pasted into the form. */
-        public String projectUrl() {
-            return modpack ? MODPACK_URL : MOD_URL;
-        }
     }
 
     /** What the player has already done (or said they have). */
@@ -80,8 +75,6 @@ public final class ModOfTheYear {
     public static final String NOMINATION_URL = "https://links.curseforge.com/moty2026-nominations-lp";
     /** The contest page, where voting happens. */
     public static final String VOTE_URL = "https://mod.curseforge.com/minecraft-mod-of-the-year-2026/";
-    public static final String MODPACK_URL = "https://www.curseforge.com/minecraft/modpacks/dungeon-train";
-    public static final String MOD_URL = "https://www.curseforge.com/minecraft/mc-mods/dungeon-train";
 
     private ModOfTheYear() {}
 
