@@ -55,6 +55,8 @@ Those gate playbooks reference further playbooks as needed.
 
 ## Gate 1 — Plan Approval
 
+Follow `~/.claude/playbooks/gates/gate-1-plan.md`, plus the Dungeon Train add-on in
+`.claude/gates/gate-1-plan.md` (UI prototypes; new advancements prototyped in the advancement editor).
 Before writing any code:
 1. Enter plan mode (`EnterPlanMode`)
 2. Explore the codebase — read relevant files, understand existing patterns (`src/main/java/...`, `build.gradle`, `gradle.properties`)
@@ -69,6 +71,8 @@ Before writing any code:
 
 ## Gate 2 — Testing Approval
 
+Follow `~/.claude/playbooks/gates/gate-2-test.md`, plus the Dungeon Train add-on in
+`.claude/gates/gate-2-test.md` (Minecraft build, F2 screenshots, Sable test).
 After implementation is complete:
 1. Build the mod: `./gradlew build` — must pass cleanly (no errors, warnings noted)
 2. Run unit tests if any: `./gradlew test`
@@ -77,7 +81,7 @@ After implementation is complete:
 5. Enter plan mode and present a **Gate 2 Testing Report**:
    - Build result: success/fail, jar size, output path (`build/libs/dungeon-train-mc-<version>.jar`)
    - Unit test summary: total, passed, failed, skipped (if applicable)
-   - Screenshot paths
+   - Screenshots shown rendered in chat, plus their paths
    - Step-by-step in-game testing instructions (what world, what to do, what to look for)
    - Compatibility notes: Sable interaction tested? multiplayer tested? dedicated server tested?
    - What passed / what failed
