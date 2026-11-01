@@ -36,7 +36,8 @@ import java.util.List;
  * <p>It asks sparingly ({@link #shouldPrompt}): only for a freeze that began in a world the player
  * has been in for {@link #JOIN_GRACE_MS} (ten minutes: joining hitches are the norm, not news), at most once per
  * {@link #PROMPT_COOLDOWN_MS}, and never again this session after a [No]. The buttons are
- * {@link ChatClick} actions, so there is no command to type.</p>
+ * {@link ChatClick} actions, so there is no command to type. Old builds are never asked
+ * ({@link LagReportVersionGate}).</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LagReportPrompt {
@@ -91,6 +92,7 @@ public final class LagReportPrompt {
         Minecraft mc = Minecraft.getInstance();
         long now = System.currentTimeMillis();
         if (mc.player == null || mc.getConnection() == null) return;
+        if (!LagReportVersionGate.enabled()) return;
         if (!shouldPrompt(startedInWorld, freezeStartedAt, joinedAt, lastPromptAt, declined, now)) return;
         lastPromptAt = now;
         pendingId = nextId++;
