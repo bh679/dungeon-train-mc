@@ -14,31 +14,31 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 final class EchoSlimeRescueStepTest {
 
     @Test
-    @DisplayName("echo on the deck inside the window is credited")
-    void onDeck_credits() {
-        assertEquals(RescueDecision.CREDIT, EchoSlimeRescueEvents.step(true, false, false));
+    @DisplayName("standing on the deck, alive, is credited")
+    void groundedOnDeck_credits() {
+        assertEquals(RescueDecision.CREDIT, EchoSlimeRescueEvents.step(true, true, false));
     }
 
     @Test
-    @DisplayName("landing on the deck on the scan the window runs out still counts")
-    void onDeck_atExpiry_credits() {
-        assertEquals(RescueDecision.CREDIT, EchoSlimeRescueEvents.step(true, false, true));
-    }
-
-    @Test
-    @DisplayName("still in the air inside the window keeps waiting")
-    void offDeck_inWindow_keeps() {
+    @DisplayName("still in the air keeps waiting, however long the fall")
+    void airborne_keeps() {
         assertEquals(RescueDecision.KEEP, EchoSlimeRescueEvents.step(false, false, false));
     }
 
     @Test
-    @DisplayName("still off the deck when the window runs out is dropped")
-    void offDeck_expired_drops() {
-        assertEquals(RescueDecision.DROP, EchoSlimeRescueEvents.step(false, false, true));
+    @DisplayName("passing just over the deck in mid-air is not a landing yet")
+    void airborneOverDeck_keeps() {
+        assertEquals(RescueDecision.KEEP, EchoSlimeRescueEvents.step(true, false, false));
     }
 
     @Test
-    @DisplayName("dead or unloaded echo is dropped")
+    @DisplayName("landing on ground that isn't the train ends the attempt")
+    void groundedOffTrain_drops() {
+        assertEquals(RescueDecision.DROP, EchoSlimeRescueEvents.step(false, true, false));
+    }
+
+    @Test
+    @DisplayName("dead (fall damage, the void) or unloaded echo is dropped")
     void gone_drops() {
         assertEquals(RescueDecision.DROP, EchoSlimeRescueEvents.step(null, false, false));
     }
@@ -46,6 +46,6 @@ final class EchoSlimeRescueStepTest {
     @Test
     @DisplayName("twin space never counts, even on something deck-like")
     void twinSpace_drops() {
-        assertEquals(RescueDecision.DROP, EchoSlimeRescueEvents.step(true, true, false));
+        assertEquals(RescueDecision.DROP, EchoSlimeRescueEvents.step(true, true, true));
     }
 }

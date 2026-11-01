@@ -17,6 +17,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import org.joml.primitives.AABBdc;
 
@@ -34,8 +35,10 @@ import java.util.UUID;
  * attempt only when the target is the striker's own echo, it is off the train (beside every carriage's
  * bounding box, so a hop on the deck can't count) and nothing in the world column under it stops a fall
  * before the bottom of the world. Carriage blocks live in Sable plot space, so they never read as ground
- * there. The {@link #onLevelTick} scan then credits the striker if the echo stands on a carriage deck
- * within {@link #RESCUE_WINDOW_TICKS}.</p>
+ * there. There is no time limit, so a hit that sends the echo up into the sky still counts: the
+ * {@link #onLevelTick} scan waits for the next time the echo stands on solid ground, and credits the
+ * striker if that ground is a carriage and the echo is still alive. Landing anywhere else, dying
+ * (fall damage, the void) or unloading ends the attempt.</p>
  *
  * <p>Twin space never counts, for the same reason it doesn't for Reboarder: a portal room is off the
  * deck and over nothing without anyone being shoved off a moving train.</p>
@@ -46,19 +49,13 @@ public final class EchoSlimeRescueEvents {
     /** {@code gameplay_action} for {@code secrete_menu/knockback_slime_echo_rescue}. */
     public static final String RESCUE_ADVANCEMENT_ACTION = "knockback_slime_echo_rescue";
 
-    /** Scan cadence (ticks), matching the Reboarder scan in {@link PlayerMobAdvancementEvents}. */
-    private static final int SCAN_PERIOD_TICKS = 10;
-
-    /** How long after the slime hit a landing on the deck still counts as the rescue. */
-    static final long RESCUE_WINDOW_TICKS = 100L;
-
     /** echo UUID → the slime hit that may yet land it back on the train. */
     private static final Map<UUID, RescueHit> PENDING = new HashMap<>();
 
     private EchoSlimeRescueEvents() {}
 
-    /** A qualifying slime hit: who struck, when, and in which level the echo was. */
-    record RescueHit(UUID playerUuid, long tick, ResourceKey<Level> dimension) {}
+    /** A qualifying slime hit: who struck, and in which level the echo was. */
+    record RescueHit(UUID playerUuid, ResourceKey<Level> dimension) {}
 
     /** What one scan concludes about a pending rescue. */
     enum RescueDecision { CREDIT, KEEP, DROP }
@@ -76,15 +73,18 @@ public final class EchoSlimeRescueEvents {
         if (CarriageDeck.isOnCarriageDeck(carriages, target)) return;
         if (!isBesideTrain(carriages, target)) return;
         if (!isOverVoid(level, target)) return;
-        PENDING.put(target.getUUID(), new RescueHit(player.getUUID(), level.getGameTime(), level.dimension()));
+        PENDING.put(target.getUUID(), new RescueHit(player.getUUID(), level.dimension()));
     }
 
+    /**
+     * Every tick while a rescue is pending (it is a rare, short-lived state), so the landing is judged
+     * on the tick it happens, before the echo can walk off the deck. Fall damage is applied during the
+     * landing move, so an echo the fall killed already reads as dead here.
+     */
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
         if (PENDING.isEmpty()) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
-        if (level.getGameTime() % SCAN_PERIOD_TICKS != 0) return;
-        long now = level.getGameTime();
         List<Trains.Carriage> carriages = Trains.allCarriages(level);
         for (Map.Entry<UUID, RescueHit> entry : new ArrayList<>(PENDING.entrySet())) {
             if (entry.getValue().dimension() != level.dimension()) continue;
@@ -92,8 +92,8 @@ public final class EchoSlimeRescueEvents {
             boolean alive = echo != null && echo.isAlive();
             Boolean onDeck = alive ? CarriageDeck.isOnCarriageDeck(carriages, echo) : null;
             boolean inTwinSpace = alive && PortalTwinSpace.isInside(level, Mth.floor(echo.getX()), echo.getY());
-            boolean expired = now - entry.getValue().tick() > RESCUE_WINDOW_TICKS;
-            switch (step(onDeck, inTwinSpace, expired)) {
+            boolean onGround = alive && echo.onGround();
+            switch (step(onDeck, onGround, inTwinSpace)) {
                 case CREDIT -> {
                     credit(level, entry.getValue().playerUuid());
                     PENDING.remove(entry.getKey());
@@ -107,14 +107,20 @@ public final class EchoSlimeRescueEvents {
     /**
      * Pure decision for one scan, table-tested by {@code EchoSlimeRescueStepTest}.
      *
-     * @param onDeck      the echo stands on a carriage deck, or {@code null} when it is dead or unloaded
+     * @param onDeck      the echo is over a carriage deck, or {@code null} when it is dead or unloaded
+     * @param onGround    the echo is standing on solid ground (vanilla {@code onGround}, which holds on carriages)
      * @param inTwinSpace the echo is inside portal twin space
-     * @param expired     the rescue window has elapsed since the slime hit
      */
-    static RescueDecision step(Boolean onDeck, boolean inTwinSpace, boolean expired) {
+    static RescueDecision step(Boolean onDeck, boolean onGround, boolean inTwinSpace) {
         if (onDeck == null || inTwinSpace) return RescueDecision.DROP;
-        if (onDeck) return RescueDecision.CREDIT;
-        return expired ? RescueDecision.DROP : RescueDecision.KEEP;
+        if (!onGround) return RescueDecision.KEEP;
+        return onDeck ? RescueDecision.CREDIT : RescueDecision.DROP;
+    }
+
+    /** A stale hit must not survive into the next world loaded in this JVM (singleplayer). */
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        PENDING.clear();
     }
 
     private static void credit(ServerLevel level, UUID playerUuid) {
