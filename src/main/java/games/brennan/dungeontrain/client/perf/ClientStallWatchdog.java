@@ -41,6 +41,11 @@ import java.util.Map;
  * <p>When a dumped freeze ends, {@link LagReportPrompt} may offer in chat to send the log to the
  * developer.</p>
  *
+ * <h2>Recent builds only</h2>
+ * <p>Nothing is dumped unless {@link LagReportVersionGate} confirms this build is within 20 minor
+ * versions of the newest release. Once the release check says it is older, the sampler thread ends
+ * for the session.</p>
+ *
  * <h2>Budget</h2>
  * <p>The same rules as the server's, for the same reason (the 512 KB log tail a bug report attaches):
  * a freeze from {@link #LONG_STALL_MS} is always dumped; a shorter one at most once per
@@ -123,6 +128,16 @@ public final class ClientStallWatchdog {
                     lastProbeAt = 0;
                 }
                 if (now - lastProbeAt < REDUMP_COOLDOWN_MS) continue;
+                if (!LagReportVersionGate.enabled()) {
+                    if (LagReportVersionGate.ruledOut()) {
+                        LOGGER.info("[DT-ClientStallWatchdog] this build is over {} minor versions behind the latest release; lag detection is off this session",
+                            LagReportVersionGate.MAX_MINORS_BEHIND);
+                        return;
+                    }
+                    // Not known to be recent yet (check pending or offline): no dump, no prompt.
+                    frozenFrame = 0;
+                    continue;
+                }
                 if (!mayDump(stalled, lastShortDumpAt, shortDumps, now)) continue;
 
                 StackTraceElement[] stack = render.getStackTrace();
