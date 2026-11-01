@@ -87,7 +87,8 @@ After implementation is complete:
 
 ## Gate 3 — Merge Approval
 
-Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
+Follow `~/.claude/playbooks/gates/gate-3-merge.md`, plus the Dungeon Train add-on steps in
+`.claude/gates/gate-3-merge.md` (changelog, tags, modpack whitelist). Summary:
 1. Push branch, open PR with conventional commit title
 2. **Log + confirm the changelog entry** — append it on the feature branch with
    `scripts/release-notes/append-entry.py` (curated player-facing notes) so it lands in the PR
