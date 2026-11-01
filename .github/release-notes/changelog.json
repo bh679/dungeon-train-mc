@@ -32268,25 +32268,60 @@
       "highlights": [],
       "pr": 2425,
       "date": "2026-11-01",
+      "released": true,
+      "released_in": "v0.1611.0",
+      "released_at": "2026-11-01T10:47:10Z"
+    },
+    {
+      "id": "lag-detection-recent-builds-only",
+      "version": "0.1612.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "internal"
+      ],
+      "title": "Lag report fix",
+      "summary": "Lag detection and the offer to send a lag report now only run on recent versions of the mod. Older versions skip them entirely.",
+      "highlights": [],
+      "date": "2026-11-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 2426
+    },
+    {
+      "id": "moty-nomination-popup",
+      "version": "0.1613.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Mod of the Year nominations",
+      "summary": "CurseForge's Mod of the Year is open for nominations, and if you've rated Dungeon Train highly, a short popup now invites you to nominate the modpack and then the mod. Pick Already did or nominate once and it won't ask again.",
+      "highlights": [],
+      "pr": 2428,
+      "date": "2026-11-01",
       "released": false,
       "released_in": null,
       "released_at": null
     },
     {
-      "id": "dig-never-mines-floor",
-      "version": "0.1611.0",
+      "id": "title-badge-update-check",
+      "version": "0.1614.0",
       "type": "fix",
       "tags": [
         "fix",
-        "mobs"
+        "ui"
       ],
-      "title": "Digging mobs leave the floor alone",
-      "summary": "Mobs that dig through walls to reach you, Player Mobs included, no longer mine the carpet, slabs or paths under their feet mid-fight.",
+      "title": "Update check fix",
+      "summary": "The version label on the title screen and pause menu tells you again when a newer version of Dungeon Train is out.",
       "highlights": [],
       "date": "2026-11-01",
       "released": false,
       "released_in": null,
-      "released_at": null
+      "released_at": null,
+      "pr": 2429
     }
   ]
 }
