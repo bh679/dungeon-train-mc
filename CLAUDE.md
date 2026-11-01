@@ -62,7 +62,7 @@ Before writing any code:
 2. Explore the codebase — read relevant files, understand existing patterns (`src/main/java/...`, `build.gradle`, `gradle.properties`)
    - Current stack baseline: NeoForge 1.21.1 (`neo_version` in `gradle.properties`), Sable physics dep (`sable_version`).
 3. Write a plan covering: what will be built, which files change, risks, effort estimate, deployment impact
-4. **Mod-impact check:** If the change involves new dependencies in `build.gradle`, MC/NeoForge/Sable version bumps, new mixins, new registered blocks/items/entities, world-gen changes, or networking packets — call this out explicitly in the plan
+4. **Mod-impact check:** run the checklist in `.claude/gates/gate-1-plan.md` and flag each item that applies
 5. Present via `ExitPlanMode` and wait for user approval
 6. **After approval — rename branch** from `claude/<auto-slug>` → `dev/<feature-slug>`
    before writing any code (see `~/.claude/playbooks/gates/gate-1-plan.md` § Post-Approval: Rename Branch)
