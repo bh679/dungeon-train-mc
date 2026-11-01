@@ -32271,6 +32271,23 @@
       "released": true,
       "released_in": "v0.1611.0",
       "released_at": "2026-11-01T10:47:10Z"
+    },
+    {
+      "id": "lag-detection-recent-builds-only",
+      "version": "0.1612.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "internal"
+      ],
+      "title": "Lag report fix",
+      "summary": "Lag detection and the offer to send a lag report now only run on recent versions of the mod. Older versions skip them entirely.",
+      "highlights": [],
+      "date": "2026-11-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 2426
     }
   ]
 }
