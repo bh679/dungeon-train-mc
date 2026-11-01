@@ -1,8 +1,13 @@
 package games.brennan.dungeontrain.client.perf;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.client.version.SemverCompare;
-import games.brennan.dungeontrain.client.version.VersionCheckState;
+import games.brennan.dungeontrain.client.version.UpdateFeed;
+import net.minecraft.SharedConstants;
+import org.slf4j.Logger;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Whether this build is new enough for {@link ClientStallWatchdog} and {@link LagReportPrompt} to
@@ -10,32 +15,60 @@ import games.brennan.dungeontrain.client.version.VersionCheckState;
  * versions behind. A freeze on an older build has most likely been fixed since, so neither its
  * stack dump nor its report is worth the log space.
  *
- * <p>"Newest" is {@link VersionCheckState}: the GitHub latest-release check the title screen already
- * makes every session, so the gate costs no request of its own. Until that check answers (or when it
- * fails, offline), the build is not known to be recent and lag detection stays off.</p>
+ * <p>"Newest" is {@code promos["<mc>-latest"]} in the repo's {@code update.json} ({@link UpdateFeed}),
+ * which {@code release.yml} rewrites on every release. Not the GitHub "latest release" API behind the
+ * title-screen badge: releases are published as pre-releases, so that one still names v0.73.0 and
+ * every build would read as ahead. Asked once per session (again every {@link #RETRY_MS} while it
+ * fails). Until it answers, offline included, the build is not known to be recent and lag detection
+ * stays off.</p>
  */
 public final class LagReportVersionGate {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
     /** How many MINOR releases behind the newest a build may be and still run lag detection. */
     static final int MAX_MINORS_BEHIND = 20;
+    /** Ask the feed again this often while it has not answered. */
+    private static final long RETRY_MS = 10 * 60_000;
+
+    private static final AtomicBoolean IN_FLIGHT = new AtomicBoolean(false);
+    private static volatile long lastAttemptAt;
+    /** The newest release; {@code null} until the feed answers. */
+    private static volatile String latest;
 
     private LagReportVersionGate() {}
 
-    /** Whether lag detection may run now. Any thread (the state's fields are volatile). */
+    /** Whether lag detection may run now. Any thread; asks the feed the first time. */
     static boolean enabled() {
-        VersionCheckState.Status status = VersionCheckState.status();
-        if (status == VersionCheckState.Status.LATEST || status == VersionCheckState.Status.AHEAD) return true;
-        return status == VersionCheckState.Status.UPDATE_AVAILABLE
-            && isRecent(VersionInfo.VERSION, VersionCheckState.latestTag());
+        String newest = latest;
+        if (newest == null) {
+            maybeFetch();
+            return false;
+        }
+        return isRecent(VersionInfo.VERSION, newest);
     }
 
     /**
-     * True once the check has answered and this build is too old: final for the session, since the
+     * True once the feed has answered and this build is too old: final for the session, since the
      * installed jar cannot change while it runs.
      */
     static boolean ruledOut() {
-        return VersionCheckState.status() == VersionCheckState.Status.UPDATE_AVAILABLE
-            && !isRecent(VersionInfo.VERSION, VersionCheckState.latestTag());
+        String newest = latest;
+        return newest != null && !isRecent(VersionInfo.VERSION, newest);
+    }
+
+    private static void maybeFetch() {
+        long now = System.currentTimeMillis();
+        if (lastAttemptAt != 0 && now - lastAttemptAt < RETRY_MS) return;
+        if (!IN_FLIGHT.compareAndSet(false, true)) return;
+        lastAttemptAt = now;
+        UpdateFeed.fetchLatest(SharedConstants.getCurrentVersion().getName(), VersionInfo.VERSION)
+            .whenComplete((version, error) -> {
+                IN_FLIGHT.set(false);
+                if (version == null) return;
+                latest = version;
+                LOGGER.info("[DungeonTrain] Lag detection version gate: installed {}, latest {} -> {}",
+                    VersionInfo.VERSION, version, isRecent(VersionInfo.VERSION, version) ? "on" : "off");
+            });
     }
 
     /**

@@ -43,7 +43,7 @@ import java.util.Map;
  *
  * <h2>Recent builds only</h2>
  * <p>Nothing is dumped unless {@link LagReportVersionGate} confirms this build is within 20 minor
- * versions of the newest release. Once the release check says it is older, the sampler thread ends
+ * versions of the newest release. Once the update feed says it is older, the sampler thread ends
  * for the session.</p>
  *
  * <h2>Budget</h2>
@@ -134,7 +134,7 @@ public final class ClientStallWatchdog {
                             LagReportVersionGate.MAX_MINORS_BEHIND);
                         return;
                     }
-                    // Not known to be recent yet (check pending or offline): no dump, no prompt.
+                    // Not known to be recent yet (feed pending or offline): no dump, no prompt.
                     frozenFrame = 0;
                     continue;
                 }

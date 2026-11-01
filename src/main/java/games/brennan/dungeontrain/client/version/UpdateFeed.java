@@ -21,7 +21,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * <p>No-throw: every failure completes the future with {@code null}.</p>
  */
-final class UpdateFeed {
+public final class UpdateFeed {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -46,7 +46,7 @@ final class UpdateFeed {
     }
 
     /** Latest version string (no {@code v}), or {@code null} on any failure. */
-    static CompletableFuture<String> fetchLatest(String mcVersion, String modVersion) {
+    public static CompletableFuture<String> fetchLatest(String mcVersion, String modVersion) {
         HttpRequest req;
         try {
             req = HttpRequest.newBuilder(URI.create(url()))
