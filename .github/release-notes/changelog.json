@@ -32288,6 +32288,23 @@
       "released_in": null,
       "released_at": null,
       "pr": 2426
+    },
+    {
+      "id": "hidden-advancement-running-total",
+      "version": "0.1613.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Advancement change",
+      "summary": "One hidden advancement now builds up over time instead of asking for a single big moment.",
+      "highlights": [],
+      "pr": 2427,
+      "date": "2026-11-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
