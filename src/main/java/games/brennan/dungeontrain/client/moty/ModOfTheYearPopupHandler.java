@@ -42,8 +42,10 @@ public final class ModOfTheYearPopupHandler {
     private static boolean askAfterAnswer = false;
     /** Ticks until a scheduled open; {@code -1} when nothing is scheduled. */
     private static int openDelayRemaining = -1;
-    /** The screen the scheduled popup will sit over; the open is dropped if the player has moved on. */
+    /** The screen the scheduled popup will sit over; the open is put off if the player has moved on. */
     private static Screen pendingParent = null;
+    /** Whether the scheduled open is the launch ask (else the after-answer ask). */
+    private static boolean pendingIsLaunch = false;
 
     private ModOfTheYearPopupHandler() {}
 
@@ -66,7 +68,7 @@ public final class ModOfTheYearPopupHandler {
         if (!(event.getScreen() instanceof TitleScreen title) || launchChecked) return;
         launchChecked = true;
         if (currentPhaseToAsk() == ModOfTheYear.Phase.NONE) return;
-        schedule(title);
+        schedule(title, true);
         LOGGER.info("ModOfTheYearPopup: launch — popup scheduled in {} ticks", OPEN_DELAY_TICKS);
     }
 
@@ -75,11 +77,22 @@ public final class ModOfTheYearPopupHandler {
         Minecraft mc = Minecraft.getInstance();
         if (askAfterAnswer && openDelayRemaining < 0 && playerIsFree(mc)) {
             askAfterAnswer = false;
-            schedule(mc.screen);
+            schedule(mc.screen, false);
         }
         if (openDelayRemaining < 0) return;
+        // The title screen is rebuilt more than once while the game finishes loading, so the launch
+        // ask follows whichever title screen is up; the after-answer ask needs the same screen.
+        if (pendingIsLaunch && mc.screen instanceof TitleScreen title) {
+            pendingParent = title;
+        }
         if (mc.screen != pendingParent) {
-            LOGGER.info("ModOfTheYearPopup: screen changed during open delay; skipping");
+            // The player moved on (opened a world, another prompt took over): ask at the next chance.
+            LOGGER.info("ModOfTheYearPopup: screen changed during open delay; asking later");
+            if (pendingIsLaunch) {
+                launchChecked = false;
+            } else {
+                askAfterAnswer = true;
+            }
             openDelayRemaining = -1;
             pendingParent = null;
             return;
@@ -94,8 +107,9 @@ public final class ModOfTheYearPopupHandler {
         mc.setScreen(new ModOfTheYearPopupScreen(parent, phase));
     }
 
-    private static void schedule(Screen parent) {
+    private static void schedule(Screen parent, boolean launch) {
         pendingParent = parent;
+        pendingIsLaunch = launch;
         openDelayRemaining = OPEN_DELAY_TICKS;
     }
 
