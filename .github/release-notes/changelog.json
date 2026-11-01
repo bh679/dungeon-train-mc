@@ -32284,9 +32284,9 @@
       "summary": "Lag detection and the offer to send a lag report now only run on recent versions of the mod. Older versions skip them entirely.",
       "highlights": [],
       "date": "2026-11-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1615.0",
+      "released_at": "2026-11-01T14:51:26Z",
       "pr": 2426
     },
     {
@@ -32302,9 +32302,9 @@
       "highlights": [],
       "pr": 2428,
       "date": "2026-11-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1615.0",
+      "released_at": "2026-11-01T14:51:26Z"
     },
     {
       "id": "title-badge-update-check",
@@ -32318,9 +32318,9 @@
       "summary": "The version label on the title screen and pause menu tells you again when a newer version of Dungeon Train is out.",
       "highlights": [],
       "date": "2026-11-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1615.0",
+      "released_at": "2026-11-01T14:51:26Z",
       "pr": 2429
     },
     {
@@ -32336,9 +32336,9 @@
       "highlights": [],
       "pr": 2427,
       "date": "2026-11-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1615.0",
+      "released_at": "2026-11-01T14:51:26Z"
     }
   ]
 }
