@@ -32305,6 +32305,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "title-badge-update-check",
+      "version": "0.1614.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Update check fix",
+      "summary": "The version label on the title screen and pause menu tells you again when a newer version of Dungeon Train is out.",
+      "highlights": [],
+      "date": "2026-11-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 2429
     }
   ]
 }
