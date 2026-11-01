@@ -24,9 +24,9 @@ import java.util.Optional;
  *   <li><b>On launch</b> — the first title screen of the session, once the menu has settled
  *       ({@link #OPEN_DELAY_TICKS}, the same wait {@code DeveloperWelcomePopupHandler} uses).</li>
  *   <li><b>After a recommendation</b> — an NPS answer of 8-10 from the death screen or
- *       {@code /feedback} ({@link #onNpsAnswered}). The survey is left to finish first: the popup
- *       waits until the player is back in the game or on the title screen, so it never cuts into
- *       the death screen's pages.</li>
+ *       {@code /feedback} ({@link #onNpsAnswered}): right after the submit, over the survey, which
+ *       it returns to when closed. If that screen goes away first (a quick respawn), it waits until
+ *       the player is back in the game or on the title screen.</li>
  * </ol>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
@@ -36,10 +36,12 @@ public final class ModOfTheYearPopupHandler {
 
     /** ~1.2 s — lets the title logo and panorama settle before the popup takes over. */
     private static final int OPEN_DELAY_TICKS = 24;
+    /** ~0.5 s after a rating is submitted — long enough to see the answer land. */
+    private static final int ANSWER_DELAY_TICKS = 10;
 
     /** The launch check runs once per session, on the first title screen. */
     private static boolean launchChecked = false;
-    /** A recommendation just came in; ask once the player is free (see {@link #playerIsFree}). */
+    /** The after-answer ask lost its screen; ask once the player is free (see {@link #playerIsFree}). */
     private static boolean askAfterAnswer = false;
     /** Ticks until a scheduled open; {@code -1} when nothing is scheduled. */
     private static int openDelayRemaining = -1;
@@ -58,10 +60,9 @@ public final class ModOfTheYearPopupHandler {
         ClientDisplayConfig.setLastNpsScore(score);
         if (!ModOfTheYear.isRecommendation(score)) return;
         ClientDisplayConfig.markNpsRecommendedHigh();
-        if (nextAsk().isPresent()) {
-            askAfterAnswer = true;
-            LOGGER.info("ModOfTheYearPopup: recommendation ({}) — asking once the survey is done", score);
-        }
+        if (nextAsk().isEmpty()) return;
+        LOGGER.info("ModOfTheYearPopup: recommendation ({}) — asking over the survey", score);
+        schedule(Minecraft.getInstance().screen, false, ANSWER_DELAY_TICKS);
     }
 
     @SubscribeEvent
@@ -69,7 +70,7 @@ public final class ModOfTheYearPopupHandler {
         if (!(event.getScreen() instanceof TitleScreen title) || launchChecked) return;
         launchChecked = true;
         if (nextAsk().isEmpty()) return;
-        schedule(title, true);
+        schedule(title, true, OPEN_DELAY_TICKS);
         LOGGER.info("ModOfTheYearPopup: launch — popup scheduled in {} ticks", OPEN_DELAY_TICKS);
     }
 
@@ -78,7 +79,7 @@ public final class ModOfTheYearPopupHandler {
         Minecraft mc = Minecraft.getInstance();
         if (askAfterAnswer && openDelayRemaining < 0 && playerIsFree(mc)) {
             askAfterAnswer = false;
-            schedule(mc.screen, false);
+            schedule(mc.screen, false, OPEN_DELAY_TICKS);
         }
         if (openDelayRemaining < 0) return;
         // Hold the countdown while the resource-loading splash is still over the title screen.
@@ -110,10 +111,10 @@ public final class ModOfTheYearPopupHandler {
         mc.setScreen(new ModOfTheYearPopupScreen(parent, ask.get()));
     }
 
-    private static void schedule(Screen parent, boolean launch) {
+    private static void schedule(Screen parent, boolean launch, int delayTicks) {
         pendingParent = parent;
         pendingIsLaunch = launch;
-        openDelayRemaining = OPEN_DELAY_TICKS;
+        openDelayRemaining = delayTicks;
     }
 
     /** In the game with no screen up, or on the title screen. */
