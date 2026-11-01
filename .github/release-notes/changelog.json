@@ -32290,6 +32290,40 @@
       "pr": 2426
     },
     {
+      "id": "moty-nomination-popup",
+      "version": "0.1613.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Mod of the Year nominations",
+      "summary": "CurseForge's Mod of the Year is open for nominations, and if you've rated Dungeon Train highly, a short popup now invites you to nominate the modpack and then the mod. Pick Already did or nominate once and it won't ask again.",
+      "highlights": [],
+      "pr": 2428,
+      "date": "2026-11-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "title-badge-update-check",
+      "version": "0.1614.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Update check fix",
+      "summary": "The version label on the title screen and pause menu tells you again when a newer version of Dungeon Train is out.",
+      "highlights": [],
+      "date": "2026-11-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 2429
+    },
+    {
       "id": "hidden-advancement-running-total",
       "version": "0.1613.0",
       "type": "feat",
