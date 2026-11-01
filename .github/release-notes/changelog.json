@@ -32271,6 +32271,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dig-never-mines-floor",
+      "version": "0.1611.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Digging mobs leave the floor alone",
+      "summary": "Mobs that dig through walls to reach you, Player Mobs included, no longer mine the carpet, slabs or paths under their feet mid-fight.",
+      "highlights": [],
+      "date": "2026-11-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
