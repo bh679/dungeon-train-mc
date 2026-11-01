@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.Optional;
 
 /**
  * When to put the {@link ModOfTheYearPopupScreen} in front of a player who qualifies
@@ -57,7 +58,7 @@ public final class ModOfTheYearPopupHandler {
         ClientDisplayConfig.setLastNpsScore(score);
         if (!ModOfTheYear.isRecommendation(score)) return;
         ClientDisplayConfig.markNpsRecommendedHigh();
-        if (currentPhaseToAsk() != ModOfTheYear.Phase.NONE) {
+        if (nextAsk().isPresent()) {
             askAfterAnswer = true;
             LOGGER.info("ModOfTheYearPopup: recommendation ({}) — asking once the survey is done", score);
         }
@@ -67,7 +68,7 @@ public final class ModOfTheYearPopupHandler {
     public static void onScreenInitPost(ScreenEvent.Init.Post event) {
         if (!(event.getScreen() instanceof TitleScreen title) || launchChecked) return;
         launchChecked = true;
-        if (currentPhaseToAsk() == ModOfTheYear.Phase.NONE) return;
+        if (nextAsk().isEmpty()) return;
         schedule(title, true);
         LOGGER.info("ModOfTheYearPopup: launch — popup scheduled in {} ticks", OPEN_DELAY_TICKS);
     }
@@ -103,10 +104,10 @@ public final class ModOfTheYearPopupHandler {
         openDelayRemaining = -1;
         Screen parent = pendingParent;
         pendingParent = null;
-        ModOfTheYear.Phase phase = currentPhaseToAsk();
-        if (phase == ModOfTheYear.Phase.NONE) return;
-        LOGGER.info("ModOfTheYearPopup: showing {} popup", phase);
-        mc.setScreen(new ModOfTheYearPopupScreen(parent, phase));
+        Optional<ModOfTheYear.Ask> ask = nextAsk();
+        if (ask.isEmpty()) return;
+        LOGGER.info("ModOfTheYearPopup: showing {} popup", ask.get());
+        mc.setScreen(new ModOfTheYearPopupScreen(parent, ask.get()));
     }
 
     private static void schedule(Screen parent, boolean launch) {
@@ -121,13 +122,11 @@ public final class ModOfTheYearPopupHandler {
         return mc.screen == null && mc.player != null && mc.player.isAlive();
     }
 
-    /** The phase this player should be asked about today, or {@code NONE}. */
-    private static ModOfTheYear.Phase currentPhaseToAsk() {
-        ModOfTheYear.Phase phase = ModOfTheYear.phaseOn(LocalDate.now(ZoneOffset.UTC));
+    /** What to ask this player today, if anything — the modpack before the mod. */
+    static Optional<ModOfTheYear.Ask> nextAsk() {
         boolean qualifies = ModOfTheYear.qualifies(
                 ClientDisplayConfig.isNpsRecommendedHigh(), ClientDisplayConfig.getLastNpsScore());
-        return ModOfTheYear.shouldAsk(phase, qualifies,
-                ClientDisplayConfig.isMotyNominated(), ClientDisplayConfig.isMotyVoted())
-                ? phase : ModOfTheYear.Phase.NONE;
+        return ModOfTheYear.nextAsk(ModOfTheYear.phaseOn(LocalDate.now(ZoneOffset.UTC)), qualifies,
+                ClientDisplayConfig.motyDone());
     }
 }

@@ -13,17 +13,19 @@ import org.slf4j.Logger;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 
 /**
- * The Mod of the Year ask: asks a player who recommended Dungeon Train to nominate the modpack
- * ({@link ModOfTheYear.Phase#NOMINATE}) or vote for it ({@link ModOfTheYear.Phase#VOTE}).
+ * One Mod of the Year ask ({@link ModOfTheYear.Ask}): nominate, or vote for, the Dungeon Train modpack
+ * (Modpack of the Year) or the Dungeon Train mod (Mod of the Year).
  *
  * <p>Same flat card as {@link games.brennan.dungeontrain.client.version.UpdatePromptScreen}, so every
  * one-time message looks like it came from the same place.</p>
  *
- * <p>The main button and "Already did" both mark the phase done, so it is never asked again;
- * "Not now" and Esc just close, and the next launch asks again while the phase is open. Nominating
- * also copies the modpack link to the clipboard, ready to paste into the form.</p>
+ * <p>The main button and "Already did" both mark the ask done, so it is never asked again, and the
+ * next ask (the mod, once the modpack is done) takes its place straight away. "Not now" and Esc just
+ * close, and the next launch asks again while the phase is open. Nominating also copies the project's
+ * link to the clipboard, ready to paste into the form.</p>
  */
 public final class ModOfTheYearPopupScreen extends Screen {
 
@@ -46,7 +48,7 @@ public final class ModOfTheYearPopupScreen extends Screen {
     private static final int COLOR_BODY = 0xFFE0E0E0;
 
     private final Screen parent;
-    private final ModOfTheYear.Phase phase;
+    private final ModOfTheYear.Ask ask;
 
     private int panelX;
     private int panelY;
@@ -57,21 +59,26 @@ public final class ModOfTheYearPopupScreen extends Screen {
     private int titleY;
     private int bodyY;
 
-    public ModOfTheYearPopupScreen(Screen parent, ModOfTheYear.Phase phase) {
-        super(Component.translatable(KEY + "title"));
+    public ModOfTheYearPopupScreen(Screen parent, ModOfTheYear.Ask ask) {
+        super(Component.translatable(KEY + (ask.modpack() ? "title_modpack" : "title")));
         this.parent = parent;
-        this.phase = phase;
+        this.ask = ask;
     }
 
-    private boolean voting() {
-        return phase == ModOfTheYear.Phase.VOTE;
+    /** The body text for this ask. */
+    private String messageKey() {
+        return switch (ask) {
+            case NOMINATE_MODPACK -> "message.nominate";
+            case NOMINATE_MOD -> "message.nominate_mod";
+            case VOTE_MODPACK -> "message.vote";
+            case VOTE_MOD -> "message.vote_mod";
+        };
     }
 
     @Override
     protected void init() {
         int innerWidth = CARD_W - 2 * PAD;
-        bodyLines = font.split(Component.translatable(KEY + (voting() ? "message.vote" : "message.nominate")),
-                innerWidth);
+        bodyLines = font.split(Component.translatable(KEY + messageKey()), innerWidth);
 
         int contentH = font.lineHeight + GAP_TITLE
                 + bodyLines.size() * LINE_STEP + GAP_BODY
@@ -92,7 +99,7 @@ public final class ModOfTheYearPopupScreen extends Screen {
         int innerLeft = panelX + PAD;
         int buttonW = (innerWidth - 2 * BUTTON_GAP) / 3;
         addRenderableWidget(Button.builder(
-                        Component.translatable(KEY + (voting() ? "button.vote" : "button.nominate")),
+                        Component.translatable(KEY + (ask.voting() ? "button.vote" : "button.nominate")),
                         b -> openContest())
                 .bounds(innerLeft, cursor, buttonW, BUTTON_H)
                 .build());
@@ -105,31 +112,34 @@ public final class ModOfTheYearPopupScreen extends Screen {
                 .build());
     }
 
-    /** The contest page behind vanilla's "open this link?" confirmation; back to what was underneath either way. */
+    /** The contest page behind vanilla's "open this link?" confirmation; then the next ask, if any. */
     private void openContest() {
-        String url = voting() ? ModOfTheYear.VOTE_URL : ModOfTheYear.NOMINATION_URL;
-        if (!voting()) {
-            this.minecraft.keyboardHandler.setClipboard(ModOfTheYear.MODPACK_URL);
+        String url = ask.contestUrl();
+        if (!ask.voting()) {
+            this.minecraft.keyboardHandler.setClipboard(ask.projectUrl());
         }
-        markDone();
-        LOGGER.info("ModOfTheYearPopup: {} clicked — opening {}", phase, url);
+        ClientDisplayConfig.markMotyDone(ask);
+        LOGGER.info("ModOfTheYearPopup: {} clicked — opening {}", ask, url);
         this.minecraft.setScreen(new ConfirmLinkScreen(yes -> {
             if (yes) Util.getPlatform().openUri(URI.create(url));
-            this.minecraft.setScreen(parent);
+            showNextOrClose();
         }, url, true));
     }
 
     private void alreadyDid() {
-        LOGGER.info("ModOfTheYearPopup: 'Already did' clicked for {}", phase);
-        markDone();
-        onClose();
+        LOGGER.info("ModOfTheYearPopup: 'Already did' clicked for {}", ask);
+        ClientDisplayConfig.markMotyDone(ask);
+        showNextOrClose();
     }
 
-    private void markDone() {
-        if (voting()) {
-            ClientDisplayConfig.markMotyVoted();
+    /** Once an ask is done, the next one (the mod, after the modpack) follows on; otherwise back out. */
+    private void showNextOrClose() {
+        Optional<ModOfTheYear.Ask> next = ModOfTheYearPopupHandler.nextAsk();
+        if (next.isPresent()) {
+            LOGGER.info("ModOfTheYearPopup: following on with {}", next.get());
+            this.minecraft.setScreen(new ModOfTheYearPopupScreen(parent, next.get()));
         } else {
-            ClientDisplayConfig.markMotyNominated();
+            onClose();
         }
     }
 
