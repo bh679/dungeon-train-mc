@@ -17,7 +17,7 @@ import java.util.concurrent.CompletableFuture;
  * Reads the newest released version from the repo's NeoForge {@code update.json} — the same file
  * {@code updateJSONURL} in mods.toml points at, rewritten by {@code release.yml} on every release.
  * Served from raw.githubusercontent.com: keyless, CDN-cached, and free of the 60/hour GitHub API
- * limit that {@link GitHubLatestReleaseFetcher} lives under, which is what makes it safe to poll.
+ * limit, which is what makes it safe to poll.
  *
  * <p>No-throw: every failure completes the future with {@code null}.</p>
  */
