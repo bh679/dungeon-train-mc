@@ -32429,8 +32429,24 @@
       "released_at": "2026-11-02T13:50:47Z"
     },
     {
-      "id": "candle-flowerpot-variants",
+      "id": "burrito-timing",
       "version": "0.1621.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Burrito timing",
+      "summary": "Burrito timing tweak.",
+      "highlights": [],
+      "pr": 2435,
+      "date": "2026-11-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "candle-flowerpot-variants",
+      "version": "0.1622.0",
       "type": "feat",
       "tags": [
         "feature",

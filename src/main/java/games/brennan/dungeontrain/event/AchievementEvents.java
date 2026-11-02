@@ -1093,6 +1093,7 @@ public final class AchievementEvents {
         StartAgainAdvancement.disarm(uuid); // drop a pending arm from a disconnect mid-command
         GlobalPlayerStats.flush(uuid);
         GlobalPlayerStats.evict(uuid);
+        BurritoClock.evict(uuid);
         GlobalBookBurnStats.flush(uuid);
         GlobalBookBurnStats.evict(uuid);
         GlobalBiomeProgress.evict(uuid);   // every biome was written when it was added
@@ -1110,6 +1111,7 @@ public final class AchievementEvents {
     @SubscribeEvent
     public static void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
         GlobalPlayerStats.flushAll();
+        BurritoClock.flushAll();
         GlobalBookBurnStats.flushAll();
         GlobalAchievementStore.flushAndClearAll();
         GlobalCriteriaProgress.flushAndClearAll();
