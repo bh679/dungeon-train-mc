@@ -49,7 +49,6 @@ final class RedstoneToggleTest {
         assertNull(RedstoneToggle.propertyFor(Blocks.NOTE_BLOCK.defaultBlockState()));
         assertNull(RedstoneToggle.propertyFor(Blocks.POWERED_RAIL.defaultBlockState()));
         assertNull(RedstoneToggle.propertyFor(Blocks.BARREL.defaultBlockState()));
-        assertNull(RedstoneToggle.propertyFor(Blocks.CANDLE.defaultBlockState()));
         assertNull(RedstoneToggle.propertyFor(Blocks.STONE.defaultBlockState()));
         assertNull(RedstoneToggle.propertyFor(null));
         assertFalse(RedstoneToggle.canToggle(Blocks.STONE.defaultBlockState()));

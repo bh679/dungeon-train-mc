@@ -473,10 +473,13 @@ public final class CarriageVariantBlocks {
                 ? HungPainting.parse(hungEl.getAsString()) : HungPainting.NONE;
             // Additive placement condition. Absent → always eligible, so older files spawn unchanged.
             VariantCondition condition = parseCondition(obj.get("if"), contextId, contextPos);
+            // Additive candle count / flower pot plant. Absent → as placed, so older files spawn unchanged.
+            VariantCandles candles = parseCandles(obj.get("candles"), contextId, contextPos);
+            VariantPot pot = parsePot(obj.get("pot"), contextId, contextPos);
             return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half,
                 VariantDifficulty.NONE, groupRef, active, connect, growth, painting, hung,
                 groupRef > 0 ? parseGroupStates(obj.get("groupStates"), blocks, contextId, contextPos) : List.of(),
-                condition);
+                condition, candles, pot);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -932,6 +935,12 @@ public final class CarriageVariantBlocks {
             sb.append(", \"hung\": \"").append(s.hung().id()).append("\"");
         }
         appendConditionJson(sb, s.condition());
+        if (!s.candles().isDefault()) {
+            sb.append(", \"candles\": \"").append(s.candles().id()).append("\"");
+        }
+        if (!s.pot().isDefault()) {
+            sb.append(", \"pot\": \"").append(s.pot().id()).append("\"");
+        }
         sb.append("}");
     }
 
@@ -1085,6 +1094,32 @@ public final class CarriageVariantBlocks {
             return VariantPainting.NONE;
         }
         return painting;
+    }
+
+    /** Parse an optional {@code "candles"} token ({@code "random"}, {@code "3"}). Absent or malformed → as placed. */
+    private static VariantCandles parseCandles(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || el.isJsonNull()) return VariantCandles.AS_PLACED;
+        String token = el.isJsonPrimitive() ? el.getAsString() : null;
+        VariantCandles candles = token == null ? null : VariantCandles.parse(token);
+        if (candles == null) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown candles '{}', using as placed.",
+                contextId, contextPos, el);
+            return VariantCandles.AS_PLACED;
+        }
+        return candles;
+    }
+
+    /** Parse an optional {@code "pot"} token ({@code "random"}, {@code "minecraft:poppy,…"}). Absent or malformed → off. */
+    private static VariantPot parsePot(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || el.isJsonNull()) return VariantPot.NONE;
+        String token = el.isJsonPrimitive() && el.getAsJsonPrimitive().isString() ? el.getAsString() : null;
+        VariantPot pot = token == null ? null : VariantPot.parse(token);
+        if (pot == null) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown pot '{}', using off.",
+                contextId, contextPos, el);
+            return VariantPot.NONE;
+        }
+        return pot;
     }
 
     private static VariantActive parseActive(JsonElement el, String contextId, BlockPos contextPos) {

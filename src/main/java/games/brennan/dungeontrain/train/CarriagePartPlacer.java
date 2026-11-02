@@ -232,7 +232,7 @@ public final class CarriagePartPlacer {
                 for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(entry.localPos()), picked,
                         entry.localPos(), seed, carriageIndex,
                         v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
-                            StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
+                            StagePlacementScope.resolve(v.state()), v,
                             entry.localPos(), seed, carriageIndex, lockId))) {
                     BlockPos world = transformLocal(stampOrigin, w.localPos(), p.mirror(), partSize);
                     if (w.isAir()) {

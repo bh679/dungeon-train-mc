@@ -678,7 +678,7 @@ public final class CarriageContentsPlacer {
                 for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(entry.localPos()), picked,
                         entry.localPos(), seed, carriageIndex,
                         v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
-                            StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
+                            StagePlacementScope.resolve(v.state()), v,
                             entry.localPos(), seed, carriageIndex, lockId))) {
                     BlockPos wWorld = origin.offset(ContentsFlip.mapLocal(w.localPos(), size, flip));
                     if (!wWorld.equals(world) && mask.covers(wWorld)) continue;
