@@ -32387,7 +32387,7 @@
         "advancements"
       ],
       "title": "Back on Track fix",
-      "summary": "Back on Track is now earned by jumping off the side of the train and climbing back aboard. Crossing the gaps between carriages no longer counts.",
+      "summary": "Back on Track no longer triggers when it shouldn't.",
       "highlights": [],
       "pr": 2433,
       "date": "2026-11-02",
