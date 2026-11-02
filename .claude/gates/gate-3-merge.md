@@ -1,4 +1,4 @@
-<!-- gate: gate-3-merge (Dungeon Train add-on) | version: 2.0.0 -->
+<!-- gate: gate-3-merge (Dungeon Train add-on) | version: 2.1.0 -->
 # Gate 3 — Merge Approval (Dungeon Train add-on)
 
 **Follow `~/.claude/playbooks/gates/gate-3-merge.md` first.** This file only adds the Dungeon Train
@@ -34,3 +34,7 @@ are the usual candidates for an opt-out. Record the answer in the entry before m
 - The modpack whitelist answer from step B, if it applied.
 
 Approval includes sign-off on the changelog notes.
+
+## Never
+- Propose, suggest or ask about a leaderboard reset. Only when Brennan raises it himself.
+- Run `git tag` or push a tag. Tags come only from `release.yml`.
