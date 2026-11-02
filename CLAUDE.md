@@ -163,7 +163,7 @@ For Gate 2 verification:
 2. Create or open the test world (`run/saves/`)
 3. Reproduce the feature flow
 4. Press **F2** for screenshots → saved to `run/screenshots/`
-5. Copy relevant screenshots to `./test-results/gate2-<feature-slug>-<YYYY-MM>.png`
+5. Copy relevant screenshots to `~/Projects/Screenshots/DungeonTrainCraft/<feature-slug>/<NN>-<what-it-shows>.png`
 
 ### Sable Compatibility
 
