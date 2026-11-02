@@ -22,12 +22,14 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - uses: gradle/actions/setup-gradle@v3
-        # Note: NOT setting gradle-home-cache-cleanup: true. The action's
-        # cleanup step uses Gradle 9.x APIs (removeUnusedEntriesOlderThan)
-        # which crash against our Gradle 8.4 wrapper. Without this flag the
-        # cleanup is skipped; the cache grows slightly over time but the
-        # build never fails on a transient cache-save outage.
+      - uses: gradle/actions/setup-gradle@v5
+        # v3 talked to GitHub's retired cache service: every restore failed with a 400,
+        # so each run downloaded Gradle, every dependency and re-decompiled Minecraft.
+        # Stay on v5 (MIT); v6's caching is a proprietary component under separate terms.
+        # Main writes the cache, PRs read it. Cleanup prunes entries this build no longer
+        # uses, so the saved Gradle home doesn't grow without bound.
+        with:
+          cache-cleanup: on-success
 
       - run: ./gradlew build --no-daemon
 
@@ -83,8 +85,11 @@ jobs:
         # slug instead of a modId. No network.
         run: python3 scripts/modpack/check-mod-ids.py
 
-      - name: Cache pinned modpack jars
-        uses: actions/cache@v4
+      # ~400 MB per copy. Only main saves one: PR-scoped copies used to fill half the repo's
+      # 10 GB cache budget and push out the Gradle cache the build job needs.
+      - name: Restore pinned modpack jars
+        id: modpack-jars
+        uses: actions/cache/restore@v4
         with:
           path: ~/.cache/dungeontrain-modpack-jars
           key: modpack-jars-${{ hashFiles('modpack/modpack.config.json') }}
@@ -95,6 +100,13 @@ jobs:
         # mod_ids == its [[mods]] + jar-in-jar modIds, so a version bump that renames or adds a
         # module can't silently free-play the players running it.
         run: python3 scripts/modpack/check-mod-ids.py --verify
+
+      - name: Save pinned modpack jars
+        if: github.event_name == 'push' && steps.modpack-jars.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/dungeontrain-modpack-jars
+          key: modpack-jars-${{ hashFiles('modpack/modpack.config.json') }}
 
       - name: Modpack manifest + relation tests
         run: |
