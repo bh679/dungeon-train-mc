@@ -1,4 +1,4 @@
-<!-- gate: gate-2-test (Dungeon Train add-on) | version: 1.0.4 -->
+<!-- gate: gate-2-test (Dungeon Train add-on) | version: 1.1.0 -->
 # Gate 2 — Testing Approval (Dungeon Train add-on)
 
 **Follow `~/.claude/playbooks/gates/gate-2-test.md` first.** This file adds the Minecraft
@@ -16,6 +16,11 @@ steps: how to build, run and capture screenshots.
    moving Sable train.
 
 ## Extra Report Content
+- **Run command first**, as a fenced ```` ```bash ```` block so the app gives it a Run button
+  (it renders in plan mode too). Use the feature worktree's absolute path:
+  ```bash
+  cd <absolute-worktree-path> && ./gradlew runClient
+  ```
 - Build: result, jar path (`build/libs/dungeontrain-<version>.jar`), size
 - Step-by-step in-game test instructions: which world, what to do, what to look for
 - Compatibility: Sable tested? multiplayer? dedicated server?
