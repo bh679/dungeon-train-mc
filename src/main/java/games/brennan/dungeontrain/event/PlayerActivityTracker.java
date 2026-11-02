@@ -454,6 +454,11 @@ public final class PlayerActivityTracker {
         }
     }
 
+    /** Does this player's client report a pause screen open? */
+    public static boolean isPaused(UUID uuid) {
+        return PAUSED.contains(uuid);
+    }
+
     // ----------------------------------------------------------------- scans
 
     /**

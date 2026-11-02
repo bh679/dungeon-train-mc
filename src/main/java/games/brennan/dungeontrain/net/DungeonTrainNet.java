@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "170";
+    public static final String PROTOCOL_VERSION = "171";
 
     private DungeonTrainNet() {}
 
@@ -183,6 +183,10 @@ public final class DungeonTrainNet {
         // Pause-screen open/close. The server can't see a client's screen, and on a dedicated
         // server the world keeps ticking behind the menu — see PlayerActivityTracker.
         registrar.playToServer(PlayerPausedPacket.TYPE, PlayerPausedPacket.STREAM_CODEC, PlayerPausedPacket::handle);
+
+        // Time spent on a pausing screen other than the pause menu (books, photos), measured on the
+        // client and credited to the Everything Burrito's play clock on close — see BurritoClock.
+        registrar.playToServer(BurritoScreenTimePacket.TYPE, BurritoScreenTimePacket.STREAM_CODEC, BurritoScreenTimePacket::handle);
 
         // Whether this player lets spawned TVs come on — a client-only Performance setting the
         // carriage stamp reads (TvSpawnPower).
