@@ -10,6 +10,8 @@
     "NetherPortalBlockInvoker",
     "PhotographFrameItemPlaceMixin",
     "WitherRoseBlockCreditMixin",
+    "VaultBlockMixin",
+    "VaultClientParticlesMixin",
     "VaultServerMixin",
     "VaultSharedDataMixin",
     "RecipeManagerDisableMixin",

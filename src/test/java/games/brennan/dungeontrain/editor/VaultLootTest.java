@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.block.VaultGreen;
 import games.brennan.dungeontrain.item.VariantClipboardItem;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
@@ -91,6 +92,33 @@ final class VaultLootTest {
     }
 
     @Test
+    @DisplayName("the green key takes the ominous table, and a green vault is never ominous")
+    void greenKeyConfig() {
+        BlockState wasOminous = Blocks.VAULT.defaultBlockState().setValue(VaultBlock.OMINOUS, true);
+        CompoundTag green = ContainerContentsRoller.roll(diamondPool(VaultLoot.GREEN_KEY),
+            wasOminous, CELL, SEED, 0, null, registries, null);
+        assertEquals(VaultLoot.GREEN_KEY, green.getCompound("config").getCompound("key_item").getString("id"));
+        assertEquals("minecraft:chests/trial_chambers/reward_ominous", green.getCompound("config").getString("loot_table"));
+        BlockState typed = VaultLoot.stateForNbt(wasOminous, green);
+        assertFalse(typed.getValue(VaultBlock.OMINOUS));
+        assertTrue(VaultGreen.isGreen(typed));
+    }
+
+    @Test
+    @DisplayName("the vault has a green property, off by default, that follows the key")
+    void greenPropertyFollowsKey() {
+        BlockState vault = Blocks.VAULT.defaultBlockState();
+        assertTrue(vault.hasProperty(VaultGreen.GREEN));
+        assertFalse(VaultGreen.isGreen(vault));
+        BlockState green = VaultLoot.stateFor(vault.setValue(VaultBlock.OMINOUS, true), diamondPool(VaultLoot.GREEN_KEY));
+        assertTrue(VaultGreen.isGreen(green));
+        assertFalse(green.getValue(VaultBlock.OMINOUS));
+        BlockState ominous = VaultLoot.stateFor(green, diamondPool(VaultLoot.OMINOUS_KEY));
+        assertFalse(VaultGreen.isGreen(ominous));
+        assertTrue(ominous.getValue(VaultBlock.OMINOUS));
+    }
+
+    @Test
     @DisplayName("vault NBT that DT never wrote keeps its block state")
     void foreignVaultNbtUntouched() {
         BlockState ominous = Blocks.VAULT.defaultBlockState().setValue(VaultBlock.OMINOUS, true);
@@ -99,10 +127,11 @@ final class VaultLootTest {
     }
 
     @Test
-    @DisplayName("the Key row cycles trial -> ominous -> trial")
+    @DisplayName("the Key row cycles trial -> ominous -> green -> trial")
     void keyCycle() {
         assertEquals(VaultLoot.OMINOUS_KEY, VaultLoot.nextKey(ContainerContentsPool.DEFAULT_VAULT_KEY));
-        assertEquals(ContainerContentsPool.DEFAULT_VAULT_KEY, VaultLoot.nextKey(VaultLoot.OMINOUS_KEY));
+        assertEquals(VaultLoot.GREEN_KEY, VaultLoot.nextKey(VaultLoot.OMINOUS_KEY));
+        assertEquals(ContainerContentsPool.DEFAULT_VAULT_KEY, VaultLoot.nextKey(VaultLoot.GREEN_KEY));
         assertEquals(ContainerContentsPool.DEFAULT_VAULT_KEY, VaultLoot.nextKey("minecraft:stick"));
     }
 
@@ -114,6 +143,13 @@ final class VaultLootTest {
         assertFalse(trialDefault.isEmpty());
         assertFalse(ominousDefault.isEmpty());
         assertFalse(VaultLoot.sameLoot(trialDefault, ominousDefault));
+
+        ContainerContentsPool greenDefault = VaultLoot.defaultPool(VaultLoot.GREEN_KEY);
+        assertEquals(VaultLoot.GREEN_KEY, greenDefault.vaultKey());
+        assertTrue(VaultLoot.sameLoot(ominousDefault, greenDefault), "the green vault starts with the ominous loot");
+        ContainerContentsPool toGreen = VaultLoot.withKey(ominousDefault, VaultLoot.GREEN_KEY);
+        assertEquals(VaultLoot.GREEN_KEY, toGreen.vaultKey());
+        assertTrue(VaultLoot.sameLoot(trialDefault, VaultLoot.withKey(toGreen, ContainerContentsPool.DEFAULT_VAULT_KEY)));
 
         ContainerContentsPool switched = VaultLoot.withKey(trialDefault, VaultLoot.OMINOUS_KEY);
         assertEquals(VaultLoot.OMINOUS_KEY, switched.vaultKey());
@@ -127,10 +163,11 @@ final class VaultLootTest {
     }
 
     @Test
-    @DisplayName("a vault linked to a default prefab relinks to the other default; other prefabs never swap")
+    @DisplayName("a vault linked to a default prefab relinks to the next key's default; other prefabs never swap")
     void linkedDefaultsRelink() {
         assertEquals(VaultLoot.OMINOUS_PREFAB, VaultLoot.otherDefaultPrefab(VaultLoot.DEFAULT_PREFAB));
-        assertEquals(VaultLoot.DEFAULT_PREFAB, VaultLoot.otherDefaultPrefab(VaultLoot.OMINOUS_PREFAB));
+        assertEquals(VaultLoot.GREEN_PREFAB, VaultLoot.otherDefaultPrefab(VaultLoot.OMINOUS_PREFAB));
+        assertEquals(VaultLoot.DEFAULT_PREFAB, VaultLoot.otherDefaultPrefab(VaultLoot.GREEN_PREFAB));
         assertEquals(null, VaultLoot.otherDefaultPrefab("pot"));
     }
 

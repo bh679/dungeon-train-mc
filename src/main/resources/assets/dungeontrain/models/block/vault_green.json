@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/template_vault",
+  "textures": {
+    "bottom": "dungeontrain:block/vault_green_bottom",
+    "front": "dungeontrain:block/vault_green_front_off",
+    "side": "dungeontrain:block/vault_green_side_off",
+    "top": "dungeontrain:block/vault_green_top"
+  }
+}
