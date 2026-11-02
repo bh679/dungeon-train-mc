@@ -32379,8 +32379,25 @@
       "released_at": "2026-11-02T07:34:29Z"
     },
     {
-      "id": "more-trial-vaults",
+      "id": "back-on-track-sides-only",
       "version": "0.1618.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Back on Track fix",
+      "summary": "Back on Track is now earned by jumping off the side of the train and climbing back aboard. Crossing the gaps between carriages no longer counts.",
+      "highlights": [],
+      "pr": 2433,
+      "date": "2026-11-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "more-trial-vaults",
+      "version": "0.1619.0",
       "type": "content",
       "tags": [
         "content",
@@ -32397,7 +32414,7 @@
     },
     {
       "id": "bundles-in-loot",
-      "version": "0.1618.0",
+      "version": "0.1619.0",
       "type": "content",
       "tags": [
         "content",
