@@ -190,6 +190,8 @@
   "chat.dungeontrain.update_notice.major_header": "[Dungeon Train] ★ MAJOR UPDATE ★",
   "chat.dungeontrain.update_notice.major_name": "%s (v%s)",
   "toast.dungeontrain.update_notice.major": "Major Dungeon Train update!",
+  "toast.dungeontrain.quick_play_blocked.title": "Every world is one run",
+  "toast.dungeontrain.quick_play_blocked.body": "Start a new run from the menu.",
   "chat.dungeontrain.low_memory_notice": "[Dungeon Train] Minecraft only has %s GB of memory. Allocate 6 GB or more in your launcher for smoother play.",
   "chat.dungeontrain.low_memory_notice.link": "[How]",
   "chat.dungeontrain.low_memory_notice.dismiss": "[Don't show again]",

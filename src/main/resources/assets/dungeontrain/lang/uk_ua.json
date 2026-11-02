@@ -213,6 +213,8 @@
   "chat.dungeontrain.update_notice.major_header": "[Dungeon Train] ★ ВЕЛИКЕ ОНОВЛЕННЯ ★",
   "chat.dungeontrain.update_notice.major_name": "%s (v%s)",
   "toast.dungeontrain.update_notice.major": "Велике оновлення Dungeon Train!",
+  "toast.dungeontrain.quick_play_blocked.title": "Один світ на один забіг",
+  "toast.dungeontrain.quick_play_blocked.body": "Почніть новий забіг із меню.",
   "chat.dungeontrain.low_memory_notice": "[Dungeon Train] Minecraft має лише %s ГБ пам’яті. Виділи 6 ГБ або більше у своєму лаунчері, щоб гра йшла плавніше.",
   "chat.dungeontrain.low_memory_notice.link": "[Як]",
   "chat.dungeontrain.low_memory_notice.dismiss": "[Більше не показувати]",

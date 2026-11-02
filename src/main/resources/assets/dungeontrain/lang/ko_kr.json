@@ -5435,6 +5435,8 @@
   "chat.dungeontrain.update_notice.major_header": "[Dungeon Train] ★ 대규모 업데이트 ★",
   "chat.dungeontrain.update_notice.major_name": "%s (v%s)",
   "toast.dungeontrain.update_notice.major": "Dungeon Train 대규모 업데이트!",
+  "toast.dungeontrain.quick_play_blocked.title": "월드 하나는 한 번의 런입니다",
+  "toast.dungeontrain.quick_play_blocked.body": "메뉴에서 새 런을 시작하세요.",
   "chat.dungeontrain.low_memory_notice": "[Dungeon Train] Minecraft에 할당된 메모리가 %s GB뿐입니다. 더 부드럽게 플레이하려면 런처에서 6 GB 이상을 할당하세요.",
   "chat.dungeontrain.low_memory_notice.link": "[방법]",
   "chat.dungeontrain.low_memory_notice.dismiss": "[다시 표시 안 함]",
