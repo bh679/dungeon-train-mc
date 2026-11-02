@@ -2545,7 +2545,7 @@
   "advancements.dungeontrain.dungeon_train.left_train.title": "脱線",
   "advancements.dungeontrain.dungeon_train.left_train.description": "列車と線路を後にする。世界は通路よりも広く——そして静かだ。",
   "advancements.dungeontrain.dungeon_train.returned_to_train.title": "軌道に戻る",
-  "advancements.dungeontrain.dungeon_train.returned_to_train.description": "列車を降り、そしてまた乗り込む。レールからでも、走って跳び乗ってでも——列車は問わない。",
+  "advancements.dungeontrain.dungeon_train.returned_to_train.description": "列車の横から飛び降り、そしてまた乗り込む。列車は理由を問わない。",
   "advancements.dungeontrain.dungeon_train.train_inside_a_train.title": "列車の中の列車?",
   "advancements.dungeontrain.dungeon_train.train_inside_a_train.description": "車両の通路の反対側へ抜け、そこには収まるはずのない部屋へ出る。",
   "advancements.dungeontrain.dungeon_train.a_new_way_out.title": "新しい出口",

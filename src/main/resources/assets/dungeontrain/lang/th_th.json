@@ -2545,7 +2545,7 @@
   "advancements.dungeontrain.dungeon_train.left_train.title": "หลุดจากราง",
   "advancements.dungeontrain.dungeon_train.left_train.description": "ทิ้งขบวนรถไฟและรางไว้เบื้องหลัง โลกกว้างใหญ่กว่าทางเดินแคบ ๆ — และเงียบกว่า",
   "advancements.dungeontrain.dungeon_train.returned_to_train.title": "กลับสู่ราง",
-  "advancements.dungeontrain.dungeon_train.returned_to_train.description": "ลงจากขบวนรถไฟ แล้วปีนกลับขึ้นมา จากรางหรือจากการกระโจนขณะแล่น — ขบวนรถไฟไม่ถาม",
+  "advancements.dungeontrain.dungeon_train.returned_to_train.description": "กระโดดลงจากด้านข้างของขบวนรถไฟ แล้วปีนกลับขึ้นมา รถไฟไม่ถามว่าทำไม",
   "advancements.dungeontrain.dungeon_train.train_inside_a_train.title": "รถไฟในรถไฟ?",
   "advancements.dungeontrain.dungeon_train.train_inside_a_train.description": "เดินออกอีกฝั่งของทางเดินในตู้โดยสาร เข้าสู่ห้องที่ไม่มีทางใส่ลงไปในตู้นั้นได้",
   "advancements.dungeontrain.dungeon_train.a_new_way_out.title": "ทางออกใหม่",
