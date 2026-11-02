@@ -32440,9 +32440,9 @@
       "highlights": [],
       "pr": 2435,
       "date": "2026-11-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1625.0",
+      "released_at": "2026-11-02T15:21:51Z"
     },
     {
       "id": "candle-flowerpot-variants",
@@ -32462,9 +32462,9 @@
       ],
       "pr": 2436,
       "date": "2026-11-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1625.0",
+      "released_at": "2026-11-02T15:21:51Z"
     },
     {
       "id": "launcher-play-opens-menu",
@@ -32480,9 +32480,9 @@
       "highlights": [],
       "pr": 2437,
       "date": "2026-11-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1625.0",
+      "released_at": "2026-11-02T15:21:51Z"
     },
     {
       "id": "new-trial-vault",
@@ -32497,9 +32497,9 @@
       "highlights": [],
       "pr": 2438,
       "date": "2026-11-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1625.0",
+      "released_at": "2026-11-02T15:21:51Z"
     }
   ]
 }
