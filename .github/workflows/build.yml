@@ -135,6 +135,11 @@ jobs:
         # and books (scripts/credits). Fails when content changed and the counts were not regenerated.
         run: python3 scripts/credits/house-credits.py --check
 
+      - name: Green vault blockstate and models are generated
+        # DT overrides vanilla's vault blockstate for the green vault (scripts/assets). Fails when the
+        # committed JSON drifts from the generator, e.g. a hand edit to a vanilla variant.
+        run: python3 scripts/assets/build-green-vault.py --check
+
   # Stdlib-only Python guard for the client/server network handshake. DungeonTrainNet's
   # PROTOCOL_VERSION string is the only thing that keeps an older client off a newer server:
   # NeoForge negotiates payload *types*, not their layouts, so a packet that gains a field still

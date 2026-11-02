@@ -2185,6 +2185,7 @@
   "item.dungeontrain.live_headpiece.tooltip.warning": "Сгорает, если его снять или если Live Eye наденет кто-то другой.",
   "item.dungeontrain.random_live_headpiece": "Случайный Live Eye (заглушка добычи)",
   "item.dungeontrain.knockback_slime": "Слизь отбрасывания",
+  "item.dungeontrain.dungeon_trial_key": "Ключ испытаний подземелья",
   "item.dungeontrain.buckler_piglin_brute_spawn_egg": "Яйцо призыва пиглина-громилы с баклером",
   "item.dungeontrain.knockback_slime.tooltip": "Расходуется при ударе",
   "item.dungeontrain.random_book": "Случайная книга",
