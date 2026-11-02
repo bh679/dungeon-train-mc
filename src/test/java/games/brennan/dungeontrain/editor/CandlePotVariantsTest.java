@@ -199,6 +199,43 @@ final class CandlePotVariantsTest {
     }
 
     @Test
+    @DisplayName("Every shipped flower pot variant is Random, except the dog bowls in worf")
+    void shippedPotsAreRandom() throws java.io.IOException {
+        java.nio.file.Path root = games.brennan.dungeontrain.RepoPaths.root().resolve("src/main/resources/data/dungeontrain");
+        HolderLookup.RegistryLookup<Block> blocks = BuiltInRegistries.BLOCK.asLookup();
+        int random = 0;
+        int bowls = 0;
+        List<java.nio.file.Path> files;
+        try (var walk = java.nio.file.Files.walk(root)) {
+            files = walk.filter(p -> p.toString().endsWith(".variants.json")).toList();
+        }
+        for (java.nio.file.Path file : files) {
+            boolean dogBowls = file.endsWith("contents/worf.variants.json");
+            var variants = JsonParser.parseString(java.nio.file.Files.readString(file))
+                .getAsJsonObject().getAsJsonObject("variants");
+            if (variants == null) continue;
+            for (var cell : variants.entrySet()) {
+                CarriageVariantBlocks.ParsedCell parsed = CarriageVariantBlocks.parseCellValue(
+                    cell.getValue(), blocks, file.toString(), BlockPos.ZERO);
+                if (parsed == null) continue;
+                for (VariantState s : parsed.states()) {
+                    if (s.isGroupRef() || !FlowerPots.isPot(s.state())) continue;
+                    String where = file + " " + cell.getKey();
+                    if (dogBowls) {
+                        assertTrue(s.pot().isDefault(), "dog bowl must stay an empty pot: " + where);
+                        bowls++;
+                    } else {
+                        assertTrue(s.pot().isRandom(), "pot should be Random: " + where);
+                        random++;
+                    }
+                }
+            }
+        }
+        assertEquals(64, random, "shipped Random pots");
+        assertEquals(2, bowls, "worf dog bowls");
+    }
+
+    @Test
     @DisplayName("The whole-entry apply honours the candle and pot options")
     void wholeEntryApply() {
         VariantState candle = VariantState.of(Blocks.CANDLE.defaultBlockState())
