@@ -2132,7 +2132,7 @@
   "item.dungeontrain.live_headpiece.tooltip.warning": "Détruit quand on le retire, ou quand quelqu'un d'autre en équipe un.",
   "item.dungeontrain.random_live_headpiece": "Caméscope de diffusion aléatoire (substitut de butin)",
   "item.dungeontrain.knockback_slime": "Slime de recul",
-  "item.dungeontrain.green_trial_key": "Clé des épreuves verte",
+  "item.dungeontrain.dungeon_trial_key": "Clé des épreuves du donjon",
   "item.dungeontrain.buckler_piglin_brute_spawn_egg": "Œuf d'apparition de piglin barbare avec bouclier rond",
   "item.dungeontrain.knockback_slime.tooltip": "Consommé à l'impact",
   "item.dungeontrain.random_book": "Livre aléatoire",

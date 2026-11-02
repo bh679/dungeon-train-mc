@@ -29,7 +29,7 @@ import java.util.UUID;
  * Vaults as loot containers. A vanilla vault rewards each player once, from a loot table, when
  * they use its key. Here the reward comes from a pool authored in the loot (C) menu instead, and
  * the pool's {@link ContainerContentsPool#vaultKey()} picks the key, which also picks the vault's
- * type: the ominous trial key makes an ominous vault, and DT's Green Trial Key a green one
+ * type: the ominous trial key makes an ominous vault, and DT's Dungeon Trial Key a green one
  * ({@link VaultGreen}).
  *
  * <p><b>Rolled per player, not at placement.</b> Placement ({@link #writeVault}) stores the pool
@@ -49,7 +49,7 @@ public final class VaultLoot {
     public static final int VAULT_SLOTS = 9;
 
     public static final String OMINOUS_KEY = "minecraft:ominous_trial_key";
-    public static final String GREEN_KEY = "dungeontrain:green_trial_key";
+    public static final String GREEN_KEY = "dungeontrain:dungeon_trial_key";
 
     /** Keys the menu's Key row cycles through, in order. Append to offer another. */
     static final List<String> KEY_CYCLE = List.of(ContainerContentsPool.DEFAULT_VAULT_KEY, OMINOUS_KEY, GREEN_KEY);

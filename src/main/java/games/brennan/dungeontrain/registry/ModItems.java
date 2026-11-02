@@ -266,8 +266,8 @@ public final class ModItems {
      * and ominous ones. A vault's key is its config's {@code key_item}, so vanilla checks and takes
      * this one like any other; {@code editor.VaultLoot#GREEN_KEY} names it.
      */
-    public static final DeferredItem<Item> GREEN_TRIAL_KEY = ITEMS.register(
-        "green_trial_key",
+    public static final DeferredItem<Item> DUNGEON_TRIAL_KEY = ITEMS.register(
+        "dungeon_trial_key",
         () -> new Item(new Item.Properties().rarity(Rarity.UNCOMMON))
     );
 
@@ -330,7 +330,7 @@ public final class ModItems {
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(VARIANT_CLIPBOARD.get());
         } else if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
-            event.accept(GREEN_TRIAL_KEY.get());
+            event.accept(DUNGEON_TRIAL_KEY.get());
         } else if (event.getTabKey() == CreativeModeTabs.COMBAT) {
             event.accept(KNOCKBACK_SLIME.get());
         } else if (event.getTabKey() == CreativeModeTabs.SPAWN_EGGS) {

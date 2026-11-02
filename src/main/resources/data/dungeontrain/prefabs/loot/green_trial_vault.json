@@ -4,7 +4,7 @@
   "category": "loot",
   "fillMin": 2,
   "fillMax": 4,
-  "vaultKey": "dungeontrain:green_trial_key",
+  "vaultKey": "dungeontrain:dungeon_trial_key",
   "entries": [
     { "id": "minecraft:emerald", "count": 10, "weight": 140, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:wind_charge", "count": 12, "weight": 200, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },

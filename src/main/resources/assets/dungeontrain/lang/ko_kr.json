@@ -2084,7 +2084,7 @@
   "item.dungeontrain.live_headpiece.tooltip.warning": "벗거나 다음 사람이 착용하면 파괴된다.",
   "item.dungeontrain.random_live_headpiece": "무작위 방송 캠코더 (전리품 자리표시자)",
   "item.dungeontrain.knockback_slime": "밀치기 슬라임",
-  "item.dungeontrain.green_trial_key": "초록 시련 열쇠",
+  "item.dungeontrain.dungeon_trial_key": "던전 시련 열쇠",
   "item.dungeontrain.buckler_piglin_brute_spawn_egg": "버클러를 든 피글린 야수 생성 알",
   "item.dungeontrain.knockback_slime.tooltip": "적중 시 소모됨",
   "item.dungeontrain.random_book": "무작위 책",

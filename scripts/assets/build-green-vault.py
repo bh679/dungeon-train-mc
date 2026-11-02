@@ -2,9 +2,10 @@
 """Build the green vault's assets: textures, block models, the vault blockstate and the key.
 
 The green vault is vanilla's vault with DT's extra ``green`` property (``block/VaultGreen``). Its
-look is vanilla's trial-vault textures recoloured green, and the Green Trial
-Key is vanilla's trial key turned the same way: the orange accents and the blue body both go green.
-Greys are left alone: only coloured pixels turn.
+look is vanilla's trial-vault textures with only the pixels the ominous vault changes turned green:
+the face, eyes, light strip and top cage panels. Everything the two vaults share stays as it is.
+The Dungeon Trial Key is vanilla's trial key turned green the same way (all its coloured pixels,
+since the ominous key differs from it everywhere).
 
     python3 scripts/assets/build-green-vault.py              # write everything
     python3 scripts/assets/build-green-vault.py --check      # JSON only, fail if stale (no jar needed)
@@ -31,14 +32,16 @@ DT_MODELS = ASSETS / "dungeontrain/models"
 VAULT_BLOCKSTATE = ASSETS / "minecraft/blockstates/vault.json"
 DEFAULT_JAR = Path.home() / ".gradle/caches/neoformruntime/artifacts/minecraft_1.21.1_client.jar"
 
-# Every coloured pixel takes a green hue, keeping its saturation and brightness: the orange accents
-# (and the trial key's copper) become bright green, the blue body a deep green.
+# A pixel that turns takes a green hue, keeping its brightness: the orange accents (and the trial
+# key's copper) become bright green, the blue face and panels a deep green.
 ACCENT_HUE = 120.0 / 360.0
 BODY_HUE = 135.0 / 360.0
 # Hues below this (or wrapping past red) are vanilla's warm accents; the rest is the cool body.
 WARM_HUE_MAX = 70.0 / 360.0
-# Pixels this grey or greyer keep their colour: the vault's steel body stays steel.
+# Key pixels this grey or greyer keep their colour: the key's steel head stays steel.
 MIN_SATURATION = 0.18
+# A vault pixel that turns is at least this saturated, so a greyish-blue panel still reads green.
+MIN_TURNED_SATURATION = 0.35
 
 VAULT_TEXTURES = (
     "vault_bottom", "vault_top", "vault_top_ejecting",
@@ -100,9 +103,9 @@ def block_models() -> dict[Path, dict]:
 
 def item_models() -> dict[Path, dict]:
     return {
-        DT_MODELS / "item/green_trial_key.json": {
+        DT_MODELS / "item/dungeon_trial_key.json": {
             "parent": "minecraft:item/generated",
-            "textures": {"layer0": "dungeontrain:item/green_trial_key"},
+            "textures": {"layer0": "dungeontrain:item/dungeon_trial_key"},
         }
     }
 
@@ -112,22 +115,33 @@ def json_outputs() -> dict[Path, str]:
     return {path: json.dumps(data, indent=2) + "\n" for path, data in files.items()}
 
 
-def turn_green(png: bytes):
+def green_pixel(rgba: tuple[int, int, int, int], min_saturation: float) -> tuple[int, int, int, int]:
+    r, g, b, a = rgba
+    h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+    warm = h <= WARM_HUE_MAX or h >= 330.0 / 360.0
+    nr, ng, nb = colorsys.hsv_to_rgb(ACCENT_HUE if warm else BODY_HUE, max(s, min_saturation), v)
+    return round(nr * 255), round(ng * 255), round(nb * 255), a
+
+
+def turn_green(png: bytes, ominous_png: bytes | None = None):
+    """``png`` with its coloured pixels turned green; with ``ominous_png``, only the pixels that differ from it."""
     from PIL import Image
 
     img = Image.open(io.BytesIO(png)).convert("RGBA")
     pixels = img.load()
+    ominous = Image.open(io.BytesIO(ominous_png)).convert("RGBA").load() if ominous_png else None
     for x in range(img.width):
         for y in range(img.height):
-            r, g, b, a = pixels[x, y]
-            if a == 0:
+            rgba = pixels[x, y]
+            if rgba[3] == 0:
                 continue
-            h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
-            if s < MIN_SATURATION:
+            if ominous is not None:
+                if ominous[x, y] != rgba:
+                    pixels[x, y] = green_pixel(rgba, MIN_TURNED_SATURATION)
                 continue
-            warm = h <= WARM_HUE_MAX or h >= 330.0 / 360.0
-            nr, ng, nb = colorsys.hsv_to_rgb(ACCENT_HUE if warm else BODY_HUE, s, v)
-            pixels[x, y] = (round(nr * 255), round(ng * 255), round(nb * 255), a)
+            r, g, b, _ = rgba
+            if colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)[1] >= MIN_SATURATION:
+                pixels[x, y] = green_pixel(rgba, 0.0)
     return img
 
 
@@ -141,11 +155,12 @@ def write_textures(jar: Path) -> None:
     with zipfile.ZipFile(jar) as z:
         for name in VAULT_TEXTURES:
             src = z.read(f"assets/minecraft/textures/block/{name}.png")
+            ominous = z.read(f"assets/minecraft/textures/block/{name}_ominous.png")
             dest = DT_TEXTURES / "block" / f"{name.replace('vault', 'vault_green', 1)}.png"
             dest.parent.mkdir(parents=True, exist_ok=True)
-            turn_green(src).save(dest)
+            turn_green(src, ominous).save(dest)
         key = turn_green(z.read("assets/minecraft/textures/item/trial_key.png"))
-        dest = DT_TEXTURES / "item/green_trial_key.png"
+        dest = DT_TEXTURES / "item/dungeon_trial_key.png"
         dest.parent.mkdir(parents=True, exist_ok=True)
         key.save(dest)
 

@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "dungeontrain:item/green_trial_key"
+    "layer0": "dungeontrain:item/dungeon_trial_key"
   }
 }

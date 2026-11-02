@@ -2084,7 +2084,7 @@
   "item.dungeontrain.live_headpiece.tooltip.warning": "ถูกทำลายเมื่อถอดออก หรือเมื่อคนถัดไปสวมใส่",
   "item.dungeontrain.random_live_headpiece": "กล้องวิดีโอถ่ายทอดแบบสุ่ม (ตัวแทนของรางวัล)",
   "item.dungeontrain.knockback_slime": "สไลม์กระเด็น",
-  "item.dungeontrain.green_trial_key": "กุญแจบททดสอบสีเขียว",
+  "item.dungeontrain.dungeon_trial_key": "กุญแจบททดสอบดันเจี้ยน",
   "item.dungeontrain.buckler_piglin_brute_spawn_egg": "ไข่เกิดพิกลินบรูทถือบักเลอร์",
   "item.dungeontrain.knockback_slime.tooltip": "หมดไปเมื่อโจมตีโดน",
   "item.dungeontrain.random_book": "หนังสือสุ่ม",
