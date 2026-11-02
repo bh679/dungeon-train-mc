@@ -254,6 +254,7 @@
     "client.LevelRendererSubLevelTeardownMixin",
     "client.MinecraftFramerateThrottleMixin",
     "client.MinecraftInitialScreensMixin",
+    "client.QuickPlaySingleplayerMixin",
     "client.SoundEngineMusicFadeMixin",
     "client.LanguageSelectEntryLogoMixin",
     "client.FrustumPortalSealMixin",

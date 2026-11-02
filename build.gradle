@@ -230,6 +230,11 @@ neoForge {
                 programArgument '--quickPlaySingleplayer'
                 programArgument quickWorld.toString()
             }
+            // Release-build Quick Play block on a dev build: ./gradlew runClient -PquickWorld=… -PquickPlayBlock
+            // should land on the title screen with a toast, not in the world (client/QuickPlaySingleplayerBlock).
+            if (project.hasProperty('quickPlayBlock')) {
+                systemProperty 'dungeontrain.quickPlayBlock', 'force'
+            }
             if (project.hasProperty('tvPoseShots')) {
                 systemProperty 'dungeontrain.tvPoseShots', 'true'
             }
@@ -418,6 +423,11 @@ neoForge {
                 requireQuickWorldSave(file(project.findProperty('serverDir') ?: 'run'), quickWorld.toString())
                 programArgument '--quickPlaySingleplayer'
                 programArgument quickWorld.toString()
+            }
+            // Release-build Quick Play block on a dev build: ./gradlew runClient -PquickWorld=… -PquickPlayBlock
+            // should land on the title screen with a toast, not in the world (client/QuickPlaySingleplayerBlock).
+            if (project.hasProperty('quickPlayBlock')) {
+                systemProperty 'dungeontrain.quickPlayBlock', 'force'
             }
             if (project.hasProperty('tvPoseShots')) {
                 systemProperty 'dungeontrain.tvPoseShots', 'true'

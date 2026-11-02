@@ -5436,6 +5436,8 @@
   "chat.dungeontrain.update_notice.major_header": "[Dungeon Train] ★ KEMAS KINI BESAR ★",
   "chat.dungeontrain.update_notice.major_name": "%s (v%s)",
   "toast.dungeontrain.update_notice.major": "Kemas kini besar Dungeon Train!",
+  "toast.dungeontrain.quick_play_blocked.title": "Setiap dunia ialah satu larian",
+  "toast.dungeontrain.quick_play_blocked.body": "Mulakan larian baharu dari menu.",
   "chat.dungeontrain.low_memory_notice": "[Dungeon Train] Minecraft hanya ada memori %s GB. Peruntukkan 6 GB atau lebih dalam pelancar anda untuk permainan yang lebih lancar.",
   "chat.dungeontrain.low_memory_notice.link": "[Caranya]",
   "chat.dungeontrain.low_memory_notice.dismiss": "[Jangan tunjuk lagi]",

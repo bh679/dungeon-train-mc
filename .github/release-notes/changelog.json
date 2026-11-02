@@ -32467,8 +32467,26 @@
       "released_at": null
     },
     {
-      "id": "new-trial-vault",
+      "id": "launcher-play-opens-menu",
       "version": "0.1623.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Launcher world shortcuts open the menu",
+      "summary": "Every world is one run, so launcher buttons that jump straight back into an old world now open the main menu instead. Start a new run from there.",
+      "highlights": [],
+      "pr": 2437,
+      "date": "2026-11-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "new-trial-vault",
+      "version": "0.1624.0",
       "type": "feat",
       "tags": [
         "feature",

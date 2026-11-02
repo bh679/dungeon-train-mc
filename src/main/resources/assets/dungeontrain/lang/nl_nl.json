@@ -5502,6 +5502,8 @@
   "chat.dungeontrain.update_notice.major_header": "[Dungeon Train] ★ GROTE UPDATE ★",
   "chat.dungeontrain.update_notice.major_name": "%s (v%s)",
   "toast.dungeontrain.update_notice.major": "Grote Dungeon Train-update!",
+  "toast.dungeontrain.quick_play_blocked.title": "Elke wereld is één run",
+  "toast.dungeontrain.quick_play_blocked.body": "Start een nieuwe run vanuit het menu.",
   "chat.dungeontrain.low_memory_notice": "[Dungeon Train] Minecraft heeft maar %s GB geheugen. Wijs in je launcher 6 GB of meer toe voor soepeler spelen.",
   "chat.dungeontrain.low_memory_notice.link": "[Hoe]",
   "chat.dungeontrain.low_memory_notice.dismiss": "[Niet meer tonen]",
