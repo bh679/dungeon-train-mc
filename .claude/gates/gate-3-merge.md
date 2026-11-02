@@ -36,5 +36,5 @@ are the usual candidates for an opt-out. Record the answer in the entry before m
 Approval includes sign-off on the changelog notes.
 
 ## Never
-- Propose, suggest or ask about a leaderboard reset. Only when Brennan raises it himself.
+- Propose, suggest or ask about a leaderboard reset. Only when Brennan raises it first.
 - Run `git tag` or push a tag. Tags come only from `release.yml`.
