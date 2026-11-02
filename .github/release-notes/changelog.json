@@ -32391,9 +32391,9 @@
       "highlights": [],
       "pr": 2433,
       "date": "2026-11-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1620.0",
+      "released_at": "2026-11-02T13:50:47Z"
     },
     {
       "id": "more-trial-vaults",
@@ -32408,9 +32408,9 @@
       "summary": "Two new trial vault layouts can turn up on the train, each with its own loot.",
       "highlights": [],
       "date": "2026-11-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1620.0",
+      "released_at": "2026-11-02T13:50:47Z"
     },
     {
       "id": "bundles-in-loot",
@@ -32424,9 +32424,9 @@
       "summary": "Bundles can now turn up in starting loot and in vases.",
       "highlights": [],
       "date": "2026-11-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1620.0",
+      "released_at": "2026-11-02T13:50:47Z"
     }
   ]
 }
