@@ -32387,13 +32387,13 @@
         "advancements"
       ],
       "title": "Back on Track fix",
-      "summary": "Back on Track is now earned by jumping off the side of the train and climbing back aboard. Crossing the gaps between carriages no longer counts.",
+      "summary": "Back on Track no longer triggers when it shouldn't.",
       "highlights": [],
       "pr": 2433,
       "date": "2026-11-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1620.0",
+      "released_at": "2026-11-02T13:50:47Z"
     },
     {
       "id": "more-trial-vaults",
@@ -32408,9 +32408,9 @@
       "summary": "Two new trial vault layouts can turn up on the train, each with its own loot.",
       "highlights": [],
       "date": "2026-11-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1620.0",
+      "released_at": "2026-11-02T13:50:47Z"
     },
     {
       "id": "bundles-in-loot",
@@ -32424,13 +32424,13 @@
       "summary": "Bundles can now turn up in starting loot and in vases.",
       "highlights": [],
       "date": "2026-11-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1620.0",
+      "released_at": "2026-11-02T13:50:47Z"
     },
     {
       "id": "burrito-timing",
-      "version": "0.1620.0",
+      "version": "0.1621.0",
       "type": "feat",
       "tags": [
         "feature"
