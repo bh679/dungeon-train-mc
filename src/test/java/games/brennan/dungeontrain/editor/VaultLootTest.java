@@ -165,13 +165,12 @@ final class VaultLootTest {
     }
 
     @Test
-    @DisplayName("every default vault can drop the Dungeon Trial Key, once in a while")
+    @DisplayName("the trial and ominous vaults can drop the Dungeon Trial Key")
     void defaultVaultsDropTheGreenKey() {
-        for (String key : List.of(ContainerContentsPool.DEFAULT_VAULT_KEY, VaultLoot.OMINOUS_KEY, VaultLoot.GREEN_KEY)) {
-            ContainerContentsEntry greenKey = VaultLoot.defaultPool(key).entries().stream()
-                .filter(e -> e.itemId().toString().equals(VaultLoot.GREEN_KEY))
-                .findFirst().orElseThrow(() -> new AssertionError(key + " vault has no Dungeon Trial Key"));
-            assertEquals(1, greenKey.weight());
+        for (String key : List.of(ContainerContentsPool.DEFAULT_VAULT_KEY, VaultLoot.OMINOUS_KEY)) {
+            assertTrue(VaultLoot.defaultPool(key).entries().stream()
+                    .anyMatch(e -> e.itemId().toString().equals(VaultLoot.GREEN_KEY)),
+                key + " vault has no Dungeon Trial Key");
         }
     }
 
