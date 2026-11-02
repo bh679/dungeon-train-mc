@@ -146,9 +146,11 @@ final class VaultLootTest {
 
         ContainerContentsPool greenDefault = VaultLoot.defaultPool(VaultLoot.GREEN_KEY);
         assertEquals(VaultLoot.GREEN_KEY, greenDefault.vaultKey());
-        assertTrue(VaultLoot.sameLoot(ominousDefault, greenDefault), "the green vault starts with the ominous loot");
+        assertFalse(greenDefault.isEmpty());
+        assertFalse(VaultLoot.sameLoot(ominousDefault, greenDefault), "the green vault has its own loot");
         ContainerContentsPool toGreen = VaultLoot.withKey(ominousDefault, VaultLoot.GREEN_KEY);
         assertEquals(VaultLoot.GREEN_KEY, toGreen.vaultKey());
+        assertTrue(VaultLoot.sameLoot(greenDefault, toGreen));
         assertTrue(VaultLoot.sameLoot(trialDefault, VaultLoot.withKey(toGreen, ContainerContentsPool.DEFAULT_VAULT_KEY)));
 
         ContainerContentsPool switched = VaultLoot.withKey(trialDefault, VaultLoot.OMINOUS_KEY);
@@ -160,6 +162,17 @@ final class VaultLootTest {
         ContainerContentsPool editedSwitched = VaultLoot.withKey(edited, VaultLoot.OMINOUS_KEY);
         assertEquals(VaultLoot.OMINOUS_KEY, editedSwitched.vaultKey());
         assertTrue(VaultLoot.sameLoot(edited, editedSwitched));
+    }
+
+    @Test
+    @DisplayName("every default vault can drop the Dungeon Trial Key, once in a while")
+    void defaultVaultsDropTheGreenKey() {
+        for (String key : List.of(ContainerContentsPool.DEFAULT_VAULT_KEY, VaultLoot.OMINOUS_KEY, VaultLoot.GREEN_KEY)) {
+            ContainerContentsEntry greenKey = VaultLoot.defaultPool(key).entries().stream()
+                .filter(e -> e.itemId().toString().equals(VaultLoot.GREEN_KEY))
+                .findFirst().orElseThrow(() -> new AssertionError(key + " vault has no Dungeon Trial Key"));
+            assertEquals(1, greenKey.weight());
+        }
     }
 
     @Test
