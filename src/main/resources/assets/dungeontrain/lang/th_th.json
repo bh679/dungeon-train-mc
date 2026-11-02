@@ -5424,6 +5424,8 @@
   "chat.dungeontrain.update_notice.major_header": "[Dungeon Train] ★ อัปเดตครั้งใหญ่ ★",
   "chat.dungeontrain.update_notice.major_name": "%s (v%s)",
   "toast.dungeontrain.update_notice.major": "อัปเดตครั้งใหญ่ของ Dungeon Train!",
+  "toast.dungeontrain.quick_play_blocked.title": "แต่ละโลกเล่นได้รอบเดียว",
+  "toast.dungeontrain.quick_play_blocked.body": "เริ่มรอบใหม่จากเมนู",
   "chat.dungeontrain.low_memory_notice": "[Dungeon Train] Minecraft มีหน่วยความจำเพียง %s GB จัดสรร 6 GB ขึ้นไปในตัวเปิดเกมของคุณเพื่อให้เล่นได้ลื่นขึ้น",
   "chat.dungeontrain.low_memory_notice.link": "[วิธีทำ]",
   "chat.dungeontrain.low_memory_notice.dismiss": "[ไม่ต้องแสดงอีก]",

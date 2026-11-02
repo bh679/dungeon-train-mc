@@ -5490,6 +5490,8 @@
   "chat.dungeontrain.update_notice.major_header": "[Dungeon Train] ★ GROSSES UPDATE ★",
   "chat.dungeontrain.update_notice.major_name": "%s (v%s)",
   "toast.dungeontrain.update_notice.major": "Großes Dungeon-Train-Update!",
+  "toast.dungeontrain.quick_play_blocked.title": "Jede Welt ist ein Durchlauf",
+  "toast.dungeontrain.quick_play_blocked.body": "Starte einen neuen Durchlauf im Menü.",
   "chat.dungeontrain.low_memory_notice": "[Dungeon Train] Minecraft hat nur %s GB Arbeitsspeicher. Weise im Launcher 6 GB oder mehr zu, damit das Spiel flüssiger läuft.",
   "chat.dungeontrain.low_memory_notice.link": "[So geht's]",
   "chat.dungeontrain.low_memory_notice.dismiss": "[Nicht mehr anzeigen]",

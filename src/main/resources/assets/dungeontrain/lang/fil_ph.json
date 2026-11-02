@@ -5424,6 +5424,8 @@
   "chat.dungeontrain.update_notice.major_header": "[Dungeon Train] ★ MALAKING UPDATE ★",
   "chat.dungeontrain.update_notice.major_name": "%s (v%s)",
   "toast.dungeontrain.update_notice.major": "Malaking update ng Dungeon Train!",
+  "toast.dungeontrain.quick_play_blocked.title": "Isang takbo lang ang bawat mundo",
+  "toast.dungeontrain.quick_play_blocked.body": "Magsimula ng bagong takbo mula sa menu.",
   "chat.dungeontrain.low_memory_notice": "[Dungeon Train] %s GB lang ang memory ng Minecraft. Maglaan ng 6 GB o higit pa sa iyong launcher para mas maayos ang laro.",
   "chat.dungeontrain.low_memory_notice.link": "[Paano]",
   "chat.dungeontrain.low_memory_notice.dismiss": "[Huwag nang ipakita]",

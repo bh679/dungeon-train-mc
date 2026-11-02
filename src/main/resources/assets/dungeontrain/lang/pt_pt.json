@@ -5490,6 +5490,8 @@
   "chat.dungeontrain.update_notice.major_header": "[Dungeon Train] ★ GRANDE ATUALIZAÇÃO ★",
   "chat.dungeontrain.update_notice.major_name": "%s (v%s)",
   "toast.dungeontrain.update_notice.major": "Grande atualização do Dungeon Train!",
+  "toast.dungeontrain.quick_play_blocked.title": "Cada mundo é uma só partida",
+  "toast.dungeontrain.quick_play_blocked.body": "Começa uma nova partida a partir do menu.",
   "chat.dungeontrain.low_memory_notice": "[Dungeon Train] O Minecraft só tem %s GB de memória. Atribui 6 GB ou mais no teu launcher para o jogo correr com mais fluidez.",
   "chat.dungeontrain.low_memory_notice.link": "[Como]",
   "chat.dungeontrain.low_memory_notice.dismiss": "[Não mostrar novamente]",

@@ -4571,6 +4571,8 @@
       "chat.dungeontrain.update_notice.major_header",
       "chat.dungeontrain.update_notice.major_name",
       "toast.dungeontrain.update_notice.major",
+      "toast.dungeontrain.quick_play_blocked.title",
+      "toast.dungeontrain.quick_play_blocked.body",
       "chat.dungeontrain.low_memory_notice",
       "chat.dungeontrain.low_memory_notice.link",
       "chat.dungeontrain.low_memory_notice.dismiss",

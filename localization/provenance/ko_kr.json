@@ -5424,6 +5424,8 @@
   "chat.dungeontrain.update_notice.major_header": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "3c6fd2fb998bae7e"},
   "chat.dungeontrain.update_notice.major_name": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "149ddf7f058b364a"},
   "toast.dungeontrain.update_notice.major": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "11ea78806fe871f1"},
+  "toast.dungeontrain.quick_play_blocked.title": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "5f109c5238526d64"},
+  "toast.dungeontrain.quick_play_blocked.body": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "65f64ab9b92e2f21"},
   "chat.dungeontrain.low_memory_notice": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "5618eb191c726477"},
   "chat.dungeontrain.low_memory_notice.link": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "c02300fcf81c711c"},
   "chat.dungeontrain.low_memory_notice.dismiss": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "a21d14fb8f86c145"},
