@@ -1,8 +1,8 @@
-<!-- gate: gate-2-test (Dungeon Train add-on) | version: 1.0.1 -->
+<!-- gate: gate-2-test (Dungeon Train add-on) | version: 1.0.2 -->
 # Gate 2 — Testing Approval (Dungeon Train add-on)
 
-**Follow `~/.claude/playbooks/gates/gate-2-test.md` first.** This file replaces its web steps
-(Playwright, local URL, accessibility snapshot) with the Minecraft ones below.
+**Follow `~/.claude/playbooks/gates/gate-2-test.md` first.** This file adds the Minecraft
+steps: how to build, run and capture screenshots.
 
 ## Agent Actions
 1. `./gradlew build` must pass; note warnings. Run `./gradlew test`.
