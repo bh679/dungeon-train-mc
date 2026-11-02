@@ -32427,6 +32427,28 @@
       "released": true,
       "released_in": "v0.1620.0",
       "released_at": "2026-11-02T13:50:47Z"
+    },
+    {
+      "id": "candle-flowerpot-variants",
+      "version": "0.1621.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Candle and flower pot variety",
+      "summary": "Flower pots around the train now grow a different plant each time, and the Train Editor can now choose how many candles stand on a block, whether they are lit, and which plants a flower pot can hold.",
+      "highlights": [
+        "Flower pots around the train now hold a random plant.",
+        "Train Editor: candles can be set to a fixed or random count, and lit, unlit or random.",
+        "Train Editor: a flower pot can pick from every plant, or from a list of plants you choose."
+      ],
+      "pr": 2436,
+      "date": "2026-11-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
