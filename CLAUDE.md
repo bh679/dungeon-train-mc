@@ -104,7 +104,7 @@ Follow `~/.claude/playbooks/gates/gate-3-merge.md`, plus the Dungeon Train add-o
 3. Verify CI green
 4. Squash-merge after explicit user approval of the changelog notes + diff
 5. Delete feature branch
-6. Bump version in `gradle.properties` per the versioning rule
+6. Before merging, `mod_version` = main's MINOR + 1, PATCH 0 (`version-bump.yml` then skips)
 7. **Leaderboard resets are never yours to propose.** Retiring a leaderboard era (`-f leaderboard_reset=true`
    on `release.yml`, the relay's `POST …/leaderboard/era/retire`, or `scripts/retire-leaderboard-era.js`)
    happens **only when Brennan brings it up himself**. Do not set the flag, do not suggest it at merge or

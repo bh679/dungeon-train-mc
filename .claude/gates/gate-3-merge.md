@@ -1,11 +1,14 @@
-<!-- gate: gate-3-merge (Dungeon Train add-on) | version: 2.1.0 -->
+<!-- gate: gate-3-merge (Dungeon Train add-on) | version: 2.2.0 -->
 # Gate 3 — Merge Approval (Dungeon Train add-on)
 
 **Follow `~/.claude/playbooks/gates/gate-3-merge.md` first.** This file only adds the Dungeon Train
 steps below; everything else (PR, report structure, approval, cleanup, docs) comes from there.
 
 ## Extra Agent Actions (before entering plan mode)
-**A. Draft + log the changelog entry** — unless the change is purely non-player-facing
+**A. Version:** `mod_version` = main's MINOR + 1, PATCH 0 (main 0.1617.0 → 0.1618.0). Do it
+before B, which reads it.
+
+**B. Draft + log the changelog entry** — unless the change is purely non-player-facing
 (CI/tooling/docs/refactors), draft a curated, player-facing summary and run
 `scripts/release-notes/append-entry.py` on the feature branch (plus `--highlight` bullets and
 `--pr <number>`), then commit and push so the entry is in the PR diff. The shipped version is
@@ -20,7 +23,7 @@ computed automatically. See `.github/release-notes/README.md`.
   `--addresses lag` and/or `--addresses train_vanished`. Players who report that issue on an
   older version are then told this release addresses it.
 
-**B. Modpack whitelist check** — if the diff adds an entry to `modpack/modpack.config.json`
+**C. Modpack whitelist check** — if the diff adds an entry to `modpack/modpack.config.json`
 (`optional_mods[]`), or changes an entry's `mod_ids` / pin: every mod the modpack ships is
 **auto-approved for fair play** (the `generateApprovedMods` build task reads `mod_ids`), unless
 the entry says `"whitelist": false`. Run `python3 scripts/modpack/check-mod-ids.py --fill` (new
@@ -31,10 +34,15 @@ are the usual candidates for an opt-out. Record the answer in the entry before m
 ## Extra Report Content
 - **The changelog entry first** (as the template requires), with its tags and `--addresses`
   choice. The user must confirm the notes before the merge — leaving them in the diff is not enough.
-- The modpack whitelist answer from step B, if it applied.
+- The modpack whitelist answer from step C, if it applied.
 
 Approval includes sign-off on the changelog notes.
 
+## After Merge: Wiki pages
+- New blocks/items/entities → `Features.md`
+- Sable interactions or quirks → `Compatibility.md`
+- Build/dev environment changes → `Development.md`
+
 ## Never
-- Propose, suggest or ask about a leaderboard reset. Only when Brennan raises it first.
-- Run `git tag` or push a tag. Tags come only from `release.yml`.
+- Never propose, suggest or ask about a leaderboard reset. Only when Brennan raises it first.
+- Never run `git tag` or push a tag. Tags come only from `release.yml`.
