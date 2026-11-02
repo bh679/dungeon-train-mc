@@ -1,4 +1,4 @@
-<!-- gate: gate-2-test (Dungeon Train add-on) | version: 1.0.2 -->
+<!-- gate: gate-2-test (Dungeon Train add-on) | version: 1.0.3 -->
 # Gate 2 — Testing Approval (Dungeon Train add-on)
 
 **Follow `~/.claude/playbooks/gates/gate-2-test.md` first.** This file adds the Minecraft
@@ -9,7 +9,8 @@ steps: how to build, run and capture screenshots.
 2. Test in the dev client (`./gradlew runClient`), or headless with the RCON harnesses for
    server-side changes. Never compile in a worktree while its client is running.
 3. Screenshots: **F2** in the client saves to `run/screenshots/`. Copy the ones that matter to
-   `./test-results/gate2-<feature-slug>-<YYYY-MM>.png`. Do not use macOS `screencapture`.
+   `./test-results/gate2-<feature-slug>-<YYYY-MM>.png`, then save key shots outside the worktree
+   (template § Screenshot Naming). Do not use macOS `screencapture`.
 4. Show the screenshots rendered in chat (`~/.claude/playbooks/ui-prototype.md` § Gate 2).
 5. Changes touching block physics, entity collision or world interaction: test standing on a
    moving Sable train.
