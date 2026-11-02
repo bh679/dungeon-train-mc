@@ -512,9 +512,9 @@ public final class VariantBlockInteractions {
         // matches the world-space block-variant menu's ADD behavior.
         RotationApplier.OrientedState oriented =
             RotationApplier.orientToPredecessors(newVariant.state(), updated);
-        updated.add(HeadAim.aim(new VariantState(
+        updated.add(BlockVariantMenuController.withNewRowDefaults(HeadAim.aim(new VariantState(
             oriented.state(), newVariant.blockEntityNbt(),
-            newVariant.weight(), oriented.rotation()), local, footprint));
+            newVariant.weight(), oriented.rotation()), local, footprint)));
         return updated;
     }
 
