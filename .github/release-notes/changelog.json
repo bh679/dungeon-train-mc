@@ -32427,6 +32427,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "burrito-clock-all-play-time",
+      "version": "0.1620.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "advancements"
+      ],
+      "title": "Fastest Everything Burrito counts all your play time",
+      "summary": "Your Everything Burrito time now counts all the time you spend playing, not just your active time on the train. Time off the train, time spent idle, and time reading books or looking at photos all count. The pause menu, the main menu and the death screen don't.",
+      "highlights": [
+        "Time off the train and time spent idle now count toward your Everything Burrito time.",
+        "Reading books, looking at photos and using your inventory count too.",
+        "Your time so far carries over, and new play counts from now on."
+      ],
+      "pr": 2435,
+      "date": "2026-11-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
