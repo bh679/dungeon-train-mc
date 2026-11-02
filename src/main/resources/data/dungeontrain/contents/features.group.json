@@ -196,6 +196,14 @@
       "id": "trailvault2",
       "weight": 5,
       "stage": "copper"
+    },
+    {
+      "id": "trialvault3",
+      "weight": 4
+    },
+    {
+      "id": "trailvault4",
+      "weight": 6
     }
   ]
 }
