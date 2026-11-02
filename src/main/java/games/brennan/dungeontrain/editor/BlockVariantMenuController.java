@@ -17,6 +17,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.BlockItem;
@@ -346,7 +347,8 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 // Sent even with no values so the popup keeps the target the author picked.
                 s.condition().id(),
                 VariantConditionEdits.isLive(s.condition(), lockIdsInUse, cellLockId),
-                conditionValuesToken(plot, localPos, s.condition())));
+                conditionValuesToken(plot, localPos, s.condition()),
+                s.candles().id(), s.pot().id()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
@@ -643,9 +645,9 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 // matching what's already there.
                 RotationApplier.OrientedState oriented =
                     RotationApplier.orientToPredecessors(capturedState, mutated);
-                VariantState newVariant = HeadAim.aim(new VariantState(
+                VariantState newVariant = withNewRowDefaults(HeadAim.aim(new VariantState(
                     oriented.state(), itemBeNbt, 1, oriented.rotation(), linkedPrefabId)
-                    .withPainting(addedPainting), localPos, plot.footprint());
+                    .withPainting(addedPainting), localPos, plot.footprint()));
                 if (mutated.size() >= MAX_ENTRIES) {
                     actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.variant_cell_full", MAX_ENTRIES), ChatFormatting.YELLOW);
                     return;
@@ -822,6 +824,34 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
                 VariantPainting next = VariantPainting.parse(packet.stateString());
                 if (next == null) return;
                 mutated.set(idx, entry.withPainting(PaintingPass.normalise(next, level.registryAccess())));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_CANDLES -> {
+                // stateString = VariantCandles token; blank = as placed.
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (entry.isMob() || entry.isGroupRef() || !VariantCandles.isCandle(entry.state())) return;
+                VariantCandles next = VariantCandles.parse(packet.stateString());
+                if (next == null) return;
+                // A fixed count is stored in the state too, so the row's icon shows it.
+                BlockState shown = next.isDefault() || next.isRandom() ? entry.state()
+                    : entry.state().setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.CANDLES, next.count());
+                mutated.set(idx, entry.withState(shown, entry.blockEntityNbt()).withCandles(next));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_POT, ADD_POT_PLANT, REMOVE_POT_PLANT -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (entry.isMob() || entry.isGroupRef() || !FlowerPots.isPot(entry.state())) return;
+                VariantPot next = potEdit(entry.pot(), packet, player);
+                if (next == null) return;
+                mutated.set(idx, entry.withPot(next));
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }
@@ -1559,6 +1589,47 @@ public final class BlockVariantMenuController extends PlayerMenuController<Block
         }
         VariantState base = new VariantState(baseState, beNbt, 1, RotationApplier.lockToCurrent(baseState));
         return VariantBlockInteractions.withWholePainting(level, clicked, base);
+    }
+
+    /**
+     * A freshly added row's option defaults: a candle starts lit with a Random count, so a new
+     * candle row varies without the author touching it. Everything else is unchanged.
+     */
+    static VariantState withNewRowDefaults(VariantState v) {
+        if (v.isMob() || !VariantCandles.isCandle(v.state())) return v;
+        return v.withActive(VariantActive.active()).withCandles(VariantCandles.RANDOM);
+    }
+
+    /**
+     * The flower pot option after one of the Plant popup's edits, or {@code null} to ignore it
+     * (unknown plant, nothing pottable held, list full).
+     */
+    @org.jetbrains.annotations.Nullable
+    private static VariantPot potEdit(VariantPot current, BlockVariantEditPacket packet, ServerPlayer player) {
+        String arg = packet.stateString() == null ? "" : packet.stateString().trim();
+        switch (packet.op()) {
+            case SET_POT -> {
+                return arg.isEmpty() ? VariantPot.NONE : VariantPot.RANDOM;
+            }
+            case ADD_POT_PLANT -> {
+                ResourceLocation plant = arg.isEmpty()
+                    ? FlowerPots.plantOf(player.getMainHandItem()) : ResourceLocation.tryParse(arg);
+                if (plant == null || FlowerPots.pottedFor(plant) == null) {
+                    actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.pot_hold_plant"),
+                        ChatFormatting.YELLOW);
+                    return null;
+                }
+                if (current.plants().size() >= VariantPot.MAX_PLANTS) return null;
+                return current.withPlant(plant);
+            }
+            case REMOVE_POT_PLANT -> {
+                ResourceLocation plant = ResourceLocation.tryParse(arg);
+                return plant == null ? null : current.withoutPlant(plant);
+            }
+            default -> {
+                return null;
+            }
+        }
     }
 
     /**

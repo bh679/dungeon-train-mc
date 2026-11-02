@@ -113,8 +113,8 @@ public final class AdvancementFirstClient {
     }
 
     /**
-     * The claim's JSON body. A burrito earn also carries {@code burritoTicks} (ticks aboard since first
-     * played or the last reset) and {@code burritoAttempt} — the relay's fastest-burrito board. A
+     * The claim's JSON body. A burrito earn also carries {@code burritoTicks} (ticks of play since first
+     * played or the last reset, BurritoClock) and {@code burritoAttempt} — the relay's fastest-burrito board. A
      * Challenge earn carries {@code challengeTicks} (ticks aboard in the life that earned it) — the
      * fastest-challenge board.
      */

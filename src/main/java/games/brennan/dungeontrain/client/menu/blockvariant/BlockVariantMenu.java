@@ -90,6 +90,10 @@ public final class BlockVariantMenu {
          * painting row uses instead); {@code secondary} = {@code GrowthPopupLayout.encode}.
          */
         PAINTING_OPTION,
+        /** A button in a candle row's Candles popup (Grow pill slot); {@code secondary} = {@code GrowthPopupLayout.encode}. */
+        CANDLE_OPTION,
+        /** A button in a flower pot row's Plant popup (Grow pill slot); {@code secondary} = {@code GrowthPopupLayout.encode}. */
+        POT_OPTION,
         ENTRY_DIFF_MIN,
         ENTRY_DIFF_MAX,
         /** The row's If pill — opens the condition popup for that row. */
@@ -216,6 +220,59 @@ public final class BlockVariantMenu {
     public static boolean isPaintingRow(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed) {
         return parsed != null && !entry.isMob() && !entry.isGroupRef()
             && games.brennan.dungeontrain.editor.PaintingPass.isPainting(parsed);
+    }
+
+    /** True when {@code entry} is a candle row — it shows the Candles pill and popup in the Grow slot. */
+    public static boolean isCandleRow(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed) {
+        return entry.entityId() == null && entry.groupRef() <= 0
+            && games.brennan.dungeontrain.editor.VariantCandles.isCandle(parsed);
+    }
+
+    /** True when {@code entry} is a flower pot row — it shows the Plant pill and popup in the Grow slot. */
+    public static boolean isPotRow(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed) {
+        return entry.entityId() == null && entry.groupRef() <= 0
+            && games.brennan.dungeontrain.editor.FlowerPots.isPot(parsed);
+    }
+
+    /** The row's candle count option, or as placed when the wire token is blank / malformed. */
+    public static games.brennan.dungeontrain.editor.VariantCandles candles(BlockVariantSyncPacket.Entry entry) {
+        games.brennan.dungeontrain.editor.VariantCandles c =
+            games.brennan.dungeontrain.editor.VariantCandles.parse(entry.candles());
+        return c == null ? games.brennan.dungeontrain.editor.VariantCandles.AS_PLACED : c;
+    }
+
+    /** The row's flower pot option, or off when the wire token is blank / malformed. */
+    public static games.brennan.dungeontrain.editor.VariantPot pot(BlockVariantSyncPacket.Entry entry) {
+        games.brennan.dungeontrain.editor.VariantPot p =
+            games.brennan.dungeontrain.editor.VariantPot.parse(entry.pot());
+        return p == null ? games.brennan.dungeontrain.editor.VariantPot.NONE : p;
+    }
+
+    /**
+     * The popup the Grow pill slot opens for a row that uses the slot for something else than
+     * Grow (painting, candles, flower pot), or {@code null} for a growable row's own Grow popup.
+     */
+    @Nullable
+    static SlotPopup slotPopup(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed,
+                               double panelW, double halfH) {
+        if (isPaintingRow(entry, parsed)) {
+            return new SlotPopup(CellKind.PAINTING_OPTION, PaintingPopupLayout.rows(painting(entry), panelW, halfH));
+        }
+        if (isCandleRow(entry, parsed)) {
+            return new SlotPopup(CellKind.CANDLE_OPTION, CandlePopupLayout.rows(candles(entry), panelW, halfH));
+        }
+        if (isPotRow(entry, parsed)) {
+            return new SlotPopup(CellKind.POT_OPTION, PotPopupLayout.rows(pot(entry), panelW, halfH));
+        }
+        return null;
+    }
+
+    /** A Grow-slot popup's rows and the cell kind its buttons report. */
+    record SlotPopup(CellKind kind, List<GrowthPopupLayout.Row> rows) {}
+
+    /** True when the row shows an option pill in the Grow slot other than Grow itself. */
+    public static boolean usesGrowSlot(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed) {
+        return isPaintingRow(entry, parsed) || isCandleRow(entry, parsed) || isPotRow(entry, parsed);
     }
 
     /** The row's painting option, or off when the wire token is blank / malformed. */

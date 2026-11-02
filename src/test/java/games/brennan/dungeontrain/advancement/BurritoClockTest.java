@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import games.brennan.dungeontrain.net.BurritoScreenTimePacket;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -13,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class BurritoClockTest {
 
     @Test
-    @DisplayName("never reset: the whole time aboard counts, since first played")
+    @DisplayName("never reset: all play counts, since first played")
     void noBaselineCountsEverything() {
         BurritoClock.Completion c = BurritoClock.Profile.FRESH.completionAt(72_000L, 5L, "normal", "1.0");
         assertEquals(72_000L, c.ticks());
@@ -21,7 +23,7 @@ class BurritoClockTest {
     }
 
     @Test
-    @DisplayName("after a reset only the time aboard since the reset counts, as the next attempt")
+    @DisplayName("after a reset only the play since the reset counts, as the next attempt")
     void resetStartsANewAttempt() {
         BurritoClock.Profile p = BurritoClock.Profile.FRESH.reset(50_000L);
         BurritoClock.Completion c = p.completionAt(80_000L, 5L, "hard", "1.0");
@@ -64,6 +66,44 @@ class BurritoClockTest {
         BurritoClock.Data d = BurritoClock.Data.EMPTY.with("hard", p);
         var json = BurritoClock.Data.CODEC.encodeStart(JsonOps.INSTANCE, d).getOrThrow();
         assertEquals(d, BurritoClock.Data.CODEC.parse(JsonOps.INSTANCE, json).getOrThrow());
+    }
+
+    @Test
+    @DisplayName("a file from before the play counter is seeded from time aboard, once")
+    void seedFromTimeAboard() {
+        BurritoClock.Data old = BurritoClock.Data.CODEC.parse(JsonOps.INSTANCE, new com.google.gson.JsonObject()).getOrThrow();
+        assertEquals(BurritoClock.UNSEEDED, old.playTicks());
+        BurritoClock.Data seeded = old.seeded(72_000L);
+        assertEquals(72_000L, seeded.playTicks());
+        assertEquals(72_000L, seeded.seeded(5L).playTicks());   // already seeded: left alone
+    }
+
+    @Test
+    @DisplayName("a baseline taken on time aboard stays valid once the counter is seeded from it")
+    void oldBaselineAfterSeed() {
+        BurritoClock.Data d = BurritoClock.Data.EMPTY.with("hard", BurritoClock.Profile.FRESH.reset(50_000L))
+            .seeded(60_000L).plusPlayTicks(1_200L);
+        BurritoClock.Completion c = d.profile("hard").completionAt(d.playTicks(), 5L, "hard", "1.0");
+        assertEquals(11_200L, c.ticks());
+    }
+
+    @Test
+    @DisplayName("the play counter keeps its profiles and round-trips")
+    void playTicksRoundTrip() {
+        BurritoClock.Data d = BurritoClock.Data.EMPTY.with("normal", BurritoClock.Profile.FRESH.reset(10L))
+            .seeded(0L).plusPlayTicks(40L);
+        assertEquals(40L, d.playTicks());
+        assertEquals(10L, d.profile("normal").baseline());
+        var json = BurritoClock.Data.CODEC.encodeStart(JsonOps.INSTANCE, d).getOrThrow();
+        assertEquals(d, BurritoClock.Data.CODEC.parse(JsonOps.INSTANCE, json).getOrThrow());
+    }
+
+    @Test
+    @DisplayName("screen time converts to ticks, clamped to 0..24 h")
+    void screenTicks() {
+        assertEquals(20L, BurritoScreenTimePacket.ticksFor(1_000L));
+        assertEquals(0L, BurritoScreenTimePacket.ticksFor(-5_000L));
+        assertEquals(BurritoScreenTimePacket.MAX_MS / 50L, BurritoScreenTimePacket.ticksFor(Long.MAX_VALUE));
     }
 
     @Test
