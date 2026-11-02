@@ -20,7 +20,7 @@
     { "id": "minecraft:book", "count": 1, "weight": 80, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 100 },
     { "id": "minecraft:diamond_block", "count": 2, "weight": 50, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:enchanted_golden_apple", "count": 1, "weight": 40, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
-    { "id": "minecraft:flow_armor_trim_smithing_template", "count": 1, "weight": 40, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
+    { "id": "minecraft:flow_armor_trim_smithing_template", "count": 1, "weight": 50, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:flow_banner_pattern", "count": 1, "weight": 20, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:music_disc_creator", "count": 1, "weight": 40, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:heavy_core", "count": 1, "weight": 5, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
