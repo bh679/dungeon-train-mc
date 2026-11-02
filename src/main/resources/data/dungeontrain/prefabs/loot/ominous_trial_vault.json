@@ -51,6 +51,6 @@
     { "id": "vista:mirror", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:potion", "count": 2, "weight": 26, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "potion": "minecraft:luck" },
     { "id": "minecraft:splash_potion", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "potion": "minecraft:luck" },
-    { "id": "dungeontrain:dungeon_trial_key", "count": 1, "weight": 50, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 }
+    { "id": "dungeontrain:dungeon_trial_key", "count": 1, "weight": 35, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 }
   ]
 }
