@@ -32486,7 +32486,7 @@
     },
     {
       "id": "new-trial-vault",
-      "version": "0.1624.0",
+      "version": "0.1625.0",
       "type": "feat",
       "tags": [
         "feature",
