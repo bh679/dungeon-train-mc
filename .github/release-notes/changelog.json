@@ -32485,6 +32485,23 @@
       "released_at": null
     },
     {
+      "id": "new-trial-vault",
+      "version": "0.1625.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot"
+      ],
+      "title": "A new vault",
+      "summary": "A new kind of trial vault now turns up on the train.",
+      "highlights": [],
+      "pr": 2438,
+      "date": "2026-11-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "ci-gradle-cache-fix",
       "version": "0.1625.0",
       "type": "ci",

@@ -2084,6 +2084,7 @@
   "item.dungeontrain.live_headpiece.tooltip.warning": "外すか、次の人が装着すると壊れる。",
   "item.dungeontrain.random_live_headpiece": "ランダムライブアイ（戦利品プレースホルダー）",
   "item.dungeontrain.knockback_slime": "ノックバックスライム",
+  "item.dungeontrain.dungeon_trial_key": "ダンジョンの試練の鍵",
   "item.dungeontrain.buckler_piglin_brute_spawn_egg": "バックラー持ちピグリンブルートのスポーンエッグ",
   "item.dungeontrain.knockback_slime.tooltip": "命中すると消費される",
   "item.dungeontrain.random_book": "ランダムな本",
