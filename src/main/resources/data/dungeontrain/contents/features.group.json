@@ -190,11 +190,11 @@
     },
     {
       "id": "trialvault",
-      "weight": 5
+      "weight": 8
     },
     {
       "id": "trailvault2",
-      "weight": 6,
+      "weight": 5,
       "stage": "copper"
     }
   ]

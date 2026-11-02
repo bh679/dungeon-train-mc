@@ -13,7 +13,7 @@
     { "id": "minecraft:honey_bottle", "count": 2, "weight": 6, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:ominous_bottle", "count": 1, "weight": 4, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:diamond", "count": 2, "weight": 2, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
-    { "id": "minecraft:shield", "count": 1, "weight": 3, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 0 },
+    { "id": "minecraft:shield", "count": 1, "weight": 3, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:bow", "count": 1, "weight": 3, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 100 },
     { "id": "minecraft:crossbow", "count": 1, "weight": 2, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 100 },
     { "id": "minecraft:iron_axe", "count": 1, "weight": 2, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 100 },
