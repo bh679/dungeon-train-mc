@@ -32356,6 +32356,28 @@
       "released": true,
       "released_in": "v0.1616.0",
       "released_at": "2026-11-01T15:16:54Z"
+    },
+    {
+      "id": "room-loot-rebalance-2431",
+      "version": "0.1617.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot",
+        "balance"
+      ],
+      "title": "Loot rebalance",
+      "summary": "Some treasure is easier to come by and some is rarer, and a few rooms have been reworked.",
+      "highlights": [
+        "Slime balls turn up more often",
+        "Ominous trial vault rewards reshuffled",
+        "A few rooms got new layouts and loot spots"
+      ],
+      "pr": 2431,
+      "date": "2026-11-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
