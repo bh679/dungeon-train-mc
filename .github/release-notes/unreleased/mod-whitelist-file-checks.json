@@ -1,0 +1,19 @@
+{
+  "id": "mod-whitelist-file-checks",
+  "version": "0.1633.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "compatibility"
+  ],
+  "title": "Mod whitelist checks",
+  "summary": "Suggesting a mod from the Unsupported Mods screen now sends its file along, so it can be checked and approved faster. Whitelisted mods are now recognised by their published files.",
+  "highlights": [
+    "Mod suggestions carry the mod's file so it can be verified.",
+    "Changing a whitelisted mod's settings in a way that affects gameplay now puts the run in Free Play."
+  ],
+  "date": "2026-11-03",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
