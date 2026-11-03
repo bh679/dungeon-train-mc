@@ -4955,6 +4955,8 @@
   "advancements.dungeontrain.tab.train_explorer": "Odkrywca pociągu",
   "advancements.dungeontrain.tab.others": "Inni",
   "advancements.dungeontrain.tab.secrete_menu": "Sekretne menu",
+  "dungeontrain.plaque.tab_complete": "Zakładka ukończona!",
+  "dungeontrain.plaque.everything_complete": "Wszystko ukończone!",
   "chat.dungeontrain.free_play.cause.portal_rate": "W tym świecie zmieniono, jak często pojawiają się wagony wymiarowe.",
   "chat.dungeontrain.free_play.portal_rate_changed": "Tor, który generuje ten świat, nie jest już tym, pod który wyważono Dungeon Train, więc ten świat zostaje w Swobodnej Grze.",
   "chat.dungeontrain.free_play.cause.dt_config": "Zmieniono ustawienia trudności Dungeon Train.",

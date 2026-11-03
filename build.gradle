@@ -759,6 +759,12 @@ dependencies {
     // photo frame reads as the wall). Dev runtime only, so the dev client sees what players see.
     localRuntime "maven.modrinth:jade-sable-compat:${jade_sable_compat_version}"
 
+    // Advancement Plaques + its Iceberg library — OPTIONAL modpack companions. Dev runtime only, so the
+    // dev client shows the Night Crest plaque (mixin/advancementplaques, string targets, no compile dep).
+    // Pinned to the modpack's builds (modpack.config.json → advancement-plaques / iceberg modrinth_version).
+    localRuntime "maven.modrinth:advancement-plaques:${advancement_plaques_version}"
+    localRuntime "maven.modrinth:iceberg:${iceberg_version}"
+
     // Windy: Configurable (client-only visuals for the train wind; see wind/WindServer and the
     // dungeontrain.windy.mixins.json entry in neoforge.mods.toml). Runtime only: the dev client gets the
     // streaks; nothing compiles against it. Keep equal to modpack.config.json → windy.file_id.
