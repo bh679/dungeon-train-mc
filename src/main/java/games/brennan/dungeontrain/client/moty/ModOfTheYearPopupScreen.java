@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.moty;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
@@ -25,6 +26,9 @@ import java.util.Optional;
  * <p>The main button and "Already did" both mark the ask done, so it is never asked again, and the
  * next ask (the mod, once the modpack is done) takes its place straight away. "Not now" and Esc just
  * close, and the next launch asks again while the phase is open.</p>
+ *
+ * <p>Each ask reports to {@link UiAnalytics} (surface {@code moty_popup}): shown, the main button and
+ * whether the link was then opened, "Already did", and "Not now" / Esc.</p>
  */
 public final class ModOfTheYearPopupScreen extends Screen {
 
@@ -48,6 +52,8 @@ public final class ModOfTheYearPopupScreen extends Screen {
 
     private final Screen parent;
     private final ModOfTheYear.Ask ask;
+    // Set once a button has reported, so the onClose() that ends every path doesn't also count a "later".
+    private boolean answered;
 
     private int panelX;
     private int panelY;
@@ -62,6 +68,7 @@ public final class ModOfTheYearPopupScreen extends Screen {
         super(Component.translatable(KEY + "title"));
         this.parent = parent;
         this.ask = ask;
+        UiAnalytics.shown(UiAnalytics.SURFACE_MOTY_POPUP, ask.analyticsTarget());
     }
 
     /** The body text for this ask. */
@@ -114,9 +121,13 @@ public final class ModOfTheYearPopupScreen extends Screen {
     /** The contest page behind vanilla's "open this link?" confirmation; then the next ask, if any. */
     private void openContest() {
         String url = ask.contestUrl();
+        String target = ask.analyticsTarget();
+        answered = true;
         ClientDisplayConfig.markMotyDone(ask);
         LOGGER.info("ModOfTheYearPopup: {} clicked — opening {}", ask, url);
+        UiAnalytics.click(UiAnalytics.SURFACE_MOTY_POPUP, target);
         this.minecraft.setScreen(new ConfirmLinkScreen(yes -> {
+            UiAnalytics.confirm(UiAnalytics.SURFACE_MOTY_POPUP, target, yes);
             if (yes) Util.getPlatform().openUri(URI.create(url));
             showNextOrClose();
         }, url, true));
@@ -124,6 +135,8 @@ public final class ModOfTheYearPopupScreen extends Screen {
 
     private void alreadyDid() {
         LOGGER.info("ModOfTheYearPopup: 'Already did' clicked for {}", ask);
+        answered = true;
+        UiAnalytics.click(UiAnalytics.SURFACE_MOTY_POPUP, ask.analyticsTarget() + ModOfTheYear.DONE_SUFFIX);
         ClientDisplayConfig.markMotyDone(ask);
         showNextOrClose();
     }
@@ -163,6 +176,10 @@ public final class ModOfTheYearPopupScreen extends Screen {
     /** "Not now" and Esc both go back to what was underneath. */
     @Override
     public void onClose() {
+        if (!answered) {
+            answered = true;
+            UiAnalytics.click(UiAnalytics.SURFACE_MOTY_POPUP, ask.analyticsTarget() + ModOfTheYear.LATER_SUFFIX);
+        }
         this.minecraft.setScreen(parent);
     }
 }

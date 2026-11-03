@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import games.brennan.dungeontrain.client.HoveredAdvancement;
 import games.brennan.dungeontrain.compat.AdvancementHintText;
+import games.brennan.dungeontrain.compat.HiddenAdvancementCount;
 import games.brennan.dungeontrain.client.EarnedPhotoThumbnails;
 import games.brennan.dungeontrain.compat.AdvancementTileDecor;
 import net.minecraft.advancements.AdvancementNode;
@@ -12,6 +13,7 @@ import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -214,5 +216,16 @@ public abstract class BetterAdvancementWidgetCompatMixin {
                                            boolean shadow, Operation<Integer> original) {
         EarnedPhotoThumbnails.drawIfSlot(g, line, x, y);
         return original.call(g, font, line, x, y, color, shadow);
+    }
+
+    /** A count-hidden advancement draws no {@code x/y}: its title bar's fill shows progress without the target. */
+    @ModifyExpressionValue(
+        method = "drawHover",
+        at = @At(value = "INVOKE",
+                 target = "Lnet/minecraft/advancements/AdvancementProgress;getProgressText()Lnet/minecraft/network/chat/Component;")
+    )
+    private Component dungeontrain$hideProgressCount(Component original) {
+        if (advancementNode == null) return original;
+        return HiddenAdvancementCount.hidesCount(advancementNode.holder().id()) ? null : original;
     }
 }

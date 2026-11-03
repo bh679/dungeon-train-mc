@@ -110,4 +110,16 @@ class ModOfTheYearTest {
         assertEquals(ModOfTheYear.VOTE_URL, Ask.VOTE_MOD.contestUrl());
         assertEquals(ModOfTheYear.NOMINATION_URL, Ask.NOMINATE_MOD.contestUrl());
     }
+
+    @Test
+    @DisplayName("analytics targets match the relay's ui-events.js whitelist")
+    void analyticsTargetsMatchRelayWhitelist() {
+        // Renaming an Ask silently 400s its events relay-side, so pin the exact strings.
+        assertEquals("moty_nominate_modpack", Ask.NOMINATE_MODPACK.analyticsTarget());
+        assertEquals("moty_nominate_mod", Ask.NOMINATE_MOD.analyticsTarget());
+        assertEquals("moty_vote_modpack", Ask.VOTE_MODPACK.analyticsTarget());
+        assertEquals("moty_vote_mod", Ask.VOTE_MOD.analyticsTarget());
+        assertEquals("moty_nominate_mod_done", Ask.NOMINATE_MOD.analyticsTarget() + ModOfTheYear.DONE_SUFFIX);
+        assertEquals("moty_vote_modpack_later", Ask.VOTE_MODPACK.analyticsTarget() + ModOfTheYear.LATER_SUFFIX);
+    }
 }
