@@ -300,14 +300,27 @@ public final class BookFactory {
      * letters V) and {@code ramp} holds the chance at 0 until a configured fraction {@code T} of the mod
      * letters is read, then rises to 1. Settles permanently at the pool-size fair share; never capped,
      * never 100%. Returns 0 when discovery is off or the pool is empty/unknown. Package-private for tests.
+     *
+     * <p>"Read" is the larger of this world's count and the cross-world
+     * {@link games.brennan.dungeontrain.advancement.GlobalNarrativeProgress} count, so the ramp carries
+     * across worlds: each new world starts as far along as the player has read in all of them.</p>
      */
     static double narrativeLecternChanceForWorld(ServerLevel overworld, NarrativeProgressData data) {
         if (!SharedBookGate.canDiscoverNarratives()) return 0.0;
         return discoveryChance(
                 NarrativePool.approvedTotal(),
                 StoryRegistry.totalLetterCount(),
-                data.distinctModStoryLettersRead(),
+                Math.max(data.distinctModStoryLettersRead(), globalModStoryLettersRead()),
                 DungeonTrainConfig.getNarrativeDiscoveryRampThreshold());
+    }
+
+    /** Mod-story letters read in any world, counting only stories currently loaded. */
+    private static int globalModStoryLettersRead() {
+        int total = 0;
+        for (String basename : StoryRegistry.basenames()) {
+            total += games.brennan.dungeontrain.advancement.GlobalNarrativeProgress.progressFor(basename).readCount();
+        }
+        return total;
     }
 
     /**
