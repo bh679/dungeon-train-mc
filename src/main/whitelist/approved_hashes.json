@@ -6217,26 +6217,46 @@
     "catalogue": {
       "platform": "curseforge",
       "slug": "catalogue",
-      "source": "relay-reports",
+      "source": "curseforge-via-relay",
       "sha1": [
-        "6d67f855c20bc6392763cfb22e1152da4e8015b4"
+        "6d67f855c20bc6392763cfb22e1152da4e8015b4",
+        "896ca58c21a8db4383a51f9909ddd830128a70ee",
+        "e4b45e50ff941346cfa8c128c9f9302c9ae230dc",
+        "f2f2286d229ac1d10534f61f084d29dde4836442"
       ]
     },
     "cosmeticarmorreworked": {
       "platform": "curseforge",
       "slug": "cosmetic-armor-reworked",
-      "source": "relay-reports",
+      "source": "curseforge-via-relay",
       "sha1": [
         "5f1e699cd0888b857ec63f01adaeb3571848bfea"
       ]
     },
     "customskinloader": {
-      "platform": "modrinth",
+      "platform": "curseforge",
       "slug": "customskinloader",
-      "source": "relay-reports",
+      "source": "curseforge-via-relay",
       "sha1": [
-        "deafbe7021d3939606a11ebe23b3f9458fd5b1d6"
-      ]
+        "17027305076948649d88bcb6b316eb6f55a748b3",
+        "324e6921ecd576e44875981466e7f22170b6541a",
+        "3710853d5d63dfb9a5ff67d807ba71037199348f",
+        "3f9cfe6c5a00fb84dc317b896eb245d50e0e6b9f",
+        "4f52855efacfce5c1872fc875d0b2a372cde9643",
+        "5afeba5f1dac62fd55b8fd40244bbf08b1eb2e35",
+        "7175bc8e0afddf204112f68270499f501ed44a20",
+        "9a1651298fddeb3c74c3eff017a31975bf33a8b7",
+        "a8b899e42f2eba58c93d1f956938686bc9a40b04",
+        "ab8dd841cafc3b4ecbf0250d3f5aee8a1fdb506a",
+        "b2d9bf46f3d672e2bef26a8e6de55401a7c0818e",
+        "deafbe7021d3939606a11ebe23b3f9458fd5b1d6",
+        "e2d525a8c401681c7dedd4d1f4779758218e2f2b",
+        "ed289e3cb6e87eba951a6f249d063d865e75d5ed",
+        "ff2a6f2edfb94caa3aec635d42b4496203d47565"
+      ],
+      "modrinth": {
+        "slug": "customskinloader"
+      }
     },
     "eatinganimation": {
       "platform": "modrinth",
@@ -6249,25 +6269,40 @@
     "framework": {
       "platform": "curseforge",
       "slug": "framework",
-      "source": "relay-reports",
+      "source": "curseforge-via-relay",
       "sha1": [
-        "e46eb138fbb13a12f37154fb4ec407d64b326475"
+        "19a39e307a8e58e869a5cfc286874c44cdd0420d",
+        "224d36da132e660b6933f2c71ea2db36d30b035e",
+        "26e7ff80783db0e11021a710236cc474a6532c27",
+        "39b1e8c48a8024e81e4182fcf112567bdf529f7f",
+        "5a6b6c61b856098bfe8c9d35b92638ddbc14da27",
+        "5df5319a739c7dbdc62b77b6e0ed44c6728107ea",
+        "66761577a7d9ecea9b0ddf35b7342e9743cbeb4a",
+        "774da4b0c43a66d0888be4cf4e0a01b7a6899b1b",
+        "ac8020d47e347d1b1de7df27d4c86d4721016944",
+        "e46eb138fbb13a12f37154fb4ec407d64b326475",
+        "eb3f4d3ebd0ad9bccbe30f7efe7e89f040e0c714",
+        "f0275feaf8702828cbd887c922d28c3f961e4bf9"
       ]
     },
     "reforgedplaymod": {
       "platform": "curseforge",
       "slug": "reforgedplay-mod",
-      "source": "relay-reports",
+      "source": "curseforge-via-relay",
       "sha1": [
-        "0e7d8794fb81756e58d8559fc3ab88abc9b6d511"
+        "0e7d8794fb81756e58d8559fc3ab88abc9b6d511",
+        "8c0410dbe21d2271e49cb3381a8e46ccc1ffbe03",
+        "f8f82a93e318324bf90995d812292ba52fe46cf7"
       ]
     },
     "replaymod": {
       "platform": "curseforge",
       "slug": "reforgedplay-mod",
-      "source": "relay-reports",
+      "source": "curseforge-via-relay",
       "sha1": [
-        "0e7d8794fb81756e58d8559fc3ab88abc9b6d511"
+        "0e7d8794fb81756e58d8559fc3ab88abc9b6d511",
+        "8c0410dbe21d2271e49cb3381a8e46ccc1ffbe03",
+        "f8f82a93e318324bf90995d812292ba52fe46cf7"
       ]
     },
     "commongroovylibrary": {

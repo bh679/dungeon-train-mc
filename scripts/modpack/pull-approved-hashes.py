@@ -32,8 +32,10 @@ approved (baked here, or placed by the relay) is Free Play, whatever its id.
 Two kinds of hand record survive every run (``--refresh`` included), for ids the store search
 cannot place:
   ``"source": "relay-reports"``  sha1s of the mod's own published files that players reported and
-                                 the relay placed (a CurseForge-only mod, or one Modrinth does not
-                                 tag NeoForge 1.21.1) — re-run with CURSEFORGE_API_KEY to widen them;
+                                 the relay placed (a mod Modrinth does not tag NeoForge 1.21.1);
+  ``"source": "curseforge-via-relay"``  every 1.21.1 NeoForge file of a CurseForge-only mod, listed
+                                 with the relay's CurseForge key (none on dev machines) and checked
+                                 by downloading the newest jar and reading its mod ids;
   ``"platform": "nested", "in": [ids]``  a library that only ships inside another approved mod's
                                  jar: that jar's hash is its hash (``--check`` asserts each one has).
 
@@ -323,7 +325,8 @@ def save_output(doc):
 
 def is_hand_record(rec):
     """A record the store search cannot reproduce (see the module doc) — kept across runs."""
-    return bool(rec) and (rec.get("platform") == "nested" or rec.get("source") == "relay-reports")
+    return bool(rec) and (rec.get("platform") == "nested"
+                          or rec.get("source") in ("relay-reports", "curseforge-via-relay"))
 
 
 def no_hash_ids(ids, doc):
