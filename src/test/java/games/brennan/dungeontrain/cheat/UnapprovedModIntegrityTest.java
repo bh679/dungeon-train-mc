@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -186,5 +187,18 @@ class UnapprovedModIntegrityTest {
         // The control id proves the scan still reports what the list does not approve.
         assertEquals(List.of("notapprovedcontrol v9"), UnapprovedModIntegrity.unapprovedFrom(
             ApprovedModList.approved(), ApprovedModList.prefixes(), NO_REVOCATIONS, CHEATS, installed));
+    }
+
+    @Test
+    @DisplayName("Essential is outdated only when its own file is unverified")
+    void essentialOutdatedOnlyWhenItsFileIsUnverified() {
+        String current = "1".repeat(40);
+        ModFileFingerprint latest = file("Essential (neoforge_1.21.1).jar", current, List.of("gg.essential"), "essential");
+        ModFileFingerprint old = file("Essential (neoforge_1.21.1).jar", "2".repeat(40), List.of("gg.essential"), "essential");
+        ModFileFingerprint jei = file("jei-20.jar", "3".repeat(40), List.of("mezz.jei"), "jei");
+        assertFalse(UnapprovedModIntegrity.isOutdatedEssential(latest, Set.of(current), KNOWN), "an approved build is current");
+        assertTrue(UnapprovedModIntegrity.isOutdatedEssential(old, Set.of(current), KNOWN), "any other build is outdated");
+        assertFalse(UnapprovedModIntegrity.isOutdatedEssential(jei, Set.of(), KNOWN), "another mod's unverified file is not Essential");
+        assertFalse(UnapprovedModIntegrity.isOutdatedEssential(null, Set.of(), KNOWN), "not installed");
     }
 }

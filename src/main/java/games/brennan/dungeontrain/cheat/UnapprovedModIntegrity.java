@@ -242,6 +242,25 @@ public final class UnapprovedModIntegrity {
             ? f : null;
     }
 
+    /** Essential's mod id. Its own updater replaces the store jar, so its files are verified by build. */
+    public static final String ESSENTIAL_ID = "essential";
+
+    /**
+     * Is the installed Essential an unverified build right now? Essential's builds are approved from
+     * its own update service as they come out (the relay records each new one), plus two older
+     * builds approved by hand — so an unverified Essential is nearly always an old build, and the
+     * fix is "update Essential", not the generic "reinstall from CurseForge or Modrinth". False
+     * when Essential is not installed or the scan is not done.
+     */
+    public static boolean essentialOutdated() {
+        return unverifiedFileOf(ESSENTIAL_ID) != null;
+    }
+
+    /** Pure: is {@code f} an Essential jar whose hash is not approved? Package-visible for tests. */
+    static boolean isOutdatedEssential(ModFileFingerprint f, Set<String> approvedSha1s, Map<String, Set<String>> knownPackages) {
+        return f != null && f.modIds().contains(ESSENTIAL_ID) && tierOf(f, approvedSha1s, knownPackages) != Tier.VERIFIED;
+    }
+
     /**
      * Enumerate installed mods (id → version) and match against {@link ApprovedModList}. Wrapped so
      * a broken mod list can never take the game down at boot — a scan failure means "nothing
