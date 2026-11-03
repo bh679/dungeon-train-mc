@@ -6,8 +6,14 @@ the shipped `released: false` entries to released, stamping the release tag and
 a UTC timestamp, so the next release's unreleased set starts clean. The workflow
 then commits the changed ledger to main with a [skip ci] message.
 
+Shipped entries move from their unreleased/<id>.json file into changelog.json
+(changelog_io.save_changelog does the split), so this commit is the only kind
+that edits changelog.json and open PRs, which only add unreleased/ files, never
+conflict with it.
+
 Which entries a release shipped: `--release-ledger` names the changelog.json of
-the commit the release was built from; the entries unreleased THERE are the
+the commit the release was built from (with its unreleased/ directory beside
+it, as the release commit had them); the entries unreleased THERE are the
 release's entries, and only those are marked in the current ledger. That lets
 the workflow re-run this against a newer main (after a PR merged mid-release
 and the push was rejected) without also marking entries merged after the cut.
@@ -47,7 +53,8 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         "--release-ledger",
         dest="release_ledger",
         default=None,
-        help="changelog.json of the commit the release was built from; only the "
+        help="changelog.json of the commit the release was built from, with its "
+        "unreleased/ directory beside it; only the "
         "entries unreleased there are marked. Omit to mark every unreleased entry.",
     )
     return p.parse_args(argv)

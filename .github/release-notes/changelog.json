@@ -32500,43 +32500,6 @@
       "released": true,
       "released_in": "v0.1625.0",
       "released_at": "2026-11-02T15:21:51Z"
-    },
-    {
-      "id": "ci-gradle-cache-fix",
-      "version": "0.1626.0",
-      "type": "ci",
-      "tags": [
-        "internal"
-      ],
-      "title": "Faster build checks",
-      "summary": "Build checks reuse their cached downloads again, so changes are verified sooner.",
-      "highlights": [],
-      "pr": 2440,
-      "date": "2026-11-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "story-rotation-global-done",
-      "version": "0.1627.0",
-      "type": "fix",
-      "tags": [
-        "fix",
-        "books",
-        "advancements"
-      ],
-      "title": "Finished stories no longer repeat in new worlds",
-      "summary": "Once you've read a narrative story to the end, lecterns stop offering it, in any world, until you've finished every other story. You'll no longer be handed the same opening story world after world, so A Library In Motion is reachable.",
-      "highlights": [
-        "A finished story stays out of lecterns until every story is finished",
-        "Finishing a story in one world unlocks its follow-up stories in every world"
-      ],
-      "pr": 2442,
-      "date": "2026-11-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
     }
   ]
 }

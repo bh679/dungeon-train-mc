@@ -1,0 +1,21 @@
+{
+  "id": "story-rotation-global-done",
+  "version": "0.1628.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "books",
+    "advancements"
+  ],
+  "title": "Finished stories no longer repeat in new worlds",
+  "summary": "Once you've read a narrative story to the end, lecterns stop offering it, in any world, until you've finished every other story. You'll no longer be handed the same opening story world after world, so A Library In Motion is reachable.",
+  "highlights": [
+    "A finished story stays out of lecterns until every story is finished",
+    "Finishing a story in one world unlocks its follow-up stories in every world"
+  ],
+  "pr": 2442,
+  "date": "2026-11-03",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
