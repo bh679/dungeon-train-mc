@@ -57,6 +57,7 @@ public final class ProgressCreditingGrants {
         "dungeontrain:editor_action",
         "dungeontrain:story_set_completed",
         "dungeontrain:random_books_read",
+        "dungeontrain:random_book_variant_seen",
         "dungeontrain:starting_books_read",
         "dungeontrain:books_burned_unread",
         "dungeontrain:gave_playermob_unrequited",

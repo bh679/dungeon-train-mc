@@ -73,6 +73,9 @@ public final class ModAdvancementTriggers {
     public static final Supplier<RandomBooksReadTrigger> RANDOM_BOOKS_READ =
         TRIGGERS.register("random_books_read", RandomBooksReadTrigger::new);
 
+    public static final Supplier<RandomBookVariantSeenTrigger> RANDOM_BOOK_VARIANT_SEEN =
+        TRIGGERS.register("random_book_variant_seen", RandomBookVariantSeenTrigger::new);
+
     public static final Supplier<StartingBooksReadTrigger> STARTING_BOOKS_READ =
         TRIGGERS.register("starting_books_read", StartingBooksReadTrigger::new);
 
