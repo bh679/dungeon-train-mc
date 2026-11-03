@@ -32555,6 +32555,26 @@
       "released": true,
       "released_in": "v0.1628.0",
       "released_at": "2026-11-03T03:56:06Z"
+    },
+    {
+      "id": "player-letters-burn-library-motion",
+      "version": "0.1629.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "books",
+        "advancements"
+      ],
+      "title": "Player-written letters burn, and a new way to earn A Library In Motion",
+      "summary": "Player-written letters taken from a lectern now burn when dropped, like every other lectern book. A Library In Motion is now earned the first time you finish a story written by another player.",
+      "highlights": [
+        "Player-written lectern letters now burn when dropped",
+        "A Library In Motion: finish a story written by another player"
+      ],
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1629.0",
+      "released_at": "2026-11-03T04:48:33Z"
     }
   ]
 }
