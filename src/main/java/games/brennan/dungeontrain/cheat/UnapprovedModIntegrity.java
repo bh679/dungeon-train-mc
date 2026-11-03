@@ -82,7 +82,7 @@ public final class UnapprovedModIntegrity {
     static final long FETCH_WAIT_MS = 8000;
     private static volatile boolean serverRunning;
 
-    /** The verdict tiers of the file check — only {@link #SUSPECT} costs the run (see {@link #tierOf}). */
+    /** The verdict tiers of the file check — anything but {@link #VERIFIED} costs the run (see {@link #tierOf}). */
     public enum Tier { VERIFIED, PLAUSIBLE, UNKNOWN, SUSPECT }
 
     private UnapprovedModIntegrity() {}
@@ -198,13 +198,15 @@ public final class UnapprovedModIntegrity {
 
     /**
      * Pure: which installed files are NOT on the approved-hash list, as display strings (sorted).
+     * Only a file whose hash is known counts: a mod is whitelisted by its published files, so a
+     * plausible or unknown jar (a hash nobody has placed yet) is unverified like a suspect one.
      * Package-visible for unit tests — no live scanner needed.
      */
     static List<String> unverifiedFrom(List<ModFileFingerprint> files, Set<String> approvedSha1s,
                                        Map<String, Set<String>> knownPackages) {
         List<String> found = new ArrayList<>();
         for (ModFileFingerprint f : files) {
-            if (tierOf(f, approvedSha1s, knownPackages) == Tier.SUSPECT) found.add(f.display());
+            if (tierOf(f, approvedSha1s, knownPackages) != Tier.VERIFIED) found.add(f.display());
         }
         found.sort(String::compareTo);
         return List.copyOf(found);
@@ -217,10 +219,9 @@ public final class UnapprovedModIntegrity {
      *   <li>{@link Tier#VERIFIED} — its hash is approved.</li>
      *   <li>{@link Tier#PLAUSIBLE} — hash unknown, but every id it declares has known packages
      *       and the jar's packages intersect each id's — a fresh release or a GitHub build of a
-     *       mod we approve. Not Free Play.</li>
+     *       mod we approve. Unverified: no hash on record means it does not count.</li>
      *   <li>{@link Tier#UNKNOWN} — hash unknown and some declared id has no package knowledge at
-     *       all. Not Free Play (the player did nothing wrong; the catalogue is behind), but the
-     *       relay queues it and the build refuses an approved id without knowledge.</li>
+     *       all. Unverified, and the relay queues it for the operator.</li>
      *   <li>{@link Tier#SUSPECT} — it declares no ids, or its packages share nothing with a
      *       declared id's known set: code that is not the mod it claims to be. Free Play.</li>
      * </ul>
@@ -233,11 +234,11 @@ public final class UnapprovedModIntegrity {
 
     /**
      * Live-state convenience for the client popup: the installed file declaring {@code modId}, if
-     * that file is unverified right now; null when it is verified, unknown, or the scan is not done.
+     * that file is unverified right now; null when it is verified or the scan is not done.
      */
     public static ModFileFingerprint unverifiedFileOf(String modId) {
         ModFileFingerprint f = DtModVerifyBridge.fileOf(modId);
-        return f != null && tierOf(f, ApprovedModList.approvedHashes(), ApprovedModList.knownPackages()) == Tier.SUSPECT
+        return f != null && tierOf(f, ApprovedModList.approvedHashes(), ApprovedModList.knownPackages()) != Tier.VERIFIED
             ? f : null;
     }
 
