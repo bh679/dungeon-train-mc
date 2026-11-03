@@ -172,4 +172,18 @@ class UnapprovedModIntegrityTest {
         assertTrue(UnapprovedModIntegrity.isUnsupported("jade", APPROVED, PREFIXES, Set.of("jade"), CHEATS),
             "a revoked mod is unsupported again");
     }
+
+    @Test
+    @DisplayName("The baked list keeps an Essential + Essential Tweaks install, and the recent relay approvals, out of Free Play")
+    void bakedListApprovesEssentialTweaksAndRecentApprovals() {
+        Map<String, String> installed = installed(
+            "essential", "1.5.2", "essentialtweaks", "1.3.0+1.21.1-neoforge",
+            "legendarytooltips", "1", "weaponmaster_ydm", "1", "jecharacters", "1",
+            "explosiveenhancement", "1", "armor_hud", "1", "shouldersurfing", "1",
+            "armor_visibility", "1", "ash_api", "1", "cwb", "1", "cinematic", "1",
+            "notapprovedcontrol", "9");
+        // The control id proves the scan still reports what the list does not approve.
+        assertEquals(List.of("notapprovedcontrol v9"), UnapprovedModIntegrity.unapprovedFrom(
+            ApprovedModList.approved(), ApprovedModList.prefixes(), NO_REVOCATIONS, CHEATS, installed));
+    }
 }
