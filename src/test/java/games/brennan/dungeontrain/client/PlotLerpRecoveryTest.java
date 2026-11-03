@@ -5,10 +5,13 @@ import org.junit.jupiter.api.Test;
 
 import static games.brennan.dungeontrain.client.PlotLerpRecovery.HOLD_TICKS;
 import static games.brennan.dungeontrain.client.PlotLerpRecovery.Step;
+import static games.brennan.dungeontrain.client.PlotLerpRecovery.shouldHold;
 import static games.brennan.dungeontrain.client.PlotLerpRecovery.step;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Pure-logic coverage for {@link PlotLerpRecovery#step}. */
+/** Pure-logic coverage for {@link PlotLerpRecovery#step} and {@link PlotLerpRecovery#shouldHold}. */
 final class PlotLerpRecoveryTest {
 
     @Test
@@ -31,5 +34,25 @@ final class PlotLerpRecoveryTest {
     void dropsWhenGoneOrFollowed() {
         assertEquals(Step.DROP, step(true, true, HOLD_TICKS));
         assertEquals(Step.DROP, step(true, false, HOLD_TICKS));
+    }
+
+    @Test
+    @DisplayName("a world-space mob smoothing toward plot coordinates is held")
+    void holdsReloadGapMob() {
+        assertTrue(shouldHold(false, true, false));
+    }
+
+    @Test
+    @DisplayName("a mob living in plot space is Sable's own and never held")
+    void leavesPlotSpaceMobAlone() {
+        assertFalse(shouldHold(false, true, true));
+    }
+
+    @Test
+    @DisplayName("a followed mob, or a world-space target, is never held")
+    void leavesFollowedAndWorldTargetsAlone() {
+        assertFalse(shouldHold(true, true, false));
+        assertFalse(shouldHold(false, false, false));
+        assertFalse(shouldHold(false, false, true));
     }
 }

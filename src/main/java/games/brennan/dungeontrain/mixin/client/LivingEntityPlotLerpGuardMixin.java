@@ -31,6 +31,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * its carriage is back. Order against Sable's hook does not matter: a mob Sable follows has a plot
  * position or no steps left, and either one skips this. Recheck {@code sable$setupLerp} on a Sable
  * bump.</p>
+ *
+ * <p>A mob that already stands at plot coordinates is left alone. Sable keeps an entity the server
+ * marks "actually in" a carriage (contents mobs, armor stands) in plot space, lerping to plot
+ * coordinates with its plot position cleared on purpose. Holding those moved them into world space
+ * and the next packet moved them back, so they flashed invisible on every sync (Ash, 0.1629.0).
+ * The reload-gap mob this guards against is still in world space.</p>
  */
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityPlotLerpGuardMixin {
@@ -45,11 +51,13 @@ public abstract class LivingEntityPlotLerpGuardMixin {
         if (lerpSteps <= 0) return;
         LivingEntity self = (LivingEntity) (Object) this;
         if (!(self.level() instanceof ClientLevel level)) return;
-        if (((EntityStickExtension) self).sable$getPlotPosition() != null) return;
         SubLevelContainer container = SubLevelContainer.getContainer(level);
         if (container == null) return;
         Vec3 target = new Vec3(lerpX, lerpY, lerpZ);
-        if (!container.inBounds(BlockPos.containing(target))) return;
+        boolean followed = ((EntityStickExtension) self).sable$getPlotPosition() != null;
+        if (!PlotLerpRecovery.shouldHold(followed,
+                container.inBounds(BlockPos.containing(target)),
+                container.inBounds(BlockPos.containing(self.position())))) return;
         lerpSteps = 0;
         PlotLerpRecovery.hold(self, target);
     }
