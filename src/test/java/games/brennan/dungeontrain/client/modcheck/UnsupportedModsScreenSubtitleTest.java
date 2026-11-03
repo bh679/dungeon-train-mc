@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 /** {@link UnsupportedModsScreen#unverifiedSubtitle}: Essential gets "update it", any other file its name. */
@@ -23,5 +25,8 @@ class UnsupportedModsScreenSubtitleTest {
         TranslatableContents other = contents(new UnsupportedModsScreen.UnsupportedMod("jei", "JEI", "jei-19.jar"));
         assertEquals("gui.dungeontrain.unsupported_mods.unverified_file", other.getKey());
         assertArrayEquals(new Object[] {"jei-19.jar"}, other.getArgs());
+        assertTrue(UnsupportedModsScreen.isUpdateRow(new UnsupportedModsScreen.UnsupportedMod("essential", "Essential", "e.jar")), "blue update line");
+        assertFalse(UnsupportedModsScreen.isUpdateRow(new UnsupportedModsScreen.UnsupportedMod("essential", "Essential")), "unapproved id, not an old file");
+        assertFalse(UnsupportedModsScreen.isUpdateRow(new UnsupportedModsScreen.UnsupportedMod("jei", "JEI", "jei.jar")));
     }
 }

@@ -70,6 +70,8 @@ public final class UnsupportedModsScreen extends Screen {
     private static final int ROW_ALT = 0x20FFFFFF;
     private static final int NAME_COLOUR = 0xFFFFFFFF;
     private static final int ID_COLOUR = 0xFF909090;
+    /** The "update Essential" line: the same aqua as the whitelist link, so it reads as the thing to do. */
+    private static final int UPDATE_COLOUR = 0xFF000000 | ChatFormatting.AQUA.getColor();
     private static final int BODY_COLOUR = 0xFFD0D0D0;
     /**
      * The Free Play effect drawn exactly as the HUD draws a status effect: the vanilla
@@ -247,7 +249,8 @@ public final class UnsupportedModsScreen extends Screen {
                 ModSuggestClient.Result r = results.get(mod.modId());
                 Component sub = r != null ? ModSuggestScreen.resultMessage(r)
                     : mod.unverifiedFile() ? unverifiedSubtitle(mod) : Component.literal(mod.modId());
-                int subColour = r == null ? ID_COLOUR : ModSuggestScreen.resultColour(r);
+                int subColour = r != null ? ModSuggestScreen.resultColour(r)
+                    : isUpdateRow(mod) ? UPDATE_COLOUR : ID_COLOUR;
                 g.drawString(this.font, trim(sub.getString(), textW - 8), x + 8, rowY + 3 + this.font.lineHeight + 1,
                     subColour, false);
             }
@@ -314,8 +317,13 @@ public final class UnsupportedModsScreen extends Screen {
      * unverified Essential is an old build and the fix is to update it; any other file gets its name.
      */
     static Component unverifiedSubtitle(UnsupportedMod mod) {
-        return UnapprovedModIntegrity.ESSENTIAL_ID.equals(mod.modId())
+        return isUpdateRow(mod)
             ? Component.translatable("gui.dungeontrain.unsupported_mods.update_essential")
             : Component.translatable("gui.dungeontrain.unsupported_mods.unverified_file", mod.fileName());
+    }
+
+    /** Is this an unverified Essential, whose fix is to update it (blue "update to latest" line)? */
+    static boolean isUpdateRow(UnsupportedMod mod) {
+        return mod.unverifiedFile() && UnapprovedModIntegrity.ESSENTIAL_ID.equals(mod.modId());
     }
 }
