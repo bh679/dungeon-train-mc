@@ -54,7 +54,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * found by other players, and the {@link AlbumKind#FREE_PLAY} album, which never leaves this
  * computer. The run decides which one a copy opens onto ({@link RunIntegrity#isCheated}).</p>
  *
- * <p>A donor keeps more live albums — 10 for every A$10 ({@link AlbumDonors}): each copy carries which one
+ * <p>A donor keeps more live albums — two for any donation, 10 for every A$10 ({@link AlbumDonors}): each copy carries which one
  * it shows ({@link AlbumOwnership.Owner#index}), and {@link AlbumPicker} chooses it when the copy is
  * made — a crafted or blank album is always their unfinished one.</p>
  *

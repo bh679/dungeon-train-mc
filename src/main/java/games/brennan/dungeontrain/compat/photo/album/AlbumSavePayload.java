@@ -42,7 +42,7 @@ public final class AlbumSavePayload {
 
     /**
      * The owner's own albums as the relay holds them ({@code GET /albums/mine}), and how many they may
-     * keep: 1, or 10 for every full A$10 they have donated.
+     * keep: 1, 2 for any donation, or 10 for every full A$10 they have donated.
      */
     public record Mine(List<Album> albums, int albumLimit) {
         public static final Mine NONE = new Mine(List.of(), 1);

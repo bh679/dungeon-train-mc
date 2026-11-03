@@ -7,7 +7,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * How many live albums each player may keep: 10 for every full A$10 they have donated, as the relay
+ * How many live albums each player may keep: two for any donation, 10 for every full A$10, as the relay
  * says ({@code albumLimit} on {@code GET /albums/mine}, asked at login). Until it answers, with no
  * relay at all, or in Free Play, a player has one album, as everyone did before.
  */
