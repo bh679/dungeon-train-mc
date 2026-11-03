@@ -18,6 +18,10 @@ function pickScale() {
 const frameSprite = n => `${n.f}_frame_${view.earned ? 'obtained' : 'unobtained'}`;
 function nodeEl(n, parent, x, y) {
   const d = el('node abs sprite', { left: px(x), top: px(y), backgroundImage: `url(${SP[frameSprite(n)] || SP.task_frame_obtained})` }, parent);
+  if (!view.earned && isTabCompleteTile(layoutCache.E, n.id)) {
+    d.classList.add('tabdone'); // the grey frame a shade darker, clipped to the sprite's shape
+    d.style.maskImage = d.style.webkitMaskImage = d.style.backgroundImage;
+  }
   el('ic', { backgroundImage: `url(${IC[n.i]})` }, d);
   return d;
 }
@@ -80,8 +84,7 @@ function render() {
   tab.nodes.forEach(n => {
     const d = nodeEl(n, tree, n.px + 3, n.py);
     d.dataset.node = n.id;
-    if (!view.earned && !visibleWithNothingEarned(L.E, n.id)) d.classList.add('hid');
-    if (n.id === selected) d.classList.add('sel');
+    if (!view.earned && !visibleWithNothingEarned(L.E, n.id)) d.classList.add('hid');    if (n.id === selected) d.classList.add('sel');
     if (view.paint) { if (paintBlocked(L.E, n.id)) d.classList.add('fixed'); else if (!paintIn(L.E, n.id, view.paint)) d.classList.add('off'); }
     d.setAttribute('role', 'button'); d.setAttribute('aria-label', `Edit ${n.t}`); d.tabIndex = 0;
     d.addEventListener('mouseenter', () => { if (!drag || !drag.active) showHover(n); });

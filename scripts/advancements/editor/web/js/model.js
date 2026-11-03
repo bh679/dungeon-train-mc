@@ -597,6 +597,11 @@ function combinesRules(id) { return !!(M.needs && M.needs[id]); }
  * towards it), or a tab-complete advancement's (its tab, less the tab-complete copies). Hidden-until-earned
  * ones are left out, as a player can't see them. Null when the selection is neither.
  */
+/** A tab-complete advancement, or its copy inside its own tab? Drawn a darker grey while unearned, as in game. */
+function isTabCompleteTile(E, id) {
+  if (!M.complete) return false;
+  return !!(M.complete[id] || (E.nodes[id] && E.nodes[id].copyOf && M.complete[E.nodes[id].copyOf]));
+}
 function neededBy(L, id) {
   const E = L.E;
   if (E.nodes[id] && E.nodes[id].copyOf && M.complete && M.complete[E.nodes[id].copyOf]) id = E.nodes[id].copyOf; // its in-tab copy

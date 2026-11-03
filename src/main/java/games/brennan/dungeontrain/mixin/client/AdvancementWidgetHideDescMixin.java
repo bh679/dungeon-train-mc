@@ -83,6 +83,15 @@ public abstract class AdvancementWidgetHideDescMixin {
         AdvancementTileDecor.beforeTile(guiGraphics, advancementNode, progress, originX, originY, x, y);
     }
 
+    /** The tile's frame, a shade darker for an unearned tab-complete advancement. */
+    @WrapOperation(method = "draw",
+                   at = @At(value = "INVOKE",
+                            target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Lnet/minecraft/resources/ResourceLocation;IIII)V"))
+    private void dungeontrain$tileFrame(GuiGraphics guiGraphics, ResourceLocation sprite, int x, int y, int w, int h,
+                                        Operation<Void> original) {
+        AdvancementTileDecor.wrapTileFrame(advancementNode, progress, () -> original.call(guiGraphics, sprite, x, y, w, h));
+    }
+
     /** Restore the shader colour once the icon is down. */
     @Inject(method = "draw",
             at = @At(value = "INVOKE",

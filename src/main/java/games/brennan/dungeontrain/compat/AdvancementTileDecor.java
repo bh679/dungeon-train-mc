@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.compat;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import games.brennan.dungeontrain.advancement.TabCompleteAdvancements;
+import games.brennan.dungeontrain.advancement.TabGateways;
 import games.brennan.dungeontrain.client.CapstoneNeeds;
 import games.brennan.dungeontrain.client.TrackedAdvancements;
 import net.minecraft.advancements.AdvancementNode;
@@ -42,6 +44,12 @@ public final class AdvancementTileDecor {
     private static final float HALO_R = 1.0f, HALO_G = 1.0f, HALO_B = 0.33f;
     /** Tint of the "still needed" halo shown while a capstone is hovered — vanilla's "aqua". */
     private static final float NEED_R = 0.33f, NEED_G = 1.0f, NEED_B = 1.0f;
+    /**
+     * Shade of an unearned tab-complete tile's frame, multiplied onto the grey sprite so it stands out
+     * from the tiles around it. Earned ones keep vanilla's gold. The advancement editor uses the same
+     * shade ({@code .node.tabdone} in {@code editor.css}).
+     */
+    private static final float TAB_COMPLETE_SHADE = 0.72f;
     /** How far the halo frame extends past the tile on each side. */
     private static final int HALO_PAD = 2;
     /** Frame size both widgets blit. */
@@ -105,11 +113,31 @@ public final class AdvancementTileDecor {
      */
     public static void wrapHoverFrame(GuiGraphics g, ResourceLocation sprite, int x, int y,
                                       AdvancementNode node, AdvancementProgress progress, Runnable blit) {
-        if (node != null && sprite.getPath().contains("_frame_")
-            && isTrackedAndUnearned(node.holder().id(), progress)) {
+        boolean frame = node != null && sprite.getPath().contains("_frame_");
+        if (frame && isTrackedAndUnearned(node.holder().id(), progress)) {
             drawHalo(g, node, x, y, 1.0f, HALO_R, HALO_G, HALO_B);
         }
+        if (frame) wrapTileFrame(node, progress, blit);
+        else blit.run();
+    }
+
+    /**
+     * Wraps the tile's frame blit in the widget's {@code draw} (the only {@code blitSprite} there, in
+     * vanilla and Better Advancements alike): an unearned tab-complete tile, or its in-tab copy, is
+     * drawn {@link #TAB_COMPLETE_SHADE} darker. Multiplies whatever colour is already set, so the fade
+     * of a ruled-out tile and Better Advancements' own colour both survive.
+     */
+    public static void wrapTileFrame(AdvancementNode node, AdvancementProgress progress, Runnable blit) {
+        if (node == null || (progress != null && progress.isDone())
+            || !TabCompleteAdvancements.isTabCompleteOrCopy(TabGateways.layout(), node.holder().id())) {
+            blit.run();
+            return;
+        }
+        float[] c = RenderSystem.getShaderColor();
+        float r = c[0], gr = c[1], b = c[2], a = c[3];
+        RenderSystem.setShaderColor(r * TAB_COMPLETE_SHADE, gr * TAB_COMPLETE_SHADE, b * TAB_COMPLETE_SHADE, a);
         blit.run();
+        RenderSystem.setShaderColor(r, gr, b, a);
     }
 
     /**
