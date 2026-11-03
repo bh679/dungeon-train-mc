@@ -1,0 +1,21 @@
+{
+  "id": "mod-approval-inbox-notes",
+  "version": "0.1630.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community",
+    "ui"
+  ],
+  "title": "Whitelist approval notes",
+  "summary": "When a mod you suggested for the whitelist, or commented on, gets approved, a note now lands in your inbox on the main menu. The inbox window also shows notes sent to you outside of Discord, which it used to miss.",
+  "highlights": [
+    "Suggested a mod and it got approved? You will hear about it on the main menu.",
+    "Inbox notes from Dungeon Train itself now show up in the window instead of a connection error."
+  ],
+  "pr": 2445,
+  "date": "2026-11-03",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
