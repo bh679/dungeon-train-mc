@@ -32833,6 +32833,40 @@
       "released": true,
       "released_in": "v0.1643.0",
       "released_at": "2026-11-03T13:40:38Z"
+    },
+    {
+      "id": "essential-update-notice",
+      "version": "0.1644.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Clearer advice when a mod needs updating",
+      "summary": "When an installed mod is out of date, the game now tells you to update it instead of giving general reinstall advice.",
+      "highlights": [],
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1645.0",
+      "released_at": "2026-11-03T16:47:16Z"
+    },
+    {
+      "id": "mod-check-hardening",
+      "version": "0.1645.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Fair play check fix",
+      "summary": "The installed-mod check for fair play is now more reliable.",
+      "highlights": [],
+      "pr": 2462,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1645.0",
+      "released_at": "2026-11-03T16:47:16Z"
     }
   ]
 }
