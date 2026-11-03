@@ -3,6 +3,7 @@
   "generatedAt": "2026-11-03",
   "slugs": {
     "advancementplaques": "advancement-plaques",
+    "ambientenvironment": "ambient-environment",
     "armor_visibility": "armor-visibility",
     "betteradvancedtooltips": "better-advanced-tooltips",
     "betteradvancements": "better-advancements",
@@ -219,6 +220,19 @@
       "packages": [
         "com.bawnorton",
         "dev.uncandango"
+      ]
+    },
+    "ambientenvironment": {
+      "platform": "modrinth",
+      "project": "DyTvM1dv",
+      "slug": "ambient-environment",
+      "name": "Ambient Environment",
+      "sha1": [
+        "3a00ec1170b38e75a502dcc46038397f8fd9b305",
+        "447dc98901f954ba07030f8acee01dbf2b1fcfd2"
+      ],
+      "packages": [
+        "com.blamejared"
       ]
     },
     "ambientsounds": {
@@ -6756,6 +6770,7 @@
   },
   "unmatched": [
     "adventureitemstats",
+    "betterfpsdist",
     "cinematic",
     "codecui",
     "discordpresence",
