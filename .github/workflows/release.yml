@@ -59,7 +59,7 @@ jobs:
           fetch-depth: 0
 
       # The commit this release is built from. "Mark changelog entries released" reads the
-      # shipped entries from its changelog.json, since main has usually moved on by then.
+      # shipped entries from its ledger (changelog.json + unreleased/), since main has usually moved on by then.
       - name: Record release commit
         run: echo "RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
@@ -487,7 +487,8 @@ jobs:
       # only the entries unreleased in RELEASE_SHA's ledger (what this release shipped),
       # and on a rejected push starts again from a fresh main instead of rebasing (the
       # rebase conflicted in changelog.json on v0.1471.0 and was rejected again on
-      # v0.1478.0). Leaves the checkout on the pushed commit, so the update.json step and
+      # v0.1478.0). Marking moves the shipped unreleased/<id>.json files into changelog.json,
+      # so open PRs (which only add unreleased/ files) never conflict with it. Leaves the checkout on the pushed commit, so the update.json step and
       # notify-highlights.py below see the stamped entries.
       - name: Mark changelog entries released
         if: ${{ success() && inputs.auto == false && inputs.test_release == false }}

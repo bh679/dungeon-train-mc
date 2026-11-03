@@ -9,8 +9,10 @@
 3. **Draft + log the changelog entry** — unless the change is purely non-player-facing
    (CI/tooling/docs/refactors), draft a curated, player-facing summary and run
    `scripts/release-notes/append-entry.py` on the feature branch (plus `--highlight` bullets and
-   `--pr <number>`), then commit and push so the entry is in the PR diff. The shipped version is
-   computed automatically. See `.github/release-notes/README.md`.
+   `--pr <number>`), then commit and push so the entry is in the PR diff. It writes one new file,
+   `.github/release-notes/unreleased/<id>.json`, so it can't conflict with other PRs or a release;
+   never edit `changelog.json` by hand. The shipped version is computed automatically. See
+   `.github/release-notes/README.md`.
    **Pick the tags yourself, from the diff** — you know what the change is *about* better than any
    keyword rule, and there is none. Run `append-entry.py --tag-guide`, answer its one question per
    tag, and pass `--tag <tag>` for each yes (or `--no-topical-tags` if only the type-derived tag
