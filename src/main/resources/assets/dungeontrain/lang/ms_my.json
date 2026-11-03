@@ -3391,7 +3391,7 @@
   "gui.dungeontrain.unsupported_mods.body": "Mod-mod ini tidak dikenali oleh Dungeon Train. Permainan akan tetap berjalan, tetapi dalam Main Bebas. %s",
   "gui.dungeontrain.unsupported_mods.live_hint": "Untuk bermain sesi biasa / rasmi, keluar dan lumpuhkan mod-mod ini.",
   "gui.dungeontrain.unsupported_mods.unverified_file": "%s — fail tidak disahkan",
-  "gui.dungeontrain.unsupported_mods.update_essential": "Kemas kini Essential kepada versi terbaharu",
+  "gui.dungeontrain.unsupported_mods.update_essential": "Kemas kini terbaharu",
   "gui.dungeontrain.unsupported_mods.quit_disable": "Keluar & Lumpuhkan",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "Melumpuhkan mod-mod ini dalam folder mods anda, sama seperti yang dilakukan pelancar anda, dan menutup permainan. Anda boleh menghidupkannya semula bila-bila masa dari pelancar anda.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "Mod-mod ini tidak dapat dilumpuhkan dari sini. Matikan dari pelancar anda, kemudian mulakan semula.",

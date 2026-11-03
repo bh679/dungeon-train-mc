@@ -3405,7 +3405,7 @@
   "gui.dungeontrain.unsupported_mods.body": "《地牢列车》无法识别这些模组。游戏仍会运行，但处于自由模式。%s",
   "gui.dungeontrain.unsupported_mods.live_hint": "要进行正常／计入成绩的游玩，请退出游戏并禁用这些模组。",
   "gui.dungeontrain.unsupported_mods.unverified_file": "%s：文件未验证",
-  "gui.dungeontrain.unsupported_mods.update_essential": "将 Essential 更新到最新版本",
+  "gui.dungeontrain.unsupported_mods.update_essential": "更新到最新版",
   "gui.dungeontrain.unsupported_mods.quit_disable": "退出并禁用",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "在你的模组文件夹中禁用这些模组，方式与启动器相同，并关闭游戏。你可以随时通过启动器重新启用它们。",
   "gui.dungeontrain.unsupported_mods.disable_failed": "无法从此处禁用这些模组。请在启动器中禁用它们，然后重新启动。",

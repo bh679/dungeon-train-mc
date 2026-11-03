@@ -3391,7 +3391,7 @@
   "gui.dungeontrain.unsupported_mods.body": "이 모드들은 Dungeon Train이 알지 못하는 모드입니다. 게임은 계속 실행되지만 자유 플레이 상태가 됩니다. %s",
   "gui.dungeontrain.unsupported_mods.live_hint": "정상적인/기록되는 플레이를 하려면 게임을 종료하고 이 모드들을 비활성화하세요.",
   "gui.dungeontrain.unsupported_mods.unverified_file": "%s — 파일 미검증",
-  "gui.dungeontrain.unsupported_mods.update_essential": "Essential을 최신 버전으로 업데이트하세요",
+  "gui.dungeontrain.unsupported_mods.update_essential": "최신으로 업데이트",
   "gui.dungeontrain.unsupported_mods.quit_disable": "종료 및 비활성화",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "이 모드들을 모드 폴더에서 끕니다. 런처가 하는 방식과 동일하며, 게임도 종료됩니다. 언제든지 런처에서 다시 켤 수 있습니다.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "이 모드들은 여기서 비활성화할 수 없습니다. 런처에서 끈 뒤 다시 시작하세요.",

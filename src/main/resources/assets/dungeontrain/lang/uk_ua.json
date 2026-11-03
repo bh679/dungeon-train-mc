@@ -4148,7 +4148,7 @@
   "gui.dungeontrain.unsupported_mods.body": "Ці моди невідомі Dungeon Train. Гра все одно запуститься, але у Вільній грі. %s",
   "gui.dungeontrain.unsupported_mods.live_hint": "Щоб зіграти звичайну / залікову гру, вийди й вимкни ці моди.",
   "gui.dungeontrain.unsupported_mods.unverified_file": "%s — файл не перевірено",
-  "gui.dungeontrain.unsupported_mods.update_essential": "Оновіть Essential до останньої версії",
+  "gui.dungeontrain.unsupported_mods.update_essential": "Оновіть",
   "gui.dungeontrain.unsupported_mods.quit_disable": "Вийти й вимкнути",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "Вимикає ці моди у твоїй папці mods так само, як це робить лончер, і закриває гру. Увімкнути їх назад можна будь-коли з лончера.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "Ці моди не вдалося вимкнути звідси. Вимкни їх у лончері й перезапусти гру.",

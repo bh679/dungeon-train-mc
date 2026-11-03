@@ -3446,7 +3446,7 @@
   "gui.dungeontrain.unsupported_mods.body": "Deze mods zijn onbekend bij Dungeon Train. Het spel blijft werken, maar in Vrij Spel. %s",
   "gui.dungeontrain.unsupported_mods.live_hint": "Om een normale / meetellende sessie te spelen, sluit het spel af en schakel deze mods uit.",
   "gui.dungeontrain.unsupported_mods.unverified_file": "%s — bestand niet geverifieerd",
-  "gui.dungeontrain.unsupported_mods.update_essential": "Werk Essential bij naar de nieuwste versie",
+  "gui.dungeontrain.unsupported_mods.update_essential": "Bijwerken",
   "gui.dungeontrain.unsupported_mods.quit_disable": "Afsluiten & Uitschakelen",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "Schakelt deze mods uit in je mods-map, net zoals je launcher dat doet, en sluit het spel af. Je kunt ze op elk moment weer inschakelen via je launcher.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "Deze mods konden hier niet worden uitgeschakeld. Schakel ze uit via je launcher en start opnieuw op.",

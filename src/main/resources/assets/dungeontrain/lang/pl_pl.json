@@ -3501,7 +3501,7 @@
   "gui.dungeontrain.unsupported_mods.body": "Te mody są nieznane Dungeon Train. Gra nadal działa, ale w trybie Swobodnej Gry. %s",
   "gui.dungeontrain.unsupported_mods.live_hint": "Aby zagrać normalną / liczącą się rozgrywkę, wyjdź z gry i wyłącz te mody.",
   "gui.dungeontrain.unsupported_mods.unverified_file": "%s — plik niezweryfikowany",
-  "gui.dungeontrain.unsupported_mods.update_essential": "Zaktualizuj Essential do najnowszej wersji",
+  "gui.dungeontrain.unsupported_mods.update_essential": "Zaktualizuj",
   "gui.dungeontrain.unsupported_mods.quit_disable": "Wyjdź i wyłącz",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "Wyłącza te mody w Twoim folderze mods, tak samo jak robi to Twój launcher, i zamyka grę. Możesz je włączyć ponownie w dowolnym momencie w swoim launcherze.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "Nie udało się wyłączyć tych modów stąd. Wyłącz je w swoim launcherze, a następnie uruchom grę ponownie.",

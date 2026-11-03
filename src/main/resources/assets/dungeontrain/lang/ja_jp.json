@@ -3391,7 +3391,7 @@
   "gui.dungeontrain.unsupported_mods.body": "これらのModはDungeon Trainには未知のものです。ゲームは動作しますが、フリープレイになります。%s",
   "gui.dungeontrain.unsupported_mods.live_hint": "通常／記録対象のプレイをするには、ゲームを終了してこれらのModを無効化してください。",
   "gui.dungeontrain.unsupported_mods.unverified_file": "%s — ファイル未検証",
-  "gui.dungeontrain.unsupported_mods.update_essential": "Essentialを最新版に更新してください",
+  "gui.dungeontrain.unsupported_mods.update_essential": "最新版に更新",
   "gui.dungeontrain.unsupported_mods.quit_disable": "終了して無効化",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "これらのModをmodsフォルダ内で無効化します。ランチャーで行うのと同じ方法です。ゲームも終了します。ランチャーからいつでも再度有効化できます。",
   "gui.dungeontrain.unsupported_mods.disable_failed": "これらのModはここから無効化できませんでした。ランチャーで無効化してから再起動してください。",

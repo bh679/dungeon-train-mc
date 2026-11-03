@@ -3446,7 +3446,7 @@
   "gui.dungeontrain.unsupported_mods.body": "Esses mods são desconhecidos para o Dungeon Train. O jogo continua funcionando, mas em Jogo Livre. %s",
   "gui.dungeontrain.unsupported_mods.live_hint": "Para jogar uma jornada normal / válida, saia e desative esses mods.",
   "gui.dungeontrain.unsupported_mods.unverified_file": "%s — arquivo não verificado",
-  "gui.dungeontrain.unsupported_mods.update_essential": "Atualize o Essential para a versão mais recente",
+  "gui.dungeontrain.unsupported_mods.update_essential": "Atualize",
   "gui.dungeontrain.unsupported_mods.quit_disable": "Sair e Desativar",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "Desativa esses mods na sua pasta de mods, do mesmo jeito que seu launcher faz, e fecha o jogo. Você pode reativá-los a qualquer momento pelo seu launcher.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "Esses mods não puderam ser desativados por aqui. Desative-os no seu launcher e reinicie.",

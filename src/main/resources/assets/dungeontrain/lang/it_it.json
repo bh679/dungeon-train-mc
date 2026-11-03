@@ -3446,7 +3446,7 @@
   "gui.dungeontrain.unsupported_mods.body": "Queste mod sono sconosciute a Dungeon Train. Il gioco funzionerà comunque, ma in Gioco Libero. %s",
   "gui.dungeontrain.unsupported_mods.live_hint": "Per giocare una partita normale / valida, esci e disattiva queste mod.",
   "gui.dungeontrain.unsupported_mods.unverified_file": "%s — file non verificato",
-  "gui.dungeontrain.unsupported_mods.update_essential": "Aggiorna Essential all'ultima versione",
+  "gui.dungeontrain.unsupported_mods.update_essential": "Aggiorna all'ultima",
   "gui.dungeontrain.unsupported_mods.quit_disable": "Esci e Disattiva",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "Disattiva queste mod nella tua cartella mods, proprio come fa il tuo launcher, e chiude il gioco. Puoi riattivarle in qualsiasi momento dal tuo launcher.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "Queste mod non possono essere disattivate da qui. Disattivale dal tuo launcher, poi riavvia.",

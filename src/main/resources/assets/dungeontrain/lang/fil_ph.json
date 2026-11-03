@@ -3391,7 +3391,7 @@
   "gui.dungeontrain.unsupported_mods.body": "Hindi kilala ng Dungeon Train ang mga mod na ito. Tatakbo pa rin ang laro, pero nasa Malayang Paglalaro. %s",
   "gui.dungeontrain.unsupported_mods.live_hint": "Para makapaglaro ng normal / live run, mag-quit at i-disable ang mga mod na ito.",
   "gui.dungeontrain.unsupported_mods.unverified_file": "%s — hindi na-verify ang file",
-  "gui.dungeontrain.unsupported_mods.update_essential": "I-update ang Essential sa pinakabagong bersyon",
+  "gui.dungeontrain.unsupported_mods.update_essential": "I-update sa bago",
   "gui.dungeontrain.unsupported_mods.quit_disable": "I-quit at I-disable",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "Ino-off ang mga mod na ito sa iyong mods folder, tulad ng ginagawa ng launcher mo, at isinasara ang laro. Puwede mo silang buksan ulit anumang oras mula sa launcher mo.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "Hindi ma-disable ang mga mod na ito mula rito. I-off ang mga ito sa launcher mo, tapos mag-restart.",

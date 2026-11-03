@@ -3391,7 +3391,7 @@
   "gui.dungeontrain.unsupported_mods.body": "Những mod này Dungeon Train không nhận biết được. Game vẫn sẽ chạy, nhưng ở chế độ Chơi Tự Do. %s",
   "gui.dungeontrain.unsupported_mods.live_hint": "Để chơi một lượt chơi bình thường / được tính điểm, hãy thoát và tắt các mod này.",
   "gui.dungeontrain.unsupported_mods.unverified_file": "%s — tệp chưa xác minh",
-  "gui.dungeontrain.unsupported_mods.update_essential": "Cập nhật Essential lên phiên bản mới nhất",
+  "gui.dungeontrain.unsupported_mods.update_essential": "Cập nhật bản mới",
   "gui.dungeontrain.unsupported_mods.quit_disable": "Thoát và Tắt",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "Tắt các mod này trong thư mục mods của bạn, giống như cách launcher của bạn làm, và đóng trò chơi. Bạn có thể bật lại bất cứ lúc nào từ launcher của mình.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "Không thể tắt các mod này từ đây. Hãy tắt chúng trong launcher của bạn, sau đó khởi động lại.",
