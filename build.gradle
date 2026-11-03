@@ -804,6 +804,9 @@ tasks.named('test', Test).configure {
     // The JUnit launcher boots the full mod set; with BetterEnd + BCLib's registries on top, Gradle's
     // 512 MB default heap runs out partway through the suite (OutOfMemoryError in the test worker).
     maxHeapSize = '2g'
+    // The suite is CPU-bound once booted, and each fork re-pays the ~26 s mod-set boot plus its own 2 GB
+    // heap, so half the cores (2 on CI's 4 vCPU runners), capped at 4, beats both one fork and one per core.
+    maxParallelForks = Math.max(1, Math.min(4, Runtime.runtime.availableProcessors().intdiv(2)))
     testLogging {
         events 'passed', 'skipped', 'failed'
         exceptionFormat 'full'

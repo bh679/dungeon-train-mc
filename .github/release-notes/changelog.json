@@ -32516,6 +32516,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "parallel-test-forks",
+      "version": "0.1627.0",
+      "type": "ci",
+      "tags": [
+        "internal"
+      ],
+      "title": "Faster CI test runs",
+      "summary": "The automated test suite now runs in parallel, so changes are checked sooner.",
+      "highlights": [],
+      "date": "2026-11-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
