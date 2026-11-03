@@ -18,9 +18,9 @@ import java.util.Set;
 
 /**
  * Terra Omnia's checklist: every biome the game has, by its own name, ridden ones ticked and the rest
- * greyed out. The rare biomes it asks only some of ({@link TerraOmnia#RARE}) come first, under their own
- * heading; the rest are grouped as {@link TerraOmnia#ordered} lists them (the vanilla Overworld, Nether, End,
- * then each mod), ridden first within a group. Opened by clicking the advancement ({@link AdvancementTrackClick}),
+ * greyed out. Grouped as {@link TerraOmnia#ordered} lists them (the vanilla Overworld, Nether, End, then each
+ * mod), ridden first within a group; the rare biomes it asks only some of ({@link TerraOmnia#RARE}) come last,
+ * under their own heading. Opened by clicking the advancement ({@link AdvancementTrackClick}),
  * earned or not, drawn over the advancements screen the way a photo album is ({@link EarnedPhotoAlbumScreen}).
  * Scroll with the wheel, the scrollbar (drag its thumb or click its track) or the arrow, page, Home and End
  * keys; a click anywhere else, or Esc, puts it away.
@@ -50,11 +50,11 @@ public final class BiomeChecklistScreen extends Screen {
 
     /**
      * One line of the checklist: a biome, whether it has been ridden, whether it is a spare rare one, and whether a
-     * new group starts with it. A heading line has a {@code heading} and no biome.
+     * new group starts with it. A heading line has a {@code heading} and no biome, and starts its group.
      */
     private record Line(ResourceLocation biome, boolean ridden, boolean spare, boolean groupStart, Component heading) {
-        static Line heading(Component text) {
-            return new Line(null, false, false, false, text);
+        static Line heading(Component text, boolean groupStart) {
+            return new Line(null, false, false, groupStart, text);
         }
     }
 
@@ -86,8 +86,8 @@ public final class BiomeChecklistScreen extends Screen {
     }
 
     /**
-     * Every biome in this world's registry, in checklist order: the rare section under its heading, then by group,
-     * ridden first within each.
+     * Every biome in this world's registry, in checklist order: by group, ridden first within each, then the rare
+     * section under its heading.
      */
     private List<Line> buildLines() {
         if (minecraft == null || minecraft.level == null) return List.of();
@@ -99,11 +99,12 @@ public final class BiomeChecklistScreen extends Screen {
         });
         Set<ResourceLocation> ridden = RiddenBiomes.get();
         List<Line> out = new ArrayList<>();
-        if (!rare.isEmpty()) out.add(Line.heading(Component.translatable("gui.dungeontrain.biome_checklist.rare")));
-        List<List<ResourceLocation>> sections = new ArrayList<>();
+        List<List<ResourceLocation>> sections = new ArrayList<>(groups.values());
         if (!rare.isEmpty()) sections.add(rare);
-        sections.addAll(groups.values());
         for (List<ResourceLocation> group : sections) {
+            if (group == rare) {
+                out.add(Line.heading(Component.translatable("gui.dungeontrain.biome_checklist.rare"), !out.isEmpty()));
+            }
             List<ResourceLocation> sorted = new ArrayList<>(group);
             sorted.sort(Comparator.comparing((ResourceLocation id) -> !ridden.contains(id)));   // stable: ids stay in order
             for (int i = 0; i < sorted.size(); i++) {
