@@ -17,8 +17,8 @@ import java.util.Optional;
  * {@code dt_pnarr_*} keys so exactly one of the two tags is ever present on a book — a mod-story book
  * carries {@code dt_narrative_*} and routes into canon progress/advancements; a player-narrative book
  * carries {@code dt_pnarr_*} and routes only into the world-local player-series store, never touching
- * {@code GlobalNarrativeProgress} or advancements. There is no variant field (player letters have a
- * single page list).</p>
+ * {@code GlobalNarrativeProgress}. Finishing a series earns "A Library In Motion"
+ * ({@code finished_player_series}). There is no variant field (player letters have a single page list).</p>
  */
 public final class PlayerNarrativeBookTag {
 

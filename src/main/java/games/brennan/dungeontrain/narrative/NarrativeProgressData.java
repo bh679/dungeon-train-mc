@@ -325,6 +325,18 @@ public final class NarrativeProgressData extends SavedData {
     }
 
     /**
+     * Whether the world has read every one of {@code letterIndices} of {@code seriesId} — i.e. finished the
+     * series as it currently stands. An empty list is never finished. Drives "A Library In Motion".
+     */
+    public boolean hasReadAllPlayerLetters(String seriesId, java.util.Collection<Integer> letterIndices) {
+        if (letterIndices == null || letterIndices.isEmpty()) return false;
+        for (int letterIndex : letterIndices) {
+            if (!hasReadPlayerLetter(seriesId, letterIndex)) return false;
+        }
+        return true;
+    }
+
+    /**
      * The distinct player narrative seriesIds the world has started (read ≥1 letter of), in the order they
      * were first read (oldest first, so the tail is the most recently started). Used both to continue an
      * in-progress series and to pin in-progress series into the relay pool fetch so they stay resolvable.

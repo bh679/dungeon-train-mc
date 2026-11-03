@@ -639,6 +639,16 @@ public final class AchievementEvents {
     }
 
     /**
+     * Fired when a lectern read finishes a player-written narrative series — every letter it currently
+     * has is read in this world. Drives "A Library In Motion". Routed through the generic
+     * {@link ModAdvancementTriggers#GAMEPLAY_ACTION} marker with action id {@code finished_player_series};
+     * vanilla award is idempotent so later finishes are harmless.
+     */
+    public static void notifyPlayerSeriesFinished(ServerPlayer player) {
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "finished_player_series");
+    }
+
+    /**
      * Fired when a player tags {@code @dev} / {@code @brennanhatton} in chat.
      * Drives "Summon The Creator". Routed through the generic
      * {@link ModAdvancementTriggers#GAMEPLAY_ACTION} marker with action id

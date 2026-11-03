@@ -1,11 +1,13 @@
 package games.brennan.dungeontrain.narrative.block;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.event.AchievementEvents;
 import games.brennan.dungeontrain.narrative.BookFactory;
 import games.brennan.dungeontrain.narrative.NarrativeBookEvents;
 import games.brennan.dungeontrain.narrative.NarrativeBookTag;
+import games.brennan.dungeontrain.narrative.NarrativePool;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.PlayerNarrativeBookTag;
 import net.minecraft.ChatFormatting;
@@ -24,7 +26,9 @@ import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -61,6 +65,8 @@ import java.util.Optional;
  * in {@link NarrativeLecternHooks}). No custom BE / renderer required.</p>
  */
 public class NarrativeLecternBlock extends LecternBlock {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     public NarrativeLecternBlock(Properties properties) {
         super(properties);
@@ -147,17 +153,36 @@ public class NarrativeLecternBlock extends LecternBlock {
         });
 
         // Parallel branch for a served PLAYER narrative letter (exactly one of the two tags is present).
-        // World-local only: advance the player-series read-set and count it toward the death-screen tally,
-        // but intentionally NOT GlobalNarrativeProgress / story advancements — player series are non-canon.
+        // World-local: advance the player-series read-set and count it toward the death-screen tally, but
+        // NOT GlobalNarrativeProgress — player series are non-canon. Finishing a series (every letter it
+        // currently has read) earns "A Library In Motion".
         PlayerNarrativeBookTag.read(book).ifPresent(pid -> {
             NarrativeProgressData data = NarrativeProgressData.get(overworld);
             data.markPlayerLetterRead(pid.seriesId(), pid.letterIndex());
             NarrativeBookEvents.countPlayerSeriesLetterForRun(sp, pid);
+            Optional<NarrativePool.Series> series = NarrativePool.resolve(pid.seriesId());
+            LOGGER.info("[DungeonTrain] Narrative: lectern served player series {} letter {} \"{}\" by {} (to {})",
+                pid.seriesId(), pid.letterIndex(), series.map(s -> titleOf(s, pid.letterIndex())).orElse("?"),
+                series.map(NarrativePool.Series::author).orElse("?"), sp.getName().getString());
+            series.ifPresent(s -> {
+                List<Integer> indices = s.letters().stream().map(NarrativePool.SeriesLetter::letterIndex).toList();
+                if (data.hasReadAllPlayerLetters(s.seriesId(), indices)) {
+                    AchievementEvents.notifyPlayerSeriesFinished(sp);
+                }
+            });
         });
 
         // Now let vanilla open the lectern menu — it reads the BE's book
         // we just swapped in.
         return super.useWithoutItem(state, level, pos, player, hit);
+    }
+
+    /** The title of letter {@code letterIndex} of {@code series}, or {@code "?"} when it is not present. */
+    private static String titleOf(NarrativePool.Series series, int letterIndex) {
+        return series.letters().stream()
+            .filter(l -> l.letterIndex() == letterIndex)
+            .map(NarrativePool.SeriesLetter::title)
+            .findFirst().orElse("?");
     }
 
     // Block removal is left to vanilla LecternBlock#onRemove: it pops the
