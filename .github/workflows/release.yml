@@ -375,6 +375,7 @@ jobs:
             ambientsounds(optional)
             creativecore(optional)
             advancement-plaques(optional)
+            ydms-weapon-master(optional)
             better-advancements(optional)
             iceberg(optional)
             distant-horizons(optional)

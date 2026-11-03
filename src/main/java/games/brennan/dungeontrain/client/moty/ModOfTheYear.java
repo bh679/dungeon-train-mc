@@ -50,7 +50,20 @@ public final class ModOfTheYear {
         public String contestUrl() {
             return voting ? VOTE_URL : NOMINATION_URL;
         }
+
+        /**
+         * The UiAnalytics target for this ask's main button ({@code moty_nominate_modpack} …); "Already
+         * did" and "Not now" add {@link #DONE_SUFFIX} / {@link #LATER_SUFFIX}. Lock-step with the relay's
+         * ui-events.js TARGETS, or the events 400 and are dropped.
+         */
+        public String analyticsTarget() {
+            return "moty_" + name().toLowerCase(java.util.Locale.ROOT);
+        }
     }
+
+    /** Target suffixes for "Already did" and "Not now" / Esc (see {@link Ask#analyticsTarget()}). */
+    public static final String DONE_SUFFIX = "_done";
+    public static final String LATER_SUFFIX = "_later";
 
     /** What the player has already done (or said they have). */
     public record Done(boolean modpackNominated, boolean modNominated, boolean modpackVoted, boolean modVoted) {}

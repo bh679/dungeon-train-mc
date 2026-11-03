@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.advancement.BurritoClock;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
 import games.brennan.dungeontrain.advancement.GlobalBiomeProgress;
+import games.brennan.dungeontrain.advancement.GlobalRandomBookProgress;
 import games.brennan.dungeontrain.advancement.TerraOmnia;
 import games.brennan.dungeontrain.advancement.TerraOmniaMigration;
 import games.brennan.dungeontrain.advancement.TabGateways;
@@ -82,6 +83,7 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -688,10 +690,12 @@ public final class AchievementEvents {
         if (anyStoryRead()) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "any_story");
         }
-        if (allFaulthurstTitlesSeen(data)) {
+        Map<String, Set<Integer>> lifetime = GlobalRandomBookProgress.seen(player.getUUID());
+        if (allFaulthurstTitlesSeen(data, lifetime)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "faulthurst_all_titles");
         }
-        if (allFaulthurstSeen(data)) {
+        fireFaulthurstVariantsSeen(player, data, lifetime);
+        if (allFaulthurstSeen(data, lifetime)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "faulthurst");
         }
         if (allStoriesRead()) {
@@ -905,10 +909,12 @@ public final class AchievementEvents {
 
     /**
      * True when every random-book file whose basename contains
-     * {@code "faulthurst"} has every variant marked seen. Drives the
+     * {@code "faulthurst"} has every variant seen, in this world or in the
+     * player's lifetime record ({@link GlobalRandomBookProgress}) — so a new
+     * world no longer starts it from zero. Drives the
      * {@code faulthurst_all_variants} milestone ("Faulthurst's Favourite").
      */
-    private static boolean allFaulthurstSeen(NarrativeProgressData data) {
+    private static boolean allFaulthurstSeen(NarrativeProgressData data, Map<String, Set<Integer>> lifetime) {
         boolean anyFaulthurst = false;
         for (String basename : RandomBookRegistry.basenames()) {
             if (!basename.toLowerCase().contains("faulthurst")) continue;
@@ -916,9 +922,7 @@ public final class AchievementEvents {
             RandomBookFile file = RandomBookRegistry.getByBasename(basename).orElse(null);
             if (file == null) return false;
             int total = file.variants().size();
-            Set<Integer> seen = data.randomBookSnapshot()
-                .getOrDefault(basename, new NarrativeProgress())
-                .readLetters();
+            Set<Integer> seen = seenAnywhere(data, lifetime, basename);
             for (int i = 0; i < total; i++) {
                 if (!seen.contains(i)) return false;
             }
@@ -927,22 +931,59 @@ public final class AchievementEvents {
     }
 
     /**
+     * One {@code random_book_variant_seen} per seen variant of every Faulthurst random-book, in this
+     * world or the player's lifetime record: the per-variant criteria behind Faulthurst's Favourite's
+     * progress bar. Already-held criteria are
+     * no-ops, so re-firing the whole set after each read is harmless.
+     */
+    private static void fireFaulthurstVariantsSeen(ServerPlayer player, NarrativeProgressData data,
+                                                   Map<String, Set<Integer>> lifetime) {
+        for (String basename : RandomBookRegistry.basenames()) {
+            if (!basename.toLowerCase().contains("faulthurst")) continue;
+            for (int variant : seenAnywhere(data, lifetime, basename)) {
+                ModAdvancementTriggers.RANDOM_BOOK_VARIANT_SEEN.get().trigger(player, basename, variant);
+            }
+        }
+    }
+
+    /**
      * True when every Faulthurst random-book has at least one variant
      * marked seen. Drives the {@code faulthurst_all_titles} milestone
      * ("I Must Know"). Weaker than {@link #allFaulthurstSeen} — requires
      * the player to have encountered every title, not every variant.
      */
-    private static boolean allFaulthurstTitlesSeen(NarrativeProgressData data) {
+    private static boolean allFaulthurstTitlesSeen(NarrativeProgressData data, Map<String, Set<Integer>> lifetime) {
         boolean anyFaulthurst = false;
         for (String basename : RandomBookRegistry.basenames()) {
             if (!basename.toLowerCase().contains("faulthurst")) continue;
             anyFaulthurst = true;
-            Set<Integer> seen = data.randomBookSnapshot()
-                .getOrDefault(basename, new NarrativeProgress())
-                .readLetters();
-            if (seen.isEmpty()) return false;
+            if (seenAnywhere(data, lifetime, basename).isEmpty()) return false;
         }
         return anyFaulthurst;
+    }
+
+    /** The variants of {@code basename} seen in this world or in the player's lifetime record. */
+    private static Set<Integer> seenAnywhere(NarrativeProgressData data, Map<String, Set<Integer>> lifetime,
+                                             String basename) {
+        Set<Integer> seen = new HashSet<>(data.randomBookSnapshot()
+            .getOrDefault(basename, new NarrativeProgress())
+            .readLetters());
+        seen.addAll(lifetime.getOrDefault(basename, Set.of()));
+        return seen;
+    }
+
+    /**
+     * Fold this world's random-book variants into the player's lifetime record, so a player part-way
+     * through "Faulthurst's Favourite" in a world from before that record existed keeps what they have.
+     * Grow-only; a Free Play run adds nothing.
+     */
+    private static void absorbWorldRandomBooksIntoLifetime(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null || RunIntegrity.isCheated(player)) return;
+        Map<String, Set<Integer>> world = new HashMap<>();
+        NarrativeProgressData.get(server.overworld()).randomBookSnapshot()
+            .forEach((basename, p) -> world.put(basename, p.readLetters()));
+        GlobalRandomBookProgress.addAll(player.getUUID(), world);
     }
 
     /**
@@ -1040,6 +1081,7 @@ public final class AchievementEvents {
         // so progress earned in other worlds — or before this store existed —
         // can complete them here.
         absorbWorldStoryProgressIntoGlobal(player);
+        absorbWorldRandomBooksIntoLifetime(player);
         notifyStoryProgress(player);
         // Absorb this world's already-earned advancements into the cross-world
         // store FIRST, so progress that predates this store — or a freshly-
@@ -1107,6 +1149,7 @@ public final class AchievementEvents {
         GlobalBookBurnStats.flush(uuid);
         GlobalBookBurnStats.evict(uuid);
         GlobalBiomeProgress.evict(uuid);   // every biome was written when it was added
+        GlobalRandomBookProgress.evict(uuid);   // likewise every random-book variant
         AdvancementProfiles.reconcileRevokes(player);
         // After the reconcile, which may still strike ids. Queued writes finish in the background.
         GlobalAchievementStore.evict(uuid);
