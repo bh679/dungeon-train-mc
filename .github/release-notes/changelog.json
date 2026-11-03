@@ -32689,6 +32689,41 @@
       "released": true,
       "released_in": "v0.1636.0",
       "released_at": "2026-11-03T07:55:24Z"
+    },
+    {
+      "id": "faulthurst-lifetime-progress",
+      "version": "0.1637.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "books",
+        "advancements"
+      ],
+      "title": "Book reading fix",
+      "summary": "Reading progress for a hidden collection now carries over between worlds, and you are less likely to be handed a book you have already read.",
+      "highlights": [],
+      "pr": 2456,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1638.0",
+      "released_at": "2026-11-03T10:57:01Z"
+    },
+    {
+      "id": "weapon-master-in-modpack",
+      "version": "0.1637.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Weapon Master in the modpack",
+      "summary": "The Dungeon Train modpack now includes YDM's Weapon Master.",
+      "highlights": [],
+      "pr": 2455,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1638.0",
+      "released_at": "2026-11-03T10:57:01Z"
     }
   ]
 }
