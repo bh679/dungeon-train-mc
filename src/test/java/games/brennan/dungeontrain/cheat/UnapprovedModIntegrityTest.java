@@ -47,8 +47,8 @@ class UnapprovedModIntegrityTest {
         "datapackmod", Set.of());
 
     @Test
-    @DisplayName("Only a SUSPECT file is reported: the renamed cheat jar, not an honest unplaced build")
-    void onlySuspectFilesAreReported() {
+    @DisplayName("Every file without a known hash is reported: suspect, unknown and plausible alike")
+    void onlyHashedFilesPass() {
         String good = "a".repeat(40);
         List<ModFileFingerprint> files = List.of(
             file("jei-19.jar", good, List.of("mezz.jei"), "jei"),                          // verified by hash
@@ -57,10 +57,11 @@ class UnapprovedModIntegrityTest {
             file("bundle.jar", "d".repeat(40), List.of("dev.alpha"), "alpha", "beta"),      // suspect: beta's code missing
             file("newmod.jar", "e".repeat(40), List.of("a.b"), "newmod"),                   // unknown: no knowledge
             file("resource.jar", "f".repeat(40), List.of(), "datapackmod"));               // plausible: no classes, known []
-        assertEquals(List.of("bundle.jar (alpha, beta)", "totally-jei.jar (jei)"),
+        assertEquals(List.of("bundle.jar (alpha, beta)", "jei-20-fresh.jar (jei)", "newmod.jar (newmod)",
+                "resource.jar (datapackmod)", "totally-jei.jar (jei)"),
             UnapprovedModIntegrity.unverifiedFrom(files, Set.of(good), KNOWN));
         assertEquals(List.of(), UnapprovedModIntegrity.unverifiedFrom(List.of(), Set.of(), Map.of()),
-            "no files scanned means nothing suspect — never 'everything is fake'");
+            "no files scanned means nothing unverified — never 'everything is fake'");
     }
 
     @Test

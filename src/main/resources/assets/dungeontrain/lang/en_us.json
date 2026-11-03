@@ -254,6 +254,7 @@
   "chat.dungeontrain.free_play.portal_rate_changed": "The track this world generates is no longer the one Dungeon Train is balanced against, so this world stays in Free Play.",
   "chat.dungeontrain.free_play.cause.dt_config": "The Dungeon Train difficulty settings have been changed.",
   "chat.dungeontrain.free_play.cause.soup_stacking": "Stackable soups were turned on in Farmer's Delight.",
+  "chat.dungeontrain.free_play.cause.cpm_scaling": "Player scaling was turned on in Customizable Player Models.",
   "chat.dungeontrain.free_play.dt_config_changed": "Changed: %s",
   "chat.dungeontrain.free_play.dt_config_fix": "Click here to set every Dungeon Train setting back to default, then restart the game to play normally. Your current settings are kept as a backup file.",
   "command.dungeontrain.fix_ais.success": "Default Adventure Item Stats settings restored. Restart the game (or server) to resume normal play.",

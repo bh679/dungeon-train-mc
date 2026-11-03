@@ -4183,6 +4183,7 @@
       "advancements.dungeontrain.tab.others",
       "advancements.dungeontrain.tab.secrete_menu",
       "chat.dungeontrain.free_play.cause.soup_stacking",
+      "chat.dungeontrain.free_play.cause.cpm_scaling",
       "effect.dungeontrain.free_play.trigger.detail",
       "effect.dungeontrain.free_play.trigger.detail_more",
       "gui.dungeontrain.config_deviation.body",

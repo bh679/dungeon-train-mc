@@ -4900,6 +4900,7 @@
   "chat.dungeontrain.free_play.portal_rate_changed": "La vía que genera este mundo ya no es aquella para la que está equilibrado Dungeon Train, así que este mundo se queda en Juego Libre.",
   "chat.dungeontrain.free_play.cause.dt_config": "Se han cambiado los ajustes de dificultad de Dungeon Train.",
   "chat.dungeontrain.free_play.cause.soup_stacking": "Se activaron las sopas apilables en Farmer's Delight.",
+  "chat.dungeontrain.free_play.cause.cpm_scaling": "Se activó el escalado de jugadores en Customizable Player Models.",
   "chat.dungeontrain.free_play.dt_config_changed": "Cambiado: %s",
   "chat.dungeontrain.free_play.dt_config_fix": "Haz clic aquí para devolver todos los ajustes de Dungeon Train a sus valores por defecto y reinicia el juego para jugar con normalidad. Tus ajustes actuales se conservan en un archivo de copia de seguridad.",
   "command.dungeontrain.fix_config.success": "Ajustes restablecidos. Reinicia el juego (o el servidor) para volver a la partida normal.",

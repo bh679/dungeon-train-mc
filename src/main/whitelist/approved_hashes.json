@@ -11,6 +11,7 @@
     "bobby": "bobby-reneoforged",
     "catalogue": "catalogue",
     "cloth_config": "cloth-config",
+    "commonnetworking": "common-network",
     "cosmeticarmorreworked": "cosmetic-armor-reworked",
     "crash_assistant": "crash-assistant",
     "cristellib": "cristel-lib",
@@ -24,7 +25,7 @@
     "dynamiccrosshairapi": "dynamic-crosshair",
     "dynamiclights": "dynamic-lights",
     "dynamiclightsreforged": "dynamiclights-reforged",
-    "eatinganimation": "eating-animation",
+    "eatinganimation": "eating-animations",
     "effortlessbuilding": "effortless-building",
     "enchdesc": "enchantment-descriptions",
     "entity_model_features": "entity-model-features",
@@ -45,28 +46,31 @@
     "lambdynlights": "lambdynamiclights",
     "lanserverproperties": "lan-server-properties",
     "legendarytooltips": "legendary-tooltips",
+    "lionfishapi": "lionfish-api",
     "mousetweaks": "mouse-tweaks",
     "notenoughanimations": "not-enough-animations",
     "overloadedarmorbar": "overloaded-armor-bar",
     "particlerain": "particle-rain",
     "pickupnotifier": "pick-up-notifier",
     "piglinproliferation": "piglin-proliferation",
-    "presencefootsteps": "presence-footsteps",
+    "presencefootsteps": "pf-neoforge",
     "puzzleslib": "puzzles-lib",
     "replaymod": "replaymod",
     "resourcefulconfig": "resourceful-config",
     "roughlyenoughitems": "rei",
+    "sable_player_ragdoll": "sable-ragdolls",
     "shouldersurfing": "shoulder-surfing-reloaded",
     "simplytooltips": "simply-tooltips",
-    "skinlayers3d": "3d-skin-layers",
+    "skinlayers3d": "3dskinlayers",
     "smoothswapping": "smooth-swapping",
     "sodiumdynamiclights": "sodium-dynamic-lights",
+    "spectrelib": "spectrelib",
     "supermartijn642configlib": "supermartijn642s-config-lib",
     "transition": "transition",
     "trender": "trender",
     "voicechat": "simple-voice-chat",
     "weaponmaster_ydm": "weaponmaster",
-    "wildfire_gender": "female-gender-mod",
+    "wildfire_gender": "female-gender",
     "xaerominimap": "xaeros-minimap",
     "xaeroworldmap": "xaeros-world-map",
     "yet_another_config_lib_v3": "yacl",
@@ -856,6 +860,17 @@
         "slug": "cameraoverhaul"
       }
     },
+    "catalogue": {
+      "platform": "curseforge",
+      "slug": "catalogue",
+      "source": "curseforge-via-relay",
+      "sha1": [
+        "6d67f855c20bc6392763cfb22e1152da4e8015b4",
+        "896ca58c21a8db4383a51f9909ddd830128a70ee",
+        "e4b45e50ff941346cfa8c128c9f9302c9ae230dc",
+        "f2f2286d229ac1d10534f61f084d29dde4836442"
+      ]
+    },
     "cirrus": {
       "platform": "modrinth",
       "project": "SJDzFJH7",
@@ -964,6 +979,45 @@
         "project": "342584",
         "slug": "collective"
       }
+    },
+    "commongroovylibrary": {
+      "platform": "nested",
+      "in": [
+        "gml"
+      ],
+      "sha1": []
+    },
+    "commonnetworking": {
+      "platform": "modrinth",
+      "project": "HIuqnQpi",
+      "slug": "common-network",
+      "name": "Common Network",
+      "sha1": [
+        "1d2c05d40f11792940693fea44547b002795521f",
+        "286d58d3e8b2194429d78bc6fb2c99d79c4d25f2",
+        "3a8fa307a084843c45d4b83e4d2fee6ff79c52b2",
+        "4d34b99fe7ab3a38d017d0fb0f1c93ec8a937e7e",
+        "92f7925a2264882f25f92d5e89531806c65f84f5",
+        "ba01ccc3cfdbcba8c11d2e607d0348d5eab6458b",
+        "c0ca558f29f76f934d02f48d40e9adbb42f5a32f",
+        "cf994e605f6f8307447704fc2e93a2feac441846",
+        "d45843d3243685b438954c13ca74b471df8a5b25",
+        "dc930ba0764c3c9e73fe029b609975fd4a43d2da",
+        "f55722a4278997e7ef278f4390a31e848f7beea7",
+        "fb569aa00c95fee595da9a5424a9ca6b97031cd1",
+        "feb2522cb8e94965318998dca6f55a8772b5956b"
+      ],
+      "packages": [
+        "commonnetwork.api",
+        "commonnetwork.networking"
+      ]
+    },
+    "conditional_mixin": {
+      "platform": "nested",
+      "in": [
+        "moreculling"
+      ],
+      "sha1": []
     },
     "connector": {
       "platform": "modrinth",
@@ -1077,6 +1131,14 @@
         "project": "237749",
         "slug": "coroutil"
       }
+    },
+    "cosmeticarmorreworked": {
+      "platform": "curseforge",
+      "slug": "cosmetic-armor-reworked",
+      "source": "curseforge-via-relay",
+      "sha1": [
+        "5f1e699cd0888b857ec63f01adaeb3571848bfea"
+      ]
     },
     "crash_assistant": {
       "platform": "modrinth",
@@ -1477,6 +1539,31 @@
         "top.theillusivec4"
       ]
     },
+    "customskinloader": {
+      "platform": "curseforge",
+      "slug": "customskinloader",
+      "source": "curseforge-via-relay",
+      "sha1": [
+        "17027305076948649d88bcb6b316eb6f55a748b3",
+        "324e6921ecd576e44875981466e7f22170b6541a",
+        "3710853d5d63dfb9a5ff67d807ba71037199348f",
+        "3f9cfe6c5a00fb84dc317b896eb245d50e0e6b9f",
+        "4f52855efacfce5c1872fc875d0b2a372cde9643",
+        "5afeba5f1dac62fd55b8fd40244bbf08b1eb2e35",
+        "7175bc8e0afddf204112f68270499f501ed44a20",
+        "9a1651298fddeb3c74c3eff017a31975bf33a8b7",
+        "a8b899e42f2eba58c93d1f956938686bc9a40b04",
+        "ab8dd841cafc3b4ecbf0250d3f5aee8a1fdb506a",
+        "b2d9bf46f3d672e2bef26a8e6de55401a7c0818e",
+        "deafbe7021d3939606a11ebe23b3f9458fd5b1d6",
+        "e2d525a8c401681c7dedd4d1f4779758218e2f2b",
+        "ed289e3cb6e87eba951a6f249d063d865e75d5ed",
+        "ff2a6f2edfb94caa3aec635d42b4496203d47565"
+      ],
+      "modrinth": {
+        "slug": "customskinloader"
+      }
+    },
     "cuttingdelight": {
       "platform": "modrinth",
       "project": "5oqQBDcS",
@@ -1682,6 +1769,13 @@
         "mod.crend"
       ]
     },
+    "dynamiccrosshairapi": {
+      "platform": "nested",
+      "in": [
+        "dynamiccrosshair"
+      ],
+      "sha1": []
+    },
     "dynamiclights": {
       "platform": "modrinth",
       "project": "7YjclEGc",
@@ -1804,6 +1898,14 @@
         "project": "849519",
         "slug": "e4mc"
       }
+    },
+    "eatinganimation": {
+      "platform": "modrinth",
+      "slug": "eating-animations",
+      "source": "relay-reports",
+      "sha1": [
+        "68f276dc8cf57658b0afc2112c6ee63325989e02"
+      ]
     },
     "effortlessbuilding": {
       "platform": "modrinth",
@@ -2343,6 +2445,25 @@
         "f98335548ab3d6592912535c5703f18ab153c10d"
       ],
       "packages": []
+    },
+    "framework": {
+      "platform": "curseforge",
+      "slug": "framework",
+      "source": "curseforge-via-relay",
+      "sha1": [
+        "19a39e307a8e58e869a5cfc286874c44cdd0420d",
+        "224d36da132e660b6933f2c71ea2db36d30b035e",
+        "26e7ff80783db0e11021a710236cc474a6532c27",
+        "39b1e8c48a8024e81e4182fcf112567bdf529f7f",
+        "5a6b6c61b856098bfe8c9d35b92638ddbc14da27",
+        "5df5319a739c7dbdc62b77b6e0ed44c6728107ea",
+        "66761577a7d9ecea9b0ddf35b7342e9743cbeb4a",
+        "774da4b0c43a66d0888be4cf4e0a01b7a6899b1b",
+        "ac8020d47e347d1b1de7df27d4c86d4721016944",
+        "e46eb138fbb13a12f37154fb4ec407d64b326475",
+        "eb3f4d3ebd0ad9bccbe30f7efe7e89f040e0c714",
+        "f0275feaf8702828cbd887c922d28c3f961e4bf9"
+      ]
     },
     "fusion": {
       "platform": "modrinth",
@@ -3373,6 +3494,20 @@
         "dev.lambdaurora"
       ]
     },
+    "lambdynlights_api": {
+      "platform": "nested",
+      "in": [
+        "lambdynlights"
+      ],
+      "sha1": []
+    },
+    "lambdynlights_runtime": {
+      "platform": "nested",
+      "in": [
+        "lambdynlights"
+      ],
+      "sha1": []
+    },
     "lanserverproperties": {
       "platform": "modrinth",
       "project": "SqnBX2qd",
@@ -3400,6 +3535,13 @@
       "packages": [
         "com.anthonyhilyard"
       ]
+    },
+    "libbamboo": {
+      "platform": "nested",
+      "in": [
+        "dynamiccrosshair"
+      ],
+      "sha1": []
     },
     "libipn": {
       "platform": "modrinth",
@@ -3432,6 +3574,21 @@
         "project": "679177",
         "slug": "libipn"
       }
+    },
+    "lionfishapi": {
+      "platform": "modrinth",
+      "project": "FoVacERa",
+      "slug": "lionfish-api",
+      "name": "Lionfish-API",
+      "sha1": [
+        "353ca00ed118eb67cf11085abbbd699884722326",
+        "414fdd581bdb86f1dd1acc0adb0573f92e8d8a91",
+        "934336ca431f40be60c98ea4efb9512e3abd83a8",
+        "af90b807eed100e899b9afa13bb75e7d45294ba3"
+      ],
+      "packages": [
+        "com.github.L_Ender"
+      ]
     },
     "lithium": {
       "platform": "modrinth",
@@ -4732,6 +4889,18 @@
         "com.teampotato"
       ]
     },
+    "presencefootsteps": {
+      "platform": "modrinth",
+      "project": "JIEwmDVI",
+      "slug": "pf-neoforge",
+      "name": "Presence Footsteps (NeoForge)",
+      "sha1": [
+        "71bd6de2b01441d92be1e109879b76b7750bd787"
+      ],
+      "packages": [
+        "eu.ha3"
+      ]
+    },
     "prickle": {
       "platform": "modrinth",
       "project": "aaRl8GiW",
@@ -4923,6 +5092,26 @@
         "me.flashyreese"
       ]
     },
+    "reforgedplaymod": {
+      "platform": "curseforge",
+      "slug": "reforgedplay-mod",
+      "source": "curseforge-via-relay",
+      "sha1": [
+        "0e7d8794fb81756e58d8559fc3ab88abc9b6d511",
+        "8c0410dbe21d2271e49cb3381a8e46ccc1ffbe03",
+        "f8f82a93e318324bf90995d812292ba52fe46cf7"
+      ]
+    },
+    "replaymod": {
+      "platform": "curseforge",
+      "slug": "reforgedplay-mod",
+      "source": "curseforge-via-relay",
+      "sha1": [
+        "0e7d8794fb81756e58d8559fc3ab88abc9b6d511",
+        "8c0410dbe21d2271e49cb3381a8e46ccc1ffbe03",
+        "f8f82a93e318324bf90995d812292ba52fe46cf7"
+      ]
+    },
     "resourcefulconfig": {
       "platform": "modrinth",
       "project": "M1953qlQ",
@@ -5051,6 +5240,33 @@
       ],
       "packages": [
         "b34tingh34rt.sable_pathfinder"
+      ]
+    },
+    "sable_player_ragdoll": {
+      "platform": "modrinth",
+      "project": "I3mWDgfy",
+      "slug": "sable-ragdolls",
+      "name": "Sable: Ragdolls",
+      "sha1": [
+        "114a953a830673ebfe2af154f5a1ce535fc4d90c",
+        "1fe1309ef5b8cf9a17b86148e177f3dfbec936b8",
+        "36d162885f17bcc76a730cade0c787f13e6b811b",
+        "3c32094ff9bc141a832967b379963284affa492a",
+        "459b206c5a02659a0ba5fced75da77d93cf5c960",
+        "4cfec23f09f638b3c80cce22d5314498a60fbf6f",
+        "4e0a1c7a058b3d1cd5599d9ab018dd4423398556",
+        "6441534110547f2fc988352102df2cfe12a89037",
+        "6e706a558c872b528889e0a0afc81a3f69149a22",
+        "77be1cbee80da8bab423e3c57d5d0c98eeaa2d7b",
+        "80282738b5aebb365ceeeb130904feaf484ee9bd",
+        "86fb7fdfb3396214c7114924a23122dca09027db",
+        "b1711740c1a100534de0bde5d10866ae546e8fb3",
+        "c47b304774e251bd81861e4ca0cdfce9fb3c9fde",
+        "e0fe1b68a7da841296df814f9d03f138e30baf42",
+        "fd9548b0a859a12cc59c92f2bd49d8d788384ddc"
+      ],
+      "packages": [
+        "dev.leo"
       ]
     },
     "scribble": {
@@ -5403,6 +5619,38 @@
         "net.sweenus"
       ]
     },
+    "skinlayers3d": {
+      "platform": "modrinth",
+      "project": "zV5r3pPn",
+      "slug": "3dskinlayers",
+      "name": "3D Skin Layers",
+      "sha1": [
+        "0a4fede95e0369bd54c45c6e1b8ceb90071315f6",
+        "14815b21354dd2015e6bc523b2d8e8112da5068c",
+        "14e6fb20e82ffcb7e604e595118e7d0ca9f7f384",
+        "1b118d6e95866ef0c411a21e56e03aa2549a1ea3",
+        "2a816ad477d1b0f4a7def62700c8e898c48a259b",
+        "4821fa3218dc5f37ea140e395a1799abbfdf7757",
+        "4a9597806d9f2ab83f6b78d87da71f5ee7db2094",
+        "8f25b0babc279ee9f5d07f20d9168a7a4ef93dac",
+        "97db8c89eda8de4c55950f7002866a2dffd5f234",
+        "9d171fcd22f4a2880aa576df15cdb0d089859867",
+        "a66d41db9f2d71f902889ca0b3c9808c4473a452",
+        "ae2d1279d27fd2e45dcc3f3a45e26ecd6df00d1a",
+        "c3ca1000cf0e82608bc4a96067e15a20ecdbec1b",
+        "c75d03796b22e70b3441f0cfa1b1b0a59d2ddd14",
+        "ced9781c80b2d4a7dcbcd7c506b2360ee7fb0560",
+        "d3058fec150a8629ba468de4552f2e8556501f1d",
+        "d4864fac231ff3d360e08a82f06553c3f76de8a6",
+        "d688d428ba72a5bd57b44d8954793c59d8576838",
+        "d6cb50513f4f50f5636fcb6d31d8659c429c5949",
+        "deac01f329f104995354b343ab363020e4256446",
+        "ec046d736a67626d774cae3cf6d37133eaccfbd4"
+      ],
+      "packages": [
+        "dev.tr7zw"
+      ]
+    },
     "smartbrainlib": {
       "platform": "modrinth",
       "project": "PuyPazRT",
@@ -5606,6 +5854,13 @@
         "slug": "sound"
       }
     },
+    "spruceui": {
+      "platform": "nested",
+      "in": [
+        "lambdynlights"
+      ],
+      "sha1": []
+    },
     "subtle_effects": {
       "platform": "modrinth",
       "project": "4q8UOK1d",
@@ -5794,6 +6049,15 @@
         "slug": "toucanlib"
       }
     },
+    "transition": {
+      "platform": "nested",
+      "in": [
+        "entityculling",
+        "notenoughanimations",
+        "skinlayers3d"
+      ],
+      "sha1": []
+    },
     "trashslot": {
       "platform": "modrinth",
       "project": "vRYk0bv7",
@@ -5822,6 +6086,15 @@
         "project": "235577",
         "slug": "trashslot"
       }
+    },
+    "trender": {
+      "platform": "nested",
+      "in": [
+        "entityculling",
+        "notenoughanimations",
+        "skinlayers3d"
+      ],
+      "sha1": []
     },
     "txnilib": {
       "platform": "modrinth",
@@ -6205,6 +6478,13 @@
         "de.maxhenkel"
       ]
     },
+    "voicechat_api": {
+      "platform": "nested",
+      "in": [
+        "voicechat"
+      ],
+      "sha1": []
+    },
     "watut": {
       "platform": "modrinth",
       "project": "AtB5mHky",
@@ -6236,6 +6516,18 @@
       ],
       "packages": [
         "com.minecraftserverzone"
+      ]
+    },
+    "wildfire_gender": {
+      "platform": "modrinth",
+      "project": "bcOsQHnC",
+      "slug": "female-gender",
+      "name": "Female Gender Mod",
+      "sha1": [
+        "f2e4027d0943c04700173a97c88aaebb1f1777ad"
+      ],
+      "packages": [
+        "com.wildfire"
       ]
     },
     "windy": {
@@ -6301,6 +6593,13 @@
       "packages": [
         "de.cristelknight"
       ]
+    },
+    "xaerolib": {
+      "platform": "nested",
+      "in": [
+        "xaerominimap"
+      ],
+      "sha1": []
     },
     "xaerominimap": {
       "platform": "modrinth",
@@ -6427,6 +6726,13 @@
         "org.quiltmc"
       ]
     },
+    "yumi_mc_core": {
+      "platform": "nested",
+      "in": [
+        "lambdynlights"
+      ],
+      "sha1": []
+    },
     "yungsapi": {
       "platform": "modrinth",
       "project": "Ua7DFN59",
@@ -6450,55 +6756,30 @@
   },
   "unmatched": [
     "adventureitemstats",
-    "catalogue",
     "cinematic",
     "codecui",
-    "commongroovylibrary",
-    "commonnetworking",
-    "conditional_mixin",
-    "cosmeticarmorreworked",
-    "customskinloader",
     "discordpresence",
     "dpibypassdetect",
     "dungeonbackup",
-    "dynamiccrosshairapi",
     "dynamiclightsreforged",
-    "eatinganimation",
     "ediblebackpacks",
     "enderchestpersistence",
     "essential",
     "essentialtweaks",
-    "framework",
     "keeptrim",
     "khi",
     "kuma_api",
-    "lambdynlights_api",
-    "lambdynlights_runtime",
-    "libbamboo",
-    "lionfishapi",
     "lostcityterrainfit",
     "mixinsquared",
     "overloadedarmorbar",
     "pigmanvillagers",
     "playermob",
-    "presencefootsteps",
-    "reforgedplaymod",
-    "replaymod",
     "sable_fence_trapdoor_fix",
-    "sable_player_ragdoll",
     "sablecompanion",
     "sablejade",
-    "skinlayers3d",
     "spectrelib",
-    "spruceui",
     "streamdetect",
     "tradeeverything",
-    "transition",
-    "trender",
-    "voicechat_api",
-    "wildfire_gender",
-    "wover",
-    "xaerolib",
-    "yumi_mc_core"
+    "wover"
   ]
 }

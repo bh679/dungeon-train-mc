@@ -4840,6 +4840,7 @@
   "chat.dungeontrain.free_play.portal_rate_changed": "Ang riles na nililikha ng mundong ito ay hindi na iyong pinagbatayan ng balanse ng Dungeon Train, kaya nananatili sa Malayang Paglalaro ang mundong ito.",
   "chat.dungeontrain.free_play.cause.dt_config": "Binago ang mga setting ng hirap ng Dungeon Train.",
   "chat.dungeontrain.free_play.cause.soup_stacking": "Binuksan ang pagpapatong ng sabaw sa Farmer's Delight.",
+  "chat.dungeontrain.free_play.cause.cpm_scaling": "Binuksan ang pag-scale ng player sa Customizable Player Models.",
   "chat.dungeontrain.free_play.dt_config_changed": "Binago: %s",
   "chat.dungeontrain.free_play.dt_config_fix": "I-click dito para ibalik sa default ang lahat ng setting ng Dungeon Train, tapos i-restart ang laro para makapaglaro nang normal. Itatago ang kasalukuyan mong mga setting bilang backup na file.",
   "command.dungeontrain.fix_config.success": "Na-reset na ang mga setting. I-restart ang laro (o ang server) para bumalik sa normal na paglalaro.",

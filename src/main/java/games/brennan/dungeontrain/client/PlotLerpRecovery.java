@@ -50,6 +50,14 @@ public final class PlotLerpRecovery {
         PENDING.put(entity, new Pending(plotTarget, HOLD_TICKS));
     }
 
+    /**
+     * Whether a pending vanilla lerp is the reload-gap case: a world-space mob Sable is not
+     * following, smoothing toward plot coordinates. A mob already in plot space is Sable's own.
+     */
+    public static boolean shouldHold(boolean followed, boolean targetInPlot, boolean selfInPlot) {
+        return !followed && targetInPlot && !selfInPlot;
+    }
+
     /** What to do with one parked mob this tick. */
     static Step step(boolean removedOrFollowed, boolean carriageFound, int ticksLeft) {
         if (removedOrFollowed) return Step.DROP;

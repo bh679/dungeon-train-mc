@@ -22,6 +22,7 @@ import sys
 from pathlib import Path
 
 import capstone_rules
+from PIL import Image
 from textures import Textures, png_uri, square
 
 REPO = Path(__file__).resolve().parents[3]
@@ -232,6 +233,10 @@ def build_bundle() -> tuple[dict, list[str]]:
                    button=png_uri(tex.mc_img("assets/minecraft/textures/gui/sprites/widget/button.png")),
                    button_highlighted=png_uri(tex.mc_img("assets/minecraft/textures/gui/sprites/widget/button_highlighted.png")),
                    dirt=png_uri(square(tex.mc_img("assets/minecraft/textures/block/dirt.png"))))
+    # DT's tab-complete frame (AdvancementTileDecor), read from the working tree like DT's item sprites.
+    dt_spr = REPO / "src/main/resources/assets/dungeontrain/textures/gui/sprites/advancements"
+    for state in ("unobtained", "obtained"):
+        sprites[f"tab_complete_frame_{state}"] = png_uri(Image.open(dt_spr / f"tab_complete_frame_{state}.png").convert("RGBA"))
 
     bundle = {
         "nodes": nodes, "gameParents": parents, "gameOrder": order + VANILLA_ROOTS,

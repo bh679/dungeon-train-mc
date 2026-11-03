@@ -4840,6 +4840,7 @@
   "chat.dungeontrain.free_play.portal_rate_changed": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "db14541fde8a24ae"},
   "chat.dungeontrain.free_play.cause.dt_config": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "a18c5657dd0a162b"},
   "chat.dungeontrain.free_play.cause.soup_stacking": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "951e70ee836620d7"},
+  "chat.dungeontrain.free_play.cause.cpm_scaling": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "3314b794019df12e"},
   "chat.dungeontrain.free_play.dt_config_changed": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "d1a67d8f9649b832"},
   "chat.dungeontrain.free_play.dt_config_fix": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "eb309a2dc0fcdf69"},
   "command.dungeontrain.fix_config.success": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "5be7eac350f51c03"},

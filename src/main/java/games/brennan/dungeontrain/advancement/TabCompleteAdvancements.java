@@ -51,6 +51,17 @@ public final class TabCompleteAdvancements {
     }
 
     /**
+     * Is {@code id} a tab-complete advancement or its copy inside its own tab? Those tiles are drawn
+     * in the tab-complete frame shape ({@code AdvancementTileDecor}). Pure over the layout.
+     */
+    public static boolean isTabCompleteOrCopy(TabGateways.Layout layout, ResourceLocation id) {
+        String key = id.toString();
+        if (layout.complete().containsKey(key)) return true;
+        String original = layout.copies().get(key);
+        return original != null && layout.complete().containsKey(original);
+    }
+
+    /**
      * The advancements a tab needs: {@code root} and everything below it, minus those {@code skip}
      * rejects. Pure over the tree; package-private for tests.
      */
