@@ -1,4 +1,4 @@
-<!-- gate: gate-1-plan (Dungeon Train add-on) | version: 1.2.0 -->
+<!-- gate: gate-1-plan (Dungeon Train add-on) | version: 1.2.1 -->
 # Gate 1 — Plan Approval (Dungeon Train add-on)
 
 **Follow `~/.claude/playbooks/gates/gate-1-plan.md` first.** This file only adds the Dungeon Train
@@ -29,6 +29,6 @@ Flag each that applies in the plan's Risks, with its follow-up:
 | New registered block/item/entity | Lang keys in all 20 locales; loot/creative tabs |
 | World-gen change | Determinism across bands; existing worlds unaffected? |
 | Network packet added/changed | Bump `PROTOCOL_VERSION` |
-| New bundled templates | Regenerate `house_credits.json` |
+| Bundled templates added or re-saved, or room weights changed | Regenerate `house_credits.json` (CI fails if stale) |
 | Block physics / collision / world interaction | Gate 2 Sable test on a moving train |
 | Relay API change | Relay deploy order relative to the mod release |
