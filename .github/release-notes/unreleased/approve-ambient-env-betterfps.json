@@ -1,0 +1,17 @@
+{
+  "id": "approve-ambient-env-betterfps",
+  "version": "0.1642.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "compatibility"
+  ],
+  "title": "More approved mods",
+  "summary": "Ambient Environment and Better FPS - Render Distance are now on the approved list, so runs with them installed count normally.",
+  "highlights": [],
+  "pr": 2459,
+  "date": "2026-11-03",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
