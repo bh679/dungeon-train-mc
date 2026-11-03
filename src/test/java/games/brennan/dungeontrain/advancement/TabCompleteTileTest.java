@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.advancement;
 
+import games.brennan.dungeontrain.compat.AdvancementTileDecor;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,11 +20,18 @@ class TabCompleteTileTest {
         Map.of(DT + "train_explored", DT + "tab_train_explorer"));
 
     private static boolean shaded(String path) {
-        return TabCompleteAdvancements.isTabCompleteOrCopy(LAYOUT, ResourceLocation.parse(DT + path));
+        return AdvancementTileDecor.hasStarFrame(LAYOUT, ResourceLocation.parse(DT + path));
     }
 
     @Test
-    @DisplayName("a tab-complete advancement and its in-tab copy are shaded")
+    @DisplayName("the Everything Burrito and It's Not That Simple wear it too")
+    void burritoAndStartAgain() {
+        assertTrue(shaded("completionist"));
+        assertTrue(shaded("start_again"));
+    }
+
+    @Test
+    @DisplayName("a tab-complete advancement and its in-tab copy wear the star frame")
     void tabCompleteAndCopy() {
         assertTrue(shaded("train_explored"));
         assertTrue(shaded("train_explored_tab"));
