@@ -1001,6 +1001,7 @@
   "chat.dungeontrain.restore.applied": "Твої предмети відновлено.",
   "chat.dungeontrain.restore.applied_with_chest": "Твої предмети відновлено. Те, що було в тебе з собою, лежить у скрині «До відновлення».",
   "item.dungeontrain.player_album.name": "Альбом %s",
+  "item.dungeontrain.player_album.name_numbered": "Альбом %1$s %2$s",
   "chat.dungeontrain.album_drifts_off": "Фото стає на своє місце, і альбом вислизає з рук та пливе вздовж потяга. Він ще тебе знайде.",
   "chat.dungeontrain.found_album_burns": "Ти закриваєш альбом, і він розсипається попелом.",
   "chat.dungeontrain.shared_book.1": "Твоя книга тепер у потяга. Для чиїхось інших очей…",

@@ -867,6 +867,7 @@
   "chat.dungeontrain.restore.applied": "กู้คืนไอเท็มของคุณแล้ว",
   "chat.dungeontrain.restore.applied_with_chest": "กู้คืนไอเท็มของคุณแล้ว ของที่คุณถืออยู่ก่อนหน้านี้อยู่ในหีบ \"ก่อนกู้คืน\"",
   "item.dungeontrain.player_album.name": "อัลบั้มของ %s",
+  "item.dungeontrain.player_album.name_numbered": "อัลบั้มของ %1$s %2$s",
   "chat.dungeontrain.album_drifts_off": "รูปเข้าที่แล้ว อัลบั้มก็หลุดจากมือคุณและลอยไปตามขบวนรถไฟ มันจะกลับมาหาคุณอีก",
   "chat.dungeontrain.found_album_burns": "คุณปิดอัลบั้ม และมันก็สลายเป็นเถ้าถ่าน",
   "chat.dungeontrain.shared_book.1": "ขบวนรถไฟมีหนังสือของคุณแล้ว เพื่อสายตาของใครอีกคน…",

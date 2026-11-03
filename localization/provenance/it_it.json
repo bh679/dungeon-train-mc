@@ -900,6 +900,7 @@
   "chat.dungeontrain.restore.applied": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "b9d36f8c61f57623"},
   "chat.dungeontrain.restore.applied_with_chest": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "7449336fabd0b0eb"},
   "item.dungeontrain.player_album.name": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "3accfcc73ba73c26"},
+  "item.dungeontrain.player_album.name_numbered": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "d473b6a518a835a9"},
   "chat.dungeontrain.album_drifts_off": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "9b503097e0ebc7b5"},
   "chat.dungeontrain.found_album_burns": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "4691b12c2f4a022f"},
   "chat.dungeontrain.shared_book.1": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "7a57903735578008"},

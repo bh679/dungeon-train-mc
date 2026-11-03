@@ -900,6 +900,7 @@
   "chat.dungeontrain.restore.applied": "Tus objetos fueron restaurados.",
   "chat.dungeontrain.restore.applied_with_chest": "Tus objetos fueron restaurados. Lo que llevabas está en el cofre \"Antes de restaurar\".",
   "item.dungeontrain.player_album.name": "Álbum de %s",
+  "item.dungeontrain.player_album.name_numbered": "Álbum de %1$s %2$s",
   "chat.dungeontrain.album_drifts_off": "La foto encuentra su lugar y el álbum se te escapa de las manos, alejándose por el tren. Te volverá a encontrar.",
   "chat.dungeontrain.found_album_burns": "Cierras el álbum y se deshace en cenizas.",
   "chat.dungeontrain.shared_book.1": "El tren tiene ahora tu libro. Para los ojos de otro…",

@@ -867,6 +867,7 @@
   "chat.dungeontrain.restore.applied": "你的物品已恢复。",
   "chat.dungeontrain.restore.applied_with_chest": "你的物品已恢复。你原本携带的物品在“恢复前”箱子里。",
   "item.dungeontrain.player_album.name": "%s的相册",
+  "item.dungeontrain.player_album.name_numbered": "%1$s的相册 %2$s",
   "chat.dungeontrain.album_drifts_off": "照片放好了，相册从你手中滑落，沿着列车飘远。它会再找到你的。",
   "chat.dungeontrain.found_album_burns": "你合上相册，它化为灰烬。",
   "chat.dungeontrain.shared_book.1": "列车收下了你的书。它正等着另一双眼睛翻阅……",

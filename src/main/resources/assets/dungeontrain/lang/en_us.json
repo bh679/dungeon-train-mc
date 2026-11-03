@@ -968,6 +968,7 @@
   "chat.dungeontrain.restore.applied": "Your items have been restored.",
   "chat.dungeontrain.restore.applied_with_chest": "Your items have been restored. What you were carrying is in the Before restore chest.",
   "item.dungeontrain.player_album.name": "%s's Album",
+  "item.dungeontrain.player_album.name_numbered": "%1$s's Album %2$s",
   "chat.dungeontrain.album_drifts_off": "The photo settles in, and the album slips from your hands to drift off down the train. It will find you again.",
   "chat.dungeontrain.found_album_burns": "You close the album, and it crumbles to ash.",
   "chat.dungeontrain.shared_book.1": "The train has your book now. For someone else's eyes…",
