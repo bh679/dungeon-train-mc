@@ -11,6 +11,7 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +67,13 @@ public final class UnapprovedModIntegrity {
      */
     private static volatile List<String> unverified = List.of();
 
+    /** What a scan that has not finished yet reads as while it is pending (fails closed). */
+    static final String PENDING = "mod files (still being checked)";
+    /** What a judgement that threw reads as while the engine is present (fails closed). */
+    static final String UNCHECKABLE = "mod files (could not be checked)";
+
+    private static volatile net.minecraft.server.MinecraftServer server;
+
     /**
      * Mod ids whose file is judged by id elsewhere and so is never hashed: the game, the loader,
      * DT's own jar (with everything it embeds) and the verification engine itself.
@@ -105,6 +113,14 @@ public final class UnapprovedModIntegrity {
         return ApprovedModList.enforceHashes() && !unverified.isEmpty();
     }
 
+    /** Pure: the session's file findings plus the engine's tamper findings, sorted, each once. */
+    static List<String> combine(List<String> files, List<String> tampered) {
+        if (tampered.isEmpty()) return files;
+        java.util.TreeSet<String> out = new java.util.TreeSet<>(files);
+        out.addAll(tampered);
+        return List.copyOf(out);
+    }
+
     /**
      * The unverified mod files found at this session's boot, e.g. {@code "xray.jar (jei)"} — the
      * file name and the ids it claims, so the player sees WHICH jar to reinstall or remove.
@@ -129,11 +145,17 @@ public final class UnapprovedModIntegrity {
         DtModVerifyBridge.scan(EXEMPT_IDS);
         ApprovedModListFetcher.ensureFetched();
         serverRunning = true;
+        server = event.getServer();
         detected = scan();
         // Never a session late: give the relay's answer a moment to land before judging, so a mod
         // updated this launch is judged against what the relay knows now, not last launch's cache.
         ApprovedModListFetcher.awaitSettled(FETCH_WAIT_MS);
         unverified = scanFiles();
+        if (unverified.contains(PENDING)) {
+            // A late scan is judged when it lands, relay answer or not — on the server thread.
+            var s = server;
+            DtModVerifyBridge.onScanDone(() -> { if (s != null) s.execute(UnapprovedModIntegrity::rejudge); });
+        }
         if (!unverified.isEmpty()) {
             if (ApprovedModList.enforceHashes()) {
                 LOGGER.warn("[DungeonTrain] Unverified mod file(s) installed — this session runs in Free Play: {}",
@@ -159,6 +181,7 @@ public final class UnapprovedModIntegrity {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         serverRunning = false;
+        server = null;
         detected = List.of();
         unverified = List.of();
     }
@@ -166,7 +189,8 @@ public final class UnapprovedModIntegrity {
     /**
      * Re-judge the running session's files against freshly-landed relay knowledge — the second
      * half of "never a session late": a verify answer that arrives after boot (slow relay, slow
-     * scan) still clears a taint before, or even after, the player logs in. No-op without a server.
+     * scan) still clears a taint before, or even after, the player logs in. Also runs when a scan
+     * that was still pending at boot completes. No-op without a server.
      */
     public static void rejudge() {
         if (!serverRunning) return;
@@ -180,20 +204,77 @@ public final class UnapprovedModIntegrity {
     }
 
     /**
-     * The hash half of the boot scan: every installed file whose SHA-1 is not approved. Waits
-     * briefly for the scanner; an empty scan (not finished, or failed) means "nothing unverified"
-     * — the same defensive direction as {@link #scan()}, because a scan that could not see the
-     * files must not conclude that every file is fake.
+     * The hash half of the boot scan: every installed file whose SHA-1 is not approved, every file
+     * the engine should have hashed but did not, and any sign the engine is not DT's own. Fails
+     * CLOSED while the engine is present: a scan still running after {@link #SCAN_WAIT_MS} reads as
+     * {@link #PENDING} (and is re-judged when it lands), a judgement that throws as
+     * {@link #UNCHECKABLE}. Without the engine nothing is hashed and the answer stays empty —
+     * the id-only check decides, exactly as before the hash check existed.
      */
     static List<String> scanFiles() {
+        if (!DtModVerifyBridge.isPresent()) return List.of();
         try {
-            return unverifiedFrom(DtModVerifyBridge.current(SCAN_WAIT_MS), ApprovedModList.approvedHashes(),
+            List<ModFileFingerprint> files = DtModVerifyBridge.current(SCAN_WAIT_MS);
+            boolean done = DtModVerifyBridge.isDone();
+            List<String> found = judgeFiles(done, files, expectedJarNames(), ApprovedModList.approvedHashes(),
                 ApprovedModList.knownPackages());
+            return combine(found, EngineIntegrity.tampered());
         } catch (Throwable t) {
-            LOGGER.warn("[DungeonTrain] Could not judge the installed mod files — assuming every file is "
-                + "verified: {}", t.toString());
-            return List.of();
+            LOGGER.warn("[DungeonTrain] Could not judge the installed mod files — treating them as "
+                + "unverified: {}", t.toString());
+            return List.of(UNCHECKABLE);
         }
+    }
+
+    /**
+     * Pure: the file findings for one judgement. A scan not yet done is {@link #PENDING}, never
+     * clean; a done scan is its unverified files plus every expected jar it did not hash.
+     */
+    static List<String> judgeFiles(boolean scanDone, List<ModFileFingerprint> files, Collection<String> expectedJarNames,
+                                   Set<String> approvedSha1s, Map<String, Set<String>> knownPackages) {
+        if (!scanDone) return List.of(PENDING);
+        java.util.TreeSet<String> out = new java.util.TreeSet<>(unverifiedFrom(files, approvedSha1s, knownPackages));
+        out.addAll(missingFrom(files, expectedJarNames));
+        return List.copyOf(out);
+    }
+
+    /**
+     * Pure: the expected jars the scan returned no fingerprint for — a jar the engine could not hash
+     * is not a verified one. Names are compared by file name, the engine's {@code fileName}.
+     */
+    static List<String> missingFrom(List<ModFileFingerprint> scanned, Collection<String> expectedJarNames) {
+        Set<String> seen = new java.util.HashSet<>();
+        for (ModFileFingerprint f : scanned) seen.add(f.fileName());
+        List<String> out = new ArrayList<>();
+        for (String name : new java.util.TreeSet<>(expectedJarNames)) {
+            if (!seen.contains(name)) out.add(name + " (could not hash)");
+        }
+        return List.copyOf(out);
+    }
+
+    /**
+     * The plain {@code .jar} outermost files the engine must have fingerprinted: every loaded mod
+     * file's outermost file, minus those carrying an exempt id (the engine skips those whole).
+     */
+    static Set<String> expectedJarNames() {
+        Map<java.nio.file.Path, Boolean> exempt = new LinkedHashMap<>();
+        for (var info : ModList.get().getModFiles()) {
+            java.nio.file.Path p = EngineIntegrity.outermost(info.getFile()).getFilePath();
+            boolean ex = info.getMods().stream().anyMatch(m -> EXEMPT_IDS.contains(ModIds.normalise(m.getModId())));
+            exempt.merge(p, ex, Boolean::logicalOr);
+        }
+        return expectedFrom(exempt);
+    }
+
+    /** Pure: outermost path → carries an exempt id; the non-exempt plain-jar file names. */
+    static Set<String> expectedFrom(Map<java.nio.file.Path, Boolean> outermostExempt) {
+        Set<String> out = new java.util.TreeSet<>();
+        outermostExempt.forEach((p, ex) -> {
+            if (ex || p.getFileName() == null) return;
+            String name = p.getFileName().toString();
+            if (name.toLowerCase(java.util.Locale.ROOT).endsWith(".jar") && !java.nio.file.Files.isDirectory(p)) out.add(name);
+        });
+        return out;
     }
 
     /**

@@ -79,14 +79,30 @@ public final class DtModVerifyBridge {
         return present;
     }
 
+    /** The engine's scan future, once started; completes when every jar has been fingerprinted. */
+    private static volatile CompletableFuture<?> scanFuture;
+
     /** Start the once-per-JVM scan of the installed jars (no-op without the engine). */
     public static void scan(Set<String> exemptIds) {
         if (!present) return;
         try {
-            Api.scan(exemptIds);
+            scanFuture = Api.scan(exemptIds);
         } catch (LinkageError e) {
             disable(e);
         }
+    }
+
+    /**
+     * Run {@code then} once the scan has finished (successfully or not), on the engine's thread — the
+     * caller hops to its own. Runs at once without the engine or when no scan was started.
+     */
+    public static void onScanDone(Runnable then) {
+        CompletableFuture<?> f = scanFuture;
+        if (!present || f == null) {
+            then.run();
+            return;
+        }
+        f.whenComplete((r, err) -> then.run());
     }
 
     /** The fingerprints once the scan is done within {@code timeoutMs}; empty when not yet, or absent. */
@@ -174,8 +190,8 @@ public final class DtModVerifyBridge {
 
     /** The only place the engine's classes are named; converts between its records and DT's. */
     private static final class Api {
-        static void scan(Set<String> exemptIds) {
-            ModVerify.scan(exemptIds);
+        static CompletableFuture<?> scan(Set<String> exemptIds) {
+            return ModVerify.scan(exemptIds);
         }
 
         static List<ModFileFingerprint> current(long timeoutMs) {
