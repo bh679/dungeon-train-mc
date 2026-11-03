@@ -1,0 +1,16 @@
+{
+  "id": "weapon-master-in-modpack",
+  "version": "0.1637.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "compatibility"
+  ],
+  "title": "Weapon Master in the modpack",
+  "summary": "The Dungeon Train modpack now includes YDM's Weapon Master.",
+  "highlights": [],
+  "date": "2026-11-03",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
