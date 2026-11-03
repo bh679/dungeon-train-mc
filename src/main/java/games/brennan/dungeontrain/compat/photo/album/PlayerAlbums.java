@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.compat.photo.album;
 
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -55,6 +54,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * found by other players, and the {@link AlbumKind#FREE_PLAY} album, which never leaves this
  * computer. The run decides which one a copy opens onto ({@link RunIntegrity#isCheated}).</p>
  *
+ * <p>A donor keeps more live albums — 10 for every A$10 ({@link AlbumDonors}): each copy carries which one
+ * it shows ({@link AlbumOwnership.Owner#index}), and {@link AlbumPicker} chooses it when the copy is
+ * made — a crafted or blank album is always their unfinished one.</p>
+ *
  * <ul>
  *   <li>Opening it to look costs nothing.</li>
  *   <li>Putting a photo in it burns it on the spot: the album, photo and all, drifts off down the
@@ -95,6 +98,38 @@ public final class PlayerAlbums {
         return AlbumKind.forRun(RunIntegrity.isCheated(player));
     }
 
+    /** Which album a copy of their own opens onto: the one it carries, but Free Play has only one. */
+    static int indexFor(ServerPlayer player, ItemStack stack) {
+        if (kindFor(player) != AlbumKind.LIVE) return 0;
+        return AlbumOwnership.owner(stack).map(AlbumOwnership.Owner::index).orElse(0);
+    }
+
+    /** Whether each of the player's live albums, up to their limit, is full, first to last. */
+    private static List<Boolean> fullness(ServerPlayer player, int limit) {
+        AlbumStore store = AlbumStore.get();
+        int count = Math.min(store.count(player.getUUID(), AlbumKind.LIVE), limit);
+        List<Boolean> full = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) full.add(AlbumPicker.isFull(store.entry(player.getUUID(), AlbumKind.LIVE, i)));
+        return full;
+    }
+
+    /** The album a crafted or blank album becomes: a donor's unfinished one, everyone else's first. */
+    static int unfinishedIndex(ServerPlayer player) {
+        int limit = AlbumDonors.limit(player);
+        return limit > 1 ? AlbumPicker.unfinished(fullness(player, limit), limit) : 0;
+    }
+
+    /** The album a "your album" from the train becomes: a donor's is rolled ({@link AlbumPicker#found}). */
+    static int foundIndex(ServerPlayer player) {
+        int limit = AlbumDonors.limit(player);
+        if (limit <= 1) return 0;
+        return AlbumPicker.found(fullness(player, limit), limit, player.getRandom().nextDouble());
+    }
+
+    private static void stampAsUnfinished(ServerPlayer player, ItemStack stack) {
+        AlbumOwnership.stamp(stack, player.getUUID(), player.getGameProfile().getName(), unfinishedIndex(player));
+    }
+
     // ---- opening --------------------------------------------------------------
 
     /**
@@ -107,7 +142,7 @@ public final class PlayerAlbums {
         Optional<AlbumOwnership.Owner> owner = AlbumOwnership.owner(stack);
         if (owner.isEmpty()) {
             if (!isBlank(stack)) return true;           // an album from before albums were personal: left as it was
-            AlbumOwnership.stamp(stack, player.getUUID(), player.getGameProfile().getName());
+            stampAsUnfinished(player, stack);
             owner = AlbumOwnership.owner(stack);
         }
         if (!owner.get().uuid().equals(player.getUUID())) {
@@ -115,15 +150,15 @@ public final class PlayerAlbums {
             return false;
         }
         AlbumTimings.time("open album of " + player.getGameProfile().getName(),
-                () -> stack.set(Exposure.DataComponents.ALBUM_CONTENT, currentContent(player)));
+                () -> stack.set(Exposure.DataComponents.ALBUM_CONTENT, currentContent(player, indexFor(player, stack))));
         // The menu reads the pages off the client's copy of the stack — send it first.
         player.containerMenu.broadcastChanges();
         return true;
     }
 
-    private static AlbumContent currentContent(ServerPlayer player) {
+    private static AlbumContent currentContent(ServerPlayer player, int index) {
         AlbumStore store = AlbumStore.get();
-        return AlbumWorldBridge.toContent(player.server, store, store.entry(player.getUUID(), kindFor(player)));
+        return AlbumWorldBridge.toContent(player.server, store, store.entry(player.getUUID(), kindFor(player), index));
     }
 
     private static boolean isBlank(ItemStack stack) {
@@ -151,7 +186,7 @@ public final class PlayerAlbums {
             if (player == null) continue;
             ItemStack album = player.getInventory().getItem(burn.slot());
             if (!AlbumOwnership.isOwnedBy(album, player.getUUID())) continue;
-            save(player, album.getOrDefault(Exposure.DataComponents.ALBUM_CONTENT, AlbumContent.EMPTY));
+            save(player, indexFor(player, album), album.getOrDefault(Exposure.DataComponents.ALBUM_CONTENT, AlbumContent.EMPTY));
             // Out of the inventory before the menu closes, so the close handler finds nothing left to save.
             player.getInventory().setItem(burn.slot(), ItemStack.EMPTY);
             player.closeContainer();
@@ -168,8 +203,9 @@ public final class PlayerAlbums {
         ItemStack album = player.getInventory().getItem(menu.getAlbumSlot());
         if (!AlbumOwnership.isOwnedBy(album, player.getUUID())) return;
         AlbumContent edited = album.getOrDefault(Exposure.DataComponents.ALBUM_CONTENT, AlbumContent.EMPTY);
-        AlbumStore.Entry stored = AlbumStore.get().entry(player.getUUID(), kindFor(player));
-        if (!pageKeys(edited).equals(AlbumStore.pageKeys(stored))) save(player, edited);
+        int index = indexFor(player, album);
+        AlbumStore.Entry stored = AlbumStore.get().entry(player.getUUID(), kindFor(player), index);
+        if (!pageKeys(edited).equals(AlbumStore.pageKeys(stored))) save(player, index, edited);
     }
 
     /** What an album shows, page by page ({@link AlbumStore#pageKey}). Stacks don't compare by value. */
@@ -184,13 +220,13 @@ public final class PlayerAlbums {
 
     // ---- getting hold of it ----------------------------------------------------
 
-    /** A crafted album is its crafter's album from the start. */
+    /** A crafted album is its crafter's (unfinished) album from the start. */
     @SubscribeEvent
     public static void onCrafted(PlayerEvent.ItemCraftedEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         ItemStack crafted = event.getCrafting();
         if (crafted.is(Exposure.Items.ALBUM.get()) && AlbumOwnership.owner(crafted).isEmpty() && isBlank(crafted)) {
-            AlbumOwnership.stamp(crafted, player.getUUID(), player.getGameProfile().getName());
+            stampAsUnfinished(player, crafted);
         }
     }
 
@@ -219,19 +255,20 @@ public final class PlayerAlbums {
         if (!held.is(Exposure.Items.ALBUM.get())) return;
         Optional<AlbumOwnership.Owner> owner = AlbumOwnership.owner(held);
         if (owner.isEmpty()) {
-            if (isBlank(held)) AlbumOwnership.stamp(held, player.getUUID(), player.getGameProfile().getName());
+            if (isBlank(held)) stampAsUnfinished(player, held);
         } else if (!owner.get().uuid().equals(player.getUUID())) {
             player.setItemSlot(slot, FoundAlbums.readOnlyCopy(held, owner.get()));
         }
     }
 
     /**
-     * A fresh copy of {@code player}'s album: only their name on it. Its pages are filled when it is
-     * opened ({@link #beforeOpen}), so taking it in hand costs the tick nothing.
+     * A fresh copy of {@code player}'s album: only their name on it (and, for a donor, which album it
+     * is — {@link #foundIndex}). Its pages are filled when it is opened ({@link #beforeOpen}), so
+     * taking it in hand costs the tick almost nothing.
      */
     public static ItemStack newAlbum(ServerPlayer player) {
         ItemStack album = new ItemStack(Exposure.Items.ALBUM.get());
-        AlbumOwnership.stamp(album, player.getUUID(), player.getGameProfile().getName());
+        AlbumOwnership.stamp(album, player.getUUID(), player.getGameProfile().getName(), foundIndex(player));
         return album;
     }
 
@@ -241,19 +278,19 @@ public final class PlayerAlbums {
      * Keep {@code content} as the player's album for this run — in the store at once, its new
      * pictures written in the background — and, for the live album, send it on when they share.
      */
-    static void save(ServerPlayer player, AlbumContent content) {
-        AlbumTimings.time("save album of " + player.getGameProfile().getName(), () -> saveNow(player, content));
+    static void save(ServerPlayer player, int index, AlbumContent content) {
+        AlbumTimings.time("save album of " + player.getGameProfile().getName(), () -> saveNow(player, index, content));
     }
 
-    private static void saveNow(ServerPlayer player, AlbumContent content) {
+    private static void saveNow(ServerPlayer player, int index, AlbumContent content) {
         MinecraftServer server = player.server;
         AlbumStore store = AlbumStore.get();
         AlbumKind kind = kindFor(player);
         UUID owner = player.getUUID();
         String name = player.getGameProfile().getName();
         AlbumWorldBridge.Snapshot snapshot = AlbumWorldBridge.fromContent(server, store, content, name);
-        long rev = AlbumSavePayload.nextRev(store.entry(owner, kind).rev(), System.currentTimeMillis());
-        store.put(owner, kind, new AlbumStore.Entry(rev,
+        long rev = AlbumSavePayload.nextRev(store.entry(owner, kind, index).rev(), System.currentTimeMillis());
+        store.put(owner, kind, index, new AlbumStore.Entry(rev,
                 snapshot.pages().stream().map(AlbumWorldBridge.SavedPage::page).toList()));
         AlbumAdvancements.onSaved(player, content);
 
@@ -271,7 +308,7 @@ public final class PlayerAlbums {
                         return;
                     }
                     store.putImages(pngs);
-                    if (upload) upload(owner, name, rev, relayPages, store);
+                    if (upload) upload(owner, index, name, rev, relayPages, store);
                 }));
     }
 
@@ -289,7 +326,7 @@ public final class PlayerAlbums {
     }
 
     /** Server thread: send the pictures the relay has not had from this server, then the album. */
-    private static void upload(UUID owner, String name, long rev, List<AlbumSavePayload.Page> pages, AlbumStore store) {
+    private static void upload(UUID owner, int index, String name, long rev, List<AlbumSavePayload.Page> pages, AlbumStore store) {
         for (AlbumSavePayload.Page page : pages) {
             if (page.hash() == null || sentImages.contains(page.hash())) continue;
             store.image(page.hash()).ifPresent(png -> {
@@ -298,7 +335,7 @@ public final class PlayerAlbums {
                         AlbumSavePayload.image(owner, Base64.getEncoder().encodeToString(png)).toString());
             });
         }
-        RelayOutbox.get().enqueue(SAVE_PATH, AlbumSavePayload.save(owner, name, rev, pages).toString());
+        RelayOutbox.get().enqueue(SAVE_PATH, AlbumSavePayload.save(owner, index, name, rev, pages).toString());
     }
 
     /** Whether others may see this picture in the owner's album: their own photo, or one already public. */
@@ -312,7 +349,10 @@ public final class PlayerAlbums {
 
     // ---- loading from the relay --------------------------------------------------
 
-    /** On joining, pull the player's live album from the relay when it is newer than this computer's copy. */
+    /**
+     * On joining, ask the relay for the player's live albums: how many they may keep
+     * ({@link AlbumDonors}), and each album newer than this computer's copy.
+     */
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
@@ -320,25 +360,41 @@ public final class PlayerAlbums {
         prewarm(AlbumStore.get().entry(owner, kindFor(player)));
         if (!SharedBookGate.canContribute(player)) return;
         MinecraftServer server = player.server;
-        long known = AlbumStore.get().entry(owner, AlbumKind.LIVE).rev();
         String base = DungeonTrain.relayBaseUrl();
         HttpRequest request = HttpRequest.newBuilder(URI.create(base + MINE_PATH + "?uuid=" + AlbumSavePayload.bare(owner)))
                 .timeout(REQUEST_TIMEOUT).header("Accept", "application/json").GET().build();
         HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(response -> {
                     if (response.statusCode() != 200) throw new IllegalStateException("mine answered " + response.statusCode());
-                    JsonObject body = JsonParser.parseString(response.body()).getAsJsonObject();
-                    return AlbumSavePayload.parse(body.get("album"))
-                            .filter(album -> album.rev() > known)
-                            .map(album -> new Downloaded(album, downloadPngs(base, album.pages())));
+                    return AlbumSavePayload.parseMine(JsonParser.parseString(response.body()).getAsJsonObject());
                 })
-                .whenComplete((downloaded, error) -> {
+                .whenComplete((mine, error) -> {
                     if (error != null) {
                         LOGGER.debug("[DungeonTrain] Album of {} not fetched: {}", owner, error.toString());
                         return;
                     }
-                    downloaded.ifPresent(d -> server.execute(() -> adopt(d)));
+                    server.execute(() -> {
+                        AlbumDonors.record(owner, mine.albumLimit());
+                        fetchNewer(server, base, mine);
+                    });
                 });
+    }
+
+    /** Server thread: download, off it, each album the relay holds a newer save of than this computer. */
+    private static void fetchNewer(MinecraftServer server, String base, AlbumSavePayload.Mine mine) {
+        AlbumStore store = AlbumStore.get();
+        for (AlbumSavePayload.Album album : mine.albums()) {
+            if (album.index() >= mine.albumLimit()) continue;
+            if (album.rev() <= store.entry(album.owner(), AlbumKind.LIVE, album.index()).rev()) continue;
+            CompletableFuture.supplyAsync(() -> new Downloaded(album, downloadPngs(base, album.pages())))
+                    .whenComplete((downloaded, error) -> {
+                        if (error != null) {
+                            LOGGER.debug("[DungeonTrain] Album {} of {} not fetched: {}", album.index() + 1, album.owner(), error.toString());
+                            return;
+                        }
+                        server.execute(() -> adopt(downloaded));
+                    });
+        }
     }
 
     private record Downloaded(AlbumSavePayload.Album album, Map<String, byte[]> pngs) {}
@@ -347,7 +403,8 @@ public final class PlayerAlbums {
     private static void adopt(Downloaded downloaded) {
         AlbumStore store = AlbumStore.get();
         UUID owner = downloaded.album().owner();
-        AlbumStore.Entry before = store.entry(owner, AlbumKind.LIVE);
+        int index = downloaded.album().index();
+        AlbumStore.Entry before = store.entry(owner, AlbumKind.LIVE, index);
         if (downloaded.album().rev() <= before.rev()) return;   // edited here while it was on its way
         List<AlbumStore.Page> pages = new ArrayList<>();
         for (AlbumSavePayload.Page page : downloaded.album().pages()) {
@@ -356,7 +413,7 @@ public final class PlayerAlbums {
             if (held) sentImages.add(page.hash());
         }
         AlbumStore.Entry adopted = new AlbumStore.Entry(downloaded.album().rev(), pages);
-        store.put(owner, AlbumKind.LIVE, adopted);
+        store.put(owner, AlbumKind.LIVE, index, adopted);
         store.putImages(downloaded.pngs());
         prewarm(adopted);
     }
@@ -417,6 +474,7 @@ public final class PlayerAlbums {
     public static void onServerStopped(ServerStoppedEvent event) {
         pendingBurns = List.of();
         sentImages.clear();
+        AlbumDonors.clear();
         AlbumWorldBridge.forgetLent();
         AlbumStore.get().flush();
     }

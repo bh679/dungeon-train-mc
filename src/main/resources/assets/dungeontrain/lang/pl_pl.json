@@ -933,6 +933,7 @@
   "chat.dungeontrain.restore.applied": "Twoje przedmioty zostały przywrócone.",
   "chat.dungeontrain.restore.applied_with_chest": "Twoje przedmioty zostały przywrócone. To, co miałeś przy sobie, jest w skrzyni „Przed przywróceniem”.",
   "item.dungeontrain.player_album.name": "Album gracza %s",
+  "item.dungeontrain.player_album.name_numbered": "Album gracza %1$s %2$s",
   "chat.dungeontrain.album_drifts_off": "Zdjęcie trafia na swoje miejsce, a album wyślizguje ci się z rąk i odpływa wzdłuż pociągu. Jeszcze cię odnajdzie.",
   "chat.dungeontrain.found_album_burns": "Zamykasz album, a ten rozsypuje się w popiół.",
   "chat.dungeontrain.shared_book.1": "Pociąg ma teraz twoją książkę. Dla cudzych oczu…",
