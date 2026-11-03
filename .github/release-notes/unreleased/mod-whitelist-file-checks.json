@@ -6,12 +6,9 @@
     "feature",
     "compatibility"
   ],
-  "title": "Mod whitelist checks",
-  "summary": "Suggesting a mod from the Unsupported Mods screen now sends its file along, so it can be checked and approved faster. Whitelisted mods are now recognised by their published files.",
-  "highlights": [
-    "Mod suggestions carry the mod's file so it can be verified.",
-    "Changing a whitelisted mod's settings in a way that affects gameplay now puts the run in Free Play."
-  ],
+  "title": "Mod check improvements",
+  "summary": "Improvements to how installed mods are checked.",
+  "highlights": [],
   "date": "2026-11-03",
   "released": false,
   "released_in": null,
