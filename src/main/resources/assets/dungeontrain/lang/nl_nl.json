@@ -4899,6 +4899,7 @@
   "chat.dungeontrain.free_play.portal_rate_changed": "Het spoor dat deze wereld genereert is niet langer het spoor waarop Dungeon Train is afgestemd, dus deze wereld blijft in Vrij Spel.",
   "chat.dungeontrain.free_play.cause.dt_config": "De moeilijkheidsinstellingen van Dungeon Train zijn aangepast.",
   "chat.dungeontrain.free_play.cause.soup_stacking": "Stapelbare soepen zijn aangezet in Farmer's Delight.",
+  "chat.dungeontrain.free_play.cause.cpm_scaling": "Spelerschaling is aangezet in Customizable Player Models.",
   "chat.dungeontrain.free_play.dt_config_changed": "Gewijzigd: %s",
   "chat.dungeontrain.free_play.dt_config_fix": "Klik hier om alle Dungeon Train-instellingen terug op standaard te zetten, en herstart het spel daarna om normaal te spelen. Je huidige instellingen worden als reservekopie bewaard.",
   "command.dungeontrain.fix_config.success": "Instellingen hersteld. Herstart het spel (of de server) om normaal verder te spelen.",

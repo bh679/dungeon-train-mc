@@ -277,6 +277,7 @@
   "chat.dungeontrain.free_play.portal_rate_changed": "Колія, яку генерує цей світ, уже не та, під яку збалансовано Dungeon Train, тож цей світ залишається у Вільній грі.",
   "chat.dungeontrain.free_play.cause.dt_config": "Налаштування складності Dungeon Train було змінено.",
   "chat.dungeontrain.free_play.cause.soup_stacking": "У Farmer's Delight увімкнено стакання супів.",
+  "chat.dungeontrain.free_play.cause.cpm_scaling": "У Customizable Player Models увімкнено масштабування гравця.",
   "chat.dungeontrain.free_play.dt_config_changed": "Змінено: %s",
   "chat.dungeontrain.free_play.dt_config_fix": "Натисни тут, щоб повернути всі налаштування Dungeon Train до стандартних, а потім перезапусти гру, щоб грати як звично. Твої поточні налаштування буде збережено у файлі резервної копії.",
   "command.dungeontrain.fix_ais.success": "Стандартні налаштування Adventure Item Stats відновлено. Перезапусти гру (або сервер), щоб повернутися до звичайної гри.",

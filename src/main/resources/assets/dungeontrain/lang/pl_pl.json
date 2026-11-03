@@ -4959,6 +4959,7 @@
   "chat.dungeontrain.free_play.portal_rate_changed": "Tor, który generuje ten świat, nie jest już tym, pod który wyważono Dungeon Train, więc ten świat zostaje w Swobodnej Grze.",
   "chat.dungeontrain.free_play.cause.dt_config": "Zmieniono ustawienia trudności Dungeon Train.",
   "chat.dungeontrain.free_play.cause.soup_stacking": "W Farmer's Delight włączono układanie zup w stosy.",
+  "chat.dungeontrain.free_play.cause.cpm_scaling": "W Customizable Player Models włączono skalowanie gracza.",
   "chat.dungeontrain.free_play.dt_config_changed": "Zmieniono: %s",
   "chat.dungeontrain.free_play.dt_config_fix": "Kliknij tutaj, aby przywrócić wszystkim ustawieniom Dungeon Train wartości domyślne, a potem uruchom grę ponownie, by grać normalnie. Twoje obecne ustawienia zostaną zachowane jako kopia zapasowa.",
   "command.dungeontrain.fix_config.success": "Ustawienia przywrócone. Uruchom grę (lub serwer) ponownie, aby wrócić do normalnej rozgrywki.",

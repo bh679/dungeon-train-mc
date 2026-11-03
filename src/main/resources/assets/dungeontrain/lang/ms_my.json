@@ -4839,6 +4839,7 @@
   "chat.dungeontrain.free_play.portal_rate_changed": "Landasan yang dijana dunia ini bukan lagi landasan yang menjadi asas pengimbangan Dungeon Train, jadi dunia ini kekal dalam Main Bebas.",
   "chat.dungeontrain.free_play.cause.dt_config": "Tetapan kesukaran Dungeon Train telah diubah.",
   "chat.dungeontrain.free_play.cause.soup_stacking": "Sup boleh disusun telah dihidupkan dalam Farmer's Delight.",
+  "chat.dungeontrain.free_play.cause.cpm_scaling": "Penskalaan pemain telah dihidupkan dalam Customizable Player Models.",
   "chat.dungeontrain.free_play.dt_config_changed": "Diubah: %s",
   "chat.dungeontrain.free_play.dt_config_fix": "Klik di sini untuk mengembalikan semua tetapan Dungeon Train kepada nilai lalai, kemudian mulakan semula permainan untuk bermain seperti biasa. Tetapan semasa anda disimpan sebagai fail sandaran.",
   "command.dungeontrain.fix_config.success": "Tetapan telah ditetapkan semula. Mulakan semula permainan (atau pelayan) untuk kembali bermain seperti biasa.",

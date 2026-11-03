@@ -4899,6 +4899,7 @@
   "chat.dungeontrain.free_play.portal_rate_changed": "Il binario che questo mondo genera non è più quello su cui Dungeon Train è bilanciato, quindi questo mondo resta in Gioco Libero.",
   "chat.dungeontrain.free_play.cause.dt_config": "Le impostazioni di difficoltà di Dungeon Train sono state cambiate.",
   "chat.dungeontrain.free_play.cause.soup_stacking": "Le zuppe impilabili sono state attivate in Farmer's Delight.",
+  "chat.dungeontrain.free_play.cause.cpm_scaling": "Il ridimensionamento dei giocatori è stato attivato in Customizable Player Models.",
   "chat.dungeontrain.free_play.dt_config_changed": "Cambiato: %s",
   "chat.dungeontrain.free_play.dt_config_fix": "Fai clic qui per riportare tutte le impostazioni di Dungeon Train ai valori predefiniti, poi riavvia il gioco per giocare normalmente. Le tue impostazioni attuali vengono conservate in un file di backup.",
   "command.dungeontrain.fix_config.success": "Impostazioni ripristinate. Riavvia il gioco (o il server) per riprendere la partita normale.",

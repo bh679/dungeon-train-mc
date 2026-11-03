@@ -3396,6 +3396,7 @@
       "chat.dungeontrain.free_play.cause.portal_rate",
       "chat.dungeontrain.free_play.cause.dt_config",
       "chat.dungeontrain.free_play.cause.soup_stacking",
+      "chat.dungeontrain.free_play.cause.cpm_scaling",
       "chat.dungeontrain.free_play.dt_config_changed",
       "chat.dungeontrain.free_play.dt_config_fix",
       "command.dungeontrain.fix_config.success",

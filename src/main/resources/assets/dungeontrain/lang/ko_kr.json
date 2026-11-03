@@ -4839,6 +4839,7 @@
   "chat.dungeontrain.free_play.portal_rate_changed": "이 세계가 생성하는 선로는 더 이상 Dungeon Train이 맞춰 조정된 선로가 아니므로, 이 세계는 자유 플레이로 남습니다.",
   "chat.dungeontrain.free_play.cause.dt_config": "Dungeon Train의 난이도 설정이 변경되었습니다.",
   "chat.dungeontrain.free_play.cause.soup_stacking": "Farmer's Delight에서 수프 겹치기를 켰습니다.",
+  "chat.dungeontrain.free_play.cause.cpm_scaling": "Customizable Player Models에서 플레이어 크기 조절을 켰습니다.",
   "chat.dungeontrain.free_play.dt_config_changed": "변경됨: %s",
   "chat.dungeontrain.free_play.dt_config_fix": "여기를 클릭하면 Dungeon Train의 모든 설정이 기본값으로 돌아갑니다. 그다음 게임을 다시 시작하면 정상적으로 플레이할 수 있습니다. 지금 설정은 백업 파일로 남습니다.",
   "command.dungeontrain.fix_config.success": "설정을 초기화했습니다. 게임(또는 서버)을 다시 시작하면 정상 플레이로 돌아갑니다.",
