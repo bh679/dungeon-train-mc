@@ -32797,6 +32797,42 @@
       "released": true,
       "released_in": "v0.1642.0",
       "released_at": "2026-11-03T12:44:50Z"
+    },
+    {
+      "id": "approve-ambient-env-betterfps",
+      "version": "0.1642.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "More approved mods",
+      "summary": "Ambient Environment and Better FPS - Render Distance are now on the approved list, so runs with them installed count normally.",
+      "highlights": [],
+      "pr": 2459,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1643.0",
+      "released_at": "2026-11-03T13:40:38Z"
+    },
+    {
+      "id": "rare-biomes-more-often",
+      "version": "0.1642.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements",
+        "balance"
+      ],
+      "title": "Rare biomes turn up more often",
+      "summary": "A few of the rarest biomes now appear about twice as often, and only where the land suits them.",
+      "highlights": [],
+      "pr": 2460,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1643.0",
+      "released_at": "2026-11-03T13:40:38Z"
     }
   ]
 }
