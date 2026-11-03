@@ -57,7 +57,12 @@ public final class NightCrestPlaque {
 
     /** Does this advancement get the Night Crest? The ones wearing the star frame. */
     public static boolean isFor(AdvancementHolder holder) {
-        return holder != null && AdvancementTileDecor.hasStarFrame(TabGateways.layout(), holder.id());
+        return holder != null && isFor(TabGateways.layout(), holder.id());
+    }
+
+    /** {@link #isFor(AdvancementHolder)} over a given layout. Pure; for tests. */
+    public static boolean isFor(TabGateways.Layout layout, ResourceLocation id) {
+        return AdvancementTileDecor.hasStarFrame(layout, id);
     }
 
     /** The plaque's heading, in place of "Challenge Complete!". */
