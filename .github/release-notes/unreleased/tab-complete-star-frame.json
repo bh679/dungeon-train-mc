@@ -1,0 +1,18 @@
+{
+  "id": "tab-complete-star-frame",
+  "version": "0.1639.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "advancements",
+    "ui"
+  ],
+  "title": "Star frames for the big advancements",
+  "summary": "The advancements for completing a whole tab, along with the Everything Burrito and It's Not That Simple, now have their own star-shaped frame, so they stand out on the advancements screen. They are grey until earned and gold once earned.",
+  "highlights": [],
+  "pr": 2457,
+  "date": "2026-11-03",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
