@@ -1,6 +1,6 @@
 {
   "id": "moty-popup-tracking",
-  "version": "0.1633.0",
+  "version": "0.1634.0",
   "type": "chore",
   "tags": [
     "internal"
@@ -8,6 +8,7 @@
   "title": "Mod of the Year popup stats",
   "summary": "The Mod of the Year popup now counts how often it is shown and which button is picked, for players who allowed online features.",
   "highlights": [],
+  "pr": 2452,
   "date": "2026-11-03",
   "released": false,
   "released_in": null,
