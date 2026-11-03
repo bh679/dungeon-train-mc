@@ -867,6 +867,7 @@
   "chat.dungeontrain.restore.applied": "Item anda telah dipulihkan.",
   "chat.dungeontrain.restore.applied_with_chest": "Item anda telah dipulihkan. Barang yang anda bawa ada dalam peti \"Sebelum pemulihan\".",
   "item.dungeontrain.player_album.name": "Album %s",
+  "item.dungeontrain.player_album.name_numbered": "Album %1$s %2$s",
   "chat.dungeontrain.album_drifts_off": "Foto itu terletak di tempatnya, dan album terlepas dari tangan anda lalu hanyut menyusuri kereta api. Ia akan menemui anda semula.",
   "chat.dungeontrain.found_album_burns": "Anda menutup album itu, dan ia hancur menjadi abu.",
   "chat.dungeontrain.shared_book.1": "Kereta api memiliki buku anda sekarang. Untuk mata orang lain…",

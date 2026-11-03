@@ -1000,6 +1000,7 @@
   "chat.dungeontrain.restore.applied": "Obiectele tale au fost restaurate.",
   "chat.dungeontrain.restore.applied_with_chest": "Obiectele tale au fost restaurate. Ce aveai la tine este în cufărul „Înainte de restaurare”.",
   "item.dungeontrain.player_album.name": "Albumul lui %s",
+  "item.dungeontrain.player_album.name_numbered": "Albumul lui %1$s %2$s",
   "chat.dungeontrain.album_drifts_off": "Fotografia își găsește locul, iar albumul îți scapă din mâini și plutește mai departe prin tren. Te va găsi din nou.",
   "chat.dungeontrain.found_album_burns": "Închizi albumul, iar acesta se preface în cenușă.",
   "chat.dungeontrain.shared_book.1": "Trenul îți are cartea acum. Pentru ochii altcuiva…",
