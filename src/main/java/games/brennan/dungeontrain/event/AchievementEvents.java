@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.advancement.AdvancementAwards;
 import games.brennan.dungeontrain.advancement.AdvancementRevocations;
 import games.brennan.dungeontrain.advancement.BurritoClock;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
+import games.brennan.dungeontrain.advancement.DeferredCapstoneGrants;
 import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
 import games.brennan.dungeontrain.advancement.GlobalBiomeProgress;
 import games.brennan.dungeontrain.advancement.GlobalRandomBookProgress;
@@ -1324,12 +1325,11 @@ public final class AchievementEvents {
             // checkAndGrant re-fires this event, and the id guard avoids the
             // needless re-entry (the award is idempotent once done regardless).
             // Each tab's "tab complete" advancement (Dungeon Train Explored and friends): every advancement
-            // in that tab. Before the burrito, which needs them. Skip their own earns, as for the burrito.
-            if (!TabCompleteAdvancements.isTabComplete(id)) {
-                TabCompleteAdvancements.checkAndGrant(player);
-            }
+            // in that tab. Before the burrito, which needs them. Both a moment later, so their cards
+            // always follow the one that finished them (DeferredCapstoneGrants). A tab-complete's own
+            // earn schedules again: that is the burrito's turn. The burrito's own earn needs none.
             if (!id.equals(CompletionistAdvancement.ID)) {
-                CompletionistAdvancement.checkAndGrant(player);
+                DeferredCapstoneGrants.schedule(player);
             }
         }
     }
