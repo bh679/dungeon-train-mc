@@ -1,0 +1,16 @@
+{
+  "id": "changelog-no-conflicts",
+  "version": "0.1627.0",
+  "type": "ci",
+  "tags": [
+    "internal"
+  ],
+  "title": "Faster update checks behind the scenes",
+  "summary": "Updates now move through testing faster, because changes waiting to go in no longer trip over each other.",
+  "highlights": [],
+  "pr": 2444,
+  "date": "2026-11-03",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
