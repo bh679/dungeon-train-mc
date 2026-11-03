@@ -32759,6 +32759,44 @@
       "released": true,
       "released_in": "v0.1640.0",
       "released_at": "2026-11-03T11:10:37Z"
+    },
+    {
+      "id": "mod-whitelist-file-checks",
+      "version": "0.1633.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Mod check improvements",
+      "summary": "Improvements to how installed mods are checked.",
+      "highlights": [],
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1642.0",
+      "released_at": "2026-11-03T12:44:50Z"
+    },
+    {
+      "id": "tab-complete-cards-last-night-crest",
+      "version": "0.1642.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "advancements",
+        "ui"
+      ],
+      "title": "Tab complete, in the right order",
+      "summary": "Finishing a tab now always shows its tab-complete card last, after the advancement that finished it. With Advancement Plaques installed, the biggest advancements get a starry gold plaque of their own.",
+      "highlights": [
+        "Tab-complete cards always arrive after the advancement that completed the tab",
+        "With Advancement Plaques, star-framed advancements show a starry plaque with a gold halo, sparkles and a chime"
+      ],
+      "pr": 2458,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1642.0",
+      "released_at": "2026-11-03T12:44:50Z"
     }
   ]
 }

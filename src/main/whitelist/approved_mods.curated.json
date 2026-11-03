@@ -62,7 +62,8 @@
         "sodium_extra",
         "reeses_sodium_options",
         "modelfix",
-        "cupboard"
+        "cupboard",
+        "betterfpsdist"
       ]
     },
     "visual": {
@@ -86,6 +87,7 @@
         "particular",
         "particlerain",
         "subtle_effects",
+        "ambientenvironment",
         "continuity",
         "fusion",
         "euphoria_patcher",

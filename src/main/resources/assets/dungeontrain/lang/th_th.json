@@ -4836,6 +4836,8 @@
   "advancements.dungeontrain.tab.train_explorer": "นักสำรวจขบวนรถไฟ",
   "advancements.dungeontrain.tab.others": "คนอื่น",
   "advancements.dungeontrain.tab.secrete_menu": "เมนูลับ",
+  "dungeontrain.plaque.tab_complete": "ครบทั้งแท็บแล้ว!",
+  "dungeontrain.plaque.everything_complete": "ครบทุกอย่างแล้ว!",
   "chat.dungeontrain.free_play.cause.portal_rate": "ความถี่ที่ตู้ข้ามมิติจะปรากฏถูกเปลี่ยนไปในโลกนี้",
   "chat.dungeontrain.free_play.portal_rate_changed": "รางที่โลกนี้สร้างขึ้นไม่ใช่รางที่ Dungeon Train ปรับสมดุลไว้อีกต่อไป โลกนี้จึงยังอยู่ในโหมดเล่นอิสระ",
   "chat.dungeontrain.free_play.cause.dt_config": "การตั้งค่าความยากของ Dungeon Train ถูกเปลี่ยนไป",

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.advancement;
 
+import games.brennan.dungeontrain.client.NightCrestPlaque;
 import games.brennan.dungeontrain.compat.AdvancementTileDecor;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.DisplayName;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -43,5 +45,15 @@ class TabCompleteTileTest {
         assertFalse(shaded("carts_100"));
         assertFalse(shaded("tab_train_explorer"));
         assertFalse(shaded("reached_nether"));
+    }
+
+    @Test
+    @DisplayName("Advancement Plaques shows the Night Crest for exactly the star-frame advancements")
+    void nightCrestFollowsStarFrame() {
+        for (String path : List.of("completionist", "start_again", "train_explored", "train_explored_tab",
+                                   "carts_100", "tab_train_explorer", "reached_nether")) {
+            ResourceLocation id = ResourceLocation.parse(DT + path);
+            assertEquals(AdvancementTileDecor.hasStarFrame(LAYOUT, id), NightCrestPlaque.isFor(LAYOUT, id), path);
+        }
     }
 }
