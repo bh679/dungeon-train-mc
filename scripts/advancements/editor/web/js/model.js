@@ -597,7 +597,7 @@ function combinesRules(id) { return !!(M.needs && M.needs[id]); }
  * towards it), or a tab-complete advancement's (its tab, less the tab-complete copies). Hidden-until-earned
  * ones are left out, as a player can't see them. Null when the selection is neither.
  */
-/** A tab-complete advancement, or its copy inside its own tab? Drawn a darker grey while unearned, as in game. */
+/** A tab-complete advancement, or its copy inside its own tab? Drawn in DT's tab-complete frame, as in game. */
 function isTabCompleteTile(E, id) {
   if (!M.complete) return false;
   return !!(M.complete[id] || (E.nodes[id] && E.nodes[id].copyOf && M.complete[E.nodes[id].copyOf]));

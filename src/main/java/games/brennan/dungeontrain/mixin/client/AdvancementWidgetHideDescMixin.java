@@ -21,6 +21,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
@@ -83,13 +84,13 @@ public abstract class AdvancementWidgetHideDescMixin {
         AdvancementTileDecor.beforeTile(guiGraphics, advancementNode, progress, originX, originY, x, y);
     }
 
-    /** The tile's frame, a shade darker for an unearned tab-complete advancement. */
-    @WrapOperation(method = "draw",
-                   at = @At(value = "INVOKE",
-                            target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Lnet/minecraft/resources/ResourceLocation;IIII)V"))
-    private void dungeontrain$tileFrame(GuiGraphics guiGraphics, ResourceLocation sprite, int x, int y, int w, int h,
-                                        Operation<Void> original) {
-        AdvancementTileDecor.wrapTileFrame(advancementNode, progress, () -> original.call(guiGraphics, sprite, x, y, w, h));
+    /** The tile's frame: the tab-complete shape for a tab-complete advancement. */
+    @ModifyArg(method = "draw",
+               at = @At(value = "INVOKE",
+                        target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Lnet/minecraft/resources/ResourceLocation;IIII)V"),
+               index = 0)
+    private ResourceLocation dungeontrain$tileFrame(ResourceLocation sprite) {
+        return AdvancementTileDecor.tileFrame(advancementNode, sprite);
     }
 
     /** Restore the shader colour once the icon is down. */
@@ -115,7 +116,7 @@ public abstract class AdvancementWidgetHideDescMixin {
     private void dungeontrain$hoverFrame(GuiGraphics guiGraphics, ResourceLocation sprite, int x, int y, int w, int h,
                                          Operation<Void> original) {
         AdvancementTileDecor.wrapHoverFrame(guiGraphics, sprite, x, y, advancementNode, progress,
-            () -> original.call(guiGraphics, sprite, x, y, w, h));
+            frame -> original.call(guiGraphics, frame, x, y, w, h));
     }
 
     /** Whether {@code drawConnectivity} pushed a scissor for this tile's incoming connector. */

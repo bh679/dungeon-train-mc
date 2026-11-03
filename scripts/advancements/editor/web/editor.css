@@ -64,8 +64,7 @@ body.full .stage .exitfull { display: block; position: absolute; top: calc(6px +
 .node.moving { opacity: .35; }
 /* Progress: Not earned — what a new player would not see yet */
 .node.hid { opacity: .3; filter: grayscale(1); }
-/* An unearned tab-complete advancement: the frame a shade darker, as in game (AdvancementTileDecor) */
-.node.tabdone { background-color: rgb(184, 184, 184); background-blend-mode: multiply; mask-size: 100% 100%; -webkit-mask-size: 100% 100%; }#fade { background: #000; opacity: 0; pointer-events: none; transition: opacity .15s; }
+#fade { background: #000; opacity: 0; pointer-events: none; transition: opacity .15s; }
 #fade.on { opacity: .3; }
 .gtitle { font-size: calc(8.5px * var(--s)); color: var(--gui-text); white-space: nowrap; line-height: 1; }
 .tab { width: calc(28px * var(--s)); height: calc(32px * var(--s)); cursor: pointer; }

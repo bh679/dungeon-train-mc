@@ -15,13 +15,10 @@ function pickScale() {
   PER_ROW = Math.max(1, Math.floor((W + 4) / 32));
   gui.style.setProperty('--s', S);
 }
-const frameSprite = n => `${n.f}_frame_${view.earned ? 'obtained' : 'unobtained'}`;
+// A tab-complete advancement (or its in-tab copy) gets DT's own frame shape, as in game (AdvancementTileDecor).
+const frameSprite = n => `${isTabCompleteTile(layoutCache.E, n.id) ? 'tab_complete' : n.f}_frame_${view.earned ? 'obtained' : 'unobtained'}`;
 function nodeEl(n, parent, x, y) {
   const d = el('node abs sprite', { left: px(x), top: px(y), backgroundImage: `url(${SP[frameSprite(n)] || SP.task_frame_obtained})` }, parent);
-  if (!view.earned && isTabCompleteTile(layoutCache.E, n.id)) {
-    d.classList.add('tabdone'); // the grey frame a shade darker, clipped to the sprite's shape
-    d.style.maskImage = d.style.webkitMaskImage = d.style.backgroundImage;
-  }
   el('ic', { backgroundImage: `url(${IC[n.i]})` }, d);
   return d;
 }

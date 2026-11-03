@@ -51,8 +51,8 @@ public final class TabCompleteAdvancements {
     }
 
     /**
-     * Is {@code id} a tab-complete advancement or its copy inside its own tab? Those tiles are drawn a
-     * shade darker while unearned ({@code AdvancementTileDecor}). Pure over the layout.
+     * Is {@code id} a tab-complete advancement or its copy inside its own tab? Those tiles are drawn
+     * in the tab-complete frame shape ({@code AdvancementTileDecor}). Pure over the layout.
      */
     public static boolean isTabCompleteOrCopy(TabGateways.Layout layout, ResourceLocation id) {
         String key = id.toString();
