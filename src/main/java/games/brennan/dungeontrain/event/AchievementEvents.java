@@ -691,6 +691,7 @@ public final class AchievementEvents {
         if (allFaulthurstTitlesSeen(data)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "faulthurst_all_titles");
         }
+        fireFaulthurstVariantsSeen(player, data);
         if (allFaulthurstSeen(data)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "faulthurst");
         }
@@ -924,6 +925,23 @@ public final class AchievementEvents {
             }
         }
         return anyFaulthurst;
+    }
+
+    /**
+     * One {@code random_book_variant_seen} per seen variant of every Faulthurst random-book: the
+     * per-variant criteria behind Faulthurst's Favourite's progress bar. Already-held criteria are
+     * no-ops, so re-firing the whole set after each read is harmless.
+     */
+    private static void fireFaulthurstVariantsSeen(ServerPlayer player, NarrativeProgressData data) {
+        Map<String, NarrativeProgress> snapshot = data.randomBookSnapshot();
+        for (String basename : RandomBookRegistry.basenames()) {
+            if (!basename.toLowerCase().contains("faulthurst")) continue;
+            NarrativeProgress progress = snapshot.get(basename);
+            if (progress == null) continue;
+            for (int variant : progress.readLetters()) {
+                ModAdvancementTriggers.RANDOM_BOOK_VARIANT_SEEN.get().trigger(player, basename, variant);
+            }
+        }
     }
 
     /**
