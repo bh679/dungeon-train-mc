@@ -1,0 +1,18 @@
+{
+  "id": "advancement-progress-fill",
+  "version": "0.1635.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "advancements",
+    "ui"
+  ],
+  "title": "Advancement progress",
+  "summary": "One hidden advancement now fills its title bar as you get closer, without saying how much is left.",
+  "highlights": [],
+  "pr": 2453,
+  "date": "2026-11-03",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
