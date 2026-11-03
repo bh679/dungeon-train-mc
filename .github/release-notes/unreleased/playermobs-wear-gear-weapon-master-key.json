@@ -1,0 +1,22 @@
+{
+  "id": "playermobs-wear-gear-weapon-master-key",
+  "version": "0.1633.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "compatibility",
+    "mobs",
+    "ui"
+  ],
+  "title": "Some PlayerMobs wear their gear, and Weapon Master plays nicely",
+  "summary": "Now and then a PlayerMob wears some of what it carries: a sword slung across its back, a shield, a pickaxe at its hip, arrows over a shoulder. Most don't, so one that does is worth a second look. If you use YDM's Weapon Master, its settings key now stays quiet in creative, where V opens the builder's block menu.",
+  "highlights": [
+    "About 1 in 8 PlayerMobs show some of the weapons, tools, shield, banner or arrows they carry, and a few show several",
+    "YDM's Weapon Master settings no longer open on V in creative; in survival they work as before"
+  ],
+  "pr": 2449,
+  "date": "2026-11-03",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
