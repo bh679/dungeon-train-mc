@@ -1532,6 +1532,7 @@
       "toast.dungeontrain.live_ended.replaced",
       "toast.dungeontrain.live_ended.failed",
       "toast.dungeontrain.live_ended.moderated",
+      "gui.dungeontrain.biome_checklist.rare",
       "advancements.dungeontrain.dungeon_train.burned_leaderboard_book.hint",
       "advancements.dungeontrain.dungeon_train.burned_stat_book.hint",
       "advancements.dungeontrain.dungeon_train.submitted_love_note.hint",

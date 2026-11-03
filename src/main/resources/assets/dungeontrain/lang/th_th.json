@@ -2476,6 +2476,7 @@
   "advancements.dungeontrain.dungeon_train.ridden_biomes_100.hint": "นั่นมันไบโอมเยอะเลยนะ",
   "advancements.dungeontrain.dungeon_train.all_biome_families.hint": "ยังมีผืนดินที่คุณยังไม่เคยยืน",
   "advancements.dungeontrain.dungeon_train.ridden_biomes_all.hint": "ยังมีผืนดินที่คุณยังไม่เคยยืน",
+  "gui.dungeontrain.biome_checklist.rare": "หายาก: ผ่าน 2 จาก 5 แห่งนี้",
   "advancements.dungeontrain.dungeon_train.multiplayer.hint": "เกมสนุกกว่าเมื่อมีเพื่อน",
   "advancements.dungeontrain.dungeon_train.echo_encounter.hint": "คุณจะรู้เองเมื่อได้เห็นมัน",
   "advancements.dungeontrain.dungeon_train.echo_befriend.hint": "จงเมตตาต่อตัวเอง",
