@@ -90,6 +90,8 @@ public final class PlayerAlbums {
     private static List<PendingBurn> pendingBurns = List.of();
     /** Pictures this server has already sent to the relay (by hash). */
     private static final Set<String> sentImages = ConcurrentHashMap.newKeySet();
+    /** Players whose live albums were already asked of the relay this session. Server thread. */
+    private static final Set<UUID> asked = ConcurrentHashMap.newKeySet();
 
     private PlayerAlbums() {}
 
@@ -356,9 +358,28 @@ public final class PlayerAlbums {
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        prewarm(AlbumStore.get().entry(player.getUUID(), kindFor(player)));
+        askRelay(player);
+    }
+
+    /**
+     * The client's network consent arrived ({@code NetworkConsentSyncPacket}). It lands after
+     * {@link #onLogin} — the client only sends it once it has handled the login — so this is where
+     * the relay is normally first asked.
+     */
+    public static void onConsentSynced(ServerPlayer player) {
+        askRelay(player);
+    }
+
+    @SubscribeEvent
+    public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        asked.remove(event.getEntity().getUUID());
+    }
+
+    /** Once per session, with the player's consent: their album limit and any newer live albums. */
+    private static void askRelay(ServerPlayer player) {
+        if (!SharedBookGate.canContribute(player) || !asked.add(player.getUUID())) return;
         UUID owner = player.getUUID();
-        prewarm(AlbumStore.get().entry(owner, kindFor(player)));
-        if (!SharedBookGate.canContribute(player)) return;
         MinecraftServer server = player.server;
         String base = DungeonTrain.relayBaseUrl();
         HttpRequest request = HttpRequest.newBuilder(URI.create(base + MINE_PATH + "?uuid=" + AlbumSavePayload.bare(owner)))
@@ -371,6 +392,7 @@ public final class PlayerAlbums {
                 .whenComplete((mine, error) -> {
                     if (error != null) {
                         LOGGER.debug("[DungeonTrain] Album of {} not fetched: {}", owner, error.toString());
+                        asked.remove(owner);   // the next consent sync or login may ask again
                         return;
                     }
                     server.execute(() -> {
@@ -474,6 +496,7 @@ public final class PlayerAlbums {
     public static void onServerStopped(ServerStoppedEvent event) {
         pendingBurns = List.of();
         sentImages.clear();
+        asked.clear();
         AlbumDonors.clear();
         AlbumWorldBridge.forgetLent();
         AlbumStore.get().flush();
