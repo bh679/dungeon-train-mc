@@ -16,16 +16,17 @@ class OverworldStretchSecondLookTest {
     private static final Predicate<String> RARE = Set.of("tropics", "hot_springs")::contains;
     private static final Predicate<String> LAND = s -> !s.equals("ocean") && !s.equals("lush_caves");
 
-    private static String look(String base, String shifted) {
-        return OverworldStretchBiomes.withSecondLook(base, () -> shifted, RARE, LAND);
+    private static String look(String base, String first, String second) {
+        return OverworldStretchBiomes.withSecondLook(base, RARE, LAND, () -> first, () -> second);
     }
 
     @Test
-    @DisplayName("ordinary land takes a rare shifted pick, and keeps itself otherwise")
+    @DisplayName("ordinary land takes the first rare shifted pick, and keeps itself otherwise")
     void landTakesRare() {
-        assertEquals("tropics", look("plains", "tropics"));
-        assertEquals("plains", look("plains", "forest"));
-        assertEquals("plains", look("plains", null));
+        assertEquals("tropics", look("plains", "tropics", "hot_springs"));
+        assertEquals("hot_springs", look("plains", "forest", "hot_springs"));
+        assertEquals("plains", look("plains", "forest", "ocean"));
+        assertEquals("plains", look("plains", null, null));
     }
 
     @Test
@@ -33,9 +34,9 @@ class OverworldStretchSecondLookTest {
     void othersKeepTheirOwn() {
         AtomicInteger asked = new AtomicInteger();
         Supplier<String> counted = () -> { asked.incrementAndGet(); return "tropics"; };
-        assertEquals("ocean", OverworldStretchBiomes.withSecondLook("ocean", counted, RARE, LAND));
-        assertEquals("lush_caves", OverworldStretchBiomes.withSecondLook("lush_caves", counted, RARE, LAND));
-        assertEquals("hot_springs", OverworldStretchBiomes.withSecondLook("hot_springs", counted, RARE, LAND));
+        assertEquals("ocean", OverworldStretchBiomes.withSecondLook("ocean", RARE, LAND, counted, counted));
+        assertEquals("lush_caves", OverworldStretchBiomes.withSecondLook("lush_caves", RARE, LAND, counted, counted));
+        assertEquals("hot_springs", OverworldStretchBiomes.withSecondLook("hot_springs", RARE, LAND, counted, counted));
         assertEquals(0, asked.get());
     }
 }

@@ -54,9 +54,11 @@ import java.util.function.Supplier;
  * </ul>
  *
  * <p>Terra Omnia's rare biomes ({@link TerraOmnia#RARE}) get a second look, so they turn up about twice as
- * often: where the BoP pick is ordinary land, the pick at a fixed shift along Z ({@link #SECOND_LOOK_QZ}) is
- * taken instead when that one is rare. The shifted field is the same climate map moved, so the extra patches
- * keep their natural shapes, and a rare biome with share {@code f} ends up near {@code 2f}.</p>
+ * often: where the BoP pick is ordinary land, the picks at a fixed shift either way along Z
+ * ({@link #SECOND_LOOK_QZ}) are tried, and the first rare one is taken instead. Each shifted field is the same
+ * climate map moved, so the extra patches keep their natural shapes. Only land (about half the quarts) can
+ * take one, so two looks are what lifts a rare share {@code f} to about {@code 2f} — one gave about 1.5x
+ * against vanilla's overworld noise.</p>
  *
  * <p>The region layout is read from the source being asked — TerraBlender gives each chunk fill its
  * own clone of the source and layout, because the layout's cache isn't thread-safe.</p>
@@ -73,8 +75,8 @@ public final class OverworldStretchBiomes {
     private static volatile OverworldStretchBiomes current;
 
     /**
-     * The second look's shift, in quarts along Z (160k blocks). The track runs along X, so the shifted field
-     * is far off the line and never near the Far Lands. A constant: every world and every regen agree.
+     * The second look's shift, in quarts along Z (160k blocks), taken both ways. The track runs along X, so the
+     * shifted fields are far off the line and never near the Far Lands. A constant: every world and every regen agree.
      */
     static final int SECOND_LOOK_QZ = 40_000;
 
@@ -167,10 +169,9 @@ public final class OverworldStretchBiomes {
             IExtendedParameterList<?> layout = regionLayout(source);
             Holder<Biome> h = bopRegionAt(layout, qx, qy, qz).findValue(target);
             if (h != null) {
-                int shiftedQz = qz + SECOND_LOOK_QZ;
-                return withSecondLook(h,
-                        () -> bopRegionAt(layout, qx, qy, shiftedQz).findValue(sampler.sample(qx, qy, shiftedQz)),
-                        rare::contains, OverworldStretchBiomes::takesRare);
+                return withSecondLook(h, rare::contains, OverworldStretchBiomes::takesRare,
+                        () -> shiftedPick(layout, qx, qy, qz + SECOND_LOOK_QZ, sampler),
+                        () -> shiftedPick(layout, qx, qy, qz - SECOND_LOOK_QZ, sampler));
             }
             // deferred / missing → vanilla
         }
@@ -179,15 +180,23 @@ public final class OverworldStretchBiomes {
         return table.findValue(target);                    // missing entries are the fallback already
     }
 
+    private Holder<Biome> shiftedPick(IExtendedParameterList<?> layout, int qx, int qy, int qz, Climate.Sampler sampler) {
+        return bopRegionAt(layout, qx, qy, qz).findValue(sampler.sample(qx, qy, qz));
+    }
+
     /**
-     * {@code base}, or the {@code shifted} pick when that one is rare and {@code base} is neither rare itself
-     * nor ground a rare biome may cover ({@code takesRare}). {@code shifted} is only asked when it could be used.
-     * Generic so the rule is testable without a registry.
+     * {@code base}, or the first {@code shifted} pick that is rare when {@code base} is neither rare itself nor
+     * ground a rare biome may cover ({@code takesRare}). The shifted picks are asked in order, only while one
+     * could still be used. Generic so the rule is testable without a registry.
      */
-    static <T> T withSecondLook(T base, Supplier<T> shifted, Predicate<T> isRare, Predicate<T> takesRare) {
+    @SafeVarargs
+    static <T> T withSecondLook(T base, Predicate<T> isRare, Predicate<T> takesRare, Supplier<T>... shifted) {
         if (isRare.test(base) || !takesRare.test(base)) return base;
-        T other = shifted.get();
-        return other != null && isRare.test(other) ? other : base;
+        for (Supplier<T> look : shifted) {
+            T other = look.get();
+            if (other != null && isRare.test(other)) return other;
+        }
+        return base;
     }
 
     /** Ordinary land: never water, a shore or a cave, which keep their own biome under the second look. */
