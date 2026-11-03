@@ -4898,6 +4898,7 @@
   "chat.dungeontrain.free_play.portal_rate_changed": "Die Strecke, die diese Welt erzeugt, ist nicht mehr die, auf die Dungeon Train abgestimmt ist, deshalb bleibt diese Welt im Freien Spiel.",
   "chat.dungeontrain.free_play.cause.dt_config": "Die Schwierigkeitseinstellungen von Dungeon Train wurden geändert.",
   "chat.dungeontrain.free_play.cause.soup_stacking": "Stapelbare Suppen wurden in Farmer's Delight eingeschaltet.",
+  "chat.dungeontrain.free_play.cause.cpm_scaling": "Die Spielerskalierung wurde in Customizable Player Models eingeschaltet.",
   "chat.dungeontrain.free_play.dt_config_changed": "Geändert: %s",
   "chat.dungeontrain.free_play.dt_config_fix": "Klicke hier, um alle Dungeon-Train-Einstellungen auf die Standardwerte zurückzusetzen, und starte das Spiel dann neu, um normal zu spielen. Deine aktuellen Einstellungen werden als Sicherungsdatei aufbewahrt.",
   "command.dungeontrain.fix_config.success": "Einstellungen zurückgesetzt. Starte das Spiel (oder den Server) neu, um normal weiterzuspielen.",

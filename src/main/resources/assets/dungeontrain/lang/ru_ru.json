@@ -4963,6 +4963,7 @@
   "chat.dungeontrain.free_play.portal_rate_changed": "Генерация пути теперь не та, под которую задумана Dungeon Train, поэтому будет включена Свободная игра.",
   "chat.dungeontrain.free_play.cause.dt_config": "Настройки сложности Dungeon Train изменены.",
   "chat.dungeontrain.free_play.cause.soup_stacking": "В Farmer's Delight включено складывание супов в стопки.",
+  "chat.dungeontrain.free_play.cause.cpm_scaling": "В Customizable Player Models включено масштабирование игрока.",
   "chat.dungeontrain.free_play.dt_config_changed": "Изменено: %s",
   "chat.dungeontrain.free_play.dt_config_fix": "Нажмите сюда, чтобы сбросить все настройки Dungeon Train, затем перезапустите игру. Копия ваших текущих настроек сохранится в отдельный файл.",
   "command.dungeontrain.fix_config.success": "Настройки сброшены. Перезагрузите игру (или сервер), чтобы продолжить.",

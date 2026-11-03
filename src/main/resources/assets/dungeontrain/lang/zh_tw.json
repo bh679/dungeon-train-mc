@@ -4852,6 +4852,7 @@
   "chat.dungeontrain.free_play.portal_rate_changed": "本世界生成的軌道已不再是《地牢列車》所平衡的那一條，因此本世界將維持自由遊玩狀態。",
   "chat.dungeontrain.free_play.cause.dt_config": "《地牢列車》的難度設定已被更改。",
   "chat.dungeontrain.free_play.cause.soup_stacking": "已在 Farmer's Delight 中開啟可堆疊湯品。",
+  "chat.dungeontrain.free_play.cause.cpm_scaling": "已在 Customizable Player Models 中開啟玩家縮放。",
   "chat.dungeontrain.free_play.dt_config_changed": "已更改：%s",
   "chat.dungeontrain.free_play.dt_config_fix": "點擊此處可將《地牢列車》的所有設定還原為預設值，接著重新啟動遊戲即可正常遊玩。你目前的設定會保留為備份檔。",
   "command.dungeontrain.fix_config.success": "設定已重設。重新啟動遊戲（或伺服器）即可恢復正常遊玩。",

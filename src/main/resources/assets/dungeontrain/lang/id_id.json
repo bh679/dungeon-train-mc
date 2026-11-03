@@ -4838,6 +4838,7 @@
   "chat.dungeontrain.free_play.portal_rate_changed": "Rel yang dihasilkan dunia ini bukan lagi rel yang menjadi acuan penyeimbangan Dungeon Train, jadi dunia ini tetap dalam Main Bebas.",
   "chat.dungeontrain.free_play.cause.dt_config": "Pengaturan tingkat kesulitan Dungeon Train telah diubah.",
   "chat.dungeontrain.free_play.cause.soup_stacking": "Sup yang bisa ditumpuk dinyalakan di Farmer's Delight.",
+  "chat.dungeontrain.free_play.cause.cpm_scaling": "Penskalaan pemain dinyalakan di Customizable Player Models.",
   "chat.dungeontrain.free_play.dt_config_changed": "Diubah: %s",
   "chat.dungeontrain.free_play.dt_config_fix": "Klik di sini untuk mengembalikan semua pengaturan Dungeon Train ke bawaan, lalu mulai ulang permainan untuk bermain seperti biasa. Pengaturanmu saat ini disimpan sebagai berkas cadangan.",
   "command.dungeontrain.fix_config.success": "Pengaturan disetel ulang. Mulai ulang permainan (atau server) untuk kembali bermain normal.",
