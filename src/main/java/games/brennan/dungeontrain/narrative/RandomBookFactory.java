@@ -71,6 +71,12 @@ public final class RandomBookFactory {
         return Optional.of(buildVanillaBook(book, body, variantIndex));
     }
 
+    /** Whether a {@code (book basename, variantIndex)} tuple counts as already seen. */
+    @FunctionalInterface
+    public interface SeenTest {
+        boolean seen(String basename, int variantIndex);
+    }
+
     /**
      * Pick an unseen {@code (book, variantIndex)} tuple for the world.
      * Books with at least one unseen variant are weighted by their pool
@@ -89,23 +95,44 @@ public final class RandomBookFactory {
         if (RandomBookRegistry.count() == 0) return Optional.empty();
         long bookSeed = mix(rollSeed, SALT_BOOK_PICK);
         long variantSeed = mix(rollSeed, SALT_VARIANT_PICK);
-        Optional<PickedBook> first = tryPickUnseen(data, bookSeed, variantSeed);
+        Optional<PickedBook> first = tryPickUnseen(registryBooks(), data::hasSeenRandomBook, bookSeed, variantSeed);
         if (first.isPresent()) return first;
         // World has seen every variant of every loaded book — silent cycle.
         data.resetRandomBookProgress();
-        return tryPickUnseen(data, bookSeed, variantSeed);
+        return tryPickUnseen(registryBooks(), data::hasSeenRandomBook, bookSeed, variantSeed);
     }
 
-    private static Optional<PickedBook> tryPickUnseen(NarrativeProgressData data,
-                                                      long bookSeed, long variantSeed) {
+    /**
+     * Pick a tuple neither the world nor this player has seen — the player's record is every variant they
+     * have held in any world ({@code GlobalRandomBookProgress}), so a new world doesn't hand them the same
+     * books again. Empty when there is none; the caller then falls back to {@link #pickUnseenForWorld}.
+     */
+    public static Optional<PickedBook> pickUnseenForPlayer(NarrativeProgressData data, SeenTest playerSeen, long rollSeed) {
+        if (RandomBookRegistry.count() == 0) return Optional.empty();
+        SeenTest either = (basename, i) -> data.hasSeenRandomBook(basename, i) || playerSeen.seen(basename, i);
+        return tryPickUnseen(registryBooks(), either,
+            mix(rollSeed, SALT_BOOK_PICK), mix(rollSeed, SALT_VARIANT_PICK));
+    }
+
+    private static List<RandomBookFile> registryBooks() {
+        List<RandomBookFile> books = new ArrayList<>();
+        for (ResourceLocation id : RandomBookRegistry.ids()) {
+            RandomBookRegistry.get(id).ifPresent(books::add);
+        }
+        return books;
+    }
+
+    /**
+     * Weighted pick across {@code books} with at least one variant {@code seen} rejects, then a uniform pick
+     * across that book's unseen variants. Empty when every variant of every weighted book is seen.
+     */
+    static Optional<PickedBook> tryPickUnseen(List<RandomBookFile> books, SeenTest seen,
+                                              long bookSeed, long variantSeed) {
         List<RandomBookFile> candidates = new ArrayList<>();
         double totalWeight = 0;
-        for (ResourceLocation id : RandomBookRegistry.ids()) {
-            Optional<RandomBookFile> bookOpt = RandomBookRegistry.get(id);
-            if (bookOpt.isEmpty()) continue;
-            RandomBookFile book = bookOpt.get();
+        for (RandomBookFile book : books) {
             if (book.weight() <= 0) continue;
-            if (hasAnyUnseenVariant(data, book)) {
+            if (!unseenVariantIndices(book, seen).isEmpty()) {
                 candidates.add(book);
                 totalWeight += book.weight();
             }
@@ -121,26 +148,17 @@ public final class RandomBookFactory {
         }
 
         // Uniform pick across the picked book's unseen variants.
-        List<Integer> unseen = collectUnseenVariantIndices(data, picked);
-        if (unseen.isEmpty()) return Optional.empty(); // defensive: hasAnyUnseenVariant said yes
+        List<Integer> unseen = unseenVariantIndices(picked, seen);
         long unsignedVariant = variantSeed & 0x7FFFFFFFFFFFFFFFL;
         int variantIndex = unseen.get((int) (unsignedVariant % unseen.size()));
         return Optional.of(new PickedBook(picked, variantIndex));
     }
 
-    private static boolean hasAnyUnseenVariant(NarrativeProgressData data, RandomBookFile book) {
-        int total = book.variants().size();
-        for (int i = 0; i < total; i++) {
-            if (!data.hasSeenRandomBook(book.basename(), i)) return true;
-        }
-        return false;
-    }
-
-    private static List<Integer> collectUnseenVariantIndices(NarrativeProgressData data, RandomBookFile book) {
+    private static List<Integer> unseenVariantIndices(RandomBookFile book, SeenTest seen) {
         List<Integer> out = new ArrayList<>();
         int total = book.variants().size();
         for (int i = 0; i < total; i++) {
-            if (!data.hasSeenRandomBook(book.basename(), i)) out.add(i);
+            if (!seen.seen(book.basename(), i)) out.add(i);
         }
         return out;
     }

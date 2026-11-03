@@ -1,0 +1,18 @@
+{
+  "id": "faulthurst-lifetime-progress",
+  "version": "0.1637.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "books",
+    "advancements"
+  ],
+  "title": "Book reading fix",
+  "summary": "Reading progress for a hidden collection now carries over between worlds, and you are less likely to be handed a book you have already read.",
+  "highlights": [],
+  "pr": 2456,
+  "date": "2026-11-03",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
