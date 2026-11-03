@@ -32500,22 +32500,6 @@
       "released": true,
       "released_in": "v0.1625.0",
       "released_at": "2026-11-02T15:21:51Z"
-    },
-    {
-      "id": "ci-gradle-cache-fix",
-      "version": "0.1626.0",
-      "type": "ci",
-      "tags": [
-        "internal"
-      ],
-      "title": "Faster build checks",
-      "summary": "Build checks reuse their cached downloads again, so changes are verified sooner.",
-      "highlights": [],
-      "pr": 2440,
-      "date": "2026-11-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
     }
   ]
 }
