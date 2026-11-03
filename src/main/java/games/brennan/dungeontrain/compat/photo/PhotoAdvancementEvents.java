@@ -312,7 +312,7 @@ public final class PhotoAdvancementEvents {
             ResourceLocation id = ResourceLocation.tryParse(t.getAsString());
             if (id != null) biomes.add(id);
         }
-        if (TerraOmnia.isComplete(biomes, player.registryAccess().registryOrThrow(Registries.BIOME))) {
+        if (TerraOmnia.holdsEvery(biomes, player.registryAccess().registryOrThrow(Registries.BIOME))) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, PHOTOGRAPHED_EVERY_BIOME);
         }
     }

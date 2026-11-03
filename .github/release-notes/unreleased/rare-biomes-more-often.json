@@ -1,0 +1,19 @@
+{
+  "id": "rare-biomes-more-often",
+  "version": "0.1642.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "world",
+    "advancements",
+    "balance"
+  ],
+  "title": "Rare biomes turn up more often",
+  "summary": "A few of the rarest biomes now appear about twice as often, and only where the land suits them.",
+  "highlights": [],
+  "pr": 2460,
+  "date": "2026-11-03",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
