@@ -36,6 +36,8 @@ public final class BiomeChecklistScreen extends Screen {
     private static final int SCROLL_STEP = 24;
     private static final int RIDDEN_COLOUR = 0xFFFFFFFF;
     private static final int MISSING_COLOUR = 0xFF6E6E6E;
+    /** A rare biome no longer needed, because enough of the others are ridden ({@link TerraOmnia#isSpareRare}). */
+    private static final int SPARE_COLOUR = 0xFF3A3A3A;
     private static final int TICK_COLOUR = 0xFF55FF55;
     private static final int BAR_WIDTH = 6;
     private static final int BAR_MIN_THUMB = 16;
@@ -44,12 +46,12 @@ public final class BiomeChecklistScreen extends Screen {
     private static final int THUMB_HOVER_COLOUR = 0xFFC8C8C8;
     private static final int FADE_HEIGHT = 16;
 
-    /** One line of the checklist: a biome, whether it has been ridden, and whether a new group starts with it. */
-    private record Line(ResourceLocation biome, boolean ridden, boolean groupStart) {}
+    /** One line of the checklist: a biome, whether it has been ridden, whether it is a spare rare one, and whether a new group starts with it. */
+    private record Line(ResourceLocation biome, boolean ridden, boolean spare, boolean groupStart) {}
 
     private final Screen parent;
     private List<Line> lines = List.of();
-    private long riddenCount;
+    private TerraOmnia.Progress progress = new TerraOmnia.Progress(0, 0);
     private int scroll;
     private int maxScroll;
     private int[] column = new int[0];
@@ -68,7 +70,7 @@ public final class BiomeChecklistScreen extends Screen {
             parent.resize(minecraft, width, height);
         }
         lines = buildLines();
-        riddenCount = lines.stream().filter(Line::ridden).count();
+        progress = TerraOmnia.progress(RiddenBiomes.get(), lines.stream().map(Line::biome).toList());
         layout();
         setScroll(scroll);
     }
@@ -85,7 +87,8 @@ public final class BiomeChecklistScreen extends Screen {
             List<ResourceLocation> sorted = new ArrayList<>(group);
             sorted.sort(Comparator.comparing((ResourceLocation id) -> !ridden.contains(id)));   // stable: ids stay in order
             for (int i = 0; i < sorted.size(); i++) {
-                out.add(new Line(sorted.get(i), ridden.contains(sorted.get(i)), i == 0 && !out.isEmpty()));
+                ResourceLocation id = sorted.get(i);
+                out.add(new Line(id, ridden.contains(id), TerraOmnia.isSpareRare(id, ridden), i == 0 && !out.isEmpty()));
             }
         }
         return List.copyOf(out);
@@ -135,7 +138,7 @@ public final class BiomeChecklistScreen extends Screen {
         g.pose().pushPose();
         g.pose().translate(0, 0, OVERLAY_Z);
         g.drawCenteredString(font, title, width / 2, 12, 0xFFFFFFFF);
-        g.drawCenteredString(font, riddenCount + "/" + lines.size(), width / 2, 24, 0xFFAAAAAA);
+        g.drawCenteredString(font, progress.counted() + "/" + progress.needed(), width / 2, 24, 0xFFAAAAAA);
         g.enableScissor(0, TOP - 2, width, height);
         int cols = columns();
         int left = (width - cols * COLUMN_WIDTH) / 2;
@@ -201,7 +204,7 @@ public final class BiomeChecklistScreen extends Screen {
     private void drawLine(GuiGraphics g, Line line, int x, int y) {
         if (line.ridden()) g.drawString(font, "✔", x, y, TICK_COLOUR, true);
         String name = font.plainSubstrByWidth(nameOf(line.biome()).getString(), COLUMN_WIDTH - 14);
-        g.drawString(font, name, x + 10, y, line.ridden() ? RIDDEN_COLOUR : MISSING_COLOUR, line.ridden());
+        g.drawString(font, name, x + 10, y, line.ridden() ? RIDDEN_COLOUR : line.spare() ? SPARE_COLOUR : MISSING_COLOUR, line.ridden());
     }
 
     /** The game's own name for a biome; its id, tidied, when no language names it ({@code waterfall_ponds} → Waterfall Ponds). */

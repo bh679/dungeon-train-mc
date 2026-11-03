@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.worldgen.density;
 
 import com.mojang.datafixers.util.Pair;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.advancement.TerraOmnia;
 import games.brennan.dungeontrain.mixin.MultiNoiseBiomeSourceAccessor;
 import games.brennan.dungeontrain.worldgen.BackportBiomes;
 import games.brennan.dungeontrain.worldgen.SecondLapOverworld;
@@ -11,11 +12,13 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.tags.BiomeTags;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.biome.MultiNoiseBiomeSource;
 import net.minecraft.world.level.biome.MultiNoiseBiomeSourceParameterList;
+import net.neoforged.neoforge.common.Tags;
 import org.slf4j.Logger;
 import terrablender.api.Region;
 import terrablender.api.RegionType;
@@ -24,10 +27,13 @@ import terrablender.worldgen.IExtendedParameterList;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * The overworld biome for a column, confined by stretch: Biomes O' Plenty only in the
@@ -47,6 +53,11 @@ import java.util.function.Function;
  *       leaves as TerraBlender's "deferred" placeholder falls through to vanilla, as TerraBlender does.</li>
  * </ul>
  *
+ * <p>Terra Omnia's rare biomes ({@link TerraOmnia#RARE}) get a second look, so they turn up about twice as
+ * often: where the BoP pick is ordinary land, the pick at a fixed shift along Z ({@link #SECOND_LOOK_QZ}) is
+ * taken instead when that one is rare. The shifted field is the same climate map moved, so the extra patches
+ * keep their natural shapes, and a rare biome with share {@code f} ends up near {@code 2f}.</p>
+ *
  * <p>The region layout is read from the source being asked — TerraBlender gives each chunk fill its
  * own clone of the source and layout, because the layout's cache isn't thread-safe.</p>
  *
@@ -60,6 +71,12 @@ public final class OverworldStretchBiomes {
     private static final String BOP_NAMESPACE = "biomesoplenty";
 
     private static volatile OverworldStretchBiomes current;
+
+    /**
+     * The second look's shift, in quarts along Z (160k blocks). The track runs along X, so the shifted field
+     * is far off the line and never near the Far Lands. A constant: every world and every regen agree.
+     */
+    static final int SECOND_LOOK_QZ = 40_000;
 
     /** Vanilla's overworld climate table ({@code minecraft:} keys only). Registry-free, so built once per JVM. */
     private static volatile Climate.ParameterList<ResourceKey<Biome>> vanillaTable;
@@ -97,16 +114,20 @@ public final class OverworldStretchBiomes {
     private final Climate.ParameterList<Holder<Biome>> vanillaWithoutBackport;
     private final List<Climate.ParameterList<Holder<Biome>>> bopRegions;
     private final Map<ResourceLocation, Integer> bopRegionIndex;
+    /** Terra Omnia's rare biomes, as holders, for {@link #pick}'s second look. Empty without BoP. */
+    private final Set<Holder<Biome>> rare;
     private final Holder<Biome> fallback;
 
     private OverworldStretchBiomes(Climate.ParameterList<Holder<Biome>> vanilla,
                                    Climate.ParameterList<Holder<Biome>> vanillaWithoutBackport,
                                    List<Climate.ParameterList<Holder<Biome>>> bopRegions,
-                                   Map<ResourceLocation, Integer> bopRegionIndex, Holder<Biome> fallback) {
+                                   Map<ResourceLocation, Integer> bopRegionIndex, Set<Holder<Biome>> rare,
+                                   Holder<Biome> fallback) {
         this.vanilla = vanilla;
         this.vanillaWithoutBackport = vanillaWithoutBackport;
         this.bopRegions = bopRegions;
         this.bopRegionIndex = bopRegionIndex;
+        this.rare = rare;
         this.fallback = fallback;
     }
 
@@ -143,12 +164,36 @@ public final class OverworldStretchBiomes {
                               int qx, int qy, int qz, Climate.Sampler sampler) {
         Climate.TargetPoint target = sampler.sample(qx, qy, qz);
         if (stretch == SecondLapOverworld.Stretch.BOP && !bopRegions.isEmpty()) {
-            Holder<Biome> h = bopRegionAt(regionLayout(source), qx, qy, qz).findValue(target);
-            if (h != null) return h;                       // deferred / missing → vanilla
+            IExtendedParameterList<?> layout = regionLayout(source);
+            Holder<Biome> h = bopRegionAt(layout, qx, qy, qz).findValue(target);
+            if (h != null) {
+                int shiftedQz = qz + SECOND_LOOK_QZ;
+                return withSecondLook(h,
+                        () -> bopRegionAt(layout, qx, qy, shiftedQz).findValue(sampler.sample(qx, qy, shiftedQz)),
+                        rare::contains, OverworldStretchBiomes::takesRare);
+            }
+            // deferred / missing → vanilla
         }
         Climate.ParameterList<Holder<Biome>> table =
                 allowBackport && stretch == SecondLapOverworld.Stretch.VANILLA ? vanilla : vanillaWithoutBackport;
         return table.findValue(target);                    // missing entries are the fallback already
+    }
+
+    /**
+     * {@code base}, or the {@code shifted} pick when that one is rare and {@code base} is neither rare itself
+     * nor ground a rare biome may cover ({@code takesRare}). {@code shifted} is only asked when it could be used.
+     * Generic so the rule is testable without a registry.
+     */
+    static <T> T withSecondLook(T base, Supplier<T> shifted, Predicate<T> isRare, Predicate<T> takesRare) {
+        if (isRare.test(base) || !takesRare.test(base)) return base;
+        T other = shifted.get();
+        return other != null && isRare.test(other) ? other : base;
+    }
+
+    /** Ordinary land: never water, a shore or a cave, which keep their own biome under the second look. */
+    private static boolean takesRare(Holder<Biome> biome) {
+        return !biome.is(BiomeTags.IS_OCEAN) && !biome.is(BiomeTags.IS_DEEP_OCEAN) && !biome.is(BiomeTags.IS_RIVER)
+                && !biome.is(BiomeTags.IS_BEACH) && !biome.is(Tags.Biomes.IS_UNDERGROUND);
     }
 
     /**
@@ -244,8 +289,14 @@ public final class OverworldStretchBiomes {
                         key -> key == Region.DEFERRED_PLACEHOLDER ? null : holder.apply(key)));
             }
 
+            Set<Holder<Biome>> rare = new HashSet<>();
+            for (ResourceLocation id : TerraOmnia.RARE) {
+                Holder<Biome> h = holder.apply(ResourceKey.create(Registries.BIOME, id));
+                if (h != null) rare.add(h);
+            }
+
             return new OverworldStretchBiomes(vanilla, vanillaWithoutBackport, List.copyOf(bopRegions),
-                    Map.copyOf(bopRegionIndex), fallback);
+                    Map.copyOf(bopRegionIndex), Set.copyOf(rare), fallback);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Failed to build the second-lap overworld biome tables; overworld stays as generated", t);
             return null;
