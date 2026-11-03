@@ -67,6 +67,42 @@ final class StoryStartTierTest {
             "variant 1 of each letter was never seen, yet the story is complete");
     }
 
+    @Test
+    @DisplayName("Re-read: the story the world is part-way through is continued first")
+    void rereadContinuesStartedStory() {
+        assertEquals(java.util.Optional.of(AUGUSTUS),
+            NarrativeProgressData.pickReread(ALL, done("pip"), done("pip", "augustus"), 0L));
+    }
+
+    @Test
+    @DisplayName("Re-read: with nothing part-way, an unstarted, unfinished story is picked per seed")
+    void rereadPicksUnstartedPerSeed() {
+        Predicate<StoryFile> complete = done("pip", "soren");
+        for (long seed = 0; seed < 8; seed++) {
+            StoryFile pick = NarrativeProgressData.pickReread(ALL, complete, done(), seed).orElseThrow();
+            assertTrue(pick == AUGUSTUS || pick == EDDA, "only unfinished stories are re-read");
+        }
+        assertEquals(NarrativeProgressData.pickReread(ALL, complete, done(), 5L),
+            NarrativeProgressData.pickReread(ALL, complete, done(), 5L), "stable per seed");
+    }
+
+    @Test
+    @DisplayName("Re-read: every story complete in the world → empty (caller starts a new round)")
+    void rereadEmptyWhenWorldReadAll() {
+        assertTrue(NarrativeProgressData.pickReread(ALL, done("pip", "soren", "augustus", "edda"),
+            done("pip", "soren", "augustus", "edda"), 0L).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Re-read: a fresh round starts every story from letter 1")
+    void rereadRoundStartsAtLetterOne() {
+        NarrativeProgressData data = NarrativeProgressData.load(new net.minecraft.nbt.CompoundTag());
+        data.markRead("pip", 1);
+        data.markRead("pip", 2);
+        data.resetAll();
+        assertEquals(1, data.progressFor("pip").nextUnreadLetter(PIP.letters().size()));
+    }
+
     private static Predicate<StoryFile> done(String... basenames) {
         Set<String> set = Set.of(basenames);
         return story -> set.contains(story.basename());

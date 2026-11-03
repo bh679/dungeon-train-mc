@@ -586,11 +586,59 @@ public final class NarrativeProgressData extends SavedData {
      * </ol>
      */
     private List<StoryFile> startTier() {
+        return startTier(loadedStories(), this::isStoryDone);
+    }
+
+    private static List<StoryFile> loadedStories() {
         List<StoryFile> stories = new ArrayList<>();
         for (String basename : StoryRegistry.basenames()) {
             StoryRegistry.getByBasename(basename).ifPresent(stories::add);
         }
-        return startTier(stories, this::isStoryDone);
+        return stories;
+    }
+
+    /**
+     * The story a RE-READ lectern serves once every story is done, so re-reads run in order from letter 1.
+     * Uses this world's own story progress as the re-read cursor: continues the story the world is part-way
+     * through, else picks (equal odds, per {@code randomSeed}) one the world has not read, whose next letter
+     * is letter 1. Once the world has read every story, its story progress is cleared to start a fresh round.
+     * Cross-world progress is untouched, so this never affects advancements or {@link #isStoryDone}.
+     * Empty only when no stories are loaded.
+     */
+    public Optional<String> nextRereadStory(long randomSeed) {
+        List<StoryFile> stories = loadedStories();
+        Optional<StoryFile> pick = pickReread(stories, this::isWorldComplete, this::isWorldStarted, randomSeed);
+        if (pick.isEmpty() && !stories.isEmpty()) {
+            resetAll(); // this world has re-read everything → new round
+            pick = pickReread(stories, this::isWorldComplete, this::isWorldStarted, randomSeed);
+        }
+        return pick.map(StoryFile::basename);
+    }
+
+    /**
+     * Pure re-read pick behind {@link #nextRereadStory}: the first started-but-unfinished story, else a
+     * seeded equal-odds pick among unstarted ones. Empty when every story is complete.
+     */
+    static Optional<StoryFile> pickReread(List<StoryFile> stories,
+                                          java.util.function.Predicate<StoryFile> complete,
+                                          java.util.function.Predicate<StoryFile> started,
+                                          long randomSeed) {
+        List<StoryFile> unstarted = new ArrayList<>();
+        for (StoryFile story : stories) {
+            if (complete.test(story)) continue;
+            if (started.test(story)) return Optional.of(story);
+            unstarted.add(story);
+        }
+        if (unstarted.isEmpty()) return Optional.empty();
+        return Optional.of(unstarted.get(Math.floorMod(randomSeed, unstarted.size())));
+    }
+
+    private boolean isWorldComplete(StoryFile story) {
+        return progressFor(story.basename()).isComplete(story.letters().size());
+    }
+
+    private boolean isWorldStarted(StoryFile story) {
+        return progressFor(story.basename()).readCount() > 0;
     }
 
     /**
