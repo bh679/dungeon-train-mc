@@ -1355,6 +1355,24 @@
       ]
     }
   },
+  "item.dungeontrain.player_album.name_numbered": {
+    "1": {
+      "label": "the player whose photo album it is",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    },
+    "2": {
+      "label": "which of their albums it is, counting from 1 (always 2 or more)",
+      "examples": [
+        "2",
+        "3",
+        "17"
+      ]
+    }
+  },
   "item.dungeontrain.shared_photo.by": {
     "1": {
       "label": "the player who took the photo",

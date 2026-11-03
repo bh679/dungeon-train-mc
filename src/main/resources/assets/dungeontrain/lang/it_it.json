@@ -900,6 +900,7 @@
   "chat.dungeontrain.restore.applied": "I tuoi oggetti sono stati ripristinati.",
   "chat.dungeontrain.restore.applied_with_chest": "I tuoi oggetti sono stati ripristinati. Ciò che avevi con te è nel baule «Prima del ripristino».",
   "item.dungeontrain.player_album.name": "Album di %s",
+  "item.dungeontrain.player_album.name_numbered": "Album di %1$s %2$s",
   "chat.dungeontrain.album_drifts_off": "La foto trova il suo posto, e l'album ti scivola dalle mani, allontanandosi lungo il treno. Ti ritroverà.",
   "chat.dungeontrain.found_album_burns": "Chiudi l'album, e si sbriciola in cenere.",
   "chat.dungeontrain.shared_book.1": "Ora il treno ha il tuo libro. Per gli occhi di qualcun altro…",

@@ -900,6 +900,7 @@
   "chat.dungeontrain.restore.applied": "Deine Gegenstände wurden wiederhergestellt.",
   "chat.dungeontrain.restore.applied_with_chest": "Deine Gegenstände wurden wiederhergestellt. Was du bei dir hattest, liegt in der Kiste „Vor der Wiederherstellung“.",
   "item.dungeontrain.player_album.name": "Album von %s",
+  "item.dungeontrain.player_album.name_numbered": "Album von %1$s %2$s",
   "chat.dungeontrain.album_drifts_off": "Das Foto findet seinen Platz, und das Album gleitet dir aus den Händen und treibt den Zug entlang davon. Es wird dich wiederfinden.",
   "chat.dungeontrain.found_album_burns": "Du schließt das Album, und es zerfällt zu Asche.",
   "chat.dungeontrain.shared_book.1": "Der Zug hat nun dein Buch. Für die Augen eines anderen…",
