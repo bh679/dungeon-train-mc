@@ -22,7 +22,8 @@ import java.util.UUID;
  * same tick, so vanilla sends both in one update packet built from a {@code HashMap}, and the client
  * adds their cards in that map's order: the capstone's card came first about half the time. Checked
  * {@link #DELAY_TICKS} later it rides a packet of its own, after the card it crowns. The burrito
- * follows the same way: the tab-complete's own earn schedules the next check, so it lands last of all.</p>
+ * follows the same way: a check that grants a tab-complete leaves the burrito for the next one, which
+ * that tab-complete's own earn schedules, so the burrito lands last of all.</p>
  *
  * <p>Login and difficulty swaps still check at once ({@code AdvancementProfiles}): those are backfills
  * with no card to follow. In memory only; a player who leaves before the check is caught by the login
@@ -52,8 +53,9 @@ public final class DeferredCapstoneGrants {
         for (UUID id : PENDING.drainDue(server.getTickCount())) {
             ServerPlayer player = server.getPlayerList().getPlayer(id);
             if (player == null || player.hasDisconnected()) continue;
-            TabCompleteAdvancements.checkAndGrant(player);
-            CompletionistAdvancement.checkAndGrant(player);
+            // A tab-complete granted now is the burrito's last requirement at most: its own earn
+            // schedules the next check, so the burrito gets a packet of its own after it.
+            if (!TabCompleteAdvancements.checkAndGrant(player)) CompletionistAdvancement.checkAndGrant(player);
         }
     }
 
