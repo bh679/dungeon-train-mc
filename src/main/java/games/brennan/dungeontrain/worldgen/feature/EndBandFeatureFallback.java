@@ -75,7 +75,7 @@ public final class EndBandFeatureFallback {
 
     /**
      * Place the island stamp and/or the track bed on {@code chunk} when the decoration loop did not reach them
-     * ({@code ranIslands} / {@code ranTrack}). Overworld only; never inside an offline or vanilla-only sample.
+     * ({@code ranIslands} / {@code ranTrack}: it placed them). Overworld only; never inside an offline or vanilla-only sample.
      * Never throws — a failure logs and leaves the chunk as the loop left it.
      */
     public static void run(WorldGenLevel level, ChunkGenerator generator, ChunkAccess chunk,
@@ -94,22 +94,25 @@ public final class EndBandFeatureFallback {
             BlockPos origin = new BlockPos(pos.getMinBlockX(), level.getMinBuildHeight(), pos.getMinBlockZ());
             WorldgenRandom random = new WorldgenRandom(new XoroshiroRandomSource(RandomSupport.generateUniqueSeed()));
             long decorationSeed = random.setDecorationSeed(level.getSeed(), origin.getX(), origin.getZ());
-            if (!ranIslands) place(level, generator, random, origin, decorationSeed, ISLANDS, 0);
-            if (!ranTrack) place(level, generator, random, origin, decorationSeed, TRACK, 1);
+            boolean islands = !ranIslands && place(level, generator, random, origin, decorationSeed, ISLANDS, 0);
+            boolean track = !ranTrack && place(level, generator, random, origin, decorationSeed, TRACK, 1);
+            if (islands || track) {
+                LOGGER.debug("[DungeonTrain] End-band feature fallback at {}: islands={} track={}", pos, islands, track);
+            }
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] End-band feature fallback failed at {}", chunk.getPos(), t);
         }
     }
 
-    private static void place(WorldGenLevel level, ChunkGenerator generator, WorldgenRandom random,
-                              BlockPos origin, long decorationSeed, ResourceKey<PlacedFeature> key, int index) {
+    private static boolean place(WorldGenLevel level, ChunkGenerator generator, WorldgenRandom random,
+                                 BlockPos origin, long decorationSeed, ResourceKey<PlacedFeature> key, int index) {
         Optional<Holder.Reference<PlacedFeature>> feature =
                 level.registryAccess().registryOrThrow(Registries.PLACED_FEATURE).getHolder(key);
         if (feature.isEmpty()) {
             LOGGER.warn("[DungeonTrain] End-band feature fallback: {} is not registered", key.location());
-            return;
+            return false;
         }
         random.setFeatureSeed(decorationSeed, index, STEP);
-        feature.get().value().place(level, generator, random, origin);
+        return feature.get().value().place(level, generator, random, origin);
     }
 }

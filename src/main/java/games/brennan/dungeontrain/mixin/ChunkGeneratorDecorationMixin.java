@@ -121,10 +121,12 @@ public abstract class ChunkGeneratorDecorationMixin {
     private static final ThreadLocal<RegistryAccess> dungeontrain$superflatVillages = new ThreadLocal<>();
 
     /**
-     * Per-decoration-call record of whether the loop reached the End band's two features — {@code [0]} the
+     * Per-decoration-call record of whether the loop placed the End band's two features — {@code [0]} the
      * island stamp, {@code [1]} the track bed. Vanilla keeps only biomes its source lists, and an End-band
-     * chunk labelled End at every height has none left, so the loop places nothing there; the tail runs what
-     * it missed ({@link EndBandFeatureFallback}). Same lifecycle as the flags above.
+     * chunk labelled End at every height has none left, so the loop never reaches them there — or reaches
+     * them off a neighbour's overworld biome and then fails its own biome check at the chunk's End-labelled
+     * origin. The tail runs what was not placed ({@link EndBandFeatureFallback}). Same lifecycle as the
+     * flags above.
      */
     @Unique
     private static final ThreadLocal<boolean[]> dungeontrain$endBandFeaturesRan = ThreadLocal.withInitial(() -> new boolean[2]);
@@ -190,7 +192,6 @@ public abstract class ChunkGeneratorDecorationMixin {
             target = "Lnet/minecraft/world/level/levelgen/placement/PlacedFeature;placeWithBiomeCheck(Lnet/minecraft/world/level/WorldGenLevel;Lnet/minecraft/world/level/chunk/ChunkGenerator;Lnet/minecraft/util/RandomSource;Lnet/minecraft/core/BlockPos;)Z"))
     private boolean dungeontrain$filterFeature(PlacedFeature feature, WorldGenLevel level, ChunkGenerator generator,
                                                RandomSource random, BlockPos origin) {
-        dungeontrain$noteEndBandFeature(feature);
         if (OfflineChunkSampler.isSampling() && dungeontrain$isDtNamespaceFeature(feature)) {
             return false; // offline sample: DT's corridor and band features belong to the display world only
         }
@@ -220,7 +221,9 @@ public abstract class ChunkGeneratorDecorationMixin {
             return false; // upside-down band: no dungeon spawners hanging in the mirrored ceiling
         }
         if (dungeontrain$isDtNamespaceFeature(feature)) {
-            return feature.placeWithBiomeCheck(level, generator, random, origin);  // DT's own: the core's decoration
+            boolean placed = feature.placeWithBiomeCheck(level, generator, random, origin);  // DT's own: the core's decoration
+            if (placed) dungeontrain$noteEndBandFeature(feature);
+            return placed;
         }
         OverworldDecorationGuard.enter();   // overworld decoration: its writes into the Nether core are refused
         try {
@@ -424,7 +427,7 @@ public abstract class ChunkGeneratorDecorationMixin {
         return kind != null && kind.usesOldGenerator();
     }
 
-    /** Record that the loop reached the island stamp / the track bed for this chunk (see the tail fallback). */
+    /** Record that the loop placed the island stamp / the track bed on this chunk (see the tail fallback). */
     @Unique
     private static void dungeontrain$noteEndBandFeature(PlacedFeature feature) {
         try {
@@ -433,7 +436,7 @@ public abstract class ChunkGeneratorDecorationMixin {
             if (f == ModFeatures.DISINTEGRATION.get()) ran[0] = true;
             else if (f == ModFeatures.TRACK_BED.get()) ran[1] = true;
         } catch (Throwable t) {
-            // unclassifiable → not noted; the fallback may run it again, which is harmless
+            // unclassifiable → not noted; the fallback may run it again, which places nothing new
         }
     }
 
