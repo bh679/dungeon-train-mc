@@ -1,0 +1,15 @@
+{
+  "id": "bake-trusted-mod-hashes",
+  "version": "0.1661.0",
+  "type": "chore",
+  "tags": [
+    "internal"
+  ],
+  "title": "Fair play list update",
+  "summary": "The fair play check now recognises two more approved mods offline.",
+  "highlights": [],
+  "date": "2026-11-04",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
