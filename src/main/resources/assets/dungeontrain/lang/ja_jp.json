@@ -5673,6 +5673,8 @@
   "gui.dungeontrain.perks.death.tile.perks": "強化したパーク",
   "gui.dungeontrain.perks.death.tile.top": "最多ポイント",
   "gui.dungeontrain.perks.death.unlock_hint": "次の命のためにパークを解放しよう。",
+  "gui.dungeontrain.perks.death.skip": "スキップ",
+  "gui.dungeontrain.perks.death.next": "次へ",
   "gui.dungeontrain.perks.story.earned": "この命で%s。",
   "gui.dungeontrain.perks.story.earned_points": "%sを獲得。",
   "gui.dungeontrain.perks.story.advancements.other": "%s 個の進捗",

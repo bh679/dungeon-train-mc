@@ -31663,6 +31663,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "death-perks-next-after-last-point",
+      "version": "0.1659.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Skip and Next on the death perks menu",
+      "summary": "On the perks menu after you die, the corner button now says Skip. Spend your last point there and a Next button takes the place of Unlock, so the way on is right where you were clicking.",
+      "highlights": [],
+      "pr": 2481,
+      "date": "2026-11-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

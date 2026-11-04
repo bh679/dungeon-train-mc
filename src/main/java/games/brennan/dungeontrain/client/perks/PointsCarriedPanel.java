@@ -117,12 +117,16 @@ final class PointsCarriedPanel {
 
     /** The death recap's grey bevel button, saying Next Screen. */
     static void nextButton(GuiGraphics g, Font font, int x, int y, int w, int h, boolean hover, double alpha) {
+        nextButton(g, font, Component.translatable("gui.dungeontrain.death.continue"), x, y, w, h, hover, alpha);
+    }
+
+    /** The death recap's grey bevel button, saying {@code text}. */
+    static void nextButton(GuiGraphics g, Font font, Component text, int x, int y, int w, int h, boolean hover, double alpha) {
         g.fill(x, y, x + w, y + h, fade(hover ? BTN_HOVER_BG : BTN_BG, alpha));
         g.fill(x, y, x + w, y + 2, fade(BTN_LIGHT, alpha));
         g.fill(x, y, x + 2, y + h, fade(BTN_LIGHT, alpha));
         g.fill(x, y + h - 2, x + w, y + h, fade(BTN_DARK, alpha));
         g.fill(x + w - 2, y, x + w, y + h, fade(BTN_DARK, alpha));
-        Component text = Component.translatable("gui.dungeontrain.death.continue");
         g.drawString(font, text, x + (w - font.width(text)) / 2, y + (h - font.lineHeight) / 2 + 1, fade(BTN_TEXT, alpha), false);
     }
 

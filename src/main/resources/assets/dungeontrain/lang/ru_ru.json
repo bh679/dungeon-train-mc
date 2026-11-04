@@ -5807,6 +5807,8 @@
   "gui.dungeontrain.perks.death.tile.perks": "Усилено перков",
   "gui.dungeontrain.perks.death.tile.top": "Больше всего очков",
   "gui.dungeontrain.perks.death.unlock_hint": "Открой перки для следующей жизни.",
+  "gui.dungeontrain.perks.death.skip": "Пропустить",
+  "gui.dungeontrain.perks.death.next": "Далее",
   "gui.dungeontrain.perks.story.earned": "%s за эту жизнь.",
   "gui.dungeontrain.perks.story.earned_points": "Это даёт %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s достижение",

@@ -5737,6 +5737,8 @@
   "gui.dungeontrain.perks.death.tile.perks": "Perks powered",
   "gui.dungeontrain.perks.death.tile.top": "Most points",
   "gui.dungeontrain.perks.death.unlock_hint": "Unlock perks for the next life.",
+  "gui.dungeontrain.perks.death.skip": "Skip",
+  "gui.dungeontrain.perks.death.next": "Next",
   "gui.dungeontrain.perks.story.earned": "%s, this life.",
   "gui.dungeontrain.perks.story.earned_points": "Earning %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s advancement",

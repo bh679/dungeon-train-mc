@@ -5687,6 +5687,8 @@
   "gui.dungeontrain.perks.death.tile.perks": "强化的特权",
   "gui.dungeontrain.perks.death.tile.top": "点数最多",
   "gui.dungeontrain.perks.death.unlock_hint": "为下一生解锁特权。",
+  "gui.dungeontrain.perks.death.skip": "跳过",
+  "gui.dungeontrain.perks.death.next": "下一步",
   "gui.dungeontrain.perks.story.earned": "这一生，%s。",
   "gui.dungeontrain.perks.story.earned_points": "赢得%s。",
   "gui.dungeontrain.perks.story.advancements.other": " %s 项进度",

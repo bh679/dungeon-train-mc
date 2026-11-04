@@ -5673,6 +5673,8 @@
   "gui.dungeontrain.perks.death.tile.perks": "Đặc quyền được tăng",
   "gui.dungeontrain.perks.death.tile.top": "Nhiều điểm nhất",
   "gui.dungeontrain.perks.death.unlock_hint": "Mở khóa đặc quyền cho đời sau.",
+  "gui.dungeontrain.perks.death.skip": "Bỏ qua",
+  "gui.dungeontrain.perks.death.next": "Tiếp",
   "gui.dungeontrain.perks.story.earned": "%s trong đời này.",
   "gui.dungeontrain.perks.story.earned_points": "Mang về %s.",
   "gui.dungeontrain.perks.story.advancements.other": "%s tiến trình",

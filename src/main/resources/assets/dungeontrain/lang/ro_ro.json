@@ -5807,6 +5807,8 @@
   "gui.dungeontrain.perks.death.tile.perks": "Avantaje întărite",
   "gui.dungeontrain.perks.death.tile.top": "Cele mai multe puncte",
   "gui.dungeontrain.perks.death.unlock_hint": "Deblochează avantaje pentru viața următoare.",
+  "gui.dungeontrain.perks.death.skip": "Sari peste",
+  "gui.dungeontrain.perks.death.next": "Înainte",
   "gui.dungeontrain.perks.story.earned": "%s în această viață.",
   "gui.dungeontrain.perks.story.earned_points": "Care aduc %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s realizare",

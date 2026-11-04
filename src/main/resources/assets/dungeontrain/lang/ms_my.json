@@ -5673,6 +5673,8 @@
   "gui.dungeontrain.perks.death.tile.perks": "Perk dikuatkan",
   "gui.dungeontrain.perks.death.tile.top": "Mata terbanyak",
   "gui.dungeontrain.perks.death.unlock_hint": "Buka perk untuk hayat seterusnya.",
+  "gui.dungeontrain.perks.death.skip": "Langkau",
+  "gui.dungeontrain.perks.death.next": "Seterusnya",
   "gui.dungeontrain.perks.story.earned": "%s dalam hayat ini.",
   "gui.dungeontrain.perks.story.earned_points": "Memperoleh %s.",
   "gui.dungeontrain.perks.story.advancements.other": "%s pencapaian",
