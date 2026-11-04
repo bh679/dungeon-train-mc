@@ -38,7 +38,10 @@ Worktrees: `.claude/worktrees/nervous-chatterjee-4681c3`, `xenodochial-lamport-7
 ### login in Claude's browser pane): /micban AshSeven 1, /micunban, /mictwitch on, off all
 ### answered "Only you" privately, nothing in the public feed, and the ban + approval rows show
 ### lifted/revoked on the admin routes. Name lookup is leaderboard player_names (case-insensitive);
-### Brennan's own account is not in it. Still untested: !micban from Discord, explorer Voice page.
+### Brennan's own account is not in it. Discord !micban/!micunban/!mictwitch tested by Brennan in
+### #live-eye at 12:00-12:03 UTC (1-day ban, permanent ban, Twitch on/off): rows recorded and all
+### lifted/revoked. Discord commands only work in the configured Live chat channels (main + second);
+### no dev channel on prod. Still untested: the explorer Voice page.
 
 | PR | Scope |
 |---|---|
