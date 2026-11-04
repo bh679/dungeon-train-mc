@@ -5892,8 +5892,9 @@
   "gui.dungeontrain.perks.story.next_life": "Що ти візьмеш у наступне життя?",
   "gui.dungeontrain.perks.story.unlock": "Ким ти будеш, коли знову сядеш у потяг?",
   "gui.dungeontrain.perks.story.select": "Обери перк, щоб побачити, що в ньому.",
-  "item.dungeontrain.home_cassette": "Домашня касета",
-  "item.dungeontrain.home_cassette.tooltip": "Налаштована на вашу особисту кімнату. Її телевізор показує вашу власну історію.",
-  "chat.dungeontrain.home_room.tv_stays": "Телевізор залишається. Будуйте навколо нього.",
-  "chat.dungeontrain.home_room.view_only": "Тут хтось живе. Дивіться, але залиште все, як було."
+  "item.dungeontrain.tribute_cassette": "Касета пам'яті",
+  "item.dungeontrain.tribute_cassette.tooltip": "Налаштована на твою кімнату пам'яті. Її телевізор показує твою власну історію.",
+  "chat.dungeontrain.tribute_room.tv_stays": "Телевізор залишається. Будуйте навколо нього.",
+  "chat.dungeontrain.tribute_room.view_only": "Чиясь кімната пам'яті. Дивись, але залиш усе, як було.",
+  "chat.dungeontrain.tribute_room.banner": "Ця кімната — данина пам'яті гравцю %s і його рук справа"
 }

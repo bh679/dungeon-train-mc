@@ -5757,8 +5757,9 @@
   "gui.dungeontrain.perks.story.next_life": "다음 생으로 무엇을 가져가겠습니까?",
   "gui.dungeontrain.perks.story.unlock": "다시 탑승할 때, 당신은 누구일까요?",
   "gui.dungeontrain.perks.story.select": "특성을 골라 무엇이 담겼는지 확인하세요.",
-  "item.dungeontrain.home_cassette": "홈 카세트",
-  "item.dungeontrain.home_cassette.tooltip": "자신의 홈 룸에 맞춰진 카세트. 그 TV는 당신 자신의 이야기를 보여준다.",
-  "chat.dungeontrain.home_room.tv_stays": "TV는 그대로 둡니다. 주변에 지으세요.",
-  "chat.dungeontrain.home_room.view_only": "누군가의 집입니다. 구경은 하되 발견한 그대로 두세요."
+  "item.dungeontrain.tribute_cassette": "헌정 카세트",
+  "item.dungeontrain.tribute_cassette.tooltip": "당신의 헌정 방에 맞춰진 카세트. 그 TV는 당신 자신의 이야기를 틀어 줍니다.",
+  "chat.dungeontrain.tribute_room.tv_stays": "TV는 그대로 둡니다. 주변에 지으세요.",
+  "chat.dungeontrain.tribute_room.view_only": "누군가의 헌정 방입니다. 둘러보되, 처음 본 그대로 두세요.",
+  "chat.dungeontrain.tribute_room.banner": "이 방은 %s에게 바치는, 본인이 만든 헌정입니다"
 }

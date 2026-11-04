@@ -273,11 +273,11 @@ public final class DungeonTrainNet {
         registrar.playToClient(SpawnDeckHoldPacket.TYPE, SpawnDeckHoldPacket.STREAM_CODEC, SpawnDeckHoldPacket::handle);
         registrar.playToClient(PortalLoadScreenPacket.TYPE, PortalLoadScreenPacket.STREAM_CODEC, PortalLoadScreenPacket::handle);
         registrar.playToClient(PortalTestSessionPacket.TYPE, PortalTestSessionPacket.STREAM_CODEC, PortalTestSessionPacket::handle);
-        registrar.playToServer(HomeRoomVisitPacket.TYPE, HomeRoomVisitPacket.STREAM_CODEC, HomeRoomVisitPacket::handle);
-        registrar.playToServer(HomeRoomVisitEndPacket.TYPE, HomeRoomVisitEndPacket.STREAM_CODEC, HomeRoomVisitEndPacket::handle);
-        registrar.playToClient(HomeRoomVisitStatePacket.TYPE, HomeRoomVisitStatePacket.STREAM_CODEC, HomeRoomVisitStatePacket::handle);
-        registrar.playToClient(HomeRoomSavedPacket.TYPE, HomeRoomSavedPacket.STREAM_CODEC, HomeRoomSavedPacket::handle);
-        registrar.playToClient(HomeRoomReportPacket.TYPE, HomeRoomReportPacket.STREAM_CODEC, HomeRoomReportPacket::handle);
+        registrar.playToServer(TributeRoomVisitPacket.TYPE, TributeRoomVisitPacket.STREAM_CODEC, TributeRoomVisitPacket::handle);
+        registrar.playToServer(TributeRoomVisitEndPacket.TYPE, TributeRoomVisitEndPacket.STREAM_CODEC, TributeRoomVisitEndPacket::handle);
+        registrar.playToClient(TributeRoomVisitStatePacket.TYPE, TributeRoomVisitStatePacket.STREAM_CODEC, TributeRoomVisitStatePacket::handle);
+        registrar.playToClient(TributeRoomSavedPacket.TYPE, TributeRoomSavedPacket.STREAM_CODEC, TributeRoomSavedPacket::handle);
+        registrar.playToClient(TributeRoomReportPacket.TYPE, TributeRoomReportPacket.STREAM_CODEC, TributeRoomReportPacket::handle);
 
         // Advancements keybind hint: server → the earning player on a gameplay
         // advancement. The client decides whether to show it (gated on its local

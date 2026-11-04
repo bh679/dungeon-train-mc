@@ -5892,8 +5892,9 @@
   "gui.dungeontrain.perks.story.next_life": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "4f9076530c302d93"},
   "gui.dungeontrain.perks.story.unlock": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "e8c55f6eb4464519"},
   "gui.dungeontrain.perks.story.select": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "a9f457e00826290b"},
-  "item.dungeontrain.home_cassette": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "0db3dfd1f7926f16"},
-  "item.dungeontrain.home_cassette.tooltip": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "84e2443d8b31e4c0"},
-  "chat.dungeontrain.home_room.tv_stays": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "df8ca2b0036d2810"},
-  "chat.dungeontrain.home_room.view_only": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "215887430406f432"}
+  "item.dungeontrain.tribute_cassette": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "276ec3937c7e4e3c"},
+  "item.dungeontrain.tribute_cassette.tooltip": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "70d8fc024baf5630"},
+  "chat.dungeontrain.tribute_room.tv_stays": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "df8ca2b0036d2810"},
+  "chat.dungeontrain.tribute_room.view_only": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "47a9cf30afa6fbf1"},
+  "chat.dungeontrain.tribute_room.banner": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "11286999124bea2b"}
 }

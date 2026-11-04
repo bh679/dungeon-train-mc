@@ -5757,8 +5757,9 @@
   "gui.dungeontrain.perks.story.next_life": "次の命へ、何を持っていく？",
   "gui.dungeontrain.perks.story.unlock": "また乗り込むとき、あなたは誰になる？",
   "gui.dungeontrain.perks.story.select": "パークを選んで、その中身を確かめよう。",
-  "item.dungeontrain.home_cassette": "ホームカセット",
-  "item.dungeontrain.home_cassette.tooltip": "自分のホームルームに合わせたカセット。そのテレビはあなた自身の物語を映す。",
-  "chat.dungeontrain.home_room.tv_stays": "テレビはそのまま。周りに建てよう。",
-  "chat.dungeontrain.home_room.view_only": "ここは誰かの家。見るだけにして、元のままにしておこう。"
+  "item.dungeontrain.tribute_cassette": "トリビュートカセット",
+  "item.dungeontrain.tribute_cassette.tooltip": "自分のトリビュートルームに合わせたカセット。そのテレビはあなた自身の物語を映す。",
+  "chat.dungeontrain.tribute_room.tv_stays": "テレビはそのまま。周りに建てよう。",
+  "chat.dungeontrain.tribute_room.view_only": "ここは誰かのトリビュートルーム。見るだけにして、元のままにしておこう。",
+  "chat.dungeontrain.tribute_room.banner": "この部屋は %s への、本人によるトリビュートです"
 }

@@ -40,9 +40,9 @@ public final class TvBlocks {
         return !stack.isEmpty() && stack.getItem() instanceof LiveCassetteItem c && c.isSecond();
     }
 
-    /** The Home Cassette: the one a home room's TV is tuned with ({@code HomeTvBroadcast}). */
+    /** The Tribute Cassette: the one a tribute room's TV is tuned with ({@code TributeTvBroadcast}). */
     public static boolean isHomeCassette(ItemStack stack) {
-        return !stack.isEmpty() && stack.getItem() instanceof games.brennan.dungeontrain.item.HomeTvCassetteItem;
+        return !stack.isEmpty() && stack.getItem() instanceof games.brennan.dungeontrain.item.TributeTvCassetteItem;
     }
 
     /** A fresh cassette for the first stream ({@code second} false) or the second. */

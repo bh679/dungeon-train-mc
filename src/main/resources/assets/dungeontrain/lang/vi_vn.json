@@ -5757,8 +5757,9 @@
   "gui.dungeontrain.perks.story.next_life": "Bạn sẽ mang gì sang đời sau?",
   "gui.dungeontrain.perks.story.unlock": "Bạn sẽ là ai khi lên tàu lần nữa?",
   "gui.dungeontrain.perks.story.select": "Chọn một đặc quyền để xem bên trong có gì.",
-  "item.dungeontrain.home_cassette": "Băng phòng riêng",
-  "item.dungeontrain.home_cassette.tooltip": "Dò sẵn kênh phòng riêng của bạn. TV trong đó phát câu chuyện của chính bạn.",
-  "chat.dungeontrain.home_room.tv_stays": "TV vẫn ở đây. Hãy xây quanh nó.",
-  "chat.dungeontrain.home_room.view_only": "Đây là nhà của ai đó. Cứ xem, nhưng hãy để nguyên như lúc bạn thấy."
+  "item.dungeontrain.tribute_cassette": "Băng tưởng niệm",
+  "item.dungeontrain.tribute_cassette.tooltip": "Dò theo phòng tưởng niệm của bạn. TV của nó chiếu câu chuyện của chính bạn.",
+  "chat.dungeontrain.tribute_room.tv_stays": "TV vẫn ở đây. Hãy xây quanh nó.",
+  "chat.dungeontrain.tribute_room.view_only": "Phòng tưởng niệm của ai đó. Cứ xem, nhưng hãy để nguyên như lúc bạn thấy.",
+  "chat.dungeontrain.tribute_room.banner": "Căn phòng này là lời tri ân dành cho và do %s tạo nên"
 }

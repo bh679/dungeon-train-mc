@@ -5826,8 +5826,9 @@
   "gui.dungeontrain.perks.story.next_life": "O que vais levar para a próxima vida?",
   "gui.dungeontrain.perks.story.unlock": "Quem serás quando voltares a embarcar?",
   "gui.dungeontrain.perks.story.select": "Escolhe uma vantagem para veres o que guarda.",
-  "item.dungeontrain.home_cassette": "Cassete do lar",
-  "item.dungeontrain.home_cassette.tooltip": "Sintonizada no teu quarto pessoal. A televisão dele passa a tua própria história.",
-  "chat.dungeontrain.home_room.tv_stays": "A televisão fica. Constrói à volta dela.",
-  "chat.dungeontrain.home_room.view_only": "Aqui mora alguém. Olha, mas deixa tudo como encontraste."
+  "item.dungeontrain.tribute_cassette": "Cassete de tributo",
+  "item.dungeontrain.tribute_cassette.tooltip": "Sintonizada na tua sala de tributo. A sua TV mostra a tua própria história.",
+  "chat.dungeontrain.tribute_room.tv_stays": "A televisão fica. Constrói à volta dela.",
+  "chat.dungeontrain.tribute_room.view_only": "A sala de tributo de alguém. Vê, mas deixa tudo como encontraste.",
+  "chat.dungeontrain.tribute_room.banner": "Esta sala é um tributo a e por %s"
 }

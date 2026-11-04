@@ -5757,8 +5757,9 @@
   "gui.dungeontrain.perks.story.next_life": "คุณจะนำอะไรไปสู่ชีวิตหน้า",
   "gui.dungeontrain.perks.story.unlock": "คุณจะเป็นใครเมื่อขึ้นรถไฟอีกครั้ง",
   "gui.dungeontrain.perks.story.select": "เลือกพลังพิเศษเพื่อดูว่ามีอะไรอยู่ข้างใน",
-  "item.dungeontrain.home_cassette": "เทปห้องส่วนตัว",
-  "item.dungeontrain.home_cassette.tooltip": "ปรับคลื่นไว้ที่ห้องส่วนตัวของคุณ ทีวีในห้องจะเล่นเรื่องราวของคุณเอง",
-  "chat.dungeontrain.home_room.tv_stays": "ทีวีอยู่ตรงนี้ต่อไป สร้างรอบๆ มันได้เลย",
-  "chat.dungeontrain.home_room.view_only": "นี่คือบ้านของใครบางคน ดูได้ แต่ปล่อยไว้ให้เหมือนเดิม"
+  "item.dungeontrain.tribute_cassette": "ตลับเทปบรรณาการ",
+  "item.dungeontrain.tribute_cassette.tooltip": "ปรับไว้ที่ห้องบรรณาการของคุณ ทีวีของมันเล่นเรื่องราวของคุณเอง",
+  "chat.dungeontrain.tribute_room.tv_stays": "ทีวีอยู่ตรงนี้ต่อไป สร้างรอบๆ มันได้เลย",
+  "chat.dungeontrain.tribute_room.view_only": "ห้องบรรณาการของใครบางคน ดูได้ แต่ปล่อยไว้อย่างที่พบ",
+  "chat.dungeontrain.tribute_room.banner": "ห้องนี้คือบรรณาการแด่และโดย %s"
 }

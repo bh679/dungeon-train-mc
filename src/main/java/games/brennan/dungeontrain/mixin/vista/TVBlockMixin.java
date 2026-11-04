@@ -74,7 +74,7 @@ public abstract class TVBlockMixin {
                                            InteractionHand hand, BlockHitResult hit,
                                            CallbackInfoReturnable<ItemInteractionResult> cir) {
         if (dungeontrain$homeTunedTv(level, pos, state) != null) {
-            // A home room's TV is its owner's death screens; a click on it is the client's (HomeTvVisit),
+            // A tribute room's TV is its owner's death screens; a click on it is the client's (TributeTvVisit),
             // never a channel cycle, and never a power toggle that would blank the picture.
             cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
             return;
@@ -136,7 +136,7 @@ public abstract class TVBlockMixin {
         level.sendBlockUpdated(tv.getBlockPos(), tv.getBlockState(), tv.getBlockState(), Block.UPDATE_CLIENTS);
     }
 
-    /** The screen's master block entity when it holds the Home Cassette, else null. */
+    /** The screen's master block entity when it holds the Tribute Cassette, else null. */
     @Nullable
     private TVBlockEntity dungeontrain$homeTunedTv(Level level, BlockPos pos, BlockState state) {
         return ((IConnectedBlock) (Object) this).findMasterBlockEntity(level, pos, state) instanceof TVBlockEntity tv

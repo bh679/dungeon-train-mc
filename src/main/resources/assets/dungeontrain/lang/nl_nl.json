@@ -5826,8 +5826,9 @@
   "gui.dungeontrain.perks.story.next_life": "Wat neem je mee naar je volgende leven?",
   "gui.dungeontrain.perks.story.unlock": "Wie ben je als je weer instapt?",
   "gui.dungeontrain.perks.story.select": "Kies een perk om te zien wat erin zit.",
-  "item.dungeontrain.home_cassette": "Thuiscassette",
-  "item.dungeontrain.home_cassette.tooltip": "Afgestemd op je eigen kamer. De tv daar speelt je eigen verhaal.",
-  "chat.dungeontrain.home_room.tv_stays": "De tv blijft staan. Bouw eromheen.",
-  "chat.dungeontrain.home_room.view_only": "Hier woont iemand. Kijk gerust, maar laat alles zoals je het aantrof."
+  "item.dungeontrain.tribute_cassette": "Eerbetooncassette",
+  "item.dungeontrain.tribute_cassette.tooltip": "Afgestemd op je eerbetoonkamer. De tv speelt je eigen verhaal af.",
+  "chat.dungeontrain.tribute_room.tv_stays": "De tv blijft staan. Bouw eromheen.",
+  "chat.dungeontrain.tribute_room.view_only": "Iemands eerbetoonkamer. Kijk rond, maar laat alles zoals je het aantrof.",
+  "chat.dungeontrain.tribute_room.banner": "Deze kamer is een eerbetoon aan en door %s"
 }

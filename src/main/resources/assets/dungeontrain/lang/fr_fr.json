@@ -5826,8 +5826,9 @@
   "gui.dungeontrain.perks.story.next_life": "Qu'emporteras-tu dans ta prochaine vie ?",
   "gui.dungeontrain.perks.story.unlock": "Qui seras-tu quand tu remonteras à bord ?",
   "gui.dungeontrain.perks.story.select": "Choisis un atout pour voir ce qu'il cache.",
-  "item.dungeontrain.home_cassette": "Cassette du foyer",
-  "item.dungeontrain.home_cassette.tooltip": "Réglée sur votre chambre personnelle. Sa télé diffuse votre propre histoire.",
-  "chat.dungeontrain.home_room.tv_stays": "La télé reste. Construisez autour.",
-  "chat.dungeontrain.home_room.view_only": "Quelqu'un vit ici. Regardez, mais laissez tout comme vous l'avez trouvé."
+  "item.dungeontrain.tribute_cassette": "Cassette d'hommage",
+  "item.dungeontrain.tribute_cassette.tooltip": "Réglée sur votre salle d'hommage. Sa télé diffuse votre propre histoire.",
+  "chat.dungeontrain.tribute_room.tv_stays": "La télé reste. Construisez autour.",
+  "chat.dungeontrain.tribute_room.view_only": "La salle d'hommage de quelqu'un. Regardez, mais laissez tout comme vous l'avez trouvé.",
+  "chat.dungeontrain.tribute_room.banner": "Cette salle est un hommage à %s, et de sa main"
 }

@@ -5771,8 +5771,9 @@
   "gui.dungeontrain.perks.story.next_life": "你会把什么带进下一生？",
   "gui.dungeontrain.perks.story.unlock": "再次登车时，你会是谁？",
   "gui.dungeontrain.perks.story.select": "选择一项特权，看看其中有什么。",
-  "item.dungeontrain.home_cassette": "家居录像带",
-  "item.dungeontrain.home_cassette.tooltip": "已调至你的私人房间。那里的电视播放的是你自己的故事。",
-  "chat.dungeontrain.home_room.tv_stays": "电视留在原地。围着它来建造吧。",
-  "chat.dungeontrain.home_room.view_only": "这是别人的家。可以看看，但请保持原样。"
+  "item.dungeontrain.tribute_cassette": "致敬磁带",
+  "item.dungeontrain.tribute_cassette.tooltip": "调到你的致敬房间。它的电视播放你自己的故事。",
+  "chat.dungeontrain.tribute_room.tv_stays": "电视留在原地。围着它来建造吧。",
+  "chat.dungeontrain.tribute_room.view_only": "这是别人的致敬房间。看看可以，但请保持原样。",
+  "chat.dungeontrain.tribute_room.banner": "这个房间是献给 %s 的致敬，也出自其手"
 }

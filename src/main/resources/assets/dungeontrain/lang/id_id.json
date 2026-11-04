@@ -5757,8 +5757,9 @@
   "gui.dungeontrain.perks.story.next_life": "Apa yang akan kamu bawa ke hidup berikutnya?",
   "gui.dungeontrain.perks.story.unlock": "Siapa dirimu saat kamu naik lagi?",
   "gui.dungeontrain.perks.story.select": "Pilih perk untuk melihat isinya.",
-  "item.dungeontrain.home_cassette": "Kaset Rumah",
-  "item.dungeontrain.home_cassette.tooltip": "Disetel ke kamar pribadimu. TV-nya memutar kisahmu sendiri.",
-  "chat.dungeontrain.home_room.tv_stays": "TV-nya tetap di sini. Bangunlah di sekitarnya.",
-  "chat.dungeontrain.home_room.view_only": "Ini rumah seseorang. Lihat saja, tapi tinggalkan seperti saat kamu menemukannya."
+  "item.dungeontrain.tribute_cassette": "Kaset Tribut",
+  "item.dungeontrain.tribute_cassette.tooltip": "Disetel ke ruang tributmu. TV-nya memutar kisahmu sendiri.",
+  "chat.dungeontrain.tribute_room.tv_stays": "TV-nya tetap di sini. Bangunlah di sekitarnya.",
+  "chat.dungeontrain.tribute_room.view_only": "Ruang tribut milik orang lain. Lihat saja, tapi tinggalkan seperti saat kamu menemukannya.",
+  "chat.dungeontrain.tribute_room.banner": "Ruangan ini adalah tribut untuk dan oleh %s"
 }

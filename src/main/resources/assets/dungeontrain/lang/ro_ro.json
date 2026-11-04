@@ -5895,8 +5895,9 @@
   "gui.dungeontrain.perks.story.next_life": "Ce vei lua cu tine în viața următoare?",
   "gui.dungeontrain.perks.story.unlock": "Cine vei fi când te vei urca din nou?",
   "gui.dungeontrain.perks.story.select": "Alege un avantaj ca să vezi ce ascunde.",
-  "item.dungeontrain.home_cassette": "Casetă de acasă",
-  "item.dungeontrain.home_cassette.tooltip": "Reglată pe camera ta personală. Televizorul ei îți redă propria poveste.",
-  "chat.dungeontrain.home_room.tv_stays": "Televizorul rămâne. Construiește în jurul lui.",
-  "chat.dungeontrain.home_room.view_only": "Aici locuiește cineva. Privește, dar lasă totul așa cum ai găsit."
+  "item.dungeontrain.tribute_cassette": "Casetă de tribut",
+  "item.dungeontrain.tribute_cassette.tooltip": "Acordată pe camera ta de tribut. Televizorul ei redă propria ta poveste.",
+  "chat.dungeontrain.tribute_room.tv_stays": "Televizorul rămâne. Construiește în jurul lui.",
+  "chat.dungeontrain.tribute_room.view_only": "Camera de tribut a cuiva. Privește, dar las-o așa cum ai găsit-o.",
+  "chat.dungeontrain.tribute_room.banner": "Această cameră este un tribut pentru și de la %s"
 }

@@ -18192,5 +18192,14 @@
         "7"
       ]
     }
+  },
+  "chat.dungeontrain.tribute_room.banner": {
+    "1": {
+      "label": "the name of the player whose tribute room this is",
+      "examples": [
+        "Wren",
+        "Brennan"
+      ]
+    }
   }
 }

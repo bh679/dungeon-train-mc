@@ -5895,8 +5895,9 @@
   "gui.dungeontrain.perks.story.next_life": "Co zabierzesz do następnego życia?",
   "gui.dungeontrain.perks.story.unlock": "Kim będziesz, gdy znów wsiądziesz?",
   "gui.dungeontrain.perks.story.select": "Wybierz perk, by zobaczyć, co skrywa.",
-  "item.dungeontrain.home_cassette": "Kaseta domowa",
-  "item.dungeontrain.home_cassette.tooltip": "Dostrojona do twojego pokoju. Jego telewizor odtwarza twoją własną historię.",
-  "chat.dungeontrain.home_room.tv_stays": "Telewizor zostaje. Buduj wokół niego.",
-  "chat.dungeontrain.home_room.view_only": "Ktoś tu mieszka. Rozejrzyj się, ale zostaw wszystko tak, jak zastałeś."
+  "item.dungeontrain.tribute_cassette": "Kaseta hołdu",
+  "item.dungeontrain.tribute_cassette.tooltip": "Nastrojona na twój pokój hołdu. Jego telewizor odtwarza twoją własną historię.",
+  "chat.dungeontrain.tribute_room.tv_stays": "Telewizor zostaje. Buduj wokół niego.",
+  "chat.dungeontrain.tribute_room.view_only": "Czyjś pokój hołdu. Rozejrzyj się, ale zostaw wszystko tak, jak zastałeś.",
+  "chat.dungeontrain.tribute_room.banner": "Ten pokój to hołd dla gracza %s i jego dzieło"
 }

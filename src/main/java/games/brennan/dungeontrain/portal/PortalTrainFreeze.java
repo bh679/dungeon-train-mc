@@ -130,7 +130,7 @@ public final class PortalTrainFreeze {
         for (Map.Entry<UUID, List<Trains.Carriage>> train : trains.entrySet()) {
             UUID trainId = train.getKey();
             boolean freeze = ((trainsWithOccupiedRooms.contains(trainId)
-                || games.brennan.dungeontrain.portal.home.HomeRoomVisitSessions.holdsTrain(trainId))
+                || games.brennan.dungeontrain.portal.tribute.TributeRoomVisitSessions.holdsTrain(trainId))
                 && !anyoneWatching(train.getValue(), players, dims, inStructure))
                 || heldForArrival.contains(trainId);
             TrainMotionFreeze.setFrozen(trainId, freeze);

@@ -180,7 +180,7 @@ public final class PerksScreen extends Screen {
 
     @Override
     protected void init() {
-        // A new canvas size (the home TV's texture, not the window) gets a fresh fit; a resize of
+        // A new canvas size (the tribute TV's texture, not the window) gets a fresh fit; a resize of
         // the same canvas keeps the player's pan and zoom, clamped.
         boolean sameCanvas = fittedWidth == width && fittedHeight == skyH();
         view = view == null || !sameCanvas ? SkyView.fit(width, skyH()) : view.clamped(width, skyH());
@@ -203,10 +203,10 @@ public final class PerksScreen extends Screen {
             death.advance(Util.getMillis());
             return;
         }
-        // on death there is no game to go back to: closing moves on to the home room, where the TV
+        // on death there is no game to go back to: closing moves on to the tribute room, where the TV
         // keeps showing this menu — or straight to the recap when there is nobody to stand in a room
         if (death != null && mc.player != null && mc.player.isDeadOrDying()) {
-            games.brennan.dungeontrain.client.homeroom.HomeTvVisit.begin(this, death::next);
+            games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.begin(this, death::next);
             return;
         }
         PerksHud.onMenuClosed();

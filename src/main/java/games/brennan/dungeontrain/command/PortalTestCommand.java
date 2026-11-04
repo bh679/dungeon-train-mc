@@ -300,10 +300,10 @@ public final class PortalTestCommand {
         // in the room they have until the new one is ready.
         // The room's salt a frame-only reseed keeps, read before Back takes the session.
         int keptSalt = current != null ? current.structure().seedSalt() : PortalStructure.NO_SALT;
-        // The home room alternates its passages press by press: black death tubes first, then a
+        // The tribute room alternates its passages press by press: black death tubes first, then a
         // normal pair corridor, then tubes again — and stands a random saved player's room each time.
-        boolean homeTubes = PortalTestSession.homeTubesFor(roomName, current);
-        boolean homeRoom = games.brennan.dungeontrain.portal.home.HomeRooms.TEMPLATE.equals(roomName);
+        boolean tributeTubes = PortalTestSession.tributeTubesFor(roomName, current);
+        boolean tributeRoom = games.brennan.dungeontrain.portal.tribute.TributeRooms.TEMPLATE.equals(roomName);
         if (current != null) {
             // Back drops a frame test's force — right for the Back button, wrong for this trip
             // straight back in, which is the same frame test re-rolled.
@@ -390,7 +390,7 @@ public final class PortalTestCommand {
                 overworld.getSeed(), PortalTestSession.PAIR_KEY, roomName, roomSalt),
             PortalRoomTiling.MAX_RADIUS);
         // A home press that is not the tubes stands a random normal corridor, as a pair on the train would.
-        PortalCorridorKind corridorKind = homeRoom && !homeTubes
+        PortalCorridorKind corridorKind = tributeRoom && !tributeTubes
             ? (overworld.random.nextBoolean() ? PortalCorridorKind.LONG : PortalCorridorKind.SHORT)
             : PortalCorridorKind.DEFAULT;
         PortalStructure planned = new PortalStructure(
@@ -400,12 +400,12 @@ public final class PortalTestCommand {
             // on the train, block variants and all.
             PortalRoomTiling.base(), games.brennan.dungeontrain.portal.PortalExitCopies.NONE,
             exitTile, corridorKind, roomSalt);
-        // The home room as some player saved it — any of them, drawn afresh each press — or the
+        // The tribute room as some player saved it — any of them, drawn afresh each press — or the
         // template when nobody has one yet. Both the tubes and the pair stamp lay the blob.
-        games.brennan.dungeontrain.portal.home.HomeRoomBlob homeBlob = homeRoom
-            ? games.brennan.dungeontrain.portal.home.HomeRoomPlacement.randomSavedRoom(overworld, player, dims, roomSize).orElse(null)
+        games.brennan.dungeontrain.portal.tribute.TributeRoomBlob tributeBlob = tributeRoom
+            ? games.brennan.dungeontrain.portal.tribute.TributeRoomPlacement.randomSavedRoom(overworld, player, dims, roomSize).orElse(null)
             : null;
-        final PortalStructure structure = homeBlob != null ? planned.withBlob(homeBlob.toPortalRoomBlob()) : planned;
+        final PortalStructure structure = tributeBlob != null ? planned.withBlob(tributeBlob.toPortalRoomBlob()) : planned;
         // The frame's roll: re-rolled when asked for, kept when not, and on every other press
         // rolled with the room.
         if (reroll == null || reroll.frame()) {
@@ -439,7 +439,7 @@ public final class PortalTestCommand {
         // a run and would otherwise withhold every hostile in the build they are here to check.
         PortalTestSession.put(player.getUUID(), new PortalTestSession.Session(
             player.level().dimension(), player.position(), player.getYRot(), player.getXRot(),
-            previous, structure, roomName, arrival, homeTubes));
+            previous, structure, roomName, arrival, tributeTubes));
 
         // Test rig: no stage ⇒ placeholders resolve through the default palette. Via the shared
         // lookup (the session is registered above, so it reads as a test stamp) so the tiler's
@@ -447,16 +447,16 @@ public final class PortalTestCommand {
         games.brennan.dungeontrain.train.StagePlacementScope.run(
             PortalCarriageBuilder.stageIdFor(overworld, PortalTestSession.PAIR_KEY, dims),
             () -> {
-                if (homeTubes && structure.blob() != null) {
+                if (tributeTubes && structure.blob() != null) {
                     // The death visit's shape: the room, then the black tubes against its doors.
                     PortalCarriageBuilder.stampRoomFromBlob(overworld, roomOrigin, roomSize, structure.blob(), PortalTestSession.PAIR_KEY);
-                    games.brennan.dungeontrain.portal.home.HomeRoomCorridors.stamp(overworld, roomOrigin, roomSize, dims);
+                    games.brennan.dungeontrain.portal.tribute.TributeRoomCorridors.stamp(overworld, roomOrigin, roomSize, dims);
                 } else {
                     PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, PortalTestSession.PAIR_KEY);
                 }
-                if (homeBlob != null) {
-                    games.brennan.dungeontrain.portal.home.HomeRoomHeads.dress(
-                        overworld, roomOrigin, roomSize, homeBlob.owner(), homeBlob.ownerName());
+                if (tributeBlob != null) {
+                    games.brennan.dungeontrain.portal.tribute.TributeRoomHeads.dress(
+                        overworld, roomOrigin, roomSize, tributeBlob.owner(), tributeBlob.ownerName());
                 }
             });
 
@@ -470,9 +470,10 @@ public final class PortalTestCommand {
         // live pair's room, on the same box; a test session is not a pair, so nothing there sees
         // it, and a room set to Daylight tested dark — which is precisely what the test is for.
         sendSky(player, dims, layout, structure);
-        // The home TV replays its owner's last death, as it does on the train.
-        if (homeBlob != null) {
-            games.brennan.dungeontrain.portal.home.HomeRoomPlacement.sendReport(overworld, player, roomOrigin, roomSize, homeBlob);
+        // The tribute TV replays its owner's last death, as it does on the train.
+        if (tributeBlob != null) {
+            games.brennan.dungeontrain.portal.tribute.TributeRoomPlacement.sendReport(overworld, player, roomOrigin, roomSize, tributeBlob);
+            games.brennan.dungeontrain.portal.tribute.TributeRoomPlacement.showBanner(player, tributeBlob);
         }
 
         LOGGER.info("[DungeonTrain] portal test: stamped '{}' ({}x{}x{}) at {} for {} — arrival {}, salt={}",
@@ -695,8 +696,8 @@ public final class PortalTestCommand {
         // that box would leave every copy the ticker grew standing under the world. The structure
         // knows its own tiled bounds; union them with the footprint and clear the lot. Blunt is
         // right here: the test band holds nothing else to protect.
-        BoundingBox window = session.homeTubes()
-            ? games.brennan.dungeontrain.portal.home.HomeRoomCorridors.windowFor(overworld, session.structure(), dims)
+        BoundingBox window = session.tributeTubes()
+            ? games.brennan.dungeontrain.portal.tribute.TributeRoomCorridors.windowFor(overworld, session.structure(), dims)
             : windowBox(overworld, session.structure(), dims);
         int cleared = PortalClear.clearBox(overworld, window, PortalCorridorMask.NONE);
         // And the room's mobs. A live room's are carried to its next site, so the clear leaves them;

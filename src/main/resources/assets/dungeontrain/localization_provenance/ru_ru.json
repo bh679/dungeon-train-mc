@@ -4907,10 +4907,11 @@
       "gui.dungeontrain.perks.story.next_life",
       "gui.dungeontrain.perks.story.unlock",
       "gui.dungeontrain.perks.story.select",
-      "item.dungeontrain.home_cassette",
-      "item.dungeontrain.home_cassette.tooltip",
-      "chat.dungeontrain.home_room.tv_stays",
-      "chat.dungeontrain.home_room.view_only"
+      "item.dungeontrain.tribute_cassette",
+      "item.dungeontrain.tribute_cassette.tooltip",
+      "chat.dungeontrain.tribute_room.tv_stays",
+      "chat.dungeontrain.tribute_room.view_only",
+      "chat.dungeontrain.tribute_room.banner"
     ],
     "adventureitemnames": [
       "key.categories.adventureitemnames",

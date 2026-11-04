@@ -106,9 +106,9 @@ public final class RespawnDimensionEvents {
     @SubscribeEvent
     public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        // A death visit respawns the player into their home room; the train comes after
-        // (placeAfterHomeRoom), once they have left it.
-        if (games.brennan.dungeontrain.portal.home.HomeRoomVisitSessions.isVisiting(player.getUUID())) return;
+        // A death visit respawns the player into their tribute room; the train comes after
+        // (placeAfterTributeRoom), once they have left it.
+        if (games.brennan.dungeontrain.portal.tribute.TributeRoomVisitSessions.isVisiting(player.getUUID())) return;
         MinecraftServer server = player.getServer();
         if (server == null || server.isHardcore()) return;
 
@@ -139,11 +139,11 @@ public final class RespawnDimensionEvents {
     }
 
     /**
-     * The placement a respawn would have had, run once a home room visit ends: roll the starting
+     * The placement a respawn would have had, run once a tribute room visit ends: roll the starting
      * dimension and put the player on its train. {@code true} when they were placed, {@code false}
      * when this world has no train to place them on (they are left where they are).
      */
-    public static boolean placeAfterHomeRoom(ServerPlayer player) {
+    public static boolean placeAfterTributeRoom(ServerPlayer player) {
         MinecraftServer server = player.getServer();
         if (server == null || server.isHardcore()) return false;
         ServerLevel overworld = server.overworld();
@@ -152,11 +152,11 @@ public final class RespawnDimensionEvents {
         StartingDimension rolled = StartingDimension.rollRespawnDimension(overworld.random.nextDouble());
         ServerLevel target = server.getLevel(rolled.levelKey());
         if (target == null) {
-            LOGGER.warn("[DungeonTrain] Home room: rolled dim {} not loaded — leaving {} where they are", rolled, player.getName().getString());
+            LOGGER.warn("[DungeonTrain] Tribute room: rolled dim {} not loaded — leaving {} where they are", rolled, player.getName().getString());
             return false;
         }
-        LOGGER.info("[DungeonTrain] Home room: rolled startingDimension={} for {}", rolled, player.getName().getString());
-        placeOrWake(player, target, data, "Home room");
+        LOGGER.info("[DungeonTrain] Tribute room: rolled startingDimension={} for {}", rolled, player.getName().getString());
+        placeOrWake(player, target, data, "Tribute room");
         return true;
     }
 

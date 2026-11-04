@@ -5826,8 +5826,9 @@
   "gui.dungeontrain.perks.story.next_life": "Was nimmst du mit ins nächste Leben?",
   "gui.dungeontrain.perks.story.unlock": "Wer wirst du sein, wenn du wieder einsteigst?",
   "gui.dungeontrain.perks.story.select": "Wähle einen Perk, um zu sehen, was er birgt.",
-  "item.dungeontrain.home_cassette": "Heimkassette",
-  "item.dungeontrain.home_cassette.tooltip": "Auf dein Heimzimmer eingestellt. Sein Fernseher zeigt deine eigene Geschichte.",
-  "chat.dungeontrain.home_room.tv_stays": "Der Fernseher bleibt. Bau drumherum.",
-  "chat.dungeontrain.home_room.view_only": "Hier wohnt jemand. Schau dich um, aber lass alles, wie du es vorgefunden hast."
+  "item.dungeontrain.tribute_cassette": "Tributkassette",
+  "item.dungeontrain.tribute_cassette.tooltip": "Auf dein Tributzimmer eingestellt. Sein Fernseher zeigt deine eigene Geschichte.",
+  "chat.dungeontrain.tribute_room.tv_stays": "Der Fernseher bleibt. Bau drumherum.",
+  "chat.dungeontrain.tribute_room.view_only": "Jemandes Tributzimmer. Schau dich um, aber lass alles, wie du es vorgefunden hast.",
+  "chat.dungeontrain.tribute_room.banner": "Dieser Raum ist ein Tribut an und von %s"
 }

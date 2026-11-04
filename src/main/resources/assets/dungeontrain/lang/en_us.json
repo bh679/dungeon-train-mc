@@ -5823,8 +5823,9 @@
   "gui.dungeontrain.perks.story.next_life": "What will you carry into the next life?",
   "gui.dungeontrain.perks.story.unlock": "Who will you be when you board again?",
   "gui.dungeontrain.perks.story.select": "Choose a perk to see what it holds.",
-  "item.dungeontrain.home_cassette": "Home Cassette",
-  "item.dungeontrain.home_cassette.tooltip": "Tuned to your home room. Its TV plays your own story.",
-  "chat.dungeontrain.home_room.tv_stays": "The TV stays. Build around it.",
-  "chat.dungeontrain.home_room.view_only": "Somebody's home. Look, but leave it as you found it."
+  "item.dungeontrain.tribute_cassette": "Tribute Cassette",
+  "item.dungeontrain.tribute_cassette.tooltip": "Tuned to your tribute room. Its TV plays your own story.",
+  "chat.dungeontrain.tribute_room.tv_stays": "The TV stays. Build around it.",
+  "chat.dungeontrain.tribute_room.view_only": "Somebody's tribute room. Look, but leave it as you found it.",
+  "chat.dungeontrain.tribute_room.banner": "This room is a tribute to and by %s"
 }

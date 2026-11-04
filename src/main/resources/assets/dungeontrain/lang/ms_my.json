@@ -5757,8 +5757,9 @@
   "gui.dungeontrain.perks.story.next_life": "Apa yang akan anda bawa ke hayat seterusnya?",
   "gui.dungeontrain.perks.story.unlock": "Siapakah anda apabila menaiki semula?",
   "gui.dungeontrain.perks.story.select": "Pilih perk untuk melihat isinya.",
-  "item.dungeontrain.home_cassette": "Kaset Rumah",
-  "item.dungeontrain.home_cassette.tooltip": "Ditala ke bilik peribadi anda. TV-nya memainkan kisah anda sendiri.",
-  "chat.dungeontrain.home_room.tv_stays": "TV kekal di sini. Binalah di sekelilingnya.",
-  "chat.dungeontrain.home_room.view_only": "Ini rumah seseorang. Lihat sahaja, tetapi tinggalkan seperti anda menjumpainya."
+  "item.dungeontrain.tribute_cassette": "Kaset Penghormatan",
+  "item.dungeontrain.tribute_cassette.tooltip": "Ditala ke bilik penghormatan anda. TV-nya memainkan kisah anda sendiri.",
+  "chat.dungeontrain.tribute_room.tv_stays": "TV kekal di sini. Binalah di sekelilingnya.",
+  "chat.dungeontrain.tribute_room.view_only": "Bilik penghormatan milik orang lain. Lihat sahaja, tetapi tinggalkan seperti anda menjumpainya.",
+  "chat.dungeontrain.tribute_room.banner": "Bilik ini ialah penghormatan untuk dan oleh %s"
 }

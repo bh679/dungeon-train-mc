@@ -305,7 +305,7 @@ public final class NarrativeDeathScreen extends Screen {
     private String liveLifeId = LiveLifeEvents.lifeForScreen();
     // Dev preview (LiveDeathPagesPreview): open on "the broadcast" instead of the fall.
     private boolean openOnLivePages = false;
-    // Another player's last death, replayed on their home room's TV: the stats come from the saved
+    // Another player's last death, replayed on their tribute room's TV: the stats come from the saved
     // report, nothing is sent, answered or ended from here, and the run-end controls stay hidden.
     @Nullable
     private DeathStatsPacket reportOverride;
@@ -351,7 +351,7 @@ public final class NarrativeDeathScreen extends Screen {
     private final DeathPortraitRenderer portrait = new DeathPortraitRenderer();
 
     // Clickable regions, recomputed each render() and read by mouseClicked().
-    private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect;
+    private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect, fullscreenRect;
     // DONATE page: the in-body Contribute button (opens the Revolut donate link), the per-tile
     // hover-tooltip regions, and the scrollable supporter-name list state.
     private Rect donateRect;
@@ -437,7 +437,7 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     /**
-     * Another player's last death, as their home room's TV replays it: their saved stats, their
+     * Another player's last death, as their tribute room's TV replays it: their saved stats, their
      * death message as the fall title, the story pages only — no survey, no donation, no Board anew,
      * nothing sent anywhere.
      */
@@ -2176,7 +2176,12 @@ public final class NarrativeDeathScreen extends Screen {
         Component reboard = runEndLabel(true);
         int leaveW = this.font.width(leave) + 16;
         int reboardW = this.font.width(reboard) + 16;
-        int leaveX = this.width - 10 - leaveW;
+        // On a tribute TV a fullscreen toggle sits in the very corner, right of leave: it lifts the
+        // page onto the window, and while it is up there it is the way back down, as Esc is.
+        boolean onTv = onTv();
+        int fsW = onTv ? 14 : 0;
+        fullscreenRect = onTv ? drawFullscreenChip(g, this.width - 10 - fsW, 8, zoomedOnWindow()) : null;
+        int leaveX = this.width - 10 - leaveW - (onTv ? fsW + 6 : 0);
         int reboardX = leaveX - 6 - reboardW;
         leaveRect = foreign ? null : shiftHeld
                 ? drawChip(g, leaveX, 8, leave, CHIP_LV_QUIT_BG, CHIP_LV_QUIT_BORDER, CHIP_LV_QUIT_TEXT)
@@ -2451,6 +2456,7 @@ public final class NarrativeDeathScreen extends Screen {
             }
             if (reboardRect != null && reboardRect.has(mx, my)) { boardAnew(); return true; }
             if (leaveRect != null && leaveRect.has(mx, my)) { leaveOrQuit(); return true; }
+            if (fullscreenRect != null && fullscreenRect.has(mx, my)) { toggleFullscreen(); return true; }
             Page page = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);
             if (bugReportRect != null && bugReportRect.has(mx, my)) {
                 // Jump straight to the bug-report question; Next Screen there returns here.
@@ -2665,8 +2671,8 @@ public final class NarrativeDeathScreen extends Screen {
         if (!foreign) UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_BOARD_ANEW);
         leavePageAnalytics(); // terminal exit — close the current page's dwell
         boolean keepMode = Screen.hasShiftDown();
-        // From the home room the server has to save the room first; it answers, and the run ends then.
-        if (games.brennan.dungeontrain.client.homeroom.HomeTvVisit.endRun(this, keepMode)) return;
+        // From the tribute room the server has to save the room first; it answers, and the run ends then.
+        if (games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.endRun(this, keepMode)) return;
         if (remote()) {
             respawn();
             return;
@@ -2799,14 +2805,59 @@ public final class NarrativeDeathScreen extends Screen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (photoViewer.isOpen()) return photoViewer.keyPressed(photos(), keyCode);
-        // Zoomed in on the home TV: Esc steps back to the room, the page staying on the screen.
+        // Zoomed in on the tribute TV: Esc steps back to the room, the page staying on the screen.
         // Esc steps back; so does Enter while typing in a field, as chat gives the keys back on Enter.
         boolean enterInField = textFieldFocused()
             && (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER);
         if ((keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE || enterInField)
-            && (games.brennan.dungeontrain.client.homeroom.HomeTvVisit.leaveZoom(this)
-                || games.brennan.dungeontrain.client.homeroom.HomeTvShowcase.leaveZoom(this))) return true;
+            && (games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.leaveZoom(this)
+                || games.brennan.dungeontrain.client.tributeroom.TributeTvShowcase.leaveZoom(this))) return true;
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    // ---- the tribute TV's fullscreen toggle --------------------------------------------------
+
+    /** Whether this page is showing on a tribute TV (the visit's, or one on the train). */
+    private boolean onTv() {
+        return games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.showsPage(this)
+            || games.brennan.dungeontrain.client.tributeroom.TributeTvShowcase.showsPage(this);
+    }
+
+    /** Whether the page is up on the window right now rather than drawn only on the TV. */
+    private boolean zoomedOnWindow() {
+        return this.minecraft != null && this.minecraft.screen == this;
+    }
+
+    /** The corner chip: lift the page onto the window, or, once it is there, put it back on the TV. */
+    private void toggleFullscreen() {
+        if (zoomedOnWindow()) {
+            if (!games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.leaveZoom(this)) {
+                games.brennan.dungeontrain.client.tributeroom.TributeTvShowcase.leaveZoom(this);
+            }
+            return;
+        }
+        if (!games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.lift(this)) {
+            games.brennan.dungeontrain.client.tributeroom.TributeTvShowcase.lift(this);
+        }
+    }
+
+    /**
+     * A 14x14 chip with a fullscreen glyph: four corner brackets opening outward to go up, and a
+     * small square inside them to come back down.
+     */
+    private Rect drawFullscreenChip(GuiGraphics g, int x, int y, boolean zoomed) {
+        int s = 14;
+        g.fill(x, y, x + s, y + s, fade(0x66000000));
+        drawBorder(g, x, y, s, s, CHIP_LV_BORDER);
+        int c = fade(CHIP_LV_TEXT);
+        int l = x + 3, t = y + 3, r = x + s - 3, b = y + s - 3; // 8x8 glyph box
+        // Corner brackets, each two 3px arms.
+        g.fill(l, t, l + 3, t + 1, c); g.fill(l, t, l + 1, t + 3, c);
+        g.fill(r - 3, t, r, t + 1, c); g.fill(r - 1, t, r, t + 3, c);
+        g.fill(l, b - 1, l + 3, b, c); g.fill(l, b - 3, l + 1, b, c);
+        g.fill(r - 3, b - 1, r, b, c); g.fill(r - 1, b - 3, r, b, c);
+        if (zoomed) g.fill(l + 2, t + 2, r - 2, b - 2, c);
+        return new Rect(x, y, s, s);
     }
 
     /** Whether a text field on this page has the keyboard. */
@@ -2830,9 +2881,9 @@ public final class NarrativeDeathScreen extends Screen {
         if (getFocused() instanceof EditBox) setFocused(null);
     }
 
-    // ---- the home TV's channel controls -----------------------------------------------------
+    // ---- the tribute TV's channel controls -----------------------------------------------------
 
-    /** Next page, as the Next Screen button does. For the home TV, where a click is the only control. */
+    /** Next page, as the Next Screen button does. For the tribute TV, where a click is the only control. */
     public void tvAdvance() {
         advance();
     }

@@ -8,8 +8,8 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.AABB;
 
 /**
- * Clearing up after a structure that stood alone in a private band — a portal test, a home room visit.
- * Shared by {@code PortalTestCommand} and {@code HomeRoomVisitService}, so both sweep the same box.
+ * Clearing up after a structure that stood alone in a private band — a portal test, a tribute room visit.
+ * Shared by {@code PortalTestCommand} and {@code TributeRoomVisitService}, so both sweep the same box.
  */
 public final class PortalTestSweep {
 

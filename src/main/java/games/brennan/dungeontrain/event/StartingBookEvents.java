@@ -263,14 +263,14 @@ public final class StartingBookEvents {
         if (event.isEndConquered()) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (isBuilderWorld(player)) return;
-        // A home room visit is not the train: the strike waits for the way out (strikeAfterHomeRoom).
-        if (games.brennan.dungeontrain.portal.home.HomeRoomVisitSessions.isVisiting(player.getUUID())) return;
+        // A tribute room visit is not the train: the strike waits for the way out (strikeAfterTributeRoom).
+        if (games.brennan.dungeontrain.portal.tribute.TributeRoomVisitSessions.isVisiting(player.getUUID())) return;
         // Respawn context is unambiguous; pre-resolve at enqueue.
         PENDING_STRIKE.put(player.getUUID(), new PendingStrike(STRIKE_DELAY_TICKS, StartingBookContext.RESPAWN));
     }
 
-    /** The respawn strike, once a home room visit has put the player on the train. */
-    public static void strikeAfterHomeRoom(ServerPlayer player) {
+    /** The respawn strike, once a tribute room visit has put the player on the train. */
+    public static void strikeAfterTributeRoom(ServerPlayer player) {
         if (isBuilderWorld(player)) return;
         PENDING_STRIKE.put(player.getUUID(), new PendingStrike(STRIKE_DELAY_TICKS, StartingBookContext.RESPAWN));
     }
