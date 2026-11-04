@@ -132,8 +132,9 @@ public final class MicCapture implements AutoCloseable {
         try {
             ALC11.alcCaptureStop(device);
             ALC11.alcCaptureCloseDevice(device);
+            LOGGER.info("[DungeonTrain] mic: capture device closed");
         } catch (Throwable t) {
-            LOGGER.debug("[DungeonTrain] mic: close failed ({})", t.toString());
+            LOGGER.warn("[DungeonTrain] mic: capture device close failed ({})", t.toString());
         }
         MemoryUtil.memFree(grab);
     }
