@@ -33,6 +33,11 @@ public final class TributeArrivalScreen extends Screen {
         float overlay = TributeTvVisit.overlayAlpha(System.currentTimeMillis());
         ResourceLocation picture = TributeTvVisit.textureLocation();
         if (overlay > 0f && picture != null) {
+            // The menu's picture is not opaque everywhere (the sky's lens is clear where the world
+            // shows through it), so a solid sky-coloured sheet goes under it at the same alpha: the
+            // whole frame holds solid while the room loads behind, then fades as one.
+            int alpha = Mth.clamp(Math.round(overlay * 255f), 0, 255);
+            g.fill(0, 0, width, height, (alpha << 24) | (games.brennan.dungeontrain.client.perks.PerksScreen.SKY_BG & 0xFFFFFF));
             RenderSystem.enableBlend();
             g.setColor(1f, 1f, 1f, overlay);
             g.blit(picture, 0, 0, width, height, 0f, 0f, 1, 1, 1, 1);
