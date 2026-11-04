@@ -5731,7 +5731,6 @@
   "gui.dungeontrain.perks.zoom.in": "Nah",
   "gui.dungeontrain.perks.zoom.closest": "Ganz nah",
   "gui.dungeontrain.perks.bar.full": "Voll. Schalte ihn erneut frei für Platz für einen weiteren Punkt.",
-  "gui.dungeontrain.perks.bar.fill_first": "Fülle zuerst seine Punkte.",
   "gui.dungeontrain.perks.bar.hint": "Fahre über einen Perk, um ihn hier zu sehen. Klicke, um ihn festzuhalten.",
   "gui.dungeontrain.perks.counter.unlock.click": "Klicken, um die Fortschritte zu öffnen.",
   "gui.dungeontrain.perks.death.kicker": "Die Punkte, die du trugst",
