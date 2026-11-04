@@ -204,6 +204,20 @@ tasks.register('generateApprovedMods') {
             throw new GradleException("Approved ids with no file-hash record: ${noRecord.sort().join(', ')}. "
                 + 'Run `python3 scripts/modpack/pull-approved-hashes.py` and commit src/main/whitelist/approved_hashes.json.')
         }
+        // namespaceApproved: ids whose file can never be matched by hash (a launcher rewrites the
+        // jar per install) and are verified by package namespace instead — see the curated file's
+        // namespaceApprovedWhy. Passed through like prefixes; every listed id must itself be approved.
+        def namespaceApproved = new TreeMap<String, List<String>>()
+        (curated.namespaceApproved ?: [:]).each { id, roots ->
+            def key = (id as String).trim().toLowerCase()
+            if (!(key in seen)) {
+                throw new GradleException("namespaceApproved lists '${key}', which is not an approved id — "
+                    + 'add it to a group in src/main/whitelist/approved_mods.curated.json first.')
+            }
+            def cleanRoots = (roots as List).collect { (it as String).trim() }.findAll { it }
+            if (!cleanRoots) throw new GradleException("namespaceApproved['${key}'] has no package roots.")
+            namespaceApproved[key] = cleanRoots
+        }
         def pulledHashes = 0
         (pulled.byMod ?: [:]).each { id, rec ->
             if (id in seen) (rec.sha1 ?: []).each { h -> if (h ==~ /[0-9a-f]{40}/) { hashes << (h as String); pulledHashes++ } }
@@ -237,6 +251,8 @@ tasks.register('generateApprovedMods') {
             'modpack pins, embedded jars). A file whose hash is unknown but whose packages are the claimed mod\'s is ' +
             'plausible, not Free Play; one whose packages are not is suspect.'
         result.knownPackages = knownPackages
+        result.namespaceApprovedWhy = curated.namespaceApprovedWhy ?: []
+        result.namespaceApproved = namespaceApproved
         // The verification engine DT embeds: UnapprovedModIntegrity refuses any other dtmodverify
         // (a top-level jar of that id would replace the nested one and answer VERIFIED for everything).
         def engineJar = jarJarJars.files.find { f -> 'dtmodverify' in jarModIds(f.bytes) }

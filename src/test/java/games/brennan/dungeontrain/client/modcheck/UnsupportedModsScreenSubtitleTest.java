@@ -29,4 +29,23 @@ class UnsupportedModsScreenSubtitleTest {
         assertFalse(UnsupportedModsScreen.isUpdateRow(new UnsupportedModsScreen.UnsupportedMod("essential", "Essential")), "unapproved id, not an old file");
         assertFalse(UnsupportedModsScreen.isUpdateRow(new UnsupportedModsScreen.UnsupportedMod("jei", "JEI", "jei.jar")));
     }
+
+    @Test
+    @DisplayName("A namespace-listed id's unverified file is told to install from a store")
+    void namespaceListedIsToldToInstallFromStore() {
+        java.util.function.Predicate<String> listed = "customskinloader"::equals;
+        UnsupportedModsScreen.UnsupportedMod csl =
+            new UnsupportedModsScreen.UnsupportedMod("customskinloader", "CustomSkinLoader", "CustomSkinLoader-Common.jar");
+        assertEquals(UnsupportedModsScreen.Hint.INSTALL_FROM_STORE, UnsupportedModsScreen.hintOf(csl, listed));
+        assertEquals(UnsupportedModsScreen.Hint.UPDATE_ESSENTIAL, UnsupportedModsScreen.hintOf(
+            new UnsupportedModsScreen.UnsupportedMod("essential", "Essential", "e.jar"), listed));
+        assertEquals(UnsupportedModsScreen.Hint.NONE, UnsupportedModsScreen.hintOf(
+            new UnsupportedModsScreen.UnsupportedMod("jei", "JEI", "jei.jar"), listed));
+        assertEquals(UnsupportedModsScreen.Hint.NONE, UnsupportedModsScreen.hintOf(
+            new UnsupportedModsScreen.UnsupportedMod("customskinloader", "CustomSkinLoader"), listed),
+            "unapproved id, not an unverified file");
+        // Live path: the baked list carries customskinloader, so the real subtitle is the store hint.
+        assertEquals("gui.dungeontrain.unsupported_mods.install_from_store", contents(csl).getKey());
+        assertFalse(UnsupportedModsScreen.isUpdateRow(csl), "store hint, not the Essential update");
+    }
 }

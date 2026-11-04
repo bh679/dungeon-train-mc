@@ -217,7 +217,7 @@ public final class UnapprovedModIntegrity {
             List<ModFileFingerprint> files = DtModVerifyBridge.current(SCAN_WAIT_MS);
             boolean done = DtModVerifyBridge.isDone();
             List<String> found = judgeFiles(done, files, expectedJarNames(), ApprovedModList.approvedHashes(),
-                ApprovedModList.knownPackages());
+                ApprovedModList.knownPackages(), ApprovedModList.namespaceApproved());
             return combine(found, EngineIntegrity.tampered());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Could not judge the installed mod files — treating them as "
@@ -232,8 +232,16 @@ public final class UnapprovedModIntegrity {
      */
     static List<String> judgeFiles(boolean scanDone, List<ModFileFingerprint> files, Collection<String> expectedJarNames,
                                    Set<String> approvedSha1s, Map<String, Set<String>> knownPackages) {
+        return judgeFiles(scanDone, files, expectedJarNames, approvedSha1s, knownPackages, Map.of());
+    }
+
+    /** {@link #judgeFiles} with the namespace rule ({@link #namespaceVerified}) as well. */
+    static List<String> judgeFiles(boolean scanDone, List<ModFileFingerprint> files, Collection<String> expectedJarNames,
+                                   Set<String> approvedSha1s, Map<String, Set<String>> knownPackages,
+                                   Map<String, Set<String>> namespaces) {
         if (!scanDone) return List.of(PENDING);
-        java.util.TreeSet<String> out = new java.util.TreeSet<>(unverifiedFrom(files, approvedSha1s, knownPackages));
+        java.util.TreeSet<String> out = new java.util.TreeSet<>(
+            unverifiedFrom(files, approvedSha1s, knownPackages, namespaces));
         out.addAll(missingFrom(files, expectedJarNames));
         return List.copyOf(out);
     }
@@ -285,12 +293,65 @@ public final class UnapprovedModIntegrity {
      */
     static List<String> unverifiedFrom(List<ModFileFingerprint> files, Set<String> approvedSha1s,
                                        Map<String, Set<String>> knownPackages) {
+        return unverifiedFrom(files, approvedSha1s, knownPackages, Map.of());
+    }
+
+    /**
+     * {@link #unverifiedFrom} with the namespace rule: a file whose hash is not approved still
+     * passes when {@link #namespaceVerified} says so ({@code namespaces} = {@link ApprovedModList#namespaceApproved()}).
+     */
+    static List<String> unverifiedFrom(List<ModFileFingerprint> files, Set<String> approvedSha1s,
+                                       Map<String, Set<String>> knownPackages, Map<String, Set<String>> namespaces) {
         List<String> found = new ArrayList<>();
         for (ModFileFingerprint f : files) {
-            if (tierOf(f, approvedSha1s, knownPackages) != Tier.VERIFIED) found.add(f.display());
+            if (!isVerified(f, approvedSha1s, knownPackages, namespaces)) found.add(f.display());
         }
         found.sort(String::compareTo);
         return List.copyOf(found);
+    }
+
+    /** Pure: verified by hash (the engine's tier) or, failing that, by namespace. */
+    static boolean isVerified(ModFileFingerprint f, Set<String> approvedSha1s, Map<String, Set<String>> knownPackages,
+                              Map<String, Set<String>> namespaces) {
+        return tierOf(f, approvedSha1s, knownPackages) == Tier.VERIFIED || namespaceVerified(f, namespaces);
+    }
+
+    /**
+     * Pure: the <b>namespace rule</b>, for files no hash can ever clear (a launcher rewrites the jar
+     * per install, so each copy has its own SHA-1). Mirrors the relay's rule exactly: the file counts
+     * as VERIFIED when every id it declares (exempt ids skipped) is a key of {@code namespaces}, its
+     * package fingerprint is non-empty, and every package key equals a root, or starts with
+     * {@code root + "."}, for a root of one of its declared ids. A file declaring no non-exempt id, or
+     * one with a single foreign package, fails and falls back to the ordinary tiers. The caller has
+     * already checked the ids are approved ({@link ApprovedModList#namespaceApproved} only ever
+     * holds approved ids: the build fails otherwise, and the relay's copy is the jar's).
+     */
+    static boolean namespaceVerified(ModFileFingerprint f, Map<String, Set<String>> namespaces) {
+        if (f == null || namespaces == null || namespaces.isEmpty() || f.packages().isEmpty()) return false;
+        Set<String> roots = new java.util.HashSet<>();
+        boolean anyId = false;
+        for (String raw : f.modIds()) {
+            String id = ModIds.normalise(raw);
+            if (EXEMPT_IDS.contains(id)) continue;
+            Set<String> r = namespaces.get(id);
+            if (r == null || r.isEmpty()) return false;
+            roots.addAll(r);
+            anyId = true;
+        }
+        if (!anyId) return false;
+        for (String pk : f.packages()) {
+            if (!underAnyRoot(pk, roots)) return false;
+        }
+        return true;
+    }
+
+    /** Pure: is {@code packageKey} one of {@code roots}, or inside one ({@code root + "."} prefix)? */
+    static boolean underAnyRoot(String packageKey, Set<String> roots) {
+        if (packageKey == null) return false;
+        for (String root : roots) {
+            if (packageKey.equals(root) || packageKey.startsWith(root + ".")) return true;
+        }
+        return false;
     }
 
     /**
@@ -319,8 +380,36 @@ public final class UnapprovedModIntegrity {
      */
     public static ModFileFingerprint unverifiedFileOf(String modId) {
         ModFileFingerprint f = DtModVerifyBridge.fileOf(modId);
-        return f != null && tierOf(f, ApprovedModList.approvedHashes(), ApprovedModList.knownPackages()) != Tier.VERIFIED
-            ? f : null;
+        return f != null && !isVerified(f, ApprovedModList.approvedHashes(), ApprovedModList.knownPackages(),
+            ApprovedModList.namespaceApproved()) ? f : null;
+    }
+
+    /**
+     * Is {@code modId} on the namespace-approved list (see {@link ApprovedModList#namespaceApproved})
+     * and its installed file still unverified right now? Such a jar is one a launcher rewrote, so
+     * the generic "reinstall from CurseForge or Modrinth" advice IS the fix (the store copy keeps
+     * its hash), and the popup and login notice say so by name. The counterpart of
+     * {@link #essentialOutdated()}. False when not installed or the scan is not done.
+     */
+    public static boolean needsStoreInstall(String modId) {
+        return isNamespaceListed(modId) && unverifiedFileOf(modId) != null;
+    }
+
+    /** Live-state: is {@code modId} a key of the namespace-approved list? */
+    public static boolean isNamespaceListed(String modId) {
+        return ApprovedModList.namespaceApproved().containsKey(ModIds.normalise(modId));
+    }
+
+    /**
+     * The namespace-listed ids whose installed file is still unverified, as display names, in the
+     * order the list sorts them: what the login notice tells the player to install from a store.
+     */
+    public static List<String> storeInstallNeeded(java.util.function.Function<String, String> displayName) {
+        List<String> out = new ArrayList<>();
+        for (String id : new java.util.TreeSet<>(ApprovedModList.namespaceApproved().keySet())) {
+            if (unverifiedFileOf(id) != null) out.add(displayName.apply(id));
+        }
+        return List.copyOf(out);
     }
 
     /** Essential's mod id. Its own updater replaces the store jar, so its files are verified by build. */

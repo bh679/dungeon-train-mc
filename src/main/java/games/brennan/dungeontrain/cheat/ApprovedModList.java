@@ -104,6 +104,14 @@ public final class ApprovedModList {
     private static volatile String bakedEngineSha1 = "";
     private static volatile String bakedEngineVersion = "";
     private static volatile java.util.Map<String, Set<String>> relayPackages = java.util.Map.of();
+    /**
+     * Ids whose FILE can never be matched by hash (a launcher rewrites the jar per install, so every
+     * copy has its own SHA-1) and are verified by package namespace instead: id → the package roots
+     * all of its code sits under. {@link UnapprovedModIntegrity#namespaceVerified} is the rule.
+     * Curated in {@code approved_mods.curated.json}, baked, and refreshed by the relay (same key).
+     */
+    private static volatile java.util.Map<String, Set<String>> bakedNamespaces = java.util.Map.of();
+    private static volatile java.util.Map<String, Set<String>> relayNamespaces = java.util.Map.of();
     /** A lowercase 40-hex SHA-1, as the relay serves and the scanner computes them. */
     private static final java.util.regex.Pattern SHA1 = java.util.regex.Pattern.compile("[0-9a-f]{40}");
     private static final int MAX_HASHES = 200000;
@@ -189,6 +197,25 @@ public final class ApprovedModList {
         return java.util.Map.copyOf(out);
     }
 
+    /** Namespace-approved ids → package roots: relay knowledge over baked (see {@link #parseNamespaces}). */
+    public static java.util.Map<String, Set<String>> namespaceApproved() {
+        loadBakedOnce();
+        loadDiskCacheOnce();
+        if (relayNamespaces.isEmpty()) return bakedNamespaces;
+        java.util.Map<String, Set<String>> out = new java.util.HashMap<>(bakedNamespaces);
+        out.putAll(relayNamespaces);
+        return java.util.Map.copyOf(out);
+    }
+
+    /** A package root: 1–3 dotted Java identifiers, at most 120 chars (a root may be a single identifier). */
+    private static final java.util.regex.Pattern PACKAGE_ROOT =
+        java.util.regex.Pattern.compile("[A-Za-z_$][\\w$]*(\\.[A-Za-z_$][\\w$]*){0,2}");
+
+    /** Pure: does {@code s} look like a package root a namespace rule may name? */
+    static boolean isPackageRoot(String s) {
+        return s != null && s.length() <= MAX_PACKAGE_KEY && PACKAGE_ROOT.matcher(s).matches();
+    }
+
     /** A package-fingerprint key: 2–3 dotted Java identifiers, at most 120 chars (the engine's own rule). */
     private static final java.util.regex.Pattern PACKAGE_KEY =
         java.util.regex.Pattern.compile("[A-Za-z_$][\\w$]*(\\.[A-Za-z_$][\\w$]*){1,2}");
@@ -245,6 +272,7 @@ public final class ApprovedModList {
         relayHashes = payload.hashes();
         if (payload.enforceHashes() != null) enforceHashes = payload.enforceHashes();
         if (!payload.knownPackages().isEmpty()) relayPackages = payload.knownPackages();
+        if (!payload.namespaceApproved().isEmpty()) relayNamespaces = payload.namespaceApproved();
         saveDiskCache(payload);
         // A payload landing while a server runs re-judges the session — the "never a session
         // late" rule: a mod updated this launch must not cost its player this run.
@@ -260,19 +288,27 @@ public final class ApprovedModList {
      */
     record Payload(Set<String> approved, Set<String> revoked, Boolean enforce,
                    Set<String> hashes, Boolean enforceHashes,
-                   java.util.Map<String, Set<String>> knownPackages) {
+                   java.util.Map<String, Set<String>> knownPackages,
+                   java.util.Map<String, Set<String>> namespaceApproved) {
         Payload {
             hashes = hashes == null ? Set.of() : Set.copyOf(hashes);
             knownPackages = knownPackages == null ? java.util.Map.of() : java.util.Map.copyOf(knownPackages);
+            namespaceApproved = namespaceApproved == null ? java.util.Map.of() : java.util.Map.copyOf(namespaceApproved);
+        }
+
+        /** The pre-namespace shape: no namespace-approved ids. */
+        Payload(Set<String> approved, Set<String> revoked, Boolean enforce, Set<String> hashes, Boolean enforceHashes,
+                java.util.Map<String, Set<String>> knownPackages) {
+            this(approved, revoked, enforce, hashes, enforceHashes, knownPackages, java.util.Map.of());
         }
 
         Payload(Set<String> approved, Set<String> revoked, Boolean enforce, Set<String> hashes, Boolean enforceHashes) {
-            this(approved, revoked, enforce, hashes, enforceHashes, java.util.Map.of());
+            this(approved, revoked, enforce, hashes, enforceHashes, java.util.Map.of(), java.util.Map.of());
         }
 
         /** The pre-hash shape: no file hashes, hash enforcement unsaid. */
         Payload(Set<String> approved, Set<String> revoked, Boolean enforce) {
-            this(approved, revoked, enforce, Set.of(), null, java.util.Map.of());
+            this(approved, revoked, enforce, Set.of(), null, java.util.Map.of(), java.util.Map.of());
         }
     }
 
@@ -292,10 +328,12 @@ public final class ApprovedModList {
             prefixes = parsePrefixes(root);
             bakedHashes = parseHashes(root);
             bakedPackages = parseKnownPackages(root);
+            bakedNamespaces = parseNamespaces(root);
             bakedEngineSha1 = stringAt(root, "engineSha1");
             bakedEngineVersion = stringAt(root, "engineVersion");
             LOGGER.debug("[DungeonTrain] approved-mod list: {} baked id(s), {} prefix(es), {} file hash(es), "
-                + "packages for {} id(s)", baked.size(), prefixes.size(), bakedHashes.size(), bakedPackages.size());
+                + "packages for {} id(s), {} namespace-approved id(s)", baked.size(), prefixes.size(),
+                bakedHashes.size(), bakedPackages.size(), bakedNamespaces.size());
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] approved-mod list: could not read {} — "
                 + "no mod is approved from the jar: {}", RESOURCE, e.toString());
@@ -360,6 +398,30 @@ public final class ApprovedModList {
         return java.util.Map.copyOf(out);
     }
 
+    /**
+     * The {@code namespaceApproved} object — id → package roots — of a baked resource or a relay
+     * payload. An id with no valid root is dropped: an empty root set would approve nothing, so
+     * carrying it could only mislead a reader of the cache.
+     */
+    static java.util.Map<String, Set<String>> parseNamespaces(JsonObject root) {
+        if (!root.has("namespaceApproved") || !root.get("namespaceApproved").isJsonObject()) return java.util.Map.of();
+        java.util.Map<String, Set<String>> out = new java.util.HashMap<>();
+        for (var e : root.getAsJsonObject("namespaceApproved").entrySet()) {
+            String id = ModIds.normalise(e.getKey());
+            if (id.isEmpty() || !e.getValue().isJsonArray()) continue;
+            Set<String> roots = new HashSet<>();
+            for (JsonElement p : e.getValue().getAsJsonArray()) {
+                if (p.isJsonPrimitive() && p.getAsJsonPrimitive().isString()) {
+                    String s = p.getAsString().trim();
+                    if (isPackageRoot(s)) roots.add(s);
+                }
+            }
+            if (!roots.isEmpty()) out.put(id, Set.copyOf(roots));
+            if (out.size() >= MAX_IDS) break;
+        }
+        return java.util.Map.copyOf(out);
+    }
+
     /** The resource's raw-ID prefixes, lowercased and validated as ID fragments. */
     static List<String> parsePrefixes(JsonObject root) {
         if (!root.has("prefixes") || !root.get("prefixes").isJsonArray()) return List.of();
@@ -389,6 +451,7 @@ public final class ApprovedModList {
             relayHashes = p.hashes();
             if (p.enforceHashes() != null) enforceHashes = p.enforceHashes();
             if (!p.knownPackages().isEmpty()) relayPackages = p.knownPackages();
+            if (!p.namespaceApproved().isEmpty()) relayNamespaces = p.namespaceApproved();
             LOGGER.debug("[DungeonTrain] approved-mod list: loaded {} approval(s), {} revocation(s), "
                 + "enforce={}, {} file hash(es), enforceHashes={} from {}", relayApproved.size(),
                 relayRevoked.size(), enforce, relayHashes.size(), enforceHashes, file);
@@ -414,7 +477,7 @@ public final class ApprovedModList {
             Set<String> revokedIds = ModIds.sanitize(stringsAt(o, "revoked"), MAX_IDS);
             Boolean on = boolAt(o, "enforce");
             return new Payload(approvedIds, revokedIds, on, parseHashes(o), boolAt(o, "enforceHashes"),
-                parseKnownPackages(o));
+                parseKnownPackages(o), parseNamespaces(o));
         } catch (Exception e) {
             return null;
         }
@@ -468,7 +531,15 @@ public final class ApprovedModList {
             }
             obj.add("knownPackages", kp);
         }
+        if (!payload.namespaceApproved().isEmpty()) obj.add("namespaceApproved", mapOf(payload.namespaceApproved()));
         return obj.toString();
+    }
+
+    /** id → sorted roots, ids sorted: a stable cache file. */
+    private static JsonObject mapOf(java.util.Map<String, Set<String>> m) {
+        JsonObject o = new JsonObject();
+        for (String id : new java.util.TreeSet<>(m.keySet())) o.add(id, arrayOf(new java.util.TreeSet<>(m.get(id))));
+        return o;
     }
 
     private static JsonArray arrayOf(Collection<String> ids) {
@@ -512,6 +583,7 @@ public final class ApprovedModList {
             relayHashes = Set.of();
             enforceHashes = BAKED_ENFORCE_HASHES;
             relayPackages = java.util.Map.of();
+            relayNamespaces = java.util.Map.of();
             loaded = false;
         } else {
             relayApproved = payload.approved();
@@ -520,6 +592,7 @@ public final class ApprovedModList {
             relayHashes = payload.hashes();
             enforceHashes = payload.enforceHashes() != null ? payload.enforceHashes() : BAKED_ENFORCE_HASHES;
             relayPackages = payload.knownPackages();
+            relayNamespaces = payload.namespaceApproved();
             loaded = true;
         }
     }

@@ -39,6 +39,20 @@
     "\"Fabric Furniture\" (modId fabricfurniture) is untouched. A prefix never beats a revocation:",
     "an exact id revoked from the relay stays unapproved even if a prefix would have matched it."
   ],
+  "namespaceApproved": {
+    "customskinloader": ["customskinloader"]
+  },
+  "namespaceApprovedWhy": [
+    "Mods whose FILE can never be verified by hash, approved by their package namespace instead.",
+    "Some launchers rewrite CustomSkinLoader's jar per install (CustomSkinLoader-Common.jar carries a",
+    "different SHA-1 on every machine: 171 installs seen, 170 of them one package set), so no store",
+    "ever publishes those bytes and no hash rule can clear them. All of its code sits under its own",
+    "package root, so the rule is: a file whose hash is unknown still counts as VERIFIED when every id",
+    "it declares is listed here and on the id whitelist, its package fingerprint is non-empty, and",
+    "EVERY package key is one of its ids' roots or sits under one (root + '.'). One foreign package",
+    "and the file falls back to the ordinary tiers. Same rule, same key, on the relay",
+    "(/approved-mods/verify answers namespaceApproved too)."
+  ],
   "groups": {
     "platform": {
       "why": "The game and the loader. Never optional, never a choice a player made.",

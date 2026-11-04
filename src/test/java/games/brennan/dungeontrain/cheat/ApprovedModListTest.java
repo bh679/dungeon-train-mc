@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -371,5 +372,35 @@ class ApprovedModListTest {
                     "group " + e.getKey() + " must say why its mods are approved");
             }
         }
+    }
+
+    @Test
+    @DisplayName("namespaceApproved parses, round-trips, and drops junk roots and empty ids")
+    void namespaceApprovedRoundTrip() {
+        ApprovedModList.Payload p = ApprovedModList.parse("{\"ok\":true,\"approved\":[],\"revoked\":[],"
+            + "\"namespaceApproved\":{\"CustomSkinLoader\":[\"customskinloader\",\"bad root!\",7],"
+            + "\"nothing\":[],\"\":[\"x\"],\"two\":[\"a.b\",\"c.d.e\"]}}");
+        assertNotNull(p);
+        assertEquals(Set.of("customskinloader"), p.namespaceApproved().get("customskinloader"));
+        assertEquals(Set.of("a.b", "c.d.e"), p.namespaceApproved().get("two"));
+        assertEquals(2, p.namespaceApproved().size(), "an id with no valid root is dropped");
+        ApprovedModList.Payload back = ApprovedModList.parse(ApprovedModList.toJson(p));
+        assertNotNull(back);
+        assertEquals(p.namespaceApproved(), back.namespaceApproved());
+        assertFalse(ApprovedModList.toJson(new ApprovedModList.Payload(Set.of(), Set.of(), null)).contains("namespaceApproved"));
+        assertEquals(Map.of(), ApprovedModList.parse("{\"ok\":true}").namespaceApproved(), "unsaid is empty");
+    }
+
+    @Test
+    @DisplayName("namespaceApproved: relay knowledge overlays baked, and the baked list carries customskinloader")
+    void namespaceApprovedOverlay() {
+        ApprovedModList.setRelayForTest(null);
+        assertEquals(Set.of("customskinloader"), ApprovedModList.namespaceApproved().get("customskinloader"),
+            "baked from approved_mods.curated.json");
+        ApprovedModList.setRelayForTest(new ApprovedModList.Payload(Set.of(), Set.of(), null, Set.of(), null,
+            Map.of(), Map.of("othermod", Set.of("dev.other"))));
+        assertEquals(Set.of("dev.other"), ApprovedModList.namespaceApproved().get("othermod"));
+        assertEquals(Set.of("customskinloader"), ApprovedModList.namespaceApproved().get("customskinloader"),
+            "baked ids survive a relay overlay");
     }
 }

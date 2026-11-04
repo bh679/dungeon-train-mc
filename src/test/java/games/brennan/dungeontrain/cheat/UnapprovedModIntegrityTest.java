@@ -245,4 +245,52 @@ class UnapprovedModIntegrityTest {
             UnapprovedModIntegrity.combine(List.of("a.jar (jei)"), List.of("x.jar (dtmodverify replaced)")));
         assertEquals(List.of("a.jar (jei)"), UnapprovedModIntegrity.combine(List.of("a.jar (jei)"), List.of()));
     }
+
+    private static final Map<String, Set<String>> NAMESPACES = Map.of("customskinloader", Set.of("customskinloader"));
+
+    @Test
+    @DisplayName("namespaceVerified: every package under a listed id's root passes; anything else fails")
+    void namespaceRule() {
+        ModFileFingerprint launcher = file("CustomSkinLoader-Common.jar", "a".repeat(40),
+            List.of("customskinloader", "customskinloader.mod", "customskinloader.utils"), "customskinloader");
+        assertTrue(UnapprovedModIntegrity.namespaceVerified(launcher, NAMESPACES), "all under the root");
+        assertFalse(UnapprovedModIntegrity.namespaceVerified(file("x.jar", "b".repeat(40),
+            List.of("customskinloader.mod", "net.xray"), "customskinloader"), NAMESPACES), "one foreign package");
+        assertFalse(UnapprovedModIntegrity.namespaceVerified(file("x.jar", "b".repeat(40),
+            List.of("customskinloaderx.mod"), "customskinloader"), NAMESPACES), "a root prefix is not the root");
+        assertFalse(UnapprovedModIntegrity.namespaceVerified(file("x.jar", "b".repeat(40),
+            List.of(), "customskinloader"), NAMESPACES), "empty fingerprint");
+        assertFalse(UnapprovedModIntegrity.namespaceVerified(file("x.jar", "b".repeat(40),
+            List.of("customskinloader.mod"), "customskinloader", "jei"), NAMESPACES), "an unlisted id declared too");
+        assertFalse(UnapprovedModIntegrity.namespaceVerified(file("x.jar", "b".repeat(40),
+            List.of("mezz.jei"), "jei"), NAMESPACES), "unlisted id");
+        assertTrue(UnapprovedModIntegrity.namespaceVerified(file("x.jar", "b".repeat(40),
+            List.of("customskinloader.mod"), "customskinloader", "neoforge"), NAMESPACES), "an exempt id is skipped");
+        assertFalse(UnapprovedModIntegrity.namespaceVerified(file("x.jar", "b".repeat(40),
+            List.of("customskinloader.mod"), "neoforge"), NAMESPACES), "only exempt ids declared");
+        assertFalse(UnapprovedModIntegrity.namespaceVerified(file("x.jar", "b".repeat(40),
+            List.of("customskinloader.mod")), NAMESPACES), "no ids at all");
+        assertFalse(UnapprovedModIntegrity.namespaceVerified(launcher, Map.of()), "no list, no rule");
+        assertFalse(UnapprovedModIntegrity.namespaceVerified(null, NAMESPACES));
+    }
+
+    @Test
+    @DisplayName("unverifiedFrom treats a namespace-verified file as verified; the others still fail")
+    void unverifiedFromHonoursNamespace() {
+        ModFileFingerprint launcher = file("CustomSkinLoader-Common.jar", "a".repeat(40),
+            List.of("customskinloader", "customskinloader.mod"), "customskinloader");
+        ModFileFingerprint foreign = file("CustomSkinLoader-Odd.jar", "b".repeat(40),
+            List.of("customskinloader.mod", "net.xray"), "customskinloader");
+        ModFileFingerprint jei = file("jei-20-fresh.jar", "c".repeat(40), List.of("mezz.jei"), "jei");
+        List<ModFileFingerprint> files = List.of(launcher, foreign, jei);
+        assertEquals(List.of("CustomSkinLoader-Odd.jar (customskinloader)", "jei-20-fresh.jar (jei)"),
+            UnapprovedModIntegrity.unverifiedFrom(files, Set.of(), KNOWN, NAMESPACES));
+        assertEquals(List.of("CustomSkinLoader-Common.jar (customskinloader)", "CustomSkinLoader-Odd.jar (customskinloader)",
+                "jei-20-fresh.jar (jei)"),
+            UnapprovedModIntegrity.unverifiedFrom(files, Set.of(), KNOWN), "without the list nothing changes");
+        assertEquals(List.of("CustomSkinLoader-Odd.jar (customskinloader)", "jei-20-fresh.jar (jei)"),
+            UnapprovedModIntegrity.judgeFiles(true, files, List.of(), Set.of(), KNOWN, NAMESPACES));
+        assertTrue(UnapprovedModIntegrity.isVerified(launcher, Set.of(), KNOWN, NAMESPACES));
+        assertTrue(UnapprovedModIntegrity.isVerified(foreign, Set.of("b".repeat(40)), KNOWN, NAMESPACES), "hash still wins first");
+    }
 }

@@ -70,7 +70,7 @@ public final class UnsupportedModsScreen extends Screen {
     private static final int ROW_ALT = 0x20FFFFFF;
     private static final int NAME_COLOUR = 0xFFFFFFFF;
     private static final int ID_COLOUR = 0xFF909090;
-    /** The "update Essential" line: the same aqua as the whitelist link, so it reads as the thing to do. */
+    /** The "update Essential" / "install from a store" line: the same aqua as the whitelist link, so it reads as the thing to do. */
     private static final int UPDATE_COLOUR = 0xFF000000 | ChatFormatting.AQUA.getColor();
     private static final int BODY_COLOUR = 0xFFD0D0D0;
     /**
@@ -250,7 +250,7 @@ public final class UnsupportedModsScreen extends Screen {
                 Component sub = r != null ? ModSuggestScreen.resultMessage(r)
                     : mod.unverifiedFile() ? unverifiedSubtitle(mod) : Component.literal(mod.modId());
                 int subColour = r != null ? ModSuggestScreen.resultColour(r)
-                    : isUpdateRow(mod) ? UPDATE_COLOUR : ID_COLOUR;
+                    : hintOf(mod) != Hint.NONE ? UPDATE_COLOUR : ID_COLOUR;
                 g.drawString(this.font, trim(sub.getString(), textW - 8), x + 8, rowY + 3 + this.font.lineHeight + 1,
                     subColour, false);
             }
@@ -312,18 +312,37 @@ public final class UnsupportedModsScreen extends Screen {
         this.minecraft.setScreen(parent);
     }
 
+    /** What an unverified file's row tells the player to do, when there is a specific fix. */
+    enum Hint { NONE, UPDATE_ESSENTIAL, INSTALL_FROM_STORE }
+
     /**
      * The line under an unverified file's name. Essential's own updater replaces the store jar, so an
-     * unverified Essential is an old build and the fix is to update it; any other file gets its name.
+     * unverified Essential is an old build and the fix is to update it; a namespace-listed mod's
+     * unverified file is a launcher-rewritten copy, so the fix is to install the store version; any
+     * other file gets its name.
      */
     static Component unverifiedSubtitle(UnsupportedMod mod) {
-        return isUpdateRow(mod)
-            ? Component.translatable("gui.dungeontrain.unsupported_mods.update_essential")
-            : Component.translatable("gui.dungeontrain.unsupported_mods.unverified_file", mod.fileName());
+        return switch (hintOf(mod)) {
+            case UPDATE_ESSENTIAL -> Component.translatable("gui.dungeontrain.unsupported_mods.update_essential");
+            case INSTALL_FROM_STORE -> Component.translatable("gui.dungeontrain.unsupported_mods.install_from_store");
+            case NONE -> Component.translatable("gui.dungeontrain.unsupported_mods.unverified_file", mod.fileName());
+        };
+    }
+
+    /** Live-state: the row's hint, judged against the current namespace-approved list. */
+    static Hint hintOf(UnsupportedMod mod) {
+        return hintOf(mod, UnapprovedModIntegrity::isNamespaceListed);
+    }
+
+    /** Pure given {@code namespaceListed}: Essential first, then a namespace-listed id, else none. */
+    static Hint hintOf(UnsupportedMod mod, java.util.function.Predicate<String> namespaceListed) {
+        if (!mod.unverifiedFile()) return Hint.NONE;
+        if (UnapprovedModIntegrity.ESSENTIAL_ID.equals(mod.modId())) return Hint.UPDATE_ESSENTIAL;
+        return namespaceListed.test(mod.modId()) ? Hint.INSTALL_FROM_STORE : Hint.NONE;
     }
 
     /** Is this an unverified Essential, whose fix is to update it (blue "update to latest" line)? */
     static boolean isUpdateRow(UnsupportedMod mod) {
-        return mod.unverifiedFile() && UnapprovedModIntegrity.ESSENTIAL_ID.equals(mod.modId());
+        return hintOf(mod) == Hint.UPDATE_ESSENTIAL;
     }
 }

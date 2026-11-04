@@ -323,6 +323,12 @@ public final class CheatDetectionEvents {
                 player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.update_essential")
                     .withStyle(ChatFormatting.GRAY));
             }
+            // A namespace-listed mod (a launcher rewrites its jar per install) whose file still failed:
+            // the store copy keeps its hash, so say which mod to install from Modrinth or CurseForge.
+            for (String name : UnapprovedModIntegrity.storeInstallNeeded(CheatDetectionEvents::modDisplayName)) {
+                player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.install_from_store", name)
+                    .withStyle(ChatFormatting.GRAY));
+            }
         }
         if (UnapprovedModIntegrity.isIdFreePlay()) {
             // The whitelist's half of the same story (parallel to the cheat-mod block above): a mod
@@ -439,5 +445,17 @@ public final class CheatDetectionEvents {
     /** The two modes that make a run Free Play on their own. */
     private static boolean isTaintingMode(GameType mode) {
         return mode == GameType.CREATIVE || mode == GameType.SPECTATOR;
+    }
+
+    /** The installed mod's display name, or its id when it has none (or is not loaded). */
+    private static String modDisplayName(String modId) {
+        try {
+            return net.neoforged.fml.ModList.get().getModContainerById(modId)
+                .map(c -> c.getModInfo().getDisplayName())
+                .filter(n -> n != null && !n.isBlank())
+                .orElse(modId);
+        } catch (Throwable t) {
+            return modId;
+        }
     }
 }

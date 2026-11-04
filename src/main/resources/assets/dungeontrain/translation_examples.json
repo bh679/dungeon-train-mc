@@ -208,6 +208,14 @@
       ]
     }
   },
+  "chat.dungeontrain.free_play.install_from_store": {
+    "1": {
+      "label": "the display name of the mod whose launcher-installed file could not be verified",
+      "examples": [
+        "CustomSkinLoader"
+      ]
+    }
+  },
   "chat.dungeontrain.beacon_hint.too_early": {
     "1": {
       "label": "how many seconds before the Wither died the photo was taken (always 2 to 10)",
