@@ -20,26 +20,24 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 /**
- * Plays the Live Feed's sound: out of each lit TV tuned to it (placed in the world, at its screen, so it
- * moves with a Sable carriage), and flat out of the TV the viewer wears (the pinned box) or holds.
+ * Plays the Live Feed's sound out of one TV at a time: flat out of the TV the viewer wears (the pinned
+ * box) or holds when that shows an audible stream, else out of the nearest lit TV placed in the world
+ * (at its screen, so it moves with a Sable carriage) that is within its own hearing range.
  *
  * <p>Vista ticks every TV and hands each live one to {@link #tv} ({@link LiveFeedSource#updateAudio});
- * that only records the TV as a candidate. Once a client tick, {@link #onClientTick} keeps the nearest
- * {@link #MAX_TV_SPEAKERS} candidates playing — Minecraft has few streaming channels, and a TV room holds
- * dozens of screens — and stops the rest, along with any TV that stopped asking (switched off, retuned,
- * broken, out of range). Vista's audio mode OFF silences them all; its default, REQUIRE_SPEAKER (a note
- * block beside the TV), is not asked of a Live Feed TV — almost no TV on the train has one, and the
- * stream's sound is the point of tuning in. Loudness is Vista's TV volume, then the Blocks slider, fading
- * with distance over the TV's own hearing range ({@link LiveSpeakerRange}: 9 blocks for a lone TV, 18 for
- * the largest grid), which this class applies itself each tick in place of Minecraft's fixed per-event
+ * that only records the TV as a candidate. Once a client tick, {@link #onClientTick} asks
+ * {@link LiveSpeakerChoice} which single TV plays (the worn or held one first; among placed TVs the
+ * nearest, with the one already playing kept unless another is {@link LiveSpeakerChoice#SWAP_MARGIN}
+ * nearer) and stops every other, along with any TV that stopped asking (switched off, retuned, broken,
+ * out of range). Vista's audio mode OFF silences them all; its default, REQUIRE_SPEAKER (a note block
+ * beside the TV), is not asked of a Live Feed TV — almost no TV on the train has one, and the stream's
+ * sound is the point of tuning in. Loudness is Vista's TV volume, then the Blocks slider, fading with
+ * distance over the TV's own hearing range ({@link LiveSpeakerRange}: 9 blocks for a lone TV, 18 for the
+ * largest grid), which this class applies itself each tick in place of Minecraft's fixed per-event
  * rolloff; a TV past its range is not a candidate at all.</p>
  *
  * <p>Silence rules, checked every tick so a change is heard at once: TV stream sound off, the stream or
@@ -51,8 +49,8 @@ import java.util.Map;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveTvSpeakers {
 
-    /** How many placed TVs play at once: the nearest. */
-    static final int MAX_TV_SPEAKERS = 4;
+    /** How many TVs play at once, worn or placed: {@link LiveSpeakerChoice#MAX_SPEAKERS}, one. */
+    static final int MAX_TV_SPEAKERS = LiveSpeakerChoice.MAX_SPEAKERS;
     /** The dark channel's looped replay, as a share of full volume. */
     static final float REPLAY_VOLUME = 0.3f;
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -77,7 +75,9 @@ public final class LiveTvSpeakers {
     }
 
     private static final Map<BlockPos, Candidate> CANDIDATES = new HashMap<>();
-    private static final Map<BlockPos, Speaker> TVS = new HashMap<>();
+    /** The one placed TV playing, and where it stands; null when none. */
+    @Nullable private static Speaker placed;
+    @Nullable private static BlockPos placedPos;
     @Nullable private static Speaker flat;
     /** The stream most recently heard, for {@code /livemute} and the mute buttons. */
     @Nullable private static volatile LiveFeedSource.Hearing heard;
@@ -135,35 +135,31 @@ public final class LiveTvSpeakers {
         if (flatHearing != null && !mayHear(flatHearing)) flatHearing = null;
         flat = reconcile(flat, flatHearing, null, 1, mc);
 
-        List<Candidate> wanted = new ArrayList<>();
-        if (mayPlay) {
+        // The worn or held TV plays: every placed TV is silent, whatever it shows. Else the nearest placed one.
+        Map<BlockPos, Double> distances = new HashMap<>();
+        if (mayPlay && flatHearing == null) {
             String ownPlaylist = LiveStreamController.get().playlistUrl();
             for (Candidate c : CANDIDATES.values()) {
-                // The worn or held TV already plays this stream: no second copy out of the TVs around.
-                if (flatHearing != null && flatHearing.session() == c.hearing().session()) continue;
-                if (mayHearPlaced(c.hearing(), ownPlaylist)) wanted.add(c);
+                if (mayHearPlaced(c.hearing(), ownPlaylist)) distances.put(c.pos(), c.distance());
             }
-            wanted.sort(Comparator.comparingDouble(Candidate::distance));
         }
+        BlockPos chosenPos = LiveSpeakerChoice.placed(flatHearing != null, distances, placedPos);
+        Candidate chosen = chosenPos == null ? null : CANDIDATES.get(chosenPos);
         CANDIDATES.clear();
-        Map<BlockPos, Candidate> keep = new HashMap<>();
-        for (int i = 0; i < Math.min(MAX_TV_SPEAKERS, wanted.size()); i++) keep.put(wanted.get(i).pos(), wanted.get(i));
 
-        for (Iterator<Map.Entry<BlockPos, Speaker>> it = TVS.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<BlockPos, Speaker> e = it.next();
-            if (!keep.containsKey(e.getKey())) {
-                e.getValue().sound.end();
-                it.remove();
-            }
+        if (placed != null && (chosen == null || !chosen.pos().equals(placedPos))) {
+            placed.sound.end();
+            placed = null;
+            placedPos = null;
         }
-        for (Candidate c : keep.values()) {
-            Speaker s = reconcile(TVS.get(c.pos()), c.hearing(), c.at(), LiveSpeakerRange.gain(c.distance(), c.range()), mc);
-            if (s != null) TVS.put(c.pos(), s);
+        if (chosen != null) {
+            placed = reconcile(placed, chosen.hearing(), chosen.at(), LiveSpeakerRange.gain(chosen.distance(), chosen.range()), mc);
+            placedPos = placed == null ? null : chosen.pos();
         }
-        LiveFeedSource.Hearing now = flatHearing != null ? flatHearing : wanted.isEmpty() ? null : wanted.get(0).hearing();
+        LiveFeedSource.Hearing now = flatHearing != null ? flatHearing : chosen == null ? null : chosen.hearing();
         if (now != null) heard = now;
         long ms = System.currentTimeMillis();
-        if ((flat != null || !TVS.isEmpty()) && ms - lastPerfMs >= PERF_MS) {
+        if ((flat != null || placed != null) && ms - lastPerfMs >= PERF_MS) {
             lastPerfMs = ms;
             LOGGER.debug("[DungeonTrain] [live] {}", perf());
         }
@@ -247,8 +243,9 @@ public final class LiveTvSpeakers {
 
     /** Stop every speaker (leaving a world). */
     static void stopAll() {
-        for (Speaker s : TVS.values()) s.sound.end();
-        TVS.clear();
+        if (placed != null) placed.sound.end();
+        placed = null;
+        placedPos = null;
         if (flat != null) flat.sound.end();
         flat = null;
     }
@@ -256,12 +253,12 @@ public final class LiveTvSpeakers {
     /** The {@code [live]} perf line: speakers playing and the worst lag behind the feed, ms. */
     static String perf() {
         long lag = flat != null ? flat.sound.lagMs() : 0;
-        StringBuilder at = new StringBuilder();
-        for (Speaker s : TVS.values()) {
-            lag = Math.max(lag, s.sound.lagMs());
-            at.append(String.format(java.util.Locale.ROOT, " (%.1f %.1f %.1f)", s.sound.getX(), s.sound.getY(), s.sound.getZ()));
+        String at = "";
+        if (placed != null) {
+            lag = Math.max(lag, placed.sound.lagMs());
+            at = String.format(java.util.Locale.ROOT, " (%.1f %.1f %.1f)", placed.sound.getX(), placed.sound.getY(), placed.sound.getZ());
         }
-        return "speakers " + (TVS.size() + (flat != null ? 1 : 0)) + (flat != null ? " flat" : "") + at
+        return "speakers " + ((placed != null ? 1 : 0) + (flat != null ? 1 : 0)) + (flat != null ? " flat" : "") + at
             + " audio lag " + lag + " ms";
     }
 }
