@@ -42,8 +42,15 @@ Order across repos: deploy the relay first. `dev/live-eye-mic-capture` sends `mi
 #975 adds. Shipping either mod branch before its relay PR is live means the feature silently
 does nothing.
 
-CI on the three relay PRs was pending after the main merges (2026-10-29). #975 once hit the
-known live-chat-translate fence-id flake; rerun that job rather than reading it as a failure.
+2026-11-04: all six branches re-merged with main (relay main 0.289.4, DT main v0.1645.0).
+Relay merge commits 468dc18c (#978), 43e9d3ca (#975), 612f20ad (#974); full suite green on
+each, all three MERGEABLE. Mod merge commits 0e77c226 (capture), 053ff7e2 (tv-audio),
+e60d32e2 (report); each builds to dungeontrain-0.1645.0.jar and passes ./gradlew test.
+The mod branches now sit in scratchpad worktrees of the orchestrator session, not in the
+original session worktrees (those are detached). None of the mod branches has a changelog
+entry yet; write one as unreleased/<id>.json at Gate 3 (per #2444). Relay test flakes seen
+under load: deploy-relay.test.js timing and community.test.js fetchMee6; rerun rather than
+read as failures.
 
 ### Prod box state (checked 2026-10-29)
 
