@@ -2759,7 +2759,34 @@ public final class NarrativeDeathScreen extends Screen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (photoViewer.isOpen()) return photoViewer.keyPressed(photos(), keyCode);
+        // Zoomed in on the home TV: Esc steps back to the room, the page staying on the screen.
+        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE
+            && games.brennan.dungeontrain.client.homeroom.HomeTvVisit.leaveZoom(this)) return true;
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    // ---- the home TV's channel controls -----------------------------------------------------
+
+    /** Next page, as the Next Screen button does. For the home TV, where a click is the only control. */
+    public void tvAdvance() {
+        advance();
+    }
+
+    /** Previous page, as the back button does. */
+    public void tvBack() {
+        back();
+    }
+
+    /**
+     * Whether the page showing needs the player's hands — a form to fill, a strip to scroll, a button
+     * to press — and so has to come up on the window rather than be driven from the TV.
+     */
+    public boolean tvPageTakesInput() {
+        if (pages.isEmpty()) return false;
+        return switch (pages.get(currentPage).kind()) {
+            case SURVEY, BUG_RESPONSE, DONATE, PHOTOS, PLATFORM -> true;
+            default -> false;
+        };
     }
 
     private void drawKicker(GuiGraphics g, int cx, int y, String key) {

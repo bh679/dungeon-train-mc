@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.net.HomeRoomVisitPacket;
 import games.brennan.dungeontrain.net.HomeRoomVisitStatePacket;
 import net.mehvahdjukaar.vista.common.tv.TVBlockEntity;
 import net.minecraft.client.Minecraft;
+import games.brennan.dungeontrain.client.NarrativeDeathScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
@@ -28,7 +29,8 @@ import java.util.function.Supplier;
  * </pre>
  *
  * <p>The TV shows whatever {@link ScreenToTexture} is drawing: the perks menu exactly as it was left,
- * for now. Right-clicking the TV opens the recap as a screen; its Board anew comes back through
+ * then the recap, page by page, each right-click on the TV the next one ({@link #onTvClicked}). A page
+ * that needs input comes up on the window and goes back down with Esc; Board anew comes back through
  * {@link #endRun}. A server that never answers hands the player the recap instead
  * ({@link #ROOM_TIMEOUT_MS}), so nobody waits on black.</p>
  */
@@ -47,7 +49,9 @@ public final class HomeTvVisit {
     private static long phaseAtMs;
     @Nullable private static Supplier<Screen> recap;
     @Nullable private static ScreenToTexture texture;
+    @Nullable private static NarrativeDeathScreen recapScreen;
     @Nullable private static BoundingBox screenBox;
+    private static net.minecraft.core.Direction screenFacing = net.minecraft.core.Direction.NORTH;
     @Nullable private static Screen pendingHost;
     private static boolean pendingKeepMode;
     private static long readyAtMs = -1L;
@@ -99,6 +103,7 @@ public final class HomeTvVisit {
             return;
         }
         screenBox = BoundingBox.fromCorners(packet.screenMin(), packet.screenMax());
+        screenFacing = packet.facing();
         if (phase == Phase.AWAITING_ROOM || phase == Phase.FADING_OUT) LOGGER.info("[DungeonTrain] home room: TV at {}", screenBox);
     }
 
@@ -121,7 +126,10 @@ public final class HomeTvVisit {
     public static void onFrameStart(float partialTick) {
         if (phase == Phase.IDLE) return;
         long now = System.currentTimeMillis();
-        if (texture != null && phase != Phase.ENDING) texture.renderFrame(-10_000, -10_000, partialTick);
+        if (texture != null && phase != Phase.ENDING) {
+            int[] m = zoomed() ? new int[] {TvPointer.OFF_SCREEN, TvPointer.OFF_SCREEN} : tvMouse();
+            texture.renderFrame(m[0], m[1], partialTick);
+        }
         Minecraft mc = Minecraft.getInstance();
         switch (phase) {
             case FADING_OUT -> {
@@ -157,7 +165,7 @@ public final class HomeTvVisit {
     }
 
     public static void onClientTick() {
-        if (texture != null && phase != Phase.IDLE && phase != Phase.ENDING) texture.tick();
+        if (texture != null && phase != Phase.IDLE && phase != Phase.ENDING && !zoomed()) texture.tick();
     }
 
     /** The room is up when we are alive in a level that has the TV's blocks — its chunk has arrived. */
@@ -185,11 +193,73 @@ public final class HomeTvVisit {
 
     // ---- the way out ------------------------------------------------------------------------
 
-    /** Right-clicked the TV: the recap, as a screen, for now. */
-    public static boolean onTvClicked(BlockPos pos) {
-        if (phase != Phase.WATCHING || !showsOn(pos) || recap == null) return false;
-        Minecraft.getInstance().setScreen(recap.get());
+    /**
+     * Right-clicked the TV. The first click switches it from the perks to the recap; every click
+     * after that is the next page, sneaking the previous one. A page that needs the player's hands
+     * comes up on the window instead ({@link #leaveZoom} takes it back down).
+     */
+    public static boolean onTvClicked(BlockPos pos, boolean sneaking) {
+        if (phase != Phase.WATCHING || !showsOn(pos) || texture == null) return false;
+        Minecraft mc = Minecraft.getInstance();
+        if (recapScreen == null) {
+            if (recap == null) return false;
+            Screen next = recap.get();
+            if (!(next instanceof NarrativeDeathScreen nds)) {
+                mc.setScreen(next);
+                return true;
+            }
+            recapScreen = nds;
+            texture.attach(nds);
+            return true;
+        }
+        if (sneaking) {
+            // Hands on the page: typing, scrolling a strip — the window has the keyboard.
+            mc.setScreen(recapScreen);
+            return true;
+        }
+        // The click lands where the crosshair is on the picture: the page's own buttons take it.
+        int[] m = tvMouse();
+        if (m[0] == TvPointer.OFF_SCREEN) return true;
+        recapScreen.mouseClicked(m[0], m[1], 0);
+        recapScreen.mouseReleased(m[0], m[1], 0);
         return true;
+    }
+
+    /** The wheel while looking at the TV: the page scrolls, not the hotbar. {@code false} when not on the TV. */
+    public static boolean onTvScrolled(double dx, double dy) {
+        if (phase != Phase.WATCHING || recapScreen == null || zoomed()) return false;
+        int[] m = tvMouse();
+        if (m[0] == TvPointer.OFF_SCREEN) return false;
+        recapScreen.mouseScrolled(m[0], m[1], dx, dy);
+        return true;
+    }
+
+    /** GUI coordinates of the crosshair on the picture, or off-screen when it is not on the TV's face. */
+    private static int[] tvMouse() {
+        int[] off = {TvPointer.OFF_SCREEN, TvPointer.OFF_SCREEN};
+        Minecraft mc = Minecraft.getInstance();
+        if (texture == null || screenBox == null || !(mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult hit)) return off;
+        if (!screenBox.isInside(hit.getBlockPos()) || hit.getDirection() != screenFacing) return off;
+        double[] uv = TvPointer.faceFraction(screenFacing, screenBox, hit.getLocation());
+        if (uv == null) return off;
+        double screenAspect = (screenFacing.getAxis() == net.minecraft.core.Direction.Axis.Z ? screenBox.getXSpan() : screenBox.getZSpan())
+            / (double) screenBox.getYSpan();
+        return TvPointer.toGui(uv[0], uv[1], screenAspect, texture.aspect(), texture.guiWidth(), texture.guiHeight());
+    }
+
+    /** Esc on a zoomed page: back to the room, the page staying on the TV. {@code false} when not zoomed. */
+    public static boolean leaveZoom(Screen screen) {
+        if (phase != Phase.WATCHING || texture == null || screen != recapScreen) return false;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen != screen) return false;
+        mc.setScreen(null);
+        texture.attach(recapScreen);
+        return true;
+    }
+
+    /** Whether the texture's screen is also the window's right now — then the window ticks it, not us. */
+    private static boolean zoomed() {
+        return texture != null && texture.screen() != null && Minecraft.getInstance().screen == texture.screen();
     }
 
     /**
@@ -225,6 +295,7 @@ public final class HomeTvVisit {
         }
         phase = Phase.IDLE;
         recap = null;
+        recapScreen = null;
         screenBox = null;
         pendingHost = null;
         pendingKeepMode = false;
@@ -235,6 +306,12 @@ public final class HomeTvVisit {
     /** For the dev preview harness: where the visit stands. */
     static Phase phase() {
         return phase;
+    }
+
+    /** For the dev preview harness: the recap once it is on the TV, or null. */
+    @Nullable
+    static NarrativeDeathScreen recapOnTv() {
+        return recapScreen;
     }
 
     /** For the dev preview harness: a block of the TV, or null. */

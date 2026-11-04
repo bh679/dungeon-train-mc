@@ -37,7 +37,7 @@ public final class HomeTvClientEvents {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         if (!event.getLevel().isClientSide() || !HomeTvVisit.isActive()) return;
-        if (HomeTvVisit.onTvClicked(event.getPos())) event.setCanceled(true);
+        if (HomeTvVisit.onTvClicked(event.getPos(), event.getEntity().isShiftKeyDown())) event.setCanceled(true);
     }
 
     /**
@@ -49,6 +49,19 @@ public final class HomeTvClientEvents {
         if (!HomeTvVisit.isActive()) return;
         if (!(event.getNewScreen() instanceof ReceivingLevelScreen) && !(event.getNewScreen() instanceof LevelLoadingScreen)) return;
         if (event.getCurrentScreen() instanceof HomeArrivalScreen) event.setCanceled(true);
+    }
+
+    /** A left click on the TV is a click on the page too, never a swing at the block. */
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
+        if (!event.getLevel().isClientSide() || !HomeTvVisit.isActive()) return;
+        if (HomeTvVisit.onTvClicked(event.getPos(), event.getEntity().isShiftKeyDown())) event.setCanceled(true);
+    }
+
+    @SubscribeEvent
+    public static void onMouseScroll(net.neoforged.neoforge.client.event.InputEvent.MouseScrollingEvent event) {
+        if (!HomeTvVisit.isActive()) return;
+        if (HomeTvVisit.onTvScrolled(event.getScrollDeltaX(), event.getScrollDeltaY())) event.setCanceled(true);
     }
 
     @SubscribeEvent

@@ -78,7 +78,9 @@ public final class ScreenToTexture {
 
     /** Make {@code next} the screen shown: sized to the texture, never to the window. */
     public void attach(Screen next) {
+        Screen previous = this.screen;
         this.screen = next;
+        if (previous != null && previous != next) previous.removed();
         if (next != null) next.init(Minecraft.getInstance(), guiWidth, guiHeight);
     }
 
