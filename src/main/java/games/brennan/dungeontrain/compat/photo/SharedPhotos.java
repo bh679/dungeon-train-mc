@@ -105,12 +105,14 @@ public final class SharedPhotos {
     /** Frame extra-data key carrying how many people had opened a found photo when it was handed out. */
     public static final String SHARED_VIEWS_KEY = "dt_shared_photo_views";
 
-    /** Frame extra-data key carrying the views a Tribute refills a found photo to (more if its photographer boosted it). */
+    /** Frame extra-data key carrying the views a Tribute refills a found photo to (more once a Tribute has earned it more reach). */
     public static final String SHARED_MAX_VIEWS_KEY = "dt_shared_photo_max_views";
 
     /**
-     * Views a photo goes back to after any Tribute, its photographer's own included (the relay's
-     * PLAYER_PHOTOS_VIEWS). Before its first Tribute a photo has fewer (PLAYER_PHOTOS_FRESH_VIEWS, 3).
+     * Views a photo goes back to after a one-emerald Tribute, its photographer's own included (the
+     * relay's PLAYER_PHOTOS_VIEWS); a dearer Tribute from someone else earns more
+     * ({@link TributePayment#reach}). Before its first Tribute a photo has fewer
+     * (PLAYER_PHOTOS_FRESH_VIEWS, 3).
      */
     public static final int VIEWS_MAX = 5;
 
@@ -590,7 +592,7 @@ public final class SharedPhotos {
         run.recordTribute(cost);
         announceTribute(player, held, photoId, cost);
         StartingBookEvents.dropAndBurnApproved(player, held);
-        player.sendSystemMessage(tributePaidLine(player, cost, VIEWS_MAX));
+        player.sendSystemMessage(tributePaidLine(player, cost, TributePayment.reach(cost, maxViews(held), ownPhoto)));
     }
 
     /**
