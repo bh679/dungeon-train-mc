@@ -116,9 +116,12 @@ public final class HomeRoomVisitService {
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         BoundingBox room = BoundingBox.fromCorners(roomOrigin, roomOrigin.offset(roomSize.getX() - 1, roomSize.getY() - 1, roomSize.getZ() - 1));
 
+        // The room as saved, then the visit's own entrance and exit tubes against its doors — not the
+        // pair corridors a room gets on the train (HomeRoomCorridors).
         StagePlacementScope.run(PortalCarriageBuilder.stageIdFor(overworld, HomeRooms.PAIR_KEY, dims),
-            () -> PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, HomeRooms.PAIR_KEY));
-        BoundingBox window = PortalTestSweep.windowBox(overworld, structure, dims);
+            () -> PortalCarriageBuilder.stampRoomFromBlob(overworld, roomOrigin, roomSize, structure.blob(), HomeRooms.PAIR_KEY));
+        List<BoundingBox> tubes = HomeRoomCorridors.stamp(overworld, roomOrigin, roomSize, dims);
+        BoundingBox window = HomeRoomCorridors.window(room, tubes);
 
         List<BlockPos> screen = new ArrayList<>();
         Direction facing = screenBlocks(overworld, room, screen);

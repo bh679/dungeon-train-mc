@@ -66,5 +66,51 @@ put(5, 1, 3, mat)
 root = {'size': L(3, [L_, H_, W_]), 'entities': L(10, []),
         'blocks': L(10, [blocks[k] for k in sorted(blocks)]),
         'palette': L(10, [e for _, e in palette]), 'DataVersion': I(3955)}
-nbt.write(OUT, root)
-print('wrote', OUT, len(blocks), 'blocks,', len(palette), 'palette entries')
+# The bundled room is authored in the Portals editor from here on: never overwrite one that exists.
+if os.path.exists(OUT) and '--force' not in sys.argv:
+    print('kept', OUT, '(authored; pass --force to regenerate)')
+else:
+    nbt.write(OUT, root)
+    print('wrote', OUT, len(blocks), 'blocks,', len(palette), 'palette entries')
+
+
+def tube(name, open_at_high_x):
+    """A 16 x 7 x 9 black concrete passage: closed at one end, open to the room at the other.
+
+    The death visit stands these end-on against the home room's doors (HomeRoomCorridors). They
+    are portal-room templates so the Portals editor lists them under `home`; weight 0 keeps the
+    train lottery from ever standing one as a room."""
+    TL, TH, TW = 16, 7, 9
+    pal2 = []
+    def p2(n):
+        for i, (k, _) in enumerate(pal2):
+            if k == n: return i
+        pal2.append((n, {'Name': S(n)})); return len(pal2) - 1
+    con = p2('minecraft:black_concrete'); air = None
+    bl = {}
+    for x in range(TL):
+        for y in range(TH):
+            for z in range(TW):
+                shell = y in (0, TH - 1) or z in (0, TW - 1)
+                closed_end = (x == TL - 1) if not open_at_high_x else (x == 0)
+                if shell or closed_end:
+                    bl[(x, y, z)] = {'pos': L(3, [x, y, z]), 'state': I(con)}
+    out = f'src/main/resources/data/dungeontrain/portals/room/{name}.nbt'
+    if os.path.exists(out) and '--force' not in sys.argv:
+        print('kept', out, '(authored; pass --force to regenerate)'); return
+    nbt.write(out, {'size': L(3, [TL, TH, TW]), 'entities': L(10, []),
+                    'blocks': L(10, [bl[k] for k in sorted(bl)]),
+                    'palette': L(10, [e for _, e in pal2]), 'DataVersion': I(3955)})
+    print('wrote', out, len(bl), 'blocks')
+
+
+# The entrance opens toward +x (the room sits past its high end); the exit opens toward -x.
+tube('home_entrance', True)
+tube('home_exit', False)
+import json
+group = {"schemaVersion": 3, "selfWeight": 1,
+         "variants": [{"id": "home_entrance", "weight": 0}, {"id": "home_exit", "weight": 0}]}
+gp = 'src/main/resources/data/dungeontrain/portals/room/home.group.json'
+with open(gp, 'w') as fh:
+    json.dump(group, fh, indent=2); fh.write('\n')
+print('wrote', gp)
