@@ -33,6 +33,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.TicketType;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -50,6 +51,7 @@ import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
 
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -186,10 +188,25 @@ public final class PlayerJoinEvents {
     private static final double FLATBED_FEET_EPSILON = 0.15;
 
     /**
-     * Max ticks to keep retrying the train lookup after login. 20 TPS,
-     * so 100 ≈ 5 s — generous; in practice the race resolves in 1–2 ticks.
+     * Max ticks to keep retrying after login. 20 TPS, so 240 ≈ 12 s — generous
+     * for the train lookup, whose race resolves in 1–2 ticks; sized to clear
+     * {@link #SCAN_WAIT_TICKS}.
      */
-    private static final int MAX_RETRY_TICKS = 100;
+    private static final int MAX_RETRY_TICKS = 240;
+
+    /**
+     * How long since login the track scan may hold placement for chunks that are still generating.
+     * Only an intro cinematic waits, and that player is behind the client's preload gate meanwhile.
+     * Past this they are placed from what has loaded (the scan only picks the camera start, the body
+     * always goes on the train). A dev server took about 7 s to generate what a fresh world needs.
+     * Must stay below {@link #MAX_RETRY_TICKS}, so that timeout can only ever mean the train never
+     * appeared.
+     */
+    private static final int SCAN_WAIT_TICKS = 200;
+
+    /** Generates chunks for the track scan. Self-expiring, so no removal on placement or logout. */
+    private static final TicketType<ChunkPos> JOIN_SCAN_TICKET =
+        TicketType.create("dungeontrain_join_scan", Comparator.comparingLong(ChunkPos::toLong), 200);
 
     /** Player UUID → tick count of pending retry. Cleared on success/timeout/logout. */
     private static final Map<UUID, Integer> PENDING = new ConcurrentHashMap<>();
@@ -365,7 +382,7 @@ public final class PlayerJoinEvents {
                 it.remove();
                 continue;
             }
-            if (tryPlace(player)) {
+            if (tryPlace(player, entry.getValue())) {
                 it.remove();
                 continue;
             }
@@ -383,9 +400,12 @@ public final class PlayerJoinEvents {
     /**
      * Try to place {@code player}. Returns {@code true} if a placement
      * decision was made (success or skip-no-recovery), {@code false} if
-     * the train wasn't resolvable yet and we should retry next tick.
+     * the train wasn't resolvable yet, or the chunks along the track are
+     * still generating, and we should retry next tick.
+     *
+     * @param ticksWaited how many ticks this player has been queued
      */
-    private static boolean tryPlace(ServerPlayer player) {
+    private static boolean tryPlace(ServerPlayer player, int ticksWaited) {
         if (!(player.level() instanceof ServerLevel currentLevel)) return true;
 
         ServerLevel overworld = currentLevel.getServer().overworld();
@@ -422,9 +442,28 @@ public final class PlayerJoinEvents {
         // the player is spawned well past any tunnel mouth. If not found,
         // fall back to the first non-tunnel X (so the player spawns near a
         // visible stretch of track rather than on top of the buried train).
-        int bufferedX = findBufferedReferenceX(trainLevel, trainX, tg);
-        boolean haveBuffered = bufferedX != Integer.MIN_VALUE;
-        int lookX = haveBuffered ? bufferedX : findAboveGroundReferenceX(trainLevel, trainX, tg);
+        boolean syncGen = DungeonTrainConfig.isSpawnSearchSyncGenEnabled();
+        BufferedColumnScan.ChunkReady ready = cx -> ensureSearchChunk(trainLevel, cx << 4, tg.centerZ(), syncGen);
+        BufferedColumnScan.ColumnBuried buried = x -> TunnelGenerator.isColumnUnderground(trainLevel, x, tg);
+        // The scan result only feeds the intro's camera start, so a returning player never waits for
+        // it or asks for chunks.
+        boolean cinematic = CinematicIntroService.shouldPlay(player);
+        BufferedColumnScan.Result scan = cinematic
+            ? BufferedColumnScan.scan(trainX, X_BUFFER, MAX_ABOVEGROUND_SCAN, ready, buried)
+            : new BufferedColumnScan.None();
+        if (scan instanceof BufferedColumnScan.Pending pending) {
+            if (ticksWaited < SCAN_WAIT_TICKS) {
+                requestScanChunks(trainLevel, pending, tg.centerZ() >> 4);
+                return false;
+            }
+            LOGGER.info("[DungeonTrain] Login spawn scan for {} still waiting on {} chunk(s) after {} ticks, placing from loaded chunks",
+                player.getName().getString(), pending.chunkXs().size(), ticksWaited);
+        }
+
+        boolean haveBuffered = scan instanceof BufferedColumnScan.Found;
+        int bufferedX = scan instanceof BufferedColumnScan.Found found ? found.x() : Integer.MIN_VALUE;
+        int lookX = haveBuffered ? bufferedX
+            : BufferedColumnScan.firstClearReadyColumn(trainX, MAX_ABOVEGROUND_SCAN, ready, buried);
         int anchorX = haveBuffered ? bufferedX : lookX;
 
         // Camera start may sit over water (it's just a camera viewpoint).
@@ -461,14 +500,13 @@ public final class PlayerJoinEvents {
         DungeonTrainNet.sendTo(player, new SpawnDeckHoldPacket(
             data.getTrainY() + 1.0, SpawnDeckHoldPacket.DEFAULT_HOLD_TICKS));
 
-        boolean cinematic = CinematicIntroService.shouldPlay(player);
-        LOGGER.info("[DungeonTrain] Login spawn for {}: onTrain=({}, {}, {}) camStart=({}, {}, {}) yaw={} pitch={} cinematic={} trainCenter=({}, {}, {}) anchorX={} lookX={} buffered={}",
+        LOGGER.info("[DungeonTrain] Login spawn for {}: onTrain=({}, {}, {}) camStart=({}, {}, {}) yaw={} pitch={} cinematic={} trainCenter=({}, {}, {}) anchorX={} lookX={} buffered={} waitedTicks={}",
             player.getName().getString(),
             String.format("%.1f", flat.x()), String.format("%.1f", flat.y()), String.format("%.1f", flat.z()),
             String.format("%.1f", target.px), target.py, String.format("%.1f", target.pz),
             String.format("%.1f", yaw), String.format("%.1f", pitch), cinematic,
             String.format("%.1f", trainCenter.x), String.format("%.1f", trainCenter.y), String.format("%.1f", trainCenter.z),
-            anchorX, lookX, haveBuffered);
+            anchorX, lookX, haveBuffered, ticksWaited);
 
         if (cinematic) {
             // Join intro: let the client hold the cinematic behind a loading
@@ -497,52 +535,31 @@ public final class PlayerJoinEvents {
         return new Vector3d(canonical.x(), canonical.y(), canonical.z());
     }
 
+    /** Ask for each listed chunk on the track row to generate, without waiting for any of them. */
+    private static void requestScanChunks(ServerLevel level, BufferedColumnScan.Pending pending, int chunkZ) {
+        for (int cx : pending.chunkXs()) {
+            ChunkPos pos = new ChunkPos(cx, chunkZ);
+            level.getChunkSource().addRegionTicket(JOIN_SCAN_TICKET, pos, 0, pos);
+        }
+    }
+
     /**
-     * Find an X with at least {@link #X_BUFFER} non-tunnel columns on each
-     * side. Scans +X first, then −X. Returns {@link Integer#MIN_VALUE} if
-     * no such buffered window exists in {@link #MAX_ABOVEGROUND_SCAN}
-     * blocks in either direction.
+     * The blocking form of the login scan's {@link BufferedColumnScan} walk, for callers that must
+     * return a pose in the same call (world bootstrap, respawn, cinematic replay). Force-generates
+     * each chunk it reads, and returns {@link Integer#MIN_VALUE} if no buffered window exists in
+     * {@link #MAX_ABOVEGROUND_SCAN} blocks in either direction.
      */
     private static int findBufferedReferenceX(
         ServerLevel level, int originX, TunnelGeometry tg
     ) {
-        int found = scanBufferedDir(level, originX, tg, +1);
-        if (found != Integer.MIN_VALUE) return found;
-        return scanBufferedDir(level, originX, tg, -1);
-    }
-
-    /**
-     * Walk in {@code dir} from {@code originX} looking for a contiguous run
-     * of {@code 2 * X_BUFFER + 1} non-tunnel columns. Returns the middle of
-     * the first qualifying run, or {@link Integer#MIN_VALUE} if no run
-     * exists in {@link #MAX_ABOVEGROUND_SCAN} blocks.
-     *
-     * <p>Force-loads each column's chunk before checking — without this,
-     * unloaded chunks (common at bootstrap time when only spawn chunks are
-     * loaded) get treated as non-tunnel by {@code isColumnUnderground}'s
-     * {@code hasChunkAt} early exit, which corrupts the scan.</p>
-     */
-    private static int scanBufferedDir(
-        ServerLevel level, int originX, TunnelGeometry tg, int dir
-    ) {
-        int needed = 2 * X_BUFFER + 1;
-        int consecutive = 0;
-        int runStart = 0;
-        int dxStart = (dir > 0) ? 0 : 1;
-        for (int dx = dxStart; dx <= MAX_ABOVEGROUND_SCAN; dx++) {
-            int x = originX + dir * dx;
-            WorldgenForceGuard.forceChunk(level, x >> 4, tg.centerZ() >> 4);
-            if (!TunnelGenerator.isColumnUnderground(level, x, tg)) {
-                if (consecutive == 0) runStart = x;
-                consecutive++;
-                if (consecutive >= needed) {
-                    return runStart + dir * X_BUFFER;
-                }
-            } else {
-                consecutive = 0;
-            }
-        }
-        return Integer.MIN_VALUE;
+        int chunkZ = tg.centerZ() >> 4;
+        BufferedColumnScan.Result scan = BufferedColumnScan.scan(originX, X_BUFFER, MAX_ABOVEGROUND_SCAN,
+            cx -> {
+                WorldgenForceGuard.forceChunk(level, cx, chunkZ);
+                return true;
+            },
+            x -> TunnelGenerator.isColumnUnderground(level, x, tg));
+        return scan instanceof BufferedColumnScan.Found found ? found.x() : Integer.MIN_VALUE;
     }
 
     /**
