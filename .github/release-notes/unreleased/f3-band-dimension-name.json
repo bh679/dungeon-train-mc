@@ -1,0 +1,17 @@
+{
+  "id": "f3-band-dimension-name",
+  "version": "0.1648.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "F3 knows where you are",
+  "summary": "The F3 debug screen now names the place you are travelling through as its dimension.",
+  "highlights": [],
+  "pr": 2468,
+  "date": "2026-11-04",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
