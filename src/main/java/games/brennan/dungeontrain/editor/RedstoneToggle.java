@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.editor;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.CandleBlock;
+import net.minecraft.world.level.block.CandleCakeBlock;
 import net.minecraft.world.level.block.CopperBulbBlock;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.FenceGateBlock;
@@ -27,6 +29,8 @@ import java.util.Random;
  *   <li>{@link BlockStateProperties#OPEN} on trapdoors, doors and fence gates.</li>
  *   <li>{@link BlockStateProperties#POWERED} on levers.</li>
  *   <li>{@link BlockStateProperties#LIT} on copper bulbs (toggle on a rising edge, keep it).</li>
+ *   <li>{@link BlockStateProperties#LIT} on candles and candle cakes (lit with fire, stays lit).
+ *       A waterlogged candle can't burn, so it is always placed unlit.</li>
  * </ul>
  * Blocks that fall back the moment the signal stops — redstone lamps and
  * torches, pistons, dispensers, hoppers, buttons, pressure plates, rails,
@@ -59,7 +63,7 @@ public final class RedstoneToggle {
         if (block instanceof LeverBlock) {
             return state.hasProperty(BlockStateProperties.POWERED) ? BlockStateProperties.POWERED : null;
         }
-        if (block instanceof CopperBulbBlock) {
+        if (block instanceof CopperBulbBlock || block instanceof CandleBlock || block instanceof CandleCakeBlock) {
             return state.hasProperty(BlockStateProperties.LIT) ? BlockStateProperties.LIT : null;
         }
         return null;
@@ -78,7 +82,14 @@ public final class RedstoneToggle {
         if (state == null) return null;
         BooleanProperty prop = propertyFor(state);
         if (prop == null) return state;
-        return state.setValue(prop, active);
+        return state.setValue(prop, active && !drowned(state));
+    }
+
+    /** True for a waterlogged candle: vanilla never lets one burn under water. */
+    private static boolean drowned(BlockState state) {
+        return state.getBlock() instanceof CandleBlock
+            && state.hasProperty(BlockStateProperties.WATERLOGGED)
+            && state.getValue(BlockStateProperties.WATERLOGGED);
     }
 
     /**
@@ -98,7 +109,7 @@ public final class RedstoneToggle {
             case RANDOM -> roll(localPos, worldSeed, carriageIndex, lockId);
             case INACTIVE -> false;
         };
-        return state.setValue(prop, on);
+        return state.setValue(prop, on && !drowned(state));
     }
 
     /** Seeded coin flip — same recipe as {@link RotationApplier#applyHalf}, own salt. */

@@ -16,6 +16,7 @@ import games.brennan.dungeontrain.client.credits.DonationPrefsClient;
 import games.brennan.dungeontrain.client.credits.DonationPrefsState;
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
 import games.brennan.dungeontrain.client.live.StreamNameTag;
+import games.brennan.dungeontrain.client.live.StreamerBoxPanes;
 import games.brennan.dungeontrain.client.live.StreamPreviewWidget;
 import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
 import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
@@ -749,6 +750,16 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                     (btn, v) -> LiveFeedClientConfig.setWornTvStreams(v)),
                     key + ".tip");
 
+            // While streaming with someone else live: what the streamer's own box shows (StreamerBoxPanes).
+            case STREAMER_BOX_STREAMS -> Setting.of(
+                    CycleButton.<LiveFeedClientConfig.StreamerBoxStreams>builder(DungeonTrainClientOptionsScreen::streamerBoxStreamsLabel)
+                            .withValues(LiveFeedClientConfig.StreamerBoxStreams.values())
+                            .withInitialValue(LiveFeedClientConfig.streamerBoxStreams())
+                            .displayOnlyValue()
+                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
+                                    (btn, v) -> { LiveFeedClientConfig.setStreamerBoxStreams(v); StreamerBoxPanes.reset(); }),
+                    key + ".tip");
+
             // Pop-ups copied back over the stream's name tag (LiveToastRects). On the Performance tab too.
             case STREAM_POPUPS_OVER_TAG -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.popupsOverNameTag(),
                     LiveFeedClientConfig::setPopupsOverNameTag), key + ".tip");
@@ -811,6 +822,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // preview outlines the streaming one).
             case HEAD_VIEWER_SIZE -> headViewerSize(key, false);
             case HEAD_VIEWER_SIZE_STREAMING -> headViewerSize(key, true);
+            // Who is live, under each pane of the pinned feed (HeadViewerCaption).
+            case HEAD_VIEWER_NAMES -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.headViewerNames(),
+                    LiveFeedClientConfig::setHeadViewerNames), key + ".tip");
 
             // The consent card's Developer chat switch. Inert (greyed) in Kid mode, where the Kid rule
             // keeps developer chat off whatever this says; flipping it re-syncs the inbound gate.
@@ -1197,6 +1211,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
     private static Component wornTvStreamsLabel(LiveFeedClientConfig.WornTvStreams v) {
         return Component.translatable("gui.dungeontrain.options.worn_tv_streams." + v.name().toLowerCase(java.util.Locale.ROOT));
+    }
+
+    private static Component streamerBoxStreamsLabel(LiveFeedClientConfig.StreamerBoxStreams v) {
+        return Component.translatable("gui.dungeontrain.options.streamer_box_streams." + v.name().toLowerCase(java.util.Locale.ROOT));
     }
 
     private static Component streamNameTagLabel(LiveFeedClientConfig.NameTag tag) {

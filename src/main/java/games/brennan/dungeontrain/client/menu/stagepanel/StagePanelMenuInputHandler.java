@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.menu.stagepanel;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
+import games.brennan.dungeontrain.client.menu.WorldPanelInput;
 import games.brennan.dungeontrain.client.menu.StageDuplicateNameScreen;
 import games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenu;
 import games.brennan.dungeontrain.client.menu.parts.PartPositionMenu;
@@ -10,8 +11,6 @@ import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.StagePanelEditPacket;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.Direction;
-import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -19,7 +18,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
 
@@ -34,52 +32,28 @@ import java.util.List;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class StagePanelMenuInputHandler {
 
-    private static boolean pressArmed;
+    private static final WorldPanelInput<StagePanelMenu.Hit> INPUT = WorldPanelInput.leftOnly(
+        StagePanelMenu::hovered, hit -> hit.kind() == StagePanelMenu.CellKind.NONE,
+        StagePanelMenuInputHandler::shouldHandle, StagePanelMenuInputHandler::dispatch);
 
     private StagePanelMenuInputHandler() {}
 
+    /** The press: cancels the world interaction and arms when the crosshair is on a panel cell. */
     @SubscribeEvent
     public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
-        if (!shouldHandle()) return;
-        StagePanelMenu.Hit hit = StagePanelMenu.hovered();
-        if (hit.kind() == StagePanelMenu.CellKind.NONE) return;
-        event.setCanceled(true);
-        event.setSwingHand(false);
-        pressArmed = true;
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player != null) {
-            mc.hitResult = BlockHitResult.miss(
-                mc.player.getEyePosition(),
-                Direction.UP,
-                mc.player.blockPosition()
-            );
-        }
-        if (mc.gameMode != null) mc.gameMode.stopDestroyBlock();
+        INPUT.onInteraction(event);
     }
 
+    /** The release of the armed button fires the hit under the crosshair. */
     @SubscribeEvent
     public static void onMouseButton(InputEvent.MouseButton.Pre event) {
-        if (!shouldHandle()) {
-            pressArmed = false;
-            return;
-        }
-        if (Minecraft.getInstance().screen != null) return;
-        if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
-        if (event.getAction() != GLFW.GLFW_RELEASE) return;
-        if (!pressArmed) return;
-        pressArmed = false;
-
-        StagePanelMenu.Hit hit = StagePanelMenu.hovered();
-        if (hit.kind() == StagePanelMenu.CellKind.NONE) return;
-        dispatch(hit);
+        INPUT.onMouseButton(event);
     }
 
+    /** Belt and braces: a left-click-block that slipped past the press cancel must not start block damage. */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        if (!shouldHandle()) return;
-        StagePanelMenu.Hit hit = StagePanelMenu.hovered();
-        if (hit.kind() == StagePanelMenu.CellKind.NONE) return;
-        event.setCanceled(true);
+        INPUT.onLeftClickBlock(event);
     }
 
     @SubscribeEvent

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu.blockvariant;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
+import games.brennan.dungeontrain.client.menu.WorldPanelInput;
 import games.brennan.dungeontrain.client.menu.MenuClickModifiers;
 import games.brennan.dungeontrain.client.menu.number.NumberField;
 import games.brennan.dungeontrain.client.menu.number.NumberPad;
@@ -18,7 +19,6 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -56,60 +56,34 @@ import java.util.List;
 )
 public final class BlockVariantMenuInputHandler {
 
-    private static boolean pressArmed;
-    private static boolean pressShift;
-    /** Which mouse button armed the press — only its own release dispatches. */
-    private static int pressButton;
-
     /**
      * Ceiling for a typed weight. The stepper has no cap of its own — this is a sanity bound on
      * the number pad so a mistyped digit run can't drown every other entry in the pool.
      */
     private static final int TYPED_WEIGHT_MAX = 1000;
 
+    private static final WorldPanelInput<BlockVariantMenu.Hit> INPUT = new WorldPanelInput<>(
+        BlockVariantMenu::hovered, hit -> hit.kind() == BlockVariantMenu.CellKind.NONE,
+        BlockVariantMenuInputHandler::shouldHandle, true, BlockVariantMenuInputHandler::dispatch);
+
     private BlockVariantMenuInputHandler() {}
 
+    /** The press: cancels the world interaction and arms when the crosshair is on a panel cell. */
     @SubscribeEvent
     public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
-        if (!shouldHandle()) return;
-        BlockVariantMenu.Hit hit = BlockVariantMenu.hovered();
-        if (hit.kind() == BlockVariantMenu.CellKind.NONE) return;
-        event.setCanceled(true);
-        event.setSwingHand(false);
-        pressArmed = true;
-        pressButton = event.isUseItem() ? GLFW.GLFW_MOUSE_BUTTON_RIGHT : GLFW.GLFW_MOUSE_BUTTON_LEFT;
-        pressShift = Minecraft.getInstance().screen == null
-            && (GLFW.glfwGetKey(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS
-                || GLFW.glfwGetKey(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS);
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player != null) {
-            mc.hitResult = BlockHitResult.miss(
-                mc.player.getEyePosition(),
-                Direction.UP,
-                mc.player.blockPosition()
-            );
-        }
-        if (mc.gameMode != null) mc.gameMode.stopDestroyBlock();
+        INPUT.onInteraction(event);
     }
 
+    /** The release of the armed button fires the hit under the crosshair. */
     @SubscribeEvent
     public static void onMouseButton(InputEvent.MouseButton.Pre event) {
-        if (!shouldHandle()) {
-            pressArmed = false;
-            return;
-        }
-        if (Minecraft.getInstance().screen != null) return;
-        int btn = event.getButton();
-        if (btn != GLFW.GLFW_MOUSE_BUTTON_LEFT && btn != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
-        if (event.getAction() != GLFW.GLFW_RELEASE) return;
-        if (!pressArmed || btn != pressButton) return;
-        pressArmed = false;
-        boolean shift = pressShift
-            || (event.getModifiers() & GLFW.GLFW_MOD_SHIFT) != 0;
+        INPUT.onMouseButton(event);
+    }
 
-        BlockVariantMenu.Hit hit = BlockVariantMenu.hovered();
-        if (hit.kind() == BlockVariantMenu.CellKind.NONE) return;
-        dispatch(hit, shift, btn);
+    /** Belt and braces: a left-click-block that slipped past the press cancel must not start block damage. */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
+        INPUT.onLeftClickBlock(event);
     }
 
     /**
@@ -148,14 +122,6 @@ public final class BlockVariantMenuInputHandler {
                  ENTRY_HALF_MODE, ENTRY_ACTIVE_MODE, ENTRY_DIFF_MIN, ENTRY_DIFF_MAX -> true;
             default -> false;
         };
-    }
-
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        if (!shouldHandle()) return;
-        BlockVariantMenu.Hit hit = BlockVariantMenu.hovered();
-        if (hit.kind() == BlockVariantMenu.CellKind.NONE) return;
-        event.setCanceled(true);
     }
 
     @SubscribeEvent
@@ -305,6 +271,23 @@ public final class BlockVariantMenuInputHandler {
                     BlockVariantEditPacket.Op.SET_PAINTING, variantId, local, hit.index(),
                     next.isDefault() ? "" : next.id(), 0));
             }
+            case CANDLE_OPTION -> {
+                // Same modal rules as GROWTH_OPTION: -2 closes, -1 is the popup's own margin.
+                int code = hit.secondary();
+                if (code == -1) return;
+                if (code < 0 || hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) {
+                    BlockVariantMenu.closeGrowthPopup();
+                    return;
+                }
+                games.brennan.dungeontrain.editor.VariantCandles current =
+                    BlockVariantMenu.candles(BlockVariantMenu.entries().get(hit.index()));
+                games.brennan.dungeontrain.editor.VariantCandles next =
+                    CandlePopupLayout.apply(GrowthPopupLayout.option(code));
+                if (next.equals(current)) return;
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_CANDLES, variantId, local, hit.index(), next.id(), 0));
+            }
+            case POT_OPTION -> dispatchPot(hit, variantId, local);
             case SPAN_OPTION -> {
                 // -2 = clicked elsewhere in the panel (close), -1 = the popup's own margin (ignore).
                 // A button sets that one section and leaves the popup open for the next choice.
@@ -482,6 +465,55 @@ public final class BlockVariantMenuInputHandler {
             default -> new NumberField(NumberTitle.of("weight"), entry.weight(), 1, TYPED_WEIGHT_MAX, false,
                 inc, dec, set);
         };
+    }
+
+    /**
+     * A click in a flower pot row's Plant popup. Same modal rules as the Grow popup: -2 closes,
+     * -1 is the popup's own margin. The browse stepper moves client-side; everything else is an
+     * edit the server applies to the row's {@code VariantPot}.
+     */
+    private static void dispatchPot(BlockVariantMenu.Hit hit, String variantId, net.minecraft.core.BlockPos local) {
+        int code = hit.secondary();
+        if (code == -1) return;
+        if (code < 0 || hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) {
+            BlockVariantMenu.closeGrowthPopup();
+            return;
+        }
+        int row = hit.index();
+        games.brennan.dungeontrain.editor.VariantPot pot = BlockVariantMenu.pot(BlockVariantMenu.entries().get(row));
+        int section = GrowthPopupLayout.section(code);
+        int option = GrowthPopupLayout.option(code);
+        BlockVariantEditPacket.Op op;
+        String arg;
+        if (section == PotPopupLayout.SECTION_ON) {
+            if ((option == 1) == pot.on()) return;
+            op = BlockVariantEditPacket.Op.SET_POT;
+            arg = option == 1 ? "random" : "";
+        } else if (section == PotPopupLayout.SECTION_BROWSE) {
+            if (option == PotPopupLayout.BROWSE_PREV || option == PotPopupLayout.BROWSE_NEXT) {
+                PotPopupLayout.stepBrowse(option == PotPopupLayout.BROWSE_PREV ? -1 : 1);
+                return;
+            }
+            net.minecraft.resources.ResourceLocation shown = PotPopupLayout.browsed();
+            if (shown == null) return;
+            op = BlockVariantEditPacket.Op.ADD_POT_PLANT;
+            arg = shown.toString();
+        } else if (section == PotPopupLayout.SECTION_ACTIONS) {
+            if (option == PotPopupLayout.ACTION_RANDOM) {
+                if (pot.isRandom()) return;
+                op = BlockVariantEditPacket.Op.SET_POT;
+                arg = "random";
+            } else {
+                op = BlockVariantEditPacket.Op.ADD_POT_PLANT;
+                arg = "";
+            }
+        } else {
+            net.minecraft.resources.ResourceLocation plant = PotPopupLayout.listedPlant(pot, section, option);
+            if (plant == null) return;
+            op = BlockVariantEditPacket.Op.REMOVE_POT_PLANT;
+            arg = plant.toString();
+        }
+        DungeonTrainNet.sendToServer(new BlockVariantEditPacket(op, variantId, local, row, arg, 0));
     }
 
     /**

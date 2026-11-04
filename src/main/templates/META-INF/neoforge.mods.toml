@@ -478,6 +478,12 @@ logoFile="logo.png"
 [[mixins]]
     config="${mod_id}.betteradvancements.mixins.json"
 
+# Advancement Plaques (bundled companion, optional) — the star-frame advancements (tab-complete,
+# Everything Burrito, It's Not That Simple) get DT's own Night Crest plaque (see
+# client/NightCrestPlaque). Gated by AdvancementPlaquesMixinPlugin: a no-op without the mod.
+[[mixins]]
+    config="${mod_id}.advancementplaques.mixins.json"
+
 # Distant Horizons (optional) reads GL_POLYGON_MODE through LWJGL's one-int glGetInteger; Apple's GL
 # driver writes two ints, corrupting the native heap just past the render thread's stack every frame
 # (random C2 / Metal crashes on macOS). dungeontrain.distanthorizons.mixins.json, gated by

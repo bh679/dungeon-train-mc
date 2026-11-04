@@ -36,6 +36,7 @@ public final class LiveFeedClientInit {
                 LiveFeedSource.MAIN.dropAll();
                 LiveFeedSource.SECOND.dropAll();
                 HeadViewerPanes.reset();
+                StreamerBoxPanes.reset();
                 LiveStatusPoller.reset();
                 LiveChatBridge.reset();
                 LiveHeadpieceAntenna.reset();

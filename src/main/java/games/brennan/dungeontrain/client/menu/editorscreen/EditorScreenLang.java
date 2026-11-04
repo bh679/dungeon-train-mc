@@ -313,6 +313,18 @@ public final class EditorScreenLang {
     public static final String RESEED_TIP_ON = PREFIX + "reseed.tip_on";
     public static final String RESEED_TIP_OFF = PREFIX + "reseed.tip_off";
     public static final String RESEED_TIP_NOW = PREFIX + "reseed.tip_now";
+    // The toolbar's arrow button and the offset row it opens — see OffsetControls.
+    public static final String ICON_OFFSET = PREFIX + "icon.offset";
+    public static final String ICON_OFFSET_TIP = PREFIX + "icon.offset.tip";
+    public static final String OFFSET_X_NEG = PREFIX + "offset.x_neg";
+    public static final String OFFSET_X_POS = PREFIX + "offset.x_pos";
+    public static final String OFFSET_Y_NEG = PREFIX + "offset.y_neg";
+    public static final String OFFSET_Y_POS = PREFIX + "offset.y_pos";
+    public static final String OFFSET_Z_NEG = PREFIX + "offset.z_neg";
+    public static final String OFFSET_Z_POS = PREFIX + "offset.z_pos";
+    public static final String OFFSET_TIP = PREFIX + "offset.tip";
+    public static final String OFFSET_DISTANCE = PREFIX + "offset.distance";
+    public static final String OFFSET_DISTANCE_TIP = PREFIX + "offset.distance.tip";
     // The test toolbar and the test settings rows — see TestModeControls.
     public static final String TEST_RELOAD = PREFIX + "test.reload";
     public static final String TEST_RELOAD_TIP = PREFIX + "test.reload.tip";

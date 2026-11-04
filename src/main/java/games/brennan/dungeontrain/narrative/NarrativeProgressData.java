@@ -325,6 +325,18 @@ public final class NarrativeProgressData extends SavedData {
     }
 
     /**
+     * Whether the world has read every one of {@code letterIndices} of {@code seriesId} — i.e. finished the
+     * series as it currently stands. An empty list is never finished. Drives "A Library In Motion".
+     */
+    public boolean hasReadAllPlayerLetters(String seriesId, java.util.Collection<Integer> letterIndices) {
+        if (letterIndices == null || letterIndices.isEmpty()) return false;
+        for (int letterIndex : letterIndices) {
+            if (!hasReadPlayerLetter(seriesId, letterIndex)) return false;
+        }
+        return true;
+    }
+
+    /**
      * The distinct player narrative seriesIds the world has started (read ≥1 letter of), in the order they
      * were first read (oldest first, so the tail is the most recently started). Used both to continue an
      * in-progress series and to pin in-progress series into the relay pool fetch so they stay resolvable.
@@ -534,7 +546,8 @@ public final class NarrativeProgressData extends SavedData {
      * <p>Used by the narrative_lectern's lazy resolver: if the world is in
      * the middle of any story, that lectern continues that story rather
      * than picking a fresh random one. Empty when there is no in-progress
-     * narrative.</p>
+     * narrative. A story already finished in another world ({@link #isStoryDone})
+     * is not resumed.</p>
      */
     public Optional<String> currentInProgressStory() {
         List<String> all = StoryRegistry.basenames();
@@ -542,8 +555,7 @@ public final class NarrativeProgressData extends SavedData {
             Optional<StoryFile> story = StoryRegistry.getByBasename(basename);
             if (story.isEmpty()) continue;
             NarrativeProgress p = progressFor(basename);
-            int total = story.get().letters().size();
-            if (p.readCount() > 0 && !p.isComplete(total)) {
+            if (p.readCount() > 0 && !isStoryDone(story.get())) {
                 return Optional.of(basename);
             }
         }
@@ -586,19 +598,82 @@ public final class NarrativeProgressData extends SavedData {
      * </ol>
      */
     private List<StoryFile> startTier() {
-        List<StoryFile> ordinary = new java.util.ArrayList<>();
-        List<StoryFile> blocked = new java.util.ArrayList<>();
-        List<StoryFile> deferred = new java.util.ArrayList<>();
-        List<StoryFile> deferredBlocked = new java.util.ArrayList<>();
+        return startTier(loadedStories(), this::isStoryDone);
+    }
+
+    private static List<StoryFile> loadedStories() {
+        List<StoryFile> stories = new ArrayList<>();
         for (String basename : StoryRegistry.basenames()) {
-            Optional<StoryFile> story = StoryRegistry.getByBasename(basename);
-            if (story.isEmpty()) continue;
-            if (progressFor(basename).isComplete(story.get().letters().size())) continue;
-            boolean startable = prerequisiteMet(story.get());
-            if (story.get().deferred()) {
-                (startable ? deferred : deferredBlocked).add(story.get());
+            StoryRegistry.getByBasename(basename).ifPresent(stories::add);
+        }
+        return stories;
+    }
+
+    /**
+     * The story a RE-READ lectern serves once every story is done, so re-reads run in order from letter 1.
+     * Uses this world's own story progress as the re-read cursor: continues the story the world is part-way
+     * through, else picks (equal odds, per {@code randomSeed}) one the world has not read, whose next letter
+     * is letter 1. Once the world has read every story, its story progress is cleared to start a fresh round.
+     * Cross-world progress is untouched, so this never affects advancements or {@link #isStoryDone}.
+     * Empty only when no stories are loaded.
+     */
+    public Optional<String> nextRereadStory(long randomSeed) {
+        List<StoryFile> stories = loadedStories();
+        Optional<StoryFile> pick = pickReread(stories, this::isWorldComplete, this::isWorldStarted, randomSeed);
+        if (pick.isEmpty() && !stories.isEmpty()) {
+            resetAll(); // this world has re-read everything → new round
+            pick = pickReread(stories, this::isWorldComplete, this::isWorldStarted, randomSeed);
+        }
+        return pick.map(StoryFile::basename);
+    }
+
+    /**
+     * Pure re-read pick behind {@link #nextRereadStory}: the first started-but-unfinished story, else a
+     * seeded equal-odds pick among unstarted ones. Empty when every story is complete.
+     */
+    static Optional<StoryFile> pickReread(List<StoryFile> stories,
+                                          java.util.function.Predicate<StoryFile> complete,
+                                          java.util.function.Predicate<StoryFile> started,
+                                          long randomSeed) {
+        List<StoryFile> unstarted = new ArrayList<>();
+        for (StoryFile story : stories) {
+            if (complete.test(story)) continue;
+            if (started.test(story)) return Optional.of(story);
+            unstarted.add(story);
+        }
+        if (unstarted.isEmpty()) return Optional.empty();
+        return Optional.of(unstarted.get(Math.floorMod(randomSeed, unstarted.size())));
+    }
+
+    private boolean isWorldComplete(StoryFile story) {
+        return progressFor(story.basename()).isComplete(story.letters().size());
+    }
+
+    private boolean isWorldStarted(StoryFile story) {
+        return progressFor(story.basename()).readCount() > 0;
+    }
+
+    /**
+     * {@link #startTier()} over an explicit story list, with "done" supplied by the caller so the
+     * tiering is testable without a registry or the global store. A done story is never startable,
+     * and a done prerequisite unlocks the stories chained {@code after} it. A prerequisite missing from
+     * {@code stories} counts as met, so a dangling {@code after} can't stall a world.
+     */
+    static List<StoryFile> startTier(List<StoryFile> stories, java.util.function.Predicate<StoryFile> isDone) {
+        Map<String, StoryFile> byBasename = new HashMap<>();
+        for (StoryFile story : stories) byBasename.put(story.basename(), story);
+        List<StoryFile> ordinary = new ArrayList<>();
+        List<StoryFile> blocked = new ArrayList<>();
+        List<StoryFile> deferred = new ArrayList<>();
+        List<StoryFile> deferredBlocked = new ArrayList<>();
+        for (StoryFile story : stories) {
+            if (isDone.test(story)) continue;
+            StoryFile prerequisite = story.after() == null ? null : byBasename.get(story.after());
+            boolean startable = prerequisite == null || isDone.test(prerequisite);
+            if (story.deferred()) {
+                (startable ? deferred : deferredBlocked).add(story);
             } else {
-                (startable ? ordinary : blocked).add(story.get());
+                (startable ? ordinary : blocked).add(story);
             }
         }
         if (!ordinary.isEmpty()) return ordinary;
@@ -607,12 +682,17 @@ public final class NarrativeProgressData extends SavedData {
         return deferredBlocked;
     }
 
-    /** True when {@code story} has no {@code after}, or names a story that is unknown or complete. */
-    private boolean prerequisiteMet(StoryFile story) {
-        if (story.after() == null) return true;
-        Optional<StoryFile> prerequisite = StoryRegistry.getByBasename(story.after());
-        if (prerequisite.isEmpty()) return true;
-        return progressFor(story.after()).isComplete(prerequisite.get().letters().size());
+    /**
+     * True when {@code story} is finished in this world OR in the installation-wide
+     * {@link games.brennan.dungeontrain.advancement.GlobalNarrativeProgress} record. Lectern selection
+     * uses this so a story read to the end in an earlier world is not served again in a new one until
+     * every other story is finished too — the same cross-world record "A Library In Motion" counts.
+     */
+    private boolean isStoryDone(StoryFile story) {
+        int total = story.letters().size();
+        return progressFor(story.basename()).isComplete(total)
+            || games.brennan.dungeontrain.advancement.GlobalNarrativeProgress
+                .progressFor(story.basename()).isComplete(total);
     }
 
     // ---------------- Letter-series tracking (player-written lectern letters) ----------------

@@ -29,11 +29,21 @@ final class PhotoTierAdvancementsTest {
     @Test
     @DisplayName("a Tribute tier matches only its own side, at or above its price")
     void tributeMatching() {
-        PhotoTributeTrigger.Instance selfCare = new PhotoTributeTrigger.Instance(Optional.empty(), PhotoTributeTrigger.OWN, 180);
-        assertTrue(selfCare.matches(PhotoTributeTrigger.OWN, 180));
-        assertTrue(selfCare.matches(PhotoTributeTrigger.OWN, 243));
-        assertFalse(selfCare.matches(PhotoTributeTrigger.OWN, 81));
-        assertFalse(selfCare.matches(PhotoTributeTrigger.OTHERS, 243));
+        PhotoTributeTrigger.Instance selfCare = new PhotoTributeTrigger.Instance(Optional.empty(), PhotoTributeTrigger.OWN, 180, 0);
+        assertTrue(selfCare.matches(PhotoTributeTrigger.OWN, 180, 0));
+        assertTrue(selfCare.matches(PhotoTributeTrigger.OWN, 243, 0));
+        assertFalse(selfCare.matches(PhotoTributeTrigger.OWN, 81, 0));
+        assertFalse(selfCare.matches(PhotoTributeTrigger.OTHERS, 243, 0));
+    }
+
+    @Test
+    @DisplayName("a total tier matches any Tribute to others once the running total reaches it")
+    void totalMatching() {
+        PhotoTributeTrigger.Instance total = new PhotoTributeTrigger.Instance(Optional.empty(), PhotoTributeTrigger.OTHERS, 1, 500);
+        assertTrue(total.matches(PhotoTributeTrigger.OTHERS, 1, 500));
+        assertTrue(total.matches(PhotoTributeTrigger.OTHERS, 3, 612));
+        assertFalse(total.matches(PhotoTributeTrigger.OTHERS, 9, 499));
+        assertFalse(total.matches(PhotoTributeTrigger.OWN, 9, 600));
     }
 
     @Test
@@ -46,13 +56,12 @@ final class PhotoTierAdvancementsTest {
     }
 
     @Test
-    @DisplayName("the Tribute tiers ask for the prices agreed: others 3/5/7/9 emeralds, own 20/64/243/729/2187 blocks")
+    @DisplayName("the Tribute tiers ask for the prices agreed: others 3/5/7 emeralds, own 20/64/243/729/2187 blocks")
     void tributeThresholds() throws IOException {
         Map<String, Integer> others = new LinkedHashMap<>();
         others.put("supporting_artists", 3);
         others.put("appreciating_photos", 5);
         others.put("voyeur", 7);
-        others.put("big_spender", 9);
         Map<String, Integer> ownBlocks = new LinkedHashMap<>();
         ownBlocks.put("self_care", 20);
         ownBlocks.put("confidence", 64);
@@ -69,6 +78,15 @@ final class PhotoTierAdvancementsTest {
             assertEquals(PhotoTributeTrigger.OWN, c.get("whose").getAsString(), e.getKey());
             assertEquals(e.getValue() * 9, c.get("min_cost").getAsInt(), e.getKey());
         }
+    }
+
+    @Test
+    @DisplayName("Big Spender asks for 100 emeralds paid to others' photos in total, whatever one Tribute cost")
+    void bigSpenderTotal() throws IOException {
+        JsonObject c = conditions("big_spender");
+        assertEquals(PhotoTributeTrigger.OTHERS, c.get("whose").getAsString());
+        assertEquals(100, c.get("min_total").getAsInt());
+        assertFalse(c.has("min_cost"));
     }
 
     @Test

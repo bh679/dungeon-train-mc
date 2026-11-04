@@ -65,8 +65,8 @@ final class VariantGroupSubsetOrderTest {
      * included — the generator does not avoid them, that is the point) and
      * references to lock-ids no cell carries.
      */
-    private static CarriageVariantBlocks randomSidecar(Random rng, int groups) {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+    private static VariantDoc randomSidecar(Random rng, int groups) {
+        VariantDoc sc = CarriageVariantBlocks.empty();
         for (int id = 1; id <= groups; id++) {
             int size = 2 + rng.nextInt(4);
             List<VariantState> states = new ArrayList<>(size);
@@ -133,7 +133,7 @@ final class VariantGroupSubsetOrderTest {
         int withDeadGroups = 0;
         for (int g = 0; g < GRAPHS; g++) {
             int groups = 1 + rng.nextInt(MAX_GROUPS);
-            CarriageVariantBlocks sc = randomSidecar(rng, groups);
+            VariantDoc sc = randomSidecar(rng, groups);
             VariantGroupResolver refs = sc.groupRefs();
             VariantGroupRefs.Graph graph = refs.graph();
 
@@ -152,7 +152,7 @@ final class VariantGroupSubsetOrderTest {
         int withSubsets = 0;
         for (int g = 0; g < GRAPHS; g++) {
             int groups = 1 + rng.nextInt(MAX_GROUPS);
-            CarriageVariantBlocks sc = randomSidecar(rng, groups);
+            VariantDoc sc = randomSidecar(rng, groups);
             VariantGroupResolver refs = sc.groupRefs();
             VariantGroupRefs.Graph graph = refs.graph();
             List<Integer> order = graph.order();
@@ -192,7 +192,7 @@ final class VariantGroupSubsetOrderTest {
         int agreements = 0;
         for (int g = 0; g < 120; g++) {
             int groups = 2 + rng.nextInt(MAX_GROUPS - 1);
-            CarriageVariantBlocks sc = randomSidecar(rng, groups);
+            VariantDoc sc = randomSidecar(rng, groups);
             for (long seed = 0; seed < 6; seed++) {
                 for (int idx = 0; idx < 6; idx++) {
                     for (int id = 1; id <= groups; id++) {

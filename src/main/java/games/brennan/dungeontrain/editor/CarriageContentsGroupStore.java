@@ -1,23 +1,10 @@
 package games.brennan.dungeontrain.editor;
 
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CarriageContentsGroup;
-import net.neoforged.fml.loading.FMLPaths;
-import org.slf4j.Logger;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
@@ -31,7 +18,6 @@ import java.util.TreeSet;
  * group definition that turns a contents id into a parent that resolves to one
  * of its weighted children at spawn time.
  *
- * <p>Tier order mirrors {@link CarriageVariantContentsAllowStore}:
  * <ol>
  *   <li><b>Active package's working dir</b> —
  *       {@code <active-package>/contents/<id>.group.json}. Editor commands
@@ -52,16 +38,14 @@ import java.util.TreeSet;
  * before the weighted pick — so a child only ever spawns through its parent,
  * never as a sibling of it.</p>
  *
- * <p>Dev-mode promotion: writes are mirrored to {@code src/main/resources/...}
- * when the source tree is writable, so an in-game group authoring session
- * ships in the next build. Mirrors the pattern used by
- * {@link CarriageContentsStore#saveToSource} (not the builtin-only logic of
- * {@link CarriageVariantContentsAllowStore}) — group parents are Custom by
- * design, but their group files are still legitimate shippable assets.</p>
+ * <p>Policies: {@link SourcePolicy#DEV_MODE} — a group parent is Custom by design and has no
+ * {@code .nbt} of its own to mark it as shipping, so editor dev mode is the author's "this ships"
+ * signal (as it is for stages and loot prefabs); it used to mirror whenever the tree was writable,
+ * which put per-install sidecars into {@code src/}. {@link DeleteCachePolicy#REMOVE}: a bundled
+ * copy, if any, is visible again on the next read.</p>
  */
 public final class CarriageContentsGroupStore {
 
-    private static final Logger LOGGER = LogUtils.getLogger();
     // Matches CarriageContentsStore.SUBDIR so group sidecars share the
     // package-routed contents/ directory with their parent's .nbt file —
     // moving a package moves them together.
@@ -70,11 +54,27 @@ public final class CarriageContentsGroupStore {
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/contents/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/contents";
 
-    // Per-id cache; Optional.empty() means "no group sidecar for this id" — short-circuits future loads.
-    private static final Map<String, Optional<CarriageContentsGroup>> CACHE = new HashMap<>();
+    private static final ThreeTierStore<String, CarriageContentsGroup> STORE =
+        StoreDescriptor.<String, CarriageContentsGroup>named("CarriageContentsGroupStore")
+            .id(key -> key)
+            .subdir(SUBDIR)
+            .fileName(key -> key + EXT)
+            .bundledUnder(RESOURCE_PREFIX)
+            .sourceRelDir(SOURCE_REL_PATH)
+            .codec(StoreCodecs.json(CarriageContentsGroup::fromJson, CarriageContentsGroup::toJson))
+            .logNoun("contents group")
+            .sourcePolicy(SourcePolicy.DEV_MODE)
+            .deleteCachePolicy(DeleteCachePolicy.REMOVE)
+            .build();
+
+    static {
+        // Lock order is this class -> STORE (every read takes the class monitor first), so the
+        // registry must clear through the synchronized facade, not the store's own entry.
+        StoreRegistry.register("CarriageContentsGroupStore", CarriageContentsGroupStore::clearCache);
+    }
 
     // Ids known to have a group sidecar in either tier. Populated by preload()
-    // from the registry scan, augmented by save(), pruned by delete().
+    // from the registry scan, augmented by save()/get(), pruned by delete().
     private static final TreeSet<String> KNOWN_PARENTS = new TreeSet<>();
 
     // Memoised union of all member ids across every known group.
@@ -82,11 +82,14 @@ public final class CarriageContentsGroupStore {
     private static volatile Set<String> ALL_CHILD_IDS_CACHE = null;
 
     // Memoised reverse lookup: childId → parentId for the first group that
-    // claims the child. null = needs recompute. Same lifecycle as the
-    // child-ids cache — invalidated together.
+    // claims the child. Same lifecycle as the child-ids cache.
     private static volatile Map<String, String> CHILD_TO_PARENT_CACHE = null;
 
     private CarriageContentsGroupStore() {}
+
+    private static String key(String parentId) {
+        return parentId.toLowerCase(Locale.ROOT);
+    }
 
     /**
      * Active-package write target — {@code <active-package>/contents/}.
@@ -103,21 +106,24 @@ public final class CarriageContentsGroupStore {
      * imported package's group sidecar is still resolvable.
      */
     public static Path fileForId(String id) {
-        return directory().resolve(id.toLowerCase(Locale.ROOT) + EXT);
+        return STORE.fileFor(key(id));
     }
 
     public static Path sourceFileForId(String id) {
-        return sourceDirectory().resolve(id.toLowerCase(Locale.ROOT) + EXT);
+        return STORE.sourceFileFor(key(id));
     }
 
     public static boolean sourceTreeAvailable() {
-        Path resources = resourcesRootOrNull();
-        return resources != null && Files.isDirectory(resources) && Files.isWritable(resources);
+        return STORE.sourceTreeAvailable();
     }
 
     public static synchronized void clearCache() {
-        CACHE.clear();
+        STORE.clearCache();
         KNOWN_PARENTS.clear();
+        invalidateIndexes();
+    }
+
+    private static void invalidateIndexes() {
         ALL_CHILD_IDS_CACHE = null;
         CHILD_TO_PARENT_CACHE = null;
     }
@@ -130,19 +136,16 @@ public final class CarriageContentsGroupStore {
      */
     public static synchronized void injectForTesting(String parentId, CarriageContentsGroup group) {
         if (parentId == null || group == null) return;
-        String key = parentId.toLowerCase(Locale.ROOT);
-        CACHE.put(key, Optional.of(group));
+        String key = key(parentId);
+        STORE.injectForTesting(key, group);
         KNOWN_PARENTS.add(key);
-        ALL_CHILD_IDS_CACHE = null;
-        CHILD_TO_PARENT_CACHE = null;
+        invalidateIndexes();
     }
 
     public static synchronized void invalidate(String parentId) {
         if (parentId == null) return;
-        String key = parentId.toLowerCase(Locale.ROOT);
-        CACHE.remove(key);
-        ALL_CHILD_IDS_CACHE = null;
-        CHILD_TO_PARENT_CACHE = null;
+        STORE.invalidate(key(parentId));
+        invalidateIndexes();
     }
 
     /**
@@ -152,11 +155,7 @@ public final class CarriageContentsGroupStore {
      */
     public static synchronized void preload(String parentId) {
         if (parentId == null) return;
-        String key = parentId.toLowerCase(Locale.ROOT);
-        if (KNOWN_PARENTS.add(key)) {
-            ALL_CHILD_IDS_CACHE = null;
-        CHILD_TO_PARENT_CACHE = null;
-        }
+        if (KNOWN_PARENTS.add(key(parentId))) invalidateIndexes();
     }
 
     /**
@@ -168,23 +167,10 @@ public final class CarriageContentsGroupStore {
      */
     public static synchronized Optional<CarriageContentsGroup> get(String parentId) {
         if (parentId == null) return Optional.empty();
-        String key = parentId.toLowerCase(Locale.ROOT);
-        Optional<CarriageContentsGroup> cached = CACHE.get(key);
-        if (cached != null) return cached;
-        Optional<CarriageContentsGroup> loaded;
-        try {
-            loaded = loadFromConfig(key);
-            if (loaded.isEmpty()) loaded = loadFromResource(key);
-        } catch (Throwable t) {
-            LOGGER.warn("[DungeonTrain] Contents group load for '{}' failed defensively: {}", key, t.toString());
-            loaded = Optional.empty();
-        }
-        CACHE.put(key, loaded);
-        if (loaded.isPresent()) {
-            KNOWN_PARENTS.add(key);
-            ALL_CHILD_IDS_CACHE = null;
-        CHILD_TO_PARENT_CACHE = null;
-        }
+        String key = key(parentId);
+        boolean wasCached = STORE.isCached(key);
+        Optional<CarriageContentsGroup> loaded = STORE.get(key);
+        if (loaded.isPresent() && !wasCached && KNOWN_PARENTS.add(key)) invalidateIndexes();
         return loaded;
     }
 
@@ -218,13 +204,12 @@ public final class CarriageContentsGroupStore {
      */
     public static synchronized Optional<String> findParentOf(String childId) {
         if (childId == null) return Optional.empty();
-        String key = childId.toLowerCase(Locale.ROOT);
         Map<String, String> cached = CHILD_TO_PARENT_CACHE;
         if (cached == null) {
             rebuildIndexes();
             cached = CHILD_TO_PARENT_CACHE;
         }
-        return Optional.ofNullable(cached.get(key));
+        return Optional.ofNullable(cached.get(key(childId)));
     }
 
     /**
@@ -235,7 +220,7 @@ public final class CarriageContentsGroupStore {
     private static void rebuildIndexes() {
         Set<String> children = new LinkedHashSet<>();
         Map<String, String> reverse = new LinkedHashMap<>();
-        for (String parent : KNOWN_PARENTS) {
+        for (String parent : new TreeSet<>(KNOWN_PARENTS)) {
             Optional<CarriageContentsGroup> g = get(parent);
             if (g.isEmpty()) continue;
             for (CarriageContentsGroup.Member m : g.get().members()) {
@@ -251,157 +236,33 @@ public final class CarriageContentsGroupStore {
 
     /**
      * Persist {@code group} for {@code parentId}. Writes the config-dir file
-     * and best-effort mirrors to the source tree when running from a checkout.
+     * and, in dev mode, mirrors it to the source tree.
      */
     public static synchronized void save(String parentId, CarriageContentsGroup group) throws IOException {
         if (parentId == null) throw new IllegalArgumentException("parentId must not be null");
         if (group == null) throw new IllegalArgumentException("group must not be null");
-        String key = parentId.toLowerCase(Locale.ROOT);
-        Files.createDirectories(directory());
-        Path file = fileForId(key);
-        String pretty = new GsonBuilder().setPrettyPrinting().create().toJson(group.toJson());
-        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            w.write(pretty);
-        }
-        CACHE.put(key, Optional.of(group));
+        String key = key(parentId);
+        STORE.save(key, group);
         KNOWN_PARENTS.add(key);
-        ALL_CHILD_IDS_CACHE = null;
-        CHILD_TO_PARENT_CACHE = null;
-        LOGGER.info("[DungeonTrain] Saved contents group {} to {}", key, file);
-        trySaveToSource(key, group);
+        invalidateIndexes();
     }
 
-    public static synchronized void saveToSource(String parentId, CarriageContentsGroup group) throws IOException {
-        if (!sourceTreeAvailable()) {
-            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
-        }
-        String key = parentId.toLowerCase(Locale.ROOT);
-        Path file = sourceFileForId(key);
-        Files.createDirectories(file.getParent());
-        String pretty = new GsonBuilder().setPrettyPrinting().create().toJson(group.toJson());
-        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            w.write(pretty);
-        }
-        LOGGER.info("[DungeonTrain] Wrote bundled contents group {} to {} (devmode promote).", key, file);
+    public static void saveToSource(String parentId, CarriageContentsGroup group) throws IOException {
+        STORE.saveToSource(key(parentId), group);
     }
 
     /**
-     * Delete the config-dir sidecar (and the source-tree mirror when in dev).
-     * Returns true iff the config-dir file existed. Cache is updated so a
-     * subsequent {@link #get} returns the bundled-resource copy if any.
+     * Delete the config-dir sidecar (and the source-tree mirror in dev mode).
+     * Returns true iff the config-dir file existed. The cache entry is dropped
+     * so a subsequent {@link #get} returns the bundled-resource copy if any;
+     * when there is none, the id is no longer a group parent.
      */
     public static synchronized boolean delete(String parentId) throws IOException {
         if (parentId == null) return false;
-        String key = parentId.toLowerCase(Locale.ROOT);
-        Path file = fileForId(key);
-        boolean existed = Files.deleteIfExists(file);
-        // Invalidate cache so the next get() consults the bundled tier — if
-        // that tier also has no copy, KNOWN_PARENTS will be pruned on next
-        // get() returning empty (we proactively remove here in that case below).
-        CACHE.remove(key);
-        ALL_CHILD_IDS_CACHE = null;
-        CHILD_TO_PARENT_CACHE = null;
-        tryDeleteFromSource(key);
-        // If the bundled tier also has nothing, the id is no longer a group parent.
-        if (loadFromResource(key).isEmpty()) {
-            KNOWN_PARENTS.remove(key);
-            CACHE.put(key, Optional.empty());
-        }
-        if (existed) LOGGER.info("[DungeonTrain] Deleted contents group {} ({})", key, file);
+        String key = key(parentId);
+        boolean existed = STORE.delete(key);
+        invalidateIndexes();
+        if (!STORE.bundled(key)) KNOWN_PARENTS.remove(key);
         return existed;
-    }
-
-    private static Optional<CarriageContentsGroup> loadFromConfig(String key) {
-        // Walks active package + every enabled package's contents/ dir
-        // (active-first precedence). Same routing CarriageContentsStore uses
-        // for .nbt files, so a group sidecar always resolves alongside its
-        // parent's NBT regardless of which package it came from.
-        Path file = UserContentPaths.findFile(SUBDIR, key + EXT);
-        if (file == null) return Optional.empty();
-        try (BufferedReader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
-            JsonElement root = JsonParser.parseReader(r);
-            if (!root.isJsonObject()) {
-                LOGGER.warn("[DungeonTrain] Contents group {} is not a JSON object — ignoring", file);
-                return Optional.empty();
-            }
-            CarriageContentsGroup g = CarriageContentsGroup.fromJson(root.getAsJsonObject());
-            LOGGER.info("[DungeonTrain] Loaded contents group {} from config {} ({} members)",
-                key, file, g.members().size());
-            return Optional.of(g);
-        } catch (Exception e) {
-            LOGGER.error("[DungeonTrain] Failed to read contents group {} at {}: {}",
-                key, file, e.toString());
-            return Optional.empty();
-        }
-    }
-
-    private static Optional<CarriageContentsGroup> loadFromResource(String key) {
-        String resource = RESOURCE_PREFIX + key + EXT;
-        try (InputStream in = CarriageContentsGroupStore.class.getResourceAsStream(resource)) {
-            if (in == null) return Optional.empty();
-            JsonElement root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-            if (!root.isJsonObject()) {
-                LOGGER.warn("[DungeonTrain] Bundled contents group {} is not a JSON object — ignoring", resource);
-                return Optional.empty();
-            }
-            CarriageContentsGroup g = CarriageContentsGroup.fromJson(root.getAsJsonObject());
-            LOGGER.info("[DungeonTrain] Loaded contents group {} from bundled {} ({} members)",
-                key, resource, g.members().size());
-            return Optional.of(g);
-        } catch (Exception e) {
-            LOGGER.error("[DungeonTrain] Failed to read bundled contents group {}: {}",
-                resource, e.toString());
-            return Optional.empty();
-        }
-    }
-
-    private static void trySaveToSource(String key, CarriageContentsGroup group) {
-        if (!sourceTreeAvailable()) return;
-        try {
-            saveToSource(key, group);
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Failed to write bundled contents group {} to source tree: {} (config write succeeded).",
-                key, e.toString());
-        }
-    }
-
-    private static void tryDeleteFromSource(String key) {
-        if (!sourceTreeAvailable()) return;
-        try {
-            Path file = sourceFileForId(key);
-            if (SourceTreeFiles.deleteWithClasspathTwin(file)) {
-                LOGGER.info("[DungeonTrain] Deleted bundled contents group {} (devmode promote).", file);
-            }
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Failed to delete bundled contents group {} from source tree: {} (config delete succeeded).",
-                key, e.toString());
-        }
-    }
-
-    private static Path sourceDirectory() {
-        Path dir = sourceDirectoryOrNull();
-        if (dir == null) {
-            throw new IllegalStateException(
-                "Cannot resolve source directory — FMLPaths.GAMEDIR has no parent."
-            );
-        }
-        return dir;
-    }
-
-    private static Path sourceDirectoryOrNull() {
-        Path projectRoot = projectRootOrNull();
-        if (projectRoot == null) return null;
-        return projectRoot.resolve(SOURCE_REL_PATH);
-    }
-
-    private static Path resourcesRootOrNull() {
-        Path projectRoot = projectRootOrNull();
-        if (projectRoot == null) return null;
-        return projectRoot.resolve("src/main/resources");
-    }
-
-    private static Path projectRootOrNull() {
-        Path gameDir = FMLPaths.GAMEDIR.get();
-        return gameDir.getParent();
     }
 }

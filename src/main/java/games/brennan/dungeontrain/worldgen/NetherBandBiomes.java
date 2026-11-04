@@ -103,6 +103,20 @@ public final class NetherBandBiomes {
         return pickCave(seed, worldX, worldZ, CAVE_POST_MIX_SIZE);
     }
 
+    /** Lush caves' index in both {@link #CAVE_PRE} and {@link #CAVE_POST}. */
+    public static final int CAVE_LUSH = 0;
+
+    /**
+     * Whether the region pick puts lush caves in a column's cave band — {@link #pickCave} before the core,
+     * {@link #pickCavePost} after it. The ancient-city override (always deep dark) is applied on top of this by
+     * {@code NetherBandBiomeSet#isLushCave}.
+     */
+    public static boolean caveIsLush(long seed, int worldX, int worldZ, boolean pastCore, boolean sulfurAvailable) {
+        int pick = pastCore ? pickCavePost(seed, worldX, worldZ, sulfurAvailable)
+                : pickCave(seed, worldX, worldZ, CAVE_PRE.size());
+        return pick == CAVE_LUSH;
+    }
+
     private static ResourceKey<Biome> bop(String path) {
         return ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath("biomesoplenty", path));
     }

@@ -26,8 +26,8 @@ import org.slf4j.Logger;
 import java.util.UUID;
 
 /**
- * The viewer's half of a death takeover: the streamer died, and the relay offers their stream to
- * every in-game viewer ({@code takeover} in the status poll). A viewer wearing a TV on their head is
+ * The viewer's half of a death takeover: the streamer died, or took the Live Eye off, and the relay
+ * offers their stream to every in-game viewer ({@code takeover} in the status poll). A viewer wearing a TV on their head is
  * told in chat, with a button ({@link #promptLine}) and one under their TV box
  * ({@link LiveTakeoverButton}). The first to accept wins a one-use ticket; their server checks it and
  * swaps the worn TV for a Live Eye ({@link LiveTakeoverPacket}), which goes live as any Live Eye does,
@@ -100,14 +100,18 @@ public final class LiveTakeoverOffer {
         return tvOnHead && !freePlay && streamingAllowed && ffmpegUsable && idle;
     }
 
-    /** "<Name> died live — [Take over the stream]". */
+    /** "<Name> died live — [Take over the stream]", or "<Name> took off their Live Eye — …". */
     static Component promptLine(Takeover t) {
         MutableComponent button = Component.literal("[").append(Component.translatable("chat.dungeontrain.live.takeover.button")).append("]")
             .withStyle(s -> s.withColor(ChatFormatting.GREEN).withBold(true)
                 .withClickEvent(ChatClick.event(CLICK_ACTION, t.id()))
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable("chat.dungeontrain.live.takeover.button.tip"))));
-        return Component.translatable("chat.dungeontrain.live.takeover.offer", t.from().isEmpty() ? "?" : t.from(), button)
+        return Component.translatable(offerKey(t), t.from().isEmpty() ? "?" : t.from(), button)
             .withStyle(ChatFormatting.YELLOW);
+    }
+
+    static String offerKey(Takeover t) {
+        return t.removed() ? "chat.dungeontrain.live.takeover.offer.removed" : "chat.dungeontrain.live.takeover.offer";
     }
 
     /** Take the open offer: first to the relay wins. */

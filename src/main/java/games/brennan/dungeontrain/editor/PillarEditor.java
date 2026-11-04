@@ -1,61 +1,27 @@
 package games.brennan.dungeontrain.editor;
 
-import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.template.PillarAdjunctTemplateId;
 import games.brennan.dungeontrain.template.PillarTemplateId;
-import games.brennan.dungeontrain.template.TemplateDecor;
+import games.brennan.dungeontrain.template.SaveResult;
+import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
-import games.brennan.dungeontrain.track.TrackPalette;
 import games.brennan.dungeontrain.track.variant.TrackKind;
-import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
-import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
-import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
-import games.brennan.dungeontrain.template.Template;
-import games.brennan.dungeontrain.template.TemplateStamp;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Vec3i;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.StairBlock;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Optional;
 
 /**
- * Multi-plot editor for pillar sections (TOP/MIDDLE/BOTTOM) and the
- * stairs adjunct. Layout follows {@link TrackSidePlots}: pillar parts
- * stack on Y at the {@link TrackSidePlots#X_PILLARS} column, adjunct
- * lives at {@link TrackSidePlots#X_STAIRS}; each kind's registered
- * variant names lay out along {@code +Z} with
- * {@link EditorLayout#GAP}-block spacing between footprints.
- *
- * <p>The carriage editor's session map is reused via
- * {@link CarriageEditor#rememberReturn} so {@code /dungeontrain editor
- * exit} restores the player from any track-side editor.</p>
+ * Editor plots for pillar sections (TOP/MIDDLE/BOTTOM) and the stairs adjuncts: the static entry
+ * points the commands and packets still call, each a thin delegate to
+ * {@link TrackSideEditors#pillar} / {@link TrackSideEditors#adjunct}. The lifecycle lives in
+ * {@link PlotEditor}; new code should call the instance.
  */
 public final class PillarEditor {
-
-    private static final Logger LOGGER = LogUtils.getLogger();
-
-    private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
-
-    public record SaveResult(boolean sourceAttempted, boolean sourceWritten, String sourceError) {
-        public static SaveResult skipped() { return new SaveResult(false, false, null); }
-        public static SaveResult written() { return new SaveResult(true, true, null); }
-        public static SaveResult failed(String error) { return new SaveResult(true, false, error); }
-    }
 
     /** Resolved section + name pair for a player position. */
     public record SectionPlot(PillarSection section, String name) {}
@@ -65,560 +31,186 @@ public final class PillarEditor {
 
     private PillarEditor() {}
 
+    private static TrackSidePlotEditor<Template.Pillar> sections(PillarSection section) {
+        return TrackSideEditors.pillar(section);
+    }
+
+    private static TrackSidePlotEditor<Template.Adjunct> adjuncts(PillarAdjunct adjunct) {
+        return TrackSideEditors.adjunct(adjunct);
+    }
+
+    // ---- sections ----------------------------------------------------------------------------
+
     /** Plot origin for {@code (section, default)}. */
     public static BlockPos plotOrigin(PillarSection section, CarriageDims dims) {
-        return TrackSidePlots.plotOriginDefault(PillarTemplateStore.pillarKind(section), dims);
+        return plotOrigin(section, TrackKind.DEFAULT_NAME, dims);
     }
 
     /** Plot origin for an id-record-shaped pillar template. */
     public static BlockPos plotOrigin(PillarTemplateId id, CarriageDims dims) {
-        return TrackSidePlots.plotOrigin(PillarTemplateStore.pillarKind(id.section()), id.name(), dims);
+        return plotOrigin(id.section(), id.name(), dims);
     }
 
-    /** Plot origin for {@code (section, name)} — bare-tuple wrapper over the id-record form. */
+    /** Plot origin for {@code (section, name)}. */
     public static BlockPos plotOrigin(PillarSection section, String name, CarriageDims dims) {
-        return plotOrigin(new PillarTemplateId(section, name), dims);
+        return TrackSidePlots.plotOrigin(PillarTemplateStore.pillarKind(section), name, dims);
     }
 
-    /** Plot origin for {@code (adjunct, default)}. */
-    public static BlockPos plotOriginAdjunct(PillarAdjunct adjunct, CarriageDims dims) {
-        return TrackSidePlots.plotOriginDefault(PillarTemplateStore.adjunctKind(adjunct), dims);
-    }
-
-    /** Plot origin for an id-record-shaped pillar-adjunct template. */
-    public static BlockPos plotOriginAdjunct(PillarAdjunctTemplateId id, CarriageDims dims) {
-        return TrackSidePlots.plotOrigin(PillarTemplateStore.adjunctKind(id.adjunct()), id.name(), dims);
-    }
-
-    /** Plot origin for {@code (adjunct, name)} — bare-tuple wrapper over the id-record form. */
-    public static BlockPos plotOriginAdjunct(PillarAdjunct adjunct, String name, CarriageDims dims) {
-        return plotOriginAdjunct(new PillarAdjunctTemplateId(adjunct, name), dims);
-    }
-
-    /**
-     * Resolve the section + variant name {@code pos} sits inside, or null
-     * if outside every pillar section plot. Includes the 1-block outline-
-     * cage margin.
-     */
+    /** Resolve the section + variant name {@code pos} sits inside, or null. */
     public static SectionPlot plotContaining(BlockPos pos, CarriageDims dims) {
-        // Answers only while TRACKS is the resident category — every category shares the origin.
-        if (!EditorStampedCategoryState.isActive(EditorCategory.TRACKS)) return null;
         for (PillarSection section : PillarSection.values()) {
-            int h = section.height();
-            int w = dims.width();
-            for (String name : TrackVariantRegistry.namesFor(PillarTemplateStore.pillarKind(section))) {
-                BlockPos o = TrackSidePlots.plotOrigin(PillarTemplateStore.pillarKind(section), name, dims);
-                // +2 Y headroom — see CarriageEditor.plotContaining.
-                if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + 1
-                    && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + h + 2
-                    && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + w) {
-                    return new SectionPlot(section, name);
-                }
-            }
+            Optional<Template.Pillar> hit = sections(section).plotContaining(pos, dims);
+            if (hit.isPresent()) return new SectionPlot(section, hit.get().name());
         }
         return null;
     }
 
-    /**
-     * Resolve the adjunct + variant name {@code pos} sits inside, or null
-     * if outside every adjunct plot. Includes the 1-block outline margin.
-     */
-    public static AdjunctPlot plotContainingAdjunct(BlockPos pos, CarriageDims dims) {
-        // Answers only while TRACKS is the resident category — every category shares the origin.
-        if (!EditorStampedCategoryState.isActive(EditorCategory.TRACKS)) return null;
-        for (PillarAdjunct adjunct : PillarAdjunct.values()) {
-            for (String name : TrackVariantRegistry.namesFor(PillarTemplateStore.adjunctKind(adjunct))) {
-                BlockPos o = TrackSidePlots.plotOrigin(PillarTemplateStore.adjunctKind(adjunct), name, dims);
-                // +2 Y headroom — see CarriageEditor.plotContaining.
-                if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + adjunct.xSize()
-                    && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + adjunct.ySize() + 2
-                    && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + adjunct.zSize()) {
-                    return new AdjunctPlot(adjunct, name);
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Teleport {@code player} to the default plot for {@code section}.
-     * Stamps every registered variant for this section first so the row
-     * is fully visible.
-     */
+    /** Teleport {@code player} to the default plot for {@code section}, stamping the row first. */
     public static void enter(ServerPlayer player, PillarSection section) {
         enter(player, section, true);
     }
 
-    /**
-     * Always restamps: this is the reload every command and post-download jump means, whether or
-     * not the player is already standing in the default plot — a relay Load that installed a new
-     * variant arrives here and its plot must be stamped. The walk that keeps unsaved edits is
-     * {@link #walkTo(ServerPlayer, PillarSection, boolean)}.
-     */
+    /** Always restamps — see {@link PlotEditor#enter(ServerPlayer, Template, boolean)}. */
     public static void enter(ServerPlayer player, PillarSection section, boolean onTop) {
-        enter(player, section, onTop, true);
+        sections(section).enter(player, new Template.Pillar(section), onTop);
     }
 
-    /**
-     * Go here / the panel's Enter: a walk to the section's default plot, not a reload — restamps
-     * only when the player is not already standing in it.
-     */
+    /** Go here / the panel's Enter: a walk to the section's default plot, not a reload. */
     public static void walkTo(ServerPlayer player, PillarSection section, boolean onTop) {
-        enter(player, section, onTop, !EditorPlotScope.standingIn(player, new Template.Pillar(section)));
+        sections(section).walkTo(player, new Template.Pillar(section), onTop);
     }
 
-    /**
-     * @param stamp whether to erase + restamp the plots before teleporting. The category entry
-     *              passes {@code false}: it has stamped, or queued, every plot itself.
-     */
+    /** @param stamp whether to erase + restamp the plots before teleporting. */
     public static void enter(ServerPlayer player, PillarSection section, boolean onTop, boolean stamp) {
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
-        ServerLevel overworld = server.overworld();
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-        BlockPos origin = plotOrigin(section, TrackKind.DEFAULT_NAME, dims);
-
-        CarriageEditor.rememberReturn(player);
-        if (stamp) stampAllSectionPlots(overworld, section, dims);
-
-        Vec3i footprint = TrackSidePlots.footprint(
-            PillarTemplateStore.pillarKind(section), TrackKind.DEFAULT_NAME, dims);
-        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, EditorPlotArrival.Inside.CENTRE, null);
-
-        LOGGER.info("[DungeonTrain] Pillar editor enter: {} -> {} default plot at {} ({} variants, {})",
-            player.getName().getString(), section.id(), origin,
-            TrackVariantRegistry.namesFor(PillarTemplateStore.pillarKind(section)).size(),
-            onTop ? "top" : "inside");
+        sections(section).enter(player, new Template.Pillar(section), onTop, stamp);
     }
 
     /** Erase + restamp every variant for {@code section}. Idempotent. */
     public static void stampPlot(ServerLevel overworld, PillarSection section, CarriageDims dims) {
-        stampAllSectionPlots(overworld, section, dims);
+        sections(section).stampAll(overworld, dims);
     }
 
     /** Erase + restamp the single plot for {@code (section, name)}. */
     public static void stampPlot(ServerLevel overworld, PillarSection section, String name, CarriageDims dims) {
-        BlockPos origin = plotOrigin(section, name, dims);
-        eraseAt(overworld, origin, section, dims);
-        EditorPlotEntityClearer.discardNonPlayersIn(
-            overworld, origin.offset(-1, -1, -1), new Vec3i(3, section.height() + 2, dims.width() + 2));
-        stampNameAt(overworld, origin, section, name, dims);
-        setOutline(overworld, origin, section, dims);
-        captureSectionSnapshot(overworld, origin, section, name, dims);
+        sections(section).stampPlot(overworld, new Template.Pillar(section, name), dims);
     }
 
     /** Erase every variant plot for {@code section}. */
     public static void clearPlot(ServerLevel overworld, PillarSection section, CarriageDims dims) {
-        for (String name : TrackVariantRegistry.namesFor(PillarTemplateStore.pillarKind(section))) {
-            BlockPos origin = plotOrigin(section, name, dims);
-            eraseAt(overworld, origin, section, dims);
-            EditorPlotSnapshots.clear(sectionSnapshotKey(section, name));
-        }
+        sections(section).clearAll(overworld, dims);
     }
 
-    /** Erase a single named variant plot for {@code section} — footprint + outline cleared to air. */
+    /** Erase a single named variant plot for {@code section}. */
     public static void clearPlot(ServerLevel overworld, PillarSection section, String name, CarriageDims dims) {
-        BlockPos origin = plotOrigin(section, name, dims);
-        eraseAt(overworld, origin, section, dims);
-        EditorPlotSnapshots.clear(sectionSnapshotKey(section, name));
-    }
-
-    /** Snapshot the freshly-stamped {@code (1 × section.height × dims.width)} pillar region for {@link EditorDirtyCheck}'s baseline. */
-    private static void captureSectionSnapshot(ServerLevel overworld, BlockPos origin, PillarSection section, String name, CarriageDims dims) {
-        EditorPlotSnapshots.capture(sectionSnapshotKey(section, name), overworld, origin,
-            1, section.height(), dims.width());
+        sections(section).clearPlot(overworld, new Template.Pillar(section, name), dims);
     }
 
     /** Snapshot key shared with {@link EditorDirtyCheck} for pillar-section rows. */
     public static String sectionSnapshotKey(PillarSection section, String name) {
-        return EditorPlotSnapshots.key("tracks", "pillar_" + section.id() + ":" + name);
+        return sections(section).snapshotKey(new Template.Pillar(section, name));
     }
 
-    /**
-     * Save the captured template for the {@code (section, name)} the player
-     * is currently standing in. Player-position-resolved overload — used by
-     * the action-bar {@code /dt save} flow where the player explicitly stands
-     * in the plot they want to save. For callers that already know the
-     * variant (template label menu, save-all iteration, save-model command)
-     * use {@link #save(ServerPlayer, PillarTemplateId)} which doesn't
-     * consult player position.
-     */
+    /** Save the {@code section} plot the player is standing in. */
     public static SaveResult save(ServerPlayer player, PillarSection section) throws IOException {
-        MinecraftServer server = player.getServer();
-        if (server == null) throw new IOException("No server context.");
-        ServerLevel overworld = server.overworld();
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-
-        SectionPlot loc = plotContaining(player.blockPosition(), dims);
+        SectionPlot loc = plotContaining(player.blockPosition(), dimsOf(player));
         if (loc == null || loc.section() != section) {
             throw new IOException("Player is not inside any " + section.id() + " plot.");
         }
         return save(player, new PillarTemplateId(section, loc.name()));
     }
 
-    /**
-     * Save the captured template for the explicitly-named pillar variant.
-     * Does NOT consult player position — the caller has already resolved
-     * the {@code (section, name)} pair (template label menu's plot-action
-     * packet, save-all iteration over registry, save-model command).
-     */
+    /** Save the explicitly-named pillar variant; does not consult player position. */
     public static SaveResult save(ServerPlayer player, PillarTemplateId id) throws IOException {
-        MinecraftServer server = player.getServer();
-        if (server == null) throw new IOException("No server context.");
-        ServerLevel overworld = server.overworld();
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-
-        PillarSection section = id.section();
-        String name = id.name();
-        BlockPos origin = plotOrigin(id, dims);
-
-        TrackKind kind = PillarTemplateStore.pillarKind(section);
-        Vec3i footprint = kind.dims(dims);
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
-
-        StructureTemplate template = captureTemplate(overworld, origin, section, dims);
-        TrackVariantStore.save(kind, name, template);
-
-        // Refresh the dirty-check baseline.
-        captureSectionSnapshot(overworld, origin, section, name, dims);
-
-        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
-            .trigger(player, "made_pillar");
-        // …and, when they have opted in, to the player's relay profile. Hooked here rather than at
-        // the callers because both ways in land on this method — see EditorRelaySave.
-        EditorRelaySave.afterSave(player, new Template.Pillar(section, name));
-        LOGGER.info("[DungeonTrain] Pillar editor save: {} -> {}/{} (1x{}x{})",
-            player.getName().getString(), section.id(), name,
-            section.height(), dims.width());
-
-        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
-        try {
-            TrackVariantStore.saveToSource(kind, name, template);
-            try {
-                sidecar.saveToSource(kind, name);
-            } catch (IOException e) {
-                LOGGER.warn("[DungeonTrain] Pillar editor save: variant sidecar source write failed for {}: {}",
-                    section.id(), e.toString());
-            }
-            return SaveResult.written();
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Pillar editor save: source write failed for {}: {}",
-                section.id(), e.toString());
-            return SaveResult.failed(e.getMessage());
-        }
+        return sections(id.section()).save(player, new Template.Pillar(id.section(), id.name()));
     }
 
-    private static void stampAllSectionPlots(ServerLevel overworld, PillarSection section, CarriageDims dims) {
-        // A category fill still in flight must land before a whole-kind restamp walks the same plots.
-        EditorStampQueue.flush();
-        List<String> names = TrackVariantRegistry.namesFor(PillarTemplateStore.pillarKind(section));
-        for (String name : names) {
-            stampPlot(overworld, section, name, dims);
-        }
+    // ---- adjuncts ----------------------------------------------------------------------------
+
+    /** Plot origin for {@code (adjunct, default)}. */
+    public static BlockPos plotOriginAdjunct(PillarAdjunct adjunct, CarriageDims dims) {
+        return plotOriginAdjunct(adjunct, TrackKind.DEFAULT_NAME, dims);
     }
 
-    private static void eraseAt(ServerLevel level, BlockPos origin, PillarSection section, CarriageDims dims) {
-        BlockState air = Blocks.AIR.defaultBlockState();
-        int h = section.height();
-        int w = dims.width();
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= w; dz++) {
-                for (int dy = -1; dy <= h; dy++) {
-                    level.setBlock(origin.offset(dx, dy, dz), air, 3);
-                }
-            }
-        }
+    /** Plot origin for an id-record-shaped pillar-adjunct template. */
+    public static BlockPos plotOriginAdjunct(PillarAdjunctTemplateId id, CarriageDims dims) {
+        return plotOriginAdjunct(id.adjunct(), id.name(), dims);
     }
 
-    private static void stampNameAt(ServerLevel level, BlockPos origin, PillarSection section, String name, CarriageDims dims) {
-        TrackKind kind = PillarTemplateStore.pillarKind(section);
-        Optional<StructureTemplate> stored = TrackVariantStore.get(level, kind, name, dims);
-        if (stored.isPresent()) {
-            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            TemplateStamp.placeWithDecor(level, origin, stored.get(), settings);
-            return;
-        }
-        BlockState fallback = TrackPalette.PILLAR;
-        int h = section.height();
-        int w = dims.width();
-        for (int dy = 0; dy < h; dy++) {
-            for (int dz = 0; dz < w; dz++) {
-                level.setBlock(origin.offset(0, dy, dz), fallback, 3);
-            }
-        }
+    /** Plot origin for {@code (adjunct, name)}. */
+    public static BlockPos plotOriginAdjunct(PillarAdjunct adjunct, String name, CarriageDims dims) {
+        return TrackSidePlots.plotOrigin(PillarTemplateStore.adjunctKind(adjunct), name, dims);
     }
 
-    private static StructureTemplate captureTemplate(ServerLevel level, BlockPos origin, PillarSection section, CarriageDims dims) {
-        Vec3i size = new Vec3i(1, section.height(), dims.width());
-        return TemplateDecor.capture(level, origin, size, Blocks.AIR);
+    /** Resolve the adjunct + variant name {@code pos} sits inside, or null. */
+    public static AdjunctPlot plotContainingAdjunct(BlockPos pos, CarriageDims dims) {
+        for (PillarAdjunct adjunct : PillarAdjunct.values()) {
+            Optional<Template.Adjunct> hit = adjuncts(adjunct).plotContaining(pos, dims);
+            if (hit.isPresent()) return new AdjunctPlot(adjunct, hit.get().name());
+        }
+        return null;
     }
 
-    /**
-     * Teleport {@code player} to the default plot for {@code adjunct}.
-     * Stamps every registered variant first.
-     */
+    /** Teleport {@code player} to the default plot for {@code adjunct}, stamping the row first. */
     public static void enter(ServerPlayer player, PillarAdjunct adjunct) {
         enter(player, adjunct, true);
     }
 
-    /** As {@link #enter(ServerPlayer, PillarSection, boolean)}: always restamps. */
+    /** Always restamps. */
     public static void enter(ServerPlayer player, PillarAdjunct adjunct, boolean onTop) {
-        enter(player, adjunct, onTop, true);
+        adjuncts(adjunct).enter(player, new Template.Adjunct(adjunct), onTop);
     }
 
-    /** As {@link #walkTo(ServerPlayer, PillarSection, boolean)}: restamps only when not already inside. */
+    /** Restamps only when not already inside. */
     public static void walkTo(ServerPlayer player, PillarAdjunct adjunct, boolean onTop) {
-        enter(player, adjunct, onTop, !EditorPlotScope.standingIn(player, new Template.Adjunct(adjunct)));
+        adjuncts(adjunct).walkTo(player, new Template.Adjunct(adjunct), onTop);
     }
 
-    /**
-     * @param stamp whether to erase + restamp the plots before teleporting. The category entry
-     *              passes {@code false}: it has stamped, or queued, every plot itself.
-     */
+    /** @param stamp whether to erase + restamp the plots before teleporting. */
     public static void enter(ServerPlayer player, PillarAdjunct adjunct, boolean onTop, boolean stamp) {
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
-        ServerLevel overworld = server.overworld();
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-        BlockPos origin = plotOriginAdjunct(adjunct, TrackKind.DEFAULT_NAME, dims);
-
-        CarriageEditor.rememberReturn(player);
-        if (stamp) stampAllAdjunctPlots(overworld, adjunct, dims);
-
-        Vec3i footprint = TrackSidePlots.footprint(
-            PillarTemplateStore.adjunctKind(adjunct), TrackKind.DEFAULT_NAME, dims);
-        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, EditorPlotArrival.Inside.CENTRE, null);
-
-        LOGGER.info("[DungeonTrain] Pillar editor enter adjunct: {} -> {} default plot at {} (size={}x{}x{}, {} variants)",
-            player.getName().getString(), adjunct.id(), origin,
-            adjunct.xSize(), adjunct.ySize(), adjunct.zSize(),
-            TrackVariantRegistry.namesFor(PillarTemplateStore.adjunctKind(adjunct)).size());
+        adjuncts(adjunct).enter(player, new Template.Adjunct(adjunct), onTop, stamp);
     }
 
     /** Erase + restamp every variant for {@code adjunct}. Idempotent. */
     public static void stampPlot(ServerLevel overworld, PillarAdjunct adjunct, CarriageDims dims) {
-        stampAllAdjunctPlots(overworld, adjunct, dims);
+        adjuncts(adjunct).stampAll(overworld, dims);
     }
 
     /** Erase + restamp the single plot for {@code (adjunct, name)}. */
     public static void stampPlotAdjunct(ServerLevel overworld, PillarAdjunct adjunct, String name, CarriageDims dims) {
-        BlockPos origin = plotOriginAdjunct(adjunct, name, dims);
-        eraseAtAdjunct(overworld, origin, adjunct);
-        stampNameAtAdjunct(overworld, origin, adjunct, name);
-        setOutlineAdjunct(overworld, origin, adjunct);
-        captureAdjunctSnapshot(overworld, origin, adjunct, name);
+        adjuncts(adjunct).stampPlot(overworld, new Template.Adjunct(adjunct, name), dims);
     }
 
     /** Erase every variant plot for {@code adjunct}. */
     public static void clearPlotAdjunct(ServerLevel overworld, PillarAdjunct adjunct, CarriageDims dims) {
-        for (String name : TrackVariantRegistry.namesFor(PillarTemplateStore.adjunctKind(adjunct))) {
-            BlockPos origin = plotOriginAdjunct(adjunct, name, dims);
-            eraseAtAdjunct(overworld, origin, adjunct);
-            EditorPlotSnapshots.clear(adjunctSnapshotKey(adjunct, name));
-        }
+        adjuncts(adjunct).clearAll(overworld, dims);
     }
 
-    /** Erase a single named variant plot for {@code adjunct} — footprint + outline cleared to air. */
+    /** Erase a single named variant plot for {@code adjunct}. */
     public static void clearPlotAdjunct(ServerLevel overworld, PillarAdjunct adjunct, String name, CarriageDims dims) {
-        BlockPos origin = plotOriginAdjunct(adjunct, name, dims);
-        eraseAtAdjunct(overworld, origin, adjunct);
-        EditorPlotSnapshots.clear(adjunctSnapshotKey(adjunct, name));
-    }
-
-    /** Snapshot the freshly-stamped adjunct region for {@link EditorDirtyCheck}'s baseline. */
-    private static void captureAdjunctSnapshot(ServerLevel overworld, BlockPos origin, PillarAdjunct adjunct, String name) {
-        EditorPlotSnapshots.capture(adjunctSnapshotKey(adjunct, name), overworld, origin,
-            adjunct.xSize(), adjunct.ySize(), adjunct.zSize());
+        adjuncts(adjunct).clearPlot(overworld, new Template.Adjunct(adjunct, name), dims);
     }
 
     /** Snapshot key shared with {@link EditorDirtyCheck} for adjunct rows. */
     public static String adjunctSnapshotKey(PillarAdjunct adjunct, String name) {
-        return EditorPlotSnapshots.key("tracks", "adjunct_" + adjunct.id() + ":" + name);
+        return adjuncts(adjunct).snapshotKey(new Template.Adjunct(adjunct, name));
     }
 
-    /**
-     * Save the captured adjunct template for the {@code (adjunct, name)}
-     * the player is currently standing in. Player-position-resolved overload —
-     * see {@link #save(ServerPlayer, PillarAdjunctTemplateId)} for the
-     * explicit-name version used by the template label menu and save-all
-     * iteration.
-     */
+    /** Save the {@code adjunct} plot the player is standing in. */
     public static SaveResult save(ServerPlayer player, PillarAdjunct adjunct) throws IOException {
-        MinecraftServer server = player.getServer();
-        if (server == null) throw new IOException("No server context.");
-        ServerLevel overworld = server.overworld();
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-
-        AdjunctPlot loc = plotContainingAdjunct(player.blockPosition(), dims);
+        AdjunctPlot loc = plotContainingAdjunct(player.blockPosition(), dimsOf(player));
         if (loc == null || loc.adjunct() != adjunct) {
             throw new IOException("Player is not inside any " + adjunct.id() + " plot.");
         }
         return save(player, new PillarAdjunctTemplateId(adjunct, loc.name()));
     }
 
-    /**
-     * Save the captured adjunct template for the explicitly-named adjunct
-     * variant. Does NOT consult player position — the caller has already
-     * resolved the {@code (adjunct, name)} pair.
-     */
+    /** Save the explicitly-named adjunct variant; does not consult player position. */
     public static SaveResult save(ServerPlayer player, PillarAdjunctTemplateId id) throws IOException {
-        MinecraftServer server = player.getServer();
-        if (server == null) throw new IOException("No server context.");
-        ServerLevel overworld = server.overworld();
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-
-        PillarAdjunct adjunct = id.adjunct();
-        String name = id.name();
-        BlockPos origin = plotOriginAdjunct(id, dims);
-
-        TrackKind kind = PillarTemplateStore.adjunctKind(adjunct);
-        Vec3i footprint = kind.dims(dims);
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
-
-        StructureTemplate template = captureAdjunctTemplate(overworld, origin, adjunct);
-        TrackVariantStore.save(kind, name, template);
-
-        // Refresh the dirty-check baseline.
-        captureAdjunctSnapshot(overworld, origin, adjunct, name);
-
-        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
-            .trigger(player, "made_stair");
-        // …and, when they have opted in, to the player's relay profile. Hooked here rather than at
-        // the callers because both ways in land on this method — see EditorRelaySave.
-        EditorRelaySave.afterSave(player, new Template.Adjunct(adjunct, name));
-        LOGGER.info("[DungeonTrain] Pillar editor save adjunct: {} -> {}/{} ({}x{}x{})",
-            player.getName().getString(), adjunct.id(), name,
-            adjunct.xSize(), adjunct.ySize(), adjunct.zSize());
-
-        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
-        try {
-            TrackVariantStore.saveToSource(kind, name, template);
-            try {
-                sidecar.saveToSource(kind, name);
-            } catch (IOException e) {
-                LOGGER.warn("[DungeonTrain] Pillar editor save adjunct: variant sidecar source write failed for {}: {}",
-                    adjunct.id(), e.toString());
-            }
-            return SaveResult.written();
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Pillar editor save adjunct: source write failed for {}: {}",
-                adjunct.id(), e.toString());
-            return SaveResult.failed(e.getMessage());
-        }
+        return adjuncts(id.adjunct()).save(player, new Template.Adjunct(id.adjunct(), id.name()));
     }
 
-    private static void stampAllAdjunctPlots(ServerLevel overworld, PillarAdjunct adjunct, CarriageDims dims) {
-        // A category fill still in flight must land before a whole-kind restamp walks the same plots.
-        EditorStampQueue.flush();
-        List<String> names = TrackVariantRegistry.namesFor(PillarTemplateStore.adjunctKind(adjunct));
-        for (String name : names) {
-            stampPlotAdjunct(overworld, adjunct, name, dims);
-        }
-    }
-
-    private static void eraseAtAdjunct(ServerLevel level, BlockPos origin, PillarAdjunct adjunct) {
-        BlockState air = Blocks.AIR.defaultBlockState();
-        for (int dx = -1; dx <= adjunct.xSize(); dx++) {
-            for (int dz = -1; dz <= adjunct.zSize(); dz++) {
-                for (int dy = -1; dy <= adjunct.ySize(); dy++) {
-                    level.setBlock(origin.offset(dx, dy, dz), air, 3);
-                }
-            }
-        }
-    }
-
-    private static void stampNameAtAdjunct(ServerLevel level, BlockPos origin, PillarAdjunct adjunct, String name) {
-        TrackKind kind = PillarTemplateStore.adjunctKind(adjunct);
-        // Adjunct dims are fixed — pass min CarriageDims since the kind ignores width.
-        CarriageDims sentinel = CarriageDims.clamp(
-            CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT);
-        Optional<StructureTemplate> stored = TrackVariantStore.get(level, kind, name, sentinel);
-        if (stored.isPresent()) {
-            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            TemplateStamp.placeWithDecor(level, origin, stored.get(), settings);
-            return;
-        }
-        stampProceduralStairsFallback(level, origin, adjunct);
-    }
-
-    private static void stampProceduralStairsFallback(ServerLevel level, BlockPos origin, PillarAdjunct adjunct) {
-        if (adjunct != PillarAdjunct.STAIRS) {
-            BlockState block = TrackPalette.PILLAR;
-            for (int dx = 0; dx < adjunct.xSize(); dx++) {
-                for (int dy = 0; dy < adjunct.ySize(); dy++) {
-                    for (int dz = 0; dz < adjunct.zSize(); dz++) {
-                        level.setBlock(origin.offset(dx, dy, dz), block, 3);
-                    }
-                }
-            }
-            return;
-        }
-        BlockState stairBlock = Blocks.STONE_BRICK_STAIRS.defaultBlockState()
-            .setValue(StairBlock.FACING, Direction.SOUTH);
-        BlockState fill = TrackPalette.PILLAR;
-        BlockState air = Blocks.AIR.defaultBlockState();
-        int xs = adjunct.xSize();
-        int ys = adjunct.ySize();
-        int zs = adjunct.zSize();
-        for (int dy = 0; dy < ys; dy++) {
-            int stepZ = Math.min(dy, zs - 1);
-            for (int dx = 0; dx < xs; dx++) {
-                for (int dz = 0; dz < zs; dz++) {
-                    BlockState state;
-                    if (dz < stepZ) state = fill;
-                    else if (dz == stepZ) state = stairBlock;
-                    else state = air;
-                    level.setBlock(origin.offset(dx, dy, dz), state, 3);
-                }
-            }
-        }
-    }
-
-    private static StructureTemplate captureAdjunctTemplate(ServerLevel level, BlockPos origin, PillarAdjunct adjunct) {
-        Vec3i size = new Vec3i(adjunct.xSize(), adjunct.ySize(), adjunct.zSize());
-        return TemplateDecor.capture(level, origin, size, Blocks.AIR);
-    }
-
-    private static void setOutlineAdjunct(ServerLevel level, BlockPos origin, PillarAdjunct adjunct) {
-        int x0 = origin.getX() - 1;
-        int y0 = origin.getY() - 1;
-        int z0 = origin.getZ() - 1;
-        int x1 = origin.getX() + adjunct.xSize();
-        int y1 = origin.getY() + adjunct.ySize();
-        int z1 = origin.getZ() + adjunct.zSize();
-        for (int x = x0; x <= x1; x++) {
-            for (int y = y0; y <= y1; y++) {
-                for (int z = z0; z <= z1; z++) {
-                    int extremes = (x == x0 || x == x1 ? 1 : 0)
-                        + (y == y0 || y == y1 ? 1 : 0)
-                        + (z == z0 || z == z1 ? 1 : 0);
-                    if (extremes < 2) continue;
-                    level.setBlock(new BlockPos(x, y, z), OUTLINE_BLOCK, 3);
-                }
-            }
-        }
-    }
-
-    private static void setOutline(ServerLevel level, BlockPos origin, PillarSection section, CarriageDims dims) {
-        int h = section.height();
-        int w = dims.width();
-        int x0 = origin.getX() - 1;
-        int y0 = origin.getY() - 1;
-        int z0 = origin.getZ() - 1;
-        int x1 = origin.getX() + 1;
-        int y1 = origin.getY() + h;
-        int z1 = origin.getZ() + w;
-
-        for (int x = x0; x <= x1; x++) {
-            for (int y = y0; y <= y1; y++) {
-                for (int z = z0; z <= z1; z++) {
-                    int extremes = (x == x0 || x == x1 ? 1 : 0)
-                        + (y == y0 || y == y1 ? 1 : 0)
-                        + (z == z0 || z == z1 ? 1 : 0);
-                    if (extremes < 2) continue;
-                    level.setBlock(new BlockPos(x, y, z), OUTLINE_BLOCK, 3);
-                }
-            }
-        }
+    private static CarriageDims dimsOf(ServerPlayer player) throws IOException {
+        if (player.getServer() == null) throw new IOException("No server context.");
+        return games.brennan.dungeontrain.world.DungeonTrainWorldData.get(player.getServer().overworld()).dims();
     }
 }

@@ -1,26 +1,13 @@
 package games.brennan.dungeontrain.editor;
 
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CarriagePartAssignment;
 import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
-import net.neoforged.fml.loading.FMLPaths;
-import org.slf4j.Logger;
+import games.brennan.dungeontrain.train.ShellPool;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -32,8 +19,7 @@ import java.util.Optional;
  *
  * <ol>
  *   <li><b>Config dir</b> — {@code config/dungeontrain/user/templates/<id>.parts.json}.
- *       Per-install override; the editor's {@code part set/clear} commands
- *       write here.</li>
+ *       Per-install override; the editor's {@code part set/clear} commands write here.</li>
  *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/templates/<id>.parts.json}
  *       on the classpath. Shipped defaults for built-in variants that the mod
  *       wants to render via parts out-of-the-box. Optional — absent means the
@@ -43,22 +29,37 @@ import java.util.Optional;
  * </ol>
  *
  * <p>Lives in the same directory as carriage NBTs because a sidecar always
- * accompanies a specific carriage variant; keeping them together makes the
- * config dir self-explanatory and the {@code .parts.json} suffix keeps
+ * accompanies a specific carriage variant; the {@code .parts.json} suffix keeps
  * {@link games.brennan.dungeontrain.train.CarriageVariantRegistry}'s
  * {@code *.nbt}-only scan from treating sidecars as custom carriages.</p>
+ *
+ * <p>Policies: {@link SourcePolicy#SHIPS_WITH_GAME} — a save or delete mirrors into the source tree
+ * only when the variant's {@code <id>.nbt} is already there (built-ins and shipping customs such as
+ * {@code pen}), never for a per-install variant; {@link DeleteCachePolicy#REMOVE}, so clearing a
+ * shipped variant's override falls back to the bundled sidecar at once. {@link #exists} asks the
+ * active package only.</p>
  */
 public final class CarriageVariantPartsStore {
 
-    private static final Logger LOGGER = LogUtils.getLogger();
     static final String SUBDIR = "templates";
     static final String EXT = ".parts.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/templates/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/templates";
 
-    // Per-id cache; Optional.empty() means "both tiers missing", which short-
-    // circuits future lookups. Cleared on ServerStopped via CarriagePartRegistry.
-    private static final Map<String, Optional<CarriagePartAssignment>> CACHE = new HashMap<>();
+    private static final ThreeTierStore<CarriageVariant, CarriagePartAssignment> STORE =
+        StoreDescriptor.<CarriageVariant, CarriagePartAssignment>named("CarriageVariantPartsStore")
+            .id(CarriageVariant::id)
+            .subdir(SUBDIR)
+            .fileName(v -> ShellPool.path(v.id()) + EXT)
+            .bundledUnder(RESOURCE_PREFIX)
+            .sourceRelDir(SOURCE_REL_PATH)
+            .shipMarker(v -> ShellPool.path(v.id()) + ".nbt")
+            .codec(StoreCodecs.json(CarriagePartAssignment::fromJson, CarriagePartAssignment::toJson))
+            .logNoun("parts assignment")
+            .sourcePolicy(SourcePolicy.SHIPS_WITH_GAME)
+            .deleteCachePolicy(DeleteCachePolicy.REMOVE)
+            .onAnyChange(StageBlockIndex::invalidateAll)
+            .build();
 
     private CarriageVariantPartsStore() {}
 
@@ -67,213 +68,48 @@ public final class CarriageVariantPartsStore {
     }
 
     public static Path fileFor(CarriageVariant variant) {
-        return directory().resolve(games.brennan.dungeontrain.train.ShellPool.path(variant.id()) + EXT);
+        return STORE.fileFor(variant);
     }
 
     public static Path sourceFileFor(CarriageType type) {
-        return sourceDirectory().resolve(type.name().toLowerCase(Locale.ROOT) + EXT);
+        return STORE.sourceFileFor(CarriageVariant.of(type));
     }
 
     public static boolean sourceTreeAvailable() {
-        Path resources = resourcesRootOrNull();
-        return resources != null && Files.isDirectory(resources) && Files.isWritable(resources);
+        return STORE.sourceTreeAvailable();
     }
 
-    public static synchronized void clearCache() {
-        CACHE.clear();
+    public static void clearCache() {
+        STORE.clearCache();
+    }
+
+    /** Lower-cases the id, as it always has; every id in play is already lower-case. */
+    public static void invalidate(String id) {
+        STORE.invalidateId(id.toLowerCase(Locale.ROOT));
         StageBlockIndex.invalidateAll();
     }
 
-    public static synchronized void invalidate(String id) {
-        CACHE.remove(id.toLowerCase(Locale.ROOT));
-        StageBlockIndex.invalidateAll();
+    public static Optional<CarriagePartAssignment> get(CarriageVariant variant) {
+        return STORE.get(variant);
     }
 
-    public static synchronized Optional<CarriagePartAssignment> get(CarriageVariant variant) {
-        String key = variant.id();
-        Optional<CarriagePartAssignment> cached = CACHE.get(key);
-        if (cached != null) return cached;
-        Optional<CarriagePartAssignment> loaded = loadFromConfig(variant);
-        if (loaded.isEmpty()) loaded = loadFromResource(variant);
-        CACHE.put(key, loaded);
-        return loaded;
+    public static void save(CarriageVariant variant, CarriagePartAssignment assignment) throws IOException {
+        STORE.save(variant, assignment);
     }
 
-    public static synchronized void save(CarriageVariant variant, CarriagePartAssignment assignment) throws IOException {
-        Path file = fileFor(variant);
-        Files.createDirectories(file.getParent());
-        String pretty = new GsonBuilder().setPrettyPrinting().create().toJson(assignment.toJson());
-        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            w.write(pretty);
-        }
-        CACHE.put(variant.id(), Optional.of(assignment));
-        StageBlockIndex.invalidateAll();
-        LOGGER.info("[DungeonTrain] Saved parts assignment for {} to {}", variant.id(), file);
-        trySaveToSource(variant, assignment);
+    public static void saveToSource(CarriageType type, CarriagePartAssignment assignment) throws IOException {
+        STORE.saveToSource(CarriageVariant.of(type), assignment);
     }
 
-    public static synchronized void saveToSource(CarriageType type, CarriagePartAssignment assignment) throws IOException {
-        if (!sourceTreeAvailable()) {
-            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
-        }
-        Path file = sourceFileFor(type);
-        Files.createDirectories(file.getParent());
-        String pretty = new GsonBuilder().setPrettyPrinting().create().toJson(assignment.toJson());
-        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            w.write(pretty);
-        }
-        LOGGER.info("[DungeonTrain] Wrote bundled parts assignment {} to {}", type, file);
-    }
-
-    public static synchronized boolean delete(CarriageVariant variant) throws IOException {
-        Path file = fileFor(variant);
-        boolean existed = Files.deleteIfExists(file);
-        CACHE.put(variant.id(), Optional.empty());
-        StageBlockIndex.invalidateAll();
-        if (existed) LOGGER.info("[DungeonTrain] Deleted parts assignment for {} ({})", variant.id(), file);
-        tryDeleteFromSource(variant);
-        return existed;
-    }
-
-    /**
-     * Best-effort source-tree write invoked from {@link #save}. Silent no-op
-     * outside dev mode (production installs have no writable
-     * {@code src/main/resources/}) or for variants that don't ship with the
-     * game (no {@code <id>.nbt} present in the source-tree templates dir —
-     * those are per-install user variants). Builtin variants and shipping
-     * custom variants (e.g. {@code pen}, {@code black}) both promote. Warn-
-     * level log on dev-mode failures so the config write isn't masked by a
-     * source-tree problem. Mirrors
-     * {@link games.brennan.dungeontrain.train.CarriageWeights#trySaveToSource}.
-     */
-    private static void trySaveToSource(CarriageVariant variant, CarriagePartAssignment assignment) {
-        if (!shipsWithGame(variant)) return;
-        try {
-            Path file = sourceFileForVariant(variant);
-            Files.createDirectories(file.getParent());
-            String pretty = new GsonBuilder().setPrettyPrinting().create().toJson(assignment.toJson());
-            try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-                w.write(pretty);
-            }
-            LOGGER.info("[DungeonTrain] Wrote bundled parts assignment for {} to {}", variant.id(), file);
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Failed to write bundled parts assignment for {} to source tree: {} (config write succeeded).",
-                variant.id(), e.toString());
-        }
-    }
-
-    /**
-     * Best-effort source-tree delete invoked from {@link #delete}. Removes the
-     * promoted {@code <id>.parts.json} so a Clear from the in-game menu also
-     * propagates to the bundled copy in dev — otherwise the next load tier
-     * would fall back to the stale promoted bundled file. Silent no-op outside
-     * dev mode or for variants that don't ship with the game.
-     */
-    private static void tryDeleteFromSource(CarriageVariant variant) {
-        if (!shipsWithGame(variant)) return;
-        try {
-            Path file = sourceFileForVariant(variant);
-            if (SourceTreeFiles.deleteWithClasspathTwin(file)) {
-                LOGGER.info("[DungeonTrain] Deleted bundled parts assignment {} (devmode promote).", file);
-            }
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Failed to delete bundled parts assignment for {} from source tree: {} (config delete succeeded).",
-                variant.id(), e.toString());
-        }
-    }
-
-    /** Source-tree path for any variant — by {@code id()}, regardless of Builtin/Custom. */
-    private static Path sourceFileForVariant(CarriageVariant variant) {
-        return sourceDirectory().resolve(games.brennan.dungeontrain.train.ShellPool.path(variant.id()) + EXT);
-    }
-
-    /**
-     * True when the variant's {@code <id>.nbt} is present in the writable
-     * source-tree templates dir — the signal that this variant ships with
-     * the game and its sidecars should be promoted alongside it. Returns
-     * false outside a dev checkout (no writable source tree) and for
-     * per-install user-only variants that have no shipped NBT.
-     */
-    private static boolean shipsWithGame(CarriageVariant variant) {
-        if (!sourceTreeAvailable()) return false;
-        return Files.exists(sourceDirectory().resolve(games.brennan.dungeontrain.train.ShellPool.path(variant.id()) + ".nbt"));
+    public static boolean delete(CarriageVariant variant) throws IOException {
+        return STORE.delete(variant);
     }
 
     public static boolean exists(CarriageVariant variant) {
-        return Files.isRegularFile(fileFor(variant));
+        return STORE.existsInActive(variant);
     }
 
     public static boolean bundled(CarriageVariant variant) {
-        try (InputStream in = CarriageVariantPartsStore.class.getResourceAsStream(
-                RESOURCE_PREFIX + games.brennan.dungeontrain.train.ShellPool.path(variant.id()) + EXT)) {
-            return in != null;
-        } catch (IOException e) {
-            return false;
-        }
-    }
-
-    private static Optional<CarriagePartAssignment> loadFromConfig(CarriageVariant variant) {
-        Path file = UserContentPaths.findFile(SUBDIR, games.brennan.dungeontrain.train.ShellPool.path(variant.id()) + EXT);
-        if (file == null) return Optional.empty();
-        try (BufferedReader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
-            JsonElement root = JsonParser.parseReader(r);
-            if (!root.isJsonObject()) {
-                LOGGER.warn("[DungeonTrain] Parts assignment {} is not a JSON object — ignoring", file);
-                return Optional.empty();
-            }
-            CarriagePartAssignment a = CarriagePartAssignment.fromJson(root.getAsJsonObject());
-            LOGGER.info("[DungeonTrain] Loaded parts assignment {} from config {}", variant.id(), file);
-            return Optional.of(a);
-        } catch (Exception e) {
-            LOGGER.error("[DungeonTrain] Failed to read parts assignment {} at {}: {}",
-                variant.id(), file, e.toString());
-            return Optional.empty();
-        }
-    }
-
-    private static Optional<CarriagePartAssignment> loadFromResource(CarriageVariant variant) {
-        String resource = RESOURCE_PREFIX + games.brennan.dungeontrain.train.ShellPool.path(variant.id()) + EXT;
-        try (InputStream in = CarriageVariantPartsStore.class.getResourceAsStream(resource)) {
-            if (in == null) return Optional.empty();
-            JsonElement root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-            if (!root.isJsonObject()) {
-                LOGGER.warn("[DungeonTrain] Bundled parts assignment {} is not a JSON object — ignoring", resource);
-                return Optional.empty();
-            }
-            CarriagePartAssignment a = CarriagePartAssignment.fromJson(root.getAsJsonObject());
-            LOGGER.info("[DungeonTrain] Loaded parts assignment {} from bundled {}", variant.id(), resource);
-            return Optional.of(a);
-        } catch (Exception e) {
-            LOGGER.error("[DungeonTrain] Failed to read bundled parts assignment {}: {}",
-                resource, e.toString());
-            return Optional.empty();
-        }
-    }
-
-    private static Path sourceDirectory() {
-        Path dir = sourceDirectoryOrNull();
-        if (dir == null) {
-            throw new IllegalStateException(
-                "Cannot resolve source directory — FMLPaths.GAMEDIR has no parent."
-            );
-        }
-        return dir;
-    }
-
-    private static Path sourceDirectoryOrNull() {
-        Path projectRoot = projectRootOrNull();
-        if (projectRoot == null) return null;
-        return projectRoot.resolve(SOURCE_REL_PATH);
-    }
-
-    private static Path resourcesRootOrNull() {
-        Path projectRoot = projectRootOrNull();
-        if (projectRoot == null) return null;
-        return projectRoot.resolve("src/main/resources");
-    }
-
-    private static Path projectRootOrNull() {
-        Path gameDir = FMLPaths.GAMEDIR.get();
-        return gameDir.getParent();
+        return STORE.bundled(variant);
     }
 }

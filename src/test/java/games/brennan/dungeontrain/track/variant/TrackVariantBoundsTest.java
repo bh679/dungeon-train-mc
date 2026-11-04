@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.track.variant;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
@@ -120,11 +121,11 @@ final class TrackVariantBoundsTest {
     @Test
     @DisplayName("a wrong first footprint does not prune what later callers see")
     void wrongFirstFootprintDoesNotPoisonTheCache() {
-        TrackVariantBlocks cropped = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
+        VariantDoc cropped = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
         assertEquals(cellsWithinBuiltIn, cropped.size(),
             "a caller asking at the built-in size still sees only the cells inside it");
 
-        TrackVariantBlocks full = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, REAL_SIZE);
+        VariantDoc full = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, REAL_SIZE);
         assertEquals(cellsTotal, full.size(),
             "the room's own footprint must see every authored cell, whatever was asked for first");
     }
@@ -132,10 +133,10 @@ final class TrackVariantBoundsTest {
     @Test
     @DisplayName("the bound holds in either call order")
     void boundIsIndependentOfCallOrder() {
-        TrackVariantBlocks full = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, REAL_SIZE);
+        VariantDoc full = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, REAL_SIZE);
         assertEquals(cellsTotal, full.size());
 
-        TrackVariantBlocks cropped = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
+        VariantDoc cropped = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
         assertEquals(cellsWithinBuiltIn, cropped.size());
 
         assertEquals(cellsTotal, TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, REAL_SIZE).size(),
@@ -145,8 +146,8 @@ final class TrackVariantBoundsTest {
     @Test
     @DisplayName("a fitting footprint returns the cached sidecar itself, not a copy")
     void fittingFootprintIsNotCopied() {
-        TrackVariantBlocks first = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, REAL_SIZE);
-        TrackVariantBlocks second = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, REAL_SIZE);
+        VariantDoc first = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, REAL_SIZE);
+        VariantDoc second = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, REAL_SIZE);
         assertSame(first, second,
             "the common path must stay free — and editor edits must land on the cached instance");
         assertFalse(first.isCropped());
@@ -155,7 +156,7 @@ final class TrackVariantBoundsTest {
     @Test
     @DisplayName("edits through a bounded view reach the whole sidecar")
     void viewEditsWriteThroughToTheSource() {
-        TrackVariantBlocks view = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
+        VariantDoc view = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
         assertTrue(view.isCropped());
 
         BlockPos cell = new BlockPos(1, 1, 1);
@@ -164,7 +165,7 @@ final class TrackVariantBoundsTest {
             VariantState.of(Blocks.STONE_BRICKS.defaultBlockState()),
             VariantState.of(Blocks.MOSSY_STONE_BRICKS.defaultBlockState())));
 
-        TrackVariantBlocks whole = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, REAL_SIZE);
+        VariantDoc whole = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, REAL_SIZE);
         assertNotNull(whole.statesAt(cell),
             "an edit made through a view must land on the sidecar the editor will save, not on a copy");
         assertEquals(cellsTotal + (fresh ? 1 : 0), whole.size(),
@@ -197,28 +198,28 @@ final class TrackVariantBoundsTest {
     @Test
     @DisplayName("a bounded footprint is cropped once and the view reused")
     void boundedViewIsMemoisedPerFootprint() {
-        TrackVariantBlocks first = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
-        TrackVariantBlocks second = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
+        VariantDoc first = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
+        VariantDoc second = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
         assertSame(first, second,
             "a room stamped many times at one size must not re-crop (and re-warn) on every stamp");
         assertTrue(first.isCropped());
 
-        TrackVariantBlocks other = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, new Vec3i(11, 7, 14));
+        VariantDoc other = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, new Vec3i(11, 7, 14));
         assertTrue(other != first, "a different footprint is its own view");
     }
 
     @Test
     @DisplayName("an edit to the sidecar retires the memoised view")
     void editRetiresTheMemoisedView() {
-        TrackVariantBlocks before = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
+        VariantDoc before = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
         BlockPos cell = new BlockPos(2, 2, 2);
         boolean fresh = before.statesAt(cell) == null;
-        TrackVariantBlocks whole = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, REAL_SIZE);
+        VariantDoc whole = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, REAL_SIZE);
         whole.put(cell, List.of(
             VariantState.of(Blocks.STONE_BRICKS.defaultBlockState()),
             VariantState.of(Blocks.MOSSY_STONE_BRICKS.defaultBlockState())));
 
-        TrackVariantBlocks after = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
+        VariantDoc after = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
         assertTrue(after != before, "a view built before the edit must not be handed out after it");
         assertNotNull(after.statesAt(cell), "the fresh view carries the edit");
         assertEquals(cellsWithinBuiltIn + (fresh ? 1 : 0), after.size());

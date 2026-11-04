@@ -467,8 +467,10 @@ public final class PortalRoomTiler {
 
     /**
      * Capture copy {@code tile} into {@link PortalRoomMemory} when a player has stood in it, returning
-     * whether it was captured. Not for an untouched copy (its template is what it still is) nor one
-     * whose chunks are unloaded — reading those would load them on the server tick.
+     * whether it was captured. Not for an untouched copy (its template is what it still is). A copy
+     * whose chunks have unloaded is loaded for the read: every caller erases the copy next, and
+     * {@link PortalClear} loads the chunks to do that regardless — skipping the capture here only
+     * meant the copy came back from its template (see {@link PortalRoomMemory} "Unloaded chunks").
      */
     public static boolean rememberTile(ServerLevel level, CarriageDims dims, PortalStructure structure,
                                        Tile tile, int pairKey) {
@@ -476,8 +478,8 @@ public final class PortalRoomTiler {
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
-        BlockPos far = origin.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1);
-        if (!level.hasChunksAt(origin, far)) return false;
+        if (!PortalRoomMemory.ensureLoaded(level, origin, size,
+                "portal pair " + pairKey + "'s copy " + tile.x() + "," + tile.z())) return false;
         long started = System.nanoTime();
         net.minecraft.nbt.CompoundTag snapshot = PortalRoomMemory.capture(level, origin, size);
         if (snapshot == null) return false;

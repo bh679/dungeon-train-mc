@@ -96,11 +96,13 @@ final class ClientOptionsIcons {
             case TWITCH_HINT -> TWITCH;
             case LIVE_FEED_VIEWING -> Icon.item(Items.ENDER_EYE);
             case WORN_TV_STREAMS -> Icon.item(Items.SPYGLASS);
+            case STREAMER_BOX_STREAMS -> Icon.item(Items.ITEM_FRAME);
             case TV_STREAM_SOUND -> Icon.item(Items.JUKEBOX);
             case MUTED_STREAMERS -> Icon.item(Items.NOTE_BLOCK);
             case STREAM_SIZE -> Icon.item(Items.MAP);
             case STREAM_SAVE_BANDWIDTH -> Icon.item(Items.PISTON);
             case HEAD_VIEWER_SIZE -> Icon.item(Items.GLASS);
+            case HEAD_VIEWER_NAMES -> Icon.item(Items.NAME_TAG);
             case HEAD_VIEWER_SIZE_STREAMING -> Icon.item(Items.TINTED_GLASS);
 
             case SCALE_ALL -> ACCESSIBILITY;

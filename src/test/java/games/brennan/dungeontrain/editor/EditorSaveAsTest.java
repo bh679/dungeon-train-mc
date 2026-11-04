@@ -146,4 +146,21 @@ final class EditorSaveAsTest {
         assertTrue(new EditorTemplateAddress("wat", "", "x").resolve().isEmpty());
         assertTrue(new EditorTemplateAddress("track", "", "").resolve().isEmpty());
     }
+
+    @Test
+    @DisplayName("Every record's address type has a resolve arm — a missing one would fall to the empty default")
+    void addressTypesAllResolve() {
+        // Kinds whose resolve needs a live registry are stood in for by a name that is not
+        // registered: the arm runs and answers empty, where a missing arm would also answer empty —
+        // so the positive half of this check is addressRoundTrips plus the registry-backed kinds'
+        // Gate 2 pass. What this pins is that no type string throws on the way through.
+        for (Template model : List.of(
+                new Template.Staged("not-a-staged-build"),
+                new Template.ChunkFrame("not-a-frame"),
+                new Template.Building("not-a-building"),
+                new Template.LostCity("not-a-reference"))) {
+            EditorTemplateAddress address = EditorTemplateAddress.of(model);
+            assertTrue(address.resolve().isEmpty(), address.toString());
+        }
+    }
 }

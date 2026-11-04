@@ -8,6 +8,7 @@ auto-release test convention.
 """
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -54,8 +55,8 @@ def write_changelog(ws: str, data: dict) -> None:
 
 
 def read_changelog(ws: str) -> dict:
-    with open(changelog_path(ws)) as f:
-        return json.load(f)
+    """The merged ledger view: changelog.json plus unreleased/<id>.json."""
+    return changelog_io.load_changelog(changelog_path(ws))
 
 
 def run(script: str, ws: str, *args: str, **extra_env: str) -> subprocess.CompletedProcess:
@@ -103,13 +104,14 @@ def test_append_computes_minor_bump_when_patch_nonzero() -> None:
     assert entries[0]["version"] == "0.291.0", entries[0]["version"]
 
 
-def test_append_shares_version_when_patch_zero() -> None:
-    # version-bump.yml skips when PATCH==0, so the feature shares the current MINOR.
+def test_append_computes_minor_bump_when_patch_zero() -> None:
+    # Branches leave mod_version alone, so version-bump.yml bumps MINOR on every merge,
+    # PATCH 0 included.
     ws = make_workspace()
     write_gradle(ws, "0.291.0")
     r = append(ws, "feature-b")
     assert r.returncode == 0, r.stderr
-    assert read_changelog(ws)["entries"][0]["version"] == "0.291.0"
+    assert read_changelog(ws)["entries"][0]["version"] == "0.292.0"
 
 
 def test_append_version_override() -> None:
@@ -638,9 +640,9 @@ def test_mark_released_is_immutable_and_scoped() -> None:
 
 MARK_PUSH = os.path.join(HERE, "mark-released-and-push.sh")
 
-# On the first push, a "parallel merge" lands on main (a new unreleased entry, which
-# edits the same changelog.json hunk) before receive-pack takes the ref lock, so the
-# push is rejected exactly like main moving mid-release.
+# On the first push, a "parallel merge" lands on main (a new unreleased/ entry file)
+# before receive-pack takes the ref lock, so the push is rejected exactly like main
+# moving mid-release.
 _RACE_HOOK = """#!/usr/bin/env bash
 set -e
 origin=$(cd "$GIT_DIR" && pwd)
@@ -650,16 +652,16 @@ unset GIT_DIR GIT_QUARANTINE_PATH GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRE
 tmp=$(mktemp -d)
 git clone -q "$origin" "$tmp/c"
 cd "$tmp/c"
+mkdir -p .github/release-notes/unreleased
 python3 - <<'PY'
 import json
-p = ".github/release-notes/changelog.json"
-d = json.load(open(p))
-d["entries"].append({"id": "late", "version": "0.291.0", "type": "feat", "title": "Late",
+p = ".github/release-notes/unreleased/late.json"
+json.dump({"id": "late", "version": "0.291.0", "type": "feat", "title": "Late",
     "summary": "S.", "highlights": [], "date": "2026-06-10",
-    "released": False, "released_in": None, "released_at": None})
-json.dump(d, open(p, "w"), indent=2)
+    "released": False, "released_in": None, "released_at": None}, open(p, "w"), indent=2)
 PY
-git -c user.name=t -c user.email=t@t commit -qam "feat: late merge"
+git add .github/release-notes/unreleased/late.json
+git -c user.name=t -c user.email=t@t commit -qm "feat: late merge"
 git push -q origin HEAD:main
 """
 
@@ -705,8 +707,11 @@ def _run_mark_push(work: str, sha: str) -> subprocess.CompletedProcess:
 
 
 def _origin_entries(origin: str) -> dict:
-    raw = _git(origin, "show", "main:.github/release-notes/changelog.json")
-    return {e["id"]: e for e in json.loads(raw)["entries"]}
+    """origin/main's merged ledger (changelog.json + unreleased/), by id."""
+    root = tempfile.mkdtemp(prefix="mark-push-origin-")
+    _git(root, "clone", "-q", origin, "c")
+    ledger = os.path.join(root, "c", ".github/release-notes/changelog.json")
+    return {e["id"]: e for e in changelog_io.load_changelog(ledger)["entries"]}
 
 
 def test_mark_push_retries_from_fresh_main_after_race() -> None:
@@ -763,9 +768,10 @@ def test_produced_and_shipped_changelog_match_schema() -> None:
     with open(SCHEMA_FILE) as f:
         schema = json.load(f)
 
-    # Shipped ledger validates.
+    # Shipped ledger validates, alone and merged with its unreleased/ files.
     with open(SHIPPED_CHANGELOG) as f:
         jsonschema.validate(json.load(f), schema)
+    jsonschema.validate(changelog_io.load_changelog(SHIPPED_CHANGELOG), schema)
 
     # A produced ledger validates (append + mark a couple of entries).
     ws = make_workspace()
@@ -962,6 +968,194 @@ def test_render_full_major_leads_before_notable() -> None:
     assert md.startswith("# Big Drop\n\nBig.\n\n# Mid Drop\n\nMid."), md
 
 
+# ---------------------------------------------------------------------------
+# Per-entry layout: unreleased entries live in unreleased/<id>.json so PRs never conflict
+# ---------------------------------------------------------------------------
+
+def unreleased_dir(ws: str) -> str:
+    return os.path.join(ws, ".github/release-notes/unreleased")
+
+
+def test_append_writes_only_its_own_entry_file() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    write_changelog(ws, {"entries": [_entry("old", "0.290.0", "v0.290.0")]})
+    with open(changelog_path(ws), "rb") as f:
+        before = f.read()
+    assert append(ws, "feature-x").returncode == 0
+    with open(changelog_path(ws), "rb") as f:
+        assert f.read() == before  # the shared ledger is never touched by a PR
+    assert os.listdir(unreleased_dir(ws)) == ["feature-x.json"]
+    with open(os.path.join(unreleased_dir(ws), "feature-x.json")) as f:
+        assert json.load(f)["id"] == "feature-x"
+
+
+def test_append_refuses_id_that_is_not_a_file_slug() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = append(ws, "../escape")
+    assert r.returncode != 0 and "::error::" in r.stderr
+    assert not os.path.exists(os.path.join(ws, ".github/escape.json"))
+
+
+def test_append_duplicate_of_released_id_refused() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    write_changelog(ws, {"entries": [_entry("old", "0.290.0", "v0.290.0")]})
+    r = append(ws, "old")
+    assert r.returncode != 0 and "already exists" in r.stderr
+    assert not os.path.exists(unreleased_dir(ws))
+
+
+def test_load_refuses_id_in_both_ledger_and_unreleased() -> None:
+    ws = make_workspace()
+    write_changelog(ws, {"entries": [_entry("a", released_in="v0.290.0")]})
+    os.makedirs(unreleased_dir(ws))
+    changelog_io.write_json(os.path.join(unreleased_dir(ws), "a.json"), _entry("a"))
+    try:
+        changelog_io.load_changelog(changelog_path(ws))
+    except ValueError as e:
+        assert "both" in str(e)
+    else:
+        raise AssertionError("duplicate id across ledger and unreleased/ was accepted")
+
+
+def test_load_refuses_file_name_id_mismatch() -> None:
+    ws = make_workspace()
+    os.makedirs(unreleased_dir(ws))
+    changelog_io.write_json(os.path.join(unreleased_dir(ws), "a.json"), _entry("b"))
+    try:
+        changelog_io.load_changelog(changelog_path(ws))
+    except ValueError as e:
+        assert "matches the file name" in str(e)
+    else:
+        raise AssertionError("an entry file named for another id was accepted")
+
+
+def test_mark_folds_entry_files_into_ledger() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    write_changelog(ws, {"entries": [_entry("old", "0.290.0", "v0.290.0")]})
+    append(ws, "feat-a")
+    append(ws, "feat-b")
+    r = run(MARK, ws, "--released-in", "v0.291.0")
+    assert r.returncode == 0 and "count=2" in r.stdout, r.stdout + r.stderr
+    assert os.listdir(unreleased_dir(ws)) == []
+    with open(changelog_path(ws)) as f:
+        ledger = json.load(f)["entries"]
+    assert [e["id"] for e in ledger] == ["old", "feat-a", "feat-b"]
+    assert all(e["released"] for e in ledger)
+
+
+def test_mark_release_ledger_reads_snapshot_unreleased_dir() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    write_changelog(ws, {"entries": [_entry("old", "0.290.0", "v0.290.0")]})
+    append(ws, "a")
+    append(ws, "b")
+    # The release commit's whole release-notes dir (as git archive extracts it).
+    snap = os.path.join(ws, "snap/.github/release-notes")
+    shutil.copytree(os.path.join(ws, ".github/release-notes"), snap)
+    append(ws, "late")  # merged after the cut
+    r = run(MARK, ws, "--released-in", "v0.291.0", "--release-ledger", os.path.join(snap, "changelog.json"))
+    assert r.returncode == 0 and "count=2" in r.stdout, r.stdout + r.stderr
+    assert os.listdir(unreleased_dir(ws)) == ["late.json"]
+    entries = {e["id"]: e for e in read_changelog(ws)["entries"]}
+    assert entries["a"]["released_in"] == entries["b"]["released_in"] == "v0.291.0"
+    assert entries["late"]["released"] is False
+
+
+def test_legacy_unreleased_in_ledger_still_renders_and_migrates() -> None:
+    # A release commit cut before this layout keeps unreleased entries in changelog.json.
+    ws = make_workspace()
+    write_changelog(ws, {"entries": [_entry("old", "0.290.0", "v0.290.0"), _entry("legacy")]})
+    assert "T legacy" in run(RENDER, ws).stdout
+    changelog_io.save_changelog(changelog_io.load_changelog(changelog_path(ws)), changelog_path(ws))
+    assert os.listdir(unreleased_dir(ws)) == ["legacy.json"]
+    assert [e["id"] for e in read_changelog(ws)["entries"]] == ["old", "legacy"]
+
+
+def test_shipped_ledger_round_trips_byte_identical() -> None:
+    ws = make_workspace()
+    notes = os.path.join(ws, ".github/release-notes")
+    shutil.copy(SHIPPED_CHANGELOG, changelog_path(ws))
+    shipped_dir = os.path.join(os.path.dirname(SHIPPED_CHANGELOG), "unreleased")
+    if os.path.isdir(shipped_dir):
+        shutil.copytree(shipped_dir, unreleased_dir(ws))
+    before = {p: open(os.path.join(notes, p), "rb").read() for p in _tree(notes)}
+    changelog_io.save_changelog(changelog_io.load_changelog(changelog_path(ws)), changelog_path(ws))
+    after = {p: open(os.path.join(notes, p), "rb").read() for p in _tree(notes)}
+    assert before == after
+    with open(SHIPPED_CHANGELOG) as f:
+        assert all(e["released"] for e in json.load(f)["entries"]), "unreleased entry left in changelog.json"
+
+
+def _tree(root: str) -> list[str]:
+    return sorted(os.path.relpath(os.path.join(d, n), root) for d, _, ns in os.walk(root) for n in ns)
+
+
+def _seed_repo_with_scripts(root: str) -> tuple[str, str]:
+    """(bare origin, seed checkout) holding the release-notes scripts and one released entry."""
+    origin = os.path.join(root, "origin.git")
+    _git(root, "init", "-q", "--bare", "-b", "main", origin)
+    seed = os.path.join(root, "seed")
+    _git(root, "clone", "-q", origin, seed)
+    shutil.copytree(HERE, os.path.join(seed, "scripts/release-notes"),
+                    ignore=shutil.ignore_patterns("__pycache__", "test_*"))
+    os.makedirs(os.path.join(seed, ".github/release-notes"))
+    write_gradle(seed, "0.290.0")
+    write_changelog(seed, {"entries": [_entry("old", "0.290.0", "v0.290.0")]})
+    _git(seed, "add", ".")
+    _git(seed, "commit", "-qm", "seed")
+    _git(seed, "push", "-q", "origin", "HEAD:main")
+    return origin, seed
+
+
+def _branch_with_entry(seed: str, name: str) -> None:
+    _git(seed, "checkout", "-q", "-b", name, "origin/main")
+    r = subprocess.run([sys.executable, "scripts/release-notes/append-entry.py", "--id", name,
+                        "--type", "feat", "--title", name, "--summary", "S.", "--no-topical-tags"],
+                       cwd=seed, capture_output=True, text=True,
+                       env={k: v for k, v in os.environ.items() if k != "CHANGELOG_FILE"})
+    assert r.returncode == 0, r.stderr
+    _git(seed, "add", ".github/release-notes")
+    _git(seed, "commit", "-qm", f"feat: {name}")
+
+
+def _squash_merge(seed: str, branch: str) -> None:
+    """GitHub-style squash merge of `branch` into main; raises on conflict."""
+    _git(seed, "checkout", "-q", "main")
+    _git(seed, "merge", "-q", "--squash", branch)
+    _git(seed, "commit", "-qm", f"merge {branch}")
+    _git(seed, "push", "-q", "origin", "main")
+
+
+def test_two_entry_branches_merge_in_either_order_and_survive_a_release() -> None:
+    for order in (("feat-a", "feat-b"), ("feat-b", "feat-a")):
+        root = tempfile.mkdtemp(prefix="changelog-merge-order-")
+        origin, seed = _seed_repo_with_scripts(root)
+        _git(seed, "checkout", "-q", "-B", "main", "origin/main")
+        for name in ("feat-a", "feat-b", "feat-c"):
+            _branch_with_entry(seed, name)
+        for name in order:
+            _squash_merge(seed, name)  # no conflict either way
+        # A real release marks a and b on main while feat-c is still open.
+        work = os.path.join(root, "work")
+        _git(root, "clone", "-q", origin, work)
+        r = _run_mark_push(work, _git(work, "rev-parse", "HEAD"))
+        assert r.returncode == 0, r.stdout + r.stderr
+        _git(seed, "fetch", "-q", "origin")
+        _git(seed, "checkout", "-q", "-B", "main", "origin/main")
+        _squash_merge(seed, "feat-c")  # the open PR still merges clean after the release
+        entries = _origin_entries(origin)
+        assert entries["feat-a"]["released_in"] == entries["feat-b"]["released_in"] == "v0.291.0"
+        assert entries["feat-c"]["released"] is False
+        out = subprocess.run([sys.executable, "scripts/release-notes/render-unreleased.py"], cwd=seed,
+                             capture_output=True, text=True,
+                             env={k: v for k, v in os.environ.items() if k != "CHANGELOG_FILE"}).stdout
+        assert "**feat-c**" in out and "feat-a" not in out, out
+
+
 def main() -> int:
     tests = [
         test_link_changelog_links_title_and_appends_read_more,
@@ -972,7 +1166,7 @@ def main() -> int:
         test_link_changelog_release_links_title_to_that_version,
         test_link_changelog_no_footer_keeps_linked_heading_for_discord,
         test_append_computes_minor_bump_when_patch_nonzero,
-        test_append_shares_version_when_patch_zero,
+        test_append_computes_minor_bump_when_patch_zero,
         test_append_version_override,
         test_append_records_all_fields,
         test_append_duplicate_id_refused,
@@ -1021,6 +1215,16 @@ def main() -> int:
         test_mark_push_noop_when_already_marked,
         test_end_to_end_append_render_mark_render,
         test_produced_and_shipped_changelog_match_schema,
+        test_append_writes_only_its_own_entry_file,
+        test_append_refuses_id_that_is_not_a_file_slug,
+        test_append_duplicate_of_released_id_refused,
+        test_load_refuses_id_in_both_ledger_and_unreleased,
+        test_load_refuses_file_name_id_mismatch,
+        test_mark_folds_entry_files_into_ledger,
+        test_mark_release_ledger_reads_snapshot_unreleased_dir,
+        test_legacy_unreleased_in_ledger_still_renders_and_migrates,
+        test_shipped_ledger_round_trips_byte_identical,
+        test_two_entry_branches_merge_in_either_order_and_survive_a_release,
     ]
     failed = 0
     for t in tests:

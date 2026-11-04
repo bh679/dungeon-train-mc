@@ -1041,8 +1041,18 @@ public final class LiveFeedClient {
         return post("/live/died", body);
     }
 
-    /** A dead streamer's stream on offer: {@code id} to accept it, {@code from} who died, open {@code untilMs} more. */
-    public record Takeover(String id, String from, long untilMs) {}
+    /** Why a stream is on offer: its streamer died, or took the Live Eye off. */
+    public static final String TAKEOVER_REMOVED = "removed";
+
+    /**
+     * A stream on offer: {@code id} to accept it, {@code from} whose it was, open {@code untilMs} more;
+     * {@code removed} when they took the Live Eye off rather than died.
+     */
+    public record Takeover(String id, String from, long untilMs, boolean removed) {
+        public Takeover(String id, String from, long untilMs) {
+            this(id, from, untilMs, false);
+        }
+    }
 
     /** The {@code takeover} offer in a status body, or null (none, or from an older relay). */
     @Nullable
@@ -1058,7 +1068,7 @@ public final class LiveFeedClient {
             return null;
         }
         if (until <= 0) return null;
-        return new Takeover(id, LiveChatRules.clean(str(t, "from"), 32), until);
+        return new Takeover(id, LiveChatRules.clean(str(t, "from"), 32), until, TAKEOVER_REMOVED.equals(str(t, "reason")));
     }
 
     /** First to accept wins: 200 {@code {ticket}}; 409 {@code taken} / {@code gone} for everyone after. */
@@ -1137,7 +1147,7 @@ public final class LiveFeedClient {
     /** As above; {@code secondSlot}: a TV here shows the second stream too, so the viewer counts on that slot as well. */
     public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel, @Nullable Life ranked,
                                                    @Nullable String name, boolean headTv, boolean secondSlot) {
-        String path = statusPath(viewer, ranked, name, headTv, secondSlot);
+        String path = withRemovedOffer(statusPath(viewer, ranked, name, headTv, secondSlot));
         HttpRequest req = HttpRequest.newBuilder(URI.create(viewerBase(channel) + path))
             .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
         return send(RELAY, req);
@@ -1175,6 +1185,14 @@ public final class LiveFeedClient {
         if (viewer == null || ranked == null || name == null || name.isBlank()) return path;
         path += "&name=" + java.net.URLEncoder.encode(name, java.nio.charset.StandardCharsets.UTF_8);
         return headTv ? path + "&head=1" : path;
+    }
+
+    /**
+     * {@code removedOffer=1}: this mod can word a takeover offer whose streamer took the Live Eye off
+     * ({@link Takeover#removed}), so the relay offers those too; older mods only ever hear of deaths.
+     */
+    static String withRemovedOffer(String path) {
+        return path + (path.indexOf('?') < 0 ? "?" : "&") + "removedOffer=1";
     }
 
     private static String statusPathBase(@Nullable UUID viewer, @Nullable Life ranked) {

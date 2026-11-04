@@ -317,6 +317,12 @@ public final class CheatDetectionEvents {
                 .withStyle(ChatFormatting.GRAY));
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.unverified_mods_fix")
                 .withStyle(ChatFormatting.GRAY));
+            // Essential's updater replaces the store jar, so "reinstall from CurseForge or Modrinth"
+            // is the wrong fix for it: an unverified Essential is an old build. Say so.
+            if (UnapprovedModIntegrity.essentialOutdated()) {
+                player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.update_essential")
+                    .withStyle(ChatFormatting.GRAY));
+            }
         }
         if (UnapprovedModIntegrity.isIdFreePlay()) {
             // The whitelist's half of the same story (parallel to the cheat-mod block above): a mod

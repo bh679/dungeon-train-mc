@@ -40,6 +40,11 @@ public final class NetherCoreGeometry {
     public static final int NETHER_Y_SAMPLE_MIN = 8;
     public static final int NETHER_Y_SAMPLE_MAX = 120;
 
+    /** World y of the core slab's top row — Nether y {@link #NETHER_Y_SAMPLE_MAX} — on a track bed at {@code bedY}. */
+    public static int coreTopY(int bedY) {
+        return bedY + (NETHER_Y_SAMPLE_MAX - NETHER_CENTER_Y);
+    }
+
     /** Returned by the density accessors for a Y outside the sampled cell rows. */
     public static final double NO_DENSITY = CellDensityGeometry.NO_DENSITY;
 

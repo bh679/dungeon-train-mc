@@ -113,7 +113,7 @@ class AdvancementTabsTest {
                 Map.entry(DT + "carts_10000", TRAIN_EXPLORER),
                 Map.entry(DT + "the_long_run", TRAIN_EXPLORER),
                 Map.entry(DT + "reached_nether", TRAIN_EXPLORER),
-                Map.entry(DT + "ridden_biomes_150", TRAIN_EXPLORER),
+                Map.entry(DT + "ridden_biomes_all", TRAIN_EXPLORER),
                 Map.entry(DT + "help_i_cant_get_off", TRAIN_EXPLORER),
                 Map.entry(DT + "echo_kill", OTHERS),
                 Map.entry(DT + "encountered_1000_players", OTHERS),

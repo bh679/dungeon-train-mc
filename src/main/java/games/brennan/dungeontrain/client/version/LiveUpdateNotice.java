@@ -87,7 +87,7 @@ public final class LiveUpdateNotice {
         if (now - lastPollMs < intervalMs() || !IN_FLIGHT.compareAndSet(false, true)) return;
         lastPollMs = now;
 
-        String installed = GitHubLatestReleaseFetcher.currentModVersion();
+        String installed = LatestReleaseFetcher.currentModVersion();
         UpdateFeed.fetchLatest(SharedConstants.getCurrentVersion().getName(), installed)
             .thenAcceptAsync(latest -> {
                 IN_FLIGHT.set(false);

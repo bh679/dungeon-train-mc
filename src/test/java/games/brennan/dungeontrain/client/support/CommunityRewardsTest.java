@@ -7,6 +7,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The shelf rules every Community Rewards surface shares: which reward is featured, when the next month starts. */
 class CommunityRewardsTest {
@@ -73,6 +74,18 @@ class CommunityRewardsTest {
         assertEquals(NOW, CommunityRewards.nextFreeMs(state, CommunityRewards.Reward.QUICKER_STREAMS, NOW));
         assertEquals("", CommunityRewards.keptOnBy(state, CommunityRewards.Reward.QUICKER_STREAMS, NOW));
         assertEquals(CommunityRewards.Reward.QUICKER_STREAMS, CommunityRewards.featured(state, NOW));
+    }
+
+    @Test
+    void raisedOnlyWhenTheRelayQuotesAboveTheBase() {
+        assertTrue(CommunityRewards.raisedAud(null).isEmpty(), "no quote: the lang-key amount");
+        assertTrue(CommunityRewards.raisedAud(new LiveRewards.Quote(94, 94, List.of())).isEmpty());
+        LiveRewards.Quote two = new LiveRewards.Quote(150, 100, List.of("hd_streams", "quicker_streams", "free_money"));
+        assertEquals(150, CommunityRewards.raisedAud(two).getAsInt());
+        // Shelf order, unknown ids left out.
+        assertEquals(List.of(CommunityRewards.Reward.QUICKER_STREAMS, CommunityRewards.Reward.HD_STREAMS),
+                CommunityRewards.raisedBy(two));
+        assertEquals(100, CommunityRewards.Reward.TWO_STREAMS.costAud(), "Two Streams' solo base");
     }
 
     @Test

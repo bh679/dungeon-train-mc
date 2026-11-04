@@ -215,6 +215,11 @@ public final class CinematicPreloadGate {
         if (phase == Phase.IDLE) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return; // wait for world-entry (logout resets)
+        // A gate already running when replay playback took over must not fight Replay Mod's screens.
+        if (ReplayPlaybackGuard.skipsCinematic("spawn loading screen")) {
+            release(mc);
+            return;
+        }
 
         // Keep our loading screen up across the whole hold. Because it is non-pausing
         // and non-Esc, this also blocks the focus-loss auto-pause, so the integrated
