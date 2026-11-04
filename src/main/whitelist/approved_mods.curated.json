@@ -39,6 +39,18 @@
     "\"Fabric Furniture\" (modId fabricfurniture) is untouched. A prefix never beats a revocation:",
     "an exact id revoked from the relay stays unapproved even if a prefix would have matched it."
   ],
+  "carrierApproved": [
+    "customskinloader"
+  ],
+  "carrierApprovedWhy": [
+    "Ids whose mod file may be verified by its CARRIER: the jar in mods/ that generated it. CustomSkinLoader",
+    "15.x ships only a Universal bootstrap jar in mods/ (not a mod itself; its hashes are approved like any",
+    "file) that rewrites CustomSkinLoader-Common.jar into .minecraft/CustomSkinLoader/Core/ on every launch,",
+    "remapped for the running game, so that file's hash differs per install while the bootstrap's does not.",
+    "The engine reports the bootstrap as the generated file's carrier; the file is VERIFIED when every id it",
+    "declares is listed here and the carrier's own hash is approved. Any other carrier is never trusted by",
+    "the client and is flagged for review on the relay. Every id here must also be an approved id."
+  ],
   "groups": {
     "platform": {
       "why": "The game and the loader. Never optional, never a choice a player made.",
