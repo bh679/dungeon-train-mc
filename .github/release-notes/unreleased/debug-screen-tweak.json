@@ -1,13 +1,13 @@
 {
-  "id": "f3-band-dimension-name",
+  "id": "debug-screen-tweak",
   "version": "0.1648.0",
   "type": "feat",
   "tags": [
     "feature",
     "ui"
   ],
-  "title": "F3 knows where you are",
-  "summary": "The F3 debug screen now names the place you are travelling through as its dimension.",
+  "title": "Debug screen tweak",
+  "summary": "A small tweak to the debug screen.",
   "highlights": [],
   "pr": 2468,
   "date": "2026-11-04",
