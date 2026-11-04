@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.AdvancementAwards;
+import games.brennan.dungeontrain.advancement.GlobalLivestreamStats;
 import games.brennan.dungeontrain.advancement.AdvancementRevocations;
 import games.brennan.dungeontrain.advancement.BurritoClock;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
@@ -1149,6 +1150,8 @@ public final class AchievementEvents {
         BurritoClock.evict(uuid);
         GlobalBookBurnStats.flush(uuid);
         GlobalBookBurnStats.evict(uuid);
+        GlobalLivestreamStats.flush(uuid);
+        GlobalLivestreamStats.evict(uuid);
         GlobalBiomeProgress.evict(uuid);   // every biome was written when it was added
         GlobalRandomBookProgress.evict(uuid);   // likewise every random-book variant
         AdvancementProfiles.reconcileRevokes(player);
@@ -1167,6 +1170,7 @@ public final class AchievementEvents {
         GlobalPlayerStats.flushAll();
         BurritoClock.flushAll();
         GlobalBookBurnStats.flushAll();
+        GlobalLivestreamStats.flushAll();
         GlobalAchievementStore.flushAndClearAll();
         GlobalCriteriaProgress.flushAndClearAll();
     }
