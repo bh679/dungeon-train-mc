@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** A placed TV is heard 4.5 blocks away at 1x1, 9 at 3x3, further for bigger grids, and fades straight to the range. */
+/** A placed TV is heard 4.5 blocks away at 1x1, 9 at 4x4, further for bigger grids, and fades straight to the range. */
 class LiveSpeakerRangeTest {
 
     @Test
@@ -14,15 +14,15 @@ class LiveSpeakerRangeTest {
     }
 
     @Test
-    void aThreeByThreeReachesNineBlocks() {
-        assertEquals(9, LiveSpeakerRange.range(3), 1e-9);
+    void aFourByFourReachesNineBlocks() {
+        assertEquals(9, LiveSpeakerRange.range(4), 1e-9);
     }
 
     @Test
     void sizesLieOnAStraightLineWithNoCeiling() {
-        assertEquals(6.75, LiveSpeakerRange.range(2), 1e-9);
-        assertEquals(11.25, LiveSpeakerRange.range(4), 1e-9);
-        assertEquals(20.25, LiveSpeakerRange.range(8), 1e-9, "keeps growing past 3x3");
+        assertEquals(6, LiveSpeakerRange.range(2), 1e-9);
+        assertEquals(7.5, LiveSpeakerRange.range(3), 1e-9);
+        assertEquals(15, LiveSpeakerRange.range(8), 1e-9, "keeps growing past 4x4");
     }
 
     @Test
