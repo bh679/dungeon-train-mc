@@ -5,7 +5,6 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.vista.TvItems;
 import net.mehvahdjukaar.vista.common.tv.TVBlockEntity;
 import net.mehvahdjukaar.vista.configs.ClientConfigs;
-import net.mehvahdjukaar.vista.configs.CommonConfigs;
 import net.mehvahdjukaar.vista.integration.sable.SableCompatClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -36,8 +35,8 @@ import java.util.Map;
  * out of range). Vista's audio mode OFF silences them all; its default, REQUIRE_SPEAKER (a note block
  * beside the TV), is not asked of a Live Feed TV — almost no TV on the train has one, and the stream's
  * sound is the point of tuning in. Loudness is Vista's TV volume, then the Blocks slider, fading with
- * distance over the TV's own hearing range ({@link LiveSpeakerRange}: 4.5 blocks for a lone TV, 9 for the
- * largest grid), which this class applies itself each tick in place of Minecraft's fixed per-event
+ * distance over the TV's own hearing range ({@link LiveSpeakerRange}: 4.5 blocks for a lone TV, 9 for a
+ * 3x3, 2.25 more per extra TV a side), which this class applies itself each tick in place of Minecraft's fixed per-event
  * rolloff; a TV past its range is not a candidate at all.</p>
  *
  * <p>Silence rules, checked every tick so a change is heard at once: TV stream sound off, the stream or
@@ -98,20 +97,10 @@ public final class LiveTvSpeakers {
         CANDIDATES.put(pos, new Candidate(pos, h, at, d, range));
     }
 
-    /** How far {@code tv} is heard, blocks: by the longer side of its grid against Vista's largest allowed. */
+    /** How far {@code tv} is heard, blocks: by the longer side of its grid (4.5 at 1x1, 9 at 3x3, on up). */
     private static double range(TVBlockEntity tv) {
         int size = Math.max(LiveSpeakerRange.tvsAlong(tv.getScreenPixelWidth()), LiveSpeakerRange.tvsAlong(tv.getScreenPixelHeight()));
-        return LiveSpeakerRange.range(size, largestTvSize());
-    }
-
-    /** Vista's {@code max_connected_size}, TVs a side; its default if the config is not up yet. */
-    private static int largestTvSize() {
-        try {
-            Integer max = CommonConfigs.TV_MAX_CONNECTED_TV_SIZE.get();
-            return max == null ? LiveSpeakerRange.DEFAULT_SIZE_LARGEST : max;
-        } catch (RuntimeException e) {
-            return LiveSpeakerRange.DEFAULT_SIZE_LARGEST;
-        }
+        return LiveSpeakerRange.range(size);
     }
 
     /** The stream most recently heard, or null. */

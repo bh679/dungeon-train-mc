@@ -5,37 +5,30 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** A placed TV is heard 4.5 blocks away when it is one TV, 9 at the largest grid, and fades straight to the range. */
+/** A placed TV is heard 4.5 blocks away at 1x1, 9 at 3x3, further for bigger grids, and fades straight to the range. */
 class LiveSpeakerRangeTest {
 
     @Test
     void aLoneTvReachesFourAndAHalfBlocks() {
-        assertEquals(4.5, LiveSpeakerRange.range(1, 8), 1e-9);
+        assertEquals(4.5, LiveSpeakerRange.range(1), 1e-9);
     }
 
     @Test
-    void theLargestGridReachesEighteenBlocks() {
-        assertEquals(9, LiveSpeakerRange.range(8, 8), 1e-9);
-        assertEquals(9, LiveSpeakerRange.range(24, 24), 1e-9);
+    void aThreeByThreeReachesNineBlocks() {
+        assertEquals(9, LiveSpeakerRange.range(3), 1e-9);
     }
 
     @Test
-    void sizesBetweenLieOnAStraightLine() {
-        assertEquals(6.75, LiveSpeakerRange.range(5, 9), 1e-9, "midpoint of 1..9");
-        assertEquals(4.5 + 4.5 / 7, LiveSpeakerRange.range(2, 8), 1e-9);
+    void sizesLieOnAStraightLineWithNoCeiling() {
+        assertEquals(6.75, LiveSpeakerRange.range(2), 1e-9);
+        assertEquals(11.25, LiveSpeakerRange.range(4), 1e-9);
+        assertEquals(20.25, LiveSpeakerRange.range(8), 1e-9, "keeps growing past 3x3");
     }
 
     @Test
-    void sizesOutsideTheGridClamp() {
-        assertEquals(4.5, LiveSpeakerRange.range(0, 8), 1e-9);
-        assertEquals(4.5, LiveSpeakerRange.range(-3, 8), 1e-9);
-        assertEquals(9, LiveSpeakerRange.range(12, 8), 1e-9, "wider than the config allows: still the largest");
-    }
-
-    @Test
-    void aOneTvMaximumGivesEveryTvTheLargestRange() {
-        assertEquals(9, LiveSpeakerRange.range(1, 1), 1e-9);
-        assertEquals(9, LiveSpeakerRange.range(1, 0), 1e-9);
+    void sizesBelowOneCountAsOne() {
+        assertEquals(4.5, LiveSpeakerRange.range(0), 1e-9);
+        assertEquals(4.5, LiveSpeakerRange.range(-3), 1e-9);
     }
 
     @Test
