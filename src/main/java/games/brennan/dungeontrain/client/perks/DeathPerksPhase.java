@@ -74,6 +74,15 @@ final class DeathPerksPhase {
         return new PerkMenuSnapshot(live.unlocks(), carried.drained(ringsLeft(now)).active(), live.unlockPoints(), 0);
     }
 
+    /** An unlock was made since this menu opened: {@code live} holds more levels than at death. */
+    boolean spentHere(PerkMenuSnapshot live) {
+        return levels(live) > levels(carried);
+    }
+
+    private static int levels(PerkMenuSnapshot s) {
+        return s.unlocks().values().stream().mapToInt(Integer::intValue).sum();
+    }
+
     /** The death recap, opened when the player moves on from the menu. */
     Screen next() {
         return next.get();

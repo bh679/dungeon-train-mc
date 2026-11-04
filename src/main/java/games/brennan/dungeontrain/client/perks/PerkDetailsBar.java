@@ -60,6 +60,7 @@ final class PerkDetailsBar {
     private Button activateButton;
     /** The death screen's menu: Unlock only, no Activate and no Active Points. */
     private boolean unlockOnly;
+    private boolean noUnlock;
     private String builtFor = "";
     private PointsGraph graph;
     private int graphX, graphY, graphW, graphHover = -1;
@@ -99,6 +100,13 @@ final class PerkDetailsBar {
         builtFor = "";
     }
 
+    /** The death menu's points are all spent: the Unlock tab and why-not line give way to its Next button. */
+    void noUnlock(boolean on) {
+        if (on == noUnlock) return;
+        noUnlock = on;
+        builtFor = "";
+    }
+
     /** The buttons, rebuilt when the perk or its state changes; empty while nothing is shown. */
     List<Button> buttons() {
         if (unlockButton == null) return List.of();
@@ -130,7 +138,7 @@ final class PerkDetailsBar {
             + "|" + snap.unlockPoints() + "|" + snap.activePoints() + "|" + screenW + "x" + screenH;
         if (key.equals(builtFor)) return false;
         builtFor = key;
-        if (shown == null || shown.isRoot()) {
+        if (shown == null || shown.isRoot() || noUnlock) {
             unlockButton = null;
             activateButton = null;
             unlockReason = null;

@@ -5740,6 +5740,8 @@
   "gui.dungeontrain.perks.death.tile.perks": "Versterkte perks",
   "gui.dungeontrain.perks.death.tile.top": "Meeste punten",
   "gui.dungeontrain.perks.death.unlock_hint": "Ontgrendel perks voor het volgende leven.",
+  "gui.dungeontrain.perks.death.skip": "Overslaan",
+  "gui.dungeontrain.perks.death.next": "Volgende",
   "gui.dungeontrain.perks.story.earned": "%s, dit leven.",
   "gui.dungeontrain.perks.story.earned_points": "Goed voor %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s vooruitgang",

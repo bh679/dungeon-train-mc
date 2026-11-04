@@ -5740,6 +5740,8 @@
   "gui.dungeontrain.perks.death.tile.perks": "Gestärkte Perks",
   "gui.dungeontrain.perks.death.tile.top": "Meiste Punkte",
   "gui.dungeontrain.perks.death.unlock_hint": "Schalte Perks für das nächste Leben frei.",
+  "gui.dungeontrain.perks.death.skip": "Überspringen",
+  "gui.dungeontrain.perks.death.next": "Weiter",
   "gui.dungeontrain.perks.story.earned": "%s in diesem Leben.",
   "gui.dungeontrain.perks.story.earned_points": "Dafür gibt es %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s Fortschritt",
