@@ -41,6 +41,7 @@ import games.brennan.ediblebackpacks.client.ClientAutoCollect;
 import games.brennan.ediblebackpacks.config.AutoCollectMode;
 import games.brennan.ediblebackpacks.config.EBClientConfig;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.GuiGraphics;
@@ -1251,14 +1252,17 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
     private static final int MIC_MIX_STEP = 5;
 
-    /** "" is the system default; a device name can be long, so it is cut to fit the button. */
+    /** "" is the system default; a device name can be long, so it is cut to the button, measured with the font. */
     private static Component micDeviceLabel(String device) {
         if (device.isEmpty()) return Component.translatable("gui.dungeontrain.options.mic_device.default");
-        String shown = device.length() > MIC_DEVICE_CHARS ? device.substring(0, MIC_DEVICE_CHARS - 1) + "…" : device;
-        return Component.literal(shown);
+        Font font = Minecraft.getInstance().font;
+        return Component.literal(LabelCut.fit(device, font::width, MIC_DEVICE_LABEL_W));
     }
 
-    private static final int MIC_DEVICE_CHARS = 22;
+    /** A value button's text inset on each side (vanilla's 2 px plus the bevel), so a cut label clears the edges. */
+    private static final int MIC_DEVICE_PAD = 4;
+    /** The pixels a mic device name may take on its {@link #CONTROL_W} button. */
+    static final int MIC_DEVICE_LABEL_W = CONTROL_W - 2 * MIC_DEVICE_PAD;
 
     private static Component wornTvStreamsLabel(LiveFeedClientConfig.WornTvStreams v) {
         return Component.translatable("gui.dungeontrain.options.worn_tv_streams." + v.name().toLowerCase(java.util.Locale.ROOT));
