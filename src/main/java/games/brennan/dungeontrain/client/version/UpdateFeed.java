@@ -17,11 +17,11 @@ import java.util.concurrent.CompletableFuture;
  * Reads the newest released version from the repo's NeoForge {@code update.json} — the same file
  * {@code updateJSONURL} in mods.toml points at, rewritten by {@code release.yml} on every release.
  * Served from raw.githubusercontent.com: keyless, CDN-cached, and free of the 60/hour GitHub API
- * limit that {@link GitHubLatestReleaseFetcher} lives under, which is what makes it safe to poll.
+ * limit, which is what makes it safe to poll.
  *
  * <p>No-throw: every failure completes the future with {@code null}.</p>
  */
-final class UpdateFeed {
+public final class UpdateFeed {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -46,7 +46,7 @@ final class UpdateFeed {
     }
 
     /** Latest version string (no {@code v}), or {@code null} on any failure. */
-    static CompletableFuture<String> fetchLatest(String mcVersion, String modVersion) {
+    public static CompletableFuture<String> fetchLatest(String mcVersion, String modVersion) {
         HttpRequest req;
         try {
             req = HttpRequest.newBuilder(URI.create(url()))

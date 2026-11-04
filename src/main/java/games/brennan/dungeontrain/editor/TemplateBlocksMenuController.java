@@ -30,6 +30,8 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
+import static games.brennan.dungeontrain.editor.EditorFeedback.actionBar;
+
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,8 +39,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Server-side driver for the template-blocks world-space menu. Opens on the
@@ -56,52 +56,47 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@code fillFromWorld}; swapped <b>variant</b> candidates are written to the
  * sidecar immediately via {@link BlockVariantPlot#save()}.</p>
  */
-public final class TemplateBlocksMenuController {
+public final class TemplateBlocksMenuController extends PlayerMenuController<TemplateBlocksMenuController.OpenMenu> {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final double TOGGLE_REACH = 8.0;
 
     /** Per-player anchor of the currently-open panel, reused on re-sync so it doesn't jump after a swap. */
-    private record OpenMenu(String key, Vec3 anchor, Vec3 right, Vec3 up) {}
+    record OpenMenu(String key, Vec3 anchor, Vec3 right, Vec3 up) {}
 
-    private static final Map<UUID, OpenMenu> OPEN = new ConcurrentHashMap<>();
+    public static final TemplateBlocksMenuController INSTANCE = new TemplateBlocksMenuController();
 
-    private TemplateBlocksMenuController() {}
+    private TemplateBlocksMenuController() {
+        super("TemplateBlocksMenu", "template blocks");
+    }
 
-    /** Per-player exit reset. */
-    /**
-     * Re-send this player's open template-blocks menu because the plot changed
-     * behind the controller's back — an editor undo or redo.
-     */
-    public static void resyncOpen(ServerPlayer player) {
-        OpenMenu open = OPEN.get(player.getUUID());
-        if (open == null) return;
+    @Override
+    protected String requiresOpKey() {
+        return "chat.dungeontrain.editor_bar.template_blocks.requires_op";
+    }
+
+    @Override
+    protected String keyOf(OpenMenu state) {
+        return state.key();
+    }
+
+    /** The plot changed behind the controller's back (undo / redo): re-send while the player is still in it. */
+    @Override
+    protected void resync(ServerPlayer player, OpenMenu open) {
         CarriageDims dims = DungeonTrainWorldData.get(player.serverLevel()).dims();
         BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
         if (plot == null || !plot.key().equals(open.key())) return;
         sendSync(player, plot);
     }
 
-    public static void forget(ServerPlayer player) {
-        OPEN.remove(player.getUUID());
-    }
-
-    /** Per-server-stop reset. */
-    public static void clearAll() {
-        OPEN.clear();
-    }
-
     public static void toggle(ServerPlayer player, boolean open) {
         if (!open) {
-            OPEN.remove(player.getUUID());
+            INSTANCE.remove(player);
             DungeonTrainNet.sendTo(player, TemplateBlocksSyncPacket.empty());
             return;
         }
-        if (!player.hasPermissions(2)) {
-            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.template_blocks.requires_op"), ChatFormatting.RED);
-            return;
-        }
+        if (!INSTANCE.requireOp(player)) return;
 
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
@@ -113,7 +108,7 @@ public final class TemplateBlocksMenuController {
         }
 
         OpenMenu anchor = computeAnchor(player);
-        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), anchor.anchor(), anchor.right(), anchor.up()));
+        INSTANCE.put(player, new OpenMenu(plot.key(), anchor.anchor(), anchor.right(), anchor.up()));
         sendSync(player, plot);
     }
 
@@ -128,39 +123,22 @@ public final class TemplateBlocksMenuController {
         if (hit instanceof BlockHitResult bhit && bhit.getType() != HitResult.Type.MISS) {
             Direction face = bhit.getDirection();
             BlockPos worldPos = bhit.getBlockPos();
-            Vec3 normal = new Vec3(face.getStepX(), face.getStepY(), face.getStepZ());
-            Vec3 faceCentre = new Vec3(
-                worldPos.getX() + 0.5 + face.getStepX() * 0.5,
-                worldPos.getY() + 0.5 + face.getStepY() * 0.5,
-                worldPos.getZ() + 0.5 + face.getStepZ() * 0.5);
-            Vec3 anchor = faceCentre.add(normal.scale(0.02));
-            Vec3 up = computeUp(normal, player);
-            Vec3 right = up.cross(normal).normalize();
-            return new OpenMenu("", anchor, right, up);
+            Vec3 normal = MenuPanelGeometry.normalOf(face);
+            Vec3 anchor = MenuPanelGeometry.faceAnchor(worldPos, face);
+            Vec3 up = MenuPanelGeometry.computeUp(normal, player);
+            return new OpenMenu("", anchor, MenuPanelGeometry.right(up, normal), up);
         }
         // Free anchor — face the player.
         Vec3 look = player.getViewVector(1.0f).normalize();
         Vec3 anchor = player.getEyePosition().add(look.scale(2.0));
         Vec3 normal = look.reverse();
-        Vec3 up = computeUp(normal, player);
-        Vec3 right = up.cross(normal).normalize();
-        return new OpenMenu("", anchor, right, up);
-    }
-
-    /** World up unless {@code normal} is near-vertical, in which case snap to the player's horizontal look. */
-    private static Vec3 computeUp(Vec3 normal, ServerPlayer player) {
-        if (Math.abs(normal.y) > 0.99) {
-            Vec3 look = player.getLookAngle();
-            Vec3 horizontal = new Vec3(look.x, 0, look.z);
-            if (horizontal.lengthSqr() < 1.0e-6) horizontal = new Vec3(0, 0, 1);
-            return horizontal.normalize();
-        }
-        return new Vec3(0, 1, 0);
+        Vec3 up = MenuPanelGeometry.computeUp(normal, player);
+        return new OpenMenu("", anchor, MenuPanelGeometry.right(up, normal), up);
     }
 
     /** Build the block list for {@code plot} and push it to the player at the stored anchor. */
     private static void sendSync(ServerPlayer player, BlockVariantPlot plot) {
-        OpenMenu open = OPEN.get(player.getUUID());
+        OpenMenu open = INSTANCE.open(player);
         if (open == null) return;
         List<TemplateBlocksSyncPacket.Entry> entries = buildBlockList(player.serverLevel(), plot);
         DungeonTrainNet.sendTo(player, new TemplateBlocksSyncPacket(
@@ -218,11 +196,7 @@ public final class TemplateBlocksMenuController {
 
     /** Apply a {@link TemplateBlocksEditPacket}, with OP + plot validation. */
     public static void applyEdit(ServerPlayer player, TemplateBlocksEditPacket packet) {
-        if (!player.hasPermissions(2)) {
-            LOGGER.warn("[DungeonTrain] TemplateBlocksMenu edit rejected: player {} not OP",
-                player.getName().getString());
-            return;
-        }
+        if (INSTANCE.authorise(player, packet.key()) == null) return;
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
@@ -231,6 +205,7 @@ public final class TemplateBlocksMenuController {
                 player.getName().getString(), packet.key());
             return;
         }
+        INSTANCE.armUndo(player);
         Block target = resolveBlock(packet.blockId());
         if (target == null) {
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.unknown_block", packet.blockId()), ChatFormatting.YELLOW);
@@ -391,7 +366,4 @@ public final class TemplateBlocksMenuController {
         return block;
     }
 
-    private static void actionBar(ServerPlayer player, Component text, ChatFormatting colour) {
-        player.displayClientMessage(text.copy().withStyle(colour), true);
-    }
 }

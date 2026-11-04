@@ -60,24 +60,11 @@ public final class PhaseSelectScreen implements MenuScreen {
 
     /**
      * Per-category command prefix up to (but excluding) the phase token, or null when the model
-     * is unaddressable. Mirrors {@code EditorMenuScreen.weightRowFor}'s command shapes.
+     * is unaddressable — {@link PlotCategory#command}'s PHASE row.
      */
     private String phaseCommandPrefix() {
-        if (modelId.isEmpty()) return null;
-        if (category == null) return null;
-        return switch (category) {
-            case CARRIAGES -> "dungeontrain editor phase " + modelId;
-            case CONTENTS -> "dungeontrain editor contents phase " + modelId;
-            case TRACKS -> modelName.isEmpty() ? null
-                : "dungeontrain editor tracks phase " + modelId + " " + modelName;
-            case PORTALS -> modelName.isEmpty() ? null
-                : "dungeontrain editor portals phase " + modelId + " " + modelName;
-            // No per-template spawn gate to edit.
-            case WHOLE -> "dungeontrain editor whole phase " + modelId;
-            case WHOLE_GROUP -> "dungeontrain editor whole group phase " + modelId;
-            case WHOLE_HALF -> "dungeontrain editor whole half phase " + modelId;
-            case PARTS, CHUNK_FRAMES, BUILDINGS, LOST_CITY, ARCHITECTURE, WORKBENCH -> null;
-        };
+        if (category == null || !category.hasGate()) return null;
+        return category.command(PlotCategory.Verb.PHASE, modelId, modelName).orElse(null);
     }
 
     private static String displayName(TrainPhase p) {

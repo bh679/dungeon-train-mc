@@ -59,6 +59,70 @@ public record LiveRewards(List<Reward> rewards) {
         StreamDelay d = StreamDelay.parseBody(body);
         if (d != null) streamDelay = d;
         openIds = parseOpen(body);
+        quotes = parseQuotes(body);
+    }
+
+    /**
+     * What one more gift of a reward costs right now, as the relay quotes it (summary
+     * {@code rewardPrices}): {@code base} is the reward on its own, {@code aud} that raised by the
+     * rewards already on that cost it more to run ({@code raisedBy}, their ids). Whole AUD.
+     */
+    public record Quote(int aud, int base, List<String> raisedBy) {
+        public Quote {
+            raisedBy = List.copyOf(raisedBy == null ? List.of() : raisedBy);
+        }
+
+        /** Whether other rewards being on push this one above its own base. */
+        public boolean raised() {
+            return aud > base && !raisedBy.isEmpty();
+        }
+    }
+
+    private static volatile java.util.Map<String, Quote> quotes = java.util.Map.of();
+
+    /** The relay's quote for reward {@code id}, or null when it sent none (an older relay: show the lang-key amount). */
+    @Nullable
+    public static Quote quote(String id) {
+        return quotes.get(id);
+    }
+
+    /**
+     * The {@code rewardPrices} quotes of a summary body ({@code {id: {aud, base, raisedBy: [{id}]}}});
+     * empty when absent or malformed. A quote with an unusable amount is skipped, never guessed.
+     */
+    static java.util.Map<String, Quote> parseQuotes(String body) {
+        try {
+            JsonElement root = JsonParser.parseString(body);
+            if (!root.isJsonObject()) return java.util.Map.of();
+            JsonObject o = root.getAsJsonObject();
+            if (!o.has("rewardPrices") || !o.get("rewardPrices").isJsonObject()) return java.util.Map.of();
+            java.util.Map<String, Quote> out = new java.util.HashMap<>();
+            for (var e : o.getAsJsonObject("rewardPrices").entrySet()) {
+                Quote q = parseQuote(e.getValue());
+                if (q != null) out.put(e.getKey(), q);
+            }
+            return java.util.Map.copyOf(out);
+        } catch (RuntimeException e) {
+            return java.util.Map.of();
+        }
+    }
+
+    @Nullable
+    private static Quote parseQuote(JsonElement v) {
+        if (!v.isJsonObject()) return null;
+        JsonObject q = v.getAsJsonObject();
+        int aud = q.has("aud") && q.get("aud").isJsonPrimitive() ? q.get("aud").getAsInt() : 0;
+        int base = q.has("base") && q.get("base").isJsonPrimitive() ? q.get("base").getAsInt() : 0;
+        if (aud <= 0 || base <= 0 || aud < base) return null;
+        List<String> by = new ArrayList<>();
+        if (q.has("raisedBy") && q.get("raisedBy").isJsonArray()) {
+            for (JsonElement r : q.getAsJsonArray("raisedBy")) {
+                if (r.isJsonObject() && r.getAsJsonObject().has("id") && r.getAsJsonObject().get("id").isJsonPrimitive()) {
+                    by.add(r.getAsJsonObject().get("id").getAsString());
+                }
+            }
+        }
+        return new Quote(aud, base, by);
     }
 
     private static volatile java.util.Set<String> openIds = java.util.Set.of();

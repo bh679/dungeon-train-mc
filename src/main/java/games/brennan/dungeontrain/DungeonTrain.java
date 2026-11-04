@@ -16,6 +16,7 @@ import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.compat.DiscordInboundBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
 import games.brennan.dungeontrain.compat.FreePlayBridge;
+import games.brennan.dungeontrain.compat.PlayerMobRigSurfaceBridge;
 import games.brennan.dungeontrain.client.ContentModeSyncClient;
 import games.brennan.dungeontrain.client.DevMessageConsentClient;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -718,6 +719,15 @@ public class DungeonTrain {
             } catch (Throwable t) {
                 LOGGER.warn("PlayerMob present but Free Play seam unavailable ({}); "
                         + "reincarnation echoes will not be provenance-matched.", t.toString());
+            }
+            // End Crystal rigs: a PlayerMob riding a carriage builds its bunker on the carriage
+            // (RigSurfaces seam, playermob 0.117.0+), so the rig rides with the train. Independent
+            // try: an older build keeps world-space rigs, which never start on a moving carriage.
+            try {
+                PlayerMobRigSurfaceBridge.install();
+            } catch (Throwable t) {
+                LOGGER.warn("PlayerMob present but rig-surface seam unavailable ({}); "
+                        + "PlayerMobs cannot rig End Crystals on carriages.", t.toString());
             }
         }
 

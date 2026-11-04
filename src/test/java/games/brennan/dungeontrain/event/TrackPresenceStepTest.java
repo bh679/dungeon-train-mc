@@ -40,6 +40,16 @@ final class TrackPresenceStepTest {
         return TrackPresenceEvents.step(s, false, false, true, false);
     }
 
+    /** One scan while off the carriage but inside the corridor, e.g. in the gap between two carriages. */
+    private static PresenceStep inGap(State s) {
+        return TrackPresenceEvents.step(s, false, false, false, false);
+    }
+
+    /** One scan on the rail bed between carriages. */
+    private static PresenceStep onRails(State s) {
+        return TrackPresenceEvents.step(s, false, true, false, false);
+    }
+
     /** One scan while under the world's bedrock layer. */
     private static PresenceStep belowBedrock(State s) {
         return TrackPresenceEvents.step(s, false, false, true, true);
@@ -87,6 +97,50 @@ final class TrackPresenceStepTest {
         PresenceStep hop = offSide(aboard());
         assertFalse(hop.next().leftCarriageSinceAboard());
         assertFalse(onCarriage(hop.next()).returnedToTrain());
+    }
+
+    @Test
+    @DisplayName("loitering in the gap between carriages, then stepping back on → no returned_to_train")
+    void gapBetweenCarriages_doesNotLatch() {
+        State s = aboard();
+        for (int i = 0; i < 10; i++) {
+            s = inGap(s).next();
+        }
+        assertFalse(s.leftCarriageSinceAboard());
+        assertFalse(onCarriage(s).returnedToTrain());
+    }
+
+    @Test
+    @DisplayName("dropping onto the rails between carriages, then climbing back → no returned_to_train")
+    void railBedBetweenCarriages_doesNotLatch() {
+        State s = aboard();
+        for (int i = 0; i < 10; i++) {
+            s = onRails(s).next();
+        }
+        assertFalse(onCarriage(s).returnedToTrain());
+    }
+
+    @Test
+    @DisplayName("wandering back and forth across a gap many times never latches")
+    void backAndForthOverGap_neverLatches() {
+        State s = aboard();
+        for (int i = 0; i < 20; i++) {
+            s = inGap(inGap(s).next()).next();
+            PresenceStep back = onCarriage(s);
+            assertFalse(back.returnedToTrain());
+            s = back.next();
+        }
+    }
+
+    @Test
+    @DisplayName("time in the gap then off the side still latches once out of the corridor")
+    void gapThenOffSide_latches() {
+        State s = aboard();
+        for (int i = 0; i < GRACE; i++) {
+            s = inGap(s).next();
+        }
+        s = offSide(s).next();
+        assertTrue(onCarriage(s).returnedToTrain());
     }
 
     // ---- below the bedrock ----

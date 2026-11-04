@@ -82,7 +82,6 @@ dungeontrain:dungeon_train/reached_superflat
 dungeontrain:dungeon_train/reached_void
 dungeontrain:dungeon_train/reached_wwoo
 dungeontrain:dungeon_train/read_all_nether_starting_books
-dungeontrain:dungeon_train/read_all_rules
 dungeontrain:dungeon_train/read_all_stories
 dungeontrain:dungeon_train/read_shared_book
 dungeontrain:dungeon_train/reassembly_required
@@ -93,9 +92,9 @@ dungeontrain:dungeon_train/remote_echo_kill
 dungeontrain:dungeon_train/remote_echo_void
 dungeontrain:dungeon_train/returned_to_train
 dungeontrain:dungeon_train/ridden_biomes_100
-dungeontrain:dungeon_train/ridden_biomes_150
 dungeontrain:dungeon_train/ridden_biomes_25
 dungeontrain:dungeon_train/ridden_biomes_50
+dungeontrain:dungeon_train/ridden_biomes_all
 dungeontrain:dungeon_train/roof_run_1
 dungeontrain:dungeon_train/roof_runner
 dungeontrain:dungeon_train/root

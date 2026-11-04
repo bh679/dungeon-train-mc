@@ -26,6 +26,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -170,9 +171,46 @@ public final class PlayerMobAdvancementEvents {
         // Echoes additionally feed the void-push advancements: remember the strike so an
         // out-of-world death within the window credits a deliberate shove (see onEchoFellToVoid).
         if (EchoIdentity.sourcePlayer(target).isPresent()) {
-            ECHO_STRIKES.put(target.getUUID(),
-                new EchoStrike(player.getUUID(), level.getGameTime(), onTrain));
+            recordEchoStrike(target, player.getUUID(), level.getGameTime(), onTrain);
         }
+    }
+
+    /**
+     * Any damage a player deals an echo counts as a void-push strike too — a Punch arrow, a trident,
+     * a wind charge's direct hit, a sweeping-edge splash — not only the direct melee swing
+     * {@link #onAttackEntity} sees. Projectile damage resolves to its owner here, as in
+     * {@link KillCredit#onLivingDamage}.
+     */
+    @SubscribeEvent
+    public static void onEchoDamaged(LivingDamageEvent.Post event) {
+        LivingEntity victim = event.getEntity();
+        if (!(victim.level() instanceof ServerLevel level)) return;
+        if (!(event.getSource().getEntity() instanceof ServerPlayer player)) return;
+        if (EchoIdentity.sourcePlayer(victim).isEmpty()) return;
+        boolean onTrain = CarriageDeck.isOnTrainFootprint(Trains.allCarriages(level), victim);
+        recordEchoStrike(victim, player.getUUID(), level.getGameTime(), onTrain);
+    }
+
+    private static void recordEchoStrike(Entity echo, UUID playerUuid, long now, boolean onTrainNow) {
+        ECHO_STRIKES.put(echo.getUUID(),
+            mergeEchoStrike(ECHO_STRIKES.get(echo.getUUID()), playerUuid, now, onTrainNow));
+    }
+
+    /**
+     * The strike to keep after {@code playerUuid} hits an echo at {@code now}. Pure, so
+     * {@code EchoVoidPushStrikeTest} can table-test it.
+     *
+     * <p><b>On-train is sticky.</b> Once the same player struck the echo aboard, later hits within
+     * {@link #VOID_PUSH_WINDOW_TICKS} keep that, so swinging again as the echo goes over the edge (or
+     * already falls) no longer erases the shove. Another player's hit replaces the strike with their
+     * own reading: credit goes to whoever struck last.</p>
+     */
+    static EchoStrike mergeEchoStrike(EchoStrike prev, UUID playerUuid, long now, boolean onTrainNow) {
+        boolean carried = prev != null
+            && prev.onTrain()
+            && prev.playerUuid().equals(playerUuid)
+            && now - prev.tick() <= VOID_PUSH_WINDOW_TICKS;
+        return new EchoStrike(playerUuid, now, onTrainNow || carried);
     }
 
     @SubscribeEvent
@@ -375,7 +413,8 @@ public final class PlayerMobAdvancementEvents {
      * Fires when an echo the player recently shoved off the train falls to its death in the void
      * ({@code FELL_OUT_OF_WORLD}). {@link #onEchoKilled} already credits the kill itself (via
      * {@link KillCredit}); this handler adds the void-push feats on top. The strike is captured in
-     * {@link #onAttackEntity} (with whether the echo was aboard at the time); a death within
+     * {@link #onAttackEntity} and {@link #onEchoDamaged} (with whether the echo was aboard — sticky
+     * across follow-up hits, see {@link #mergeEchoStrike}); a death within
      * {@link #VOID_PUSH_WINDOW_TICKS} of an on-train strike reads as a deliberate shove and credits
      * {@code own_void_push} or {@code remote_void_push} per the echo's source identity.
      */

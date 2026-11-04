@@ -55,8 +55,8 @@ final class VariantConditionResolveTest {
     }
 
     /** Below = planks or cobble; on top = stone, or glass only over planks. */
-    private static CarriageVariantBlocks glassOverPlanks() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+    private static VariantDoc glassOverPlanks() {
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(BELOW, List.of(of(Blocks.OAK_PLANKS), of(Blocks.COBBLESTONE)));
         sc.put(CELL, List.of(of(Blocks.STONE), of(Blocks.GLASS).withCondition(below(Blocks.OAK_PLANKS))));
         return sc;
@@ -65,7 +65,7 @@ final class VariantConditionResolveTest {
     @Test
     @DisplayName("a gated entry only ever appears over the block it asks for, and does appear there")
     void gateFollowsTheNeighboursRoll() {
-        CarriageVariantBlocks sc = glassOverPlanks();
+        VariantDoc sc = glassOverPlanks();
         int glass = 0;
         for (int seed = 0; seed < SEEDS; seed++) {
             for (int idx = 0; idx < INDICES; idx++) {
@@ -84,7 +84,7 @@ final class VariantConditionResolveTest {
     @Test
     @DisplayName("several values are OR'd together")
     void valuesAreOr() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(BELOW, List.of(of(Blocks.OAK_PLANKS), of(Blocks.COBBLESTONE)));
         sc.put(CELL, List.of(of(Blocks.GLASS).withCondition(below(Blocks.OAK_PLANKS, Blocks.COBBLESTONE)),
             of(Blocks.STONE).withCondition(below(Blocks.DIRT))));
@@ -96,7 +96,7 @@ final class VariantConditionResolveTest {
     @Test
     @DisplayName("several sides pass when any one of them holds a listed block")
     void anySide() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         VariantCondition northOrDown = below(Blocks.OAK_PLANKS).toggleSide(Direction.NORTH);
         sc.put(CELL, List.of(of(Blocks.STONE).withCondition(below(Blocks.DIRT)), of(Blocks.GLASS).withCondition(northOrDown)));
         // Planks only to the north, nothing below: still passes.
@@ -111,7 +111,7 @@ final class VariantConditionResolveTest {
     @Test
     @DisplayName("every entry gated out leaves the cell empty")
     void allGatedIsEmpty() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(BELOW, List.of(of(Blocks.COBBLESTONE), of(Blocks.MOSSY_COBBLESTONE)));
         sc.put(CELL, List.of(of(Blocks.GLASS).withCondition(below(Blocks.OAK_PLANKS)),
             of(Blocks.STONE).withCondition(below(Blocks.DIRT))));
@@ -122,7 +122,7 @@ final class VariantConditionResolveTest {
     @Test
     @DisplayName("a non-variant neighbour reads the placer's template, or air with no placer")
     void templateNeighbour() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL, List.of(of(Blocks.STONE).withCondition(below(Blocks.OAK_PLANKS)),
             of(Blocks.GLASS).withCondition(below(Blocks.AIR))));
         assertEquals(Blocks.GLASS, blockOf(sc.resolve(CELL, 1, 1)));
@@ -136,7 +136,7 @@ final class VariantConditionResolveTest {
     @Test
     @DisplayName("a group target judges what that lock group rolled")
     void groupTarget() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(GROUP_CELL, List.of(of(Blocks.OAK_PLANKS), of(Blocks.COBBLESTONE)));
         sc.setLockId(GROUP_CELL, 3);
         VariantCondition onPlanks = VariantCondition.NONE.withGroup(3)
@@ -157,7 +157,7 @@ final class VariantConditionResolveTest {
     @Test
     @DisplayName("two cells gated on each other resolve deterministically instead of recursing forever")
     void cycleTerminates() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         VariantCondition upIsGlass = VariantCondition.NONE.withDirection(Direction.UP)
             .withValueAdded(BuiltInRegistries.BLOCK.getKey(Blocks.GLASS));
         sc.put(BELOW, List.of(of(Blocks.STONE), of(Blocks.OAK_PLANKS).withCondition(upIsGlass)));
@@ -171,8 +171,8 @@ final class VariantConditionResolveTest {
     @Test
     @DisplayName("a cell with no conditions rolls exactly as before, even beside a gated cell")
     void ungatedUnchanged() {
-        CarriageVariantBlocks gated = glassOverPlanks();
-        CarriageVariantBlocks plain = CarriageVariantBlocks.empty();
+        VariantDoc gated = glassOverPlanks();
+        VariantDoc plain = CarriageVariantBlocks.empty();
         plain.put(BELOW, List.of(of(Blocks.OAK_PLANKS), of(Blocks.COBBLESTONE)));
         boolean differs = false;
         for (int seed = 0; seed < SEEDS; seed++) {
@@ -191,8 +191,8 @@ final class VariantConditionResolveTest {
      * Brennan's centre tree: lock group 1 at y0 and y4 rolls a log or air; y1-y3 each offer a heart
      * (glowstone here) when the log is both below <i>and</i> above, else follow the group.
      */
-    private static CarriageVariantBlocks heartColumn() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+    private static VariantDoc heartColumn() {
+        VariantDoc sc = CarriageVariantBlocks.empty();
         VariantState air = VariantState.of(CarriageVariantBlocks.emptyPlaceholder());
         for (int y : new int[] {0, 4}) {
             BlockPos p = new BlockPos(0, y, 0);
@@ -211,7 +211,7 @@ final class VariantConditionResolveTest {
         return sc;
     }
 
-    private static Block[] rollColumn(CarriageVariantBlocks sc, int seed, int idx, boolean topDown) {
+    private static Block[] rollColumn(VariantDoc sc, int seed, int idx, boolean topDown) {
         Block[] out = new Block[5];
         try (VariantConditions.Scope ignored = VariantConditions.open(p -> Blocks.AIR.defaultBlockState())) {
             for (int i = 0; i < 5; i++) {
@@ -234,7 +234,7 @@ final class VariantConditionResolveTest {
     @Test
     @DisplayName("a heart only ever sits between two logs, never touches another, whatever order cells roll in")
     void heartsNeverTouch() {
-        CarriageVariantBlocks sc = heartColumn();
+        VariantDoc sc = heartColumn();
         int hearts = 0;
         for (int seed = 0; seed < 64; seed++) {
             for (int idx = 0; idx < 64; idx++) {

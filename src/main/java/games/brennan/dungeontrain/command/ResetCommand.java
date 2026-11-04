@@ -89,16 +89,15 @@ public final class ResetCommand {
     }
 
     /**
-     * Re-stamp the plot via the normal tier resolution — same as {@code enter}
-     * does. Phase-3 collapse onto {@link Template#restampPlot} (per-record
-     * override delegates to the appropriate per-editor {@code stampPlot}).
-     * Parts use the default no-op since carriage-part plots are entered via a
+     * Put the plot back to what is saved — {@link Template#resetEditorPlot}, which is the plain
+     * {@link Template#restampPlot} for every kind but the dimensional carriage (it also reverts
+     * its size). Parts use the default no-op since carriage-part plots are entered via a
      * different flow.
      */
     private static void resetToSaved(ServerLevel overworld, Template model, CarriageDims dims) {
         // The erase + restamp is DT rewriting the plot, not a gameplay event — held under the
         // stamp guard so authored observers in the plot do not pulse (ObserverBlockStampMixin).
-        CarriageStampGuard.run(() -> model.restampPlot(overworld, dims));
+        CarriageStampGuard.run(() -> model.resetEditorPlot(overworld, dims));
     }
 
     /**

@@ -1,11 +1,9 @@
 package games.brennan.dungeontrain.template;
 
 /**
- * Outcome of a {@link TemplateStore#save} call. Mirrors the per-editor
- * {@code SaveResult} records ({@code CarriageEditor.SaveResult},
- * {@code TrackEditor.SaveResult}, etc.) — the config-dir write either
- * succeeded silently or threw, and the source-tree write is opt-in via
- * {@code EditorDevMode} and reported separately.
+ * Outcome of a {@link TemplateStore#save} call and of every editor's own {@code save}: the
+ * config-dir write either succeeded silently or threw, and the source-tree write is opt-in via
+ * {@code EditorDevMode} and reported separately ({@code editor.EditorSave} builds it).
  *
  * <p>{@link #sourceAttempted} is true when devmode was on at save time and
  * the store tried to write through to {@code src/main/resources/...}.

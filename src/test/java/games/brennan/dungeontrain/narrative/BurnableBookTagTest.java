@@ -75,6 +75,14 @@ class BurnableBookTagTest {
     }
 
     @Test
+    @DisplayName("A player-written lectern letter burns, held or not — like a mod-story lectern book")
+    void playerNarrativeLetterBurns() {
+        ItemStack letter = book();
+        PlayerNarrativeBookTag.stamp(letter, "series-a", 2);
+        assertTrue(BurnableBookTag.isBurnable(letter));
+    }
+
+    @Test
     @DisplayName("Plain and empty stacks stay untouched")
     void plainStacksAreNotBurnable() {
         assertFalse(BurnableBookTag.isBurnable(book()));

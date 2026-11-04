@@ -50,7 +50,7 @@ import java.util.UUID;
  * Anchors are at block-corner precision (offsets baked from kind
  * placements + half-extents).</p>
  */
-public final class PartPositionMenuController {
+public final class PartPositionMenuController extends PlayerMenuController<String> {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -68,15 +68,57 @@ public final class PartPositionMenuController {
      */
     private static final Map<UUID, EditorMenusMode> MODES = new HashMap<>();
 
-    /**
-     * Last (variantId, kind) we sent a sync packet for, per player.
-     * Keyed format {@code "variantId|kind"} or the empty string for
-     * "we last sent the close-menu sentinel". Null means we have never
-     * sent a sync packet for this player.
-     */
-    private static final Map<UUID, String> LAST_HOVER = new HashMap<>();
+    public static final PartPositionMenuController INSTANCE = new PartPositionMenuController();
 
-    private PartPositionMenuController() {}
+    /**
+     * The open record is the last (variantId, kind, face) we sent a sync packet for — the format
+     * {@code "variantId|kind|face"}, or the empty string for "we last sent the close-menu
+     * sentinel". No record means we have never sent a sync packet for this player.
+     */
+    private PartPositionMenuController() {
+        super("PartMenu", "part assignment");
+    }
+
+    @Override
+    protected String keyOf(String state) {
+        return state;
+    }
+
+    /**
+     * An undo or redo changed the assignment underneath the open menu: drop only the hover dedup
+     * key, so the per-tick hover sync re-composes and re-sends on the next tick. Deliberately not
+     * {@link #forget}, which pushes an empty packet — that <i>closes</i> the menu rather than
+     * refreshing it.
+     */
+    @Override
+    protected void resync(ServerPlayer player, String state) {
+        remove(player);
+    }
+
+    /**
+     * Per-player exit reset. Closes the open part menu and nothing else: the
+     * {@link EditorMenusMode} is the player's setting for the session, so it is kept — dropping it
+     * here reset it to the default each time they entered a test. {@link #onLogout} lets go of it.
+     */
+    @Override
+    public void forget(ServerPlayer player) {
+        if (remove(player) != null) {
+            DungeonTrainNet.sendTo(player, PartAssignmentSyncPacket.empty());
+        }
+    }
+
+    /** Logout reset — drops the player's mode too. Sends nothing; the client is going away. */
+    @Override
+    public void onLogout(ServerPlayer player) {
+        MODES.remove(player.getUUID());
+        remove(player);
+    }
+
+    @Override
+    public void clearAll() {
+        super.clearAll();
+        MODES.clear();
+    }
 
     /** This player's editor-menus mode. {@link EditorMenusMode#DEFAULT} until they change it. */
     public static EditorMenusMode mode(ServerPlayer player) {
@@ -109,51 +151,12 @@ public final class PartPositionMenuController {
         if (next == EditorMenusMode.OFF) {
             // Push an immediate close so the client doesn't keep its panel up
             // until the next hover transition.
-            String prev = LAST_HOVER.put(uuid, "");
+            String prev = INSTANCE.open(player);
+            INSTANCE.put(player, "");
             if (prev == null || !prev.isEmpty()) {
                 DungeonTrainNet.sendTo(player, PartAssignmentSyncPacket.empty());
             }
         }
-    }
-
-    /** Per-server-stop reset. Hooked from {@link CarriagePartRegistry}'s lifecycle helpers. */
-    public static synchronized void clearAll() {
-        MODES.clear();
-        LAST_HOVER.clear();
-    }
-
-    /**
-     * Re-send this player's open part menu, if any, because its underlying state
-     * changed behind the controller's back — an editor undo or redo.
-     *
-     * <p>Drops only the hover dedup key, so the per-tick hover sync re-composes
-     * and re-sends on the next tick. Deliberately not {@link #forget}, which
-     * pushes an empty packet — that <i>closes</i> the menu rather than
-     * refreshing it.</p>
-     */
-    public static void resyncOpen(ServerPlayer player) {
-        LAST_HOVER.remove(player.getUUID());
-    }
-
-    /**
-     * Per-player exit reset. Hooked from {@link VariantOverlayRenderer#forget}, which runs every
-     * tick the player is below the build area — a test session's basement included.
-     *
-     * <p>Closes the open part menu and nothing else. The {@link EditorMenusMode} is the player's
-     * setting for the session, so it is kept: dropping it here reset it to the default each time
-     * they entered a test. {@link #forgetSession} is what lets go of it.</p>
-     */
-    public static void forget(ServerPlayer player) {
-        if (LAST_HOVER.remove(player.getUUID()) != null) {
-            DungeonTrainNet.sendTo(player, PartAssignmentSyncPacket.empty());
-        }
-    }
-
-    /** Logout reset — drops the player's mode too. Sends nothing; the client is going away. */
-    public static void forgetSession(ServerPlayer player) {
-        UUID uuid = player.getUUID();
-        MODES.remove(uuid);
-        LAST_HOVER.remove(uuid);
     }
 
     /**
@@ -163,13 +166,11 @@ public final class PartPositionMenuController {
      */
     public static void update(ServerPlayer player, CarriageVariant variant,
                               BlockPos plotOrigin, CarriageDims dims) {
-        UUID uuid = player.getUUID();
-
         if (!isMenuEnabled(player)) {
             // Suppress: ensure client knows menu is closed.
-            String prev = LAST_HOVER.get(uuid);
+            String prev = INSTANCE.open(player);
             if (prev != null && !prev.isEmpty()) {
-                LAST_HOVER.put(uuid, "");
+                INSTANCE.put(player, "");
                 DungeonTrainNet.sendTo(player, PartAssignmentSyncPacket.empty());
             }
             return;
@@ -180,9 +181,9 @@ public final class PartPositionMenuController {
             : CarriagePartKind.kindAtLocalPos(hitLocal.getX(), hitLocal.getY(), hitLocal.getZ(), dims);
 
         if (kind == null) {
-            String prev = LAST_HOVER.get(uuid);
+            String prev = INSTANCE.open(player);
             if (prev != null && !prev.isEmpty()) {
-                LAST_HOVER.put(uuid, "");
+                INSTANCE.put(player, "");
                 DungeonTrainNet.sendTo(player, PartAssignmentSyncPacket.empty());
             }
             return;
@@ -197,10 +198,10 @@ public final class PartPositionMenuController {
         Direction inwardFace = canonicalInwardFace(kind, kindCentre, plotOrigin, dims);
 
         String key = variant.id() + "|" + kind.name() + "|" + inwardFace.name();
-        String prev = LAST_HOVER.get(uuid);
+        String prev = INSTANCE.open(player);
         if (key.equals(prev)) return;
 
-        LAST_HOVER.put(uuid, key);
+        INSTANCE.put(player, key);
         DungeonTrainNet.sendTo(player,
             buildSyncPacket(variant, kindCentre, kind, inwardFace));
     }
@@ -497,10 +498,7 @@ public final class PartPositionMenuController {
      * currently looking at.
      */
     public static void applyEdit(ServerPlayer player, PartAssignmentEditPacket packet) {
-        if (!player.hasPermissions(2)) {
-            LOGGER.warn("[DungeonTrain] PartMenu edit rejected: player {} not OP", player.getName().getString());
-            return;
-        }
+        if (!INSTANCE.isOp(player)) return;
         net.minecraft.server.MinecraftServer server = player.getServer();
         if (server == null) return;
         net.minecraft.server.level.ServerLevel overworld = server.overworld();
@@ -512,6 +510,7 @@ public final class PartPositionMenuController {
                 player.getName().getString(), packet.variantId());
             return;
         }
+        INSTANCE.armUndo(player);
 
         // PREVIEW_ENTRY: re-stamp the named variant's template at the
         // placement under the player's crosshair. Pure visual swap — no
@@ -629,10 +628,9 @@ public final class PartPositionMenuController {
 
         // Force a fresh sync so the client menu reflects the mutation
         // even though the (variantId, kind) key didn't change.
-        UUID uuid = player.getUUID();
-        LAST_HOVER.remove(uuid);
+        INSTANCE.remove(player);
         DungeonTrainNet.sendTo(player,
             buildSyncPacket(standingIn, kindCentre, packet.kind(), inwardFace));
-        LAST_HOVER.put(uuid, standingIn.id() + "|" + packet.kind().name() + "|" + inwardFace.name());
+        INSTANCE.put(player, standingIn.id() + "|" + packet.kind().name() + "|" + inwardFace.name());
     }
 }

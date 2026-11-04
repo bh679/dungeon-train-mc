@@ -27,51 +27,21 @@ public final class EditorPlotTeleport {
      */
     public static String commandFor(PlotCategory category, String modelId, String modelName) {
         if (category == null) return null;
-        return switch (category) {
-            case CARRIAGES -> "dungeontrain editor enter " + modelId;
-            case CONTENTS -> "dungeontrain editor contents enter " + modelId;
-            case WHOLE -> "dungeontrain editor whole enter " + modelId;
-            case WHOLE_GROUP -> "dungeontrain editor whole group enter " + modelId;
-            case WHOLE_HALF -> "dungeontrain editor whole half enter " + modelId;
-            case TRACKS -> trackTeleportCommand(modelId);
-            // Portals address a specific room by name — there is only one kind, so modelId
-            // carries no information the command needs.
-            case PORTALS -> "dungeontrain editor portals enter " + modelName;
-            // Parts: modelId is the kind tag ("floor"/"walls"/"roof"/"doors"),
-            // modelName is the variant name. Server command is
-            // {@code /dt editor part enter <kind> <name>}.
-            case PARTS -> "dungeontrain editor part enter " + modelId + " " + modelName;
-            // Chunk frames have no kinds: modelName is the frame.
-            case CHUNK_FRAMES -> "dungeontrain editor chunkframe enter " + modelName;
-            // Buildings have no kinds either; goto keeps unsaved edits standing.
-            case BUILDINGS -> "dungeontrain editor buildings goto " + modelName;
-            case LOST_CITY -> "dungeontrain editor buildings lostcity goto " + modelName;
-            // Staged builds are addressed by staged id; goto keeps unsaved edits standing.
-            case WORKBENCH -> "dungeontrain editor workbench goto " + modelName;
-            // Nothing authored yet, so no plot to stand in.
-            case ARCHITECTURE -> null;
-        };
+        // The track-side kinds have no category-level enter: each is model-shaped (track / pillar /
+        // tunnel), and the kind tag in modelId says which.
+        if (category == PlotCategory.TRACKS) return trackTeleportCommand(modelId);
+        return category.command(PlotCategory.Verb.ENTER, modelId, modelName).orElse(null);
     }
 
     /**
      * Build the slash command that bumps the weight of the template
      * identified by {@code (category, modelId, modelName)} in {@code dir}
      * ({@code "inc"} or {@code "dec"}). Returns {@code null} for categories
-     * without a weight pool (currently {@code PARTS}).
+     * without a weight pool, and for a track-side template with no name to address.
      */
     public static String weightCommandFor(PlotCategory category, String modelId, String modelName, String dir) {
         if (category == null || !category.hasWeightPool()) return null;
-        return switch (category) {
-            case CARRIAGES -> "dungeontrain editor weight " + modelId + " " + dir;
-            case CONTENTS -> "dungeontrain editor contents weight " + modelId + " " + dir;
-            case TRACKS -> "dungeontrain editor tracks weight " + modelId + " " + modelName + " " + dir;
-            case PORTALS -> "dungeontrain editor portals weight " + modelId + " " + modelName + " " + dir;
-            case WHOLE -> "dungeontrain editor whole weight " + modelId + " " + dir;
-            case WHOLE_GROUP -> "dungeontrain editor whole group weight " + modelId + " " + dir;
-            case WHOLE_HALF -> "dungeontrain editor whole half weight " + modelId + " " + dir;
-            case BUILDINGS -> "dungeontrain editor buildings weight " + modelName + " " + dir;
-            case PARTS, CHUNK_FRAMES, LOST_CITY, ARCHITECTURE, WORKBENCH -> null; // no weight pool — refused by the guard above
-        };
+        return category.command(PlotCategory.Verb.WEIGHT, modelId, modelName).map(c -> c + " " + dir).orElse(null);
     }
 
     /**
@@ -212,16 +182,7 @@ public final class EditorPlotTeleport {
      */
     public static String levelCommandFor(PlotCategory category, String modelId, String modelName, String sub, String dir) {
         if (category == null || !category.hasGate()) return null;
-        return switch (category) {
-            case CARRIAGES -> "dungeontrain editor " + sub + " " + modelId + " " + dir;
-            case CONTENTS -> "dungeontrain editor contents " + sub + " " + modelId + " " + dir;
-            case TRACKS -> "dungeontrain editor tracks " + sub + " " + modelId + " " + modelName + " " + dir;
-            case PORTALS -> "dungeontrain editor portals " + sub + " " + modelId + " " + modelName + " " + dir;
-            case WHOLE -> "dungeontrain editor whole " + sub + " " + modelId + " " + dir;
-            case WHOLE_GROUP -> "dungeontrain editor whole group " + sub + " " + modelId + " " + dir;
-            case WHOLE_HALF -> "dungeontrain editor whole half " + sub + " " + modelId + " " + dir;
-            case PARTS, CHUNK_FRAMES, BUILDINGS, LOST_CITY, ARCHITECTURE, WORKBENCH -> null; // no spawn gate — refused by the guard above
-        };
+        return category.levelCommand(sub, modelId, modelName).map(c -> c + " " + dir).orElse(null);
     }
 
     /**
@@ -234,16 +195,8 @@ public final class EditorPlotTeleport {
     public static String phaseCommandFor(PlotCategory category, String modelId, String modelName,
                                          String phaseToken, String action) {
         if (category == null || !category.hasGate()) return null;
-        return switch (category) {
-            case CARRIAGES -> "dungeontrain editor phase " + modelId + " " + phaseToken + " " + action;
-            case CONTENTS -> "dungeontrain editor contents phase " + modelId + " " + phaseToken + " " + action;
-            case TRACKS -> "dungeontrain editor tracks phase " + modelId + " " + modelName + " " + phaseToken + " " + action;
-            case PORTALS -> "dungeontrain editor portals phase " + modelId + " " + modelName + " " + phaseToken + " " + action;
-            case WHOLE -> "dungeontrain editor whole phase " + modelId + " " + phaseToken + " " + action;
-            case WHOLE_GROUP -> "dungeontrain editor whole group phase " + modelId + " " + phaseToken + " " + action;
-            case WHOLE_HALF -> "dungeontrain editor whole half phase " + modelId + " " + phaseToken + " " + action;
-            case PARTS, CHUNK_FRAMES, BUILDINGS, LOST_CITY, ARCHITECTURE, WORKBENCH -> null; // no spawn gate — refused by the guard above
-        };
+        return category.command(PlotCategory.Verb.PHASE, modelId, modelName)
+            .map(c -> c + " " + phaseToken + " " + action).orElse(null);
     }
 
     /**

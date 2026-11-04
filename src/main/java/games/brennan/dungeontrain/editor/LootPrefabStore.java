@@ -71,6 +71,11 @@ public final class LootPrefabStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    static {
+        // Dropped by TemplateStores.clearCaches() with every other store cache.
+        StoreRegistry.register("LootPrefabStore", LootPrefabStore::clear);
+    }
+
     static final String SUBDIR = "prefabs/loot";
     private static final String EXT = ".json";
     public static final int CURRENT_SCHEMA_VERSION = 4;

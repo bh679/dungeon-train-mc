@@ -5,13 +5,16 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageSpace;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.worldgen.NetherBand;
+import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import games.brennan.dungeontrain.worldgen.density.BetterNetherCoreBiomes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BiomeTags;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
@@ -75,7 +78,9 @@ import java.util.List;
  * <p><b>Only into a Nether biome.</b> The band's mountains are hollowed into overworld cave biomes
  * (lush, dripstone, sulfur, deep dark) that can sit beneath a column already past the ramp threshold.
  * Every spawn block must itself read as a Nether biome ({@link #isNetherSpawnBiome}), and the ground
- * roster comes from that block's biome, so the caves stay free of zombified piglins and magma cubes.</p>
+ * roster comes from that block's biome, so the caves stay free of zombified piglins and magma cubes.
+ * Lush caves are also exempt from the ambient cancel ({@link #onFinalizeSpawn}), so they fill with
+ * their vanilla mobs (axolotls, glow squid, tropical fish, bats, dark-cave monsters).</p>
  *
  * <p><b>Never below the world floor, never in a portal room.</b> Candidate heights come from the
  * player's own Y, so a player who steps through a portal mid-band would otherwise have the band
@@ -269,6 +274,14 @@ public final class NetherMobSpawner {
         return coreDepth >= GHAST_MIN_CORE_DEPTH;
     }
 
+    /**
+     * Whether a spawn at {@code y} would stand above the core slab's top row {@code roofY} — on or over the
+     * band's bedrock roof. Package-private and param-in so it unit-tests without a level.
+     */
+    static boolean isAboveRoof(int y, int roofY) {
+        return y > roofY;
+    }
+
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
@@ -280,7 +293,9 @@ public final class NetherMobSpawner {
         // Resolved once per tick, not per candidate: both are level-wide and neither can change
         // between attempts within a tick.
         int bedrockY = WorldFloor.bedrockY(level);
-        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+        CarriageDims dims = data.dims();
+        int roofY = NetherCoreGeometry.coreTopY(TrackGeometry.from(dims, data.getTrainY()).bedY());
 
         for (ServerPlayer player : level.players()) {
             int px = (int) Math.floor(player.getX());
@@ -306,7 +321,7 @@ public final class NetherMobSpawner {
             boolean ghastsAllowed = ghastsNearby < ghastCapFor(pass);
 
             for (int i = 0; i < TRIES; i++) {
-                trySpawnNear(level, player, rng, ghastsAllowed, pass, dims, bedrockY);
+                trySpawnNear(level, player, rng, ghastsAllowed, pass, dims, bedrockY, roofY);
             }
         }
     }
@@ -327,6 +342,9 @@ public final class NetherMobSpawner {
             // A Deeper Dark core spawns from its Otherside biomes' own lists (snappers, shattered, centipedes),
             // as the Otherside does; only the overworld mountains around it stay empty.
             if (games.brennan.dungeontrain.worldgen.OthersideCore.isOthersideBiome(level.getBiome(pos))) return;
+            // The mountains' lush caves spawn their own vanilla roster (axolotls, glow squid, tropical fish,
+            // bats, dark-cave monsters), as lush caves do anywhere in the overworld.
+            if (level.getBiome(pos).is(Biomes.LUSH_CAVES)) return;
             event.setSpawnCancelled(true);
         }
     }
@@ -345,15 +363,43 @@ public final class NetherMobSpawner {
     public static void onSpawnPlacementCheck(MobSpawnEvent.SpawnPlacementCheck event) {
         MobSpawnType type = event.getSpawnType();
         if (type != MobSpawnType.NATURAL && type != MobSpawnType.CHUNK_GENERATION) return;
-        if (event.getEntityType().getCategory() != MobCategory.MONSTER) return;
         ServerLevel level = event.getLevel().getLevel();
-        if (BandStructureSpawns.inMonsterSpawningStructure(level, event.getPos())) {
+        BlockPos pos = event.getPos();
+        if (event.getEntityType() == EntityType.GLOW_SQUID) {
+            if (!level.dimension().equals(Level.OVERWORLD)) return;
+            boolean inBand = NetherBand.heightRampAt(level, pos.getX()) > 0.0
+                    && DisintegrationBand.middleRampAt(level, pos.getX()) <= 0.0;
+            if (allowsGlowSquid(inBand, level.getBiome(pos).is(Biomes.LUSH_CAVES),
+                    level.getFluidState(pos).is(FluidTags.WATER), level.getFluidState(pos.below()).is(FluidTags.WATER),
+                    level.getRawBrightness(pos, 0))) {
+                event.setResult(MobSpawnEvent.SpawnPlacementCheck.Result.SUCCEED);
+            }
+            return;
+        }
+        if (event.getEntityType().getCategory() != MobCategory.MONSTER) return;
+        if (BandStructureSpawns.inMonsterSpawningStructure(level, pos)) {
             event.setResult(MobSpawnEvent.SpawnPlacementCheck.Result.SUCCEED);
         }
     }
 
+    /**
+     * Whether a glow squid may spawn here despite vanilla's height rule.
+     *
+     * <p>Vanilla wants water at {@code y <= seaLevel - 33} (y 30), but the default world's floor is y 32,
+     * so the band's lush caves, which list glow squid like lush caves everywhere, never got one. Only the
+     * height is waived: the water and the full darkness vanilla asks for still apply.</p>
+     *
+     * <p>Vanilla is content with one block of water. The band's lush caves are full of shallow pools a squid
+     * flops out of, so here the block below must be water too: at least two deep.</p>
+     */
+    static boolean allowsGlowSquid(boolean inNetherBand, boolean lushCave, boolean water, boolean waterBelow,
+                                   int rawBrightness) {
+        return inNetherBand && lushCave && water && waterBelow && rawBrightness == 0;
+    }
+
     private static void trySpawnNear(ServerLevel level, ServerPlayer player, RandomSource rng,
-                                     boolean ghastsAllowed, long pass, CarriageDims dims, int bedrockY) {
+                                     boolean ghastsAllowed, long pass, CarriageDims dims, int bedrockY,
+                                     int roofY) {
         int dx = rng.nextInt(2 * SPAWN_RADIUS + 1) - SPAWN_RADIUS;
         int dz = rng.nextInt(2 * SPAWN_RADIUS + 1) - SPAWN_RADIUS;
         if (dx * dx + dz * dz < MIN_SPAWN_DIST * MIN_SPAWN_DIST) return;
@@ -386,7 +432,7 @@ public final class NetherMobSpawner {
                 BlockPos air = new BlockPos(wx, y, wz);
                 // `continue`, not `return`: the scan runs upward, so a blocked low pocket is no
                 // reason to give up on the legal ones above it.
-                if (blockedSpawnSite(dims, bedrockY, air)) continue;
+                if (blockedSpawnSite(dims, bedrockY, roofY, air)) continue;
                 if (!isNetherSpawnBiome(level.getBiome(air))) continue;   // the mountain caves spawn nothing
                 if (hasRoomFor(level, EntityType.GHAST, air) && !insideCarriage(level, EntityType.GHAST, air)) {
                     spawn(level, EntityType.GHAST, air, rng);
@@ -399,7 +445,7 @@ public final class NetherMobSpawner {
         // Ground mob: find a solid floor with 2 air above, near the player's Y.
         for (int y = player.getBlockY() + FLOOR_SEARCH_UP; y >= player.getBlockY() - FLOOR_SEARCH_DOWN; y--) {
             BlockPos feet = new BlockPos(wx, y, wz);
-            if (blockedSpawnSite(dims, bedrockY, feet)) continue;
+            if (blockedSpawnSite(dims, bedrockY, roofY, feet)) continue;
             if (!level.getBlockState(feet.below()).blocksMotion()) continue;
             if (!level.getBlockState(feet).isAir() || !level.getBlockState(feet.above()).isAir()) continue;
             // The mountains' overworld caves (lush, dripstone, sulfur, deep dark) spawn nothing — the
@@ -418,8 +464,12 @@ public final class NetherMobSpawner {
     }
 
     /**
-     * True for a position the band must not spawn into — the basement under the world floor, or a
-     * portal structure.
+     * True for a position the band must not spawn into — the basement under the world floor, above the
+     * Nether core's roof, or a portal structure.
+     *
+     * <p>Every candidate height is derived from the player's, so a player on or over the roof would
+     * otherwise draw ghasts into the open sky above it (and ground mobs onto it). The real Nether has
+     * nothing above its ceiling; neither does the band.</p>
      *
      * <p>Two tests rather than one because neither contains the other, the same split
      * {@code BasementSpawnGuard} and {@code PortalRoomSpawnGuard} make for ambient spawns. A portal
@@ -432,8 +482,9 @@ public final class NetherMobSpawner {
      * <p>Probed at the column centre, the position {@link #spawn} hands to {@link Mob#moveTo},
      * so the test matches where the mob actually lands.</p>
      */
-    private static boolean blockedSpawnSite(CarriageDims dims, int bedrockY, BlockPos pos) {
+    private static boolean blockedSpawnSite(CarriageDims dims, int bedrockY, int roofY, BlockPos pos) {
         if (WorldFloor.isBelowFloor(pos.getY(), bedrockY)) return true;
+        if (isAboveRoof(pos.getY(), roofY)) return true;
         return PortalCarriageEvents.isInsidePortalStructure(
                 dims, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
     }

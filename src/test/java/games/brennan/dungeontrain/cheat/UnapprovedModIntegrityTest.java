@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -47,8 +48,8 @@ class UnapprovedModIntegrityTest {
         "datapackmod", Set.of());
 
     @Test
-    @DisplayName("Only a SUSPECT file is reported: the renamed cheat jar, not an honest unplaced build")
-    void onlySuspectFilesAreReported() {
+    @DisplayName("Every file without a known hash is reported: suspect, unknown and plausible alike")
+    void onlyHashedFilesPass() {
         String good = "a".repeat(40);
         List<ModFileFingerprint> files = List.of(
             file("jei-19.jar", good, List.of("mezz.jei"), "jei"),                          // verified by hash
@@ -57,10 +58,11 @@ class UnapprovedModIntegrityTest {
             file("bundle.jar", "d".repeat(40), List.of("dev.alpha"), "alpha", "beta"),      // suspect: beta's code missing
             file("newmod.jar", "e".repeat(40), List.of("a.b"), "newmod"),                   // unknown: no knowledge
             file("resource.jar", "f".repeat(40), List.of(), "datapackmod"));               // plausible: no classes, known []
-        assertEquals(List.of("bundle.jar (alpha, beta)", "totally-jei.jar (jei)"),
+        assertEquals(List.of("bundle.jar (alpha, beta)", "jei-20-fresh.jar (jei)", "newmod.jar (newmod)",
+                "resource.jar (datapackmod)", "totally-jei.jar (jei)"),
             UnapprovedModIntegrity.unverifiedFrom(files, Set.of(good), KNOWN));
         assertEquals(List.of(), UnapprovedModIntegrity.unverifiedFrom(List.of(), Set.of(), Map.of()),
-            "no files scanned means nothing suspect — never 'everything is fake'");
+            "no files scanned means nothing unverified — never 'everything is fake'");
     }
 
     @Test
@@ -171,5 +173,76 @@ class UnapprovedModIntegrityTest {
         assertTrue(!UnapprovedModIntegrity.isUnsupported("fabric_api_base", APPROVED, PREFIXES, NO_REVOCATIONS, CHEATS));
         assertTrue(UnapprovedModIntegrity.isUnsupported("jade", APPROVED, PREFIXES, Set.of("jade"), CHEATS),
             "a revoked mod is unsupported again");
+    }
+
+    @Test
+    @DisplayName("The baked list keeps an Essential + Essential Tweaks install, and the recent relay approvals, out of Free Play")
+    void bakedListApprovesEssentialTweaksAndRecentApprovals() {
+        Map<String, String> installed = installed(
+            "essential", "1.5.2", "essentialtweaks", "1.3.0+1.21.1-neoforge",
+            "legendarytooltips", "1", "weaponmaster_ydm", "1", "jecharacters", "1",
+            "explosiveenhancement", "1", "armor_hud", "1", "shouldersurfing", "1",
+            "armor_visibility", "1", "ash_api", "1", "cwb", "1", "cinematic", "1",
+            "notapprovedcontrol", "9");
+        // The control id proves the scan still reports what the list does not approve.
+        assertEquals(List.of("notapprovedcontrol v9"), UnapprovedModIntegrity.unapprovedFrom(
+            ApprovedModList.approved(), ApprovedModList.prefixes(), NO_REVOCATIONS, CHEATS, installed));
+    }
+
+    @Test
+    @DisplayName("Essential is outdated only when its own file is unverified")
+    void essentialOutdatedOnlyWhenItsFileIsUnverified() {
+        String current = "1".repeat(40);
+        ModFileFingerprint latest = file("Essential (neoforge_1.21.1).jar", current, List.of("gg.essential"), "essential");
+        ModFileFingerprint old = file("Essential (neoforge_1.21.1).jar", "2".repeat(40), List.of("gg.essential"), "essential");
+        ModFileFingerprint jei = file("jei-20.jar", "3".repeat(40), List.of("mezz.jei"), "jei");
+        assertFalse(UnapprovedModIntegrity.isOutdatedEssential(latest, Set.of(current), KNOWN), "an approved build is current");
+        assertTrue(UnapprovedModIntegrity.isOutdatedEssential(old, Set.of(current), KNOWN), "any other build is outdated");
+        assertFalse(UnapprovedModIntegrity.isOutdatedEssential(jei, Set.of(), KNOWN), "another mod's unverified file is not Essential");
+        assertFalse(UnapprovedModIntegrity.isOutdatedEssential(null, Set.of(), KNOWN), "not installed");
+    }
+
+    @Test
+    @DisplayName("A scan still running is pending, never clean; it fails closed")
+    void pendingScanIsNotClean() {
+        List<String> got = UnapprovedModIntegrity.judgeFiles(false, List.of(), List.of("jei-19.jar"), Set.of(), KNOWN);
+        assertEquals(List.of(UnapprovedModIntegrity.PENDING), got);
+    }
+
+    @Test
+    @DisplayName("A late scan is judged on its files once done: pending clears to clean or to the real findings")
+    void lateScanIsJudged() {
+        String good = "a".repeat(40);
+        List<ModFileFingerprint> files = List.of(file("jei-19.jar", good, List.of("mezz.jei"), "jei"));
+        assertEquals(List.of(), UnapprovedModIntegrity.judgeFiles(true, files, List.of("jei-19.jar"), Set.of(good), KNOWN));
+        assertEquals(List.of("jei-19.jar (jei)"),
+            UnapprovedModIntegrity.judgeFiles(true, files, List.of("jei-19.jar"), Set.of(), KNOWN));
+    }
+
+    @Test
+    @DisplayName("An expected jar the engine returned no fingerprint for is unverified (could not hash)")
+    void missingFileIsUnverified() {
+        String good = "a".repeat(40);
+        List<ModFileFingerprint> files = List.of(file("jei-19.jar", good, List.of("mezz.jei"), "jei"));
+        assertEquals(List.of("huge.jar (could not hash)"),
+            UnapprovedModIntegrity.judgeFiles(true, files, List.of("jei-19.jar", "huge.jar"), Set.of(good), KNOWN));
+    }
+
+    @Test
+    @DisplayName("Expected jars: non-exempt plain .jar outermost files only")
+    void expectedJarsSkipExemptAndNonJar() {
+        Map<java.nio.file.Path, Boolean> in = new LinkedHashMap<>();
+        in.put(java.nio.file.Path.of("mods", "dungeontrain-1.jar"), true);
+        in.put(java.nio.file.Path.of("mods", "jei-19.jar"), false);
+        in.put(java.nio.file.Path.of("mods", "notes.zip"), false);
+        assertEquals(Set.of("jei-19.jar"), UnapprovedModIntegrity.expectedFrom(in));
+    }
+
+    @Test
+    @DisplayName("Engine tamper findings join the file findings once each")
+    void combineAddsTamper() {
+        assertEquals(List.of("a.jar (jei)", "x.jar (dtmodverify replaced)"),
+            UnapprovedModIntegrity.combine(List.of("a.jar (jei)"), List.of("x.jar (dtmodverify replaced)")));
+        assertEquals(List.of("a.jar (jei)"), UnapprovedModIntegrity.combine(List.of("a.jar (jei)"), List.of()));
     }
 }

@@ -62,7 +62,8 @@
         "sodium_extra",
         "reeses_sodium_options",
         "modelfix",
-        "cupboard"
+        "cupboard",
+        "betterfpsdist"
       ]
     },
     "visual": {
@@ -86,6 +87,7 @@
         "particular",
         "particlerain",
         "subtle_effects",
+        "ambientenvironment",
         "continuity",
         "fusion",
         "euphoria_patcher",
@@ -171,9 +173,15 @@
       "why": "Playing with other people: hosting, cosmetics and social layers.",
       "ids": [
         "essential",
+        "essentialtweaks",
         "e4mc",
         "e4all",
         "lanserverproperties"
+      ],
+      "note": [
+        "essentialtweaks (Essential Tweaks, EpicSkydex) is client-only and only changes Essential's defaults:",
+        "unbound keybinds, no Discord RPC, no update popups, banners or badges. Decompiled and audited",
+        "2026-11-03: no packets, commands, game-mode or player access. It rides on the essential approval."
       ]
     },
     "libraries": {
@@ -226,7 +234,8 @@
         "smartbrainlib",
         "irons_lib",
         "oracle_index",
-        "rhino"
+        "rhino",
+        "ash_api"
       ]
     },
     "farmers_delight": {
@@ -244,10 +253,19 @@
       "why": "Approved on the relay's mod-request queue (dt.brennan.games #/mod-requests) after community suggestion, then baked here so offline and first-launch players get them too. Same rule as every other group.",
       "ids": [
         "alltheleaks",
+        "armor_hud",
+        "armor_visibility",
         "catalogue",
+        "cinematic",
         "cirrus",
+        "cwb",
+        "explosiveenhancement",
+        "jecharacters",
+        "legendarytooltips",
         "lmft",
-        "perception"
+        "perception",
+        "shouldersurfing",
+        "weaponmaster_ydm"
       ]
     }
   }
