@@ -240,6 +240,14 @@
     "mode": "bedrock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
   },
   "gravityfalls": 1,
+  "home": {
+    "weight": 1,
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0//auto/off"
+  },
+  "home_entrance": {
+    "weight": 0,
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0//auto/off"
+  },
   "house": {
     "weight": 1,
     "mode": "bedrock",
@@ -546,13 +554,5 @@
   "zombies": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
-  },
-  "home": {
-    "weight": 1,
-    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0//auto/off"
-  },
-  "home_entrance": {
-    "weight": 0,
-    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0//auto/off"
   }
 }
