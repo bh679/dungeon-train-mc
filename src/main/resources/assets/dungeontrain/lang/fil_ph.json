@@ -5749,6 +5749,8 @@
   "gui.dungeontrain.perks.death.tile.perks": "Perks na pinalakas",
   "gui.dungeontrain.perks.death.tile.top": "Pinakamaraming puntos",
   "gui.dungeontrain.perks.death.unlock_hint": "Mag-unlock ng perks para sa susunod na buhay.",
+  "gui.dungeontrain.perks.death.skip": "Laktawan",
+  "gui.dungeontrain.perks.death.next": "Susunod",
   "gui.dungeontrain.perks.story.earned": "%s sa buhay na ito.",
   "gui.dungeontrain.perks.story.earned_points": "Katumbas ng %s.",
   "gui.dungeontrain.perks.story.advancements.other": "%s advancement",

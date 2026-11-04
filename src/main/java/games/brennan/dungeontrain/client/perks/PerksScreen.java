@@ -375,8 +375,9 @@ public final class PerksScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int rawX, int rawY, float partialTick) {
-        // over the Unlock tab, nothing behind it is hovered: the sky, titles, names and lists see no mouse
-        boolean onTab = bar.tabContains(rawX, rawY);
+        // over the Unlock tab or the Next taking its place, nothing behind it is hovered: the sky, titles,
+        // names and lists see no mouse
+        boolean onTab = bar.tabContains(rawX, rawY) || (nextCentred(last) && overNext(rawX, rawY));
         int mouseX = onTab ? -10_000 : rawX, mouseY = onTab ? -10_000 : rawY;
         frameAt = Util.getMillis();
         PerkMenuSnapshot snap = snapshot();
@@ -473,6 +474,10 @@ public final class PerksScreen extends Screen {
             bar.mouse(rawX, rawY);
             double barFade = layer(MenuReveal.Stage.BAR, fade);
             if (barFade > 0.03) bar.render(g, snap, barFade);
+            if (nextCentred(snap)) {
+                PointsCarriedPanel.nextButton(g, font, Component.translatable("gui.dungeontrain.perks.death.next"),
+                    nextX(snap), nextY(snap), NEXT_W, NEXT_H, overNext(rawX, rawY), barFade);
+            }
             renderStoryLine(g, now, fade, gx, lowestStar);
         }
         else card.render(g, now);
@@ -501,6 +506,7 @@ public final class PerksScreen extends Screen {
             hoveredClass = null;
         }
         List<net.minecraft.client.gui.components.Button> before = bar.buttons();
+        bar.noUnlock(nextCentred(snap));
         if (bar.update(width, height, hoveredClass == null ? p : null, p != null && p.id().equals(selected), hoveredClass, snap)) {
             before.forEach(this::removeWidget);
             bar.buttons().forEach(this::addRenderableWidget);
@@ -580,8 +586,9 @@ public final class PerksScreen extends Screen {
         if (death != null) {
             g.drawString(font, Component.translatable("gui.dungeontrain.perks.death.unlock_hint"), x, y,
                 (SkyPalette.GOLD & 0xFFFFFF) | alpha, true);
-            if (nextFade > 0.03) {
-                PointsCarriedPanel.nextButton(g, font, width - 8 - NEXT_W, NEXT_Y, NEXT_W, NEXT_H, overNext(mouseX, mouseY), nextFade);
+            if (nextFade > 0.03 && !nextCentred(snap)) {
+                PointsCarriedPanel.nextButton(g, font, Component.translatable("gui.dungeontrain.perks.death.skip"),
+                    nextX(snap), nextY(snap), NEXT_W, NEXT_H, overNext(mouseX, mouseY), nextFade);
             }
             return;
         }
@@ -590,9 +597,25 @@ public final class PerksScreen extends Screen {
 
     private static final int NEXT_W = 80, NEXT_H = 18, NEXT_Y = 3;
 
-    /** Over the death menu's Next Screen button, in the header's top right. */
+    /** Every point spent, at least one of them in this menu: Next stands on the bar where the Unlock tab was. */
+    private boolean nextCentred(PerkMenuSnapshot s) {
+        return death != null && s.unlockPoints() <= 0 && death.spentHere(s);
+    }
+
+    /** The death menu's way on: Skip in the header's top right, until {@link #nextCentred}. */
+    private int nextX(PerkMenuSnapshot s) {
+        return nextCentred(s) ? width / 2 - NEXT_W / 2 : width - 8 - NEXT_W;
+    }
+
+    private int nextY(PerkMenuSnapshot s) {
+        return nextCentred(s) ? height - PerkDetailsBar.HEIGHT - NEXT_H : NEXT_Y;
+    }
+
+    /** Over the death menu's Skip or Next button. */
     private boolean overNext(double mx, double my) {
-        return death != null && mx >= width - 8 - NEXT_W && mx < width - 8 && my >= NEXT_Y && my < NEXT_Y + NEXT_H;
+        if (death == null) return false;
+        int x = nextX(last), y = nextY(last);
+        return mx >= x && mx < x + NEXT_W && my >= y && my < y + NEXT_H;
     }
 
     private SkyNames.Sky sky() {

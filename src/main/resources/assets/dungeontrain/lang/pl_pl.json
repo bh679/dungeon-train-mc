@@ -5883,6 +5883,8 @@
   "gui.dungeontrain.perks.death.tile.perks": "Wzmocnione perki",
   "gui.dungeontrain.perks.death.tile.top": "Najwięcej punktów",
   "gui.dungeontrain.perks.death.unlock_hint": "Odblokuj perki na następne życie.",
+  "gui.dungeontrain.perks.death.skip": "Pomiń",
+  "gui.dungeontrain.perks.death.next": "Dalej",
   "gui.dungeontrain.perks.story.earned": "%s w tym życiu.",
   "gui.dungeontrain.perks.story.earned_points": "Dające %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s postęp",

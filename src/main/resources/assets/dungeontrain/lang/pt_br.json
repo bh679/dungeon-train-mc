@@ -5816,6 +5816,8 @@
   "gui.dungeontrain.perks.death.tile.perks": "Vantagens fortalecidas",
   "gui.dungeontrain.perks.death.tile.top": "Mais pontos",
   "gui.dungeontrain.perks.death.unlock_hint": "Desbloqueie vantagens para a próxima vida.",
+  "gui.dungeontrain.perks.death.skip": "Pular",
+  "gui.dungeontrain.perks.death.next": "Próximo",
   "gui.dungeontrain.perks.story.earned": "%s nesta vida.",
   "gui.dungeontrain.perks.story.earned_points": "Rendendo %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s conquista",

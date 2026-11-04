@@ -5816,6 +5816,8 @@
   "gui.dungeontrain.perks.death.tile.perks": "Atouts renforcés",
   "gui.dungeontrain.perks.death.tile.top": "Le plus de points",
   "gui.dungeontrain.perks.death.unlock_hint": "Débloque des atouts pour la prochaine vie.",
+  "gui.dungeontrain.perks.death.skip": "Passer",
+  "gui.dungeontrain.perks.death.next": "Suivant",
   "gui.dungeontrain.perks.story.earned": "%s, dans cette vie.",
   "gui.dungeontrain.perks.story.earned_points": "Qui rapportent %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s progrès",

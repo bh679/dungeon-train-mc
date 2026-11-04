@@ -76,6 +76,15 @@ class DeathPerksPhaseTest {
     }
 
     @Test
+    @DisplayName("spent here only once the live unlocks hold more levels than at death")
+    void spentHere() {
+        DeathPerksPhase phase = new DeathPerksPhase(NO_POINTS, DeathStory.of(null, NO_POINTS, "en_us"), () -> null, 0);
+        assertFalse(phase.spentHere(NO_POINTS));
+        assertTrue(phase.spentHere(new PerkMenuSnapshot(Map.of("health", 4), Map.of(), 3, 0)));
+        assertTrue(phase.spentHere(new PerkMenuSnapshot(Map.of("health", 3, "speed", 1), Map.of(), 3, 0)));
+    }
+
+    @Test
     @DisplayName("never unlocked a perk: the guided first time")
     void firstTime() {
         DeathPerksPhase fresh = new DeathPerksPhase(PerkMenuSnapshot.EMPTY, DeathStory.of(null, PerkMenuSnapshot.EMPTY, "en_us"), () -> null, 0);

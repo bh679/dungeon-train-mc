@@ -5880,6 +5880,8 @@
   "gui.dungeontrain.perks.death.tile.perks": "Посилено перків",
   "gui.dungeontrain.perks.death.tile.top": "Найбільше балів",
   "gui.dungeontrain.perks.death.unlock_hint": "Відкрий перки для наступного життя.",
+  "gui.dungeontrain.perks.death.skip": "Пропустити",
+  "gui.dungeontrain.perks.death.next": "Далі",
   "gui.dungeontrain.perks.story.earned": "%s за це життя.",
   "gui.dungeontrain.perks.story.earned_points": "Це дає %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s досягнення",

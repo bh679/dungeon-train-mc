@@ -5816,6 +5816,8 @@
   "gui.dungeontrain.perks.death.tile.perks": "Vantaggi potenziati",
   "gui.dungeontrain.perks.death.tile.top": "Più punti",
   "gui.dungeontrain.perks.death.unlock_hint": "Sblocca vantaggi per la prossima vita.",
+  "gui.dungeontrain.perks.death.skip": "Salta",
+  "gui.dungeontrain.perks.death.next": "Avanti",
   "gui.dungeontrain.perks.story.earned": "%s in questa vita.",
   "gui.dungeontrain.perks.story.earned_points": "Che fruttano %s.",
   "gui.dungeontrain.perks.story.advancements.one": "%s progresso",

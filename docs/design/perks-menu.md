@@ -67,7 +67,9 @@ recap, and it only unlocks.
   the tree swings in and the menu fades in, all on the same sky. A click skips it.
 - **Unlock menu.** The tree as the next life starts it (no points): Unlock only, no Activate button and
   no Active Points counter; a level can be raised without filling it first, since the points are gone.
-  Next Screen (top right) or Esc opens the recap; closing to the game is not possible while dead.
+  Skip (top right) or Esc opens the recap; closing to the game is not possible while dead. Once an unlock
+  made in this menu leaves no Advancement Points, Next replaces the Unlock tab, centred on the bar's top
+  edge, and Skip goes. Arriving with no points and spending none keeps Skip and the grey tab.
 - **Unlocks travel with Board anew.** Unlocks live on the player in the world's save, so
   `DeathScreenLayoutHandler.launchWorld` captures them (`player/PendingPerks`) and
   `perks/PerkCarryEvents` lands them on the new world's first login, on the same difficulty profile
