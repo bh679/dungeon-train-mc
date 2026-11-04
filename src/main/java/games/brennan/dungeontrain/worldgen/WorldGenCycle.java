@@ -1594,6 +1594,16 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * True if {@code worldX} is an <b>End void</b> column: the overworld is fully eroded there
+     * ({@link #endMiddleRamp} ≥ {@link Disintegration#VOID_RAMP_MIN}) — both void holds, the island fades
+     * and the core ({@link #isEndCore} ⊂ this). There is no ground of any kind in such a column, so the
+     * biome-source hook labels it with the End band's biome at every height, not just above sea level.
+     */
+    public boolean isEndVoid(int worldX) {
+        return endMiddleRamp(worldX) >= Disintegration.VOID_RAMP_MIN;
+    }
+
+    /**
      * Which repeat of the world-gen cycle {@code worldX} falls in (0-based), or {@code -1} in the
      * overworld buffer behind the anchor / when the cycle is empty (further back, the reversed run's index). The general form behind {@link #endPassIndex}: because the Nether
      * band is the first special band of every period, this doubles as the Nether-band pass index (repeat
