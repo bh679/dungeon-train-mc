@@ -125,6 +125,132 @@ public final class LiveModerationClient {
         return o.toString();
     }
 
+    /** The path a report on a streamer goes out on ({@code /livereport}). Sent directly: the 409 answer matters. */
+    public static final String REPORT_PATH = "/live/report";
+
+    /**
+     * The {@code /live/report} body. {@code streamerUuid} may be null (a streamer on another server: the relay's
+     * status names them but carries no uuid); it is then left out, never sent empty, and the relay takes the
+     * holder of {@code channel}. Pure.
+     */
+    public static String reportBody(UUID player, String name, @org.jetbrains.annotations.Nullable UUID streamerUuid,
+                                    String streamerName, String channel, String reason, boolean abandon) {
+        JsonObject o = new JsonObject();
+        o.addProperty("uuid", player.toString().replace("-", ""));
+        o.addProperty("name", name == null ? "" : name);
+        if (streamerUuid != null) o.addProperty("streamerUuid", streamerUuid.toString().replace("-", ""));
+        o.addProperty("streamerName", streamerName == null ? "" : streamerName);
+        o.addProperty("channel", LiveFeedClient.CHANNEL_SECOND.equals(channel) ? LiveFeedClient.CHANNEL_SECOND : LiveFeedClient.CHANNEL_MAIN);
+        o.addProperty("reason", reason == null ? "" : reason);
+        o.addProperty("abandon", abandon);
+        return o.toString();
+    }
+
+    /** {@code body} with {@code abandon} set, for the [Abandon it and report again] resend. Pure. */
+    public static String withAbandon(String body) {
+        JsonObject o = com.google.gson.JsonParser.parseString(body).getAsJsonObject();
+        o.addProperty("abandon", true);
+        return o.toString();
+    }
+
+    /** What the relay said to a report. {@code existing*} are set for {@link Kind#OPEN} (createdAt 0 when unknown). */
+    public record ReportReply(Kind kind, long existingCreatedAt, String existingStreamerName) {
+        public enum Kind { SENT, OPEN, NOT_LIVE, NOT_FOUND, SELF, BANNED, RATE_LIMITED, FAILED }
+
+        static ReportReply of(Kind kind) {
+            return new ReportReply(kind, 0L, "");
+        }
+    }
+
+    /**
+     * A {@code /live/report} answer, from its status and body. A 400 is read by its {@code error}: only
+     * {@code not_live} says the stream ended ({@code streamer_not_found}: someone else holds that channel,
+     * {@code self_report}: the player's own stream); any other 400
+     * ({@code bad_uuid}, {@code bad_channel}, ...) and anything unexpected is FAILED. Pure.
+     */
+    public static ReportReply parseReportReply(int status, String body) {
+        switch (status) {
+            case 400: return switch (errorOf(body)) {
+                case "not_live" -> ReportReply.of(ReportReply.Kind.NOT_LIVE);
+                case "streamer_not_found" -> ReportReply.of(ReportReply.Kind.NOT_FOUND);
+                case "self_report" -> ReportReply.of(ReportReply.Kind.SELF);
+                default -> ReportReply.of(ReportReply.Kind.FAILED);
+            };
+            case 403: return ReportReply.of(ReportReply.Kind.BANNED);
+            case 429: return ReportReply.of(ReportReply.Kind.RATE_LIMITED);
+            default: break;
+        }
+        try {
+            JsonObject o = com.google.gson.JsonParser.parseString(body).getAsJsonObject();
+            if (status / 100 == 2) {
+                return o.has("ok") && o.get("ok").getAsBoolean()
+                    ? ReportReply.of(ReportReply.Kind.SENT) : ReportReply.of(ReportReply.Kind.FAILED);
+            }
+            if (status == 409 && o.has("error") && "open_report".equals(o.get("error").getAsString())) {
+                JsonObject ex = o.has("existing") && o.get("existing").isJsonObject() ? o.getAsJsonObject("existing") : new JsonObject();
+                String name = ex.has("streamerName") && !ex.get("streamerName").isJsonNull() ? ex.get("streamerName").getAsString() : "";
+                return new ReportReply(ReportReply.Kind.OPEN, createdAt(ex), name);
+            }
+        } catch (RuntimeException e) {
+            LOGGER.debug("[DungeonTrain] live report reply unreadable (HTTP {}): {}", status, e.toString());
+        }
+        return ReportReply.of(ReportReply.Kind.FAILED);
+    }
+
+    /** A reply body's {@code error} code; "" when absent or unreadable. */
+    static String errorOf(String body) {
+        try {
+            JsonObject o = com.google.gson.JsonParser.parseString(body).getAsJsonObject();
+            return o.has("error") && o.get("error").isJsonPrimitive() ? o.get("error").getAsString() : "";
+        } catch (RuntimeException e) {
+            return "";
+        }
+    }
+
+    /** {@code createdAt} as epoch ms: a number (seconds or ms) or an ISO-8601 string; 0 when absent or unreadable. */
+    static long createdAt(JsonObject existing) {
+        if (!existing.has("createdAt") || existing.get("createdAt").isJsonNull()) return 0L;
+        try {
+            var v = existing.get("createdAt").getAsJsonPrimitive();
+            if (v.isNumber()) {
+                long n = v.getAsLong();
+                return n < 100_000_000_000L ? n * 1000L : n;
+            }
+            return java.time.Instant.parse(v.getAsString()).toEpochMilli();
+        } catch (RuntimeException e) {
+            return 0L;
+        }
+    }
+
+    /** POST a report off-thread; {@code callback} runs once on the HTTP thread with the answer (FAILED on any error). */
+    public static void sendReport(String body, Consumer<ReportReply> callback) {
+        try {
+            HttpRequest req = HttpRequest.newBuilder(URI.create(DungeonTrain.relayBaseUrl() + REPORT_PATH))
+                    .timeout(REQUEST_TIMEOUT)
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                    .whenComplete((resp, err) -> {
+                        ReportReply reply;
+                        if (err != null) {
+                            LOGGER.warn("[DungeonTrain] live report failed: {}", err.toString());
+                            reply = ReportReply.of(ReportReply.Kind.FAILED);
+                        } else {
+                            reply = parseReportReply(resp.statusCode(), resp.body());
+                            if (reply.kind() == ReportReply.Kind.FAILED) {
+                                LOGGER.warn("[DungeonTrain] live report -> HTTP {} {}", resp.statusCode(), errorOf(resp.body()));
+                            }
+                        }
+                        callback.accept(reply);
+                    });
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] live report request failed to start: {}", t.toString());
+            callback.accept(ReportReply.of(ReportReply.Kind.FAILED));
+        }
+    }
+
     /** The player a strike request was about, read back from its body (the relay's answer never repeats it). */
     public static UUID playerOf(String requestBody) {
         try {

@@ -89,7 +89,7 @@ public final class CommandAllowlist {
     private static final Set<String> ALLOWED_ROOTS = Set.of(
         "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list",
         "feedback", "bug", "log", "fixaisconfig", "fixconfig", "customcontent", "new-world",
-        "playanimation", "stopsound", "dtbackup", "dtrestore", "dungeonbackup", "liveappeal",
+        "playanimation", "stopsound", "dtbackup", "dtrestore", "dungeonbackup", "liveappeal", "livereport",
         "reportcarriage", "dtrebuild");
 
     /**
