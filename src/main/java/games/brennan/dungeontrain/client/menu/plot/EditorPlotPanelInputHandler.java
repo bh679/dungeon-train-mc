@@ -1,10 +1,10 @@
 package games.brennan.dungeontrain.client.menu.plot;
 
-import games.brennan.dungeontrain.client.menu.MenuLang;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CarriageContentsAllowScreen;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
+import games.brennan.dungeontrain.client.menu.WorldPanelInput;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer;
@@ -30,9 +30,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.BlockPos;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -72,67 +70,33 @@ public final class EditorPlotPanelInputHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** True only when a press fired while the panel was hovered and we're awaiting its release. */
-    private static boolean pressArmed;
-    /** Shift at press time, and which button armed the press — only its own release dispatches. */
-    private static boolean pressShift;
-    private static int pressButton;
+    private static final WorldPanelInput<Hovered> INPUT = new WorldPanelInput<>(
+        EditorPlotLabelsRenderer::hovered, hit -> hit.cell() == CellKind.NONE,
+        EditorPlotPanelInputHandler::shouldHandle, true, EditorPlotPanelInputHandler::dispatch);
 
     private EditorPlotPanelInputHandler() {}
 
-    /** Cancel the world-targeted attack/use when a press lands on a panel cell. */
+    /** The press: cancels the world interaction and arms when the crosshair is on a panel cell. */
     @SubscribeEvent
     public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
-        if (!shouldHandle()) return;
-        Hovered hit = EditorPlotLabelsRenderer.hovered();
-        if (hit.cell() == CellKind.NONE) return;
-        event.setCanceled(true);
-        event.setSwingHand(false);
-        pressArmed = true;
-        pressButton = event.isUseItem() ? GLFW.GLFW_MOUSE_BUTTON_RIGHT : GLFW.GLFW_MOUSE_BUTTON_LEFT;
-        Minecraft mc = Minecraft.getInstance();
-        long win = mc.getWindow().getWindow();
-        pressShift = mc.screen == null
-            && (GLFW.glfwGetKey(win, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS
-                || GLFW.glfwGetKey(win, GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS);
-        if (mc.player != null) {
-            mc.hitResult = BlockHitResult.miss(
-                mc.player.getEyePosition(),
-                Direction.UP,
-                mc.player.blockPosition()
-            );
-        }
-        if (mc.gameMode != null) mc.gameMode.stopDestroyBlock();
+        INPUT.onInteraction(event);
     }
 
+    /** The release of the armed button fires the hit under the crosshair. */
     @SubscribeEvent
     public static void onMouseButton(InputEvent.MouseButton.Pre event) {
-        if (!shouldHandle()) {
-            pressArmed = false;
-            return;
-        }
-        if (Minecraft.getInstance().screen != null) return;
-        int btn = event.getButton();
-        if (btn != GLFW.GLFW_MOUSE_BUTTON_LEFT && btn != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
-        if (event.getAction() != GLFW.GLFW_RELEASE) return;
-        if (!pressArmed || btn != pressButton) return;
-        pressArmed = false;
-        boolean shift = pressShift || (event.getModifiers() & GLFW.GLFW_MOD_SHIFT) != 0;
-
-        Hovered hit = EditorPlotLabelsRenderer.hovered();
-        if (hit.cell() == CellKind.NONE) return;
-        // Right-click is a number row's step-down and nothing else.
-        if (btn == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !isNumberCell(hit.cell())) return;
-        dispatch(hit, shift, btn);
+        INPUT.onMouseButton(event);
     }
 
-    /** Belt-and-braces — block any LeftClickBlock that slipped past the press cancel. */
+    /** Belt and braces: a left-click-block that slipped past the press cancel must not start block damage. */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        if (!shouldHandle()) return;
-        if (EditorPlotLabelsRenderer.hovered().cell() == CellKind.NONE) return;
-        event.setCanceled(true);
+        INPUT.onLeftClickBlock(event);
     }
+
+    /** Cancel the world-targeted attack/use when a press lands on a panel cell. */
+
+    /** Belt-and-braces — block any LeftClickBlock that slipped past the press cancel. */
 
     /** Refresh hover even outside the per-frame render so press arming is current. */
     @SubscribeEvent
@@ -165,6 +129,8 @@ public final class EditorPlotPanelInputHandler {
     }
 
     private static void dispatch(Hovered hit, boolean shift, int button) {
+        // Right-click is a number cell's step-down and nothing else.
+        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !isNumberCell(hit.cell())) return;
         List<EditorPlotLabelsPacket.Entry> entries = EditorPlotLabelsRenderer.entries();
         if (hit.entryIndex() < 0 || hit.entryIndex() >= entries.size()) return;
         EditorPlotLabelsPacket.Entry entry = entries.get(hit.entryIndex());

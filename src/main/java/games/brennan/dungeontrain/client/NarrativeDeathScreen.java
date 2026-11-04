@@ -6,6 +6,7 @@ import games.brennan.discordpresence.network.SurveyQuestionPayload;
 import games.brennan.discordpresence.survey.SurveyKeys;
 import games.brennan.discordpresence.survey.SurveyRegistry;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
+import games.brennan.dungeontrain.client.moty.ModOfTheYearPopupHandler;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.bugresponse.BugIssueClassifier;
 import games.brennan.dungeontrain.narrative.PluralRules;
@@ -2634,9 +2635,10 @@ public final class NarrativeDeathScreen extends Screen {
             if (comment.isEmpty()) return;
             score = 0; // unused server-side (DP omits the Rating field for no-scale questions)
         }
-        // Remember the NPS ("recommend") score — it gates whether the donation page appears.
+        // Remember the NPS ("recommend") score — it gates whether the donation page appears, and a
+        // recommendation brings up the Mod of the Year ask over this screen, returning here after.
         if (e.scaleMax() >= e.scaleMin() && SurveyRegistry.NPS_ID.equals(e.id())) {
-            ClientDisplayConfig.setLastNpsScore(score);
+            ModOfTheYearPopupHandler.onNpsAnswered(score);
         }
         DPNetwork.sendToServer(new SurveySubmitPayload(e.id(), score, comment));
         submitted.add(e.id());

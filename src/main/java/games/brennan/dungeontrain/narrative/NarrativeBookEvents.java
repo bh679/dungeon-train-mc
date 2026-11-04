@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
+import games.brennan.dungeontrain.advancement.GlobalRandomBookProgress;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -41,6 +42,7 @@ import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Detects when a player opens a narrative-tagged book and advances the
@@ -395,11 +397,13 @@ public final class NarrativeBookEvents {
         NarrativeProgressData data = NarrativeProgressData.get(overworld);
 
         RandomBookTag.RandomBookIdentity id = idOpt.get();
-        if (!data.hasSeenRandomBook(id.basename(), id.variantIndex())) {
-            // First time the world has seen this exact tuple — mark and let
+        UUID uuid = player.getUUID();
+        boolean worldSeen = data.hasSeenRandomBook(id.basename(), id.variantIndex());
+        boolean playerSeen = GlobalRandomBookProgress.hasSeen(uuid, id.basename(), id.variantIndex());
+        if (!worldSeen && !playerSeen) {
+            // First time the world and this player have seen this exact tuple — mark and let
             // the read flow proceed unchanged.
-            data.markRandomBookSeen(id.basename(), id.variantIndex());
-            data.markRandomBookVariantEverRead(id.basename(), id.variantIndex()); // monotonic — feeds shared-book loot chance
+            markRandomBookHeld(player, data, id.basename(), id.variantIndex());
             LOGGER.info("[DungeonTrain] RandomBook: world marked {} variant {} seen (by {})",
                 id.basename(), id.variantIndex(), player.getName().getString());
             games.brennan.dungeontrain.event.AchievementEvents.notifyStoryProgress(player);
@@ -407,16 +411,25 @@ public final class NarrativeBookEvents {
             return;
         }
 
-        // Already seen — try to swap to an unseen pick. The picker resets
-        // tracking internally if every variant is seen, so the second-stage
-        // call always returns something when the pool is non-empty.
-        long seed = overworld.getGameTime() ^ player.getUUID().getLeastSignificantBits();
-        Optional<RandomBookFactory.PickedBook> alt =
-            RandomBookFactory.pickUnseenForWorld(data, seed);
+        // Seen before, by this world or by this player in any world — swap to a pick neither has seen.
+        // When the player has seen every one, a book the world hasn't seen stays as it is; one the world
+        // has seen swaps to a world-unseen pick, and that picker resets the world's tracking itself once
+        // every variant is seen, so it always returns something when the pool is non-empty.
+        long seed = overworld.getGameTime() ^ uuid.getLeastSignificantBits();
+        Optional<RandomBookFactory.PickedBook> alt = RandomBookFactory.pickUnseenForPlayer(
+            data, (basename, variant) -> GlobalRandomBookProgress.hasSeen(uuid, basename, variant), seed);
+        if (alt.isEmpty() && !worldSeen) {
+            markRandomBookHeld(player, data, id.basename(), id.variantIndex());
+            LOGGER.info("[DungeonTrain] RandomBook: world marked {} variant {} seen (by {}, read before)",
+                id.basename(), id.variantIndex(), player.getName().getString());
+            games.brennan.dungeontrain.event.AchievementEvents.notifyStoryProgress(player);
+            RandomBookTag.markHeld(stack);
+            return;
+        }
+        if (alt.isEmpty()) alt = RandomBookFactory.pickUnseenForWorld(data, seed);
         if (alt.isPresent()) {
             RandomBookFactory.replaceStackContent(stack, alt.get());
-            data.markRandomBookSeen(alt.get().book().basename(), alt.get().variantIndex());
-            data.markRandomBookVariantEverRead(alt.get().book().basename(), alt.get().variantIndex()); // monotonic — feeds loot chance
+            markRandomBookHeld(player, data, alt.get().book().basename(), alt.get().variantIndex());
             LOGGER.info("[DungeonTrain] RandomBook: swapped seen {} v{} -> {} v{} (held by {})",
                 id.basename(), id.variantIndex(),
                 alt.get().book().basename(), alt.get().variantIndex(),
@@ -426,6 +439,19 @@ public final class NarrativeBookEvents {
         // Stamp held even when the pool is empty and we left the stack as-is
         // — the player still held it; subsequent drops should burn.
         RandomBookTag.markHeld(stack);
+    }
+
+    /**
+     * Mark a random-book variant seen for the world and, for a clean run, in the player's lifetime record
+     * ({@link GlobalRandomBookProgress}) that "Faulthurst's Favourite" reads across worlds.
+     */
+    private static void markRandomBookHeld(ServerPlayer player, NarrativeProgressData data,
+                                           String basename, int variantIndex) {
+        data.markRandomBookSeen(basename, variantIndex);
+        data.markRandomBookVariantEverRead(basename, variantIndex); // monotonic — feeds shared-book loot chance
+        if (!RunIntegrity.isCheated(player)) {
+            GlobalRandomBookProgress.add(player.getUUID(), basename, variantIndex);
+        }
     }
 
     /**

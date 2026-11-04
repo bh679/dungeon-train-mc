@@ -39,6 +39,10 @@ public final class EditorScreenState {
     private static Set<String> expandedGroups = Set.of();
     /** Whether the filter bar shows every filter, or only the ones in force on its one row. */
     private static boolean filtersExpanded;
+    /** Whether the detail pane's offset row is open — folded until its arrow button is pressed. */
+    private static boolean offsetRowOpen;
+    /** How many blocks each offset button moves the plot's blocks. */
+    private static int offsetDistance = OffsetControls.DEFAULT_DISTANCE;
     /**
      * The Nav tab's picked tile, or null for "wherever the player is". Null rather than a default
      * tile so a fresh screen opens on the area being stood in, whichever that turns out to be
@@ -134,6 +138,15 @@ public final class EditorScreenState {
 
     public static void toggleFilters() {
         filtersExpanded = !filtersExpanded;
+    }
+    public static boolean offsetRowOpen() { return offsetRowOpen; }
+    public static void toggleOffsetRow() {
+        offsetRowOpen = !offsetRowOpen;
+    }
+    public static int offsetDistance() { return offsetDistance; }
+    /** Set the offset step, held to what the buttons take; anything outside that is ignored. */
+    public static void setOffsetDistance(int next) {
+        if (OffsetControls.isDistance(next)) offsetDistance = next;
     }
     public static String creatorReview() { return creatorReview; }
     public static boolean creatorStarred() { return creatorStarred; }

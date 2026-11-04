@@ -6,8 +6,6 @@ import games.brennan.dungeontrain.net.ClientActionPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveTakeoverClient.PollLine;
-import games.brennan.dungeontrain.perks.effects.archivist.ArchivistPerks;
-import games.brennan.dungeontrain.perks.effects.archivist.VoteWeight;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -158,9 +156,7 @@ public final class LiveTakeoverChat {
         UUID me = mc.getUser().getProfileId();
         PollLine poll = open;
         String pollId = poll == null ? null : poll.id();
-        // Vote Weight perk: the line counts 1 + rank times (the relay tallies it).
-        int weight = VoteWeight.weight(games.brennan.dungeontrain.perks.Perks.rank(mc.player, ArchivistPerks.VOTE_WEIGHT));
-        LiveFeedClient.chatSend(LiveChatBridge.base(LiveStreamController.get().streaming()), me, mc.getUser().getName(), choice, weight,
+        LiveFeedClient.chatSend(LiveChatBridge.base(LiveStreamController.get().streaming()), me, mc.getUser().getName(), choice,
                 LiveChatBridge.room())
             .thenAcceptAsync(r -> {
                 if (mc.player == null) return;

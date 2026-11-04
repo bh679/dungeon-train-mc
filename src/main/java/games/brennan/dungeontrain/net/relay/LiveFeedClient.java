@@ -539,7 +539,7 @@ public final class LiveFeedClient {
     /** A plain claim: no takeover choice or ticket yet. */
     public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
                                                   LiveClaimInfo info, @Nullable Life life) {
-        return claim(uuid, name, eyeId, info, life, false, null, null, 0L, 0L);
+        return claim(uuid, name, eyeId, info, life, false, null, null);
     }
 
     /**
@@ -547,22 +547,12 @@ public final class LiveFeedClient {
      * the claim reads with {@link LiveTakeoverClient#parseBlocked}); {@code takeover} is the player's
      * "Take over" past the holder's protected minutes, {@code ticket} an approved takeover vote's pass,
      * {@code takeoverTicket} a won dead streamer's takeover ({@link #acceptTakeover}). Either ticket carries
-     * the claim past the relay's tenure check, once. {@code takeoverExtraMs} / {@code holderVoteExtraMs}
-     * are the Live Eye Safe Duration perk's extra protected minutes, added by the relay to its two windows.
+     * the claim past the relay's tenure check, once.
      */
     public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
                                                   LiveClaimInfo info, @Nullable Life life,
                                                   boolean takeover, @Nullable String ticket,
-                                                  @Nullable String takeoverTicket,
-                                                  long takeoverExtraMs, long holderVoteExtraMs) {
-        return post("/live/claim", claimBody(uuid, name, eyeId, info, life, takeover, ticket, takeoverTicket,
-            takeoverExtraMs, holderVoteExtraMs));
-    }
-
-    /** The claim's request body. Package-private for tests. */
-    static JsonObject claimBody(UUID uuid, String name, String eyeId, LiveClaimInfo info, @Nullable Life life,
-                                boolean takeover, @Nullable String ticket, @Nullable String takeoverTicket,
-                                long takeoverExtraMs, long holderVoteExtraMs) {
+                                                  @Nullable String takeoverTicket) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
@@ -584,10 +574,7 @@ public final class LiveFeedClient {
             body.addProperty("versionDot", info.versionDot());
             body.addProperty("chat", info.chat());
         }
-        // Live Eye Safe Duration perk: extra protected time, half per window. An older relay ignores them.
-        if (takeoverExtraMs > 0) body.addProperty("takeoverExtraMs", takeoverExtraMs);
-        if (holderVoteExtraMs > 0) body.addProperty("holderVoteExtraMs", holderVoteExtraMs);
-        return body;
+        return post("/live/claim", body);
     }
 
     @Nullable
@@ -756,43 +743,19 @@ public final class LiveFeedClient {
 
     /** Post one in-game line into the stream's Discord chat as this player. */
     public static CompletableFuture<Result> chatSend(String base, UUID uuid, String name, String content) {
-        return chatSend(base, uuid, name, content, 1, null);
+        return chatSend(base, uuid, name, content, null);
     }
 
     /** {@link #chatSend(String, UUID, String, String)} into one stream's room ({@link #chat(String, long, String)}). */
     public static CompletableFuture<Result> chatSend(String base, UUID uuid, String name, String content, @Nullable String room) {
-        return chatSend(base, uuid, name, content, 1, room);
-    }
-
-    /**
-     * {@link #chatSend(String, UUID, String, String)} with the Vote Weight perk's {@code weight}, sent
-     * only above 1: the relay counts a takeover vote line that many times (an older relay once).
-     */
-    public static CompletableFuture<Result> chatSend(String base, UUID uuid, String name, String content, int weight) {
-        return chatSend(base, uuid, name, content, weight, null);
-    }
-
-    /** Both: a weighted line into one stream's room. */
-    public static CompletableFuture<Result> chatSend(String base, UUID uuid, String name, String content, int weight,
-                                                     @Nullable String room) {
-        return post(base, "/live/chat/send", chatSendBody(uuid, name, content, weight, room));
+        return post(base, "/live/chat/send", chatSendBody(uuid, name, content, room));
     }
 
     static JsonObject chatSendBody(UUID uuid, String name, String content, @Nullable String room) {
-        return chatSendBody(uuid, name, content, 1, room);
-    }
-
-    /** The chat line's request body. Package-private for tests. */
-    static JsonObject chatSendBody(UUID uuid, String name, String content, int weight) {
-        return chatSendBody(uuid, name, content, weight, null);
-    }
-
-    static JsonObject chatSendBody(UUID uuid, String name, String content, int weight, @Nullable String room) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
         body.addProperty("content", content);
-        if (weight > 1) body.addProperty("weight", weight);
         return withRoom(body, room);
     }
 
@@ -1078,8 +1041,18 @@ public final class LiveFeedClient {
         return post("/live/died", body);
     }
 
-    /** A dead streamer's stream on offer: {@code id} to accept it, {@code from} who died, open {@code untilMs} more. */
-    public record Takeover(String id, String from, long untilMs) {}
+    /** Why a stream is on offer: its streamer died, or took the Live Eye off. */
+    public static final String TAKEOVER_REMOVED = "removed";
+
+    /**
+     * A stream on offer: {@code id} to accept it, {@code from} whose it was, open {@code untilMs} more;
+     * {@code removed} when they took the Live Eye off rather than died.
+     */
+    public record Takeover(String id, String from, long untilMs, boolean removed) {
+        public Takeover(String id, String from, long untilMs) {
+            this(id, from, untilMs, false);
+        }
+    }
 
     /** The {@code takeover} offer in a status body, or null (none, or from an older relay). */
     @Nullable
@@ -1095,7 +1068,7 @@ public final class LiveFeedClient {
             return null;
         }
         if (until <= 0) return null;
-        return new Takeover(id, LiveChatRules.clean(str(t, "from"), 32), until);
+        return new Takeover(id, LiveChatRules.clean(str(t, "from"), 32), until, TAKEOVER_REMOVED.equals(str(t, "reason")));
     }
 
     /** First to accept wins: 200 {@code {ticket}}; 409 {@code taken} / {@code gone} for everyone after. */
@@ -1174,7 +1147,7 @@ public final class LiveFeedClient {
     /** As above; {@code secondSlot}: a TV here shows the second stream too, so the viewer counts on that slot as well. */
     public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel, @Nullable Life ranked,
                                                    @Nullable String name, boolean headTv, boolean secondSlot) {
-        String path = statusPath(viewer, ranked, name, headTv, secondSlot);
+        String path = withRemovedOffer(statusPath(viewer, ranked, name, headTv, secondSlot));
         HttpRequest req = HttpRequest.newBuilder(URI.create(viewerBase(channel) + path))
             .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
         return send(RELAY, req);
@@ -1212,6 +1185,14 @@ public final class LiveFeedClient {
         if (viewer == null || ranked == null || name == null || name.isBlank()) return path;
         path += "&name=" + java.net.URLEncoder.encode(name, java.nio.charset.StandardCharsets.UTF_8);
         return headTv ? path + "&head=1" : path;
+    }
+
+    /**
+     * {@code removedOffer=1}: this mod can word a takeover offer whose streamer took the Live Eye off
+     * ({@link Takeover#removed}), so the relay offers those too; older mods only ever hear of deaths.
+     */
+    static String withRemovedOffer(String path) {
+        return path + (path.indexOf('?') < 0 ? "?" : "&") + "removedOffer=1";
     }
 
     private static String statusPathBase(@Nullable UUID viewer, @Nullable Life ranked) {

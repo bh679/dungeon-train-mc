@@ -216,6 +216,40 @@
       ]
     }
   },
+  "chat.dungeontrain.photo_progress.named": {
+    "1": {
+      "label": "the name of the camera advancement the photo counted toward, shown as a hoverable link",
+      "examples": [
+        "[Nature Documentary]"
+      ]
+    },
+    "2": {
+      "label": "how many the player has so far",
+      "examples": [
+        "4"
+      ]
+    },
+    "3": {
+      "label": "how many the advancement needs",
+      "examples": [
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_progress.named_count": {
+    "1": {
+      "label": "the name of the camera advancement the photo counted toward, shown as a hoverable link",
+      "examples": [
+        "[Field Guide]"
+      ]
+    },
+    "2": {
+      "label": "how many photos of this kind the player has taken so far (the target is kept secret)",
+      "examples": [
+        "12"
+      ]
+    }
+  },
   "chat.dungeontrain.selfie_hint.not_selfie": {
     "1": {
       "label": "the key the player has bound to Toggle Perspective, which flips the camera into selfie mode",
@@ -1318,6 +1352,24 @@
         "Steve",
         "Alex",
         "Notch"
+      ]
+    }
+  },
+  "item.dungeontrain.player_album.name_numbered": {
+    "1": {
+      "label": "the player whose photo album it is",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    },
+    "2": {
+      "label": "which of their albums it is, counting from 1 (always 2 or more)",
+      "examples": [
+        "2",
+        "3",
+        "17"
       ]
     }
   },
@@ -15795,6 +15847,21 @@
       ]
     }
   },
+  "chat.dungeontrain.live.takeover.offer.removed": {
+    "1": {
+      "label": "the player name of the streamer who took their Live Eye off",
+      "examples": [
+        "Steve",
+        "brennan_hatton"
+      ]
+    },
+    "2": {
+      "label": "the clickable [Take the Live Eye] button (chat.dungeontrain.live.takeover.button)",
+      "examples": [
+        "[Take the Live Eye]"
+      ]
+    }
+  },
   "chat.dungeontrain.live.took_over": {
     "1": {
       "label": "the player name of the broadcaster who was cut off",
@@ -15833,6 +15900,50 @@
       "label": "the relay's estimate of the outage, in whole minutes",
       "examples": [
         "5"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_chat.translation": {
+    "1": {
+      "label": "the chat line's translation into the reader's language, as typed by the relay",
+      "examples": [
+        "the creeper got me again"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_chat.translation.named": {
+    "1": {
+      "label": "the name of the player or viewer who wrote the line",
+      "examples": [
+        "Alice"
+      ]
+    },
+    "2": {
+      "label": "the chat line's translation into the reader's language",
+      "examples": [
+        "the creeper got me again"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_chat.translation.original": {
+    "1": {
+      "label": "the line as it was typed, in its own language",
+      "examples": [
+        "苦力怕又炸了我一次"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_chat.translation.on": {
+    "1": {
+      "label": "the reader's language, named in itself",
+      "examples": [
+        "Deutsch"
+      ]
+    },
+    "2": {
+      "label": "the clickable settings path, already translated (chat.dungeontrain.live_chat.translation.path)",
+      "examples": [
+        "Options / Dungeon Train / Stream / Chat translations"
       ]
     }
   },
@@ -17319,598 +17430,6 @@
       ]
     }
   },
-  "gui.dungeontrain.rewards.give.month": {
-    "1": {
-      "label": "a month name, short or full",
-      "examples": [
-        "Nov",
-        "December"
-      ]
-    }
-  },
-  "gui.dungeontrain.rewards.give.amount": {
-    "1": {
-      "label": "the gift amount, figure only",
-      "examples": [
-        "$94",
-        "$140"
-      ]
-    }
-  },
-  "gui.dungeontrain.rewards.thanks.later": {
-    "1": {
-      "label": "a community reward's name",
-      "examples": [
-        "Quicker Streams",
-        "Replays Kept"
-      ]
-    },
-    "2": {
-      "label": "the day and short month that gift starts",
-      "examples": [
-        "14 Nov",
-        "3 Dec"
-      ]
-    }
-  },
-  "gui.dungeontrain.rewards.quicker_streams.line": {
-    "1": {
-      "label": "seconds viewers are behind the streamer normally",
-      "examples": [
-        "30",
-        "28"
-      ]
-    },
-    "2": {
-      "label": "seconds behind with Quicker Streams on",
-      "examples": [
-        "6",
-        "4"
-      ]
-    }
-  },
-  "chat.dungeontrain.live.viewer_died": {
-    "1": {
-      "label": "the dead player's death message, as vanilla words it",
-      "examples": [
-        "Steve was slain by Zombie",
-        "Alex fell from a high place"
-      ]
-    }
-  },
-  "chat.dungeontrain.perks.active_gained": {
-    "1": {
-      "label": "the name of the cosmic apple just eaten",
-      "examples": [
-        "Cosmic Apple",
-        "Violet Core"
-      ]
-    },
-    "2": {
-      "label": "perk points that apple gave",
-      "examples": [
-        "1",
-        "10"
-      ]
-    },
-    "3": {
-      "label": "active perk points the player now has this life",
-      "examples": [
-        "1",
-        "11"
-      ]
-    }
-  },
-  "chat.dungeontrain.perks.ready_to_spend": {
-    "1": {
-      "label": "active perk points ready to spend",
-      "examples": [
-        "1",
-        "4"
-      ]
-    }
-  },
-  "chat.dungeontrain.perks.unlock_gained": {
-    "1": {
-      "label": "unlock points just earned",
-      "examples": [
-        "1",
-        "3"
-      ]
-    },
-    "2": {
-      "label": "unspent unlock points in total",
-      "examples": [
-        "12",
-        "40"
-      ]
-    }
-  },
-  "chat.dungeontrain.live_room.now": {
-    "1": {
-      "label": "which of the two live streams: 1 or 2",
-      "examples": [
-        "1",
-        "2"
-      ]
-    },
-    "2": {
-      "label": "the Minecraft player name of that stream's streamer",
-      "examples": [
-        "Alice",
-        "Bo"
-      ]
-    }
-  },
-  "chat.dungeontrain.live_room.now_unnamed": {
-    "1": {
-      "label": "which of the two live streams: 1 or 2",
-      "examples": [
-        "1",
-        "2"
-      ]
-    }
-  },
-  "gui.dungeontrain.live_room.stream": {
-    "1": {
-      "label": "which of the two live streams: 1 or 2",
-      "examples": [
-        "1",
-        "2"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.unlock_points": {
-    "1": {
-      "label": "how many unlock points are unspent",
-      "examples": [
-        "0",
-        "7"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.points": {
-    "1": {
-      "label": "how many active perk points are unspent",
-      "examples": [
-        "1",
-        "3"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.point_to_spend": {
-    "1": {
-      "label": "how many active perk points are waiting",
-      "examples": [
-        "1",
-        "2"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.tier_cost": {
-    "1": {
-      "label": "the perk's tier",
-      "examples": [
-        "1",
-        "3"
-      ]
-    },
-    "2": {
-      "label": "unlock points the perk costs",
-      "examples": [
-        "1",
-        "10"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.per_point": {
-    "1": {
-      "label": "what one point in the perk does",
-      "examples": [
-        "+2 max health",
-        "one more shot"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.needs": {
-    "1": {
-      "label": "the name of the perk that must be unlocked first",
-      "examples": [
-        "Health",
-        "Trade Values"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.locked_points": {
-    "1": {
-      "label": "unlock points the player has",
-      "examples": [
-        "3",
-        "12"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.locked_short": {
-    "1": {
-      "label": "unlock points the player has",
-      "examples": [
-        "3",
-        "0"
-      ]
-    },
-    "2": {
-      "label": "unlock points the perk costs",
-      "examples": [
-        "5",
-        "10"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.unlocked_points": {
-    "1": {
-      "label": "active points in the perk",
-      "examples": [
-        "0"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.active_points": {
-    "1": {
-      "label": "active points in the perk",
-      "examples": [
-        "1",
-        "10"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.links": {
-    "1": {
-      "label": "comma-separated names of the linked perks",
-      "examples": [
-        "Health, Armour",
-        "The Engine"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.hud_unlocked": {
-    "1": {
-      "label": "the perk's name",
-      "examples": [
-        "Health",
-        "Trade Values"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.hud_points": {
-    "1": {
-      "label": "the perk's name",
-      "examples": [
-        "Health"
-      ]
-    },
-    "2": {
-      "label": "active points in it now",
-      "examples": [
-        "3",
-        "10"
-      ]
-    }
-  },
-  "perk.dungeontrain.restock_villager.button": {
-    "1": {
-      "label": "restocks the player still has left with this villager this life",
-      "examples": [
-        "0",
-        "2"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.rank_cost": {
-    "1": {
-      "label": "active perk points the next rank costs",
-      "examples": [
-        "2",
-        "9"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.raise_limit": {
-    "1": {
-      "label": "Advancement Points one more unlock costs",
-      "examples": [
-        "1",
-        "3"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.points_of": {
-    "1": {
-      "label": "points in the perk",
-      "examples": [
-        "2",
-        "7"
-      ]
-    },
-    "2": {
-      "label": "most points the perk can hold",
-      "examples": [
-        "3",
-        "10"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.refused.gate": {
-    "1": {
-      "label": "Advancement Points that must be spent in total",
-      "examples": [
-        "100",
-        "200"
-      ]
-    },
-    "2": {
-      "label": "the perk point limit to go past",
-      "examples": [
-        "10",
-        "20"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.ap.one": {
-    "1": {
-      "label": "how many Advancement Points (one)",
-      "examples": [
-        "1"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.ap.other": {
-    "1": {
-      "label": "how many Advancement Points",
-      "examples": [
-        "0",
-        "5"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.card.locked": {
-    "1": {
-      "label": "the perk's tier",
-      "examples": [
-        "1",
-        "3"
-      ]
-    },
-    "2": {
-      "label": "a number of Advancement Points, already worded (\"1 Advancement Point\", \"5 Advancement Points\")",
-      "examples": [
-        "1 Advancement Point",
-        "3 Advancement Points"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.card.you_hold": {
-    "1": {
-      "label": "Advancement Points the player holds",
-      "examples": [
-        "0",
-        "2"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.card.points": {
-    "1": {
-      "label": "points in the perk now",
-      "examples": [
-        "0",
-        "3"
-      ]
-    },
-    "2": {
-      "label": "the most points it can hold (its unlock level)",
-      "examples": [
-        "1",
-        "10"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.card.next_cost": {
-    "1": {
-      "label": "Active Points the next point costs",
-      "examples": [
-        "1",
-        "4"
-      ]
-    },
-    "2": {
-      "label": "Active Points the player holds",
-      "examples": [
-        "0",
-        "3"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.card.click_add": {
-    "1": {
-      "label": "Active Points the next point costs",
-      "examples": [
-        "1",
-        "4"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.card.gate": {
-    "1": {
-      "label": "a number of Advancement Points, already worded (\"1 Advancement Point\", \"5 Advancement Points\")",
-      "examples": [
-        "40 Advancement Points"
-      ]
-    },
-    "2": {
-      "label": "the current most points a perk can hold",
-      "examples": [
-        "10",
-        "20"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.card.again_cost": {
-    "1": {
-      "label": "a number of Advancement Points, already worded (\"1 Advancement Point\", \"5 Advancement Points\")",
-      "examples": [
-        "2 Advancement Points"
-      ]
-    },
-    "2": {
-      "label": "Advancement Points the player holds",
-      "examples": [
-        "0",
-        "1"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.card.click_again": {
-    "1": {
-      "label": "a number of Advancement Points, already worded (\"1 Advancement Point\", \"5 Advancement Points\")",
-      "examples": [
-        "1 Advancement Point",
-        "3 Advancement Points"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.bar.tier": {
-    "1": {
-      "label": "the perk's tier",
-      "examples": [
-        "1",
-        "3"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.bar.engine.active": {
-    "1": {
-      "label": "points put into perks this life",
-      "examples": [
-        "0",
-        "7"
-      ]
-    },
-    "2": {
-      "label": "how many points the unlocked perks can hold",
-      "examples": [
-        "3",
-        "12"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.stat.unit.seconds": {
-    "1": {
-      "label": "a number of seconds",
-      "examples": [
-        "2",
-        "4.5"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.stat.unit.plain": {
-    "1": {
-      "label": "a number, maybe with a sign",
-      "examples": [
-        "3",
-        "+1",
-        "-2"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.stat.unit.percent": {
-    "1": {
-      "label": "a percentage number, without the % sign",
-      "examples": [
-        "5",
-        "80",
-        "12.5"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.stat.unit.minutes": {
-    "1": {
-      "label": "a number of minutes",
-      "examples": [
-        "10",
-        "12.5"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.stat.unit.multiplier": {
-    "1": {
-      "label": "a multiplier number",
-      "examples": [
-        "2",
-        "1.5"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.stat.unit.blocks": {
-    "1": {
-      "label": "a number of blocks",
-      "examples": [
-        "0.1",
-        "1.5"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.stat.works_on.groups": {
-    "1": {
-      "label": "how many enchantment groups (3 to 9)",
-      "examples": [
-        "3",
-        "7"
-      ]
-    }
-  },
-  "chat.dungeontrain.live_chat.translation": {
-    "1": {
-      "label": "the chat line's translation into the reader's language, as typed by the relay",
-      "examples": [
-        "the creeper got me again"
-      ]
-    }
-  },
-  "chat.dungeontrain.live_chat.translation.named": {
-    "1": {
-      "label": "the name of the player or viewer who wrote the line",
-      "examples": [
-        "Alice"
-      ]
-    },
-    "2": {
-      "label": "the chat line's translation into the reader's language",
-      "examples": [
-        "the creeper got me again"
-      ]
-    }
-  },
-  "chat.dungeontrain.live_chat.translation.original": {
-    "1": {
-      "label": "the line as it was typed, in its own language",
-      "examples": [
-        "苦力怕又炸了我一次"
-      ]
-    }
-  },
-  "chat.dungeontrain.live_chat.translation.on": {
-    "1": {
-      "label": "the reader's language, named in itself",
-      "examples": [
-        "Deutsch"
-      ]
-    },
-    "2": {
-      "label": "the clickable settings path, already translated (chat.dungeontrain.live_chat.translation.path)",
-      "examples": [
-        "Options / Dungeon Train / Stream / Chat translations"
-      ]
-    }
-  },
   "gui.dungeontrain.rewards.status.on_for_seconds.one": {
     "1": {
       "label": "how many seconds the reward has left (1)",
@@ -18013,71 +17532,141 @@
       ]
     }
   },
-  "gui.dungeontrain.perks.death.question": {
+  "gui.dungeontrain.rewards.give.month": {
     "1": {
-      "label": "points put into perks this life",
+      "label": "a month name, short or full",
       "examples": [
-        "3",
-        "24"
+        "Nov",
+        "December"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.give.amount": {
+    "1": {
+      "label": "the gift amount, figure only",
+      "examples": [
+        "$94",
+        "$100"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.raised": {
+    "1": {
+      "label": "a Community Reward's name",
+      "examples": [
+        "Two Streams",
+        "Quicker Streams"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.raised_many": {
+    "1": {
+      "label": "two or more Community Reward names, comma separated",
+      "examples": [
+        "Two Streams, Quicker Streams",
+        "Two Streams, HD Streams"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.thanks.later": {
+    "1": {
+      "label": "a community reward's name",
+      "examples": [
+        "Quicker Streams",
+        "Replays Kept"
       ]
     },
     "2": {
-      "label": "how many perks held those points",
+      "label": "the day and short month that gift starts",
       "examples": [
-        "1",
-        "5"
+        "14 Nov",
+        "3 Dec"
       ]
     }
   },
-  "gui.dungeontrain.perks.story.earned": {
+  "gui.dungeontrain.rewards.quicker_streams.line": {
     "1": {
-      "label": "how many advancements earned this life, already worded (\"4 advancements\")",
+      "label": "seconds viewers are behind the streamer normally",
       "examples": [
-        "1 advancement",
-        "4 advancements"
+        "30",
+        "28"
       ]
-    }
-  },
-  "gui.dungeontrain.perks.story.earned_points": {
-    "1": {
-      "label": "the unlock points they earned, already worded (\"7 unlock points\")",
+    },
+    "2": {
+      "label": "seconds behind with Quicker Streams on",
       "examples": [
-        "1 unlock point",
-        "7 unlock points"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.story.advancements.one": {
-    "1": {
-      "label": "advancements earned this life",
-      "examples": [
-        "1"
-      ]
-    }
-  },
-  "gui.dungeontrain.perks.story.advancements.other": {
-    "1": {
-      "label": "advancements earned this life",
-      "examples": [
-        "0",
+        "6",
         "4"
       ]
     }
   },
-  "gui.dungeontrain.perks.story.points.one": {
+  "chat.dungeontrain.live.viewer_died": {
     "1": {
-      "label": "unlock points earned this life",
+      "label": "the dead player's death message, as vanilla words it",
       "examples": [
-        "1"
+        "Steve was slain by Zombie",
+        "Alex fell from a high place"
       ]
     }
   },
-  "gui.dungeontrain.perks.story.points.other": {
+  "chat.dungeontrain.live_room.now": {
     "1": {
-      "label": "unlock points earned this life",
+      "label": "which of the two live streams: 1 or 2",
       "examples": [
-        "0",
-        "7"
+        "1",
+        "2"
+      ]
+    },
+    "2": {
+      "label": "the Minecraft player name of that stream's streamer",
+      "examples": [
+        "Alice",
+        "Bo"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_room.now_unnamed": {
+    "1": {
+      "label": "which of the two live streams: 1 or 2",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.live_room.stream": {
+    "1": {
+      "label": "which of the two live streams: 1 or 2",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.enchant_damage.undead": {
+    "1": {
+      "label": "the extra attack damage a weapon's enchantment adds against these mobs",
+      "examples": [
+        "2.5",
+        "12.5"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.enchant_damage.arthropods": {
+    "1": {
+      "label": "the extra attack damage a weapon's enchantment adds against these mobs",
+      "examples": [
+        "2.5",
+        "12.5"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.enchant_damage.aquatic": {
+    "1": {
+      "label": "the extra attack damage a weapon's enchantment adds against these mobs",
+      "examples": [
+        "2.5",
+        "12.5"
       ]
     }
   }

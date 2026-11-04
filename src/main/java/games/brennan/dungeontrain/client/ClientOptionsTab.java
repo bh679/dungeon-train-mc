@@ -190,12 +190,16 @@ public enum ClientOptionsTab {
         LIVE_FEED_VIEWING("gui.dungeontrain.options.live_feed_viewing"),
         /** What a worn TV shows while two streams are live: both, or one of them. */
         WORN_TV_STREAMS("gui.dungeontrain.options.worn_tv_streams"),
+        /** What the streamer's own box shows while someone else is live too: theirs, the other, both or none. */
+        STREAMER_BOX_STREAMS("gui.dungeontrain.options.streamer_box_streams"),
         /** The broadcast's picture size; the preview shows it. */
         STREAM_SIZE("gui.dungeontrain.options.stream_size"),
         /** Slower, smaller encoding: less upload for frame rate. Off by default; also on Performance. */
         STREAM_SAVE_BANDWIDTH("gui.dungeontrain.options.stream_save_bandwidth"),
         /** The live feed pinned top-right on the HUD while you watch. */
         HEAD_VIEWER_SIZE("gui.dungeontrain.options.head_viewer_size"),
+        /** Who is live, in a line under each pane of that pinned feed. On by default. */
+        HEAD_VIEWER_NAMES("gui.dungeontrain.options.head_viewer_names"),
         /** The same pinned feed while you stream; the preview outlines it. */
         HEAD_VIEWER_SIZE_STREAMING("gui.dungeontrain.options.head_viewer_size_streaming"),
 
@@ -362,9 +366,11 @@ public enum ClientOptionsTab {
                 rows.add(Row.TWITCH_HINT);
                 rows.add(Row.LIVE_FEED_VIEWING);
                 rows.add(Row.WORN_TV_STREAMS);
+                rows.add(Row.STREAMER_BOX_STREAMS);
                 rows.add(Row.STREAM_SIZE);
                 rows.add(Row.STREAM_SAVE_BANDWIDTH);
                 rows.add(Row.HEAD_VIEWER_SIZE);
+                rows.add(Row.HEAD_VIEWER_NAMES);
                 rows.add(Row.HEAD_VIEWER_SIZE_STREAMING);
             }
             case EDITOR -> {

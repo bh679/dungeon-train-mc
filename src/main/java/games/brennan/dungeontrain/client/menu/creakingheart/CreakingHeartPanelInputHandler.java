@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.menu.creakingheart;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.ClientStages;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
+import games.brennan.dungeontrain.client.menu.WorldPanelInput;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
 import games.brennan.dungeontrain.client.menu.EditorSaveStatus;
 import games.brennan.dungeontrain.client.menu.MenuClickModifiers;
@@ -18,9 +19,7 @@ import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -42,53 +41,32 @@ import java.util.List;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class CreakingHeartPanelInputHandler {
 
-    private static boolean pressArmed;
-    private static boolean pressShift;
-    private static int pressButton;
     /** Ticks until the editor's unsaved list is asked for again after an edit; 0 when none is pending. */
     private static int saveStatusRefreshTicks;
     private static final int SAVE_STATUS_REFRESH_DELAY = 10;
 
+    private static final WorldPanelInput<CreakingHeartPanelLayout.Hit> INPUT = new WorldPanelInput<>(
+        CreakingHeartPanel::hovered, hit -> hit.kind() == CreakingHeartPanelLayout.Kind.NONE,
+        CreakingHeartPanelInputHandler::shouldHandle, true, CreakingHeartPanelInputHandler::dispatch);
+
     private CreakingHeartPanelInputHandler() {}
 
+    /** The press: cancels the world interaction and arms when the crosshair is on a panel cell. */
     @SubscribeEvent
     public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
-        if (!shouldHandle()) return;
-        if (CreakingHeartPanel.hovered().kind() == CreakingHeartPanelLayout.Kind.NONE) return;
-        event.setCanceled(true);
-        event.setSwingHand(false);
-        Minecraft mc = Minecraft.getInstance();
-        pressArmed = true;
-        pressButton = event.isUseItem() ? GLFW.GLFW_MOUSE_BUTTON_RIGHT : GLFW.GLFW_MOUSE_BUTTON_LEFT;
-        long window = mc.getWindow().getWindow();
-        pressShift = GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS
-            || GLFW.glfwGetKey(window, GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS;
-        if (mc.player != null) {
-            mc.hitResult = BlockHitResult.miss(mc.player.getEyePosition(), Direction.UP, mc.player.blockPosition());
-        }
-        if (mc.gameMode != null) mc.gameMode.stopDestroyBlock();
+        INPUT.onInteraction(event);
     }
 
+    /** The release of the armed button fires the hit under the crosshair. */
     @SubscribeEvent
     public static void onMouseButton(InputEvent.MouseButton.Pre event) {
-        if (!shouldHandle()) {
-            pressArmed = false;
-            return;
-        }
-        if (Minecraft.getInstance().screen != null) return;
-        int btn = event.getButton();
-        if (event.getAction() != GLFW.GLFW_RELEASE || !pressArmed || btn != pressButton) return;
-        pressArmed = false;
-        boolean shift = pressShift || (event.getModifiers() & GLFW.GLFW_MOD_SHIFT) != 0;
-        CreakingHeartPanelLayout.Hit hit = CreakingHeartPanel.hovered();
-        if (hit.kind() != CreakingHeartPanelLayout.Kind.NONE) dispatch(hit, shift, btn);
+        INPUT.onMouseButton(event);
     }
 
+    /** Belt and braces: a left-click-block that slipped past the press cancel must not start block damage. */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        if (shouldHandle() && CreakingHeartPanel.hovered().kind() != CreakingHeartPanelLayout.Kind.NONE) {
-            event.setCanceled(true);
-        }
+        INPUT.onLeftClickBlock(event);
     }
 
     /** Closes the panel when the player walks away, the heart is gone, or the world unloads. */

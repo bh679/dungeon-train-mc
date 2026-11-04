@@ -12,7 +12,7 @@ public record InventoryEditorLayout(
     Rect tabs, Rect panel,
     Rect filter, Rect categoryStrip, Rect typeStrip, Rect grid,
     Rect header, Rect preview, Rect sheet, Rect icons, Rect settings, Rect test,
-    int tile, Rect testIcons
+    int tile, Rect testIcons, Rect offsetIcons
 ) {
 
     /** An axis-aligned rectangle in logical pixels. */
@@ -125,6 +125,7 @@ public record InventoryEditorLayout(
         int tile = panel.h() < 210 ? TILE_SMALL : TILE_LARGE;
         return new InventoryEditorLayout(tabs, panel, filter, category, strip, grid,
             header, preview, sheet, icons, settings, test, tile,
+            new Rect(right.x(), icons.bottom(), right.w(), 0),
             new Rect(right.x(), icons.bottom(), right.w(), 0));
     }
 
@@ -136,11 +137,32 @@ public record InventoryEditorLayout(
      * author came to the pane for while testing.
      */
     public InventoryEditorLayout withTestRow() {
-        int take = ICONS_H + 1;
-        Rect row = new Rect(icons.x(), icons.bottom() + 1, icons.w(), ICONS_H);
-        Rect shifted = new Rect(preview.x(), preview.y() + take, preview.w(), Math.max(0, preview.h() - take));
+        Rect row = rowUnder(icons);
         return new InventoryEditorLayout(tabs, panel, filter, categoryStrip, typeStrip, grid,
-            header, shifted, sheet, icons, settings, test, tile, row);
+            header, previewUnder(row), sheet, icons, settings, test, tile, row, offsetIcons);
+    }
+
+    /**
+     * This layout with the offset row the toolbar's arrow opens, straight under the editing row's
+     * {@code cell}-sized buttons and as tall as them, so it reads as that button's; made room for
+     * the way {@link #withTestRow} is. Never both: the offset row gives way while a test runs.
+     */
+    public InventoryEditorLayout withOffsetRow(int cell) {
+        // Under the buttons as drawn, not the row's full height: a toolbar squeezed to smaller
+        // buttons would otherwise leave a gap between the arrow and the row it opened.
+        Rect row = new Rect(icons.x(), icons.y() + cell + 1, icons.w(), cell);
+        return new InventoryEditorLayout(tabs, panel, filter, categoryStrip, typeStrip, grid,
+            header, previewUnder(row), sheet, icons, settings, test, tile, testIcons, row);
+    }
+
+    private static Rect rowUnder(Rect above) {
+        return new Rect(above.x(), above.bottom() + 1, above.w(), ICONS_H);
+    }
+
+    /** The model, its top moved down to clear {@code row}; its bottom stays where it was. */
+    private Rect previewUnder(Rect row) {
+        int top = Math.max(preview.y(), row.bottom() + 2);
+        return new Rect(preview.x(), top, preview.w(), Math.max(0, preview.bottom() - top));
     }
 
     private static int clamp(int v, int lo, int hi) {

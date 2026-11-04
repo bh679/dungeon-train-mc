@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.CinematicPreloadGate;
+import games.brennan.dungeontrain.client.ReplayPlaybackGuard;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -45,6 +46,9 @@ public record CinematicPreloadBeginPacket(int placeTimeoutTicks) implements Cust
      * (mirrors {@code CinematicIntroPacket.handle}).
      */
     public static void handle(CinematicPreloadBeginPacket packet, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> CinematicPreloadGate.arm(packet.placeTimeoutTicks()));
+        ctx.enqueueWork(() -> {
+            if (ReplayPlaybackGuard.skipsCinematic("spawn loading screen")) return;
+            CinematicPreloadGate.arm(packet.placeTimeoutTicks());
+        });
     }
 }

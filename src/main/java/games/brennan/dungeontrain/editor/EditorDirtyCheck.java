@@ -639,82 +639,41 @@ public final class EditorDirtyCheck {
     }
 
     /**
-     * Translate a {@link Template} into the {@link DirtyEntry#modelId()}
-     * key the dirty scan produces — so save-all can membership-test
-     * {@link #unsavedModelIds} directly. Returns {@code null} for
-     * {@link games.brennan.dungeontrain.template.TemplateKind#PART} and
-     * {@link games.brennan.dungeontrain.template.TemplateKind#WHOLE_CARRIAGE}: the scan passes
-     * don't cover parts, and whole carriages have no editor plot to scan at all — they live in
-     * builder worlds, whose dirty tracking is {@code BuilderDirtyCheck}. Callers must keep their
-     * existing filter (e.g. empty-plot) for those kinds.
+     * The {@link DirtyEntry#modelId()} key the dirty scan produces for {@code model} —
+     * {@link Template#dirtyKey()} — so save-all can membership-test {@link #unsavedModelIds}
+     * directly. Null for parts and official Lost City buildings, which no scan pass covers; callers
+     * keep their existing filter (e.g. empty-plot) for those.
      */
     public static String dirtyKeyFor(Template model) {
-        return switch (model.kind()) {
-            case CARRIAGE, CONTENTS -> model.id();
-            case TRACK -> "track." + model.variantName();
-            case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL ->
-                model.id() + "." + model.variantName();
-            // Template.PortalRoom has no variantName of its own — it would answer its id, giving
-            // portal_room.portal_room, which no scan row carries. scanPortalRooms keys by the name.
-            case PORTAL_ROOM -> model instanceof Template.PortalRoom room
-                ? "portal_room." + room.name()
-                : model.id() + "." + model.variantName();
-            // Whole rows are keyed by the bare id under their own category ids — see scanWhole.
-            case WHOLE_CARRIAGE, CARRIAGE_GROUP, WHOLE_HALF -> model.id();
-            // Neither is covered by a scan pass yet.
-            case CHUNK_FRAME -> ChunkFrameEditor.MODEL_ID + "." + model.variantName();
-            case BUILDING -> games.brennan.dungeontrain.building.Buildings.MODEL_ID + "." + model.variantName();
-            case STAGED -> model.variantName();
-            case PART, LOST_CITY -> null;
-        };
+        return model.dirtyKey().orElse(null);
     }
 
     /**
      * As {@link #dirtyKeyFor(Template)}, from the kind a <em>relay download</em> carries — which is
-     * all a build has before it is installed and the registries have caught up, so there is no
-     * {@link Template} to ask.
+     * all a build has before it is installed, so the three strings are resolved to a template first
+     * ({@link RelayTemplates#resolve}).
      *
-     * <p>Read by the download path to answer one question before it writes: does the template this
-     * build is about to land on have in-world edits nobody has saved? The strings have to be exactly
-     * the {@link DirtyEntry#modelId()} keys the scan passes emit, so they are built from the same
-     * {@link PillarSection}, {@link PillarAdjunct} and {@link TunnelVariant} ids those passes use
-     * rather than written out as literals.</p>
+     * <p>A carriage group answers its id here, as its Whole row does: the scan does emit group rows
+     * (under {@code whole_group}). The download path still never prompts for one, because
+     * {@code BuilderRelayKinds.categoryIdFor} has no editor category for a group — that is the
+     * fact that decides it, not a second key.</p>
      *
-     * @return null when there is nothing to compare against — a kind with no plot of its own (a part
-     *         is stamped inside the carriages plots, a carriage group is a builder-world build), or a
-     *         track sub-kind this build of the mod does not know. A null key means no prompt.
+     * @return null when there is nothing to compare against — a kind with no plot of its own, or
+     *         a track sub-kind this build of the mod does not know. A null key means no prompt.
      */
     public static String dirtyKeyFor(BuilderPhotoPaths.Kind kind, String subKind, String id) {
-        if (kind == null || id == null || id.isEmpty()) return null;
-        return switch (kind) {
-            case CARRIAGE, CONTENTS -> id;
-            case PORTAL_ROOM -> "portal_room." + id;
-            case TRACK -> trackDirtyKeyFor(TrackKind.fromId(subKind), id);
-            case CHUNK_FRAME -> ChunkFrameEditor.MODEL_ID + "." + id;
-            case BUILDING -> games.brennan.dungeontrain.building.Buildings.MODEL_ID + "." + id;
-            case PART, CARRIAGE_GROUP, LOST_CITY -> null;
-        };
+        return RelayTemplates.resolve(kind, subKind, id).flatMap(Template::dirtyKey).orElse(null);
     }
 
     /**
-     * The {@link EditorPlotSnapshots} key a track-side plot's baseline is stored under — the
-     * inverse of the scan passes' {@code key = …} lines, so a sidecar edit on a
+     * The {@link EditorPlotSnapshots} key a track-side plot's baseline is stored under —
+     * {@link Template#snapshotKey()} of the kind's template, so a sidecar edit on a
      * {@code BlockVariantPlot.TrackPlot} lands on the row the scan will read.
      */
     @Nullable
     public static String snapshotKeyFor(@Nullable TrackKind kind, String name) {
         if (kind == null || name == null) return null;
-        return switch (kind) {
-            case TILE -> TrackEditor.snapshotKey(name);
-            case PILLAR_TOP -> PillarEditor.sectionSnapshotKey(PillarSection.TOP, name);
-            case PILLAR_MIDDLE -> PillarEditor.sectionSnapshotKey(PillarSection.MIDDLE, name);
-            case PILLAR_BOTTOM -> PillarEditor.sectionSnapshotKey(PillarSection.BOTTOM, name);
-            case ADJUNCT_STAIRS -> PillarEditor.adjunctSnapshotKey(PillarAdjunct.STAIRS, name);
-            case ADJUNCT_STAIRS_ENTRANCE -> PillarEditor.adjunctSnapshotKey(PillarAdjunct.STAIRS_ENTRANCE, name);
-            case TUNNEL_SECTION -> TunnelEditor.tunnelSnapshotKey(TunnelVariant.SECTION, name);
-            case TUNNEL_PORTAL -> TunnelEditor.tunnelSnapshotKey(TunnelVariant.PORTAL, name);
-            case PORTAL_ROOM -> PortalRoomEditor.snapshotKey(name);
-        };
+        return RelayTemplates.trackSide(kind, name).snapshotKey().orElse(null);
     }
 
     /**
@@ -724,47 +683,7 @@ public final class EditorDirtyCheck {
      */
     @Nullable
     static String snapshotKeyFor(String categoryId, String modelId) {
-        if (categoryId == null || modelId == null) return null;
-        switch (categoryId) {
-            case "carriages", "contents", "whole", "whole_group" -> {
-                return EditorPlotSnapshots.key(categoryId, modelId);
-            }
-            case "portals" -> {
-                int sep = modelId.indexOf('.');
-                return sep < 0 ? null : PortalRoomEditor.snapshotKey(modelId.substring(sep + 1));
-            }
-            case "tracks" -> {
-                int sep = modelId.indexOf('.');
-                if (sep < 0) return null;
-                String prefix = modelId.substring(0, sep);
-                String name = modelId.substring(sep + 1);
-                for (TrackKind kind : TrackKind.values()) {
-                    if (kind == TrackKind.PORTAL_ROOM) continue;
-                    String key = trackDirtyKeyFor(kind, name);
-                    if (key != null && key.equals(prefix + "." + name)) return snapshotKeyFor(kind, name);
-                }
-                return null;
-            }
-            default -> {
-                return null;
-            }
-        }
-    }
-
-    /** The {@link #dirtyKeyFor} arm for the track-side kinds, one key shape per editor. */
-    private static String trackDirtyKeyFor(TrackKind kind, String id) {
-        if (kind == null) return null;
-        return switch (kind) {
-            case TILE -> "track." + id;
-            case PILLAR_TOP -> "pillar_" + PillarSection.TOP.id() + "." + id;
-            case PILLAR_MIDDLE -> "pillar_" + PillarSection.MIDDLE.id() + "." + id;
-            case PILLAR_BOTTOM -> "pillar_" + PillarSection.BOTTOM.id() + "." + id;
-            case ADJUNCT_STAIRS -> "adjunct_" + PillarAdjunct.STAIRS.id() + "." + id;
-            case ADJUNCT_STAIRS_ENTRANCE -> "adjunct_" + PillarAdjunct.STAIRS_ENTRANCE.id() + "." + id;
-            case TUNNEL_SECTION -> "tunnel_" + TunnelVariant.SECTION.id() + "." + id;
-            case TUNNEL_PORTAL -> "tunnel_" + TunnelVariant.PORTAL.id() + "." + id;
-            case PORTAL_ROOM -> "portal_room." + id;
-        };
+        return TemplateDirtyKeys.parse(categoryId, modelId).flatMap(Template::snapshotKey).orElse(null);
     }
 
     private static Set<BlockPos> variantCellPositions(List<CarriageVariantBlocks.Entry> entries) {

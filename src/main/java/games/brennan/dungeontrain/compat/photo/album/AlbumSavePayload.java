@@ -28,12 +28,33 @@ public final class AlbumSavePayload {
         }
     }
 
-    /** An album from the relay. */
-    public record Album(UUID owner, String name, long rev, List<Page> pages) {
+    /** An album from the relay. {@code index} is which of the owner's albums it is (0, the first, unless they donated). */
+    public record Album(UUID owner, int index, String name, long rev, List<Page> pages) {
         public Album {
+            index = Math.max(index, 0);
             pages = List.copyOf(pages);
         }
+
+        public Album(UUID owner, String name, long rev, List<Page> pages) {
+            this(owner, 0, name, rev, pages);
+        }
     }
+
+    /**
+     * The owner's own albums as the relay holds them ({@code GET /albums/mine}), and how many they may
+     * keep: 1, 2 for any donation, or 10 for every full A$10 they have donated.
+     */
+    public record Mine(List<Album> albums, int albumLimit) {
+        public static final Mine NONE = new Mine(List.of(), 1);
+
+        public Mine {
+            albums = List.copyOf(albums);
+            albumLimit = Math.min(Math.max(albumLimit, 1), MAX_INDEX + 1);
+        }
+    }
+
+    /** The highest album index the relay accepts (its own cap). */
+    public static final int MAX_INDEX = 999;
 
     private AlbumSavePayload() {}
 
@@ -56,8 +77,14 @@ public final class AlbumSavePayload {
     }
 
     public static JsonObject save(UUID owner, String name, long rev, List<Page> pages) {
+        return save(owner, 0, name, rev, pages);
+    }
+
+    /** The save body; {@code index} is written only past the first album, so a first album's body is unchanged. */
+    public static JsonObject save(UUID owner, int index, String name, long rev, List<Page> pages) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", bare(owner));
+        if (index > 0) body.addProperty("index", index);
         body.addProperty("name", name == null ? "" : name);
         body.addProperty("rev", rev);
         JsonArray array = new JsonArray();
@@ -85,6 +112,8 @@ public final class AlbumSavePayload {
         try {
             JsonObject o = element.getAsJsonObject();
             UUID owner = fromBare(o.get("uuid").getAsString());
+            int index = o.has("index") && !o.get("index").isJsonNull() ? o.get("index").getAsInt() : 0;
+            if (index > MAX_INDEX) return Optional.empty();
             String name = o.has("name") ? o.get("name").getAsString() : "";
             long rev = o.get("rev").getAsLong();
             List<Page> pages = new ArrayList<>();
@@ -95,9 +124,27 @@ public final class AlbumSavePayload {
                 String note = p.has("note") && !p.get("note").isJsonNull() ? p.get("note").getAsString() : "";
                 pages.add(new Page(hash, note));
             }
-            return Optional.of(new Album(owner, name, rev, pages));
+            return Optional.of(new Album(owner, index, name, rev, pages));
         } catch (RuntimeException e) {
             return Optional.empty();
         }
+    }
+
+    /**
+     * A {@code GET /albums/mine} body. A relay from before numbered albums answers only {@code album}
+     * (the first) and no {@code albumLimit}: one album.
+     */
+    public static Mine parseMine(JsonObject body) {
+        if (body == null) return Mine.NONE;
+        List<Album> albums = new ArrayList<>();
+        JsonElement many = body.get("albums");
+        if (many != null && many.isJsonArray()) {
+            for (JsonElement element : many.getAsJsonArray()) parse(element).ifPresent(albums::add);
+        } else {
+            parse(body.get("album")).ifPresent(albums::add);
+        }
+        JsonElement limit = body.get("albumLimit");
+        int albumLimit = limit != null && limit.isJsonPrimitive() && limit.getAsJsonPrimitive().isNumber() ? limit.getAsInt() : 1;
+        return new Mine(albums, albumLimit);
     }
 }

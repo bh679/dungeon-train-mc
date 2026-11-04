@@ -10,7 +10,6 @@ import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.PortalTestSessionState;
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
-import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
 import games.brennan.dungeontrain.client.menu.EditorSaveStatus;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
@@ -44,9 +43,13 @@ public final class EditorDetailPane {
     static final int DIM_TEXT = 0xB0FFFFFF;
     static final int DISABLED = 0x30FFFFFF;
     static final int DISABLED_ICON = 0x60FFFFFF;
+    /** The offset arrow while its row is open: a warm gold, unlike any state colour the toolbar uses. */
+    static final int OFFSET_OPEN_TINT = 0xFFFFD35C;
+    /** The offset row's distance box: never narrower than a two-digit step. */
+    static final int OFFSET_DISTANCE_MIN_W = 16;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT, LOOT_ITEM, EDIT_NOTE, BLOCK_GROUP, TEST_ICON, TEST_ROW }
+    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT, LOOT_ITEM, EDIT_NOTE, BLOCK_GROUP, TEST_ICON, TEST_ROW, OFFSET_ICON, OFFSET_DISTANCE }
 
     private final VersionStrip versions = new VersionStrip();
     /** The relay row of the selected template, and the version of it being shown (0 = as it is now). */
@@ -119,12 +122,19 @@ public final class EditorDetailPane {
     private List<EditorScreenActions.Icon> testIcons = List.of();
     private List<CommandMenuEntry> testRows = List.of();
     private int[] testIconX = new int[0];
+    /** While the toolbar's arrow has it open: the offset row, one button per direction. */
+    private List<EditorScreenActions.Icon> offsetIcons = List.of();
+    private int[] offsetIconX = new int[0];
+    /** The offset row's distance box, or null while the row is shut. */
+    private InventoryEditorLayout.Rect offsetDistanceRect;
 
     public Hit hovered() { return hovered; }
     public List<EditorScreenActions.Icon> icons() { return icons; }
     public List<CommandMenuEntry> rows() { return rows; }
     public List<EditorScreenActions.Icon> testIcons() { return testIcons; }
     public List<CommandMenuEntry> testRows() { return testRows; }
+    public List<EditorScreenActions.Icon> offsetIcons() { return offsetIcons; }
+    public InventoryEditorLayout.Rect offsetDistanceRect() { return offsetDistanceRect; }
     public CommandMenuEntry testEntry() { return test; }
 
     /** The Reseed cell beside the test button — the world switch, or in a test the re-roll button. */
@@ -143,15 +153,26 @@ public final class EditorDetailPane {
     public void layout(InventoryEditorLayout layout, EditorScreenActions.Ctx ctx, long nowMillis) {
         // A running test takes a row under the editing toolbar for its own; the model gives it room.
         testing = PortalTestSessionState.active();
-        this.layout = testing ? layout.withTestRow() : layout;
+        // The offset row gives way to a test: the author stands in the test copy, not the plot, and
+        // the floor-size pane has no room for both rows above the sheet.
+        boolean offsetOpen = EditorScreenState.offsetRowOpen() && ctx.hasSelection() && !testing;
+        // The editing row first: the offset row under it takes the size its buttons came out at.
+        icons = EditorScreenActions.icons(ctx, DungeonTrainNet::sendToServer, relayId);
+        IconRow row = layoutIcons(icons.size(), layout.icons().x(), layout.icons().w());
+        iconX = row.x();
+        iconCell = row.cell();
+        this.layout = testing ? layout.withTestRow() : offsetOpen ? layout.withOffsetRow(iconCell) : layout;
         layout = this.layout;
+        offsetIcons = offsetOpen
+            ? OffsetControls.icons(ctx.standingInSelection(), EditorScreenState.offsetDistance()) : List.of();
+        int[] offsetX = layoutOffsetIcons(offsetIcons.size(), layout.offsetIcons().x(), iconCell);
+        offsetIconX = java.util.Arrays.copyOf(offsetX, offsetIcons.size());
+        offsetDistanceRect = offsetOpen ? new InventoryEditorLayout.Rect(offsetX[offsetIcons.size()],
+            layout.offsetIcons().y(), offsetDistanceWidth(iconCell), iconCell) : null;
         testIcons = testing ? TestModeControls.icons() : List.of();
         testRows = testing ? TestModeControls.rows() : List.of();
         testIconX = layoutTestIcons(testIcons.size(), layout.testIcons().x());
         this.ctx = ctx;
-        // The relay row of what is selected, which showVersion has already handed this pane for the
-        // version strip — it is what the Submit icon acts on.
-        icons = EditorScreenActions.icons(ctx, DungeonTrainNet::sendToServer, relayId);
         // Read once: the Size line takes the room's own dimensions from these, and the rows below
         // take everything else. Reading them twice could show two different numbers for one axis.
         roomRows = EditorScreenActions.roomRows(ctx);
@@ -191,10 +212,6 @@ public final class EditorDetailPane {
         pages = DetailPages.of(rows.size(), Math.max(0, body().h() / ROW_H), lootPages, submitPages)
             .withBlockPages(blockPages);
         page = pages.clamp(page);
-
-        IconRow row = layoutIcons(icons.size(), layout.icons().x(), layout.icons().w());
-        iconX = row.x();
-        iconCell = row.cell();
     }
 
     /**
@@ -234,6 +251,27 @@ public final class EditorDetailPane {
             x += ICON_CELL + ICON_GAP;
         }
         return xs;
+    }
+
+    /**
+     * Where each offset button starts, at the editing row's {@code cell} size so the row reads as
+     * that toolbar's: the three axes' pairs apart from each other, then one more entry — where the
+     * distance box starts, set apart the same way.
+     */
+    static int[] layoutOffsetIcons(int count, int x0, int cell) {
+        int[] xs = new int[count + 1];
+        int x = x0;
+        for (int i = 0; i <= count; i++) {
+            if (i > 0 && i % 2 == 0) x += ICON_GROUP_GAP;
+            xs[i] = x;
+            x += cell + ICON_GAP;
+        }
+        return xs;
+    }
+
+    /** The distance box's width beside buttons of {@code cell}. */
+    static int offsetDistanceWidth(int cell) {
+        return Math.max(cell, OFFSET_DISTANCE_MIN_W);
     }
 
     /** Icon-row geometry: how big each button is, and where each one starts. */
@@ -409,6 +447,11 @@ public final class EditorDetailPane {
                 // A staged build's picture is its own snapshot on the shelf; the relay's copy of the
                 // same row stands in when the file is not on this machine (a dedicated server).
                 PreviewPane.drawStaged(g, font, layout.preview(), staged, name, yaw, theme, relayId);
+            } else if (seq == 0 && ctx.hasSelection()
+                && games.brennan.dungeontrain.client.builder.LivePlotPreview.has(ctx.selection().templateKey())) {
+                // An offset, undo or redo press moved the plot's blocks since the file was saved:
+                // draw the plot as it stands, which is what the press is being watched for.
+                PreviewPane.drawLive(g, font, layout.preview(), ctx.selection().templateKey(), name, yaw, theme);
             } else {
                 PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, seq == 0 ? 0 : relayId, seq);
             }
@@ -441,8 +484,25 @@ public final class EditorDetailPane {
         }
         if (pages.hasPager()) drawPager(g, font);
         drawIcons(g);
+        drawOffsetIcons(g, font);
         drawTestIcons(g);
         drawTest(g, font);
+    }
+
+    /** The offset row, drawn like the editing toolbar it opens from; off while not standing in the plot. */
+    private void drawOffsetIcons(GuiGraphics g, Font font) {
+        if (offsetIcons.isEmpty()) return;
+        int hov = hovered.kind() == HitKind.OFFSET_ICON ? hovered.index() : -1;
+        DetailPainters.drawIconStrip(g, offsetIcons, offsetIconX, iconCell, layout.offsetIcons().y(), hov,
+            i -> false,
+            i -> !offsetIcons.get(i).enabled() ? DISABLED_ICON : i == hov ? DetailPainters.HOVER_INK : 0);
+        // The distance box: the step each button moves, typed over by clicking it.
+        InventoryEditorLayout.Rect d = offsetDistanceRect;
+        boolean dHov = hovered.kind() == HitKind.OFFSET_DISTANCE;
+        g.fill(d.x(), d.y(), d.right(), d.bottom(), dHov ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
+        String step = String.valueOf(EditorScreenState.offsetDistance());
+        g.drawString(font, step, d.x() + (d.w() - font.width(step) + 1) / 2, d.y() + (d.h() - font.lineHeight + 2) / 2,
+            dHov ? MenuRowPainter.TEXT_ON_HOVER : MenuRowPainter.TEXT_NORMAL, false);
     }
 
     /** The test toolbar, drawn like the editing one above it. */
@@ -452,7 +512,7 @@ public final class EditorDetailPane {
             int x = testIconX[i];
             boolean hov = hovered.kind() == HitKind.TEST_ICON && hovered.index() == i;
             g.fill(x, r.y(), x + ICON_CELL, r.y() + ICON_CELL, hov ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
-            if (hov) tint(g, 0xFF000000);
+            if (hov) DetailPainters.tint(g, 0xFF000000);
             g.blitSprite(EditorIcons.forAction(testIcons.get(i).id()), x + (ICON_CELL - ICON_SIZE) / 2,
                 r.y() + (ICON_CELL - ICON_SIZE) / 2, ICON_SIZE, ICON_SIZE);
             g.setColor(1f, 1f, 1f, 1f);
@@ -566,51 +626,38 @@ public final class EditorDetailPane {
     }
 
     private void drawIcons(GuiGraphics g) {
-        InventoryEditorLayout.Rect r = layout.icons();
-        for (int i = 0; i < icons.size(); i++) {
-            EditorScreenActions.Icon icon = icons.get(i);
-            int x = iconX[i];
-            boolean hov = hovered.kind() == HitKind.ICON && hovered.index() == i;
-            boolean danger = "remove".equals(icon.id()) || "clear".equals(icon.id());
-            int fill = !icon.enabled() ? DISABLED
-                : hov ? (danger ? 0xC0FF5544 : MenuRowPainter.CELL_HOVER) : MenuRowPainter.CELL_IDLE;
-            g.fill(x, r.y(), x + iconCell, r.y() + iconCell, fill);
-            if (!icon.enabled()) {
-                tint(g, DISABLED_ICON);
-            } else if ("save".equals(icon.id())) {
-                // Save says the state as well as offering the action: breathing green while this
-                // build has unsaved work, steady blue once it matches what is on disk. It is the
-                // only status the pane cannot show as a number, so it lives on its own button
-                // rather than on a second one beside it.
-                tint(g, EditorSaveStatus.tint(ctx.dirty(), System.currentTimeMillis()));
-            } else if ("submit".equals(icon.id()) || "withdraw".equals(icon.id())) {
-                // The same trick, for the other thing a build's state cannot be read off this pane:
-                // whether it has been offered to the train. Pulsing blue while it is only saved,
-                // steady green once submitted — and kept through the hover, like Save, because the
-                // state is the reason to press it.
-                tint(g, SubmitTint.of("withdraw".equals(icon.id()), System.currentTimeMillis()));
-            } else if (hov) {
-                tint(g, 0xFF000000);
-            }
-            int sprite = Math.min(ICON_SIZE, iconCell);
-            g.blitSprite(EditorIcons.forAction(icon.id()), x + (iconCell - sprite) / 2,
-                r.y() + (iconCell - sprite) / 2, sprite, sprite);
-            g.setColor(1f, 1f, 1f, 1f);
+        DetailPainters.drawIconStrip(g, icons, iconX, iconCell, layout.icons().y(),
+            hovered.kind() == HitKind.ICON ? hovered.index() : -1,
+            i -> "remove".equals(icons.get(i).id()) || "clear".equals(icons.get(i).id()),
+            this::iconTint);
+    }
+
+    /**
+     * What an icon is drawn through. A disabled icon dims; Save says the state as well as offering
+     * the action — breathing green while this build has unsaved work, steady blue once it matches
+     * what is on disk — since it is the only status the pane cannot show as a number, so it lives
+     * on its own button rather than on a second one beside it. Submit / Withdraw do the same for
+     * the other thing a build's state cannot be read off this pane: whether it has been offered to
+     * the train — pulsing blue while only saved, steady green once submitted. Both keep their
+     * colour through the hover, because the state is the reason to press them; any other hovered
+     * icon inks.
+     */
+    private int iconTint(int i) {
+        EditorScreenActions.Icon icon = icons.get(i);
+        boolean hov = hovered.kind() == HitKind.ICON && hovered.index() == i;
+        if (!icon.enabled()) return DISABLED_ICON;
+        if ("save".equals(icon.id())) return EditorSaveStatus.tint(ctx.dirty(), System.currentTimeMillis());
+        // Lit while its row is open, so the arrow says what pressing it again will do.
+        if (OffsetControls.TOGGLE.equals(icon.id()) && !offsetIcons.isEmpty()) return OFFSET_OPEN_TINT;
+        if ("submit".equals(icon.id()) || "withdraw".equals(icon.id())) {
+            return SubmitTint.of("withdraw".equals(icon.id()), System.currentTimeMillis());
         }
+        return hov ? DetailPainters.HOVER_INK : 0;
     }
 
     private void drawRows(GuiGraphics g, Font font, EditorScreenTheme theme) {
-        InventoryEditorLayout.Rect r = rowArea();
-        g.enableScissor(r.x(), r.y(), r.right(), r.bottom());
-        int first = pages.first(page);
-        int end = pages.end(page);
-        for (int idx = first; idx < end; idx++) {
-            int top = r.y() + (idx - first) * ROW_H;
-            boolean hov = hovered.kind() == HitKind.ROW && hovered.index() == idx;
-            MenuRowPainter.drawRow(g, font, rows.get(idx), r.x(), top, r.right(), ROW_H - 1,
-                idx, hov, hovered.sub(), null);
-        }
-        g.disableScissor();
+        DetailPainters.drawRowList(g, font, rows, rowArea(), ROW_H, pages.first(page), pages.end(page),
+            hovered.kind() == HitKind.ROW ? hovered.index() : -1, hovered.sub());
     }
 
     /**
@@ -695,8 +742,8 @@ public final class EditorDetailPane {
         String label = testLabel();
         int tw = font.width(label) + 12;
         int x = r.x() + (r.w() - tw) / 2;
-        if (!enabled) tint(g, DISABLED_ICON);
-        else if (hov) tint(g, 0xFF000000);
+        if (!enabled) DetailPainters.tint(g, DISABLED_ICON);
+        else if (hov) DetailPainters.tint(g, 0xFF000000);
         g.blitSprite(testIcon(), x, r.y() + (r.h() - 10) / 2, 10, 10);
         g.setColor(1f, 1f, 1f, 1f);
         g.drawString(font, label, x + 12, r.y() + (r.h() - font.lineHeight) / 2 + 1,
@@ -711,11 +758,6 @@ public final class EditorDetailPane {
 
     private static ResourceLocation testIcon() {
         return PortalTestSessionState.active() ? EditorIcons.EXIT : EditorIcons.PLAY;
-    }
-
-    private static void tint(GuiGraphics g, int argb) {
-        g.setColor(((argb >> 16) & 0xFF) / 255f, ((argb >> 8) & 0xFF) / 255f,
-            (argb & 0xFF) / 255f, ((argb >>> 24) & 0xFF) / 255f);
     }
 
     public Hit hitTest(double mx, double my) {
@@ -737,6 +779,13 @@ public final class EditorDetailPane {
                 case NEXT -> new Hit(HitKind.PAGE_NEXT, 0, 0);
                 case NONE -> Hit.NONE;
             };
+        }
+        InventoryEditorLayout.Rect or = layout.offsetIcons();
+        if (!offsetIcons.isEmpty() && my >= or.y() && my < or.y() + iconCell) {
+            for (int i = 0; i < offsetIconX.length; i++) {
+                if (mx >= offsetIconX[i] && mx < offsetIconX[i] + iconCell) return new Hit(HitKind.OFFSET_ICON, i, 0);
+            }
+            if (offsetDistanceRect.contains(mx, my)) return new Hit(HitKind.OFFSET_DISTANCE, 0, 0);
         }
         InventoryEditorLayout.Rect tr = layout.testIcons();
         if (testing && my >= tr.y() && my < tr.y() + ICON_CELL) {
@@ -816,6 +865,14 @@ public final class EditorDetailPane {
                 yield List.of(EditorScreenLang.text(icon.labelKey()), icon.detail());
             }
             case TEST_ROW -> List.of(EditorScreenLang.text(EditorScreenLang.TEST_SETTINGS_TIP));
+            case OFFSET_ICON -> {
+                if (hit.index() < 0 || hit.index() >= offsetIcons.size()) yield List.of();
+                EditorScreenActions.Icon icon = offsetIcons.get(hit.index());
+                String label = EditorScreenLang.text(icon.labelKey());
+                yield List.of(label, icon.enabled() ? icon.detail() : EditorScreenLang.text(icon.disabledKey()));
+            }
+            case OFFSET_DISTANCE -> List.of(EditorScreenLang.text(EditorScreenLang.OFFSET_DISTANCE),
+                EditorScreenLang.text(EditorScreenLang.OFFSET_DISTANCE_TIP));
             case BLOCK_GROUP -> {
                 var player = net.minecraft.client.Minecraft.getInstance().player;
                 yield BlocksPage.tooltip(blockEntries, hit.index(), blocksLive,

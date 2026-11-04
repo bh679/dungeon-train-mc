@@ -14,7 +14,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The words the Live Eye text filter looks for, and the strike ladder it explains to players.
@@ -31,8 +33,16 @@ import java.util.List;
  *
  * <p>{@link #effective()} is the compiled union, rebuilt only when a source changes — a check never pays
  * for compilation. The payload shape is shared by the resource, the cache and the relay:
- * {@code {version, hard[], word[], cjk[], phrases[], allow[], ladder{removeAtStrike, banAfterRemovals,
+ * {@code {version, hard[], word[], cjk[], phrases[], mild[], allow[], ladder{removeAtStrike, banAfterRemovals,
  * banDays[], strikeDecayDays}}}. Anything malformed is dropped at the boundary, never thrown.</p>
+ *
+ * <p>{@code mild[]} is the profanity Twitch allows but a streamer would rather not have on air: {@link #mild()}
+ * masks it on the same scope, but it is never a strike. A mild term wins over every other bucket, so a word
+ * still listed under {@code word[]} by an older relay or cache stays strike-free.</p>
+ *
+ * <p>{@code off[]} (relay only) names words an operator switched off or took off the Live Eye on the relay's
+ * word-list page: they are dropped from every bucket, the baked floor included, so a jar never keeps
+ * masking or striking a word the relay has retired.</p>
  */
 public final class LiveWordList {
 
@@ -54,8 +64,8 @@ public final class LiveWordList {
 
     /** One parsed list body. */
     public record Payload(int version, List<String> hard, List<String> word, List<String> cjk,
-                          List<String> phrases, List<String> allow, Ladder ladder) {
-        public static final Payload EMPTY = new Payload(0, List.of(), List.of(), List.of(), List.of(), List.of(), null);
+                          List<String> phrases, List<String> mild, List<String> off, List<String> allow, Ladder ladder) {
+        public static final Payload EMPTY = new Payload(0, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null);
 
         boolean hasTerms() {
             return !hard.isEmpty() || !word.isEmpty() || !cjk.isEmpty() || !phrases.isEmpty();
@@ -65,16 +75,28 @@ public final class LiveWordList {
     private static volatile Payload baked;
     private static volatile Payload relay = Payload.EMPTY;
     private static volatile boolean loaded;
-    private static volatile CompiledWords compiled;
+    private static volatile Compiled compiled;
+
+    /** Both compiled lists, swapped together so a check never sees one list's version next to the other's. */
+    record Compiled(CompiledWords strike, CompiledWords mild) {}
 
     private LiveWordList() {}
 
-    /** The compiled union of baked and relay lists. Cheap after the first call. */
+    /** The compiled union of baked and relay strike lists (every mild term left out). Cheap after the first call. */
     public static CompiledWords effective() {
-        CompiledWords c = compiled;
+        return compiled().strike();
+    }
+
+    /** The mild terms: masked on the same scope as {@link #effective()}, but never a strike. */
+    public static CompiledWords mild() {
+        return compiled().mild();
+    }
+
+    private static Compiled compiled() {
+        Compiled c = compiled;
         if (c != null) return c;
         synchronized (LiveWordList.class) {
-            if (compiled == null) compiled = compile(baked(), relayLoaded());
+            if (compiled == null) compiled = compileBoth(baked(), relayLoaded());
             return compiled;
         }
     }
@@ -137,10 +159,37 @@ public final class LiveWordList {
         }
     }
 
+    /** The strike list of {@code a} merged with {@code b}, every mild or off term of either left out. */
     static CompiledWords compile(Payload a, Payload b) {
-        return new CompiledWords(
-            concat(a.word(), b.word()), concat(a.hard(), b.hard()), concat(a.cjk(), b.cjk()),
-            concat(a.phrases(), b.phrases()), concat(a.allow(), b.allow()));
+        return compileBoth(a, b).strike();
+    }
+
+    static Compiled compileBoth(Payload a, Payload b) {
+        Set<String> off = folded(concat(a.off(), b.off()));
+        List<String> mild = without(concat(a.mild(), b.mild()), off);
+        Set<String> notStrike = folded(mild);
+        notStrike.addAll(off);
+        List<String> allow = concat(a.allow(), b.allow());
+        CompiledWords strike = new CompiledWords(
+            without(concat(a.word(), b.word()), notStrike), without(concat(a.hard(), b.hard()), notStrike),
+            without(concat(a.cjk(), b.cjk()), off), without(concat(a.phrases(), b.phrases()), off), allow);
+        CompiledWords mildWords = new CompiledWords(mild, List.of(), List.of(), List.of(), allow);
+        return new Compiled(strike, mildWords);
+    }
+
+    private static Set<String> folded(List<String> terms) {
+        Set<String> out = new HashSet<>();
+        for (String t : terms) out.add(TextNormalizer.normalizeTerm(t));
+        return out;
+    }
+
+    private static List<String> without(List<String> terms, Set<String> folded) {
+        if (folded.isEmpty()) return terms;
+        List<String> out = new ArrayList<>(terms.size());
+        for (String t : terms) {
+            if (!folded.contains(TextNormalizer.normalizeTerm(t))) out.add(t);
+        }
+        return out;
     }
 
     private static List<String> concat(List<String> x, List<String> y) {
@@ -159,7 +208,7 @@ public final class LiveWordList {
             if (o.has("ok") && o.get("ok").isJsonPrimitive() && !o.get("ok").getAsBoolean()) return Payload.EMPTY;
             int version = o.has("version") && o.get("version").isJsonPrimitive() ? o.get("version").getAsInt() : 0;
             return new Payload(version, terms(o, "hard"), terms(o, "word"), terms(o, "cjk"),
-                terms(o, "phrases"), terms(o, "allow"), ladder(o));
+                terms(o, "phrases"), terms(o, "mild"), terms(o, "off"), terms(o, "allow"), ladder(o));
         } catch (Exception e) {
             return Payload.EMPTY;
         }
@@ -213,6 +262,8 @@ public final class LiveWordList {
         o.add("word", array(p.word()));
         o.add("cjk", array(p.cjk()));
         o.add("phrases", array(p.phrases()));
+        o.add("mild", array(p.mild()));
+        o.add("off", array(p.off()));
         o.add("allow", array(p.allow()));
         if (p.ladder() != null) {
             JsonObject l = new JsonObject();

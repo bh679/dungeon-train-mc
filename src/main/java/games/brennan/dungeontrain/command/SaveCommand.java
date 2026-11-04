@@ -168,16 +168,18 @@ public final class SaveCommand {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
 
-        Optional<EditorCategory> categoryOpt = EditorCategory.fromId(categoryId);
+        Optional<games.brennan.dungeontrain.editor.PlotCategory> categoryOpt =
+            games.brennan.dungeontrain.editor.PlotCategory.fromId(categoryId);
         if (categoryOpt.isEmpty()) {
             source.sendFailure(Component.translatable("chat.dungeontrain.save.unknown_category", categoryId));
             return 0;
         }
-        EditorCategory category = categoryOpt.get();
+        games.brennan.dungeontrain.editor.PlotCategory category = categoryOpt.get();
 
-        Template model = findModel(category, id);
+        // The id is the dirty scan's row key; TemplateDirtyKeys is its one inverse.
+        Template model = games.brennan.dungeontrain.editor.TemplateDirtyKeys.parseExisting(categoryId, id).orElse(null);
         if (model == null) {
-            source.sendFailure(Component.translatable("chat.dungeontrain.save.unknown_model_category", id, Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id())));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.unknown_model_category", id, Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.owner().id())));
             return 0;
         }
 
@@ -206,77 +208,6 @@ public final class SaveCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
-    }
-
-    /**
-     * Resolve {@code id} to the matching {@link Template} inside
-     * {@code category}. The id format mirrors what
-     * {@link games.brennan.dungeontrain.editor.EditorDirtyCheck} publishes:
-     *
-     * <ul>
-     *   <li>{@code <variantId>} — carriages, contents</li>
-     *   <li>{@code track:<name>} — track tile variants</li>
-     *   <li>{@code pillar_<section>:<name>} — pillar section variants</li>
-     *   <li>{@code adjunct_<id>:<name>} — pillar adjunct variants</li>
-     *   <li>{@code tunnel_<variant>:<name>} — tunnel variants</li>
-     * </ul>
-     *
-     * Track-side {@code <kind>:<name>} ids construct a fresh
-     * {@link Template} rather than scanning {@code category.models()},
-     * because the category's enumeration only includes default-named
-     * variants whereas the dirty list surfaces every name.
-     */
-    private static Template findModel(EditorCategory category, String id) {
-        if (category == EditorCategory.TRACKS && id.contains(".")) {
-            int sep = id.indexOf('.');
-            String prefix = id.substring(0, sep);
-            String name = id.substring(sep + 1);
-            if ("track".equals(prefix)) {
-                return new Template.Track(name);
-            }
-            if (prefix.startsWith("pillar_")) {
-                games.brennan.dungeontrain.track.PillarSection sec;
-                try {
-                    sec = games.brennan.dungeontrain.track.PillarSection.valueOf(
-                        prefix.substring("pillar_".length()).toUpperCase(java.util.Locale.ROOT));
-                } catch (IllegalArgumentException e) {
-                    return null;
-                }
-                return new Template.Pillar(sec, name);
-            }
-            if (prefix.startsWith("adjunct_")) {
-                games.brennan.dungeontrain.track.PillarAdjunct adj;
-                try {
-                    adj = games.brennan.dungeontrain.track.PillarAdjunct.valueOf(
-                        prefix.substring("adjunct_".length()).toUpperCase(java.util.Locale.ROOT));
-                } catch (IllegalArgumentException e) {
-                    return null;
-                }
-                return new Template.Adjunct(adj, name);
-            }
-            if (prefix.startsWith("tunnel_")) {
-                games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant tv;
-                try {
-                    tv = games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant.valueOf(
-                        prefix.substring("tunnel_".length()).toUpperCase(java.util.Locale.ROOT));
-                } catch (IllegalArgumentException e) {
-                    return null;
-                }
-                return new Template.Tunnel(tv, name);
-            }
-        }
-        if (category == EditorCategory.PORTALS && id.contains(".")) {
-            int sep = id.indexOf('.');
-            if (games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM.id()
-                    .equals(id.substring(0, sep))) {
-                return new Template.PortalRoom(id.substring(sep + 1));
-            }
-            return null;
-        }
-        for (Template m : category.models()) {
-            if (m.id().equals(id)) return m;
-        }
-        return null;
     }
 
     /**

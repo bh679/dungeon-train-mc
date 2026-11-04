@@ -244,7 +244,7 @@ public final class VariantOverlayRenderer {
         if (LAST_HISTORY_KEY.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player, EditorHistoryPacket.empty());
         }
-        PartPositionMenuController.forget(player);
+        PartPositionMenuController.INSTANCE.forget(player);
         // Take the plot's daylight back off — they have left the build area, and the client would
         // otherwise hold a box it can no longer be inside.
         EditorPlotSky.forget(player);
@@ -354,7 +354,7 @@ public final class VariantOverlayRenderer {
 
             // A staged Workbench build has no parts menu.
             if (games.brennan.dungeontrain.editor.workbench.WorkbenchVariantPlot.at(level, playerPos) != null) {
-                PartPositionMenuController.forget(player);
+                PartPositionMenuController.INSTANCE.forget(player);
                 continue;
             }
 
@@ -370,7 +370,7 @@ public final class VariantOverlayRenderer {
             // in one — so a player who left while it was open (a teleport to another category, a walk
             // off the end) kept it active client-side, and the floating type menus ignore every
             // click while a parts menu is active.
-            PartPositionMenuController.forget(player);
+            PartPositionMenuController.INSTANCE.forget(player);
         }
         EditorClock.tick(level, cycleSeen);
         recordEditorTiming(level, System.nanoTime() - tickStart, atPlots);

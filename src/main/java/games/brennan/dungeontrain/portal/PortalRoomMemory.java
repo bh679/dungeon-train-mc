@@ -12,6 +12,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
@@ -70,6 +71,16 @@ import java.util.stream.Stream;
  * across a relocation. They live under {@code tiles/} beside the rooms with a cap of their own
  * ({@link #MAX_REMEMBERED_TILES}), so a wide walk through copies never pushes a base room out. A tile
  * nobody has reached is still a fresh template copy: an endless room is endless by design.</p>
+ *
+ * <h2>Unloaded chunks</h2>
+ * <p>A capture used to be skipped, silently, when the room's chunks were not loaded, on the reasoning
+ * that reading them would load them on the server tick. But every caller goes on to <b>erase</b> the
+ * room, and {@code PortalClear} loads the chunks to do that anyway. Nothing held twin-space chunks
+ * once a player stepped back onto the train, so the drain regularly reached the copies they had stood
+ * in after their chunks had gone: the capture was skipped, the copy erased, and the next visit laid the
+ * template again with its loot re-rolled (v0.1494.0, reported by Dowl and Akazuki_ruru). The capture
+ * now loads what it needs through {@link #ensureLoaded}, paying once what the erase paid regardless,
+ * and says so in the log.</p>
  */
 public final class PortalRoomMemory {
 
@@ -146,6 +157,32 @@ public final class PortalRoomMemory {
     }
 
     // ---- capture / remember / recall -----------------------------------------
+
+    /**
+     * Have every chunk the room box at {@code roomOrigin} spans loaded, so a capture reads real blocks.
+     * Loads the ones that are not, synchronously, which is what the erase that follows every capture
+     * does too. One info line names how many had to be loaded, so a bug report shows it. False, with
+     * a warning, when a load fails — the caller then skips the capture as it always did.
+     */
+    public static boolean ensureLoaded(ServerLevel level, BlockPos roomOrigin, Vec3i size, String what) {
+        int loaded = 0;
+        try {
+            for (ChunkPos chunk : chunkSpan(roomOrigin, size)) {
+                if (level.getChunkSource().getChunkNow(chunk.x, chunk.z) != null) continue;
+                level.getChunk(chunk.x, chunk.z);
+                loaded++;
+            }
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Could not load the chunks of {} to remember it — it will be stamped "
+                + "from its template next time: {}", what, t.toString());
+            return false;
+        }
+        if (loaded > 0) {
+            LOGGER.info("[DungeonTrain] {} had {} chunk(s) unloaded at capture; loaded them so it is remembered",
+                what, loaded);
+        }
+        return true;
+    }
 
     /**
      * Capture the room box at {@code roomOrigin} as it stands. Null when the capture fails — the caller
@@ -289,6 +326,19 @@ public final class PortalRoomMemory {
         List<Path> oldestFirst = new ArrayList<>(writtenAt.keySet());
         oldestFirst.sort(Comparator.comparingLong((Path p) -> writtenAt.get(p)).thenComparing(Path::toString));
         return List.copyOf(oldestFirst.subList(0, writtenAt.size() - keep));
+    }
+
+    /** The chunk columns a room box at {@code origin} of {@code size} touches, each once. */
+    static List<ChunkPos> chunkSpan(BlockPos origin, Vec3i size) {
+        int minCx = origin.getX() >> 4;
+        int minCz = origin.getZ() >> 4;
+        int maxCx = (origin.getX() + size.getX() - 1) >> 4;
+        int maxCz = (origin.getZ() + size.getZ() - 1) >> 4;
+        List<ChunkPos> chunks = new ArrayList<>();
+        for (int cx = minCx; cx <= maxCx; cx++) {
+            for (int cz = minCz; cz <= maxCz; cz++) chunks.add(new ChunkPos(cx, cz));
+        }
+        return List.copyOf(chunks);
     }
 
     /** The file a copy is kept in, inside its dimension's {@code tiles/} folder. */

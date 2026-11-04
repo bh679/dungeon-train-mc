@@ -24,6 +24,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 
+import static games.brennan.dungeontrain.editor.EditorFeedback.actionBar;
+
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -33,8 +35,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Server side of the X editor's Blocks page: lists the blocks of the plot the player is standing in
@@ -45,39 +45,41 @@ import java.util.concurrent.ConcurrentHashMap;
  * ({@link TemplateBlocksMenuController}): structure blocks at plain positions, and each candidate
  * of every block-variant cell.</p>
  */
-public final class TemplateBlockGroupsController {
+public final class TemplateBlockGroupsController extends PlayerMenuController<TemplateBlockGroupsController.Session> {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private record Session(String key, List<TemplateBlockGroups.Group<Block>> groups) {}
+    record Session(String key, List<TemplateBlockGroups.Group<Block>> groups) {}
 
-    private static final Map<UUID, Session> SESSIONS = new ConcurrentHashMap<>();
+    public static final TemplateBlockGroupsController INSTANCE = new TemplateBlockGroupsController();
 
     private static final Comparator<Block> BY_ID =
         Comparator.comparing(b -> BuiltInRegistries.BLOCK.getKey(b).toString());
 
-    private TemplateBlockGroupsController() {}
+    private TemplateBlockGroupsController() {
+        super("TemplateBlockGroups", "template blocks");
+    }
 
-    public static void forget(ServerPlayer player) {
-        SESSIONS.remove(player.getUUID());
+    @Override
+    protected String keyOf(Session state) {
+        return state.key();
+    }
+
+    /** An undo or redo changed the plot underneath the page: the cells reconcile and re-send. */
+    @Override
+    protected void resync(ServerPlayer player, Session state) {
+        sync(player);
     }
 
     /** The player saved: their cells merge. Re-sent straight away if they had the page open. */
     public static void onSaved(ServerPlayer player) {
-        if (SESSIONS.remove(player.getUUID()) != null) sync(player);
-    }
-
-    /** Re-send after an undo or redo changed the plot underneath the page. No-op when never opened. */
-    public static void resyncOpen(ServerPlayer player) {
-        if (SESSIONS.containsKey(player.getUUID())) sync(player);
+        if (INSTANCE.remove(player) != null) sync(player);
     }
 
     public static void applyEdit(ServerPlayer player, TemplateBlockGroupsEditPacket packet) {
-        if (!player.hasPermissions(2)) {
-            LOGGER.warn("[DungeonTrain] Template block groups edit rejected: player {} not OP",
-                player.getName().getString());
-            return;
-        }
+        // OP only: a REQUEST is what opens the page, so there is no session to authorise against yet.
+        if (!INSTANCE.isOp(player)) return;
+        INSTANCE.armUndo(player);
         switch (packet.op()) {
             case REQUEST -> sync(player);
             case RESKIN -> reskin(player, packet.key(), packet.group());
@@ -103,11 +105,11 @@ public final class TemplateBlockGroupsController {
     /** The player's cells for {@code plot}, brought up to date with the world — built fresh for a new plot. */
     private static List<TemplateBlockGroups.Group<Block>> currentGroups(ServerPlayer player, BlockVariantPlot plot) {
         Map<TemplateBlockGroups.Member, Block> live = liveUses(player.serverLevel(), plot);
-        Session old = SESSIONS.get(player.getUUID());
+        Session old = INSTANCE.open(player);
         List<TemplateBlockGroups.Group<Block>> groups = old != null && old.key().equals(plot.key())
             ? TemplateBlockGroups.reconcile(old.groups(), live)
             : TemplateBlockGroups.build(live, BY_ID);
-        SESSIONS.put(player.getUUID(), new Session(plot.key(), groups));
+        INSTANCE.put(player, new Session(plot.key(), groups));
         return groups;
     }
 
@@ -169,9 +171,9 @@ public final class TemplateBlockGroupsController {
         // One click, one undo step — structure blocks and variant pools together.
         EditorRegionDiff.record(player, "Block swap", plot.key(),
             () -> CarriageStampGuard.run(() -> rewrite(player, level, plot, target, newBlock, heldBeNbt)));
-        Session session = SESSIONS.get(player.getUUID());
+        Session session = INSTANCE.open(player);
         if (session != null && session.key().equals(plot.key())) {
-            SESSIONS.put(player.getUUID(),
+            INSTANCE.put(player,
                 new Session(plot.key(), TemplateBlockGroups.reskin(session.groups(), group, newBlock)));
         }
         actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.block_groups.replaced", target.count(), target.block().getName(), newBlock.getName()), ChatFormatting.GREEN);
@@ -243,7 +245,4 @@ public final class TemplateBlockGroupsController {
         return BlockVariantPlot.resolveAt(player, dims);
     }
 
-    private static void actionBar(ServerPlayer player, Component text, ChatFormatting colour) {
-        player.displayClientMessage(text.copy().withStyle(colour), true);
-    }
 }

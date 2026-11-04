@@ -2,10 +2,8 @@ package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
-import games.brennan.dungeontrain.track.variant.TrackKind;
-import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
-import games.brennan.dungeontrain.train.CarriageContentsWeights;
-import games.brennan.dungeontrain.train.CarriageWeights;
+import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateKind;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
@@ -16,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 /**
  * Duplicate everything a template knows about itself that is <b>not</b> its blocks.
@@ -66,22 +65,32 @@ public final class TemplateCopy {
      * with its blocks but not its variants is what this class exists to prevent.</p>
      *
      * @param subKind the part kind or track kind id for {@link BuilderPhotoPaths.Kind#PART} and
-     *                {@link BuilderPhotoPaths.Kind#TRACK}; ignored otherwise
+     *                {@link BuilderPhotoPaths.Kind#TRACK}; ignored otherwise. The relay's three
+     *                strings are resolved once ({@link RelayTemplates#resolve}) and the copy asks
+     *                the two templates for their own sidecars and weight store.
      */
     public static void copy(BuilderPhotoPaths.Kind kind, @Nullable String subKind,
                             String from, String to) throws IOException {
         if (kind == null || from == null || to == null) return;
-        String src = from.toLowerCase(Locale.ROOT);
-        String dst = to.toLowerCase(Locale.ROOT);
+        Optional<Template> source = RelayTemplates.resolve(kind, subKind, from.toLowerCase(Locale.ROOT));
+        Optional<Template> target = RelayTemplates.resolve(kind, subKind, to.toLowerCase(Locale.ROOT));
+        if (source.isEmpty() || target.isEmpty()) return;
+        copy(source.get(), target.get());
+    }
+
+    /** Lay down {@code to}'s sidecars and weights entry as copies of {@code from}'s — two templates of one kind. */
+    public static void copy(Template from, Template to) throws IOException {
+        String src = from.variantName();
+        String dst = to.variantName();
         if (src.equals(dst)) return;
 
-        int copied = copyFiles(kind, subKind, src, dst);
-        boolean weights = copyWeights(kind, subKind, src, dst);
+        int copied = copyFiles(from.sidecars(), to.sidecars(), from.kind(), src);
+        boolean weights = from.weightStore().isPresent() && from.weightStore().get().copy(src, dst);
 
-        TemplateSidecars.invalidateCaches(kind, subKind, dst);
+        to.invalidateSidecarCaches();
         ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Copied template data {}:{} -> {} ({} sidecar file(s), weights entry: {})",
-            kind.name().toLowerCase(Locale.ROOT), src, dst, copied, weights);
+            from.kind().id(), src, dst, copied, weights);
     }
 
     // ---------- sidecar files ----------
@@ -93,10 +102,8 @@ public final class TemplateCopy {
      *
      * @return how many files were written
      */
-    private static int copyFiles(BuilderPhotoPaths.Kind kind, @Nullable String subKind,
-                                 String from, String to) throws IOException {
-        List<TemplateSidecars.Sidecar> before = TemplateSidecars.filesFor(kind, subKind, from);
-        List<TemplateSidecars.Sidecar> after = TemplateSidecars.filesFor(kind, subKind, to);
+    private static int copyFiles(List<TemplateSidecars.Sidecar> before, List<TemplateSidecars.Sidecar> after,
+                                 TemplateKind kind, String from) throws IOException {
         if (before.size() != after.size()) {
             LOGGER.warn("[DungeonTrain] Copy {}:{}: sidecar lists differ in size ({} vs {}) — skipping",
                 kind, from, before.size(), after.size());
@@ -149,35 +156,5 @@ public final class TemplateCopy {
     private static void write(Path file, String text) throws IOException {
         Files.createDirectories(file.getParent());
         Files.writeString(file, text, StandardCharsets.UTF_8);
-    }
-
-    // ---------- weights entry ----------
-
-    /**
-     * Carry the kind's {@code weights.json} entry. Each store's own {@code copy} keeps everything but
-     * the label, and handles its own config write and dev-mode source twin.
-     *
-     * @return whether the source had an entry to carry
-     */
-    private static boolean copyWeights(BuilderPhotoPaths.Kind kind, @Nullable String subKind,
-                                       String from, String to) throws IOException {
-        TrackKind trackKind = trackKindOf(kind, subKind);
-        if (trackKind != null) {
-            return TrackVariantWeights.copy(trackKind, from, to);
-        }
-        return switch (kind) {
-            case CARRIAGE -> CarriageWeights.copy(from, to);
-            case CONTENTS -> CarriageContentsWeights.copy(from, to);
-            // Parts are weighted inside the carriage's own .parts.json, and a group is not weighted
-            // at all — neither has an entry of its own to carry.
-            default -> false;
-        };
-    }
-
-    /** The {@link TrackKind} whose weights file holds this build, or null when it is not track-side. */
-    @Nullable
-    private static TrackKind trackKindOf(BuilderPhotoPaths.Kind kind, @Nullable String subKind) {
-        if (kind == BuilderPhotoPaths.Kind.PORTAL_ROOM) return TrackKind.PORTAL_ROOM;
-        return kind == BuilderPhotoPaths.Kind.TRACK && subKind != null ? TrackKind.fromId(subKind) : null;
     }
 }

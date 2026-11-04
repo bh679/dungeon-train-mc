@@ -170,9 +170,9 @@ public final class ModDataAttachments {
         );
 
     /**
-     * Total server ticks this player has spent livestreaming, across every stream. Counts towards the
-     * Dark Room's lifetime streaming advancement ({@code event/LiveTvAdvancements}). {@code copyOnDeath}
-     * so dying doesn't reset it.
+     * Legacy: this world's streaming ticks from before the lifetime total left the world. Nothing adds to
+     * it now; {@code event/LiveTvAdvancements} moves what an older save holds into
+     * {@code advancement/GlobalLivestreamStats} at login and zeroes it. Stays registered so those saves load.
      */
     public static final Supplier<AttachmentType<Long>> LIVESTREAM_TICKS =
         TYPES.register("livestream_ticks",

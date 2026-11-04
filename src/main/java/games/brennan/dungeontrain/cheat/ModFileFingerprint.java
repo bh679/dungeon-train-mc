@@ -21,13 +21,23 @@ import java.util.List;
  * @param modIds   lowercase mod ids the file declares, in discovery order
  * @param packages the jar's package fingerprint (top-level package names, outer jar and embedded
  *                 jars together, sorted)
+ * @param carrierSha1 SHA-1 of the {@code mods/} jar that generated this file (the engine found this
+ *                    file outside {@code mods/} and a plain jar there bundling it under
+ *                    {@code META-INF/jar-jar/}), or null when the file is its own install
+ * @param carrierName that jar's file name, or null
  */
 public record ModFileFingerprint(String fileName, long size, String sha1, long murmur2, List<String> modIds,
-                                 List<String> packages) {
+                                 List<String> packages, String carrierSha1, String carrierName) {
 
     public ModFileFingerprint {
         modIds = List.copyOf(modIds);
         packages = packages == null ? List.of() : List.copyOf(packages);
+    }
+
+    /** The pre-carrier shape: a file installed as itself. */
+    public ModFileFingerprint(String fileName, long size, String sha1, long murmur2, List<String> modIds,
+                              List<String> packages) {
+        this(fileName, size, sha1, murmur2, modIds, packages, null, null);
     }
 
     /** The pre-package shape, for tests and callers that only have a hash. */
