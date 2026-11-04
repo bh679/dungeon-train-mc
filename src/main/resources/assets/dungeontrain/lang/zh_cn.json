@@ -5754,7 +5754,6 @@
   "gui.dungeontrain.perks.zoom.in": "近处",
   "gui.dungeontrain.perks.zoom.closest": "最近",
   "gui.dungeontrain.perks.bar.full": "已满。再次解锁可多放一个点数。",
-  "gui.dungeontrain.perks.bar.fill_first": "请先填满它的点数。",
   "gui.dungeontrain.perks.bar.hint": "将鼠标悬停在特权上即可在此查看。点击可固定。",
   "gui.dungeontrain.perks.counter.unlock.click": "点击打开进度。",
   "gui.dungeontrain.perks.death.kicker": "你随身的点数",
