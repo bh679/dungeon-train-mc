@@ -5544,5 +5544,8 @@
   "advancements.dungeontrain.tab.others": "Others",
   "advancements.dungeontrain.tab.secrete_menu": "The Secret Menu",
   "dungeontrain.plaque.tab_complete": "Tab Complete!",
-  "dungeontrain.plaque.everything_complete": "Everything Complete!"
+  "dungeontrain.plaque.everything_complete": "Everything Complete!",
+  "tooltip.dungeontrain.enchant_damage.undead": "+%s vs Undead",
+  "tooltip.dungeontrain.enchant_damage.arthropods": "+%s vs Arthropods",
+  "tooltip.dungeontrain.enchant_damage.aquatic": "+%s vs Aquatic"
 }

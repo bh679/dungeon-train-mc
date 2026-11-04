@@ -17642,5 +17642,32 @@
         "2"
       ]
     }
+  },
+  "tooltip.dungeontrain.enchant_damage.undead": {
+    "1": {
+      "label": "the extra attack damage a weapon's enchantment adds against these mobs",
+      "examples": [
+        "2.5",
+        "12.5"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.enchant_damage.arthropods": {
+    "1": {
+      "label": "the extra attack damage a weapon's enchantment adds against these mobs",
+      "examples": [
+        "2.5",
+        "12.5"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.enchant_damage.aquatic": {
+    "1": {
+      "label": "the extra attack damage a weapon's enchantment adds against these mobs",
+      "examples": [
+        "2.5",
+        "12.5"
+      ]
+    }
   }
 }
