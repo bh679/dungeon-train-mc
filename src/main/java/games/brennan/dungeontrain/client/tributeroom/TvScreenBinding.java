@@ -23,9 +23,11 @@ public record TvScreenBinding(ScreenToTexture texture, BoundingBox screen, Direc
         Minecraft mc = Minecraft.getInstance();
         if (!(mc.hitResult instanceof BlockHitResult hit)) return off;
         if (!screen.isInside(hit.getBlockPos()) || hit.getDirection() != facing) return off;
-        double[] uv = TvPointer.faceFraction(facing, screen, hit.getLocation());
+        int across = facing.getAxis() == Direction.Axis.Z ? screen.getXSpan() : screen.getZSpan();
+        double[] uv = TvPointer.insideBezel(TvPointer.faceFraction(facing, screen, hit.getLocation()), across, screen.getYSpan());
         if (uv == null) return off;
-        double screenAspect = (facing.getAxis() == Direction.Axis.Z ? screen.getXSpan() : screen.getZSpan()) / (double) screen.getYSpan();
+        // The picture fills what is inside the bezel, so its aspect is the bezelled face's.
+        double screenAspect = (across - 2 * TvPointer.BEZEL) / (screen.getYSpan() - 2 * TvPointer.BEZEL);
         return TvPointer.toGui(uv[0], uv[1], screenAspect, texture.aspect(), texture.guiWidth(), texture.guiHeight());
     }
 

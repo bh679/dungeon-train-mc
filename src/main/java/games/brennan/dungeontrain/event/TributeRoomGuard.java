@@ -44,9 +44,13 @@ public final class TributeRoomGuard {
 
     private TributeRoomGuard() {}
 
-    /** The rule, with the two facts that decide it. Pure. */
-    static boolean denies(boolean inLiveTributeRoom, boolean inVisit, boolean isTv) {
-        return inLiveTributeRoom || (inVisit && isTv);
+    /**
+     * The rule, with the facts that decide it. Pure. A live room is look-only for everyone. A room on a
+     * visit is the visitor's own to change, TV aside; anyone else in it (before the visitor arrives,
+     * or wandering in) changes nothing, so only what its owner did after their death is ever saved.
+     */
+    static boolean denies(boolean inLiveTributeRoom, boolean inVisit, boolean isTv, boolean ownVisit) {
+        return inLiveTributeRoom || (inVisit && (isTv || !ownVisit));
     }
 
     private static boolean quiet() {
@@ -61,6 +65,22 @@ public final class TributeRoomGuard {
         return TributeRoomVisitSessions.contains(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
     }
 
+    /** Whether {@code pos} is inside {@code player}'s own visit. */
+    private static boolean ownVisit(ServerPlayer player, BlockPos pos) {
+        TributeRoomVisitSessions.Session own = TributeRoomVisitSessions.get(player.getUUID());
+        return own != null && own.window().isInside(pos);
+    }
+
+    /** Someone else's visit room, or a room stood ahead of a visit: not this player's to touch. */
+    private static boolean othersVisit(ServerPlayer player, BlockPos pos) {
+        return visit(pos) && !ownVisit(player, pos);
+    }
+
+    /** A live room or another player's visit: look-only for {@code player}. */
+    private static boolean lookOnly(ServerLevel level, ServerPlayer player, BlockPos pos) {
+        return live(level, pos) || othersVisit(player, pos);
+    }
+
     private static void refuse(Player player, BlockPos pos, boolean isTv) {
         String key = isTv && !live((ServerLevel) player.level(), pos) ? "chat.dungeontrain.tribute_room.tv_stays" : "chat.dungeontrain.tribute_room.view_only";
         player.displayClientMessage(Component.translatable(key).withStyle(ChatFormatting.GRAY), true);
@@ -71,7 +91,7 @@ public final class TributeRoomGuard {
         if (quiet() || !(event.getLevel() instanceof ServerLevel level) || !(event.getPlayer() instanceof ServerPlayer player)) return;
         BlockPos pos = event.getPos();
         boolean tv = TvBlocks.isTelevision(event.getState());
-        if (!denies(live(level, pos), visit(pos), tv)) return;
+        if (!denies(live(level, pos), visit(pos), tv, ownVisit(player, pos))) return;
         event.setCanceled(true);
         refuse(player, pos, tv);
     }
@@ -79,7 +99,7 @@ public final class TributeRoomGuard {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onPlace(BlockEvent.EntityPlaceEvent event) {
         if (quiet() || !(event.getLevel() instanceof ServerLevel level) || !(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!live(level, event.getPos())) return;
+        if (!lookOnly(level, player, event.getPos())) return;
         event.setCanceled(true);
         refuse(player, event.getPos(), false);
     }
@@ -87,7 +107,7 @@ public final class TributeRoomGuard {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onMultiPlace(BlockEvent.EntityMultiPlaceEvent event) {
         if (quiet() || !(event.getLevel() instanceof ServerLevel level) || !(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!live(level, event.getPos())) return;
+        if (!lookOnly(level, player, event.getPos())) return;
         event.setCanceled(true);
         refuse(player, event.getPos(), false);
     }
@@ -97,7 +117,7 @@ public final class TributeRoomGuard {
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         if (quiet() || !(event.getLevel() instanceof ServerLevel level) || !(event.getEntity() instanceof ServerPlayer player)) return;
         BlockPos pos = event.getPos();
-        if (!live(level, pos)) return;
+        if (!lookOnly(level, player, pos)) return;
         BlockState state = level.getBlockState(pos);
         boolean container = state.hasBlockEntity() && level.getBlockEntity(pos) instanceof Container;
         if (!container && !TvBlocks.isTelevision(state)) return;
@@ -113,7 +133,7 @@ public final class TributeRoomGuard {
         HitResult hit = player.pick(5.0, 0f, true);
         if (!(hit instanceof BlockHitResult block) || hit.getType() == HitResult.Type.MISS) return;
         BlockPos target = block.getBlockPos().relative(block.getDirection());
-        if (!live(level, target) && !live(level, block.getBlockPos())) return;
+        if (!lookOnly(level, player, target) && !lookOnly(level, player, block.getBlockPos())) return;
         event.setCanceled(true);
         refuse(player, target, false);
     }
@@ -122,7 +142,7 @@ public final class TributeRoomGuard {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
         if (quiet() || !(event.getLevel() instanceof ServerLevel level) || !(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!decor(event.getTarget()) || !live(level, event.getTarget().blockPosition())) return;
+        if (!decor(event.getTarget()) || !lookOnly(level, player, event.getTarget().blockPosition())) return;
         event.setCanceled(true);
         refuse(player, event.getTarget().blockPosition(), false);
     }
@@ -130,7 +150,7 @@ public final class TributeRoomGuard {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onAttackEntity(AttackEntityEvent event) {
         if (quiet() || !(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!decor(event.getTarget()) || !live(player.serverLevel(), event.getTarget().blockPosition())) return;
+        if (!decor(event.getTarget()) || !lookOnly(player.serverLevel(), player, event.getTarget().blockPosition())) return;
         event.setCanceled(true);
         refuse(player, event.getTarget().blockPosition(), false);
     }

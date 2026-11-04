@@ -60,4 +60,17 @@ class TvPointerTest {
         assertEquals(100, p[0]);
         assertEquals(225, p[1]);
     }
+
+    @Test
+    void bezelIsNotThePicture() {
+        // A 3x2 face: the picture starts 2/16 of a block in from every edge.
+        assertNull(TvPointer.insideBezel(new double[] {0.0, 0.5}, 3, 2));
+        assertNull(TvPointer.insideBezel(new double[] {0.5, 1.0}, 3, 2));
+        double[] mid = TvPointer.insideBezel(new double[] {0.5, 0.5}, 3, 2);
+        assertEquals(0.5, mid[0], 1e-9);
+        assertEquals(0.5, mid[1], 1e-9);
+        // The picture's left edge sits at the bezel's inner line.
+        double[] edge = TvPointer.insideBezel(new double[] {TvPointer.BEZEL / 3, 0.5}, 3, 2);
+        assertEquals(0.0, edge[0], 1e-9);
+    }
 }

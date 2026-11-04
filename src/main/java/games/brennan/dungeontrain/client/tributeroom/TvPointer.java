@@ -43,6 +43,25 @@ public final class TvPointer {
     }
 
     /**
+     * The bezel Vista leaves around the picture, in blocks: the screen is {@code 16 * blocks - 4} pixels
+     * across, two pixels in from each edge of the whole face ({@code TVBlockEntity#getScreenPixelWidth}).
+     */
+    public static final double BEZEL = 2.0 / 16.0;
+
+    /**
+     * {@code uv} across the whole face turned into the fraction across the picture inside the bezel;
+     * null when the point is on the bezel. {@code blocksAcross} and {@code blocksDown} size the face.
+     */
+    @Nullable
+    public static double[] insideBezel(double[] uv, int blocksAcross, int blocksDown) {
+        if (uv == null) return null;
+        double u = (uv[0] * blocksAcross - BEZEL) / (blocksAcross - 2 * BEZEL);
+        double v = (uv[1] * blocksDown - BEZEL) / (blocksDown - 2 * BEZEL);
+        if (u < 0 || u > 1 || v < 0 || v > 1) return null;
+        return new double[] {u, v};
+    }
+
+    /**
      * GUI coordinates for a point {@code u} across and {@code v} down a screen face of aspect
      * {@code screenAspect} showing a picture of aspect {@code pictureAspect} contain-fitted (centred,
      * the larger axis filling); {@link #OFF_SCREEN} when the point lands in the letterbox.
