@@ -205,6 +205,8 @@ public final class PerksScreen extends Screen {
         }
         // on death there is no game to go back to: closing moves on to the tribute room, where the TV
         // keeps showing this menu — or straight to the recap when there is nobody to stand in a room
+        // Already on the tribute TV: Next Screen pressed on the picture swaps the TV to the recap.
+        if (death != null && games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.showRecap(this)) return;
         if (death != null && mc.player != null && mc.player.isDeadOrDying()) {
             games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.begin(this, death::next);
             return;
@@ -800,6 +802,9 @@ public final class PerksScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Lifted off the tribute TV: Esc puts the menu back on it rather than closing it.
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE
+            && games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.leaveZoom(this)) return true;
         // first time: Space or Enter moves the story on, once the stars have started (not a Space
         // still held from the death scene, which ends on the lead-in)
         long nowMs = Util.getMillis();

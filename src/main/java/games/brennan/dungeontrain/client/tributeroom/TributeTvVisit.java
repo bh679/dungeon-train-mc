@@ -259,14 +259,18 @@ public final class TributeTvVisit {
         if (phase != Phase.WATCHING || !showsOn(pos) || texture == null) return false;
         Minecraft mc = Minecraft.getInstance();
         if (recapScreen == null) {
-            if (recap == null) return false;
-            Screen next = recap.get();
-            if (!(next instanceof NarrativeDeathScreen nds)) {
-                mc.setScreen(next);
+            // Still the perks menu: the click lands on its own buttons, and only Next Screen moves on
+            // (PerksScreen.onClose → showRecap). A click off every button does nothing, as on the window.
+            Screen page = texture.screen();
+            if (page == null) return false;
+            if (sneaking) {
+                mc.setScreen(page);
                 return true;
             }
-            recapScreen = nds;
-            texture.attach(nds);
+            int[] m = tvMouse();
+            if (m[0] == TvPointer.OFF_SCREEN) return true;
+            page.mouseClicked(m[0], m[1], 0);
+            page.mouseReleased(m[0], m[1], 0);
             return true;
         }
         if (sneaking) {
@@ -280,6 +284,25 @@ public final class TributeTvVisit {
         recapScreen.mouseClicked(m[0], m[1], 0);
         recapScreen.mouseReleased(m[0], m[1], 0);
         if (recapScreen.textFieldFocused()) liftForTyping(mc, recapScreen);
+        return true;
+    }
+
+    /**
+     * Next Screen pressed on the perks menu while it shows on the TV: the TV switches to the recap.
+     * {@code false} when {@code perks} is not the menu this visit is showing, so the menu closes as usual.
+     */
+    public static boolean showRecap(Screen perks) {
+        if (phase != Phase.WATCHING || texture == null || texture.screen() != perks || recapScreen != null) return false;
+        if (recap == null) return false;
+        Minecraft mc = Minecraft.getInstance();
+        Screen next = recap.get();
+        if (!(next instanceof NarrativeDeathScreen nds)) {
+            mc.setScreen(next);
+            return true;
+        }
+        recapScreen = nds;
+        if (mc.screen == perks) mc.setScreen(null);
+        texture.attach(nds);
         return true;
     }
 
@@ -321,12 +344,12 @@ public final class TributeTvVisit {
 
     /** Esc on a zoomed page: back to the room, the page staying on the TV. {@code false} when not zoomed. */
     public static boolean leaveZoom(Screen screen) {
-        if (phase != Phase.WATCHING || texture == null || screen != recapScreen) return false;
+        if (phase != Phase.WATCHING || texture == null || screen == null || screen != texture.screen()) return false;
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen != screen) return false;
-        recapScreen.blurTextField();
+        if (screen == recapScreen) recapScreen.blurTextField();
         mc.setScreen(null);
-        texture.attach(recapScreen);
+        texture.attach(screen);
         return true;
     }
 
