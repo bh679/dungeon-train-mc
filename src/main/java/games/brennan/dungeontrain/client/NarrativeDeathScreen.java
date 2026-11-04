@@ -2179,9 +2179,10 @@ public final class NarrativeDeathScreen extends Screen {
         // On a tribute TV a fullscreen toggle sits in the very corner, right of leave: it lifts the
         // page onto the window, and while it is up there it is the way back down, as Esc is.
         boolean onTv = onTv();
-        int fsW = onTv ? 14 : 0;
-        fullscreenRect = onTv ? drawFullscreenChip(g, this.width - 10 - fsW, 8, zoomedOnWindow()) : null;
-        int leaveX = this.width - 10 - leaveW - (onTv ? fsW + 6 : 0);
+        int fsW = onTv ? FULLSCREEN_CHIP_W : 0;
+        fullscreenRect = onTv ? drawFullscreenChip(g, this.width - 10 - fsW, 8, zoomedOnWindow(), mouseX, mouseY) : null;
+        // A wide gap from Leave: aimed through a TV from across a room, a chip is a coarse target.
+        int leaveX = this.width - 10 - leaveW - (onTv ? fsW + 14 : 0);
         int reboardX = leaveX - 6 - reboardW;
         leaveRect = foreign ? null : shiftHeld
                 ? drawChip(g, leaveX, 8, leave, CHIP_LV_QUIT_BG, CHIP_LV_QUIT_BORDER, CHIP_LV_QUIT_TEXT)
@@ -2841,23 +2842,26 @@ public final class NarrativeDeathScreen extends Screen {
         }
     }
 
+    static final int FULLSCREEN_CHIP_W = 24;
+
     /**
-     * A 14x14 chip with a fullscreen glyph: four corner brackets opening outward to go up, and a
-     * small square inside them to come back down.
+     * A chip with a fullscreen glyph: four corner brackets opening outward to go up, and a square
+     * inside them to come back down. Lit while the pointer (the crosshair, on a TV) is over it.
      */
-    private Rect drawFullscreenChip(GuiGraphics g, int x, int y, boolean zoomed) {
-        int s = 14;
-        g.fill(x, y, x + s, y + s, fade(0x66000000));
-        drawBorder(g, x, y, s, s, CHIP_LV_BORDER);
-        int c = fade(CHIP_LV_TEXT);
-        int l = x + 3, t = y + 3, r = x + s - 3, b = y + s - 3; // 8x8 glyph box
+    private Rect drawFullscreenChip(GuiGraphics g, int x, int y, boolean zoomed, int mouseX, int mouseY) {
+        int s = 14, w = FULLSCREEN_CHIP_W;
+        boolean hover = mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + s;
+        g.fill(x, y, x + w, y + s, fade(hover ? 0x99FFFFFF : 0x66000000));
+        drawBorder(g, x, y, w, s, hover ? 0xFFFFFFFF : CHIP_LV_BORDER);
+        int c = fade(hover ? 0xFF101010 : CHIP_LV_TEXT);
+        int l = x + (w - 8) / 2, t = y + 3, r = l + 8, b = y + s - 3; // 8x8 glyph box, centred
         // Corner brackets, each two 3px arms.
         g.fill(l, t, l + 3, t + 1, c); g.fill(l, t, l + 1, t + 3, c);
         g.fill(r - 3, t, r, t + 1, c); g.fill(r - 1, t, r, t + 3, c);
         g.fill(l, b - 1, l + 3, b, c); g.fill(l, b - 3, l + 1, b, c);
         g.fill(r - 3, b - 1, r, b, c); g.fill(r - 1, b - 3, r, b, c);
         if (zoomed) g.fill(l + 2, t + 2, r - 2, b - 2, c);
-        return new Rect(x, y, s, s);
+        return new Rect(x, y, w, s);
     }
 
     /** Whether a text field on this page has the keyboard. */
