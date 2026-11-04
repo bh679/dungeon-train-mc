@@ -77,7 +77,7 @@ public final class LiveUploader implements AutoCloseable {
 
     private static final Storage LIVE = new Storage() {
         @Override public CompletableFuture<Result> presign(String token, List<String> files) {
-            return LiveFeedClient.presign(token, files, LiveMic.on());
+            return LiveFeedClient.presign(token, files, LiveMic.heartbeatMicOn());
         }
         @Override public CompletableFuture<Result> upload(SignedPut target, Path file) { return LiveFeedClient.upload(target, file); }
         @Override public CompletableFuture<Result> upload(SignedPut target, String body) { return LiveFeedClient.upload(target, body); }
@@ -257,6 +257,10 @@ public final class LiveUploader implements AutoCloseable {
         if (r.ok()) {
             LiveLifeEvents.heartbeat(count);
             LiveLifeEvents.crowd(LiveFeedClient.parseCrowd(r));
+            // The relay's word on the mic, every heartbeat: a ban landing mid-stream silences the voice here.
+            if (LiveMic.relayAllows(LiveFeedClient.parseMic(r).allowed())) {
+                LOGGER.info("[DungeonTrain] live mic: the relay turned the mic off for this streamer mid-stream");
+            }
         }
         if (urls.isEmpty()) {
             presignFailed(r);

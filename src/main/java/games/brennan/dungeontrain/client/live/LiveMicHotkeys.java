@@ -57,6 +57,11 @@ public final class LiveMicHotkeys {
         Minecraft mc = Minecraft.getInstance();
         LiveMic.Toggle t = LiveMic.toggle();
         if (t == LiveMic.Toggle.NOT_ENABLED) return;
+        if (t == LiveMic.Toggle.BARRED) {
+            // The relay turned the mic off for this streamer mid-stream: the switch does nothing, say why again.
+            LiveStreamController.sayMicBarred();
+            return;
+        }
         if (t == LiveMic.Toggle.NO_DEVICE) {
             if (mc.player != null) mc.player.displayClientMessage(
                 Component.translatable("chat.dungeontrain.live.mic_no_device").withStyle(ChatFormatting.RED), false);

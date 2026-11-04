@@ -267,6 +267,8 @@ public final class LiveRecOverlay {
     }
 
     private static Component micTooltip(boolean on) {
+        // Barred by the relay mid-stream: the icon shows off, and the tip says it is off for this streamer.
+        if (LiveMic.barred()) return Component.translatable("chat.dungeontrain.live.mic_barred");
         if (!on) return Component.translatable("gui.dungeontrain.live.mic_tip_off");
         return Component.translatable(LiveFeedClientConfig.micPushToTalk()
             ? "gui.dungeontrain.live.mic_tip_on_ptt" : "gui.dungeontrain.live.mic_tip_on");

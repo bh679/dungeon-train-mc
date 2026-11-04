@@ -433,7 +433,14 @@ public final class LiveStreamController {
             if (++qualityTicks % QUALITY_CHECK_TICKS == 0) tickQuality(System.currentTimeMillis());
             // The approved list can change under a running stream (the relay's overlay revokes a mod).
             if (audio != null && ++waitTicks % MOD_RECHECK_TICKS == 0) AudioMirror.setSilenced(!soundAllowedByMods(false));
+            // A mic ban that landed on a heartbeat (LiveUploader): the same line as a ban at claim time, once.
+            if (LiveMic.takeBarredNotice()) sayMicBarred();
         }
+    }
+
+    /** The relay has the mic turned off for this streamer: at claim time, or mid-stream on a heartbeat. */
+    static void sayMicBarred() {
+        say(Component.translatable("chat.dungeontrain.live.mic_barred").withStyle(ChatFormatting.GRAY));
     }
 
     /**
@@ -556,7 +563,7 @@ public final class LiveStreamController {
             // one's Live Eye into a TV).
             tellServerTakeover(LiveClaimResultPacket.Result.LIVE, c.prevName() == null ? "" : c.prevName());
             LiveFeedClient.MicPolicy mic = LiveFeedClient.parseMic(result);
-            if (micWanted && !mic.allowed()) say(Component.translatable("chat.dungeontrain.live.mic_barred").withStyle(ChatFormatting.GRAY));
+            if (micWanted && !mic.allowed()) sayMicBarred();
             beginStreaming(c, hasAac, micWanted && mic.allowed());
         }, mc);
     }

@@ -14,6 +14,10 @@ import org.jetbrains.annotations.Nullable;
  * turns it on. The capture device opens on the first switch-on, so a streamer who never uses the mic
  * never meets the system's microphone permission prompt. With push to talk set, the mic is only heard
  * while that key is held as well.</p>
+ *
+ * <p>The relay has the last word: every heartbeat reply says whether this streamer may use a mic
+ * ({@link #relayAllows}). Barred mid-stream, the voice stops at once (the mic track carries silence,
+ * the icon shows it off) and the switch is kept, so it is heard again on the heartbeat that allows it.</p>
  */
 public final class LiveMic {
 
@@ -25,6 +29,10 @@ public final class LiveMic {
     private static volatile boolean enabled;
     private static volatile boolean on;
     private static volatile boolean pttHeld;
+    /** The relay barred the mic mid-stream (uploader thread writes, render and pump threads read). */
+    private static volatile boolean barred;
+    /** A ban landed and the render thread has not yet said so in chat ({@link #takeBarredNotice}). */
+    private static volatile boolean barredNotice;
     @Nullable private static volatile MicCapture capture;
     /** Pump thread only. */
     private static MicDsp.NoiseGate gate = new MicDsp.NoiseGate(GATE_THRESHOLD, GATE_HOLD_SAMPLES);
@@ -37,8 +45,8 @@ public final class LiveMic {
 
     private LiveMic() {}
 
-    /** What a switch-on did. */
-    public enum Toggle { ON, OFF, NO_DEVICE, NOT_ENABLED }
+    /** What a switch-on did. {@code BARRED}: the relay has the mic turned off for this streamer. */
+    public enum Toggle { ON, OFF, NO_DEVICE, NOT_ENABLED, BARRED }
 
     /** Whether this client could stream a mic at all: support switched on and a capture device listed. */
     public static boolean available() {
@@ -49,6 +57,8 @@ public final class LiveMic {
     public static void startStream(boolean withMic) {
         enabled = withMic;
         on = false;
+        barred = false;
+        barredNotice = false;
         gate = new MicDsp.NoiseGate(GATE_THRESHOLD, GATE_HOLD_SAMPLES);
     }
 
@@ -56,6 +66,8 @@ public final class LiveMic {
     public static void endStream() {
         enabled = false;
         on = false;
+        barred = false;
+        barredNotice = false;
         closeCapture();
     }
 
@@ -64,23 +76,59 @@ public final class LiveMic {
         return enabled;
     }
 
-    /** The mic switch for this stream (the heartbeat's {@code micOn}). */
+    /** The mic switch for this stream, as far as the relay lets it count: off while barred. */
     public static boolean on() {
-        return enabled && on;
+        return enabled && on && !barred;
     }
 
-    /** Whether the mic is heard right now: on, and push to talk held when that is set. */
+    /** Whether the mic is heard right now: on, allowed, and push to talk held when that is set. */
     public static boolean transmitting() {
-        return on() && (!LiveFeedClientConfig.micPushToTalk() || pttHeld);
+        return heard(on(), LiveFeedClientConfig.micPushToTalk(), pttHeld);
+    }
+
+    /** The one rule for "voice is going out now": the switch on, and the key held when push to talk is set. */
+    static boolean heard(boolean on, boolean pushToTalk, boolean held) {
+        return on && (!pushToTalk || held);
+    }
+
+    /** The heartbeat's {@code micOn}: what viewers hear right now, not the switch. */
+    public static boolean heartbeatMicOn() {
+        return transmitting();
     }
 
     public static void setPushToTalkHeld(boolean held) {
         pttHeld = held;
     }
 
+    /** The relay has the mic turned off for this streamer while the stream carries on. */
+    public static boolean barred() {
+        return barred;
+    }
+
+    /**
+     * Any thread: the relay's word from a heartbeat reply. A ban silences the voice from the next pump
+     * block and leaves the switch alone; a later {@code true} lets it through again. True when this
+     * reply turned the ban on.
+     */
+    public static boolean relayAllows(boolean allowed) {
+        if (!enabled) return false;
+        boolean newlyBarred = !allowed && !barred;
+        barred = !allowed;
+        if (newlyBarred) barredNotice = true;
+        return newlyBarred;
+    }
+
+    /** Render thread: true once per ban, for the chat line that says the mic is off for this streamer. */
+    public static boolean takeBarredNotice() {
+        if (!barredNotice) return false;
+        barredNotice = false;
+        return true;
+    }
+
     /** Render thread: flips the mic, opening the capture device the first time it goes on. */
     public static Toggle toggle() {
         if (!enabled) return Toggle.NOT_ENABLED;
+        if (barred) return Toggle.BARRED;
         if (on) {
             on = false;
             return Toggle.OFF;
