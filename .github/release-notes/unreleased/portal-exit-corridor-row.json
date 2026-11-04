@@ -6,8 +6,8 @@
     "fix",
     "train"
   ],
-  "title": "Carriage bounce fix",
-  "summary": "Fixed a rare case where a player was pulled back and forth between two carriages every second.",
+  "title": "Bounce fix",
+  "summary": "Fixed a rare case where a player could get bounced around.",
   "highlights": [],
   "pr": 2466,
   "date": "2026-11-04",
