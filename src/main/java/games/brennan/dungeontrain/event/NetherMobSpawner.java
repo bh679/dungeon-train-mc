@@ -104,6 +104,11 @@ public final class NetherMobSpawner {
     private static final int SPAWN_RADIUS = 40;
     /** Mobs never spawn closer than this to the player. */
     private static final int MIN_SPAWN_DIST = 16;
+    /**
+     * Blocks around a spawn column whose chunks must be ready: half a ghast's 4-wide box plus the extra
+     * block {@code noCollision} scans around a box. {@code getBiome}'s fuzz reaches 2, so it fits too.
+     */
+    private static final int SPAWN_CHUNK_MARGIN = 3;
     /** Max nether-band mobs near a player before the spawner backs off. */
     private static final int NEARBY_CAP = 10;
     /** Ghast odds (1-in-N) on the FIRST Nether pass, in the biomes vanilla fills with ghasts. */
@@ -410,8 +415,11 @@ public final class NetherMobSpawner {
         if (NetherBand.netherRampAt(level, wx) < SPAWN_INTENSITY_THRESHOLD) return;
         if (DisintegrationBand.middleRampAt(level, wx) > 0.0) return;
 
+        // The column is up to SPAWN_RADIUS from the player, so it regularly lands in a chunk still
+        // generating ahead of the train, and the reads below would park the server thread on it.
+        if (!ChunkFootprint.ready(level.getChunkSource()::getChunkNow, wx, wz, SPAWN_CHUNK_MARGIN)) return;
+
         BlockPos probe = new BlockPos(wx, player.getBlockY(), wz);
-        if (!level.isLoaded(probe)) return;
 
         // Biome at the player's height drives the ghast frequency (the core cycles all 5 Nether biomes);
         // the ground roster reads the biome at the chosen feet block instead.
