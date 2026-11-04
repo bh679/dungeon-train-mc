@@ -5583,6 +5583,7 @@
   "item.dungeontrain.home_cassette": "ホームカセット",
   "item.dungeontrain.home_cassette.tooltip": "自分のホームルームに合わせたカセット。そのテレビはあなた自身の物語を映す。",
   "chat.dungeontrain.home_room.tv_stays": "テレビはそのまま。周りに建てよう。",
+  "chat.dungeontrain.home_room.view_only": "ここは誰かの家。見るだけにして、元のままにしておこう。",
   "perk.dungeontrain.restock_villager.button": "補充 (%s)",
   "gui.dungeontrain.perks.rank_cost": "次のポイントのコストは%s。",
   "gui.dungeontrain.perks.raise_limit": "上限を上げる (%s)",

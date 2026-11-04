@@ -5583,6 +5583,7 @@
   "item.dungeontrain.home_cassette": "Băng phòng riêng",
   "item.dungeontrain.home_cassette.tooltip": "Dò sẵn kênh phòng riêng của bạn. TV trong đó phát câu chuyện của chính bạn.",
   "chat.dungeontrain.home_room.tv_stays": "TV vẫn ở đây. Hãy xây quanh nó.",
+  "chat.dungeontrain.home_room.view_only": "Đây là nhà của ai đó. Cứ xem, nhưng hãy để nguyên như lúc bạn thấy.",
   "perk.dungeontrain.restock_villager.button": "Bổ sung (%s)",
   "gui.dungeontrain.perks.rank_cost": "Điểm tiếp theo tốn %s.",
   "gui.dungeontrain.perks.raise_limit": "Nâng giới hạn (%s)",

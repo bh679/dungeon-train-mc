@@ -5649,6 +5649,7 @@
   "item.dungeontrain.home_cassette": "Fita do lar",
   "item.dungeontrain.home_cassette.tooltip": "Sintonizada no seu quarto pessoal. A TV dele passa a sua própria história.",
   "chat.dungeontrain.home_room.tv_stays": "A TV fica. Construa ao redor dela.",
+  "chat.dungeontrain.home_room.view_only": "Aqui mora alguém. Olhe, mas deixe tudo como encontrou.",
   "perk.dungeontrain.restock_villager.button": "Reabastecer (%s)",
   "gui.dungeontrain.perks.rank_cost": "O próximo ponto custa %s.",
   "gui.dungeontrain.perks.raise_limit": "Subir limite (%s)",

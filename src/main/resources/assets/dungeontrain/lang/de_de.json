@@ -5649,6 +5649,7 @@
   "item.dungeontrain.home_cassette": "Heimkassette",
   "item.dungeontrain.home_cassette.tooltip": "Auf dein Heimzimmer eingestellt. Sein Fernseher zeigt deine eigene Geschichte.",
   "chat.dungeontrain.home_room.tv_stays": "Der Fernseher bleibt. Bau drumherum.",
+  "chat.dungeontrain.home_room.view_only": "Hier wohnt jemand. Schau dich um, aber lass alles, wie du es vorgefunden hast.",
   "perk.dungeontrain.restock_villager.button": "Auffüllen (%s)",
   "gui.dungeontrain.perks.rank_cost": "Der nächste Punkt kostet %s.",
   "gui.dungeontrain.perks.raise_limit": "Limit erhöhen (%s)",

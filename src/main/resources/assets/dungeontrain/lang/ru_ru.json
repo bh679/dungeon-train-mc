@@ -5715,6 +5715,7 @@
   "item.dungeontrain.home_cassette": "Домашняя кассета",
   "item.dungeontrain.home_cassette.tooltip": "Настроена на вашу личную комнату. Её телевизор показывает вашу собственную историю.",
   "chat.dungeontrain.home_room.tv_stays": "Телевизор остаётся. Стройте вокруг него.",
+  "chat.dungeontrain.home_room.view_only": "Здесь кто-то живёт. Смотрите, но оставьте всё как было.",
   "perk.dungeontrain.restock_villager.button": "Пополнить (%s)",
   "gui.dungeontrain.perks.rank_cost": "Следующее очко стоит %s.",
   "gui.dungeontrain.perks.raise_limit": "Поднять предел (%s)",

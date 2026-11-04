@@ -548,7 +548,7 @@
     "mode": "endless_repetition/dynamic"
   },
   "home": {
-    "weight": 0,
+    "weight": 1,
     "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0//auto/off"
   }
 }

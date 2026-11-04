@@ -5583,6 +5583,7 @@
   "item.dungeontrain.home_cassette": "Kaset Rumah",
   "item.dungeontrain.home_cassette.tooltip": "Disetel ke kamar pribadimu. TV-nya memutar kisahmu sendiri.",
   "chat.dungeontrain.home_room.tv_stays": "TV-nya tetap di sini. Bangunlah di sekitarnya.",
+  "chat.dungeontrain.home_room.view_only": "Ini rumah seseorang. Lihat saja, tapi tinggalkan seperti saat kamu menemukannya.",
   "perk.dungeontrain.restock_villager.button": "Isi ulang (%s)",
   "gui.dungeontrain.perks.rank_cost": "Poin berikutnya butuh %s.",
   "gui.dungeontrain.perks.raise_limit": "Naikkan batas (%s)",

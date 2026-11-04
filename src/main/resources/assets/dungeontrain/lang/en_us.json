@@ -2638,6 +2638,7 @@
   "item.dungeontrain.home_cassette": "Home Cassette",
   "item.dungeontrain.home_cassette.tooltip": "Tuned to your home room. Its TV plays your own story.",
   "chat.dungeontrain.home_room.tv_stays": "The TV stays. Build around it.",
+  "chat.dungeontrain.home_room.view_only": "Somebody's home. Look, but leave it as you found it.",
   "item.dungeontrain.live_headpiece.tooltip": "Livestream the wearer's perspective.",
   "item.dungeontrain.live_headpiece.tooltip.warning": "Destroyed when removed, or next person equips.",
   "item.dungeontrain.random_live_headpiece": "Random Live Eye (loot placeholder)",

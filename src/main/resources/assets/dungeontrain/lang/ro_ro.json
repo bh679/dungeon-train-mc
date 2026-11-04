@@ -5715,6 +5715,7 @@
   "item.dungeontrain.home_cassette": "Casetă de acasă",
   "item.dungeontrain.home_cassette.tooltip": "Reglată pe camera ta personală. Televizorul ei îți redă propria poveste.",
   "chat.dungeontrain.home_room.tv_stays": "Televizorul rămâne. Construiește în jurul lui.",
+  "chat.dungeontrain.home_room.view_only": "Aici locuiește cineva. Privește, dar lasă totul așa cum ai găsit.",
   "perk.dungeontrain.restock_villager.button": "Reaprovizionează (%s)",
   "gui.dungeontrain.perks.rank_cost": "Următorul punct costă %s.",
   "gui.dungeontrain.perks.raise_limit": "Crește limita (%s)",

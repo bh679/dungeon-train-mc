@@ -48,5 +48,6 @@ public final class HomeRoomEvents {
     public static void onServerStopped(ServerStoppedEvent event) {
         HomeRoomVisitSessions.clear();
         HomeRoomDeathKit.clear();
+        games.brennan.dungeontrain.portal.home.HomeRoomRegistry.clear();
     }
 }

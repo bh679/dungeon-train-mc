@@ -5583,6 +5583,7 @@
   "item.dungeontrain.home_cassette": "홈 카세트",
   "item.dungeontrain.home_cassette.tooltip": "자신의 홈 룸에 맞춰진 카세트. 그 TV는 당신 자신의 이야기를 보여준다.",
   "chat.dungeontrain.home_room.tv_stays": "TV는 그대로 둡니다. 주변에 지으세요.",
+  "chat.dungeontrain.home_room.view_only": "누군가의 집입니다. 구경은 하되 발견한 그대로 두세요.",
   "perk.dungeontrain.restock_villager.button": "보충 (%s)",
   "gui.dungeontrain.perks.rank_cost": "다음 포인트 비용: %s.",
   "gui.dungeontrain.perks.raise_limit": "한도 올리기 (%s)",

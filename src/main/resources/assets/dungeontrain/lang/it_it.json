@@ -5649,6 +5649,7 @@
   "item.dungeontrain.home_cassette": "Cassetta di casa",
   "item.dungeontrain.home_cassette.tooltip": "Sintonizzata sulla tua stanza personale. La sua TV trasmette la tua storia.",
   "chat.dungeontrain.home_room.tv_stays": "La TV resta. Costruisci intorno.",
+  "chat.dungeontrain.home_room.view_only": "Qui abita qualcuno. Guarda pure, ma lascia tutto come l'hai trovato.",
   "perk.dungeontrain.restock_villager.button": "Rifornisci (%s)",
   "gui.dungeontrain.perks.rank_cost": "Il prossimo punto costa %s.",
   "gui.dungeontrain.perks.raise_limit": "Alza limite (%s)",

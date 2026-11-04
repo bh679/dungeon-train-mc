@@ -5649,6 +5649,7 @@
   "item.dungeontrain.home_cassette": "Thuiscassette",
   "item.dungeontrain.home_cassette.tooltip": "Afgestemd op je eigen kamer. De tv daar speelt je eigen verhaal.",
   "chat.dungeontrain.home_room.tv_stays": "De tv blijft staan. Bouw eromheen.",
+  "chat.dungeontrain.home_room.view_only": "Hier woont iemand. Kijk gerust, maar laat alles zoals je het aantrof.",
   "perk.dungeontrain.restock_villager.button": "Aanvullen (%s)",
   "gui.dungeontrain.perks.rank_cost": "Het volgende punt kost %s.",
   "gui.dungeontrain.perks.raise_limit": "Limiet verhogen (%s)",

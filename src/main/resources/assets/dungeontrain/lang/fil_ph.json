@@ -5583,6 +5583,7 @@
   "item.dungeontrain.home_cassette": "Home Cassette",
   "item.dungeontrain.home_cassette.tooltip": "Nakatutok sa iyong sariling silid. Pinapalabas ng TV nito ang sarili mong kuwento.",
   "chat.dungeontrain.home_room.tv_stays": "Nananatili ang TV. Magtayo sa paligid nito.",
+  "chat.dungeontrain.home_room.view_only": "May nakatira rito. Tumingin ka, pero iwan mo ito kung paano mo nadatnan.",
   "perk.dungeontrain.restock_villager.button": "I-restock (%s)",
   "gui.dungeontrain.perks.rank_cost": "Ang susunod na point ay nagkakahalaga ng %s.",
   "gui.dungeontrain.perks.raise_limit": "Itaas ang limit (%s)",

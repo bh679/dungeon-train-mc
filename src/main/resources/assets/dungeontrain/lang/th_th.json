@@ -5583,6 +5583,7 @@
   "item.dungeontrain.home_cassette": "เทปห้องส่วนตัว",
   "item.dungeontrain.home_cassette.tooltip": "ปรับคลื่นไว้ที่ห้องส่วนตัวของคุณ ทีวีในห้องจะเล่นเรื่องราวของคุณเอง",
   "chat.dungeontrain.home_room.tv_stays": "ทีวีอยู่ตรงนี้ต่อไป สร้างรอบๆ มันได้เลย",
+  "chat.dungeontrain.home_room.view_only": "นี่คือบ้านของใครบางคน ดูได้ แต่ปล่อยไว้ให้เหมือนเดิม",
   "perk.dungeontrain.restock_villager.button": "เติมสินค้า (%s)",
   "gui.dungeontrain.perks.rank_cost": "แต้มถัดไปใช้ %s",
   "gui.dungeontrain.perks.raise_limit": "เพิ่มขีดจำกัด (%s)",

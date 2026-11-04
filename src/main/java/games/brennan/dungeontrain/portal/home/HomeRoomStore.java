@@ -17,7 +17,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import java.util.UUID;
 
 /**
@@ -65,6 +67,34 @@ public final class HomeRoomStore {
             return Optional.ofNullable(blob);
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] home room: could not read {} — starting from the default: {}", file, e.toString());
+            return Optional.empty();
+        }
+    }
+
+    /** Every owner (dashless uuid) with a room saved here, sorted, so a seeded draw is stable. */
+    public static List<String> owners() {
+        Path dir = directory();
+        if (!Files.isDirectory(dir)) return List.of();
+        try (Stream<Path> files = Files.list(dir)) {
+            return files.map(f -> f.getFileName().toString())
+                .filter(n -> n.endsWith(".nbt") && n.length() == 36)
+                .map(n -> n.substring(0, 32))
+                .sorted()
+                .toList();
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] home room: could not list {}: {}", dir, e.toString());
+            return List.of();
+        }
+    }
+
+    /** The saved room of the owner with dashless uuid {@code owner}, when it reads. */
+    public static Optional<HomeRoomBlob> loadByOwner(String owner) {
+        Path file = directory().resolve(owner + ".nbt");
+        if (!Files.isRegularFile(file)) return Optional.empty();
+        try {
+            return Optional.ofNullable(HomeRoomBlob.decode(NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap())));
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] home room: could not read {}: {}", file, e.toString());
             return Optional.empty();
         }
     }

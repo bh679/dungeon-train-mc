@@ -5715,6 +5715,7 @@
   "item.dungeontrain.home_cassette": "Kaseta domowa",
   "item.dungeontrain.home_cassette.tooltip": "Dostrojona do twojego pokoju. Jego telewizor odtwarza twoją własną historię.",
   "chat.dungeontrain.home_room.tv_stays": "Telewizor zostaje. Buduj wokół niego.",
+  "chat.dungeontrain.home_room.view_only": "Ktoś tu mieszka. Rozejrzyj się, ale zostaw wszystko tak, jak zastałeś.",
   "perk.dungeontrain.restock_villager.button": "Uzupełnij (%s)",
   "gui.dungeontrain.perks.rank_cost": "Następny punkt kosztuje %s.",
   "gui.dungeontrain.perks.raise_limit": "Podnieś limit (%s)",
