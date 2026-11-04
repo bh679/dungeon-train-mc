@@ -32867,6 +32867,73 @@
       "released": true,
       "released_in": "v0.1645.0",
       "released_at": "2026-11-03T16:47:16Z"
+    },
+    {
+      "id": "debug-screen-tweak",
+      "version": "0.1648.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Debug screen tweak",
+      "summary": "A small tweak to the debug screen.",
+      "highlights": [],
+      "pr": 2468,
+      "date": "2026-11-04",
+      "released": true,
+      "released_in": "v0.1649.0",
+      "released_at": "2026-11-04T09:33:33Z"
+    },
+    {
+      "id": "end-band-biome-fixes",
+      "version": "0.1649.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "End fix",
+      "summary": "A few small fixes in the End. It opens the way it should, its second half shows the scenery it was meant to, and the sky out over the void reads right.",
+      "highlights": [],
+      "pr": 2469,
+      "date": "2026-11-04",
+      "released": true,
+      "released_in": "v0.1649.0",
+      "released_at": "2026-11-04T09:33:33Z"
+    },
+    {
+      "id": "local-ci-runner",
+      "version": "0.1646.0",
+      "type": "ci",
+      "tags": [
+        "internal"
+      ],
+      "title": "Faster checks before changes ship",
+      "summary": "The team can now run the full set of release checks on their own machine before sending a change in, so fixes reach you with fewer delays.",
+      "highlights": [],
+      "pr": 2467,
+      "date": "2026-11-04",
+      "released": true,
+      "released_in": "v0.1649.0",
+      "released_at": "2026-11-04T09:33:33Z"
+    },
+    {
+      "id": "portal-exit-corridor-row",
+      "version": "0.1646.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Bounce fix",
+      "summary": "Fixed a rare case where a player could get bounced around.",
+      "highlights": [],
+      "pr": 2466,
+      "date": "2026-11-04",
+      "released": true,
+      "released_in": "v0.1649.0",
+      "released_at": "2026-11-04T09:33:33Z"
     }
   ]
 }
