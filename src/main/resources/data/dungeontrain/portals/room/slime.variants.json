@@ -178,6 +178,6 @@
     "6,2,11": ["minecraft:slime_block", {"state": "dungeontrain:variant_placeholder", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "dungeontrain:variant_placeholder", "groupRef": 23, "groupStates": [{"state": "dungeontrain:variant_placeholder", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:slime_block", "groupRef": 17, "groupStates": ["minecraft:slime_block", {"state": "dungeontrain:variant_placeholder", "rotation": {"mode": "lock", "dirs": ["north"]}}]}]}, {"state": "minecraft:slime_block", "groupRef": 14, "groupStates": ["minecraft:slime_block", {"state": "dungeontrain:variant_placeholder", "rotation": {"mode": "lock", "dirs": ["north"]}}]}],
     "4,3,6": ["dungeontrain:variant_placeholder", {"entity": "minecraft:slime"}],
     "5,3,10": ["dungeontrain:variant_placeholder", {"entity": "minecraft:slime"}],
-    "4,2,2": [{"state": "minecraft:slime_block", "weight": 20}, {"state": "minecraft:barrel[facing=north,open=false]", "lootPrefab": "slimes"}, {"state": "dungeontrain:variant_placeholder", "weight": 250, "rotation": {"mode": "lock", "dirs": ["north"]}}]
+    "4,2,2": [{"state": "minecraft:slime_block", "weight": 20}, {"state": "minecraft:barrel[facing=north,open=false]", "lootPrefab": "slimes"}, {"state": "dungeontrain:variant_placeholder", "weight": 300, "rotation": {"mode": "lock", "dirs": ["north"]}}]
   }
 }

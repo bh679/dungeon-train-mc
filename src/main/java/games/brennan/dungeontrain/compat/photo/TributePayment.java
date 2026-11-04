@@ -24,6 +24,17 @@ public final class TributePayment {
 
     private TributePayment() {}
 
+    /**
+     * People a photo reaches after a Tribute, so the chat line can name it. The relay is the
+     * authority (playerphotos.js {@code reachFor}): each emerald from someone else beyond the first
+     * adds one to {@link SharedPhotos#VIEWS_MAX}, the reach it has earned never drops, and a
+     * photographer's own Tribute earns none.
+     */
+    static int reach(int cost, int maxViews, boolean ownPhoto) {
+        int earned = ownPhoto ? 0 : SharedPhotos.VIEWS_MAX - SharedPhotos.TRIBUTE_BASE_COST + cost;
+        return Math.max(SharedPhotos.VIEWS_MAX, Math.max(maxViews, earned));
+    }
+
     /** Everything the player could pay with, in emeralds. */
     public static int worth(Player player) {
         return count(player, Items.EMERALD) + EMERALDS_PER_BLOCK * count(player, Items.EMERALD_BLOCK);

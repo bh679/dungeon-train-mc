@@ -263,7 +263,15 @@ public final class StartingBookEvents {
         if (event.isEndConquered()) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (isBuilderWorld(player)) return;
+        // A tribute room visit is not the train: the strike waits for the way out (strikeAfterTributeRoom).
+        if (games.brennan.dungeontrain.portal.tribute.TributeRoomVisitSessions.isVisiting(player.getUUID())) return;
         // Respawn context is unambiguous; pre-resolve at enqueue.
+        PENDING_STRIKE.put(player.getUUID(), new PendingStrike(STRIKE_DELAY_TICKS, StartingBookContext.RESPAWN));
+    }
+
+    /** The respawn strike, once a tribute room visit has put the player on the train. */
+    public static void strikeAfterTributeRoom(ServerPlayer player) {
+        if (isBuilderWorld(player)) return;
         PENDING_STRIKE.put(player.getUUID(), new PendingStrike(STRIKE_DELAY_TICKS, StartingBookContext.RESPAWN));
     }
 
@@ -731,12 +739,16 @@ public final class StartingBookEvents {
             // Nor a photo taken out of a frame (or dropped by breaking it): it lands so the player who took
             // it down can pick it up, and burns as normal once viewed or dropped again (FramePhotoRemoval).
             boolean frameRemoval = games.brennan.dungeontrain.compat.photo.FramePhotoRemoval.inProgress();
+            // Nor a photo won from a vault: it lands for the player who unlocked it, and burns as normal
+            // once viewed or dropped again (VaultEjection).
+            boolean vaultEject = games.brennan.dungeontrain.compat.photo.VaultEjection.inProgress();
             // A found photo (the relay pool's) burns on a player's drop too — it was never theirs to keep.
             if ((games.brennan.dungeontrain.compat.DisposableCamera.holdsBurnAfterViewing(stack)
                         || stack.is(games.brennan.dungeontrain.registry.ModItems.FOUND_PHOTOGRAPH.get()))
                     && !mobDrop
                     && !containerSpill
                     && !frameRemoval
+                    && !vaultEject
                     && !BURN_ENTITIES.containsKey(item.getUUID())) {
                 igniteItem(item, FlameVariant.DEFAULT);
                 // Opt-in author credit, as for a book: the photographer is named as it catches fire.
@@ -843,28 +855,24 @@ public final class StartingBookEvents {
     /**
      * Scan the player's hands (mainhand → offhand) then full inventory for
      * the first {@link ItemStack} that is burnable per
-     * {@link BurnableBookTag#isBurnable}, remove it from its slot, and
-     * return a copy. Returns {@link ItemStack#EMPTY} when nothing matches.
+     * {@link BurnableBookTag#isBurnable}, take ONE copy out of its slot, and
+     * return it. Returns {@link ItemStack#EMPTY} when nothing matches.
+     *
+     * <p>Identical books stack (written books stack to 16), so a slot can hold several copies of
+     * the same board or story. Reading one burns that one; the rest stay in the slot to be read.</p>
      */
     private static ItemStack findAndRemoveBurnableBook(ServerPlayer player) {
         ItemStack mainhand = player.getMainHandItem();
-        if (BurnableBookTag.isBurnable(mainhand)) {
-            ItemStack copy = mainhand.copy();
-            mainhand.setCount(0);  // empty the slot in-place
-            return copy;
-        }
+        if (BurnableBookTag.isBurnable(mainhand)) return mainhand.split(1);
         ItemStack offhand = player.getOffhandItem();
-        if (BurnableBookTag.isBurnable(offhand)) {
-            ItemStack copy = offhand.copy();
-            offhand.setCount(0);
-            return copy;
-        }
+        if (BurnableBookTag.isBurnable(offhand)) return offhand.split(1);
         Inventory inv = player.getInventory();
         for (int i = 0; i < inv.getContainerSize(); i++) {
             ItemStack s = inv.getItem(i);
             if (BurnableBookTag.isBurnable(s)) {
-                inv.setItem(i, ItemStack.EMPTY);
-                return s;
+                ItemStack one = s.split(1);
+                inv.setChanged();
+                return one;
             }
         }
         return ItemStack.EMPTY;
@@ -1010,15 +1018,18 @@ public final class StartingBookEvents {
      * common case) or no cursed book is authored for its outcome. The picked variant is marked seen
      * per-installation so a player who curses repeatedly gets fresh prose; the STORY itself is only
      * retired when the book is actually read ({@link #handleStartingBookClosed}) — an unopened book
-     * burns and the same story is offered again at the next strike.
+     * burns and the same story is offered again next life. Within one life it is handed out once
+     * ({@link CursedStoryPool#markDelivered}), so a later strike moves on to the next unread story.
      */
     private static Optional<ItemStack> rollCursedStory(ServerPlayer player, long seed) {
         UUID uuid = player.getUUID();
         Optional<CursedStoryPool.Story> story = CursedStoryPool.peek(uuid);
         if (story.isEmpty()) return Optional.empty();
-        return CursedBookFactory.roll(seed, story.get(),
+        Optional<ItemStack> book = CursedBookFactory.roll(seed, story.get(),
             PlayerPlayedMarker.seenDimensionVariants(uuid),
             key -> PlayerPlayedMarker.markDimensionVariantSeen(uuid, key));
+        book.ifPresent(b -> CursedStoryPool.markDelivered(uuid, story.get().id()));
+        return book;
     }
 
     /**

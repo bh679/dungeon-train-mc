@@ -79,6 +79,9 @@ import net.minecraft.world.item.ItemStack;
  *       {@link games.brennan.dungeontrain.client.StartingBookClientEvents}'s
  *       {@code LecternScreen} exclusion, which keeps an in-place lectern read
  *       from ever being mistaken for a held-book close).</li>
+ *   <li>{@link PlayerNarrativeBookTag} — a player-written narrative letter served by a lectern.
+ *       Unconditional, exactly like {@link NarrativeBookTag}: only a copy taken off the lectern
+ *       (Take Book, or a broken lectern) is at risk.</li>
  * </ul>
  *
  * <p>Explicitly NOT burnable:</p>
@@ -121,6 +124,7 @@ public final class BurnableBookTag {
         if (LeaderboardBookTag.is(stack) && LeaderboardBookTag.isHeld(stack)) return true;
         if (RunStatBookTag.is(stack) && RunStatBookTag.isHeld(stack)) return true;
         if (NarrativeBookTag.read(stack).isPresent()) return true;
+        if (PlayerNarrativeBookTag.read(stack).isPresent()) return true;
         return false;
     }
 }

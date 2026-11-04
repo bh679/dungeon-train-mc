@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.SampledCells;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
@@ -40,7 +41,8 @@ import java.util.Set;
  * type), and the cells a sampled BetterEnd / BoP End pass wrote during the chunk's own
  * worldgen ({@link EndBandInlineTerrain}, recorded per chunk in
  * {@link ModDataAttachments#END_BAND_SAMPLED_CELLS}) — everything else in the band is
- * dissolved. The background path needs no record: it writes its sample on a later tick, after
+ * dissolved, and any sand or gravel the crumbling leaves hanging is anchored ({@link FallingBlockAnchor})
+ * so the fade never rains falling blocks. The background path needs no record: it writes its sample on a later tick, after
  * this erosion. Writes go through raw {@link LevelChunkSection#setBlockState}, the Sable-safe
  * path (see {@link BedrockFloorEvents}).</p>
  */
@@ -181,8 +183,51 @@ public final class WorldDisintegrationEvents {
                 }
             }
         }
+        for (int dx = 0; dx < 16; dx++) {
+            double ramp = middle[dx];
+            if (ramp <= 0.0) continue;
+            for (int dz = 0; dz < 16; dz++) {
+                int worldZ = chunkMinZ + dz;
+                if (ramp >= 1.0 && worldZ >= preserveZMin && worldZ <= preserveZMax) continue;
+                changed |= anchorColumn(chunk, dx, dz, chunkMinX + dx, worldZ, ramp >= 1.0, exempt);
+            }
+        }
         GenProfiler.add(GenProfiler.Bucket.EROSION, genT0);
         if (changed) chunk.setUnsaved(true);
+        return changed;
+    }
+
+    /**
+     * Turn every fallable the erosion left hanging (free space directly below) into its stable
+     * equivalent, bottom-up, so the crumbled fade never rains sand and gravel into the void once the
+     * chunk ticks. One anchor holds the whole stack above it. Idempotent: a second pass finds nothing
+     * left to convert. True if any block changed.
+     */
+    private static boolean anchorColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
+                                        boolean core, SampledCells exempt) {
+        boolean changed = false;
+        BlockState below = AIR;
+        for (int sIdx = 0; sIdx < chunk.getSectionsCount(); sIdx++) {
+            LevelChunkSection section = chunk.getSection(sIdx);
+            if (section.hasOnlyAir()) {
+                below = AIR;
+                continue;
+            }
+            int baseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sIdx));
+            for (int ly = 0; ly < 16; ly++) {
+                int y = baseY + ly;
+                BlockState cur = section.getBlockState(dx, ly, dz);
+                BlockState stable = isPreservedEndBlock(cur, core) || exempt.contains(dx, y, dz)
+                        ? null : FallingBlockAnchor.anchorIfUnsupported(cur, below);
+                if (stable != null) {
+                    if (cur.hasBlockEntity()) chunk.removeBlockEntity(new BlockPos(worldX, y, worldZ));
+                    section.setBlockState(dx, ly, dz, stable, false);
+                    cur = stable;
+                    changed = true;
+                }
+                below = cur;
+            }
+        }
         return changed;
     }
 }

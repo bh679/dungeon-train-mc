@@ -82,7 +82,6 @@ dungeontrain:dungeon_train/reached_superflat
 dungeontrain:dungeon_train/reached_void
 dungeontrain:dungeon_train/reached_wwoo
 dungeontrain:dungeon_train/read_all_nether_starting_books
-dungeontrain:dungeon_train/read_all_rules
 dungeontrain:dungeon_train/read_all_stories
 dungeontrain:dungeon_train/read_shared_book
 dungeontrain:dungeon_train/reassembly_required

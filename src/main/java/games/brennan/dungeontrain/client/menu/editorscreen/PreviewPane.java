@@ -47,6 +47,18 @@ public final class PreviewPane {
         g.renderOutline(r.x(), r.y(), r.w(), r.h(), theme.outline());
     }
 
+    /** The plot the author stands in as its blocks are now — see {@link games.brennan.dungeontrain.client.builder.LivePlotPreview}. */
+    public static void drawLive(GuiGraphics g, Font font, InventoryEditorLayout.Rect r, String templateKey,
+                                String name, float yaw, EditorScreenTheme theme) {
+        g.fill(r.x(), r.y(), r.right(), r.bottom(), BACKDROP);
+        games.brennan.dungeontrain.client.builder.LivePlotPreview.draw(
+            g, templateKey, r.x(), r.y(), r.w(), r.h(), yaw, FILL);
+        if (!name.isEmpty()) {
+            g.drawString(font, font.plainSubstrByWidth(name, r.w() - 6), r.x() + 3, r.y() + 2, CAPTION, true);
+        }
+        g.renderOutline(r.x(), r.y(), r.w(), r.h(), theme.outline());
+    }
+
     /** As above at {@code seq} of the build's relay history; 0 is the build as it is now. */
     public static void draw(GuiGraphics g, Font font, InventoryEditorLayout.Rect r, TemplateArt art,
                             String name, float yaw, EditorScreenTheme theme, int relayId, int seq) {

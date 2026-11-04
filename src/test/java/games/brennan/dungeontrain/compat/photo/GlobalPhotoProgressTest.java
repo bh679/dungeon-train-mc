@@ -74,4 +74,22 @@ class GlobalPhotoProgressTest {
         assertTrue(GlobalPhotoProgress.deleteFor(PLAYER));
         assertFalse(GlobalPhotoProgress.hasAny(PLAYER));
     }
+
+    @Test
+    @DisplayName("the Terra Omnia credit flag survives a restart, reads false from older files, and merging keeps it")
+    void rideCreditedFlag() {
+        GlobalPhotoProgress.useDirectoryForTests(dir);
+        GlobalPhotoProgress.merge(PLAYER, new GlobalPhotoProgress.Tally(Map.of("hostile", 1), Set.of("minecraft:plains")));
+        GlobalPhotoProgress.flushAndClearAll();
+        assertFalse(GlobalPhotoProgress.read(PLAYER).rideCredited());
+
+        GlobalPhotoProgress.merge(PLAYER, new GlobalPhotoProgress.Tally(Map.of(), Set.of(), true));
+        GlobalPhotoProgress.merge(PLAYER, new GlobalPhotoProgress.Tally(Map.of("hostile", 2), Set.of()));
+        GlobalPhotoProgress.flushAndClearAll();
+
+        GlobalPhotoProgress.Tally read = GlobalPhotoProgress.read(PLAYER);
+        assertTrue(read.rideCredited());
+        assertEquals(Set.of("minecraft:plains"), read.biomes());
+        assertTrue(read.sameTallies(new GlobalPhotoProgress.Tally(Map.of("hostile", 2), Set.of("minecraft:plains"))));
+    }
 }

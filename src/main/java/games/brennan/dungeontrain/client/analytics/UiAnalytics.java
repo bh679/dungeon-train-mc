@@ -62,6 +62,10 @@ public final class UiAnalytics {
     public static final String SURFACE_VIDEOS = "videos_page";
     /** The Community Rewards page (the shelf "See All Rewards" opens). Relay ui-events.js SURFACES. */
     public static final String SURFACE_REWARDS_PAGE = "rewards_page";
+    // The Mod of the Year popup (client/moty/ModOfTheYearPopupScreen). Its targets come from
+    // ModOfTheYear.Ask#analyticsTarget (one per ask, plus _done / _later), not constants here.
+    // Lock-step with ui-events.js SURFACES + TARGETS.
+    public static final String SURFACE_MOTY_POPUP = "moty_popup";
     // Targets
     public static final String TARGET_PAGE = "page";
     public static final String TARGET_SUPPORT = "support";
@@ -251,6 +255,15 @@ public final class UiAnalytics {
     /** The ConfirmLinkScreen resolved — {@code yes} means the external link actually opened. */
     public static void confirm(String surface, String target, boolean yes) {
         send(surface, target, yes ? "confirm_yes" : "confirm_no", -1, null, null, -1, -1, null);
+    }
+
+    /**
+     * A prompt identified by {@code target} was put on screen (fire once per visit, from the
+     * constructor). Unlike {@link #pageOpen(String)}, the target says WHICH prompt, so a surface
+     * that shows several (the Mod of the Year asks) can count each one's views.
+     */
+    public static void shown(String surface, String target) {
+        send(surface, target, "open", -1, null, null, -1, -1, null);
     }
 
     /** A tracked page was opened (fire once per visit — from the screen's constructor, not init()). */

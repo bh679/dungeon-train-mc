@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.portal;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -1994,7 +1995,7 @@ public final class PortalCarriageBuilder {
                                           Vec3i size, PortalCorridorMask mask, int variantIndex,
                                           int exactIndex, int pairKey, PortalRoomTiling.Tile tile,
                                           int liveMobCount) {
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, roomName, size);
+        VariantDoc sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, roomName, size);
         if (sidecar.isEmpty()) return;
 
         long worldSeed = level.getSeed();

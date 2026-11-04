@@ -48,12 +48,16 @@ public final class GlobalPhotoProgress {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final long FLUSH_TIMEOUT_SECONDS = 10;
 
-    /** One player's tallies. Immutable. */
-    public record Tally(Map<String, Integer> counts, Set<String> biomes) {
+    /**
+     * One player's tallies. Immutable. {@code rideCredited}: the photographed biomes have had their one-time
+     * credit towards Terra Omnia ({@link PhotoBiomeRideCredit}); once set it stays set.
+     */
+    public record Tally(Map<String, Integer> counts, Set<String> biomes, boolean rideCredited) {
         public static final Codec<Tally> CODEC = RecordCodecBuilder.create(in -> in.group(
             Codec.unboundedMap(Codec.STRING, Codec.INT).optionalFieldOf("counts", Map.of()).forGetter(Tally::counts),
             Codec.STRING.listOf().xmap(list -> (Set<String>) new LinkedHashSet<>(list), set -> List.copyOf(set))
-                .optionalFieldOf("biomes", Set.of()).forGetter(Tally::biomes)
+                .optionalFieldOf("biomes", Set.of()).forGetter(Tally::biomes),
+            Codec.BOOL.optionalFieldOf("rideCredited", false).forGetter(Tally::rideCredited)
         ).apply(in, Tally::new));
 
         public static final Tally EMPTY = new Tally(Map.of(), Set.of());
@@ -63,13 +67,22 @@ public final class GlobalPhotoProgress {
             biomes = Collections.unmodifiableSet(new LinkedHashSet<>(biomes));
         }
 
-        /** The larger of each count and every biome from both. */
+        public Tally(Map<String, Integer> counts, Set<String> biomes) {
+            this(counts, biomes, false);
+        }
+
+        /** The larger of each count, every biome from both, and the credit flag if either has it. */
         public Tally merge(Tally other) {
             Map<String, Integer> mergedCounts = new LinkedHashMap<>(counts);
             other.counts.forEach((category, n) -> mergedCounts.merge(category, n, Math::max));
             Set<String> mergedBiomes = new LinkedHashSet<>(biomes);
             mergedBiomes.addAll(other.biomes);
-            return new Tally(mergedCounts, mergedBiomes);
+            return new Tally(mergedCounts, mergedBiomes, rideCredited || other.rideCredited);
+        }
+
+        /** Whether the counts and biomes match {@code other}'s, the credit flag aside. */
+        public boolean sameTallies(Tally other) {
+            return counts.equals(other.counts) && biomes.equals(other.biomes);
         }
     }
 

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.compat;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.BandAdvancements;
 import games.brennan.dungeontrain.advancement.LifeDisqualification;
 import games.brennan.dungeontrain.client.ChallengesLockedClient;
 import games.brennan.dungeontrain.client.LifeDisqualificationClient;
@@ -55,6 +56,9 @@ public final class AdvancementHintText {
         return Set.copyOf(ids);
     }
 
+    /** The Secrete Menu's tab root: the only root whose description stays masked until earned. */
+    private static final String SECRETE_MENU_ROOT = BandAdvancements.SECRETE_MENU_PREFIX + BandAdvancements.REVERSE_ANCHOR;
+
     private AdvancementHintText() {
     }
 
@@ -69,14 +73,15 @@ public final class AdvancementHintText {
      * <p>Masked: unearned {@code dungeontrain:*} advancements. Never masked: other namespaces, tab
      * roots (the tab needs to explain itself when opened), the {@code editor/} tab (its descriptions
      * document editor capabilities and double as discoverability hints), and anything already
-     * earned.</p>
+     * earned. The one masked root is {@link #SECRETE_MENU_ROOT}: Slimed can open that tab before its
+     * root is earned, and the root's description would give away how to earn it.</p>
      *
      * @param progress may be null — treated as "not earned yet"
      */
     public static boolean shouldMask(ResourceLocation id, AdvancementProgress progress) {
         if (!isModAdvancement(id)) return false;
         String path = id.getPath();
-        if (path.endsWith("/root")) return false;
+        if (path.endsWith("/root") && !path.equals(SECRETE_MENU_ROOT)) return false;
         if (path.startsWith("editor/")) return false;
         return progress == null || !progress.isDone();
     }

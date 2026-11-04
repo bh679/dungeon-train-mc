@@ -84,6 +84,7 @@ public final class PerksScreen extends Screen {
     private long frameAt;
 
     private SkyView view;
+    private int fittedWidth = -1, fittedHeight = -1;
     private PerkMenuSnapshot last = PerkMenuSnapshot.EMPTY;
     private Set<String> off;
     private String preview;
@@ -169,6 +170,8 @@ public final class PerksScreen extends Screen {
         int[] life = stats == null ? null : new int[] {stats.lifeUnlockAdvancements(), stats.lifeUnlockPoints()};
         DeathStory story = DeathStory.of(life, atDeath, mc.options.languageCode);
         mc.setScreen(new PerksScreen(false, new DeathPerksPhase(atDeath, story, next, Util.getMillis())));
+        // The tribute room stands behind this menu while it plays, so Next Screen moves straight in.
+        games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.prepare();
         mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.AMETHYST_BLOCK_CHIME, 0.8F, 0.4F));
     }
 
@@ -179,7 +182,12 @@ public final class PerksScreen extends Screen {
 
     @Override
     protected void init() {
-        view = view == null ? SkyView.fit(width, skyH()) : view.clamped(width, skyH());
+        // A new canvas size (the tribute TV's texture, not the window) gets a fresh fit; a resize of
+        // the same canvas keeps the player's pan and zoom, clamped.
+        boolean sameCanvas = fittedWidth == width && fittedHeight == skyH();
+        view = view == null || !sameCanvas ? SkyView.fit(width, skyH()) : view.clamped(width, skyH());
+        fittedWidth = width;
+        fittedHeight = skyH();
         bar.invalidate();
     }
 
@@ -190,9 +198,23 @@ public final class PerksScreen extends Screen {
 
     @Override
     public void onClose() {
+        Minecraft mc = Minecraft.getInstance();
+        // Not before the menu is finished: a close while it still builds up, or while the points
+        // drain, brings the rest of it up instead — the room comes after the perks, never during.
+        if (death != null && !death.finished(Util.getMillis())) {
+            death.advance(Util.getMillis());
+            return;
+        }
+        // on death there is no game to go back to: closing moves on to the tribute room, where the TV
+        // keeps showing this menu — or straight to the recap when there is nobody to stand in a room
+        // Already on the tribute TV: Next Screen pressed on the picture swaps the TV to the recap.
+        if (death != null && games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.showRecap(this)) return;
+        if (death != null && mc.player != null && mc.player.isDeadOrDying()) {
+            games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.begin(this, death::next);
+            return;
+        }
         PerksHud.onMenuClosed();
-        // on death there is no game to go back to: closing moves on to the recap
-        if (death != null) Minecraft.getInstance().setScreen(death.next());
+        if (death != null) mc.setScreen(death.next());
         else super.onClose();
     }
 
@@ -804,6 +826,9 @@ public final class PerksScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Lifted off the tribute TV: Esc puts the menu back on it rather than closing it.
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE
+            && games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.leaveZoom(this)) return true;
         // first time: Space or Enter moves the story on, once the stars have started (not a Space
         // still held from the death scene, which ends on the lead-in)
         long nowMs = Util.getMillis();

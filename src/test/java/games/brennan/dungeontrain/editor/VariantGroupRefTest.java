@@ -86,8 +86,8 @@ final class VariantGroupRefTest {
      * Group 1 = [stone, andesite, diorite] at two cells; group 2 = [oak, birch,
      * →group 1]. The canonical shape from the feature request.
      */
-    private static CarriageVariantBlocks twoGroups() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+    private static VariantDoc twoGroups() {
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_1, groupOnePool());
         sc.put(CELL_1B, groupOnePool());
         sc.setLockId(CELL_1, 1);
@@ -104,7 +104,7 @@ final class VariantGroupRefTest {
     @Test
     @DisplayName("a reference renders exactly what the referenced group rendered")
     void referenceAgreesWithTheGroupItPointsAt() {
-        CarriageVariantBlocks sc = twoGroups();
+        VariantDoc sc = twoGroups();
         int deferred = 0;
         for (int seed = 0; seed < SEEDS; seed++) {
             for (int idx = 0; idx < INDICES; idx++) {
@@ -131,7 +131,7 @@ final class VariantGroupRefTest {
     @Test
     @DisplayName("a reference never leaks its placeholder block")
     void placeholderIsNeverPlaced() {
-        CarriageVariantBlocks sc = twoGroups();
+        VariantDoc sc = twoGroups();
         for (int seed = 0; seed < SEEDS; seed++) {
             for (int idx = 0; idx < INDICES; idx++) {
                 assertFalse(blockOf(sc.resolve(CELL_2, seed, idx)) == Blocks.BEDROCK,
@@ -146,7 +146,7 @@ final class VariantGroupRefTest {
     void chainedReferencesTerminate() {
         // 3 → 2 → 1, with the references weighted heavily so the chain is the
         // usual outcome rather than a rare one.
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_1, groupOnePool());
         sc.setLockId(CELL_1, 1);
         sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), ref(1).withWeight(50)));
@@ -175,7 +175,7 @@ final class VariantGroupRefTest {
     @Test
     @DisplayName("a self-reference is dropped and the cell re-rolls among the rest")
     void selfReferenceIsDropped() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_1, List.of(of(Blocks.STONE), ref(1)));
         sc.setLockId(CELL_1, 1);
         for (int seed = 0; seed < SEEDS; seed++) {
@@ -189,7 +189,7 @@ final class VariantGroupRefTest {
     @Test
     @DisplayName("a reference to a group that does not exist is dropped, not placed")
     void danglingReferenceIsDropped() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_LOOSE, List.of(of(Blocks.STONE), ref(9)));  // no cell carries lock-id 9
         for (int seed = 0; seed < SEEDS; seed++) {
             for (int idx = 0; idx < INDICES; idx++) {
@@ -205,7 +205,7 @@ final class VariantGroupRefTest {
         // The case a group-level liveness check waves through: both groups have
         // a concrete option, so both "resolve", yet a walk 1 → 2 → 1 has
         // nowhere to land. Excluding back-edges is what keeps this terminating.
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_1, List.of(of(Blocks.STONE), ref(2)));
         sc.setLockId(CELL_1, 1);
         sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), ref(1)));
@@ -231,7 +231,7 @@ final class VariantGroupRefTest {
         // 2 resolves to oak alone; group 3 references group 2, which is alive,
         // so group 3 still works. Group 4's sole option references group 5,
         // which has no cells at all — group 4 has nothing left to roll.
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), ref(9)));
         sc.setLockId(CELL_2, 2);
         sc.put(CELL_3, List.of(of(Blocks.GLASS), ref(2)));
@@ -257,7 +257,7 @@ final class VariantGroupRefTest {
     // the per-group pools can be derived in one forward pass.
 
     /** Position of {@code lockId} in the graph's subset order. */
-    private static int orderOf(CarriageVariantBlocks sc, int lockId) {
+    private static int orderOf(VariantDoc sc, int lockId) {
         int at = sc.groupRefs().graph().order().indexOf(lockId);
         assertTrue(at >= 0, "lock-id " + lockId + " missing from the subset order");
         return at;
@@ -267,7 +267,7 @@ final class VariantGroupRefTest {
     @DisplayName("a chain orders subset-first, and every group in use appears exactly once")
     void chainOrdersSubsetsFirst() {
         // 3 → 2 → 1: group 1 has no subsets, so it leads; 3 requires 2 requires 1.
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_1, groupOnePool());
         sc.setLockId(CELL_1, 1);
         sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), ref(1)));
@@ -285,7 +285,7 @@ final class VariantGroupRefTest {
     void subsetFreeGroupsLead() {
         // Authored dependents-first, and with an independent group last, so an
         // order that merely echoed insertion order would fail this.
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_3, List.of(of(Blocks.GLASS), ref(1), ref(2)));
         sc.setLockId(CELL_3, 3);
         sc.put(CELL_1, groupOnePool());
@@ -309,7 +309,7 @@ final class VariantGroupRefTest {
         // and the order is free to list them in id order. The pair must still
         // appear in full: an order that dropped a tangled group would take its
         // pool with it.
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_1, List.of(of(Blocks.STONE), ref(2)));
         sc.setLockId(CELL_1, 1);
         sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), ref(1)));
@@ -324,7 +324,7 @@ final class VariantGroupRefTest {
     @DisplayName("dangling and self references are not subsets and don't delay a group")
     void deadReferencesAreNotSubsets() {
         // Group 2's references go nowhere real, so it has nothing to wait for.
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_1, groupOnePool());
         sc.setLockId(CELL_1, 1);
         sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), ref(2), ref(9)));
@@ -342,7 +342,7 @@ final class VariantGroupRefTest {
     void precomputedPoolsMatchTheFilter() {
         // Covers a plain group (1), a live reference (3 → 2), a partly-dead list
         // (2, whose ref(9) dangles) and a wholly-dead one (4).
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_1, groupOnePool());
         sc.setLockId(CELL_1, 1);
         sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), ref(9)));
@@ -375,7 +375,7 @@ final class VariantGroupRefTest {
     @Test
     @DisplayName("a reference-free group's pool reuses the group's own list, no copy")
     void referenceFreePoolIsNotCopied() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         List<VariantState> pool = groupOnePool();
         sc.put(CELL_1, pool);
         sc.setLockId(CELL_1, 1);
@@ -391,7 +391,7 @@ final class VariantGroupRefTest {
     void noReferencesMeansNoBehaviourChange() {
         // The regression guard for every sidecar already on disk: the pick must
         // be bit-identical to the raw pickers, locked and unlocked alike.
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         List<VariantState> pool = groupOnePool();
         sc.put(CELL_1, pool);
         sc.setLockId(CELL_1, 1);
@@ -411,7 +411,7 @@ final class VariantGroupRefTest {
     @Test
     @DisplayName("the graph is recomputed after the sidecar changes underneath it")
     void graphCacheIsInvalidatedOnMutation() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), ref(1)));
         sc.setLockId(CELL_2, 2);
         // Group 1 does not exist yet — the reference is dead, so oak every time.
@@ -433,7 +433,7 @@ final class VariantGroupRefTest {
     @Test
     @DisplayName("reaches() sees straight, chained and absent paths for the editor's loop guard")
     void reachesBacksTheAuthorTimeGuard() {
-        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantDoc sc = CarriageVariantBlocks.empty();
         sc.put(CELL_1, groupOnePool());
         sc.setLockId(CELL_1, 1);
         sc.put(CELL_2, List.of(of(Blocks.OAK_PLANKS), ref(1)));

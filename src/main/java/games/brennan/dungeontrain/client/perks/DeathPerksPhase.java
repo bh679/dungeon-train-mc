@@ -74,6 +74,11 @@ final class DeathPerksPhase {
         return new PerkMenuSnapshot(live.unlocks(), carried.drained(ringsLeft(now)).active(), live.unlockPoints(), 0);
     }
 
+    /** Whether the menu has finished: everything up and the points held at death drained away. */
+    boolean finished(long now) {
+        return reveal.done(now) && ringsLeft(now) <= 0;
+    }
+
     /** An unlock was made since this menu opened: {@code live} holds more levels than at death. */
     boolean spentHere(PerkMenuSnapshot live) {
         return levels(live) > levels(carried);

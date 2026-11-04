@@ -26,7 +26,18 @@ Output, committed: ``src/main/whitelist/approved_hashes.json``::
       "unmatched": ["<id>", ...] }
 
 ``generateApprovedMods`` (gradle/approved-mods.gradle) merges ``byMod[*].sha1`` into the baked
-``hashes``. ``unmatched`` ids stay approved by id and verify live through the relay.
+``hashes``. A mod only counts with a hash: while hash enforcement is on, a jar whose sha1 is not
+approved (baked here, or placed by the relay) is Free Play, whatever its id.
+
+Two kinds of hand record survive every run (``--refresh`` included), for ids the store search
+cannot place:
+  ``"source": "relay-reports"``  sha1s of the mod's own published files that players reported and
+                                 the relay placed (a mod Modrinth does not tag NeoForge 1.21.1);
+  ``"source": "curseforge-via-relay"``  every 1.21.1 NeoForge file of a CurseForge-only mod, listed
+                                 with the relay's CurseForge key (none on dev machines) and checked
+                                 by downloading the newest jar and reading its mod ids;
+  ``"platform": "nested", "in": [ids]``  a library that only ships inside another approved mod's
+                                 jar: that jar's hash is its hash (``--check`` asserts each one has).
 
 Modes:
   (default)   network: resolve every approved id not yet matched (unmatched ones are retried;
@@ -312,16 +323,40 @@ def save_output(doc):
     OUTPUT.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+def is_hand_record(rec):
+    """A record the store search cannot reproduce (see the module doc) — kept across runs."""
+    return bool(rec) and (rec.get("platform") == "nested"
+                          or rec.get("source") in ("relay-reports", "curseforge-via-relay"))
+
+
+def no_hash_ids(ids, doc):
+    """Approved ids with no hash from any source: not pulled, not nested, not pinned, not embedded."""
+    by_mod = doc.get("byMod", {})
+    hashed = {k for k, v in by_mod.items() if v.get("sha1") or v.get("platform") == "nested"}
+    return sorted(i for i in ids if i not in hashed and i not in pinned_ids() and i not in EMBEDDED_IDS_HINT)
+
+
 def check():
     ids = set(approved_ids())
     doc = load_output()
-    covered = set(doc.get("byMod", {})) | set(doc.get("unmatched", []))
+    by_mod = doc.get("byMod", {})
+    covered = set(by_mod) | set(doc.get("unmatched", []))
     missing = sorted(ids - covered)
     if missing:
         print("FAIL: approved ids without a hash record (run scripts/modpack/pull-approved-hashes.py):", file=sys.stderr)
         for m in missing:
             print(f"  - {m}", file=sys.stderr)
         return 1
+    broken = sorted(k for k, v in by_mod.items() if v.get("platform") == "nested"
+                    and not all(by_mod.get(o, {}).get("sha1") for o in v.get("in", [])))
+    if broken:
+        print("FAIL: nested records whose carrier mod has no hashes: " + ", ".join(broken), file=sys.stderr)
+        return 1
+    # A mod counts only by its file hash: an approved id with none anywhere does not count.
+    hashless = no_hash_ids(ids, doc)
+    if hashless:
+        print("WARN: approved ids with NO file hash — they do not count while hash enforcement is on: "
+              + ", ".join(hashless), file=sys.stderr)
     # Package knowledge is what keeps an honest player out of Free Play when a hash is unknown, so
     # an approved id with none anywhere (pulled, pinned, or embedded in our jar) is a release risk.
     known = {k for k, v in doc.get("byMod", {}).items() if isinstance(v.get("packages"), list)} | pinned_ids(packages=True)
@@ -352,7 +387,7 @@ def main(argv=None):
         ids = [i for i in ids if i in wanted]
     # Unmatched ids are retried every run (a mod may have been published since); matched ones only
     # with --refresh.
-    todo = [i for i in ids if args.refresh or args.only or i not in by_mod]
+    todo = [i for i in ids if (args.refresh or args.only or i not in by_mod) and not is_hand_record(by_mod.get(i))]
     print(f"{len(ids)} approved ids, {len(todo)} to resolve"
           + ("" if cf_headers() else " (no CURSEFORGE_API_KEY: Modrinth only)"))
     for n, mod_id in enumerate(todo, 1):
@@ -374,12 +409,15 @@ def main(argv=None):
     by_mod = {k: v for k, v in by_mod.items() if k in keep}
     unmatched = {u for u in unmatched if u in keep}
     save_output({"byMod": by_mod, "unmatched": sorted(unmatched), "slugs": slugs})
-    total = sum(len(v["sha1"]) for v in by_mod.values())
+    total = sum(len(v.get("sha1", [])) for v in by_mod.values())
     pinned = pinned_ids()
     print(f"OK: {len(by_mod)} matched ({total} hashes), {len(unmatched)} unmatched"
           f" — of which {len([u for u in unmatched if u in pinned])} are modpack-pinned (hash baked from the config anyway).")
     if unmatched:
         print("unmatched: " + ", ".join(sorted(unmatched)))
+    hashless = no_hash_ids(ids, {"byMod": by_mod})
+    if hashless:
+        print("NO HASH (these do not count): " + ", ".join(hashless))
     return 0
 
 

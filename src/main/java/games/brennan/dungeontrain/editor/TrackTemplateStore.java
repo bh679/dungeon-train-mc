@@ -1,16 +1,15 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateAdapters;
 import games.brennan.dungeontrain.template.TemplateStore;
 import games.brennan.dungeontrain.track.TrackPlacer;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
@@ -44,6 +43,11 @@ import java.util.Optional;
 public final class TrackTemplateStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    static {
+        // Dropped by TemplateStores.clearCaches() with every other store cache.
+        StoreRegistry.register("TrackTemplateStore", TrackTemplateStore::clearCache);
+    }
 
     /** Per-name cache of unpacked cells, keyed by lowercase variant name. */
     private static final Map<String, Optional<BlockState[][][]>> CELLS_CACHE = new HashMap<>();
@@ -214,23 +218,10 @@ public final class TrackTemplateStore {
      * {@link Template.Track#name()} field isn't dispatched on yet —
      * the editor save still hits the single-tile flow.
      */
-    private static final TemplateStore<Template.Track> ADAPTER = new TemplateStore<>() {
-        @Override public TemplateKind kind() { return TemplateKind.TRACK; }
-
-        @Override
-        public SaveResult save(ServerPlayer player, Template.Track template) throws Exception {
-            TrackEditor.SaveResult r = TrackEditor.save(player);
-            return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
-        }
-
-        @Override
-        public boolean canPromote(Template.Track template) { return sourceTreeAvailable(); }
-
-        @Override
-        public void promote(Template.Track template) throws Exception {
-            TrackTemplateStore.promote();
-        }
-    };
+    private static final TemplateStore<Template.Track> ADAPTER = TemplateAdapters.of(
+        TemplateKind.TRACK,
+        (player, t) -> TrackEditor.save(player),
+        TemplateAdapters.whenSourceWritable(t -> TrackTemplateStore.promote()));
 
     public static TemplateStore<Template.Track> adapter() { return ADAPTER; }
 }

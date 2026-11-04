@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import games.brennan.dungeontrain.editor.GrowthPass;
 import games.brennan.dungeontrain.editor.ConnectPass;
 import com.mojang.logging.LogUtils;
@@ -435,7 +436,7 @@ public final class CarriagePlacer {
             // returns "portal", "portal_middle" and null, and all three used to fall through both
             // arms in silence — which is how a 264-cell portal sidecar sat unapplied without ever
             // saying so. If a sidecar was authored and nothing laid it, that is worth a line.
-            CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, variantDims(variant, dims));
+            VariantDoc sidecar = CarriageVariantBlocks.loadFor(variant, variantDims(variant, dims));
             if (!sidecar.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] Variant sidecar for '{}' ignored — {} basis has no "
                         + "per-position overlay ({} cells dropped).",
@@ -801,7 +802,7 @@ public final class CarriagePlacer {
                                                CarriageVariant variant, CarriageDims dims,
                                                long seed, int carriageIndex) {
         CarriageDims sidecarDims = variantDims(variant, dims);
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, sidecarDims);
+        VariantDoc sidecar = CarriageVariantBlocks.loadFor(variant, sidecarDims);
         if (sidecar.isEmpty()) return;
         int spawned = 0;
         try (VariantConditions.Scope conds = VariantConditions.open(
@@ -993,7 +994,7 @@ public final class CarriagePlacer {
         CarriageDims dims, long seed, int carriageIndex
     ) {
         CarriageDims sidecarDims = variantDims(variant, dims);
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, sidecarDims);
+        VariantDoc sidecar = CarriageVariantBlocks.loadFor(variant, sidecarDims);
         if (sidecar.isEmpty()) return;
         java.util.function.Predicate<BlockPos> within = GrowthPass.inside(origin,
             sidecarDims.length(), sidecarDims.height(), sidecarDims.width());
@@ -1007,7 +1008,7 @@ public final class CarriagePlacer {
                 // One write per space: a door / bed / tall plant cell owns two (MultiBlockVariants).
                 for (MultiBlockVariants.Write w : MultiBlockVariants.expand(e.states(), sidecar.spanAt(e.localPos()), picked, e.localPos(),
                         seed, carriageIndex, v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
-                            StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
+                            StagePlacementScope.resolve(v.state()), v,
                             e.localPos(), seed, carriageIndex, lockId))) {
                     BlockPos world = origin.offset(w.localPos());
                     if (w.isAir()) {
@@ -1015,7 +1016,7 @@ public final class CarriagePlacer {
                     } else {
                         games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
                             level, world, w.state(), w.entry().blockEntityNbt(),
-                            "carriage:" + variant.id(), w.localPos(), seed, carriageIndex,
+                            games.brennan.dungeontrain.editor.BlockVariantPlot.carriageKey(variant.id()), w.localPos(), seed, carriageIndex,
                             w.entry().linkedLootPrefabId());
                         ConnectPass.note(level, world, w.entry().connect(), w.state());
                         GrowthPass.note(level, world, w.entry(), w.state(), w.localPos(), seed, carriageIndex, within);
@@ -1809,10 +1810,27 @@ public final class CarriagePlacer {
         stampTemplate(level, origin, template, processor, relight, decorBox, decorRule);
     }
 
+    /**
+     * {@link #stampTemplateAt} mirrored: {@code mirror} is applied to the blocks and their decor
+     * alike. {@link Mirror#FRONT_BACK} negates local X, so a caller stamping a template of length
+     * {@code n} mirrored lands it over {@code [origin.x - n + 1, origin.x]} — pass the far corner as
+     * {@code origin} to keep it where the unmirrored copy would stand (the flatbed pads do the same).
+     */
+    public static void stampTemplateMirroredAt(ServerLevel level, BlockPos origin, StructureTemplate template,
+                                               Mirror mirror, boolean relight, TemplateDecor.Rule decorRule) {
+        stampTemplate(level, origin, template, null, relight, null, decorRule, mirror);
+    }
+
     private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template,
                                       StructureProcessor processor, boolean relight,
                                       BoundingBox decorBox, TemplateDecor.Rule decorRule) {
-        StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+        stampTemplate(level, origin, template, processor, relight, decorBox, decorRule, Mirror.NONE);
+    }
+
+    private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template,
+                                      StructureProcessor processor, boolean relight,
+                                      BoundingBox decorBox, TemplateDecor.Rule decorRule, Mirror mirror) {
+        StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true).setMirror(mirror);
         if (processor != null) settings.addProcessor(processor);
         if (relight) {
             stampTemplateRelit(level, origin, template, settings);
@@ -1827,7 +1845,7 @@ public final class CarriagePlacer {
         // standing on the track — that one spawns deferred, at shipyard coords, from
         // {@link #applyContentsEntitiesAt}.
         if (relight) {
-            StructurePlaceSettings decorSettings = new StructurePlaceSettings();
+            StructurePlaceSettings decorSettings = new StructurePlaceSettings().setMirror(mirror);
             if (decorBox != null) decorSettings.setBoundingBox(decorBox);
             TemplateDecor.replace(level, origin, template, decorSettings, /*mark*/ null, decorRule);
         }

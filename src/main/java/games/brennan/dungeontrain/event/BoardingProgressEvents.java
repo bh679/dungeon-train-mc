@@ -375,6 +375,11 @@ public final class BoardingProgressEvents {
         player.setData(ModDataAttachments.RUN_SPAWN_X.get(), player.blockPosition().getX());
     }
 
+    /** Re-stamp the life's distance origin where the player stands now — the train, after a tribute room visit. */
+    public static void stampLifeOrigin(ServerPlayer player) {
+        player.setData(ModDataAttachments.RUN_SPAWN_X.get(), player.blockPosition().getX());
+    }
+
     /**
      * World-X this player's current life started from, or {@code null} if it was never captured
      * (a life already in progress when this feature shipped, or one that never boarded).

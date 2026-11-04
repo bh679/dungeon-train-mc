@@ -55,12 +55,14 @@ Those gate playbooks reference further playbooks as needed.
 
 ## Gate 1 — Plan Approval
 
+Follow `~/.claude/playbooks/gates/gate-1-plan.md`, plus the Dungeon Train add-on in
+`.claude/gates/gate-1-plan.md` (UI prototypes; new advancements prototyped in the advancement editor).
 Before writing any code:
 1. Enter plan mode (`EnterPlanMode`)
 2. Explore the codebase — read relevant files, understand existing patterns (`src/main/java/...`, `build.gradle`, `gradle.properties`)
    - Current stack baseline: NeoForge 1.21.1 (`neo_version` in `gradle.properties`), Sable physics dep (`sable_version`).
 3. Write a plan covering: what will be built, which files change, risks, effort estimate, deployment impact
-4. **Mod-impact check:** If the change involves new dependencies in `build.gradle`, MC/NeoForge/Sable version bumps, new mixins, new registered blocks/items/entities, world-gen changes, or networking packets — call this out explicitly in the plan
+4. **Mod-impact check:** run the checklist in `.claude/gates/gate-1-plan.md` and flag each item that applies
 5. Present via `ExitPlanMode` and wait for user approval
 6. **After approval — rename branch** from `claude/<auto-slug>` → `dev/<feature-slug>`
    before writing any code (see `~/.claude/playbooks/gates/gate-1-plan.md` § Post-Approval: Rename Branch)
@@ -69,6 +71,8 @@ Before writing any code:
 
 ## Gate 2 — Testing Approval
 
+Follow `~/.claude/playbooks/gates/gate-2-test.md`, plus the Dungeon Train add-on in
+`.claude/gates/gate-2-test.md` (Minecraft build, F2 screenshots, Sable test).
 After implementation is complete:
 1. Build the mod: `./gradlew build` — must pass cleanly (no errors, warnings noted)
 2. Run unit tests if any: `./gradlew test`
@@ -77,7 +81,7 @@ After implementation is complete:
 5. Enter plan mode and present a **Gate 2 Testing Report**:
    - Build result: success/fail, jar size, output path (`build/libs/dungeon-train-mc-<version>.jar`)
    - Unit test summary: total, passed, failed, skipped (if applicable)
-   - Screenshot paths
+   - Screenshots shown rendered in chat, plus their paths
    - Step-by-step in-game testing instructions (what world, what to do, what to look for)
    - Compatibility notes: Sable interaction tested? multiplayer tested? dedicated server tested?
    - What passed / what failed
@@ -87,11 +91,13 @@ After implementation is complete:
 
 ## Gate 3 — Merge Approval
 
-Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
+Follow `~/.claude/playbooks/gates/gate-3-merge.md`, plus the Dungeon Train add-on steps in
+`.claude/gates/gate-3-merge.md` (changelog, tags, modpack whitelist). Summary:
 1. Push branch, open PR with conventional commit title
 2. **Log + confirm the changelog entry** — append it on the feature branch with
    `scripts/release-notes/append-entry.py` (curated player-facing notes) so it lands in the PR
-   diff, and present those notes **and tags** to the user to confirm before merging — see
+   diff as one new file, `.github/release-notes/unreleased/<id>.json` (never edit `changelog.json`
+   on a branch; only releases write it), and present those notes **and tags** to the user to confirm before merging — see
    `.github/release-notes/README.md`. **You choose the tags, from the diff** — there is no
    keyword classifier. Run `append-entry.py --tag-guide`, answer its question per tag, pass
    `--tag` for each yes or `--no-topical-tags` if none apply (one or the other is required).
@@ -99,7 +105,7 @@ Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
 3. Verify CI green
 4. Squash-merge after explicit user approval of the changelog notes + diff
 5. Delete feature branch
-6. Bump version in `gradle.properties` per the versioning rule
+6. Don't bump `mod_version` — `version-bump.yml` does the MINOR bump on main after the merge (see "Versioning")
 7. **Leaderboard resets are never yours to propose.** Retiring a leaderboard era (`-f leaderboard_reset=true`
    on `release.yml`, the relay's `POST …/leaderboard/era/retire`, or `scripts/retire-leaderboard-era.js`)
    happens **only when Brennan brings it up himself**. Do not set the flag, do not suggest it at merge or
@@ -119,6 +125,7 @@ Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
 ./gradlew test            # Run JUnit tests (if present)
 ./gradlew --stop          # Stop the gradle daemon if dev client hangs
 ./gradlew pullTradeValues # Refresh data/dungeontrain/trade_values.json from the relay (see below)
+scripts/ci/run-local.sh   # Run the four build.yml CI jobs locally before pushing (scripts/ci/README.md)
 python3 scripts/modpack/pull-approved-hashes.py  # Refresh src/main/whitelist/approved_hashes.json (see below)
 ```
 
@@ -150,6 +157,13 @@ NeoForge file of every approved mod, pulled by hand with
 fails on an approved id with no record. Ids the script cannot place are listed in `unmatched` and
 stay id-only approved; the relay verifies their files live and the Approved Mods page's review
 queue shows what it could not place. The relay's `enforceHashes` switch ships OFF.
+**The relay's copy of the baked list refreshes itself:** `release.yml` runs
+`scripts/relay/sync-approved-mods-catalog.sh` after every release (cascade ticks included), which
+copies the jar's `approved_mods.json` into dp-relay's `web/js/approved-mods-catalog.json`, regenerates
+`approved-mod-projects.json` with the relay's `sync-mod-projects.js`, and opens or updates ONE PR on
+`bh679/dp-relay` (branch `auto/approved-mods-catalog`). It needs the `RELAY_REPO_TOKEN` secret (a
+fine-grained PAT on dp-relay, Contents + Pull requests read/write); unset, the step warns and skips.
+The relay's `catalog-freshness.yml` goes red until that PR is merged, so never refresh the copy by hand.
 
 ### In-Game Manual Testing
 
@@ -158,7 +172,7 @@ For Gate 2 verification:
 2. Create or open the test world (`run/saves/`)
 3. Reproduce the feature flow
 4. Press **F2** for screenshots → saved to `run/screenshots/`
-5. Copy relevant screenshots to `./test-results/gate2-<feature-slug>-<YYYY-MM>.png`
+5. Copy relevant screenshots to `~/Projects/Screenshots/DungeonTrainCraft/<feature-slug>/<NN>-<what-it-shows>.png`
 
 ### Sable Compatibility
 
@@ -170,13 +184,17 @@ assumptions break on ships. Document the Sable test result in the Gate 2 report.
 
 ## Versioning
 
-Per global versioning rule: SemVer in `gradle.properties` `mod_version` field.
-- Every commit during dev → PATCH bump
-- Feature merged to main (Gate 3) → MINOR bump (reset PATCH)
-- Breaking save format / API change → MAJOR bump
+SemVer in `gradle.properties` `mod_version` field. **Project exception to the global versioning
+rule:** feature branches do NOT bump `mod_version` per commit.
+- Commits during dev → leave `mod_version` alone
+- Feature merged to main (Gate 3) → MINOR bump, done by `version-bump.yml` on main after the squash
+- Breaking save format / API change → MAJOR bump, set by hand on the branch to `X.0.0`
+  (`version-bump.yml` skips a merge whose own diff set `mod_version` to `X.Y.0`)
 
-> **Note:** The shipped versioning hook is npm-only (`package.json`). It is NOT installed in
-> this repo. Bump `gradle.properties` `mod_version` manually before each commit.
+**Why:** `version-bump.yml` rewrites the `mod_version` line on main after every merge. A branch
+that also edits that line conflicts with every merge, and on GitHub a conflicting PR gets no CI
+run at all, so each conflict cost a manual sync plus a full re-run. Same reason the changelog keeps
+one file per unreleased entry (`.github/release-notes/unreleased/`).
 
 **Tagging is NOT done manually.** Tags exist only when a release is shipped — see
 "Releasing (post-Gate 3)" below. The global versioning rule's `git tag && git push`

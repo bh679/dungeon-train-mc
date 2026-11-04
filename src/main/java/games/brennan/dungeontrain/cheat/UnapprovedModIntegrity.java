@@ -11,6 +11,7 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +67,13 @@ public final class UnapprovedModIntegrity {
      */
     private static volatile List<String> unverified = List.of();
 
+    /** What a scan that has not finished yet reads as while it is pending (fails closed). */
+    static final String PENDING = "mod files (still being checked)";
+    /** What a judgement that threw reads as while the engine is present (fails closed). */
+    static final String UNCHECKABLE = "mod files (could not be checked)";
+
+    private static volatile net.minecraft.server.MinecraftServer server;
+
     /**
      * Mod ids whose file is judged by id elsewhere and so is never hashed: the game, the loader,
      * DT's own jar (with everything it embeds) and the verification engine itself.
@@ -82,7 +90,7 @@ public final class UnapprovedModIntegrity {
     static final long FETCH_WAIT_MS = 8000;
     private static volatile boolean serverRunning;
 
-    /** The verdict tiers of the file check — only {@link #SUSPECT} costs the run (see {@link #tierOf}). */
+    /** The verdict tiers of the file check — anything but {@link #VERIFIED} costs the run (see {@link #tierOf}). */
     public enum Tier { VERIFIED, PLAUSIBLE, UNKNOWN, SUSPECT }
 
     private UnapprovedModIntegrity() {}
@@ -103,6 +111,14 @@ public final class UnapprovedModIntegrity {
     /** The file half alone: an unverified mod file is installed and hash enforcement is on. */
     public static boolean isFileFreePlay() {
         return ApprovedModList.enforceHashes() && !unverified.isEmpty();
+    }
+
+    /** Pure: the session's file findings plus the engine's tamper findings, sorted, each once. */
+    static List<String> combine(List<String> files, List<String> tampered) {
+        if (tampered.isEmpty()) return files;
+        java.util.TreeSet<String> out = new java.util.TreeSet<>(files);
+        out.addAll(tampered);
+        return List.copyOf(out);
     }
 
     /**
@@ -129,11 +145,17 @@ public final class UnapprovedModIntegrity {
         DtModVerifyBridge.scan(EXEMPT_IDS);
         ApprovedModListFetcher.ensureFetched();
         serverRunning = true;
+        server = event.getServer();
         detected = scan();
         // Never a session late: give the relay's answer a moment to land before judging, so a mod
         // updated this launch is judged against what the relay knows now, not last launch's cache.
         ApprovedModListFetcher.awaitSettled(FETCH_WAIT_MS);
         unverified = scanFiles();
+        if (unverified.contains(PENDING)) {
+            // A late scan is judged when it lands, relay answer or not — on the server thread.
+            var s = server;
+            DtModVerifyBridge.onScanDone(() -> { if (s != null) s.execute(UnapprovedModIntegrity::rejudge); });
+        }
         if (!unverified.isEmpty()) {
             if (ApprovedModList.enforceHashes()) {
                 LOGGER.warn("[DungeonTrain] Unverified mod file(s) installed — this session runs in Free Play: {}",
@@ -159,6 +181,7 @@ public final class UnapprovedModIntegrity {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         serverRunning = false;
+        server = null;
         detected = List.of();
         unverified = List.of();
     }
@@ -166,7 +189,8 @@ public final class UnapprovedModIntegrity {
     /**
      * Re-judge the running session's files against freshly-landed relay knowledge — the second
      * half of "never a session late": a verify answer that arrives after boot (slow relay, slow
-     * scan) still clears a taint before, or even after, the player logs in. No-op without a server.
+     * scan) still clears a taint before, or even after, the player logs in. Also runs when a scan
+     * that was still pending at boot completes. No-op without a server.
      */
     public static void rejudge() {
         if (!serverRunning) return;
@@ -180,31 +204,90 @@ public final class UnapprovedModIntegrity {
     }
 
     /**
-     * The hash half of the boot scan: every installed file whose SHA-1 is not approved. Waits
-     * briefly for the scanner; an empty scan (not finished, or failed) means "nothing unverified"
-     * — the same defensive direction as {@link #scan()}, because a scan that could not see the
-     * files must not conclude that every file is fake.
+     * The hash half of the boot scan: every installed file whose SHA-1 is not approved, every file
+     * the engine should have hashed but did not, and any sign the engine is not DT's own. Fails
+     * CLOSED while the engine is present: a scan still running after {@link #SCAN_WAIT_MS} reads as
+     * {@link #PENDING} (and is re-judged when it lands), a judgement that throws as
+     * {@link #UNCHECKABLE}. Without the engine nothing is hashed and the answer stays empty —
+     * the id-only check decides, exactly as before the hash check existed.
      */
     static List<String> scanFiles() {
+        if (!DtModVerifyBridge.isPresent()) return List.of();
         try {
-            return unverifiedFrom(DtModVerifyBridge.current(SCAN_WAIT_MS), ApprovedModList.approvedHashes(),
+            List<ModFileFingerprint> files = DtModVerifyBridge.current(SCAN_WAIT_MS);
+            boolean done = DtModVerifyBridge.isDone();
+            List<String> found = judgeFiles(done, files, expectedJarNames(), ApprovedModList.approvedHashes(),
                 ApprovedModList.knownPackages());
+            return combine(found, EngineIntegrity.tampered());
         } catch (Throwable t) {
-            LOGGER.warn("[DungeonTrain] Could not judge the installed mod files — assuming every file is "
-                + "verified: {}", t.toString());
-            return List.of();
+            LOGGER.warn("[DungeonTrain] Could not judge the installed mod files — treating them as "
+                + "unverified: {}", t.toString());
+            return List.of(UNCHECKABLE);
         }
     }
 
     /**
+     * Pure: the file findings for one judgement. A scan not yet done is {@link #PENDING}, never
+     * clean; a done scan is its unverified files plus every expected jar it did not hash.
+     */
+    static List<String> judgeFiles(boolean scanDone, List<ModFileFingerprint> files, Collection<String> expectedJarNames,
+                                   Set<String> approvedSha1s, Map<String, Set<String>> knownPackages) {
+        if (!scanDone) return List.of(PENDING);
+        java.util.TreeSet<String> out = new java.util.TreeSet<>(unverifiedFrom(files, approvedSha1s, knownPackages));
+        out.addAll(missingFrom(files, expectedJarNames));
+        return List.copyOf(out);
+    }
+
+    /**
+     * Pure: the expected jars the scan returned no fingerprint for — a jar the engine could not hash
+     * is not a verified one. Names are compared by file name, the engine's {@code fileName}.
+     */
+    static List<String> missingFrom(List<ModFileFingerprint> scanned, Collection<String> expectedJarNames) {
+        Set<String> seen = new java.util.HashSet<>();
+        for (ModFileFingerprint f : scanned) seen.add(f.fileName());
+        List<String> out = new ArrayList<>();
+        for (String name : new java.util.TreeSet<>(expectedJarNames)) {
+            if (!seen.contains(name)) out.add(name + " (could not hash)");
+        }
+        return List.copyOf(out);
+    }
+
+    /**
+     * The plain {@code .jar} outermost files the engine must have fingerprinted: every loaded mod
+     * file's outermost file, minus those carrying an exempt id (the engine skips those whole).
+     */
+    static Set<String> expectedJarNames() {
+        Map<java.nio.file.Path, Boolean> exempt = new LinkedHashMap<>();
+        for (var info : ModList.get().getModFiles()) {
+            java.nio.file.Path p = EngineIntegrity.outermost(info.getFile()).getFilePath();
+            boolean ex = info.getMods().stream().anyMatch(m -> EXEMPT_IDS.contains(ModIds.normalise(m.getModId())));
+            exempt.merge(p, ex, Boolean::logicalOr);
+        }
+        return expectedFrom(exempt);
+    }
+
+    /** Pure: outermost path → carries an exempt id; the non-exempt plain-jar file names. */
+    static Set<String> expectedFrom(Map<java.nio.file.Path, Boolean> outermostExempt) {
+        Set<String> out = new java.util.TreeSet<>();
+        outermostExempt.forEach((p, ex) -> {
+            if (ex || p.getFileName() == null) return;
+            String name = p.getFileName().toString();
+            if (name.toLowerCase(java.util.Locale.ROOT).endsWith(".jar") && !java.nio.file.Files.isDirectory(p)) out.add(name);
+        });
+        return out;
+    }
+
+    /**
      * Pure: which installed files are NOT on the approved-hash list, as display strings (sorted).
+     * Only a file whose hash is known counts: a mod is whitelisted by its published files, so a
+     * plausible or unknown jar (a hash nobody has placed yet) is unverified like a suspect one.
      * Package-visible for unit tests — no live scanner needed.
      */
     static List<String> unverifiedFrom(List<ModFileFingerprint> files, Set<String> approvedSha1s,
                                        Map<String, Set<String>> knownPackages) {
         List<String> found = new ArrayList<>();
         for (ModFileFingerprint f : files) {
-            if (tierOf(f, approvedSha1s, knownPackages) == Tier.SUSPECT) found.add(f.display());
+            if (tierOf(f, approvedSha1s, knownPackages) != Tier.VERIFIED) found.add(f.display());
         }
         found.sort(String::compareTo);
         return List.copyOf(found);
@@ -217,10 +300,9 @@ public final class UnapprovedModIntegrity {
      *   <li>{@link Tier#VERIFIED} — its hash is approved.</li>
      *   <li>{@link Tier#PLAUSIBLE} — hash unknown, but every id it declares has known packages
      *       and the jar's packages intersect each id's — a fresh release or a GitHub build of a
-     *       mod we approve. Not Free Play.</li>
+     *       mod we approve. Unverified: no hash on record means it does not count.</li>
      *   <li>{@link Tier#UNKNOWN} — hash unknown and some declared id has no package knowledge at
-     *       all. Not Free Play (the player did nothing wrong; the catalogue is behind), but the
-     *       relay queues it and the build refuses an approved id without knowledge.</li>
+     *       all. Unverified, and the relay queues it for the operator.</li>
      *   <li>{@link Tier#SUSPECT} — it declares no ids, or its packages share nothing with a
      *       declared id's known set: code that is not the mod it claims to be. Free Play.</li>
      * </ul>
@@ -233,12 +315,31 @@ public final class UnapprovedModIntegrity {
 
     /**
      * Live-state convenience for the client popup: the installed file declaring {@code modId}, if
-     * that file is unverified right now; null when it is verified, unknown, or the scan is not done.
+     * that file is unverified right now; null when it is verified or the scan is not done.
      */
     public static ModFileFingerprint unverifiedFileOf(String modId) {
         ModFileFingerprint f = DtModVerifyBridge.fileOf(modId);
-        return f != null && tierOf(f, ApprovedModList.approvedHashes(), ApprovedModList.knownPackages()) == Tier.SUSPECT
+        return f != null && tierOf(f, ApprovedModList.approvedHashes(), ApprovedModList.knownPackages()) != Tier.VERIFIED
             ? f : null;
+    }
+
+    /** Essential's mod id. Its own updater replaces the store jar, so its files are verified by build. */
+    public static final String ESSENTIAL_ID = "essential";
+
+    /**
+     * Is the installed Essential an unverified build right now? Essential's builds are approved from
+     * its own update service as they come out (the relay records each new one), plus two older
+     * builds approved by hand — so an unverified Essential is nearly always an old build, and the
+     * fix is "update Essential", not the generic "reinstall from CurseForge or Modrinth". False
+     * when Essential is not installed or the scan is not done.
+     */
+    public static boolean essentialOutdated() {
+        return unverifiedFileOf(ESSENTIAL_ID) != null;
+    }
+
+    /** Pure: is {@code f} an Essential jar whose hash is not approved? Package-visible for tests. */
+    static boolean isOutdatedEssential(ModFileFingerprint f, Set<String> approvedSha1s, Map<String, Set<String>> knownPackages) {
+        return f != null && f.modIds().contains(ESSENTIAL_ID) && tierOf(f, approvedSha1s, knownPackages) != Tier.VERIFIED;
     }
 
     /**

@@ -30504,129 +30504,6 @@
       "pr": 2297
     },
     {
-      "id": "trader-perks-reduced-reduction-restock",
-      "version": "0.1509.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "mobs",
-        "loot"
-      ],
-      "title": "Trader perks: Reduced Reduction and Restock Villager",
-      "summary": "Two new Trader perks. Reduced Reduction keeps a villager's prices from dropping as fast while you keep selling to it. Restock Villager lets you refresh a villager's sold-out trades a few times each life.",
-      "highlights": [],
-      "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "knight-combat-perks",
-      "version": "0.1509.0",
-      "type": "feat",
-      "tags": [
-        "feature"
-      ],
-      "title": "Knight perks",
-      "summary": "Three new Knight perks. Crits gives your hits a chance to land critical strikes, and past a point they hit even harder. Kill Buff gives you a burst of Strength on every kill, getting stronger as it grows. Vampirism gives each kill a chance to heal you, and enough of it heals you more than once. None of them have a cap.",
-      "highlights": [],
-      "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "perks-archivist",
-      "version": "0.1509.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "community",
-        "balance"
-      ],
-      "title": "Archivist perks",
-      "summary": "New Archivist perks for the perks tree: keep the Live Eye safe for longer, give your votes more weight, and get extra shots from a disposable camera.",
-      "highlights": [],
-      "pr": 2299,
-      "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "cosmic-apples",
-      "version": "0.1509.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "loot"
-      ],
-      "title": "Cosmic apples",
-      "summary": "Cosmic apples now turn up in carriage chests. Eat one for perk points to spend this life: a Cosmic Apple gives 1, a Celestial Bite gives 5 and a Violet Core gives 10. The rarer apples only appear further along the train.",
-      "highlights": [
-        "Three apples, each worth more perk points than the last",
-        "The deeper you ride, the better the apples you can find"
-      ],
-      "pr": 2316,
-      "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "perk-points",
-      "version": "0.1509.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "advancements",
-        "ui"
-      ],
-      "title": "Perk points",
-      "summary": "Advancements now earn Advancement Points, which unlock perks and are kept when you die. The advancements screen shows how many you have to spend. Points from cosmic apples buy perk ranks for this life, and each rank costs a little more the more you buy. A perk can be unlocked again to hold more points.",
-      "highlights": [
-        "Advancement Points from advancements unlock perks",
-        "Unlock a perk again to give it room for more points"
-      ],
-      "date": "2026-10-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "crafter-enchanting-perks",
-      "version": "0.1508.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "loot",
-        "balance"
-      ],
-      "title": "Crafter perks: enchanting and cooking",
-      "summary": "Four new Crafter perks. Enchanting costs fewer levels, food cooks faster, enchantments can climb past their usual maximum, and the enchantments on your gear can work stronger than they are.",
-      "highlights": [],
-      "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "perks-lover-pet-health-good-gifter",
-      "version": "0.1509.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "mobs"
-      ],
-      "title": "Lover perks: Pet Health and Good Gifter",
-      "summary": "Two new Lover perks. Pet Health gives your tamed pets an extra half heart for each rank, with no limit. Good Gifter makes animals easier to win over: every rank makes your gifts tame more often, and as it grows animals start taking similar food, then other animals' food, then your own food, then anything at all, until a friendly hand is enough. Player mobs also warm to your gifts faster.",
-      "highlights": [],
-      "date": "2026-10-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
       "id": "dimensional-carriage-far-exit-landing",
       "version": "0.1509.0",
       "type": "fix",
@@ -31068,109 +30945,6 @@
       "released_at": "2026-10-26T10:16:46Z"
     },
     {
-      "id": "perks-tree-v18",
-      "version": "0.1539.0",
-      "type": "chore",
-      "tags": [
-        "internal"
-      ],
-      "title": "Perks tree update",
-      "summary": "The perks tree gains a new Archivist perk and a few links and positions are tidied.",
-      "highlights": [],
-      "date": "2026-10-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "perks-menu-constellation",
-      "version": "0.1540.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "ui"
-      ],
-      "title": "Perks menu",
-      "summary": "Press P (or use the button on the pause menu) to open your perks as a sky of stars. Unlock perks with Advancement Points and activate them with Cosmic Apples, all from the bar along the bottom.",
-      "highlights": [
-        "Hover or click a star to see what it does, its points and its key stats",
-        "Right-click a star to unlock it, double-click to add a point",
-        "Show, hide and pick classes from the list on the right"
-      ],
-      "date": "2026-10-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "perks-stats-and-descriptions",
-      "version": "0.1548.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "translations",
-        "ui"
-      ],
-      "title": "Perk numbers and clearer descriptions",
-      "summary": "The bar along the bottom of the perks menu now shows each perk's key numbers, with hearts drawn as hearts, and hovering a point shows what it would change. Every perk has a clearer description, in every language. Perks that aren't ready yet show as Coming soon, and anyone can now offer their Live Eye to a viewer by name.",
-      "highlights": [
-        "Key numbers for every perk in the perks bar",
-        "Clearer perk descriptions in every language",
-        "Perks that aren't ready yet show as Coming soon",
-        "Offer your Live Eye to a chosen viewer, no perk needed"
-      ],
-      "pr": 2358,
-      "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "perks-effect-rework",
-      "version": "0.1559.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "loot",
-        "balance"
-      ],
-      "title": "Perk reworks",
-      "summary": "Enchant Max and Enchant Bonus now grow with every point: each point brings more of your enchantments along, starting with Protection, and every ten points add another level. Extra Cam-Shots no longer leaves it to chance: one point gives every second camera an extra shot. Vampirism and Cooking Time keep getting better with every point. Pet Health now takes effect on your pets straight away, and Live Eye Safe Duration lengthens both stages of your protection.",
-      "highlights": [
-        "Enchant Max and Enchant Bonus grow with every point",
-        "Extra camera shots without the luck",
-        "Pet Health applies to your pets straight away",
-        "Live Eye Safe Duration lengthens both stages of protection"
-      ],
-      "pr": 2364,
-      "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "perks-button-advancements",
-      "version": "0.1562.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "loot",
-        "advancements",
-        "ui"
-      ],
-      "title": "Perks button on the advancements screen",
-      "summary": "A star button beside Done on the advancements screen opens your perks, with your Advancement Points shown on it. Cosmic Apples now start turning up once you've unlocked your first perk.",
-      "highlights": [
-        "Open your perks straight from the advancements screen",
-        "Your Advancement Points sit on the button",
-        "Cosmic Apples appear after your first perk unlock"
-      ],
-      "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
       "id": "contents-weight-tuning-2337",
       "version": "0.1537.0",
       "type": "content",
@@ -31541,9 +31315,9 @@
       "highlights": [],
       "pr": 2362,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
     },
     {
       "id": "mob-haste-slower",
@@ -31559,9 +31333,9 @@
       "highlights": [],
       "pr": 2363,
       "date": "2026-10-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
     },
     {
       "id": "advancement-progress-list",
@@ -31580,6 +31354,1977 @@
         "If you had earned its earlier version, it is now a bigger goal, and you start with your progress carried over"
       ],
       "pr": 2366,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
+    },
+    {
+      "id": "balance-tweak-2026-10-27",
+      "version": "0.1561.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "balance"
+      ],
+      "title": "Balance tweak",
+      "summary": "A small balance adjustment.",
+      "highlights": [],
+      "pr": 2368,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
+    },
+    {
+      "id": "replay-mod-keeps-camera",
+      "version": "0.1562.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Replay Mod fix",
+      "summary": "Replay Mod now keeps its camera from the first moment of a recording. Keyframed shots of your spawn onto the train render the way you set them, instead of holding one still frame.",
+      "highlights": [],
+      "pr": 2370,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
+    },
+    {
+      "id": "fade-terrain-lag-fix",
+      "version": "0.1563.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "world"
+      ],
+      "title": "Lag fix",
+      "summary": "Fixed a lag spike on one stretch of the journey, where loose terrain could collapse all at once as the train arrived.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2371,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
+    },
+    {
+      "id": "exploration-list-and-nether-variety",
+      "version": "0.1564.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world",
+        "advancements"
+      ],
+      "title": "Exploration fix",
+      "summary": "A hidden advancement is fairer, and the world has a little more variety further along.",
+      "highlights": [],
+      "pr": 2372,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1564.0",
+      "released_at": "2026-10-27T15:33:54Z"
+    },
+    {
+      "id": "dimensional-carriage-copies-stay-changed",
+      "version": "0.1565.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train",
+        "loot"
+      ],
+      "title": "Dimensional carriage fix",
+      "summary": "Rooms inside a dimensional carriage now stay as you left them, including the parts you changed from the room next door. Step back onto the train and come back, and what you took or broke is still gone.",
+      "highlights": [],
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1565.0",
+      "released_at": "2026-10-27T16:41:08Z"
+    },
+    {
+      "id": "live-eye-removed-takeover",
+      "version": "0.1566.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Taking off the Live Eye passes the stream on",
+      "summary": "When a streamer takes off their Live Eye, anyone watching with a TV on their head is now offered the stream, just like when a streamer dies. First click wins.",
+      "highlights": [],
+      "pr": 2375,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1567.0",
+      "released_at": "2026-10-28T04:54:28Z"
+    },
+    {
+      "id": "dimensional-carriage-explosion-fix",
+      "version": "0.1566.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage fix",
+      "summary": "Explosions inside a dimensional carriage now leave the same damage everywhere they should, so a wall you blew open stays open.",
+      "highlights": [],
+      "pr": 2376,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1567.0",
+      "released_at": "2026-10-28T04:54:28Z"
+    },
+    {
+      "id": "reload-settle-rider-fling",
+      "version": "0.1568.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "No more sudden jumps when revisiting carriages",
+      "summary": "Walking back along the train and then forward again could suddenly throw you several carriages ahead, into the walls of a carriage you had not reached yet. Carriages you return to now stay exactly where they belong, and so do you.",
+      "highlights": [],
+      "pr": 2378,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1568.0",
+      "released_at": "2026-10-28T05:57:48Z"
+    },
+    {
+      "id": "streamer-box-stream-switching",
+      "version": "0.1569.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Watch the other stream while you stream",
+      "summary": "While you stream and another player is live too, the box in your corner can now show your stream, theirs, both or nothing.",
+      "highlights": [
+        "Click the box in your inventory to switch it, or pick where it starts in Options, Stream.",
+        "In your inventory the box now sits behind your menus and comes to the front when you hover it."
+      ],
+      "pr": 2379,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1569.0",
+      "released_at": "2026-10-28T06:41:56Z"
+    },
+    {
+      "id": "echo-text-tweak",
+      "version": "0.1570.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Text fix",
+      "summary": "A small text fix.",
+      "highlights": [],
+      "pr": 2381,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
+    },
+    {
+      "id": "fallen-mobs-stay-on-tracks",
+      "version": "0.1571.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Mobs that fall onto the tracks stay there",
+      "summary": "Mobs knocked off the train onto the tracks near you no longer vanish. They stay down on the rails and get slowly hurt while carriages roll over them.",
+      "highlights": [],
+      "pr": 2384,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
+    },
+    {
+      "id": "read-one-book-from-stack",
+      "version": "0.1572.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "books"
+      ],
+      "title": "Book stack fix",
+      "summary": "Reading a book from a stack of identical copies now burns only the copy you read. The rest stay in your inventory to read later.",
+      "highlights": [],
+      "pr": 2382,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
+    },
+    {
+      "id": "note-story-once-per-life",
+      "version": "0.1572.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "books"
+      ],
+      "title": "Note story fix",
+      "summary": "A note's story no longer arrives twice in the same life.",
+      "highlights": [],
+      "pr": 2382,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
+    },
+    {
+      "id": "fluid-barrier-tick-cache",
+      "version": "0.1573.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Smoother ride near water",
+      "summary": "Crossing rivers, lakes and oceans is easier on the server: the train no longer costs extra tick time while the water around it settles. Water still stays out of the carriages.",
+      "highlights": [
+        "Fewer freezes when the world around the train fills with water."
+      ],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2383,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
+    },
+    {
+      "id": "editor-shared-plot-helpers",
+      "version": "0.1574.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Editor housekeeping",
+      "summary": "The Train Editor's plots share one set of plumbing now, whichever kind of template you are working on. Leaving the editor takes you straight back to where you came in, however many areas you wandered through.",
+      "highlights": [
+        "One exit from anywhere in the editor."
+      ],
+      "pr": 2385,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
+    },
+    {
+      "id": "dh-structure-lookup-no-sync-load",
+      "version": "0.1576.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Less lag while Distant Horizons generates far terrain",
+      "summary": "With Distant Horizons on, its far-terrain generation could freeze the game for a second or two at a time while the train rolled. Those freezes are gone.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2387,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
+    },
+    {
+      "id": "note-echo-author-skin",
+      "version": "0.1577.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "books"
+      ],
+      "title": "Note echo fix",
+      "summary": "An echo sent by a Love Note or a Death Note now arrives wearing its author's own skin, not a stand-in.",
+      "highlights": [],
+      "pr": 2388,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1577.0",
+      "released_at": "2026-10-28T16:18:27Z"
+    },
+    {
+      "id": "deeper-dark-wider-reach",
+      "version": "0.1578.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "The deeper dark spreads",
+      "summary": "The deeper dark no longer keeps to its own stretch of the line. Keep an eye out for its sculk and gloom in places you thought you knew.",
+      "highlights": [],
+      "pr": 2389,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1580.0",
+      "released_at": "2026-10-29T04:54:43Z"
+    },
+    {
+      "id": "editor-template-dispatch",
+      "version": "0.1578.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Editor housekeeping",
+      "summary": "Behind-the-scenes tidy-up of how the Train Editor stamps, enters and views its plots. Nothing changes in how you build; the half-carriage row in the Whole section now fills in with the rest when you open it.",
+      "highlights": [
+        "Editor housekeeping: every plot kind is handled the same way under the hood",
+        "Whole section: half-carriage plots fill in with the rest of the section"
+      ],
+      "pr": 2390,
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1580.0",
+      "released_at": "2026-10-29T04:54:43Z"
+    },
+    {
+      "id": "sky-falling-comets",
+      "version": "0.1579.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Deeper down the line, the sky gets dangerous",
+      "summary": "Out in the stranger stretches of the journey, the sky is no longer empty. Keep an eye above you, and on the roof of your carriage.",
+      "highlights": [
+        "Fiery visitors streak overhead, and some of them come for the train.",
+        "You will hear them coming, and feel them land.",
+        "When the sky fills up, keep your head down.",
+        "Each time around, they come more often."
+      ],
+      "pr": 2365,
+      "date": "2026-10-27",
+      "released": true,
+      "released_in": "v0.1580.0",
+      "released_at": "2026-10-29T04:54:43Z",
+      "major": true,
+      "notable": true,
+      "description": "Deeper down the line, the sky is no longer empty. Something has started coming down out of the dark.\n\nListen for it. And when the sky fills up, keep your head down.\n\n*The further you go, the more of it there is.*",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/comet-shower.gif"
+    },
+    {
+      "id": "editor-three-tier-store",
+      "version": "0.1580.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Editor housekeeping",
+      "summary": "Behind-the-scenes tidy-up of how the editor stores templates. Removing your own edit of a built-in template now brings the original back straight away.",
+      "highlights": [],
+      "pr": 2391,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1580.0",
+      "released_at": "2026-10-29T04:54:43Z"
+    },
+    {
+      "id": "deathnote-echo-head-skin",
+      "version": "0.1581.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "books"
+      ],
+      "title": "Death Note trophy fix",
+      "summary": "The head you take from a Death Note echo now wears its author's skin, the same face the echo wore, even on offline servers.",
+      "highlights": [],
+      "pr": 2392,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1587.0",
+      "released_at": "2026-10-29T07:21:18Z"
+    },
+    {
+      "id": "coffee-table-book-terra-omnia-biomes",
+      "version": "0.1582.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Coffee Table Book fix",
+      "summary": "Coffee Table Book now asks for the same biomes as Terra Omnia, so every photo slot can be filled.",
+      "highlights": [
+        "Biomes you had already photographed now count towards Terra Omnia."
+      ],
+      "pr": 2394,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1587.0",
+      "released_at": "2026-10-29T07:21:18Z"
+    },
+    {
+      "id": "editor-menu-controller-base",
+      "version": "0.1583.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Editor tidy-up",
+      "summary": "Behind-the-scenes cleanup of the train editor's menus. Editor menus now close properly when you leave the world.",
+      "highlights": [],
+      "pr": 2393,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1587.0",
+      "released_at": "2026-10-29T07:21:18Z"
+    },
+    {
+      "id": "no-rewards-on-advancement-replay",
+      "version": "0.1584.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "Starting a new world is a little tidier with advancements you have already earned.",
+      "highlights": [],
+      "pr": 2397,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1587.0",
+      "released_at": "2026-10-29T07:21:18Z"
+    },
+    {
+      "id": "ai-translation-review-pass",
+      "version": "0.1581.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations"
+      ],
+      "title": "Translation fixes",
+      "summary": "Some translated text now reads more clearly.",
+      "highlights": [],
+      "pr": 2395,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1587.0",
+      "released_at": "2026-10-29T07:21:18Z"
+    },
+    {
+      "id": "note-echo-author-gear",
+      "version": "0.1586.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "books"
+      ],
+      "title": "Note echo fix",
+      "summary": "A fix for echoes sent by Love Notes and Death Notes.",
+      "highlights": [],
+      "pr": 2396,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1587.0",
+      "released_at": "2026-10-29T07:21:18Z"
+    },
+    {
+      "id": "editor-kind-facts",
+      "version": "0.1586.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Editor menu fixes",
+      "summary": "Train Editor menus now send the same commands everywhere. Setting a track weight now needs a variant name. Removing a portal room removes the room you picked even when you are not standing in it. Unsaved chunk frames can now be saved by name with the save command.",
+      "highlights": [],
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1587.0",
+      "released_at": "2026-10-29T07:21:18Z"
+    },
+    {
+      "id": "live-eye-pickup-swap",
+      "version": "0.1588.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot"
+      ],
+      "title": "Swap your Live Eye for one you find",
+      "summary": "Already carrying a Live Eye? You can now pick up another one you find on the ground. The new one is yours and your old one turns into a TV. Wearing yours or live? Then it stays where it is for someone else.",
+      "highlights": [],
+      "pr": 2399,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
+    },
+    {
+      "id": "editor-plot-editor-base",
+      "version": "0.1589.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Editor plot lifecycle shared across template kinds",
+      "summary": "Behind the scenes, the Train Editor's track, pillar, stairs, tunnel, carriage and whole-carriage plots now share one enter / stamp / save / clear routine instead of carrying their own copy each. Entering a named track-side variant from the X menu now lands on that variant's own plot rather than the row's default.",
+      "highlights": [
+        "One plot lifecycle for six editor kinds; the old entry points still work",
+        "Go here on a named track, pillar, stairs or tunnel variant lands on that plot"
+      ],
+      "date": "2026-10-28",
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
+    },
+    {
+      "id": "piglin-fix",
+      "version": "0.1590.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Piglin fix",
+      "summary": "Piglin fix.",
+      "highlights": [],
+      "pr": 2402,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
+    },
+    {
+      "id": "editor-variant-doc-store",
+      "version": "0.1590.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Train Editor variant saving",
+      "summary": "Block variants now save the same way in every Train Editor plot. Variant pools in carriage plots keep all their settings when saved, and clearing every variant from a plot removes the leftover file.",
+      "highlights": [],
+      "pr": 2403,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
+    },
+    {
+      "id": "worn-tv-who-is-live",
+      "version": "0.1592.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "See who is live on your TV",
+      "summary": "Wearing a TV now shows who is live in a line under the picture. With two streams on, each picture names its own streamer. Turn it off in Options, Stream, Who's live.",
+      "highlights": [],
+      "pr": 2404,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
+    },
+    {
+      "id": "slimed-fix",
+      "version": "0.1593.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "A small advancement fix.",
+      "highlights": [],
+      "pr": 2406,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
+    },
+    {
+      "id": "train-tree-breakoff",
+      "version": "0.1594.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "Trees on the train snap off",
+      "summary": "Trees you grow on top of the train now break off when they hit a hill or tunnel, just like bamboo, dropping their wood instead of carving through the world.",
+      "highlights": [
+        "Works for trees, huge mushrooms and huge fungi grown on a carriage"
+      ],
+      "pr": 2405,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1594.0",
+      "released_at": "2026-10-29T09:41:21Z"
+    },
+    {
+      "id": "trapped-dimensional-carriages",
+      "version": "0.1595.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "Two new dimensional carriages",
+      "summary": "Two new dimensional carriages can turn up further along the line. Watch your step.",
+      "highlights": [],
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1598.0",
+      "released_at": "2026-10-29T11:48:20Z",
+      "pr": 2408
+    },
+    {
+      "id": "ain-053-supporter-names",
+      "version": "0.1595.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot"
+      ],
+      "title": "Name update",
+      "summary": "More names.",
+      "highlights": [],
+      "pr": 2407,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1598.0",
+      "released_at": "2026-10-29T11:48:20Z"
+    },
+    {
+      "id": "crystal-fix",
+      "version": "0.1597.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Crystal fix",
+      "summary": "Fixed an issue with End Crystals.",
+      "highlights": [],
+      "pr": 2401,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1598.0",
+      "released_at": "2026-10-29T11:48:20Z"
+    },
+    {
+      "id": "photo-progress-chat",
+      "version": "0.1598.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Photo progress in chat",
+      "summary": "When a photo counts toward an advancement you have already discovered, chat now tells you how far along you are.",
+      "highlights": [],
+      "pr": 2409,
+      "date": "2026-10-29",
+      "released": true,
+      "released_in": "v0.1598.0",
+      "released_at": "2026-10-29T11:48:20Z"
+    },
+    {
+      "id": "mild-words-no-strike",
+      "version": "0.1599.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Gentler stream chat filter",
+      "summary": "The Live Eye filter is less extreme to everyday swearing. Slurs and the stronger words are filtered exactly as before.",
+      "highlights": [],
+      "pr": 2410,
+      "date": "2026-10-31",
+      "released": true,
+      "released_in": "v0.1601.0",
+      "released_at": "2026-10-31T06:36:47Z"
+    },
+    {
+      "id": "word-list-off-words",
+      "version": "0.1600.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Stream chat filter stays current",
+      "summary": "When a word is retired from the stream chat filter, it stops being hidden straight away, with no mod update needed.",
+      "highlights": [],
+      "pr": 2411,
+      "date": "2026-10-31",
+      "released": true,
+      "released_in": "v0.1601.0",
+      "released_at": "2026-10-31T06:36:47Z"
+    },
+    {
+      "id": "retire-unreachable-hidden-advancement",
+      "version": "0.1601.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Advancement cleanup",
+      "summary": "One hidden advancement that was out of reach in practice has been retired. It no longer counts toward completing the advancements.",
+      "highlights": [],
+      "pr": 2413,
+      "date": "2026-10-31",
+      "released": true,
+      "released_in": "v0.1601.0",
+      "released_at": "2026-10-31T06:36:47Z"
+    },
+    {
+      "id": "lush-caves-nether-mobs",
+      "version": "0.1602.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world",
+        "mobs"
+      ],
+      "title": "Lush caves come alive",
+      "summary": "Lush caves inside some of the mountains along the line were strangely empty. They now fill with axolotls, glow squid, fish, bats and the usual cave monsters, like lush caves anywhere else.",
+      "highlights": [],
+      "pr": 2415,
+      "date": "2026-10-31",
+      "released": true,
+      "released_in": "v0.1608.0",
+      "released_at": "2026-10-31T11:52:46Z"
+    },
+    {
+      "id": "potionlevelfix-modpack",
+      "version": "0.1603.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "ui"
+      ],
+      "title": "High effect and enchantment levels show their number",
+      "summary": "In the Dungeon Train modpacks, effect and enchantment levels above X now read properly. Tooltips, your effect list and a mob's details show the real level instead of dropping the number or printing a stray text key.",
+      "highlights": [
+        "Strong mob buffs late in the train now show their full level",
+        "Over-cap enchantments read as numerals in tooltips"
+      ],
+      "pr": 2417,
+      "date": "2026-10-31",
+      "released": true,
+      "released_in": "v0.1608.0",
+      "released_at": "2026-10-31T11:52:46Z"
+    },
+    {
+      "id": "lush-cave-underground-lakes",
+      "version": "0.1604.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Underground lakes in some caves",
+      "summary": "Some lush caves deep inside the mountains were nearly dry. They now fill with proper underground lakes, deep in places, the way lush caves should. Only newly explored areas change.",
+      "highlights": [],
+      "date": "2026-10-31",
+      "released": true,
+      "released_in": "v0.1608.0",
+      "released_at": "2026-10-31T11:52:46Z"
+    },
+    {
+      "id": "lag-report-prompt",
+      "version": "0.1605.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "performance",
+        "ui"
+      ],
+      "title": "Send a lag report from chat",
+      "summary": "If the game freezes for a few seconds, a line in chat offers to send your log to the developer so the freeze can be tracked down. It only asks after you've played for a while, at most every half hour, and No stops it for the session.",
+      "highlights": [],
+      "pr": 2419,
+      "date": "2026-10-31",
+      "released": true,
+      "released_in": "v0.1608.0",
+      "released_at": "2026-10-31T11:52:46Z"
+    },
+    {
+      "id": "hidden-advancement-unlock-fix",
+      "version": "0.1606.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "A hidden advancement that some players had earned was not unlocking. It does now.",
+      "highlights": [],
+      "pr": 2421,
+      "date": "2026-10-31",
+      "released": true,
+      "released_in": "v0.1608.0",
+      "released_at": "2026-10-31T11:52:46Z"
+    },
+    {
+      "id": "community-reward-dynamic-amounts",
+      "version": "0.1606.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Community Rewards: first gift is the smallest",
+      "summary": "Each Community Reward now starts at its own amount and only goes up while another reward that costs more to run alongside it is on, so whichever is given first is the smaller gift. A grey line on the card says which reward is raising it.",
+      "highlights": [
+        "Two Streams now starts at $100 AUD.",
+        "The Contribute page's gift header is shorter."
+      ],
+      "pr": 2420,
+      "date": "2026-10-31",
+      "released": true,
+      "released_in": "v0.1608.0",
+      "released_at": "2026-10-31T11:52:46Z"
+    },
+    {
+      "id": "editor-offset-buttons",
+      "version": "0.1609.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Offset buttons in the editor",
+      "summary": "The editor's template toolbar has a new Offset button. It opens a row of arrows that slide every block in the plot you are standing in, with a box to set how far each press moves. The preview model updates as you press.",
+      "highlights": [
+        "Six arrows: left/right, down/up, and the two depth directions",
+        "Type a distance from 1 to 64 blocks per press",
+        "Blocks pushed past one side come back in on the other, and every press can be undone"
+      ],
+      "pr": 2423,
+      "date": "2026-10-31",
+      "released": true,
+      "released_in": "v0.1610.0",
+      "released_at": "2026-10-31T15:56:47Z"
+    },
+    {
+      "id": "nether-roof-ceiling",
+      "version": "0.1610.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Nether fix",
+      "summary": "A few small fixes in the Nether.",
+      "highlights": [],
+      "pr": 2424,
+      "date": "2026-10-31",
+      "released": true,
+      "released_in": "v0.1610.0",
+      "released_at": "2026-10-31T15:56:47Z"
+    },
+    {
+      "id": "secret-advancement-addition",
+      "version": "0.1611.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "New secret advancement",
+      "summary": "There is a new hidden advancement to discover.",
+      "highlights": [],
+      "pr": 2425,
+      "date": "2026-11-01",
+      "released": true,
+      "released_in": "v0.1611.0",
+      "released_at": "2026-11-01T10:47:10Z"
+    },
+    {
+      "id": "lag-detection-recent-builds-only",
+      "version": "0.1612.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "internal"
+      ],
+      "title": "Lag report fix",
+      "summary": "Lag detection and the offer to send a lag report now only run on recent versions of the mod. Older versions skip them entirely.",
+      "highlights": [],
+      "date": "2026-11-01",
+      "released": true,
+      "released_in": "v0.1615.0",
+      "released_at": "2026-11-01T14:51:26Z",
+      "pr": 2426
+    },
+    {
+      "id": "moty-nomination-popup",
+      "version": "0.1613.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Mod of the Year nominations",
+      "summary": "CurseForge's Mod of the Year is open for nominations, and if you've rated Dungeon Train highly, a short popup now invites you to nominate the modpack and then the mod. Pick Already did or nominate once and it won't ask again.",
+      "highlights": [],
+      "pr": 2428,
+      "date": "2026-11-01",
+      "released": true,
+      "released_in": "v0.1615.0",
+      "released_at": "2026-11-01T14:51:26Z"
+    },
+    {
+      "id": "title-badge-update-check",
+      "version": "0.1614.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Update check fix",
+      "summary": "The version label on the title screen and pause menu tells you again when a newer version of Dungeon Train is out.",
+      "highlights": [],
+      "date": "2026-11-01",
+      "released": true,
+      "released_in": "v0.1615.0",
+      "released_at": "2026-11-01T14:51:26Z",
+      "pr": 2429
+    },
+    {
+      "id": "hidden-advancement-running-total",
+      "version": "0.1613.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Advancement change",
+      "summary": "One hidden advancement now builds up over time instead of asking for a single big moment.",
+      "highlights": [],
+      "pr": 2427,
+      "date": "2026-11-01",
+      "released": true,
+      "released_in": "v0.1615.0",
+      "released_at": "2026-11-01T14:51:26Z"
+    },
+    {
+      "id": "dig-never-mines-floor",
+      "version": "0.1616.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Digging mobs leave the floor alone",
+      "summary": "Mobs that dig through walls to reach you, Player Mobs included, no longer mine the carpet, slabs or paths under their feet mid-fight.",
+      "highlights": [],
+      "pr": 2430,
+      "date": "2026-11-01",
+      "released": true,
+      "released_in": "v0.1616.0",
+      "released_at": "2026-11-01T15:16:54Z"
+    },
+    {
+      "id": "room-loot-rebalance-2431",
+      "version": "0.1617.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot",
+        "balance"
+      ],
+      "title": "Loot rebalance",
+      "summary": "Some treasure is easier to come by and some is rarer, and a few rooms have been reworked.",
+      "highlights": [
+        "Ominous trial vault rewards have been boosted, with new loot",
+        "A few rooms got new layouts and loot spots"
+      ],
+      "pr": 2431,
+      "date": "2026-11-02",
+      "released": true,
+      "released_in": "v0.1617.0",
+      "released_at": "2026-11-02T07:34:29Z"
+    },
+    {
+      "id": "back-on-track-sides-only",
+      "version": "0.1618.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Back on Track fix",
+      "summary": "Back on Track no longer triggers when it shouldn't.",
+      "highlights": [],
+      "pr": 2433,
+      "date": "2026-11-02",
+      "released": true,
+      "released_in": "v0.1620.0",
+      "released_at": "2026-11-02T13:50:47Z"
+    },
+    {
+      "id": "more-trial-vaults",
+      "version": "0.1619.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "loot"
+      ],
+      "title": "More trial vaults",
+      "summary": "Two new trial vault layouts can turn up on the train, each with its own loot.",
+      "highlights": [],
+      "date": "2026-11-02",
+      "released": true,
+      "released_in": "v0.1620.0",
+      "released_at": "2026-11-02T13:50:47Z"
+    },
+    {
+      "id": "bundles-in-loot",
+      "version": "0.1619.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot"
+      ],
+      "title": "Bundles in loot",
+      "summary": "Bundles can now turn up in starting loot and in vases.",
+      "highlights": [],
+      "date": "2026-11-02",
+      "released": true,
+      "released_in": "v0.1620.0",
+      "released_at": "2026-11-02T13:50:47Z"
+    },
+    {
+      "id": "burrito-timing",
+      "version": "0.1621.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Burrito timing",
+      "summary": "Burrito timing tweak.",
+      "highlights": [],
+      "pr": 2435,
+      "date": "2026-11-02",
+      "released": true,
+      "released_in": "v0.1625.0",
+      "released_at": "2026-11-02T15:21:51Z"
+    },
+    {
+      "id": "candle-flowerpot-variants",
+      "version": "0.1622.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Candle and flower pot variety",
+      "summary": "Flower pots around the train now grow a different plant each time, and the Train Editor can now choose how many candles stand on a block, whether they are lit, and which plants a flower pot can hold.",
+      "highlights": [
+        "Flower pots around the train now hold a random plant.",
+        "Train Editor: candles can be set to a fixed or random count, and lit, unlit or random.",
+        "Train Editor: a flower pot can pick from every plant, or from a list of plants you choose."
+      ],
+      "pr": 2436,
+      "date": "2026-11-02",
+      "released": true,
+      "released_in": "v0.1625.0",
+      "released_at": "2026-11-02T15:21:51Z"
+    },
+    {
+      "id": "launcher-play-opens-menu",
+      "version": "0.1623.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Launcher world shortcuts open the menu",
+      "summary": "Every world is one run, so launcher buttons that jump straight back into an old world now open the main menu instead. Start a new run from there.",
+      "highlights": [],
+      "pr": 2437,
+      "date": "2026-11-02",
+      "released": true,
+      "released_in": "v0.1625.0",
+      "released_at": "2026-11-02T15:21:51Z"
+    },
+    {
+      "id": "new-trial-vault",
+      "version": "0.1625.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot"
+      ],
+      "title": "A new vault",
+      "summary": "A new kind of trial vault now turns up on the train.",
+      "highlights": [],
+      "pr": 2438,
+      "date": "2026-11-02",
+      "released": true,
+      "released_in": "v0.1625.0",
+      "released_at": "2026-11-02T15:21:51Z"
+    },
+    {
+      "id": "ci-gradle-cache-fix",
+      "version": "0.1626.0",
+      "type": "ci",
+      "tags": [
+        "internal"
+      ],
+      "title": "Faster build checks",
+      "summary": "Build checks reuse their cached downloads again, so changes are verified sooner.",
+      "highlights": [],
+      "pr": 2440,
+      "date": "2026-11-02",
+      "released": true,
+      "released_in": "v0.1628.0",
+      "released_at": "2026-11-03T03:56:06Z"
+    },
+    {
+      "id": "changelog-no-conflicts",
+      "version": "0.1627.0",
+      "type": "ci",
+      "tags": [
+        "internal"
+      ],
+      "title": "Faster update checks behind the scenes",
+      "summary": "Updates now move through testing faster, because changes waiting to go in no longer trip over each other.",
+      "highlights": [],
+      "pr": 2444,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1628.0",
+      "released_at": "2026-11-03T03:56:06Z"
+    },
+    {
+      "id": "story-rotation-global-done",
+      "version": "0.1628.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "books",
+        "advancements"
+      ],
+      "title": "Finished stories no longer repeat in new worlds",
+      "summary": "Once you've read a narrative story to the end, lecterns stop offering it, in any world, until you've finished every other story. Your reading now carries across worlds, so each new world brings you closer to finishing the stories and to discovering player-written ones.",
+      "highlights": [
+        "A finished story stays out of lecterns until every story is finished",
+        "Finishing a story in one world unlocks its follow-up stories in every world",
+        "Player-written stories unlock based on how much you've read across all worlds",
+        "Re-read stories now start at letter 1 and continue in order"
+      ],
+      "pr": 2442,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1628.0",
+      "released_at": "2026-11-03T03:56:06Z"
+    },
+    {
+      "id": "player-letters-burn-library-motion",
+      "version": "0.1629.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "books",
+        "advancements"
+      ],
+      "title": "Player-written letters burn, and a new way to earn A Library In Motion",
+      "summary": "Player-written letters taken from a lectern now burn when dropped, like every other lectern book. A Library In Motion is now earned the first time you finish a story written by another player.",
+      "highlights": [
+        "Player-written lectern letters now burn when dropped",
+        "A Library In Motion: finish a story written by another player"
+      ],
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1629.0",
+      "released_at": "2026-11-03T04:48:33Z"
+    },
+    {
+      "id": "approve-essential-tweaks",
+      "version": "0.1631.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Essential Tweaks and more mods count for fair play",
+      "summary": "Running Essential Tweaks alongside Essential no longer puts your run in Free Play. A batch of recently approved mods now also count offline, from your very first launch.",
+      "highlights": [
+        "Essential Tweaks approved for fair play",
+        "Armor Visibility now counts, it was approved under the wrong name before",
+        "Shoulder Surfing, Legendary Tooltips, Just Enough Characters, Armor HUD, Cubes Without Borders, Explosive Enhancement, Weapon Master and Cinematic Interactions are approved offline too"
+      ],
+      "pr": 2447,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1633.0",
+      "released_at": "2026-11-03T07:05:56Z"
+    },
+    {
+      "id": "donor-photo-albums",
+      "version": "0.1632.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "More photo albums for supporters",
+      "summary": "Anyone who has supported the game can now keep more than one photo album: one extra for any donation, and 10 for every A$10. Once your first album is full, an album you find on the train is your newest album half the time, and one of your full albums the rest of the time. A crafted album is always your newest one.",
+      "highlights": [
+        "Your photo album now follows you to every computer you play on"
+      ],
+      "pr": 2448,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1633.0",
+      "released_at": "2026-11-03T07:05:56Z"
+    },
+    {
+      "id": "mod-approval-inbox-notes",
+      "version": "0.1630.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Whitelist approval notes",
+      "summary": "When a mod you suggested for the whitelist, or commented on, gets approved, a note now lands in your inbox on the main menu. The inbox window also shows notes sent to you outside of Discord, which it used to miss.",
+      "highlights": [
+        "Suggested a mod and it got approved? You will hear about it on the main menu.",
+        "Inbox notes from Dungeon Train itself now show up in the window instead of a connection error."
+      ],
+      "pr": 2445,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1633.0",
+      "released_at": "2026-11-03T07:05:56Z"
+    },
+    {
+      "id": "advancement-progress-fill",
+      "version": "0.1635.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Advancement progress",
+      "summary": "One hidden advancement now fills its title bar as you get closer, without saying how much is left.",
+      "highlights": [],
+      "pr": 2453,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1636.0",
+      "released_at": "2026-11-03T07:55:24Z"
+    },
+    {
+      "id": "moty-popup-tracking",
+      "version": "0.1634.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Behind the scenes",
+      "summary": "Small behind-the-scenes improvements.",
+      "highlights": [],
+      "pr": 2452,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1636.0",
+      "released_at": "2026-11-03T07:55:24Z"
+    },
+    {
+      "id": "playermobs-wear-gear-weapon-master-key",
+      "version": "0.1633.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "mobs",
+        "ui"
+      ],
+      "title": "PlayerMobs show some of their gear",
+      "summary": "Some PlayerMobs now show a little of what they carry. YDM's Weapon Master also sits better alongside Dungeon Train in creative.",
+      "highlights": [],
+      "pr": 2449,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1636.0",
+      "released_at": "2026-11-03T07:55:24Z"
+    },
+    {
+      "id": "faulthurst-lifetime-progress",
+      "version": "0.1637.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "books",
+        "advancements"
+      ],
+      "title": "Book reading fix",
+      "summary": "Reading progress for a hidden collection now carries over between worlds, and you are less likely to be handed a book you have already read.",
+      "highlights": [],
+      "pr": 2456,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1638.0",
+      "released_at": "2026-11-03T10:57:01Z"
+    },
+    {
+      "id": "weapon-master-in-modpack",
+      "version": "0.1637.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Weapon Master in the modpack",
+      "summary": "The Dungeon Train modpack now includes YDM's Weapon Master.",
+      "highlights": [],
+      "pr": 2455,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1638.0",
+      "released_at": "2026-11-03T10:57:01Z"
+    },
+    {
+      "id": "mob-flicker-plot-space",
+      "version": "0.1637.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Mob flicker fix",
+      "summary": "Snow golems and armor stands riding the train no longer flicker invisible and back.",
+      "highlights": [],
+      "pr": 2454,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1640.0",
+      "released_at": "2026-11-03T11:10:37Z"
+    },
+    {
+      "id": "tab-complete-star-frame",
+      "version": "0.1639.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Star frames for the big advancements",
+      "summary": "The advancements for completing a whole tab, along with the Everything Burrito, now have their own star-shaped frame, so they stand out on the advancements screen.",
+      "highlights": [],
+      "pr": 2457,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1640.0",
+      "released_at": "2026-11-03T11:10:37Z"
+    },
+    {
+      "id": "mod-whitelist-file-checks",
+      "version": "0.1633.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Mod check improvements",
+      "summary": "Improvements to how installed mods are checked.",
+      "highlights": [],
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1642.0",
+      "released_at": "2026-11-03T12:44:50Z"
+    },
+    {
+      "id": "tab-complete-cards-last-night-crest",
+      "version": "0.1642.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "advancements",
+        "ui"
+      ],
+      "title": "Tab complete, in the right order",
+      "summary": "Finishing a tab now always shows its tab-complete card last, after the advancement that finished it. With Advancement Plaques installed, the biggest advancements get a starry gold plaque of their own.",
+      "highlights": [
+        "Tab-complete cards always arrive after the advancement that completed the tab",
+        "With Advancement Plaques, star-framed advancements show a starry plaque with a gold halo, sparkles and a chime"
+      ],
+      "pr": 2458,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1642.0",
+      "released_at": "2026-11-03T12:44:50Z"
+    },
+    {
+      "id": "approve-ambient-env-betterfps",
+      "version": "0.1642.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "More approved mods",
+      "summary": "Ambient Environment and Better FPS - Render Distance are now on the approved list, so runs with them installed count normally.",
+      "highlights": [],
+      "pr": 2459,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1643.0",
+      "released_at": "2026-11-03T13:40:38Z"
+    },
+    {
+      "id": "rare-biomes-more-often",
+      "version": "0.1642.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements",
+        "balance"
+      ],
+      "title": "Rare biomes turn up more often",
+      "summary": "A few of the rarest biomes now appear about twice as often, and only where the land suits them.",
+      "highlights": [],
+      "pr": 2460,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1643.0",
+      "released_at": "2026-11-03T13:40:38Z"
+    },
+    {
+      "id": "essential-update-notice",
+      "version": "0.1644.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Clearer advice when a mod needs updating",
+      "summary": "When an installed mod is out of date, the game now tells you to update it instead of giving general reinstall advice.",
+      "highlights": [],
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1645.0",
+      "released_at": "2026-11-03T16:47:16Z"
+    },
+    {
+      "id": "mod-check-hardening",
+      "version": "0.1645.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Fair play check fix",
+      "summary": "The installed-mod check for fair play is now more reliable.",
+      "highlights": [],
+      "pr": 2462,
+      "date": "2026-11-03",
+      "released": true,
+      "released_in": "v0.1645.0",
+      "released_at": "2026-11-03T16:47:16Z"
+    },
+    {
+      "id": "debug-screen-tweak",
+      "version": "0.1648.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Debug screen tweak",
+      "summary": "A small tweak to the debug screen.",
+      "highlights": [],
+      "pr": 2468,
+      "date": "2026-11-04",
+      "released": true,
+      "released_in": "v0.1649.0",
+      "released_at": "2026-11-04T09:33:33Z"
+    },
+    {
+      "id": "end-band-biome-fixes",
+      "version": "0.1649.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "End fix",
+      "summary": "A few small fixes in the End. It opens the way it should, its second half shows the scenery it was meant to, and the sky out over the void reads right.",
+      "highlights": [],
+      "pr": 2469,
+      "date": "2026-11-04",
+      "released": true,
+      "released_in": "v0.1649.0",
+      "released_at": "2026-11-04T09:33:33Z"
+    },
+    {
+      "id": "local-ci-runner",
+      "version": "0.1646.0",
+      "type": "ci",
+      "tags": [
+        "internal"
+      ],
+      "title": "Faster checks before changes ship",
+      "summary": "The team can now run the full set of release checks on their own machine before sending a change in, so fixes reach you with fewer delays.",
+      "highlights": [],
+      "pr": 2467,
+      "date": "2026-11-04",
+      "released": true,
+      "released_in": "v0.1649.0",
+      "released_at": "2026-11-04T09:33:33Z"
+    },
+    {
+      "id": "portal-exit-corridor-row",
+      "version": "0.1646.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Bounce fix",
+      "summary": "Fixed a rare case where a player could get bounced around.",
+      "highlights": [],
+      "pr": 2466,
+      "date": "2026-11-04",
+      "released": true,
+      "released_in": "v0.1649.0",
+      "released_at": "2026-11-04T09:33:33Z"
+    },
+    {
+      "id": "carrier-verification",
+      "version": "0.1647.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Fair play check: launcher-installed mods",
+      "summary": "Mods that your launcher sets up for you (like skin loaders) are now recognised correctly by the fair play check.",
+      "highlights": [],
+      "date": "2026-11-04",
+      "released": true,
+      "released_in": "v0.1650.0",
+      "released_at": "2026-11-04T10:03:02Z"
+    },
+    {
+      "id": "vault-photos-land-intact",
+      "version": "0.1650.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot"
+      ],
+      "title": "Vault photo fix",
+      "summary": "Photos won from vaults no longer burn as they land, so you can pick them up.",
+      "highlights": [],
+      "pr": 2470,
+      "date": "2026-11-04",
+      "released": true,
+      "released_in": "v0.1650.0",
+      "released_at": "2026-11-04T10:03:02Z"
+    },
+    {
+      "id": "advancement-progress-fix",
+      "version": "0.1651.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "Progress toward a hidden advancement was not carrying over between runs. It does now, and progress you had already made still counts.",
+      "highlights": [],
+      "pr": 2473,
+      "date": "2026-11-04",
+      "released": true,
+      "released_in": "v0.1651.0",
+      "released_at": "2026-11-04T11:23:37Z"
+    },
+    {
+      "id": "enchant-damage-tooltip",
+      "version": "0.1652.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Weapon tooltips show enchant damage",
+      "summary": "Weapon tooltips now include damage enchantments. Sharpness raises the Attack Damage number, and Smite, Bane of Arthropods and Impaling show their bonus on their own line, like +7.5 vs Undead.",
+      "highlights": [],
+      "pr": 2475,
+      "date": "2026-11-04",
+      "released": true,
+      "released_in": "v0.1653.0",
+      "released_at": "2026-11-04T12:01:58Z"
+    },
+    {
+      "id": "end-band-generates-again",
+      "version": "0.1653.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "End fix",
+      "summary": "The End's islands and the track through them generate again. Worlds that already crossed an empty stretch keep what was generated there; new ground is right.",
+      "highlights": [],
+      "pr": 2476,
+      "date": "2026-11-04",
+      "released": true,
+      "released_in": "v0.1653.0",
+      "released_at": "2026-11-04T12:01:58Z"
+    },
+    {
+      "id": "advancement-text-tweak",
+      "version": "0.1651.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement text tweak",
+      "summary": "Reworded the name and hint of one advancement, in every language.",
+      "highlights": [],
+      "pr": 2472,
+      "date": "2026-11-04",
+      "released": true,
+      "released_in": "v0.1658.0",
+      "released_at": "2026-11-04T13:46:17Z"
+    },
+    {
+      "id": "ffmpeg-download-resumes",
+      "version": "0.1657.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "TV video download fix",
+      "summary": "FFmpeg, which TVs need to play streams, now carries on from where it stopped after a dropped connection instead of starting over. If it still can't be set up, chat says what went wrong and offers buttons to try again or install it yourself.",
+      "highlights": [],
+      "pr": 2479,
+      "date": "2026-11-04",
+      "released": true,
+      "released_in": "v0.1658.0",
+      "released_at": "2026-11-04T13:46:17Z"
+    },
+    {
+      "id": "next-tier-photo-floor",
+      "version": "0.1657.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Photo finds tweak",
+      "summary": "A small change to which photos turn up on the train.",
+      "highlights": [],
+      "pr": 2478,
+      "date": "2026-11-04",
+      "released": true,
+      "released_in": "v0.1658.0",
+      "released_at": "2026-11-04T13:46:17Z"
+    },
+    {
+      "id": "relay-approved-mods-catalog-auto-refresh",
+      "version": "0.1646.0",
+      "type": "ci",
+      "tags": [
+        "community",
+        "internal"
+      ],
+      "title": "Release pipeline improvement",
+      "summary": "The fair-play mod list the website checks against now follows every release on its own.",
+      "highlights": [],
+      "pr": 2463,
+      "date": "2026-11-04",
+      "released": true,
+      "released_in": "v0.1658.0",
+      "released_at": "2026-11-04T13:46:17Z"
+    },
+    {
+      "id": "tribute-scaled-photo-reach",
+      "version": "0.1653.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Bigger Tributes carry photos further",
+      "summary": "The more emeralds you pay in Tribute to another player's photo, the more people will get to see it.",
+      "highlights": [],
+      "pr": 2477,
+      "date": "2026-11-04",
+      "released": true,
+      "released_in": "v0.1658.0",
+      "released_at": "2026-11-04T13:46:17Z"
+    },
+    {
+      "id": "trader-perks-reduced-reduction-restock",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "loot"
+      ],
+      "title": "Trader perks: Reduced Reduction and Restock Villager",
+      "summary": "Two new Trader perks. Reduced Reduction keeps a villager's prices from dropping as fast while you keep selling to it. Restock Villager lets you refresh a villager's sold-out trades a few times each life.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "knight-combat-perks",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Knight perks",
+      "summary": "Three new Knight perks. Crits gives your hits a chance to land critical strikes, and past a point they hit even harder. Kill Buff gives you a burst of Strength on every kill, getting stronger as it grows. Vampirism gives each kill a chance to heal you, and enough of it heals you more than once. None of them have a cap.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perks-archivist",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "balance"
+      ],
+      "title": "Archivist perks",
+      "summary": "New Archivist perks for the perks tree: keep the Live Eye safe for longer, give your votes more weight, and get extra shots from a disposable camera.",
+      "highlights": [],
+      "pr": 2299,
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "cosmic-apples",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot"
+      ],
+      "title": "Cosmic apples",
+      "summary": "Cosmic apples now turn up in carriage chests. Eat one for perk points to spend this life: a Cosmic Apple gives 1, a Celestial Bite gives 5 and a Violet Core gives 10. The rarer apples only appear further along the train.",
+      "highlights": [
+        "Three apples, each worth more perk points than the last",
+        "The deeper you ride, the better the apples you can find"
+      ],
+      "pr": 2316,
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perk-points",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Perk points",
+      "summary": "Advancements now earn Advancement Points, which unlock perks and are kept when you die. The advancements screen shows how many you have to spend. Points from cosmic apples buy perk ranks for this life, and each rank costs a little more the more you buy. A perk can be unlocked again to hold more points.",
+      "highlights": [
+        "Advancement Points from advancements unlock perks",
+        "Unlock a perk again to give it room for more points"
+      ],
+      "date": "2026-10-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "crafter-enchanting-perks",
+      "version": "0.1508.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Crafter perks: enchanting and cooking",
+      "summary": "Four new Crafter perks. Enchanting costs fewer levels, food cooks faster, enchantments can climb past their usual maximum, and the enchantments on your gear can work stronger than they are.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perks-lover-pet-health-good-gifter",
+      "version": "0.1509.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Lover perks: Pet Health and Good Gifter",
+      "summary": "Two new Lover perks. Pet Health gives your tamed pets an extra half heart for each rank, with no limit. Good Gifter makes animals easier to win over: every rank makes your gifts tame more often, and as it grows animals start taking similar food, then other animals' food, then your own food, then anything at all, until a friendly hand is enough. Player mobs also warm to your gifts faster.",
+      "highlights": [],
+      "date": "2026-10-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perks-tree-v18",
+      "version": "0.1539.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Perks tree update",
+      "summary": "The perks tree gains a new Archivist perk and a few links and positions are tidied.",
+      "highlights": [],
+      "date": "2026-10-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perks-menu-constellation",
+      "version": "0.1540.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Perks menu",
+      "summary": "Press P (or use the button on the pause menu) to open your perks as a sky of stars. Unlock perks with Advancement Points and activate them with Cosmic Apples, all from the bar along the bottom.",
+      "highlights": [
+        "Hover or click a star to see what it does, its points and its key stats",
+        "Right-click a star to unlock it, double-click to add a point",
+        "Show, hide and pick classes from the list on the right"
+      ],
+      "date": "2026-10-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perks-stats-and-descriptions",
+      "version": "0.1548.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations",
+        "ui"
+      ],
+      "title": "Perk numbers and clearer descriptions",
+      "summary": "The bar along the bottom of the perks menu now shows each perk's key numbers, with hearts drawn as hearts, and hovering a point shows what it would change. Every perk has a clearer description, in every language. Perks that aren't ready yet show as Coming soon, and anyone can now offer their Live Eye to a viewer by name.",
+      "highlights": [
+        "Key numbers for every perk in the perks bar",
+        "Clearer perk descriptions in every language",
+        "Perks that aren't ready yet show as Coming soon",
+        "Offer your Live Eye to a chosen viewer, no perk needed"
+      ],
+      "pr": 2358,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perks-effect-rework",
+      "version": "0.1559.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Perk reworks",
+      "summary": "Enchant Max and Enchant Bonus now grow with every point: each point brings more of your enchantments along, starting with Protection, and every ten points add another level. Extra Cam-Shots no longer leaves it to chance: one point gives every second camera an extra shot. Vampirism and Cooking Time keep getting better with every point. Pet Health now takes effect on your pets straight away, and Live Eye Safe Duration lengthens both stages of your protection.",
+      "highlights": [
+        "Enchant Max and Enchant Bonus grow with every point",
+        "Extra camera shots without the luck",
+        "Pet Health applies to your pets straight away",
+        "Live Eye Safe Duration lengthens both stages of protection"
+      ],
+      "pr": 2364,
+      "date": "2026-10-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perks-button-advancements",
+      "version": "0.1562.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "advancements",
+        "ui"
+      ],
+      "title": "Perks button on the advancements screen",
+      "summary": "A star button beside Done on the advancements screen opens your perks, with your Advancement Points shown on it. Cosmic Apples now start turning up once you've unlocked your first perk.",
+      "highlights": [
+        "Open your perks straight from the advancements screen",
+        "Your Advancement Points sit on the button",
+        "Cosmic Apples appear after your first perk unlock"
+      ],
       "date": "2026-10-27",
       "released": false,
       "released_in": null,

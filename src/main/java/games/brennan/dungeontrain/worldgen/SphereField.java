@@ -143,6 +143,12 @@ public final class SphereField {
     /** Nether spheres are cut around a source centre in this Y range — cavern floors, walls, the lava sea. */
     static final int NETHER_SOURCE_MIN_Y = 40;
     static final int NETHER_SOURCE_MAX_Y = 100;
+    /**
+     * Otherside spheres are cut around a source centre in this Y range of its 0..127 slab — above the sculk
+     * grime sea (y 17), below the bedrock roof, so a ball shows caves, pillars and floors rather than bedrock.
+     */
+    static final int OTHERSIDE_SOURCE_MIN_Y = 24;
+    static final int OTHERSIDE_SOURCE_MAX_Y = 100;
 
     private static final int PRESENCE_SALT = 11;
     private static final int JITTER_X_SALT = 12;
@@ -312,11 +318,13 @@ public final class SphereField {
                 return new Sphere(cx, cy, cz, r, cy - sourceCenterY, source, structure);
             }
         }
-        if (source == SphereSource.NETHER) {
-            // The Nether has a roof, so there is no surface to anchor to: cut around a hashed height.
+        if (source == SphereSource.NETHER || source == SphereSource.OTHERSIDE) {
+            // The Nether and the Otherside have a roof, so there is no surface to anchor to: cut around a hashed
+            // height (the same roll for both, so flipping a sphere's source never moves its cut).
             double u2 = hash01(seed, cellX, cellY, cellZ, NETHER_Y_SALT);
-            sourceCenterY = NETHER_SOURCE_MIN_Y
-                    + (int) Math.floor(u2 * (NETHER_SOURCE_MAX_Y - NETHER_SOURCE_MIN_Y + 1));
+            int srcLo = source == SphereSource.NETHER ? NETHER_SOURCE_MIN_Y : OTHERSIDE_SOURCE_MIN_Y;
+            int srcHi = source == SphereSource.NETHER ? NETHER_SOURCE_MAX_Y : OTHERSIDE_SOURCE_MAX_Y;
+            sourceCenterY = srcLo + (int) Math.floor(u2 * (srcHi - srcLo + 1));
         } else {
             sourceCenterY = surface.surfaceY(cx, cz) - bias;
         }

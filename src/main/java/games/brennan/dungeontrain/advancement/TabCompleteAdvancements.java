@@ -51,6 +51,17 @@ public final class TabCompleteAdvancements {
     }
 
     /**
+     * Is {@code id} a tab-complete advancement or its copy inside its own tab? Those tiles are drawn
+     * in the tab-complete frame shape ({@code AdvancementTileDecor}). Pure over the layout.
+     */
+    public static boolean isTabCompleteOrCopy(TabGateways.Layout layout, ResourceLocation id) {
+        String key = id.toString();
+        if (layout.complete().containsKey(key)) return true;
+        String original = layout.copies().get(key);
+        return original != null && layout.complete().containsKey(original);
+    }
+
+    /**
      * The advancements a tab needs: {@code root} and everything below it, minus those {@code skip}
      * rejects. Pure over the tree; package-private for tests.
      */
@@ -85,30 +96,35 @@ public final class TabCompleteAdvancements {
         return out;
     }
 
-    /** Grant {@code player} every tab-complete advancement whose tab is now done. Idempotent. */
-    public static void checkAndGrant(ServerPlayer player) {
+    /**
+     * Grant {@code player} every tab-complete advancement whose tab is now done. Idempotent. Answers
+     * whether it granted any.
+     */
+    public static boolean checkAndGrant(ServerPlayer player) {
         MinecraftServer server = player.getServer();
-        if (server == null) return;
+        if (server == null) return false;
         TabGateways.Layout layout = TabGateways.layout();
-        if (layout.complete().isEmpty()) return;
+        if (layout.complete().isEmpty()) return false;
         Predicate<ResourceLocation> skip = skipRule(leftOut(layout));
+        boolean any = false;
         for (Map.Entry<String, String> e : layout.complete().entrySet()) {
-            checkOne(player, server.getAdvancements(), e.getKey(), e.getValue(), skip);
+            any |= checkOne(player, server.getAdvancements(), e.getKey(), e.getValue(), skip);
         }
+        return any;
     }
 
-    private static void checkOne(ServerPlayer player, ServerAdvancementManager mgr, String selfId, String tabRootId,
+    private static boolean checkOne(ServerPlayer player, ServerAdvancementManager mgr, String selfId, String tabRootId,
                                  Predicate<ResourceLocation> skip) {
         ResourceLocation selfRl = ResourceLocation.tryParse(selfId), rootRl = ResourceLocation.tryParse(tabRootId);
-        if (selfRl == null || rootRl == null) return;
+        if (selfRl == null || rootRl == null) return false;
         AdvancementHolder self = mgr.get(selfRl);
         AdvancementNode root = mgr.tree().get(rootRl);
-        if (self == null || root == null) return; // data not loaded
-        if (player.getAdvancements().getOrStartProgress(self).isDone()) return;
+        if (self == null || root == null) return false; // data not loaded
+        if (player.getAdvancements().getOrStartProgress(self).isDone()) return false;
 
         List<AdvancementNode> needed = members(root, skip);
         for (AdvancementNode node : needed) {
-            if (!player.getAdvancements().getOrStartProgress(node.holder()).isDone()) return;
+            if (!player.getAdvancements().getOrStartProgress(node.holder()).isDone()) return false;
         }
         boolean granted = false;
         for (String key : self.value().criteria().keySet()) {
@@ -118,6 +134,7 @@ public final class TabCompleteAdvancements {
             LOGGER.info("[DungeonTrain] Granted tab complete '{}' ({} advancements under {}) to {}",
                 selfId, needed.size(), tabRootId, player.getName().getString());
         }
+        return granted;
     }
 
     /** What not to require in this world: {@link #leftOut}, unreachable bands and the relay's not-required list. */

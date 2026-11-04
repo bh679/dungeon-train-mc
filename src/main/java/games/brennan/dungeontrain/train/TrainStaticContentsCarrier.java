@@ -3,7 +3,9 @@ package games.brennan.dungeontrain.train;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.CarriedStaticEntityPacket;
+import games.brennan.dungeontrain.ship.CarriageBoxIndex;
 import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.ResidentCarriageBoxes;
 import games.brennan.dungeontrain.ship.Shipyards;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -15,6 +17,8 @@ import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
@@ -93,6 +97,12 @@ public final class TrainStaticContentsCarrier {
      */
     private static final String NBT_PLACED_DECOR = "DungeonTrainPlacedDecor";
 
+    /**
+     * How far below a crystal's feet to probe for the block it was placed on. Vanilla spawns it at
+     * the top face of that block; half a block down lands inside it whatever the float drift.
+     */
+    private static final double CRYSTAL_BASE_PROBE = 0.5;
+
     private TrainStaticContentsCarrier() {}
 
     /**
@@ -147,10 +157,20 @@ public final class TrainStaticContentsCarrier {
         double z = persistent.getDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Z);
 
         // (0,0,0) means no anchor was ever persisted — a contents entity from before the spawn NBT
-        // existed (nothing to anchor to), or a stand a player just placed inside a carriage.
+        // existed (nothing to anchor to), or a stand or crystal a player just placed on a carriage.
         if (x == 0.0 && y == 0.0 && z == 0.0) {
-            if (contentsType || hasContentsTag(entity)) return;
-            Vector3d adopted = adoptPlacedDecor(level, entity);
+            if (hasContentsTag(entity)) return;
+            Vector3d adopted;
+            if (entity instanceof EndCrystal) {
+                // Only a fresh placement can be a player's: a crystal loaded from disk with no
+                // anchor is ordinary world decor (End spikes) and must not cost a carriage scan.
+                if (event.loadedFromDisk()) return;
+                adopted = adoptPlacedCrystal(level, entity);
+            } else if (contentsType) {
+                return;
+            } else {
+                adopted = adoptPlacedDecor(level, entity);
+            }
             if (adopted == null) return;
             x = adopted.x;
             y = adopted.y;
@@ -195,7 +215,53 @@ public final class TrainStaticContentsCarrier {
         // Welded decor, per design: the carrier owns this entity's position from here on, so leave
         // it nothing to fight. Otherwise the stand spends every tick falling and being yanked back.
         entity.setNoGravity(true);
+        return persistAnchor(entity, plotPos, ship);
+    }
 
+    /**
+     * Adopt an End Crystal a <em>player</em> just placed on obsidian or bedrock on a carriage.
+     *
+     * <p>Unlike an armor stand, a crystal is not a Sable-retained type, so by the time it joins the
+     * level Sable has already kicked it out of the plot to the matching <i>world</i> point — where,
+     * never ticking {@code move()}, it then stays while the train drives off. Map that world point
+     * back into the carriage that is under it and anchor it there.</p>
+     *
+     * <p>A plot position is still accepted first, in case Sable ever stops kicking on add. A
+     * carriage is only taken when the plot block under the crystal is one a crystal can be placed
+     * on, so one set down beside a passing train is left alone.</p>
+     */
+    @Nullable
+    private static Vector3d adoptPlacedCrystal(ServerLevel level, Entity entity) {
+        Vector3d pos = new Vector3d(entity.getX(), entity.getY(), entity.getZ());
+        ManagedShip plotShip = Shipyards.of(level).findAt(BlockPos.containing(pos.x, pos.y, pos.z));
+        if (plotShip != null && plotShip.isResident()) {
+            return persistAnchor(entity, pos, plotShip);
+        }
+
+        CarriageBoxIndex<ManagedShip> boxes = ResidentCarriageBoxes.forTick(level);
+        if (!boxes.mayContain(pos.x, pos.y, pos.z)) return null;
+        for (int i = boxes.nextCandidate(pos.x, pos.y, pos.z, 0); i >= 0;
+             i = boxes.nextCandidate(pos.x, pos.y, pos.z, i + 1)) {
+            ManagedShip ship = boxes.handle(i);
+            // worldToShip mutates its argument; keep pos for the next candidate.
+            Vector3d plotPos = ship.worldToShip(new Vector3d(pos));
+            BlockPos base = BlockPos.containing(plotPos.x, plotPos.y - CRYSTAL_BASE_PROBE, plotPos.z);
+            ManagedShip owner = Shipyards.of(level).findAt(base);
+            if (owner == null || owner.id() != ship.id()) continue;
+            BlockState below = level.getBlockState(base);
+            if (below.is(Blocks.OBSIDIAN) || below.is(Blocks.BEDROCK)) {
+                return persistAnchor(entity, plotPos, ship);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Persist {@code plotPos} as {@code entity}'s carriage anchor under the same keys
+     * {@link CarriageContentsPlacer} writes, so the per-tick re-anchor, the client packet and a
+     * reload all treat an adopted entity exactly like DT's own contents.
+     */
+    private static Vector3d persistAnchor(Entity entity, Vector3d plotPos, ManagedShip ship) {
         CompoundTag persistent = entity.getPersistentData();
         persistent.putBoolean(NBT_PLACED_DECOR, true);
         persistent.putDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_X, plotPos.x);

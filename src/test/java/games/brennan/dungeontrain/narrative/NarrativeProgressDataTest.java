@@ -253,4 +253,21 @@ final class NarrativeProgressDataTest {
         assertFalse(reloaded.hasReadPlayerLetter("life-a", 1), "missing key decodes as empty, not NPE");
         assertTrue(reloaded.startedPlayerSeriesIds().isEmpty());
     }
+
+    @Test
+    @DisplayName("A player series is finished only when every letter it has is read")
+    void playerSeriesFinishedNeedsEveryLetter() {
+        NarrativeProgressData data = NarrativeProgressData.load(new CompoundTag());
+        java.util.List<Integer> letters = java.util.List.of(1, 2, 3);
+        assertFalse(data.hasReadAllPlayerLetters("life-a", letters), "nothing read");
+        data.markPlayerLetterRead("life-a", 1);
+        data.markPlayerLetterRead("life-a", 3);
+        assertFalse(data.hasReadAllPlayerLetters("life-a", letters), "letter 2 missing");
+        data.markPlayerLetterRead("life-a", 2);
+        assertTrue(data.hasReadAllPlayerLetters("life-a", letters), "all three read");
+        assertFalse(data.hasReadAllPlayerLetters("life-a", java.util.List.of(1, 2, 3, 4)),
+            "a letter added later makes it unfinished again");
+        assertFalse(data.hasReadAllPlayerLetters("life-b", letters), "scoped per series");
+        assertFalse(data.hasReadAllPlayerLetters("life-a", java.util.List.of()), "an empty series is never finished");
+    }
 }

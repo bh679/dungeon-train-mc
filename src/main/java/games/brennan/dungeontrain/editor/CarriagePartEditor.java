@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriagePartPlacer;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
+import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateStamp;
 import net.minecraft.core.BlockPos;
@@ -57,7 +58,7 @@ import java.util.UUID;
  * <p>Per-player session (the {@code (kind, name)} the player is editing) is
  * still tracked in {@link #PART_SESSIONS} so {@code /editor part save} knows
  * the filename to write to. The return-position session is shared with
- * {@link CarriageEditor#rememberReturn} so a single {@code /editor exit}
+ * {@link EditorSessions#rememberReturn} so a single {@code /editor exit}
  * unwinds regardless of which sub-editor the player entered last.</p>
  */
 public final class CarriagePartEditor {
@@ -85,7 +86,6 @@ public final class CarriagePartEditor {
      */
     private static final int PLOT_GAP = 5;
 
-    private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
 
     /** (kind, current-name) the player is editing. Empty when the player has never entered a part plot in this session. */
     public record PartSession(CarriagePartKind kind, String name) {}
@@ -184,13 +184,7 @@ public final class CarriagePartEditor {
             for (String name : CarriagePartRegistry.registeredNames(kind)) {
                 BlockPos o = plotOrigin(kind, name, dims);
                 if (o == null) continue;
-                Vec3i size = kind.dims(dims);
-                // +2 Y headroom above cage top — see CarriageEditor.plotContaining.
-                if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + size.getX()
-                    && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + size.getY() + 2
-                    && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + size.getZ()) {
-                    return new PlotLocation(kind, name);
-                }
+                if (EditorPlotBox.contains(pos, o, kind.dims(dims))) return new PlotLocation(kind, name);
             }
         }
         return null;
@@ -206,17 +200,6 @@ public final class CarriagePartEditor {
         return Optional.ofNullable(PART_SESSIONS.get(player.getUUID()));
     }
 
-    /**
-     * Outcome of {@link #save} — config-dir write always happens (or throws);
-     * the source-tree write is opt-in via {@link EditorDevMode} and reported
-     * separately. Copy of {@link CarriageEditor.SaveResult}'s shape so command
-     * dispatchers can treat both uniformly.
-     */
-    public record SaveResult(boolean sourceAttempted, boolean sourceWritten, String sourceError) {
-        public static SaveResult skipped() { return new SaveResult(false, false, null); }
-        public static SaveResult written() { return new SaveResult(true, true, null); }
-        public static SaveResult failed(String error) { return new SaveResult(true, false, error); }
-    }
 
     /**
      * Teleport {@code player} to the plot for {@code (kind, name)}, remembering
@@ -243,7 +226,7 @@ public final class CarriagePartEditor {
         // walk to its menu, not a reload — restamping would throw away every unsaved edit.
         boolean alreadyHere = EditorPlotScope.standingIn(player, new Template.Part(kind, name));
 
-        CarriageEditor.rememberReturn(player);
+        EditorSessions.rememberReturn(player);
         PART_SESSIONS.put(player.getUUID(), new PartSession(kind, name));
         // Register the name immediately so plotContaining (used by
         // EditorStatusHudOverlay, the editor menu auto-stack, and the parts
@@ -395,7 +378,7 @@ public final class CarriagePartEditor {
             copyVariantSidecar(kind, sourceName, name);
         }
 
-        CarriageEditor.rememberReturn(player);
+        EditorSessions.rememberReturn(player);
         PART_SESSIONS.put(player.getUUID(), new PartSession(kind, name));
 
         Vec3i size = kind.dims(dims);
@@ -457,7 +440,7 @@ public final class CarriagePartEditor {
         if (origin == null) origin = nextFreePlotOrigin(kind, dims);
 
         Vec3i partSize = kind.dims(dims);
-        CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
+        VariantDoc sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
 
         StructureTemplate template = captureTemplate(overworld, origin, kind, dims);
         CarriagePartTemplateStore.save(kind, name, template);
@@ -469,7 +452,7 @@ public final class CarriagePartEditor {
         // accumulated since enter (PrefabUseHandler defers its writes until
         // /save). Failure is logged but doesn't fail the whole save.
         try {
-            ContainerContentsStore.loadFor("part:" + kind.id() + ":" + name).save();
+            ContainerContentsStore.loadFor(BlockVariantPlot.partKey(kind, name)).save();
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Part editor save: contents-store save failed for {}:{}: {}",
                 kind.id(), name, e.toString());
@@ -485,23 +468,13 @@ public final class CarriagePartEditor {
         LOGGER.info("[DungeonTrain] Part editor save: {} -> {}:{} template",
             player.getName().getString(), kind.id(), name);
 
-        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
-        try {
-            CarriagePartTemplateStore.saveToSource(kind, name, template);
-            // Promote the variants sidecar too — without this, shift-right-click
-            // variant authoring stayed in run/config and was lost on worktree
-            // delete (the same defect the contents editor had pre-0.66.1).
-            sidecar.saveToSource(kind, name);
-            // Promote the container-contents sidecar (per-position links and
-            // pools). Without this, chest→loot-prefab references authored in
-            // the plot stay in run/config and are lost when the part ships.
-            ContainerContentsStore.loadFor("part:" + kind.id() + ":" + name).saveToSource();
-            return SaveResult.written();
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Part editor save: source write failed for {}:{}: {}",
-                kind.id(), name, e.toString());
-            return SaveResult.failed(e.getMessage());
-        }
+        // The variants and container-contents sidecars ship too; without them, shift-right-click
+        // variant authoring and chest→loot-prefab links stayed in run/config and were lost when
+        // the part shipped.
+        return EditorSave.toSource("Part editor save: " + kind.id() + ":" + name,
+            () -> CarriagePartTemplateStore.saveToSource(kind, name, template),
+            () -> sidecar.saveToSource(),
+            () -> ContainerContentsStore.loadFor(BlockVariantPlot.partKey(kind, name)).saveToSource());
     }
 
     /**
@@ -565,33 +538,17 @@ public final class CarriagePartEditor {
         LOGGER.info("[DungeonTrain] Part editor saveAs: {} renamed {}:{} -> {}:{}",
             player.getName().getString(), kind.id(), oldName, kind.id(), newName);
 
-        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
-        try {
-            CarriagePartTemplateStore.saveToSource(kind, newName, template);
-            // Variants sidecar — write under the new name and clean up the old
-            // name's source file so the rename leaves no stale bundled resource.
-            Vec3i partSize = kind.dims(dims);
-            CarriagePartVariantBlocks newSidecar = CarriagePartVariantBlocks.loadFor(kind, newName, partSize);
-            newSidecar.saveToSource(kind, newName);
-            try {
-                Files.deleteIfExists(CarriagePartTemplateStore.sourceFileFor(kind, oldName));
-            } catch (IOException e) {
-                LOGGER.warn("[DungeonTrain] Part editor saveAs: source-tree delete failed for {}:{}: {}",
-                    kind.id(), oldName, e.toString());
-            }
-            try {
+        // Variants sidecar — write under the new name and clean up the old name's source files so
+        // the rename leaves no stale bundled resource.
+        Vec3i partSize = kind.dims(dims);
+        return EditorSave.toSource("Part editor saveAs: " + kind.id() + ":" + newName,
+            () -> CarriagePartTemplateStore.saveToSource(kind, newName, template),
+            () -> CarriagePartVariantBlocks.loadFor(kind, newName, partSize).saveToSource(),
+            () -> Files.deleteIfExists(CarriagePartTemplateStore.sourceFileFor(kind, oldName)),
+            () -> {
                 java.nio.file.Path oldVariantsSrc = CarriagePartVariantBlocks.sourcePathFor(kind, oldName);
                 if (oldVariantsSrc != null) Files.deleteIfExists(oldVariantsSrc);
-            } catch (IOException e) {
-                LOGGER.warn("[DungeonTrain] Part editor saveAs: variants source-tree delete failed for {}:{}: {}",
-                    kind.id(), oldName, e.toString());
-            }
-            return SaveResult.written();
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Part editor saveAs: source write failed for {}:{}: {}",
-                kind.id(), newName, e.toString());
-            return SaveResult.failed(e.getMessage());
-        }
+            });
     }
 
     /**
@@ -607,7 +564,7 @@ public final class CarriagePartEditor {
         // Drop in-session contents-store changes (loot-prefab links) so the
         // re-stamp reads the last-saved disk state; placement writes only
         // touch the in-memory cache until /save.
-        ContainerContentsStore.invalidate("part:" + kind.id() + ":" + name);
+        ContainerContentsStore.invalidate(BlockVariantPlot.partKey(kind, name));
         EditorSidecarBaseline.forgetFile(CarriagePartVariantBlocks.configPathFor(kind, name));
         CarriagePartPlacer.eraseAt(level, origin, kind, dims);
         stampCurrent(level, origin, kind, name, dims);
@@ -746,7 +703,7 @@ public final class CarriagePartEditor {
 
     /** Barrier cage around the 1-outside-footprint bounding box. */
     private static void setOutline(ServerLevel level, BlockPos origin, CarriagePartKind kind, CarriageDims dims) {
-        applyOutline(level, origin, kind, dims, OUTLINE_BLOCK);
+        applyOutline(level, origin, kind, dims, EditorPlotCage.OUTLINE_BLOCK);
     }
 
     /** Erase the barrier cage drawn by {@link #setOutline} — sets every cage edge back to air. */
@@ -755,25 +712,7 @@ public final class CarriagePartEditor {
     }
 
     private static void applyOutline(ServerLevel level, BlockPos origin, CarriagePartKind kind, CarriageDims dims, BlockState state) {
-        Vec3i size = kind.dims(dims);
-        int x0 = origin.getX() - 1;
-        int y0 = origin.getY() - 1;
-        int z0 = origin.getZ() - 1;
-        int x1 = origin.getX() + size.getX();
-        int y1 = origin.getY() + size.getY();
-        int z1 = origin.getZ() + size.getZ();
-
-        for (int x = x0; x <= x1; x++) {
-            for (int y = y0; y <= y1; y++) {
-                for (int z = z0; z <= z1; z++) {
-                    int extremes = (x == x0 || x == x1 ? 1 : 0)
-                        + (y == y0 || y == y1 ? 1 : 0)
-                        + (z == z0 || z == z1 ? 1 : 0);
-                    if (extremes < 2) continue;
-                    level.setBlock(new BlockPos(x, y, z), state, 3);
-                }
-            }
-        }
+        EditorPlotCage.setOutline(level, origin, kind.dims(dims), state);
     }
 
     /** Clear the per-player session map. Wired into server stop via {@link CarriagePartRegistry}. */

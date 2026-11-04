@@ -23,6 +23,7 @@ final class CostButton extends DarkTintedButton {
 
     CostButton(int x, int y, int w, int h, Currency currency, int cost, Component name, OnPress onPress) {
         super(x, y, w, h, Component.literal(Integer.toString(cost)), onPress);
+        withStrongHover();
         this.currency = currency;
         setTooltip(net.minecraft.client.gui.components.Tooltip.create(name));
     }

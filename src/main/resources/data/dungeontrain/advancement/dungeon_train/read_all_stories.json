@@ -11,8 +11,8 @@
   },
   "criteria": {
     "completed": {
-      "trigger": "dungeontrain:story_set_completed",
-      "conditions": { "setId": "all_stories" }
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "finished_player_series" }
     }
   },
   "requirements": [["completed"]]

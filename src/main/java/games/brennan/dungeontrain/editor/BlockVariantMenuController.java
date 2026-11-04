@@ -17,9 +17,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -29,15 +29,14 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
+import static games.brennan.dungeontrain.editor.EditorFeedback.actionBar;
+
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Server-side driver for the block-variant world-space menu. Tap-Z opens
@@ -56,7 +55,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * use the player's horizontal forward look so the bottom of the menu
  * always faces the player.</p>
  */
-public final class BlockVariantMenuController {
+public final class BlockVariantMenuController extends PlayerMenuController<BlockVariantMenuController.OpenMenu> {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -80,7 +79,7 @@ public final class BlockVariantMenuController {
      * so the panel neither jumps to a wrapping side face nor rotates to
      * track the player's current look angle.
      */
-    private record OpenMenu(String variantId, BlockPos localPos, Direction face, Vec3 up,
+    record OpenMenu(String variantId, BlockPos localPos, Direction face, Vec3 up,
                            @Nullable Vec3 anchor, @Nullable Vec3 right, @Nullable BlockPos anchorWorld) {
         /** A panel hung off a cell's face — the anchor is re-derived from that face on every re-sync. */
         OpenMenu(String variantId, BlockPos localPos, Direction face, Vec3 up) {
@@ -106,19 +105,28 @@ public final class BlockVariantMenuController {
         }
     }
 
-    private static final Map<UUID, OpenMenu> OPEN = new ConcurrentHashMap<>();
+    public static final BlockVariantMenuController INSTANCE = new BlockVariantMenuController();
 
-    private BlockVariantMenuController() {}
+    private BlockVariantMenuController() {
+        super("BlockVariantMenu", "variant edit");
+    }
 
-    /** Per-player exit reset — drop the tracked anchor face. */
+    @Override
+    protected String requiresOpKey() {
+        return "chat.dungeontrain.editor_bar.variant_menu.requires_op";
+    }
+
+    @Override
+    protected String keyOf(OpenMenu state) {
+        return state.variantId();
+    }
+
     /**
-     * Re-send this player's open block-variant menu because its sidecar changed
-     * behind the controller's back — an editor undo or redo. No-op when nothing
-     * is open, or when the player has since moved to a different plot.
+     * The sidecar changed behind the controller's back — an editor undo or redo. No-op when the
+     * player has since moved to a different plot.
      */
-    public static void resyncOpen(ServerPlayer player) {
-        OpenMenu open = OPEN.get(player.getUUID());
-        if (open == null) return;
+    @Override
+    protected void resync(ServerPlayer player, OpenMenu open) {
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         BlockVariantPlot plot = resolvePlotFor(player, dims, open.variantId());
@@ -127,25 +135,23 @@ public final class BlockVariantMenuController {
             open.face(), open.up());
     }
 
-    public static void forget(ServerPlayer player) {
-        OPEN.remove(player.getUUID());
-    }
-
-    /** Per-server-stop reset. */
-    public static void clearAll() {
-        OPEN.clear();
+    /**
+     * One snapshot ahead of the op switch covers every menu mutation — candidate add / remove /
+     * reorder, weight, rotation, lock-id cycle — without each arm having to describe its own
+     * inverse. The sidecar, not the config tree: that is where this menu's state lives.
+     */
+    @Override
+    protected void armUndo(ServerPlayer player) {
+        EditorEditRecorder.notePendingSidecar(player, "Variant edit");
     }
 
     public static void toggle(ServerPlayer player, boolean open) {
         if (!open) {
-            OPEN.remove(player.getUUID());
+            INSTANCE.remove(player);
             DungeonTrainNet.sendTo(player, BlockVariantSyncPacket.empty());
             return;
         }
-        if (!player.hasPermissions(2)) {
-            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.requires_op"), ChatFormatting.RED);
-            return;
-        }
+        if (!INSTANCE.requireOp(player)) return;
 
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
@@ -175,37 +181,14 @@ public final class BlockVariantMenuController {
         // Either space of a door / bed / tall-plant cell opens that cell's menu, but the panel
         // hangs off the half the player actually aimed at. Any square of a hung painting opens
         // the cell it hangs from, so its variants cover the whole painting.
-        BlockPos lookedLocal = clampToFootprint(localPos, plot);
+        BlockPos lookedLocal = MenuPanelGeometry.clampToFootprint(localPos, plot);
         BlockPos clampedLocal = MultiBlockFootprint.ownerCell(plot, paintingCell(level, plot, lookedLocal));
         BlockPos anchorWorld = plot.origin().offset(lookedLocal);
 
         Direction face = bhit.getDirection();
-        Vec3 up = computeUp(face, player);
-        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clampedLocal, face, up, anchorWorld));
+        Vec3 up = MenuPanelGeometry.computeUp(face, player);
+        INSTANCE.put(player, new OpenMenu(plot.key(), clampedLocal, face, up, anchorWorld));
         sendSync(player, plot, clampedLocal, anchorWorld, face, up);
-    }
-
-    /**
-     * Compute the menu's up-axis for {@code face}: vertical faces snap to
-     * the player's current horizontal look so the panel reads the right way
-     * up; non-vertical faces use world up. Captured once at open time and
-     * frozen in {@link OpenMenu#up()} so re-syncs don't rotate the panel.
-     */
-    private static Vec3 computeUp(Direction face, Player player) {
-        if (face.getAxis() != Direction.Axis.Y) return new Vec3(0, 1, 0);
-        Vec3 look = player.getLookAngle();
-        Vec3 horizontal = new Vec3(look.x, 0, look.z);
-        if (horizontal.lengthSqr() < 1.0e-6) horizontal = new Vec3(0, 0, 1);
-        return horizontal.normalize();
-    }
-
-    /** Clamp each axis of {@code localPos} into {@code [0, footprint)} so cell lookup always lands on a real cell. */
-    private static BlockPos clampToFootprint(BlockPos localPos, BlockVariantPlot plot) {
-        net.minecraft.core.Vec3i f = plot.footprint();
-        int x = Math.max(0, Math.min(f.getX() - 1, localPos.getX()));
-        int y = Math.max(0, Math.min(f.getY() - 1, localPos.getY()));
-        int z = Math.max(0, Math.min(f.getZ() - 1, localPos.getZ()));
-        return new BlockPos(x, y, z);
     }
 
     /** Compose + send the sync packet for the cell at {@code localPos}. */
@@ -223,10 +206,7 @@ public final class BlockVariantMenuController {
      */
     public static void openForCopies(ServerPlayer player, String roomName,
                                      games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane) {
-        if (!player.hasPermissions(2)) {
-            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.requires_op"), ChatFormatting.RED);
-            return;
-        }
+        if (!INSTANCE.requireOp(player)) return;
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
 
@@ -253,12 +233,12 @@ public final class BlockVariantMenuController {
         // level against; any fixed axis will do, and this is the one the command menu picks.
         if (up.lengthSqr() < 1.0e-4) up = new Vec3(0, 0, 1);
         up = up.normalize();
-        Vec3 right = up.cross(normal).normalize();
+        Vec3 right = MenuPanelGeometry.right(up, normal);
 
         BlockPos cell = games.brennan.dungeontrain.portal.PortalRoomCopiesPlot.CELL;
         // The stored face is only used to re-anchor a later re-sync; UP keeps that stable rather
         // than tying it to a block face this panel never had.
-        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), cell, Direction.UP, up, anchor, right));
+        INSTANCE.put(player, new OpenMenu(plot.key(), cell, Direction.UP, up, anchor, right));
         List<VariantState> states = plot.statesAt(cell);
         DungeonTrainNet.sendTo(player, buildSyncPacket(plot, cell, states == null ? List.of() : states,
             plot.lockIdAt(cell), anchor, right, up));
@@ -324,14 +304,10 @@ public final class BlockVariantMenuController {
         BlockVariantPlot plot, BlockPos localPos, BlockPos worldPos,
         Direction face, Vec3 up, List<VariantState> states, int lockId
     ) {
-        Vec3 normal = new Vec3(face.getStepX(), face.getStepY(), face.getStepZ());
-        Vec3 faceCentre = new Vec3(
-            worldPos.getX() + 0.5 + face.getStepX() * 0.5,
-            worldPos.getY() + 0.5 + face.getStepY() * 0.5,
-            worldPos.getZ() + 0.5 + face.getStepZ() * 0.5);
-        Vec3 anchor = faceCentre.add(normal.scale(0.02));
+        Vec3 normal = MenuPanelGeometry.normalOf(face);
+        Vec3 anchor = MenuPanelGeometry.faceAnchor(worldPos, face);
 
-        Vec3 right = up.cross(normal).normalize();
+        Vec3 right = MenuPanelGeometry.right(up, normal);
         return buildSyncPacket(plot, localPos, states, lockId, anchor, right, up);
     }
 
@@ -371,7 +347,8 @@ public final class BlockVariantMenuController {
                 // Sent even with no values so the popup keeps the target the author picked.
                 s.condition().id(),
                 VariantConditionEdits.isLive(s.condition(), lockIdsInUse, cellLockId),
-                conditionValuesToken(plot, localPos, s.condition())));
+                conditionValuesToken(plot, localPos, s.condition()),
+                s.candles().id(), s.pot().id()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
@@ -398,23 +375,13 @@ public final class BlockVariantMenuController {
 
     /** Apply a {@link BlockVariantEditPacket} mutation, with OP + plot validation. */
     public static void applyEdit(ServerPlayer player, BlockVariantEditPacket packet) {
-        if (!player.hasPermissions(2)) {
-            LOGGER.warn("[DungeonTrain] BlockVariantMenu edit rejected: player {} not OP",
-                player.getName().getString());
-            return;
-        }
-        ServerLevel level = player.serverLevel();
-        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         // Authorised against the menu the server itself opened for this player, rather than against
         // where they are standing now. That key came from the server at open time, so it is a
         // stronger check than the positional one it replaces — and it is what lets the author step
         // off the plot, or stand outside the carriage they are building, with the menu still up.
-        OpenMenu open = OPEN.get(player.getUUID());
-        if (open == null || !open.variantId().equals(packet.variantId())) {
-            LOGGER.warn("[DungeonTrain] BlockVariantMenu edit rejected: player {} has no open menu for '{}'",
-                player.getName().getString(), packet.variantId());
-            return;
-        }
+        if (INSTANCE.authorise(player, packet.variantId()) == null) return;
+        ServerLevel level = player.serverLevel();
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         BlockVariantPlot plot = resolvePlotFor(player, dims, packet.variantId());
         if (plot == null || !plot.key().equals(packet.variantId())) {
             LOGGER.warn("[DungeonTrain] BlockVariantMenu edit rejected: no plot for '{}'",
@@ -428,10 +395,7 @@ public final class BlockVariantMenuController {
             return;
         }
 
-        // One snapshot ahead of the op switch covers every menu mutation —
-        // candidate add / remove / reorder, weight, rotation, lock-id cycle —
-        // without each arm having to describe its own inverse.
-        EditorEditRecorder.notePendingSidecar(player, "Variant edit");
+        INSTANCE.armUndo(player);
 
         // CYCLE_LOCK_ID has its own short flow — handle before the
         // states-list mutation pipeline since it doesn't touch states.
@@ -681,9 +645,9 @@ public final class BlockVariantMenuController {
                 // matching what's already there.
                 RotationApplier.OrientedState oriented =
                     RotationApplier.orientToPredecessors(capturedState, mutated);
-                VariantState newVariant = HeadAim.aim(new VariantState(
+                VariantState newVariant = withNewRowDefaults(HeadAim.aim(new VariantState(
                     oriented.state(), itemBeNbt, 1, oriented.rotation(), linkedPrefabId)
-                    .withPainting(addedPainting), localPos, plot.footprint());
+                    .withPainting(addedPainting), localPos, plot.footprint()));
                 if (mutated.size() >= MAX_ENTRIES) {
                     actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.variant_cell_full", MAX_ENTRIES), ChatFormatting.YELLOW);
                     return;
@@ -863,6 +827,34 @@ public final class BlockVariantMenuController {
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }
+            case SET_CANDLES -> {
+                // stateString = VariantCandles token; blank = as placed.
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (entry.isMob() || entry.isGroupRef() || !VariantCandles.isCandle(entry.state())) return;
+                VariantCandles next = VariantCandles.parse(packet.stateString());
+                if (next == null) return;
+                // A fixed count is stored in the state too, so the row's icon shows it.
+                BlockState shown = next.isDefault() || next.isRandom() ? entry.state()
+                    : entry.state().setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.CANDLES, next.count());
+                mutated.set(idx, entry.withState(shown, entry.blockEntityNbt()).withCandles(next));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_POT, ADD_POT_PLANT, REMOVE_POT_PLANT -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (entry.isMob() || entry.isGroupRef() || !FlowerPots.isPot(entry.state())) return;
+                VariantPot next = potEdit(entry.pot(), packet, player);
+                if (next == null) return;
+                mutated.set(idx, entry.withPot(next));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
             case BUMP_DIFF_MIN -> {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();
@@ -1018,7 +1010,7 @@ public final class BlockVariantMenuController {
         }
 
         if (dropCell) {
-            OPEN.remove(player.getUUID());
+            INSTANCE.remove(player);
             DungeonTrainNet.sendTo(player, BlockVariantSyncPacket.empty());
             return;
         }
@@ -1028,14 +1020,14 @@ public final class BlockVariantMenuController {
 
     /**
      * Re-sync the targeted cell using the face the menu was originally
-     * anchored to (looked up in {@link #OPEN}). Avoids re-running
+     * anchored to (the open record). Avoids re-running
      * {@code player.pick(...)} — which would let the panel pop onto a
      * wrapping side face when the billboarded panel extends past the
      * block edge.
      */
     private static void resyncSameFace(ServerPlayer player, BlockVariantPlot plot,
                                        BlockPos localPos) {
-        OpenMenu open = OPEN.get(player.getUUID());
+        OpenMenu open = INSTANCE.open(player);
         boolean sameMenu = open != null
             && open.variantId().equals(plot.key())
             && open.localPos().equals(localPos);
@@ -1058,7 +1050,7 @@ public final class BlockVariantMenuController {
             up = open.up();
         } else {
             face = Direction.UP;
-            up = computeUp(face, player);
+            up = MenuPanelGeometry.computeUp(face, player);
         }
         // Stay on the half the menu was opened from — for a two-space cell that may not be the
         // owning cell itself.
@@ -1325,11 +1317,11 @@ public final class BlockVariantMenuController {
             }
         }
 
-        OpenMenu open = OPEN.get(player.getUUID());
+        OpenMenu open = INSTANCE.open(player);
         Direction face = open != null ? open.face() : Direction.UP;
-        Vec3 up = open != null ? open.up() : computeUp(face, player);
+        Vec3 up = open != null ? open.up() : MenuPanelGeometry.computeUp(face, player);
         // Close the block-variant menu — the container menu takes over.
-        OPEN.remove(player.getUUID());
+        INSTANCE.remove(player);
         DungeonTrainNet.sendTo(player, BlockVariantSyncPacket.empty());
         ContainerContentsMenuController.openAt(player, plot, localPos, face, up);
     }
@@ -1600,6 +1592,47 @@ public final class BlockVariantMenuController {
     }
 
     /**
+     * A freshly added row's option defaults: a candle starts lit with a Random count, so a new
+     * candle row varies without the author touching it. Everything else is unchanged.
+     */
+    static VariantState withNewRowDefaults(VariantState v) {
+        if (v.isMob() || !VariantCandles.isCandle(v.state())) return v;
+        return v.withActive(VariantActive.active()).withCandles(VariantCandles.RANDOM);
+    }
+
+    /**
+     * The flower pot option after one of the Plant popup's edits, or {@code null} to ignore it
+     * (unknown plant, nothing pottable held, list full).
+     */
+    @org.jetbrains.annotations.Nullable
+    private static VariantPot potEdit(VariantPot current, BlockVariantEditPacket packet, ServerPlayer player) {
+        String arg = packet.stateString() == null ? "" : packet.stateString().trim();
+        switch (packet.op()) {
+            case SET_POT -> {
+                return arg.isEmpty() ? VariantPot.NONE : VariantPot.RANDOM;
+            }
+            case ADD_POT_PLANT -> {
+                ResourceLocation plant = arg.isEmpty()
+                    ? FlowerPots.plantOf(player.getMainHandItem()) : ResourceLocation.tryParse(arg);
+                if (plant == null || FlowerPots.pottedFor(plant) == null) {
+                    actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.pot_hold_plant"),
+                        ChatFormatting.YELLOW);
+                    return null;
+                }
+                if (current.plants().size() >= VariantPot.MAX_PLANTS) return null;
+                return current.withPlant(plant);
+            }
+            case REMOVE_POT_PLANT -> {
+                ResourceLocation plant = ResourceLocation.tryParse(arg);
+                return plant == null ? null : current.withoutPlant(plant);
+            }
+            default -> {
+                return null;
+            }
+        }
+    }
+
+    /**
      * The cell a hung painting's square belongs to — the painting's anchor, when that lies inside
      * the plot — so every square of a painting opens (and copies) the one cell that varies the whole
      * painting. {@code local} unchanged for anything else.
@@ -1807,9 +1840,5 @@ public final class BlockVariantMenuController {
         return CarriageVariantBlocks.isEmptyPlaceholder(state)
             ? Component.translatable("chat.dungeontrain.editor_bar.variant_menu.empty_block")
             : state.getBlock().getName();
-    }
-
-    private static void actionBar(ServerPlayer player, Component text, ChatFormatting colour) {
-        player.displayClientMessage(text.copy().withStyle(colour), true);
     }
 }

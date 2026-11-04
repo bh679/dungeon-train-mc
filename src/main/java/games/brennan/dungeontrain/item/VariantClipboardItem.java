@@ -142,6 +142,10 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_HUNG = "hg";
     /** Per-entry placement condition token ({@code VariantCondition#id}). Absent when none. */
     private static final String NBT_CONDITION = "if";
+    /** Per-entry candle count token ({@code VariantCandles#id}). Absent when as placed. */
+    private static final String NBT_CANDLES = "cd";
+    /** Per-entry flower pot plant token ({@code VariantPot#id}). Absent when off. */
+    private static final String NBT_POT = "po";
 
     /** Pool sub-keys, kept short for compact NBT. */
     private static final String NBT_POOL_FILL_MIN = "fmin";
@@ -470,6 +474,12 @@ public final class VariantClipboardItem extends Item {
             if (!s.hung().isDefault()) {
                 entry.putString(NBT_HUNG, s.hung().id());
             }
+            if (!s.candles().isDefault()) {
+                entry.putString(NBT_CANDLES, s.candles().id());
+            }
+            if (!s.pot().isDefault()) {
+                entry.putString(NBT_POT, s.pot().id());
+            }
             list.add(entry);
         }
         root.put(NBT_ROOT_KEY, list);
@@ -655,7 +665,11 @@ public final class VariantClipboardItem extends Item {
                     entry.contains(NBT_HUNG, Tag.TAG_STRING) ? entry.getString(NBT_HUNG) : null),
                 groupRef > 0 && entry.contains(NBT_GROUP_STATES, Tag.TAG_COMPOUND)
                     ? decodeStates(entry.getCompound(NBT_GROUP_STATES)) : List.of(),
-                condition));
+                condition,
+                games.brennan.dungeontrain.editor.VariantCandles.parse(
+                    entry.contains(NBT_CANDLES, Tag.TAG_STRING) ? entry.getString(NBT_CANDLES) : null),
+                games.brennan.dungeontrain.editor.VariantPot.parse(
+                    entry.contains(NBT_POT, Tag.TAG_STRING) ? entry.getString(NBT_POT) : null)));
         }
         return out;
     }

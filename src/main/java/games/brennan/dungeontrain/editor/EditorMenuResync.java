@@ -33,13 +33,6 @@ public final class EditorMenuResync {
      * regardless of what the step touched.
      */
     public static void afterHistoryStep(ServerPlayer player) {
-        PartPositionMenuController.resyncOpen(player);
-        BlockVariantMenuController.resyncOpen(player);
-        ContainerContentsMenuController.resyncOpen(player);
-        TemplateBlocksMenuController.resyncOpen(player);
-        TemplateBlockGroupsController.resyncOpen(player);
-        // Stage panels are shared rather than per-player — another author may be
-        // looking at the stage this step just changed.
-        StagePanelController.resyncAllOpen(player.server);
+        MenuControllers.resyncAfterHistory(player);
     }
 }

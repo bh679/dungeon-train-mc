@@ -466,6 +466,9 @@ public final class PortalCarriageEvents {
      * pair adopting mobs fifty blocks away and dragging them along on every re-stamp.</p>
      */
     public static boolean isInsidePortalStructure(CarriageDims dims, double x, double y, double z) {
+        // A tribute room visit stands in its own band, off every pair; it is a portal structure to the
+        // spawn guard, the rescue and the freeze all the same.
+        if (games.brennan.dungeontrain.portal.tribute.TributeRoomVisitSessions.contains(x, y, z)) return true;
         if (STRUCTURES.isEmpty()) return false;
         for (PortalStructure structure : STRUCTURES.values()) {
             AABB box = structureBox(dims, structure);
@@ -1798,6 +1801,35 @@ public final class PortalCarriageEvents {
         }
     }
 
+    /**
+     * A player did something to the block at {@code pos}: broke it, placed one, or opened what stands
+     * there. The copy it is in is marked as visited so it is captured before it is erased.
+     *
+     * <p>{@link #occupiedTiles} marks the copies players <b>stand</b> in, and that is not the same
+     * set: a player can reach across a seam and mine a barrel in the next copy over, or loot a chest
+     * through an authored opening, without ever setting foot in it. That copy was never captured, so
+     * it came back whole from its template on the next visit (reported by Dowl and Akazuki_ruru on
+     * v0.1494.0, reproduced by Brennan). The base tile goes through {@link PortalRoomMemory#markTouched}
+     * for the same reason.</p>
+     */
+    public static void markTouchedAt(ServerLevel level, BlockPos pos) {
+        if (STRUCTURES.isEmpty()) return;
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        for (Map.Entry<Integer, PortalStructure> pair : STRUCTURES.entrySet()) {
+            PortalStructure structure = pair.getValue();
+            if (!structureBox(dims, structure).contains(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5)) continue;
+            if (games.brennan.dungeontrain.portal.PortalTestSession.isTestStamp(pair.getKey())) return;
+            PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+            PortalRoomTiling.Tile tile = structure.tileAt(dims, layout, pos.getX(), pos.getZ());
+            if (PortalRoomTiling.Tile.BASE.equals(tile)) {
+                PortalRoomMemory.markTouched(level, pair.getKey(), dims);
+            } else {
+                PortalRoomMemory.markTileTouched(pair.getKey(), tile);
+            }
+            return;
+        }
+    }
+
     private static Set<PortalRoomTiling.Tile> occupiedTiles(List<ServerPlayer> players,
                                                             CarriageDims dims,
                                                             PortalCarriageLayout layout,
@@ -2709,6 +2741,8 @@ public final class PortalCarriageEvents {
                 PortalRoomMemory.markTouched(level, pairKey, dims);
             } else {
                 planned = PortalCarriageBuilder.withDriftedCopy(level, planned, pairKey, stageId);
+                // A home pair stands a player's saved room in place of the bare template.
+                planned = games.brennan.dungeontrain.portal.tribute.TributeRoomPlacement.withPlayerRoom(level, planned, pairKey);
             }
         }
         final PortalStructure toStamp = planned;
@@ -2723,6 +2757,7 @@ public final class PortalCarriageEvents {
         // A drifting room is registered once its blocks are down (or, on a relocation, told where
         // it now stands), so an edit a player makes from the next tick on is queued for the relay.
         SharedRoomEvents.onStructureStamped(level, pairKey, planned, dims, stageId);
+        games.brennan.dungeontrain.portal.tribute.TributeRoomRegistry.onStructureStamped(level, pairKey, planned, dims);
         // Where the exit stands, but only when it is not the ordinary place. A pair that moved it
         // (PortalRoomExits) is a portal a player has to search, and that is worth being able to see
         // in a log without walking the room — it is also the only outward sign the setting fired.
@@ -2779,6 +2814,7 @@ public final class PortalCarriageEvents {
         // erase, while the blocks can still be read. The evicted record keeps the room it rolled but
         // not the copy: a pair that comes back is stamped afresh, as a culled carriage is.
         SharedRoomEvents.onStructureGone(pairKey);
+        games.brennan.dungeontrain.portal.tribute.TributeRoomRegistry.onStructureGone(pairKey);
         // Remembered before the erase, so the stamp it gets when its carriage next wants a twin lays
         // the room as it was left. Before the mob reap too: a living mob is part of how it was left.
         rememberIfTouched(level, dims, pairKey, structure);
@@ -2799,8 +2835,9 @@ public final class PortalCarriageEvents {
     /**
      * Capture and remember {@code structure}'s room box when a player has been inside it, and hand the
      * capture back as the blob its next stamp should lay; null for an untouched room (its template is
-     * what it still is) or one whose chunks are not loaded — reading those would load them, and a room
-     * nobody can see has not changed since it was last captured anyway.
+     * what it still is). Chunks that have unloaded are loaded for the read: the eviction that calls this
+     * erases the room next and loads them regardless, and a skipped capture meant the room came back
+     * from its template (see {@link PortalRoomMemory} "Unloaded chunks").
      */
     private static games.brennan.dungeontrain.portal.PortalRoomBlob rememberIfTouched(
             ServerLevel level, CarriageDims dims, int pairKey, PortalStructure structure) {
@@ -2808,8 +2845,8 @@ public final class PortalCarriageEvents {
         BlockPos roomOrigin = structure.roomOrigin(dims,
             PortalCarriageBuilder.layoutFor(dims, structure.kind()));
         net.minecraft.core.Vec3i size = structure.roomSize();
-        BlockPos far = roomOrigin.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1);
-        if (!level.hasChunksAt(roomOrigin, far)) return null;
+        if (!PortalRoomMemory.ensureLoaded(level, roomOrigin, size,
+                "portal pair " + pairKey + "'s room '" + structure.roomName() + "'")) return null;
         long started = System.nanoTime();
         net.minecraft.nbt.CompoundTag snapshot = PortalRoomMemory.capture(level, roomOrigin, size);
         if (snapshot == null) return null;

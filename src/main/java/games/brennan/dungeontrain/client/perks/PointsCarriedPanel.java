@@ -120,14 +120,15 @@ final class PointsCarriedPanel {
         nextButton(g, font, Component.translatable("gui.dungeontrain.death.continue"), x, y, w, h, hover, alpha);
     }
 
-    /** The death recap's grey bevel button, saying {@code text}. */
+    /** The death recap's grey bevel button, saying {@code text}; under the pointer a white halo, bevel and text, so it reads from a TV too. */
     static void nextButton(GuiGraphics g, Font font, Component text, int x, int y, int w, int h, boolean hover, double alpha) {
+        if (hover) g.fill(x - 2, y - 2, x + w + 2, y + h + 2, fade(0x66FFFFFF, alpha));
         g.fill(x, y, x + w, y + h, fade(hover ? BTN_HOVER_BG : BTN_BG, alpha));
-        g.fill(x, y, x + w, y + 2, fade(BTN_LIGHT, alpha));
-        g.fill(x, y, x + 2, y + h, fade(BTN_LIGHT, alpha));
-        g.fill(x, y + h - 2, x + w, y + h, fade(BTN_DARK, alpha));
-        g.fill(x + w - 2, y, x + w, y + h, fade(BTN_DARK, alpha));
-        g.drawString(font, text, x + (w - font.width(text)) / 2, y + (h - font.lineHeight) / 2 + 1, fade(BTN_TEXT, alpha), false);
+        g.fill(x, y, x + w, y + 2, fade(hover ? 0xFFFFFFFF : BTN_LIGHT, alpha));
+        g.fill(x, y, x + 2, y + h, fade(hover ? 0xFFFFFFFF : BTN_LIGHT, alpha));
+        g.fill(x, y + h - 2, x + w, y + h, fade(hover ? 0xFFA0A0A0 : BTN_DARK, alpha));
+        g.fill(x + w - 2, y, x + w, y + h, fade(hover ? 0xFFA0A0A0 : BTN_DARK, alpha));
+        g.drawString(font, text, x + (w - font.width(text)) / 2, y + (h - font.lineHeight) / 2 + 1, fade(hover ? 0xFFFFFFFF : BTN_TEXT, alpha), false);
     }
 
     static int fade(int argb, double alpha) {

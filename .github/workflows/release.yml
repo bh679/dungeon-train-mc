@@ -59,7 +59,7 @@ jobs:
           fetch-depth: 0
 
       # The commit this release is built from. "Mark changelog entries released" reads the
-      # shipped entries from its changelog.json, since main has usually moved on by then.
+      # shipped entries from its ledger (changelog.json + unreleased/), since main has usually moved on by then.
       - name: Record release commit
         run: echo "RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
@@ -68,7 +68,7 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - uses: gradle/actions/setup-gradle@v3
+      - uses: gradle/actions/setup-gradle@v5
 
       - name: Verify input tag matches mod_version on main
         run: |
@@ -378,6 +378,7 @@ jobs:
             ambientsounds(optional)
             creativecore(optional)
             advancement-plaques(optional)
+            ydms-weapon-master(optional)
             better-advancements(optional)
             iceberg(optional)
             distant-horizons(optional)
@@ -408,6 +409,7 @@ jobs:
             prickle(optional)
             durability-tooltip(optional)
             supermartijn642s-config-lib(optional)
+            potionlevelfix(optional)
             crash-assistant(optional)
             particle-effects(optional)
             advanced-shulkerboxes(optional)
@@ -489,7 +491,8 @@ jobs:
       # only the entries unreleased in RELEASE_SHA's ledger (what this release shipped),
       # and on a rejected push starts again from a fresh main instead of rebasing (the
       # rebase conflicted in changelog.json on v0.1471.0 and was rejected again on
-      # v0.1478.0). Leaves the checkout on the pushed commit, so the update.json step and
+      # v0.1478.0). Marking moves the shipped unreleased/<id>.json files into changelog.json,
+      # so open PRs (which only add unreleased/ files) never conflict with it. Leaves the checkout on the pushed commit, so the update.json step and
       # notify-highlights.py below see the stamped entries.
       - name: Mark changelog entries released
         if: ${{ success() && inputs.auto == false && inputs.test_release == false }}
@@ -664,6 +667,31 @@ jobs:
             exit 0
           fi
           python3 scripts/relay/sync-template-credits.py || echo "::warning::Some builder credits failed to sync — re-run scripts/relay/sync-template-credits.py."
+
+      # The relay judges Free Play from a verbatim copy of this jar's baked whitelist
+      # (assets/dungeontrain/cheat/approved_mods.json → dp-relay web/js/approved-mods-catalog.json,
+      # plus approved-mod-projects.json derived from approved_hashes.json + modpack.config.json). A
+      # copy that lags a release files honest players once enforceHashes is on (2026-11-04: a month-old
+      # copy was 21 ids short). This opens — or brings up to date — ONE pull request on dp-relay
+      # (branch auto/approved-mods-catalog) carrying the fresh copy; no difference → nothing opened.
+      # Every release including cascade ticks (the copy must match the newest jar), never a test
+      # build. Needs RELAY_REPO_TOKEN: a fine-grained PAT on bh679/dp-relay with Contents + Pull
+      # requests read/write. Unset → warning, skipped. Never blocks a release: the relay's own
+      # catalog-freshness.yml goes red until the PR lands, so a miss here is not silent.
+      - name: Open the relay approved-mods catalog PR
+        if: ${{ always() && steps.gh_release.outcome == 'success' && inputs.test_release == false }}
+        continue-on-error: true
+        env:
+          RELAY_REPO_TOKEN: ${{ secrets.RELAY_REPO_TOKEN }}
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          MAIN_JAR: ${{ steps.jars.outputs.main }}
+        run: |
+          if [ -z "$RELAY_REPO_TOKEN" ]; then
+            echo "::warning::RELAY_REPO_TOKEN is not set — relay approved-mods catalog PR not opened (gh secret set RELAY_REPO_TOKEN)."
+            exit 0
+          fi
+          bash scripts/relay/sync-approved-mods-catalog.sh "$MAIN_JAR" \
+            || echo "::warning::relay approved-mods catalog PR not opened — see the log; run scripts/relay/sync-approved-mods-catalog.sh by hand."
 
       # A balancing release retires the current one-life leaderboard era on the relay and opens the
       # next at this version (relay: leaderboard-eras.js). Operator-dispatched only: the cascade never
