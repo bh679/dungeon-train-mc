@@ -60,7 +60,10 @@ import java.util.regex.Pattern;
  * for that run ({@link #audioArgs}), into {@link #audio()} for the TVs' speakers ({@code LiveTvSpeakers}).
  * One process, one input clock: the sound leaves ffmpeg in step with the picture. A stream with no audio
  * track makes ffmpeg refuse the run ("matches no streams"), so the session then decodes picture only
- * ({@code noAudio}) for good. The death clip loops silent.</p>
+ * ({@code noAudio}) for good. The death clip loops silent. A mic stream ({@code micTrack}: the relay's status
+ * says the stream carries one) also writes its second track, the game alone, to a port of its own, which
+ * feeds nothing but the mic level meter ({@link #micLevel}); a stream that turns out to have no second
+ * track goes on without it ({@code micMissing}).</p>
  *
  * <p>Frames arrive as RGBA, whose bytes are already {@link NativeImage}'s pixel layout, so the
  * reader reads each into a direct buffer and {@code memCopy}s it whole into a staging image under {@code fillLock} and swaps it with {@code back} under
@@ -124,6 +127,14 @@ public final class LiveHlsSession implements IMediaSession {
     private volatile boolean audioMissing;
     /** When the newest sound arrived, ms; 0 before any. */
     private volatile long lastAudioMs;
+    /** The stream carries a mic track (its second), to be decoded for the level meter. */
+    private final boolean micTrack;
+    /** The stream has no second audio track after all (ffmpeg said so): runs leave the mic map out. */
+    private volatile boolean micMissing;
+    /** The current run's ffmpeg said its mic map ({@code 0:a:1}) matched nothing. */
+    private volatile boolean micMapFailed;
+    /** How loud the streamer's mic is, from the two tracks. */
+    private final LiveMicMeter mic = new LiveMicMeter();
     /** How long a feed may go without sound and still count as {@link #hasSound sounding}. */
     private static final long AUDIO_FRESH_MS = 2_000;
     /**
@@ -153,14 +164,21 @@ public final class LiveHlsSession implements IMediaSession {
      * renditions of it.
      */
     public LiveHlsSession(String playlistUrl, String mediaUrl, int width, int height, boolean replay) {
-        this(playlistUrl, mediaUrl, width, height, replay, false);
+        this(playlistUrl, mediaUrl, width, height, replay, false, false);
     }
 
-    private LiveHlsSession(String playlistUrl, String mediaUrl, int width, int height, boolean replay, boolean local) {
+    /** {@code micTrack}: the stream carries a mic track (its second), decoded for the level meter ({@link #micLevel}). */
+    public LiveHlsSession(String playlistUrl, String mediaUrl, int width, int height, boolean replay, boolean micTrack) {
+        this(playlistUrl, mediaUrl, width, height, replay, false, micTrack);
+    }
+
+    private LiveHlsSession(String playlistUrl, String mediaUrl, int width, int height, boolean replay, boolean local,
+                           boolean micTrack) {
         this.playlistUrl = playlistUrl;
         this.mediaUrl = mediaUrl;
         this.replay = replay;
         this.local = local;
+        this.micTrack = micTrack && !replay && !local;
         this.width = width;
         this.height = height;
         this.shape = new LiveFrameShape.Size(width, height);
@@ -175,7 +193,7 @@ public final class LiveHlsSession implements IMediaSession {
      */
     public static LiveHlsSession localLoop(java.nio.file.Path file, int width, int height) {
         String path = file.toAbsolutePath().toString();
-        return new LiveHlsSession(path, path, width, height, true, true);
+        return new LiveHlsSession(path, path, width, height, true, true, false);
     }
 
     /** The source playlist this session stands for (not necessarily what it decodes). */
@@ -186,6 +204,16 @@ public final class LiveHlsSession implements IMediaSession {
 
     /** This feed's sound ({@link LiveAudioRing}): empty for the death clip and a stream without audio. */
     public LiveAudioRing audio() { return audio; }
+
+    /** How loud the streamer's mic is now, 0 to 1 ({@link LiveMicMeter}); 0 for a stream without one. */
+    public float micLevel() {
+        return mic.level();
+    }
+
+    /** Whether this session decodes the stream's mic track alongside its sound. */
+    boolean decodesMicTrack() {
+        return micTrack && !micMissing;
+    }
 
     /** Whether sound arrived within the last two seconds: there is something for a speaker to play. */
     public boolean hasSound() {
@@ -383,6 +411,7 @@ public final class LiveHlsSession implements IMediaSession {
         while (!closed && !idle()) {
             Process p = null;
             ServerSocket sound = null;
+            ServerSocket micSound = null;
             try {
                 status = frameSeq == 0 ? MediaStatus.LOADING : MediaStatus.BUFFERING;
                 if (!replay && !playlistSafe()) {
@@ -392,15 +421,20 @@ public final class LiveHlsSession implements IMediaSession {
                 LOGGER.info("[DungeonTrain] live decoder: {} at {}x{}{}", mediaUrl, width, height,
                     mediaUrl.equals(playlistUrl) ? "" : " (a rendition of " + playlistUrl + ")");
                 audioMissing = false;
+                micMapFailed = false;
                 sound = local || noAudio ? null : new ServerSocket(0, 1, AUDIO_HOST);
                 int port = sound != null ? sound.getLocalPort() : 0;
-                p = ffmpeg.runFFmpeg(local ? localArgs(mediaUrl, width, height) : args(mediaUrl, width, height, replay, catchup, port));
+                micSound = sound != null && decodesMicTrack() ? new ServerSocket(0, 1, AUDIO_HOST) : null;
+                int micPort = micSound != null ? micSound.getLocalPort() : 0;
+                p = ffmpeg.runFFmpeg(local ? localArgs(mediaUrl, width, height)
+                    : args(mediaUrl, width, height, replay, catchup, port, micPort));
                 LivePerfStats.decoderRun();
                 lastProgressMs = System.currentTimeMillis(); // a fresh run gets a whole stall window
                 process = p;
                 if (closed) break;
                 FfmpegSupport.drain(p.getErrorStream(), "decoder", this::onDecoderError);
-                if (sound != null) startAudioReader(sound);
+                if (sound != null) startAudioReader(sound, false);
+                if (micSound != null) startAudioReader(micSound, true);
                 long framesThisRun = 0;
                 try (InputStream in = new BufferedInputStream(p.getInputStream(), 1 << 16);
                      ReadableByteChannel ch = Channels.newChannel(in)) {
@@ -434,6 +468,13 @@ public final class LiveHlsSession implements IMediaSession {
                 if (p != null) p.destroyForcibly();
                 process = null;
                 closeQuietly(sound);
+                closeQuietly(micSound);
+            }
+            if (micMapFailed && !micMissing) {
+                // One track after all: the sound stays, the mic level reads the mix alone from now on.
+                micMissing = true;
+                LOGGER.info("[DungeonTrain] live decoder: no mic track on {} (second audio map matched nothing), level reads the mix", playlistUrl);
+                continue;
             }
             if (audioMissing && !noAudio) {
                 // The stream has no sound: decode its picture alone from now on, straight away.
@@ -454,7 +495,18 @@ public final class LiveHlsSession implements IMediaSession {
      * output would not open — so the next run decodes the picture alone rather than failing again.
      */
     private void onDecoderError(String line) {
+        if (micTrackMissing(line)) {
+            // ffmpeg 8's unnamed "matches no streams" line came first and was about this map, not the sound's.
+            micMapFailed = true;
+            audioMissing = false;
+            return;
+        }
         if (audioMissing(line) || audioOutputFailed(line)) audioMissing = true;
+    }
+
+    /** Whether an ffmpeg error line says the mic map ({@code -map 0:a:1}) found nothing. Pure, for the tests. */
+    static boolean micTrackMissing(String line) {
+        return line.contains("'0:a:1'");
     }
 
     /** Whether an ffmpeg error line says the loopback sound output would not open. Pure, for the tests. */
@@ -476,7 +528,7 @@ public final class LiveHlsSession implements IMediaSession {
      * writes into {@link #audio} until the run ends. Always reads to the end — an unread socket would
      * block ffmpeg, and the picture with it.
      */
-    private void startAudioReader(ServerSocket server) {
+    private void startAudioReader(ServerSocket server, boolean micTrack) {
         Thread t = new Thread(() -> {
             try {
                 server.setSoTimeout(AUDIO_ACCEPT_MS);
@@ -485,18 +537,22 @@ public final class LiveHlsSession implements IMediaSession {
                     byte[] chunk = new byte[4096];
                     int n;
                     while ((n = in.read(chunk)) > 0) {
-                        if (!closed) {
+                        if (closed) continue;
+                        if (micTrack) {
+                            mic.game(chunk, 0, n);
+                        } else {
                             audio.write(chunk, 0, n);
                             lastAudioMs = System.currentTimeMillis();
+                            mic.mix(chunk, 0, n);
                         }
                     }
                 }
             } catch (SocketTimeoutException e) {
-                LOGGER.debug("[DungeonTrain] live decoder: no audio connection for {}", playlistUrl);
+                LOGGER.debug("[DungeonTrain] live decoder: no {} connection for {}", micTrack ? "mic track" : "audio", playlistUrl);
             } catch (IOException e) {
                 // the run ended
             }
-        }, "dt-live-audio");
+        }, micTrack ? "dt-live-audio-mic" : "dt-live-audio");
         t.setDaemon(true);
         t.start();
     }
@@ -555,6 +611,15 @@ public final class LiveHlsSession implements IMediaSession {
      * loopback port this session listens on ({@link #audioArgs}); 0 decodes the picture alone.
      */
     static String[] args(String playlistUrl, int width, int height, boolean replay, boolean catchup, int audioPort) {
+        return args(playlistUrl, width, height, replay, catchup, audioPort, 0);
+    }
+
+    /**
+     * {@link #args(String, int, int, boolean, boolean, int)} with the mic track too, when {@code micPort} is a
+     * second loopback port this session listens on: the stream's second audio track goes there for the
+     * level meter ({@link #audioArgs}); 0 leaves it out.
+     */
+    static String[] args(String playlistUrl, int width, int height, boolean replay, boolean catchup, int audioPort, int micPort) {
         String protocols = playlistUrl.startsWith("http://") ? "http,https,tls,tcp" : "https,tls,tcp";
         List<String> a = new ArrayList<>(List.of("-hide_banner", "-loglevel", "error", "-nostdin",
             "-protocol_whitelist", protocols, "-rw_timeout", Long.toString(RW_TIMEOUT_US)));
@@ -565,13 +630,13 @@ public final class LiveHlsSession implements IMediaSession {
         if (audioPort > 0) a.addAll(List.of("-thread_type", "slice"));
         if (replay) {
             a.addAll(List.of("-stream_loop", "-1", "-i", playlistUrl));
-            a.addAll(audioArgs(audioPort));
+            a.addAll(audioArgs(audioPort, micPort));
             a.addAll(List.of("-vf", cover(width, height) + ",format=gray,noise=alls=18:allf=t+u,format=rgba"));
         } else {
             a.addAll(List.of("-live_start_index", "-1",
                 "-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5",
                 "-i", playlistUrl));
-            a.addAll(audioArgs(audioPort));
+            a.addAll(audioArgs(audioPort, micPort));
             a.addAll(List.of("-vf", cover(width, height)));
         }
         a.addAll(List.of(PAM_OUT));
@@ -585,9 +650,25 @@ public final class LiveHlsSession implements IMediaSession {
      * loopback port, then {@code -map 0:v:0} for the picture output that follows.
      */
     static List<String> audioArgs(int audioPort) {
+        return audioArgs(audioPort, 0);
+    }
+
+    /**
+     * {@link #audioArgs(int)}, and with a {@code micPort} a second output of the stream's second audio
+     * track (the game alone) in the same form, for the mic level meter; 0 leaves it out. A mic stream's
+     * sound is always its first track: the second never reaches a speaker.
+     */
+    static List<String> audioArgs(int audioPort, int micPort) {
         if (audioPort <= 0) return List.of("-an");
-        return List.of("-map", "0:a:0", "-vn", "-ac", "1", "-ar", "24000", "-f", "s16le",
-            "tcp://127.0.0.1:" + audioPort, "-map", "0:v:0");
+        List<String> a = new ArrayList<>(pcmOut("0:a:0", audioPort));
+        if (micPort > 0) a.addAll(pcmOut("0:a:1", micPort));
+        a.addAll(List.of("-map", "0:v:0"));
+        return List.copyOf(a);
+    }
+
+    /** One audio output: {@code track} as 24 kHz mono s16le PCM to the loopback {@code port}. */
+    private static List<String> pcmOut(String track, int port) {
+        return List.of("-map", track, "-vn", "-ac", "1", "-ar", "24000", "-f", "s16le", "tcp://127.0.0.1:" + port);
     }
 
     /** Every decoder's output: RGBA frames as PAM, each with its own size ({@link LiveFrameShape}). */

@@ -53,7 +53,8 @@ import java.util.Random;
  * <p>While two streams are live (the Two Streams reward) a viewer's box becomes two panes, the
  * second stream under the first ({@link HeadViewerPanes}), unless the box is at its largest size;
  * in the inventory a click on a pane makes that stream the only one and a click on the lone pane
- * brings both back. Under each pane a caption says who is live on it ({@link HeadViewerCaption}). The streamer's own preview does the same with their stream and the other one
+ * brings both back. Under each pane a caption says who is live on it ({@link HeadViewerCaption}), and up
+ * its right edge a green bar shows how loud the streamer's mic is ({@link HeadViewerMicBar}). The streamer's own preview does the same with their stream and the other one
  * ({@link StreamerBoxPanes}): their own by default, and the setting can also pick the other, both or none.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
@@ -143,6 +144,8 @@ public final class LiveHeadViewer {
                     LiveFeedSource source = pane.second() ? LiveFeedSource.SECOND : LiveFeedSource.MAIN;
                     draw(g, source, source.frame(mc.player.tickCount, partial, false), pane.box(), !pane.second(),
                         mc.player.tickCount, partial);
+                    // The streamer's mic level, a thin green bar up the pane's right edge (HeadViewerMicBar).
+                    HeadViewerMicBar.draw(g, source, pane.box(), pane.second());
                     HeadViewerCaption.draw(g, pane.box(), pane.second());
                 }
                 // The takeover button hangs under the lowest pane and its caption, so neither covers it.

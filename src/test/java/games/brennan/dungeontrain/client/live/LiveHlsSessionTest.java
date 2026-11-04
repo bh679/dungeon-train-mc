@@ -111,6 +111,28 @@ class LiveHlsSessionTest {
     }
 
     @Test
+    void withAMicPortTheSecondTrackGoesToItsOwnPortForTheLevelMeter() {
+        List<String> a = List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, true, 41234, 41235));
+        String s = String.join(" ", a);
+        assertTrue(s.contains("-map 0:a:0 -vn -ac 1 -ar 24000 -f s16le tcp://127.0.0.1:41234 "
+            + "-map 0:a:1 -vn -ac 1 -ar 24000 -f s16le tcp://127.0.0.1:41235 -map 0:v:0"),
+            "the sound first, the game-only track second, the picture last: " + s);
+        assertEquals(a, List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, true, 41234, 41235)));
+        assertFalse(String.join(" ", LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, true, 41234, 0)).contains("0:a:1"),
+            "no mic port, no second output");
+        assertTrue(List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, true, 0, 41235)).contains("-an"),
+            "no sound port: nothing, mic port or not");
+    }
+
+    @Test
+    void aStreamWithNoMicTrackIsRecognisedFromFfmpegsError() {
+        assertTrue(LiveHlsSession.micTrackMissing("Failed to set value '0:a:1' for option 'map': Invalid argument"));
+        assertTrue(LiveHlsSession.micTrackMissing("Stream map '0:a:1' matches no streams."));
+        assertFalse(LiveHlsSession.micTrackMissing("Stream map '0:a:0' matches no streams."));
+        assertFalse(LiveHlsSession.micTrackMissing("Stream map '' matches no streams."), "unnamed: the next line says which");
+    }
+
+    @Test
     void withoutSoundTheRunStaysPictureOnly() {
         assertTrue(List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, true, 0)).contains("-an"));
         assertTrue(List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, true)).contains("-an"));

@@ -365,9 +365,10 @@ public final class LiveFeedSource implements IVideoSource {
             dropPending();
             return s;
         }
+        boolean micTrack = !replay && carriesMicTrack(status);
         if (s == null || view == null || !view.hasPicture()) {
             dropSession();
-            session = newSession(url, media, replay, width);
+            session = newSession(url, media, replay, width, micTrack);
             view = (LiveFeedTexture) session.createTextureView(texture);
             view.register();
             return session;
@@ -375,7 +376,7 @@ public final class LiveFeedSource implements IVideoSource {
         LiveHlsSession p = pending;
         if (p == null || !matches(p, url, media, replay, width)) {
             dropPending();
-            pending = newSession(url, media, replay, width);
+            pending = newSession(url, media, replay, width, micTrack);
             pendingTexture = (LiveFeedTexture) pending.createTextureView(pendingTextureId);
             pendingTexture.register();
             p = pending;
@@ -422,8 +423,22 @@ public final class LiveFeedSource implements IVideoSource {
             Minecraft.getInstance().getWindow().getGuiScale(), LiveFeedClientConfig.viewerWidth());
     }
 
-    private static LiveHlsSession newSession(String url, String media, boolean replay, int width) {
-        return new LiveHlsSession(url, media, width, LiveFeedClientConfig.heightFor(width), replay);
+    private static LiveHlsSession newSession(String url, String media, boolean replay, int width, boolean micTrack) {
+        return new LiveHlsSession(url, media, width, LiveFeedClientConfig.heightFor(width), replay, micTrack);
+    }
+
+    /** Whether the stream {@code status} describes carries a mic track (its second audio track). Pure. */
+    static boolean carriesMicTrack(@Nullable Status status) {
+        return status != null && status.mic() != null && status.mic().enabled();
+    }
+
+    /**
+     * Render thread: the session on screen for this source now (the first stream's while this one
+     * borrows it), or null before any. What the pinned box's mic bar reads ({@code HeadViewerMicBar}).
+     */
+    @Nullable
+    public LiveHlsSession shownSession() {
+        return delegate().session;
     }
 
     private void dropPending() {
