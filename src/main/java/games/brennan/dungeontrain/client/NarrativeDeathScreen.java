@@ -758,6 +758,8 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        hoverX = mouseX;
+        hoverY = mouseY;
         // Advance the transition first: it may apply the deferred page switch
         // (and rebuild widgets) when the fade-out ends, so everything below sees
         // the right page.
@@ -3090,22 +3092,44 @@ public final class NarrativeDeathScreen extends Screen {
         return drawChip(g, x, y, text, 0x66000000, border, textColor);
     }
 
+    /** Where the pointer is this frame (the crosshair, on a TV), for every chip and button's hover. */
+    private int hoverX = -1, hoverY = -1;
+
+    private boolean hovering(int x, int y, int w, int h) {
+        return hoverX >= x && hoverX < x + w && hoverY >= y && hoverY < y + h;
+    }
+
+    /** A colour lifted towards white, for a control under the pointer. */
+    private static int lift(int argb, float amount) {
+        int a = argb >>> 24, r = (argb >> 16) & 0xFF, gg = (argb >> 8) & 0xFF, b = argb & 0xFF;
+        r += Math.round((255 - r) * amount);
+        gg += Math.round((255 - gg) * amount);
+        b += Math.round((255 - b) * amount);
+        return (Math.max(a, 0xAA) << 24) | (r << 16) | (gg << 8) | b;
+    }
+
+    /** A chip; under the pointer it fills brighter, with a white border and a wider halo. */
     private Rect drawChip(GuiGraphics g, int x, int y, Component text, int bg, int border, int textColor) {
         int w = this.font.width(text) + 16, h = 14;
-        g.fill(x, y, x + w, y + h, fade(bg));
-        drawBorder(g, x, y, w, h, border);
-        g.drawString(this.font, text, x + 8, y + (h - this.font.lineHeight) / 2 + 1, fade(textColor), false);
+        boolean hover = hovering(x, y, w, h);
+        if (hover) g.fill(x - 2, y - 2, x + w + 2, y + h + 2, fade(0x66FFFFFF));
+        g.fill(x, y, x + w, y + h, fade(hover ? lift(bg, 0.35f) : bg));
+        drawBorder(g, x, y, w, h, hover ? 0xFFFFFFFF : border);
+        g.drawString(this.font, text, x + 8, y + (h - this.font.lineHeight) / 2 + 1, fade(hover ? 0xFFFFFFFF : textColor), false);
         return new Rect(x, y, w, h);
     }
 
+    /** A bevelled button; under the pointer it brightens, its bevel turns white and a halo rings it. */
     private Rect drawBevel(GuiGraphics g, int x, int y, int w, int h, Component text,
                            int bg, int light, int dark, int textColor) {
-        g.fill(x, y, x + w, y + h, fade(bg));
-        g.fill(x, y, x + w, y + 2, fade(light));
-        g.fill(x, y, x + 2, y + h, fade(light));
-        g.fill(x, y + h - 2, x + w, y + h, fade(dark));
-        g.fill(x + w - 2, y, x + w, y + h, fade(dark));
-        drawCenteredStr(g, text, x + w / 2, y + (h - this.font.lineHeight) / 2 + 1, textColor);
+        boolean hover = hovering(x, y, w, h);
+        if (hover) g.fill(x - 2, y - 2, x + w + 2, y + h + 2, fade(0x66FFFFFF));
+        g.fill(x, y, x + w, y + h, fade(hover ? lift(bg, 0.3f) : bg));
+        g.fill(x, y, x + w, y + 2, fade(hover ? 0xFFFFFFFF : light));
+        g.fill(x, y, x + 2, y + h, fade(hover ? 0xFFFFFFFF : light));
+        g.fill(x, y + h - 2, x + w, y + h, fade(hover ? lift(dark, 0.5f) : dark));
+        g.fill(x + w - 2, y, x + w, y + h, fade(hover ? lift(dark, 0.5f) : dark));
+        drawCenteredStr(g, text, x + w / 2, y + (h - this.font.lineHeight) / 2 + 1, hover ? 0xFFFFFFFF : textColor);
         return new Rect(x, y, w, h);
     }
 

@@ -117,13 +117,15 @@ final class PointsCarriedPanel {
 
     /** The death recap's grey bevel button, saying Next Screen. */
     static void nextButton(GuiGraphics g, Font font, int x, int y, int w, int h, boolean hover, double alpha) {
+        // Under the pointer: a white halo, a white bevel and brighter text, so it reads from a TV too.
+        if (hover) g.fill(x - 2, y - 2, x + w + 2, y + h + 2, fade(0x66FFFFFF, alpha));
         g.fill(x, y, x + w, y + h, fade(hover ? BTN_HOVER_BG : BTN_BG, alpha));
-        g.fill(x, y, x + w, y + 2, fade(BTN_LIGHT, alpha));
-        g.fill(x, y, x + 2, y + h, fade(BTN_LIGHT, alpha));
-        g.fill(x, y + h - 2, x + w, y + h, fade(BTN_DARK, alpha));
-        g.fill(x + w - 2, y, x + w, y + h, fade(BTN_DARK, alpha));
+        g.fill(x, y, x + w, y + 2, fade(hover ? 0xFFFFFFFF : BTN_LIGHT, alpha));
+        g.fill(x, y, x + 2, y + h, fade(hover ? 0xFFFFFFFF : BTN_LIGHT, alpha));
+        g.fill(x, y + h - 2, x + w, y + h, fade(hover ? 0xFFA0A0A0 : BTN_DARK, alpha));
+        g.fill(x + w - 2, y, x + w, y + h, fade(hover ? 0xFFA0A0A0 : BTN_DARK, alpha));
         Component text = Component.translatable("gui.dungeontrain.death.continue");
-        g.drawString(font, text, x + (w - font.width(text)) / 2, y + (h - font.lineHeight) / 2 + 1, fade(BTN_TEXT, alpha), false);
+        g.drawString(font, text, x + (w - font.width(text)) / 2, y + (h - font.lineHeight) / 2 + 1, fade(hover ? 0xFFFFFFFF : BTN_TEXT, alpha), false);
     }
 
     static int fade(int argb, double alpha) {
