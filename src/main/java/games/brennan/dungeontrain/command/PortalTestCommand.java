@@ -457,6 +457,8 @@ public final class PortalTestCommand {
                 if (tributeBlob != null) {
                     games.brennan.dungeontrain.portal.tribute.TributeRoomHeads.dress(
                         overworld, roomOrigin, roomSize, tributeBlob.owner(), tributeBlob.ownerName());
+                    games.brennan.dungeontrain.compat.vista.TvBlocks.tuneTributeTvs(overworld,
+                        net.minecraft.world.level.levelgen.structure.BoundingBox.fromCorners(roomOrigin, roomOrigin.offset(roomSize.getX() - 1, roomSize.getY() - 1, roomSize.getZ() - 1)));
                 }
             });
 

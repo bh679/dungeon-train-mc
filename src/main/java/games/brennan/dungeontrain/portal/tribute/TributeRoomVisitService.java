@@ -122,6 +122,7 @@ public final class TributeRoomVisitService {
             () -> PortalCarriageBuilder.stampRoomFromBlob(overworld, roomOrigin, roomSize, structure.blob(), TributeRooms.PAIR_KEY));
         List<BoundingBox> tubes = TributeRoomCorridors.stamp(overworld, roomOrigin, roomSize, dims);
         TributeRoomHeads.dress(overworld, roomOrigin, roomSize, blob.owner(), blob.ownerName());
+        games.brennan.dungeontrain.compat.vista.TvBlocks.tuneTributeTvs(overworld, room);
         BoundingBox window = TributeRoomCorridors.window(room, tubes);
 
         List<BlockPos> screen = new ArrayList<>();

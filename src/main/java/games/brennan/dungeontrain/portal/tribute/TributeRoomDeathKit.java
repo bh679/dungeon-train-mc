@@ -63,7 +63,7 @@ public final class TributeRoomDeathKit {
     }
 
     static boolean excluded(ItemStack stack) {
-        if (TvBlocks.isLiveCassette(stack) || TvBlocks.isHomeCassette(stack)) return true;
+        if (TvBlocks.isLiveCassette(stack) || TvBlocks.isTributeCassette(stack)) return true;
         return stack.getItem() instanceof BlockItem block && TvBlocks.isTelevision(block.getBlock().defaultBlockState());
     }
 }

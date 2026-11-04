@@ -41,8 +41,34 @@ public final class TvBlocks {
     }
 
     /** The Tribute Cassette: the one a tribute room's TV is tuned with ({@code TributeTvBroadcast}). */
-    public static boolean isHomeCassette(ItemStack stack) {
+    public static boolean isTributeCassette(ItemStack stack) {
         return !stack.isEmpty() && stack.getItem() instanceof games.brennan.dungeontrain.item.TributeTvCassetteItem;
+    }
+
+    /** A fresh Tribute Cassette. */
+    public static ItemStack tributeCassette() {
+        return new ItemStack(ModItems.TRIBUTE_CASSETTE.get());
+    }
+
+    /**
+     * Tune every TV in the box to the Tribute Cassette, whatever its slot holds. A tribute room's TV is
+     * the one thing in it that is never the owner's to retune: a room saved with the slot empty was
+     * once handed a Live Feed Cassette by the load backstop ({@code TVBlockEntityMixin}) and kept it,
+     * and the visit then opened on the stream instead of the owner's own story. Returns how many were retuned.
+     */
+    public static int tuneTributeTvs(net.minecraft.server.level.ServerLevel level, net.minecraft.world.level.levelgen.structure.BoundingBox box) {
+        int tuned = 0;
+        for (net.minecraft.core.BlockPos pos : net.minecraft.core.BlockPos.betweenClosed(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ())) {
+            if (!isTelevision(level.getBlockState(pos))) continue;
+            if (!(level.getBlockEntity(pos) instanceof net.mehvahdjukaar.vista.common.tv.TVBlockEntity tv)) continue;
+            if (isTributeCassette(tv.getItem(0))) continue;
+            tv.setItem(0, tributeCassette());
+            tv.setChanged();
+            net.minecraft.world.level.block.state.BlockState state = level.getBlockState(pos);
+            level.sendBlockUpdated(pos.immutable(), state, state, 3);
+            tuned++;
+        }
+        return tuned;
     }
 
     /** A fresh cassette for the first stream ({@code second} false) or the second. */

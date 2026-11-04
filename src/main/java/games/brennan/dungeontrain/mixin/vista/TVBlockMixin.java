@@ -140,7 +140,7 @@ public abstract class TVBlockMixin {
     @Nullable
     private TVBlockEntity dungeontrain$homeTunedTv(Level level, BlockPos pos, BlockState state) {
         return ((IConnectedBlock) (Object) this).findMasterBlockEntity(level, pos, state) instanceof TVBlockEntity tv
-            && TvBlocks.isHomeCassette(tv.getItem(0)) ? tv : null;
+            && TvBlocks.isTributeCassette(tv.getItem(0)) ? tv : null;
     }
 
     /** The screen's master block entity when it holds either Live Feed Cassette, else null. */

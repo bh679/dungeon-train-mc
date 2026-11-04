@@ -47,6 +47,7 @@ public final class TributeRoomRegistry {
             String name = TributeRoomStore.loadByOwner(owner).map(TributeRoomBlob::ownerName)
                 .filter(n -> !n.isBlank()).orElseGet(() -> TributeRoomHeads.nameFor(level, owner));
             TributeRoomHeads.dress(level, origin, size, owner, name);
+            games.brennan.dungeontrain.compat.vista.TvBlocks.tuneTributeTvs(level, room);
         }
     }
 
