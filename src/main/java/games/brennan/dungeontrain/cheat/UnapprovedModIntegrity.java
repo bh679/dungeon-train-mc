@@ -254,12 +254,15 @@ public final class UnapprovedModIntegrity {
 
     /**
      * The plain {@code .jar} outermost files the engine must have fingerprinted: every loaded mod
-     * file's outermost file, minus those carrying an exempt id (the engine skips those whole).
+     * file's outermost file, minus those carrying an exempt id (the engine skips those whole). The
+     * mapping is the engine's own ({@link DtModVerifyBridge#outermostPath}) so that a mod a custom
+     * locator opened from inside a library shell (Sodium's NeoForge build) counts as the shell here
+     * exactly as the scan counts it — otherwise its nested jars would read as "could not hash".
      */
     static Set<String> expectedJarNames() {
         Map<java.nio.file.Path, Boolean> exempt = new LinkedHashMap<>();
         for (var info : ModList.get().getModFiles()) {
-            java.nio.file.Path p = EngineIntegrity.outermost(info.getFile()).getFilePath();
+            java.nio.file.Path p = DtModVerifyBridge.outermostPath(info.getFile());
             boolean ex = info.getMods().stream().anyMatch(m -> EXEMPT_IDS.contains(ModIds.normalise(m.getModId())));
             exempt.merge(p, ex, Boolean::logicalOr);
         }
