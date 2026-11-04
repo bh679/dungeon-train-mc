@@ -15,6 +15,7 @@ public final class LiveViewerClientConfig {
 
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.BooleanValue TV_STREAM_SOUND;
+    public static final ModConfigSpec.BooleanValue TV_SOUND_ON_TRAIN;
     public static final ModConfigSpec.ConfigValue<List<? extends String>> MUTED_STREAMERS;
 
     static {
@@ -23,6 +24,9 @@ public final class LiveViewerClientConfig {
         TV_STREAM_SOUND = b
             .comment("Play a live stream's sound from the TVs showing it, and from a TV you wear or hold. Off = every TV is silent. Volume follows Vista's TV volume and the Blocks slider.")
             .define("tvStreamSound", true);
+        TV_SOUND_ON_TRAIN = b
+            .comment("Play live stream sound from the TVs placed on the train. Off = placed TVs are silent; a TV you wear or hold still plays. Only matters while tvStreamSound is on.")
+            .define("tvSoundOnTrain", true);
         MUTED_STREAMERS = b
             .comment("Streamers whose sound TVs never play, whenever they stream, as \"<uuid>|<name>\" (the uuid may be empty). Managed in-game: Options > Dungeon Train > Stream > Muted streamers, or the Mute buttons in Live chat.")
             .defineListAllowEmpty("mutedStreamers", () -> List.<String>of(), () -> "|Steve",
@@ -44,6 +48,15 @@ public final class LiveViewerClientConfig {
         if (!loaded() || TV_STREAM_SOUND.get() == value) return;
         TV_STREAM_SOUND.set(value);
         TV_STREAM_SOUND.save();
+    }
+
+    /** Whether the TVs placed on the train play stream sound; on until the config loads. */
+    public static boolean tvSoundOnTrain() { return !loaded() || TV_SOUND_ON_TRAIN.get(); }
+
+    public static void setTvSoundOnTrain(boolean value) {
+        if (!loaded() || TV_SOUND_ON_TRAIN.get() == value) return;
+        TV_SOUND_ON_TRAIN.set(value);
+        TV_SOUND_ON_TRAIN.save();
     }
 
     /** The muted streamers, oldest first; empty until the config loads. */

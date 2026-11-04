@@ -194,6 +194,8 @@ public enum ClientOptionsTab {
         STREAMER_BOX_STREAMS("gui.dungeontrain.options.streamer_box_streams"),
         /** Whether TVs play a stream's sound at all. On by default. */
         TV_STREAM_SOUND("gui.dungeontrain.options.tv_stream_sound"),
+        /** Whether the TVs placed on the train play sound (a worn or held TV always may). On by default; inert while TV stream sound is off. */
+        TV_SOUND_ON_TRAIN("gui.dungeontrain.options.tv_sound_on_train"),
         /** The streamers this viewer muted on TVs, each with an Unmute button (its own page). */
         MUTED_STREAMERS("gui.dungeontrain.options.muted_streamers"),
         /** The broadcast's picture size; the preview shows it. */
@@ -371,8 +373,9 @@ public enum ClientOptionsTab {
                 rows.add(Row.LIVE_FEED_VIEWING);
                 rows.add(Row.WORN_TV_STREAMS);
                 rows.add(Row.STREAMER_BOX_STREAMS);
-                // TV stream sound and the muted list: a pair, so the rows after keep their pairing.
+                // TV stream sound and its placed-TV sub-switch: a pair, so the rows after keep their pairing.
                 rows.add(Row.TV_STREAM_SOUND);
+                rows.add(Row.TV_SOUND_ON_TRAIN);
                 rows.add(Row.MUTED_STREAMERS);
                 rows.add(Row.STREAM_SIZE);
                 rows.add(Row.STREAM_SAVE_BANDWIDTH);

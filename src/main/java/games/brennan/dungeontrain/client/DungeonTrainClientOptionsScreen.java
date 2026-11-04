@@ -732,9 +732,20 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             }
 
             // Whether TVs play stream sound, and the streamers muted on them (LiveTvSpeakers, LiveViewerMutes).
+            // TVs on the train follows this switch (greyed while it is off), so the rows are rebuilt.
             case TV_STREAM_SOUND -> Setting.of(onOff(Component.translatable(key),
                     games.brennan.dungeontrain.config.LiveViewerClientConfig.tvStreamSound(),
-                    games.brennan.dungeontrain.config.LiveViewerClientConfig::setTvStreamSound), key + ".tip");
+                    on -> { games.brennan.dungeontrain.config.LiveViewerClientConfig.setTvStreamSound(on); rebuildIfShown(); }),
+                    key + ".tip");
+            // Placed TVs only; a worn or held TV plays regardless. Inert and greyed while TV stream sound is off.
+            case TV_SOUND_ON_TRAIN -> {
+                boolean soundOff = !games.brennan.dungeontrain.config.LiveViewerClientConfig.tvStreamSound();
+                CycleButton<Boolean> onTrain = onOff(Component.translatable(key),
+                        !soundOff && games.brennan.dungeontrain.config.LiveViewerClientConfig.tvSoundOnTrain(),
+                        games.brennan.dungeontrain.config.LiveViewerClientConfig::setTvSoundOnTrain);
+                onTrain.active = !soundOff;
+                yield Setting.of(onTrain, key + ".tip");
+            }
             case MUTED_STREAMERS -> Setting.of(Button.builder(Component.translatable(key + ".button",
                             games.brennan.dungeontrain.config.LiveViewerClientConfig.mutedStreamers().size()),
                             b -> this.minecraft.setScreen(new MutedStreamersScreen(this)))

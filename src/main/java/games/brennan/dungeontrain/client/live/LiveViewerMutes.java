@@ -93,6 +93,29 @@ public final class LiveViewerMutes {
     }
 
     /**
+     * Whether the stream at {@code streamKey} is this client's own broadcast: {@code ownPlaylistUrl} is the
+     * playlist its claim handed out (null while not streaming), the same identity the relay's status names.
+     * Pure, for the tests.
+     */
+    static boolean ownStream(@Nullable String streamKey, @Nullable String ownPlaylistUrl) {
+        return streamKey != null && streamKey.equals(ownPlaylistUrl);
+    }
+
+    /**
+     * Whether a TV placed in the world may play a stream: {@link #audible} plus two rules of its own. The
+     * "TVs on the train" switch off keeps every placed TV silent (a worn or held TV still plays), and this
+     * client's own broadcast is never played by a placed TV, whatever the settings: it would loop back into
+     * the streamer's microphone. Pure, for the tests.
+     */
+    static boolean placedAudible(boolean soundOn, boolean onTrain, Set<String> mutedStreams, List<Muted> mutedStreamers,
+                                 @Nullable String streamKey, @Nullable String name, @Nullable String uuid,
+                                 @Nullable String ownPlaylistUrl) {
+        if (!onTrain) return false;
+        if (ownStream(streamKey, ownPlaylistUrl)) return false;
+        return audible(soundOn, mutedStreams, mutedStreamers, streamKey, name, uuid);
+    }
+
+    /**
      * {@code muted} with this streamer added (an existing entry for them refreshed with the newer name and
      * any uuid now known), newest last, at most {@link #MAX_MUTED}. A new list; {@code muted} is untouched.
      */
@@ -140,6 +163,16 @@ public final class LiveViewerMutes {
     public static boolean audible(@Nullable String streamKey, @Nullable String name) {
         return audible(LiveViewerClientConfig.tvStreamSound(), STREAMS,
             LiveViewerClientConfig.mutedStreamers(), streamKey, name, uuidOf(name));
+    }
+
+    /**
+     * Whether a TV placed in the world may play the stream at {@code streamKey} by {@code name} now:
+     * {@link #audible(String, String)}, the "TVs on the train" switch, and never this client's own
+     * broadcast ({@code ownPlaylistUrl}: {@code LiveStreamController#playlistUrl()}, null while not streaming).
+     */
+    public static boolean placedAudible(@Nullable String streamKey, @Nullable String name, @Nullable String ownPlaylistUrl) {
+        return placedAudible(LiveViewerClientConfig.tvStreamSound(), LiveViewerClientConfig.tvSoundOnTrain(), STREAMS,
+            LiveViewerClientConfig.mutedStreamers(), streamKey, name, uuidOf(name), ownPlaylistUrl);
     }
 
     public static void muteStream(String streamKey) {

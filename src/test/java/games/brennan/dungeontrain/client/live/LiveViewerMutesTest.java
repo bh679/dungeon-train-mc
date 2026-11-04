@@ -56,6 +56,38 @@ class LiveViewerMutesTest {
         assertTrue(LiveViewerMutes.audible(true, Set.of(), muted, MAIN_URL, null, null), "the replay loop names nobody");
     }
 
+    // ---- placed TVs: the "TVs on the train" switch and the viewer's own broadcast ----
+
+    @Test
+    void placedTvFollowsTheAudibleRulesWhenOnTrainIsOn() {
+        List<Muted> muted = List.of(new Muted(null, "Alex"));
+        assertTrue(LiveViewerMutes.placedAudible(true, true, Set.of(), List.of(), MAIN_URL, "Bo", null, null));
+        assertFalse(LiveViewerMutes.placedAudible(false, true, Set.of(), List.of(), MAIN_URL, "Bo", null, null),
+            "TV stream sound off silences placed TVs too");
+        assertFalse(LiveViewerMutes.placedAudible(true, true, Set.of(MAIN_URL), List.of(), MAIN_URL, "Bo", null, null));
+        assertFalse(LiveViewerMutes.placedAudible(true, true, Set.of(), muted, MAIN_URL, "Alex", null, null));
+    }
+
+    @Test
+    void onTrainOffSilencesPlacedTvsOnly() {
+        assertFalse(LiveViewerMutes.placedAudible(true, false, Set.of(), List.of(), MAIN_URL, "Bo", null, null));
+        assertTrue(LiveViewerMutes.audible(true, Set.of(), List.of(), MAIN_URL, "Bo", null),
+            "the worn or held TV's rule does not read the switch");
+    }
+
+    @Test
+    void ownBroadcastNeverPlaysFromAPlacedTv() {
+        assertTrue(LiveViewerMutes.ownStream(MAIN_URL, MAIN_URL));
+        assertFalse(LiveViewerMutes.ownStream(SECOND_URL, MAIN_URL));
+        assertFalse(LiveViewerMutes.ownStream(MAIN_URL, null), "not streaming: nothing is our own");
+        assertFalse(LiveViewerMutes.ownStream(null, null));
+
+        assertFalse(LiveViewerMutes.placedAudible(true, true, Set.of(), List.of(), MAIN_URL, "Bo", null, MAIN_URL),
+            "every switch on, nothing muted: still silent, it would feed back into the mic");
+        assertTrue(LiveViewerMutes.placedAudible(true, true, Set.of(), List.of(), SECOND_URL, "Alex", null, MAIN_URL),
+            "someone else's stream plays while we stream on the other channel");
+    }
+
     @Test
     void withAddsRefreshesAndCaps() {
         List<Muted> one = LiveViewerMutes.with(List.of(), "Alex", null);

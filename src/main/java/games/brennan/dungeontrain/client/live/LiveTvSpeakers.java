@@ -39,7 +39,8 @@ import java.util.Map;
  * stream's sound is the point of tuning in. Loudness is Vista's TV volume, then the Blocks slider.</p>
  *
  * <p>Silence rules, checked every tick so a change is heard at once: TV stream sound off, the stream or
- * its streamer muted ({@link LiveViewerMutes}), and this client streaming — its own feed would loop back
+ * its streamer muted ({@link LiveViewerMutes}), for placed TVs the "TVs on the train" switch off and
+ * this client's own broadcast (never out of a placed TV, whatever the settings), and this client streaming — its own feed would loop back
  * into its capture, and anyone else's would be rebroadcast, their voice included. The replay loop a dark
  * channel shows plays at {@link #REPLAY_VOLUME}.</p>
  */
@@ -116,10 +117,11 @@ public final class LiveTvSpeakers {
 
         List<Candidate> wanted = new ArrayList<>();
         if (mayPlay) {
+            String ownPlaylist = LiveStreamController.get().playlistUrl();
             for (Candidate c : CANDIDATES.values()) {
                 // The worn or held TV already plays this stream: no second copy out of the TVs around.
                 if (flatHearing != null && flatHearing.session() == c.hearing().session()) continue;
-                if (mayHear(c.hearing())) wanted.add(c);
+                if (mayHearPlaced(c.hearing(), ownPlaylist)) wanted.add(c);
             }
             wanted.sort(Comparator.comparingDouble(Candidate::distance));
         }
@@ -174,6 +176,15 @@ public final class LiveTvSpeakers {
     /** Whether {@code h} may play: Vista's audio mode not OFF, TV stream sound on, and the viewer's mutes. */
     private static boolean mayHear(LiveFeedSource.Hearing h) {
         return ClientConfigs.AUDIO_MODE.get() != ClientConfigs.AudioMode.OFF && LiveViewerMutes.audible(h.streamKey(), h.streamer());
+    }
+
+    /**
+     * {@link #mayHear} for a TV placed in the world: also the "TVs on the train" switch, and never this
+     * client's own broadcast ({@code ownPlaylist}), which would loop back into its microphone.
+     */
+    private static boolean mayHearPlaced(LiveFeedSource.Hearing h, @Nullable String ownPlaylist) {
+        return ClientConfigs.AUDIO_MODE.get() != ClientConfigs.AudioMode.OFF
+            && LiveViewerMutes.placedAudible(h.streamKey(), h.streamer(), ownPlaylist);
     }
 
     /**
