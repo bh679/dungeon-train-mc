@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.portal.home;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
-import games.brennan.dungeontrain.editor.UserContentPaths;
+import games.brennan.dungeontrain.data.PlayerDataPaths;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageSnapshotTemplate;
 import net.minecraft.nbt.CompoundTag;
@@ -21,9 +21,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Where a player's home room lives between runs: one compressed NBT file per player under the user
- * content root ({@code dungeontrain/user/portals/home/<uuid>.nbt}), beside the authored rooms, so the
- * backup and export paths that cover those cover this.
+ * Where a player's home room lives between runs: one compressed NBT file per player under the
+ * player-data root ({@code <gameDir>/dungeontrain/home-rooms/<uuid>.nbt}), beside the achievements and
+ * the other things that are the player's rather than the world's.
  *
  * <p>Outside any world on purpose. In singleplayer every death ends in a <em>new</em> world, so a room
  * kept in the world would be gone with it; here it is the player's, whatever world they are in.</p>
@@ -31,13 +31,19 @@ import java.util.UUID;
 public final class HomeRoomStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String SUB_DIR = "portals/home";
+    private static final String SUB_DIR = "home-rooms";
 
     private HomeRoomStore() {}
 
-    /** {@code <user root>/portals/home/} — created on first save. */
+    /**
+     * {@code <gameDir>/dungeontrain/home-rooms/} — created on first save.
+     *
+     * <p>Beside the player-data folders, not under the user content root: anything under
+     * {@code user/} is authored content, which the custom-content question asks about at every
+     * reboard and which Free Play is gated on. A home room is the player's save, not their content.</p>
+     */
     public static Path directory() {
-        return UserContentPaths.root().resolve(SUB_DIR);
+        return PlayerDataPaths.dir(SUB_DIR);
     }
 
     static Path fileFor(UUID owner) {

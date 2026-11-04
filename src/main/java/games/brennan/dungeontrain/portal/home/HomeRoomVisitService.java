@@ -318,8 +318,9 @@ public final class HomeRoomVisitService {
         int x = (int) Math.floor(pose.x()), z = (int) Math.floor(pose.z());
         for (int y = room.minY() + 1; y < room.maxY() - 1; y++) {
             BlockPos feet = new BlockPos(x, y, z);
-            if (!level.getBlockState(feet.below()).isAir() && level.getBlockState(feet).isAir()
-                    && level.getBlockState(feet.above()).isAir()) {
+            if (!level.getBlockState(feet.below()).getCollisionShape(level, feet.below()).isEmpty()
+                    && level.getBlockState(feet).getCollisionShape(level, feet).isEmpty()
+                    && level.getBlockState(feet.above()).getCollisionShape(level, feet.above()).isEmpty()) {
                 return new HomeRoomCamera.Pose(pose.x(), y, pose.z(), pose.yaw(), pose.pitch());
             }
         }
