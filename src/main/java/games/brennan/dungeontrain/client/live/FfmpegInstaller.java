@@ -12,23 +12,13 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.util.HashSet;
-import java.util.HexFormat;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -47,10 +37,6 @@ public final class FfmpegInstaller {
     private static final Logger LOGGER = LogUtils.getLogger();
     /** Vista's managed-binaries folder, relative to the game directory exactly as Vista resolves it. */
     static final Path BIN = Path.of("vista_ffmpeg_bin");
-    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(20);
-    /** The whole download, however slow; a stalled transfer is cut off here rather than hanging. */
-    private static final long DOWNLOAD_LIMIT_MIN = 30;
-    private static final int BUFFER = 64 * 1024;
 
     private static final AtomicBoolean RUNNING = new AtomicBoolean();
     private static volatile int progress = -1;
@@ -60,9 +46,17 @@ public final class FfmpegInstaller {
     /** Outcome listener for the chat lines ({@link FfmpegHint}); null in tests. */
     @Nullable private static volatile Listener listener;
 
+    /** Why an install ended without a working ffmpeg. */
+    enum Failure {
+        /** The files never arrived. */
+        DOWNLOAD,
+        /** The files are there but Vista couldn't run them. */
+        WONT_RUN
+    }
+
     interface Listener {
         void installed();
-        void failed();
+        void failed(Failure failure);
     }
 
     private FfmpegInstaller() {}
@@ -90,6 +84,11 @@ public final class FfmpegInstaller {
         if (!RUNNING.compareAndSet(false, true)) return;
         progress = -1;
         enableVistaFfmpeg();
+        if (FFmpegManager.hasManagedBinaries()) {
+            LOGGER.info("[DungeonTrain] ffmpeg is already in {}; handing it to Vista", BIN.toAbsolutePath());
+            handToVista(FFmpegManager.getOrDownload(null));
+            return;
+        }
         FfmpegMirror mirror = FfmpegMirror.current();
         if (mirror != null) {
             Util.ioPool().execute(() -> fromMirror(mirror));
@@ -112,21 +111,19 @@ public final class FfmpegInstaller {
     private static void fromMirror(FfmpegMirror mirror) {
         try {
             Files.createDirectories(BIN);
+            // Outlives a failed try: the next one, or the next launch, carries on from it.
             Path zip = BIN.resolve("dungeontrain-ffmpeg.zip.part");
-            try {
-                download(mirror, zip);
-                try (InputStream in = Files.newInputStream(zip)) {
-                    extractBinaries(in, BIN, binaryNames());
-                }
-            } finally {
-                Files.deleteIfExists(zip);
+            FfmpegDownload.fetch(mirror, zip, p -> progress = p);
+            try (InputStream in = Files.newInputStream(zip)) {
+                extractBinaries(in, BIN, binaryNames());
             }
+            Files.deleteIfExists(zip);
             LOGGER.info("[DungeonTrain] Installed ffmpeg from {}", mirror.url());
             // Vista now finds the managed binaries, runs its own -version check and keeps them.
             handToVista(FFmpegManager.getOrDownload(null));
         } catch (IOException | RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Could not install ffmpeg from {}: {}", mirror.url(), e.toString());
-            finish(false);
+            finish(Failure.DOWNLOAD);
         }
     }
 
@@ -135,16 +132,27 @@ public final class FfmpegInstaller {
         Minecraft.getInstance().execute(() -> VistaModClientAccessor.dungeontrain$setFfmpegFuture(future));
         future.whenComplete((ffmpeg, e) -> {
             if (e != null) LOGGER.warn("[DungeonTrain] Vista rejected the ffmpeg install: {}", e.toString());
-            finish(e == null);
+            finish(e == null ? null : failureOf(e));
         });
     }
 
-    private static void finish(boolean ok) {
+    /** Vista's run check throws its own type, sometimes wrapped; anything else stopped it getting the files. */
+    static Failure failureOf(Throwable error) {
+        for (Throwable t = error; t != null; t = t.getCause()) {
+            if (t instanceof FFmpegManager.UnusableFFmpegException) return Failure.WONT_RUN;
+        }
+        return Failure.DOWNLOAD;
+    }
+
+    /** {@code failure} is null on success. */
+    private static void finish(@Nullable Failure failure) {
         RUNNING.set(false);
         progress = -1;
         Listener l = listener;
         if (l == null) return;
-        Minecraft.getInstance().execute(ok ? l::installed : l::failed);
+        Minecraft.getInstance().execute(() -> {
+            if (failure == null) l.installed(); else l.failed(failure);
+        });
     }
 
     /** Undo Vista's "Don't install": it saves {@code ffmpeg_enabled=false}, which also skips its startup check. */
@@ -152,62 +160,6 @@ public final class FfmpegInstaller {
         if (ClientConfigs.canUseFFmpeg()) return;
         ClientConfigs.SPEC.manuallySetValue(ClientConfigs.ENABLE_FFMPEG, true);
         LOGGER.info("[DungeonTrain] Switched Vista's ffmpeg back on");
-    }
-
-    /** Download {@code mirror} to {@code dest}, refusing anything but its pinned size and SHA-256. */
-    private static void download(FfmpegMirror mirror, Path dest) throws IOException {
-        HttpClient client = HttpClient.newBuilder()
-            .connectTimeout(CONNECT_TIMEOUT)
-            .followRedirects(HttpClient.Redirect.NORMAL)
-            .build();
-        HttpRequest request = HttpRequest.newBuilder(URI.create(mirror.url())).timeout(CONNECT_TIMEOUT).GET().build();
-        HttpResponse<InputStream> response;
-        try {
-            response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IOException("interrupted", e);
-        }
-        if (response.statusCode() != 200) {
-            response.body().close();
-            throw new IOException("HTTP " + response.statusCode());
-        }
-        InputStream body = response.body();
-        // A read with no data blocks without a timeout of its own: closing the stream at the limit ends it.
-        CompletableFuture<Void> limit = CompletableFuture.runAsync(() -> closeQuietly(body),
-            CompletableFuture.delayedExecutor(DOWNLOAD_LIMIT_MIN, TimeUnit.MINUTES));
-        try (InputStream in = body; OutputStream out = Files.newOutputStream(dest)) {
-            copyVerified(in, out, mirror.size(), mirror.sha256(), p -> progress = p);
-        } finally {
-            limit.cancel(false);
-        }
-    }
-
-    /**
-     * Copy {@code in} to {@code out}, reporting whole percentages of {@code size}, and fail unless
-     * exactly {@code size} bytes with SHA-256 {@code sha256} arrived. Pure, for the tests.
-     */
-    static void copyVerified(InputStream in, OutputStream out, long size, String sha256,
-                             java.util.function.IntConsumer onProgress) throws IOException {
-        MessageDigest digest = sha256Digest();
-        byte[] buf = new byte[BUFFER];
-        long total = 0;
-        int lastPct = -1;
-        int n;
-        while ((n = in.read(buf)) != -1) {
-            total += n;
-            if (total > size) throw new IOException("download larger than the pinned " + size + " bytes");
-            digest.update(buf, 0, n);
-            out.write(buf, 0, n);
-            int pct = (int) (total * 100 / size);
-            if (pct != lastPct) {
-                lastPct = pct;
-                onProgress.accept(pct);
-            }
-        }
-        if (total != size) throw new IOException("download ended at " + total + " of " + size + " bytes");
-        String actual = HexFormat.of().formatHex(digest.digest());
-        if (!actual.equalsIgnoreCase(sha256)) throw new IOException("SHA-256 mismatch: " + actual);
     }
 
     /**
@@ -241,21 +193,5 @@ public final class FfmpegInstaller {
     private static String fileName(String entryName) {
         String n = entryName.replace('\\', '/');
         return n.substring(n.lastIndexOf('/') + 1);
-    }
-
-    private static MessageDigest sha256Digest() {
-        try {
-            return MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    private static void closeQuietly(InputStream in) {
-        try {
-            in.close();
-        } catch (IOException ignored) {
-            // already closed
-        }
     }
 }
