@@ -121,7 +121,7 @@ class MenuRevealTest {
     }
 
     @Test
-    @DisplayName("first time: next brings the layer in while its line is read, and the next line once it is in")
+    @DisplayName("first time: next goes straight to the next line, its layer coming in underneath")
     void firstTimeNext() {
         MenuReveal r = new MenuReveal(0, BEATS, true);
         assertTrue(r.canStepLine(100));
@@ -129,13 +129,12 @@ class MenuRevealTest {
         assertEquals(100, r.beatStart(MenuReveal.BEAT_STARS), "the lead-in cut short");
         r.next(100 + F + 200);
         assertEquals(100 + F + 200, r.startOf(MenuReveal.Stage.STARS), "reading cut: the stars come in now");
-        long starsUp = 100 + F + 200 + MenuReveal.STAR_FADE_MS / 2;
-        assertEquals(starsUp, r.beatStart(MenuReveal.BEAT_ACTIVE), "the next line once they are halfway in");
-        r.next(starsUp - 50);
-        assertEquals(starsUp - 50, r.beatStart(MenuReveal.BEAT_ACTIVE), "layer coming in: the next line now");
-        long a = starsUp - 50;
+        assertEquals(100 + F + 200, r.beatStart(MenuReveal.BEAT_ACTIVE), "and the next line is up at once, no waiting on them");
+        assertEquals(1.0, r.lineAlpha(100 + F + 201), 1e-9, "a line reached by a press is there at once");
+        long a = 100 + F + 200;
         r.next(a + 100);
-        assertEquals(a + F, r.startOf(MenuReveal.Stage.ACTIVE), "never before the line has faded in");
+        assertEquals(a + 100, r.startOf(MenuReveal.Stage.ACTIVE), "stepped before its fade: the layer starts at the press");
+        assertEquals(a + 100, r.beatStart(MenuReveal.BEAT_CENTRE), "the next line, at once");
         assertEquals(MenuReveal.BEAT_SELECT, MenuReveal.BEAT_SELECT);
         long t = a + 10_000;
         for (int k = 0; k < 8; k++) {

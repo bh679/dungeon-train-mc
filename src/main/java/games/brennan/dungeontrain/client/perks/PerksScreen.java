@@ -201,16 +201,18 @@ public final class PerksScreen extends Screen {
         Minecraft mc = Minecraft.getInstance();
         // Not before the menu is finished: a close while it still builds up, or while the points
         // drain, brings the rest of it up instead — the room comes after the perks, never during.
-        if (death != null && !death.finished(Util.getMillis())) {
-            death.advance(Util.getMillis());
-            return;
-        }
-        // on death there is no game to go back to: closing moves on to the tribute room, where the TV
-        // keeps showing this menu — or straight to the recap when there is nobody to stand in a room
         // Already on the tribute TV: Next Screen pressed on the picture swaps the TV to the recap.
         if (death != null && games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.showRecap(this)) return;
+        // On death there is no game to go back to: Next moves on to the tribute room at once, the TV
+        // there carrying on with this menu wherever it is in its build-up (the room already stands).
         if (death != null && mc.player != null && mc.player.isDeadOrDying()) {
             games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.begin(this, death::next);
+            return;
+        }
+        // Not before the menu is finished: a close while it still builds up, or while the points
+        // drain, brings the rest of it up instead.
+        if (death != null && !death.finished(Util.getMillis())) {
+            death.advance(Util.getMillis());
             return;
         }
         PerksHud.onMenuClosed();
