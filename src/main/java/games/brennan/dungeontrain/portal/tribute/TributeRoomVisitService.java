@@ -55,6 +55,10 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.world.level.Level;
+import net.minecraft.resources.ResourceKey;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
 import java.util.Map;
 import java.util.UUID;
 
@@ -77,22 +81,55 @@ public final class TributeRoomVisitService {
      * template, the room does not fit this world), in which case nothing was changed and the client is
      * told to fall back to the full-screen recap.
      */
-    public static boolean begin(ServerPlayer dead) {
+    /**
+     * A room stood ahead of the visit, while the perks menu still shows: everything the stamp needs
+     * done, so {@link #begin} only has to move the player in. Discarded if they never come.
+     */
+    record Prepared(int slot, ResourceKey<Level> deathDim, Vec3 deathPos, PortalStructure structure, BoundingBox window,
+                    BoundingBox room, List<BlockPos> screen, Direction facing, TributeRoomCamera.Pose pose,
+                    TributeRoomBlob blob, List<BoundingBox> tubes, PortalCarriageLayout layout) {}
+
+    private static final Map<UUID, Prepared> PREPARED = new ConcurrentHashMap<>();
+
+    /**
+     * Stand {@code dead}'s room now, in the background, so the visit that follows the perks menu opens
+     * at once. Idempotent per death. False when no room can stand (then {@link #begin} fails too).
+     */
+    public static boolean prepare(ServerPlayer dead) {
         MinecraftServer server = dead.getServer();
-        if (server == null || server.isHardcore()) return false;
-        if (!dead.isDeadOrDying()) {
-            LOGGER.info("[DungeonTrain] tribute room: {} asked for a visit while alive — ignored", dead.getName().getString());
-            return false;
-        }
+        if (server == null || server.isHardcore() || !dead.isDeadOrDying()) return false;
+        if (PREPARED.containsKey(dead.getUUID())) return true;
         // Died inside the room (their own lava, say): the old visit is saved and swept, and a fresh one stands.
         if (TributeRoomVisitSessions.isVisiting(dead.getUUID())) end(dead, false);
+        Prepared prepared = stand(server, dead);
+        if (prepared == null) return false;
+        PREPARED.put(dead.getUUID(), prepared);
+        LOGGER.info("[DungeonTrain] tribute room: stood {}'s room (rev {}) ahead of the visit at slot {}",
+            dead.getName().getString(), prepared.blob().revision(), prepared.slot());
+        return true;
+    }
 
+    /** A room stood ahead that nobody came to: swept, its tickets let go. */
+    public static void discardPrepared(ServerPlayer player) {
+        Prepared prepared = PREPARED.remove(player.getUUID());
+        if (prepared == null || player.getServer() == null) return;
+        ServerLevel overworld = player.getServer().overworld();
+        TributeRoomVisitTickets.release(overworld, prepared.window(), player.getServer().getLevel(prepared.deathDim()),
+            prepared.deathPos(), player.getUUID());
+        PortalClear.clearBox(overworld, prepared.window(), PortalCorridorMask.NONE);
+        PortalTestSweep.discardMobs(overworld, prepared.window());
+        LOGGER.info("[DungeonTrain] tribute room: swept the room stood ahead for {}", player.getName().getString());
+    }
+
+    /** The room, its tubes, floor, heads and TV, stood and ticketed; null when nothing can stand. */
+    @Nullable
+    private static Prepared stand(MinecraftServer server, ServerPlayer dead) {
         ServerLevel overworld = server.overworld();
         DungeonTrainWorldData worldData = DungeonTrainWorldData.get(overworld);
         CarriageDims dims = worldData.dims();
 
         TributeRoomBlob blob = TributeRoomStore.loadOrDefault(overworld, dead, dims).orElse(null);
-        if (blob == null) return false;
+        if (blob == null) return null;
         Vec3i size = TributeRooms.size(overworld, dims);
         PortalTwinRegion region = PortalTwinSpace.basementOf(overworld);
         Vec3i roomSize = PortalCarriageBuilder.heldInRegion(region, size);
@@ -101,12 +138,14 @@ public final class TributeRoomVisitService {
         if (!roomSize.equals(size) || !PortalTwinLanes.fitsUnderWorld(region.base(), region.ceiling(), laneFloor, structureHeight)) {
             LOGGER.warn("[DungeonTrain] tribute room: {}x{}x{} does not fit this world's basement — no visit",
                 size.getX(), size.getY(), size.getZ());
-            return false;
+            return null;
         }
 
         PortalRoomSettings settings = PortalRoomSettings.of(TributeRooms.TEMPLATE);
         int doorHeightOffset = PortalRoomLayout.clampDoorHeightOffset(dims, roomSize.getY(), settings.doorHeightOffset().value());
-        int slot = TributeRoomVisitSite.freeSlot(TributeRoomVisitSessions.takenSlots());
+        Set<Integer> taken = new java.util.HashSet<>(TributeRoomVisitSessions.takenSlots());
+        for (Prepared p : PREPARED.values()) taken.add(p.slot());
+        int slot = TributeRoomVisitSite.freeSlot(taken);
         PortalStructure structure = new PortalStructure(
             TributeRoomVisitSite.originFor(slot, laneFloor, doorHeightOffset), TributeRooms.TEMPLATE, roomSize, settings,
             PortalRoomTiling.base(), PortalExitCopies.NONE, PortalRoomTiling.Tile.BASE, PortalCorridorKind.DEFAULT,
@@ -130,19 +169,42 @@ public final class TributeRoomVisitService {
         if (screen.isEmpty()) {
             LOGGER.warn("[DungeonTrain] tribute room: {}'s room has no TV — sweeping it and skipping the visit", dead.getName().getString());
             PortalClear.clearBox(overworld, window, PortalCorridorMask.NONE);
-            return false;
+            return null;
         }
         TributeRoomCamera.Pose pose = TributeRoomCamera.facing(screen, facing, roomOrigin.getY() + 1);
         pose = standable(overworld, pose, room);
+        powerOn(overworld, screen);
+        TributeRoomVisitTickets.hold(overworld, window, dead.serverLevel(), dead.position(), dead.getUUID());
+        return new Prepared(slot, dead.level().dimension(), dead.position(), structure, window, room, List.copyOf(screen),
+            facing, pose, blob, tubes, layout);
+    }
+
+    public static boolean begin(ServerPlayer dead) {
+        MinecraftServer server = dead.getServer();
+        if (server == null || server.isHardcore()) return false;
+        if (!dead.isDeadOrDying()) {
+            LOGGER.info("[DungeonTrain] tribute room: {} asked for a visit while alive — ignored", dead.getName().getString());
+            return false;
+        }
+        Prepared p = PREPARED.remove(dead.getUUID());
+        if (p == null) {
+            // Nothing stood ahead (an older client, or the prepare failed): stand it now.
+            if (TributeRoomVisitSessions.isVisiting(dead.getUUID())) end(dead, false);
+            p = stand(server, dead);
+            if (p == null) return false;
+        }
+        ServerLevel overworld = server.overworld();
+        DungeonTrainWorldData worldData = DungeonTrainWorldData.get(overworld);
+        CarriageDims dims = worldData.dims();
+        TributeRoomCamera.Pose pose = p.pose();
 
         boolean keepInventory = overworld.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY);
         List<ItemStack> kit = TributeRoomDeathKit.take(dead.getUUID(), keepInventory);
         GameType previous = dead.gameMode.getGameModeForPlayer();
         UUID trainId = nearestTrain(dead.serverLevel(), dead.position());
-        TributeRoomVisitSessions.put(dead.getUUID(), new TributeRoomVisitSessions.Session(slot, dead.level().dimension(),
-            dead.position(), structure, window, room, List.copyOf(screen), pose, blob, trainId, !kit.isEmpty(),
+        TributeRoomVisitSessions.put(dead.getUUID(), new TributeRoomVisitSessions.Session(p.slot(), p.deathDim(),
+            p.deathPos(), p.structure(), p.window(), p.room(), p.screen(), pose, p.blob(), trainId, !kit.isEmpty(),
             previous, overworld.getGameTime()));
-        TributeRoomVisitTickets.hold(overworld, window, dead.serverLevel(), dead.position(), dead.getUUID());
 
         // Alive again, in the room. The session is registered first so every respawn listener can see
         // this is a visit (RespawnDimensionEvents, StartingBookEvents) and the body's pins let go.
@@ -163,13 +225,12 @@ public final class TributeRoomVisitService {
         if (previous == GameType.ADVENTURE || previous == GameType.SPECTATOR) fresh.setGameMode(GameType.SURVIVAL);
         for (ItemStack stack : kit) fresh.getInventory().placeItemBackInInventory(stack);
 
-        powerOn(overworld, screen);
-        resendWindow(server, overworld, fresh, window);
-        DungeonTrainNet.sendTo(fresh, TributeRoomVisitStatePacket.active(boxOf(screen), facing, tubes));
-        PortalCarriageEvents.sendRoomAmbience(dims, layout, structure, worldData.getTrainY(), List.of(fresh));
+        resendWindow(server, overworld, fresh, p.window());
+        DungeonTrainNet.sendTo(fresh, TributeRoomVisitStatePacket.active(boxOf(p.screen()), p.facing(), p.tubes()));
+        PortalCarriageEvents.sendRoomAmbience(dims, p.layout(), p.structure(), worldData.getTrainY(), List.of(fresh));
 
         LOGGER.info("[DungeonTrain] tribute room: stamped {}'s room (rev {}) at {} slot {} — standing at ({}, {}, {}) facing the TV, kit {} item(s), train {}",
-            fresh.getName().getString(), blob.revision(), structure.origin(), slot,
+            fresh.getName().getString(), p.blob().revision(), p.structure().origin(), p.slot(),
             String.format("%.1f", pose.x()), String.format("%.1f", pose.y()), String.format("%.1f", pose.z()),
             kit.size(), trainId);
         return true;
@@ -227,6 +288,11 @@ public final class TributeRoomVisitService {
     }
 
     /** Server stopping: save every standing visit's room; nothing is swept (the world is going). */
+    /** Server stopping: nothing stood ahead survives it. */
+    public static void clearPrepared() {
+        PREPARED.clear();
+    }
+
     public static void saveAll(MinecraftServer server) {
         ServerLevel overworld = server.overworld();
         for (Map.Entry<UUID, TributeRoomVisitSessions.Session> entry : TributeRoomVisitSessions.entries()) {

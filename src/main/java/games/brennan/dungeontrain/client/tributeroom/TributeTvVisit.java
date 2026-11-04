@@ -84,7 +84,17 @@ public final class TributeTvVisit {
         texture.attach(perks);
         setPhase(Phase.AWAITING_ROOM);
         mc.setScreen(new TributeArrivalScreen());
-        DungeonTrainNet.sendToServer(new TributeRoomVisitPacket());
+        DungeonTrainNet.sendToServer(new TributeRoomVisitPacket(false));
+    }
+
+    /**
+     * The perks menu just opened on a death: have the server stand the room now, behind the menu, so
+     * Next moves straight in. Harmless to repeat; the server stands it once per death.
+     */
+    public static void prepare() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.getConnection() == null || !mc.player.isDeadOrDying()) return;
+        DungeonTrainNet.sendToServer(new TributeRoomVisitPacket(true));
     }
 
     public static boolean isActive() {

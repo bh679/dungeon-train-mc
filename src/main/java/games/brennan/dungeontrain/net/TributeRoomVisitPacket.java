@@ -16,13 +16,14 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * visit could not start (hardcore, no template, already visiting), so the client falls back to the
  * full-screen recap rather than waiting on black.</p>
  */
-public record TributeRoomVisitPacket() implements CustomPacketPayload {
+/** @param prepareOnly stand the room now, ahead of the visit, and answer nothing; the visit itself comes with {@code false} */
+public record TributeRoomVisitPacket(boolean prepareOnly) implements CustomPacketPayload {
 
     public static final Type<TributeRoomVisitPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "tribute_room_visit"));
 
     public static final StreamCodec<FriendlyByteBuf, TributeRoomVisitPacket> STREAM_CODEC =
-        StreamCodec.unit(new TributeRoomVisitPacket());
+        StreamCodec.of((buf, packet) -> buf.writeBoolean(packet.prepareOnly), buf -> new TributeRoomVisitPacket(buf.readBoolean()));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
@@ -32,6 +33,10 @@ public record TributeRoomVisitPacket() implements CustomPacketPayload {
     public static void handle(TributeRoomVisitPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
+            if (packet.prepareOnly) {
+                TributeRoomVisitService.prepare(player);
+                return;
+            }
             if (!TributeRoomVisitService.begin(player)) {
                 DungeonTrainNet.sendTo(player, TributeRoomVisitStatePacket.none());
             }

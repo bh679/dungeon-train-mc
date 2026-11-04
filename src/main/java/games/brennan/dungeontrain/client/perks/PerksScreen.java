@@ -170,6 +170,8 @@ public final class PerksScreen extends Screen {
         int[] life = stats == null ? null : new int[] {stats.lifeUnlockAdvancements(), stats.lifeUnlockPoints()};
         DeathStory story = DeathStory.of(life, atDeath, mc.options.languageCode);
         mc.setScreen(new PerksScreen(false, new DeathPerksPhase(atDeath, story, next, Util.getMillis())));
+        // The tribute room stands behind this menu while it plays, so Next Screen moves straight in.
+        games.brennan.dungeontrain.client.tributeroom.TributeTvVisit.prepare();
         mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.AMETHYST_BLOCK_CHIME, 0.8F, 0.4F));
     }
 

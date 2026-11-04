@@ -58,6 +58,15 @@ public final class TributeRoomEvents {
         TributeRoomDeathKit.forget(player.getUUID());
         games.brennan.dungeontrain.portal.tribute.LastDeathReports.forget(player.getUUID());
         if (TributeRoomVisitSessions.isVisiting(player.getUUID())) TributeRoomVisitService.end(player, true);
+        TributeRoomVisitService.discardPrepared(player);
+    }
+
+    /** A respawn that is not the visit (the vanilla button, a command): the room stood ahead is swept. */
+    @SubscribeEvent
+    public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (TributeRoomVisitSessions.isVisiting(player.getUUID())) return;
+        TributeRoomVisitService.discardPrepared(player);
     }
 
     /** Ahead of the world's own save, so a Quit from inside the room still keeps the room. */
@@ -70,6 +79,7 @@ public final class TributeRoomEvents {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         TributeRoomVisitSessions.clear();
+        TributeRoomVisitService.clearPrepared();
         TributeRoomDeathKit.clear();
         games.brennan.dungeontrain.portal.tribute.TributeRoomRegistry.clear();
         games.brennan.dungeontrain.portal.tribute.LastDeathReports.clear();
