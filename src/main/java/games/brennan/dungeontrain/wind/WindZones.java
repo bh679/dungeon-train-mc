@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.QuartPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biomes;
 
@@ -116,9 +117,18 @@ public final class WindZones {
         return level.getBiome(pos).is(Biomes.DEEP_DARK);
     }
 
-    /** One of the cave biomes the train runs through leaving the Nether (deep dark, lush, dripstone, sulfur). */
+    /**
+     * One of the cave biomes the train runs through leaving the Nether (deep dark, lush, dripstone, sulfur).
+     *
+     * <p>Runs every tick, also for a lead carriage over chunks still generating, so it must not wait: only
+     * {@code getChunkNow} doesn't, and {@code level.getBiome} can reach into a neighbouring chunk even from a
+     * loaded one, so the biome is read straight from this chunk. A chunk not ready yet counts as no cave.</p>
+     */
     public static boolean isCave(Level level, BlockPos pos) {
-        var biome = level.getBiome(pos);
+        var chunk = level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4);
+        if (chunk == null) return false;
+        var biome = chunk.getNoiseBiome(QuartPos.fromBlock(pos.getX()), QuartPos.fromBlock(pos.getY()),
+                QuartPos.fromBlock(pos.getZ()));
         for (var key : NetherBandBiomes.CAVE_POST) {
             if (biome.is(key)) return true;
         }
