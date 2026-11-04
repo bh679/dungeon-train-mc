@@ -15,8 +15,10 @@ class LiveFeedClientConfigMicTest {
     }
 
     @Test
-    void theMicItselfStillStartsEveryStreamOffAndTheBalanceAtBoth() {
-        assertEquals(50, LiveFeedClientConfig.MIC_MIX_DEFAULT);
+    void theBalanceStartsWithTheVoiceOverTheGameAndAlwaysOn() {
+        assertEquals(75, LiveFeedClientConfig.MIC_MIX_DEFAULT, "voice at full, game at half");
+        assertEquals(75, LiveFeedClientConfig.MIC_MIX_PERCENT.getDefault());
+        assertEquals(75, LiveFeedClientConfig.micMixPercent(), "the same before the config loads");
         assertFalse(LiveFeedClientConfig.micPushToTalk());
     }
 }

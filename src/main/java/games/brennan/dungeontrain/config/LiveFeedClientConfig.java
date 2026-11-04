@@ -69,8 +69,8 @@ public final class LiveFeedClientConfig {
     static final List<Integer> CAPTURE_SIZES = List.of(640, 854, 960, 1280, 1920);
     static final int CAPTURE_WIDTH_MIN = 320;
     static final int CAPTURE_WIDTH_MAX = 1920;
-    /** The game/mic balance's default: both at full volume. */
-    static final int MIC_MIX_DEFAULT = 50;
+    /** The game/mic balance's default: the voice at full, the game at half, so a voice is heard over the game. */
+    static final int MIC_MIX_DEFAULT = 75;
     /** The Microphone option starts off: a streamer opts in before their mic can join a stream. */
     static final boolean MIC_SUPPORT_DEFAULT = false;
 
@@ -87,16 +87,16 @@ public final class LiveFeedClientConfig {
             .comment("Show the chat lines on your screen to viewers, whispers included. What you type is never shown. Always off in Kid mode, whatever this says.")
             .define("streamChat", true);
         STREAM_AUDIO = b
-            .comment("Send in-game sounds with your stream: everything you hear from Minecraft and Dungeon Train, music included. Never voice chat or other apps. Your microphone is separate (micSupport) and only goes out once you switch it on by LIVE. On by default; takes effect from your next stream.")
+            .comment("Send in-game sounds with your stream: everything you hear from Minecraft and Dungeon Train, music included. Never voice chat or other apps. Your microphone is its own switch (micSupport). On by default; takes effect from your next stream.")
             .define("streamAudio", true);
         MIC_SUPPORT = b
-            .comment("Let your microphone join your stream. Even with this on, the mic starts every stream off: click the mic by LIVE (or press Toggle Mic) to talk. Needs streamAudio. Off = no mic button, and the stream carries one sound track as before. Off by default; takes effect from your next stream.")
+            .comment("Your microphone on your stream: the one mic switch. The mic button by LIVE in your inventory and the Toggle Mic key flip this same setting, and the icon by LIVE shows it. Needs streamAudio. A stream starts with the mic as this is set; switched on during a stream that started without a mic, the voice joins from your next stream. Off by default.")
             .define("micSupport", MIC_SUPPORT_DEFAULT);
         MIC_DEVICE = b
             .comment("Which microphone to use, by the name your system gives it. Empty = the system default. A name that is no longer plugged in falls back to the default.")
             .define("micDevice", "");
         MIC_MIX_PERCENT = b
-            .comment("Game sound versus your voice on the stream, while the mic is on. 0 = game only, 50 = both at full volume, 100 = your voice only. Moving off 50 turns the other one down. Applies at once.")
+            .comment("Game sound versus your voice on the stream, while the mic is on. 0 = game only, 50 = both at full volume, 100 = your voice only. Moving off 50 turns the other one down. 75 by default (voice at full, game at half). Applies at once.")
             .defineInRange("micMixPercent", MIC_MIX_DEFAULT, 0, 100);
         MIC_PUSH_TO_TALK = b
             .comment("Push to talk: with the mic switched on, you are only heard while the Push to Talk key is held. Off = heard whenever the mic is on.")
@@ -278,7 +278,10 @@ public final class LiveFeedClientConfig {
 
     // ---- microphone ----
 
-    /** Whether the mic may join streams at all (it still starts every stream off). Off unless the player turns it on. */
+    /**
+     * The one mic switch: the Microphone option, which the mic button by LIVE and the Toggle Mic key
+     * flip too ({@code LiveMic.set}). Off unless the player turns it on.
+     */
     public static boolean micSupport() { return loaded() ? MIC_SUPPORT.get() : MIC_SUPPORT_DEFAULT; }
 
     public static void setMicSupport(boolean value) {
@@ -297,7 +300,7 @@ public final class LiveFeedClientConfig {
         MIC_DEVICE.save();
     }
 
-    /** The game-versus-mic balance on the stream: 0 = game only, 50 = both at full, 100 = mic only. */
+    /** The game-versus-mic balance on the stream: 0 = game only, 50 = both at full, 100 = mic only; 75 by default. */
     public static int micMixPercent() { return loaded() ? MIC_MIX_PERCENT.get() : MIC_MIX_DEFAULT; }
 
     public static void setMicMixPercent(int value) {
