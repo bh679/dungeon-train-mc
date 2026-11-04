@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.vista.TvItems;
 import net.mehvahdjukaar.vista.common.tv.TVBlockEntity;
 import net.mehvahdjukaar.vista.configs.ClientConfigs;
+import net.mehvahdjukaar.vista.configs.CommonConfigs;
 import net.mehvahdjukaar.vista.integration.sable.SableCompatClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -36,7 +37,10 @@ import java.util.Map;
  * dozens of screens — and stops the rest, along with any TV that stopped asking (switched off, retuned,
  * broken, out of range). Vista's audio mode OFF silences them all; its default, REQUIRE_SPEAKER (a note
  * block beside the TV), is not asked of a Live Feed TV — almost no TV on the train has one, and the
- * stream's sound is the point of tuning in. Loudness is Vista's TV volume, then the Blocks slider.</p>
+ * stream's sound is the point of tuning in. Loudness is Vista's TV volume, then the Blocks slider, fading
+ * with distance over the TV's own hearing range ({@link LiveSpeakerRange}: 9 blocks for a lone TV, 18 for
+ * the largest grid), which this class applies itself each tick in place of Minecraft's fixed per-event
+ * rolloff; a TV past its range is not a candidate at all.</p>
  *
  * <p>Silence rules, checked every tick so a change is heard at once: TV stream sound off, the stream or
  * its streamer muted ({@link LiveViewerMutes}), for placed TVs the "TVs on the train" switch off and
@@ -47,8 +51,6 @@ import java.util.Map;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveTvSpeakers {
 
-    /** Vista's own TV sound range, blocks. */
-    static final double RANGE = 16;
     /** How many placed TVs play at once: the nearest. */
     static final int MAX_TV_SPEAKERS = 4;
     /** The dark channel's looped replay, as a share of full volume. */
@@ -60,8 +62,8 @@ public final class LiveTvSpeakers {
     /** A speaker that failed to start is retried after this long. */
     private static final long RETRY_MS = 250;
 
-    /** A placed TV asking to play this tick. */
-    private record Candidate(BlockPos pos, LiveFeedSource.Hearing hearing, Vec3 at, double distance) {}
+    /** A placed TV asking to play this tick, {@code distance} blocks from the camera, heard over {@code range}. */
+    private record Candidate(BlockPos pos, LiveFeedSource.Hearing hearing, Vec3 at, double distance, double range) {}
 
     private static final class Speaker {
         final LiveSpeakerSound sound;
@@ -89,9 +91,27 @@ public final class LiveTvSpeakers {
         if (h == null) return;
         Vec3 at = SableCompatClient.projectOutOfSubLevel(tv, tv.getScreenRect().center());
         double d = at.distanceTo(Minecraft.getInstance().gameRenderer.getMainCamera().getPosition());
-        if (d > RANGE) return;
+        double range = range(tv);
+        // Out of its own hearing: not a candidate, so a far big screen never takes a channel from a near small one.
+        if (d >= range) return;
         BlockPos pos = tv.getBlockPos().immutable();
-        CANDIDATES.put(pos, new Candidate(pos, h, at, d));
+        CANDIDATES.put(pos, new Candidate(pos, h, at, d, range));
+    }
+
+    /** How far {@code tv} is heard, blocks: by the longer side of its grid against Vista's largest allowed. */
+    private static double range(TVBlockEntity tv) {
+        int size = Math.max(LiveSpeakerRange.tvsAlong(tv.getScreenPixelWidth()), LiveSpeakerRange.tvsAlong(tv.getScreenPixelHeight()));
+        return LiveSpeakerRange.range(size, largestTvSize());
+    }
+
+    /** Vista's {@code max_connected_size}, TVs a side; its default if the config is not up yet. */
+    private static int largestTvSize() {
+        try {
+            Integer max = CommonConfigs.TV_MAX_CONNECTED_TV_SIZE.get();
+            return max == null ? LiveSpeakerRange.DEFAULT_SIZE_LARGEST : max;
+        } catch (RuntimeException e) {
+            return LiveSpeakerRange.DEFAULT_SIZE_LARGEST;
+        }
     }
 
     /** The stream most recently heard, or null. */
@@ -113,7 +133,7 @@ public final class LiveTvSpeakers {
             && mc.options.getSoundSourceVolume(SoundSource.MASTER) > 0 && mc.options.getSoundSourceVolume(SoundSource.BLOCKS) > 0;
         LiveFeedSource.Hearing flatHearing = mayPlay ? flatHearing(mc) : null;
         if (flatHearing != null && !mayHear(flatHearing)) flatHearing = null;
-        flat = reconcile(flat, flatHearing, null, mc);
+        flat = reconcile(flat, flatHearing, null, 1, mc);
 
         List<Candidate> wanted = new ArrayList<>();
         if (mayPlay) {
@@ -137,7 +157,7 @@ public final class LiveTvSpeakers {
             }
         }
         for (Candidate c : keep.values()) {
-            Speaker s = reconcile(TVS.get(c.pos()), c.hearing(), c.at(), mc);
+            Speaker s = reconcile(TVS.get(c.pos()), c.hearing(), c.at(), LiveSpeakerRange.gain(c.distance(), c.range()), mc);
             if (s != null) TVS.put(c.pos(), s);
         }
         LiveFeedSource.Hearing now = flatHearing != null ? flatHearing : wanted.isEmpty() ? null : wanted.get(0).hearing();
@@ -188,16 +208,18 @@ public final class LiveTvSpeakers {
     }
 
     /**
-     * Keep {@code current} playing {@code h} at {@code at} (null: flat), starting or swapping the sound
-     * as needed; null {@code h} stops it. Returns the speaker now playing, or null.
+     * Keep {@code current} playing {@code h} at {@code at} (null: flat) at {@code gain} of its volume (the
+     * distance fade, {@link LiveSpeakerRange#gain}; 1 for flat), starting or swapping the sound as needed;
+     * null {@code h} stops it. Returns the speaker now playing, or null.
      */
     @Nullable
-    private static Speaker reconcile(@Nullable Speaker current, @Nullable LiveFeedSource.Hearing h, @Nullable Vec3 at, Minecraft mc) {
+    private static Speaker reconcile(@Nullable Speaker current, @Nullable LiveFeedSource.Hearing h, @Nullable Vec3 at,
+                                     float gain, Minecraft mc) {
         if (h == null) {
             if (current != null) current.sound.end();
             return null;
         }
-        float volume = volume(h);
+        float volume = volume(h) * gain;
         if (current != null && current.session == h.session()) {
             if (mc.getSoundManager().isActive(current.sound)) {
                 if (at != null) current.sound.moveTo(at);

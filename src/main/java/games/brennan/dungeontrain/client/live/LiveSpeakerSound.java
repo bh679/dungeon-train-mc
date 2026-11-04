@@ -14,10 +14,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * A live feed playing out of one TV ({@code at} its screen, fading over Vista's 32 blocks) or out of the
- * TV on the viewer's own head or in their hand ({@code at} null: no position, no fade). Vista's own
- * speaker sound event (a streamed sound, so Minecraft asks this instance for its audio) and category,
- * so Vista's TV volume and the Blocks slider set how loud it is; the audio is {@link LiveAudioStream}.
+ * A live feed playing out of one TV ({@code at} its screen, panned from there) or out of the TV on the
+ * viewer's own head or in their hand ({@code at} null: no position). Neither fades on its own
+ * ({@link Attenuation#NONE}): a placed TV's fade over its size-dependent range ({@link LiveSpeakerRange})
+ * is set into its volume every tick by {@link LiveTvSpeakers}. Vista's own speaker sound event (a
+ * streamed sound, so Minecraft asks this instance for its audio) and category, so Vista's TV volume and
+ * the Blocks slider set how loud it is; the audio is {@link LiveAudioStream}.
  */
 final class LiveSpeakerSound extends AbstractTickableSoundInstance {
 
@@ -28,9 +30,10 @@ final class LiveSpeakerSound extends AbstractTickableSoundInstance {
         super((SoundEvent) VistaMod.TV_SPEAKER_SOUND.get(), SoundSource.BLOCKS, SoundInstance.createUnseededRandom());
         this.ring = ring;
         this.volume = volume;
+        // The fade is ours (LiveTvSpeakers sets the volume by distance each tick); the position still pans.
+        this.attenuation = Attenuation.NONE;
         if (at == null) {
             this.relative = true;
-            this.attenuation = Attenuation.NONE;
         } else {
             moveTo(at);
         }
