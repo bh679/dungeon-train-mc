@@ -11,16 +11,18 @@ import java.nio.ByteBuffer;
  * {@link LiveSpeakerSound} from.
  *
  * <p>Minecraft asks for a second at a time and keeps four buffers queued, which for a live feed would
- * put the sound four seconds behind the picture. A buffer here is at most {@link #CHUNK_BYTES} (40 ms),
- * so the queue holds about 160 ms: with the ring's 40 ms cushion the sound plays about 220 ms after
- * the picture it left ffmpeg with. A client hitch longer than the queue runs it dry, which ends the
- * sound; {@code LiveTvSpeakers} starts it again.</p>
+ * put the sound four seconds behind the picture. A buffer here is at most {@link #CHUNK_BYTES} (60 ms),
+ * so the queue holds about 240 ms: with the ring's 500 ms starting cushion the sound plays about
+ * three quarters of a second after the picture it left ffmpeg with, more once the ring has settled
+ * behind a jittery stream. The queue is refilled once a client tick, so a client hitch
+ * longer than the queue runs it dry, which ends the sound; {@code LiveTvSpeakers} starts it again
+ * (40 ms buffers, a 160 ms queue, ran dry a few times a minute on a loaded machine).</p>
  */
 final class LiveAudioStream implements AudioStream {
 
     static final AudioFormat FORMAT = new AudioFormat(24_000f, 16, 1, true, false);
-    /** 40 ms of sound. */
-    static final int CHUNK_BYTES = LiveAudioRing.BYTES_PER_SECOND / 25;
+    /** 60 ms of sound. */
+    static final int CHUNK_BYTES = LiveAudioRing.BYTES_PER_SECOND * 60 / 1000;
 
     private final LiveAudioRing ring;
     private long cursor = -1;

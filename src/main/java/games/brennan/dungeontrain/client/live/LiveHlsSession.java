@@ -135,8 +135,15 @@ public final class LiveHlsSession implements IMediaSession {
     private volatile boolean micMapFailed;
     /** How loud the streamer's mic is, from the two tracks. */
     private final LiveMicMeter mic = new LiveMicMeter();
-    /** How long a feed may go without sound and still count as {@link #hasSound sounding}. */
-    private static final long AUDIO_FRESH_MS = 2_000;
+    /**
+     * How long a feed may go without sound and still count as {@link #hasSound sounding}: as long as a
+     * run may go without a frame ({@link #STALL_MS}). At the live edge ffmpeg waits for the next segment,
+     * two to three seconds on a young playlist (measured 2026-11); a shorter window (it was 2 s) ended
+     * the speaker on every such wait and started a fresh one after, which threw away the cushion
+     * {@link LiveAudioRing} had grown and so turned each wait into a stutter. The ring plays silence
+     * through a wait by itself.
+     */
+    static final long AUDIO_FRESH_MS = STALL_MS;
     /**
      * Where a run's sound comes back: IPv4 loopback by number, never {@code getLoopbackAddress()}, which
      * Minecraft's JVM (IPv6 preferred) answers with {@code ::1} while ffmpeg dials {@code 127.0.0.1}.
@@ -215,7 +222,7 @@ public final class LiveHlsSession implements IMediaSession {
         return micTrack && !micMissing;
     }
 
-    /** Whether sound arrived within the last two seconds: there is something for a speaker to play. */
+    /** Whether sound arrived within {@link #AUDIO_FRESH_MS}: there is something for a speaker to play. */
     public boolean hasSound() {
         return !closed && lastAudioMs != 0 && System.currentTimeMillis() - lastAudioMs < AUDIO_FRESH_MS;
     }

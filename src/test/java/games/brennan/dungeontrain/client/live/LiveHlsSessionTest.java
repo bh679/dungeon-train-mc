@@ -66,6 +66,8 @@ class LiveHlsSessionTest {
     @Test
     void theStallWindowCoversMoreThanOneSegment() {
         assertTrue(LiveHlsSession.STALL_MS >= 2 * 10_000L, "a viewer buffers up to one 10 s segment legitimately");
+        assertTrue(LiveHlsSession.AUDIO_FRESH_MS >= 10_000L,
+            "a wait for the next segment never ends the speaker (the ring plays silence through it)");
     }
 
     @Test

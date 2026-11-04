@@ -15,17 +15,30 @@ import java.nio.ByteBuffer;
  * gets silence and leaves the cursor where it was: Minecraft must always get a buffer, or it ends the
  * sound, and a buffer half sound and half silence would crackle. Each such gap lets the cushion grow by
  * one buffer, so a reader settles just far enough behind to ride out ffmpeg's jitter.</p>
+ *
+ * <p>The cushion has to cover how ffmpeg writes (measured 2026-11, idle client): 4 KB bursts with
+ * pauses of 170 to 210 ms between them every second, and at the live edge a stall of one to three
+ * seconds whenever the next segment is late, after which {@code -readrate_catchup} writes at twice
+ * real time until it is back on schedule. Over a minute the writes average exactly real time, so a
+ * reader's lag swings by a stall's length and otherwise holds. A 40 ms cushion with a 200 ms
+ * pull-forward turned the pauses alone into a stutter (every pause an underrun, every burst after one a
+ * pull-forward: 42% of a minute silence and as much skipped), and a pull-forward shorter than a stall
+ * undid the cushion the underruns had grown just before the next stall needed it. A reader that
+ * underran through a stall settles a whole stall's length behind (its cursor stood still while the
+ * catch-up wrote the stall back), so the pull-forward is well past the longest stall seen (3 s, a
+ * viewer who joined a young playlist right at its edge), and the cushion is left to settle where the
+ * stream's jitter puts it; the perf line reports how far behind that is.</p>
  */
 public final class LiveAudioRing {
 
     /** 24 000 samples a second, two bytes each. */
     public static final int BYTES_PER_SECOND = 48_000;
-    /** Three seconds of sound: far more than any reader may lag. */
-    static final int CAPACITY = 3 * BYTES_PER_SECOND;
-    /** How far behind the newest sample a reader plays: 40 ms, about two of ffmpeg's audio writes. */
-    static final long TARGET_LAG = BYTES_PER_SECOND * 40L / 1000;
-    /** A reader further behind than this (200 ms) is pulled back to {@link #TARGET_LAG}. */
-    static final long MAX_LAG = BYTES_PER_SECOND * 200L / 1000;
+    /** Eight seconds of sound: past {@link #MAX_LAG} plus a catch-up burst. */
+    static final int CAPACITY = 8 * BYTES_PER_SECOND;
+    /** How far behind the newest sample a reader starts: 500 ms, past the pauses between ffmpeg's bursts. */
+    static final long TARGET_LAG = BYTES_PER_SECOND * 500L / 1000;
+    /** A reader further behind than this (6 s: a real hitch, twice the longest stall seen) is pulled back to {@link #TARGET_LAG}. */
+    static final long MAX_LAG = BYTES_PER_SECOND * 6000L / 1000;
 
     private final byte[] buf = new byte[CAPACITY];
     /** Bytes ever written: the timeline position one past the newest sample. */
