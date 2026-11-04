@@ -4434,7 +4434,9 @@
       "gui.dungeontrain.options.confirm_build_restore.tip",
       "gui.dungeontrain.options.other_advancement_tabs",
       "gui.dungeontrain.options.low_memory_notice_chat",
-      "gui.dungeontrain.options.low_memory_notice_chat.tip"
+      "gui.dungeontrain.options.low_memory_notice_chat.tip",
+      "chat.dungeontrain.perks.active_gained",
+      "gui.dungeontrain.perks.refused.no_active"
     ],
     "adventureitemnames": [],
     "playermob": [],

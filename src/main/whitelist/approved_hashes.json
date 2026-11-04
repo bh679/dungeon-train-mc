@@ -75,7 +75,8 @@
     "xaerominimap": "xaeros-minimap",
     "xaeroworldmap": "xaeros-world-map",
     "yet_another_config_lib_v3": "yacl",
-    "yungsapi": "yungs-api"
+    "yungsapi": "yungs-api",
+    "sable_player_ragdoll_patch": "sableragdoll-patch"
   },
   "byMod": {
     "advancementplaques": {
@@ -6765,6 +6766,30 @@
       ],
       "packages": [
         "com.yungnickyoung"
+      ]
+    },
+    "sable_player_ragdoll_patch": {
+      "platform": "modrinth",
+      "project": "4q2Q9rk1",
+      "slug": "sableragdoll-patch",
+      "name": "Sable: Ragdoll - Patch",
+      "sha1": [
+        "21ca6b06b262f6475690554a61ed783791b2b709",
+        "27d49608a81a96c58c600090547b7caefe7fc1be",
+        "30b214ad5f7a5c092b569b6326fad7a4c29db938",
+        "5848f7ed7e36b15369acb4b11c43abd580d5128d",
+        "61a86a4eab95c7ea12fc8569a21c5d9c96cba8e8",
+        "8781050a642568e60951f2a2f13be4a527cd7087",
+        "8d8243cf1377d2ebf83a5f4132c108e6d37e26e1",
+        "95eb1268ad9a7b82ffd0b71d3285394b3330e573",
+        "a04a66e958cdd6d68f828a4df7c5fcd62f88dd73",
+        "a1dd6aba1c4f26d5f42efa32518f2aebc026371d",
+        "b7c16b75f536f914273989cfb94aadad6cc929d3",
+        "cd3c5a1f6be7101277a066d3fbd396326a7bca9c",
+        "fa11fb7a285ec3e90c80c4ba1bafab06d8b33277"
+      ],
+      "packages": [
+        "twtlinmiao.sableplayerragdollpatch"
       ]
     }
   },

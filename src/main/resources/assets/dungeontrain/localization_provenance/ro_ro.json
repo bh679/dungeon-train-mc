@@ -175,7 +175,9 @@
       "gui.dungeontrain.unsupported_mods.update_essential",
       "advancements.dungeontrain.enchiridion.photo_deeper_dark.title",
       "advancements.dungeontrain.secrete_menu.knockback_slime_hit.title",
-      "advancements.dungeontrain.secrete_menu.knockback_slime_hit.hint"
+      "advancements.dungeontrain.secrete_menu.knockback_slime_hit.hint",
+      "chat.dungeontrain.perks.active_gained",
+      "gui.dungeontrain.perks.refused.no_active"
     ],
     "adventureitemnames": [],
     "playermob": [],
