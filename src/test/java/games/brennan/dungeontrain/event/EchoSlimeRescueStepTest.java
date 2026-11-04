@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Pure-logic coverage for {@link EchoSlimeRescueEvents#step} — what one scan decides about an echo
- * slimed back towards the train (Bounce Back). Positions are supplied as arguments, so no Minecraft
+ * slimed back towards the train (Knockback Aboard). Positions are supplied as arguments, so no Minecraft
  * bootstrap.
  */
 final class EchoSlimeRescueStepTest {

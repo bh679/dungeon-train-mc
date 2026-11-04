@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * <b>Bounce Back</b> ({@code secrete_menu/knockback_slime_echo_rescue}): knock your own echo back onto
+ * <b>Knockback Aboard</b> ({@code secrete_menu/knockback_slime_echo_rescue}): knock your own echo back onto
  * the train with a Knockback Slime while it is out over the void.
  *
  * <p>{@link #recordSlimeHit} runs from {@code KnockbackSlimeItem#hurtEnemy}. A hit counts as a rescue
