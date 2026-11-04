@@ -43,6 +43,7 @@ Approval includes sign-off on the changelog notes.
 - Build/dev environment changes → `Development.md`
 
 ## Never
-- Never bump `mod_version` on the branch. `version-bump.yml` does it on main after the merge.
+- Never bump `mod_version` on the branch, except a breaking MAJOR. `version-bump.yml` does it on main
+  after the merge (CLAUDE.md § Versioning).
 - Never propose, suggest or ask about a leaderboard reset. Only when Brennan raises it first.
 - Never run `git tag` or push a tag. Tags come only from `release.yml`.
