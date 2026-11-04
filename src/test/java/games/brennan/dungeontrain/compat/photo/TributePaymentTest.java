@@ -24,4 +24,25 @@ class TributePaymentTest {
         assertEquals(2, TributePayment.blocksNeeded(2, 12));
         assertEquals(8, TributePayment.change(2, 12));
     }
+
+    @Test
+    @DisplayName("each emerald from someone else beyond the first adds one person to a photo's reach")
+    void reachGrowsWithTheEmeralds() {
+        assertEquals(5, TributePayment.reach(1, 3, false));
+        assertEquals(6, TributePayment.reach(2, 5, false));
+        assertEquals(11, TributePayment.reach(7, 5, false));
+    }
+
+    @Test
+    @DisplayName("a cheaper Tribute keeps the reach the photo already earned")
+    void reachNeverDrops() {
+        assertEquals(9, TributePayment.reach(1, 9, false));
+    }
+
+    @Test
+    @DisplayName("a photographer's own Tribute earns no reach but keeps what others earned")
+    void ownTributeEarnsNoReach() {
+        assertEquals(5, TributePayment.reach(7, 3, true));
+        assertEquals(9, TributePayment.reach(7, 9, true));
+    }
 }
