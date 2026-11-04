@@ -437,7 +437,7 @@
   },
   "sloped": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic/off/on:12/off/nether"
+    "mode": "endless_repetition/dynamic/off/on:12/off/nether/repeated/0/1"
   },
   "smalllibrary": {
     "weight": 1,

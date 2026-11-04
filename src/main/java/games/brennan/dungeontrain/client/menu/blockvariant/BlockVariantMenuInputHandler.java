@@ -271,6 +271,23 @@ public final class BlockVariantMenuInputHandler {
                     BlockVariantEditPacket.Op.SET_PAINTING, variantId, local, hit.index(),
                     next.isDefault() ? "" : next.id(), 0));
             }
+            case CANDLE_OPTION -> {
+                // Same modal rules as GROWTH_OPTION: -2 closes, -1 is the popup's own margin.
+                int code = hit.secondary();
+                if (code == -1) return;
+                if (code < 0 || hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) {
+                    BlockVariantMenu.closeGrowthPopup();
+                    return;
+                }
+                games.brennan.dungeontrain.editor.VariantCandles current =
+                    BlockVariantMenu.candles(BlockVariantMenu.entries().get(hit.index()));
+                games.brennan.dungeontrain.editor.VariantCandles next =
+                    CandlePopupLayout.apply(GrowthPopupLayout.option(code));
+                if (next.equals(current)) return;
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_CANDLES, variantId, local, hit.index(), next.id(), 0));
+            }
+            case POT_OPTION -> dispatchPot(hit, variantId, local);
             case SPAN_OPTION -> {
                 // -2 = clicked elsewhere in the panel (close), -1 = the popup's own margin (ignore).
                 // A button sets that one section and leaves the popup open for the next choice.
@@ -448,6 +465,55 @@ public final class BlockVariantMenuInputHandler {
             default -> new NumberField(NumberTitle.of("weight"), entry.weight(), 1, TYPED_WEIGHT_MAX, false,
                 inc, dec, set);
         };
+    }
+
+    /**
+     * A click in a flower pot row's Plant popup. Same modal rules as the Grow popup: -2 closes,
+     * -1 is the popup's own margin. The browse stepper moves client-side; everything else is an
+     * edit the server applies to the row's {@code VariantPot}.
+     */
+    private static void dispatchPot(BlockVariantMenu.Hit hit, String variantId, net.minecraft.core.BlockPos local) {
+        int code = hit.secondary();
+        if (code == -1) return;
+        if (code < 0 || hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) {
+            BlockVariantMenu.closeGrowthPopup();
+            return;
+        }
+        int row = hit.index();
+        games.brennan.dungeontrain.editor.VariantPot pot = BlockVariantMenu.pot(BlockVariantMenu.entries().get(row));
+        int section = GrowthPopupLayout.section(code);
+        int option = GrowthPopupLayout.option(code);
+        BlockVariantEditPacket.Op op;
+        String arg;
+        if (section == PotPopupLayout.SECTION_ON) {
+            if ((option == 1) == pot.on()) return;
+            op = BlockVariantEditPacket.Op.SET_POT;
+            arg = option == 1 ? "random" : "";
+        } else if (section == PotPopupLayout.SECTION_BROWSE) {
+            if (option == PotPopupLayout.BROWSE_PREV || option == PotPopupLayout.BROWSE_NEXT) {
+                PotPopupLayout.stepBrowse(option == PotPopupLayout.BROWSE_PREV ? -1 : 1);
+                return;
+            }
+            net.minecraft.resources.ResourceLocation shown = PotPopupLayout.browsed();
+            if (shown == null) return;
+            op = BlockVariantEditPacket.Op.ADD_POT_PLANT;
+            arg = shown.toString();
+        } else if (section == PotPopupLayout.SECTION_ACTIONS) {
+            if (option == PotPopupLayout.ACTION_RANDOM) {
+                if (pot.isRandom()) return;
+                op = BlockVariantEditPacket.Op.SET_POT;
+                arg = "random";
+            } else {
+                op = BlockVariantEditPacket.Op.ADD_POT_PLANT;
+                arg = "";
+            }
+        } else {
+            net.minecraft.resources.ResourceLocation plant = PotPopupLayout.listedPlant(pot, section, option);
+            if (plant == null) return;
+            op = BlockVariantEditPacket.Op.REMOVE_POT_PLANT;
+            arg = plant.toString();
+        }
+        DungeonTrainNet.sendToServer(new BlockVariantEditPacket(op, variantId, local, row, arg, 0));
     }
 
     /**

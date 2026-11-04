@@ -69,18 +69,18 @@
       "mod_ids": [
         "playermob"
       ],
-      "sha1": "c492b4c57fe16e0532d048f489709e67af632c2e",
+      "sha1": "9264be437cb791fee939e3291f7b6d61300e2925",
       "packages": [
         "games.brennan"
       ],
       "project_id": 1559379,
-      "file_id": 9359897,
+      "file_id": 9415170,
       "required": true,
       "dependency_type": "required",
-      "version": "0.117.0",
+      "version": "0.119.0",
       "gradle_property": "playermob_min_version",
       "modrinth_project": "interactive-player-mobs",
-      "modrinth_version": "MsaHmki0"
+      "modrinth_version": "Bo4sN5qX"
     },
     {
       "name": "Ender Chest Persistence",
@@ -842,6 +842,22 @@
       "required": true,
       "modrinth_project": "advancement-plaques",
       "modrinth_version": "OWylG33I"
+    },
+    {
+      "name": "YDM's Weapon Master",
+      "slug": "ydms-weapon-master",
+      "mod_ids": [
+        "weaponmaster_ydm"
+      ],
+      "sha1": "4cfceaf50678186c8c8de2eedc1f47f46a624782",
+      "packages": [
+        "com.minecraftserverzone"
+      ],
+      "project_id": 608235,
+      "file_id": 6476374,
+      "required": true,
+      "modrinth_project": "weaponmaster",
+      "modrinth_version": "j4CtkXVs"
     },
     {
       "name": "Better Advancements",

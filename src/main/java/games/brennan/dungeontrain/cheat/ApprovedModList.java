@@ -100,6 +100,9 @@ public final class ApprovedModList {
      * the relay.
      */
     private static volatile java.util.Map<String, Set<String>> bakedPackages = java.util.Map.of();
+    /** SHA-1 + version of the dtmodverify jar DT embeds ("" when not baked). Baked only, never relay-set. */
+    private static volatile String bakedEngineSha1 = "";
+    private static volatile String bakedEngineVersion = "";
     private static volatile java.util.Map<String, Set<String>> relayPackages = java.util.Map.of();
     /** A lowercase 40-hex SHA-1, as the relay serves and the scanner computes them. */
     private static final java.util.regex.Pattern SHA1 = java.util.regex.Pattern.compile("[0-9a-f]{40}");
@@ -289,6 +292,8 @@ public final class ApprovedModList {
             prefixes = parsePrefixes(root);
             bakedHashes = parseHashes(root);
             bakedPackages = parseKnownPackages(root);
+            bakedEngineSha1 = stringAt(root, "engineSha1");
+            bakedEngineVersion = stringAt(root, "engineVersion");
             LOGGER.debug("[DungeonTrain] approved-mod list: {} baked id(s), {} prefix(es), {} file hash(es), "
                 + "packages for {} id(s)", baked.size(), prefixes.size(), bakedHashes.size(), bakedPackages.size());
         } catch (Exception e) {
@@ -416,6 +421,22 @@ public final class ApprovedModList {
     }
 
     /** A boolean field, or {@code null} when missing or not a boolean — "the relay did not say". */
+    /** The baked SHA-1 of the embedded verification engine jar; "" when the build baked none. */
+    public static String bakedEngineSha1() {
+        loadBakedOnce();
+        return bakedEngineSha1;
+    }
+
+    /** The baked version of the embedded verification engine; "" when the build baked none. */
+    public static String bakedEngineVersion() {
+        loadBakedOnce();
+        return bakedEngineVersion;
+    }
+
+    private static String stringAt(JsonObject o, String key) {
+        return o.has(key) && o.get(key).isJsonPrimitive() ? o.get(key).getAsString() : "";
+    }
+
     private static Boolean boolAt(JsonObject o, String key) {
         return o.has(key) && o.get(key).isJsonPrimitive() && o.getAsJsonPrimitive(key).isBoolean()
             ? o.get(key).getAsBoolean() : null;

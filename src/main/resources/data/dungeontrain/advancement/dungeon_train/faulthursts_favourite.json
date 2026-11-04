@@ -1,9 +1,15 @@
 {
   "parent": "dungeontrain:dungeon_train/i_must_know",
   "display": {
-    "icon": { "id": "minecraft:enchanted_book" },
-    "title": { "translate": "advancements.dungeontrain.dungeon_train.faulthursts_favourite.title" },
-    "description": { "translate": "advancements.dungeontrain.dungeon_train.faulthursts_favourite.description" },
+    "icon": {
+      "id": "minecraft:enchanted_book"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.faulthursts_favourite.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.faulthursts_favourite.description"
+    },
     "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
@@ -12,8 +18,341 @@
   "criteria": {
     "completed": {
       "trigger": "dungeontrain:story_set_completed",
-      "conditions": { "setId": "faulthurst" }
+      "conditions": {
+        "setId": "faulthurst"
+      }
+    },
+    "faulthursts_asides_i/0": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "faulthursts_asides_i",
+        "variant": 0
+      }
+    },
+    "faulthursts_asides_i/1": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "faulthursts_asides_i",
+        "variant": 1
+      }
+    },
+    "faulthursts_asides_i/2": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "faulthursts_asides_i",
+        "variant": 2
+      }
+    },
+    "musings_of_faulthurst/0": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 0
+      }
+    },
+    "musings_of_faulthurst/1": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 1
+      }
+    },
+    "musings_of_faulthurst/2": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 2
+      }
+    },
+    "musings_of_faulthurst/3": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 3
+      }
+    },
+    "musings_of_faulthurst/4": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 4
+      }
+    },
+    "musings_of_faulthurst/5": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 5
+      }
+    },
+    "musings_of_faulthurst/6": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 6
+      }
+    },
+    "musings_of_faulthurst/7": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 7
+      }
+    },
+    "musings_of_faulthurst/8": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 8
+      }
+    },
+    "musings_of_faulthurst/9": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 9
+      }
+    },
+    "musings_of_faulthurst/10": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 10
+      }
+    },
+    "musings_of_faulthurst/11": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 11
+      }
+    },
+    "musings_of_faulthurst/12": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 12
+      }
+    },
+    "musings_of_faulthurst/13": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 13
+      }
+    },
+    "musings_of_faulthurst/14": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 14
+      }
+    },
+    "musings_of_faulthurst/15": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 15
+      }
+    },
+    "musings_of_faulthurst/16": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 16
+      }
+    },
+    "musings_of_faulthurst/17": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 17
+      }
+    },
+    "musings_of_faulthurst/18": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 18
+      }
+    },
+    "musings_of_faulthurst/19": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 19
+      }
+    },
+    "musings_of_faulthurst/20": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 20
+      }
+    },
+    "musings_of_faulthurst/21": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 21
+      }
+    },
+    "musings_of_faulthurst/22": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 22
+      }
+    },
+    "musings_of_faulthurst/23": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 23
+      }
+    },
+    "musings_of_faulthurst/24": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 24
+      }
+    },
+    "musings_of_faulthurst/25": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 25
+      }
+    },
+    "musings_of_faulthurst/26": {
+      "trigger": "dungeontrain:random_book_variant_seen",
+      "conditions": {
+        "book": "musings_of_faulthurst",
+        "variant": 26
+      }
     }
   },
-  "requirements": [["completed"]]
+  "requirements": [
+    [
+      "completed",
+      "faulthursts_asides_i/0"
+    ],
+    [
+      "completed",
+      "faulthursts_asides_i/1"
+    ],
+    [
+      "completed",
+      "faulthursts_asides_i/2"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/0"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/1"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/2"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/3"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/4"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/5"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/6"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/7"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/8"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/9"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/10"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/11"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/12"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/13"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/14"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/15"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/16"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/17"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/18"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/19"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/20"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/21"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/22"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/23"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/24"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/25"
+    ],
+    [
+      "completed",
+      "musings_of_faulthurst/26"
+    ]
+  ]
 }

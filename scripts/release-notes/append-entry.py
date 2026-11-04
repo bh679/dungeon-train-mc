@@ -2,7 +2,9 @@
 """Append one curated entry to the changelog ledger (Gate-3 merge step).
 
 Run by the agent on the feature branch during Gate 3, before merging, so the
-entry lands in the PR diff and squash-merges atomically. The shipped version is
+entry lands in the PR diff and squash-merges atomically. It writes one new file,
+`.github/release-notes/unreleased/<id>.json`, and nothing else, so two PRs (or a
+PR and a release) never conflict over the ledger. The shipped version is
 computed from gradle.properties using the same rule as version-bump.yml, so the
 logged `version` matches what CI assigns after the squash.
 
@@ -45,6 +47,7 @@ Optional:
 Paths honour CHANGELOG_FILE / GRADLE_PROPERTIES_FILE env overrides.
 """
 import argparse
+import os
 import sys
 
 import changelog_io
@@ -224,9 +227,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"::error::{e}", file=sys.stderr)
         return 1
 
-    changelog_io.save_changelog({**data, "entries": new_entries})
+    try:
+        written = changelog_io.write_unreleased_entry(entry)
+    except ValueError as e:
+        print(f"::error::{e}", file=sys.stderr)
+        return 1
     print(
-        f"Logged changelog entry '{args.id}' for v{version} "
+        f"Logged changelog entry '{args.id}' for v{version} in {os.path.relpath(written)} "
         f"({len(new_entries)} entr{'y' if len(new_entries) == 1 else 'ies'} total)."
     )
     return 0

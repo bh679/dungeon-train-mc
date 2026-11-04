@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 """Shared helpers for the per-version changelog ledger.
 
-The ledger (`.github/release-notes/changelog.json`) records one curated entry
-per Gate-3 merge. The agent appends entries during Gate 3 (append-entry.py),
+The ledger records one curated entry per Gate-3 merge, in two places:
+released entries in `.github/release-notes/changelog.json`, and each
+unreleased entry in its own file under `.github/release-notes/unreleased/`.
+A PR adds a new file rather than editing the shared one, so open PRs never
+conflict with each other or with a release marking entries released (a
+conflicting PR gets no CI run on GitHub). load_changelog / save_changelog
+present and accept the merged view, so callers see one `entries` list. The agent appends entries during Gate 3 (append-entry.py),
 renders the unreleased set for confirmation before a release (render-unreleased.py),
 and `release.yml` marks shipped entries released on a successful real release
 (mark-released.py). This module is the single source of truth for reading,
 writing, and transforming that ledger so the three entrypoints stay thin.
 
 Inclusion in a release is governed by the per-entry `released` flag, never by
-comparing version numbers — back-to-back Gate-3 merges can share one X.Y.0
-(version-bump.yml skips when PATCH==0), so a version boundary would wrongly
-exclude a feature merged right after a release. The `version` field is kept as
+comparing version numbers — an entry's version is computed when it is logged
+and main can move before it merges, so a version boundary would misplace
+entries merged around a release. The `version` field is kept as
 descriptive metadata and for grouping in the rendered notes.
 
 Public surface:
@@ -20,8 +25,9 @@ Public surface:
   parse_semver(s) — strict X.Y.Z parse, returns (int,int,int) or None.
   read_mod_version() — read mod_version from gradle.properties or None.
   compute_release_version(current) — the version this merge ships as, applying
-      the SAME rule as version-bump.yml (PATCH==0 -> unchanged, else MINOR+1).
-  load_changelog / save_changelog — read/write the ledger object.
+      the SAME rule as version-bump.yml (MINOR+1).
+  load_changelog / save_changelog — read/write the merged ledger view
+      (changelog.json + unreleased/<id>.json); save splits it back.
   find_entry / make_entry / append_entry — entry construction (immutable).
   normalise_tags(type, tags) — type-derived tag + topical tags, canonical order.
   TAG_GUIDE / render_tag_guide() — the per-tag question the agent answers when tagging.
@@ -34,10 +40,12 @@ Public surface:
 
 Env overrides (mirror scripts/auto-release for testability):
   CHANGELOG_FILE          default: .github/release-notes/changelog.json
+  CHANGELOG_ENTRIES_DIR   default: unreleased/ beside the changelog file
   GRADLE_PROPERTIES_FILE  default: gradle.properties
 """
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from typing import Any
@@ -46,6 +54,9 @@ CHANGELOG_FILE = os.environ.get(
     "CHANGELOG_FILE", ".github/release-notes/changelog.json"
 )
 GRADLE_PROPERTIES_FILE = os.environ.get("GRADLE_PROPERTIES_FILE", "gradle.properties")
+
+# Entry ids double as unreleased/<id>.json file names; mirrors the schema pattern.
+ENTRY_ID_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
 # Conventional-commit types accepted on an entry. feat/fix/content are the ones
 # that usually matter to players; the rest are allowed so the ledger can record
@@ -210,33 +221,116 @@ def read_mod_version(path: str | None = None) -> str | None:
 def compute_release_version(current: str) -> str:
     """The version a merge of the current branch will ship as.
 
-    Replicates version-bump.yml exactly: read M.m.p; if PATCH==0 the bump is
-    skipped (the feature shares the current MINOR with whatever merged before
-    it), so the version stays M.m.0. Otherwise CI bumps to M.(m+1).0.
+    Replicates version-bump.yml: a merge bumps main to M.(m+1).0. Feature branches
+    leave mod_version alone, so `current` is main's version when the branch was cut
+    or last synced; a release version that moves on because main merged something
+    else first is fine (`version` is descriptive; release.yml stamps released_in).
+    A branch that deliberately bumps mod_version to a MAJOR/MINOR passes --version.
     """
     parsed = parse_semver(current)
     if parsed is None:
         raise ValueError(f"mod_version '{current}' is not a strict X.Y.Z version")
-    major, minor, patch = parsed
-    if patch == 0:
-        return f"{major}.{minor}.0"
+    major, minor, _patch = parsed
     return f"{major}.{minor + 1}.0"
 
 
+UNRELEASED_DIRNAME = "unreleased"
+
+
+def entries_dir_for(path: str | None = None) -> str:
+    """The unreleased-entry directory paired with the ledger at `path`.
+
+    $CHANGELOG_ENTRIES_DIR wins when `path` is the default ledger; otherwise it is
+    `unreleased/` beside the ledger file, so a snapshot or test ledger brings its own.
+    """
+    env_dir = os.environ.get("CHANGELOG_ENTRIES_DIR")
+    if path is None and env_dir:
+        return env_dir
+    return os.path.join(os.path.dirname(os.path.abspath(path or CHANGELOG_FILE)), UNRELEASED_DIRNAME)
+
+
+def _entry_file(entries_dir: str, entry_id: str) -> str:
+    if not isinstance(entry_id, str) or not ENTRY_ID_RE.match(entry_id):
+        raise ValueError(f"changelog entry id {entry_id!r} is not a valid slug")
+    return os.path.join(entries_dir, f"{entry_id}.json")
+
+
+def load_unreleased_files(entries_dir: str) -> list[dict]:
+    """Every unreleased/<id>.json entry, ordered by (date, id). [] when the dir is absent."""
+    try:
+        names = sorted(n for n in os.listdir(entries_dir) if n.endswith(".json"))
+    except FileNotFoundError:
+        return []
+    entries: list[dict] = []
+    for name in names:
+        path = os.path.join(entries_dir, name)
+        entry = read_json(path)
+        if not isinstance(entry, dict) or entry.get("id") != name[: -len(".json")]:
+            raise ValueError(f"{path}: expected one entry object whose id matches the file name")
+        if entry.get("released", False):
+            raise ValueError(f"{path}: a released entry belongs in the ledger, not {UNRELEASED_DIRNAME}/")
+        entries.append(entry)
+    return sorted(entries, key=lambda e: (str(e.get("date", "")), e["id"]))
+
+
 def load_changelog(path: str | None = None) -> dict:
-    """Load the ledger, returning {'entries': []} when the file is absent."""
+    """Load the merged ledger: changelog.json's entries, then the unreleased files.
+
+    Returns {'entries': []} when both are absent. Raises ValueError on a malformed
+    file or an id present twice.
+    """
     target = path or CHANGELOG_FILE
     try:
         data = read_json(target)
     except FileNotFoundError:
-        return {"entries": []}
+        data = {"entries": []}
     if not isinstance(data, dict) or not isinstance(data.get("entries"), list):
         raise ValueError(f"{target}: expected an object with an 'entries' array")
-    return data
+    files = load_unreleased_files(entries_dir_for(path))
+    seen = {e.get("id") for e in data["entries"]}
+    dupes = sorted(e["id"] for e in files if e["id"] in seen)
+    if dupes:
+        raise ValueError(f"changelog entry id(s) in both the ledger and {UNRELEASED_DIRNAME}/: {', '.join(dupes)}")
+    return {**data, "entries": [*data["entries"], *files]}
+
+
+def _write_if_changed(path: str, obj: Any) -> None:
+    try:
+        if read_json(path) == obj:
+            return
+    except (FileNotFoundError, ValueError):
+        pass
+    write_json(path, obj)
 
 
 def save_changelog(data: dict, path: str | None = None) -> None:
-    write_json(path or CHANGELOG_FILE, data)
+    """Write the merged view back: released entries to the ledger file, each
+    unreleased entry to unreleased/<id>.json. Unreleased files for ids no longer
+    unreleased are removed. Files whose content is unchanged are left untouched.
+    """
+    target = path or CHANGELOG_FILE
+    entries_dir = entries_dir_for(path)
+    released = [e for e in data["entries"] if e.get("released", False)]
+    unreleased = [e for e in data["entries"] if not e.get("released", False)]
+    _write_if_changed(target, {**data, "entries": released})
+    wanted = {_entry_file(entries_dir, e["id"]): e for e in unreleased}
+    if wanted:
+        os.makedirs(entries_dir, exist_ok=True)
+    for file_path, entry in wanted.items():
+        _write_if_changed(file_path, entry)
+    for stale in {os.path.join(entries_dir, e["id"] + ".json") for e in load_unreleased_files(entries_dir)} - set(wanted):
+        os.remove(stale)
+
+
+def write_unreleased_entry(entry: dict, path: str | None = None) -> str:
+    """Write one unreleased entry to its own unreleased/<id>.json, touching nothing else.
+
+    What append-entry.py uses, so a PR's diff is one new file. Returns the path.
+    """
+    file_path = _entry_file(entries_dir_for(path), entry["id"])
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    write_json(file_path, entry)
+    return file_path
 
 
 def find_entry(entries: list[dict], entry_id: str) -> dict | None:

@@ -136,7 +136,7 @@ jobs:
 
       - name: Set up Gradle
         if: steps.changed.outputs.yes == 'true'
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Run the test suite against the imported text
         if: steps.changed.outputs.yes == 'true'

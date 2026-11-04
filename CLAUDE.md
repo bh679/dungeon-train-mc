@@ -96,7 +96,8 @@ Follow `~/.claude/playbooks/gates/gate-3-merge.md`, plus the Dungeon Train add-o
 1. Push branch, open PR with conventional commit title
 2. **Log + confirm the changelog entry** — append it on the feature branch with
    `scripts/release-notes/append-entry.py` (curated player-facing notes) so it lands in the PR
-   diff, and present those notes **and tags** to the user to confirm before merging — see
+   diff as one new file, `.github/release-notes/unreleased/<id>.json` (never edit `changelog.json`
+   on a branch; only releases write it), and present those notes **and tags** to the user to confirm before merging — see
    `.github/release-notes/README.md`. **You choose the tags, from the diff** — there is no
    keyword classifier. Run `append-entry.py --tag-guide`, answer its question per tag, pass
    `--tag` for each yes or `--no-topical-tags` if none apply (one or the other is required).
@@ -104,7 +105,7 @@ Follow `~/.claude/playbooks/gates/gate-3-merge.md`, plus the Dungeon Train add-o
 3. Verify CI green
 4. Squash-merge after explicit user approval of the changelog notes + diff
 5. Delete feature branch
-6. Before merging, `mod_version` = main's MINOR + 1, PATCH 0 (`version-bump.yml` then skips)
+6. Don't bump `mod_version` — `version-bump.yml` does the MINOR bump on main after the merge (see "Versioning")
 7. **Leaderboard resets are never yours to propose.** Retiring a leaderboard era (`-f leaderboard_reset=true`
    on `release.yml`, the relay's `POST …/leaderboard/era/retire`, or `scripts/retire-leaderboard-era.js`)
    happens **only when Brennan brings it up himself**. Do not set the flag, do not suggest it at merge or
@@ -175,13 +176,17 @@ assumptions break on ships. Document the Sable test result in the Gate 2 report.
 
 ## Versioning
 
-Per global versioning rule: SemVer in `gradle.properties` `mod_version` field.
-- Every commit during dev → PATCH bump
-- Feature merged to main (Gate 3) → MINOR bump (reset PATCH)
-- Breaking save format / API change → MAJOR bump
+SemVer in `gradle.properties` `mod_version` field. **Project exception to the global versioning
+rule:** feature branches do NOT bump `mod_version` per commit.
+- Commits during dev → leave `mod_version` alone
+- Feature merged to main (Gate 3) → MINOR bump, done by `version-bump.yml` on main after the squash
+- Breaking save format / API change → MAJOR bump, set by hand on the branch to `X.0.0`
+  (`version-bump.yml` skips a merge whose own diff set `mod_version` to `X.Y.0`)
 
-> **Note:** The shipped versioning hook is npm-only (`package.json`). It is NOT installed in
-> this repo. Bump `gradle.properties` `mod_version` manually before each commit.
+**Why:** `version-bump.yml` rewrites the `mod_version` line on main after every merge. A branch
+that also edits that line conflicts with every merge, and on GitHub a conflicting PR gets no CI
+run at all, so each conflict cost a manual sync plus a full re-run. Same reason the changelog keeps
+one file per unreleased entry (`.github/release-notes/unreleased/`).
 
 **Tagging is NOT done manually.** Tags exist only when a release is shipped — see
 "Releasing (post-Gate 3)" below. The global versioning rule's `git tag && git push`

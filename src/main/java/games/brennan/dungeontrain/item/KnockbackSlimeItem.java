@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.item;
 
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.event.EchoSlimeRescueEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -54,6 +55,7 @@ public class KnockbackSlimeItem extends Item {
         target.hurtMarked = true;
         if (attacker instanceof ServerPlayer player) {
             grantHitAdvancement(player);
+            EchoSlimeRescueEvents.recordSlimeHit(player, target);
         }
         stack.consume(1, attacker);
         return true;

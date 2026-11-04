@@ -22,6 +22,10 @@ import java.util.Set;
  * credit for the old 150-biome version, {@link TerraOmniaMigration}) and the client's checklist, so both
  * list the biomes in one order: the vanilla Overworld, the Nether, the End, then Biomes O' Plenty,
  * BetterNether, BetterEnd and Deeper Darker, then anything else; alphabetical within each.
+ *
+ * <p>Five Biomes O' Plenty biomes are so rare that riding every one of them was the wall at the end, so
+ * Terra Omnia asks for only {@link #RARE_NEEDED} of the {@link #RARE} ones. Coffee Table Book still wants a
+ * photo in all of them ({@link #holdsEvery}).</p>
  */
 public final class TerraOmnia {
 
@@ -63,6 +67,17 @@ public final class TerraOmnia {
         ResourceLocation.fromNamespaceAndPath("betternether", "upside_down_forest_cleared"),
         ResourceLocation.fromNamespaceAndPath("betternether", "wart_forest_edge"));
 
+    /** The rare biomes Terra Omnia asks only {@link #RARE_NEEDED} of. Twice as common in the BoP stretch too. */
+    public static final Set<ResourceLocation> RARE = Set.of(
+        ResourceLocation.fromNamespaceAndPath("biomesoplenty", "wintry_origin_valley"),
+        ResourceLocation.fromNamespaceAndPath("biomesoplenty", "origin_valley"),
+        ResourceLocation.fromNamespaceAndPath("biomesoplenty", "hot_springs"),
+        ResourceLocation.fromNamespaceAndPath("biomesoplenty", "auroral_garden"),
+        ResourceLocation.fromNamespaceAndPath("biomesoplenty", "tropics"));
+
+    /** How many of {@link #RARE} Terra Omnia asks for. */
+    public static final int RARE_NEEDED = 2;
+
     private static final int OVERWORLD = 0;
     private static final int NETHER = 1;
     private static final int END = 2;
@@ -70,14 +85,58 @@ public final class TerraOmnia {
 
     private TerraOmnia() {}
 
-    /** Whether {@code ridden} holds every biome in {@code all}. An empty registry completes nothing. */
+    /**
+     * Whether {@code ridden} finishes Terra Omnia over {@code all}: every biome outside {@link #RARE}, and
+     * {@link #RARE_NEEDED} of the rare ones {@code all} holds (all of them when it holds fewer). An empty
+     * {@code all} completes nothing.
+     */
     public static boolean isComplete(Set<ResourceLocation> ridden, Collection<ResourceLocation> all) {
-        return !all.isEmpty() && ridden.containsAll(all);
+        Progress p = progress(ridden, all);
+        return p.needed() > 0 && p.counted() >= p.needed();
     }
 
-    /** Whether {@code ridden} holds every biome Terra Omnia asks for in {@code registry}. */
+    /** Whether {@code ridden} finishes Terra Omnia over the biomes it asks for in {@code registry}. */
     public static boolean isComplete(Set<ResourceLocation> ridden, Registry<Biome> registry) {
         return isComplete(ridden, ordered(registry).keySet());
+    }
+
+    /** Whether {@code have} holds every biome in {@code all}, the rare ones included. An empty {@code all} holds nothing. */
+    public static boolean holdsEvery(Set<ResourceLocation> have, Collection<ResourceLocation> all) {
+        return !all.isEmpty() && have.containsAll(all);
+    }
+
+    /** Whether {@code have} holds every biome Terra Omnia lists in {@code registry}, the rare ones included. */
+    public static boolean holdsEvery(Set<ResourceLocation> have, Registry<Biome> registry) {
+        return holdsEvery(have, ordered(registry).keySet());
+    }
+
+    /** Terra Omnia's count: biomes that count toward it out of how many it needs. */
+    public record Progress(int counted, int needed) {}
+
+    /** The rare biomes count only up to {@link #RARE_NEEDED}; every other biome in {@code all} counts once. Pure. */
+    public static Progress progress(Set<ResourceLocation> ridden, Collection<ResourceLocation> all) {
+        int common = 0;
+        int commonRidden = 0;
+        int rare = 0;
+        int rareRidden = 0;
+        for (ResourceLocation id : all) {
+            boolean held = ridden.contains(id);
+            if (RARE.contains(id)) {
+                rare++;
+                if (held) rareRidden++;
+            } else {
+                common++;
+                if (held) commonRidden++;
+            }
+        }
+        int rareNeeded = Math.min(RARE_NEEDED, rare);
+        return new Progress(commonRidden + Math.min(rareRidden, rareNeeded), common + rareNeeded);
+    }
+
+    /** Whether {@code biome} is a rare one {@code ridden} no longer needs, because enough of the others are held. */
+    public static boolean isSpareRare(ResourceLocation biome, Set<ResourceLocation> ridden) {
+        if (!RARE.contains(biome) || ridden.contains(biome)) return false;
+        return ridden.stream().filter(RARE::contains).count() >= RARE_NEEDED;
     }
 
     /** Every biome Terra Omnia asks for in {@code registry}, keyed in checklist order, each with its group. */

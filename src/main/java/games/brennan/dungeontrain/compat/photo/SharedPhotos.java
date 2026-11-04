@@ -568,11 +568,15 @@ public final class SharedPhotos {
         player.setItemInHand(hand.get(), ItemStack.EMPTY);
         TributePayment.pay(player, cost);
         boolean ownPhoto = isOwnPhoto(held, player.getGameProfile().getName());
+        // Big Spender's running total: clean runs only, so Free Play emeralds can't bank progress for later.
+        int totalToOthers = ownPhoto ? 0
+                : RunIntegrity.isCheated(player) ? GlobalTributeStats.totalPaidToOthers(player.getUUID())
+                : GlobalTributeStats.addPaidToOthers(player.getUUID(), cost);
         AdvancementPhotoCapture.during(held, () -> {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TRIBUTED_PHOTO);
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player,
                     ownPhoto ? EnchiridionAdvancements.TRIBUTED_OWN_PHOTO : EnchiridionAdvancements.TRIBUTED_OTHERS_PHOTO);
-            ModAdvancementTriggers.PHOTO_TRIBUTE.get().trigger(player, ownPhoto, cost);
+            ModAdvancementTriggers.PHOTO_TRIBUTE.get().trigger(player, ownPhoto, cost, totalToOthers);
             recordView(player, photoId);
         });
         JsonObject body = action(player, photoId);
