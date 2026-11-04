@@ -27,8 +27,10 @@ Worktrees: `.claude/worktrees/nervous-chatterjee-4681c3`, `xenodochial-lamport-7
 `jolly-williams-c5904c`. Gate 2 screenshots: `nervous-chatterjee-4681c3/test-results/gate2-live-eye-mic-v3-*.png`.
 
 ### Relay (bh679/dp-relay). MERGED 2026-11-04 (Gate 3 approved by Brennan): #978 cabd5d87,
-### #975 938ec6a4, #974 3b3824f3, in that order. Not yet deployed; deploy in a no-stream window,
-### then start the dt-live-reports worker once (command below).
+### #975 938ec6a4, #974 3b3824f3, in that order. DEPLOYED 2026-11-04 10:52 UTC as release
+### 0.289.6-1cdaf1b7 (rollback target 0.289.5-b85e83f0); dt-live-reports worker started and
+### pm2-saved, transcribing with OpenAI whisper-1; the seven changed public/ live page files
+### were scp'd to htdocs and sha-verified (deploy-relay.sh does not ship public/).
 
 | PR | Scope |
 |---|---|
