@@ -125,6 +125,7 @@ Follow `~/.claude/playbooks/gates/gate-3-merge.md`, plus the Dungeon Train add-o
 ./gradlew test            # Run JUnit tests (if present)
 ./gradlew --stop          # Stop the gradle daemon if dev client hangs
 ./gradlew pullTradeValues # Refresh data/dungeontrain/trade_values.json from the relay (see below)
+scripts/ci/run-local.sh   # Run the four build.yml CI jobs locally before pushing (scripts/ci/README.md)
 python3 scripts/modpack/pull-approved-hashes.py  # Refresh src/main/whitelist/approved_hashes.json (see below)
 ```
 
