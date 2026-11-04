@@ -1,0 +1,17 @@
+{
+  "id": "debug-screen-tweak",
+  "version": "0.1648.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Debug screen tweak",
+  "summary": "A small tweak to the debug screen.",
+  "highlights": [],
+  "pr": 2468,
+  "date": "2026-11-04",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
