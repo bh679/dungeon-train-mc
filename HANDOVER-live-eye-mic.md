@@ -31,6 +31,11 @@ Worktrees: `.claude/worktrees/nervous-chatterjee-4681c3`, `xenodochial-lamport-7
 ### 0.289.6-1cdaf1b7 (rollback target 0.289.5-b85e83f0); dt-live-reports worker started and
 ### pm2-saved, transcribing with OpenAI whisper-1; the seven changed public/ live page files
 ### were scp'd to htdocs and sha-verified (deploy-relay.sh does not ship public/).
+### Post-deploy checks on a real stream (xiamo_maomao, old client, 11:05 UTC): Live page mute
+### stream / mute streamer / muted list / Clear all work; mic badge hidden as expected (mic off);
+### public-status carries streamerKey and no uuid; Twitch mirror pushing to brennanhattongames
+### with -map 0:a:0 -c:a copy, 0 restarts. Not done by Claude (needs Brennan's Developer login):
+### /micban /micunban /mictwitch in web chat, !micban from Discord, the explorer Voice page.
 
 | PR | Scope |
 |---|---|
