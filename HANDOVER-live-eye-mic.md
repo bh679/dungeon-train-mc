@@ -77,6 +77,29 @@ read as failures.
   `pm2 startOrReload ecosystem.config.js --only dt-live-reports && pm2 save`.
 - Box is 2 vCPU and CPU-bound with two streams; do not run local whisper there.
 
+## Mod branch state after Gate 2 (2026-11-04 evening)
+
+Gate 2 reports: `<scratchpad>/dt-{tv,capture,report}/test-results/GATE2-*.md` (scratchpad of the
+orchestrator session; copy them into the repo's test-results/ at PR time).
+
+- `dev/live-eye-tv-audio` @ 940de747c: Gate 2 7/7 pass incl. Sable; then the TV sound stutter
+  fixed (ring cushion 40 ms -> 500 ms, MAX_LAG 6 s, 60 ms OpenAL chunks, no speaker restart on
+  segment waits; 0 underruns after vs 640/min before; sound now ~0.75 s behind picture). Also
+  on this branch today: HUD mic bar, "TVs on the train" toggle, placed TVs silent on own
+  stream, speaker range 9..18 blocks by TV grid size.
+- `dev/live-eye-mic-capture` @ b4502ca5a: Gate 2 found and fixed: mid-stream ban honoured,
+  push-to-talk micOn, Microphone default off, device label cut. Brennan's real-voice test
+  (local relay, MacBook mic) proved the two-track chain but voice was 10-15 dB too quiet and
+  the inventory-only switch was unfindable. Fixed: AGC (target -20 dBFS, +24 dB max), ONE mic
+  switch (inventory button == Microphone option, saved; stream starts in that state, default
+  off; turning on mid-stream without a mic track = next stream), balance default 75%, toggle
+  key K, 8 s on-screen hint, toggle/device logging. NOT yet re-tested with a voice.
+  Local-harness note: the dev config's segmentSeconds=2 without the quicker_streams claim makes
+  the relay 429 most heartbeats; harmless, prod shows 0.
+- `dev/live-report-streamer` @ e60d32e2: Gate 2 9/9 pass.
+- Still none has a changelog entry or PR. The tv-audio and capture branches both touch
+  LiveFeedClient.Status (mic field); merge capture first.
+
 ## Tested
 
 End-to-end report: `/Users/brennanhatton/Projects/dp-relay/.claude/worktrees/server-route-modules-49e3c2/TEST-REPORT-live-mic-e2e.md`.
