@@ -114,7 +114,7 @@ public record TributeRoomBlob(String owner, String ownerName, CompoundTag snapsh
     public static TributeRoomBlob decode(CompoundTag tag) {
         if (tag == null || !tag.contains(TAG_OWNER) || !tag.contains(TAG_SNAPSHOT)) return null;
         return new TributeRoomBlob(tag.getString(TAG_OWNER), tag.getString(TAG_NAME),
-            tag.getCompound(TAG_SNAPSHOT), tag.getInt(TAG_REVISION), tag.getLong(TAG_SAVED_AT),
+            TributeRoomLegacy.migrate(tag.getCompound(TAG_SNAPSHOT)), tag.getInt(TAG_REVISION), tag.getLong(TAG_SAVED_AT),
             tag.getString(TAG_DIFFICULTY), tag.contains(TAG_REPORT) ? tag.getByteArray(TAG_REPORT) : null,
             tag.getString(TAG_REPORT_MESSAGE), tag.getLong(TAG_REPORT_AT));
     }
