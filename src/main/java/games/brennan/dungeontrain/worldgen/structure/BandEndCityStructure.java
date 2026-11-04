@@ -112,7 +112,8 @@ public class BandEndCityStructure extends Structure {
             if (baseY == Integer.MIN_VALUE) return Optional.empty();
 
             int endY = EndIslandGeometry.END_ISLAND_CENTER_Y + (baseY - ctx.endIslands().bedY());
-            if (!isCityBiome(ctx.endCoreBiomes(), anchorX, endY, anchorZ)) return Optional.empty();
+            double pieceProgress = cycle.endPieceProgress(anchorX, cycle.endPassIndex(anchorX));
+            if (!isCityBiome(ctx.endCoreBiomes(), anchorX, endY, anchorZ, pieceProgress)) return Optional.empty();
 
             BlockPos start = new BlockPos(anchorX, baseY, anchorZ);
             return Optional.of(new GenerationStub(start, builder -> generatePieces(builder, start, rotation, context)));
@@ -124,13 +125,14 @@ public class BandEndCityStructure extends Structure {
 
     /**
      * The band's End-biome gate — vanilla restricts end cities to {@code end_highlands} /
-     * {@code end_midlands}, and {@link EndCoreBiomes#islandFieldBiomeAt} answers that against the same
-     * patch of outer End the island was carved from, so a city only lands where the real End would have
-     * put one on that very island.
+     * {@code end_midlands}, and {@link EndCoreBiomes#islandBiomeAt} answers that: in a vanilla piece of the
+     * order, the piece's sequence stage (no cities among the opening small islands, cities in its highlands);
+     * otherwise the same patch of outer End the island was carved from, so a city only lands where the real
+     * End would have put one on that very island.
      */
-    private static boolean isCityBiome(EndCoreBiomes endBiomes, int worldX, int endY, int worldZ) {
+    private static boolean isCityBiome(EndCoreBiomes endBiomes, int worldX, int endY, int worldZ, double pieceProgress) {
         if (endBiomes == null) return false;
-        Holder<Biome> biome = endBiomes.islandFieldBiomeAt(worldX, endY, worldZ);
+        Holder<Biome> biome = endBiomes.islandBiomeAt(worldX, endY, worldZ, pieceProgress);
         return biome.is(Biomes.END_HIGHLANDS) || biome.is(Biomes.END_MIDLANDS);
     }
 

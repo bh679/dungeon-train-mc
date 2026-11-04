@@ -78,7 +78,8 @@ public record LiveColumnProviders(NetherBandContext ctx) implements ColumnBiomeP
     public Holder<Biome> endCore(int blockX, int blockZ) {
         WorldGenCycle cycle = ctx.cycle();
         long endPass = cycle.endSourcePassAt(blockX, blockZ, ctx.generationSeed());
-        return ctx.endCoreBiomes().biomeAt(blockX, blockZ, endPass, cycle.endStyleOfPass(endPass));
+        return ctx.endCoreBiomes().biomeAt(blockX, blockZ, endPass, cycle.endStyleOfPass(endPass),
+                cycle.endPieceProgress(blockX, endPass));
     }
 
     @Override
