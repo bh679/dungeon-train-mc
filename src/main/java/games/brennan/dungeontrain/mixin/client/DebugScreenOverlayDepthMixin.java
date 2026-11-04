@@ -1,11 +1,16 @@
 package games.brennan.dungeontrain.mixin.client;
 
+import games.brennan.dungeontrain.client.ClientBandDimension;
 import games.brennan.dungeontrain.client.ClientPortalRoomDepth;
 import games.brennan.dungeontrain.client.DebugScreenDepthLines;
+import games.brennan.dungeontrain.client.DebugScreenDimensionLine;
+import games.brennan.dungeontrain.worldgen.BandDimensionName;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -34,12 +39,38 @@ public abstract class DebugScreenOverlayDepthMixin {
 
     @Inject(method = "getGameInformation", at = @At("RETURN"), cancellable = true)
     private void dungeontrain$disguiseLeft(CallbackInfoReturnable<List<String>> cir) {
+        dungeontrain$nameBand(cir);
         dungeontrain$disguise(cir);
     }
 
     @Inject(method = "getSystemInformation", at = @At("RETURN"), cancellable = true)
     private void dungeontrain$disguiseRight(CallbackInfoReturnable<List<String>> cir) {
         dungeontrain$disguise(cir);
+    }
+
+    /**
+     * Prints the band the player is in as the dimension, and a dimensional carriage as a dimension of
+     * its own. Only ever renames the overworld: a real dimension is already telling the truth.
+     */
+    @Unique
+    private static void dungeontrain$nameBand(CallbackInfoReturnable<List<String>> cir) {
+        try {
+            List<String> lines = cir.getReturnValue();
+            if (lines == null || lines.isEmpty()) return;
+
+            Minecraft minecraft = Minecraft.getInstance();
+            ClientLevel level = minecraft.level;
+            Entity camera = minecraft.getCameraEntity();
+            if (level == null || camera == null || !level.dimension().equals(Level.OVERWORLD)) return;
+
+            boolean inCarriage =
+                !ClientPortalRoomDepth.shiftAt(camera.getX(), camera.getY(), camera.getZ()).isZero();
+            String shown = inCarriage ? BandDimensionName.DIMENSIONAL_CARRIAGE : ClientBandDimension.id();
+            cir.setReturnValue(DebugScreenDimensionLine.renamed(
+                lines, level.dimension().location().toString(), shown));
+        } catch (Throwable ignored) {
+            // The same bargain as the coordinates below: vanilla's own line stands if anything is off.
+        }
     }
 
     @Unique
