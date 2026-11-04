@@ -26,7 +26,9 @@ review. One open report per reporter per streamer; a second must abandon the fir
 Worktrees: `.claude/worktrees/nervous-chatterjee-4681c3`, `xenodochial-lamport-75adea`,
 `jolly-williams-c5904c`. Gate 2 screenshots: `nervous-chatterjee-4681c3/test-results/gate2-live-eye-mic-v3-*.png`.
 
-### Relay (bh679/dp-relay). All three PRs open, merge in this order, deploy in a no-stream window.
+### Relay (bh679/dp-relay). MERGED 2026-11-04 (Gate 3 approved by Brennan): #978 cabd5d87,
+### #975 938ec6a4, #974 3b3824f3, in that order. Not yet deployed; deploy in a no-stream window,
+### then start the dt-live-reports worker once (command below).
 
 | PR | Scope |
 |---|---|
