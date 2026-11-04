@@ -12,6 +12,7 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.lwjgl.glfw.GLFW;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -49,11 +50,15 @@ import java.util.function.Consumer;
  * screen's widget list, its click is caught in {@link #onMousePressed}.</p>
  *
  * <p>On a stream that carries a mic track ({@link LiveMic#enabled()}) the mic sits right of LIVE
- * (End Stream moves right of it): crossed out in red while the mic is off, which it is at the start of
- * every stream. In play it is a small icon only; with a screen open, where the mouse can reach it, it
- * is a button that turns the mic on and off (Toggle Mic, {@link LiveMicHotkeys}, works either way).
+ * (End Stream moves right of it): crossed out in red while the mic is off. In play it is a small icon
+ * only; with a screen open, where the mouse can reach it, it is a button that flips the one mic switch,
+ * the Microphone option (Toggle Mic, {@link LiveMicHotkeys}, and the Stream tab flip the same one).
  * With push to talk set it shows dimmed until the key is held. While the mic is heard it fills with
  * green from the bottom as loud as the voice is ({@link LiveMic#level()}).</p>
+ *
+ * <p>While the mic is off, a line under LIVE says how to turn it on ({@link MicHint}): for the first
+ * seconds of the stream, and again each time a container screen such as the inventory closes with
+ * the mic still off, since that is where the button is.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveRecOverlay {
@@ -103,6 +108,8 @@ public final class LiveRecOverlay {
     private static final ResourceLocation MIC_OFF = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/mic_off");
     private static final int WHITE = 0xF0FFFFFF;
     private static final int RED = 0xFFE62E2E;
+    /** The "how to turn the mic on" line under LIVE: a soft yellow, like a hotbar hint. */
+    private static final int HINT = 0xFFFFE680;
     /** The corner mask as runs of set pixels, {lx0, lx1, ly} in local space — worked out once, not per frame. */
     static final int[][] CORNER_SPANS = spans(CORNER_LEN, CORNER_LEN, LiveRecOverlay::inCorner);
     /** The eye's runs, same layout. */
@@ -191,7 +198,53 @@ public final class LiveRecOverlay {
         }
         if (LiveStreamController.get().postMortem()) endStreamButton(g, font);
         int viewers = LiveStreamController.get().viewerCount();
-        if (viewers >= 0) viewerCount(g, font, left, countTop(font.lineHeight), viewers);
+        int countTop = countTop(font.lineHeight);
+        if (viewers >= 0) viewerCount(g, font, left, countTop, viewers);
+        if (micHintShowing()) micHint(g, font, left, countTop + (viewers >= 0 ? font.lineHeight + COUNT_GAP : 0));
+    }
+
+    /** The hint is for a stream with a mic track whose mic is off and not barred, while its window is open. */
+    private static boolean micHintShowing() {
+        if (!LiveMic.enabled() || LiveMic.on() || LiveMic.barred()) return false;
+        return MicHint.showing(System.currentTimeMillis(), LiveStreamController.get().streamStartedMs());
+    }
+
+    private static void micHint(GuiGraphics g, Font font, int left, int top) {
+        g.drawString(font, Component.translatable("gui.dungeontrain.live.mic_hint", LiveMicHotkeys.toggleKeyName()),
+            left, top, HINT, true);
+    }
+
+    /**
+     * When the "how to turn the mic on" line shows: the first {@link #FIRST_MS} of a stream, and
+     * {@link #AFTER_CLOSE_MS} after each container screen closes with the mic still off.
+     */
+    static final class MicHint {
+        static final long FIRST_MS = 8000;
+        static final long AFTER_CLOSE_MS = 8000;
+        private static volatile long until;
+
+        private MicHint() {}
+
+        /** A container screen (the inventory) closed with the mic off: show the line again for a while. */
+        static void screenClosed(long nowMs) {
+            until = nowMs + AFTER_CLOSE_MS;
+        }
+
+        static boolean showing(long nowMs, long streamStartedMs) {
+            return nowMs - streamStartedMs < FIRST_MS || nowMs < until;
+        }
+
+        static void reset() {
+            until = 0;
+        }
+    }
+
+    /** A container screen closing with the mic still off: the hint comes back for a while. */
+    @SubscribeEvent
+    public static void onScreenClosing(ScreenEvent.Closing event) {
+        if (!(event.getScreen() instanceof AbstractContainerScreen<?>)) return;
+        if (!LiveStreamController.get().streaming() || !LiveMic.enabled() || LiveMic.on()) return;
+        MicHint.screenClosed(System.currentTimeMillis());
     }
 
     /** Right edge of LIVE. */
@@ -294,7 +347,7 @@ public final class LiveRecOverlay {
         if (live.streaming() && LiveMic.enabled()
             && LiveStreamSettingsButton.contains(micBox(mc.font), event.getMouseX(), event.getMouseY())) {
             event.setCanceled(true);
-            LiveMicHotkeys.toggle();
+            LiveMicHotkeys.toggle(LiveMic.Source.INVENTORY);
             return;
         }
         if (!live.postMortem()) return;

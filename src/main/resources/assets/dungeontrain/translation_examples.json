@@ -4923,6 +4923,15 @@
       ]
     }
   },
+  "gui.dungeontrain.live.mic_hint": {
+    "1": {
+      "label": "the name of the key bound to Toggle Live Eye Mic, as the game shows it",
+      "examples": [
+        "K",
+        "Mouse Button 5"
+      ]
+    }
+  },
   "gui.dungeontrain.options.mic_mix.value": {
     "1": {
       "label": "the mic's share of the stream's sound, a whole number from 0 to 100 (the percent sign follows)",
