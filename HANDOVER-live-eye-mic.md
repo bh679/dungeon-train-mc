@@ -34,8 +34,11 @@ Worktrees: `.claude/worktrees/nervous-chatterjee-4681c3`, `xenodochial-lamport-7
 ### Post-deploy checks on a real stream (xiamo_maomao, old client, 11:05 UTC): Live page mute
 ### stream / mute streamer / muted list / Clear all work; mic badge hidden as expected (mic off);
 ### public-status carries streamerKey and no uuid; Twitch mirror pushing to brennanhattongames
-### with -map 0:a:0 -c:a copy, 0 restarts. Not done by Claude (needs Brennan's Developer login):
-### /micban /micunban /mictwitch in web chat, !micban from Discord, the explorer Voice page.
+### with -map 0:a:0 -c:a copy, 0 restarts. Web chat commands tested live as Brennan (Discord
+### login in Claude's browser pane): /micban AshSeven 1, /micunban, /mictwitch on, off all
+### answered "Only you" privately, nothing in the public feed, and the ban + approval rows show
+### lifted/revoked on the admin routes. Name lookup is leaderboard player_names (case-insensitive);
+### Brennan's own account is not in it. Still untested: !micban from Discord, explorer Voice page.
 
 | PR | Scope |
 |---|---|
