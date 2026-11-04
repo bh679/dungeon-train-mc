@@ -71,6 +71,8 @@ public final class LiveFeedClientConfig {
     static final int CAPTURE_WIDTH_MAX = 1920;
     /** The game/mic balance's default: both at full volume. */
     static final int MIC_MIX_DEFAULT = 50;
+    /** The Microphone option starts off: a streamer opts in before their mic can join a stream. */
+    static final boolean MIC_SUPPORT_DEFAULT = false;
 
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
@@ -88,8 +90,8 @@ public final class LiveFeedClientConfig {
             .comment("Send in-game sounds with your stream: everything you hear from Minecraft and Dungeon Train, music included. Never voice chat or other apps. Your microphone is separate (micSupport) and only goes out once you switch it on by LIVE. On by default; takes effect from your next stream.")
             .define("streamAudio", true);
         MIC_SUPPORT = b
-            .comment("Let your microphone join your stream. Even with this on, the mic starts every stream off: click the mic by LIVE (or press Toggle Mic) to talk. Needs streamAudio. Off = no mic button, and the stream carries one sound track as before. Takes effect from your next stream.")
-            .define("micSupport", true);
+            .comment("Let your microphone join your stream. Even with this on, the mic starts every stream off: click the mic by LIVE (or press Toggle Mic) to talk. Needs streamAudio. Off = no mic button, and the stream carries one sound track as before. Off by default; takes effect from your next stream.")
+            .define("micSupport", MIC_SUPPORT_DEFAULT);
         MIC_DEVICE = b
             .comment("Which microphone to use, by the name your system gives it. Empty = the system default. A name that is no longer plugged in falls back to the default.")
             .define("micDevice", "");
@@ -276,8 +278,8 @@ public final class LiveFeedClientConfig {
 
     // ---- microphone ----
 
-    /** Whether the mic may join streams at all (it still starts every stream off). On unless turned off. */
-    public static boolean micSupport() { return !loaded() || MIC_SUPPORT.get(); }
+    /** Whether the mic may join streams at all (it still starts every stream off). Off unless the player turns it on. */
+    public static boolean micSupport() { return loaded() ? MIC_SUPPORT.get() : MIC_SUPPORT_DEFAULT; }
 
     public static void setMicSupport(boolean value) {
         if (!loaded() || MIC_SUPPORT.get() == value) return;
