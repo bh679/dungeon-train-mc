@@ -41,7 +41,7 @@ public final class PortalRoomAuthorHeads {
     private PortalRoomAuthorHeads() {}
 
     /** The skin a head should wear: a CDN texture URL and its arm model. */
-    record Skin(String url, boolean slim) {}
+    public record Skin(String url, boolean slim) {}
 
     /** Dress every unowned player head in the room box. Returns how many were dressed. */
     public static int dress(ServerLevel level, BlockPos origin, Vec3i size,
@@ -87,7 +87,7 @@ public final class PortalRoomAuthorHeads {
      * The SKIN entry of a session-server {@code textures} property, or empty for anything else
      * (offline-mode profiles carry none; a malformed one is ignored rather than thrown).
      */
-    static Optional<Skin> fromTextures(String base64) {
+    public static Optional<Skin> fromTextures(String base64) {
         if (base64 == null || base64.isBlank()) return Optional.empty();
         try {
             String json = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);

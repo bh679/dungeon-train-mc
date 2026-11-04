@@ -121,6 +121,7 @@ public final class HomeRoomVisitService {
         StagePlacementScope.run(PortalCarriageBuilder.stageIdFor(overworld, HomeRooms.PAIR_KEY, dims),
             () -> PortalCarriageBuilder.stampRoomFromBlob(overworld, roomOrigin, roomSize, structure.blob(), HomeRooms.PAIR_KEY));
         List<BoundingBox> tubes = HomeRoomCorridors.stamp(overworld, roomOrigin, roomSize, dims);
+        HomeRoomHeads.dress(overworld, roomOrigin, roomSize, blob.owner(), blob.ownerName());
         BoundingBox window = HomeRoomCorridors.window(room, tubes);
 
         List<BlockPos> screen = new ArrayList<>();

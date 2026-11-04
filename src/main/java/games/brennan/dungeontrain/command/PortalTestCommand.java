@@ -454,6 +454,10 @@ public final class PortalTestCommand {
                 } else {
                     PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, PortalTestSession.PAIR_KEY);
                 }
+                if (homeBlob != null) {
+                    games.brennan.dungeontrain.portal.home.HomeRoomHeads.dress(
+                        overworld, roomOrigin, roomSize, homeBlob.owner(), homeBlob.ownerName());
+                }
             });
 
         if (previous != GameType.CREATIVE) player.setGameMode(GameType.CREATIVE);

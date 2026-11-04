@@ -43,6 +43,11 @@ public final class HomeRoomRegistry {
         BoundingBox room = BoundingBox.fromCorners(origin, origin.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1));
         String owner = structure.blob() == null ? "" : structure.blob().owner();
         STANDING.put(pairKey, new Standing(level.dimension(), room, owner));
+        if (!owner.isEmpty()) {
+            String name = HomeRoomStore.loadByOwner(owner).map(HomeRoomBlob::ownerName)
+                .filter(n -> !n.isBlank()).orElseGet(() -> HomeRoomHeads.nameFor(level, owner));
+            HomeRoomHeads.dress(level, origin, size, owner, name);
+        }
     }
 
     public static void onStructureGone(int pairKey) {
