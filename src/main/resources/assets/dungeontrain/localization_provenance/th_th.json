@@ -137,6 +137,7 @@
       "advancements.dungeontrain.dungeon_train.no_break_100.description",
       "advancements.dungeontrain.dungeon_train.no_break_1000.description",
       "advancements.dungeontrain.dungeon_train.contained_loop.description",
+      "gui.dungeontrain.options.mic_support.hint",
       "gui.dungeontrain.options.stream_name_tag.hint",
       "gui.dungeontrain.options.stream_size.tip",
       "gui.dungeontrain.options.head_viewer_size.tip",

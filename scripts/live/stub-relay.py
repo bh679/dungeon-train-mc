@@ -194,6 +194,9 @@ class Handler(BaseHTTPRequestHandler):
                    "playlistUrl": "http://127.0.0.1:%d/files/%s/live.m3u8" % (port, session)}
             if ARGS.prev_name and channel == "main":
                 out["prevName"] = ARGS.prev_name
+            # Live Eye mic: the claim says whether the client can stream one; the reply allows it unless --mic-barred.
+            out["mic"] = {"allowed": not ARGS.mic_barred, "twitch": False}
+            print("[stub] claim asks mic=%s -> allowed=%s" % (self._json().get("mic"), not ARGS.mic_barred), flush=True)
             if ARGS.quick:
                 seg = ARGS.quick_seconds
                 out.update(segmentSeconds=seg, listSize=max(6, -(-60 // seg)))
@@ -203,6 +206,9 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, out)
         if path.endswith("/live/presign"):
             body = self._json()
+            if body.get("micOn") != STATE.get("mic_on"):
+                STATE["mic_on"] = body.get("micOn")
+                print("[stub] heartbeat micOn=%s" % body.get("micOn"), flush=True)
             session = STATE["session"]
             urls = {}
             max_age = 1 if ARGS.quick and ARGS.quick_seconds <= 4 else 2
@@ -353,6 +359,7 @@ def main():
     p.add_argument("--second-streamer", default="", help="Two Streams: a second player of this name is live on the second slot")
     p.add_argument("--two-streams", action="store_true", help="every status says the Two Streams reward is on (twoStreams: true)")
     p.add_argument("--prev-name", default="", help="main-slot claims take over from this streamer (prevName)")
+    p.add_argument("--mic-barred", action="store_true", help="claim replies bar the streamer's mic (mic.allowed false)")
     p.add_argument("--throttle-kbps", type=int, default=0, help="cap PUT upload speed (kbit/s); /ctl?throttle=N changes it")
     ARGS = p.parse_args()
     STATE["throttle_kbps"] = max(0, ARGS.throttle_kbps)

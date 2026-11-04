@@ -15,8 +15,10 @@ import games.brennan.dungeontrain.client.twitch.TwitchLinkClient;
 import games.brennan.dungeontrain.client.credits.DonationPrefsClient;
 import games.brennan.dungeontrain.client.credits.DonationPrefsState;
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
+import games.brennan.dungeontrain.client.live.LiveMicHotkeys;
 import games.brennan.dungeontrain.client.live.StreamNameTag;
 import games.brennan.dungeontrain.client.live.StreamerBoxPanes;
+import games.brennan.dungeontrain.client.live.audio.MicCapture;
 import games.brennan.dungeontrain.client.live.StreamPreviewWidget;
 import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
 import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
@@ -40,6 +42,8 @@ import games.brennan.ediblebackpacks.client.ClientAutoCollect;
 import games.brennan.ediblebackpacks.config.AutoCollectMode;
 import games.brennan.ediblebackpacks.config.EBClientConfig;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -310,6 +314,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
      * or — for the two rows that stand for several — the expanded lines.
      */
     private void addRow(SettingsRowList list, ClientOptionsTab.Row row) {
+        if (ClientOptionsTab.isHeading(row)) {
+            list.addWidget(caption(Component.translatable(row.captionKey()).withStyle(ChatFormatting.BOLD)));
+            return;
+        }
         switch (row) {
             case PERFORMANCE_TIPS -> addPerformanceTips(list);
             case DISCORD_ACCOUNT -> addDiscordAccount(list);
@@ -701,6 +709,37 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case STREAM_AUDIO -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.streamAudio(),
                     LiveFeedClientConfig::setStreamAudio), key + ".tip");
 
+            // ---- Microphone (LiveMic). The Microphone row IS the mic switch, the same one as the button by
+            // LIVE: on a stream with a mic track it opens or closes the mic at once. The device is read when
+            // the next stream starts; the balance and mode apply at once.
+            case MIC_SUPPORT -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.micSupport(),
+                    LiveMicHotkeys::setFromOptions), key + ".tip");
+            case MIC_DEVICE -> {
+                List<String> devices = new ArrayList<>();
+                devices.add("");
+                devices.addAll(MicCapture.devices());
+                String current = LiveFeedClientConfig.micDevice();
+                if (!devices.contains(current)) current = "";
+                yield Setting.of(
+                        CycleButton.<String>builder(DungeonTrainClientOptionsScreen::micDeviceLabel)
+                                .withValues(devices)
+                                .withInitialValue(current)
+                                .displayOnlyValue()
+                                .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
+                                        (btn, v) -> LiveFeedClientConfig.setMicDevice(v)),
+                        key + ".tip");
+            }
+            // One slider for game sound against voice in the mix; applies at once.
+            case MIC_MIX -> Setting.of(slider(micMixOption(key)), key + ".tip");
+            case MIC_MODE -> Setting.of(
+                    CycleButton.<Boolean>builder(ptt -> Component.translatable(ptt ? key + ".push_to_talk" : key + ".always_on"))
+                            .withValues(false, true)
+                            .withInitialValue(LiveFeedClientConfig.micPushToTalk())
+                            .displayOnlyValue()
+                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
+                                    (btn, v) -> LiveFeedClientConfig.setMicPushToTalk(v)),
+                    key + ".tip");
+
             // Slower x264 at a lower bitrate; read when the next stream starts. On Performance too, as a frame-rate cost.
             case STREAM_SAVE_BANDWIDTH -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.saveBandwidth(),
                     LiveFeedClientConfig::setSaveBandwidth), key + ".tip");
@@ -1052,6 +1091,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // Expanded by addRow() into several rows; there is no single control for them.
             case PERFORMANCE_TIPS -> throw new IllegalStateException("PERFORMANCE_TIPS is expanded, not built");
             case DISCORD_ACCOUNT -> throw new IllegalStateException("DISCORD_ACCOUNT is expanded, not built");
+            case STREAM_SECTION_BROADCAST, STREAM_SECTION_MIC, STREAM_SECTION_PICTURE, STREAM_SECTION_CHAT,
+                 STREAM_SECTION_WATCHING -> throw new IllegalStateException(row + " is a heading, not built");
             case TWITCH_ACCOUNT -> throw new IllegalStateException("TWITCH_ACCOUNT is expanded, not built");
         };
     }
@@ -1199,6 +1240,32 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     private static Component liveChatTranslationLabel(LiveFeedClientConfig.LiveChatTranslation mode) {
         return Component.translatable("gui.dungeontrain.options.live_chat_translation." + mode.name().toLowerCase(java.util.Locale.ROOT));
     }
+
+    /** The mic gain choices, percent. */
+    /** The game/mic balance in 5% notches: {@code Mic 30%}, with the game at {@code 100 - that}. */
+    private static OptionInstance<Integer> micMixOption(String key) {
+        return new OptionInstance<>(
+                key,
+                OptionInstance.noTooltip(),
+                (caption, notch) -> Component.translatable(key + ".value", notch * MIC_MIX_STEP),
+                new OptionInstance.IntRange(0, 100 / MIC_MIX_STEP),
+                Math.round(LiveFeedClientConfig.micMixPercent() / (float) MIC_MIX_STEP),
+                notch -> LiveFeedClientConfig.setMicMixPercent(notch * MIC_MIX_STEP));
+    }
+
+    private static final int MIC_MIX_STEP = 5;
+
+    /** "" is the system default; a device name can be long, so it is cut to the button, measured with the font. */
+    private static Component micDeviceLabel(String device) {
+        if (device.isEmpty()) return Component.translatable("gui.dungeontrain.options.mic_device.default");
+        Font font = Minecraft.getInstance().font;
+        return Component.literal(LabelCut.fit(device, font::width, MIC_DEVICE_LABEL_W));
+    }
+
+    /** A value button's text inset on each side (vanilla's 2 px plus the bevel), so a cut label clears the edges. */
+    private static final int MIC_DEVICE_PAD = 4;
+    /** The pixels a mic device name may take on its {@link #CONTROL_W} button. */
+    static final int MIC_DEVICE_LABEL_W = CONTROL_W - 2 * MIC_DEVICE_PAD;
 
     private static Component wornTvStreamsLabel(LiveFeedClientConfig.WornTvStreams v) {
         return Component.translatable("gui.dungeontrain.options.worn_tv_streams." + v.name().toLowerCase(java.util.Locale.ROOT));
