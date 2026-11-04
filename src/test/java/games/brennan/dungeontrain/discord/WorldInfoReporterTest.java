@@ -85,6 +85,20 @@ class WorldInfoReporterTest {
     }
 
     @Test
+    @DisplayName("A mod entry writes its carrier's sha1 only when the engine found one")
+    void modEntryCarriesCarrierSha1() {
+        String bootstrap = "324e6921ecd576e44875981466e7f22170b6541a";
+        JsonObject out = sample(1L, 2L, List.of(
+                new WorldInfoReporter.ModEntry("customskinloader", "15.1", "a".repeat(40), 100L,
+                    "CustomSkinLoader-Common.jar", bootstrap),
+                new WorldInfoReporter.ModEntry("jei", "19", "b".repeat(40), 200L, "jei.jar")));
+        JsonArray arr = out.getAsJsonArray("mods");
+        assertEquals(bootstrap, arr.get(0).getAsJsonObject().get("carrierSha1").getAsString());
+        assertEquals("a".repeat(40), arr.get(0).getAsJsonObject().get("sha1").getAsString());
+        assertFalse(arr.get(1).getAsJsonObject().has("carrierSha1"), "a file installed as itself has no carrier");
+    }
+
+    @Test
     @DisplayName("mods serialize as an ordered array of {modId,version} objects")
     void modsArrayPreservesOrder() {
         JsonObject out = sample(1L, 2L, List.of(

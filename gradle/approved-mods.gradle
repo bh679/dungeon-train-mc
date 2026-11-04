@@ -228,6 +228,16 @@ tasks.register('generateApprovedMods') {
                           'Hand-curated groups live in src/main/whitelist/approved_mods.curated.json.'] + (curated.comment ?: [])
         result.prefixes = curated.prefixes ?: []
         result.prefixesWhy = curated.prefixesWhy ?: []
+        // Ids whose generated mod file may be verified by its carrier jar (ApprovedModList.carrierApproved):
+        // the allowlist is curated, and a listed id must be an approved id or the rule approves nothing.
+        def carrierApproved = (curated.carrierApproved ?: []).collect { it as String }
+        def carrierNotApproved = carrierApproved.findAll { id -> !(id in seen) }
+        if (carrierNotApproved) {
+            throw new GradleException("carrierApproved ids that are not approved ids: ${carrierNotApproved.sort().join(', ')}. "
+                + 'Approve them in approved_mods.curated.json first.')
+        }
+        result.carrierApproved = carrierApproved
+        result.carrierApprovedWhy = curated.carrierApprovedWhy ?: []
         result.groups = groups
         result.hashesWhy = 'SHA-1 of every file the modpack pins, every jar embedded in ours, and every published ' +
             '1.21.1 NeoForge file of each approved mod — approved as files offline. GENERATED from modpack.config.json ' +

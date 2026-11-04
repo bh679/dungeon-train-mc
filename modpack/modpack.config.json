@@ -635,15 +635,15 @@
       "mod_ids": [
         "dtmodverify"
       ],
-      "sha1": "72d635d59c1965269f4f7d2c822ecd2b5accb11a",
+      "sha1": "5d2d787433d1a428c69583d7a924a63916c06988",
       "packages": [
         "games.brennan"
       ],
       "project_id": 1738856,
-      "file_id": 9128034,
+      "file_id": 9431856,
       "required": true,
       "dependency_type": "required",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "gradle_property": "dtmodverify_min_version",
       "curseforge_only": true
     },
