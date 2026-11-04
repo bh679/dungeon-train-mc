@@ -1,0 +1,111 @@
+package games.brennan.dungeontrain.portal.home;
+
+import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
+import games.brennan.dungeontrain.editor.UserContentPaths;
+import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageSnapshotTemplate;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtAccounter;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import org.slf4j.Logger;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * Where a player's home room lives between runs: one compressed NBT file per player under the user
+ * content root ({@code dungeontrain/user/portals/home/<uuid>.nbt}), beside the authored rooms, so the
+ * backup and export paths that cover those cover this.
+ *
+ * <p>Outside any world on purpose. In singleplayer every death ends in a <em>new</em> world, so a room
+ * kept in the world would be gone with it; here it is the player's, whatever world they are in.</p>
+ */
+public final class HomeRoomStore {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final String SUB_DIR = "portals/home";
+
+    private HomeRoomStore() {}
+
+    /** {@code <user root>/portals/home/} — created on first save. */
+    public static Path directory() {
+        return UserContentPaths.root().resolve(SUB_DIR);
+    }
+
+    static Path fileFor(UUID owner) {
+        return directory().resolve(dashless(owner) + ".nbt");
+    }
+
+    /** A uuid as every relay-facing id writes it. */
+    public static String dashless(UUID uuid) {
+        return uuid.toString().replace("-", "");
+    }
+
+    /** The saved room of {@code owner}, when there is one that reads. */
+    public static Optional<HomeRoomBlob> load(UUID owner) {
+        Path file = fileFor(owner);
+        if (!Files.isRegularFile(file)) return Optional.empty();
+        try {
+            HomeRoomBlob blob = HomeRoomBlob.decode(NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap()));
+            if (blob == null) LOGGER.warn("[DungeonTrain] home room: {} holds no room — ignoring it", file);
+            return Optional.ofNullable(blob);
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] home room: could not read {} — starting from the default: {}", file, e.toString());
+            return Optional.empty();
+        }
+    }
+
+    /** Write {@code blob} as its owner's room. Atomic: a crash mid-write leaves the old file. */
+    public static boolean save(HomeRoomBlob blob) {
+        Path file = directory().resolve(blob.owner() + ".nbt");
+        Path tmp = file.resolveSibling(file.getFileName() + ".tmp");
+        try {
+            Files.createDirectories(file.getParent());
+            NbtIo.writeCompressed(blob.encode(), tmp);
+            Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            return true;
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] home room: could not save {}'s room to {}: {}", blob.ownerName(), file, e.toString());
+            return false;
+        }
+    }
+
+    /**
+     * The untouched default for {@code player}: the bundled template's blocks, read through the same
+     * template store the stamp reads, so what this returns is exactly what would stand without a blob.
+     * Empty when the template is missing, which is a build fault worth refusing the visit over.
+     */
+    public static Optional<HomeRoomBlob> defaultFor(ServerLevel level, ServerPlayer player, CarriageDims dims) {
+        Optional<StructureTemplate> template = PortalRoomTemplateStore.get(level, HomeRooms.TEMPLATE, dims);
+        if (template.isEmpty()) {
+            LOGGER.error("[DungeonTrain] home room: bundled template '{}' is missing", HomeRooms.TEMPLATE);
+            return Optional.empty();
+        }
+        CompoundTag templateTag = template.get().save(new CompoundTag());
+        CompoundTag snapshot = CarriageSnapshotTemplate.fromTemplateTag(templateTag);
+        return Optional.of(HomeRoomBlob.initial(dashless(player.getUUID()), player.getGameProfile().getName(), snapshot));
+    }
+
+    /**
+     * {@code player}'s room, or the default when they have none — or when what is on disk is not the
+     * one box a home room is laid into (a template resize since it was saved): that file is kept, but
+     * the visit starts from the default rather than clipping it.
+     */
+    public static Optional<HomeRoomBlob> loadOrDefault(ServerLevel level, ServerPlayer player, CarriageDims dims) {
+        Optional<HomeRoomBlob> saved = load(player.getUUID());
+        if (saved.isPresent()) {
+            if (saved.get().matches(HomeRooms.size(level, dims))) return saved;
+            LOGGER.warn("[DungeonTrain] home room: {}'s saved room is not the template's size — starting from the default",
+                player.getGameProfile().getName());
+        }
+        return defaultFor(level, player, dims);
+    }
+}

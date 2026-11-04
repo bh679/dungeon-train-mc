@@ -5712,6 +5712,8 @@
   "item.dungeontrain.live_cassette.tooltip": "Acordată pe Fluxul în direct. Pune-o în orice televizor ca să vezi cine transmite.",
   "item.dungeontrain.live_cassette_2": "Casetă pentru Fluxul în direct 2",
   "item.dungeontrain.live_cassette_2.tooltip": "Acordată pe al doilea stream. Arată al doilea jucător care transmite, sau primul stream cât timp nu există un al doilea.",
+  "item.dungeontrain.home_cassette": "Casetă de acasă",
+  "item.dungeontrain.home_cassette.tooltip": "Reglată pe camera ta personală. Televizorul ei îți redă propria poveste.",
   "perk.dungeontrain.restock_villager.button": "Reaprovizionează (%s)",
   "gui.dungeontrain.perks.rank_cost": "Următorul punct costă %s.",
   "gui.dungeontrain.perks.raise_limit": "Crește limita (%s)",

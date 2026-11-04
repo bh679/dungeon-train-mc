@@ -5712,6 +5712,8 @@
   "item.dungeontrain.live_cassette.tooltip": "Настроена на Прямой эфир. Вставь в любой телевизор, чтобы смотреть того, кто сейчас в эфире.",
   "item.dungeontrain.live_cassette_2": "Кассета Прямого эфира 2",
   "item.dungeontrain.live_cassette_2.tooltip": "Настроена на вторую трансляцию. Показывает второго игрока в эфире, а пока второго нет, первую трансляцию.",
+  "item.dungeontrain.home_cassette": "Домашняя кассета",
+  "item.dungeontrain.home_cassette.tooltip": "Настроена на вашу личную комнату. Её телевизор показывает вашу собственную историю.",
   "perk.dungeontrain.restock_villager.button": "Пополнить (%s)",
   "gui.dungeontrain.perks.rank_cost": "Следующее очко стоит %s.",
   "gui.dungeontrain.perks.raise_limit": "Поднять предел (%s)",

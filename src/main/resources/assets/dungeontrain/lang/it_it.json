@@ -5646,6 +5646,8 @@
   "item.dungeontrain.live_cassette.tooltip": "Sintonizzata sulla Diretta. Inseriscila in qualsiasi TV per guardare chi sta trasmettendo.",
   "item.dungeontrain.live_cassette_2": "Cassetta della Diretta 2",
   "item.dungeontrain.live_cassette_2.tooltip": "Sintonizzata sul secondo stream. Mostra il secondo giocatore in diretta, o il primo stream finché non ce n'è un secondo.",
+  "item.dungeontrain.home_cassette": "Cassetta di casa",
+  "item.dungeontrain.home_cassette.tooltip": "Sintonizzata sulla tua stanza personale. La sua TV trasmette la tua storia.",
   "perk.dungeontrain.restock_villager.button": "Rifornisci (%s)",
   "gui.dungeontrain.perks.rank_cost": "Il prossimo punto costa %s.",
   "gui.dungeontrain.perks.raise_limit": "Alza limite (%s)",

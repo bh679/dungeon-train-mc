@@ -21,6 +21,7 @@ public final class LiveFeedClientInit {
     @SubscribeEvent
     static void onClientSetup(FMLClientSetupEvent event) {
         LiveBroadcastSource.setClientSource(() -> LiveFeedSource.MAIN, () -> LiveFeedSource.SECOND);
+        games.brennan.dungeontrain.compat.vista.HomeTvBroadcast.setClientSource(() -> games.brennan.dungeontrain.client.homeroom.HomeTvSource.INSTANCE);
         // ItemProperties is not thread-safe; registration belongs on the main thread like the rest
         event.enqueueWork(LiveHeadpieceAntenna::register);
     }

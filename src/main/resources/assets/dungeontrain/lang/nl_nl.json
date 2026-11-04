@@ -5646,6 +5646,8 @@
   "item.dungeontrain.live_cassette.tooltip": "Afgestemd op de Live Feed. Stop hem in een willekeurige tv om te zien wie er uitzendt.",
   "item.dungeontrain.live_cassette_2": "Live Feed-cassette 2",
   "item.dungeontrain.live_cassette_2.tooltip": "Afgestemd op de tweede stream. Toont de tweede speler die live is, of de eerste stream zolang er geen tweede is.",
+  "item.dungeontrain.home_cassette": "Thuiscassette",
+  "item.dungeontrain.home_cassette.tooltip": "Afgestemd op je eigen kamer. De tv daar speelt je eigen verhaal.",
   "perk.dungeontrain.restock_villager.button": "Aanvullen (%s)",
   "gui.dungeontrain.perks.rank_cost": "Het volgende punt kost %s.",
   "gui.dungeontrain.perks.raise_limit": "Limiet verhogen (%s)",

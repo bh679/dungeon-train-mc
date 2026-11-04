@@ -2635,6 +2635,8 @@
   "item.dungeontrain.live_cassette.tooltip": "Tuned to the Live Feed. Put it in any TV to watch whoever is broadcasting.",
   "item.dungeontrain.live_cassette_2": "Live Feed Cassette 2",
   "item.dungeontrain.live_cassette_2.tooltip": "Tuned to the second stream. Shows the second player who is live, or the first stream while there is no second.",
+  "item.dungeontrain.home_cassette": "Home Cassette",
+  "item.dungeontrain.home_cassette.tooltip": "Tuned to your home room. Its TV plays your own story.",
   "item.dungeontrain.live_headpiece.tooltip": "Livestream the wearer's perspective.",
   "item.dungeontrain.live_headpiece.tooltip.warning": "Destroyed when removed, or next person equips.",
   "item.dungeontrain.random_live_headpiece": "Random Live Eye (loot placeholder)",

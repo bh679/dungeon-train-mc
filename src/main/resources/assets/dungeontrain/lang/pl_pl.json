@@ -5712,6 +5712,8 @@
   "item.dungeontrain.live_cassette.tooltip": "Nastrojona na Przekaz na żywo. Włóż ją do dowolnego telewizora, by zobaczyć, kto transmituje.",
   "item.dungeontrain.live_cassette_2": "Kaseta Przekazu na żywo 2",
   "item.dungeontrain.live_cassette_2.tooltip": "Nastrojona na drugą transmisję. Pokazuje drugiego gracza, który nadaje, albo pierwszą transmisję, dopóki nie ma drugiej.",
+  "item.dungeontrain.home_cassette": "Kaseta domowa",
+  "item.dungeontrain.home_cassette.tooltip": "Dostrojona do twojego pokoju. Jego telewizor odtwarza twoją własną historię.",
   "perk.dungeontrain.restock_villager.button": "Uzupełnij (%s)",
   "gui.dungeontrain.perks.rank_cost": "Następny punkt kosztuje %s.",
   "gui.dungeontrain.perks.raise_limit": "Podnieś limit (%s)",

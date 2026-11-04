@@ -466,6 +466,9 @@ public final class PortalCarriageEvents {
      * pair adopting mobs fifty blocks away and dragging them along on every re-stamp.</p>
      */
     public static boolean isInsidePortalStructure(CarriageDims dims, double x, double y, double z) {
+        // A home room visit stands in its own band, off every pair; it is a portal structure to the
+        // spawn guard, the rescue and the freeze all the same.
+        if (games.brennan.dungeontrain.portal.home.HomeRoomVisitSessions.contains(x, y, z)) return true;
         if (STRUCTURES.isEmpty()) return false;
         for (PortalStructure structure : STRUCTURES.values()) {
             AABB box = structureBox(dims, structure);

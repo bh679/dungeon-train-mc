@@ -130,6 +130,13 @@ public final class ModItems {
      * shows the second player who is live, or the first stream while there is no second. A right-click on
      * a TV cycles off / Stream 1 / Stream 2 ({@code mixin.vista.TVBlockMixin}). Never a player's item either.
      */
+    /** The cassette a home room's TV is tuned with; never a player's item. */
+    public static final DeferredItem<Item> HOME_CASSETTE = ITEMS.register(
+        "home_cassette",
+        () -> new games.brennan.dungeontrain.item.HomeTvCassetteItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)
+            .component(VistaMod.LINKED_FEED_COMPONENT.get(), games.brennan.dungeontrain.compat.vista.HomeTvBroadcast.FEED_UUID))
+    );
+
     public static final DeferredItem<Item> LIVE_CASSETTE_2 = ITEMS.register(
         "live_cassette_2",
         () -> new LiveCassetteItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)

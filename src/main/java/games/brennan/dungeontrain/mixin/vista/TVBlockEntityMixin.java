@@ -35,7 +35,7 @@ public abstract class TVBlockEntityMixin {
     @Inject(method = "canTakeItemThroughFace", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$keepLiveCassette(int slot, ItemStack stack, Direction side,
                                                CallbackInfoReturnable<Boolean> cir) {
-        if (TvBlocks.isLiveCassette(stack)) cir.setReturnValue(false);
+        if (TvBlocks.isLiveCassette(stack) || TvBlocks.isHomeCassette(stack)) cir.setReturnValue(false);
     }
 
     @Inject(method = "loadAdditional", at = @At("TAIL"))

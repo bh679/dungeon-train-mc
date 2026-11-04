@@ -5580,6 +5580,8 @@
   "item.dungeontrain.live_cassette.tooltip": "ปรับจูนกับฟีดสดแล้ว ใส่ในทีวีเครื่องไหนก็ได้เพื่อดูว่าใครกำลังถ่ายทอด",
   "item.dungeontrain.live_cassette_2": "เทปฟีดสด 2",
   "item.dungeontrain.live_cassette_2.tooltip": "ปรับจูนกับสตรีมที่สองแล้ว แสดงผู้เล่นคนที่สองที่กำลังถ่ายทอด หรือสตรีมแรกเมื่อยังไม่มีสตรีมที่สอง",
+  "item.dungeontrain.home_cassette": "เทปห้องส่วนตัว",
+  "item.dungeontrain.home_cassette.tooltip": "ปรับคลื่นไว้ที่ห้องส่วนตัวของคุณ ทีวีในห้องจะเล่นเรื่องราวของคุณเอง",
   "perk.dungeontrain.restock_villager.button": "เติมสินค้า (%s)",
   "gui.dungeontrain.perks.rank_cost": "แต้มถัดไปใช้ %s",
   "gui.dungeontrain.perks.raise_limit": "เพิ่มขีดจำกัด (%s)",

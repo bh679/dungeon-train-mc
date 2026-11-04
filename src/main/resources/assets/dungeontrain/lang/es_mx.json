@@ -5646,6 +5646,8 @@
   "item.dungeontrain.live_cassette.tooltip": "Sintonizado a la Señal en vivo. Ponlo en cualquier televisor para ver a quien esté transmitiendo.",
   "item.dungeontrain.live_cassette_2": "Casete de Señal en vivo 2",
   "item.dungeontrain.live_cassette_2.tooltip": "Sintonizado al segundo stream. Muestra al segundo jugador que esté en vivo, o el primer stream mientras no haya un segundo.",
+  "item.dungeontrain.home_cassette": "Casete del hogar",
+  "item.dungeontrain.home_cassette.tooltip": "Sintonizado con tu cuarto personal. Su televisión reproduce tu propia historia.",
   "perk.dungeontrain.restock_villager.button": "Reabastecer (%s)",
   "gui.dungeontrain.perks.rank_cost": "El siguiente punto cuesta %s.",
   "gui.dungeontrain.perks.raise_limit": "Subir límite (%s)",

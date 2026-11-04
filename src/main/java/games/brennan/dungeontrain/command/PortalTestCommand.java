@@ -592,16 +592,8 @@ public final class PortalTestCommand {
         return 1;
     }
 
-    /** Remove every entity but a player from a test window — nothing else lives in the test band. */
     private static int discardMobs(ServerLevel level, BoundingBox box) {
-        int removed = 0;
-        for (net.minecraft.world.entity.Entity entity : level.getEntities(
-                (net.minecraft.world.entity.Entity) null, net.minecraft.world.phys.AABB.of(box),
-                entity -> !(entity instanceof net.minecraft.world.entity.player.Player))) {
-            entity.discard();
-            removed++;
-        }
-        return removed;
+        return games.brennan.dungeontrain.portal.PortalTestSweep.discardMobs(level, box);
     }
 
     /** The same lift the live path sends — {@code PortalCarriageEvents.sendSkyFor} — for this one player. */
@@ -688,21 +680,10 @@ public final class PortalTestCommand {
         return 1;
     }
 
-    /**
-     * The footprint and every copy the tiler grew around it, as one box. Public for
-     * {@code editor.TestCopyMobs}, which asks whether a spawn lands inside a test copy.
-     */
+    /** The footprint and every copy the tiler grew around it, as one box — see {@link games.brennan.dungeontrain.portal.PortalTestSweep}. */
     public static BoundingBox windowBox(ServerLevel level, PortalStructure structure,
                                          CarriageDims dims) {
-        BoundingBox footprint = PortalCarriageBuilder.footprintOf(level, structure, dims);
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
-        return new BoundingBox(
-            Math.min(footprint.minX(), structure.tiledMinX(dims, layout) - 1),
-            footprint.minY(),
-            Math.min(footprint.minZ(), structure.tiledMinZ(dims, layout) - 1),
-            Math.max(footprint.maxX(), structure.tiledMaxX(dims, layout) + 1),
-            Math.max(footprint.maxY(), structure.origin().getY() + structure.roomSize().getY() + 1),
-            Math.max(footprint.maxZ(), structure.tiledMaxZ(dims, layout) + 1));
+        return games.brennan.dungeontrain.portal.PortalTestSweep.windowBox(level, structure, dims);
     }
 
     /**

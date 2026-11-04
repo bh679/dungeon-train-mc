@@ -37,7 +37,7 @@ public final class PerksHud {
     }
 
     /** Restart the clock so the last change is readable once the sky is gone. */
-    static void onMenuClosed() {
+    public static void onMenuClosed() {
         if (line != null) shownAt = Util.getMillis();
     }
 

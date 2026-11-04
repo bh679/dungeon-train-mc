@@ -2625,11 +2625,13 @@ public final class NarrativeDeathScreen extends Screen {
         if (!runEndReady()) return;
         UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_BOARD_ANEW);
         leavePageAnalytics(); // terminal exit — close the current page's dwell
+        boolean keepMode = Screen.hasShiftDown();
+        // From the home room the server has to save the room first; it answers, and the run ends then.
+        if (games.brennan.dungeontrain.client.homeroom.HomeTvVisit.endRun(this, keepMode)) return;
         if (remote()) {
             respawn();
             return;
         }
-        boolean keepMode = Screen.hasShiftDown();
         DeathScreenLayoutHandler.launchWorld(this, false, !keepMode);
     }
 

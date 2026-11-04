@@ -30,7 +30,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "172";
+    public static final String PROTOCOL_VERSION = "173";
 
     private DungeonTrainNet() {}
 
@@ -269,6 +269,10 @@ public final class DungeonTrainNet {
         registrar.playToClient(SpawnDeckHoldPacket.TYPE, SpawnDeckHoldPacket.STREAM_CODEC, SpawnDeckHoldPacket::handle);
         registrar.playToClient(PortalLoadScreenPacket.TYPE, PortalLoadScreenPacket.STREAM_CODEC, PortalLoadScreenPacket::handle);
         registrar.playToClient(PortalTestSessionPacket.TYPE, PortalTestSessionPacket.STREAM_CODEC, PortalTestSessionPacket::handle);
+        registrar.playToServer(HomeRoomVisitPacket.TYPE, HomeRoomVisitPacket.STREAM_CODEC, HomeRoomVisitPacket::handle);
+        registrar.playToServer(HomeRoomVisitEndPacket.TYPE, HomeRoomVisitEndPacket.STREAM_CODEC, HomeRoomVisitEndPacket::handle);
+        registrar.playToClient(HomeRoomVisitStatePacket.TYPE, HomeRoomVisitStatePacket.STREAM_CODEC, HomeRoomVisitStatePacket::handle);
+        registrar.playToClient(HomeRoomSavedPacket.TYPE, HomeRoomSavedPacket.STREAM_CODEC, HomeRoomSavedPacket::handle);
 
         // Advancements keybind hint: server → the earning player on a gameplay
         // advancement. The client decides whether to show it (gated on its local

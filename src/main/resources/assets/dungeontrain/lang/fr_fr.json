@@ -5646,6 +5646,8 @@
   "item.dungeontrain.live_cassette.tooltip": "Réglée sur le Flux en direct. Insérez-la dans n'importe quelle télé pour regarder qui diffuse.",
   "item.dungeontrain.live_cassette_2": "Cassette du Flux en direct 2",
   "item.dungeontrain.live_cassette_2.tooltip": "Réglée sur le second stream. Montre le second joueur en direct, ou le premier stream tant qu'il n'y en a pas de second.",
+  "item.dungeontrain.home_cassette": "Cassette du foyer",
+  "item.dungeontrain.home_cassette.tooltip": "Réglée sur votre chambre personnelle. Sa télé diffuse votre propre histoire.",
   "perk.dungeontrain.restock_villager.button": "Réapprovisionner (%s)",
   "gui.dungeontrain.perks.rank_cost": "Le prochain point coûte %s.",
   "gui.dungeontrain.perks.raise_limit": "Monter la limite (%s)",
