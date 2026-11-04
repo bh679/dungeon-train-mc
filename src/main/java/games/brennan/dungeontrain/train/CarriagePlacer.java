@@ -1809,10 +1809,27 @@ public final class CarriagePlacer {
         stampTemplate(level, origin, template, processor, relight, decorBox, decorRule);
     }
 
+    /**
+     * {@link #stampTemplateAt} mirrored: {@code mirror} is applied to the blocks and their decor
+     * alike. {@link Mirror#FRONT_BACK} negates local X, so a caller stamping a template of length
+     * {@code n} mirrored lands it over {@code [origin.x - n + 1, origin.x]} — pass the far corner as
+     * {@code origin} to keep it where the unmirrored copy would stand (the flatbed pads do the same).
+     */
+    public static void stampTemplateMirroredAt(ServerLevel level, BlockPos origin, StructureTemplate template,
+                                               Mirror mirror, boolean relight, TemplateDecor.Rule decorRule) {
+        stampTemplate(level, origin, template, null, relight, null, decorRule, mirror);
+    }
+
     private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template,
                                       StructureProcessor processor, boolean relight,
                                       BoundingBox decorBox, TemplateDecor.Rule decorRule) {
-        StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+        stampTemplate(level, origin, template, processor, relight, decorBox, decorRule, Mirror.NONE);
+    }
+
+    private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template,
+                                      StructureProcessor processor, boolean relight,
+                                      BoundingBox decorBox, TemplateDecor.Rule decorRule, Mirror mirror) {
+        StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true).setMirror(mirror);
         if (processor != null) settings.addProcessor(processor);
         if (relight) {
             stampTemplateRelit(level, origin, template, settings);
@@ -1827,7 +1844,7 @@ public final class CarriagePlacer {
         // standing on the track — that one spawns deferred, at shipyard coords, from
         // {@link #applyContentsEntitiesAt}.
         if (relight) {
-            StructurePlaceSettings decorSettings = new StructurePlaceSettings();
+            StructurePlaceSettings decorSettings = new StructurePlaceSettings().setMirror(mirror);
             if (decorBox != null) decorSettings.setBoundingBox(decorBox);
             TemplateDecor.replace(level, origin, template, decorSettings, /*mark*/ null, decorRule);
         }

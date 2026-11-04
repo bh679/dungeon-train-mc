@@ -25,19 +25,23 @@ public final class HomeTvClientEvents {
 
     @SubscribeEvent
     public static void onFrameStart(RenderFrameEvent.Pre event) {
-        HomeTvVisit.onFrameStart(event.getPartialTick().getGameTimeDeltaPartialTick(false));
+        float partial = event.getPartialTick().getGameTimeDeltaPartialTick(false);
+        HomeTvVisit.onFrameStart(partial);
+        HomeTvShowcase.onFrameStart(partial);
     }
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         HomeTvVisit.onClientTick();
+        HomeTvShowcase.onClientTick();
     }
 
     /** The TV is the way on: a right-click on it is ours, and never reaches the server's channel cycle. */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        if (!event.getLevel().isClientSide() || !HomeTvVisit.isActive()) return;
-        if (HomeTvVisit.onTvClicked(event.getPos(), event.getEntity().isShiftKeyDown())) event.setCanceled(true);
+        if (!event.getLevel().isClientSide()) return;
+        boolean sneak = event.getEntity().isShiftKeyDown();
+        if (HomeTvVisit.onTvClicked(event.getPos(), sneak) || HomeTvShowcase.onTvClicked(event.getPos(), sneak)) event.setCanceled(true);
     }
 
     /**
@@ -54,18 +58,22 @@ public final class HomeTvClientEvents {
     /** A left click on the TV is a click on the page too, never a swing at the block. */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        if (!event.getLevel().isClientSide() || !HomeTvVisit.isActive()) return;
-        if (HomeTvVisit.onTvClicked(event.getPos(), event.getEntity().isShiftKeyDown())) event.setCanceled(true);
+        if (!event.getLevel().isClientSide()) return;
+        boolean sneak = event.getEntity().isShiftKeyDown();
+        if (HomeTvVisit.onTvClicked(event.getPos(), sneak) || HomeTvShowcase.onTvClicked(event.getPos(), sneak)) event.setCanceled(true);
     }
 
     @SubscribeEvent
     public static void onMouseScroll(net.neoforged.neoforge.client.event.InputEvent.MouseScrollingEvent event) {
-        if (!HomeTvVisit.isActive()) return;
-        if (HomeTvVisit.onTvScrolled(event.getScrollDeltaX(), event.getScrollDeltaY())) event.setCanceled(true);
+        if (HomeTvVisit.onTvScrolled(event.getScrollDeltaX(), event.getScrollDeltaY())
+            || HomeTvShowcase.onTvScrolled(event.getScrollDeltaX(), event.getScrollDeltaY())) event.setCanceled(true);
     }
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
-        net.minecraft.client.Minecraft.getInstance().execute(HomeTvVisit::reset);
+        net.minecraft.client.Minecraft.getInstance().execute(() -> {
+            HomeTvVisit.reset();
+            HomeTvShowcase.reset();
+        });
     }
 }

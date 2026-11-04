@@ -22,7 +22,13 @@ class HomeRoomBlobTest {
     void roundTripsThroughNbt() {
         HomeRoomBlob blob = new HomeRoomBlob("abc", "Brennan", snapshot(11, 7, 13), 3, 1234L, "normal");
         HomeRoomBlob back = HomeRoomBlob.decode(blob.encode());
-        assertEquals(blob, back);
+        assertEquals(blob.owner(), back.owner());
+        assertEquals(blob.ownerName(), back.ownerName());
+        assertEquals(blob.snapshot(), back.snapshot());
+        assertEquals(blob.revision(), back.revision());
+        assertEquals(blob.savedAtMs(), back.savedAtMs());
+        assertEquals(blob.difficulty(), back.difficulty());
+        assertNull(back.report());
     }
 
     @Test
@@ -54,5 +60,19 @@ class HomeRoomBlobTest {
         HomeRoomBlob blob = HomeRoomBlob.initial("abc", "", snapshot(11, 7, 13));
         assertEquals("abc", blob.toPortalRoomBlob().owner());
         assertFalse(blob.toPortalRoomBlob().isLeased());
+    }
+
+    @Test
+    void reportRidesWithTheRoomAndSurvivesASave() {
+        HomeRoomBlob blob = HomeRoomBlob.initial("abc", "Brennan", snapshot(11, 7, 13))
+            .withReport(new byte[] {1, 2, 3}, "Brennan fell from a high place", 55L);
+        assertTrue(blob.hasReport());
+        HomeRoomBlob back = HomeRoomBlob.decode(blob.encode());
+        assertArrayEquals(new byte[] {1, 2, 3}, back.report());
+        assertEquals("Brennan fell from a high place", back.reportMessage());
+        assertEquals(55L, back.reportAtMs());
+        HomeRoomBlob saved = back.saved(snapshot(11, 7, 13), "Brennan", 99L, "hard");
+        assertTrue(saved.hasReport(), "a save keeps the last death");
+        assertFalse(HomeRoomBlob.initial("abc", "", snapshot(11, 7, 13)).hasReport());
     }
 }

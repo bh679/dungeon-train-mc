@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.train.CarriagePlacer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
@@ -19,19 +20,19 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * The death visit's own way in and out: the {@value #ENTRANCE} and {@value #EXIT} templates, stood
- * end-on against the home room's two doors in place of the pair corridors a room gets on the train.
+ * The death visit's own way in and out: the {@value #ENTRANCE} template, stood end-on against the
+ * home room's two doors in place of the pair corridors a room gets on the train — as authored on the
+ * entry side, mirrored along X on the exit side, so one tube serves both and an author edits one.
  *
- * <p>Both are portal-room templates (so the Portals editor lists them under {@code home} and an
- * author can reshape them), weighted 0 so the train lottery never stands one as a room. Each is
- * centred on the room's door line and shares its floor row, so a door cut at the room's centre
- * opens straight into the tube. The geometry is pure and unit-tested; only {@link #stamp} touches a
- * level.</p>
+ * <p>It is a portal-room template (so the Portals editor lists it under {@code home}), weighted 0 so
+ * the train lottery never stands it as a room. It is centred on the room's door line and shares its
+ * floor row, so a door cut at the room's centre opens straight into it. The geometry is pure and
+ * unit-tested; only {@link #stamp} touches a level.</p>
  */
 public final class HomeRoomCorridors {
 
+    /** The one tube template: laid as is on the entry side, mirrored along X on the exit side. */
     public static final String ENTRANCE = "home_entrance";
-    public static final String EXIT = "home_exit";
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -68,24 +69,38 @@ public final class HomeRoomCorridors {
      * can sweep them later; a tube whose template is missing is skipped with a log line.
      */
     public static List<BoundingBox> stamp(ServerLevel level, BlockPos roomOrigin, Vec3i roomSize, CarriageDims dims) {
+        Optional<StructureTemplate> template = PortalRoomTemplateStore.get(level, ENTRANCE, dims);
+        if (template.isEmpty()) {
+            LOGGER.warn("[DungeonTrain] home room: no '{}' template — the visit has no passages", ENTRANCE);
+            return List.of();
+        }
+        Vec3i size = template.get().getSize();
         List<BoundingBox> laid = new ArrayList<>(2);
-        layTube(level, ENTRANCE, dims, roomOrigin, roomSize, true).ifPresent(laid::add);
-        layTube(level, EXIT, dims, roomOrigin, roomSize, false).ifPresent(laid::add);
+        BoundingBox in = boxOf(entranceOrigin(roomOrigin, roomSize, size), size);
+        PortalClear.clearBox(level, in, PortalCorridorMask.NONE);
+        CarriagePlacer.stampTemplateAt(level, entranceOrigin(roomOrigin, roomSize, size), template.get(), null, /*relight*/ true, TemplateDecor.Rule.ROOM);
+        laid.add(in);
+        BlockPos exit = exitOrigin(roomOrigin, roomSize, size);
+        BoundingBox out = boxOf(exit, size);
+        PortalClear.clearBox(level, out, PortalCorridorMask.NONE);
+        // Mirrored along X: the open end that faced the room on the entry side faces it here too.
+        CarriagePlacer.stampTemplateMirroredAt(level, exit.offset(size.getX() - 1, 0, 0), template.get(), Mirror.FRONT_BACK, /*relight*/ true, TemplateDecor.Rule.ROOM);
+        laid.add(out);
         return laid;
     }
 
-    private static Optional<BoundingBox> layTube(ServerLevel level, String name, CarriageDims dims,
-                                                 BlockPos roomOrigin, Vec3i roomSize, boolean entrance) {
-        Optional<StructureTemplate> template = PortalRoomTemplateStore.get(level, name, dims);
-        if (template.isEmpty()) {
-            LOGGER.warn("[DungeonTrain] home room: no '{}' template — the visit has no {} passage", name, entrance ? "entrance" : "exit");
-            return Optional.empty();
-        }
+    /** The sweep window of a visit-shaped stamp of {@code structure}: its room and the two tubes. */
+    public static BoundingBox windowFor(ServerLevel level, games.brennan.dungeontrain.portal.PortalStructure structure, CarriageDims dims) {
+        BlockPos roomOrigin = structure.roomOrigin(dims, games.brennan.dungeontrain.portal.PortalCarriageBuilder.layoutFor(dims, structure.kind()));
+        BoundingBox room = boxOf(roomOrigin, structure.roomSize());
+        return window(room, boxes(level, roomOrigin, structure.roomSize(), dims));
+    }
+
+    /** The boxes {@link #stamp} would lay, for a sweep that has to find them again without a level write. */
+    public static List<BoundingBox> boxes(ServerLevel level, BlockPos roomOrigin, Vec3i roomSize, CarriageDims dims) {
+        Optional<StructureTemplate> template = PortalRoomTemplateStore.get(level, ENTRANCE, dims);
+        if (template.isEmpty()) return List.of();
         Vec3i size = template.get().getSize();
-        BlockPos origin = entrance ? entranceOrigin(roomOrigin, roomSize, size) : exitOrigin(roomOrigin, roomSize, size);
-        BoundingBox box = boxOf(origin, size);
-        PortalClear.clearBox(level, box, PortalCorridorMask.NONE);
-        CarriagePlacer.stampTemplateAt(level, origin, template.get(), null, /*relight*/ true, TemplateDecor.Rule.ROOM);
-        return Optional.of(box);
+        return List.of(boxOf(entranceOrigin(roomOrigin, roomSize, size), size), boxOf(exitOrigin(roomOrigin, roomSize, size), size));
     }
 }

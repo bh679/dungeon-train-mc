@@ -554,9 +554,5 @@
   "home_entrance": {
     "weight": 0,
     "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0//auto/off"
-  },
-  "home_exit": {
-    "weight": 0,
-    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0//auto/off"
   }
 }

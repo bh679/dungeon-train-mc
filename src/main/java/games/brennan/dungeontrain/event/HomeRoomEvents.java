@@ -34,6 +34,7 @@ public final class HomeRoomEvents {
     public static void onLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         HomeRoomDeathKit.forget(player.getUUID());
+        games.brennan.dungeontrain.portal.home.LastDeathReports.forget(player.getUUID());
         if (HomeRoomVisitSessions.isVisiting(player.getUUID())) HomeRoomVisitService.end(player, true);
     }
 
@@ -49,5 +50,6 @@ public final class HomeRoomEvents {
         HomeRoomVisitSessions.clear();
         HomeRoomDeathKit.clear();
         games.brennan.dungeontrain.portal.home.HomeRoomRegistry.clear();
+        games.brennan.dungeontrain.portal.home.LastDeathReports.clear();
     }
 }

@@ -273,6 +273,9 @@ public final class RunStatsEvents {
                 deathCause);
         DungeonTrainNet.sendTo(player, packet);
         DungeonTrainNet.sendTo(player, deathScene(player, event.getSource()));
+        // Kept for the home room: the visit that follows saves it beside the room, and a home TV on
+        // the train replays it. The third-person message too, since the packet's cause says "You".
+        games.brennan.dungeontrain.portal.home.LastDeathReports.remember(player, packet, deathMessage(player));
 
         // Relay all ~5 per-death telemetry signals to dp-relay inside ONE RelayOutbox batch window, so
         // the coalescing outbox folds them into a single POST /telemetry/batch instead of one request

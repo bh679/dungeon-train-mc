@@ -28,11 +28,21 @@ public final class HomeTvSource implements IVideoSource {
                                                         int videoAnimationTick, boolean paused,
                                                         IntAnimationState switchAnim, IntAnimationState staticAnim,
                                                         boolean showsTime) {
-        if (!HomeTvVisit.showsOn(tv.getBlockPos())) {
-            return TvScreenVertexConsumers.getNoiseVC(buffer, pixelEffectRes, switchAnim);
+        if (HomeTvVisit.showsOn(tv.getBlockPos()) && HomeTvVisit.textureLocation() != null) {
+            return TvScreenVertexConsumers.getSingleTextureVC(buffer, HomeTvVisit.textureLocation(), CrtOverlay.NONE,
+                pixelEffectRes, switchAnim, staticAnim);
         }
-        return TvScreenVertexConsumers.getSingleTextureVC(buffer, ScreenToTexture.LOCATION, CrtOverlay.NONE,
-            pixelEffectRes, switchAnim, staticAnim);
+        HomeTvShowcase.Entry shown = HomeTvShowcase.at(tv.getBlockPos());
+        if (shown != null) {
+            games.brennan.dungeontrain.client.live.LiveFeedSource live = HomeTvShowcase.liveFor(shown.ownerName());
+            if (live != null) {
+                return live.getVideoFrameBuilder(tv, partialTick, buffer, shouldUpdate, screenSize, pixelEffectRes,
+                    videoAnimationTick, paused, switchAnim, staticAnim, showsTime);
+            }
+            return TvScreenVertexConsumers.getSingleTextureVC(buffer, shown.binding().texture().location(), CrtOverlay.NONE,
+                pixelEffectRes, switchAnim, staticAnim);
+        }
+        return TvScreenVertexConsumers.getNoiseVC(buffer, pixelEffectRes, switchAnim);
     }
 
     @Override

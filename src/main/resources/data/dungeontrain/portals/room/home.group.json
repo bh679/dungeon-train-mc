@@ -5,10 +5,6 @@
     {
       "id": "home_entrance",
       "weight": 0
-    },
-    {
-      "id": "home_exit",
-      "weight": 0
     }
   ]
 }

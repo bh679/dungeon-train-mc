@@ -104,12 +104,11 @@ def tube(name, open_at_high_x):
     print('wrote', out, len(bl), 'blocks')
 
 
-# The entrance opens toward +x (the room sits past its high end); the exit opens toward -x.
+# The one tube opens toward +x (the room sits past its high end); the exit side is this mirrored.
 tube('home_entrance', True)
-tube('home_exit', False)
 import json
 group = {"schemaVersion": 3, "selfWeight": 1,
-         "variants": [{"id": "home_entrance", "weight": 0}, {"id": "home_exit", "weight": 0}]}
+         "variants": [{"id": "home_entrance", "weight": 0}]}
 gp = 'src/main/resources/data/dungeontrain/portals/room/home.group.json'
 with open(gp, 'w') as fh:
     json.dump(group, fh, indent=2); fh.write('\n')

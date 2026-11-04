@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.portal.home;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalStructure;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import org.slf4j.Logger;
@@ -19,6 +20,34 @@ public final class HomeRoomPlacement {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private HomeRoomPlacement() {}
+
+    /**
+     * A random saved player's room at {@code size} — the editor's test of the home room draws one
+     * afresh each press — or the template as {@code player}'s own default when nobody has one.
+     */
+    public static Optional<HomeRoomBlob> randomSavedRoom(ServerLevel level, net.minecraft.server.level.ServerPlayer player,
+                                                         games.brennan.dungeontrain.train.CarriageDims dims, Vec3i size) {
+        List<String> owners = HomeRoomStore.owners();
+        if (!owners.isEmpty()) {
+            String owner = owners.get(level.random.nextInt(owners.size()));
+            Optional<HomeRoomBlob> blob = HomeRoomStore.loadByOwner(owner);
+            if (blob.isPresent() && blob.get().matches(size)) return blob;
+        }
+        return HomeRoomStore.defaultFor(level, player, dims).filter(b -> b.matches(size));
+    }
+
+    /** Tell {@code player} what the TV of the room at {@code roomOrigin} replays, when its owner has a last death. */
+    public static void sendReport(ServerLevel level, net.minecraft.server.level.ServerPlayer player, BlockPos roomOrigin,
+                                  Vec3i size, HomeRoomBlob blob) {
+        if (!blob.hasReport()) return;
+        net.minecraft.world.level.levelgen.structure.BoundingBox room = net.minecraft.world.level.levelgen.structure.BoundingBox.fromCorners(
+            roomOrigin, roomOrigin.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1));
+        List<BlockPos> screen = new java.util.ArrayList<>();
+        net.minecraft.core.Direction facing = HomeRoomVisitService.screenBlocks(level, room, screen);
+        if (screen.isEmpty()) return;
+        games.brennan.dungeontrain.net.DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.HomeRoomReportPacket.of(
+            HomeRoomVisitService.boxOf(screen), facing, blob.ownerName(), blob.reportMessage(), blob.report()));
+    }
 
     /** {@code planned} with a saved room attached when it is a home pair with a room to show; unchanged otherwise. */
     public static PortalStructure withPlayerRoom(ServerLevel level, PortalStructure planned, int pairKey) {

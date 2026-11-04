@@ -25,13 +25,16 @@ import org.lwjgl.opengl.GL30C;
  * ticked here, and drawn once a frame into an off-screen target with the GUI pass's own orthographic
  * projection (the recipe {@code BuildRenderCapture} uses). A render target's rows run bottom-up, so
  * the picture is blitted into a second target the other way up before a TV samples it; the flipped
- * target's colour attachment is registered with the texture manager under {@link #LOCATION}.</p>
+ * target's colour attachment is registered with the texture manager under {@link #location()}.</p>
  *
  * <p>Render thread only.</p>
  */
 public final class ScreenToTexture {
 
-    public static final ResourceLocation LOCATION = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "home_tv");
+    private static int nextId;
+
+    /** This texture's name with the texture manager: one per instance, so several TVs can show at once. */
+    private final ResourceLocation location;
 
     private final int guiWidth;
     private final int guiHeight;
@@ -56,8 +59,13 @@ public final class ScreenToTexture {
         float r = ((clearRgb >> 16) & 0xFF) / 255f, g = ((clearRgb >> 8) & 0xFF) / 255f, b = (clearRgb & 0xFF) / 255f;
         drawn.setClearColor(r, g, b, 1f);
         flipped.setClearColor(r, g, b, 1f);
-        Minecraft.getInstance().getTextureManager().register(LOCATION, new RenderTargetTexture());
+        this.location = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "home_tv/" + (nextId++));
+        Minecraft.getInstance().getTextureManager().register(location, new RenderTargetTexture());
         registered = true;
+    }
+
+    public ResourceLocation location() {
+        return location;
     }
 
     public int guiWidth() {
@@ -132,7 +140,7 @@ public final class ScreenToTexture {
         screen = null;
         if (s != null) s.removed();
         if (registered) {
-            Minecraft.getInstance().getTextureManager().release(LOCATION);
+            Minecraft.getInstance().getTextureManager().release(location);
             registered = false;
         }
         drawn.destroyBuffers();

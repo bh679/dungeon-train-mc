@@ -84,6 +84,12 @@ public final class HomeTvVisit {
         return texture == null ? TV_ASPECT : texture.aspect();
     }
 
+    /** The visit's texture, for the TV that shows it. Null when nothing is up. */
+    @Nullable
+    static net.minecraft.resources.ResourceLocation textureLocation() {
+        return texture == null ? null : texture.location();
+    }
+
     /** How black the arrival screen draws now. */
     static float blackAlpha(long nowMs) {
         return switch (phase) {
@@ -236,15 +242,8 @@ public final class HomeTvVisit {
 
     /** GUI coordinates of the crosshair on the picture, or off-screen when it is not on the TV's face. */
     private static int[] tvMouse() {
-        int[] off = {TvPointer.OFF_SCREEN, TvPointer.OFF_SCREEN};
-        Minecraft mc = Minecraft.getInstance();
-        if (texture == null || screenBox == null || !(mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult hit)) return off;
-        if (!screenBox.isInside(hit.getBlockPos()) || hit.getDirection() != screenFacing) return off;
-        double[] uv = TvPointer.faceFraction(screenFacing, screenBox, hit.getLocation());
-        if (uv == null) return off;
-        double screenAspect = (screenFacing.getAxis() == net.minecraft.core.Direction.Axis.Z ? screenBox.getXSpan() : screenBox.getZSpan())
-            / (double) screenBox.getYSpan();
-        return TvPointer.toGui(uv[0], uv[1], screenAspect, texture.aspect(), texture.guiWidth(), texture.guiHeight());
+        if (texture == null || screenBox == null) return new int[] {TvPointer.OFF_SCREEN, TvPointer.OFF_SCREEN};
+        return new TvScreenBinding(texture, screenBox, screenFacing).mouse();
     }
 
     /** Esc on a zoomed page: back to the room, the page staying on the TV. {@code false} when not zoomed. */

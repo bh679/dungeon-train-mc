@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.portal.PortalRoomBlob;
 import games.brennan.dungeontrain.train.LeaseSnapshots;
 import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -28,7 +29,8 @@ import java.util.Objects;
  * @param difficulty the difficulty partition it was last saved under ("" when unknown)
  */
 public record HomeRoomBlob(String owner, String ownerName, CompoundTag snapshot, int revision,
-                           long savedAtMs, String difficulty) {
+                           long savedAtMs, String difficulty, @Nullable byte[] report, String reportMessage,
+                           long reportAtMs) {
 
     static final String TAG_OWNER = "owner";
     static final String TAG_NAME = "name";
@@ -36,6 +38,9 @@ public record HomeRoomBlob(String owner, String ownerName, CompoundTag snapshot,
     static final String TAG_REVISION = "rev";
     static final String TAG_SAVED_AT = "at";
     static final String TAG_DIFFICULTY = "difficulty";
+    static final String TAG_REPORT = "report";
+    static final String TAG_REPORT_MESSAGE = "reportMsg";
+    static final String TAG_REPORT_AT = "reportAt";
 
     public HomeRoomBlob {
         Objects.requireNonNull(owner, "owner");
@@ -43,6 +48,23 @@ public record HomeRoomBlob(String owner, String ownerName, CompoundTag snapshot,
         if (ownerName == null) ownerName = "";
         if (difficulty == null) difficulty = "";
         if (revision < 0) revision = 0;
+        if (reportMessage == null) reportMessage = "";
+        if (report != null && report.length == 0) report = null;
+    }
+
+    /** The old six-field shape: no report yet. */
+    public HomeRoomBlob(String owner, String ownerName, CompoundTag snapshot, int revision, long savedAtMs, String difficulty) {
+        this(owner, ownerName, snapshot, revision, savedAtMs, difficulty, null, "", 0L);
+    }
+
+    /** Whether a last-death report rides with the room. */
+    public boolean hasReport() {
+        return report != null;
+    }
+
+    /** This blob carrying {@code report} as the owner's last death. */
+    public HomeRoomBlob withReport(byte[] bytes, String message, long atMs) {
+        return new HomeRoomBlob(owner, ownerName, snapshot, revision, savedAtMs, difficulty, bytes, message, atMs);
     }
 
     /** The untouched default for {@code owner}: revision 0, the bundled template's blocks. */
@@ -60,9 +82,9 @@ public record HomeRoomBlob(String owner, String ownerName, CompoundTag snapshot,
         return LeaseSnapshots.matchesDims(snapshot, size.getX(), size.getY(), size.getZ());
     }
 
-    /** This blob after a save: the new blocks, one more revision. */
+    /** This blob after a save: the new blocks, one more revision; the report it carried stays. */
     public HomeRoomBlob saved(CompoundTag newSnapshot, String newOwnerName, long nowMs, String newDifficulty) {
-        return new HomeRoomBlob(owner, newOwnerName, newSnapshot, revision + 1, nowMs, newDifficulty);
+        return new HomeRoomBlob(owner, newOwnerName, newSnapshot, revision + 1, nowMs, newDifficulty, report, reportMessage, reportAtMs);
     }
 
     /** What the portal stamp lays: no lease, no relay id — a home room is never written back from the train. */
@@ -80,6 +102,11 @@ public record HomeRoomBlob(String owner, String ownerName, CompoundTag snapshot,
         tag.putInt(TAG_REVISION, revision);
         tag.putLong(TAG_SAVED_AT, savedAtMs);
         if (!difficulty.isEmpty()) tag.putString(TAG_DIFFICULTY, difficulty);
+        if (report != null) {
+            tag.putByteArray(TAG_REPORT, report);
+            tag.putString(TAG_REPORT_MESSAGE, reportMessage);
+            tag.putLong(TAG_REPORT_AT, reportAtMs);
+        }
         return tag;
     }
 
@@ -88,6 +115,7 @@ public record HomeRoomBlob(String owner, String ownerName, CompoundTag snapshot,
         if (tag == null || !tag.contains(TAG_OWNER) || !tag.contains(TAG_SNAPSHOT)) return null;
         return new HomeRoomBlob(tag.getString(TAG_OWNER), tag.getString(TAG_NAME),
             tag.getCompound(TAG_SNAPSHOT), tag.getInt(TAG_REVISION), tag.getLong(TAG_SAVED_AT),
-            tag.getString(TAG_DIFFICULTY));
+            tag.getString(TAG_DIFFICULTY), tag.contains(TAG_REPORT) ? tag.getByteArray(TAG_REPORT) : null,
+            tag.getString(TAG_REPORT_MESSAGE), tag.getLong(TAG_REPORT_AT));
     }
 }

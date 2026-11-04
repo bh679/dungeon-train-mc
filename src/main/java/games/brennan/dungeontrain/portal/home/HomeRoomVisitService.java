@@ -255,6 +255,9 @@ public final class HomeRoomVisitService {
         }
         HomeRoomBlob next = session.blob().saved(snapshot, player.getGameProfile().getName(), System.currentTimeMillis(),
             DifficultyPartition.keyFor(overworld));
+        // The death this visit followed rides with the room, so a home TV on the train can replay it.
+        LastDeathReports.Report report = LastDeathReports.peek(player.getUUID());
+        if (report != null) next = next.withReport(report.bytes(), report.deathMessage(), report.atMs());
         return HomeRoomStore.save(next) ? next : null;
     }
 
@@ -284,7 +287,7 @@ public final class HomeRoomVisitService {
     }
 
     /** Every TV block in {@code room}, collected into {@code out}; the direction the screen faces (NORTH when none). */
-    static Direction screenBlocks(ServerLevel level, BoundingBox room, List<BlockPos> out) {
+    public static Direction screenBlocks(ServerLevel level, BoundingBox room, List<BlockPos> out) {
         Direction facing = Direction.NORTH;
         for (BlockPos pos : BlockPos.betweenClosed(room.minX(), room.minY(), room.minZ(), room.maxX(), room.maxY(), room.maxZ())) {
             BlockState state = level.getBlockState(pos);
@@ -295,7 +298,7 @@ public final class HomeRoomVisitService {
         return facing;
     }
 
-    static BoundingBox boxOf(List<BlockPos> blocks) {
+    public static BoundingBox boxOf(List<BlockPos> blocks) {
         BoundingBox box = new BoundingBox(blocks.get(0));
         for (BlockPos p : blocks) box.encapsulate(p);
         return box;

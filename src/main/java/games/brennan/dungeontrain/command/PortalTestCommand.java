@@ -300,6 +300,10 @@ public final class PortalTestCommand {
         // in the room they have until the new one is ready.
         // The room's salt a frame-only reseed keeps, read before Back takes the session.
         int keptSalt = current != null ? current.structure().seedSalt() : PortalStructure.NO_SALT;
+        // The home room alternates its passages press by press: black death tubes first, then a
+        // normal pair corridor, then tubes again — and stands a random saved player's room each time.
+        boolean homeTubes = PortalTestSession.homeTubesFor(roomName, current);
+        boolean homeRoom = games.brennan.dungeontrain.portal.home.HomeRooms.TEMPLATE.equals(roomName);
         if (current != null) {
             // Back drops a frame test's force — right for the Back button, wrong for this trip
             // straight back in, which is the same frame test re-rolled.
@@ -385,13 +389,23 @@ public final class PortalTestCommand {
             games.brennan.dungeontrain.portal.PortalExitSites.seedFor(
                 overworld.getSeed(), PortalTestSession.PAIR_KEY, roomName, roomSalt),
             PortalRoomTiling.MAX_RADIUS);
-        PortalStructure structure = new PortalStructure(
+        // A home press that is not the tubes stands a random normal corridor, as a pair on the train would.
+        PortalCorridorKind corridorKind = homeRoom && !homeTubes
+            ? (overworld.random.nextBoolean() ? PortalCorridorKind.LONG : PortalCorridorKind.SHORT)
+            : PortalCorridorKind.DEFAULT;
+        PortalStructure planned = new PortalStructure(
             originFor(player, overworld, doorHeightOffset), roomName, roomSize, settings,
             // Starts at the base tile and grows from there: PortalTestTicker drives the real
             // PortalRoomTiler around the player, so an endless room repeats here exactly as it does
             // on the train, block variants and all.
             PortalRoomTiling.base(), games.brennan.dungeontrain.portal.PortalExitCopies.NONE,
-            exitTile, PortalCorridorKind.DEFAULT, roomSalt);
+            exitTile, corridorKind, roomSalt);
+        // The home room as some player saved it — any of them, drawn afresh each press — or the
+        // template when nobody has one yet. Both the tubes and the pair stamp lay the blob.
+        games.brennan.dungeontrain.portal.home.HomeRoomBlob homeBlob = homeRoom
+            ? games.brennan.dungeontrain.portal.home.HomeRoomPlacement.randomSavedRoom(overworld, player, dims, roomSize).orElse(null)
+            : null;
+        final PortalStructure structure = homeBlob != null ? planned.withBlob(homeBlob.toPortalRoomBlob()) : planned;
         // The frame's roll: re-rolled when asked for, kept when not, and on every other press
         // rolled with the room.
         if (reroll == null || reroll.frame()) {
@@ -425,14 +439,22 @@ public final class PortalTestCommand {
         // a run and would otherwise withhold every hostile in the build they are here to check.
         PortalTestSession.put(player.getUUID(), new PortalTestSession.Session(
             player.level().dimension(), player.position(), player.getYRot(), player.getXRot(),
-            previous, structure, roomName, arrival));
+            previous, structure, roomName, arrival, homeTubes));
 
         // Test rig: no stage ⇒ placeholders resolve through the default palette. Via the shared
         // lookup (the session is registered above, so it reads as a test stamp) so the tiler's
         // copies resolve through the same palette as this base room.
         games.brennan.dungeontrain.train.StagePlacementScope.run(
             PortalCarriageBuilder.stageIdFor(overworld, PortalTestSession.PAIR_KEY, dims),
-            () -> PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, PortalTestSession.PAIR_KEY));
+            () -> {
+                if (homeTubes && structure.blob() != null) {
+                    // The death visit's shape: the room, then the black tubes against its doors.
+                    PortalCarriageBuilder.stampRoomFromBlob(overworld, roomOrigin, roomSize, structure.blob(), PortalTestSession.PAIR_KEY);
+                    games.brennan.dungeontrain.portal.home.HomeRoomCorridors.stamp(overworld, roomOrigin, roomSize, dims);
+                } else {
+                    PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, PortalTestSession.PAIR_KEY);
+                }
+            });
 
         if (previous != GameType.CREATIVE) player.setGameMode(GameType.CREATIVE);
 
@@ -444,6 +466,10 @@ public final class PortalTestCommand {
         // live pair's room, on the same box; a test session is not a pair, so nothing there sees
         // it, and a room set to Daylight tested dark — which is precisely what the test is for.
         sendSky(player, dims, layout, structure);
+        // The home TV replays its owner's last death, as it does on the train.
+        if (homeBlob != null) {
+            games.brennan.dungeontrain.portal.home.HomeRoomPlacement.sendReport(overworld, player, roomOrigin, roomSize, homeBlob);
+        }
 
         LOGGER.info("[DungeonTrain] portal test: stamped '{}' ({}x{}x{}) at {} for {} — arrival {}, salt={}",
             roomName, roomSize.getX(), roomSize.getY(), roomSize.getZ(), structure.origin(),
@@ -665,7 +691,9 @@ public final class PortalTestCommand {
         // that box would leave every copy the ticker grew standing under the world. The structure
         // knows its own tiled bounds; union them with the footprint and clear the lot. Blunt is
         // right here: the test band holds nothing else to protect.
-        BoundingBox window = windowBox(overworld, session.structure(), dims);
+        BoundingBox window = session.homeTubes()
+            ? games.brennan.dungeontrain.portal.home.HomeRoomCorridors.windowFor(overworld, session.structure(), dims)
+            : windowBox(overworld, session.structure(), dims);
         int cleared = PortalClear.clearBox(overworld, window, PortalCorridorMask.NONE);
         // And the room's mobs. A live room's are carried to its next site, so the clear leaves them;
         // a test room has no next site, and the next test is stamped on this same spot — so a chunk
