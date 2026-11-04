@@ -93,7 +93,10 @@ orchestrator session; copy them into the repo's test-results/ at PR time).
   the inventory-only switch was unfindable. Fixed: AGC (target -20 dBFS, +24 dB max), ONE mic
   switch (inventory button == Microphone option, saved; stream starts in that state, default
   off; turning on mid-stream without a mic track = next stream), balance default 75%, toggle
-  key K, 8 s on-screen hint, toggle/device logging. NOT yet re-tested with a voice.
+  key K, 8 s on-screen hint, toggle/device logging. Re-tested with Brennan's voice 22:36
+  local time: stream started with the mic open, switch worked from inventory and from the
+  options both ways (logged), voice at -13..-24 dBFS mic-only against game -17..-19, i.e. at
+  parity or above. Voice test PASSED. Wavs in dt-capture/test-results/voice-*-take3.wav.
   Local-harness note: the dev config's segmentSeconds=2 without the quicker_streams claim makes
   the relay 429 most heartbeats; harmless, prod shows 0.
 - `dev/live-report-streamer` @ e60d32e2: Gate 2 9/9 pass.
