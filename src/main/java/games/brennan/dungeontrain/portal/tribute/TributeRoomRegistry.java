@@ -41,6 +41,7 @@ public final class TributeRoomRegistry {
         BlockPos origin = structure.roomOrigin(dims, layout);
         Vec3i size = structure.roomSize();
         BoundingBox room = BoundingBox.fromCorners(origin, origin.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1));
+        TributeRoomFloor.lay(level, origin, size);
         String owner = structure.blob() == null ? "" : structure.blob().owner();
         String key = TributeRoomKeys.keyFor(level, null);
         STANDING.put(pairKey, new Standing(level.dimension(), room, owner, key));

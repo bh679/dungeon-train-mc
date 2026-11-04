@@ -454,6 +454,7 @@ public final class PortalTestCommand {
                 } else {
                     PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, PortalTestSession.PAIR_KEY);
                 }
+                if (tributeRoom) games.brennan.dungeontrain.portal.tribute.TributeRoomFloor.lay(overworld, roomOrigin, roomSize);
                 if (tributeBlob != null) {
                     games.brennan.dungeontrain.portal.tribute.TributeRoomHeads.dress(
                         overworld, roomOrigin, roomSize, tributeBlob.owner(), tributeBlob.ownerName());
