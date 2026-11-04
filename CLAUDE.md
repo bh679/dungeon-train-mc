@@ -55,12 +55,14 @@ Those gate playbooks reference further playbooks as needed.
 
 ## Gate 1 — Plan Approval
 
+Follow `~/.claude/playbooks/gates/gate-1-plan.md`, plus the Dungeon Train add-on in
+`.claude/gates/gate-1-plan.md` (UI prototypes; new advancements prototyped in the advancement editor).
 Before writing any code:
 1. Enter plan mode (`EnterPlanMode`)
 2. Explore the codebase — read relevant files, understand existing patterns (`src/main/java/...`, `build.gradle`, `gradle.properties`)
    - Current stack baseline: NeoForge 1.21.1 (`neo_version` in `gradle.properties`), Sable physics dep (`sable_version`).
 3. Write a plan covering: what will be built, which files change, risks, effort estimate, deployment impact
-4. **Mod-impact check:** If the change involves new dependencies in `build.gradle`, MC/NeoForge/Sable version bumps, new mixins, new registered blocks/items/entities, world-gen changes, or networking packets — call this out explicitly in the plan
+4. **Mod-impact check:** run the checklist in `.claude/gates/gate-1-plan.md` and flag each item that applies
 5. Present via `ExitPlanMode` and wait for user approval
 6. **After approval — rename branch** from `claude/<auto-slug>` → `dev/<feature-slug>`
    before writing any code (see `~/.claude/playbooks/gates/gate-1-plan.md` § Post-Approval: Rename Branch)
@@ -69,6 +71,8 @@ Before writing any code:
 
 ## Gate 2 — Testing Approval
 
+Follow `~/.claude/playbooks/gates/gate-2-test.md`, plus the Dungeon Train add-on in
+`.claude/gates/gate-2-test.md` (Minecraft build, F2 screenshots, Sable test).
 After implementation is complete:
 1. Build the mod: `./gradlew build` — must pass cleanly (no errors, warnings noted)
 2. Run unit tests if any: `./gradlew test`
@@ -77,7 +81,7 @@ After implementation is complete:
 5. Enter plan mode and present a **Gate 2 Testing Report**:
    - Build result: success/fail, jar size, output path (`build/libs/dungeon-train-mc-<version>.jar`)
    - Unit test summary: total, passed, failed, skipped (if applicable)
-   - Screenshot paths
+   - Screenshots shown rendered in chat, plus their paths
    - Step-by-step in-game testing instructions (what world, what to do, what to look for)
    - Compatibility notes: Sable interaction tested? multiplayer tested? dedicated server tested?
    - What passed / what failed
@@ -87,7 +91,8 @@ After implementation is complete:
 
 ## Gate 3 — Merge Approval
 
-Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
+Follow `~/.claude/playbooks/gates/gate-3-merge.md`, plus the Dungeon Train add-on steps in
+`.claude/gates/gate-3-merge.md` (changelog, tags, modpack whitelist). Summary:
 1. Push branch, open PR with conventional commit title
 2. **Log + confirm the changelog entry** — append it on the feature branch with
    `scripts/release-notes/append-entry.py` (curated player-facing notes) so it lands in the PR
@@ -159,7 +164,7 @@ For Gate 2 verification:
 2. Create or open the test world (`run/saves/`)
 3. Reproduce the feature flow
 4. Press **F2** for screenshots → saved to `run/screenshots/`
-5. Copy relevant screenshots to `./test-results/gate2-<feature-slug>-<YYYY-MM>.png`
+5. Copy relevant screenshots to `~/Projects/Screenshots/DungeonTrainCraft/<feature-slug>/<NN>-<what-it-shows>.png`
 
 ### Sable Compatibility
 
