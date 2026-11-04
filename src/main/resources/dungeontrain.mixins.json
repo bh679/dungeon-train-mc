@@ -12,6 +12,7 @@
     "WitherRoseBlockCreditMixin",
     "VaultBlockMixin",
     "VaultClientParticlesMixin",
+    "VaultEjectMixin",
     "VaultServerMixin",
     "VaultSharedDataMixin",
     "RecipeManagerDisableMixin",
