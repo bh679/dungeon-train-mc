@@ -1,0 +1,17 @@
+{
+  "id": "enchant-damage-tooltip",
+  "version": "0.1652.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "ui"
+  ],
+  "title": "Weapon tooltips show enchant damage",
+  "summary": "Weapon tooltips now include damage enchantments. Sharpness raises the Attack Damage number, and Smite, Bane of Arthropods and Impaling show their bonus on their own line, like +7.5 vs Undead.",
+  "highlights": [],
+  "pr": 2475,
+  "date": "2026-11-04",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
