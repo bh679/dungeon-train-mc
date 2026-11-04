@@ -49,8 +49,9 @@ final class LiveSpeakerSound extends AbstractTickableSoundInstance {
         this.volume = volume;
     }
 
-    /** Stop playing; the sound engine lets it go on its next tick. */
+    /** Stop playing; the sound engine lets it go on its next tick. Ending twice is one end. */
     void end() {
+        if (isStopped()) return;
         stop();
     }
 

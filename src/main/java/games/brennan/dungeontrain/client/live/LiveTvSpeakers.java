@@ -32,7 +32,10 @@ import java.util.Map;
  * {@link LiveSpeakerChoice} which single TV plays (the worn or held one first; among placed TVs the
  * nearest, with the one already playing kept unless another is {@link LiveSpeakerChoice#SWAP_MARGIN}
  * nearer) and stops every other, along with any TV that stopped asking (switched off, retuned, broken,
- * out of range). Vista's audio mode OFF silences them all; its default, REQUIRE_SPEAKER (a note block
+ * out of range) for longer than {@link LiveSpeakerChoice#HOLD_MS} — a tick skipped (a TV on a Sable
+ * carriage is not ticked every client tick) keeps the one sound instance playing, re-pointed, rather than
+ * ending it and starting another. Each TV's sound is one {@link LiveSpeakerSound} for as long as it plays,
+ * ended exactly once; a sound the engine refuses is never counted as playing. Vista's audio mode OFF silences them all; its default, REQUIRE_SPEAKER (a note block
  * beside the TV), is not asked of a Live Feed TV — almost no TV on the train has one, and the stream's
  * sound is the point of tuning in. Loudness is Vista's TV volume, then the Blocks slider, fading with
  * distance over the TV's own hearing range ({@link LiveSpeakerRange}: 4.5 blocks for a lone TV, 9 for a
@@ -77,6 +80,10 @@ public final class LiveTvSpeakers {
     /** The one placed TV playing, and where it stands; null when none. */
     @Nullable private static Speaker placed;
     @Nullable private static BlockPos placedPos;
+    /** The playing placed TV's candidate the last time it asked: where it stands, how far, what it hears. */
+    @Nullable private static Candidate placedLast;
+    /** When the playing placed TV last asked to play ({@link LiveSpeakerChoice#held}). */
+    private static long placedAskedMs;
     @Nullable private static Speaker flat;
     /** The stream most recently heard, for {@code /livemute} and the mute buttons. */
     @Nullable private static volatile LiveFeedSource.Hearing heard;
@@ -125,31 +132,42 @@ public final class LiveTvSpeakers {
         flat = reconcile(flat, flatHearing, null, 1, mc);
 
         // The worn or held TV plays: every placed TV is silent, whatever it shows. Else the nearest placed one.
+        long now = System.currentTimeMillis();
+        String ownPlaylist = LiveStreamController.get().playlistUrl();
         Map<BlockPos, Double> distances = new HashMap<>();
         if (mayPlay && flatHearing == null) {
-            String ownPlaylist = LiveStreamController.get().playlistUrl();
             for (Candidate c : CANDIDATES.values()) {
                 if (mayHearPlaced(c.hearing(), ownPlaylist)) distances.put(c.pos(), c.distance());
             }
         }
-        BlockPos chosenPos = LiveSpeakerChoice.placed(flatHearing != null, distances, placedPos);
+        // The TV playing keeps its sound through a tick it did not ask on (LiveSpeakerChoice#HOLD_MS), at its last known place.
+        Candidate last = placedLast;
+        if (placedPos != null && CANDIDATES.containsKey(placedPos)) placedAskedMs = now;
+        boolean held = mayPlay && flatHearing == null && last != null && LiveSpeakerChoice.held(placedAskedMs, now)
+            && mayHearPlaced(last.hearing(), ownPlaylist);
+        BlockPos chosenPos = LiveSpeakerChoice.placed(flatHearing != null, distances, placedPos, held);
         Candidate chosen = chosenPos == null ? null : CANDIDATES.get(chosenPos);
+        if (chosen == null && chosenPos != null && chosenPos.equals(placedPos)) chosen = last;
         CANDIDATES.clear();
 
         if (placed != null && (chosen == null || !chosen.pos().equals(placedPos))) {
+            // Switched off, retuned, broken, out of range, muted, or another TV took the sound: this one ends.
             placed.sound.end();
             placed = null;
             placedPos = null;
+            placedLast = null;
         }
         if (chosen != null) {
+            boolean fresh = placedPos == null;
             placed = reconcile(placed, chosen.hearing(), chosen.at(), LiveSpeakerRange.gain(chosen.distance(), chosen.range()), mc);
             placedPos = placed == null ? null : chosen.pos();
+            placedLast = placed == null ? null : chosen;
+            if (fresh && placed != null) placedAskedMs = now;
         }
-        LiveFeedSource.Hearing now = flatHearing != null ? flatHearing : chosen == null ? null : chosen.hearing();
-        if (now != null) heard = now;
-        long ms = System.currentTimeMillis();
-        if ((flat != null || placed != null) && ms - lastPerfMs >= PERF_MS) {
-            lastPerfMs = ms;
+        LiveFeedSource.Hearing hearing = flatHearing != null ? flatHearing : chosen == null ? null : chosen.hearing();
+        if (hearing != null) heard = hearing;
+        if ((flat != null || placed != null) && now - lastPerfMs >= PERF_MS) {
+            lastPerfMs = now;
             LOGGER.debug("[DungeonTrain] [live] {}", perf());
         }
     }
@@ -221,6 +239,12 @@ public final class LiveTvSpeakers {
             h.streamKey(), h.replay() ? " (replay)" : "");
         LiveSpeakerSound sound = new LiveSpeakerSound(h.session().audio(), at, volume);
         mc.getSoundManager().play(sound);
+        if (!mc.getSoundManager().isActive(sound)) {
+            // Refused (no free streaming channel, or the engine is not loaded): not a speaker, so nothing counts it as playing.
+            sound.end();
+            LOGGER.debug("[DungeonTrain] live speaker: the sound engine refused {}", h.streamKey());
+            return null;
+        }
         LiveMuteChat.heard(h);
         return new Speaker(sound, h.session());
     }
@@ -235,6 +259,7 @@ public final class LiveTvSpeakers {
         if (placed != null) placed.sound.end();
         placed = null;
         placedPos = null;
+        placedLast = null;
         if (flat != null) flat.sound.end();
         flat = null;
     }
