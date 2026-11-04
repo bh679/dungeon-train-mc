@@ -1,0 +1,16 @@
+{
+  "id": "vault-tweak",
+  "version": "0.1651.0",
+  "type": "fix",
+  "tags": [
+    "fix"
+  ],
+  "title": "Vault tweak",
+  "summary": "Vault tweak.",
+  "highlights": [],
+  "pr": 2474,
+  "date": "2026-11-04",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
