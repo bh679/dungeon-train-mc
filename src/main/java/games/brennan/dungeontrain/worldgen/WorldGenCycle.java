@@ -1037,6 +1037,32 @@ public record WorldGenCycle(long startX, int owGap,
         return pass;
     }
 
+    /**
+     * How far through the <b>core</b> of its own End piece the column {@code worldX} is, for End pass
+     * {@code pass} ({@link #endSourcePassAt}'s answer, so a seam column measures against the piece that owns
+     * it): {@code 0} at the piece's first core column, {@code 1} at its last, clamped either side (the
+     * leading void fade reads 0, the trailing one 1). {@code -1} without a layout, outside the cycle, or when
+     * the pass has no piece. Drives {@link VanillaEndSequence} — a vanilla piece's small islands → highlands.
+     */
+    public double endPieceProgress(int worldX, long pass) {
+        if (layout == null || pass < 0L) return -1.0;
+        int n = layout.typeCount(CycleLayout.Type.END);
+        if (n == 0) return -1.0;
+        int i = layout.indexOfOccurrence(CycleLayout.Type.END, (int) (pass % n));
+        if (i < 0) return -1.0;
+        int core = layout.slot(i).core();
+        if (core <= 0) return -1.0;
+        long u = baseAt(worldX);
+        if (u < 0L) return -1.0;
+        long coreStart = layout.start(i);
+        if (i == layout.endGroupFirst(i)) {
+            // the group's first piece carries the entry side: erosion fade, void hold, islands fade-in
+            coreStart += 2L * Math.max(0, layout.fades().eFade()) + Math.max(0, layout.fades().eVoid());
+        }
+        double p = (double) (u - coreStart) / core;
+        return Math.max(0.0, Math.min(1.0, p));
+    }
+
     /** {@link #endStyleOfPass} of {@link #endSourcePassAt}: the look column {@code (worldX, worldZ)} wears. */
     public CycleLayout.Style endSourceLookAt(int worldX, int worldZ, long seed) {
         return endStyleOfPass(endSourcePassAt(worldX, worldZ, seed));

@@ -248,7 +248,8 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                 // End-band passes — see EndCoreBiomes) so world label, surface skin and decoration agree.
                 // across a joined End band's seam, the look that owns the column (islands and biome agree)
                 long endPass = cycle.endSourcePassAt(blockX, blockZ, ctx.generationSeed());
-                return ctx.endCoreBiomes().biomeAt(blockX, blockZ, endPass, cycle.endStyleOfPass(endPass));
+                return ctx.endCoreBiomes().biomeAt(blockX, blockZ, endPass, cycle.endStyleOfPass(endPass),
+                        cycle.endPieceProgress(blockX, endPass));
             case HIGHLAND:
                 // The mountain interior under the cave-band top is a cave biome (lush / dripstone on the way
                 // in, mostly deep dark after the core). Un-waved X for the pre/post split — core columns are

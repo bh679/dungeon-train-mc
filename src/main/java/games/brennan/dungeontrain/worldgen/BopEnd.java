@@ -3,6 +3,9 @@ package games.brennan.dungeontrain.worldgen;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.density.BopEndBiomeSource;
 import net.minecraft.core.Holder;
+import net.minecraft.core.QuartPos;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Climate;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
@@ -11,6 +14,9 @@ import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import org.slf4j.Logger;
 import terrablender.api.SurfaceRuleManager;
 import terrablender.worldgen.IExtendedNoiseGeneratorSettings;
+
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * The generator a Biomes O' Plenty End-band pass is sampled from: the End's own settings over
@@ -65,6 +71,8 @@ public final class BopEnd {
                 }
                 NoiseBasedChunkGenerator generator = new NoiseBasedChunkGenerator(source,
                         Holder.direct(endCopy(live.generatorSettings().value())));
+                LOGGER.info("[DungeonTrain] BoP End layout ready; outer-field sample: {}",
+                        census(source, end.getChunkSource().randomState().sampler()));
                 b = new Built(seed, source, generator);
                 built = b;
                 return b;
@@ -80,6 +88,25 @@ public final class BopEnd {
     public static void clear() {
         built = null;
         failedSeed = Long.MIN_VALUE;
+    }
+
+    /** Blocks of outer End the start-up census strides over, and the step between samples. */
+    private static final int CENSUS_SPAN = 4_000;
+    private static final int CENSUS_STEP = 100;
+
+    /**
+     * Biome counts along a strip of the outer End (the first BoP pass's sample line, {@code z = 0}) — one
+     * log line that proves which layout the BoP band reads (a BetterEnd biome here means the vanilla End
+     * source was patched out from under it again).
+     */
+    private static String census(BopEndBiomeSource source, Climate.Sampler sampler) {
+        Map<String, Integer> counts = new TreeMap<>();
+        long from = EndBandStyle.endSampleX(0, 1L);
+        for (long x = from; x < from + CENSUS_SPAN; x += CENSUS_STEP) {
+            Holder<Biome> h = source.getNoiseBiome(QuartPos.fromBlock((int) x), QuartPos.fromBlock(64), 0, sampler);
+            counts.merge(h.unwrapKey().map(k -> k.location().toString()).orElse("?"), 1, Integer::sum);
+        }
+        return counts.toString();
     }
 
     /** A new, unmarked copy of the End settings with TerraBlender's End surface rules on. */

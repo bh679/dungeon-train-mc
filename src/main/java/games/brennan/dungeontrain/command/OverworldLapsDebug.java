@@ -130,7 +130,9 @@ final class OverworldLapsDebug {
                 }
                 if (ctx.endCoreBiomes() != null && cycle.isEndCore(ix)) {
                     samples++;
-                    if (OverworldStretchBiomes.isBop(ctx.endCoreBiomes().biomeAt(ix, z, cycle.endPassIndex(ix), cycle.endLookAt(ix)))) end++;
+                    long pass = cycle.endPassIndex(ix);
+                    if (OverworldStretchBiomes.isBop(ctx.endCoreBiomes().biomeAt(ix, z, pass, cycle.endStyleOfPass(pass),
+                            cycle.endPieceProgress(ix, pass)))) end++;
                 }
             }
         }
