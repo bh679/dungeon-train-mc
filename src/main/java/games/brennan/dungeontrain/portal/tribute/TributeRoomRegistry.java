@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class TributeRoomRegistry {
 
     /** One standing tribute room. */
-    public record Standing(ResourceKey<Level> dimension, BoundingBox room, String owner) {}
+    public record Standing(ResourceKey<Level> dimension, BoundingBox room, String owner, String key) {}
 
     private static final Map<Integer, Standing> STANDING = new ConcurrentHashMap<>();
 
@@ -42,9 +42,10 @@ public final class TributeRoomRegistry {
         Vec3i size = structure.roomSize();
         BoundingBox room = BoundingBox.fromCorners(origin, origin.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1));
         String owner = structure.blob() == null ? "" : structure.blob().owner();
-        STANDING.put(pairKey, new Standing(level.dimension(), room, owner));
+        String key = TributeRoomKeys.keyFor(level, null);
+        STANDING.put(pairKey, new Standing(level.dimension(), room, owner, key));
         if (!owner.isEmpty()) {
-            String name = TributeRoomStore.loadByOwner(owner).map(TributeRoomBlob::ownerName)
+            String name = TributeRoomStore.loadByOwner(owner, key).map(TributeRoomBlob::ownerName)
                 .filter(n -> !n.isBlank()).orElseGet(() -> TributeRoomHeads.nameFor(level, owner));
             TributeRoomHeads.dress(level, origin, size, owner, name);
             games.brennan.dungeontrain.compat.vista.TvBlocks.tuneTributeTvs(level, room);

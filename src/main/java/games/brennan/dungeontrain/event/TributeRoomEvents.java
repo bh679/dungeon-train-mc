@@ -23,6 +23,28 @@ public final class TributeRoomEvents {
     private TributeRoomEvents() {}
 
     /** After every other handler has had its say on the drops, so the kit is what really fell. */
+    /**
+     * Dying inside the visit is not a death: the player is already dead for the run, and a second one
+     * would open a second recap over the first. They are healed and stood back in front of the TV.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onLivingDeath(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        TributeRoomVisitSessions.Session session = TributeRoomVisitSessions.get(player.getUUID());
+        if (session == null) return;
+        event.setCanceled(true);
+        player.setHealth(player.getMaxHealth());
+        player.clearFire();
+        player.removeAllEffects();
+        player.getFoodData().setFoodLevel(20);
+        net.minecraft.server.level.ServerLevel overworld = player.getServer() == null ? null
+            : player.getServer().getLevel(net.minecraft.world.level.Level.OVERWORLD);
+        if (overworld != null) {
+            games.brennan.dungeontrain.portal.tribute.TributeRoomCamera.Pose pose = session.pose();
+            player.teleportTo(overworld, pose.x(), pose.y(), pose.z(), pose.yaw(), pose.pitch());
+        }
+    }
+
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onLivingDrops(LivingDropsEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player) || event.isCanceled()) return;

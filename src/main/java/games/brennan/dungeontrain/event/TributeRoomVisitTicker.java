@@ -26,6 +26,9 @@ import java.util.UUID;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TributeRoomVisitTicker {
 
+    /** How far past the room and its tubes a visitor may stray before they are stood back at the TV. */
+    static final int LEASH = 5;
+
     private TributeRoomVisitTicker() {}
 
     @SubscribeEvent
@@ -41,7 +44,8 @@ public final class TributeRoomVisitTicker {
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
             if (player == null) continue;
             TributeRoomVisitSessions.Session session = entry.getValue();
-            if (player.level() == level && !session.window().isInside(player.blockPosition()) && player.isAlive()) {
+            // More than LEASH blocks out of the room and its tubes: back in front of the TV.
+            if (player.level() == level && !session.window().inflatedBy(LEASH).isInside(player.blockPosition()) && player.isAlive()) {
                 TributeRoomCamera.Pose pose = session.pose();
                 player.teleportTo(level, pose.x(), pose.y(), pose.z(), pose.yaw(), pose.pitch());
             }

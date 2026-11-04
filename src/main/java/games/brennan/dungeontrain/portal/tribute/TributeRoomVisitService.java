@@ -12,7 +12,6 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.TributeRoomSavedPacket;
 import games.brennan.dungeontrain.net.TributeRoomVisitStatePacket;
 import games.brennan.dungeontrain.net.PortalRoomSkyPacket;
-import games.brennan.dungeontrain.player.DifficultyPartition;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageLayout;
 import games.brennan.dungeontrain.portal.PortalClear;
@@ -271,7 +270,7 @@ public final class TributeRoomVisitService {
             if (overworld.getBlockEntity(pos) instanceof net.mehvahdjukaar.vista.common.tv.TVBlockEntity tv) tv.setItem(0, stack);
         });
         TributeRoomBlob next = session.blob().saved(snapshot, player.getGameProfile().getName(), System.currentTimeMillis(),
-            DifficultyPartition.keyFor(overworld));
+            TributeRoomKeys.keyFor(overworld, player));
         // The death this visit followed rides with the room, so a tribute TV on the train can replay it.
         LastDeathReports.Report report = LastDeathReports.peek(player.getUUID());
         if (report != null) next = next.withReport(report.bytes(), report.deathMessage(), report.atMs());

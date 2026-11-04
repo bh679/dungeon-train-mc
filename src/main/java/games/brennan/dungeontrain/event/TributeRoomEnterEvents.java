@@ -52,7 +52,7 @@ public final class TributeRoomEnterEvents {
 
     private static void sendReport(ServerLevel level, ServerPlayer player, TributeRoomRegistry.Standing standing) {
         if (standing.owner().isEmpty()) return;
-        Optional<TributeRoomBlob> blob = TributeRoomStore.loadByOwner(standing.owner());
+        Optional<TributeRoomBlob> blob = TributeRoomStore.loadByOwner(standing.owner(), standing.key());
         if (blob.isEmpty()) return;
         TributeRoomPlacement.showBanner(player, blob.get());
         if (!blob.get().hasReport()) return;

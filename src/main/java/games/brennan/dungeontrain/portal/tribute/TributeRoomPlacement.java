@@ -27,10 +27,11 @@ public final class TributeRoomPlacement {
      */
     public static Optional<TributeRoomBlob> randomSavedRoom(ServerLevel level, net.minecraft.server.level.ServerPlayer player,
                                                          games.brennan.dungeontrain.train.CarriageDims dims, Vec3i size) {
-        List<String> owners = TributeRoomStore.owners();
+        String key = TributeRoomKeys.keyFor(level, player);
+        List<String> owners = TributeRoomStore.owners(key);
         if (!owners.isEmpty()) {
             String owner = owners.get(level.random.nextInt(owners.size()));
-            Optional<TributeRoomBlob> blob = TributeRoomStore.loadByOwner(owner);
+            Optional<TributeRoomBlob> blob = TributeRoomStore.loadByOwner(owner, key);
             if (blob.isPresent() && blob.get().matches(size)) return blob;
         }
         return TributeRoomStore.defaultFor(level, player, dims).filter(b -> b.matches(size));
@@ -58,10 +59,12 @@ public final class TributeRoomPlacement {
     /** {@code planned} with a saved room attached when it is a home pair with a room to show; unchanged otherwise. */
     public static PortalStructure withPlayerRoom(ServerLevel level, PortalStructure planned, int pairKey) {
         if (!TributeRooms.TEMPLATE.equals(planned.roomName()) || planned.blob() != null) return planned;
-        List<String> owners = TributeRoomStore.owners();
+        // Only rooms of this world's own difficulty, or Free Play rooms on a Free Play world.
+        String key = TributeRoomKeys.keyFor(level, null);
+        List<String> owners = TributeRoomStore.owners(key);
         String owner = TributeRoomLottery.pick(level.getSeed(), pairKey, owners);
         if (owner == null) return planned;
-        Optional<TributeRoomBlob> blob = TributeRoomStore.loadByOwner(owner);
+        Optional<TributeRoomBlob> blob = TributeRoomStore.loadByOwner(owner, key);
         Vec3i size = planned.roomSize();
         if (blob.isEmpty() || !blob.get().matches(size)) {
             LOGGER.info("[DungeonTrain] tribute room: pair {} drew {} but their room is missing or not {}x{}x{} — the template stands",

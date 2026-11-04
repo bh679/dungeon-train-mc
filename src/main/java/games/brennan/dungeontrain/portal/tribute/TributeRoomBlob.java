@@ -83,6 +83,11 @@ public record TributeRoomBlob(String owner, String ownerName, CompoundTag snapsh
     }
 
     /** This blob after a save: the new blocks, one more revision; the report it carried stays. */
+    /** This blob filed under {@code key} (its {@code difficulty}): the room the key's worlds show. */
+    public TributeRoomBlob withKey(String key) {
+        return new TributeRoomBlob(owner, ownerName, snapshot, revision, savedAtMs, key, report, reportMessage, reportAtMs);
+    }
+
     public TributeRoomBlob saved(CompoundTag newSnapshot, String newOwnerName, long nowMs, String newDifficulty) {
         return new TributeRoomBlob(owner, newOwnerName, newSnapshot, revision + 1, nowMs, newDifficulty, report, reportMessage, reportAtMs);
     }
