@@ -98,6 +98,20 @@ public final class CinematicIntroService {
     }
 
     /**
+     * True from login until {@code player}'s intro is over, including the wait before it starts: anything that
+     * shouldn't land over the intro (an advancement toast, say) holds off while this is true. A world with no
+     * train never plays it.
+     */
+    public static boolean isIntroPendingOrActive(ServerPlayer player) {
+        return introPendingOrActive(isCinematicActive(player.getUUID()), shouldPlay(player), hasTrain(player));
+    }
+
+    /** {@link #isIntroPendingOrActive(ServerPlayer)} over plain values. Pure, for the tests. */
+    static boolean introPendingOrActive(boolean active, boolean willPlay, boolean hasTrain) {
+        return active || (willPlay && hasTrain);
+    }
+
+    /**
      * Trigger gate. Single switch point for the "frequency" decision — today:
      * config-enabled AND this player hasn't seen the intro in this world yet.
      */
