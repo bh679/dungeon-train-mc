@@ -246,15 +246,30 @@ public final class TributeRoomVisitService {
             return null;
         }
         CompoundTag snapshot;
+        // The TV is saved with an empty slot: whoever stands the room tunes it (TvBlocks.tuneTributeTvs),
+        // and a cassette in the save is a cassette that can go stale or be the wrong one. The slots are
+        // emptied for the capture only and put back, since a visit may still be running (saveAll).
+        java.util.Map<BlockPos, net.minecraft.world.item.ItemStack> held = new java.util.HashMap<>();
+        for (BlockPos pos : screen) {
+            if (overworld.getBlockEntity(pos) instanceof net.mehvahdjukaar.vista.common.tv.TVBlockEntity tv && !tv.getItem(0).isEmpty()) {
+                held.put(pos.immutable(), tv.removeItemNoUpdate(0));
+            }
+        }
         try {
             snapshot = CarriageBlockSnapshot.captureLevel(overworld, new BlockPos(room.minX(), room.minY(), room.minZ()),
                 new Vec3i(room.getXSpan(), room.getYSpan(), room.getZSpan()), overworld.registryAccess(),
                 DungeonTrainConfig.getSharedCarriageMaxEntities()).tag();
         } catch (Throwable t) {
+            held.forEach((pos, stack) -> {
+                if (overworld.getBlockEntity(pos) instanceof net.mehvahdjukaar.vista.common.tv.TVBlockEntity tv) tv.setItem(0, stack);
+            });
             LOGGER.warn("[DungeonTrain] tribute room: could not capture {}'s room — keeping the last save: {}",
                 player.getName().getString(), t.toString());
             return null;
         }
+        held.forEach((pos, stack) -> {
+            if (overworld.getBlockEntity(pos) instanceof net.mehvahdjukaar.vista.common.tv.TVBlockEntity tv) tv.setItem(0, stack);
+        });
         TributeRoomBlob next = session.blob().saved(snapshot, player.getGameProfile().getName(), System.currentTimeMillis(),
             DifficultyPartition.keyFor(overworld));
         // The death this visit followed rides with the room, so a tribute TV on the train can replay it.
