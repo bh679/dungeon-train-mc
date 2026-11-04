@@ -152,6 +152,85 @@ class MicDspTest {
         assertEquals(0f, m.update(new short[0], 0));
     }
 
+    // ---- automatic gain ----
+
+    /** One 10 ms block, a sine at {@code amplitude}: RMS is amplitude / sqrt(2). */
+    private static short[] tone(int amplitude) {
+        short[] s = new short[480];
+        for (int i = 0; i < s.length; i++) s[i] = (short) Math.round(amplitude * Math.sin(2 * Math.PI * i / 48));
+        return s;
+    }
+
+    private static double db(double rms) {
+        return 20 * Math.log10(rms / Short.MAX_VALUE);
+    }
+
+    @Test
+    void quietSpeechIsBroughtUpToTheTargetOverAFewSeconds() {
+        MicDsp.Agc agc = new MicDsp.Agc(48_000);
+        double before = db(MicDsp.rms(tone(1200), 480));
+        assertTrue(before < -28, "a quiet laptop mic: " + before);
+        double after = 0;
+        for (int i = 0; i < 600; i++) { // 6 s, two release times
+            short[] s = tone(1200);
+            agc.process(s, 480, true);
+            after = db(MicDsp.rms(s, 480));
+        }
+        assertTrue(after > -22 && after < -18, "settled at about -20 dBFS: " + after);
+        assertTrue(agc.gain() > 1f);
+    }
+
+    @Test
+    void loudSpeechIsLeftAlone() {
+        MicDsp.Agc agc = new MicDsp.Agc(48_000);
+        short[] loud = tone(12_000);
+        short[] copy = loud.clone();
+        for (int i = 0; i < 100; i++) agc.process(loud, 480, true);
+        assertArrayEquals(copy, loud, "over the target already: no boost, no cut");
+        assertEquals(1f, agc.gain());
+    }
+
+    @Test
+    void theBoostNeverPassesTheCapOrPushesAPeakOverTheCeiling() {
+        assertEquals(MicDsp.Agc.MAX_BOOST, MicDsp.Agc.wantedGain(1, 1), 1e-4, "a whisper asks for the cap, no more");
+        short[] peaky = new short[480];
+        peaky[0] = 20_000; // one click in an otherwise quiet block
+        float wanted = MicDsp.Agc.wantedGain(MicDsp.rms(peaky, 480), 20_000);
+        assertTrue(wanted * 20_000 <= MicDsp.Agc.CEILING + 1, "the ceiling holds the click: " + wanted);
+        MicDsp.Agc agc = new MicDsp.Agc(48_000);
+        for (int i = 0; i < 600; i++) agc.process(tone(1200), 480, true); // boosted well up
+        short[] burst = tone(12_000);
+        agc.process(burst, 480, true);
+        assertTrue(MicDsp.Agc.peak(burst, 480) <= MicDsp.Agc.CEILING + 1, "a sudden raised voice is held under the ceiling, not clipped");
+    }
+
+    @Test
+    void silenceAndGatedBlocksAreUntouchedAndLeaveTheGainWhereItWas() {
+        MicDsp.Agc agc = new MicDsp.Agc(48_000);
+        for (int i = 0; i < 600; i++) agc.process(tone(1200), 480, true);
+        float held = agc.gain();
+        short[] noise = filled(480, 30);
+        agc.process(noise, 480, false);
+        assertArrayEquals(filled(480, 30), noise, "a gated block is not pumped up");
+        assertEquals(held, agc.gain(), "and the gain waits for the voice");
+        short[] zeros = new short[480];
+        agc.process(zeros, 480, true);
+        assertArrayEquals(new short[480], zeros);
+        assertEquals(held, agc.gain());
+    }
+
+    @Test
+    void theGainComesDownFasterThanItGoesUp() {
+        MicDsp.Agc agc = new MicDsp.Agc(48_000);
+        for (int i = 0; i < 600; i++) agc.process(tone(1200), 480, true);
+        float up = agc.gain();
+        for (int i = 0; i < 100; i++) agc.process(tone(12_000), 480, true); // a second loud
+        assertTrue(agc.gain() < up * 0.5f, "a second of loud voice drops most of the boost: " + agc.gain() + " from " + up);
+        float down = agc.gain();
+        for (int i = 0; i < 100; i++) agc.process(tone(1200), 480, true); // a second quiet
+        assertTrue(agc.gain() < down + (up - down) * 0.4f, "a second of quiet brings back only a little");
+    }
+
     private static short[] filled(int n, int v) {
         short[] s = new short[n];
         java.util.Arrays.fill(s, (short) v);

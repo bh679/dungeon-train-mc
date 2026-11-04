@@ -146,6 +146,78 @@ public final class MicDsp {
         }
     }
 
+    /**
+     * Automatic gain on the voice: a quiet speaker (a laptop mic across the desk) is brought up to
+     * about {@link #TARGET_DB} RMS, a loud one is left alone (never turned down), and no boost ever
+     * pushes a peak over {@link #CEILING_DB}. The gain moves slowly, down in about {@link #ATTACK_S}
+     * and up in about {@link #RELEASE_S}, so it rides the level of a sentence and not the shape of a
+     * word. Only fed blocks the noise gate let through: room noise between words is never pumped up,
+     * and the gain holds where the voice left it. Times are in samples at {@code rate}.
+     */
+    static final class Agc {
+        /** Where speech is brought to: comfortably under the game sound's own peaks. */
+        static final double TARGET_DB = -20;
+        /** No more boost than this, whatever the mic gives. */
+        static final double MAX_BOOST_DB = 24;
+        /** No boosted peak over this, whatever the target asks. */
+        static final double CEILING_DB = -3;
+        static final double ATTACK_S = 0.5;
+        static final double RELEASE_S = 3;
+        static final double TARGET_RMS = dbToLinear(TARGET_DB) * Short.MAX_VALUE;
+        static final float MAX_BOOST = (float) dbToLinear(MAX_BOOST_DB);
+        static final double CEILING = dbToLinear(CEILING_DB) * Short.MAX_VALUE;
+
+        private final int rate;
+        private float gain = 1f;
+
+        Agc(int rate) {
+            this.rate = rate;
+        }
+
+        /** The boost in place right now, 1 (none) to {@link #MAX_BOOST}. */
+        float gain() {
+            return gain;
+        }
+
+        /** Boosts {@code s[0..n)} in place; {@code gateOpen} false leaves the block and the gain as they are. */
+        void process(short[] s, int n, boolean gateOpen) {
+            if (!gateOpen || n <= 0) return;
+            double rms = rms(s, n);
+            if (rms <= 0) return;
+            int peak = peak(s, n);
+            gain = follow(gain, wantedGain(rms, peak), n);
+            applyGain(s, n, Math.min(gain, ceilingGain(peak)));
+        }
+
+        /** The boost this block asks for: up to the target, never a cut, never over the ceiling or the cap. */
+        static float wantedGain(double rms, int peak) {
+            float toTarget = (float) Math.max(1.0, Math.min(MAX_BOOST, TARGET_RMS / rms));
+            return Math.min(toTarget, ceilingGain(peak));
+        }
+
+        /** The largest gain that keeps {@code peak} under the ceiling (at least 1: the ceiling never cuts). */
+        static float ceilingGain(int peak) {
+            return peak <= 0 ? MAX_BOOST : (float) Math.max(1.0, CEILING / peak);
+        }
+
+        /** One block's step from {@code from} toward {@code to}: fast on the way down, slow on the way up. */
+        private float follow(float from, float to, int n) {
+            double seconds = to < from ? ATTACK_S : RELEASE_S;
+            float k = (float) Math.min(1.0, n / (rate * seconds));
+            return from + (to - from) * k;
+        }
+
+        static int peak(short[] s, int n) {
+            int p = 0;
+            for (int i = 0; i < n; i++) p = Math.max(p, Math.abs(s[i]));
+            return p;
+        }
+
+        static double dbToLinear(double db) {
+            return Math.pow(10, db / 20);
+        }
+    }
+
     static double rms(short[] s, int n) {
         if (n <= 0) return 0;
         double sum = 0;
