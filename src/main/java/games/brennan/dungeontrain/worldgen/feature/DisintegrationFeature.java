@@ -88,10 +88,6 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             WorldGenLevel level = ctx.level();
             ChunkPos cp = new ChunkPos(ctx.origin());
             ServerLevel serverLevel = level.getLevel();
-            // The band is overworld geometry. End-labelled columns reach every height since the void fix
-            // (BandBiomeDecision), so this feature is attached to End biomes too (track_bed_end.json) —
-            // which also puts it on the real End dimension's own chunks, where it must do nothing.
-            if (!serverLevel.dimension().equals(Level.OVERWORLD)) return false;
             MinecraftServer server = serverLevel.getServer();
             if (server == null) return false;
             ServerLevel overworld = server.overworld();
@@ -156,8 +152,7 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             // itself off the same geometry, always lands on solid island.
             //
             // Islands are stamped across the whole band, INCLUDING the track lane, so the track feature
-            // (which runs AFTER this one — see track_bed_overworld.json and track_bed_end.json) can
-            // tunnel/pillar through them.
+            // (which runs AFTER this one — see track_bed_overworld.json) can tunnel/pillar through them.
             EndIslandGeometry geometry = islandSource.open(minY, maxY);
             // In the fully-eroded core the chunk generates empty (the noise fill is short-circuited and
             // vanilla decoration is skipped — see NoiseBasedChunkGeneratorMixin / ChunkGeneratorDecorationMixin),
