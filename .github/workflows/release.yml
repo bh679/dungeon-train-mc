@@ -665,6 +665,31 @@ jobs:
           fi
           python3 scripts/relay/sync-template-credits.py || echo "::warning::Some builder credits failed to sync — re-run scripts/relay/sync-template-credits.py."
 
+      # The relay judges Free Play from a verbatim copy of this jar's baked whitelist
+      # (assets/dungeontrain/cheat/approved_mods.json → dp-relay web/js/approved-mods-catalog.json,
+      # plus approved-mod-projects.json derived from approved_hashes.json + modpack.config.json). A
+      # copy that lags a release files honest players once enforceHashes is on (2026-11-04: a month-old
+      # copy was 21 ids short). This opens — or brings up to date — ONE pull request on dp-relay
+      # (branch auto/approved-mods-catalog) carrying the fresh copy; no difference → nothing opened.
+      # Every release including cascade ticks (the copy must match the newest jar), never a test
+      # build. Needs RELAY_REPO_TOKEN: a fine-grained PAT on bh679/dp-relay with Contents + Pull
+      # requests read/write. Unset → warning, skipped. Never blocks a release: the relay's own
+      # catalog-freshness.yml goes red until the PR lands, so a miss here is not silent.
+      - name: Open the relay approved-mods catalog PR
+        if: ${{ always() && steps.gh_release.outcome == 'success' && inputs.test_release == false }}
+        continue-on-error: true
+        env:
+          RELAY_REPO_TOKEN: ${{ secrets.RELAY_REPO_TOKEN }}
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          MAIN_JAR: ${{ steps.jars.outputs.main }}
+        run: |
+          if [ -z "$RELAY_REPO_TOKEN" ]; then
+            echo "::warning::RELAY_REPO_TOKEN is not set — relay approved-mods catalog PR not opened (gh secret set RELAY_REPO_TOKEN)."
+            exit 0
+          fi
+          bash scripts/relay/sync-approved-mods-catalog.sh "$MAIN_JAR" \
+            || echo "::warning::relay approved-mods catalog PR not opened — see the log; run scripts/relay/sync-approved-mods-catalog.sh by hand."
+
       # A balancing release retires the current one-life leaderboard era on the relay and opens the
       # next at this version (relay: leaderboard-eras.js). Operator-dispatched only: the cascade never
       # sets the input, and a test release is not a real one. Idempotent on the relay, so a re-run is

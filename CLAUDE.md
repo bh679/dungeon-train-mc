@@ -151,6 +151,13 @@ NeoForge file of every approved mod, pulled by hand with
 fails on an approved id with no record. Ids the script cannot place are listed in `unmatched` and
 stay id-only approved; the relay verifies their files live and the Approved Mods page's review
 queue shows what it could not place. The relay's `enforceHashes` switch ships OFF.
+**The relay's copy of the baked list refreshes itself:** `release.yml` runs
+`scripts/relay/sync-approved-mods-catalog.sh` after every release (cascade ticks included), which
+copies the jar's `approved_mods.json` into dp-relay's `web/js/approved-mods-catalog.json`, regenerates
+`approved-mod-projects.json` with the relay's `sync-mod-projects.js`, and opens or updates ONE PR on
+`bh679/dp-relay` (branch `auto/approved-mods-catalog`). It needs the `RELAY_REPO_TOKEN` secret (a
+fine-grained PAT on dp-relay, Contents + Pull requests read/write); unset, the step warns and skips.
+The relay's `catalog-freshness.yml` goes red until that PR is merged, so never refresh the copy by hand.
 
 ### In-Game Manual Testing
 
