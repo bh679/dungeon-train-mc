@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.live;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.compat.vista.TvGrid;
 import games.brennan.dungeontrain.compat.vista.TvItems;
 import net.mehvahdjukaar.vista.common.tv.TVBlockEntity;
 import net.mehvahdjukaar.vista.configs.ClientConfigs;
@@ -11,6 +12,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -28,7 +30,8 @@ import java.util.Map;
  * (at its screen, so it moves with a Sable carriage) that is within its own hearing range.
  *
  * <p>Vista ticks every TV and hands each live one to {@link #tv} ({@link LiveFeedSource#updateAudio});
- * that only records the TV as a candidate. Once a client tick, {@link #onClientTick} asks
+ * that only records the TV as a candidate, and only when the world says it may play ({@link LiveSpeakerCandidate}:
+ * the lit master block of its screen, keyed by that block). Once a client tick, {@link #onClientTick} asks
  * {@link LiveSpeakerChoice} which single TV plays (the worn or held one first; among placed TVs the
  * nearest, with the one already playing kept unless another is {@link LiveSpeakerChoice#SWAP_MARGIN}
  * nearer) and stops every other, along with any TV that stopped asking (switched off, retuned, broken,
@@ -62,8 +65,11 @@ public final class LiveTvSpeakers {
     /** A speaker that failed to start is retried after this long. */
     private static final long RETRY_MS = 250;
 
-    /** A placed TV asking to play this tick, {@code distance} blocks from the camera, heard over {@code range}. */
-    private record Candidate(BlockPos pos, LiveFeedSource.Hearing hearing, Vec3 at, double distance, double range) {}
+    /**
+     * A placed TV asking to play this tick: the master block of its screen at {@code pos} in {@code level}
+     * (a Sable carriage's own), {@code distance} blocks from the camera, heard over {@code range}.
+     */
+    private record Candidate(Level level, BlockPos pos, LiveFeedSource.Hearing hearing, Vec3 at, double distance, double range) {}
 
     private static final class Speaker {
         final LiveSpeakerSound sound;
@@ -90,9 +96,15 @@ public final class LiveTvSpeakers {
 
     private LiveTvSpeakers() {}
 
-    /** Vista's tick for a TV showing a live feed: record it as a candidate speaker if it may play. */
+    /**
+     * Vista's tick for a TV showing a live feed: record it as a candidate speaker if it may play. Whether it
+     * may is read from the world ({@link LiveSpeakerCandidate}), not from {@code playing}: only the lit master
+     * block of a screen counts, keyed by that block, so a stale block entity on a child block, or one whose
+     * block says off, never plays.
+     */
     static void tv(LiveFeedSource source, TVBlockEntity tv, boolean playing) {
-        if (!playing || tv.getLevel() == null || !tv.getLevel().isClientSide()) return;
+        Level level = tv.getLevel();
+        if (level == null || !level.isClientSide() || !LiveSpeakerCandidate.eligible(level, tv)) return;
         LiveFeedSource.Hearing h = source.hearing();
         if (h == null) return;
         Vec3 at = SableCompatClient.projectOutOfSubLevel(tv, tv.getScreenRect().center());
@@ -101,7 +113,7 @@ public final class LiveTvSpeakers {
         // Out of its own hearing: not a candidate, so a far big screen never takes a channel from a near small one.
         if (d >= range) return;
         BlockPos pos = tv.getBlockPos().immutable();
-        CANDIDATES.put(pos, new Candidate(pos, h, at, d, range));
+        CANDIDATES.put(pos, new Candidate(level, pos, h, at, d, range));
     }
 
     /** How far {@code tv} is heard, blocks: by the longer side of its grid (4.5 at 1x1, 9 at 4x4, on up). */
@@ -140,10 +152,12 @@ public final class LiveTvSpeakers {
                 if (mayHearPlaced(c.hearing(), ownPlaylist)) distances.put(c.pos(), c.distance());
             }
         }
-        // The TV playing keeps its sound through a tick it did not ask on (LiveSpeakerChoice#HOLD_MS), at its last known place.
+        // The TV playing keeps its sound through a tick it did not ask on (LiveSpeakerChoice#HOLD_MS), at its last
+        // known place — while its block still reads as a lit master; switched off, or joined into another screen, it ends now.
         Candidate last = placedLast;
         if (placedPos != null && CANDIDATES.containsKey(placedPos)) placedAskedMs = now;
-        boolean held = mayPlay && flatHearing == null && last != null && LiveSpeakerChoice.held(placedAskedMs, now)
+        boolean held = mayPlay && flatHearing == null && last != null
+            && LiveSpeakerChoice.held(placedAskedMs, now, TvGrid.isLitMaster(last.level(), last.pos()))
             && mayHearPlaced(last.hearing(), ownPlaylist);
         BlockPos chosenPos = LiveSpeakerChoice.placed(flatHearing != null, distances, placedPos, held);
         Candidate chosen = chosenPos == null ? null : CANDIDATES.get(chosenPos);

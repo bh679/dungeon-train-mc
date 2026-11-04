@@ -66,9 +66,16 @@ class LiveSpeakerChoiceTest {
 
     @Test
     void theHoldIsShort() {
-        assertTrue(LiveSpeakerChoice.held(1_000, 1_000), "asked this tick");
-        assertTrue(LiveSpeakerChoice.held(1_000, 1_000 + LiveSpeakerChoice.HOLD_MS), "a few ticks ago");
-        assertFalse(LiveSpeakerChoice.held(1_000, 1_001 + LiveSpeakerChoice.HOLD_MS), "longer: let go");
+        assertTrue(LiveSpeakerChoice.held(1_000, 1_000, true), "asked this tick");
+        assertTrue(LiveSpeakerChoice.held(1_000, 1_000 + LiveSpeakerChoice.HOLD_MS, true), "a few ticks ago");
+        assertFalse(LiveSpeakerChoice.held(1_000, 1_001 + LiveSpeakerChoice.HOLD_MS, true), "longer: let go");
         assertTrue(LiveSpeakerChoice.HOLD_MS >= 100 && LiveSpeakerChoice.HOLD_MS <= 1_000, "a few ticks, not a switch-off's worth");
+    }
+
+    /** The hold covers a tick skipped, never a TV whose block now reads off or is a child of a bigger screen: that ends at once. */
+    @Test
+    void aTvNoLongerLitIsNotHeldEvenForAMoment() {
+        assertFalse(LiveSpeakerChoice.held(1_000, 1_000, false), "switched off this very tick");
+        assertFalse(LiveSpeakerChoice.held(1_000, 1_050, false), "joined into another screen a tick ago");
     }
 }

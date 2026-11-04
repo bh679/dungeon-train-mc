@@ -31,9 +31,13 @@ final class LiveSpeakerChoice {
 
     private LiveSpeakerChoice() {}
 
-    /** Whether a TV that last asked to play at {@code lastAskedMs} is still held at {@code nowMs}. */
-    static boolean held(long lastAskedMs, long nowMs) {
-        return nowMs - lastAskedMs <= HOLD_MS;
+    /**
+     * Whether a TV that last asked to play at {@code lastAskedMs} is still held at {@code nowMs}. Only while
+     * the world still shows it lit ({@code stillLit}: its block is still its screen's master and switched on):
+     * the hold covers a tick skipped, never a TV switched off or joined into another screen, which ends at once.
+     */
+    static boolean held(long lastAskedMs, long nowMs, boolean stillLit) {
+        return stillLit && nowMs - lastAskedMs <= HOLD_MS;
     }
 
     /** {@link #placed(boolean, Map, Object, boolean)} with the TV playing not held through a gap. */
