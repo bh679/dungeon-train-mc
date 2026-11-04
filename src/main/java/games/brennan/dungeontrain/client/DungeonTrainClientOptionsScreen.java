@@ -15,6 +15,7 @@ import games.brennan.dungeontrain.client.twitch.TwitchLinkClient;
 import games.brennan.dungeontrain.client.credits.DonationPrefsClient;
 import games.brennan.dungeontrain.client.credits.DonationPrefsState;
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
+import games.brennan.dungeontrain.client.live.LiveMicHotkeys;
 import games.brennan.dungeontrain.client.live.StreamNameTag;
 import games.brennan.dungeontrain.client.live.StreamerBoxPanes;
 import games.brennan.dungeontrain.client.live.audio.MicCapture;
@@ -708,9 +709,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case STREAM_AUDIO -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.streamAudio(),
                     LiveFeedClientConfig::setStreamAudio), key + ".tip");
 
-            // ---- Microphone (LiveMic): read when the next stream starts, except the balance and mode, which apply at once.
+            // ---- Microphone (LiveMic). The Microphone row IS the mic switch, the same one as the button by
+            // LIVE: on a stream with a mic track it opens or closes the mic at once. The device is read when
+            // the next stream starts; the balance and mode apply at once.
             case MIC_SUPPORT -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.micSupport(),
-                    LiveFeedClientConfig::setMicSupport), key + ".tip");
+                    LiveMicHotkeys::setFromOptions), key + ".tip");
             case MIC_DEVICE -> {
                 List<String> devices = new ArrayList<>();
                 devices.add("");

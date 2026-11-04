@@ -1,18 +1,33 @@
 package games.brennan.dungeontrain.client.live.audio;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** The relay's mid-stream word on the mic, and what the heartbeat reports as "on". No capture device is opened. */
+/**
+ * The one mic switch (the Microphone option, stood in for here), the relay's mid-stream word on it,
+ * and what the heartbeat reports as "on". No capture device is opened: the option stays off whenever a
+ * switch-on would open one.
+ */
 class LiveMicTest {
+
+    private final AtomicBoolean option = new AtomicBoolean();
+
+    @BeforeEach
+    void standInForTheOption() {
+        LiveMic.setOptionForTests(option::get, option::set);
+    }
 
     @AfterEach
     void endStream() {
         LiveMic.endStream();
+        LiveMic.setOptionForTests(null, null);
     }
 
     @Test
@@ -28,7 +43,8 @@ class LiveMicTest {
         assertFalse(LiveMic.heartbeatMicOn());
         assertEquals(0f, LiveMic.level(), "no level fill while barred");
         assertEquals(1f, LiveMic.mixGameGain(), "the game stays at full in the mix while barred");
-        assertEquals(LiveMic.Toggle.BARRED, LiveMic.toggle(), "the switch does nothing while barred");
+        assertEquals(LiveMic.Toggle.BARRED, LiveMic.set(true, LiveMic.Source.KEY), "the switch does nothing while barred");
+        assertFalse(option.get(), "and the option is not touched by the refused switch-on");
 
         assertTrue(LiveMic.takeBarredNotice(), "the chat line, once");
         assertFalse(LiveMic.takeBarredNotice(), "and not again");
@@ -76,9 +92,43 @@ class LiveMicTest {
     @Test
     void theHeartbeatReportsWhatIsHeardNotTheSwitch() {
         LiveMic.startStream(true);
-        assertFalse(LiveMic.heartbeatMicOn(), "off at the start of every stream");
+        assertFalse(LiveMic.heartbeatMicOn(), "the option is off, so the mic is");
         LiveMic.setPushToTalkHeld(true);
         assertFalse(LiveMic.heartbeatMicOn(), "holding the key with the mic off is still off");
         assertEquals(LiveMic.transmitting(), LiveMic.heartbeatMicOn());
+    }
+
+    @Test
+    void theSwitchIsTheOptionAndTheStreamStartsAsItIsSet() {
+        LiveMic.startStream(true);
+        assertFalse(LiveMic.on(), "the option off: the mic starts this stream off");
+        assertEquals(LiveMic.Toggle.OFF, LiveMic.set(false, LiveMic.Source.INVENTORY), "off again is just off");
+        assertFalse(option.get());
+
+        // Without a capture device a switch-on can only fail to open one; the option is still saved.
+        assertEquals(LiveMic.Toggle.NO_DEVICE, LiveMic.toggle(LiveMic.Source.KEY));
+        assertTrue(option.get(), "the key flipped the saved option");
+        assertEquals(LiveMic.Toggle.OFF, LiveMic.toggle(LiveMic.Source.OPTIONS));
+        assertFalse(option.get(), "and the option flipped it back");
+    }
+
+    @Test
+    void switchedOnDuringAStreamWithoutAMicTrackTheOptionWaitsForTheNextStream() {
+        LiveMic.startStream(false);
+        assertEquals(LiveMic.Toggle.NEXT_STREAM, LiveMic.set(true, LiveMic.Source.OPTIONS));
+        assertTrue(option.get(), "saved");
+        assertFalse(LiveMic.on(), "but not on this stream: it carries no mic track");
+        assertFalse(LiveMic.enabled());
+        assertEquals(LiveMic.Toggle.OFF, LiveMic.set(false, LiveMic.Source.OPTIONS));
+        assertFalse(option.get());
+    }
+
+    @Test
+    void outsideAStreamTheSwitchOnlySavesTheOption() {
+        assertEquals(LiveMic.Toggle.NEXT_STREAM, LiveMic.set(true, LiveMic.Source.OPTIONS));
+        assertTrue(option.get());
+        assertFalse(LiveMic.on());
+        LiveMic.endStream();
+        assertTrue(option.get(), "a stream ending leaves the option alone");
     }
 }

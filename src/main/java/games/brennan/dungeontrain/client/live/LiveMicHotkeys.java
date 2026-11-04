@@ -17,9 +17,11 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 
 /**
- * The streamer's mic keys: Toggle Mic (unbound by default; the icon by LIVE does the same,
- * {@link LiveRecOverlay}) and Push to Talk (V), which only matters with push to talk set
- * ({@code LiveFeedClientConfig.micPushToTalk}). {@link #toggle} is the one switch both use.
+ * The streamer's mic keys: Toggle Mic (K by default: vanilla binds nothing to it, and Dungeon Train's
+ * other keys sit on Z, C, J, O, V, Y and R) and Push to Talk (V), which only matters with push to talk
+ * set ({@code LiveFeedClientConfig.micPushToTalk}). The key, the mic button by LIVE in the inventory
+ * ({@link LiveRecOverlay}) and the Stream tab's Microphone option are one switch
+ * ({@link LiveMic#set}); {@link #apply} is what the key and the button say about the result.
  *
  * <p>The inner tick class has a unique simple name — NeoForge silently dedupes inner
  * {@code @EventBusSubscriber} classes that share one (see {@code ContainerHotkeyClient}).</p>
@@ -30,7 +32,7 @@ public final class LiveMicHotkeys {
     static final KeyMapping TOGGLE = new KeyMapping(
         "key." + DungeonTrain.MOD_ID + ".live_mic_toggle",
         InputConstants.Type.KEYSYM,
-        InputConstants.UNKNOWN.getValue(),
+        InputConstants.KEY_K,
         VariantHotkeyClient.CATEGORY
     );
 
@@ -49,28 +51,46 @@ public final class LiveMicHotkeys {
         event.register(PUSH_TO_TALK);
     }
 
+    /** The Toggle Mic key's name as bound right now, for the hint by LIVE. */
+    static Component toggleKeyName() {
+        return TOGGLE.getTranslatedKeyMessage();
+    }
+
     /**
-     * Flips the stream's mic with a click to hear and a line over the hotbar; a mic that would not
-     * open says so in chat. Nothing happens on a stream without a mic track.
+     * Flips the one mic switch from the key or the inventory button, with a click to hear and a line
+     * over the hotbar; a mic that would not open says so in chat, and so does a switch-on during a
+     * stream without a mic track (the voice joins from the next stream). Nothing is said outside a
+     * stream: the option is simply saved.
      */
-    static void toggle() {
+    static void toggle(LiveMic.Source source) {
+        apply(LiveMic.toggle(source));
+    }
+
+    /** The Stream tab's Microphone option flipped: the same switch, with the same word on the result. */
+    public static void setFromOptions(boolean on) {
+        apply(LiveMic.set(on, LiveMic.Source.OPTIONS));
+    }
+
+    private static void apply(LiveMic.Toggle t) {
         Minecraft mc = Minecraft.getInstance();
-        LiveMic.Toggle t = LiveMic.toggle();
-        if (t == LiveMic.Toggle.NOT_ENABLED) return;
-        if (t == LiveMic.Toggle.BARRED) {
+        if (mc.player == null) return;
+        switch (t) {
             // The relay turned the mic off for this streamer mid-stream: the switch does nothing, say why again.
-            LiveStreamController.sayMicBarred();
-            return;
-        }
-        if (t == LiveMic.Toggle.NO_DEVICE) {
-            if (mc.player != null) mc.player.displayClientMessage(
+            case BARRED -> LiveStreamController.sayMicBarred();
+            case NO_DEVICE -> mc.player.displayClientMessage(
                 Component.translatable("chat.dungeontrain.live.mic_no_device").withStyle(ChatFormatting.RED), false);
-            return;
+            case NEXT_STREAM -> {
+                if (LiveStreamController.get().streaming()) mc.player.displayClientMessage(
+                    Component.translatable("chat.dungeontrain.live.mic_next_stream").withStyle(ChatFormatting.YELLOW), false);
+            }
+            case ON, OFF -> {
+                if (!LiveStreamController.get().streaming()) return;
+                boolean on = t == LiveMic.Toggle.ON;
+                mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, on ? 1.4f : 0.8f));
+                mc.player.displayClientMessage(Component.translatable(
+                    on ? "gui.dungeontrain.live.mic_on" : "gui.dungeontrain.live.mic_off"), true);
+            }
         }
-        boolean on = t == LiveMic.Toggle.ON;
-        mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, on ? 1.4f : 0.8f));
-        if (mc.player != null) mc.player.displayClientMessage(Component.translatable(
-            on ? "gui.dungeontrain.live.mic_on" : "gui.dungeontrain.live.mic_off"), true);
     }
 
     @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
@@ -87,7 +107,8 @@ public final class LiveMicHotkeys {
             int presses = 0;
             while (TOGGLE.consumeClick()) presses++;
             if (presses == 0 || mc.player == null || mc.screen != null) return;
-            if (presses % 2 == 1) toggle();
+            // The key is only a switch while on air: elsewhere the Stream tab's option is the place.
+            if (presses % 2 == 1 && LiveStreamController.get().streaming()) toggle(LiveMic.Source.KEY);
         }
     }
 }
