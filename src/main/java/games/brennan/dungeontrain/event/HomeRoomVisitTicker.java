@@ -41,6 +41,12 @@ public final class HomeRoomVisitTicker {
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
             if (player == null) continue;
             HomeRoomVisitSessions.Session session = entry.getValue();
+            long age = level.getGameTime() - session.startedTick();
+            if (age < 100 && age % 20 == 0) {
+                org.slf4j.LoggerFactory.getLogger("DungeonTrain/HomeRoom").info("[DungeonTrain] home room: tick {} — {} at {} chunkPos={} lastSection={} view={} level={}",
+                    age, player.getName().getString(), player.blockPosition(), player.chunkPosition(), player.getLastSectionPos(),
+                    player.getChunkTrackingView(), player.level().dimension().location());
+            }
             if (player.level() == level && !session.window().isInside(player.blockPosition()) && player.isAlive()) {
                 HomeRoomCamera.Pose pose = session.pose();
                 player.teleportTo(level, pose.x(), pose.y(), pose.z(), pose.yaw(), pose.pitch());

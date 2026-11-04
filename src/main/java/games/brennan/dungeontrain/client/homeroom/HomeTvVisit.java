@@ -35,7 +35,9 @@ import java.util.function.Supplier;
 public final class HomeTvVisit {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    static final long ROOM_TIMEOUT_MS = 8_000L;
+    static final long ROOM_TIMEOUT_MS = 20_000L;
+    /** Black held after the room is in, before the fade-in. */
+    static final long SETTLE_MS = 600L;
     /** The TV's own picture ratio: 3 blocks wide, 2 tall. */
     static final float TV_ASPECT = 1.5f;
 
@@ -48,6 +50,7 @@ public final class HomeTvVisit {
     @Nullable private static BoundingBox screenBox;
     @Nullable private static Screen pendingHost;
     private static boolean pendingKeepMode;
+    private static long readyAtMs = -1L;
 
     private HomeTvVisit() {}
 
@@ -58,7 +61,7 @@ public final class HomeTvVisit {
         Minecraft mc = Minecraft.getInstance();
         reset();
         recap = next;
-        texture = new ScreenToTexture(TV_ASPECT);
+        texture = new ScreenToTexture(TV_ASPECT, games.brennan.dungeontrain.client.perks.PerksScreen.SKY_BG);
         texture.attach(perks);
         setPhase(Phase.FADING_OUT);
         mc.setScreen(new HomeArrivalScreen(perks));
@@ -130,8 +133,13 @@ public final class HomeTvVisit {
             }
             case AWAITING_ROOM -> {
                 if (roomReady(mc)) {
-                    setPhase(Phase.FADING_IN);
-                    HomeArrivalFov.begin(now);
+                    // A few frames on black once the room is in, so the first thing seen is the room
+                    // lit and settled rather than its chunks arriving.
+                    if (readyAtMs < 0) readyAtMs = now;
+                    if (now - readyAtMs >= SETTLE_MS) {
+                        setPhase(Phase.FADING_IN);
+                        HomeArrivalFov.begin(now);
+                    }
                 } else if (now - phaseAtMs >= ROOM_TIMEOUT_MS) {
                     fallBack("no room after " + ROOM_TIMEOUT_MS + " ms");
                 }
@@ -152,11 +160,27 @@ public final class HomeTvVisit {
         if (texture != null && phase != Phase.IDLE && phase != Phase.ENDING) texture.tick();
     }
 
-    /** The room is up when we are alive in a level that has the TV's block entity. */
+    /** The room is up when we are alive in a level that has the TV's blocks — its chunk has arrived. */
     private static boolean roomReady(Minecraft mc) {
         if (screenBox == null || mc.level == null || mc.player == null || !mc.player.isAlive()) return false;
-        BlockPos corner = new BlockPos(screenBox.minX(), screenBox.minY(), screenBox.minZ());
-        return mc.level.getBlockEntity(corner) instanceof TVBlockEntity;
+        boolean anyTv = false, anyEntity = false;
+        for (BlockPos pos : BlockPos.betweenClosed(screenBox.minX(), screenBox.minY(), screenBox.minZ(),
+                screenBox.maxX(), screenBox.maxY(), screenBox.maxZ())) {
+            if (mc.level.getBlockEntity(pos) instanceof TVBlockEntity) anyEntity = true;
+            if (games.brennan.dungeontrain.compat.vista.TvBlocks.isTelevision(mc.level.getBlockState(pos))) anyTv = true;
+        }
+        if (mc.level.getGameTime() % 20 == 0 && !anyEntity) {
+            BlockPos c = new BlockPos(screenBox.minX(), screenBox.minY(), screenBox.minZ());
+            int solid = 0;
+            for (BlockPos pos : BlockPos.betweenClosed(c.offset(-8, -3, -3), c.offset(8, 6, 14))) {
+                if (!mc.level.getBlockState(pos).isAir()) solid++;
+            }
+            net.minecraft.world.level.chunk.LevelChunk chunk = mc.level.getChunkSource().getChunk(c.getX() >> 4, c.getZ() >> 4, false);
+            LOGGER.info("[DungeonTrain] home room: waiting — player alive at {}, chunk={} empty={}, solid near TV={}, at TV={}, under feet={}",
+                mc.player.blockPosition(), chunk == null ? "none" : chunk.getPos(), chunk != null && chunk.isEmpty(), solid,
+                mc.level.getBlockState(c), mc.level.getBlockState(mc.player.blockPosition().below()));
+        }
+        return anyEntity;
     }
 
     // ---- the way out ------------------------------------------------------------------------
@@ -204,7 +228,19 @@ public final class HomeTvVisit {
         screenBox = null;
         pendingHost = null;
         pendingKeepMode = false;
+        readyAtMs = -1L;
         HomeArrivalFov.reset();
+    }
+
+    /** For the dev preview harness: where the visit stands. */
+    static Phase phase() {
+        return phase;
+    }
+
+    /** For the dev preview harness: a block of the TV, or null. */
+    @Nullable
+    static BlockPos screenCorner() {
+        return screenBox == null ? null : new BlockPos(screenBox.minX(), screenBox.minY(), screenBox.minZ());
     }
 
     private static void setPhase(Phase next) {

@@ -44,15 +44,16 @@ public final class ScreenToTexture {
     private Screen screen;
     private boolean registered;
 
-    /** A texture at {@code aspect} (width over height) tall enough for the recap. */
-    public ScreenToTexture(float aspect) {
+    /** A texture at {@code aspect} (width over height) tall enough for the recap, cleared to {@code clearRgb} under the screen. */
+    public ScreenToTexture(float aspect, int clearRgb) {
         this.guiHeight = GUI_HEIGHT;
         this.guiWidth = Math.max(320, Math.round(GUI_HEIGHT * aspect));
         int w = guiWidth * PIXEL_SCALE, h = guiHeight * PIXEL_SCALE;
         this.drawn = new TextureTarget(w, h, true, Minecraft.ON_OSX);
         this.flipped = new TextureTarget(w, h, false, Minecraft.ON_OSX);
-        drawn.setClearColor(0f, 0f, 0f, 1f);
-        flipped.setClearColor(0f, 0f, 0f, 1f);
+        float r = ((clearRgb >> 16) & 0xFF) / 255f, g = ((clearRgb >> 8) & 0xFF) / 255f, b = (clearRgb & 0xFF) / 255f;
+        drawn.setClearColor(r, g, b, 1f);
+        flipped.setClearColor(r, g, b, 1f);
         Minecraft.getInstance().getTextureManager().register(LOCATION, new RenderTargetTexture());
         registered = true;
     }

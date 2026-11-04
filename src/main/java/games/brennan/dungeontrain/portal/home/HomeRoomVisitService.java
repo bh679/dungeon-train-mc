@@ -144,13 +144,22 @@ public final class HomeRoomVisitService {
         DeathBodyRagdoll.release(dead);
         DeadRiderServerCarry.release(dead);
         ServerPlayer fresh = server.getPlayerList().respawn(dead, false, Entity.RemovalReason.KILLED);
+        // Vanilla's respawn handler points the connection at the new player itself; done here or the
+        // teleport below moves the dead body and every packet keeps landing on it.
+        fresh.connection.player = fresh;
         if (fresh.isPassenger()) fresh.stopRiding();
         fresh.teleportTo(overworld, pose.x(), pose.y(), pose.z(), pose.yaw(), pose.pitch());
         fresh.resetFallDistance();
+        // Re-centre their chunk view on the room now, not next tick: the chunks below are sent
+        // against the view, and a client whose view still sits at the death spot drops every one.
+        overworld.getChunkSource().move(fresh);
+        LOGGER.info("[DungeonTrain] home room: chunk tracking for {} — chunkPos={} lastSection={} view={}",
+            fresh.getName().getString(), fresh.chunkPosition(), fresh.getLastSectionPos(), fresh.getChunkTrackingView());
         if (previous == GameType.ADVENTURE || previous == GameType.SPECTATOR) fresh.setGameMode(GameType.SURVIVAL);
         for (ItemStack stack : kit) fresh.getInventory().placeItemBackInInventory(stack);
 
         powerOn(overworld, screen);
+        resendWindow(server, overworld, fresh, window);
         DungeonTrainNet.sendTo(fresh, HomeRoomVisitStatePacket.active(boxOf(screen), facing));
         PortalCarriageEvents.sendRoomAmbience(dims, layout, structure, worldData.getTrainY(), List.of(fresh));
 
@@ -247,6 +256,29 @@ public final class HomeRoomVisitService {
     }
 
     // ---- helpers ---------------------------------------------------------------
+
+    /**
+     * Ship the window's chunks to the visitor whole, two ticks on: a stamp writes straight into the
+     * chunk, and a chunk the client already holds (or receives from a copy taken before the stamp)
+     * would otherwise show the room as it was. The same packet {@code WorldUpsideDownEvents} resends
+     * a mirrored chunk with.
+     */
+    private static void resendWindow(MinecraftServer server, ServerLevel level, ServerPlayer player, BoundingBox window) {
+        server.tell(new net.minecraft.server.TickTask(server.getTickCount() + 2, () -> {
+            if (!player.isAlive() || player.hasDisconnected()) return;
+            int sent = 0;
+            for (int cx = window.minX() >> 4; cx <= window.maxX() >> 4; cx++) {
+                for (int cz = window.minZ() >> 4; cz <= window.maxZ() >> 4; cz++) {
+                    net.minecraft.world.level.chunk.LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
+                    if (chunk == null) continue;
+                    player.connection.send(new net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket(
+                        chunk, level.getLightEngine(), null, null));
+                    sent++;
+                }
+            }
+            LOGGER.info("[DungeonTrain] home room: resent {} chunk(s) of the room to {}", sent, player.getName().getString());
+        }));
+    }
 
     /** Every TV block in {@code room}, collected into {@code out}; the direction the screen faces (NORTH when none). */
     static Direction screenBlocks(ServerLevel level, BoundingBox room, List<BlockPos> out) {

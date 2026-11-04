@@ -84,6 +84,7 @@ public final class PerksScreen extends Screen {
     private long frameAt;
 
     private SkyView view;
+    private int fittedWidth = -1, fittedHeight = -1;
     private PerkMenuSnapshot last = PerkMenuSnapshot.EMPTY;
     private Set<String> off;
     private String preview;
@@ -179,7 +180,12 @@ public final class PerksScreen extends Screen {
 
     @Override
     protected void init() {
-        view = view == null ? SkyView.fit(width, skyH()) : view.clamped(width, skyH());
+        // A new canvas size (the home TV's texture, not the window) gets a fresh fit; a resize of
+        // the same canvas keeps the player's pan and zoom, clamped.
+        boolean sameCanvas = fittedWidth == width && fittedHeight == skyH();
+        view = view == null || !sameCanvas ? SkyView.fit(width, skyH()) : view.clamped(width, skyH());
+        fittedWidth = width;
+        fittedHeight = skyH();
         bar.invalidate();
     }
 
