@@ -103,7 +103,7 @@ public final class PortalExitSites {
         if (exits == null || tile == null || !exits.lays()) return List.of();
         if (Tile.BASE.equals(tile)) return List.of();
 
-        return switch (exits.kind()) {
+        List<Site> owed = switch (exits.kind()) {
             case OFF -> List.of();
             case ON -> onLattice(tile, exits.every())
                 ? List.of(new Site(tile, PortalCarriageRole.ENTRY),
@@ -111,6 +111,34 @@ public final class PortalExitSites {
                 : List.of();
             case RANDOM -> rolledAt(tile, exits.every(), seed);
         };
+        return owed.stream().filter(site -> pointsTheRightWay(site.tile(), site.role())).toList();
+    }
+
+    /**
+     * Whether a corridor of {@code role} anchored at {@code tile} can stand without landing on the
+     * pair's own corridors.
+     *
+     * <p>Off the corridor row ({@code z != 0}) always: a corridor there is in its own lane. On it,
+     * the row is one line of corridors and rooms along the train, and a copy has to point the way
+     * the pair's own two do — an {@link PortalCarriageRole#EXIT} ahead of the base room
+     * ({@code x >= 1}), an {@link PortalCarriageRole#ENTRY} behind it ({@code x <= -1}). An exit
+     * corridor stands on the high-X side of its anchor, so one anchored behind the room reaches
+     * forward into the pair's own entry corridor: at {@code x = -1} its mouth opens inside that
+     * corridor, and at {@code x = -2} it is stamped squarely on top of it, one block along — which is
+     * where the moved exit of a 12-long room was found standing, sharing a twin with the entry it was
+     * meant to be the way out of. Both carriages then claimed the same spot and the player swapped
+     * between them once a second. An entry corridor ahead of the room is the mirror case, over the
+     * base room and the pair's exit corridor.</p>
+     *
+     * <p>Applied where sites are owed rather than where they are chosen, so the copies
+     * ({@code PortalExitCopyTiler}, which also stamps and frames every copy) and the moved exit
+     * ({@link #relocatedExitTile}) cannot disagree. The present and role rolls are untouched, so no
+     * other site moves.</p>
+     */
+    public static boolean pointsTheRightWay(Tile tile, PortalCarriageRole role) {
+        if (tile == null || role == null) return false;
+        if (tile.z() != 0) return true;
+        return role == PortalCarriageRole.EXIT ? tile.x() >= 1 : tile.x() <= -1;
     }
 
     /** True when {@code tile} is a lattice point — every {@code every} tiles on <b>both</b> axes. */
@@ -177,6 +205,10 @@ public final class PortalExitSites {
      * the tiling window the exit's room is not built at all, so its mouth would open onto the empty
      * basement — a way out that drops you out of the world is worse than one that is simply where it
      * has always been.</p>
+     *
+     * <p><b>Never on the corridor row behind the room.</b> {@link #owedAt} owes no exit there
+     * ({@link #pointsTheRightWay}), and this picks only from what is owed, so the exit cannot be
+     * stood on the pair's own entry corridor.</p>
      */
     public static Tile relocatedExitTile(PortalRoomExits exits, long seed, int radius) {
         if (exits == null || !movesExit(exits, seed)) return Tile.BASE;

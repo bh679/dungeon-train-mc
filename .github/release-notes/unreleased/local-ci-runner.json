@@ -1,0 +1,16 @@
+{
+  "id": "local-ci-runner",
+  "version": "0.1646.0",
+  "type": "ci",
+  "tags": [
+    "internal"
+  ],
+  "title": "Faster checks before changes ship",
+  "summary": "The team can now run the full set of release checks on their own machine before sending a change in, so fixes reach you with fewer delays.",
+  "highlights": [],
+  "pr": 2467,
+  "date": "2026-11-04",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

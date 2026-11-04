@@ -1,67 +1,34 @@
-<!-- gate: gate-1-plan | version: 1.0.0 -->
-# Gate 1 — Plan Approval
+<!-- gate: gate-1-plan (Dungeon Train add-on) | version: 1.2.1 -->
+# Gate 1 — Plan Approval (Dungeon Train add-on)
 
-**Trigger:** Before writing any code.
+**Follow `~/.claude/playbooks/gates/gate-1-plan.md` first.** This file only adds the Dungeon Train
+steps below; its UI prototype step applies to every in-game screen, overlay, HUD and tooltip.
 
-## Research & Reuse
-**Mandatory before writing the plan.**
+## Research & Reuse: where to look
+- **Your own mods first:** the sibling repos (`gh repo list bh679 | grep -- -mc`: AIN, AIS, PMOB, ECP,
+  TE, Keep Trim, Dungeon Backup, Lost City Terrain Fit…) and the mods DT already depends on (Sable,
+  BoP, WWOO, BetterNether/End, Deeper Darker, VanillaBackport, Exposure). Prefer a seam in one of
+  those over new code in DT.
+- **Mod registries:** Modrinth and CurseForge, NeoForge 1.21.1. A mod that does it already is a
+  candidate dependency or modpack companion. Check its licence before porting code (Big Lost City
+  is All Rights Reserved: no DT processors on its templates).
 
-- **GitHub code search first:** Run `gh search repos` and `gh search code` to find existing implementations, templates, and patterns before writing anything new.
-- **Check package registries:** Search npm, PyPI, crates.io, and other registries before writing utility code. Prefer battle-tested libraries over hand-rolled solutions.
-- **Search for adaptable implementations:** Look for open-source projects that solve 80%+ of the problem and can be forked, ported, or wrapped.
-- Prefer adopting or porting a proven approach over writing net-new code when it meets the requirement.
+## New or changed advancements
+Before plan mode, read `.claude/gates/advancement-prototype.md` and prototype them in the advancement
+editor.
 
-## Agent Actions
-1. Research & reuse (see above)
-2. Enter plan mode (`EnterPlanMode`)
-3. Explore the codebase — read relevant files, understand existing patterns
-4. Write a plan to the plan file covering:
-   - What will be built
-   - Which files will be changed and why
-   - Estimated complexity
-   - Risks or dependencies
-   - Deployment impact (see checklist below)
-5. Present the plan to the user via `ExitPlanMode`
+## Mod-impact checklist (in place of the template's deployment checklist)
+Flag each that applies in the plan's Risks, with its follow-up:
 
-**Gate requirement:** User clicks Approve in plan mode.
-
-**Never skip:** Even for "simple" changes. Plan mode catches assumptions early.
-
-## Related Playbooks
-Before creating or searching board items, read `~/.claude/playbooks/project-board.md`.
-
-## Deployment Impact Checklist
-Assess whether the planned changes impact deployment. Flag if any apply:
-
-- Environment variable additions, removals, or changes
-- New dependencies or major version bumps
-- Port or networking changes
-- Database schema migrations
-- New API endpoints requiring proxy/load balancer config
-- Docker/container configuration changes
-- Build step changes (new tools, changed commands, new artifacts)
-- New external service integrations (credentials/config needed)
-- Startup or shutdown procedure changes
-- Infrastructure requirement changes (memory, CPU, storage)
-
-**If any apply:**
-1. Check for existing `Deployment-*.md` wiki pages
-2. Include "Update deployment documentation" as a task in the plan
-3. Note which deployment methods are affected
-
-**If no deployment docs exist yet:** create them after Gate 3 (see gate-3-merge.md).
-
-## Session Identification
-Update the session title on entering this gate:
-
-**Title format:** `PLAN - <Task Name> - <Project Name>`
-
-| Status code | Meaning |
+| Change | Follow-up |
 |---|---|
-| `IDEA` | Exploring / not yet started |
-| `PLAN` | Gate 1 in progress |
-| `DEV` | Implementing |
-| `TEST` | Gate 2 in progress |
-| `DONE` | Merged and shipped |
-
-Update the title on every status transition. Sync to GitHub Project V2 board item if applicable.
+| New/removed dependency or modpack mod | `modpack.config.json` pins + `mod_ids`, `release.yml` `curseforge-dependencies`, whitelist question at Gate 3, `scripts/deptest/run-all.sh` before release |
+| MC / NeoForge / Sable bump | Sable: modpack `sable.file_id` + `sable.modrinth_version`; deptest |
+| Sibling floor (`<mod>_min_version`) raised | Refresh that mod's modpack pin; `check-pins.py` |
+| New mixin | Target mod present on both client and server? Mixin guard if third-party |
+| New registered block/item/entity | Lang keys in all 20 locales; loot/creative tabs |
+| World-gen change | Determinism across bands; existing worlds unaffected? |
+| Network packet added/changed | Bump `PROTOCOL_VERSION` |
+| Bundled templates added or re-saved, or room weights changed | Regenerate `house_credits.json` (CI fails if stale) |
+| Block physics / collision / world interaction | Gate 2 Sable test on a moving train |
+| Relay API change | Relay deploy order relative to the mod release |
