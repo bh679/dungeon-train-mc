@@ -17,15 +17,17 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
  * The client side of a home room visit, as a state machine:
  *
  * <pre>
- * IDLE → FADING_OUT (black over the perks menu) → AWAITING_ROOM (black; the server stands the room)
- *      → FADING_IN (black falls away, FOV eases out of the TV) → WATCHING (first person, TV on)
- *      → ENDING (Board anew sent; waiting for the save) → IDLE
+ * IDLE → AWAITING_ROOM (the perks menu stays on the window while the server stands the room behind it)
+ *      → FADING_IN (the menu dissolves into the TV showing the same picture, FOV eases out of it)
+ *      → WATCHING (first person, TV on; walking into a tube darkens the view with the distance)
+ *      → ENDING (Board anew sent, or a tube's far end reached; black until the save) → IDLE
  * </pre>
  *
  * <p>The TV shows whatever {@link ScreenToTexture} is drawing: the perks menu exactly as it was left,
@@ -38,12 +40,14 @@ public final class HomeTvVisit {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     static final long ROOM_TIMEOUT_MS = 20_000L;
-    /** Black held after the room is in, before the fade-in. */
+    /** The menu held after the room is in, before it dissolves into the TV. */
     static final long SETTLE_MS = 600L;
+    /** How far into a tube, as a fraction of its length, the view is fully black and the visit ends. */
+    static final float TUBE_END_FRACTION = 0.92f;
     /** What the picture is taken to be when no texture is up: the TV's own 3:2. */
     static final float TV_ASPECT = 1.5f;
 
-    enum Phase { IDLE, FADING_OUT, AWAITING_ROOM, FADING_IN, WATCHING, ENDING }
+    enum Phase { IDLE, AWAITING_ROOM, FADING_IN, WATCHING, ENDING }
 
     private static Phase phase = Phase.IDLE;
     private static long phaseAtMs;
@@ -51,6 +55,9 @@ public final class HomeTvVisit {
     @Nullable private static ScreenToTexture texture;
     @Nullable private static NarrativeDeathScreen recapScreen;
     @Nullable private static BoundingBox screenBox;
+    private static List<BoundingBox> tubes = List.of();
+    /** How black the tube walk has the view, 0..1; held at 1 once a far end has ended the visit. */
+    private static float tubeBlack;
     private static net.minecraft.core.Direction screenFacing = net.minecraft.core.Direction.NORTH;
     @Nullable private static Screen pendingHost;
     private static boolean pendingKeepMode;
@@ -60,15 +67,20 @@ public final class HomeTvVisit {
 
     // ---- entry ---------------------------------------------------------------------
 
-    /** Next pressed on the perks menu while dead: start the fade and ask the server for the room. */
+    /**
+     * Next pressed on the perks menu while dead: the menu stays exactly as it is on the window (drawn
+     * from the TV's own texture from here) while the server is asked for the room and stands it
+     * behind. Nothing goes black: the first change the player sees is the menu dissolving into the TV.
+     */
     public static void begin(Screen perks, Supplier<Screen> next) {
         Minecraft mc = Minecraft.getInstance();
         reset();
         recap = next;
         texture = new ScreenToTexture(games.brennan.dungeontrain.client.perks.PerksScreen.SKY_BG);
         texture.attach(perks);
-        setPhase(Phase.FADING_OUT);
-        mc.setScreen(new HomeArrivalScreen(perks));
+        setPhase(Phase.AWAITING_ROOM);
+        mc.setScreen(new HomeArrivalScreen());
+        DungeonTrainNet.sendToServer(new HomeRoomVisitPacket());
     }
 
     public static boolean isActive() {
@@ -90,27 +102,52 @@ public final class HomeTvVisit {
         return texture == null ? null : texture.location();
     }
 
-    /** How black the arrival screen draws now. */
-    static float blackAlpha(long nowMs) {
+    /** How opaque the menu picture is over the window now: whole until the room is in, then dissolving. */
+    static float overlayAlpha(long nowMs) {
         return switch (phase) {
-            case FADING_OUT -> Mth.clamp((nowMs - phaseAtMs) / (float) HomeArrivalScreen.FADE_OUT_MS, 0f, 1f);
             case AWAITING_ROOM -> 1f;
             case FADING_IN -> 1f - Mth.clamp((nowMs - phaseAtMs) / (float) HomeArrivalScreen.FADE_IN_MS, 0f, 1f);
             default -> 0f;
         };
     }
 
+    /** How black the view is from walking into a tube, 0..1 (1 and held once the far end ended the visit). */
+    public static float tubeBlack() {
+        return phase == Phase.WATCHING || phase == Phase.ENDING ? tubeBlack : 0f;
+    }
+
+    /**
+     * How deep {@code x,z} is into one of the tubes, 0 at its mouth on the room to 1 at its far wall;
+     * 0 outside both. The tubes lie along x, and the one the point is in is entered from the end that
+     * faces the TV's room.
+     */
+    static float tubeDepth(List<BoundingBox> tubes, @Nullable BoundingBox screen, double x, double z) {
+        if (screen == null) return 0f;
+        double roomX = (screen.minX() + screen.maxX() + 1) / 2.0;
+        for (BoundingBox tube : tubes) {
+            if (x < tube.minX() || x >= tube.maxX() + 1 || z < tube.minZ() || z >= tube.maxZ() + 1) continue;
+            double length = tube.getXSpan();
+            if (length <= 1) return 1f;
+            double mouth = roomX < tube.minX() ? tube.minX() : tube.maxX() + 1;
+            double far = roomX < tube.minX() ? tube.maxX() + 1 : tube.minX();
+            double depth = Math.abs(x - mouth) / Math.abs(far - mouth);
+            return (float) Mth.clamp(depth, 0.0, 1.0);
+        }
+        return 0f;
+    }
+
     // ---- server answers -----------------------------------------------------------------
 
     public static void onState(HomeRoomVisitStatePacket packet) {
         if (!packet.active()) {
-            if (phase == Phase.AWAITING_ROOM || phase == Phase.FADING_OUT) fallBack("the server declined the visit");
+            if (phase == Phase.AWAITING_ROOM) fallBack("the server declined the visit");
             else if (phase != Phase.ENDING) reset();
             return;
         }
         screenBox = BoundingBox.fromCorners(packet.screenMin(), packet.screenMax());
         screenFacing = packet.facing();
-        if (phase == Phase.AWAITING_ROOM || phase == Phase.FADING_OUT) LOGGER.info("[DungeonTrain] home room: TV at {}", screenBox);
+        tubes = packet.tubes();
+        if (phase == Phase.AWAITING_ROOM) LOGGER.info("[DungeonTrain] home room: TV at {}, tubes {}", screenBox, tubes);
     }
 
     /** The server saved the room. Singleplayer owns the run's end from here; a server has placed us already. */
@@ -138,17 +175,11 @@ public final class HomeTvVisit {
         }
         Minecraft mc = Minecraft.getInstance();
         switch (phase) {
-            case FADING_OUT -> {
-                if (now - phaseAtMs >= HomeArrivalScreen.FADE_OUT_MS) {
-                    setPhase(Phase.AWAITING_ROOM);
-                    mc.setScreen(new HomeArrivalScreen(null));
-                    DungeonTrainNet.sendToServer(new HomeRoomVisitPacket());
-                }
-            }
             case AWAITING_ROOM -> {
+                if (!(mc.screen instanceof HomeArrivalScreen)) mc.setScreen(new HomeArrivalScreen());
                 if (roomReady(mc)) {
-                    // A few frames on black once the room is in, so the first thing seen is the room
-                    // lit and settled rather than its chunks arriving.
+                    // A few frames behind the menu once the room is in, so what it dissolves into is the
+                    // room lit and settled rather than its chunks arriving.
                     if (readyAtMs < 0) readyAtMs = now;
                     if (now - readyAtMs >= SETTLE_MS) {
                         setPhase(Phase.FADING_IN);
@@ -159,14 +190,30 @@ public final class HomeTvVisit {
                 }
             }
             case FADING_IN -> {
-                if (!(mc.screen instanceof HomeArrivalScreen)) mc.setScreen(new HomeArrivalScreen(null));
+                if (!(mc.screen instanceof HomeArrivalScreen)) mc.setScreen(new HomeArrivalScreen());
                 if (now - phaseAtMs >= HomeArrivalScreen.FADE_IN_MS) {
                     setPhase(Phase.WATCHING);
                     if (mc.screen instanceof HomeArrivalScreen) mc.setScreen(null);
                     PerksHud.onMenuClosed();
                 }
             }
+            case WATCHING -> walkTubes(mc);
             default -> {}
+        }
+    }
+
+    /**
+     * The tubes are the way out: the view darkens with every block walked into one, and at its far
+     * end, fully black, the visit ends and the next world loads under the black.
+     */
+    private static void walkTubes(Minecraft mc) {
+        if (mc.player == null || zoomed()) return;
+        tubeBlack = Mth.clamp(tubeDepth(tubes, screenBox, mc.player.getX(), mc.player.getZ()) / TUBE_END_FRACTION, 0f, 1f);
+        if (tubeBlack >= 1f) {
+            LOGGER.info("[DungeonTrain] home room: walked out through a tube — boarding anew");
+            HomeArrivalScreen black = new HomeArrivalScreen();
+            mc.setScreen(black);
+            endRun(black, false);
         }
     }
 
@@ -270,6 +317,7 @@ public final class HomeTvVisit {
         if (phase != Phase.WATCHING) return false;
         pendingHost = host;
         pendingKeepMode = keepMode;
+        tubeBlack = 1f;
         setPhase(Phase.ENDING);
         DungeonTrainNet.sendToServer(new HomeRoomVisitEndPacket());
         return true;
@@ -296,6 +344,8 @@ public final class HomeTvVisit {
         recap = null;
         recapScreen = null;
         screenBox = null;
+        tubes = List.of();
+        tubeBlack = 0f;
         pendingHost = null;
         pendingKeepMode = false;
         readyAtMs = -1L;

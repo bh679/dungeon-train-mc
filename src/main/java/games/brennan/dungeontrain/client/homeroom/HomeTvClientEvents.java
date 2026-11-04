@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.homeroom;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.gui.screens.LevelLoadingScreen;
 import net.minecraft.client.gui.screens.ReceivingLevelScreen;
+import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -28,6 +29,17 @@ public final class HomeTvClientEvents {
         float partial = event.getPartialTick().getGameTimeDeltaPartialTick(false);
         HomeTvVisit.onFrameStart(partial);
         HomeTvShowcase.onFrameStart(partial);
+    }
+
+    /** The tube walk's darkness over the HUD, while no screen is up to draw it. */
+    @SubscribeEvent
+    public static void onGuiRendered(net.neoforged.neoforge.client.event.RenderGuiEvent.Post event) {
+        if (Minecraft.getInstance().screen instanceof HomeArrivalScreen) return;
+        float black = HomeTvVisit.tubeBlack();
+        if (black <= 0f) return;
+        net.minecraft.client.gui.GuiGraphics g = event.getGuiGraphics();
+        int alpha = net.minecraft.util.Mth.clamp(Math.round(black * 255f), 0, 255);
+        g.fill(0, 0, g.guiWidth(), g.guiHeight(), alpha << 24);
     }
 
     @SubscribeEvent

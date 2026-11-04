@@ -164,7 +164,7 @@ public final class HomeRoomVisitService {
 
         powerOn(overworld, screen);
         resendWindow(server, overworld, fresh, window);
-        DungeonTrainNet.sendTo(fresh, HomeRoomVisitStatePacket.active(boxOf(screen), facing));
+        DungeonTrainNet.sendTo(fresh, HomeRoomVisitStatePacket.active(boxOf(screen), facing, tubes));
         PortalCarriageEvents.sendRoomAmbience(dims, layout, structure, worldData.getTrainY(), List.of(fresh));
 
         LOGGER.info("[DungeonTrain] home room: stamped {}'s room (rev {}) at {} slot {} — standing at ({}, {}, {}) facing the TV, kit {} item(s), train {}",
