@@ -718,6 +718,9 @@ public final class SharedPhotos {
         // Who is here, so the relay can skip what they have already opened and lead with their own tributed photos.
         String uuids = server.getPlayerList().getPlayers().stream().map(p -> bare(p.getUUID())).collect(Collectors.joining(","));
         if (!uuids.isEmpty()) url.append("&uuids=").append(uuids);
+        // The Tribute prices they still need a photo at, so the relay can hold those photos to a floor.
+        String needs = PhotoTierNeed.needsOf(server);
+        if (!needs.isEmpty()) url.append("&needs=").append(needs);
         String exclude = Stream.concat(held.stream().map(PoolPhoto::id), spentIds().stream())
                 .map(String::valueOf).collect(Collectors.joining(","));
         if (!exclude.isEmpty()) url.append("&exclude=").append(exclude);
