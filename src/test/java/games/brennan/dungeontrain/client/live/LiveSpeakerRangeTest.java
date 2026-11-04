@@ -5,37 +5,37 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** A placed TV is heard 9 blocks away when it is one TV, 18 at the largest grid, and fades straight to the range. */
+/** A placed TV is heard 4.5 blocks away when it is one TV, 9 at the largest grid, and fades straight to the range. */
 class LiveSpeakerRangeTest {
 
     @Test
-    void aLoneTvReachesNineBlocks() {
-        assertEquals(9, LiveSpeakerRange.range(1, 8), 1e-9);
+    void aLoneTvReachesFourAndAHalfBlocks() {
+        assertEquals(4.5, LiveSpeakerRange.range(1, 8), 1e-9);
     }
 
     @Test
     void theLargestGridReachesEighteenBlocks() {
-        assertEquals(18, LiveSpeakerRange.range(8, 8), 1e-9);
-        assertEquals(18, LiveSpeakerRange.range(24, 24), 1e-9);
+        assertEquals(9, LiveSpeakerRange.range(8, 8), 1e-9);
+        assertEquals(9, LiveSpeakerRange.range(24, 24), 1e-9);
     }
 
     @Test
     void sizesBetweenLieOnAStraightLine() {
-        assertEquals(13.5, LiveSpeakerRange.range(5, 9), 1e-9, "midpoint of 1..9");
-        assertEquals(9 + 9.0 / 7, LiveSpeakerRange.range(2, 8), 1e-9);
+        assertEquals(6.75, LiveSpeakerRange.range(5, 9), 1e-9, "midpoint of 1..9");
+        assertEquals(4.5 + 4.5 / 7, LiveSpeakerRange.range(2, 8), 1e-9);
     }
 
     @Test
     void sizesOutsideTheGridClamp() {
-        assertEquals(9, LiveSpeakerRange.range(0, 8), 1e-9);
-        assertEquals(9, LiveSpeakerRange.range(-3, 8), 1e-9);
-        assertEquals(18, LiveSpeakerRange.range(12, 8), 1e-9, "wider than the config allows: still the largest");
+        assertEquals(4.5, LiveSpeakerRange.range(0, 8), 1e-9);
+        assertEquals(4.5, LiveSpeakerRange.range(-3, 8), 1e-9);
+        assertEquals(9, LiveSpeakerRange.range(12, 8), 1e-9, "wider than the config allows: still the largest");
     }
 
     @Test
     void aOneTvMaximumGivesEveryTvTheLargestRange() {
-        assertEquals(18, LiveSpeakerRange.range(1, 1), 1e-9);
-        assertEquals(18, LiveSpeakerRange.range(1, 0), 1e-9);
+        assertEquals(9, LiveSpeakerRange.range(1, 1), 1e-9);
+        assertEquals(9, LiveSpeakerRange.range(1, 0), 1e-9);
     }
 
     @Test

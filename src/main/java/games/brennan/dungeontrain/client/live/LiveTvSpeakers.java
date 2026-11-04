@@ -36,7 +36,7 @@ import java.util.Map;
  * out of range). Vista's audio mode OFF silences them all; its default, REQUIRE_SPEAKER (a note block
  * beside the TV), is not asked of a Live Feed TV — almost no TV on the train has one, and the stream's
  * sound is the point of tuning in. Loudness is Vista's TV volume, then the Blocks slider, fading with
- * distance over the TV's own hearing range ({@link LiveSpeakerRange}: 9 blocks for a lone TV, 18 for the
+ * distance over the TV's own hearing range ({@link LiveSpeakerRange}: 4.5 blocks for a lone TV, 9 for the
  * largest grid), which this class applies itself each tick in place of Minecraft's fixed per-event
  * rolloff; a TV past its range is not a candidate at all.</p>
  *

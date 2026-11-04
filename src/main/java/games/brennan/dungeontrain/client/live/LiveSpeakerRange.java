@@ -13,9 +13,9 @@ package games.brennan.dungeontrain.client.live;
 final class LiveSpeakerRange {
 
     /** Hearing range of a single TV, blocks. */
-    static final double RANGE_SMALLEST = 9;
+    static final double RANGE_SMALLEST = 4.5;
     /** Hearing range of the largest TV grid, blocks. */
-    static final double RANGE_LARGEST = 18;
+    static final double RANGE_LARGEST = 9;
     /** The smallest TV: one block. */
     static final int SIZE_SMALLEST = 1;
     /** Vista's default {@code max_connected_size}, TVs a side, when its config cannot be read. */
