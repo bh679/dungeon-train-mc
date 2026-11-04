@@ -310,7 +310,7 @@ public final class PerksScreen extends Screen {
         else unlockAction(p);
     }
 
-    /** Unlock {@code p} (first time, or again once full). */
+    /** Unlock {@code p} (first time, or again for room for one more point). */
     private void unlockAction(PerkTree.Perk p) {
         if (p.isRoot()) return;
         PerkMenuSnapshot s = last;
@@ -325,7 +325,6 @@ public final class PerksScreen extends Screen {
             refused(p.id(), "gui.dungeontrain.perks.card.needs_path");
             return;
         }
-        if (death == null && level > 0 && s.points(p.id()) < level) return;
         if (!PerkUnlocks.allowed(level + 1, s.unlockSpent(tree))) {
             refused(p.id(), "gui.dungeontrain.perks.refused.gate_short");
             return;

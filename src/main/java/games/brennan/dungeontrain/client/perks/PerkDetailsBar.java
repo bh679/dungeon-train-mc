@@ -136,20 +136,24 @@ final class PerkDetailsBar {
             unlockReason = null;
             return true;
         }
-        // Unlock: the tab centred on the bar's top edge, naming the level it buys; why not, under it in the bar
+        // Unlock: the tab centred on the bar's top edge, naming the level it buys; why not, under it in the bar.
+        // Small and grey until the perk's points are filled, though it can still be pressed; points are gone
+        // at death, so the death screen's menu has nothing to fill
+        int level = snap.unlockLevel(shown.id());
+        boolean unfilled = !unlockOnly && level > 0 && snap.points(shown.id()) < level;
         unlockButton = UnlockTab.centred(font, screenW / 2, top, Component.translatable(KEY + "unlock"),
-            snap.unlockLevel(shown.id()) + 1, shown.unlockCost(), b -> unlock.accept(shown));
+            level + 1, shown.unlockCost(), unfilled, b -> unlock.accept(shown));
         Component why = unlockBlocked(shown, snap);
         if (!isLocked) {
             // a hovered perk is shown, never bought: an outline when it could be unlocked once
-            // selected, grey when it couldn't; Activate stays away
-            unlockButton.look(why == null ? UnlockTab.Look.AVAILABLE : UnlockTab.Look.BLOCKED);
+            // selected, grey when it couldn't or isn't filled; Activate stays away
+            unlockButton.look(why == null && !unfilled ? UnlockTab.Look.AVAILABLE : UnlockTab.Look.BLOCKED);
             unlockReason = null;
             activateButton = null;
             return true;
         }
         unlockReason = why;
-        unlockButton.look(why == null ? UnlockTab.Look.READY : UnlockTab.Look.BLOCKED);
+        unlockButton.look(why != null ? UnlockTab.Look.BLOCKED : unfilled ? UnlockTab.Look.UNFILLED : UnlockTab.Look.READY);
         if (unlockOnly) {
             activateButton = null;
             return true;
@@ -163,14 +167,12 @@ final class PerkDetailsBar {
         return true;
     }
 
-    /** Why Unlock can't be pressed now, or null when it can. Unlocks a locked perk, or again once full. */
+    /** Why Unlock can't be pressed now, or null when it can. Unlocks a locked perk, or again for one more point. */
     private Component unlockBlocked(PerkTree.Perk p, PerkMenuSnapshot s) {
         PerkRegistry.bootstrap();
         if (!PerkRegistry.isBuilt(p.id())) return Component.translatable("gui.dungeontrain.perks.not_built");
         int level = s.unlockLevel(p.id());
         if (level <= 0 && !tree.reachableNow(p.id(), s::isUnlocked)) return Component.translatable("gui.dungeontrain.perks.card.needs_path");
-        // points are gone at death, so the death screen's menu raises a level without filling it first
-        if (!unlockOnly && level > 0 && s.points(p.id()) < level) return Component.translatable(KEY + "fill_first");
         int spent = s.unlockSpent(tree);
         if (level > 0 && !PerkUnlocks.allowed(level + 1, spent)) {
             return Component.translatable("gui.dungeontrain.perks.card.gate", PerkCard.ap(PerkUnlocks.spentNeeded(level + 1) - spent),

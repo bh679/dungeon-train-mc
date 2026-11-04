@@ -24,6 +24,8 @@ the older sections below disagree, this section wins.
   leaves the star and card). Clicking a star unlocks it when locked and reachable, adds a point while
   it holds fewer than its unlock level, and unlocks it again when full. Enter or Space does the same
   for the keyboard selection. The card has no buttons; its last lines say what a click does.
+- **Unlock tab before a perk is full.** The details bar's Unlock tab raises a level whether or not the
+  perk's points are filled. Until they are, it draws at 60% and grey, with a gold edge under the mouse.
 - **Solid lines only.** A perk unlocks only along a solid (requirement) line from the Engine or an
   unlocked perk, either way round. Dashed lines open nothing (`PerkTree#reachable`, server and menu).
 - **Classes by progress, plus a list.** Every class starts hidden. Unlocking a tier 1 perk shows its

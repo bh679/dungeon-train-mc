@@ -5798,7 +5798,6 @@
   "gui.dungeontrain.perks.zoom.in": "Близко",
   "gui.dungeontrain.perks.zoom.closest": "Ближе всего",
   "gui.dungeontrain.perks.bar.full": "Заполнено. Разблокируйте снова, чтобы освободить место для ещё одного очка.",
-  "gui.dungeontrain.perks.bar.fill_first": "Сначала заполните его очки.",
   "gui.dungeontrain.perks.bar.hint": "Наведите на перк, чтобы увидеть его здесь. Нажмите, чтобы закрепить.",
   "gui.dungeontrain.perks.counter.unlock.click": "Нажмите, чтобы открыть достижения.",
   "gui.dungeontrain.perks.death.kicker": "Очки, что были с тобой",

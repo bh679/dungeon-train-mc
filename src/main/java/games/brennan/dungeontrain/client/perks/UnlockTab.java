@@ -11,9 +11,11 @@ import net.neoforged.api.distmarker.OnlyIn;
  * The details bar's Unlock, a tab standing on the bar's top edge, centred. Two parts tell level from
  * cost without more words: on the gold left, the level this unlock buys in a round badge, then
  * "Unlock"; on the dark right, the Advancement Points coin and the cost. Greyed when it can't be
- * pressed. Three looks ({@link Look}): {@link Look#READY} filled gold, the selected perk can be
- * unlocked now; {@link Look#AVAILABLE} a gold outline, a hovered perk that could be unlocked once
+ * pressed. Four looks ({@link Look}): {@link Look#READY} filled gold, the selected perk can be
+ * unlocked now; {@link Look#UNFILLED} grey but pressable, it can be unlocked though its points aren't
+ * filled yet; {@link Look#AVAILABLE} a gold outline, a hovered perk that could be unlocked once
  * selected; {@link Look#BLOCKED} grey, it can't be unlocked (the bar says why for the selected perk).
+ * While a perk's points aren't filled the whole tab draws small, whichever look it has.
  */
 @OnlyIn(Dist.CLIENT)
 final class UnlockTab extends Button {
@@ -22,30 +24,41 @@ final class UnlockTab extends Button {
     private static final int PAD = 6, BADGE_R = 6, BADGE_GAP = 5, ICON = 8, ICON_GAP = 3, COST_PAD = 6;
 
     private static final int GOLD = 0xE4B95A, GOLD_HOVER = 0xF0CC70, EDGE = 0xFFE3A0, INK = 0x3A2A06;
-    private static final int OFF = 0x2A3350, OFF_EDGE = 0x3A3F6A, OFF_TEXT = 0x8E94A8, OFF_COST = 0x1B1F36;
+    private static final int OFF = 0x2A3350, OFF_EDGE = 0x3A3F6A, OFF_TEXT = 0x8E94A8, OFF_TEXT_HOVER = 0xE3E6F0, OFF_COST = 0x1B1F36;
+    private static final float SMALL_SCALE = 0.6F;
 
-    enum Look { READY, AVAILABLE, BLOCKED }
+    enum Look { READY, UNFILLED, AVAILABLE, BLOCKED }
 
     private final int level;
     private final String cost;
+    /** The width it draws at before {@link #scale}. */
+    private final int fullW;
+    private final float scale;
     private Look look = Look.READY;
 
-    private UnlockTab(int x, int y, int w, Component label, int level, int cost, OnPress onPress) {
-        super(x, y, w, H, label, onPress, DEFAULT_NARRATION);
+    private UnlockTab(int x, int y, int w, int h, int fullW, float scale, Component label, int level, int cost, OnPress onPress) {
+        super(x, y, w, h, label, onPress, DEFAULT_NARRATION);
         this.level = level;
         this.cost = Integer.toString(cost);
+        this.fullW = fullW;
+        this.scale = scale;
     }
 
-    /** A tab for unlocking {@code level} at {@code cost}, centred on {@code centreX}, standing on {@code barTop}. */
-    static UnlockTab centred(Font font, int centreX, int barTop, Component label, int level, int cost, OnPress onPress) {
-        int w = leftWidth(font, label, level) + costWidth(font, Integer.toString(cost));
-        return new UnlockTab(centreX - w / 2, barTop - H, w, label, level, cost, onPress);
+    /**
+     * A tab for unlocking {@code level} at {@code cost}, centred on {@code centreX}, standing on {@code barTop};
+     * {@code small} shrinks it, hit box and all.
+     */
+    static UnlockTab centred(Font font, int centreX, int barTop, Component label, int level, int cost, boolean small, OnPress onPress) {
+        int fullW = leftWidth(font, label, level) + costWidth(font, Integer.toString(cost));
+        float scale = small ? SMALL_SCALE : 1F;
+        int w = (int) Math.ceil(fullW * scale), h = (int) Math.ceil(H * scale);
+        return new UnlockTab(centreX - w / 2, barTop - h, w, h, fullW, scale, label, level, cost, onPress);
     }
 
-    /** Sets how it looks; only {@link Look#READY} can be pressed. */
+    /** Sets how it looks; {@link Look#READY} and {@link Look#UNFILLED} can be pressed. */
     void look(Look look) {
         this.look = look;
-        this.active = look == Look.READY;
+        this.active = look == Look.READY || look == Look.UNFILLED;
     }
 
     private static int leftWidth(Font font, Component label, int level) {
@@ -61,13 +74,24 @@ final class UnlockTab extends Button {
         Font font = net.minecraft.client.Minecraft.getInstance().font;
         int a = Math.round(alpha * 255);
         if (a <= 8) return;
-        boolean on = look != Look.BLOCKED;
+        // drawn at full size from the origin, scaled down onto the hit box so its open bottom still meets the bar
+        g.pose().pushPose();
+        g.pose().translate(getX(), getY() + getHeight() - H * scale, 0);
+        g.pose().scale(scale, scale, 1F);
+        draw(g, font, a);
+        g.pose().popPose();
+    }
+
+    private void draw(GuiGraphics g, Font font, int a) {
+        boolean on = look == Look.READY || look == Look.AVAILABLE;
         boolean outline = look == Look.AVAILABLE;
-        int x = getX(), y = getY(), w = getWidth(), split = x + leftWidth(font, getMessage(), level);
-        // ready: filled gold; available: dark with a gold outline and gold words; blocked: grey
+        // grey, but a mouse on it lights the edge and the word: this one can be pressed
+        boolean lift = look == Look.UNFILLED && isHoveredOrFocused();
+        int x = 0, y = 0, w = fullW, split = x + leftWidth(font, getMessage(), level);
+        // ready: filled gold; available: dark with a gold outline and gold words; unfilled and blocked: grey
         int body = outline ? OFF_COST : on ? (isHoveredOrFocused() ? GOLD_HOVER : GOLD) : OFF;
-        int edge = outline ? GOLD : on ? EDGE : OFF_EDGE;
-        int ink = outline ? GOLD : on ? INK : OFF_TEXT;
+        int edge = outline || lift ? GOLD : on ? EDGE : OFF_EDGE;
+        int ink = outline ? GOLD : on ? INK : lift ? OFF_TEXT_HOVER : OFF_TEXT;
         // the tab: rounded top corners, open at the bottom where it meets the bar
         g.fill(x + 1, y, x + w - 1, y + 1, argb(a, edge));
         g.fill(x, y + 1, x + 1, y + H, argb(a, edge));

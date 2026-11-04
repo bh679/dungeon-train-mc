@@ -5664,7 +5664,6 @@
   "gui.dungeontrain.perks.zoom.in": "近く",
   "gui.dungeontrain.perks.zoom.closest": "最も近く",
   "gui.dungeontrain.perks.bar.full": "満タン。もう一度解放するとポイントをもう1つ入れられます。",
-  "gui.dungeontrain.perks.bar.fill_first": "先にポイントを満たしてください。",
   "gui.dungeontrain.perks.bar.hint": "パークにカーソルを合わせるとここに表示。クリックで固定。",
   "gui.dungeontrain.perks.counter.unlock.click": "クリックで進捗を開く。",
   "gui.dungeontrain.perks.death.kicker": "持っていたポイント",
