@@ -126,7 +126,7 @@ public final class TributeRoomStore {
             return Optional.empty();
         }
         CompoundTag templateTag = template.get().save(new CompoundTag());
-        CompoundTag snapshot = CarriageSnapshotTemplate.fromTemplateTag(templateTag);
+        CompoundTag snapshot = TributeRoomLegacy.migrate(CarriageSnapshotTemplate.fromTemplateTag(templateTag));
         return Optional.of(TributeRoomBlob.initial(dashless(player.getUUID()), player.getGameProfile().getName(), snapshot));
     }
 
