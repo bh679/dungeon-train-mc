@@ -110,6 +110,8 @@ public final class HomeTvShowcase {
         if (m[0] == TvPointer.OFF_SCREEN) return true;
         e.recap().mouseClicked(m[0], m[1], 0);
         e.recap().mouseReleased(m[0], m[1], 0);
+        // A text field takes the keyboard, as chat does on T; Enter or Esc gives it back.
+        if (e.recap().textFieldFocused()) HomeTvVisit.liftForTyping(mc, e.recap());
         return true;
     }
 
@@ -129,6 +131,7 @@ public final class HomeTvShowcase {
         Minecraft mc = Minecraft.getInstance();
         for (Entry e : ENTRIES) {
             if (e.recap() != screen || mc.screen != screen) continue;
+            e.recap().blurTextField();
             mc.setScreen(null);
             e.binding().texture().attach(e.recap());
             return true;

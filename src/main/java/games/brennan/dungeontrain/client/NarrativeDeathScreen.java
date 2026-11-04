@@ -2800,10 +2800,34 @@ public final class NarrativeDeathScreen extends Screen {
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (photoViewer.isOpen()) return photoViewer.keyPressed(photos(), keyCode);
         // Zoomed in on the home TV: Esc steps back to the room, the page staying on the screen.
-        if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE
+        // Esc steps back; so does Enter while typing in a field, as chat gives the keys back on Enter.
+        boolean enterInField = textFieldFocused()
+            && (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER);
+        if ((keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE || enterInField)
             && (games.brennan.dungeontrain.client.homeroom.HomeTvVisit.leaveZoom(this)
                 || games.brennan.dungeontrain.client.homeroom.HomeTvShowcase.leaveZoom(this))) return true;
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    /** Whether a text field on this page has the keyboard. */
+    public boolean textFieldFocused() {
+        return getFocused() instanceof EditBox box && box.isFocused();
+    }
+
+    /**
+     * Give the page's text field the keyboard, for a page just lifted onto the window because a
+     * click on the TV landed on that field. {@link #init} rebuilt the field, so the focus is set anew.
+     */
+    public void focusTextField() {
+        if (commentBox == null) return;
+        setFocused(commentBox);
+        commentBox.setFocused(true);
+    }
+
+    /** Take the keyboard back from any text field, as the page goes back down onto the TV. */
+    public void blurTextField() {
+        if (commentBox != null) commentBox.setFocused(false);
+        if (getFocused() instanceof EditBox) setFocused(null);
     }
 
     // ---- the home TV's channel controls -----------------------------------------------------

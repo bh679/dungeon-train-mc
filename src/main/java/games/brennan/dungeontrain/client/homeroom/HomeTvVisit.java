@@ -42,8 +42,12 @@ public final class HomeTvVisit {
     static final long ROOM_TIMEOUT_MS = 20_000L;
     /** The menu held after the room is in, before it dissolves into the TV. */
     static final long SETTLE_MS = 600L;
-    /** How far into a tube, as a fraction of its length, the view is fully black and the visit ends. */
-    static final float TUBE_END_FRACTION = 0.92f;
+    /**
+     * How far into a tube, as a fraction of its length, the view is fully black and the visit ends.
+     * The far end is a wall the player's own width keeps them a few tenths of a block short of, so
+     * this sits well inside what they can reach.
+     */
+    static final float TUBE_END_FRACTION = 0.8f;
     /** What the picture is taken to be when no texture is up: the TV's own 3:2. */
     static final float TV_ASPECT = 1.5f;
 
@@ -275,7 +279,17 @@ public final class HomeTvVisit {
         if (m[0] == TvPointer.OFF_SCREEN) return true;
         recapScreen.mouseClicked(m[0], m[1], 0);
         recapScreen.mouseReleased(m[0], m[1], 0);
+        if (recapScreen.textFieldFocused()) liftForTyping(mc, recapScreen);
         return true;
+    }
+
+    /**
+     * The click landed on a text field: the page comes up on the window and the field takes the
+     * keyboard, as pressing T hands it to chat; Enter or Esc gives it back ({@link #leaveZoom}).
+     */
+    static void liftForTyping(Minecraft mc, NarrativeDeathScreen page) {
+        mc.setScreen(page);
+        page.focusTextField();
     }
 
     /** The wheel while looking at the TV: the page scrolls, not the hotbar. {@code false} when not on the TV. */
@@ -298,6 +312,7 @@ public final class HomeTvVisit {
         if (phase != Phase.WATCHING || texture == null || screen != recapScreen) return false;
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen != screen) return false;
+        recapScreen.blurTextField();
         mc.setScreen(null);
         texture.attach(recapScreen);
         return true;
