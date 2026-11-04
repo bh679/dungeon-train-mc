@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.mixin.client.BookViewScreenAccessor;
+import games.brennan.dungeontrain.net.BurritoScreenTimePacket;
 import games.brennan.dungeontrain.net.ClientInputPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PlayerPausedPacket;
@@ -91,6 +92,17 @@ public final class ClientActivityReporter {
     @Nullable
     private static Screen pendingOpening = null;
 
+    /**
+     * When the current spell on a burrito-counted screen began (wall clock), or {@link #NO_SEGMENT}.
+     * Counted: any pause screen except the pause menu and the settings reached from it. See
+     * {@link #trackBurritoScreen}.
+     */
+    static final long NO_SEGMENT = -1L;
+    private static long burritoScreenSinceMs = NO_SEGMENT;
+
+    /** The pause menu has been up since the world was last showing: every screen until then is the menu's. */
+    private static boolean inGameMenu = false;
+
     private static double lastCursorX = Double.NaN;
     private static double lastCursorY = Double.NaN;
 
@@ -114,6 +126,8 @@ public final class ClientActivityReporter {
             reportedPaused = false;
             pauseKind = ClientInputPacket.PAUSE_NONE;
             pendingOpening = null;
+            burritoScreenSinceMs = NO_SEGMENT;   // left mid-screen: nowhere to send it
+            inGameMenu = false;
             trackedBook = null;
             seenPages.clear();
             lastCursorX = Double.NaN;
@@ -188,6 +202,7 @@ public final class ClientActivityReporter {
      * that differs from what it last heard.
      */
     private static void reportPaused(@Nullable Screen screen) {
+        trackBurritoScreen(screen);
         boolean paused = screen != null && screen.isPauseScreen();
         if (paused == reportedPaused) return;
         Minecraft mc = Minecraft.getInstance();
@@ -259,6 +274,38 @@ public final class ClientActivityReporter {
      */
     static long renewedPresenceSince(long presenceSinceMs, long pausedSinceMs, long nowMs) {
         return nowMs - pausedSinceMs < BOOK_PRESENCE_MAX_MS ? nowMs : presenceSinceMs;
+    }
+
+    /**
+     * Time a spell on a pausing screen other than the pause menu, and send it when it ends, for the
+     * Everything Burrito's play clock ({@code BurritoScreenTimePacket}). The server stops ticking that
+     * clock for every pause screen, since a single-player server stands still behind one; this gives
+     * back the books, photos and popups. The pause menu, and any screen reached from it, never counts.
+     */
+    private static void trackBurritoScreen(@Nullable Screen screen) {
+        boolean pausing = screen != null && screen.isPauseScreen();
+        if (!pausing) {
+            inGameMenu = false;
+        } else if (screen instanceof PauseScreen) {
+            inGameMenu = true;
+        }
+        long now = System.currentTimeMillis();
+        boolean counting = pausing && !inGameMenu;
+        if (counting && burritoScreenSinceMs == NO_SEGMENT) {
+            burritoScreenSinceMs = now;
+        } else if (!counting && burritoScreenSinceMs != NO_SEGMENT) {
+            long ms = segmentMs(burritoScreenSinceMs, now);
+            burritoScreenSinceMs = NO_SEGMENT;
+            Minecraft mc = Minecraft.getInstance();
+            if (ms > 0L && mc.player != null && mc.player.isAlive() && mc.getConnection() != null) {
+                DungeonTrainNet.sendToServer(new BurritoScreenTimePacket(ms));
+            }
+        }
+    }
+
+    /** A screen spell's length, never negative (clock steps back). */
+    static long segmentMs(long sinceMs, long nowMs) {
+        return Math.max(0L, nowMs - sinceMs);
     }
 
     /**

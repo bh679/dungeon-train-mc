@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.config;
 
 import games.brennan.dungeontrain.narrative.ReadingLanguages;
 import games.brennan.dungeontrain.client.BookAuthorChatSyncClient;
+import games.brennan.dungeontrain.client.moty.ModOfTheYear;
 import games.brennan.dungeontrain.client.PetProtectionSyncClient;
 import games.brennan.dungeontrain.client.FramerateThrottle;
 import net.minecraft.world.Difficulty;
@@ -285,6 +286,16 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.IntValue SHARED_BOOKS_GAME_LANGUAGE_WEIGHT;
     /** The player's most recent NPS ("recommend") answer (0-10), or -1 if never answered. */
     public static final ModConfigSpec.IntValue DEATH_SCREEN_LAST_NPS;
+    /** Sticky: the player has given an NPS answer of 8-10 at least once (see {@code client.moty.ModOfTheYear}). */
+    public static final ModConfigSpec.BooleanValue NPS_RECOMMENDED_HIGH;
+    /** The player has nominated (or said they already nominated) the DT modpack for Modpack of the Year. */
+    public static final ModConfigSpec.BooleanValue MOTY_NOMINATED;
+    /** The player has voted (or said they already voted) for the DT modpack in Modpack of the Year. */
+    public static final ModConfigSpec.BooleanValue MOTY_VOTED;
+    /** The player has nominated (or said they already nominated) the DT mod for Mod of the Year. */
+    public static final ModConfigSpec.BooleanValue MOTY_MOD_NOMINATED;
+    /** The player has voted (or said they already voted) for the DT mod in Mod of the Year. */
+    public static final ModConfigSpec.BooleanValue MOTY_MOD_VOTED;
     /**
      * Ids of the death-screen forms (survey question ids, plus the mod-recommendation sentinel)
      * this player has submitted at least once. Drives the "Don't ask me this again" checkbox,
@@ -467,6 +478,11 @@ public final class ClientDisplayConfig {
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         DEATH_FORM_ANSWERED_IDS = pair.getLeft().deathFormAnsweredIds;
         DEATH_FORM_MUTED_IDS = pair.getLeft().deathFormMutedIds;
+        NPS_RECOMMENDED_HIGH = pair.getLeft().npsRecommendedHigh;
+        MOTY_NOMINATED = pair.getLeft().motyNominated;
+        MOTY_VOTED = pair.getLeft().motyVoted;
+        MOTY_MOD_NOMINATED = pair.getLeft().motyModNominated;
+        MOTY_MOD_VOTED = pair.getLeft().motyModVoted;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
         CONFIRM_BUILD_RESTORE = pair.getLeft().confirmBuildRestore;
         HUMAN_ONLY_TRANSLATIONS = pair.getLeft().humanOnlyTranslations;
@@ -856,6 +872,22 @@ public final class ClientDisplayConfig {
                          "Managed automatically — you can clear it by emptying this list.")
                 .defineListAllowEmpty("mutedForms", () -> List.<String>of(), () -> "",
                         o -> o instanceof String);
+        ModConfigSpec.BooleanValue npsRecommendedHigh = b
+                .comment("Internal: true once you have answered the \"how likely to recommend\" question with 8-10.",
+                         "Used to decide who is asked to nominate/vote for Dungeon Train in CurseForge's Mod of the Year. Managed automatically.")
+                .define("npsRecommendedHigh", false);
+        ModConfigSpec.BooleanValue motyNominated = b
+                .comment("Internal: true once you have nominated (or said you already nominated) the Dungeon Train modpack for Modpack of the Year. Managed automatically.")
+                .define("motyNominated", false);
+        ModConfigSpec.BooleanValue motyVoted = b
+                .comment("Internal: true once you have voted (or said you already voted) for the Dungeon Train modpack in Modpack of the Year. Managed automatically.")
+                .define("motyVoted", false);
+        ModConfigSpec.BooleanValue motyModNominated = b
+                .comment("Internal: true once you have nominated (or said you already nominated) the Dungeon Train mod for Mod of the Year. Managed automatically.")
+                .define("motyModNominated", false);
+        ModConfigSpec.BooleanValue motyModVoted = b
+                .comment("Internal: true once you have voted (or said you already voted) for the Dungeon Train mod in Mod of the Year. Managed automatically.")
+                .define("motyModVoted", false);
         b.pop();
 
         b.push("contentFilter");
@@ -997,6 +1029,7 @@ public final class ClientDisplayConfig {
                 editorPlotLighting,
                 sharedBooksRead, sharedBooksLanguages, sharedBooksGameLanguageWeight,
                 deathScreenLastNps, deathFormAnsweredIds, deathFormMutedIds,
+                npsRecommendedHigh, motyNominated, motyVoted, motyModNominated, motyModVoted,
                 politicalFilter, contentMode, devChatEnabled, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, bookCopyButton, protectOwnPets, updateNoticeChat,
@@ -1274,6 +1307,42 @@ public final class ClientDisplayConfig {
         DEATH_SCREEN_LAST_NPS.save();
     }
 
+    /** Sticky "has ever answered the NPS question with 8-10". False before the config loads. */
+    public static boolean isNpsRecommendedHigh() {
+        return isLoaded() && NPS_RECOMMENDED_HIGH.get();
+    }
+
+    /** Latch the sticky high-NPS flag. Idempotent — skips the TOML write when already set. */
+    public static void markNpsRecommendedHigh() {
+        setFlag(NPS_RECOMMENDED_HIGH);
+    }
+
+    /**
+     * What the player has already done for Mod of the Year (or said they have), for
+     * {@code client.moty.ModOfTheYear#nextAsk}. All false before the config loads.
+     */
+    public static ModOfTheYear.Done motyDone() {
+        if (!isLoaded()) return new ModOfTheYear.Done(false, false, false, false);
+        return new ModOfTheYear.Done(
+                MOTY_NOMINATED.get(), MOTY_MOD_NOMINATED.get(), MOTY_VOTED.get(), MOTY_MOD_VOTED.get());
+    }
+
+    /** Record that {@code ask} is done, so it is never asked again. */
+    public static void markMotyDone(ModOfTheYear.Ask ask) {
+        setFlag(switch (ask) {
+            case NOMINATE_MODPACK -> MOTY_NOMINATED;
+            case NOMINATE_MOD -> MOTY_MOD_NOMINATED;
+            case VOTE_MODPACK -> MOTY_VOTED;
+            case VOTE_MOD -> MOTY_MOD_VOTED;
+        });
+    }
+
+    private static void setFlag(ModConfigSpec.BooleanValue flag) {
+        if (!isLoaded() || flag.get()) return;
+        flag.set(true);
+        flag.save();
+    }
+
     /**
      * The death-screen forms this player has already answered at least once. Empty (never null)
      * before the config loads. Read once per death screen and held as a snapshot, so answering a
@@ -1361,7 +1430,12 @@ public final class ClientDisplayConfig {
             || FREE_PLAY_CONFIRM_OPTED_OUT.get()
             || DEATH_SCREEN_LAST_NPS.get() >= 0
             || !DEATH_FORM_ANSWERED_IDS.get().isEmpty()
-            || !DEATH_FORM_MUTED_IDS.get().isEmpty();
+            || !DEATH_FORM_MUTED_IDS.get().isEmpty()
+            || NPS_RECOMMENDED_HIGH.get()
+            || MOTY_NOMINATED.get()
+            || MOTY_VOTED.get()
+            || MOTY_MOD_NOMINATED.get()
+            || MOTY_MOD_VOTED.get();
     }
 
     public static void resetFirstRunFlags() {
@@ -1372,6 +1446,11 @@ public final class ClientDisplayConfig {
         DEATH_SCREEN_LAST_NPS.set(-1);
         DEATH_FORM_ANSWERED_IDS.set(List.<String>of());
         DEATH_FORM_MUTED_IDS.set(List.<String>of());
+        NPS_RECOMMENDED_HIGH.set(false);
+        MOTY_NOMINATED.set(false);
+        MOTY_VOTED.set(false);
+        MOTY_MOD_NOMINATED.set(false);
+        MOTY_MOD_VOTED.set(false);
         OPENED_ADVANCEMENTS_BEFORE.save();
     }
 
@@ -2361,6 +2440,11 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue deathScreenLastNps,
             ModConfigSpec.ConfigValue<List<? extends String>> deathFormAnsweredIds,
             ModConfigSpec.ConfigValue<List<? extends String>> deathFormMutedIds,
+            ModConfigSpec.BooleanValue npsRecommendedHigh,
+            ModConfigSpec.BooleanValue motyNominated,
+            ModConfigSpec.BooleanValue motyVoted,
+            ModConfigSpec.BooleanValue motyModNominated,
+            ModConfigSpec.BooleanValue motyModVoted,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
             ModConfigSpec.EnumValue<ContentMode> contentMode,
             ModConfigSpec.BooleanValue devChatEnabled,

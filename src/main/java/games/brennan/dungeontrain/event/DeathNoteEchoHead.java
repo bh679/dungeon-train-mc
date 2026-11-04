@@ -23,10 +23,12 @@ import java.util.UUID;
  * the book alone.
  *
  * <p>The author's identity is read off the echo's own skin ref ({@link SourceProfileSkin}, baked by
- * {@code DeathNoteEchoSpawner}), so echoes saved before this existed still qualify. That ref carries
- * no texture URL, so the head starts as an unresolved name + uuid profile, already titled
+ * {@code DeathNoteEchoSpawner}), so echoes saved before this existed still qualify. When the ref
+ * carries the skin captured at the author's death, the head wears that texture directly
+ * ({@link HeadProfiles#of}), the same face the echo wore, with no lookup, so it works offline too.
+ * Without one the head starts as an unresolved name + uuid profile, already titled
  * "&lt;Author&gt;'s Head", and is swapped for the resolved one once vanilla's skull profile lookup
- * answers. Offline mode never answers: the head keeps its title and wears the default face.</p>
+ * answers. Offline mode never answers: that head keeps its title and wears the default face.</p>
  */
 public final class DeathNoteEchoHead {
 
@@ -34,8 +36,11 @@ public final class DeathNoteEchoHead {
 
     private DeathNoteEchoHead() {}
 
-    /** Who the head belongs to: a username (always) and, when the echo carried one, their uuid. */
-    record Identity(String name, Optional<UUID> uuid) {}
+    /**
+     * Who the head belongs to: a username (always) and, when the echo carried them, their uuid and
+     * the Mojang skin texture URL it was wearing.
+     */
+    record Identity(String name, Optional<UUID> uuid, Optional<String> textureUrl) {}
 
     /** True when this death earns a head: a Death Note echo killed by its own target. */
     static boolean shouldDrop(NoteKind kind, UUID killer, String targetUuid) {
@@ -49,10 +54,11 @@ public final class DeathNoteEchoHead {
     static Optional<Identity> identityFor(String skinRef, String fallbackName) {
         Optional<SourceProfileSkin.Ref> ref = SourceProfileSkin.decode(skinRef);
         if (ref.isPresent() && HeadProfiles.isPlayerName(ref.get().name())) {
-            return Optional.of(new Identity(ref.get().name(), Optional.of(ref.get().uuid())));
+            Optional<String> url = Optional.ofNullable(ref.get().url()).filter(HeadProfiles::isTextureUrl);
+            return Optional.of(new Identity(ref.get().name(), Optional.of(ref.get().uuid()), url));
         }
         if (HeadProfiles.isPlayerName(fallbackName)) {
-            return Optional.of(new Identity(fallbackName, Optional.empty()));
+            return Optional.of(new Identity(fallbackName, Optional.empty(), Optional.empty()));
         }
         return Optional.empty();
     }
@@ -64,14 +70,17 @@ public final class DeathNoteEchoHead {
             LOGGER.debug("[DungeonTrain] DeathNote: echo has no usable author identity, no head dropped");
             return;
         }
-        ResolvableProfile profile = new ResolvableProfile(
-                Optional.of(identity.get().name()), identity.get().uuid(), new PropertyMap());
+        Optional<ResolvableProfile> skinned = identity.get().textureUrl()
+                .flatMap(url -> HeadProfiles.of(url, echo.isSkinSlim(), identity.get().name()));
+        ResolvableProfile profile = skinned.orElseGet(() -> new ResolvableProfile(
+                Optional.of(identity.get().name()), identity.get().uuid(), new PropertyMap()));
         ItemStack head = new ItemStack(Items.PLAYER_HEAD);
         head.set(DataComponents.PROFILE, profile);
         ItemEntity drop = new ItemEntity(echo.level(), echo.getX(), echo.getY() + 0.5, echo.getZ(), head);
         drop.setDefaultPickUpDelay();
         echo.level().addFreshEntity(drop);
-        resolveFace(echo.level().getServer(), drop, head, profile);
+        // A captured skin is already the face; only a name-only head needs the lookup.
+        if (skinned.isEmpty()) resolveFace(echo.level().getServer(), drop, head, profile);
     }
 
     /**

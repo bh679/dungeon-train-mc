@@ -188,4 +188,23 @@ final class NetherCoreGeometryTest {
         assertEquals(Integer.MIN_VALUE, openGeom.column(0, 0).floorBelow(openGeom.maxCoreY()));
         assertEquals(Integer.MIN_VALUE, openGeom.column(0, 0).topSolidY());
     }
+
+    @Test
+    @DisplayName("floorBelow never sites on the roof: a solid top row is a ceiling, not a floor")
+    void floorBelowSkipsTheRoof() {
+        // Solid below the centre line and again near the top (the Nether's rock ceiling), open between.
+        DensityFunction ceiling = new CountingDensity() {
+            @Override public double compute(FunctionContext c) {
+                int y = c.blockY();
+                return y < NetherCoreGeometry.NETHER_CENTER_Y || y > 100 ? 1.0 : -1.0;
+            }
+        };
+        NetherCoreGeometry geom = open(ceiling);
+        NetherCoreGeometry.Column column = geom.column(0, 0);
+        assertTrue(column.isSolid(geom.maxCoreY()), "the top row is rock");
+
+        int floor = column.floorBelow(geom.maxCoreY());
+        assertTrue(floor < BED_Y, "the walk passes through the ceiling to the floor below the open layer");
+        assertFalse(column.isSolid(floor + 1));
+    }
 }

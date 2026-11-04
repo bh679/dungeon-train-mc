@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import games.brennan.dungeontrain.editor.GrowthPass;
 import games.brennan.dungeontrain.editor.VariantConditions;
 import games.brennan.dungeontrain.editor.ConnectPass;
@@ -30,7 +31,7 @@ public final class WholeOverlay {
 
     public static void apply(ServerLevel level, BlockPos origin, WholeKind kind, String id, Vec3i footprint,
                              long seed, int carriageIndex) {
-        WholeVariantBlocks sidecar = WholeVariantBlocks.loadFor(kind, id, footprint);
+        VariantDoc sidecar = WholeVariantBlocks.loadFor(kind, id, footprint);
         if (sidecar.isEmpty()) return;
         String plotKey = BlockVariantPlot.wholeKey(kind, id);
         java.util.function.Predicate<BlockPos> within =
@@ -44,7 +45,7 @@ public final class WholeOverlay {
                 int lockId = sidecar.lockIdAt(e.localPos());
                 for (MultiBlockVariants.Write w : MultiBlockVariants.expand(e.states(), sidecar.spanAt(e.localPos()), picked, e.localPos(),
                         seed, carriageIndex, v -> RotationApplier.apply(
-                            StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
+                            StagePlacementScope.resolve(v.state()), v,
                             e.localPos(), seed, carriageIndex, lockId))) {
                     BlockPos world = origin.offset(w.localPos());
                     if (w.isAir()) {

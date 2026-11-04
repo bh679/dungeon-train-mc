@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.portal.chunkframe;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.VariantState;
@@ -51,7 +52,7 @@ public final class ChunkFramePlacer {
     }
 
     /** The frame a pair's room is dressed in: its template and its variant sidecar. */
-    public record Picked(String name, ChunkFrameTemplate template, TrackVariantBlocks variants) {}
+    public record Picked(String name, ChunkFrameTemplate template, VariantDoc variants) {}
 
     /**
      * Frames forced onto particular pairs — what Test the Carriage uses to show one frame on a
@@ -150,7 +151,7 @@ public final class ChunkFramePlacer {
      */
     public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int rollIndex) {
         ChunkFrameTemplate frame = picked.template();
-        TrackVariantBlocks variants = picked.variants();
+        VariantDoc variants = picked.variants();
         long seed = level.getSeed();
         int changed = 0;
         Vec3i size = frame.size();

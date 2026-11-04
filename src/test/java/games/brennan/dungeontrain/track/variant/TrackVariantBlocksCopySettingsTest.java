@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.track.variant;
 
+import games.brennan.dungeontrain.editor.VariantDoc;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.VariantCopyRoll;
 import games.brennan.dungeontrain.editor.VariantCopyScope;
@@ -57,8 +58,8 @@ final class TrackVariantBlocksCopySettingsTest {
             VariantState.of(Blocks.CRACKED_STONE_BRICKS.defaultBlockState()));
     }
 
-    private static TrackVariantBlocks authored() {
-        TrackVariantBlocks doc = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
+    private static VariantDoc authored() {
+        VariantDoc doc = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
         doc.put(VARYING, states());
         doc.put(REPEATING, states());
         doc.setCopyRoll(VARYING, VariantCopyRoll.VARY);
@@ -68,7 +69,7 @@ final class TrackVariantBlocksCopySettingsTest {
     @Test
     @DisplayName("the roll override round-trips through the sidecar file")
     void roundTrips() {
-        TrackVariantBlocks reloaded = TrackVariantBlocks.fromJsonText(
+        VariantDoc reloaded = TrackVariantBlocks.fromJsonText(
             authored().asJsonText(), TrackKind.PORTAL_ROOM, "room", ROOM);
 
         assertEquals(VariantCopyRoll.VARY, reloaded.copyRollAt(VARYING),
@@ -80,7 +81,7 @@ final class TrackVariantBlocksCopySettingsTest {
     @Test
     @DisplayName("'default' is never written, and a cycled-back cell writes what it always wrote")
     void defaultRollWritesNothing() {
-        TrackVariantBlocks doc = authored();
+        VariantDoc doc = authored();
         doc.setCopyRoll(VARYING, VariantCopyRoll.DEFAULT);
 
         assertEquals(VariantCopyRoll.DEFAULT, doc.copyRollAt(VARYING));
@@ -91,13 +92,13 @@ final class TrackVariantBlocksCopySettingsTest {
     @Test
     @DisplayName("'exact' round-trips too — the override that holds a cell still in a Dynamic room")
     void exactRollRoundTrips() {
-        TrackVariantBlocks doc = authored();
+        VariantDoc doc = authored();
         doc.setCopyRoll(REPEATING, VariantCopyRoll.EXACT);
 
         String json = doc.asJsonText();
         assertTrue(json.contains("\"roll\": \"exact\""), "exact not written: " + json);
 
-        TrackVariantBlocks reloaded = TrackVariantBlocks.fromJsonText(
+        VariantDoc reloaded = TrackVariantBlocks.fromJsonText(
             json, TrackKind.PORTAL_ROOM, "room", ROOM);
         assertEquals(VariantCopyRoll.EXACT, reloaded.copyRollAt(REPEATING));
     }
@@ -115,7 +116,7 @@ final class TrackVariantBlocksCopySettingsTest {
               }
             }
             """;
-        TrackVariantBlocks reloaded = TrackVariantBlocks.fromJsonText(
+        VariantDoc reloaded = TrackVariantBlocks.fromJsonText(
             legacy, TrackKind.PORTAL_ROOM, "room", ROOM);
 
         assertEquals(VariantCopyRoll.VARY, reloaded.copyRollAt(VARYING));
@@ -147,10 +148,10 @@ final class TrackVariantBlocksCopySettingsTest {
     @Test
     @DisplayName("the override rides along with a lock id when both are set")
     void coexistsWithALockId() {
-        TrackVariantBlocks doc = authored();
+        VariantDoc doc = authored();
         doc.setLockId(VARYING, 4);
 
-        TrackVariantBlocks reloaded = TrackVariantBlocks.fromJsonText(
+        VariantDoc reloaded = TrackVariantBlocks.fromJsonText(
             doc.asJsonText(), TrackKind.PORTAL_ROOM, "room", ROOM);
 
         assertEquals(4, reloaded.lockIdAt(VARYING));
@@ -160,7 +161,7 @@ final class TrackVariantBlocksCopySettingsTest {
     @Test
     @DisplayName("copyOf carries the override, and removing a cell drops it")
     void copiedAndCleared() {
-        TrackVariantBlocks doc = authored();
+        VariantDoc doc = authored();
         assertEquals(VariantCopyRoll.VARY, TrackVariantBlocks.copyOf(doc).copyRollAt(VARYING),
             "a duplicated room must keep what its source was set to");
 
@@ -172,7 +173,7 @@ final class TrackVariantBlocksCopySettingsTest {
     @Test
     @DisplayName("flagging a cell that does not exist is refused")
     void refusesAnEmptyCell() {
-        TrackVariantBlocks doc = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
+        VariantDoc doc = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
         assertThrows(IllegalArgumentException.class,
             () -> doc.setCopyRoll(VARYING, VariantCopyRoll.VARY));
         assertThrows(IllegalArgumentException.class,
@@ -184,14 +185,14 @@ final class TrackVariantBlocksCopySettingsTest {
     @Test
     @DisplayName("the scope round-trips, and 'both' writes nothing at all")
     void scopeRoundTrips() {
-        TrackVariantBlocks doc = authored();
+        VariantDoc doc = authored();
         doc.setCopyScope(VARYING, VariantCopyScope.COPIES);
 
         String json = doc.asJsonText();
         assertTrue(json.contains("\"scope\": \"copies\""), "scope not written: " + json);
         assertFalse(json.contains("\"both\""), "the default scope must never reach the file: " + json);
 
-        TrackVariantBlocks reloaded = TrackVariantBlocks.fromJsonText(
+        VariantDoc reloaded = TrackVariantBlocks.fromJsonText(
             json, TrackKind.PORTAL_ROOM, "room", ROOM);
         assertEquals(VariantCopyScope.COPIES, reloaded.copyScopeAt(VARYING));
         assertEquals(VariantCopyScope.BOTH, reloaded.copyScopeAt(REPEATING),
@@ -201,11 +202,11 @@ final class TrackVariantBlocksCopySettingsTest {
     @Test
     @DisplayName("scope, reroll and a lock id coexist in one cell")
     void allThreeCoexist() {
-        TrackVariantBlocks doc = authored();
+        VariantDoc doc = authored();
         doc.setLockId(VARYING, 3);
         doc.setCopyScope(VARYING, VariantCopyScope.NOT_COPIES);
 
-        TrackVariantBlocks reloaded = TrackVariantBlocks.fromJsonText(
+        VariantDoc reloaded = TrackVariantBlocks.fromJsonText(
             doc.asJsonText(), TrackKind.PORTAL_ROOM, "room", ROOM);
 
         assertEquals(3, reloaded.lockIdAt(VARYING));
@@ -216,7 +217,7 @@ final class TrackVariantBlocksCopySettingsTest {
     @Test
     @DisplayName("setting the scope back to 'both' clears it rather than storing it")
     void scopeClearsBackToDefault() {
-        TrackVariantBlocks doc = authored();
+        VariantDoc doc = authored();
         doc.setCopyScope(VARYING, VariantCopyScope.COPIES);
         doc.setCopyScope(VARYING, VariantCopyScope.BOTH);
 
@@ -228,7 +229,7 @@ final class TrackVariantBlocksCopySettingsTest {
     @Test
     @DisplayName("copyOf carries the scope, and removing a cell drops it")
     void scopeCopiedAndCleared() {
-        TrackVariantBlocks doc = authored();
+        VariantDoc doc = authored();
         doc.setCopyScope(VARYING, VariantCopyScope.COPIES);
         assertEquals(VariantCopyScope.COPIES, TrackVariantBlocks.copyOf(doc).copyScopeAt(VARYING));
 

@@ -37,8 +37,9 @@ import org.joml.primitives.AABBdc;
  *
  * <p><b>Pace.</b> Where the cold first appears (the start of lap {@value #FIRST_FREEZING_CYCLE}) a player takes
  * {@value #SECONDS_TO_FREEZE_AT_START} s out on the roof to freeze solid; the gap to powder snow's
- * {@value #SECONDS_TO_FREEZE_FLOOR} s halves every {@link WorldGenCycle#period() cycle} travelled, so it creeps
- * toward that floor and never quite reaches it (cycle 2 ≈ 30 s, 3 ≈ 18.5 s, 4 ≈ 13 s, 5 ≈ 10 s, …). The counter is
+ * {@value #SECONDS_TO_FREEZE_FLOOR} s halves every {@value #HALF_LIFE_CYCLES} {@link WorldGenCycle#period() cycles}
+ * travelled, so it creeps toward that floor and never quite reaches it. Cycle 2 is a doubled run, so on the shipped
+ * layout its first End band freezes in ≈ 26 s, its BetterEnd band in ≈ 17 s, and cycle 3's first End in ≈ 9 s. The counter is
  * an int, so fractional rates are applied with a stateless step on the level's game time
  * ({@link #frostThisTick}) that averages exactly the rate over time. Scaled by the End-sky intensity so it fades
  * in and out with the band's edges, netting a thaw below about two-thirds sky.</p>
@@ -58,11 +59,11 @@ public final class EndFrostbite {
     static final long FIRST_FREEZING_CYCLE = 1L;
     static final int VANILLA_THAW = 2;
     /** Seconds on the roof to freeze solid where the cold first appears. */
-    static final double SECONDS_TO_FREEZE_AT_START = 30.0;
+    static final double SECONDS_TO_FREEZE_AT_START = 32.0;
     /** Seconds the pace approaches but never reaches: powder snow's. */
     static final double SECONDS_TO_FREEZE_FLOOR = 7.0;
     /** Cycles travelled per halving of the gap between the current pace and the floor. */
-    static final double HALF_LIFE_CYCLES = 1.0;
+    static final double HALF_LIFE_CYCLES = 0.62;
     /** How far past the fully-frozen mark the counter may climb, so a step out of the cold doesn't thaw at once. */
     static final int OVERSHOOT = 20;
     /** Ticks between fully-frozen hits: vanilla's {@code Entity.FREEZE_HURT_FREQUENCY}. */

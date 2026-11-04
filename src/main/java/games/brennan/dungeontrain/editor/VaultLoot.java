@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.block.VaultGreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -28,7 +29,8 @@ import java.util.UUID;
  * Vaults as loot containers. A vanilla vault rewards each player once, from a loot table, when
  * they use its key. Here the reward comes from a pool authored in the loot (C) menu instead, and
  * the pool's {@link ContainerContentsPool#vaultKey()} picks the key, which also picks the vault's
- * type: the ominous trial key makes an ominous vault.
+ * type: the ominous trial key makes an ominous vault, and DT's Dungeon Trial Key a green one
+ * ({@link VaultGreen}).
  *
  * <p><b>Rolled per player, not at placement.</b> Placement ({@link #writeVault}) stores the pool
  * and its roll frame in the block entity's NeoForge data; {@code VaultServerMixin} rolls it when a
@@ -38,6 +40,7 @@ import java.util.UUID;
  *
  * <p>A vault with no authored pool takes the bundled {@link #DEFAULT_PREFAB} (or
  * {@link #OMINOUS_PREFAB}), hand-copied from vanilla's trial-chamber reward tables, every time.
+ * {@link #GREEN_PREFAB} starts as a copy of the ominous one.
  * A vault is never empty the way a 20%-default chest can be.</p>
  */
 public final class VaultLoot {
@@ -46,12 +49,14 @@ public final class VaultLoot {
     public static final int VAULT_SLOTS = 9;
 
     public static final String OMINOUS_KEY = "minecraft:ominous_trial_key";
+    public static final String GREEN_KEY = "dungeontrain:dungeon_trial_key";
 
     /** Keys the menu's Key row cycles through, in order. Append to offer another. */
-    static final List<String> KEY_CYCLE = List.of(ContainerContentsPool.DEFAULT_VAULT_KEY, OMINOUS_KEY);
+    static final List<String> KEY_CYCLE = List.of(ContainerContentsPool.DEFAULT_VAULT_KEY, OMINOUS_KEY, GREEN_KEY);
 
     public static final String DEFAULT_PREFAB = "trial_vault";
     public static final String OMINOUS_PREFAB = "ominous_trial_vault";
+    public static final String GREEN_PREFAB = "green_trial_vault";
 
     /** Sub-compound of the block entity's {@code NeoForgeData} holding the pool and its roll frame. */
     static final String TAG_VAULT = "dungeontrain_vault";
@@ -91,6 +96,10 @@ public final class VaultLoot {
         return OMINOUS_KEY.equals(key);
     }
 
+    public static boolean isGreenKey(String key) {
+        return GREEN_KEY.equals(key);
+    }
+
     /** The key after {@code key} in {@link #KEY_CYCLE}; an unknown key starts the cycle over. */
     public static String nextKey(String key) {
         int i = KEY_CYCLE.indexOf(key);
@@ -98,14 +107,20 @@ public final class VaultLoot {
     }
 
     public static String defaultPrefabFor(String key) {
-        return isOminousKey(key) ? OMINOUS_PREFAB : DEFAULT_PREFAB;
+        if (isOminousKey(key)) return OMINOUS_PREFAB;
+        if (isGreenKey(key)) return GREEN_PREFAB;
+        return DEFAULT_PREFAB;
     }
 
-    /** The other default vault prefab for one of the two, or null for any other prefab id. */
+    /**
+     * The default vault prefab for the key after the one {@code prefabId} defaults, following
+     * {@link #KEY_CYCLE}; null for any prefab that is not one of the defaults.
+     */
     @Nullable
     public static String otherDefaultPrefab(String prefabId) {
-        if (DEFAULT_PREFAB.equals(prefabId)) return OMINOUS_PREFAB;
-        if (OMINOUS_PREFAB.equals(prefabId)) return DEFAULT_PREFAB;
+        for (String key : KEY_CYCLE) {
+            if (defaultPrefabFor(key).equals(prefabId)) return defaultPrefabFor(nextKey(key));
+        }
         return null;
     }
 
@@ -130,21 +145,26 @@ public final class VaultLoot {
         return a.fillMin() == b.fillMin() && a.fillMax() == b.fillMax() && a.entries().equals(b.entries());
     }
 
-    /** {@code state} as the vault type {@code pool}'s key makes: ominous for the ominous key. */
+    /** {@code state} as the vault type {@code pool}'s key makes: ominous or green for those keys. */
     public static BlockState stateFor(BlockState state, ContainerContentsPool pool) {
         if (!isVault(state)) return state;
-        return state.setValue(VaultBlock.OMINOUS, isOminousKey(pool.vaultKey()));
+        return typed(state, pool.vaultKey());
+    }
+
+    /** A vault state typed for {@code key}: at most one of ominous and green is set. */
+    private static BlockState typed(BlockState state, String key) {
+        return VaultGreen.withGreen(state.setValue(VaultBlock.OMINOUS, isOminousKey(key)), isGreenKey(key));
     }
 
     /**
-     * {@code state} as the vault type its rolled NBT says: ominous when {@link #writeVault} gave it
-     * the ominous key. Anything else, or a vault NBT this class never wrote, comes back unchanged.
+     * {@code state} as the vault type its rolled NBT says: ominous or green when {@link #writeVault}
+     * gave it that key. Anything else, or a vault NBT this class never wrote, comes back unchanged.
      */
     public static BlockState stateForNbt(BlockState state, @Nullable CompoundTag nbt) {
         if (!isVault(state) || nbt == null) return state;
         if (!nbt.getCompound(NBT_NEOFORGE_DATA).contains(TAG_VAULT, Tag.TAG_COMPOUND)) return state;
         String key = nbt.getCompound(NBT_CONFIG).getCompound(NBT_KEY_ITEM).getString("id");
-        return state.setValue(VaultBlock.OMINOUS, isOminousKey(key));
+        return typed(state, key);
     }
 
     /**
@@ -171,7 +191,9 @@ public final class VaultLoot {
         CompoundTag out = baseNbt == null ? new CompoundTag() : baseNbt.copy();
         CompoundTag config = out.getCompound(NBT_CONFIG).copy();
         config.put(NBT_KEY_ITEM, new ItemStack(keyItem(pool.vaultKey())).save(registries));
-        config.putString(NBT_LOOT_TABLE, isOminousKey(pool.vaultKey()) ? REWARD_TABLE_OMINOUS : REWARD_TABLE);
+        // The green vault's default loot is the ominous loot, so it falls back to the same table.
+        boolean ominousTable = isOminousKey(pool.vaultKey()) || isGreenKey(pool.vaultKey());
+        config.putString(NBT_LOOT_TABLE, ominousTable ? REWARD_TABLE_OMINOUS : REWARD_TABLE);
         out.put(NBT_CONFIG, config);
 
         CompoundTag vault = new CompoundTag();

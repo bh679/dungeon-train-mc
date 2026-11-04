@@ -103,4 +103,38 @@ class AlbumSavePayloadTest {
     void badHashIsEmptyPage() {
         assertNull(new AlbumSavePayload.Page("../../etc", "x").hash());
     }
+
+    @Test
+    @DisplayName("a first album's save carries no index, so its body is what older relays already take")
+    void firstAlbumBodyUnchanged() {
+        List<AlbumSavePayload.Page> pages = List.of(new AlbumSavePayload.Page(HASH, "n"));
+        assertEquals(AlbumSavePayload.save(OWNER, "Alex", 5, pages), AlbumSavePayload.save(OWNER, 0, "Alex", 5, pages));
+        assertFalse(AlbumSavePayload.save(OWNER, 0, "Alex", 5, pages).has("index"));
+        assertEquals(2, AlbumSavePayload.save(OWNER, 2, "Alex", 5, pages).get("index").getAsInt());
+    }
+
+    @Test
+    @DisplayName("mine: every album with its index, and how many the owner may keep")
+    void parseMineWithAlbums() {
+        JsonObject body = JsonParser.parseString("{\"ok\":true,\"albumLimit\":10,\"album\":null,\"albums\":["
+                + "{\"uuid\":\"0000000a00000000000000000000000b\",\"rev\":3,\"pages\":[]},"
+                + "{\"uuid\":\"0000000a00000000000000000000000b\",\"index\":1,\"rev\":4,\"pages\":[]}]}").getAsJsonObject();
+        AlbumSavePayload.Mine mine = AlbumSavePayload.parseMine(body);
+        assertEquals(10, mine.albumLimit());
+        assertEquals(2, mine.albums().size());
+        assertEquals(0, mine.albums().get(0).index());
+        assertEquals(1, mine.albums().get(1).index());
+    }
+
+    @Test
+    @DisplayName("mine from an older relay: just the first album, and a limit of one")
+    void parseMineFromOldRelay() {
+        JsonObject body = JsonParser.parseString("{\"ok\":true,\"album\":"
+                + "{\"uuid\":\"0000000a00000000000000000000000b\",\"rev\":3,\"pages\":[]}}").getAsJsonObject();
+        AlbumSavePayload.Mine mine = AlbumSavePayload.parseMine(body);
+        assertEquals(1, mine.albumLimit());
+        assertEquals(1, mine.albums().size());
+        assertEquals(OWNER, mine.albums().get(0).owner());
+        assertEquals(1, AlbumSavePayload.parseMine(JsonParser.parseString("{\"ok\":true,\"album\":null}").getAsJsonObject()).albumLimit());
+    }
 }

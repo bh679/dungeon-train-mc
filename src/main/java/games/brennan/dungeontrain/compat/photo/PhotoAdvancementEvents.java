@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.BandAdvancements;
 import games.brennan.dungeontrain.advancement.EnchiridionAdvancements;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.advancement.TerraOmnia;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.EchoIdentity;
 import games.brennan.dungeontrain.event.PlayerActivityTracker;
@@ -82,7 +83,9 @@ public final class PhotoAdvancementEvents {
         rememberSubjects(player, event);
         LiveMomentPhotos.onFrameAdded(player, event.getFrame());
         // Every advancement this shot earns remembers it — see AdvancementPhotoCapture.
-        AdvancementPhotoCapture.during(event.getFrame(), () -> photoTriggers(player, event));
+        // and each one it moved along without earning gets a line in chat — see PhotoProgressNotice.
+        AdvancementPhotoCapture.during(event.getFrame(),
+                () -> PhotoProgressNotice.during(player, () -> photoTriggers(player, event)));
     }
 
     private static void photoTriggers(ServerPlayer player, FrameAddedEvent event) {
@@ -114,16 +117,20 @@ public final class PhotoAdvancementEvents {
     }
 
     /**
-     * Carry the photo tallies across worlds ({@link GlobalPhotoProgress}), then tell the client which
-     * biomes the photos already cover, so the biome album matches.
+     * Carry the photo tallies across worlds ({@link GlobalPhotoProgress}), give older photos their one-time
+     * Terra Omnia credit ({@link PhotoBiomeRideCredit}), then tell the client which biomes the photos already
+     * cover, so the biome album matches.
      */
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         GlobalPhotoProgress.Tally world = worldTally(player);
         GlobalPhotoProgress.Tally merged = world.merge(GlobalPhotoProgress.read(player.getUUID()));
-        if (!merged.equals(world)) writeWorldTally(player, merged);
+        if (!merged.sameTallies(world)) writeWorldTally(player, merged);
         mirrorTally(player);
+        PhotoBiomeRideCredit.apply(player, world.biomes());
+        // Photos that already cover every biome Terra Omnia asks for earn Coffee Table Book without another shot.
+        checkEveryBiome(player, player.getPersistentData().getList(PHOTO_BIOMES_KEY, Tag.TAG_STRING));
         syncPhotographedBiomes(player);
     }
 
@@ -179,6 +186,7 @@ public final class PhotoAdvancementEvents {
         if (event.getProgressType() != AdvancementEvent.AdvancementProgressEvent.ProgressType.GRANT) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         AdvancementPhotoCapture.onCriterion(player, event.getAdvancement(), event.getCriterionName());
+        PhotoProgressNotice.noteCollection(player, event.getAdvancement());
     }
 
     /** A print a PlayerMob took and tossed to its subject: whoever catches it earned "Candid". */
@@ -258,7 +266,7 @@ public final class PhotoAdvancementEvents {
         for (Tag t : seen) {
             if (id.equals(t.getAsString())) {
                 ModAdvancementTriggers.PHOTO_BIOMES.get().trigger(player, seen.size());
-                checkEveryBiome(player, seen.size());
+                checkEveryBiome(player, seen);
                 return;
             }
         }
@@ -266,17 +274,45 @@ public final class PhotoAdvancementEvents {
         updated.add(StringTag.valueOf(id));
         player.getPersistentData().put(PHOTO_BIOMES_KEY, updated);
         mirrorTally(player);
+        noteBiomeTier(player, updated, biome);
         // A new biome: its photo joins the biome tiers' album (the frame is current — see onFrameAdded).
         AdvancementPhotoCapture.sendEntry(player,
                 ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, EnchiridionAdvancements.BIOME_ALBUM), id);
         ModAdvancementTriggers.PHOTO_BIOMES.get().trigger(player, updated.size());
-        checkEveryBiome(player, updated.size());
+        checkEveryBiome(player, updated);
     }
 
-    /** "Coffee Table Book": a photo taken in every biome the game has. */
-    private static void checkEveryBiome(ServerPlayer player, int photographed) {
-        int total = player.registryAccess().registryOrThrow(Registries.BIOME).size();
-        if (total > 0 && photographed >= total) {
+    /**
+     * A new biome's line in chat: the next biome tier it counts toward. Coffee Table Book counts only
+     * the biomes Terra Omnia asks for, so a biome outside that list moves nothing once it is the next tier.
+     */
+    private static void noteBiomeTier(ServerPlayer player, ListTag photographed, ResourceLocation biome) {
+        Set<ResourceLocation> wanted = TerraOmnia.ordered(player.registryAccess().registryOrThrow(Registries.BIOME)).keySet();
+        String everyBiome = EnchiridionAdvancements.BIOME_TIER_ORDER.get(EnchiridionAdvancements.BIOME_TIER_ORDER.size() - 1);
+        PhotoProgressNotice.noteNextTier(player, EnchiridionAdvancements.BIOME_TIER_ORDER,
+                tier -> tier.equals(everyBiome) ? countWanted(photographed, wanted) : photographed.size(),
+                tier -> tier.equals(everyBiome)
+                        ? (wanted.contains(biome) ? wanted.size() : 0)
+                        : EnchiridionAdvancements.BIOME_TIER_TARGETS.getOrDefault(tier, 0));
+    }
+
+    private static int countWanted(ListTag photographed, Set<ResourceLocation> wanted) {
+        int n = 0;
+        for (Tag t : photographed) {
+            ResourceLocation id = ResourceLocation.tryParse(t.getAsString());
+            if (id != null && wanted.contains(id)) n++;
+        }
+        return n;
+    }
+
+    /** "Coffee Table Book": a photo taken in every biome Terra Omnia asks for ({@link TerraOmnia#ordered}). */
+    private static void checkEveryBiome(ServerPlayer player, ListTag photographed) {
+        Set<ResourceLocation> biomes = new HashSet<>();
+        for (Tag t : photographed) {
+            ResourceLocation id = ResourceLocation.tryParse(t.getAsString());
+            if (id != null) biomes.add(id);
+        }
+        if (TerraOmnia.holdsEvery(biomes, player.registryAccess().registryOrThrow(Registries.BIOME))) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, PHOTOGRAPHED_EVERY_BIOME);
         }
     }

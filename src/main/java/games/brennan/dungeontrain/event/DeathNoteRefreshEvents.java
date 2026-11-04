@@ -77,6 +77,7 @@ public final class DeathNoteRefreshEvents {
         LAST_REFRESH_CARRIAGE.remove(player.getUUID());
         LAST_SCAN_CARRIAGE.remove(player.getUUID());
         CURSED_STRUCK_THIS_LIFE.remove(player.getUUID());
+        CursedStoryPool.forgetDelivered(player.getUUID());   // a new life: unread stories may come again
         // A new world load counts as a login → re-pull this target's unspawned curses from the relay,
         // and this author's landed curses awaiting their story.
         if (DeathNoteGate.canSync(player)) refresh(player);
@@ -155,8 +156,8 @@ public final class DeathNoteRefreshEvents {
         for (DeathNotePool.Note note : DeathNotePool.notesReached(targetUuid, cur, ARRIVAL_LEAD)) {
             if (enforce && note.freePlay() != targetFreePlay) continue; // provenance mismatch — wait for a matching life
             boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
-                    note.authorUuid(), note.authorName(), note.deathCarriage(), note.id(), note.kind(),
-                    note.lines());
+                    note.authorUuid(), note.authorName(), note.authorSkinRef(), note.deathCarriage(),
+                    note.id(), note.kind(), note.lines(), note.authorGear());
             if (!ok) continue;                                       // not on a carriage yet — retry next scan
             DeathNotePool.remove(targetUuid, note.id());
             DeathNoteReporter.markUsed(note.id());

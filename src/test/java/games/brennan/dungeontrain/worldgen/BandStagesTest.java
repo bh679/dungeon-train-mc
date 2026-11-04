@@ -19,7 +19,7 @@ class BandStagesTest {
         new CycleLayout.Fades(232, 0, 300, 120, 500, 600, 600, 10_000, 1500, 1500, 1500, 480);
     /** The shipped spheres progression: End sky 1000, Nether 1750, End 2500, boost 3250–6250 (core 6550). */
     private static final SpheresSegments SPHERES =
-        SpheresSegments.of(1000, 1750, 2500, 3250, 6250, 0.1, 5, 20, 1, 1, 1);
+        SpheresSegments.of(1000, 1750, 2500, 3250, 3250, 6250, 0.1, 5, 20, 1, 1, 1, 1);
 
     private static CycleLayout defaultLayout() {
         List<LegacySpan> eras = new ArrayList<>();

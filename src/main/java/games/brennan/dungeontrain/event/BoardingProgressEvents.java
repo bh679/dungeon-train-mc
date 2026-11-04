@@ -636,7 +636,7 @@ public final class BoardingProgressEvents {
      * Sample the biome under {@code player}'s current (world-space) position and
      * fold it into their per-run {@link PlayerBiomeProgress}. A newly seen biome
      * advances the count tiers ("Far Afield" / "Many Lands" / "World Without
-     * End" / "Terra Omnia").
+     * End") and joins Terra Omnia's permanent list.
      *
      * <p>Uses {@code player.blockPosition()} — the same world-space position
      * {@link #accumulateBoardedDistance} books distance against (the deck
@@ -651,6 +651,7 @@ public final class BoardingProgressEvents {
         PlayerBiomeProgress progress = player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get());
         if (progress.addBiome(id)) {
             AchievementEvents.notifyBiomesVisited(player, progress.biomeCount());
+            AchievementEvents.recordLifetimeBiomes(player, Set.of(id));
         }
     }
 

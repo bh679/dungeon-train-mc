@@ -7,9 +7,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
@@ -35,8 +32,6 @@ public final class LostCityReferenceEditor {
     private static final int STRIDE_X = Buildings.MAX_SIZE.getX() + EditorLayout.GAP + 2;
     /** One gap past the deepest a building can be, so the two rows never touch. */
     public static final int ROW_Z = Buildings.MAX_SIZE.getZ() + EditorLayout.GAP + 2;
-    private static final BlockState OUTLINE = Blocks.BEDROCK.defaultBlockState();
-    private static final int QUIET = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
 
     private LostCityReferenceEditor() {}
 
@@ -55,7 +50,7 @@ public final class LostCityReferenceEditor {
 
     /** The official building whose slot (cage included) holds {@code pos}, or empty. Resident category only. */
     public static Optional<String> plotContaining(BlockPos pos) {
-        if (EditorStampedCategoryState.current().orElse(null) != EditorCategory.BUILDINGS) return Optional.empty();
+        if (!EditorStampedCategoryState.isActive(EditorCategory.BUILDINGS)) return Optional.empty();
         return slotContaining(pos);
     }
 
@@ -64,11 +59,7 @@ public final class LostCityReferenceEditor {
         List<LostCityReferences.Reference> all = LostCityReferences.all();
         int index = Math.floorDiv(pos.getX() + 1, STRIDE_X);
         if (index < 0 || index >= all.size()) return Optional.empty();
-        BlockPos o = slotOrigin(index);
-        Vec3i s = Buildings.MAX_SIZE;
-        boolean inside = pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + s.getX()
-            && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + s.getY() + 2
-            && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + s.getZ();
+        boolean inside = EditorPlotBox.contains(pos, slotOrigin(index), Buildings.MAX_SIZE);
         return inside ? Optional.of(all.get(index).name()) : Optional.empty();
     }
 
@@ -81,7 +72,7 @@ public final class LostCityReferenceEditor {
     public static void walkTo(ServerPlayer player, ServerLevel level, String name, boolean centre) {
         BlockPos origin = plotOrigin(name);
         if (origin == null) return;
-        CarriageEditor.rememberReturn(player);
+        EditorSessions.rememberReturn(player);
         EditorPlotArrival.land(player, level, origin, plotSize(level, name), !centre,
             EditorPlotArrival.Inside.CENTRE, null);
     }
@@ -114,34 +105,10 @@ public final class LostCityReferenceEditor {
     }
 
     private static void eraseSlot(ServerLevel level, BlockPos origin) {
-        Vec3i max = Buildings.MAX_SIZE;
-        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
-        BlockState air = Blocks.AIR.defaultBlockState();
-        for (int x = -1; x <= max.getX(); x++) {
-            for (int y = -1; y <= max.getY() + 2; y++) {
-                for (int z = -1; z <= max.getZ(); z++) {
-                    p.set(origin.getX() + x, origin.getY() + y, origin.getZ() + z);
-                    BlockState current = level.getBlockState(p);
-                    if (current.isAir()) continue;
-                    if (current.hasBlockEntity()) level.removeBlockEntity(p);
-                    level.setBlock(p, air, QUIET);
-                }
-            }
-        }
+        EditorPlotBox.eraseWithHeadroom(level, origin, Buildings.MAX_SIZE, EditorPlotCage.QUIET);
     }
 
-    /** The twelve edges of the box one block outside the plot. */
     private static void paintCage(ServerLevel level, BlockPos origin, Vec3i size) {
-        int x0 = origin.getX() - 1, y0 = origin.getY() - 1, z0 = origin.getZ() - 1;
-        int x1 = origin.getX() + size.getX(), y1 = origin.getY() + size.getY(), z1 = origin.getZ() + size.getZ();
-        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
-        for (int x = x0; x <= x1; x++) {
-            for (int y = y0; y <= y1; y++) {
-                for (int z = z0; z <= z1; z++) {
-                    int edges = (x == x0 || x == x1 ? 1 : 0) + (y == y0 || y == y1 ? 1 : 0) + (z == z0 || z == z1 ? 1 : 0);
-                    if (edges >= 2) level.setBlock(p.set(x, y, z), OUTLINE, QUIET);
-                }
-            }
-        }
+        EditorPlotCage.setOutline(level, origin, size, EditorPlotCage.OUTLINE_BLOCK, EditorPlotCage.QUIET);
     }
 }

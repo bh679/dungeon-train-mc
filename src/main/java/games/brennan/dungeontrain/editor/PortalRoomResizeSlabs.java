@@ -66,8 +66,8 @@ final class PortalRoomResizeSlabs {
 
         StructureTemplate blocks = TemplateDecor.capture(overworld, slabOrigin, slabSize, Blocks.STRUCTURE_VOID, TemplateDecor.Rule.ROOM);
 
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, sizeBefore);
-        TrackVariantBlocks slabSidecar = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
+        VariantDoc sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, sizeBefore);
+        VariantDoc slabSidecar = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
         int cells = 0;
         for (Map.Entry<BlockPos, Integer> e : slabCells(sidecar, axis, step.slabIndex()).entrySet()) {
             BlockPos local = e.getKey().subtract(PortalRoomResize.along(axis, step.slabIndex()));
@@ -146,8 +146,8 @@ final class PortalRoomResizeSlabs {
         // shrink took away is part of the row, not of the box it was cut from.
         TemplateDecor.replace(overworld, at, blocks, settings, null, TemplateDecor.Rule.ROOM);
 
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, sizeAfter);
-        TrackVariantBlocks slabSidecar = TrackVariantBlocks.fromJsonText(
+        VariantDoc sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, sizeAfter);
+        VariantDoc slabSidecar = TrackVariantBlocks.fromJsonText(
             slab.variantsJson(), TrackKind.PORTAL_ROOM, name,
             PortalRoomResize.with(sizeAfter, axis, 1));
         for (CarriageVariantBlocks.Entry e : slabSidecar.entries()) {
@@ -190,7 +190,7 @@ final class PortalRoomResizeSlabs {
     static void shiftSidecars(String name, Vec3i sizeAfter, Vec3i shift) {
         if (shift.equals(Vec3i.ZERO)) return;
 
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, sizeAfter);
+        VariantDoc sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, sizeAfter);
         Map<BlockPos, List<VariantState>> moved = new LinkedHashMap<>();
         Map<BlockPos, Integer> movedLocks = new LinkedHashMap<>();
         Map<BlockPos, VariantCopyRoll> movedRolls = new LinkedHashMap<>();
@@ -231,7 +231,7 @@ final class PortalRoomResizeSlabs {
     }
 
     /** Every sidecar cell on the {@code slabIndex} row of {@code axis}, with its lock id. */
-    private static Map<BlockPos, Integer> slabCells(TrackVariantBlocks sidecar,
+    private static Map<BlockPos, Integer> slabCells(VariantDoc sidecar,
                                                     PortalRoomResize.Axis axis, int slabIndex) {
         Map<BlockPos, Integer> out = new LinkedHashMap<>();
         for (CarriageVariantBlocks.Entry e : sidecar.entries()) {

@@ -11,7 +11,9 @@ import games.brennan.dungeontrain.train.WholeCarriageRegistry;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * A Train Editor template as three strings, and back.
@@ -50,69 +52,70 @@ public record EditorTemplateAddress(String type, String sub, String name) {
         name = name == null ? "" : name;
     }
 
-    /** The address of {@code model}. */
+    /** The address of {@code model} — {@link Template#address()}. */
     public static EditorTemplateAddress of(Template model) {
-        return switch (model) {
-            case Template.Carriage c -> new EditorTemplateAddress(CARRIAGE, "", c.variant().id());
-            case Template.Contents c -> new EditorTemplateAddress(CONTENTS, "", c.contents().id());
-            case Template.WholeCarriage w -> new EditorTemplateAddress(WHOLE, "", w.wholeCarriage().id());
-            case Template.CarriageGroup g -> new EditorTemplateAddress(GROUP, "", g.group().id());
-            case Template.WholeHalf h -> new EditorTemplateAddress(HALF, "", h.wholeCarriage().id());
-            case Template.Part p -> new EditorTemplateAddress(PART, p.partKind().id(), p.name());
-            case Template.Track t -> new EditorTemplateAddress(TRACK, "", t.name());
-            case Template.Pillar p -> new EditorTemplateAddress(PILLAR, p.section().id(), p.name());
-            case Template.Adjunct a -> new EditorTemplateAddress(ADJUNCT, a.adjunct().id(), a.name());
-            case Template.Tunnel t -> new EditorTemplateAddress(TUNNEL,
-                    t.variant().name().toLowerCase(Locale.ROOT), t.name());
-            case Template.PortalRoom r -> new EditorTemplateAddress(PORTAL_ROOM, "", r.name());
-            case Template.ChunkFrame f -> new EditorTemplateAddress(CHUNK_FRAME, "", f.name());
-            case Template.Building b -> new EditorTemplateAddress(BUILDING, "", b.name());
-            case Template.LostCity l -> new EditorTemplateAddress(LOST_CITY, "", l.name());
-            case Template.Staged s -> new EditorTemplateAddress(STAGED, "", s.stagedId());
-        };
+        return model.address();
+    }
+
+    /** One record's half of the round trip: the template {@code (sub, name)} names, or empty. */
+    @FunctionalInterface
+    public interface Parser {
+        Optional<Template> parse(String sub, String name);
+    }
+
+    /**
+     * One parser per type token. A record's {@code address()} writes its token; the parser under
+     * that token reads it back. A String switch cannot be exhaustive, so coverage is pinned by
+     * {@code TemplateAddressRoundTripTest}, which walks every permitted {@link Template} record —
+     * a new record without an entry here fails that test rather than round-tripping to empty.
+     */
+    private static final Map<String, Parser> PARSERS = Map.ofEntries(
+            Map.entry(CARRIAGE, (sub, name) -> CarriageVariantRegistry.find(name).map(Template.Carriage::new)),
+            Map.entry(CONTENTS, (sub, name) -> CarriageContentsRegistry.find(name).map(Template.Contents::new)),
+            Map.entry(WHOLE, (sub, name) -> WholeCarriageRegistry.find(name).map(Template.WholeCarriage::new)),
+            Map.entry(GROUP, (sub, name) -> CarriageGroupRegistry.find(name).map(Template.CarriageGroup::new)),
+            Map.entry(HALF, (sub, name) -> games.brennan.dungeontrain.train.WholeHalfRegistry.find(name).map(Template.WholeHalf::new)),
+            Map.entry(PART, (sub, name) -> Optional.ofNullable(CarriagePartKind.fromId(sub)).map(kind -> new Template.Part(kind, name))),
+            Map.entry(TRACK, (sub, name) -> Optional.of(new Template.Track(name))),
+            Map.entry(PILLAR, (sub, name) -> pillarSection(sub).map(s -> new Template.Pillar(s, name))),
+            Map.entry(ADJUNCT, (sub, name) -> adjunct(sub).map(a -> new Template.Adjunct(a, name))),
+            Map.entry(TUNNEL, (sub, name) -> tunnelVariant(sub).map(v -> new Template.Tunnel(v, name))),
+            Map.entry(PORTAL_ROOM, (sub, name) -> Optional.of(new Template.PortalRoom(name))),
+            Map.entry(CHUNK_FRAME, (sub, name) -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names().contains(name)
+                    ? Optional.of(new Template.ChunkFrame(name)) : Optional.empty()),
+            Map.entry(BUILDING, (sub, name) -> games.brennan.dungeontrain.building.BuildingRegistry.contains(name)
+                    ? Optional.of(new Template.Building(name)) : Optional.empty()),
+            Map.entry(LOST_CITY, (sub, name) -> games.brennan.dungeontrain.building.LostCityReferences.find(name)
+                    .map(r -> new Template.LostCity(r.name()))),
+            Map.entry(STAGED, (sub, name) -> WorkbenchTemplates.registry().find(name).map(s -> (Template) s)));
+
+    /** The type tokens with a registered parser — what the round-trip test checks against. */
+    public static Set<String> registeredTypes() {
+        return PARSERS.keySet();
     }
 
     /** The template this names, or empty when it no longer resolves (renamed, deleted, bad input). */
     public Optional<Template> resolve() {
         if (name.isEmpty()) return Optional.empty();
-        return switch (type) {
-            case CARRIAGE -> CarriageVariantRegistry.find(name).map(Template.Carriage::new);
-            case CONTENTS -> CarriageContentsRegistry.find(name).map(Template.Contents::new);
-            case WHOLE -> WholeCarriageRegistry.find(name).map(Template.WholeCarriage::new);
-            case GROUP -> CarriageGroupRegistry.find(name).map(Template.CarriageGroup::new);
-            case HALF -> games.brennan.dungeontrain.train.WholeHalfRegistry.find(name).map(Template.WholeHalf::new);
-            case PART -> Optional.ofNullable(CarriagePartKind.fromId(sub))
-                    .map(kind -> new Template.Part(kind, name));
-            case TRACK -> Optional.of(new Template.Track(name));
-            case PILLAR -> pillarSection(sub).map(s -> new Template.Pillar(s, name));
-            case ADJUNCT -> adjunct(sub).map(a -> new Template.Adjunct(a, name));
-            case TUNNEL -> tunnelVariant(sub).map(v -> new Template.Tunnel(v, name));
-            case PORTAL_ROOM -> Optional.of(new Template.PortalRoom(name));
-            case CHUNK_FRAME -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names().contains(name)
-                    ? Optional.of(new Template.ChunkFrame(name)) : Optional.empty();
-            case BUILDING -> games.brennan.dungeontrain.building.BuildingRegistry.contains(name)
-                    ? Optional.of(new Template.Building(name)) : Optional.empty();
-            case LOST_CITY -> games.brennan.dungeontrain.building.LostCityReferences.find(name)
-                    .map(r -> new Template.LostCity(r.name()));
-            default -> Optional.empty();
-        };
+        Parser parser = PARSERS.get(type);
+        return parser == null ? Optional.empty() : parser.parse(sub, name);
     }
 
-    private static Optional<PillarSection> pillarSection(String id) {
+    public static Optional<PillarSection> pillarSection(String id) {
         for (PillarSection s : PillarSection.values()) {
             if (s.id().equals(id)) return Optional.of(s);
         }
         return Optional.empty();
     }
 
-    private static Optional<PillarAdjunct> adjunct(String id) {
+    public static Optional<PillarAdjunct> adjunct(String id) {
         for (PillarAdjunct a : PillarAdjunct.values()) {
             if (a.id().equals(id)) return Optional.of(a);
         }
         return Optional.empty();
     }
 
-    private static Optional<TunnelPlacer.TunnelVariant> tunnelVariant(String id) {
+    public static Optional<TunnelPlacer.TunnelVariant> tunnelVariant(String id) {
         for (TunnelPlacer.TunnelVariant v : TunnelPlacer.TunnelVariant.values()) {
             if (v.name().toLowerCase(Locale.ROOT).equals(id)) return Optional.of(v);
         }

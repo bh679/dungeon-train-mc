@@ -259,8 +259,18 @@ public final class ModItems {
 
     /**
      * Single-use slimeball that hits like Knockback X and is spent on the hit
-     * ({@link KnockbackSlimeItem}). Creative/editor only: no loot table or recipe places it.
+     * ({@link KnockbackSlimeItem}). Found in the slimes carriage's loot ({@code prefabs/loot/slimes.json}); no recipe.
      */
+    /**
+     * The key to a green vault ({@code block.VaultGreen}), the third vault type beside vanilla's trial
+     * and ominous ones. A vault's key is its config's {@code key_item}, so vanilla checks and takes
+     * this one like any other; {@code editor.VaultLoot#GREEN_KEY} names it.
+     */
+    public static final DeferredItem<Item> DUNGEON_TRIAL_KEY = ITEMS.register(
+        "dungeon_trial_key",
+        () -> new Item(new Item.Properties().rarity(Rarity.UNCOMMON))
+    );
+
     public static final DeferredItem<Item> KNOCKBACK_SLIME = ITEMS.register(
         "knockback_slime",
         () -> new KnockbackSlimeItem(new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON))
@@ -319,6 +329,8 @@ public final class ModItems {
     public static void onBuildCreativeTabs(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(VARIANT_CLIPBOARD.get());
+        } else if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
+            event.accept(DUNGEON_TRIAL_KEY.get());
         } else if (event.getTabKey() == CreativeModeTabs.COMBAT) {
             event.accept(KNOCKBACK_SLIME.get());
         } else if (event.getTabKey() == CreativeModeTabs.SPAWN_EGGS) {

@@ -6,7 +6,8 @@ Each hostile's offset is the lowest Diff-Level at which any carriage room can sp
     linked stages), raised to a group member's own gate (minLevel, or its stages' lowest);
   * a sidecar `entity` candidate counts at max(room level, its cell's difficulty.min);
   * a baked .nbt entity (and its Passengers) counts at the room's level;
-  * a cell that rolls an ancient_vase pot counts for the pot mobs GloomslatePotMobEvents spawns.
+  * a cell that rolls an ancient_vase pot counts for the pot mobs GloomslatePotMobEvents spawns;
+  * a creaking heart (baked in the template or rolled by a cell) counts for the Creaking it spawns.
 
 Phases and bands are ignored (they are world positions, not levels), as are portal rooms (their
 cells skip difficulty bands) and the onboarding slime/magma substitutes. Only ids labelled
@@ -35,6 +36,9 @@ JAVA = ROOT / "src/main/java/games/brennan/dungeontrain/difficulty/MobEffectOffs
 # Kept in step with GloomslatePotMobEvents.POT_MOBS.
 POT_MOBS = ("deeperdarker:anger_pot", "deeperdarker:fear_pot", "deeperdarker:sorrow_pot")
 VASE_PREFAB = "ancient_vase"
+# A creaking heart spawns its Creaking (CreakingHeartSpawnSpot buffs it like the room's hostiles).
+HEART_BLOCK = "minecraft:creaking_heart"
+HEART_MOB = "minecraft:creaking"
 
 TABLE_START = "private static final Map<String, Integer> OFFSETS = Map.ofEntries("
 TABLE_RE = re.compile(re.escape(TABLE_START) + r"(.*?)\n(\s*)\);", re.S)
@@ -103,10 +107,15 @@ class Derivation:
                     if VASE_PREFAB in json.dumps(candidate):
                         for pot in POT_MOBS:
                             self._note(pot, at, f"{source} vase {cell}")
+                    if HEART_BLOCK in json.dumps(candidate):
+                        self._note(HEART_MOB, at, f"{source} heart {cell}")
         template = self.contents / f"{room}.nbt"
         if template.exists():
-            for entity in _baked_ids(self.read_nbt(template).get("entities")):
+            nbt = self.read_nbt(template)
+            for entity in _baked_ids(nbt.get("entities")):
                 self._note(entity, level, f"{source} baked")
+            if any(block.get("Name") == HEART_BLOCK for block in nbt.get("palette") or []):
+                self._note(HEART_MOB, level, f"{source} heart")
 
     def run(self) -> "Derivation":
         weights = json.loads((self.contents / "weights.json").read_text())

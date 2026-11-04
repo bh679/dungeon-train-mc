@@ -58,6 +58,11 @@ public record VariantKey(PlotCategory category, String modelId, String modelName
         return new VariantKey(category, modelId, modelName, "");
     }
 
+    /** A string naming the template the way {@link #sameTemplate} does — for caches keyed by text. */
+    public String templateKey() {
+        return (category == null ? "" : category.name()) + "|" + modelId + "|" + modelName;
+    }
+
     /** True when {@code other} names the same template, ignoring the parent link. */
     public boolean sameTemplate(VariantKey other) {
         return other != null && category == other.category

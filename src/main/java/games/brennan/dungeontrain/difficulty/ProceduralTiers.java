@@ -96,6 +96,18 @@ public final class ProceduralTiers {
     /** Levels between each further floor increment after {@link #MIN_RISE_START_LEVEL}. */
     static final int MIN_RISE_EVERY_LEVELS = 100;
 
+    /** Levels between amplifier-cap increments for the levelled buffs. */
+    private static final int AMP_EVERY_LEVELS = 25;
+
+    /**
+     * Haste only matters on mobs that dig, so it holds off until well after the first
+     * digging-tool mob ({@link ToolTiers#TOOL_START_LEVEL}).
+     */
+    static final int HASTE_START_LEVEL = 120;
+
+    /** Haste's amplifier climbs at 1/10 the rate of the other buffs. */
+    static final int HASTE_AMP_EVERY_LEVELS = AMP_EVERY_LEVELS * 10;
+
     /** Golden gear stays at a constant low weight at every level — flavor sprinkle. */
     private static final int GOLDEN_WEIGHT = 2;
 
@@ -125,15 +137,15 @@ public final class ProceduralTiers {
      * thresholds halved from the original 100-level scale.
      */
     private static final List<EffectCurve> EFFECTS = List.of(
-        new EffectCurve("minecraft:speed",           15,  25, 15, 0.80),
-        new EffectCurve("minecraft:strength",        25,  25, 20, 0.90),
-        new EffectCurve("minecraft:resistance",      35,  25, 25, 0.80),
+        new EffectCurve("minecraft:speed",           15, AMP_EVERY_LEVELS, 15, 0.80),
+        new EffectCurve("minecraft:strength",        25, AMP_EVERY_LEVELS, 20, 0.90),
+        new EffectCurve("minecraft:resistance",      35, AMP_EVERY_LEVELS, 25, 0.80),
         new EffectCurve("minecraft:fire_resistance", 40, TOP, 20, 0.70),
-        new EffectCurve("minecraft:regeneration",    50,  25, 25, 0.70),
-        new EffectCurve("minecraft:jump_boost",      60,  25, 25, 0.60),
-        new EffectCurve("minecraft:haste",           70,  25, 25, 0.60),
-        new EffectCurve("minecraft:absorption",      80,  25, 25, 0.70),
-        new EffectCurve("minecraft:slow_falling",    90, TOP, 25, 0.50)
+        new EffectCurve("minecraft:regeneration",    50, AMP_EVERY_LEVELS, 25, 0.70),
+        new EffectCurve("minecraft:jump_boost",      60, AMP_EVERY_LEVELS, 25, 0.60),
+        new EffectCurve("minecraft:absorption",      80, AMP_EVERY_LEVELS, 25, 0.70),
+        new EffectCurve("minecraft:slow_falling",    90, TOP, 25, 0.50),
+        new EffectCurve("minecraft:haste", HASTE_START_LEVEL, HASTE_AMP_EVERY_LEVELS, 25, 0.60)
     );
 
     private ProceduralTiers() {}

@@ -230,11 +230,29 @@ neoForge {
                 programArgument '--quickPlaySingleplayer'
                 programArgument quickWorld.toString()
             }
+            // Release-build Quick Play block on a dev build: ./gradlew runClient -PquickWorld=… -PquickPlayBlock
+            // should land on the title screen with a toast, not in the world (client/QuickPlaySingleplayerBlock).
+            if (project.hasProperty('quickPlayBlock')) {
+                systemProperty 'dungeontrain.quickPlayBlock', 'force'
+            }
             if (project.hasProperty('tvPoseShots')) {
                 systemProperty 'dungeontrain.tvPoseShots', 'true'
             }
             if (project.hasProperty('tvPoseSwap')) {
                 systemProperty 'dungeontrain.tvPoseSwap', 'true'
+            }
+            // Client-freeze seam: ./gradlew runClient -PquickWorld=… -PclientFreeze=3000 hangs the render
+            // thread once, 10 min 10 s into the world, so client/perf/ClientStallWatchdog's dump can be checked
+            // without typing /dt-client-freeze. Dev builds only (client/perf/ClientFreezeCommand).
+            // -PlagReportClick=send|decline answers the "Lag detected" chat prompt that follows
+            // (client/perf/LagReportPrompt).
+            def clientFreeze = project.findProperty('clientFreeze')
+            if (clientFreeze) {
+                systemProperty 'dungeontrain.clientFreezeMs', clientFreeze.toString()
+            }
+            def lagReportClick = project.findProperty('lagReportClick')
+            if (lagReportClick) {
+                systemProperty 'dungeontrain.lagReportClick', lagReportClick.toString()
             }
             // Muted-launch seam: CLI / agent-driven dev clients start at master volume 0 on every
             // launch (client/DevFirstLaunchDefaults). On automatically when an agent shell launched
@@ -405,6 +423,11 @@ neoForge {
                 requireQuickWorldSave(file(project.findProperty('serverDir') ?: 'run'), quickWorld.toString())
                 programArgument '--quickPlaySingleplayer'
                 programArgument quickWorld.toString()
+            }
+            // Release-build Quick Play block on a dev build: ./gradlew runClient -PquickWorld=… -PquickPlayBlock
+            // should land on the title screen with a toast, not in the world (client/QuickPlaySingleplayerBlock).
+            if (project.hasProperty('quickPlayBlock')) {
+                systemProperty 'dungeontrain.quickPlayBlock', 'force'
             }
             if (project.hasProperty('tvPoseShots')) {
                 systemProperty 'dungeontrain.tvPoseShots', 'true'
@@ -735,6 +758,12 @@ dependencies {
     // ignores Sable's carriage pose, so on a moving train it names the block behind thin ones (a
     // photo frame reads as the wall). Dev runtime only, so the dev client sees what players see.
     localRuntime "maven.modrinth:jade-sable-compat:${jade_sable_compat_version}"
+
+    // Advancement Plaques + its Iceberg library — OPTIONAL modpack companions. Dev runtime only, so the
+    // dev client shows the Night Crest plaque (mixin/advancementplaques, string targets, no compile dep).
+    // Pinned to the modpack's builds (modpack.config.json → advancement-plaques / iceberg modrinth_version).
+    localRuntime "maven.modrinth:advancement-plaques:${advancement_plaques_version}"
+    localRuntime "maven.modrinth:iceberg:${iceberg_version}"
 
     // Windy: Configurable (client-only visuals for the train wind; see wind/WindServer and the
     // dungeontrain.windy.mixins.json entry in neoforge.mods.toml). Runtime only: the dev client gets the

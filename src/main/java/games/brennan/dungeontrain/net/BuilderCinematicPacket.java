@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.CinematicCameraController;
+import games.brennan.dungeontrain.client.ReplayPlaybackGuard;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -80,6 +81,9 @@ public record BuilderCinematicPacket(
      * {@link CinematicIntroPacket#handle}.
      */
     public static void handle(BuilderCinematicPacket packet, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> CinematicCameraController.startFocusShot(packet));
+        ctx.enqueueWork(() -> {
+            if (ReplayPlaybackGuard.skipsCinematic("Train Builder shot")) return;
+            CinematicCameraController.startFocusShot(packet);
+        });
     }
 }

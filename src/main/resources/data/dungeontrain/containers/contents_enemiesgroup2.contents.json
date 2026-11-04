@@ -1372,7 +1372,8 @@
         { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:your_photoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:bundle", "count": 1, "weight": 1, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 }
       ]
     },
     "20,0,4": {
@@ -1438,7 +1439,8 @@
         { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:your_photoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:bundle", "count": 1, "weight": 1, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 }
       ]
     },
     "19,0,3": {
@@ -1504,7 +1506,8 @@
         { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:your_photoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:bundle", "count": 1, "weight": 1, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 }
       ]
     },
     "23,0,4": {
@@ -1570,7 +1573,8 @@
         { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:your_photoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:bundle", "count": 1, "weight": 1, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 }
       ]
     },
     "23,0,0": {
@@ -1636,7 +1640,8 @@
         { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:your_photoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:bundle", "count": 1, "weight": 1, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 }
       ]
     },
     "24,0,1": {
@@ -1702,7 +1707,8 @@
         { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:your_photoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:bundle", "count": 1, "weight": 1, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 }
       ]
     },
     "9,0,4": {
@@ -1768,7 +1774,8 @@
         { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:your_photoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:bundle", "count": 1, "weight": 1, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 }
       ]
     },
     "6,0,4": {
@@ -1834,7 +1841,8 @@
         { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:your_photoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:bundle", "count": 1, "weight": 1, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 }
       ]
     },
     "2,0,0": {
@@ -1900,7 +1908,8 @@
         { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:your_photoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:bundle", "count": 1, "weight": 1, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 }
       ]
     },
     "4,0,0": {
@@ -1966,7 +1975,8 @@
         { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:your_photoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:bundle", "count": 1, "weight": 1, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 }
       ]
     },
     "0,0,3": {
@@ -2032,7 +2042,8 @@
         { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:your_photoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:bundle", "count": 1, "weight": 1, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 }
       ]
     }
   },

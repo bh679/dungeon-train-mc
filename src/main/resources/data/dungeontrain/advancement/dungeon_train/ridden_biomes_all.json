@@ -10,10 +10,10 @@
     "hidden": true
   },
   "criteria": {
-    "milestone": {
-      "trigger": "dungeontrain:biomes_visited",
-      "conditions": { "threshold": 150 }
+    "every_biome": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "rode_every_biome" }
     }
   },
-  "requirements": [["milestone"]]
+  "requirements": [["every_biome"]]
 }

@@ -2,20 +2,25 @@ package games.brennan.dungeontrain.worldgen.density;
 
 import com.mojang.datafixers.util.Pair;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.advancement.TerraOmnia;
 import games.brennan.dungeontrain.mixin.MultiNoiseBiomeSourceAccessor;
 import games.brennan.dungeontrain.worldgen.BackportBiomes;
 import games.brennan.dungeontrain.worldgen.SecondLapOverworld;
 import net.minecraft.core.Holder;
+import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.tags.BiomeTags;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.biome.MultiNoiseBiomeSource;
 import net.minecraft.world.level.biome.MultiNoiseBiomeSourceParameterList;
+import net.minecraft.world.level.levelgen.DensityFunction;
+import net.neoforged.neoforge.common.Tags;
 import org.slf4j.Logger;
 import terrablender.api.Region;
 import terrablender.api.RegionType;
@@ -24,10 +29,13 @@ import terrablender.worldgen.IExtendedParameterList;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * The overworld biome for a column, confined by stretch: Biomes O' Plenty only in the
@@ -47,6 +55,14 @@ import java.util.function.Function;
  *       leaves as TerraBlender's "deferred" placeholder falls through to vanilla, as TerraBlender does.</li>
  * </ul>
  *
+ * <p>Terra Omnia's rare biomes ({@link TerraOmnia#RARE}) get a second look, so they turn up about twice as
+ * often: where the BoP pick is ordinary land, the column is re-picked with its temperature and humidity read
+ * at a fixed shift either way along Z ({@link #SECOND_LOOK_QZ}), and the first rare answer is taken instead.
+ * The shifted fields are the same climate maps moved, so the extra patches keep natural shapes, and the local
+ * terrain shape is kept, so they only land on ground fit for them. Only land (about half the quarts) can take
+ * one, so two looks are what lift a rare share to about twice: 0.39% to 0.88% of BoP-stretch samples on a
+ * headless census, at no measurable chunk-gen cost.</p>
+ *
  * <p>The region layout is read from the source being asked — TerraBlender gives each chunk fill its
  * own clone of the source and layout, because the layout's cache isn't thread-safe.</p>
  *
@@ -60,6 +76,15 @@ public final class OverworldStretchBiomes {
     private static final String BOP_NAMESPACE = "biomesoplenty";
 
     private static volatile OverworldStretchBiomes current;
+
+    /**
+     * The second look's shift, in quarts along Z (160k blocks), taken both ways. The track runs along X, so the
+     * shifted fields are far off the line and never near the Far Lands. A constant: every world and every regen agree.
+     */
+    static final int SECOND_LOOK_QZ = 40_000;
+
+    /** The fixed height (sea level, in quarts) a column's second look reads its flat climate at. */
+    private static final int SURFACE_QY = 63 >> 2;
 
     /** Vanilla's overworld climate table ({@code minecraft:} keys only). Registry-free, so built once per JVM. */
     private static volatile Climate.ParameterList<ResourceKey<Biome>> vanillaTable;
@@ -97,16 +122,27 @@ public final class OverworldStretchBiomes {
     private final Climate.ParameterList<Holder<Biome>> vanillaWithoutBackport;
     private final List<Climate.ParameterList<Holder<Biome>>> bopRegions;
     private final Map<ResourceLocation, Integer> bopRegionIndex;
+    /** Terra Omnia's rare biomes, as holders, for {@link #pick}'s second look. Empty without BoP. */
+    private final Set<Holder<Biome>> rare;
+    /**
+     * Copies of {@link #bopRegions} for the second look, one list per shift ({@code side} 0 = +Z, 1 = -Z). Same
+     * points, so the same answers; a separate copy because a table's search starts from its last result on that
+     * thread, and a far-off climate between two near ones spoiled that start (BoP picks ran about four times slower).
+     */
+    private final List<List<Climate.ParameterList<Holder<Biome>>>> shiftedBopRegions;
     private final Holder<Biome> fallback;
 
     private OverworldStretchBiomes(Climate.ParameterList<Holder<Biome>> vanilla,
                                    Climate.ParameterList<Holder<Biome>> vanillaWithoutBackport,
                                    List<Climate.ParameterList<Holder<Biome>>> bopRegions,
-                                   Map<ResourceLocation, Integer> bopRegionIndex, Holder<Biome> fallback) {
+                                   Map<ResourceLocation, Integer> bopRegionIndex, Set<Holder<Biome>> rare,
+                                   Holder<Biome> fallback) {
         this.vanilla = vanilla;
         this.vanillaWithoutBackport = vanillaWithoutBackport;
         this.bopRegions = bopRegions;
         this.bopRegionIndex = bopRegionIndex;
+        this.rare = rare;
+        this.shiftedBopRegions = List.of(copies(bopRegions), copies(bopRegions));
         this.fallback = fallback;
     }
 
@@ -143,12 +179,95 @@ public final class OverworldStretchBiomes {
                               int qx, int qy, int qz, Climate.Sampler sampler) {
         Climate.TargetPoint target = sampler.sample(qx, qy, qz);
         if (stretch == SecondLapOverworld.Stretch.BOP && !bopRegions.isEmpty()) {
-            Holder<Biome> h = bopRegionAt(regionLayout(source), qx, qy, qz).findValue(target);
-            if (h != null) return h;                       // deferred / missing → vanilla
+            IExtendedParameterList<?> layout = regionLayout(source);
+            Holder<Biome> h = bopRegionAt(layout, qx, qy, qz).findValue(target);
+            if (h != null) {
+                return withSecondLook(h, rare::contains, OverworldStretchBiomes::takesRare,
+                        () -> columnRare(layout, sampler, qx, qz));
+            }
+            // deferred / missing → vanilla
         }
         Climate.ParameterList<Holder<Biome>> table =
                 allowBackport && stretch == SecondLapOverworld.Stretch.VANILLA ? vanilla : vanillaWithoutBackport;
         return table.findValue(target);                    // missing entries are the fallback already
+    }
+
+    /**
+     * The column's second look: the first rare biome found with temperature and humidity read at either shift
+     * ({@link #SECOND_LOOK_QZ}), or {@code null}. Decided once per column, at the surface: continentalness,
+     * erosion and weirdness are flat and read at a fixed height, depth is the surface's, so the answer never
+     * depends on which quart asked first. Terrain shape stays local, so a rare biome only takes ground already
+     * shaped for it. Per quart, the far reads and table searches made BoP chunks several times slower to pick.
+     */
+    private Holder<Biome> columnRare(IExtendedParameterList<?> layout, Climate.Sampler sampler, int qx, int qz) {
+        return ColumnLooks.CACHE.get().get(this, sampler, qx, qz, () -> {
+            DensityFunction.SinglePointContext here = context(qx, qz);
+            long c = Climate.quantizeCoord((float) sampler.continentalness().compute(here));
+            long e = Climate.quantizeCoord((float) sampler.erosion().compute(here));
+            long w = Climate.quantizeCoord((float) sampler.weirdness().compute(here));
+            int region = bopRegionIndexAt(layout, qx, SURFACE_QY, qz);
+            for (int side = 0; side < 2; side++) {
+                DensityFunction.SinglePointContext far = context(qx, side == 0 ? qz + SECOND_LOOK_QZ : qz - SECOND_LOOK_QZ);
+                Climate.TargetPoint target = new Climate.TargetPoint(
+                        Climate.quantizeCoord((float) sampler.temperature().compute(far)),
+                        Climate.quantizeCoord((float) sampler.humidity().compute(far)), c, e, 0L, w);
+                Holder<Biome> h = shiftedBopRegions.get(side).get(region).findValue(target);
+                if (h != null && rare.contains(h)) return h;
+            }
+            return null;
+        });
+    }
+
+    private static DensityFunction.SinglePointContext context(int qx, int qz) {
+        return new DensityFunction.SinglePointContext(QuartPos.toBlock(qx), QuartPos.toBlock(SURFACE_QY), QuartPos.toBlock(qz));
+    }
+
+    /**
+     * Per-thread memo of {@link #columnRare}, direct-mapped on the column's low bits: a chunk's 4x4 quart columns
+     * never collide, so each is decided once however many quarts ask.
+     */
+    private static final class ColumnLooks {
+        static final ThreadLocal<ColumnLooks> CACHE = ThreadLocal.withInitial(ColumnLooks::new);
+        private static final int SLOTS = 64;
+        private final Object[] owners = new Object[SLOTS];
+        private final Climate.Sampler[] samplers = new Climate.Sampler[SLOTS];
+        private final int[] xs = new int[SLOTS];
+        private final int[] zs = new int[SLOTS];
+        @SuppressWarnings("unchecked")
+        private final Holder<Biome>[] values = new Holder[SLOTS];
+
+        Holder<Biome> get(Object owner, Climate.Sampler sampler, int qx, int qz, Supplier<Holder<Biome>> decide) {
+            int slot = ((qx & 7) << 3) | (qz & 7);
+            if (owners[slot] != owner || samplers[slot] != sampler || xs[slot] != qx || zs[slot] != qz) {
+                values[slot] = decide.get();
+                owners[slot] = owner;
+                samplers[slot] = sampler;
+                xs[slot] = qx;
+                zs[slot] = qz;
+            }
+            return values[slot];
+        }
+    }
+
+    /**
+     * {@code base}, or the first {@code shifted} pick that is rare when {@code base} is neither rare itself nor
+     * ground a rare biome may cover ({@code takesRare}). The shifted picks are asked in order, only while one
+     * could still be used. Generic so the rule is testable without a registry.
+     */
+    @SafeVarargs
+    static <T> T withSecondLook(T base, Predicate<T> isRare, Predicate<T> takesRare, Supplier<T>... shifted) {
+        if (isRare.test(base) || !takesRare.test(base)) return base;
+        for (Supplier<T> look : shifted) {
+            T other = look.get();
+            if (other != null && isRare.test(other)) return other;
+        }
+        return base;
+    }
+
+    /** Ordinary land: never water, a shore or a cave, which keep their own biome under the second look. */
+    private static boolean takesRare(Holder<Biome> biome) {
+        return !biome.is(BiomeTags.IS_OCEAN) && !biome.is(BiomeTags.IS_DEEP_OCEAN) && !biome.is(BiomeTags.IS_RIVER)
+                && !biome.is(BiomeTags.IS_BEACH) && !biome.is(Tags.Biomes.IS_UNDERGROUND);
     }
 
     /**
@@ -187,11 +306,23 @@ public final class OverworldStretchBiomes {
 
     private Climate.ParameterList<Holder<Biome>> bopRegionAt(IExtendedParameterList<?> regionLayout,
                                                              int qx, int qy, int qz) {
-        if (regionLayout == null || !regionLayout.isInitialized()) return bopRegions.get(0);
+        return bopRegions.get(bopRegionIndexAt(regionLayout, qx, qy, qz));
+    }
+
+    /** Index into {@link #bopRegions} of the BoP region at the quart. */
+    private int bopRegionIndexAt(IExtendedParameterList<?> regionLayout, int qx, int qy, int qz) {
+        if (regionLayout == null || !regionLayout.isInitialized()) return 0;
         int index = regionLayout.getUniqueness(qx, qy, qz);
         Region region = regionLayout.getRegion(index);
         Integer own = region == null ? null : bopRegionIndex.get(region.getName());
-        return bopRegions.get(own != null ? own : Math.floorMod(index, bopRegions.size()));
+        return own != null ? own : Math.floorMod(index, bopRegions.size());
+    }
+
+    /** A fresh table per region: same points, own search tree. */
+    private static List<Climate.ParameterList<Holder<Biome>>> copies(List<Climate.ParameterList<Holder<Biome>>> tables) {
+        List<Climate.ParameterList<Holder<Biome>>> out = new ArrayList<>(tables.size());
+        for (Climate.ParameterList<Holder<Biome>> t : tables) out.add(new Climate.ParameterList<>(t.values()));
+        return List.copyOf(out);
     }
 
     /** Build from the server's biome registry and TerraBlender's regions; {@code null} on any failure. */
@@ -244,8 +375,14 @@ public final class OverworldStretchBiomes {
                         key -> key == Region.DEFERRED_PLACEHOLDER ? null : holder.apply(key)));
             }
 
+            Set<Holder<Biome>> rare = new HashSet<>();
+            for (ResourceLocation id : TerraOmnia.RARE) {
+                Holder<Biome> h = holder.apply(ResourceKey.create(Registries.BIOME, id));
+                if (h != null) rare.add(h);
+            }
+
             return new OverworldStretchBiomes(vanilla, vanillaWithoutBackport, List.copyOf(bopRegions),
-                    Map.copyOf(bopRegionIndex), fallback);
+                    Map.copyOf(bopRegionIndex), Set.copyOf(rare), fallback);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Failed to build the second-lap overworld biome tables; overworld stays as generated", t);
             return null;

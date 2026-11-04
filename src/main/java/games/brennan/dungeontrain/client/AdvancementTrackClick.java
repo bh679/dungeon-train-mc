@@ -1,9 +1,11 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.dungeontrain.advancement.TerraOmnia;
 import games.brennan.dungeontrain.compat.AdvancementHintText;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -17,7 +19,8 @@ import net.minecraft.sounds.SoundEvents;
  * (vanilla + Better Advancements) so they can't drift apart. A left click on an <em>earned</em> camera
  * advancement instead opens the photo that earned it ({@link EarnedPhotos}). A trackable capstone (All at Once,
  * The Challenge) does both: the click pins its "what you still need" halo ({@link CapstoneNeeds}) and toggles
- * tracking. The chat confirmation comes once the screen closes — see {@link TrackedAdvancementsSummary}.
+ * tracking. Terra Omnia opens its biome checklist ({@link BiomeChecklistScreen}). The chat confirmation
+ * comes once the screen closes — see {@link TrackedAdvancementsSummary}.
  */
 public final class AdvancementTrackClick {
 
@@ -42,6 +45,14 @@ public final class AdvancementTrackClick {
         // The Challenge) also toggles tracking, as its tooltip promises.
         if (id != null && CapstoneNeeds.onClick(id)) {
             if (canToggleTracking(id)) TrackedAdvancements.toggle(id);
+            playClick();
+            return true;
+        }
+        // Terra Omnia opens its checklist of every biome, ridden or not — earned or still filling.
+        if (TerraOmnia.ID.equals(id)) {
+            Minecraft mc = Minecraft.getInstance();
+            Screen parent = mc.screen;
+            mc.execute(() -> mc.setScreen(new BiomeChecklistScreen(parent, titleOf(id))));
             playClick();
             return true;
         }

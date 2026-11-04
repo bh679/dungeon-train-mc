@@ -21,6 +21,8 @@ public final class InlineEdit {
     static final int MAX_LENGTH = 6;
 
     private String prefix = "";
+    /** Where a value typed into a screen-side setting goes, instead of a command; null otherwise. */
+    private java.util.function.IntConsumer local;
     /** Whether a blank submit means "no limit" ({@code -1}) rather than "nothing typed". */
     private boolean allowAll;
     private String buffer = "";
@@ -62,7 +64,17 @@ public final class InlineEdit {
         this.rect = rect;
     }
 
+    /**
+     * Start typing a value the screen keeps for itself (the offset step), handed to {@code sink} on
+     * Enter rather than run as a command.
+     */
+    public void beginLocal(java.util.function.IntConsumer sink, String shown, InventoryEditorLayout.Rect rect) {
+        begin("", shown, rect, false);
+        this.local = sink;
+    }
+
     public void cancel() {
+        local = null;
         allowAll = false;
         prefix = "";
         buffer = "";
@@ -75,6 +87,13 @@ public final class InlineEdit {
      * {@code -1}, "no limit". Ends the edit either way.
      */
     public String submit() {
+        if (local != null) {
+            java.util.function.IntConsumer sink = local;
+            String typed = buffer;
+            cancel();
+            if (!typed.isEmpty() && !"-".equals(typed)) sink.accept(Integer.parseInt(typed));
+            return null;
+        }
         String command;
         if (buffer.isEmpty() || "-".equals(buffer)) {
             command = allowAll && buffer.isEmpty() ? prefix + " -1" : null;
