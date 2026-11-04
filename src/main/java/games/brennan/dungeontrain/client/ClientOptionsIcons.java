@@ -101,6 +101,9 @@ final class ClientOptionsIcons {
             case LIVE_FEED_VIEWING -> Icon.item(Items.ENDER_EYE);
             case WORN_TV_STREAMS -> Icon.item(Items.SPYGLASS);
             case STREAMER_BOX_STREAMS -> Icon.item(Items.ITEM_FRAME);
+            case TV_STREAM_SOUND -> Icon.item(Items.JUKEBOX);
+            case TV_SOUND_ON_TRAIN -> Icon.item(Items.RAIL);
+            case MUTED_STREAMERS -> Icon.item(Items.NOTE_BLOCK);
             case STREAM_SIZE -> Icon.item(Items.MAP);
             case STREAM_SAVE_BANDWIDTH -> Icon.item(Items.PISTON);
             case HEAD_VIEWER_SIZE -> Icon.item(Items.GLASS);

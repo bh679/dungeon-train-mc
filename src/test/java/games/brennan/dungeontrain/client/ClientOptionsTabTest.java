@@ -95,11 +95,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: seventy-three rows (five repeated on Performance), none of the conditional rows present")
+    @DisplayName("Plain client: seventy-six rows (five repeated on Performance), none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(73, rows.size());
+        assertEquals(76, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -218,9 +218,9 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        // 73 rows (five of them Stream's section titles), five (the Live Feed's frame-rate costs) listed on
+        // 76 rows (five of them Stream's section titles), five (the Live Feed's frame-rate costs) listed on
         // Performance as well as Stream.
-        assertEquals(77, rows.size());
+        assertEquals(80, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
@@ -240,6 +240,8 @@ final class ClientOptionsTabTest {
                         ClientOptionsTab.Row.LIVE_MOMENT_BOOKS, ClientOptionsTab.Row.TWITCH_HINT,
                         ClientOptionsTab.Row.STREAM_SECTION_WATCHING, ClientOptionsTab.Row.LIVE_FEED_VIEWING,
                         ClientOptionsTab.Row.WORN_TV_STREAMS, ClientOptionsTab.Row.STREAMER_BOX_STREAMS,
+                        ClientOptionsTab.Row.TV_STREAM_SOUND, ClientOptionsTab.Row.TV_SOUND_ON_TRAIN,
+                        ClientOptionsTab.Row.MUTED_STREAMERS,
                         ClientOptionsTab.Row.HEAD_VIEWER_SIZE, ClientOptionsTab.Row.HEAD_VIEWER_NAMES, ClientOptionsTab.Row.HEAD_VIEWER_SIZE_STREAMING),
                 ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true));
         // Every section title is a heading, and every heading opens a section that has rows under it.

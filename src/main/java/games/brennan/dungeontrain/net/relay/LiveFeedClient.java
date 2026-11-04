@@ -454,8 +454,14 @@ public final class LiveFeedClient {
     public record Status(boolean live, @Nullable String session, @Nullable String playlistUrl,
                          @Nullable String streamer, int viewers, int cap, boolean slot,
                          @Nullable String replayUrl, boolean ended, List<Variant> variants, @Nullable String twitchLogin,
-                         @Nullable Status second, @Nullable String channel) {
+                         @Nullable Status second, @Nullable String channel, @Nullable Mic mic) {
         public static final Status OFFLINE = new Status(false, null, null, null, 0, 0, true, null, false, List.of(), null, null);
+
+        public Status(boolean live, @Nullable String session, @Nullable String playlistUrl, @Nullable String streamer, int viewers,
+                      int cap, boolean slot, @Nullable String replayUrl, boolean ended, List<Variant> variants,
+                      @Nullable String twitchLogin, @Nullable Status second, @Nullable String channel) {
+            this(live, session, playlistUrl, streamer, viewers, cap, slot, replayUrl, ended, variants, twitchLogin, second, channel, null);
+        }
 
         public Status(boolean live, @Nullable String session, @Nullable String playlistUrl, @Nullable String streamer, int viewers,
                       int cap, boolean slot, @Nullable String replayUrl, boolean ended, List<Variant> variants,
@@ -479,6 +485,11 @@ public final class LiveFeedClient {
          */
         public @Nullable Status second() {
             return second;
+        }
+
+        /** The streamer's microphone, from the status's {@code mic} block; null from an older relay. */
+        public @Nullable Mic mic() {
+            return mic;
         }
 
         /**
@@ -1275,7 +1286,26 @@ public final class LiveFeedClient {
         Status second = withSecond ? parseSecond(r, b, viewers, cap, slot) : null;
         return new Status(true, str(b, "session"), playlistUrl, str(b, "streamer"), viewers, cap, slot,
             ended ? replayUrl : null, ended, parseVariants(b, playlistUrl), tw == null ? null : tw.login(), second,
-            slotName(str(b, "channel")));
+            slotName(str(b, "channel")), parseMic(b));
+    }
+
+    /**
+     * A streamer's microphone, as a status describes it: {@code enabled} = the stream carries a mic track
+     * (track 0 is the game with the mic, track 1 the game alone), {@code on} = the mic is open now.
+     */
+    public record Mic(boolean enabled, boolean on) {}
+
+    /** The status body's {@code mic} block, or null when it has none (an older relay) or it is malformed. */
+    @Nullable
+    static Mic parseMic(JsonObject b) {
+        if (!b.has("mic") || !b.get("mic").isJsonObject()) return null;
+        JsonObject m = b.getAsJsonObject("mic");
+        return new Mic(bool(m, "enabled"), bool(m, "on"));
+    }
+
+    private static boolean bool(JsonObject o, String key) {
+        JsonElement e = o.get(key);
+        return e != null && e.isJsonPrimitive() && e.getAsJsonPrimitive().isBoolean() && e.getAsBoolean();
     }
 
     /** A relay slot name from a status body: {@code main} or {@code second}, anything else null. */
@@ -1304,7 +1334,7 @@ public final class LiveFeedClient {
             // The viewer figures are the outer body's (one room per poll): carry them so a TV on the
             // second stream reads the same cap and slot answer.
             return new Status(true, parsed.session(), parsed.playlistUrl(), parsed.streamer(), viewers, cap, slot,
-                parsed.replayUrl(), parsed.ended(), parsed.variants(), parsed.twitchLogin(), null, parsed.channel());
+                parsed.replayUrl(), parsed.ended(), parsed.variants(), parsed.twitchLogin(), null, parsed.channel(), parsed.mic());
         } catch (RuntimeException e) {
             LOGGER.debug("[DungeonTrain] live status: ignoring malformed second block", e);
             return null;

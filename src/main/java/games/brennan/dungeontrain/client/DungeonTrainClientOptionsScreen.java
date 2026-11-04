@@ -770,6 +770,26 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 yield Setting.of(nameTag, kid ? key + ".kid_tip" : key + ".tip");
             }
 
+            // Whether TVs play stream sound, and the streamers muted on them (LiveTvSpeakers, LiveViewerMutes).
+            // TVs on the train follows this switch (greyed while it is off), so the rows are rebuilt.
+            case TV_STREAM_SOUND -> Setting.of(onOff(Component.translatable(key),
+                    games.brennan.dungeontrain.config.LiveViewerClientConfig.tvStreamSound(),
+                    on -> { games.brennan.dungeontrain.config.LiveViewerClientConfig.setTvStreamSound(on); rebuildIfShown(); }),
+                    key + ".tip");
+            // Placed TVs only; a worn or held TV plays regardless. Inert and greyed while TV stream sound is off.
+            case TV_SOUND_ON_TRAIN -> {
+                boolean soundOff = !games.brennan.dungeontrain.config.LiveViewerClientConfig.tvStreamSound();
+                CycleButton<Boolean> onTrain = onOff(Component.translatable(key),
+                        !soundOff && games.brennan.dungeontrain.config.LiveViewerClientConfig.tvSoundOnTrain(),
+                        games.brennan.dungeontrain.config.LiveViewerClientConfig::setTvSoundOnTrain);
+                onTrain.active = !soundOff;
+                yield Setting.of(onTrain, key + ".tip");
+            }
+            case MUTED_STREAMERS -> Setting.of(Button.builder(Component.translatable(key + ".button",
+                            games.brennan.dungeontrain.config.LiveViewerClientConfig.mutedStreamers().size()),
+                            b -> this.minecraft.setScreen(new MutedStreamersScreen(this)))
+                    .bounds(0, 0, CONTROL_W, ROW_H).build(), key + ".tip");
+
             // Two streams live: what a worn TV shows by default (a TV that remembers a stream wins).
             case WORN_TV_STREAMS -> Setting.of(
                     CycleButton.<LiveFeedClientConfig.WornTvStreams>builder(DungeonTrainClientOptionsScreen::wornTvStreamsLabel)

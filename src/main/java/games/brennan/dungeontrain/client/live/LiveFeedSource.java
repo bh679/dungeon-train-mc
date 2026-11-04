@@ -64,6 +64,8 @@ public final class LiveFeedSource implements IVideoSource {
     @Nullable private LiveFeedTexture pendingTexture;
     /** The stopped stream's playlist this viewer already played to its ENDLIST; never rejoined. */
     @Nullable private String finishedUrl;
+    /** The status the newest {@link #frame} showed, for {@link #hearing} (who the stream is by). */
+    @Nullable private volatile Status lastStatus;
 
     private LiveFeedSource(String textureName, boolean second) {
         this.texture = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, textureName);
@@ -158,6 +160,40 @@ public final class LiveFeedSource implements IVideoSource {
         // Borrowing the first stream: let go of our own decoder and texture, so nothing idles behind the picture.
         if (session != null || pending != null) dropAll();
         return MAIN;
+    }
+
+    /**
+     * Vista's client tick for a TV showing this feed ({@code playing}: switched on, not paused): its
+     * speaker ({@link LiveTvSpeakers}) plays the stream's sound.
+     */
+    @Override
+    public void updateAudio(TVBlockEntity tv, boolean playing) {
+        LiveTvSpeakers.tv(this, tv, playing);
+    }
+
+    /**
+     * What a speaker of this feed would play now: the session on screen and who it is by. {@code
+     * streamKey} is the stream's playlist (what "mute this stream" keys on); {@code streamer} is null
+     * for the replay loop, whose broadcaster the status no longer names. {@code second}: the second
+     * stream (false while borrowing the first).
+     */
+    public record Hearing(LiveHlsSession session, String streamKey, boolean replay, @Nullable String streamer, boolean second) {}
+
+    /** Client thread: {@link Hearing} for this feed, or null while it has no sound to play. */
+    @Nullable
+    public Hearing hearing() {
+        if (!LiveFeedClientConfig.viewingEnabled()) return null;
+        LiveFeedSource d = delegate();
+        LiveHlsSession s = d.session;
+        if (s == null || s.frameSequence() == 0 || !s.hasSound()) return null;
+        return new Hearing(s, s.playlistUrl(), s.isReplay(), streamerOf(s.playlistUrl(), s.isReplay(), d.lastStatus), d.second);
+    }
+
+    /** Who the stream at {@code url} is by, from the status shown with it: null for a replay or another stream. Pure. */
+    @Nullable
+    static String streamerOf(String url, boolean replay, @Nullable Status status) {
+        if (replay || status == null || status.playlistUrl() == null) return null;
+        return status.playlistUrl().equals(url) ? status.streamer() : null;
     }
 
     @Override
@@ -266,6 +302,7 @@ public final class LiveFeedSource implements IVideoSource {
         Status polled = tvBlock ? LiveStatusPoller.tvWanted() : LiveStatusPoller.wanted();
         String own = second ? ownSecondUrl() : null;
         Status status = statusFor(polled, second, own, own != null ? ownName() : null);
+        lastStatus = status;
         boolean replay = false;
         String url;
         if (status.live() && status.slot() && status.playlistUrl() != null && !playedToEnd(status.playlistUrl())) {
@@ -328,9 +365,10 @@ public final class LiveFeedSource implements IVideoSource {
             dropPending();
             return s;
         }
+        boolean micTrack = !replay && carriesMicTrack(status);
         if (s == null || view == null || !view.hasPicture()) {
             dropSession();
-            session = newSession(url, media, replay, width);
+            session = newSession(url, media, replay, width, micTrack);
             view = (LiveFeedTexture) session.createTextureView(texture);
             view.register();
             return session;
@@ -338,7 +376,7 @@ public final class LiveFeedSource implements IVideoSource {
         LiveHlsSession p = pending;
         if (p == null || !matches(p, url, media, replay, width)) {
             dropPending();
-            pending = newSession(url, media, replay, width);
+            pending = newSession(url, media, replay, width, micTrack);
             pendingTexture = (LiveFeedTexture) pending.createTextureView(pendingTextureId);
             pendingTexture.register();
             p = pending;
@@ -385,8 +423,22 @@ public final class LiveFeedSource implements IVideoSource {
             Minecraft.getInstance().getWindow().getGuiScale(), LiveFeedClientConfig.viewerWidth());
     }
 
-    private static LiveHlsSession newSession(String url, String media, boolean replay, int width) {
-        return new LiveHlsSession(url, media, width, LiveFeedClientConfig.heightFor(width), replay);
+    private static LiveHlsSession newSession(String url, String media, boolean replay, int width, boolean micTrack) {
+        return new LiveHlsSession(url, media, width, LiveFeedClientConfig.heightFor(width), replay, micTrack);
+    }
+
+    /** Whether the stream {@code status} describes carries a mic track (its second audio track). Pure. */
+    static boolean carriesMicTrack(@Nullable Status status) {
+        return status != null && status.mic() != null && status.mic().enabled();
+    }
+
+    /**
+     * Render thread: the session on screen for this source now (the first stream's while this one
+     * borrows it), or null before any. What the pinned box's mic bar reads ({@code HeadViewerMicBar}).
+     */
+    @Nullable
+    public LiveHlsSession shownSession() {
+        return delegate().session;
     }
 
     private void dropPending() {

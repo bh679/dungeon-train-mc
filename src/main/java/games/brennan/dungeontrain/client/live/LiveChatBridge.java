@@ -393,6 +393,8 @@ public final class LiveChatBridge {
                 }
                 continue;
             }
+            // A player's own line names their uuid: what a streamer mute keys on once they rename.
+            if (line.source() == LiveFeedClient.Source.GAME) LiveViewerMutes.learn(line.author(), line.uuid());
             if (LiveChatRules.shouldShow(line, me, here, names)) {
                 boolean mine = me != null && line.uuid() != null && line.uuid().equalsIgnoreCase(me.toString().replace("-", ""));
                 // The reader's own words are shown as typed, never translated back at them.
