@@ -5714,6 +5714,7 @@
   "item.dungeontrain.live_cassette_2.tooltip": "Acordată pe al doilea stream. Arată al doilea jucător care transmite, sau primul stream cât timp nu există un al doilea.",
   "item.dungeontrain.home_cassette": "Casetă de acasă",
   "item.dungeontrain.home_cassette.tooltip": "Reglată pe camera ta personală. Televizorul ei îți redă propria poveste.",
+  "chat.dungeontrain.home_room.tv_stays": "Televizorul rămâne. Construiește în jurul lui.",
   "perk.dungeontrain.restock_villager.button": "Reaprovizionează (%s)",
   "gui.dungeontrain.perks.rank_cost": "Următorul punct costă %s.",
   "gui.dungeontrain.perks.raise_limit": "Crește limita (%s)",

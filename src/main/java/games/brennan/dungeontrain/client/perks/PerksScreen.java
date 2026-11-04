@@ -197,6 +197,12 @@ public final class PerksScreen extends Screen {
     @Override
     public void onClose() {
         Minecraft mc = Minecraft.getInstance();
+        // Not before the menu is finished: a close while it still builds up, or while the points
+        // drain, brings the rest of it up instead — the room comes after the perks, never during.
+        if (death != null && !death.finished(Util.getMillis())) {
+            death.advance(Util.getMillis());
+            return;
+        }
         // on death there is no game to go back to: closing moves on to the home room, where the TV
         // keeps showing this menu — or straight to the recap when there is nobody to stand in a room
         if (death != null && mc.player != null && mc.player.isDeadOrDying()) {

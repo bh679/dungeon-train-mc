@@ -5582,6 +5582,7 @@
   "item.dungeontrain.live_cassette_2.tooltip": "2つ目の配信に合わせてある。2人目の放送中のプレイヤーを映し、2つ目がないときは1つ目の配信を映す。",
   "item.dungeontrain.home_cassette": "ホームカセット",
   "item.dungeontrain.home_cassette.tooltip": "自分のホームルームに合わせたカセット。そのテレビはあなた自身の物語を映す。",
+  "chat.dungeontrain.home_room.tv_stays": "テレビはそのまま。周りに建てよう。",
   "perk.dungeontrain.restock_villager.button": "補充 (%s)",
   "gui.dungeontrain.perks.rank_cost": "次のポイントのコストは%s。",
   "gui.dungeontrain.perks.raise_limit": "上限を上げる (%s)",

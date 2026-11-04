@@ -5648,6 +5648,7 @@
   "item.dungeontrain.live_cassette_2.tooltip": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "ab5a99150ad90d53"},
   "item.dungeontrain.home_cassette": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "0db3dfd1f7926f16"},
   "item.dungeontrain.home_cassette.tooltip": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "84e2443d8b31e4c0"},
+  "chat.dungeontrain.home_room.tv_stays": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "df8ca2b0036d2810"},
   "perk.dungeontrain.restock_villager.button": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "79c873f7f0fd50b2"},
   "gui.dungeontrain.perks.rank_cost": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "bc60319b0a9a12ec"},
   "gui.dungeontrain.perks.raise_limit": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "887f5c7c037f593c"},

@@ -5648,6 +5648,7 @@
   "item.dungeontrain.live_cassette_2.tooltip": "Auf den zweiten Stream eingestellt. Zeigt den zweiten Spieler, der gerade live ist, oder den ersten Stream, solange es keinen zweiten gibt.",
   "item.dungeontrain.home_cassette": "Heimkassette",
   "item.dungeontrain.home_cassette.tooltip": "Auf dein Heimzimmer eingestellt. Sein Fernseher zeigt deine eigene Geschichte.",
+  "chat.dungeontrain.home_room.tv_stays": "Der Fernseher bleibt. Bau drumherum.",
   "perk.dungeontrain.restock_villager.button": "Auffüllen (%s)",
   "gui.dungeontrain.perks.rank_cost": "Der nächste Punkt kostet %s.",
   "gui.dungeontrain.perks.raise_limit": "Limit erhöhen (%s)",

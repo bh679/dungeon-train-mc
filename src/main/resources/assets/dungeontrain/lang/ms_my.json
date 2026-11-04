@@ -5582,6 +5582,7 @@
   "item.dungeontrain.live_cassette_2.tooltip": "Ditala ke strim kedua. Memaparkan pemain kedua yang sedang bersiaran, atau strim pertama selagi tiada yang kedua.",
   "item.dungeontrain.home_cassette": "Kaset Rumah",
   "item.dungeontrain.home_cassette.tooltip": "Ditala ke bilik peribadi anda. TV-nya memainkan kisah anda sendiri.",
+  "chat.dungeontrain.home_room.tv_stays": "TV kekal di sini. Binalah di sekelilingnya.",
   "perk.dungeontrain.restock_villager.button": "Isi semula (%s)",
   "gui.dungeontrain.perks.rank_cost": "Mata seterusnya berharga %s.",
   "gui.dungeontrain.perks.raise_limit": "Naikkan had (%s)",

@@ -5648,6 +5648,7 @@
   "item.dungeontrain.live_cassette_2.tooltip": "Afgestemd op de tweede stream. Toont de tweede speler die live is, of de eerste stream zolang er geen tweede is.",
   "item.dungeontrain.home_cassette": "Thuiscassette",
   "item.dungeontrain.home_cassette.tooltip": "Afgestemd op je eigen kamer. De tv daar speelt je eigen verhaal.",
+  "chat.dungeontrain.home_room.tv_stays": "De tv blijft staan. Bouw eromheen.",
   "perk.dungeontrain.restock_villager.button": "Aanvullen (%s)",
   "gui.dungeontrain.perks.rank_cost": "Het volgende punt kost %s.",
   "gui.dungeontrain.perks.raise_limit": "Limiet verhogen (%s)",

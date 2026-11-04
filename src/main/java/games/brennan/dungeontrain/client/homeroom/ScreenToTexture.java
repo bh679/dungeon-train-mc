@@ -33,10 +33,6 @@ public final class ScreenToTexture {
 
     public static final ResourceLocation LOCATION = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "home_tv");
 
-    /** GUI units tall. The recap screen lays out for at least 360; 2 px per unit keeps its text crisp. */
-    public static final int GUI_HEIGHT = 360;
-    public static final int PIXEL_SCALE = 2;
-
     private final int guiWidth;
     private final int guiHeight;
     private final RenderTarget drawn;
@@ -44,11 +40,17 @@ public final class ScreenToTexture {
     private Screen screen;
     private boolean registered;
 
-    /** A texture at {@code aspect} (width over height) tall enough for the recap, cleared to {@code clearRgb} under the screen. */
-    public ScreenToTexture(float aspect, int clearRgb) {
-        this.guiHeight = GUI_HEIGHT;
-        this.guiWidth = Math.max(320, Math.round(GUI_HEIGHT * aspect));
-        int w = guiWidth * PIXEL_SCALE, h = guiHeight * PIXEL_SCALE;
+    /**
+     * A texture the size and shape of the window — the same GUI size and scale the screen was laid
+     * out for, so what the TV shows is the frame the player was looking at, letterboxed by the TV
+     * rather than re-laid-out for it. Cleared to {@code clearRgb} under the screen.
+     */
+    public ScreenToTexture(int clearRgb) {
+        var window = Minecraft.getInstance().getWindow();
+        this.guiWidth = Math.max(320, window.getGuiScaledWidth());
+        this.guiHeight = Math.max(240, window.getGuiScaledHeight());
+        int scale = Math.max(1, (int) Math.round(window.getGuiScale()));
+        int w = guiWidth * scale, h = guiHeight * scale;
         this.drawn = new TextureTarget(w, h, true, Minecraft.ON_OSX);
         this.flipped = new TextureTarget(w, h, false, Minecraft.ON_OSX);
         float r = ((clearRgb >> 16) & 0xFF) / 255f, g = ((clearRgb >> 8) & 0xFF) / 255f, b = (clearRgb & 0xFF) / 255f;

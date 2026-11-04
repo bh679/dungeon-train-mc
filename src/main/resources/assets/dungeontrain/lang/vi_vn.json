@@ -5582,6 +5582,7 @@
   "item.dungeontrain.live_cassette_2.tooltip": "Đã dò sẵn stream thứ hai. Hiển thị người chơi thứ hai đang phát sóng, hoặc stream thứ nhất khi chưa có stream thứ hai.",
   "item.dungeontrain.home_cassette": "Băng phòng riêng",
   "item.dungeontrain.home_cassette.tooltip": "Dò sẵn kênh phòng riêng của bạn. TV trong đó phát câu chuyện của chính bạn.",
+  "chat.dungeontrain.home_room.tv_stays": "TV vẫn ở đây. Hãy xây quanh nó.",
   "perk.dungeontrain.restock_villager.button": "Bổ sung (%s)",
   "gui.dungeontrain.perks.rank_cost": "Điểm tiếp theo tốn %s.",
   "gui.dungeontrain.perks.raise_limit": "Nâng giới hạn (%s)",

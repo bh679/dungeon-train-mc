@@ -5582,6 +5582,7 @@
   "item.dungeontrain.live_cassette_2.tooltip": "Disetel ke stream kedua. Menampilkan pemain kedua yang sedang siaran, atau stream pertama selama belum ada yang kedua.",
   "item.dungeontrain.home_cassette": "Kaset Rumah",
   "item.dungeontrain.home_cassette.tooltip": "Disetel ke kamar pribadimu. TV-nya memutar kisahmu sendiri.",
+  "chat.dungeontrain.home_room.tv_stays": "TV-nya tetap di sini. Bangunlah di sekitarnya.",
   "perk.dungeontrain.restock_villager.button": "Isi ulang (%s)",
   "gui.dungeontrain.perks.rank_cost": "Poin berikutnya butuh %s.",
   "gui.dungeontrain.perks.raise_limit": "Naikkan batas (%s)",

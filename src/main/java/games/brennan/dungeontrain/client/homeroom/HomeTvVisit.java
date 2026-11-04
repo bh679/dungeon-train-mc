@@ -38,7 +38,7 @@ public final class HomeTvVisit {
     static final long ROOM_TIMEOUT_MS = 20_000L;
     /** Black held after the room is in, before the fade-in. */
     static final long SETTLE_MS = 600L;
-    /** The TV's own picture ratio: 3 blocks wide, 2 tall. */
+    /** What the picture is taken to be when no texture is up: the TV's own 3:2. */
     static final float TV_ASPECT = 1.5f;
 
     enum Phase { IDLE, FADING_OUT, AWAITING_ROOM, FADING_IN, WATCHING, ENDING }
@@ -61,7 +61,7 @@ public final class HomeTvVisit {
         Minecraft mc = Minecraft.getInstance();
         reset();
         recap = next;
-        texture = new ScreenToTexture(TV_ASPECT, games.brennan.dungeontrain.client.perks.PerksScreen.SKY_BG);
+        texture = new ScreenToTexture(games.brennan.dungeontrain.client.perks.PerksScreen.SKY_BG);
         texture.attach(perks);
         setPhase(Phase.FADING_OUT);
         mc.setScreen(new HomeArrivalScreen(perks));

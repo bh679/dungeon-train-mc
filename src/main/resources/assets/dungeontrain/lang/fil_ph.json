@@ -5582,6 +5582,7 @@
   "item.dungeontrain.live_cassette_2.tooltip": "Nakatutok sa ikalawang stream. Ipinapakita ang ikalawang manlalarong live, o ang unang stream habang wala pang ikalawa.",
   "item.dungeontrain.home_cassette": "Home Cassette",
   "item.dungeontrain.home_cassette.tooltip": "Nakatutok sa iyong sariling silid. Pinapalabas ng TV nito ang sarili mong kuwento.",
+  "chat.dungeontrain.home_room.tv_stays": "Nananatili ang TV. Magtayo sa paligid nito.",
   "perk.dungeontrain.restock_villager.button": "I-restock (%s)",
   "gui.dungeontrain.perks.rank_cost": "Ang susunod na point ay nagkakahalaga ng %s.",
   "gui.dungeontrain.perks.raise_limit": "Itaas ang limit (%s)",

@@ -5648,6 +5648,7 @@
   "item.dungeontrain.live_cassette_2.tooltip": "Sintonizada na segunda transmissão. Mostra o segundo jogador ao vivo, ou a primeira transmissão enquanto não houver uma segunda.",
   "item.dungeontrain.home_cassette": "Fita do lar",
   "item.dungeontrain.home_cassette.tooltip": "Sintonizada no seu quarto pessoal. A TV dele passa a sua própria história.",
+  "chat.dungeontrain.home_room.tv_stays": "A TV fica. Construa ao redor dela.",
   "perk.dungeontrain.restock_villager.button": "Reabastecer (%s)",
   "gui.dungeontrain.perks.rank_cost": "O próximo ponto custa %s.",
   "gui.dungeontrain.perks.raise_limit": "Subir limite (%s)",
