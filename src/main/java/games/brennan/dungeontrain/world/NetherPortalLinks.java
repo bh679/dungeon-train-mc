@@ -9,6 +9,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -48,6 +49,9 @@ public final class NetherPortalLinks extends SavedData {
     /** Otherside portals' pairs, kept apart so a Nether frame and an Otherside frame never pair. */
     public static final String OTHERSIDE_NAME = "dungeontrain_otherside_portal_links";
 
+    /** End gateways' pairs ({@code event/EndGatewayBandJump}), keyed by the gateway block itself. */
+    public static final String END_GATEWAY_NAME = "dungeontrain_end_gateway_links";
+
     public static NetherPortalLinks get(ServerLevel overworld) {
         return overworld.getDataStorage().computeIfAbsent(
             new SavedData.Factory<>(NetherPortalLinks::new, (tag, registries) -> load(tag)),
@@ -60,6 +64,14 @@ public final class NetherPortalLinks extends SavedData {
         return overworld.getDataStorage().computeIfAbsent(
             new SavedData.Factory<>(NetherPortalLinks::new, (tag, registries) -> load(tag)),
             OTHERSIDE_NAME
+        );
+    }
+
+    /** The End gateways' pairs ({@link #END_GATEWAY_NAME}). */
+    public static NetherPortalLinks getEndGateway(ServerLevel overworld) {
+        return overworld.getDataStorage().computeIfAbsent(
+            new SavedData.Factory<>(NetherPortalLinks::new, (tag, registries) -> load(tag)),
+            END_GATEWAY_NAME
         );
     }
 
@@ -91,17 +103,21 @@ public final class NetherPortalLinks extends SavedData {
 
     /**
      * The partner of the frame at {@code key} if it still stands: a partner whose corner is loaded and
-     * no longer a portal block is unlinked and null is returned. An unloaded partner chunk is trusted.
+     * no longer a portal block or End gateway is unlinked and null is returned. An unloaded partner chunk is trusted.
      */
     @Nullable
     public BlockPos partnerOf(ServerLevel level, BlockPos key) {
         BlockPos partner = partner(key);
         if (partner == null) return null;
-        if (level.isLoaded(partner) && !level.getBlockState(partner).hasProperty(BlockStateProperties.HORIZONTAL_AXIS)) {
+        if (level.isLoaded(partner) && !isPortal(level.getBlockState(partner))) {
             unlink(key);
             return null;
         }
         return partner;
+    }
+
+    private static boolean isPortal(BlockState state) {
+        return state.hasProperty(BlockStateProperties.HORIZONTAL_AXIS) || state.is(Blocks.END_GATEWAY);
     }
 
     /** Forget {@code key} and whatever it pointed at. */

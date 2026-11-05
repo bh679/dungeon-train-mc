@@ -218,4 +218,39 @@ final class NetherPortalJumpTest {
         assertFalse(NetherPortalJump.targetX(c, label, 500, NetherPortalJump.Target.DEEPER_DARK).isPresent());
         assertTrue(NetherPortalJump.targetX(c, label, 500).isPresent());
     }
+
+    @Test
+    @DisplayName("an End gateway leads over the void and End pieces to the overworld band before them, at the same fraction")
+    void gatewayGoesToPreviousOverworldCore() {
+        IntFunction<String> strip = x -> x < 5_000 ? "Nether" : x < 15_000 ? "Lost City" : x < 15_500 ? "Void"
+                : x < 20_000 ? "End" : x < 24_000 ? "End (other)" : "Void";
+        java.util.function.IntPredicate overworld = x -> strip.apply(x).equals("Lost City");
+        Segment core = NetherPortalJump.coreOf(new Segment(5_000, 15_000), C);
+
+        OptionalLong fromFirstPiece = NetherPortalJump.previousOverworldX(C, strip, overworld, 17_250);
+        assertEquals(NetherPortalJump.mapFraction(new Segment(15_500, 20_000), 17_250, core), fromFirstPiece.orElseThrow());
+        assertTrue(core.contains(fromFirstPiece.orElseThrow()));
+
+        OptionalLong fromSecondPiece = NetherPortalJump.previousOverworldX(C, strip, overworld, 22_000);
+        assertEquals(NetherPortalJump.mapFraction(new Segment(20_000, 24_000), 22_000, core), fromSecondPiece.orElseThrow());
+    }
+
+    @Test
+    @DisplayName("an End gateway with no overworld band behind it has nowhere to go")
+    void gatewayWithNoOverworldBehind() {
+        IntFunction<String> strip = x -> x < 5_000 ? "Void" : "End";
+        assertTrue(NetherPortalJump.previousOverworldX(C, strip, x -> false, 7_000).isEmpty());
+    }
+
+    @Test
+    @DisplayName("an End gateway in the shipped cycle lands in an overworld stretch behind it")
+    void gatewayInShippedCycle() {
+        IntFunction<String> label = LABEL;
+        long endX = C.netherPassRange(0)[1];
+        while (C.endMiddleRamp((int) endX) <= 0.0) endX += 16;
+        final long from = endX + 8;
+        long t = NetherPortalJump.previousOverworldX(C, label, x -> label.apply(x).equals("Overworld"), (int) from).orElseThrow();
+        assertTrue(t < from, "behind the gateway, got " + t);
+        assertEquals("Overworld", label.apply((int) t));
+    }
 }
