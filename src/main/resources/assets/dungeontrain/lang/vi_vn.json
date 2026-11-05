@@ -1649,6 +1649,8 @@
   "gui.dungeontrain.options.twitch_hint.hint": "Hỏi Twitch của bạn khi lên sóng",
   "gui.dungeontrain.options.twitch_hint.tip": "Khi bạn lên sóng mà chưa lưu Twitch, một dòng trò chuyện sẽ xin tên người dùng hoặc URL Twitch của bạn để giới thiệu trên Twitch chính thức của Dungeon Train. Biến mất khi đã lưu Twitch.",
   "gui.dungeontrain.options.twitch_hint.kid_tip": "Chế độ trẻ em không có Twitch.",
+  "chat.dungeontrain.live.channel.live": "%s đang phát trực tiếp. Twitch: %s",
+  "chat.dungeontrain.live.channel.join": "Bạn đang xem %s. Twitch: %s",
   "chat.dungeontrain.live.watch_links_own": "Bạn đã bắt đầu phát trực tiếp trên %s và %s, và trên kênh của bạn %s",
   "chat.dungeontrain.live.watch_link_own": "Bạn đã bắt đầu phát trực tiếp trên %s, và trên kênh của bạn %s",
   "gui.dungeontrain.options.account.pings.death": "Cái chết của bạn",

@@ -1697,6 +1697,8 @@
   "gui.dungeontrain.options.twitch_hint.hint": "Chiedi il tuo Twitch quando vai in diretta",
   "gui.dungeontrain.options.twitch_hint.tip": "Se vai in diretta senza un Twitch salvato, una riga in chat ti chiede il tuo nome utente o link Twitch per uno shout-out sul Twitch ufficiale di Dungeon Train. Sparisce appena un Twitch è salvato.",
   "gui.dungeontrain.options.twitch_hint.kid_tip": "La modalità bambini non ha Twitch.",
+  "chat.dungeontrain.live.channel.live": "%s è in diretta. Il suo Twitch: %s",
+  "chat.dungeontrain.live.channel.join": "Stai guardando %s. Il suo Twitch: %s",
   "chat.dungeontrain.live.watch_links_own": "Ora sei in diretta su %s e %s, e sul tuo canale %s",
   "chat.dungeontrain.live.watch_link_own": "Ora sei in diretta su %s, e sul tuo canale %s",
   "gui.dungeontrain.options.account.pings.death": "Le tue morti",
