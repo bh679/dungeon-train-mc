@@ -137,6 +137,17 @@ final class TerraOmniaTest {
     }
 
     @Test
+    @DisplayName("enough rare: 2 of the 5 or more, all of them when the registry holds fewer, never when it holds none")
+    void enoughRare() {
+        assertFalse(TerraOmnia.hasEnoughRare(Set.of(RARE.get(0)), RARE));
+        assertTrue(TerraOmnia.hasEnoughRare(Set.of(RARE.get(0), RARE.get(1)), RARE));
+        assertTrue(TerraOmnia.hasEnoughRare(Set.of(RARE.get(0), RARE.get(1), RARE.get(2)), RARE));
+        assertTrue(TerraOmnia.hasEnoughRare(Set.of(RARE.get(0)), List.of(RARE.get(0))));
+        assertFalse(TerraOmnia.hasEnoughRare(Set.of(RARE.get(1)), List.of(RARE.get(0))));
+        assertFalse(TerraOmnia.hasEnoughRare(Set.of(id("minecraft:plains")), List.of(id("minecraft:plains"))));
+    }
+
+    @Test
     @DisplayName("Coffee Table Book's check still needs every biome, all five rare ones included")
     void holdsEveryStaysStrict() {
         List<ResourceLocation> all = new java.util.ArrayList<>(List.of(id("minecraft:plains")));
