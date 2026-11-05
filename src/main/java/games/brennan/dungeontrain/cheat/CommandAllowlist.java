@@ -89,7 +89,7 @@ public final class CommandAllowlist {
     private static final Set<String> ALLOWED_ROOTS = Set.of(
         "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list",
         "feedback", "bug", "log", "fixaisconfig", "fixconfig", "customcontent", "new-world",
-        "playanimation", "stopsound", "dtbackup", "dtrestore", "dungeonbackup", "liveappeal",
+        "playanimation", "stopsound", "dtbackup", "dtrestore", "dungeonbackup", "liveappeal", "livereport",
         "reportcarriage", "dtrebuild");
 
     /**
@@ -106,7 +106,7 @@ public final class CommandAllowlist {
     private static final Set<String> CLIENT_ONLY_ROOTS = Set.of(
         "streamer", "dungeontrain-options", "dungeontrain-rewards", "framerate-throttle", "twitch",
         "discord", "dt-ledger-preview", "dungeontrain-debug-contribute", "dungeontrain-debug-death-pages",
-        "offereye");
+        "offereye", "livemute");
 
     private CommandAllowlist() {}
 
