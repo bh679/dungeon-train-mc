@@ -1649,6 +1649,8 @@
   "gui.dungeontrain.options.twitch_hint.hint": "Minta Twitch-mu saat mulai siaran",
   "gui.dungeontrain.options.twitch_hint.tip": "Saat kamu siaran tanpa Twitch tersimpan, sebuah baris chat meminta nama pengguna atau URL Twitch-mu untuk shout-out di Twitch resmi Dungeon Train. Hilang begitu Twitch tersimpan.",
   "gui.dungeontrain.options.twitch_hint.kid_tip": "Mode anak tidak punya Twitch.",
+  "chat.dungeontrain.live.channel.live": "%s sedang live. Twitch-nya: %s",
+  "chat.dungeontrain.live.channel.join": "Kamu sedang menonton %s. Twitch-nya: %s",
   "chat.dungeontrain.live.watch_links_own": "Kamu kini siaran langsung di %s dan %s, serta di channel-mu %s",
   "chat.dungeontrain.live.watch_link_own": "Kamu kini siaran langsung di %s, serta di channel-mu %s",
   "gui.dungeontrain.options.account.pings.death": "Kematianmu",
