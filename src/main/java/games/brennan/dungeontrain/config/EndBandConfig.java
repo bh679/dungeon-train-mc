@@ -16,6 +16,9 @@ public final class EndBandConfig {
     /** On: the BetterEnd band's vanilla End patches are remapped to BetterEnd biomes (#1785). */
     public static final boolean DEFAULT_BETTER_END_ONLY = true;
 
+    /** On: BetterEnd band samples build the real End's structures. */
+    public static final boolean DEFAULT_STRUCTURES = true;
+
     /** When a sampled band chunk gets its terrain. */
     public enum Terrain {
         /** During the chunk's own generation, on vanilla's worldgen workers: a chunk never exists without its islands. */
@@ -32,6 +35,7 @@ public final class EndBandConfig {
 
     private static ModConfigSpec.BooleanValue featureSpill;
     private static ModConfigSpec.BooleanValue betterEndOnly;
+    private static ModConfigSpec.BooleanValue structures;
     private static ModConfigSpec.EnumValue<Terrain> terrain;
 
     private EndBandConfig() {}
@@ -61,6 +65,12 @@ public final class EndBandConfig {
                         "the real End dimension is unchanged. Only chunks generated after the change are affected,",
                         "so an existing world keeps its vanilla patches next to remapped new chunks. Default true.")
                 .define("endBandBetterEndOnly", DEFAULT_BETTER_END_ONLY);
+        structures = b
+                .comment("Build the real End's structures in the BetterEnd End band: bridges, small islands, lakes,",
+                        "mountains, villages, End cities and the rest. Turn off if the band generates too slowly.",
+                        "Only chunks generated after the change are affected, so a structure can stop at the line",
+                        "where new chunks begin. Default true.")
+                .define("endBandStructures", DEFAULT_STRUCTURES);
     }
 
     /** When sampled End-band chunks get their terrain; hardcoded default pre-load. */
@@ -76,6 +86,11 @@ public final class EndBandConfig {
     /** Whether the BetterEnd band's vanilla End patches are remapped to BetterEnd biomes; hardcoded default pre-load. */
     public static boolean betterEndOnly() {
         return DungeonTrainCommonConfig.isLoaded() && betterEndOnly != null ? betterEndOnly.get() : DEFAULT_BETTER_END_ONLY;
+    }
+
+    /** Whether BetterEnd band samples build the real End's structures; hardcoded default pre-load. */
+    public static boolean structures() {
+        return DungeonTrainCommonConfig.isLoaded() && structures != null ? structures.get() : DEFAULT_STRUCTURES;
     }
 
     /** Whether sampled End-band chunks exchange feature spill with their neighbours; hardcoded default pre-load. */
