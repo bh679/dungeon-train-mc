@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalLoadScreenPacket;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
+import games.brennan.dungeontrain.portal.TrainFrameReturns;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -152,6 +153,10 @@ public final class NetherPortalBandJump {
         // never a place to send anyone, and it moves with the train anyway, so it is never paired.
         boolean onCarriage = Shipyards.isInPlotGrid(level, portalPos);
         BlockPos origin = NetherPortalLinks.frameKey(level, portalPos);
+        if (!onCarriage) {
+            TrainFrameReturns.Trip back = TrainFrameReturns.begin(level, player, origin, portalPos, kind, finder);
+            if (back.handled()) return new Outcome(true, back.transition());
+        }
         BlockPos partner = links.partnerOf(level, origin);
         ExitChoice choice = chooseExit(partner != null, onCarriage,
             partner != null && (Shipyards.isInPlotGrid(level, partner) || isAboveRoof(level, data, partner)
@@ -192,18 +197,25 @@ public final class NetherPortalBandJump {
             return new Outcome(true, null);
         }
         if (choice != ExitChoice.LINKED && !onCarriage) links.link(origin, arrived);
-        // The band counts as the real Nether (and a Deeper Dark core as the Otherside): fire the criterion vanilla
-        // fires on a dimension change, so "We Need to Go Deeper" and the Nether tab — or Deeper Darker's
-        // "enter the Otherside" — open just as they would through a real portal.
-        (kind == Kind.OTHERSIDE
-            ? NetherPortalAdvancements.othersideCrossing(NetherBand.isOthersideAt(level, fromX),
-                NetherBand.isOthersideAt(level, arrived.getX()))
-            : NetherPortalAdvancements.crossing(isRealNether(level, fromX), isRealNether(level, arrived.getX())))
-            .ifPresent(c -> CriteriaTriggers.CHANGED_DIMENSION.trigger(player, c.from(), c.to()));
+        if (onCarriage) TrainFrameReturns.remember(level, arrived, origin);
+        awardCrossing(level, player, kind, fromX, arrived.getX());
         LOGGER.info("[DungeonTrain] nether portal: {} x={} ({}) → {} ({}), frames {} ↔ {}{}",
             who, fromX, BandLabel.bandAt(level, fromX), exit, why, origin, arrived, onCarriage ? " onCarriage=true" : "");
         DungeonTrainNet.sendTo(player, new PortalLoadScreenPacket());
         return new Outcome(true, transition);
+    }
+
+    /**
+     * The band counts as the real Nether (and a Deeper Dark core as the Otherside): fire the criterion vanilla
+     * fires on a dimension change, so "We Need to Go Deeper" and the Nether tab — or Deeper Darker's
+     * "enter the Otherside" — open just as they would through a real portal.
+     */
+    public static void awardCrossing(ServerLevel level, ServerPlayer player, Kind kind, int fromX, int toX) {
+        (kind == Kind.OTHERSIDE
+            ? NetherPortalAdvancements.othersideCrossing(NetherBand.isOthersideAt(level, fromX),
+                NetherBand.isOthersideAt(level, toX))
+            : NetherPortalAdvancements.crossing(isRealNether(level, fromX), isRealNether(level, toX)))
+            .ifPresent(c -> CriteriaTriggers.CHANGED_DIMENSION.trigger(player, c.from(), c.to()));
     }
 
     /** How a portal trip picks its exit. */
