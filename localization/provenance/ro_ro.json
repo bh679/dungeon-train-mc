@@ -270,6 +270,7 @@
   "chat.dungeontrain.free_play.ais_fix": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "e2883dc60bf98ef7"},
   "chat.dungeontrain.free_play.cause.portal_rate": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "904c6067abd4d0e5"},
   "chat.dungeontrain.free_play.cause.keep_inventory": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "0988ef903197ebe7"},
+  "chat.dungeontrain.free_play.cause.profile_tampered": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "08c89d84ebebfbc4"},
   "chat.dungeontrain.free_play.cause.player": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "46605a3d31c57f1d"},
   "chat.dungeontrain.free_play.cause.player_used": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "62cb8b4ebbfc7baf"},
   "chat.dungeontrain.free_play.cause.player_switched": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "754366f2625aef8d"},

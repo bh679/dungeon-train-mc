@@ -270,6 +270,7 @@
   "chat.dungeontrain.free_play.ais_fix": "Натисни тут, щоб відновити стандартні налаштування, а потім перезапусти гру, щоб грати як звично.",
   "chat.dungeontrain.free_play.cause.portal_rate": "У цьому світі змінено частоту появи вимірних вагонів.",
   "chat.dungeontrain.free_play.cause.keep_inventory": "У цьому світі увімкнено збереження інвентарю.",
+  "chat.dungeontrain.free_play.cause.profile_tampered": "Ваші збережені файли прогресу було змінено поза грою.",
   "chat.dungeontrain.free_play.cause.player": "%s перейшов у Вільну гру, тому тепер усі в цьому світі у Вільній грі.",
   "chat.dungeontrain.free_play.cause.player_used": "%s використав %s, тому тепер усі в цьому світі у Вільній грі.",
   "chat.dungeontrain.free_play.cause.player_switched": "%s перемкнувся на %s, тому тепер усі в цьому світі у Вільній грі.",

@@ -5547,6 +5547,7 @@
   "gui.dungeontrain.low_memory.ok": "Percebi",
   "gui.dungeontrain.low_memory.dont_show": "Não mostrar novamente",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Neste mundo, «Manter inventário» está ligado.",
+  "chat.dungeontrain.free_play.cause.profile_tampered": "Os teus ficheiros de progresso guardados foram alterados fora do jogo.",
   "chat.dungeontrain.free_play.cause.player": "%s entrou no Jogo Livre, por isso todos neste mundo estão agora no Jogo Livre.",
   "chat.dungeontrain.free_play.cause.player_used": "%s usou %s, por isso todos neste mundo estão agora no Jogo Livre.",
   "chat.dungeontrain.free_play.cause.player_switched": "%s mudou para %s, por isso todos neste mundo estão agora no Jogo Livre.",

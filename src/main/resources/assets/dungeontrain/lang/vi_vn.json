@@ -5481,6 +5481,7 @@
   "gui.dungeontrain.low_memory.ok": "Đã hiểu",
   "gui.dungeontrain.low_memory.dont_show": "Không hiện lại",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Thế giới này đang bật \"Giữ hành trang\".",
+  "chat.dungeontrain.free_play.cause.profile_tampered": "Các tệp tiến trình đã lưu của bạn đã bị thay đổi bên ngoài trò chơi.",
   "chat.dungeontrain.free_play.cause.player": "%s đã vào Chơi Tự do, nên mọi người trong thế giới này cũng đang Chơi Tự do.",
   "chat.dungeontrain.free_play.cause.player_used": "%s đã dùng %s, nên mọi người trong thế giới này cũng đang Chơi Tự do.",
   "chat.dungeontrain.free_play.cause.player_switched": "%s đã chuyển sang %s, nên mọi người trong thế giới này cũng đang Chơi Tự do.",

@@ -247,6 +247,7 @@
   "chat.dungeontrain.free_play.ais_fix": "Click here to restore the default settings, then restart the game to play normally.",
   "chat.dungeontrain.free_play.cause.portal_rate": "How often dimensional carriages appear has been changed in this world.",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Keep Inventory is on in this world.",
+  "chat.dungeontrain.free_play.cause.profile_tampered": "Your saved progress files were changed outside the game.",
   "chat.dungeontrain.free_play.cause.player": "%s went into Free Play, so everyone on this world is in Free Play too.",
   "chat.dungeontrain.free_play.cause.player_used": "%s used %s, so everyone on this world is in Free Play too.",
   "chat.dungeontrain.free_play.cause.player_switched": "%s switched to %s, so everyone on this world is in Free Play too.",

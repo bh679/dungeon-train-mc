@@ -5495,6 +5495,7 @@
   "gui.dungeontrain.low_memory.ok": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "5ad3dbd1242a4cea"},
   "gui.dungeontrain.low_memory.dont_show": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "d16d035f63448e2e"},
   "chat.dungeontrain.free_play.cause.keep_inventory": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "0988ef903197ebe7"},
+  "chat.dungeontrain.free_play.cause.profile_tampered": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "08c89d84ebebfbc4"},
   "chat.dungeontrain.free_play.cause.player": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "46605a3d31c57f1d"},
   "chat.dungeontrain.free_play.cause.player_used": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "62cb8b4ebbfc7baf"},
   "chat.dungeontrain.free_play.cause.player_switched": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "754366f2625aef8d"},
