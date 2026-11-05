@@ -1,0 +1,20 @@
+{
+  "id": "leftover-carriages-after-restart",
+  "version": "0.1668.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "train"
+  ],
+  "title": "Stray carriages after reloading a world",
+  "summary": "Old carriages no longer come back when you reload a world. They used to fall off the line or ride along on top of the train. Worlds that already have them clean up as you reach them.",
+  "highlights": [],
+  "addresses": [
+    "train_vanished"
+  ],
+  "pr": 2495,
+  "date": "2026-11-05",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
