@@ -9,6 +9,7 @@
     "EnderManEndBandMixin",
     "NetherPortalBlockBandJumpMixin",
     "NetherPortalBlockInvoker",
+    "PortalForcerRoofCapMixin",
     "PhotographFrameItemPlaceMixin",
     "WitherRoseBlockCreditMixin",
     "VaultBlockMixin",
