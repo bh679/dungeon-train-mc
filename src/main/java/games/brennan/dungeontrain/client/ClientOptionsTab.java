@@ -174,7 +174,9 @@ public enum ClientOptionsTab {
         MIC_SUPPORT("gui.dungeontrain.options.mic_support"),
         /** Which capture device the mic uses. */
         MIC_DEVICE("gui.dungeontrain.options.mic_device"),
-        /** Game sound versus voice in the stream's mix, one slider (0 = game only, 100 = mic only). */
+        /** How loud live streams play from TVs; also on Music &amp; Sounds. */
+        STREAM_VOLUME("gui.dungeontrain.options.stream_volume"),
+        /** Game sound versus voice in the stream's mix, one slider (0 = game only, 100 = mic only); also on Music &amp; Sounds. */
         MIC_MIX("gui.dungeontrain.options.mic_mix"),
         /** Always on (while switched on) or push to talk. */
         MIC_MODE("gui.dungeontrain.options.mic_mode"),
@@ -218,6 +220,7 @@ public enum ClientOptionsTab {
         HEAD_VIEWER_SIZE_STREAMING("gui.dungeontrain.options.head_viewer_size_streaming"),
         // The Stream tab's section titles (HEADINGS): a caption only, no hint or control.
         STREAM_SECTION_BROADCAST("gui.dungeontrain.options.section.broadcast"),
+        STREAM_SECTION_SOUND("gui.dungeontrain.options.section.stream_sound"),
         STREAM_SECTION_MIC("gui.dungeontrain.options.section.microphone"),
         STREAM_SECTION_PICTURE("gui.dungeontrain.options.section.picture"),
         STREAM_SECTION_CHAT("gui.dungeontrain.options.section.live_chat"),
@@ -282,7 +285,7 @@ public enum ClientOptionsTab {
      * themselves.
      */
     private static final java.util.Set<Row> HEADINGS = java.util.EnumSet.of(Row.STREAM_SECTION_BROADCAST,
-            Row.STREAM_SECTION_MIC, Row.STREAM_SECTION_PICTURE, Row.STREAM_SECTION_CHAT, Row.STREAM_SECTION_WATCHING);
+            Row.STREAM_SECTION_SOUND, Row.STREAM_SECTION_MIC, Row.STREAM_SECTION_PICTURE, Row.STREAM_SECTION_CHAT, Row.STREAM_SECTION_WATCHING);
 
     /** Whether {@code row} is a caption rather than a setting. */
     public static boolean isHeading(Row row) {
@@ -380,12 +383,15 @@ public enum ClientOptionsTab {
                 rows.add(Row.STREAM_CHAT);
                 rows.add(Row.STREAM_NAME_TAG);
                 rows.add(Row.STREAM_POPUPS_OVER_TAG);
-                // Last in the section, right above the mic it carries.
+                // Last in the section, right above the sound rows.
                 rows.add(Row.STREAM_AUDIO);
+                // The two sound sliders, the same pair as on vanilla's Music & Sounds screen.
+                rows.add(Row.STREAM_SECTION_SOUND);
+                rows.add(Row.STREAM_VOLUME);
+                rows.add(Row.MIC_MIX);
                 rows.add(Row.STREAM_SECTION_MIC);
                 rows.add(Row.MIC_SUPPORT);
                 rows.add(Row.MIC_DEVICE);
-                rows.add(Row.MIC_MIX);
                 rows.add(Row.MIC_MODE);
                 rows.add(Row.STREAM_SECTION_PICTURE);
                 rows.add(Row.STREAM_SIZE);

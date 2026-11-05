@@ -95,11 +95,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: seventy-six rows (five repeated on Performance), none of the conditional rows present")
+    @DisplayName("Plain client: seventy-eight rows (five repeated on Performance), none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(76, rows.size());
+        assertEquals(78, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -218,9 +218,9 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        // 76 rows (five of them Stream's section titles), five (the Live Feed's frame-rate costs) listed on
+        // 78 rows (six of them Stream's section titles), five (the Live Feed's frame-rate costs) listed on
         // Performance as well as Stream.
-        assertEquals(80, rows.size());
+        assertEquals(82, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
@@ -231,8 +231,9 @@ final class ClientOptionsTabTest {
         assertEquals(List.of(ClientOptionsTab.Row.STREAM_SECTION_BROADCAST, ClientOptionsTab.Row.LIVESTREAM,
                         ClientOptionsTab.Row.STREAM_GUI, ClientOptionsTab.Row.STREAM_CHAT, ClientOptionsTab.Row.STREAM_NAME_TAG,
                         ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG, ClientOptionsTab.Row.STREAM_AUDIO,
+                        ClientOptionsTab.Row.STREAM_SECTION_SOUND, ClientOptionsTab.Row.STREAM_VOLUME, ClientOptionsTab.Row.MIC_MIX,
                         ClientOptionsTab.Row.STREAM_SECTION_MIC, ClientOptionsTab.Row.MIC_SUPPORT, ClientOptionsTab.Row.MIC_DEVICE,
-                        ClientOptionsTab.Row.MIC_MIX, ClientOptionsTab.Row.MIC_MODE,
+                        ClientOptionsTab.Row.MIC_MODE,
                         ClientOptionsTab.Row.STREAM_SECTION_PICTURE, ClientOptionsTab.Row.STREAM_SIZE,
                         ClientOptionsTab.Row.STREAM_SAVE_BANDWIDTH,
                         ClientOptionsTab.Row.STREAM_SECTION_CHAT, ClientOptionsTab.Row.LIVE_CHAT,
