@@ -45,6 +45,8 @@ public final class EndGatewayBandJump {
     /** What vanilla gives a pearl leaving a gateway, so it drops to the ground and lands. */
     private static final Vec3 PEARL_EXIT_MOVEMENT = new Vec3(0.0, -1.0, 0.0);
 
+    private static final String END_STRETCH = "End stretch";
+
     private static final NetherPortalBandJump.Outcome STAY = new NetherPortalBandJump.Outcome(true, null);
 
     private EndGatewayBandJump() {}
@@ -93,8 +95,12 @@ public final class EndGatewayBandJump {
     /** The gateway at the far end of a new trip, or null when there is no overworld band to go to. */
     @Nullable
     private static BlockPos buildExit(ServerLevel level, DungeonTrainWorldData data, Entity entity, int fromX) {
-        OptionalLong target = NetherPortalJump.previousOverworldX(WorldGenCycle.fromConfig(),
-                x -> BandLabel.bandAt(level, x), x -> isOverworldBand(TrainPhase.phaseAt(level, x)), fromX);
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        // A column the End band's disintegration has reached still reads as the overworld, but it is breaking up
+        // over the void: it counts with the End, as one stretch, and is never somewhere to arrive.
+        OptionalLong target = NetherPortalJump.previousOverworldX(cycle,
+                x -> cycle.endMiddleRamp(x) > 0.0 ? END_STRETCH : BandLabel.bandAt(level, x),
+                x -> cycle.endMiddleRamp(x) <= 0.0 && isOverworldBand(TrainPhase.phaseAt(level, x)), fromX);
         if (target.isEmpty()) return null;
         BlockPos column = level.getWorldBorder().clampToBounds(target.getAsLong(), entity.getY(),
                 NetherPortalBandJump.sideOfTrack(data, entity.getZ()));

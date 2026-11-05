@@ -37,6 +37,9 @@ public final class NetherPortalJump {
     /** A non-Nether core keeps at least this share of its segment (the trim is capped at a third per side). */
     private static final int MIN_CORE_DIVISOR = 3;
 
+    /** An overworld stretch shorter than this is a gap between two bands, not one to arrive in. */
+    static final long MIN_OVERWORLD_BLOCKS = 256L;
+
     private NetherPortalJump() {}
 
     /**
@@ -85,8 +88,8 @@ public final class NetherPortalJump {
 
     /**
      * Target world-X for an End gateway used at {@code fromX}: the proportional spot in the core of the nearest
-     * segment behind its own whose columns pass {@code overworld}, whatever lies between (the End band's void
-     * and its other pieces). Empty when the ride has none behind it.
+     * segment behind its own whose columns pass {@code overworld}, whatever lies between. A stretch shorter than
+     * {@link #MIN_OVERWORLD_BLOCKS} is passed over too. Empty when the ride has none behind it.
      */
     public static OptionalLong previousOverworldX(WorldGenCycle cycle, IntFunction<String> label, IntPredicate overworld,
                                                   int fromX) {
@@ -96,7 +99,7 @@ public final class NetherPortalJump {
         Segment from = segmentAround(label, fromX, Math.max(rideStart, (long) fromX - bound), (long) fromX + bound);
         for (long x = from.start() - 1L; x >= rideStart && x >= Integer.MIN_VALUE && x >= fromX - bound; ) {
             Segment segment = segmentAround(label, (int) x, Math.max(rideStart, x - bound), x);
-            if (overworld.test((int) x)) {
+            if (overworld.test((int) x) && segment.length() >= MIN_OVERWORLD_BLOCKS) {
                 return OptionalLong.of(mapFraction(from, fromX, coreOf(segment, cycle)));
             }
             x = segment.start() - 1L;
