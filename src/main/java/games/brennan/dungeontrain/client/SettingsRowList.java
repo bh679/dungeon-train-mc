@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.Font;
@@ -57,8 +58,17 @@ public final class SettingsRowList extends ContainerObjectSelectionList<Settings
     /** Same grey {@code PerformanceTipRow} dims a tip that does not apply. */
     private static final int HINT_COLOR = 0xFF9A9A9A;
     private static final String ELLIPSIS = "…";
+    /** A row a chat link pointed at: solid for {@link #HIGHLIGHT_HOLD_MS}, then fading out by {@link #HIGHLIGHT_MS}. */
+    static final long HIGHLIGHT_HOLD_MS = 1000;
+    static final long HIGHLIGHT_MS = 3000;
+    private static final int HIGHLIGHT_RGB = 0xFFAA00;
+    private static final int HIGHLIGHT_FILL_ALPHA = 0x38;
+    /** How far the highlight reaches past the row's content, so it does not touch the icon or control. */
+    private static final int HIGHLIGHT_PAD = 2;
 
     private final Font font;
+    @Nullable private Entry highlighted;
+    private long highlightStartMs;
 
     public SettingsRowList(Minecraft minecraft, int width, int height, int y) {
         super(minecraft, width, height, y, ROW_H);
@@ -66,9 +76,11 @@ public final class SettingsRowList extends ContainerObjectSelectionList<Settings
     }
 
     /** A setting: its icon, name, hint and value-only control, with the long explanation as the row's tooltip. */
-    public void addSetting(Icon icon, Component name, Component hint, AbstractWidget control,
-                           @Nullable Component tooltip) {
-        addEntry(new SettingEntry(icon, name, hint, control, tooltip));
+    public Entry addSetting(Icon icon, Component name, Component hint, AbstractWidget control,
+                            @Nullable Component tooltip) {
+        Entry entry = new SettingEntry(icon, name, hint, control, tooltip);
+        addEntry(entry);
+        return entry;
     }
 
     /** A row that is not a setting — a caption or a tip line — drawn at the full row width. */
@@ -94,6 +106,43 @@ public final class SettingsRowList extends ContainerObjectSelectionList<Settings
                 slider.applyUnsavedValue();
             }
         }
+    }
+
+    /**
+     * Centre {@code entry} and highlight it, timed from {@code startMs} so a rebuilt list carries on
+     * the fade rather than starting it again. The list must already have its final size.
+     */
+    public void focus(Entry entry, long startMs) {
+        centerScrollOn(entry);
+        this.highlighted = entry;
+        this.highlightStartMs = startMs;
+    }
+
+    /** The highlight's strength {@code elapsedMs} after it started: 1 while held, falling to 0 at the end. */
+    static float highlightStrength(long elapsedMs) {
+        if (elapsedMs < 0 || elapsedMs >= HIGHLIGHT_MS) return 0f;
+        if (elapsedMs <= HIGHLIGHT_HOLD_MS) return 1f;
+        return (HIGHLIGHT_MS - elapsedMs) / (float) (HIGHLIGHT_MS - HIGHLIGHT_HOLD_MS);
+    }
+
+    @Override
+    protected void renderItem(GuiGraphics g, int mouseX, int mouseY, float partialTick, int index,
+                              int left, int top, int width, int height) {
+        if (getEntry(index) == this.highlighted) {
+            drawHighlight(g, left, top, width, height);
+        }
+        super.renderItem(g, mouseX, mouseY, partialTick, index, left, top, width, height);
+    }
+
+    private void drawHighlight(GuiGraphics g, int left, int top, int width, int height) {
+        float strength = highlightStrength(Util.getMillis() - this.highlightStartMs);
+        if (strength <= 0f) return;
+        int x = left - HIGHLIGHT_PAD;
+        int y = top - HIGHLIGHT_PAD;
+        int w = width + 2 * HIGHLIGHT_PAD;
+        int h = height + 2 * HIGHLIGHT_PAD;
+        g.fill(x, y, x + w, y + h, (Math.round(HIGHLIGHT_FILL_ALPHA * strength) << 24) | HIGHLIGHT_RGB);
+        g.renderOutline(x, y, w, h, (Math.round(0xFF * strength) << 24) | HIGHLIGHT_RGB);
     }
 
     @Override

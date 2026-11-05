@@ -43,6 +43,34 @@ final class ClientOptionsTabTest {
         return rows;
     }
 
+    // ---- Chat links' tab and row names ----
+
+    @Test
+    @DisplayName("A chat link's tab and row names resolve, and unknown ones are null rather than a throw")
+    void linkNamesResolve() {
+        assertEquals(ClientOptionsTab.STREAM, ClientOptionsTab.tabNamed("STREAM"));
+        assertEquals(ClientOptionsTab.Row.TV_STREAM_SOUND, ClientOptionsTab.rowNamed("TV_STREAM_SOUND"));
+        assertNull(ClientOptionsTab.tabNamed("NOT_A_TAB"));
+        assertNull(ClientOptionsTab.rowNamed("NOT_A_ROW"));
+    }
+
+    @Test
+    @DisplayName("Every row a chat link points at is a setting row on the Stream tab, in every combination")
+    void chatLinkRowsAreOnStreamTab() {
+        Set<ClientOptionsTab.Row> linked = EnumSet.of(ClientOptionsTab.Row.LIVESTREAM, ClientOptionsTab.Row.LIVE_CHAT,
+                ClientOptionsTab.Row.LIVE_CHAT_TRANSLATION, ClientOptionsTab.Row.TV_STREAM_SOUND,
+                ClientOptionsTab.Row.MUTED_STREAMERS);
+        for (boolean chinese : BOOLS) {
+            for (boolean translate : BOOLS) {
+                for (boolean writable : BOOLS) {
+                    List<ClientOptionsTab.Row> rows = ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, chinese, translate, writable);
+                    assertTrue(rows.containsAll(linked));
+                    assertTrue(linked.stream().noneMatch(ClientOptionsTab::isHeading));
+                }
+            }
+        }
+    }
+
     // ---- Tab integrity across every visibility combination ----
 
     @Test

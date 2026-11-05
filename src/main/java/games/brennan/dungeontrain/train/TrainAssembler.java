@@ -995,15 +995,16 @@ public final class TrainAssembler {
     }
 
     private static int deleteExistingTrains(ServerLevel level) {
+        // Before the registry goes: it is the only list of what is asleep in Sable holding.
+        Set<UUID> woken = wakeHeldGroups(level);
         // Wipe the spawn-time registry first so any trainIds being torn
         // down here don't linger as ghost entries that would block a
         // future appender from re-spawning at those anchors. Also clear
         // the appender's wait-for-Sable-settle tracker so the first
         // post-wipe spawn doesn't get gated on a now-deleted ship's AABB.
         Trains.clearRegistry();
-        // Held groups are not in findAll() and so survive the delete loop above; drop DT's
-        // record of them too, or they would answer isHeld for the freshly spawned train's
-        // re-used anchors.
+        // Anything wakeHeldGroups could not bring back would otherwise answer isHeld for the
+        // freshly spawned train's re-used anchors.
         games.brennan.dungeontrain.ship.sable.SableHoldingIndex.clear();
         // A regenerated train re-rolls every index, so last train's identities must not survive
         // to be reported for the new one.
@@ -1022,6 +1023,7 @@ public final class TrainAssembler {
                 trains.add(ship);
             }
         }
+        warnIfNotWoken(woken, trains);
         returnSharedCarriages(level, trains);
         // Sweep any trailing-segment force-load tickets before the train
         // re-fills. Guarantees no DT force-load survives a session boundary —
@@ -1038,6 +1040,41 @@ public final class TrainAssembler {
         // rebuilds the train through here — which is what reclaims files a crash left behind.
         ContentsSnapshotStore.clear(level);
         return trains.size();
+    }
+
+    /**
+     * Load every group of this level's known trains back from Sable holding, so the delete pass
+     * sees them in {@code findAll()}. {@code Shipyard.delete} cannot reach a held group, and one
+     * left there comes back when a player nears it, as a second train with its own trainId.
+     * Deleting a live sub-level is permanent.
+     *
+     * @return the sub-level ids asked back
+     */
+    private static Set<UUID> wakeHeldGroups(ServerLevel level) {
+        Shipyard shipyard = Shipyards.of(level);
+        Set<UUID> woken = new HashSet<>();
+        for (UUID trainId : Trains.registeredTrainIds()) {
+            for (ManagedShip ship : Trains.knownGroups(trainId).values()) {
+                if (ship == null || ship.isResident()) continue;
+                if (!(ship.getKinematicDriver() instanceof TrainTransformProvider p)) continue;
+                if (!level.dimension().equals(p.getDimensionKey())) continue;
+                UUID id = ship.subLevelId();
+                if (shipyard.isHeld(id) && shipyard.reloadFromHolding(id)) woken.add(id);
+            }
+        }
+        if (!woken.isEmpty()) {
+            LOGGER.info("[DungeonTrain] Woke {} held group(s) in {} to delete them", woken.size(), level.dimension().location());
+        }
+        return woken;
+    }
+
+    /** A snatch can succeed at the API and still load nothing; such a group can come back later. */
+    private static void warnIfNotWoken(Set<UUID> woken, List<ManagedShip> trains) {
+        Set<UUID> missing = new HashSet<>(woken);
+        trains.forEach(ship -> missing.remove(ship.subLevelId()));
+        if (!missing.isEmpty()) {
+            LOGGER.warn("[DungeonTrain] {} held group(s) did not load and may come back as a second train: {}", missing.size(), missing);
+        }
     }
 
     /**

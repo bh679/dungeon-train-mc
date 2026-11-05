@@ -44,6 +44,7 @@ import games.brennan.ediblebackpacks.config.EBClientConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -62,7 +63,9 @@ import net.minecraft.world.Difficulty;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -141,6 +144,19 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
      */
     @Nullable private Runnable onReturn;
     private boolean donationPrefsRequested = false;
+    /**
+     * The row a chat link asked to show, kept until the player clicks, scrolls or presses a key:
+     * the Account tab's relay answer rebuilds every list, which would otherwise scroll away from it.
+     */
+    @Nullable private ClientOptionsTab.Row focusRow;
+    /** When the highlight began; a rebuild carries on the same fade. Unset until the row is first shown. */
+    private long focusStartMs = -1;
+
+    /** The screen on {@link ClientOptionsTab#active()}, scrolled to {@code row} with that row highlighted. */
+    public DungeonTrainClientOptionsScreen(Screen parent, ClientOptionsTab.Row row) {
+        this(parent);
+        this.focusRow = row;
+    }
 
     public DungeonTrainClientOptionsScreen(Screen parent) {
         // ".client." because gui.dungeontrain.options.title is already taken by the WORLD options screen.
@@ -181,6 +197,24 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         // Reopen (and re-init after a resize) on whichever tab the player last chose.
         this.tabNavigationBar.selectTab(ClientOptionsTab.active().ordinal(), false);
         repositionElements();
+        applyFocus();
+    }
+
+    /** Runs once the current tab has its size: {@code centerScrollOn} clamps to the list's height. */
+    private void applyFocus() {
+        if (this.focusRow == null || !(this.tabManager.getCurrentTab() instanceof OptionsTab current)) {
+            return;
+        }
+        SettingsRowList.Entry entry = current.entries.get(this.focusRow);
+        if (entry == null) {
+            // A conditional row this client doesn't have: the tab alone is the best the link can do.
+            this.focusRow = null;
+            return;
+        }
+        if (this.focusStartMs < 0) {
+            this.focusStartMs = Util.getMillis();
+        }
+        current.list.focus(entry, this.focusStartMs);
     }
 
     /**
@@ -245,7 +279,20 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     }
 
     @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        this.focusRow = null;
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        this.focusRow = null;
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        this.focusRow = null;
         // Ctrl+Tab / Ctrl+Shift+Tab between tabs, as on every other tabbed vanilla screen.
         return this.tabNavigationBar.keyPressed(keyCode) || super.keyPressed(keyCode, scanCode, modifiers);
     }
@@ -268,6 +315,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
         private final ClientOptionsTab id;
         private final SettingsRowList list;
+        /** This tab's setting rows, for a chat link to find one. */
+        private final Map<ClientOptionsTab.Row, SettingsRowList.Entry> entries = new EnumMap<>(ClientOptionsTab.Row.class);
         /** Stream tab only: what viewers would see, under the rows that change it. */
         @Nullable private final StreamPreviewWidget preview;
 
@@ -276,7 +325,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             this.list = new SettingsRowList(DungeonTrainClientOptionsScreen.this.minecraft,
                     DungeonTrainClientOptionsScreen.this.width, 0, 0);
             for (ClientOptionsTab.Row row : rows) {
-                addRow(this.list, row);
+                SettingsRowList.Entry entry = addRow(this.list, row);
+                if (entry != null) this.entries.put(row, entry);
             }
             this.preview = id == ClientOptionsTab.STREAM ? new StreamPreviewWidget() : null;
         }
@@ -312,11 +362,14 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     /**
      * Adds one row of the model to a tab's list: a setting row with its icon, name, hint and control,
      * or — for the two rows that stand for several — the expanded lines.
+     *
+     * @return the setting row's entry; null for a heading or a row that expands into several lines
      */
-    private void addRow(SettingsRowList list, ClientOptionsTab.Row row) {
+    @Nullable
+    private SettingsRowList.Entry addRow(SettingsRowList list, ClientOptionsTab.Row row) {
         if (ClientOptionsTab.isHeading(row)) {
             list.addWidget(caption(Component.translatable(row.captionKey()).withStyle(ChatFormatting.BOLD)));
-            return;
+            return null;
         }
         switch (row) {
             case PERFORMANCE_TIPS -> addPerformanceTips(list);
@@ -324,11 +377,12 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case TWITCH_ACCOUNT -> addTwitchAccount(list);
             default -> {
                 Setting setting = build(row);
-                list.addSetting(ClientOptionsIcons.of(row), Component.translatable(row.captionKey()),
+                return list.addSetting(ClientOptionsIcons.of(row), Component.translatable(row.captionKey()),
                         setting.hint != null ? setting.hint : Component.translatable(row.captionKey() + ".hint"),
                         setting.control, setting.tooltip);
             }
         }
+        return null;
     }
 
     /**
