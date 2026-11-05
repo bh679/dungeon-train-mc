@@ -42,6 +42,16 @@ class RespawnTrainReturnTest {
     }
 
     @Test
+    void portalGroupsAreNotAskedBackToLandOn() {
+        assertEquals(Set.of(0, 6), RespawnDimensionEvents.anchorsToLandOn(Set.of(0, 3, 6), a -> a == 3));
+    }
+
+    @Test
+    void anAllPortalTrainIsStillBetterThanNoTrain() {
+        assertEquals(Set.of(3), RespawnDimensionEvents.anchorsToLandOn(Set.of(3), a -> true));
+    }
+
+    @Test
     void emptyRegistryPicksNothing() {
         assertNull(RespawnDimensionEvents.pickAnchorToWake(Set.of(), null));
         assertNull(RespawnDimensionEvents.pickAnchorToWake(Set.of(), 4));

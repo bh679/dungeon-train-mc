@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.CinematicIntroPacket;
 import games.brennan.dungeontrain.net.CinematicPreloadBeginPacket;
+import games.brennan.dungeontrain.net.CinematicPreloadEndPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -72,12 +73,18 @@ public final class CinematicIntroService {
      * Client-side freeze budget (ticks) for the pre-placement phase. From login
      * the client holds the loading screen up and locks the player's position
      * (see {@code CinematicPreloadGate}) until the train settles and the body is
-     * teleported onto it (the {@link CinematicIntroPacket}). This is the safety
-     * cap: if the train never appears the client releases and drops the player
-     * into the world. Comfortably outlasts {@code PlayerJoinEvents.MAX_RETRY_TICKS}
-     * (the server-side placement retry window).
+     * teleported onto it (the {@link CinematicIntroPacket}). Past this the client
+     * keeps holding, up to a multiple of it, for as long as a stalled server might
+     * still place them; {@link #abandonPreload} ends the hold as soon as the server
+     * stops trying ({@code PlayerJoinEvents.MAX_RETRY_TICKS}).
      */
     public static final int PLACE_HOLD_TIMEOUT_TICKS = 160;
+
+    /**
+     * Shield left after placement gives up, on top of {@link #INVULN_GRACE_TICKS}. The player is
+     * handed back at their entry pose, which can be in mid-air where the train stood at world start.
+     */
+    private static final int ABANDONED_FALL_TICKS = 20;
 
     /** Player UUID → server-tick deadline at which spawn-invulnerability is force-cleared. */
     private static final Map<UUID, Long> INVULN_UNTIL = new ConcurrentHashMap<>();
@@ -161,6 +168,17 @@ public final class CinematicIntroService {
         beginInvuln(player, PLACE_HOLD_TIMEOUT_TICKS);
         LOGGER.info("[DungeonTrain] Preload hold armed for {} (placeTimeout={}t)",
             player.getName().getString(), PLACE_HOLD_TIMEOUT_TICKS);
+    }
+
+    /**
+     * Placement gave up: tell the client now rather than leaving the loading screen up until its
+     * hard cap. The intro stays unseen, so it plays at this player's next login. No-op if no hold
+     * was armed for them.
+     */
+    public static void abandonPreload(ServerPlayer player) {
+        if (!ACTIVE.contains(player.getUUID())) return;
+        DungeonTrainNet.sendTo(player, new CinematicPreloadEndPacket());
+        beginInvuln(player, ABANDONED_FALL_TICKS);
     }
 
     /**

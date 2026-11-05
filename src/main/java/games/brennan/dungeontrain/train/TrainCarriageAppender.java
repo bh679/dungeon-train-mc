@@ -2472,6 +2472,12 @@ public final class TrainCarriageAppender {
                 }
                 return false; // resume grace active — hold the window, do not release
             }
+            // A player who just logged in is still at world spawn, and the join is about to put them
+            // on this train. Releasing now would cull it out from under the login scan, which can
+            // wait seconds for chunks. Bounded by the join's own retry limit.
+            if (games.brennan.dungeontrain.event.PlayerJoinEvents.isLoginPlacementPending()) {
+                return false;
+            }
             RESUME_GRACE_UNTIL_TICK.remove(trainId); // expired (or never set) — normal cull
             RESUME_STARTED_TICK.remove(trainId);
             releaseTrainForceLoads(level, trainId, train);
