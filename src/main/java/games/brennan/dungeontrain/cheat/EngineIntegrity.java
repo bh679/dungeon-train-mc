@@ -29,10 +29,14 @@ import java.util.TreeSet;
  * jar declaring {@code dtmodverify} would both REPLACE DT's nested engine (NeoForge drops a jar-in-jar
  * mod a top-level jar also provides) and escape the hash check — answering VERIFIED for everything.
  *
- * <p>The rule: the engine's outermost file must be DT's own jar, its SHA-1 and version must be the
- * ones the build baked ({@code engineSha1}/{@code engineVersion} in {@code approved_mods.json}), and
- * no other outermost file may declare {@code dungeontrain}, {@code dtmodverify} or {@code forge}. DT
- * hashes exactly one file here — the engine jar it shipped — never the rest of the mods folder.</p>
+ * <p>The rule: the engine's SHA-1 and version must be the ones the build baked
+ * ({@code engineSha1}/{@code engineVersion} in {@code approved_mods.json}), and no other outermost
+ * file may declare {@code dungeontrain}, {@code dtmodverify} or {@code forge}. The engine normally
+ * sits inside DT's own jar; a <b>top-level</b> engine jar is accepted only when it is byte-identical
+ * to the baked one — the CurseForge modpack installs exactly that (the engine is a hybrid sibling:
+ * jarJar'd AND a CurseForge Include, and NeoForge's JarSelector then drops the nested copy), so a
+ * top-level engine with the right hash IS DT's engine. Any other top-level engine is "replaced". DT
+ * hashes exactly one file here — the engine jar — never the rest of the mods folder.</p>
  *
  * <p>Judged once per JVM (the mod list does not change after loading). Without the engine there is
  * nothing to check and the answer is clean: the id-only fallback is unchanged. In a dev run
@@ -105,8 +109,12 @@ public final class EngineIntegrity {
                                      String engineVersion, String bakedVersion, Collection<FileClaim> claims) {
         Map<String, Boolean> found = new LinkedHashMap<>();
         String engineName = name(engineOutermost);
+        boolean topLevelIdentical = false;
         if (!same(dtPath, engineOutermost)) {
-            found.put(engineName + " (dtmodverify replaced)", true);
+            // The CurseForge modpack's layout: the identical engine jar, installed top-level.
+            topLevelIdentical = !blank(bakedSha1) && bakedSha1.equalsIgnoreCase(engineSha1 == null ? "" : engineSha1)
+                && (blank(bakedVersion) || bakedVersion.equals(engineVersion));
+            if (!topLevelIdentical) found.put(engineName + " (dtmodverify replaced)", true);
         } else {
             if (!blank(bakedSha1) && !bakedSha1.equalsIgnoreCase(engineSha1 == null ? "" : engineSha1)) {
                 found.put("dtmodverify (engine modified)", true);
@@ -118,9 +126,11 @@ public final class EngineIntegrity {
         for (FileClaim c : claims) {
             if (same(dtPath, c.outermost())) continue;
             boolean loader = c.modIds().contains("neoforge");
+            boolean acceptedEngine = topLevelIdentical && same(engineOutermost, c.outermost());
             for (String id : c.modIds()) {
                 String norm = id == null ? "" : id.toLowerCase(Locale.ROOT);
                 if (!GUARDED_IDS.contains(norm) || (loader && "forge".equals(norm))) continue;
+                if (acceptedEngine && DtModVerifyBridge.MOD_ID.equals(norm)) continue;
                 String what = DtModVerifyBridge.MOD_ID.equals(norm) ? " (dtmodverify replaced)" : " (claims " + norm + ")";
                 found.put(name(c.outermost()) + what, true);
             }
@@ -130,7 +140,7 @@ public final class EngineIntegrity {
         return List.copyOf(out);
     }
 
-    static IModFile outermost(IModFile f) {
+    public static IModFile outermost(IModFile f) {
         IModFile cur = f;
         for (int i = 0; i < 16; i++) {
             IModFile parent = cur.getDiscoveryAttributes().parent();

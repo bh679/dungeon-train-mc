@@ -33,6 +33,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.TicketType;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
@@ -51,6 +53,7 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProc
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -102,6 +105,10 @@ import java.util.Set;
 public final class PortalCarriageBuilder {
 
     private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+
+    /** Asks for a column {@link #footprintReady} is waiting on; restated each tick it still waits. */
+    private static final TicketType<ChunkPos> STAMP_WAIT_TICKET =
+        TicketType.create("dungeontrain_portal_stamp_wait", Comparator.comparingLong(ChunkPos::toLong), 60);
 
     /**
      * Size mismatches already reported, so the editor's size steppers do not fill a log.
@@ -1654,14 +1661,39 @@ public final class PortalCarriageBuilder {
      * clean up. The one consequence worth knowing is that another pair's room may later be stamped
      * inside a void this one swept; that is no worse than the two structures being neighbours
      * anywhere else, which the Y lanes already make rare.</p>
+     *
+     * <p><b>Never waits for a column.</b> The halo reaches 50 blocks past the room, often into chunks
+     * still generating, and reading one blocks the server until it is done. Nothing is stamped in the
+     * halo, so a column that is not ready is cleared when it is; a client is not sent a chunk before it
+     * is ready, so at most it sees the rock for a tick.</p>
      */
     private static void clearVoidAround(ServerLevel level, PortalStructure structure,
                                         CarriageDims dims) {
         BoundingBox halo = voidHaloOf(level, structure, dims);
         BoundingBox footprint = footprintOf(level, structure, dims);
         for (BoundingBox slab : voidSlabs(halo, footprint)) {
-            PortalClear.clearBox(level, slab, PortalCorridorMask.NONE);
+            PortalClear.clearBoxDeferring(level, slab, PortalCorridorMask.NONE);
         }
+    }
+
+    /**
+     * Whether every chunk column of a structure's footprint has finished generating, asked before it
+     * is stamped so the stamp cannot block the server on one. Asks for the missing ones as it goes: the
+     * blocking read this replaces was also what got a column nobody held loaded at all. The ticket is
+     * timed, so it lapses by itself once the caller stops asking.
+     */
+    public static boolean footprintReady(ServerLevel level, PortalStructure structure, CarriageDims dims) {
+        BoundingBox footprint = footprintOf(level, structure, dims);
+        boolean ready = true;
+        for (int cx = footprint.minX() >> 4; cx <= footprint.maxX() >> 4; cx++) {
+            for (int cz = footprint.minZ() >> 4; cz <= footprint.maxZ() >> 4; cz++) {
+                if (level.getChunkSource().getChunkNow(cx, cz) != null) continue;
+                ChunkPos pos = new ChunkPos(cx, cz);
+                level.getChunkSource().addRegionTicket(STAMP_WAIT_TICKET, pos, 0, pos);
+                ready = false;
+            }
+        }
+        return ready;
     }
 
     /**

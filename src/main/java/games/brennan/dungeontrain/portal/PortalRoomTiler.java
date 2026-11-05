@@ -799,7 +799,8 @@ public final class PortalRoomTiler {
         int maxChunkZ = SectionPos.blockToSectionCoord(box.maxZ());
         for (int cx = minChunkX; cx <= maxChunkX; cx++) {
             for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
-                if (!level.hasChunk(cx, cz)) return false;
+                // Not hasChunk: that is true while the chunk is still generating. See ChunkColumnCache.
+                if (level.getChunkSource().getChunkNow(cx, cz) == null) return false;
             }
         }
         return true;
