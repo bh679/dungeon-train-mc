@@ -54,6 +54,8 @@ public final class PlayerDataPaths {
     public static final String STATS = "stats";
     public static final String NARRATIVE = "narrative";
     public static final String LOADOUTS = "loadouts";
+    /** Per-player, per-difficulty perk unlocks. New store: never lived in {@code config/}. */
+    public static final String PERKS = "perks";
     public static final String TRANSLATIONS = "translations";
     public static final String OUTBOX = "outbox";
     public static final String BACKUPS = "backups";

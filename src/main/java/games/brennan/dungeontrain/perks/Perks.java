@@ -50,13 +50,16 @@ public final class Perks {
 
     public static void unlock(ServerPlayer player, String perkId) {
         requireKnown(perkId);
-        apply(player, state(player).withUnlockedOnce(perkId));
+        PerkState next = state(player).withUnlockedOnce(perkId);
+        apply(player, next);
+        PerkProfiles.onUnlockLevelChanged(player, perkId, next.unlockLevel(perkId));
     }
 
     /** Set the unlock level directly (dev command). Zero locks the perk. */
     public static void setUnlockLevel(ServerPlayer player, String perkId, int level) {
         requireKnown(perkId);
         apply(player, state(player).withUnlockLevel(perkId, level));
+        PerkProfiles.onUnlockLevelChanged(player, perkId, Math.max(0, level));
     }
 
     /** Set active points (clamped to the perk's unlock level). Does not unlock. */
@@ -84,6 +87,12 @@ public final class Perks {
     /** Dev only: forget everything. */
     public static void clearAll(ServerPlayer player) {
         apply(player, PerkState.EMPTY);
+        PerkProfiles.onCleared(player);
+    }
+
+    /** Swap in another save's state without writing it back to any save. {@link PerkProfiles} only. */
+    static void replaceState(ServerPlayer player, PerkState next) {
+        apply(player, next);
     }
 
     /** Push the current state to the owning client. */
