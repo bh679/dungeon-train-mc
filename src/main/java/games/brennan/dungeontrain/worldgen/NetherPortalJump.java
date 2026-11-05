@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.worldgen;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.IntFunction;
+import java.util.function.IntPredicate;
 
 /**
  * Where a Nether portal on the overworld ride lets the player out — pure world-X arithmetic over a
@@ -38,6 +39,12 @@ public final class NetherPortalJump {
 
     /** A non-Nether core keeps at least this share of its segment (the trim is capped at a third per side). */
     private static final int MIN_CORE_DIVISOR = 3;
+
+    /**
+     * An overworld stretch shorter than this is a gap or a fade between two bands (the Lost City's closing fade
+     * reads as plain overworld), not one to arrive in. Every overworld band in the shipped order is longer.
+     */
+    static final long MIN_OVERWORLD_BLOCKS = 1000L;
 
     /** The one segment label for all looks of a portal's own kind of band ({@link #mergingLooks}); never a real band name. */
     private static final String MERGED_BAND = "\0portal-kind-band";
@@ -87,6 +94,27 @@ public final class NetherPortalJump {
         Segment from = segmentAround(bands, fromX, Math.max(rideStart(cycle), (long) fromX - bound), (long) fromX + bound);
         long landing = mapFraction(from, fromX, dest.get());
         return landing > Integer.MAX_VALUE ? OptionalLong.empty() : OptionalLong.of(landing);
+    }
+
+    /**
+     * Target world-X for an End gateway used at {@code fromX}: the proportional spot in the core of the nearest
+     * segment behind its own whose columns pass {@code overworld}, whatever lies between. A stretch shorter than
+     * {@link #MIN_OVERWORLD_BLOCKS} is passed over too. Empty when the ride has none behind it.
+     */
+    public static OptionalLong previousOverworldX(WorldGenCycle cycle, IntFunction<String> label, IntPredicate overworld,
+                                                  int fromX) {
+        if (cycle.period() <= 0L) return OptionalLong.empty();
+        long bound = scanBound(cycle, fromX);
+        long rideStart = rideStart(cycle);
+        Segment from = segmentAround(label, fromX, Math.max(rideStart, (long) fromX - bound), (long) fromX + bound);
+        for (long x = from.start() - 1L; x >= rideStart && x >= Integer.MIN_VALUE && x >= fromX - bound; ) {
+            Segment segment = segmentAround(label, (int) x, Math.max(rideStart, x - bound), x);
+            if (overworld.test((int) x) && segment.length() >= MIN_OVERWORLD_BLOCKS) {
+                return OptionalLong.of(mapFraction(from, fromX, coreOf(segment, cycle)));
+            }
+            x = segment.start() - 1L;
+        }
+        return OptionalLong.empty();
     }
 
     /**
