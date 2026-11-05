@@ -454,8 +454,14 @@ public final class LiveFeedClient {
     public record Status(boolean live, @Nullable String session, @Nullable String playlistUrl,
                          @Nullable String streamer, int viewers, int cap, boolean slot,
                          @Nullable String replayUrl, boolean ended, List<Variant> variants, @Nullable String twitchLogin,
-                         @Nullable Status second, @Nullable String channel) {
+                         @Nullable Status second, @Nullable String channel, @Nullable Mic mic) {
         public static final Status OFFLINE = new Status(false, null, null, null, 0, 0, true, null, false, List.of(), null, null);
+
+        public Status(boolean live, @Nullable String session, @Nullable String playlistUrl, @Nullable String streamer, int viewers,
+                      int cap, boolean slot, @Nullable String replayUrl, boolean ended, List<Variant> variants,
+                      @Nullable String twitchLogin, @Nullable Status second, @Nullable String channel) {
+            this(live, session, playlistUrl, streamer, viewers, cap, slot, replayUrl, ended, variants, twitchLogin, second, channel, null);
+        }
 
         public Status(boolean live, @Nullable String session, @Nullable String playlistUrl, @Nullable String streamer, int viewers,
                       int cap, boolean slot, @Nullable String replayUrl, boolean ended, List<Variant> variants,
@@ -479,6 +485,11 @@ public final class LiveFeedClient {
          */
         public @Nullable Status second() {
             return second;
+        }
+
+        /** The streamer's microphone, from the status's {@code mic} block; null from an older relay. */
+        public @Nullable Mic mic() {
+            return mic;
         }
 
         /**
@@ -539,7 +550,7 @@ public final class LiveFeedClient {
     /** A plain claim: no takeover choice or ticket yet. */
     public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
                                                   LiveClaimInfo info, @Nullable Life life) {
-        return claim(uuid, name, eyeId, info, life, false, null, null);
+        return claim(uuid, name, eyeId, info, life, false, null, null, false);
     }
 
     /**
@@ -547,12 +558,18 @@ public final class LiveFeedClient {
      * the claim reads with {@link LiveTakeoverClient#parseBlocked}); {@code takeover} is the player's
      * "Take over" past the holder's protected minutes, {@code ticket} an approved takeover vote's pass,
      * {@code takeoverTicket} a won dead streamer's takeover ({@link #acceptTakeover}). Either ticket carries
-     * the claim past the relay's tenure check, once.
+     * the claim past the relay's tenure check, once. {@code mic}: this client can stream a microphone
+     * (support on and a capture device listed); the reply's {@code mic} says whether it may ({@link #parseMic}).
      */
     public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
                                                   LiveClaimInfo info, @Nullable Life life,
                                                   boolean takeover, @Nullable String ticket,
-                                                  @Nullable String takeoverTicket) {
+                                                  @Nullable String takeoverTicket, boolean mic) {
+        return post("/live/claim", claimBody(uuid, name, eyeId, info, life, takeover, ticket, takeoverTicket, mic));
+    }
+
+    static JsonObject claimBody(UUID uuid, String name, String eyeId, @Nullable LiveClaimInfo info, @Nullable Life life,
+                                boolean takeover, @Nullable String ticket, @Nullable String takeoverTicket, boolean mic) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
@@ -574,7 +591,30 @@ public final class LiveFeedClient {
             body.addProperty("versionDot", info.versionDot());
             body.addProperty("chat", info.chat());
         }
-        return post("/live/claim", body);
+        body.addProperty("mic", mic);
+        return body;
+    }
+
+    /**
+     * The relay's word on this streamer's microphone, from a claim reply's {@code mic}: {@code allowed}
+     * false = barred from the mic (no mic track at all); {@code twitch} = the mic also reaches Twitch
+     * (shown only; the relay picks the track it forwards).
+     */
+    public record MicPolicy(boolean allowed, boolean twitch) {
+        public static final MicPolicy DEFAULT = new MicPolicy(true, false);
+    }
+
+    /** A claim reply's {@code mic}; an older relay that sends none (or a malformed one) allows it, without Twitch. */
+    public static MicPolicy parseMic(Result r) {
+        JsonObject body = r.body();
+        if (body == null || !body.has("mic") || !body.get("mic").isJsonObject()) return MicPolicy.DEFAULT;
+        JsonObject m = body.getAsJsonObject("mic");
+        return new MicPolicy(bool(m, "allowed", true), bool(m, "twitch", false));
+    }
+
+    private static boolean bool(JsonObject o, String key, boolean absent) {
+        if (!o.has(key) || !o.get(key).isJsonPrimitive() || !o.getAsJsonPrimitive(key).isBoolean()) return absent;
+        return o.get(key).getAsBoolean();
     }
 
     @Nullable
@@ -609,12 +649,22 @@ public final class LiveFeedClient {
     }
 
     public static CompletableFuture<Result> presign(String token, List<String> files) {
+        return presign(token, files, false);
+    }
+
+    /** The heartbeat too: {@code micOn} is whether the streamer's mic is switched on right now. */
+    public static CompletableFuture<Result> presign(String token, List<String> files, boolean micOn) {
+        return post("/live/presign", presignBody(token, files, micOn));
+    }
+
+    static JsonObject presignBody(String token, List<String> files, boolean micOn) {
         JsonObject body = new JsonObject();
         body.addProperty("token", token);
         JsonArray arr = new JsonArray();
         files.forEach(arr::add);
         body.add("files", arr);
-        return post("/live/presign", body);
+        body.addProperty("micOn", micOn);
+        return body;
     }
 
     /** file name → signed PUT, in request order; empty on a malformed reply. */
@@ -1236,7 +1286,32 @@ public final class LiveFeedClient {
         Status second = withSecond ? parseSecond(r, b, viewers, cap, slot) : null;
         return new Status(true, str(b, "session"), playlistUrl, str(b, "streamer"), viewers, cap, slot,
             ended ? replayUrl : null, ended, parseVariants(b, playlistUrl), tw == null ? null : tw.login(), second,
-            slotName(str(b, "channel")));
+            slotName(str(b, "channel")), parseMic(b));
+    }
+
+    /**
+     * A streamer's microphone, as a status describes it: {@code enabled} = the stream carries a mic track
+     * (track 0 is the game with the mic, track 1 the game alone), {@code on} = the mic is open now,
+     * {@code kids} = the relay has approved this streamer's voice for Kid mode listeners (a relay that
+     * says nothing has not: Kid mode then plays the game alone, {@link LiveSoundTrack}).
+     */
+    public record Mic(boolean enabled, boolean on, boolean kids) {
+        public Mic(boolean enabled, boolean on) {
+            this(enabled, on, false);
+        }
+    }
+
+    /** The status body's {@code mic} block, or null when it has none (an older relay) or it is malformed. */
+    @Nullable
+    static Mic parseMic(JsonObject b) {
+        if (!b.has("mic") || !b.get("mic").isJsonObject()) return null;
+        JsonObject m = b.getAsJsonObject("mic");
+        return new Mic(bool(m, "enabled"), bool(m, "on"), bool(m, "kids"));
+    }
+
+    private static boolean bool(JsonObject o, String key) {
+        JsonElement e = o.get(key);
+        return e != null && e.isJsonPrimitive() && e.getAsJsonPrimitive().isBoolean() && e.getAsBoolean();
     }
 
     /** A relay slot name from a status body: {@code main} or {@code second}, anything else null. */
@@ -1265,7 +1340,7 @@ public final class LiveFeedClient {
             // The viewer figures are the outer body's (one room per poll): carry them so a TV on the
             // second stream reads the same cap and slot answer.
             return new Status(true, parsed.session(), parsed.playlistUrl(), parsed.streamer(), viewers, cap, slot,
-                parsed.replayUrl(), parsed.ended(), parsed.variants(), parsed.twitchLogin(), null, parsed.channel());
+                parsed.replayUrl(), parsed.ended(), parsed.variants(), parsed.twitchLogin(), null, parsed.channel(), parsed.mic());
         } catch (RuntimeException e) {
             LOGGER.debug("[DungeonTrain] live status: ignoring malformed second block", e);
             return null;

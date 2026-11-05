@@ -73,7 +73,7 @@ public final class AdvancementPromotion {
      * the list reads in the order they were earned.
      */
     public static List<ResourceLocation> candidates(Path dir, UUID uuid, String target) {
-        Set<ResourceLocation> already = GlobalAchievementStore.readFile(profile(dir, uuid, target));
+        Set<ResourceLocation> already = GlobalAchievementStore.readFile(profile(dir, uuid, target), uuid, target).all();
         List<ResourceLocation> out = new ArrayList<>();
         for (ResourceLocation id : source(dir, uuid)) {
             if (GlobalAchievementStore.isShared(id) || already.contains(id)) continue;
@@ -85,8 +85,11 @@ public final class AdvancementPromotion {
     /** The pre-split backup when there is one, else the Normal profile. */
     static Set<ResourceLocation> source(Path dir, UUID uuid) {
         Path backup = dir.resolve(AdvancementSplitBackup.COPY_DIR).resolve(uuid + ".json");
-        if (Files.isRegularFile(backup)) return GlobalAchievementStore.readFile(backup);
-        return GlobalAchievementStore.readFile(profile(dir, uuid, DifficultyPartition.LEGACY_KEY));
+        if (Files.isRegularFile(backup)) {
+            return GlobalAchievementStore.readFile(backup, uuid, DifficultyPartition.LEGACY_KEY).all();
+        }
+        return GlobalAchievementStore.readFile(profile(dir, uuid, DifficultyPartition.LEGACY_KEY),
+            uuid, DifficultyPartition.LEGACY_KEY).all();
     }
 
     /**
@@ -97,21 +100,33 @@ public final class AdvancementPromotion {
     public static Applied apply(Path dir, UUID uuid, String target,
                                 Collection<ResourceLocation> copyIds, Collection<ResourceLocation> moveIds) {
         Path targetFile = profile(dir, uuid, target);
-        Set<ResourceLocation> into = new LinkedHashSet<>(GlobalAchievementStore.readFile(targetFile));
+        GlobalAchievementStore.Profile current = GlobalAchievementStore.readFile(targetFile, uuid, target);
+        // A promote is the relay's own doing, so what it moves in counts as earned.
+        Set<ResourceLocation> into = new LinkedHashSet<>(current.granted());
         int before = into.size();
-        into.addAll(copyIds);
-        into.addAll(moveIds);
+        for (ResourceLocation id : copyIds) if (!current.absorbed().contains(id)) into.add(id);
+        for (ResourceLocation id : moveIds) if (!current.absorbed().contains(id)) into.add(id);
         int added = into.size() - before;
-        if (added > 0) GlobalAchievementStore.writeAtomic(targetFile, into);
+        if (added > 0) {
+            GlobalAchievementStore.writeAtomic(targetFile, uuid, target,
+                new GlobalAchievementStore.Profile(into, current.absorbed(), current.tainted()));
+        }
 
         int removed = 0;
         if (!DifficultyPartition.LEGACY_KEY.equals(target) && !moveIds.isEmpty()) {
             Path normalFile = profile(dir, uuid, DifficultyPartition.LEGACY_KEY);
-            Set<ResourceLocation> normal = new LinkedHashSet<>(GlobalAchievementStore.readFile(normalFile));
-            int had = normal.size();
-            normal.removeAll(moveIds);
-            removed = had - normal.size();
-            if (removed > 0) GlobalAchievementStore.writeAtomic(normalFile, normal);
+            GlobalAchievementStore.Profile normal = GlobalAchievementStore.readFile(normalFile, uuid,
+                DifficultyPartition.LEGACY_KEY);
+            Set<ResourceLocation> granted = new LinkedHashSet<>(normal.granted());
+            Set<ResourceLocation> absorbed = new LinkedHashSet<>(normal.absorbed());
+            int had = granted.size() + absorbed.size();
+            granted.removeAll(moveIds);
+            absorbed.removeAll(moveIds);
+            removed = had - granted.size() - absorbed.size();
+            if (removed > 0) {
+                GlobalAchievementStore.writeAtomic(normalFile, uuid, DifficultyPartition.LEGACY_KEY,
+                    new GlobalAchievementStore.Profile(granted, absorbed, normal.tainted()));
+            }
         }
         LOGGER.info("[DungeonTrain] Advancement promote: {} added to {}, {} moved off Normal",
             added, target, removed);

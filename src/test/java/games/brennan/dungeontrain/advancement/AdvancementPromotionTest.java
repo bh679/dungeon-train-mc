@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.advancement;
 
 import net.minecraft.resources.ResourceLocation;
+import games.brennan.dungeontrain.data.InstallKey;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -29,9 +32,25 @@ class AdvancementPromotionTest {
     private static final ResourceLocation EDITOR = ResourceLocation.parse("dungeontrain:editor/first_build");
     private static final ResourceLocation CHESTS = ResourceLocation.parse("dungeontrain:dungeon_train/chests_100_unique");
 
-    private static void write(Path file, ResourceLocation... ids) throws IOException {
+    @BeforeEach
+    void keyInTempDir(@TempDir Path dir) {
+        InstallKey.useDirectoryForTests(dir);
+    }
+
+    @AfterEach
+    void restoreKey() {
+        InstallKey.resetForTests();
+    }
+
+    /** Write a sealed profile the way the live store does. The backup is a copy of Normal's. */
+    private static void write(Path file, String partition, ResourceLocation... ids) throws IOException {
         Files.createDirectories(file.getParent());
-        GlobalAchievementStore.writeAtomic(file, new java.util.LinkedHashSet<>(List.of(ids)));
+        GlobalAchievementStore.writeAtomic(file, PLAYER, partition,
+            new GlobalAchievementStore.Profile(new java.util.LinkedHashSet<>(List.of(ids)), Set.of(), false));
+    }
+
+    private static Set<ResourceLocation> read(Path file, String partition) {
+        return GlobalAchievementStore.readFile(file, PLAYER, partition).all();
     }
 
     private static Path backup(Path dir) {
@@ -45,8 +64,8 @@ class AdvancementPromotionTest {
     @Test
     @DisplayName("candidates come from the backup, skip the editor tab and what the target already has")
     void candidatesFromBackup(@TempDir Path dir) throws IOException {
-        write(backup(dir), CARTS, EDITOR, STONE, CHESTS);
-        write(profile(dir, "hard"), STONE);
+        write(backup(dir), "normal", CARTS, EDITOR, STONE, CHESTS);
+        write(profile(dir, "hard"), "hard", STONE);
 
         assertEquals(List.of(CARTS, CHESTS), AdvancementPromotion.candidates(dir, PLAYER, "hard"));
     }
@@ -54,7 +73,7 @@ class AdvancementPromotionTest {
     @Test
     @DisplayName("with no backup, the Normal profile is the source")
     void fallsBackToNormal(@TempDir Path dir) throws IOException {
-        write(profile(dir, "normal"), CARTS, STONE);
+        write(profile(dir, "normal"), "normal", CARTS, STONE);
 
         assertEquals(List.of(CARTS, STONE), AdvancementPromotion.candidates(dir, PLAYER, "hard"));
     }
@@ -62,29 +81,29 @@ class AdvancementPromotionTest {
     @Test
     @DisplayName("copy adds to the target and Normal keeps it; move takes it off Normal; the backup is untouched")
     void copyAndMove(@TempDir Path dir) throws IOException {
-        write(backup(dir), CARTS, STONE, CHESTS);
-        write(profile(dir, "normal"), CARTS, STONE, CHESTS);
+        write(backup(dir), "normal", CARTS, STONE, CHESTS);
+        write(profile(dir, "normal"), "normal", CARTS, STONE, CHESTS);
 
         AdvancementPromotion.Applied applied =
             AdvancementPromotion.apply(dir, PLAYER, "hard", List.of(CARTS), List.of(STONE));
 
         assertEquals(2, applied.added());
         assertEquals(1, applied.removed());
-        assertEquals(Set.of(CARTS, STONE), GlobalAchievementStore.readFile(profile(dir, "hard")));
-        assertEquals(Set.of(CARTS, CHESTS), GlobalAchievementStore.readFile(profile(dir, "normal")));
-        assertEquals(Set.of(CARTS, STONE, CHESTS), GlobalAchievementStore.readFile(backup(dir)));
+        assertEquals(Set.of(CARTS, STONE), read(profile(dir, "hard"), "hard"));
+        assertEquals(Set.of(CARTS, CHESTS), read(profile(dir, "normal"), "normal"));
+        assertEquals(Set.of(CARTS, STONE, CHESTS), read(backup(dir), "normal"));
     }
 
     @Test
     @DisplayName("moving into Normal is just a copy")
     void moveIntoNormalKeepsIt(@TempDir Path dir) throws IOException {
-        write(backup(dir), CARTS);
+        write(backup(dir), "normal", CARTS);
 
         AdvancementPromotion.Applied applied =
             AdvancementPromotion.apply(dir, PLAYER, "normal", List.of(), List.of(CARTS));
 
         assertEquals(new AdvancementPromotion.Applied(1, 0), applied);
-        assertEquals(Set.of(CARTS), GlobalAchievementStore.readFile(profile(dir, "normal")));
+        assertEquals(Set.of(CARTS), read(profile(dir, "normal"), "normal"));
     }
 
     @Test

@@ -28,4 +28,10 @@ class LiveAudioPumpTest {
         assertFalse(LiveAudioPump.isLoopback(new InetSocketAddress(InetAddress.getByName("192.168.1.20"), 4000)));
         assertFalse(LiveAudioPump.isLoopback(null));
     }
+
+    @Test
+    void aMicFrameIsFourChannelsAndTheGameOnlyFrameStaysTwo() {
+        assertEquals(4, LiveAudioPump.bytesPerFrame(false), "stereo s16: unchanged without a mic");
+        assertEquals(8, LiveAudioPump.bytesPerFrame(true), "mix pair + game pair");
+    }
 }

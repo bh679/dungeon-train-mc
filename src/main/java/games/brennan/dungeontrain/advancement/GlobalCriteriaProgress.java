@@ -1,12 +1,15 @@
 package games.brennan.dungeontrain.advancement;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import games.brennan.dungeontrain.cheat.ProfileIntegrity;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
+import games.brennan.dungeontrain.data.SealedJson;
 import games.brennan.dungeontrain.player.DifficultyPartition;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Difficulty;
@@ -53,6 +56,10 @@ import java.util.stream.Stream;
  * partitions, cache and off-thread writing as {@link GlobalAchievementStore}: after a profile's
  * first read nothing here touches the disk on the server thread.</p>
  *
+ * <p><b>Sealed</b> like {@link GlobalAchievementStore} ({@link SealedJson}): an edited file marks the
+ * player, and a file with no seal on an install that had sealed before is kept but
+ * {@link #isUnverified unverified}, so a collection it finishes is banked as absorbed, not earned.</p>
+ *
  * <p>JSON shape:
  * <pre>{@code
  * { "progress": {
@@ -65,8 +72,9 @@ public final class GlobalCriteriaProgress {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final long FLUSH_TIMEOUT_SECONDS = 10;
     private static final String SUFFIX = ".criteria.json";
+    static final String SEAL_STORE = "criteria";
 
-    private record Key(UUID uuid, String partition) {}
+    record Key(UUID uuid, String partition) {}
 
     /** Each loaded partition's contents (unmodifiable snapshots). */
     private static final Map<Key, Map<ResourceLocation, Set<String>>> CACHE = new ConcurrentHashMap<>();
@@ -78,6 +86,10 @@ public final class GlobalCriteriaProgress {
         return thread;
     });
     private static volatile BiFunction<UUID, String, Path> resolver = GlobalCriteriaProgress::file;
+    /** Partitions whose file had no seal on an install that had sealed before: kept, not vouched for. */
+    private static final Set<Key> UNVERIFIED = ConcurrentHashMap.newKeySet();
+    /** Partitions whose file was caught edited: written back with the taint under the seal. */
+    private static final Set<Key> TAINTED = ConcurrentHashMap.newKeySet();
 
     /** Schema record. Criteria are stored as lists to keep the JSON in earn order. */
     public record Data(Map<ResourceLocation, List<String>> progress) {
@@ -117,6 +129,13 @@ public final class GlobalCriteriaProgress {
     /** Every started advancement in the partition and the criteria held for it. */
     public static synchronized Map<ResourceLocation, Set<String>> read(UUID playerUuid, String partitionKey) {
         return cached(new Key(playerUuid, partitionKey));
+    }
+
+    /** Was this partition's progress read from a file the store could not vouch for? */
+    public static synchronized boolean isUnverified(UUID playerUuid, String partitionKey) {
+        Key key = new Key(playerUuid, partitionKey);
+        cached(key);
+        return UNVERIFIED.contains(key);
     }
 
     /** The criteria held for {@code advancement}, or none. */
@@ -174,6 +193,9 @@ public final class GlobalCriteriaProgress {
     public static synchronized boolean deleteFor(UUID playerUuid) throws IOException {
         flush();
         evict(playerUuid);
+        UNVERIFIED.removeIf(key -> key.uuid().equals(playerUuid));
+        TAINTED.removeIf(key -> key.uuid().equals(playerUuid));
+        ProfileIntegrity.clear(playerUuid);
         boolean removed = false;
         for (String partition : ALL_PARTITIONS) {
             removed |= Files.deleteIfExists(resolver.apply(playerUuid, partition));
@@ -186,7 +208,14 @@ public final class GlobalCriteriaProgress {
     private static Map<ResourceLocation, Set<String>> cached(Key key) {
         return CACHE.computeIfAbsent(key, k -> {
             Map<ResourceLocation, Set<String>> pending = PENDING.get(k);
-            return pending != null ? pending : freeze(readFile(resolver.apply(k.uuid(), k.partition())));
+            if (pending != null) return pending;
+            Map<ResourceLocation, Set<String>> loaded = freeze(readFile(resolver.apply(k.uuid(), k.partition()), k));
+            if (TAINTED.contains(k)) {
+                // Written straight back with the taint under the seal, so the mark outlives this session.
+                PENDING.put(k, loaded);
+                WRITER.execute(() -> writePending(k));
+            }
+            return loaded;
         });
     }
 
@@ -201,7 +230,7 @@ public final class GlobalCriteriaProgress {
         Map<ResourceLocation, Set<String>> snapshot = PENDING.get(key);
         if (snapshot == null) return;
         try {
-            writeAtomic(resolver.apply(key.uuid(), key.partition()), snapshot);
+            writeAtomic(resolver.apply(key.uuid(), key.partition()), key, snapshot);
         } catch (RuntimeException e) {
             LOGGER.error("[DungeonTrain] GlobalCriteriaProgress: background write for {} failed", key, e);
         }
@@ -245,27 +274,52 @@ public final class GlobalCriteriaProgress {
         CACHE.clear();
     }
 
-    static Map<ResourceLocation, Set<String>> readFile(Path path) {
+    static Map<ResourceLocation, Set<String>> readFile(Path path, Key key) {
         if (!Files.isRegularFile(path)) return Map.of();
+        JsonElement element;
         try (Reader reader = Files.newBufferedReader(path)) {
-            JsonElement element = JsonParser.parseReader(reader);
-            var result = Data.CODEC.parse(JsonOps.INSTANCE, element);
-            if (result.error().isPresent()) {
-                LOGGER.warn("[DungeonTrain] GlobalCriteriaProgress: failed to parse {}: {}",
-                    path, result.error().get().message());
-                return Map.of();
-            }
-            Map<ResourceLocation, Set<String>> progress = new LinkedHashMap<>();
-            result.result().orElse(Data.EMPTY).progress()
-                .forEach((id, criteria) -> progress.put(id, new LinkedHashSet<>(criteria)));
-            return progress;
+            element = JsonParser.parseReader(reader);
         } catch (IOException | RuntimeException e) {
             LOGGER.warn("[DungeonTrain] GlobalCriteriaProgress: couldn't read {}: {}", path, e.toString());
             return Map.of();
         }
+        var result = Data.CODEC.parse(JsonOps.INSTANCE, element);
+        if (result.error().isPresent() || !element.isJsonObject()) {
+            LOGGER.warn("[DungeonTrain] GlobalCriteriaProgress: failed to parse {}: {}",
+                path, result.error().map(e -> e.message()).orElse("not an object"));
+            return Map.of();
+        }
+        Map<ResourceLocation, Set<String>> progress = new LinkedHashMap<>();
+        result.result().orElse(Data.EMPTY).progress()
+            .forEach((id, criteria) -> progress.put(id, new LinkedHashSet<>(criteria)));
+        judge(SealedJson.verify(element.getAsJsonObject(), SealedJson.scope(SEAL_STORE, key.uuid(), key.partition())),
+            key, path, progress.isEmpty());
+        return progress;
     }
 
-    static void writeAtomic(Path path, Map<ResourceLocation, Set<String>> progress) {
+    /** Record what a read's verdict means for the partition. */
+    private static void judge(SealedJson.Verdict verdict, Key key, Path path, boolean empty) {
+        switch (verdict.provenance()) {
+            case TAMPERED -> {
+                TAINTED.add(key);
+                ProfileIntegrity.markTampered(key.uuid(), "The criteria progress " + path.getFileName());
+            }
+            case UNVERIFIED -> {
+                if (empty) return;
+                UNVERIFIED.add(key);
+                LOGGER.warn("[DungeonTrain] GlobalCriteriaProgress: {} has no seal on an install that has "
+                    + "sealed before; its progress is kept but not vouched for.", path.getFileName());
+            }
+            default -> {
+                if (verdict.tainted()) {
+                    TAINTED.add(key);
+                    ProfileIntegrity.markTampered(key.uuid(), "The criteria progress " + path.getFileName());
+                }
+            }
+        }
+    }
+
+    static void writeAtomic(Path path, Key key, Map<ResourceLocation, Set<String>> progress) {
         try {
             Files.createDirectories(path.getParent());
         } catch (IOException e) {
@@ -281,8 +335,10 @@ public final class GlobalCriteriaProgress {
             return;
         }
         Path tmp = path.resolveSibling(path.getFileName() + ".tmp");
+        JsonObject sealed = SealedJson.seal(result.result().orElseThrow().getAsJsonObject(),
+            SealedJson.scope(SEAL_STORE, key.uuid(), key.partition()), TAINTED.contains(key));
         try (Writer writer = Files.newBufferedWriter(tmp)) {
-            writer.write(result.result().orElseThrow().toString());
+            writer.write(sealed.toString());
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] GlobalCriteriaProgress: write tmp {} failed: {}", tmp, e.getMessage());
             return;
@@ -303,11 +359,17 @@ public final class GlobalCriteriaProgress {
 
     static void useDirectoryForTests(Path dir) {
         flushAndClearAll();
+        UNVERIFIED.clear();
+        TAINTED.clear();
         resolver = (uuid, partition) -> dir.resolve(fileName(uuid, partition));
+        games.brennan.dungeontrain.data.InstallKey.useDirectoryForTests(dir);
     }
 
     static void resetForTests() {
         flushAndClearAll();
+        UNVERIFIED.clear();
+        TAINTED.clear();
         resolver = GlobalCriteriaProgress::file;
+        games.brennan.dungeontrain.data.InstallKey.resetForTests();
     }
 }
