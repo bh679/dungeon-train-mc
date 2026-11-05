@@ -105,6 +105,18 @@ Runtime review, read from the jar:
 measured also needs a sample with spawning on. Mods that behave differently from the dev classpath get measured on
 real jars with the `scripts/deptest/` server setup.
 
+### Measuring spawns
+
+Compare three arms: no mod, the mod as shipped, and the mod with DT's changes. Luminous Monsters' audit got misleading
+results before these rules were followed:
+
+- **Every arm gets a fresh world.** A reused world made one arm look 39% better than no mod at all.
+- **Sample every few seconds.** Hostile mobs reach the cap of about 70 within 25 s, whatever the spawn pool, which hides any loss.
+- **Let chunks settle first,** then discard that period. Newly generated areas fill slowly.
+- **Record game ticks as well as time.** A busy machine slows the server, and that looks like fewer spawns.
+- **Stand in the middle of the biome.** `/locate` lands on its edge, so small biomes barely count. Check variants there before calling one missing.
+- **Run at least two rounds.** Use one player, with the same seed and position method.
+
 ## Pack and release checks
 
 | Check | Why |
