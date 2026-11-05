@@ -125,3 +125,25 @@ Accessibility and Screen Recording access.
 
 Mic adds 96 kbps (about 43 MB/h) per streaming client. Relay CPU cost is negligible (audio
 is copied, not re-encoded). Transcription is the only paid piece, per report.
+
+## Shipped (2026-11-05)
+
+- The three mod branches were merged into one integration branch `dev/live-eye-mic` (one speaker at a
+  time, placed-TV range 4.5 + 1.5 per TV of grid width, grid off-state fix, HUD mic bar, one unified mic
+  switch, AGC, balance 75%). Brennan play-tested it. PR #2490 squash-merged as acf685f34; main bumped
+  to 0.1665.0. Changelog entry `live-eye-voice` (major, shot 1 photo, AshSeven Everything Burrito
+  call-out with a Discord `<t:>` token).
+- Kid mode: a streamer's voice reaches a Kid mode client only when approved for kids. Relay PR #1020
+  (ddb5f428, 0.289.13): `live_mic_kids_approvals`, `/mickids <name> on|off` (web) and `!mickids`
+  (Twitch/Discord), status `mic.kids`, admin route `/live/mic/kids-approvals`, explorer Voice page
+  section, renditions copy both audio tracks. Mod reads `mic.kids` and plays the game-only track
+  otherwise (`client/live/LiveSoundTrack`), failing closed on a relay that says nothing.
+- Relay PR #1021 (847f5c90): Discord `<t:UNIX:STYLE>` tokens render as local dates on the update page
+  and UTC dates in the RSS feed.
+- Relay 0.289.13 (release 0.289.13-847f5c90) deployed 2026-11-05 04:56Z mid-stream on Brennan's say-so
+  (rollback 0.289.12-5488503c); update-page and live chat-commands public files scp'd to htdocs. Kids
+  approve/revoke verified on prod against AshSeven.
+- Release: v0.1665.0 was dispatched then cancelled before the tag (main had moved to 0.1666.0 with
+  #2491 fair play tweak); v0.1666.0 dispatched with the rendered notes, run 41971147318.
+- Deploy order lesson: a release must follow the relay deploy; Kid mode hears no voice until the relay
+  carries `mic.kids`.
