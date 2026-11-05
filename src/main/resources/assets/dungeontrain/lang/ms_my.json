@@ -1649,6 +1649,8 @@
   "gui.dungeontrain.options.twitch_hint.hint": "Minta Twitch anda apabila bersiaran",
   "gui.dungeontrain.options.twitch_hint.tip": "Apabila anda bersiaran tanpa Twitch tersimpan, satu baris sembang meminta nama pengguna atau URL Twitch anda untuk shout-out di Twitch rasmi Dungeon Train. Hilang sebaik sahaja Twitch disimpan.",
   "gui.dungeontrain.options.twitch_hint.kid_tip": "Mod kanak-kanak tiada Twitch.",
+  "chat.dungeontrain.live.channel.live": "%s sedang live. Twitch mereka: %s",
+  "chat.dungeontrain.live.channel.join": "Anda sedang menonton %s. Twitch mereka: %s",
   "chat.dungeontrain.live.watch_links_own": "Anda kini bersiaran langsung di %s dan %s, serta di saluran anda %s",
   "chat.dungeontrain.live.watch_link_own": "Anda kini bersiaran langsung di %s, serta di saluran anda %s",
   "gui.dungeontrain.options.account.pings.death": "Kematian anda",

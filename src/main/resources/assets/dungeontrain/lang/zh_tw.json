@@ -1649,6 +1649,8 @@
   "gui.dungeontrain.options.twitch_hint.hint": "開播時詢問你的 Twitch",
   "gui.dungeontrain.options.twitch_hint.tip": "當你在未儲存 Twitch 的情況下開播，聊天中會出現一行提示，請你留下 Twitch 使用者名稱或連結，以便在 Dungeon Train 官方 Twitch 上推薦你。儲存 Twitch 後即消失。",
   "gui.dungeontrain.options.twitch_hint.kid_tip": "兒童模式沒有 Twitch。",
+  "chat.dungeontrain.live.channel.live": "%s 正在直播。Twitch：%s",
+  "chat.dungeontrain.live.channel.join": "你正在觀看 %s。Twitch：%s",
   "chat.dungeontrain.live.watch_links_own": "你已在 %s 和 %s 開播，同時也在你的頻道 %s",
   "chat.dungeontrain.live.watch_link_own": "你已在 %s 開播，同時也在你的頻道 %s",
   "gui.dungeontrain.options.account.pings.death": "你的死亡",

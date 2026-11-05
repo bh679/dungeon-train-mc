@@ -1880,6 +1880,8 @@
   "gui.dungeontrain.options.twitch_hint.hint": "Ask for your Twitch when you go live",
   "gui.dungeontrain.options.twitch_hint.tip": "When you go live without a Twitch saved, a chat line asks you to drop your Twitch username or URL for a shout-out on the official Dungeon Train Twitch. Gone once a Twitch is saved.",
   "gui.dungeontrain.options.twitch_hint.kid_tip": "Kid mode has no Twitch.",
+  "chat.dungeontrain.live.channel.live": "%s is live. Their Twitch: %s",
+  "chat.dungeontrain.live.channel.join": "You're watching %s. Their Twitch: %s",
   "chat.dungeontrain.live.watch_links_own": "You are now live on %s & %s, and on your channel %s",
   "chat.dungeontrain.live.watch_link_own": "You are now live on %s, and on your channel %s",
   "gui.dungeontrain.options.account.pings.death": "Your deaths",

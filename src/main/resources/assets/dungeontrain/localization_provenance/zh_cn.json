@@ -881,6 +881,8 @@
       "gui.dungeontrain.options.twitch_hint.hint",
       "gui.dungeontrain.options.twitch_hint.tip",
       "gui.dungeontrain.options.twitch_hint.kid_tip",
+      "chat.dungeontrain.live.channel.live",
+      "chat.dungeontrain.live.channel.join",
       "chat.dungeontrain.live.watch_links_own",
       "chat.dungeontrain.live.watch_link_own",
       "gui.dungeontrain.options.account.pings.death",

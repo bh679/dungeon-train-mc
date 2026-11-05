@@ -1697,6 +1697,8 @@
   "gui.dungeontrain.options.twitch_hint.hint": "Pedir sua Twitch quando entrar ao vivo",
   "gui.dungeontrain.options.twitch_hint.tip": "Quando você entra ao vivo sem uma Twitch salva, uma linha no chat pede seu nome de usuário ou link da Twitch para um shout-out na Twitch oficial do Dungeon Train. Some assim que uma Twitch é salva.",
   "gui.dungeontrain.options.twitch_hint.kid_tip": "O modo infantil não tem Twitch.",
+  "chat.dungeontrain.live.channel.live": "%s está ao vivo. Twitch: %s",
+  "chat.dungeontrain.live.channel.join": "Você está assistindo %s. Twitch: %s",
   "chat.dungeontrain.live.watch_links_own": "Agora você está ao vivo em %s e %s, e no seu canal %s",
   "chat.dungeontrain.live.watch_link_own": "Agora você está ao vivo em %s, e no seu canal %s",
   "gui.dungeontrain.options.account.pings.death": "Suas mortes",

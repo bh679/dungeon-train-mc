@@ -1697,6 +1697,8 @@
   "gui.dungeontrain.options.twitch_hint.hint": "Pedir a tua Twitch quando entras em direto",
   "gui.dungeontrain.options.twitch_hint.tip": "Quando entras em direto sem uma Twitch guardada, uma linha no chat pede o teu nome de utilizador ou ligação da Twitch para um shout-out na Twitch oficial do Dungeon Train. Desaparece assim que guardares uma Twitch.",
   "gui.dungeontrain.options.twitch_hint.kid_tip": "O modo infantil não tem Twitch.",
+  "chat.dungeontrain.live.channel.live": "%s está em direto. Twitch: %s",
+  "chat.dungeontrain.live.channel.join": "Estás a ver %s. Twitch: %s",
   "chat.dungeontrain.live.watch_links_own": "Já estás em direto em %s e %s, e no teu canal %s",
   "chat.dungeontrain.live.watch_link_own": "Já estás em direto em %s, e no teu canal %s",
   "gui.dungeontrain.options.account.pings.death": "As tuas mortes",

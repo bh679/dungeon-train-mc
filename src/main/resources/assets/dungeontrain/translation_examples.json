@@ -16303,6 +16303,26 @@
       ]
     }
   },
+  "chat.dungeontrain.live.channel.live": {
+    "1": {
+      "label": "the name of the player who just went live",
+      "examples": ["AshSeven", "Steve"]
+    },
+    "2": {
+      "label": "a link to their Twitch channel",
+      "examples": ["twitch.tv/ashseven"]
+    }
+  },
+  "chat.dungeontrain.live.channel.join": {
+    "1": {
+      "label": "the name of the player whose stream you are watching",
+      "examples": ["AshSeven", "Steve"]
+    },
+    "2": {
+      "label": "a link to their Twitch channel",
+      "examples": ["twitch.tv/ashseven"]
+    }
+  },
   "chat.dungeontrain.live.watch_links_own": {
     "1": {
       "label": "the word Twitch, a link to the Dungeon Train Twitch channel",

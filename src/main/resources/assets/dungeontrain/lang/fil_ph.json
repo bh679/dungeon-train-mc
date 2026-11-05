@@ -1649,6 +1649,8 @@
   "gui.dungeontrain.options.twitch_hint.hint": "Hingin ang Twitch mo kapag nag-live ka",
   "gui.dungeontrain.options.twitch_hint.tip": "Kapag nag-live ka nang walang naka-save na Twitch, may linya sa chat na hihingi ng iyong Twitch username o URL para sa shout-out sa opisyal na Dungeon Train Twitch. Nawawala kapag may naka-save nang Twitch.",
   "gui.dungeontrain.options.twitch_hint.kid_tip": "Walang Twitch sa Kid mode.",
+  "chat.dungeontrain.live.channel.live": "Live na si %s. Twitch niya: %s",
+  "chat.dungeontrain.live.channel.join": "Pinapanood mo si %s. Twitch niya: %s",
   "chat.dungeontrain.live.watch_links_own": "Live ka na ngayon sa %s at %s, at sa channel mong %s",
   "chat.dungeontrain.live.watch_link_own": "Live ka na ngayon sa %s, at sa channel mong %s",
   "gui.dungeontrain.options.account.pings.death": "Iyong mga pagkamatay",

@@ -1649,6 +1649,8 @@
   "gui.dungeontrain.options.twitch_hint.hint": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "127389caebcea68d"},
   "gui.dungeontrain.options.twitch_hint.tip": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "947bc51d88977afc"},
   "gui.dungeontrain.options.twitch_hint.kid_tip": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "7fa7b4adbcee8f06"},
+  "chat.dungeontrain.live.channel.live": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "6106e6ade27054a9"},
+  "chat.dungeontrain.live.channel.join": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "04fb979c2a055813"},
   "chat.dungeontrain.live.watch_links_own": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "09abb1e22e11cd6b"},
   "chat.dungeontrain.live.watch_link_own": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "218e91636e05c33d"},
   "gui.dungeontrain.options.account.pings.death": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "9f4b9ce424b94e20"},

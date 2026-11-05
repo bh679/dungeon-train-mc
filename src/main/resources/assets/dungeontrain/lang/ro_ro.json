@@ -1934,6 +1934,8 @@
   "gui.dungeontrain.options.twitch_hint.hint": "Cere Twitch-ul tău când intri în direct",
   "gui.dungeontrain.options.twitch_hint.tip": "Când intri în direct fără un Twitch salvat, o linie din chat îți cere numele sau linkul de Twitch pentru un shout-out pe Twitch-ul oficial Dungeon Train. Dispare odată ce un Twitch e salvat.",
   "gui.dungeontrain.options.twitch_hint.kid_tip": "Modul pentru copii nu are Twitch.",
+  "chat.dungeontrain.live.channel.live": "%s este live. Twitch: %s",
+  "chat.dungeontrain.live.channel.join": "Urmărești %s. Twitch: %s",
   "chat.dungeontrain.live.watch_links_own": "Acum ești în direct pe %s și %s, și pe canalul tău %s",
   "chat.dungeontrain.live.watch_link_own": "Acum ești în direct pe %s, și pe canalul tău %s",
   "gui.dungeontrain.options.account.pings.death": "Morțile tale",

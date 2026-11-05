@@ -1649,6 +1649,8 @@
   "gui.dungeontrain.options.twitch_hint.hint": "ถาม Twitch ของคุณเมื่อเริ่มถ่ายทอดสด",
   "gui.dungeontrain.options.twitch_hint.tip": "เมื่อคุณถ่ายทอดสดโดยไม่มี Twitch ที่บันทึกไว้ จะมีข้อความในแชทขอชื่อผู้ใช้หรือ URL Twitch ของคุณเพื่อประกาศบน Twitch ทางการของ Dungeon Train หายไปเมื่อบันทึก Twitch แล้ว",
   "gui.dungeontrain.options.twitch_hint.kid_tip": "โหมดเด็กไม่มี Twitch",
+  "chat.dungeontrain.live.channel.live": "%s กำลังไลฟ์อยู่ Twitch: %s",
+  "chat.dungeontrain.live.channel.join": "คุณกำลังดู %s Twitch: %s",
   "chat.dungeontrain.live.watch_links_own": "ตอนนี้คุณกำลังถ่ายทอดสดบน %s และ %s และบนช่องของคุณ %s",
   "chat.dungeontrain.live.watch_link_own": "ตอนนี้คุณกำลังถ่ายทอดสดบน %s และบนช่องของคุณ %s",
   "gui.dungeontrain.options.account.pings.death": "การตายของคุณ",
