@@ -236,9 +236,9 @@ final class NetherPortalJumpTest {
     }
 
     @Test
-    @DisplayName("an End gateway passes over a short overworld gap to the real band behind it")
+    @DisplayName("an End gateway passes over a short overworld fade to the real band behind it")
     void gatewaySkipsShortGap() {
-        IntFunction<String> strip = x -> x < 8_000 ? "Lost City" : x < 8_100 ? "Overworld" : "End";
+        IntFunction<String> strip = x -> x < 8_000 ? "Lost City" : x < 8_480 ? "Overworld" : "End";
         long t = NetherPortalJump.previousOverworldX(C, strip, x -> !strip.apply(x).equals("End"), 9_000).orElseThrow();
         assertTrue(t < 8_000, "in the real band, got " + t);
     }

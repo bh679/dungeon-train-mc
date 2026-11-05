@@ -37,8 +37,11 @@ public final class NetherPortalJump {
     /** A non-Nether core keeps at least this share of its segment (the trim is capped at a third per side). */
     private static final int MIN_CORE_DIVISOR = 3;
 
-    /** An overworld stretch shorter than this is a gap between two bands, not one to arrive in. */
-    static final long MIN_OVERWORLD_BLOCKS = 256L;
+    /**
+     * An overworld stretch shorter than this is a gap or a fade between two bands (the Lost City's closing fade
+     * reads as plain overworld), not one to arrive in. Every overworld band in the shipped order is longer.
+     */
+    static final long MIN_OVERWORLD_BLOCKS = 1000L;
 
     private NetherPortalJump() {}
 
