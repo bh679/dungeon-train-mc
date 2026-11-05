@@ -1697,6 +1697,8 @@
   "gui.dungeontrain.options.twitch_hint.hint": "Beim Livegehen nach deinem Twitch fragen",
   "gui.dungeontrain.options.twitch_hint.tip": "Gehst du ohne gespeichertes Twitch live, bittet dich eine Chatzeile um deinen Twitch-Namen oder -Link für einen Shout-out auf dem offiziellen Dungeon-Train-Twitch. Weg, sobald ein Twitch gespeichert ist.",
   "gui.dungeontrain.options.twitch_hint.kid_tip": "Im Kindermodus gibt es kein Twitch.",
+  "chat.dungeontrain.live.channel.live": "%s ist live. Twitch-Kanal: %s",
+  "chat.dungeontrain.live.channel.join": "Du schaust %s. Twitch-Kanal: %s",
   "chat.dungeontrain.live.watch_links_own": "Du bist jetzt live auf %s und %s, und auf deinem Kanal %s",
   "chat.dungeontrain.live.watch_link_own": "Du bist jetzt live auf %s, und auf deinem Kanal %s",
   "gui.dungeontrain.options.account.pings.death": "Deine Tode",

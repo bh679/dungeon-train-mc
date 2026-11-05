@@ -1934,6 +1934,8 @@
   "gui.dungeontrain.options.twitch_hint.hint": "Питати ваш Twitch при виході в ефір",
   "gui.dungeontrain.options.twitch_hint.tip": "Якщо ви виходите в ефір без збереженого Twitch, рядок у чаті попросить ваш нік або посилання Twitch для шаут-ауту на офіційному Twitch Dungeon Train. Зникає, щойно Twitch збережено.",
   "gui.dungeontrain.options.twitch_hint.kid_tip": "У дитячому режимі немає Twitch.",
+  "chat.dungeontrain.live.channel.live": "%s в ефірі. Twitch: %s",
+  "chat.dungeontrain.live.channel.join": "Ви дивитеся: %s. Twitch: %s",
   "chat.dungeontrain.live.watch_links_own": "Тепер ти в ефірі на %s і %s, а також на своєму каналі %s",
   "chat.dungeontrain.live.watch_link_own": "Тепер ти в ефірі на %s, а також на своєму каналі %s",
   "gui.dungeontrain.options.account.pings.death": "Ваші смерті",

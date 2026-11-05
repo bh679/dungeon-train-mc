@@ -1697,6 +1697,8 @@
   "gui.dungeontrain.options.twitch_hint.hint": "Demander ton Twitch quand tu passes en direct",
   "gui.dungeontrain.options.twitch_hint.tip": "Si tu passes en direct sans Twitch enregistré, une ligne du chat te demande ton pseudo ou ton lien Twitch pour un shout-out sur le Twitch officiel de Dungeon Train. Disparaît dès qu'un Twitch est enregistré.",
   "gui.dungeontrain.options.twitch_hint.kid_tip": "Le mode enfant n'a pas de Twitch.",
+  "chat.dungeontrain.live.channel.live": "%s est en direct. Sa chaîne Twitch : %s",
+  "chat.dungeontrain.live.channel.join": "Tu regardes %s. Sa chaîne Twitch : %s",
   "chat.dungeontrain.live.watch_links_own": "Tu es maintenant en direct sur %s et %s, et sur ta chaîne %s",
   "chat.dungeontrain.live.watch_link_own": "Tu es maintenant en direct sur %s, et sur ta chaîne %s",
   "gui.dungeontrain.options.account.pings.death": "Tes morts",
