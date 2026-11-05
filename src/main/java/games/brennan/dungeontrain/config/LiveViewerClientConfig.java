@@ -16,14 +16,21 @@ public final class LiveViewerClientConfig {
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.BooleanValue TV_STREAM_SOUND;
     public static final ModConfigSpec.BooleanValue TV_SOUND_ON_TRAIN;
+    public static final ModConfigSpec.IntValue STREAM_VOLUME_PERCENT;
     public static final ModConfigSpec.ConfigValue<List<? extends String>> MUTED_STREAMERS;
+
+    /** Stream volume starts at full, so nobody's TVs change loudness until they move the slider. */
+    static final int STREAM_VOLUME_DEFAULT = 100;
 
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
         b.push("liveViewer");
         TV_STREAM_SOUND = b
-            .comment("Play a live stream's sound from the TVs showing it, and from a TV you wear or hold. Off = every TV is silent. Volume follows Vista's TV volume and the Blocks slider.")
+            .comment("Play a live stream's sound from the TVs showing it, and from a TV you wear or hold. Off = every TV is silent. Volume follows streamVolumePercent, Vista's TV volume and the Blocks slider.")
             .define("tvStreamSound", true);
+        STREAM_VOLUME_PERCENT = b
+            .comment("How loud live streams play from TVs, percent, on top of Vista's TV volume and the Blocks slider. 0 = silent. Also on Music & Sounds. Applies at once.")
+            .defineInRange("streamVolumePercent", STREAM_VOLUME_DEFAULT, 0, 100);
         TV_SOUND_ON_TRAIN = b
             .comment("Play live stream sound from the TVs placed on the train. Off = placed TVs are silent; a TV you wear or hold still plays. Only matters while tvStreamSound is on.")
             .define("tvSoundOnTrain", true);
@@ -48,6 +55,16 @@ public final class LiveViewerClientConfig {
         if (!loaded() || TV_STREAM_SOUND.get() == value) return;
         TV_STREAM_SOUND.set(value);
         TV_STREAM_SOUND.save();
+    }
+
+    /** How loud streams play from TVs, 0 to 100; full until the config loads. */
+    public static int streamVolumePercent() { return loaded() ? STREAM_VOLUME_PERCENT.get() : STREAM_VOLUME_DEFAULT; }
+
+    public static void setStreamVolumePercent(int value) {
+        int v = Math.max(0, Math.min(100, value));
+        if (!loaded() || STREAM_VOLUME_PERCENT.get() == v) return;
+        STREAM_VOLUME_PERCENT.set(v);
+        STREAM_VOLUME_PERCENT.save();
     }
 
     /** Whether the TVs placed on the train play stream sound; on until the config loads. */
