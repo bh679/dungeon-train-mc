@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.chat.ChatClick;
 import games.brennan.dungeontrain.client.ChatClickActions;
+import games.brennan.dungeontrain.client.ClientOptionsTab;
 import games.brennan.dungeontrain.config.LiveViewerClientConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -103,7 +104,8 @@ public final class LiveMuteChat {
         LiveViewerMutes.muteStream(streamKey);
         say(Component.translatable(KEY + "stream_muted").append(" ")
             .append(button(Component.translatable(KEY + "button.undo"), Component.translatable(KEY + "button.undo.hover"),
-                "unstream", idFor(streamKey))));
+                "unstream", idFor(streamKey)))
+            .append(" ").append(optionsLink(ClientOptionsTab.Row.TV_STREAM_SOUND)));
     }
 
     private static void unmuteStream(String streamKey) {
@@ -115,7 +117,8 @@ public final class LiveMuteChat {
         LiveViewerMutes.muteStreamer(name);
         say(Component.translatable(KEY + "streamer_muted", name).append(" ")
             .append(button(Component.translatable(KEY + "button.undo"), Component.translatable(KEY + "button.undo.hover"),
-                "unstreamer", name)));
+                "unstreamer", name))
+            .append(" ").append(optionsLink(ClientOptionsTab.Row.MUTED_STREAMERS)));
     }
 
     /** False when {@code name} was not muted. */
@@ -128,6 +131,13 @@ public final class LiveMuteChat {
             }
         }
         return false;
+    }
+
+    /** "Sound options": the Stream tab at {@code row}, highlighted. */
+    private static Component optionsLink(ClientOptionsTab.Row row) {
+        return LiveOptionsCommand.pathLink(KEY + "button.options", ClientOptionsTab.STREAM, row)
+            .withStyle(style -> style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                Component.translatable(KEY + "button.options.hover"))));
     }
 
     private static void say(Component body) {

@@ -225,6 +225,14 @@ public final class DtpCommand {
             return 0;
         }
 
+        // Only console, RCON or `execute as` can reach this: the death screen has no chat. A dead
+        // client never reports the teleport, so the player's chunk tickets stay behind, Sable culls
+        // the new seed at once and the wait times out, with the old train already deleted.
+        if (player.isDeadOrDying()) {
+            source.sendFailure(Component.literal(player.getName().getString() + " is dead: respawn before using /dtp."));
+            return 0;
+        }
+
         MinecraftServer server = source.getServer();
         DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
         if (!data.startsWithTrain()) {

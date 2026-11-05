@@ -832,7 +832,8 @@ public final class DebugCommand {
             + " | holding index: " + (indexOn ? "on" : "DISABLED")
             + " held=" + games.brennan.dungeontrain.ship.sable.SableHoldingIndex.size()
             + " filed=" + games.brennan.dungeontrain.ship.sable.SableHoldingIndex.filedCount()
-            + " gaveUp=" + games.brennan.dungeontrain.ship.sable.SableHoldingIndex.gaveUpCount();
+            + " gaveUp=" + games.brennan.dungeontrain.ship.sable.SableHoldingIndex.gaveUpCount()
+            + " | leftover groups deleted=" + games.brennan.dungeontrain.ship.sable.DriverlessCarriageReaper.reapedCount();
         LOGGER.info(line);
         source.sendSuccess(() -> Component.literal(line)
             .withStyle(c[0] == 0 ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);

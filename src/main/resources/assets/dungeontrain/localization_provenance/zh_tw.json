@@ -3117,6 +3117,8 @@
       "chat.dungeontrain.live_mute.button.streamer.hover",
       "chat.dungeontrain.live_mute.button.undo",
       "chat.dungeontrain.live_mute.button.undo.hover",
+      "chat.dungeontrain.live_mute.button.options",
+      "chat.dungeontrain.live_mute.button.options.hover",
       "chat.dungeontrain.live_mute.stream_muted",
       "chat.dungeontrain.live_mute.stream_unmuted",
       "chat.dungeontrain.live_mute.streamer_muted",
