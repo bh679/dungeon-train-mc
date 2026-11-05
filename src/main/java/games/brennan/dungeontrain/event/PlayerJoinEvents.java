@@ -192,7 +192,7 @@ public final class PlayerJoinEvents {
      * for the train lookup, whose race resolves in 1–2 ticks; sized to clear
      * {@link #SCAN_WAIT_TICKS}.
      */
-    private static final int MAX_RETRY_TICKS = 240;
+    static final int MAX_RETRY_TICKS = 240;
 
     /**
      * How long since login the track scan may hold placement for chunks that are still generating.

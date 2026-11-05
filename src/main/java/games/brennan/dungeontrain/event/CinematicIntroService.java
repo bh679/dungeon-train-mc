@@ -165,7 +165,9 @@ public final class CinematicIntroService {
         }
         DungeonTrainNet.sendTo(player, new CinematicPreloadBeginPacket(PLACE_HOLD_TIMEOUT_TICKS));
         ACTIVE.add(player.getUUID());
-        beginInvuln(player, PLACE_HOLD_TIMEOUT_TICKS);
+        // Outlasts the server's whole placement window, so the player stays shielded and ACTIVE
+        // until play() or abandonPreload() takes over.
+        beginInvuln(player, PlayerJoinEvents.MAX_RETRY_TICKS);
         LOGGER.info("[DungeonTrain] Preload hold armed for {} (placeTimeout={}t)",
             player.getName().getString(), PLACE_HOLD_TIMEOUT_TICKS);
     }
