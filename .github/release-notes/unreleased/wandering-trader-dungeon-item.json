@@ -1,0 +1,17 @@
+{
+  "id": "wandering-trader-dungeon-item",
+  "version": "0.1678.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "loot"
+  ],
+  "title": "Wandering traders carry something from the train",
+  "summary": "Every wandering trader now has one Dungeon Train item for sale. They only have one, so grab it while you can.",
+  "highlights": [],
+  "pr": 2507,
+  "date": "2026-11-05",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
