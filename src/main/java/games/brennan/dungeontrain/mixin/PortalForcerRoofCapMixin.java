@@ -2,9 +2,11 @@ package games.brennan.dungeontrain.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.world.PortalRoofCap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.portal.PortalForcer;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -23,9 +25,11 @@ public abstract class PortalForcerRoofCapMixin {
 
     @Shadow @Final protected ServerLevel level;
 
+    /** A twin room's copy of a frame is also skipped: it stands in sealed space, and players never belong there. */
     @ModifyReturnValue(method = "findClosestPortalPosition", at = @At("RETURN"))
-    private Optional<BlockPos> dungeontrain$ignorePortalOnRoof(Optional<BlockPos> found) {
-        return found.filter(pos -> pos.getY() <= PortalRoofCap.topY());
+    private Optional<BlockPos> dungeontrain$ignoreUnusablePortal(Optional<BlockPos> found) {
+        return found.filter(pos -> pos.getY() <= PortalRoofCap.topY()
+            && !(level.dimension() == Level.OVERWORLD && PortalTwinSpace.isInside(level, pos.getX(), pos.getY())));
     }
 
     /** {@code createPortal}'s top row is {@code minBuildHeight + logicalHeight - 1}, so this makes it the cap. */

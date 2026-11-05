@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.compat.mixinguard.ThirdPartyMixinTargets;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalLoadScreenPacket;
+import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -153,9 +154,10 @@ public final class NetherPortalBandJump {
         BlockPos origin = NetherPortalLinks.frameKey(level, portalPos);
         BlockPos partner = links.partnerOf(level, origin);
         ExitChoice choice = chooseExit(partner != null, onCarriage,
-            partner != null && (Shipyards.isInPlotGrid(level, partner) || isAboveRoof(level, data, partner)));
+            partner != null && (Shipyards.isInPlotGrid(level, partner) || isAboveRoof(level, data, partner)
+                || PortalTwinSpace.isInside(level, partner.getX(), partner.getY())));
         if (choice == ExitChoice.UNLINK_AND_JUMP) {
-            LOGGER.warn("[DungeonTrain] nether portal at x={} by {}: dropped link {} ↔ {} — a frame on a carriage or a core's roof is never paired",
+            LOGGER.warn("[DungeonTrain] nether portal at x={} by {}: dropped link {} ↔ {} — a frame on a carriage, a core's roof or in a twin room is never paired",
                 fromX, who, origin, partner);
             links.unlink(origin);
         }
@@ -216,7 +218,7 @@ public final class NetherPortalBandJump {
 
     /**
      * The exit rule: a recorded partner is followed unless the frame is on a carriage (a ship-plot position) or the
-     * partner is no place to land (on a carriage, or on a core's roof) — such a link is dropped and the trip
+     * partner is no place to land (on a carriage, on a core's roof, or in a twin room) — such a link is dropped and the trip
      * band-jumps instead, as it does with no partner.
      */
     static ExitChoice chooseExit(boolean hasPartner, boolean originOnCarriage, boolean partnerUnusable) {
