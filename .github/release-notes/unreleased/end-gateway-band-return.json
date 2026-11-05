@@ -6,8 +6,8 @@
     "fix",
     "world"
   ],
-  "title": "Gateway fix",
-  "summary": "Gateways found along the journey no longer throw you back to its very start. They now lead somewhere much closer, and you can come back the same way.",
+  "title": "Exploration fix",
+  "summary": "A small fix for explorers.",
   "highlights": [],
   "pr": 2510,
   "date": "2026-11-05",
