@@ -479,6 +479,25 @@
       "modrinth_version": "TuD0Zvi3"
     },
     {
+      "name": "Luminous Monsters",
+      "slug": "luminous-monsters",
+      "mod_ids": [
+        "luminous_monsters"
+      ],
+      "sha1": "9ca7084ccee2ac875da37815fb10cd94359659ff",
+      "packages": [
+        "net.mcreator"
+      ],
+      "project_id": 1066090,
+      "file_id": 9388896,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "luminous_monsters_min_version",
+      "version": "1.3.1",
+      "modrinth_project": "luminous-monsters",
+      "modrinth_version": "eRQ6VuD1"
+    },
+    {
       "name": "Piglin Proliferation",
       "slug": "piglin-proliferation",
       "mod_ids": [

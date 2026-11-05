@@ -70,6 +70,7 @@ The NeoForge version follows `neo_version` for the same reason.
 | **S** | **CurseForge jar** + Case L's set (CurseForge-app layout: top-level StreamDetect/DpiBypassDetect, no Sable Pathfinder) | Server starts cleanly; the two add-ons load from `mods/` (nothing nested to skip) |
 | **T** | **CurseForge jar**, Case S minus StreamDetect + DpiBypassDetect (manual CurseForge download that skipped them) | Server starts cleanly (both `optional`); `streamdetect` / `dpibypassdetect` absent from the mod list |
 | **U** | minus Deeper Darker (the only case without it) | Fails — names `deeperdarker` with its `[x,)` floor |
+| **V** | minus Luminous Monsters (the only case without it) | Fails — names `luminous_monsters` with its `[x,)` floor |
 
 **A is the positive control.** If it fails, every other "failed" result is meaningless — fix A
 before reading anything else.

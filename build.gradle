@@ -734,6 +734,10 @@ dependencies {
     // its Otherside dimension; DT names its level, biomes and structures by registry id only.
     implementation "maven.modrinth:deeperdarker:${deeperdarker_version}"
 
+    // Luminous Monsters — REQUIRED third-party dep (see gradle.properties). Natural biome-spawned mobs; DT names
+    // them by registry id only.
+    implementation "maven.modrinth:luminous-monsters:${luminous_monsters_version}"
+
     // Piglin Proliferation — REQUIRED third-party dep (see gradle.properties). Its piglins stand in carriages;
     // DT names its entities and items by registry id only.
     implementation "maven.modrinth:piglin-proliferation:${piglinproliferation_version}"
@@ -1098,6 +1102,8 @@ tasks.register('generateModMetadata', ProcessResources) {
         platform_min_version              : platform_min_version,
         // Deeper Darker — floor only.
         deeperdarker_min_version          : deeperdarker_min_version,
+        // Luminous Monsters — floor only.
+        luminous_monsters_min_version     : luminous_monsters_min_version,
         // Piglin Proliferation — floor only.
         piglinproliferation_min_version   : piglinproliferation_min_version,
         // Exposure + its Polaroid add-on — floors only.
