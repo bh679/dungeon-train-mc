@@ -156,10 +156,20 @@ public final class LiveFeedClient {
     public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
                            @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
                            @Nullable Moment moment, @Nullable RestartNotice restart, @Nullable Death death,
-                           @Nullable Map<String, String> tr) {
-        /** {@code tr}: the relay's translations of this line already known when it was read (locale → text), else null. */
+                           @Nullable Map<String, String> tr, @Nullable LinkedChannel channel) {
+        /**
+         * {@code tr}: the relay's translations of this line already known when it was read (locale → text), else null.
+         * {@code channel}: the streamer's Twitch this line links, else null.
+         */
         public ChatLine {
             tr = tr == null || tr.isEmpty() ? null : Map.copyOf(tr);
+        }
+
+        public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
+                        @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
+                        @Nullable Moment moment, @Nullable RestartNotice restart, @Nullable Death death,
+                        @Nullable Map<String, String> tr) {
+            this(seq, ts, author, uuid, content, source, logRequest, via, poll, moment, restart, death, tr, null);
         }
 
         public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
@@ -224,6 +234,19 @@ public final class LiveFeedClient {
             }
             return null;
         }
+    }
+
+    /** A streamer's Twitch channel a chat line links: the login in Twitch's own alphabet, lower-cased, and their name. */
+    public record LinkedChannel(String login, String name) {}
+
+    /** A line's {@code channel}, or null when absent or its login is not a real one (the URL is built from it). */
+    @Nullable
+    static LinkedChannel parseChannel(JsonObject m) {
+        if (!m.has("channel") || !m.get("channel").isJsonObject()) return null;
+        JsonObject o = m.getAsJsonObject("channel");
+        String login = str(o, "login");
+        if (login == null || !login.matches("[A-Za-z0-9_]{3,25}")) return null;
+        return new LinkedChannel(login.toLowerCase(java.util.Locale.ROOT), LiveChatRules.clean(str(o, "name"), LiveChatRules.MAX_AUTHOR));
     }
 
     /**
@@ -1045,7 +1068,7 @@ public final class LiveFeedClient {
                     Via via = Via.parse(m.has("via") && !m.get("via").isJsonNull() ? m.get("via").getAsString() : null);
                     lines.add(new ChatLine(m.get("seq").getAsLong(), m.has("ts") ? m.get("ts").getAsLong() : 0L,
                         author.isBlank() ? "Someone" : author, uuid, content, source, parseLogRequest(m), via,
-                        LiveTakeoverClient.parsePollLine(m), parseMoment(m), parseRestart(m), parseDeath(m), parseTr(m)));
+                        LiveTakeoverClient.parsePollLine(m), parseMoment(m), parseRestart(m), parseDeath(m), parseTr(m), parseChannel(m)));
                 }
             }
             List<Long> deleted = new ArrayList<>();

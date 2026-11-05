@@ -1,0 +1,17 @@
+{
+  "id": "twitch-links-live-chat",
+  "version": "0.1671.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community"
+  ],
+  "title": "Streamers' Twitch links in Live chat",
+  "summary": "When a streamer with a Twitch goes live, or you tune in to one, Live chat now links their channel. Works in game and on the website.",
+  "highlights": [],
+  "pr": 2498,
+  "date": "2026-11-05",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
