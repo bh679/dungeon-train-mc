@@ -1,0 +1,23 @@
+{
+  "id": "bop-end-cities-no-daytime",
+  "version": "0.1678.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "world",
+    "mobs",
+    "balance"
+  ],
+  "title": "Rare finds on a stranger stretch",
+  "summary": "One of the stranger stretches of the journey now hides rare places to find, and what lives there no longer cares what time it is.",
+  "highlights": [
+    "Rare new places to explore along the line, with loot to find inside",
+    "Those creatures stay just as active and just as many by day as by night",
+    "Tweaked how often the oddest ground turns up"
+  ],
+  "pr": 2505,
+  "date": "2026-11-05",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

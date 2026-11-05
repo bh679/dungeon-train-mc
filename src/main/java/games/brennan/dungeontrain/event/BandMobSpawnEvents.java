@@ -48,7 +48,7 @@ public final class BandMobSpawnEvents {
         int x = (int) Math.floor(event.getX());
         int z = (int) Math.floor(event.getZ());
 
-        // End band: only the End's natives survive: endermen, plus a BetterEnd column's own biome list.
+        // End band: only the End's natives survive: endermen, plus a BetterEnd column's own biome list (a BoP column's lists none).
         if (DisintegrationBand.middleRampAt(level, x, z) > 0.0) {
             BlockPos pos = BlockPos.containing(event.getX(), event.getY(), event.getZ());
             if (!EndBandSpawnRules.admits(event.getEntity() instanceof EnderMan,

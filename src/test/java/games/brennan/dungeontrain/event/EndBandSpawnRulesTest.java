@@ -24,13 +24,13 @@ class EndBandSpawnRulesTest {
     }
 
     @Test
-    @DisplayName("a vanilla End column keeps today's endermen-only rule")
+    @DisplayName("vanilla End and Biomes O' Plenty columns admit endermen only, whatever the biome lists")
     void vanillaColumnsUnchanged() {
         assertFalse(EndBandSpawnRules.admits(false, false, true));
     }
 
     @Test
-    @DisplayName("the sky stops counting only for light-ruled mobs in unlit BetterEnd columns")
+    @DisplayName("the sky stops counting only for light-ruled mobs in unlit sampled columns")
     void skyRule() {
         assertTrue(EndBandSpawnRules.skyDoesNotCount(true, true, 0, false));
         assertFalse(EndBandSpawnRules.skyDoesNotCount(false, true, 0, false), "vanilla End column");

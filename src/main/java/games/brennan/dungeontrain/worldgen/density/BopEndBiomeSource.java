@@ -9,6 +9,7 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.random.WeightedEntry;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
@@ -36,7 +37,8 @@ import java.util.stream.Stream;
  * vanilla's erosion zones (main island, then highlands / midlands / small islands / barrens by the
  * sampler's erosion — the same thresholds as {@link VanillaEndBiomes}) pick one of four TerraBlender
  * biome areas ({@link LayeredNoiseUtil#biomeArea}: its End registry's weighted lists at its configured
- * biome sizes, seeded with the world seed). A {@code TheEndBiomeSource} cannot be delegated to:
+ * biome sizes, seeded with the world seed; {@code end_corruption} made rarer, {@link BopEndBiomeWeights}). A
+ * {@code TheEndBiomeSource} cannot be delegated to:
  * WorldWeaver patches every instance's {@code getNoiseBiome} at HEAD and answers with BetterEnd biomes
  * before TerraBlender's patch runs, so a "BoP" source built that way showed one BetterEnd biome.</p>
  *
@@ -54,6 +56,11 @@ public final class BopEndBiomeSource extends BiomeSource {
 
     /** Vanilla's main-island radius, in sections squared (TerraBlender keeps it). */
     private static final long MAIN_ISLAND_SECTIONS_SQ = 4096L;
+
+    private static final ResourceKey<Biome> END_CORRUPTION =
+            ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath("biomesoplenty", "end_corruption"));
+    /** How many times rarer the band makes BoP's weights for it: about 1% of the highlands zone, not 11%. */
+    private static final int END_CORRUPTION_RARITY = 10;
 
     private final Registry<Biome> registry;
     private final Holder<Biome> end;
@@ -79,10 +86,10 @@ public final class BopEndBiomeSource extends BiomeSource {
         Registry<Biome> registry = registries.registryOrThrow(Registries.BIOME);
         TerraBlenderConfig config = TerraBlender.CONFIG;
         if (config == null) throw new IllegalStateException("TerraBlender config not loaded");
-        Area highlands = LayeredNoiseUtil.biomeArea(registries, seed, config.endHighlandsBiomeSize, EndBiomeRegistry.getHighlandsBiomes());
-        Area midlands = LayeredNoiseUtil.biomeArea(registries, seed, config.endMidlandsBiomeSize, EndBiomeRegistry.getMidlandsBiomes());
-        Area edge = LayeredNoiseUtil.biomeArea(registries, seed, config.endEdgeBiomeSize, EndBiomeRegistry.getEdgeBiomes());
-        Area islands = LayeredNoiseUtil.biomeArea(registries, seed, config.endIslandBiomeSize, EndBiomeRegistry.getIslandBiomes());
+        Area highlands = LayeredNoiseUtil.biomeArea(registries, seed, config.endHighlandsBiomeSize, weights(EndBiomeRegistry.getHighlandsBiomes()));
+        Area midlands = LayeredNoiseUtil.biomeArea(registries, seed, config.endMidlandsBiomeSize, weights(EndBiomeRegistry.getMidlandsBiomes()));
+        Area edge = LayeredNoiseUtil.biomeArea(registries, seed, config.endEdgeBiomeSize, weights(EndBiomeRegistry.getEdgeBiomes()));
+        Area islands = LayeredNoiseUtil.biomeArea(registries, seed, config.endIslandBiomeSize, weights(EndBiomeRegistry.getIslandBiomes()));
         List<Holder<Biome>> all = new ArrayList<>();
         for (ResourceKey<Biome> key : List.of(Biomes.THE_END, Biomes.END_HIGHLANDS, Biomes.END_MIDLANDS,
                 Biomes.SMALL_END_ISLANDS, Biomes.END_BARRENS)) {
@@ -94,6 +101,10 @@ public final class BopEndBiomeSource extends BiomeSource {
         }
         return new BopEndBiomeSource(registry, registry.getHolderOrThrow(Biomes.THE_END),
                 highlands, midlands, edge, islands, BiomeIdOrder.sortedCopy(all));
+    }
+
+    private static List<WeightedEntry.Wrapper<ResourceKey<Biome>>> weights(List<WeightedEntry.Wrapper<ResourceKey<Biome>>> list) {
+        return BopEndBiomeWeights.rarer(list, END_CORRUPTION, END_CORRUPTION_RARITY);
     }
 
     /** True when TerraBlender's End registry holds any Biomes O' Plenty biome. */
