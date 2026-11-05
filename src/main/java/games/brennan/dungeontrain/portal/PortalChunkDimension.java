@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.portal;
 import games.brennan.dungeontrain.portal.chunkframe.ChunkFrame;
 import games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.util.AsyncPerfLog;
+import games.brennan.dungeontrain.util.DtLogging;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.core.Vec3i;
@@ -46,14 +48,17 @@ import java.util.function.IntFunction;
  * walkway line, two blocks tall, cleared so a tree or a dune that grew in the doorway is not a wall
  * across it. Nothing is added: no floor is bridged in under a doorway the terrain left open.</p>
  *
- * <p>Every write skips {@link PortalCorridorMask}, which matters for the deferred path only: an
- * immediate fill runs before {@code stampCorridors} and could not reach a corridor if it tried,
- * while a fill that lands two ticks later would otherwise pour a hillside through a standing
- * twin.</p>
+ * <h2>Poured over several ticks</h2>
+ * <p>The stamp lays the template, the skin and the corridors and leaves the terrain to
+ * {@link PortalChunkPour}: a few rows a tick, then the frame and the doorways, which dress what the
+ * shell and the rows left. Anyone about to walk in has the rest written first
+ * ({@link #finishPourIfReady}), so nobody stands in a part-built room. Every write skips
+ * {@link PortalCorridorMask}, or a hillside would pour through the corridors already standing.</p>
  */
 public final class PortalChunkDimension {
 
     private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+    private static final org.slf4j.Logger PERF_LOGGER = org.slf4j.LoggerFactory.getLogger(DtLogging.PERF);
 
     /**
      * How many cells of each doorway are kept clear — the pair above the floor row, which is a
@@ -64,6 +69,9 @@ public final class PortalChunkDimension {
     /** Pairs whose sampled mobs have already been spawned into their room. */
     private static final java.util.Set<Integer> POPULATED =
         java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /** Rooms part-way through being written, oldest first. Server thread only. */
+    private static final java.util.Map<Integer, PortalChunkPour> POURS = new java.util.LinkedHashMap<>();
 
     private PortalChunkDimension() {}
 
@@ -77,9 +85,7 @@ public final class PortalChunkDimension {
      */
     public static void applyPendingDecoration(ServerLevel level, CarriageDims dims,
                                               IntFunction<PortalStructure> live) {
-        Set<Integer> pending = PortalChunkTerrain.decorated();
-        if (pending.isEmpty()) return;
-        for (int pairKey : pending) {
+        for (int pairKey : PortalChunkTerrain.decorated()) {
             PortalStructure structure = live.apply(pairKey);
             // Not stamped yet — normal, since a cube is usually decorated before the pair that asked
             // for it has been planned. It stays pending and is written when the room exists.
@@ -91,27 +97,104 @@ public final class PortalChunkDimension {
                 PortalChunkTerrain.decorationApplied(pairKey);
                 continue;
             }
-            // The decoration pass runs from the level tick, outside the stamp's stage scope — open it
-            // again so the frame's stage placeholders resolve as they did on the first write.
-            games.brennan.dungeontrain.train.StagePlacementScope.run(
-                PortalCarriageBuilder.stageIdFor(level, pairKey, dims), () -> write(level, structure, dims, slice, pairKey));
-            spawnOccupants(level, structure, dims, slice, pairKey);
-            PortalChunkTerrain.decorationApplied(pairKey);
+            PortalChunkPour pour = POURS.get(pairKey);
+            if (pour == null) {
+                POURS.put(pairKey, PortalChunkPour.of(slice));
+            } else if (pour.slice() != slice) {
+                POURS.put(pairKey, pour.restartedWith(slice));
+            }
         }
+        drainPours(level, dims, live);
     }
 
     /**
-     * Fill {@code structure}'s room with the chunk its pair sampled.
+     * Start writing the chunk {@code structure}'s pair sampled into its room.
      *
-     * <p>Called from {@code stampPairStructure} for a chunk-dimension room, after the room's own
-     * template has been stamped and before the corridors go down. A missing sample is a no-op rather
-     * than an error: the room then stands as its template, which is a room.</p>
+     * <p>Called from {@code stampPairStructure} for a chunk-dimension room, once the shell is down. A
+     * missing sample is a no-op rather than an error: the room then stands as its template, which is
+     * a room.</p>
+     *
+     * @return whether a pour started, which is whether it will dress the room in its frame
      */
-    public static void fill(ServerLevel level, PortalStructure structure, CarriageDims dims,
-                            int pairKey) {
+    public static boolean beginPour(ServerLevel level, PortalStructure structure, int pairKey) {
         PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey, structure.roomName());
-        if (slice == null) return;
-        write(level, structure, dims, slice, pairKey);
+        if (slice == null) return false;
+        POURS.put(pairKey, PortalChunkPour.of(slice));
+        return true;
+    }
+
+    /**
+     * Write the rest of {@code pairKey}'s room now, unless one of its chunks is not there: that read
+     * would block the server until it was, so the pour carries on as it was instead.
+     */
+    public static void finishPourIfReady(ServerLevel level, CarriageDims dims, int pairKey, PortalStructure structure) {
+        if (!POURS.containsKey(pairKey)) return;
+        if (PortalCarriageBuilder.footprintReady(level, structure, dims)) finishPour(level, dims, pairKey, structure);
+    }
+
+    /** Write the rest of {@code pairKey}'s room now, whatever it costs. */
+    public static void finishPour(ServerLevel level, CarriageDims dims, int pairKey, PortalStructure structure) {
+        PortalChunkPour pour = POURS.get(pairKey);
+        if (pour == null) return;
+        long started = System.nanoTime();
+        int height = structure.roomSize().getY();
+        if (!pour.rowsDone(height)) writeRows(level, structure, dims, pour.slice(), pour.nextRow(), height);
+        completePour(level, dims, pairKey, structure, pour, System.nanoTime() - started, /*flushed*/ true);
+    }
+
+    /** Stop writing {@code pairKey}'s room: it is being erased. */
+    public static void cancelPour(int pairKey) {
+        POURS.remove(pairKey);
+    }
+
+    /** One room's next step, the oldest whose chunks are there, so several never share a tick's cost. */
+    private static void drainPours(ServerLevel level, CarriageDims dims, IntFunction<PortalStructure> live) {
+        if (POURS.isEmpty()) return;
+        for (int pairKey : java.util.List.copyOf(POURS.keySet())) {
+            PortalStructure structure = live.apply(pairKey);
+            if (structure == null) {
+                POURS.remove(pairKey);
+                continue;
+            }
+            if (!PortalCarriageBuilder.footprintReady(level, structure, dims)) continue;
+            stepPour(level, dims, pairKey, structure, POURS.get(pairKey));
+            return;
+        }
+    }
+
+    private static void stepPour(ServerLevel level, CarriageDims dims, int pairKey, PortalStructure structure,
+                                 PortalChunkPour pour) {
+        long started = System.nanoTime();
+        int height = structure.roomSize().getY();
+        // A tick of its own, so the frame's cost does not land on top of the last rows'.
+        if (pour.rowsDone(height)) {
+            completePour(level, dims, pairKey, structure, pour, System.nanoTime() - started, /*flushed*/ false);
+            return;
+        }
+        writeRows(level, structure, dims, pour.slice(), pour.nextRow(), pour.rowsEnd(height));
+        POURS.put(pairKey, pour.advanced(height, System.nanoTime() - started));
+    }
+
+    private static void completePour(ServerLevel level, CarriageDims dims, int pairKey, PortalStructure structure,
+                                     PortalChunkPour pour, long rowNanos, boolean flushed) {
+        POURS.remove(pairKey);
+        long started = System.nanoTime();
+        // This runs from the level tick, outside the stamp's stage scope — open it again so the
+        // frame's stage placeholders resolve as they would have inside the stamp.
+        games.brennan.dungeontrain.train.StagePlacementScope.run(
+            PortalCarriageBuilder.stageIdFor(level, pairKey, dims), () -> dress(level, structure, dims, pour.slice(), pairKey));
+        // A sample decorated before its room was stamped needs no second pass: this was it.
+        if (PortalChunkTerrain.decorated().contains(pairKey) && PortalChunkTerrain.peek(pairKey) == pour.slice()) {
+            spawnOccupants(level, structure, dims, pour.slice(), pairKey);
+            PortalChunkTerrain.decorationApplied(pairKey);
+        }
+        AsyncPerfLog.debug(PERF_LOGGER, "[portal.pour] pair={} room={} ticks={} rowsMs={} maxRowTickMs={} lastStepMs={} dressMs={} flushed={}",
+            pairKey, structure.roomName(), pour.ticks(), millis(pour.totalNanos()), millis(pour.maxNanos()),
+            millis(rowNanos), millis(System.nanoTime() - started), flushed);
+    }
+
+    private static String millis(long nanos) {
+        return String.format(java.util.Locale.ROOT, "%.1f", nanos / 1_000_000.0);
     }
 
     /**
@@ -136,8 +219,9 @@ public final class PortalChunkDimension {
 
     // ---- writing -------------------------------------------------------------
 
-    private static void write(ServerLevel level, PortalStructure structure, CarriageDims dims,
-                              PortalChunkSlice slice, int pairKey) {
+    /** Write rows {@code fromRow} up to {@code toRow} of the room's box from {@code slice}. */
+    private static void writeRows(ServerLevel level, PortalStructure structure, CarriageDims dims,
+                                  PortalChunkSlice slice, int fromRow, int toRow) {
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos origin = structure.roomOrigin(dims, layout);
         Vec3i size = structure.roomSize();
@@ -158,7 +242,7 @@ public final class PortalChunkDimension {
         // skin one block outside it — so the chunk runs all 16 blocks to the sky. Where the end
         // column is open, the mouth's seal ring falls back to that same skin rather than to the
         // floor row (PortalCarriageBuilder#sealFillFor), so an open face still seals with sky.
-        for (int y = 0; y < size.getY(); y++) {
+        for (int y = fromRow; y < toRow; y++) {
             for (int z = 0; z < size.getZ() && z < slice.width(); z++) {
                 for (int x = 0; x < size.getX() && x < slice.width(); x++) {
                     // Null for a row the cube does not reach. Those rows keep whatever the template
@@ -176,9 +260,19 @@ public final class PortalChunkDimension {
                 }
             }
         }
+    }
+
+    /** What goes over the terrain once it is all down: the frame, the doorways, the biomes. */
+    private static void dress(ServerLevel level, PortalStructure structure, CarriageDims dims,
+                              PortalChunkSlice slice, int pairKey) {
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+        BlockPos origin = structure.roomOrigin(dims, layout);
+        Vec3i size = structure.roomSize();
+        PortalCorridorMask mask = PortalCarriageBuilder.corridorMask(structure, dims);
+        int shift = copyShift(structure, dims, size);
 
         // Before the doorways: the frame's inner layer is written over the terrain's edge row, and
-        // a rewrite of the terrain (the decoration pass) would otherwise bury it.
+        // the doorways are cut through it.
         frame(level, structure, dims, pairKey);
 
         openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.ENTRY);
@@ -255,6 +349,7 @@ public final class PortalChunkDimension {
      */
     public static void clear() {
         POPULATED.clear();
+        POURS.clear();
     }
 
     /**
