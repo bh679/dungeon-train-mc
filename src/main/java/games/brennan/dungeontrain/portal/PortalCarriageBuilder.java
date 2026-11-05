@@ -28,6 +28,8 @@ import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.StagePlacementScope;
+import games.brennan.dungeontrain.util.AsyncPerfLog;
+import games.brennan.dungeontrain.util.DtLogging;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -105,6 +107,7 @@ import java.util.Set;
 public final class PortalCarriageBuilder {
 
     private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+    private static final org.slf4j.Logger PERF_LOGGER = org.slf4j.LoggerFactory.getLogger(DtLogging.PERF);
 
     /** Asks for a column {@link #footprintReady} is waiting on; restated each tick it still waits. */
     private static final TicketType<ChunkPos> STAMP_WAIT_TICKET =
@@ -1005,6 +1008,7 @@ public final class PortalCarriageBuilder {
         PortalCarriageLayout layout = layoutFor(dims, structure.kind());
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         Vec3i roomSize = structure.roomSize();
+        long startedAt = System.nanoTime();
 
         if (structure.stampsFromBlob()) {
             // A drifted copy, or this world's own room carried across a relocation: laid as
@@ -1031,15 +1035,7 @@ public final class PortalCarriageBuilder {
         // they are down, which is the other half of the same shell; the endless modes settle its own
         // side walls, which for Endless Open means taking them away so there is somewhere to walk
         // out to. Void writes nothing around the room at all and sweeps the space instead.
-        // A generated room fills the box the template just laid before anything is wrapped around
-        // it: the skin is written one column outside the room, so the two never touch, but the order
-        // keeps "what the room turned out to be" true for the mode branch below.
-        // Not over a captured room: the blob already holds the terrain as it was left, and re-laying
-        // the sample would put back every ore a player mined out of it.
-        if (structure.mode().generatesTerrain() && !structure.stampsFromBlob()) {
-            PortalChunkDimension.fill(level, structure, dims, pairKey);
-        }
-
+        long roomAt = System.nanoTime();
         if (structure.mode().sealsRoomBox()) {
             bedrockSkin(level, roomOrigin, roomSize, lockStateFor(structure));
         } else if (structure.mode().clearsSurroundings()) {
@@ -1048,6 +1044,7 @@ public final class PortalCarriageBuilder {
             PortalRoomTiler.refreshFacesAround(level, dims, structure, PortalRoomTiling.Tile.BASE);
         }
 
+        long skinAt = System.nanoTime();
         stampCorridors(level, structure, dims, pairKey);
 
         // After the corridors, unlike the room's own skin, and necessarily so: this shell sits one
@@ -1062,11 +1059,27 @@ public final class PortalCarriageBuilder {
                 PortalCarriageRole.EXIT, roomOrigin, roomSize, lock);
         }
 
-        // Last of all: a chunk dimension's frame stands where the skin, the mouth seals and the
-        // corridor rings were just laid, and dresses them — see ChunkFramePlacer.
-        if (structure.mode().generatesTerrain()) {
+        long corridorsAt = System.nanoTime();
+
+        // A generated room's terrain, then its frame, which dresses the skin, the mouth seals and the
+        // corridor rings just laid (see ChunkFramePlacer). Poured over the next few ticks, so the
+        // frame comes after the terrain's last row. Not over a captured room: the blob already holds
+        // the terrain as it was left, and re-laying the sample would put back every ore a player mined
+        // out of it. It and a room with no sample only want the frame, which they get now.
+        boolean poured = structure.mode().generatesTerrain() && !structure.stampsFromBlob()
+            && PortalChunkDimension.beginPour(level, structure, pairKey);
+        if (structure.mode().generatesTerrain() && !poured) {
             PortalChunkDimension.frame(level, structure, dims, pairKey);
         }
+
+        long endedAt = System.nanoTime();
+        AsyncPerfLog.debug(PERF_LOGGER, "[portal.stamp] pair={} room={} mode={} roomMs={} skinMs={} corridorsMs={} restMs={} totalMs={} poured={}",
+            pairKey, structure.roomName(), structure.mode().name(), stampMillis(roomAt - startedAt), stampMillis(skinAt - roomAt),
+            stampMillis(corridorsAt - skinAt), stampMillis(endedAt - corridorsAt), stampMillis(endedAt - startedAt), poured);
+    }
+
+    private static String stampMillis(long nanos) {
+        return String.format(java.util.Locale.ROOT, "%.1f", nanos / 1_000_000.0);
     }
 
     /**

@@ -433,6 +433,8 @@ public final class PortalTestCommand {
         games.brennan.dungeontrain.train.StagePlacementScope.run(
             PortalCarriageBuilder.stageIdFor(overworld, PortalTestSession.PAIR_KEY, dims),
             () -> PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, PortalTestSession.PAIR_KEY));
+        // The author is about to be stood in it.
+        games.brennan.dungeontrain.portal.PortalChunkDimension.finishPour(overworld, dims, PortalTestSession.PAIR_KEY, structure);
 
         if (previous != GameType.CREATIVE) player.setGameMode(GameType.CREATIVE);
 
