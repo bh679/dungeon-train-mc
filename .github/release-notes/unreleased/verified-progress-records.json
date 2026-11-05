@@ -1,0 +1,17 @@
+{
+  "id": "verified-progress-records",
+  "version": "0.1665.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "advancements"
+  ],
+  "title": "Progress record check",
+  "summary": "Your saved progress is now checked before it counts toward records. Progress the game cannot vouch for is still kept and shown, but it no longer earns a first-ever record or a leaderboard time.",
+  "highlights": [],
+  "pr": 2491,
+  "date": "2026-11-05",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
