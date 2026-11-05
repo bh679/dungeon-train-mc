@@ -1,0 +1,17 @@
+{
+  "id": "end-gateway-band-return",
+  "version": "0.1681.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "world"
+  ],
+  "title": "Gateway fix",
+  "summary": "Gateways found along the journey no longer throw you back to its very start. They now lead somewhere much closer, and you can come back the same way.",
+  "highlights": [],
+  "pr": 2510,
+  "date": "2026-11-05",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
