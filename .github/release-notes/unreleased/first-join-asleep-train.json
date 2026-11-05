@@ -1,0 +1,20 @@
+{
+  "id": "first-join-asleep-train",
+  "version": "0.1665.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "multiplayer"
+  ],
+  "title": "New players no longer miss the train when joining a server",
+  "summary": "Joining a server for the first time now puts you on the train even when it is far away, and you no longer wait on a long loading screen if it can't be reached.",
+  "highlights": [],
+  "addresses": [
+    "train_vanished"
+  ],
+  "pr": 2489,
+  "date": "2026-11-05",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
