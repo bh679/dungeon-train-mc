@@ -10,6 +10,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class LiveViewerClientConfigTest {
 
     @Test
+    void streamVolumeStartsAtFullSoNobodysTvsChangeLoudness() {
+        assertEquals(100, LiveViewerClientConfig.STREAM_VOLUME_DEFAULT);
+        assertEquals(100, LiveViewerClientConfig.STREAM_VOLUME_PERCENT.getDefault());
+        assertEquals(100, LiveViewerClientConfig.streamVolumePercent(), "the same before the config loads");
+    }
+
+    @Test
     void mutedStreamersRoundTripAndSkipBadEntries() {
         List<Muted> muted = List.of(new Muted("0123456789abcdef0123456789abcdef", "Alex"), new Muted(null, "Bo"));
         List<String> stored = LiveViewerClientConfig.serialize(muted);

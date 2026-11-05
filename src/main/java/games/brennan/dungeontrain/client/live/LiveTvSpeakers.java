@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.vista.TvGrid;
 import games.brennan.dungeontrain.compat.vista.TvItems;
+import games.brennan.dungeontrain.config.LiveViewerClientConfig;
 import net.mehvahdjukaar.vista.common.tv.TVBlockEntity;
 import net.mehvahdjukaar.vista.configs.ClientConfigs;
 import net.mehvahdjukaar.vista.integration.sable.SableCompatClient;
@@ -40,7 +41,7 @@ import java.util.Map;
  * ending it and starting another. Each TV's sound is one {@link LiveSpeakerSound} for as long as it plays,
  * ended exactly once; a sound the engine refuses is never counted as playing. Vista's audio mode OFF silences them all; its default, REQUIRE_SPEAKER (a note block
  * beside the TV), is not asked of a Live Feed TV — almost no TV on the train has one, and the stream's
- * sound is the point of tuning in. Loudness is Vista's TV volume, then the Blocks slider, fading with
+ * sound is the point of tuning in. Loudness is the Stream volume slider, Vista's TV volume, then the Blocks slider, fading with
  * distance over the TV's own hearing range ({@link LiveSpeakerRange}: 4.5 blocks for a lone TV, 9 for a
  * 4x4, 1.5 more per extra TV a side), which this class applies itself each tick in place of Minecraft's fixed per-event
  * rolloff; a TV past its range is not a candidate at all.</p>
@@ -137,7 +138,9 @@ public final class LiveTvSpeakers {
             return;
         }
         // Streaming: never (echo). Master or Blocks at zero: Minecraft would refuse every start, so don't ask.
+        // Stream volume at zero: nothing to hear, so no sound channel is held for it.
         boolean mayPlay = !LiveStreamController.get().streaming()
+            && LiveViewerClientConfig.streamVolumePercent() > 0
             && mc.options.getSoundSourceVolume(SoundSource.MASTER) > 0 && mc.options.getSoundSourceVolume(SoundSource.BLOCKS) > 0;
         LiveFeedSource.Hearing flatHearing = mayPlay ? flatHearing(mc) : null;
         if (flatHearing != null && !mayHear(flatHearing)) flatHearing = null;
@@ -264,7 +267,7 @@ public final class LiveTvSpeakers {
     }
 
     private static float volume(LiveFeedSource.Hearing h) {
-        float base = ClientConfigs.AUDIO_VOLUME.get().floatValue();
+        float base = ClientConfigs.AUDIO_VOLUME.get().floatValue() * LiveViewerClientConfig.streamVolumePercent() / 100f;
         return h.replay() ? base * REPLAY_VOLUME : base;
     }
 
