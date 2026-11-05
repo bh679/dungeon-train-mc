@@ -33538,6 +33538,23 @@
       "released": true,
       "released_in": "v0.1679.0",
       "released_at": "2026-11-05T13:28:55Z"
+    },
+    {
+      "id": "nether-portal-fix",
+      "version": "0.1680.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Nether portal fix",
+      "summary": "A small fix to Nether portals.",
+      "highlights": [],
+      "pr": 2508,
+      "date": "2026-11-05",
+      "released": true,
+      "released_in": "v0.1680.0",
+      "released_at": "2026-11-05T16:23:03Z"
     }
   ]
 }
