@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.config.EndBandConfig;
 import games.brennan.dungeontrain.util.LogFirstN;
 import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -126,7 +127,12 @@ public final class EndBandStructures {
             try {
                 if (!set.value().placement().isStructureChunk(state, at.x, at.z)) continue;
                 Placed placed = pick(set.value(), end, noise, random, biomes, state.getLevelSeed(), at);
-                if (placed != null) out.add(placed);
+                if (placed != null) {
+                    out.add(placed);
+                    LOGGER.debug("[DungeonTrain] End-band start {} at End chunk {}, box {}",
+                            end.registryAccess().registryOrThrow(Registries.STRUCTURE).getKey(placed.structure()), at,
+                            placed.start().getBoundingBox());
+                }
             } catch (Throwable t) {
                 SITE_ERRORS.error(LOGGER, "[DungeonTrain] End-band structure failed at " + at + "; skipping it", t);
             }

@@ -99,8 +99,6 @@ public final class EndBandSampler {
     private static final Map<BiomeSource, Boolean> CARVERS = new ConcurrentHashMap<>();
     /** Undecorated End ground shared between samples under {@code endBandFeatureSpill} ({@link #sampleWithSpill}). */
     private static final EndBandGroundCache<ProtoChunk> GROUND = new EndBandGroundCache<>(EndBandGroundCache.DEFAULT_CAP);
-    /** Top End Y copied when structures are on: End cities and mountains stand well above the islands' {@link EndIslandGeometry#END_Y_SAMPLE_MAX}. */
-    static final int STRUCTURE_Y_MAX = 200;
 
     /**
      * How a sample's ground is filled: {@link OfflineChunkSampler#fillGround} joins the noise future from a
@@ -404,10 +402,14 @@ public final class EndBandSampler {
         return out;
     }
 
-    /** Copy the End's island band out of the sample, shifted onto track level; {@code structures} when it may hold any. */
+    /**
+     * Copy the End's island band out of the sample, shifted onto track level; {@code structures} when it may
+     * hold any, whose End cities and mountains stand well above the islands' {@link EndIslandGeometry#END_Y_SAMPLE_MAX},
+     * so the copy runs to the End's ceiling.
+     */
     private static Result copyOut(ServerLevel end, ProtoChunk ground, ChunkPos pos, ChunkPos endPos, int bedY,
                                   int displayMinY, int displayMaxY, boolean structures) {
-        int topEndY = structures && EndBandConfig.structures() ? STRUCTURE_Y_MAX : EndIslandGeometry.END_Y_SAMPLE_MAX;
+        int topEndY = structures && EndBandConfig.structures() ? end.getMaxBuildHeight() - 1 : EndIslandGeometry.END_Y_SAMPLE_MAX;
         int minY = Math.max(displayMinY, EndBandStyle.displayY(EndIslandGeometry.END_Y_SAMPLE_MIN, bedY));
         int maxY = Math.min(displayMaxY - 1, EndBandStyle.displayY(topEndY, bedY));
         if (maxY < minY) return null;
