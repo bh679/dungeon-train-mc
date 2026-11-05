@@ -302,7 +302,8 @@ def pinned_ids(packages=False):
 # Ids embedded in Dungeon Train's own jar get their package knowledge from the jarJar jars at
 # build time (gradle/approved-mods.gradle), so --check does not call them blind.
 EMBEDDED_IDS_HINT = {"keeptrim", "dungeonbackup", "sable_fence_trapdoor_fix", "streamdetect", "dpibypassdetect",
-                     "pigmanvillagers", "lostcityterrainfit", "discordpresence", "ediblebackpacks", "dtmodverify"}
+                     "pigmanvillagers", "lostcityterrainfit", "discordpresence", "ediblebackpacks", "dtmodverify",
+                     "sablemobpaths"}
 
 
 def load_output():
