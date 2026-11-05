@@ -1,12 +1,17 @@
 package games.brennan.dungeontrain.portal;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -14,9 +19,16 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.AABB;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.LongPredicate;
 
 /**
  * Deleting a portal structure's blocks: silently, without dropping anything, and cheaply.
@@ -47,10 +59,27 @@ import java.util.List;
  * async light worker reading it can throw. A structure is only ever erased in the neighbourhood that
  * stamped it, and the {@code getChunkNow} guard falls back to the (slower, relighting) silent path
  * rather than dropping a write.</p>
+ *
+ * <p><b>That fallback blocks the whole server.</b> {@code Level.getBlockState} on a chunk still
+ * generating parks the server thread until it is done (see {@code ChunkColumnCache} for why
+ * {@code getChunkNow} is the only guard that means anything). Two ways round it, and which applies is
+ * not a detail: a clear with a stamp behind it must happen before that stamp, so its caller waits for
+ * the chunks ({@code PortalRoomTiler.chunksLoaded}, {@code PortalCarriageBuilder.footprintReady}); a
+ * clear with nothing behind it can happen later, through {@link #clearBoxDeferring}. A clear that
+ * still finds a column missing has come from an editor or test command, where a brief load is
+ * acceptable, and takes the fallback.</p>
  */
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PortalClear {
 
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
+
+    /** Chunks asked about per tick; the backlog is normally empty, and a lookup is one hash probe. */
+    private static final int BACKLOG_LOOKUPS_PER_TICK = 64;
+    /** Columns cleared per tick, so a burst of chunks finishing together spreads over a few ticks. */
+    private static final int BACKLOG_CHUNKS_PER_TICK = 4;
+
+    private static final Map<ResourceKey<Level>, PortalClearBacklog<PortalCorridorMask>> BACKLOGS = new HashMap<>();
 
     private PortalClear() {}
 
@@ -116,6 +145,7 @@ public final class PortalClear {
             }
         }
         discardLooseItems(level, box);
+        settleBacklog(level, box);
         return changed;
     }
 
@@ -126,6 +156,27 @@ public final class PortalClear {
      * @return how many cells actually changed — everything else was already air
      */
     public static int clearBox(ServerLevel level, BoundingBox box, PortalCorridorMask mask) {
+        int cleared = clearBoxInner(level, box, mask, false);
+        settleBacklog(level, box);
+        return cleared;
+    }
+
+    /**
+     * {@link #clearBox}, except a column that is not ready is queued and cleared once it is, rather
+     * than blocking the server until it has generated.
+     *
+     * <p><b>Only for a clear with nothing stamped behind it.</b> Anything written into a column while
+     * its clear is still waiting would be deleted when the clear runs. The stamps themselves are safe
+     * from this: they begin with a clear of their own box, which {@link #settleBacklog settles} what is
+     * waiting there first. The queue is not saved; a clear still waiting at a restart is lost, which
+     * this method's one caller can accept (see {@code PortalCarriageBuilder.clearVoidAround}).</p>
+     */
+    static void clearBoxDeferring(ServerLevel level, BoundingBox box, PortalCorridorMask mask) {
+        clearBoxInner(level, box, mask, true);
+        settleBacklog(level, box);
+    }
+
+    private static int clearBoxInner(ServerLevel level, BoundingBox box, PortalCorridorMask mask, boolean defer) {
         int[] cleared = {0};
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         // Cells that were emitting light: the only ones whose removal a section write leaves visibly
@@ -135,6 +186,11 @@ public final class PortalClear {
         forEachSpan(box, level.getMinBuildHeight(), level.getMaxBuildHeight() - 1,
             (minX, minY, minZ, maxX, maxY, maxZ) -> {
                 LevelChunk chunk = level.getChunkSource().getChunkNow(minX >> 4, minZ >> 4);
+                if (chunk == null && defer) {
+                    BACKLOGS.computeIfAbsent(level.dimension(), key -> new PortalClearBacklog<>())
+                        .add(new BoundingBox(minX, minY, minZ, maxX, maxY, maxZ), mask);
+                    return;
+                }
                 if (chunk == null) {
                     cleared[0] += clearSpanUnloaded(level, pos, mask, minX, minY, minZ, maxX, maxY, maxZ);
                     return;
@@ -221,9 +277,10 @@ public final class PortalClear {
     }
 
     /**
-     * The fallback for a column that is not loaded: correct, relighting, and slow. Reached only if a
-     * structure's own chunks have gone while it was still standing, which the approach range makes
-     * rare — but dropping the write instead would leave blocks behind that nothing would ever sweep.
+     * The fallback for a column that is not loaded: correct, relighting, and slow, since it blocks
+     * until the column has generated. Reached if a structure's own chunks have gone while it was still
+     * standing, or from a command, both rare — but dropping the write instead would leave blocks behind
+     * that nothing would ever sweep.
      */
     private static int clearSpanUnloaded(ServerLevel level, BlockPos.MutableBlockPos pos,
                                          PortalCorridorMask mask,
@@ -241,6 +298,41 @@ public final class PortalClear {
             }
         }
         return changed;
+    }
+
+    /**
+     * Run what is waiting on the ready chunks around {@code box}, one block wider because a stamp's
+     * shell stands one column outside its room. Called after every clear and so ahead of every stamp,
+     * which is what guarantees a waiting clear lands before a stamp and never on top of one.
+     */
+    private static void settleBacklog(ServerLevel level, BoundingBox box) {
+        PortalClearBacklog<PortalCorridorMask> backlog = BACKLOGS.get(level.dimension());
+        if (backlog == null || backlog.isEmpty()) return;
+        run(level, backlog.takeReadyTouching(box.inflatedBy(1), readyIn(level.getChunkSource())));
+    }
+
+    @SubscribeEvent
+    public static void onLevelTick(LevelTickEvent.Post event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        PortalClearBacklog<PortalCorridorMask> backlog = BACKLOGS.get(level.dimension());
+        if (backlog == null || backlog.isEmpty()) return;
+        run(level, backlog.takeReady(readyIn(level.getChunkSource()),
+            BACKLOG_LOOKUPS_PER_TICK, BACKLOG_CHUNKS_PER_TICK));
+    }
+
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        BACKLOGS.clear();
+    }
+
+    private static LongPredicate readyIn(ServerChunkCache chunks) {
+        return key -> chunks.getChunkNow(ChunkPos.getX(key), ChunkPos.getZ(key)) != null;
+    }
+
+    private static void run(ServerLevel level, List<PortalClearBacklog.Entry<PortalCorridorMask>> entries) {
+        for (PortalClearBacklog.Entry<PortalCorridorMask> entry : entries) {
+            clearBoxInner(level, entry.box(), entry.mask(), true);
+        }
     }
 
     /**
