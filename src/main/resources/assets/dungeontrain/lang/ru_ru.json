@@ -241,7 +241,7 @@
   "gui.dungeontrain.difficulty_confirm.body_run": "Каждая сложность это отдельный забег со своими достижениями и статистикой.",
   "gui.dungeontrain.difficulty_confirm.restart_dies": "Перезапуск сейчас завершит этот забег на %s — вы умрёте, и начнётся новый мир.",
   "gui.dungeontrain.difficulty_confirm.loss_run": "Инвентарь, опыт и сундук Края остаются на этой сложности; у новой будут свои.",
-  "gui.dungeontrain.difficulty_confirm.stats": "Достижения и статистика ведутся отдельно для каждой сложности.",
+  "gui.dungeontrain.difficulty_confirm.stats": "Достижения, статистика и перки ведутся отдельно для каждой сложности.",
   "gui.dungeontrain.difficulty_confirm.next_run": "Сохранить на след. забег",
   "gui.dungeontrain.difficulty_confirm.restart_now": "Бросить забег и начать заново",
   "chat.dungeontrain.difficulty_next_run": "Следующий забег начнётся на %s. Этот продолжается как есть.",

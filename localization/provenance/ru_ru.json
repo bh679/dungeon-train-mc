@@ -241,7 +241,7 @@
   "gui.dungeontrain.difficulty_confirm.body_run": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "8bcfb3a4bc0cd6de"},
   "gui.dungeontrain.difficulty_confirm.restart_dies": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "651e00c7607abff7"},
   "gui.dungeontrain.difficulty_confirm.loss_run": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "2d2c26a371fea0a9"},
-  "gui.dungeontrain.difficulty_confirm.stats": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "7a597c870dc916a0"},
+  "gui.dungeontrain.difficulty_confirm.stats": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "19860efff2c38032"},
   "gui.dungeontrain.difficulty_confirm.next_run": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "409fa631cb829705"},
   "gui.dungeontrain.difficulty_confirm.restart_now": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "7e0d92500660e797"},
   "chat.dungeontrain.difficulty_next_run": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "b4f924fd38cd9fd9"},

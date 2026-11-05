@@ -48,7 +48,10 @@ right now (`perks/PerkPointEvents#recompute`), and `available = max(0, earned - 
 - existing players are credited for everything they already earned, on their first login after
   this ships, silently (no chat line);
 - a revoked advancement lowers `earned`; the balance clamps at 0 and no unlocked perk is taken back;
-- each difficulty keeps its own advancement profile, so each shows its own total.
+- each difficulty keeps its own advancement profile, so each shows its own total, and its own
+  unlocks: `perks/PerkProfiles` saves them per difficulty in `dungeontrain/perks/<uuid>.dat`, across
+  worlds. A difficulty change also parks active ranks and apple points until the player switches back.
+  Free Play purchases are not saved, like Free Play advancements.
 
 Earns only mark the player dirty; the next player tick recomputes once, so a login replay of
 hundreds of earns costs one pass. A genuine earn prints `+N Advancement Points (M unspent)`.

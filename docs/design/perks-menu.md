@@ -70,10 +70,9 @@ recap, and it only unlocks.
   Skip (top right) or Esc opens the recap; closing to the game is not possible while dead. Once an unlock
   made in this menu leaves no Advancement Points, Next replaces the Unlock tab, centred on the bar's top
   edge, and Skip goes. Arriving with no points and spending none keeps Skip and the grey tab.
-- **Unlocks travel with Board anew.** Unlocks live on the player in the world's save, so
-  `DeathScreenLayoutHandler.launchWorld` captures them (`player/PendingPerks`) and
-  `perks/PerkCarryEvents` lands them on the new world's first login, on the same difficulty profile
-  only (Advancement Points are earned per profile).
+- **Unlocks follow the player, per difficulty.** `perks/PerkProfiles` saves them for each difficulty
+  outside the world (`dungeontrain/perks/<uuid>.dat`), so Board anew and any new world find them on
+  login (Advancement Points are earned per difficulty too). Free Play purchases stay in that world.
 
 ## 1. What the game copies from the web page
 

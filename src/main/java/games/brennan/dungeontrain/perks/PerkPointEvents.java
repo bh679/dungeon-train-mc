@@ -42,6 +42,11 @@ public final class PerkPointEvents {
 
     private PerkPointEvents() {}
 
+    /** Recount on the next tick without announcing a gain; a pending genuine earn still announces. */
+    static void markDirtySilently(ServerPlayer player) {
+        DIRTY.merge(player.getUUID(), true, (a, b) -> a && b);
+    }
+
     @SubscribeEvent
     public static void onEarn(AdvancementEvent.AdvancementEarnEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
