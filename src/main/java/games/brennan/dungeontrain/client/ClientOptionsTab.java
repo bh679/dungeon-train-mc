@@ -72,6 +72,24 @@ public enum ClientOptionsTab {
         return active;
     }
 
+    /** The tab named {@code name}, or null: a chat link's segment ({@code LiveOptionsCommand}). */
+    @org.jetbrains.annotations.Nullable
+    public static ClientOptionsTab tabNamed(String name) {
+        for (ClientOptionsTab tab : values()) {
+            if (tab.name().equals(name)) return tab;
+        }
+        return null;
+    }
+
+    /** The row named {@code name}, or null: a chat link's segment ({@code LiveOptionsCommand}). */
+    @org.jetbrains.annotations.Nullable
+    public static Row rowNamed(String name) {
+        for (Row row : Row.values()) {
+            if (row.name().equals(name)) return row;
+        }
+        return null;
+    }
+
     public static void select(ClientOptionsTab tab) {
         if (tab != null) active = tab;
     }
