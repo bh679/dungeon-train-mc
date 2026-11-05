@@ -24,8 +24,8 @@ import java.util.Set;
  * BetterNether, BetterEnd and Deeper Darker, then anything else; alphabetical within each.
  *
  * <p>Five Biomes O' Plenty biomes are so rare that riding every one of them was the wall at the end, so
- * Terra Omnia asks for only {@link #RARE_NEEDED} of the {@link #RARE} ones. Coffee Table Book still wants a
- * photo in all of them ({@link #holdsEvery}).</p>
+ * Terra Omnia asks for only {@link #RARE_NEEDED} of the {@link #RARE} ones. Coffee Table Book wants a photo in
+ * {@link #COFFEE_TABLE_RARE_NEEDED} of them ({@link #isCoffeeTableComplete}).</p>
  */
 public final class TerraOmnia {
 
@@ -78,6 +78,9 @@ public final class TerraOmnia {
     /** How many of {@link #RARE} Terra Omnia asks for. */
     public static final int RARE_NEEDED = 2;
 
+    /** How many of {@link #RARE} Coffee Table Book asks for a photo in. */
+    public static final int COFFEE_TABLE_RARE_NEEDED = 4;
+
     private static final int OVERWORLD = 0;
     private static final int NETHER = 1;
     private static final int END = 2;
@@ -100,21 +103,35 @@ public final class TerraOmnia {
         return isComplete(ridden, ordered(registry).keySet());
     }
 
-    /** Whether {@code have} holds every biome in {@code all}, the rare ones included. An empty {@code all} holds nothing. */
-    public static boolean holdsEvery(Set<ResourceLocation> have, Collection<ResourceLocation> all) {
-        return !all.isEmpty() && have.containsAll(all);
+    /**
+     * Whether {@code have} finishes Coffee Table Book over {@code all}: every biome outside {@link #RARE}, and
+     * {@link #COFFEE_TABLE_RARE_NEEDED} of the rare ones {@code all} holds (all of them when it holds fewer). An
+     * empty {@code all} completes nothing.
+     */
+    public static boolean isCoffeeTableComplete(Set<ResourceLocation> have, Collection<ResourceLocation> all) {
+        Progress p = coffeeTableProgress(have, all);
+        return p.needed() > 0 && p.counted() >= p.needed();
     }
 
-    /** Whether {@code have} holds every biome Terra Omnia lists in {@code registry}, the rare ones included. */
-    public static boolean holdsEvery(Set<ResourceLocation> have, Registry<Biome> registry) {
-        return holdsEvery(have, ordered(registry).keySet());
+    /** Whether {@code have} finishes Coffee Table Book over the biomes Terra Omnia lists in {@code registry}. */
+    public static boolean isCoffeeTableComplete(Set<ResourceLocation> have, Registry<Biome> registry) {
+        return isCoffeeTableComplete(have, ordered(registry).keySet());
     }
 
-    /** Terra Omnia's count: biomes that count toward it out of how many it needs. */
+    /** A biome count: biomes that count toward the advancement out of how many it needs. */
     public record Progress(int counted, int needed) {}
 
     /** The rare biomes count only up to {@link #RARE_NEEDED}; every other biome in {@code all} counts once. Pure. */
     public static Progress progress(Set<ResourceLocation> ridden, Collection<ResourceLocation> all) {
+        return progress(ridden, all, RARE_NEEDED);
+    }
+
+    /** The rare biomes count only up to {@link #COFFEE_TABLE_RARE_NEEDED}; every other biome in {@code all} counts once. Pure. */
+    public static Progress coffeeTableProgress(Set<ResourceLocation> have, Collection<ResourceLocation> all) {
+        return progress(have, all, COFFEE_TABLE_RARE_NEEDED);
+    }
+
+    private static Progress progress(Set<ResourceLocation> ridden, Collection<ResourceLocation> all, int rareWanted) {
         int common = 0;
         int commonRidden = 0;
         int rare = 0;
@@ -129,7 +146,7 @@ public final class TerraOmnia {
                 if (held) commonRidden++;
             }
         }
-        int rareNeeded = Math.min(RARE_NEEDED, rare);
+        int rareNeeded = Math.min(rareWanted, rare);
         return new Progress(commonRidden + Math.min(rareRidden, rareNeeded), common + rareNeeded);
     }
 

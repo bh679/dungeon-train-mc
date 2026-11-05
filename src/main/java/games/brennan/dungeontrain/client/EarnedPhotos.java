@@ -244,7 +244,7 @@ public final class EarnedPhotos {
     /**
      * Every slot of {@code advancement}'s album: the photos this run counts, then an empty slot
      * ({@code file} null) for each still missing. A creature collection lists its criteria in order; a
-     * biome tier asks for its target number, Coffee Table Book for every biome there is. A count tier
+     * biome tier asks for its target number, Coffee Table Book for the biomes it wants. A count tier
      * lists only the photos kept, never its missing ones ({@link #countSlots}).
      */
     static List<Entry> albumSlots(ResourceLocation advancement, AdvancementProgress progress,
@@ -255,8 +255,8 @@ public final class EarnedPhotos {
         if (kind == EarnedPhotoAlbumScreen.Kind.BIOME) {
             Set<ResourceLocation> every = everyBiome(advancement);
             for (Entry e : visible) if (every == null || every.contains(e.id())) out.add(e);
-            int target = every != null ? every.size() : biomeTarget(advancement);
-            for (int i = out.size(); i < target; i++) out.add(new Entry(null, null));
+            int missing = every != null ? missingFromEveryBiome(out, every) : biomeTarget(advancement) - out.size();
+            for (int i = 0; i < missing; i++) out.add(new Entry(null, null));
             return out;
         }
         Map<String, Entry> byId = new LinkedHashMap<>();
@@ -286,6 +286,14 @@ public final class EarnedPhotos {
     private static int biomeTarget(ResourceLocation advancement) {
         Integer target = EnchiridionAdvancements.BIOME_TIER_TARGETS.get(advancement.getPath());
         return target != null ? target : 0;
+    }
+
+    /** Coffee Table Book's empty slots: a rare photo past the number it wants stays in the album but fills none. */
+    private static int missingFromEveryBiome(List<Entry> photos, Set<ResourceLocation> every) {
+        Set<ResourceLocation> have = new java.util.HashSet<>();
+        photos.forEach(e -> have.add(e.id()));
+        TerraOmnia.Progress progress = TerraOmnia.coffeeTableProgress(have, every);
+        return progress.needed() - progress.counted();
     }
 
     /**

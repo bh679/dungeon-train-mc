@@ -284,35 +284,36 @@ public final class PhotoAdvancementEvents {
 
     /**
      * A new biome's line in chat: the next biome tier it counts toward. Coffee Table Book counts only
-     * the biomes Terra Omnia asks for, so a biome outside that list moves nothing once it is the next tier.
+     * the biomes it asks for, so a biome outside that list, or a rare one past the number it wants, moves
+     * nothing once it is the next tier.
      */
     private static void noteBiomeTier(ServerPlayer player, ListTag photographed, ResourceLocation biome) {
         Set<ResourceLocation> wanted = TerraOmnia.ordered(player.registryAccess().registryOrThrow(Registries.BIOME)).keySet();
+        Set<ResourceLocation> have = biomeIds(photographed);
+        Set<ResourceLocation> before = new HashSet<>(have);
+        before.remove(biome);
+        TerraOmnia.Progress progress = TerraOmnia.coffeeTableProgress(have, wanted);
+        boolean moved = progress.counted() > TerraOmnia.coffeeTableProgress(before, wanted).counted();
         String everyBiome = EnchiridionAdvancements.BIOME_TIER_ORDER.get(EnchiridionAdvancements.BIOME_TIER_ORDER.size() - 1);
         PhotoProgressNotice.noteNextTier(player, EnchiridionAdvancements.BIOME_TIER_ORDER,
-                tier -> tier.equals(everyBiome) ? countWanted(photographed, wanted) : photographed.size(),
+                tier -> tier.equals(everyBiome) ? progress.counted() : photographed.size(),
                 tier -> tier.equals(everyBiome)
-                        ? (wanted.contains(biome) ? wanted.size() : 0)
+                        ? (moved ? progress.needed() : 0)
                         : EnchiridionAdvancements.BIOME_TIER_TARGETS.getOrDefault(tier, 0));
     }
 
-    private static int countWanted(ListTag photographed, Set<ResourceLocation> wanted) {
-        int n = 0;
-        for (Tag t : photographed) {
-            ResourceLocation id = ResourceLocation.tryParse(t.getAsString());
-            if (id != null && wanted.contains(id)) n++;
-        }
-        return n;
-    }
-
-    /** "Coffee Table Book": a photo taken in every biome Terra Omnia asks for ({@link TerraOmnia#ordered}). */
-    private static void checkEveryBiome(ServerPlayer player, ListTag photographed) {
+    private static Set<ResourceLocation> biomeIds(ListTag photographed) {
         Set<ResourceLocation> biomes = new HashSet<>();
         for (Tag t : photographed) {
             ResourceLocation id = ResourceLocation.tryParse(t.getAsString());
             if (id != null) biomes.add(id);
         }
-        if (TerraOmnia.holdsEvery(biomes, player.registryAccess().registryOrThrow(Registries.BIOME))) {
+        return biomes;
+    }
+
+    /** "Coffee Table Book": a photo taken in the biomes it asks for ({@link TerraOmnia#isCoffeeTableComplete}). */
+    private static void checkEveryBiome(ServerPlayer player, ListTag photographed) {
+        if (TerraOmnia.isCoffeeTableComplete(biomeIds(photographed), player.registryAccess().registryOrThrow(Registries.BIOME))) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, PHOTOGRAPHED_EVERY_BIOME);
         }
     }

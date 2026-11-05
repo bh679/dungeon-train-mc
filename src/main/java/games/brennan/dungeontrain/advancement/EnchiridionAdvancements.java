@@ -81,7 +81,7 @@ public final class EnchiridionAdvancements {
     /** The biome tiers share one album of photos, one per biome, kept under the first tier. */
     public static final String BIOME_ALBUM = PATH_PREFIX + "scenic_route";
 
-    /** The biome tiers, lowest first. Coffee Table Book is last: it asks for every biome. */
+    /** The biome tiers, lowest first. Coffee Table Book is last: it asks for every biome, bar one rare one. */
     public static final java.util.List<String> BIOME_TIER_ORDER = java.util.List.of(
             PATH_PREFIX + "scenic_route", PATH_PREFIX + "travel_brochure", PATH_PREFIX + "coffee_table_book");
 
@@ -90,7 +90,7 @@ public final class EnchiridionAdvancements {
     /**
      * How many biomes each photo tier asks for — the album shows that many slots. Kept here because a
      * client never receives criterion conditions; a test pins these to the JSON. Coffee Table Book
-     * (absent) asks for every biome the game has.
+     * (absent) asks for the biomes {@link TerraOmnia#isCoffeeTableComplete} counts.
      */
     public static final java.util.Map<String, Integer> BIOME_TIER_TARGETS = java.util.Map.of(
             PATH_PREFIX + "scenic_route", 30, PATH_PREFIX + "travel_brochure", 60);

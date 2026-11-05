@@ -137,12 +137,27 @@ final class TerraOmniaTest {
     }
 
     @Test
-    @DisplayName("Coffee Table Book's check still needs every biome, all five rare ones included")
-    void holdsEveryStaysStrict() {
+    @DisplayName("Coffee Table Book: any 4 rare biomes complete it, 3 do not; the rest are all still needed")
+    void coffeeTableFourOfFiveRare() {
+        List<ResourceLocation> common = List.of(id("minecraft:plains"), id("biomesoplenty:bayou"));
+        List<ResourceLocation> all = new java.util.ArrayList<>(common);
+        all.addAll(RARE);
+        assertTrue(TerraOmnia.isCoffeeTableComplete(with(common, RARE.get(0), RARE.get(1), RARE.get(2), RARE.get(3)), all));
+        assertTrue(TerraOmnia.isCoffeeTableComplete(with(common, RARE.get(1), RARE.get(2), RARE.get(3), RARE.get(4)), all));
+        assertTrue(TerraOmnia.isCoffeeTableComplete(Set.copyOf(all), all));
+        assertFalse(TerraOmnia.isCoffeeTableComplete(with(common, RARE.get(0), RARE.get(1), RARE.get(2)), all));
+        assertFalse(TerraOmnia.isCoffeeTableComplete(Set.copyOf(RARE), all));
+        assertFalse(TerraOmnia.isCoffeeTableComplete(Set.of(), List.of()));
+    }
+
+    @Test
+    @DisplayName("Coffee Table Book's count: a fifth rare biome adds nothing; fewer in the registry are all needed")
+    void coffeeTableProgress() {
         List<ResourceLocation> all = new java.util.ArrayList<>(List.of(id("minecraft:plains")));
         all.addAll(RARE);
-        assertFalse(TerraOmnia.holdsEvery(with(List.of(id("minecraft:plains")), RARE.get(0), RARE.get(1)), all));
-        assertTrue(TerraOmnia.holdsEvery(Set.copyOf(all), all));
-        assertFalse(TerraOmnia.holdsEvery(Set.of(), List.of()));
+        assertEquals(new TerraOmnia.Progress(0, 5), TerraOmnia.coffeeTableProgress(Set.of(), all));
+        assertEquals(new TerraOmnia.Progress(4, 5), TerraOmnia.coffeeTableProgress(Set.copyOf(RARE), all));
+        assertEquals(new TerraOmnia.Progress(5, 5), TerraOmnia.coffeeTableProgress(Set.copyOf(all), all));
+        assertEquals(new TerraOmnia.Progress(1, 2), TerraOmnia.coffeeTableProgress(Set.of(RARE.get(0)), RARE.subList(0, 2)));
     }
 }
