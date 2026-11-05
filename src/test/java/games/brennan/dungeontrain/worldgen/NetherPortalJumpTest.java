@@ -106,16 +106,19 @@ final class NetherPortalJumpTest {
     }
 
     @Test
-    @DisplayName("in a Nether band's mountain approach (before its core) counts as the band before it")
-    void approachBeforeFirstCoreGoesToFirstCore() {
+    @DisplayName("only the core counts as in the Nether: the approach and both crossfades lead into the core")
+    void onlyTheCoreCountsAsInTheNether() {
         Segment c0 = core(0);
         long approach = C.netherPassRange(0)[0] + 1;          // mountain rise: no netherrack yet
         assertFalse(NetherBand.isInNetherBand(C, (int) approach));
         assertTrue(c0.contains(target(approach)));
-        // Already in the netherrack crossfade = "in the Nether": back to the band before it.
-        long crossfade = c0.start() - 10;
-        assertTrue(NetherBand.isInNetherBand(C, (int) crossfade));
-        assertFalse(c0.contains(target(crossfade)));
+        long entering = c0.start() - 10;
+        assertTrue(NetherBand.isInNetherBand(C, (int) entering));
+        assertTrue(c0.contains(target(entering)), "entry crossfade leads into the core");
+        long leaving = c0.end() + 10;
+        assertTrue(NetherBand.isInNetherBand(C, (int) leaving));
+        assertTrue(c0.contains(target(leaving)), "exit crossfade leads back into the core");
+        assertFalse(c0.contains(target(c0.start())), "the core's first column leads out of it");
     }
 
     @Test
@@ -167,15 +170,14 @@ final class NetherPortalJumpTest {
     }
 
     @Test
-    @DisplayName("a Nether-look column always lands outside the Nether, past a split slot's look change too")
-    void everyNetherLookLandsOutsideTheNether() {
+    @DisplayName("a Nether core column always lands outside the Nether, past a split slot's look change too")
+    void everyNetherCoreColumnLandsOutsideTheNether() {
         int sampled = 0;
         for (int pass = 0; pass < 8; pass++) {
             long[] range = C.netherPassRange(pass);
             if (range == null || range[0] > Integer.MAX_VALUE) break;
             for (long x = range[0]; x < range[1] && x < Integer.MAX_VALUE; x += 64L) {
-                if (!NetherBand.isInNetherBand(C, (int) x)
-                    || C.netherLookAt((int) x) == CycleLayout.Style.OTHERSIDE) continue;
+                if (!C.isNetherCore((int) x) || C.netherLookAt((int) x) == CycleLayout.Style.OTHERSIDE) continue;
                 long t = lookTarget(x);
                 assertFalse(NetherBand.isInNetherBand(C, (int) t), "x=" + x + " landed in a Nether at " + t);
                 sampled++;

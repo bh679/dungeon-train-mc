@@ -12,9 +12,12 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.world.NetherPortalLinks;
 import games.brennan.dungeontrain.world.OthersideExitPortal;
+import games.brennan.dungeontrain.world.PortalRoofCap;
 import games.brennan.dungeontrain.worldgen.BandLabel;
 import games.brennan.dungeontrain.worldgen.NetherBand;
+import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import games.brennan.dungeontrain.worldgen.NetherPortalJump;
+import games.brennan.dungeontrain.worldgen.OthersideCore;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
@@ -27,6 +30,7 @@ import net.minecraft.world.level.portal.DimensionTransition;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
+import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -58,6 +62,9 @@ public final class NetherPortalBandJump {
 
     /** Blocks sideways from the track centre a new exit portal is asked for — clear of the rails and tunnels. */
     static final int SIDE_OFFSET = 48;
+
+    /** Rows kept between an exit portal asked for in a core and the top of the core: the frame's own height, plus one. */
+    private static final int EXIT_ROOF_CLEARANCE = 6;
 
     /** Vanilla's private {@code NetherPortalBlock#getExitPortal}, reached through the mixin invoker. */
     @FunctionalInterface
@@ -146,9 +153,9 @@ public final class NetherPortalBandJump {
         BlockPos origin = NetherPortalLinks.frameKey(level, portalPos);
         BlockPos partner = links.partnerOf(level, origin);
         ExitChoice choice = chooseExit(partner != null, onCarriage,
-            partner != null && Shipyards.isInPlotGrid(level, partner));
+            partner != null && (Shipyards.isInPlotGrid(level, partner) || isAboveRoof(level, data, partner)));
         if (choice == ExitChoice.UNLINK_AND_JUMP) {
-            LOGGER.warn("[DungeonTrain] nether portal at x={} by {}: dropped link {} ↔ {} — a frame on a carriage is never paired",
+            LOGGER.warn("[DungeonTrain] nether portal at x={} by {}: dropped link {} ↔ {} — a frame on a carriage or a core's roof is never paired",
                 fromX, who, origin, partner);
             links.unlink(origin);
         }
@@ -167,7 +174,9 @@ public final class NetherPortalBandJump {
             why = "to " + BandLabel.bandAt(level, exit.getX()) + " core";
         }
 
-        DimensionTransition transition = finder.find(level, player, portalPos, exit, false, level.getWorldBorder());
+        BlockPos asked = exit;
+        DimensionTransition transition = PortalRoofCap.under(roofTop(level, data, exit.getX()),
+            () -> finder.find(level, player, portalPos, asked, false, level.getWorldBorder()));
         if (transition == null) {
             LOGGER.warn("[DungeonTrain] nether portal at x={} by {}: no exit portal could be placed near {}", fromX, who, exit);
             return new Outcome(true, null);
@@ -206,13 +215,26 @@ public final class NetherPortalBandJump {
     }
 
     /**
-     * The exit rule: a recorded partner is followed unless either end is a frame on a carriage (a ship-plot
-     * position) — such a link is dropped and the trip band-jumps instead, as it does with no partner.
+     * The exit rule: a recorded partner is followed unless the frame is on a carriage (a ship-plot position) or the
+     * partner is no place to land (on a carriage, or on a core's roof) — such a link is dropped and the trip
+     * band-jumps instead, as it does with no partner.
      */
-    static ExitChoice chooseExit(boolean hasPartner, boolean originOnCarriage, boolean partnerOnCarriage) {
+    static ExitChoice chooseExit(boolean hasPartner, boolean originOnCarriage, boolean partnerUnusable) {
         if (!hasPartner) return ExitChoice.BAND_JUMP;
-        if (originOnCarriage || partnerOnCarriage) return ExitChoice.UNLINK_AND_JUMP;
+        if (originOnCarriage || partnerUnusable) return ExitChoice.UNLINK_AND_JUMP;
         return ExitChoice.LINKED;
+    }
+
+    /** Top Y of the core slab over column {@code x}, under its roof; empty where {@code x} is no core column. */
+    private static OptionalInt roofTop(ServerLevel level, DungeonTrainWorldData data, int x) {
+        if (!WorldGenCycle.fromConfig().isNetherCore(x)) return OptionalInt.empty();
+        int bedY = TrackGeometry.from(data.dims(), data.getTrainY()).bedY();
+        return OptionalInt.of(NetherBand.isOthersideAt(level, x) ? OthersideCore.slabTop(bedY) : NetherCoreGeometry.coreTopY(bedY));
+    }
+
+    private static boolean isAboveRoof(ServerLevel level, DungeonTrainWorldData data, BlockPos frame) {
+        OptionalInt top = roofTop(level, data, frame.getX());
+        return top.isPresent() && frame.getY() > top.getAsInt();
     }
 
     /** Where a new exit portal is asked for in the destination band's core, or null when there is no band to go to. */
@@ -222,7 +244,9 @@ public final class NetherPortalBandJump {
         OptionalLong target = NetherPortalJump.targetX(WorldGenCycle.fromConfig(), x -> BandLabel.bandAt(level, x), fromX,
             kind.target());
         if (target.isEmpty()) return null;
-        return level.getWorldBorder().clampToBounds(target.getAsLong(), player.getY(), sideOfTrack(data, player.getZ()));
+        OptionalInt roof = target.getAsLong() > Integer.MAX_VALUE ? OptionalInt.empty() : roofTop(level, data, (int) target.getAsLong());
+        double y = roof.isPresent() ? Math.min(player.getY(), roof.getAsInt() - EXIT_ROOF_CLEARANCE) : player.getY();
+        return level.getWorldBorder().clampToBounds(target.getAsLong(), y, sideOfTrack(data, player.getZ()));
     }
 
     /** A Nether band column that is the real Nether, not a Deeper Dark. */

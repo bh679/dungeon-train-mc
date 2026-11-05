@@ -16,9 +16,12 @@ import java.util.function.IntFunction;
  *   <li><b>First overworld</b> (before the first Nether core) → the first Nether's core.</li>
  *   <li><b>Any other non-Nether band</b> → back to the <b>previous</b> Nether's core (the last core that
  *       starts at or behind the player).</li>
- *   <li><b>Inside a Nether band</b> → back to the core of the <b>band just before it</b>, whatever its
+ *   <li><b>Inside a Nether core</b> → back to the core of the <b>band just before it</b>, whatever its
  *       type. All looks of one Nether count as one band, so this never lands in the same Nether.</li>
  * </ul>
+ *
+ * <p>Only the core counts as inside the Nether: the crossfades at its edges follow the first two rules, so the
+ * portal there leads into that Nether's core.</p>
  *
  * <p>The landing column keeps the player's <b>proportion</b>: their fraction through the segment they
  * left is applied to the destination core ({@link #mapFraction}), so bands of different lengths still
@@ -108,7 +111,7 @@ public final class NetherPortalJump {
      */
     static Optional<Segment> destinationCore(WorldGenCycle cycle, IntFunction<String> label, int fromX, long bound,
                                              Target target) {
-        if (NetherBand.isInNetherBand(cycle, fromX) && target.wants(cycle.netherLookAt(fromX))) {
+        if (cycle.isNetherCore(fromX) && target.wants(cycle.netherLookAt(fromX))) {
             return target == Target.DEEPER_DARK ? beforeJoinedRange(cycle, label, fromX, bound)
                     : previousBandCore(cycle, label, fromX, bound);
         }
