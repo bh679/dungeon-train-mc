@@ -1,0 +1,19 @@
+{
+  "id": "train-portals-lead-back",
+  "version": "0.1680.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "train"
+  ],
+  "title": "Train portals lead back",
+  "summary": "A Nether portal built on the train now leads back to it. Step into the portal at the other end to return to the frame you built, wherever the train has got to.",
+  "highlights": [
+    "A few Nether portal fixes"
+  ],
+  "pr": 2508,
+  "date": "2026-11-05",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
