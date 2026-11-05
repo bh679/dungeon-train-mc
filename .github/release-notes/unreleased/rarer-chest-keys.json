@@ -1,0 +1,18 @@
+{
+  "id": "rarer-chest-keys",
+  "version": "0.1676.0",
+  "type": "content",
+  "tags": [
+    "content",
+    "loot",
+    "balance"
+  ],
+  "title": "Rarer keys in chests",
+  "summary": "Keys now turn up in chests about half as often.",
+  "highlights": [],
+  "pr": 2503,
+  "date": "2026-11-05",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
