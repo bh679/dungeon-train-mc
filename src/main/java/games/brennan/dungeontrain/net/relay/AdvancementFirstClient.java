@@ -16,13 +16,21 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
  * Asks the relay whether this player is the first ever to earn an advancement
  * ({@code POST /advancements/first-claim}). The relay records the first clean claimant atomically,
- * so the answer is authoritative across every player and install. Fail-closed: any error, timeout
- * or odd body means "not first" — the player is never told a first that isn't.
+ * so the answer is authoritative across every player and install. Fail-closed: an error, timeout or
+ * odd body that outlasts the retries means "not first" — the player is never told a first that isn't.
+ *
+ * <p>The relay records a claim even when its answer never gets back, and a record is only won once, so
+ * giving up early loses the announcement for good (AshSeven's Coffee Table Book: the relay stalled for
+ * 11 s, this client stopped listening at 6). A claim with no answer is therefore retried, marked
+ * {@code retry}, which lets the relay repeat "first" to the holder it just recorded. Only an unanswered
+ * claim retries, so the first answer heard is the only one acted on.</p>
  */
 public final class AdvancementFirstClient {
 
@@ -34,6 +42,9 @@ public final class AdvancementFirstClient {
             .connectTimeout(Duration.ofSeconds(5))
             .build();
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(6);
+    private static final Duration CLAIM_TIMEOUT = Duration.ofSeconds(15);
+    /** Seconds before each retry. The whole run must stay inside the relay's retry window (10 min). */
+    static final long[] RETRY_DELAYS_SECONDS = {5L, 20L, 60L};
 
     private AdvancementFirstClient() {}
 
@@ -41,7 +52,8 @@ public final class AdvancementFirstClient {
     public record Answer(boolean first, String byName) {}
 
     /**
-     * Off-thread; {@code callback} runs on the HTTP thread with the answer, or not at all on failure.
+     * Off-thread; {@code callback} runs on the HTTP thread with the answer, or not at all once the
+     * retries run out. It can run minutes after the earn.
      *
      * @param difficulty the vanilla difficulty partition key the earn happened on
      *                   ({@code DifficultyPartition.keyFor}) — the relay keeps advancement stats per
@@ -52,33 +64,70 @@ public final class AdvancementFirstClient {
     public static void claim(UUID player, String name, String advancementId, String difficulty,
                              BurritoClock.Completion burrito, long challengeTicks, Consumer<Answer> callback) {
         try {
-            JsonObject body = body(player, name, advancementId, difficulty, burrito, challengeTicks);
-            HttpRequest req = HttpRequest.newBuilder(URI.create(DungeonTrain.relayBaseUrl() + "/advancements/first-claim"))
-                    .timeout(REQUEST_TIMEOUT)
-                    .header("Content-Type", "application/json")
-                    .header("Accept", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body.toString(), StandardCharsets.UTF_8))
-                    .build();
-            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-                    .whenComplete((resp, err) -> {
-                        try {
-                            if (err != null) {
-                                LOGGER.debug("[DungeonTrain] first-claim failed: {}", err.toString());
-                                return;
-                            }
-                            if (resp.statusCode() / 100 != 2) {
-                                LOGGER.debug("[DungeonTrain] first-claim -> HTTP {}", resp.statusCode());
-                                return;
-                            }
-                            Answer parsed = parse(resp.body());
-                            if (parsed != null) callback.accept(parsed);
-                        } catch (Throwable t) {
-                            LOGGER.debug("[DungeonTrain] first-claim parse failed: {}", t.toString());
-                        }
-                    });
+            sendClaim(body(player, name, advancementId, difficulty, burrito, challengeTicks), advancementId, 0, callback);
         } catch (Throwable t) {
-            LOGGER.debug("[DungeonTrain] first-claim request failed to start: {}", t.toString());
+            LOGGER.info("[DungeonTrain] first-claim for {} failed to start: {}", advancementId, t.toString());
         }
+    }
+
+    private static void sendClaim(JsonObject firstBody, String advancementId, int attempt, Consumer<Answer> callback) {
+        JsonObject body = attempt == 0 ? firstBody : retryBody(firstBody);
+        HttpRequest req = HttpRequest.newBuilder(URI.create(DungeonTrain.relayBaseUrl() + "/advancements/first-claim"))
+                .timeout(CLAIM_TIMEOUT)
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body.toString(), StandardCharsets.UTF_8))
+                .build();
+        HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                .whenComplete((resp, err) -> {
+                    try {
+                        if (err != null) {
+                            retryOrGiveUp(firstBody, advancementId, attempt, callback, err.toString());
+                            return;
+                        }
+                        if (shouldRetryStatus(resp.statusCode())) {
+                            retryOrGiveUp(firstBody, advancementId, attempt, callback, "HTTP " + resp.statusCode());
+                            return;
+                        }
+                        if (resp.statusCode() / 100 != 2) {
+                            LOGGER.info("[DungeonTrain] first-claim for {} -> HTTP {}", advancementId, resp.statusCode());
+                            return;
+                        }
+                        Answer parsed = parse(resp.body());
+                        if (parsed != null) callback.accept(parsed);
+                    } catch (Throwable t) {
+                        LOGGER.info("[DungeonTrain] first-claim for {} parse failed: {}", advancementId, t.toString());
+                    }
+                });
+    }
+
+    private static void retryOrGiveUp(JsonObject firstBody, String advancementId, int attempt,
+                                      Consumer<Answer> callback, String reason) {
+        if (attempt >= RETRY_DELAYS_SECONDS.length) {
+            LOGGER.info("[DungeonTrain] first-claim for {} gave up after {} tries: {}", advancementId, attempt + 1, reason);
+            return;
+        }
+        long delay = RETRY_DELAYS_SECONDS[attempt];
+        LOGGER.info("[DungeonTrain] first-claim for {} got no answer ({}); retrying in {} s", advancementId, reason, delay);
+        CompletableFuture.delayedExecutor(delay, TimeUnit.SECONDS).execute(() -> {
+            try {
+                sendClaim(firstBody, advancementId, attempt + 1, callback);
+            } catch (Throwable t) {
+                LOGGER.info("[DungeonTrain] first-claim retry for {} failed to start: {}", advancementId, t.toString());
+            }
+        });
+    }
+
+    /** A 5xx is the relay not answering (a restart, Apache's 503), so the claim may yet land. A 4xx never will. */
+    static boolean shouldRetryStatus(int status) {
+        return status >= 500;
+    }
+
+    /** A copy of the claim's body, marked as a retry. */
+    static JsonObject retryBody(JsonObject firstBody) {
+        JsonObject body = firstBody.deepCopy();
+        body.addProperty("retry", true);
+        return body;
     }
 
     /**
