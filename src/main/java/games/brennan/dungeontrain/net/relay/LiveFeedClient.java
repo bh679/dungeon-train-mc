@@ -1291,16 +1291,22 @@ public final class LiveFeedClient {
 
     /**
      * A streamer's microphone, as a status describes it: {@code enabled} = the stream carries a mic track
-     * (track 0 is the game with the mic, track 1 the game alone), {@code on} = the mic is open now.
+     * (track 0 is the game with the mic, track 1 the game alone), {@code on} = the mic is open now,
+     * {@code kids} = the relay has approved this streamer's voice for Kid mode listeners (a relay that
+     * says nothing has not: Kid mode then plays the game alone, {@link LiveSoundTrack}).
      */
-    public record Mic(boolean enabled, boolean on) {}
+    public record Mic(boolean enabled, boolean on, boolean kids) {
+        public Mic(boolean enabled, boolean on) {
+            this(enabled, on, false);
+        }
+    }
 
     /** The status body's {@code mic} block, or null when it has none (an older relay) or it is malformed. */
     @Nullable
     static Mic parseMic(JsonObject b) {
         if (!b.has("mic") || !b.get("mic").isJsonObject()) return null;
         JsonObject m = b.getAsJsonObject("mic");
-        return new Mic(bool(m, "enabled"), bool(m, "on"));
+        return new Mic(bool(m, "enabled"), bool(m, "on"), bool(m, "kids"));
     }
 
     private static boolean bool(JsonObject o, String key) {

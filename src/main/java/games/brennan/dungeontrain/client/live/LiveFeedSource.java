@@ -360,23 +360,24 @@ public final class LiveFeedSource implements IVideoSource {
     private LiveHlsSession sessionFor(String url, boolean replay, Status status, FFmpeg ffmpeg) {
         int width = decodeWidth();
         String media = mediaUrlFor(url, replay, status, width);
+        int soundTrack = replay ? LiveSoundTrack.MIX : LiveSoundTrack.forViewer(status.mic());
         LiveHlsSession s = session;
-        if (s != null && matches(s, url, media, replay, width)) {
+        if (s != null && matches(s, url, media, replay, width, soundTrack)) {
             dropPending();
             return s;
         }
         boolean micTrack = !replay && carriesMicTrack(status);
         if (s == null || view == null || !view.hasPicture()) {
             dropSession();
-            session = newSession(url, media, replay, width, micTrack);
+            session = newSession(url, media, replay, width, micTrack, soundTrack);
             view = (LiveFeedTexture) session.createTextureView(texture);
             view.register();
             return session;
         }
         LiveHlsSession p = pending;
-        if (p == null || !matches(p, url, media, replay, width)) {
+        if (p == null || !matches(p, url, media, replay, width, soundTrack)) {
             dropPending();
-            pending = newSession(url, media, replay, width, micTrack);
+            pending = newSession(url, media, replay, width, micTrack, soundTrack);
             pendingTexture = (LiveFeedTexture) pending.createTextureView(pendingTextureId);
             pendingTexture.register();
             p = pending;
@@ -397,8 +398,9 @@ public final class LiveFeedSource implements IVideoSource {
         return s; // keep showing the old picture meanwhile
     }
 
-    private static boolean matches(LiveHlsSession s, String url, String media, boolean replay, int width) {
-        return s.playlistUrl().equals(url) && s.mediaUrl().equals(media) && s.isReplay() == replay && s.width() == width;
+    private static boolean matches(LiveHlsSession s, String url, String media, boolean replay, int width, int soundTrack) {
+        return s.playlistUrl().equals(url) && s.mediaUrl().equals(media) && s.isReplay() == replay && s.width() == width
+            && s.soundTrack() == soundTrack;
     }
 
     /**
@@ -423,8 +425,9 @@ public final class LiveFeedSource implements IVideoSource {
             Minecraft.getInstance().getWindow().getGuiScale(), LiveFeedClientConfig.viewerWidth());
     }
 
-    private static LiveHlsSession newSession(String url, String media, boolean replay, int width, boolean micTrack) {
-        return new LiveHlsSession(url, media, width, LiveFeedClientConfig.heightFor(width), replay, micTrack);
+    private static LiveHlsSession newSession(String url, String media, boolean replay, int width, boolean micTrack,
+                                             int soundTrack) {
+        return new LiveHlsSession(url, media, width, LiveFeedClientConfig.heightFor(width), replay, micTrack, soundTrack);
     }
 
     /** Whether the stream {@code status} describes carries a mic track (its second audio track). Pure. */
