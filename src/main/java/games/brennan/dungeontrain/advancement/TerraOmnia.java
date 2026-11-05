@@ -133,6 +133,12 @@ public final class TerraOmnia {
         return new Progress(commonRidden + Math.min(rareRidden, rareNeeded), common + rareNeeded);
     }
 
+    /** Whether {@code ridden} holds as many of the rare biomes in {@code all} as Terra Omnia asks for. False when {@code all} has none. */
+    public static boolean hasEnoughRare(Set<ResourceLocation> ridden, Collection<ResourceLocation> all) {
+        List<ResourceLocation> rare = all.stream().filter(RARE::contains).toList();
+        return !rare.isEmpty() && rare.stream().filter(ridden::contains).count() >= Math.min(RARE_NEEDED, rare.size());
+    }
+
     /** Whether {@code biome} is a rare one {@code ridden} no longer needs, because enough of the others are held. */
     public static boolean isSpareRare(ResourceLocation biome, Set<ResourceLocation> ridden) {
         if (!RARE.contains(biome) || ridden.contains(biome)) return false;
