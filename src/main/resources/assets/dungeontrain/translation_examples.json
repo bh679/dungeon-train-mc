@@ -4923,6 +4923,24 @@
       ]
     }
   },
+  "gui.dungeontrain.live.mic_hint": {
+    "1": {
+      "label": "the name of the key bound to Toggle Live Eye Mic, as the game shows it",
+      "examples": [
+        "K",
+        "Mouse Button 5"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.mic_mix.value": {
+    "1": {
+      "label": "the mic's share of the stream's sound, a whole number from 0 to 100 (the percent sign follows)",
+      "examples": [
+        "50",
+        "75"
+      ]
+    }
+  },
   "gui.dungeontrain.options.internet": {
     "1": {
       "label": "whether it is on",
@@ -17667,6 +17685,192 @@
       "examples": [
         "2.5",
         "12.5"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.muted_streamers.button": {
+    "1": {
+      "label": "how many streamers you have muted",
+      "examples": [
+        "0",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.muted_streamers.unmute.tip": {
+    "1": {
+      "label": "the streamer's Minecraft name",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.hearing": {
+    "1": {
+      "label": "the streamer's Minecraft name",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.button.streamer": {
+    "1": {
+      "label": "the streamer's Minecraft name",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.button.streamer.hover": {
+    "1": {
+      "label": "the streamer's Minecraft name",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.streamer_muted": {
+    "1": {
+      "label": "the streamer's Minecraft name",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.unmuted": {
+    "1": {
+      "label": "the streamer's Minecraft name",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.list": {
+    "1": {
+      "label": "the muted streamers' names, comma separated",
+      "examples": [
+        "Alice, Bob"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_mute.not_muted": {
+    "1": {
+      "label": "the name typed after /livemute unmute",
+      "examples": [
+        "Alice"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.stream": {
+    "1": {
+      "label": "which of the two live streams it is",
+      "examples": [
+        "1",
+        "2"
+      ]
+    },
+    "2": {
+      "label": "that stream's streamer name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.stream_unnamed": {
+    "1": {
+      "label": "which of the two live streams it is",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.pick_reason": {
+    "1": {
+      "label": "the reported streamer's Minecraft player name, or \"the streamer\" when unknown",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.sent": {
+    "1": {
+      "label": "the reported streamer's Minecraft player name, or \"the streamer\" when unknown",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.open": {
+    "1": {
+      "label": "the reported streamer's Minecraft player name, or \"the streamer\" when unknown",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    },
+    "2": {
+      "label": "how long ago the earlier report was made, already translated (e.g. 'just now', '5 min ago')",
+      "examples": [
+        "5 min ago",
+        "just now"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.kept": {
+    "1": {
+      "label": "the reported streamer's Minecraft player name, or \"the streamer\" when unknown",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.not_live": {
+    "1": {
+      "label": "the reported streamer's Minecraft player name, or \"the streamer\" when unknown",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.not_found": {
+    "1": {
+      "label": "the reported streamer's Minecraft player name, or \"the streamer\" when unknown",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.ago.minutes": {
+    "1": {
+      "label": "a number of minutes",
+      "examples": [
+        "5",
+        "42"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.ago.hours": {
+    "1": {
+      "label": "a number of hours",
+      "examples": [
+        "2",
+        "13"
+      ]
+    }
+  },
+  "command.dungeontrain.live_report.ago.days": {
+    "1": {
+      "label": "a number of days",
+      "examples": [
+        "3",
+        "12"
       ]
     }
   }

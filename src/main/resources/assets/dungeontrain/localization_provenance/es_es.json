@@ -24,7 +24,10 @@
       "gui.dungeontrain.editor_screen.layout.weight_tip",
       "item.dungeontrain.live_headpiece",
       "item.dungeontrain.live_headpiece.tooltip.warning",
-      "item.dungeontrain.random_live_headpiece"
+      "item.dungeontrain.random_live_headpiece",
+      "gui.dungeontrain.options.stream_audio.hint",
+      "gui.dungeontrain.options.stream_audio.tip",
+      "gui.dungeontrain.options.mic_support.hint"
     ],
     "adventureitemnames": [],
     "playermob": [],

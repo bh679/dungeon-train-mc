@@ -17,7 +17,10 @@
       "chat.dungeontrain.twitch.saved",
       "chat.dungeontrain.twitch.saved_verify",
       "gui.dungeontrain.editor_screen.layout.weight_tip",
-      "gui.dungeontrain.options.catch_up_burst.hint"
+      "gui.dungeontrain.options.catch_up_burst.hint",
+      "gui.dungeontrain.options.stream_audio.hint",
+      "gui.dungeontrain.options.stream_audio.tip",
+      "gui.dungeontrain.options.mic_support.hint"
     ],
     "adventureitemnames": [],
     "playermob": [],
