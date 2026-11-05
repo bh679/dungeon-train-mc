@@ -153,6 +153,64 @@ final class NetherPortalJumpTest {
         assertTrue(NetherPortalJump.coreOf(ow, C).contains(t), "lands in the first overworld core, got " + t);
     }
 
+    // ---- A portal on the train: the look-naming label, and a destination that follows the ride ---------
+
+    /** Names the Nether's look, as {@code BandLabel} does: a split slot reads as two labels. */
+    private static final IntFunction<String> LOOK_LABEL = x -> NetherBand.isInNetherBand(C, x)
+        ? "Nether " + C.netherLookAt(x)
+        : (C.endMiddleRamp(x) > 0.0 ? "End" : "Overworld");
+
+    private static long lookTarget(long fromX) {
+        OptionalLong t = NetherPortalJump.targetX(C, LOOK_LABEL, (int) fromX);
+        assertTrue(t.isPresent(), "a target from x=" + fromX);
+        return t.getAsLong();
+    }
+
+    @Test
+    @DisplayName("a Nether-look column always lands outside the Nether, past a split slot's look change too")
+    void everyNetherLookLandsOutsideTheNether() {
+        int sampled = 0;
+        for (int pass = 0; pass < 8; pass++) {
+            long[] range = C.netherPassRange(pass);
+            if (range == null || range[0] > Integer.MAX_VALUE) break;
+            for (long x = range[0]; x < range[1] && x < Integer.MAX_VALUE; x += 64L) {
+                if (!NetherBand.isInNetherBand(C, (int) x)
+                    || C.netherLookAt((int) x) == CycleLayout.Style.OTHERSIDE) continue;
+                long t = lookTarget(x);
+                assertFalse(NetherBand.isInNetherBand(C, (int) t), "x=" + x + " landed in a Nether at " + t);
+                sampled++;
+            }
+        }
+        assertTrue(sampled > 0, "the shipped order has Nether columns to sample");
+    }
+
+    @Test
+    @DisplayName("riding through the first Nether, the landing spot only moves forward, across the look change too")
+    void landingMovesForwardAcrossTheLookChange() {
+        Segment c0 = core(0);
+        assertFalse(C.netherLookAt((int) c0.start()) == C.netherLookAt((int) c0.end() - 1), "pass 0 changes look");
+        Segment owCore = NetherPortalJump.coreOf(segment(0), C);
+        long last = Long.MIN_VALUE;
+        for (long x = c0.start(); x < c0.end(); x += 64L) {
+            long t = lookTarget(x);
+            assertTrue(owCore.contains(t), "x=" + x + " lands in the first overworld core, got " + t);
+            assertTrue(t >= last, "x=" + x + " landed behind the previous spot: " + t + " < " + last);
+            last = t;
+        }
+    }
+
+    @Test
+    @DisplayName("one portal, carried by the train: its destination follows where the train is on each trip")
+    void destinationFollowsTheTrain() {
+        Segment c0 = core(0);
+        long before = lookTarget(c0.start() - 1000L);
+        long inside = lookTarget(c0.end() - 100L);
+        long after = lookTarget(C.netherPassRange(0)[1] + 200L);
+        assertTrue(c0.contains(before), "before the Nether → into it, got " + before);
+        assertTrue(NetherPortalJump.coreOf(segment(0), C).contains(inside), "in the Nether → the overworld, got " + inside);
+        assertTrue(c0.contains(after), "past the Nether → back into it, got " + after);
+    }
+
     // ---- Otherside portals (the Deeper Dark) ----------------------------------------------------------
 
     /** As {@link #LABEL}, but a Deeper Dark pass reads as its own band — as {@code BandLabel} names it. */

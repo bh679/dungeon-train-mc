@@ -17,7 +17,7 @@ import java.util.function.IntFunction;
  *   <li><b>Any other non-Nether band</b> → back to the <b>previous</b> Nether's core (the last core that
  *       starts at or behind the player).</li>
  *   <li><b>Inside a Nether band</b> → back to the core of the <b>band just before it</b>, whatever its
- *       type.</li>
+ *       type. All looks of one Nether count as one band, so this never lands in the same Nether.</li>
  * </ul>
  *
  * <p>The landing column keeps the player's <b>proportion</b>: their fraction through the segment they
@@ -35,6 +35,9 @@ public final class NetherPortalJump {
 
     /** A non-Nether core keeps at least this share of its segment (the trim is capped at a third per side). */
     private static final int MIN_CORE_DIVISOR = 3;
+
+    /** The one segment label for all looks of a portal's own kind of band ({@link #mergingLooks}); never a real band name. */
+    private static final String MERGED_BAND = "\0portal-kind-band";
 
     private NetherPortalJump() {}
 
@@ -75,11 +78,21 @@ public final class NetherPortalJump {
     public static OptionalLong targetX(WorldGenCycle cycle, IntFunction<String> label, int fromX, Target target) {
         if (cycle.period() <= 0L) return OptionalLong.empty();
         long bound = scanBound(cycle, fromX);
-        Optional<Segment> dest = destinationCore(cycle, label, fromX, bound, target);
+        IntFunction<String> bands = mergingLooks(cycle, label, target);
+        Optional<Segment> dest = destinationCore(cycle, bands, fromX, bound, target);
         if (dest.isEmpty()) return OptionalLong.empty();
-        Segment from = segmentAround(label, fromX, Math.max(rideStart(cycle), (long) fromX - bound), (long) fromX + bound);
+        Segment from = segmentAround(bands, fromX, Math.max(rideStart(cycle), (long) fromX - bound), (long) fromX + bound);
         long landing = mapFraction(from, fromX, dest.get());
         return landing > Integer.MAX_VALUE ? OptionalLong.empty() : OptionalLong.of(landing);
+    }
+
+    /**
+     * {@code label} with every column in a band of kind {@code target} named alike. The F3+4 label also names the
+     * look, so a split slot ({@code nether:vanilla=1000~400+bop}) reads as two segments, and without this a portal
+     * in its later look would take the earlier look for "the band before" and land in the same Nether.
+     */
+    private static IntFunction<String> mergingLooks(WorldGenCycle cycle, IntFunction<String> label, Target target) {
+        return x -> NetherBand.isInNetherBand(cycle, x) && target.wants(cycle.netherLookAt(x)) ? MERGED_BAND : label.apply(x);
     }
 
     /** The core a portal at {@code fromX} leads to, per the class rules; empty when there is none. */
@@ -153,7 +166,7 @@ public final class NetherPortalJump {
         long prevEnd = nether.start() - 1L;
         if (prevEnd < rideStart || prevEnd < Integer.MIN_VALUE) return Optional.empty();
         if (NetherBand.isInNetherBand(cycle, (int) prevEnd)) {
-            // Two Nether looks back to back (a split slot): the band before is still "the Nether".
+            // A Nether slot of the other kind right before this one (looks of this kind are one segment).
             return slotCore(cycle, (int) cycle.netherPassIndex((int) prevEnd));
         }
         Segment prev = segmentAround(label, (int) prevEnd, Math.max(rideStart, prevEnd - bound), prevEnd);
