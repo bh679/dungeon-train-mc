@@ -78,6 +78,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * death lines name it, and moving to the other room starts its chat from the head, with one short line
  * saying which. With one stream up no room is named, exactly as before.</p>
  *
+ * <p>A streamer's Twitch is linked in chat ({@link LiveChannelLink}): the relay's line when they come on air,
+ * and this reader's own line on joining their room.</p>
+ *
  * <p>Failures are quiet: a bad poll is retried next interval, a failed send is logged once per session.
  * Nothing here touches the stream itself.</p>
  */
@@ -105,6 +108,7 @@ public final class LiveChatBridge {
     private static long lastRestartTs;
     private static long lastRestartPrintedMs;
     private static final LiveChatSignatures signatures = new LiveChatSignatures();
+    private static final LiveChannelLink channelLink = new LiveChannelLink();
     /** Lines printed this session, by seq, waiting on a translation; bounded like the signatures. */
     private static final Map<Long, Printed> printed = new LinkedHashMap<>(16, 0.75f, false) {
         @Override
@@ -170,6 +174,8 @@ public final class LiveChatBridge {
         }
         long now = System.currentTimeMillis();
         printRestartLines(mc, now);
+        Component channelLine = channelLink.joinLine(pick != null && pick.stream() == 2 ? status.second() : status, now);
+        if (channelLine != null) mc.gui.getChat().addMessage(channelLine);
         if (now - lastPollMs < LiveRelayRestart.chatPollMs(now, POLL_MS) || !inFlight.compareAndSet(false, true)) return;
         lastPollMs = now;
         String asked = room;
@@ -259,7 +265,11 @@ public final class LiveChatBridge {
         // [Report streamer] rides on the last line: the room line when there is one.
         mc.gui.getChat().addMessage(pick == null ? withReport(connectedLine, pick) : connectedLine);
         if (pick != null) mc.gui.getChat().addMessage(withReport(roomLine(pick), pick));
-        if (viaTv) join(mc);
+        channelLink.reset();
+        if (viaTv) {
+            join(mc);
+            channelLink.onJoined(System.currentTimeMillis());
+        }
     }
 
     /**
@@ -276,7 +286,11 @@ public final class LiveChatBridge {
         printed.clear();
         ChatReactionTracker.forgetLive();
         if (pick != null) mc.gui.getChat().addMessage(withReport(roomLine(pick), pick));
-        if (joinedViaTv) join(mc);
+        channelLink.reset();
+        if (joinedViaTv) {
+            join(mc);
+            channelLink.onJoined(System.currentTimeMillis());
+        }
     }
 
     /** "Now chatting in Stream 2 (Bo)": which room this client just entered. */
@@ -321,6 +335,7 @@ public final class LiveChatBridge {
 
     private static void disconnect() {
         connected = false;
+        channelLink.reset();
         room = null;
         restartLines.clear();
         LiveTakeoverChat.reset();
@@ -398,6 +413,14 @@ public final class LiveChatBridge {
                 // A TV watcher died (LiveDeathAnnounce): printed in this reader's language.
                 if (LiveChatRules.showDeath(line.death(), myName, names)) {
                     chat.addMessage(LiveDeathAnnounce.line(mc, line), signatures.sign(line.seq()), tag);
+                }
+                continue;
+            }
+            if (line.channel() != null) {
+                // A streamer's Twitch: a link here, in this reader's language.
+                long at = System.currentTimeMillis();
+                if (channelLink.showRelayLine(line.channel(), at)) {
+                    chat.addMessage(LiveChannelLink.goLiveLine(line.channel()), signatures.sign(line.seq()), tag);
                 }
                 continue;
             }

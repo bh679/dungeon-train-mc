@@ -1,0 +1,18 @@
+{
+  "id": "checklist-section-tick",
+  "version": "0.1675.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "advancements",
+    "ui"
+  ],
+  "title": "Advancement screen tweak",
+  "summary": "A small tidy-up on the advancements screen.",
+  "highlights": [],
+  "pr": 2502,
+  "date": "2026-11-05",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

@@ -50,11 +50,12 @@ public final class BiomeChecklistScreen extends Screen {
 
     /**
      * One line of the checklist: a biome, whether it has been ridden, whether it is a spare rare one, and whether a
-     * new group starts with it. A heading line has a {@code heading} and no biome, and starts its group.
+     * new group starts with it. A heading line has a {@code heading} and no biome, starts its group, and counts as
+     * ridden once its section is earned.
      */
     private record Line(ResourceLocation biome, boolean ridden, boolean spare, boolean groupStart, Component heading) {
-        static Line heading(Component text, boolean groupStart) {
-            return new Line(null, false, false, groupStart, text);
+        static Line heading(Component text, boolean earned, boolean groupStart) {
+            return new Line(null, earned, false, groupStart, text);
         }
     }
 
@@ -103,7 +104,8 @@ public final class BiomeChecklistScreen extends Screen {
         if (!rare.isEmpty()) sections.add(rare);
         for (List<ResourceLocation> group : sections) {
             if (group == rare) {
-                out.add(Line.heading(Component.translatable("gui.dungeontrain.biome_checklist.rare"), !out.isEmpty()));
+                out.add(Line.heading(Component.translatable("gui.dungeontrain.biome_checklist.rare"),
+                        TerraOmnia.hasEnoughRare(ridden, rare), !out.isEmpty()));
             }
             List<ResourceLocation> sorted = new ArrayList<>(group);
             sorted.sort(Comparator.comparing((ResourceLocation id) -> !ridden.contains(id)));   // stable: ids stay in order
@@ -168,7 +170,7 @@ public final class BiomeChecklistScreen extends Screen {
             int x = left + column[i] * COLUMN_WIDTH;
             int y = TOP + offset[i] - scroll;
             if (y + ROW < TOP || y > height) continue;
-            drawLine(g, lines.get(i), x, y);
+            drawLine(g, lines.get(i), x, y, column[i] == column[column.length - 1]);
         }
         g.disableScissor();
         if (maxScroll > 0) {
@@ -223,12 +225,14 @@ public final class BiomeChecklistScreen extends Screen {
         scroll = Math.max(0, Math.min(maxScroll, value));
     }
 
-    private void drawLine(GuiGraphics g, Line line, int x, int y) {
+    private void drawLine(GuiGraphics g, Line line, int x, int y, boolean lastColumn) {
+        if (line.ridden()) g.drawString(font, "✔", x, y, TICK_COLOUR, true);
         if (line.heading() != null) {
-            g.drawString(font, font.plainSubstrByWidth(line.heading().getString(), COLUMN_WIDTH - 4), x, y, HEADING_COLOUR, true);
+            // A heading runs longer than a biome's name; with no column to its right it may use the room up to the scrollbar.
+            int room = lastColumn ? Math.max(COLUMN_WIDTH - 14, barLeft() - 2 - (x + 10)) : COLUMN_WIDTH - 14;
+            g.drawString(font, font.plainSubstrByWidth(line.heading().getString(), room), x + 10, y, HEADING_COLOUR, true);
             return;
         }
-        if (line.ridden()) g.drawString(font, "✔", x, y, TICK_COLOUR, true);
         String name = font.plainSubstrByWidth(nameOf(line.biome()).getString(), COLUMN_WIDTH - 14);
         g.drawString(font, name, x + 10, y, line.ridden() ? RIDDEN_COLOUR : line.spare() ? SPARE_COLOUR : MISSING_COLOUR, line.ridden());
     }

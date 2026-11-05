@@ -407,6 +407,9 @@ public final class PortalChunkTerrain {
         int roll = rollOf(pairKey);
         SAMPLER.execute(() -> {
             try {
+                // Ahead of the ground, which is what the pair's planning waits on, so the stamp that
+                // follows never parses a frame's sidecar inside its tick.
+                games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.preload(level, roomName);
                 // Two passes, and the split is what keeps a portal carriage crossable. The first is
                 // the ground — noise, surface rules and the carvers — which the pair cannot be
                 // planned without, because its doorways stand on it. The second is everything that

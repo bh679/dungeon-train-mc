@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.mixin.client;
 
+import games.brennan.dungeontrain.client.sound.MicBalanceOption;
+import games.brennan.dungeontrain.client.sound.StreamVolumeOption;
 import games.brennan.dungeontrain.client.sound.TrainVolumeOption;
 import net.minecraft.client.Options;
 import net.minecraft.client.gui.screens.Screen;
@@ -15,7 +17,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * Adds Dungeon Train's <b>engine volume</b> slider to vanilla's Music &amp; Sounds screen, so the
  * setting sits with the volumes it belongs beside rather than only in the mod's own menus. The
  * control itself is {@link TrainVolumeOption}, shared verbatim with
- * {@code DungeonTrainClientOptionsScreen}.
+ * {@code DungeonTrainClientOptionsScreen}. The wind, Stream volume and Mic balance sliders join it
+ * the same way.
  *
  * <p><b>Why a mixin, when the main Options screen only needed an event.</b>
  * {@code OptionsScreenDungeonTrainButton} adds its button through
@@ -52,6 +55,7 @@ public abstract class SoundOptionsScreenTrainVolumeMixin extends OptionsSubScree
         if (this.list != null) {
             this.list.addSmall(TrainVolumeOption.forSoundScreen(),
                     games.brennan.dungeontrain.client.wind.WindVolumeOption.forSoundScreen());
+            this.list.addSmall(StreamVolumeOption.forSoundScreen(), MicBalanceOption.forSoundScreen());
         }
     }
 }

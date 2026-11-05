@@ -2307,6 +2307,12 @@ public final class PortalCarriageEvents {
                 continue;
             }
 
+            // Nobody stands in a room that is still being written: what is left lands now, in the
+            // tick they cross.
+            if (move.toFrame() == PortalFrames.FRAME_TWIN) {
+                games.brennan.dungeontrain.portal.PortalChunkDimension.finishPourIfReady(level, dims, pairKey, structure);
+            }
+
             // Coming out: remember which copy of the room they left from. BASE clears the binding,
             // so a trip back through the original twin puts them at the start again — which is what
             // a player who deliberately walked back to it has asked for.
@@ -2689,6 +2695,10 @@ public final class PortalCarriageEvents {
         // Both the carry and the erase read the OLD record, so they cover exactly the box that was
         // written even if the room has since been authored at a different length.
         if (existing != null) {
+            // A whole room to capture and erase, not one still being written. Whatever could not be
+            // written now never will be: the erase is about to take the room.
+            games.brennan.dungeontrain.portal.PortalChunkDimension.finishPourIfReady(level, dims, pairKey, existing);
+            games.brennan.dungeontrain.portal.PortalChunkDimension.cancelPour(pairKey);
             // A drifting room somebody has built in — or one lent by another world — is re-laid as
             // it stands, not re-rolled from the template. Captured while the old blocks are still
             // there, before the erase below; null means the template will do.
@@ -2810,6 +2820,7 @@ public final class PortalCarriageEvents {
     private static void evictStructure(ServerLevel level, CarriageDims dims, int pairKey, int byPair) {
         PortalStructure structure = STRUCTURES.remove(pairKey);
         if (structure == null) return;
+        games.brennan.dungeontrain.portal.PortalChunkDimension.cancelPour(pairKey);
         // Its drifting room goes back to the relay with whatever was last built in it — before the
         // erase, while the blocks can still be read. The evicted record keeps the room it rolled but
         // not the copy: a pair that comes back is stamped afresh, as a culled carriage is.
