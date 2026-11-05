@@ -225,7 +225,7 @@ public final class SharedRoomEvents {
             return;
         }
         if (!SharedCarriageGate.canDiscover()) return;
-        // Same gate the planner used — mode, author's setting, test rig and the one-in-twenty roll.
+        // Same gate the planner used — mode, author's setting, test rig and the drift roll.
         if (!games.brennan.dungeontrain.portal.PortalRoomDriftPlanner.driftsHere(level, pairKey, structure.settings())) return;
         PortalRoomBlob blob = structure.blob();
         if (blob != null && blob.isLeased()) {

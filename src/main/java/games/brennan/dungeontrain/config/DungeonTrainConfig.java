@@ -214,8 +214,13 @@ public final class DungeonTrainConfig {
      * 65% / 30% / 5% — most slots show the community's work, a healthy share hands players their own
      * back, and a steady trickle of blank canvases keeps entering the pool.
      */
-    /** One Bedrock dimensional carriage in fifteen drifts; the rest are the plain template. */
-    public static final double DEFAULT_SHARED_ROOM_CHANCE = 1.0 / 15.0;
+    /** One Bedrock dimensional carriage in five drifts; the rest are the plain template. */
+    public static final double DEFAULT_SHARED_ROOM_CHANCE = 0.20;
+    /**
+     * The room drift chance shipped before {@link #CURRENT_CONFIG_VERSION} 6 (one in fifteen). Read by the
+     * v5 -> v6 step of {@link #runPendingMigrations()} to tell a stale shipped default from an operator's pick.
+     */
+    public static final double LEGACY_SHARED_ROOM_CHANCE = 1.0 / 15.0;
     public static final double MIN_SHARED_ROOM_CHANCE = 0.0;
     public static final double MAX_SHARED_ROOM_CHANCE = 1.0;
     /** One Group carriage in ten drifts — one group-long build travelling the relay whole. */
@@ -331,7 +336,7 @@ public final class DungeonTrainConfig {
      *
      * <p>0 = pre-versioning (any file written before this mechanism existed).</p>
      */
-    public static final int CURRENT_CONFIG_VERSION = 5;
+    public static final int CURRENT_CONFIG_VERSION = 6;
     public static final int DEFAULT_CONFIG_VERSION = 0;
     public static final int MIN_CONFIG_VERSION = 0;
     public static final int MAX_CONFIG_VERSION = 1_000_000;
@@ -731,7 +736,7 @@ public final class DungeonTrainConfig {
                 .comment("The probability a Bedrock dimensional carriage DRIFTS at all — takes part in the shared pool",
                         "the way a shared carriage slot does. A drifting one uploads when a player edits it and rolls the",
                         "pool/own/fresh split above for whether it arrives as another world's copy; the rest are the plain",
-                        "template and never touch the relay. Rolled deterministically per pair. Default 1/15 (0.0667).",
+                        "template and never touch the relay. Rolled deterministically per pair. Default 0.20.",
                         "Authors can still veto a room outright with its Drift setting.")
                 .defineInRange("sharedRoomChance", DEFAULT_SHARED_ROOM_CHANCE,
                         MIN_SHARED_ROOM_CHANCE, MAX_SHARED_ROOM_CHANCE);
@@ -1301,6 +1306,14 @@ public final class DungeonTrainConfig {
             SHARED_GROUP_CHANCE.set(DEFAULT_SHARED_GROUP_CHANCE);
             LOGGER.info("[DungeonTrain] Config migration v{}->v{}: Group carriage drift chance now {}.",
                     from, CURRENT_CONFIG_VERSION, DEFAULT_SHARED_GROUP_CHANCE);
+        }
+
+        // v5 -> v6: Bedrock dimensional carriages drift one in five instead of one in fifteen, for the
+        // same reason as the step above: the old value is on disk everywhere. An operator's pick is kept.
+        if (from < 6 && Math.abs(SHARED_ROOM_CHANCE.get() - LEGACY_SHARED_ROOM_CHANCE) < 1e-9) {
+            SHARED_ROOM_CHANCE.set(DEFAULT_SHARED_ROOM_CHANCE);
+            LOGGER.info("[DungeonTrain] Config migration v{}->v{}: dimensional carriage drift chance now {}.",
+                    from, CURRENT_CONFIG_VERSION, DEFAULT_SHARED_ROOM_CHANCE);
         }
 
         CONFIG_VERSION.set(CURRENT_CONFIG_VERSION);
