@@ -43,6 +43,14 @@ class EndBandStructuresTest {
     }
 
     @Test
+    @DisplayName("only a Biomes O' Plenty pass spaces End cities like the vanilla End band")
+    void bandCitySpacing() {
+        assertTrue(EndBandStructures.usesBandCitySpacing(id("minecraft", "end_cities"), CycleLayout.Style.BOP));
+        assertFalse(EndBandStructures.usesBandCitySpacing(id("minecraft", "end_cities"), CycleLayout.Style.BETTER));
+        assertFalse(EndBandStructures.usesBandCitySpacing(id("biomesoplenty", "anything"), CycleLayout.Style.BOP));
+    }
+
+    @Test
     @DisplayName("a start reaches a chunk only when its box touches it")
     void reach() {
         ChunkPos chunk = new ChunkPos(1, 1);    // blocks 16..31

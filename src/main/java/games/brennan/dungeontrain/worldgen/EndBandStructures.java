@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.util.LogFirstN;
 import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -16,9 +17,11 @@ import net.minecraft.world.level.levelgen.LegacyRandomSource;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.WorldgenRandom;
+import net.minecraft.world.level.levelgen.structure.BuiltinStructureSets;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
+import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -31,7 +34,8 @@ import java.util.function.Supplier;
  * The real End's structures for a sampled band chunk: for a <b>BetterEnd</b> pass its bridges, small islands,
  * lakes, mountains, ice stars, giant glowshrooms, sulphuric caves, villages and End cities; for a
  * <b>Biomes O' Plenty</b> pass ({@link BopEnd}) the End cities, read through BoP's own generator and structure
- * sets, since BetterEnd's structures also list the vanilla End biomes the BoP End shares.
+ * sets, since BetterEnd's structures also list the vanilla End biomes the BoP End shares. Those cities are spaced
+ * as rarely as the vanilla End band's ({@link #BAND_CITIES}), to stay a find.
  *
  * <p>A sample is a throwaway chunk that never went through vanilla's {@code STRUCTURE_STARTS} and
  * {@code STRUCTURE_REFERENCES} steps, so decoration found no starts and built nothing. Those steps would need
@@ -60,6 +64,9 @@ public final class EndBandStructures {
     private static final ResourceLocation ETERNAL_PORTAL =
             ResourceLocation.fromNamespaceAndPath("betterend", "eternal_portal");
     private static final String DT_NAMESPACE = "dungeontrain";
+    /** The vanilla End band's structure set, whose placement a BoP pass's End cities borrow. */
+    private static final ResourceKey<StructureSet> BAND_CITIES = ResourceKey.create(Registries.STRUCTURE_SET,
+            ResourceLocation.fromNamespaceAndPath(DT_NAMESPACE, "end_city"));
 
     /** A valid start and the structure it belongs to. */
     private record Placed(Structure structure, StructureStart start) {}
@@ -94,6 +101,19 @@ public final class EndBandStructures {
     static boolean isExcluded(ResourceLocation id, CycleLayout.Style style) {
         if (ETERNAL_PORTAL.equals(id) || DT_NAMESPACE.equals(id.getNamespace())) return true;
         return style == CycleLayout.Style.BOP && !VanillaOnlySample.allows(id) && !BopEnd.NAMESPACE.equals(id.getNamespace());
+    }
+
+    /** True for the structure set whose spacing a pass of look {@code style} takes from {@link #BAND_CITIES}. */
+    static boolean usesBandCitySpacing(ResourceLocation set, CycleLayout.Style style) {
+        return style == CycleLayout.Style.BOP && BuiltinStructureSets.END_CITIES.location().equals(set);
+    }
+
+    /** Where {@code set} may start: its own placement, unless {@link #usesBandCitySpacing} and the band's set is there. */
+    private static StructurePlacement placement(ServerLevel end, Holder<StructureSet> set, CycleLayout.Style style) {
+        boolean band = set.unwrapKey().filter(k -> usesBandCitySpacing(k.location(), style)).isPresent();
+        if (!band) return set.value().placement();
+        return end.registryAccess().registryOrThrow(Registries.STRUCTURE_SET).getOptional(BAND_CITIES)
+                .map(StructureSet::placement).orElse(set.value().placement());
     }
 
     /** Whether box {@code [minX, maxX] × [minZ, maxZ]} touches {@code chunk}, as a piece must to be placed there. */
@@ -132,7 +152,7 @@ public final class EndBandStructures {
         List<Placed> out = new ArrayList<>(0);
         for (Holder<StructureSet> set : state.possibleStructureSets()) {
             try {
-                if (!set.value().placement().isStructureChunk(state, at.x, at.z)) continue;
+                if (!placement(end, set, style).isStructureChunk(state, at.x, at.z)) continue;
                 Placed placed = pick(set.value(), end, noise, random, biomes, style, state.getLevelSeed(), at);
                 if (placed != null) {
                     out.add(placed);
