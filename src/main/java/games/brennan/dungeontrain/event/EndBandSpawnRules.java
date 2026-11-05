@@ -21,16 +21,20 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.MobSpawnEvent;
 
 /**
- * What may spawn naturally in a <b>BetterEnd</b> End-band column, under the overworld's sky.
+ * What may spawn naturally in a sampled ({@link #isSampledColumn BetterEnd or Biomes O' Plenty}) End-band
+ * column, under the overworld's sky.
  *
  * <p>{@link BandMobSpawnEvents} allows only endermen across the End band; here a BetterEnd column also
  * admits whatever its own biome lists ({@link #admits}), which is how slimes, shadow walkers, dragonflies,
- * moths and End fish reach the band.</p>
+ * moths and End fish reach the band. A BoP column stays endermen-only: BoP's End biomes list no mobs, and its
+ * vanilla patches may carry what other mods inject.</p>
  *
  * <p>Endermen and shadow walkers are ruled by light, in two checks, and both read the sky: the real End has
- * none, the band has the overworld's, so by day neither could ever spawn on an island. Both give way here
- * on a block that a real End would allow ({@link #skyDoesNotCount}): no block light, a floor the mob may
- * stand on, and not on Peaceful. Mobs with rules of their own (the End slime) are left to them.</p>
+ * none, so no time of day, while the band has the overworld's, so by day neither could ever spawn on an
+ * island. Both give way in a sampled column on a block that a real End would allow ({@link #skyDoesNotCount}):
+ * no block light, a floor the mob may stand on, and not on Peaceful. Mobs with rules of their own (the End
+ * slime) are left to them. {@code EnderManEndBandMixin} does the same for what daylight does to a living
+ * enderman.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class EndBandSpawnRules {
@@ -45,17 +49,27 @@ public final class EndBandSpawnRules {
     }
 
     /** Whether a light-ruled monster may ignore the sky: the real End's own limit is block light 0. */
-    static boolean skyDoesNotCount(boolean betterEndColumn, boolean lightRuled, int blockLight, boolean peaceful) {
-        return betterEndColumn && lightRuled && blockLight == 0 && !peaceful;
+    static boolean skyDoesNotCount(boolean sampledColumn, boolean lightRuled, int blockLight, boolean peaceful) {
+        return sampledColumn && lightRuled && blockLight == 0 && !peaceful;
     }
 
     /** True for a band column generated from the BetterEnd End. */
     static boolean isBetterEndColumn(ServerLevel level, int x, int z) {
-        if (!level.dimension().equals(Level.OVERWORLD)) return false;
-        if (DisintegrationBand.middleRampAt(level, x, z) <= 0.0) return false;
+        return sampledLook(level, x, z) == CycleLayout.Style.BETTER;
+    }
+
+    /** True for a band column generated from a sampled End, BetterEnd or BoP: the sky there does not count. */
+    public static boolean isSampledColumn(ServerLevel level, int x, int z) {
+        return sampledLook(level, x, z) != null;
+    }
+
+    /** The sampled End look of a band column, or {@code null} for anything else, the vanilla End band included. */
+    private static CycleLayout.Style sampledLook(ServerLevel level, int x, int z) {
+        if (!level.dimension().equals(Level.OVERWORLD)) return null;
+        if (DisintegrationBand.middleRampAt(level, x, z) <= 0.0) return null;
         long seed = DungeonTrainWorldData.get(level).getGenerationSeed();
-        return MixBand.cycleAtColumn(level, x, z).endSourceLookAt(x, z, seed) == CycleLayout.Style.BETTER
-                && EndBandSampler.appliesTo(level.getServer(), CycleLayout.Style.BETTER);
+        CycleLayout.Style look = MixBand.cycleAtColumn(level, x, z).endSourceLookAt(x, z, seed);
+        return EndBandSampler.appliesTo(level.getServer(), look) ? look : null;
     }
 
     /** Whether the biome at {@code pos} lists {@code type} in its own category. */
@@ -70,7 +84,7 @@ public final class EndBandSpawnRules {
 
     private static boolean skyDoesNotCount(ServerLevel level, EntityType<?> type, BlockPos pos) {
         return isLightRuled(type)
-                && skyDoesNotCount(isBetterEndColumn(level, pos.getX(), pos.getZ()), true,
+                && skyDoesNotCount(isSampledColumn(level, pos.getX(), pos.getZ()), true,
                         level.getBrightness(LightLayer.BLOCK, pos), level.getDifficulty() == Difficulty.PEACEFUL);
     }
 

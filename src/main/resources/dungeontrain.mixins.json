@@ -6,6 +6,7 @@
   "refmap": "dungeontrain.refmap.json",
   "plugin": "games.brennan.dungeontrain.mixin.CoreMixinPlugin",
   "mixins": [
+    "EnderManEndBandMixin",
     "NetherPortalBlockBandJumpMixin",
     "NetherPortalBlockInvoker",
     "PortalForcerRoofCapMixin",
@@ -23,6 +24,7 @@
     "TamableAnimalTameMixin",
     "TamableAnimalFollowTeleportMixin",
     "AbstractHorseTameMixin",
+    "WanderingTraderStockMixin",
     "LightningBoltVisualOnlyMixin",
     "RegenerationSoftCapMixin",
     "FlowingFluidExternalWaterMixin",

@@ -253,15 +253,30 @@ public final class EndBandSampler {
         ProtoChunk ground = fill.fill(end, noise, random, chunk, workspace);
         if (ground == null) return null;
         if (carve) carveGround(noise, random, ground, workspace, end.getSeed(), endPos);
+        decorate(end, noise, random, source, bop, endPos, workspace, ground);
+        return copyOut(end, ground, pos, endPos, bedY, displayMinY, displayMaxY);
+    }
+
+    /**
+     * The biome's decoration with its structures, best effort: a failure keeps the bare terrain. A BoP pass
+     * keeps vanilla + BoP features only: BetterEnd injects its ores into the vanilla End biomes, which the BoP
+     * End shares.
+     */
+    private static void decorate(ServerLevel end, NoiseBasedChunkGenerator noise, RandomState random, BiomeSource source,
+                                 boolean bop, ChunkPos endPos, OfflineChunkSampler.Workspace workspace, ProtoChunk chunk) {
         try {
-            // A BoP pass keeps vanilla + BoP features only: BetterEnd injects its ores into the vanilla
-            // End biomes, which the BoP End shares.
-            if (bop) OfflineChunkSampler.decorate(noise, workspace, ground, true, BopEnd.NAMESPACE);
-            else OfflineChunkSampler.decorate(noise, EndBandStructures.withStructures(end, noise, random, source, endPos, workspace), ground);
+            if (bop) {
+                BopEnd.Built built = BopEnd.get(end.getServer());
+                OfflineChunkSampler.Workspace structures = built == null ? workspace
+                        : EndBandStructures.withStructures(end, noise, random, source, CycleLayout.Style.BOP, built.structureState(), endPos, workspace);
+                OfflineChunkSampler.decorate(noise, structures, chunk, true, BopEnd.NAMESPACE);
+            } else {
+                OfflineChunkSampler.decorate(noise, EndBandStructures.withStructures(end, noise, random, source, CycleLayout.Style.BETTER,
+                        end.getChunkSource().getGeneratorState(), endPos, workspace), chunk);
+            }
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] End-band decoration failed at {} — keeping bare terrain", endPos, t);
         }
-        return copyOut(end, ground, pos, endPos, bedY, displayMinY, displayMaxY, !bop);
     }
 
     /**
@@ -292,13 +307,8 @@ public final class EndBandSampler {
             }
         }
         OfflineChunkSampler.Workspace workspace = OfflineChunkSampler.workspaceFor(end, noise, random, centre, ring::get, biomes);
-        try {
-            if (bop) OfflineChunkSampler.decorate(noise, workspace, centre, true, BopEnd.NAMESPACE);
-            else OfflineChunkSampler.decorate(noise, EndBandStructures.withStructures(end, noise, random, source, endPos, workspace), centre);
-        } catch (Throwable t) {
-            LOGGER.debug("[DungeonTrain] End-band decoration failed at {} — keeping bare terrain", endPos, t);
-        }
-        Result own = copyOut(end, centre, pos, endPos, bedY, displayMinY, displayMaxY, !bop);
+        decorate(end, noise, random, source, bop, endPos, workspace, centre);
+        Result own = copyOut(end, centre, pos, endPos, bedY, displayMinY, displayMaxY);
         if (own == null) return null;
         int chunkOffsetX = EndBandStyle.endChunkOffsetX(passIndex);
         int shiftX = pos.getMinBlockX() - endPos.getMinBlockX();
@@ -403,13 +413,13 @@ public final class EndBandSampler {
     }
 
     /**
-     * Copy the End's island band out of the sample, shifted onto track level; {@code structures} when it may
-     * hold any, whose End cities and mountains stand well above the islands' {@link EndIslandGeometry#END_Y_SAMPLE_MAX},
-     * so the copy runs to the End's ceiling.
+     * Copy the End's island band out of the sample, shifted onto track level. End cities and mountains stand well
+     * above the islands' {@link EndIslandGeometry#END_Y_SAMPLE_MAX}, so with structures on the copy runs to the
+     * End's ceiling.
      */
     private static Result copyOut(ServerLevel end, ProtoChunk ground, ChunkPos pos, ChunkPos endPos, int bedY,
-                                  int displayMinY, int displayMaxY, boolean structures) {
-        int topEndY = structures && EndBandConfig.structures() ? end.getMaxBuildHeight() - 1 : EndIslandGeometry.END_Y_SAMPLE_MAX;
+                                  int displayMinY, int displayMaxY) {
+        int topEndY = EndBandConfig.structures() ? end.getMaxBuildHeight() - 1 : EndIslandGeometry.END_Y_SAMPLE_MAX;
         int minY = Math.max(displayMinY, EndBandStyle.displayY(EndIslandGeometry.END_Y_SAMPLE_MIN, bedY));
         int maxY = Math.min(displayMaxY - 1, EndBandStyle.displayY(topEndY, bedY));
         if (maxY < minY) return null;

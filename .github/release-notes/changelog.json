@@ -33352,6 +33352,192 @@
       "released": true,
       "released_in": "v0.1671.0",
       "released_at": "2026-11-05T08:06:41Z"
+    },
+    {
+      "id": "bop-end-cities-no-daytime",
+      "version": "0.1678.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "mobs",
+        "balance"
+      ],
+      "title": "Rare finds on a stranger stretch",
+      "summary": "One of the stranger stretches of the journey now hides rare places to find, and what lives there no longer cares what time it is.",
+      "highlights": [
+        "Rare new places to explore along the line, with loot to find inside",
+        "Those creatures stay just as active and just as many by day as by night",
+        "Tweaked how often the oddest ground turns up"
+      ],
+      "pr": 2505,
+      "date": "2026-11-05",
+      "released": true,
+      "released_in": "v0.1679.0",
+      "released_at": "2026-11-05T13:28:55Z"
+    },
+    {
+      "id": "checklist-section-tick",
+      "version": "0.1675.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Advancement screen tweak",
+      "summary": "A small tidy-up on the advancements screen.",
+      "highlights": [],
+      "pr": 2502,
+      "date": "2026-11-05",
+      "released": true,
+      "released_in": "v0.1679.0",
+      "released_at": "2026-11-05T13:28:55Z"
+    },
+    {
+      "id": "dimensional-carriage-entry-lag",
+      "version": "0.1672.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Less lag entering dimensional carriages",
+      "summary": "Stepping into a dimensional carriage no longer freezes the world around you.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2500,
+      "date": "2026-11-05",
+      "released": true,
+      "released_in": "v0.1679.0",
+      "released_at": "2026-11-05T13:28:55Z"
+    },
+    {
+      "id": "drifting-dimension-one-in-five",
+      "version": "0.1673.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "train"
+      ],
+      "title": "More dimensional carriages drift",
+      "summary": "Dimensional carriages drift far more often. You're more likely to arrive in one another traveller has built in, and more of your own work gets carried on down the line.",
+      "highlights": [
+        "One in five sealed dimensional carriages now drifts, up from one in fifteen"
+      ],
+      "pr": 2501,
+      "date": "2026-11-05",
+      "released": true,
+      "released_in": "v0.1679.0",
+      "released_at": "2026-11-05T13:28:55Z"
+    },
+    {
+      "id": "first-ever-survives-slow-server",
+      "version": "0.1676.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "advancements"
+      ],
+      "title": "First-ever announcements no longer go missing",
+      "summary": "Being the first passenger ever to earn an advancement now gets its announcement even when the server is slow to answer.",
+      "highlights": [],
+      "pr": 2504,
+      "date": "2026-11-05",
+      "released": true,
+      "released_in": "v0.1679.0",
+      "released_at": "2026-11-05T13:28:55Z"
+    },
+    {
+      "id": "rarer-chest-keys",
+      "version": "0.1676.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot",
+        "balance"
+      ],
+      "title": "Rarer keys in chests",
+      "summary": "Keys now turn up in chests about half as often.",
+      "highlights": [],
+      "pr": 2503,
+      "date": "2026-11-05",
+      "released": true,
+      "released_in": "v0.1679.0",
+      "released_at": "2026-11-05T13:28:55Z"
+    },
+    {
+      "id": "rarer-vault-key",
+      "version": "0.1678.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot",
+        "balance"
+      ],
+      "title": "Vault key tweak",
+      "summary": "The rarest vault key now turns up less often.",
+      "highlights": [],
+      "pr": 2506,
+      "date": "2026-11-05",
+      "released": true,
+      "released_in": "v0.1679.0",
+      "released_at": "2026-11-05T13:28:55Z"
+    },
+    {
+      "id": "twitch-links-live-chat",
+      "version": "0.1671.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Streamers' Twitch links in Live chat",
+      "summary": "When a streamer with a Twitch goes live, or you tune in to one, Live chat now links their channel. Works in game and on the website.",
+      "highlights": [],
+      "pr": 2498,
+      "date": "2026-11-05",
+      "released": true,
+      "released_in": "v0.1679.0",
+      "released_at": "2026-11-05T13:28:55Z"
+    },
+    {
+      "id": "vault-reward-stats",
+      "version": "0.1672.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Stronger gear from vaults",
+      "summary": "Weapons and armor from vaults now come with stronger stats. The rarer the key, the better the gear.",
+      "highlights": [],
+      "pr": 2499,
+      "date": "2026-11-05",
+      "released": true,
+      "released_in": "v0.1679.0",
+      "released_at": "2026-11-05T13:28:55Z"
+    },
+    {
+      "id": "wandering-trader-dungeon-item",
+      "version": "0.1678.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot"
+      ],
+      "title": "Wandering traders carry something from the train",
+      "summary": "Every wandering trader now has one Dungeon Train item for sale. They only have one, so grab it while you can.",
+      "highlights": [],
+      "pr": 2507,
+      "date": "2026-11-05",
+      "released": true,
+      "released_in": "v0.1679.0",
+      "released_at": "2026-11-05T13:28:55Z"
     }
   ]
 }

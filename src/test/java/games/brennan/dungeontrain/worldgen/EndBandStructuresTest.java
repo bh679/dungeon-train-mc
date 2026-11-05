@@ -22,11 +22,32 @@ class EndBandStructuresTest {
     @Test
     @DisplayName("Eternal portals and DT's own structures are left out; the rest are built")
     void exclusions() {
-        assertTrue(EndBandStructures.isExcluded(id("betterend", "eternal_portal")));
-        assertTrue(EndBandStructures.isExcluded(id("dungeontrain", "end_city")));
-        assertFalse(EndBandStructures.isExcluded(id("betterend", "end_bridge")));
-        assertFalse(EndBandStructures.isExcluded(id("betterend", "end_village")));
-        assertFalse(EndBandStructures.isExcluded(id("minecraft", "end_city")));
+        CycleLayout.Style better = CycleLayout.Style.BETTER;
+        assertTrue(EndBandStructures.isExcluded(id("betterend", "eternal_portal"), better));
+        assertTrue(EndBandStructures.isExcluded(id("dungeontrain", "end_city"), better));
+        assertFalse(EndBandStructures.isExcluded(id("betterend", "end_bridge"), better));
+        assertFalse(EndBandStructures.isExcluded(id("betterend", "end_village"), better));
+        assertFalse(EndBandStructures.isExcluded(id("minecraft", "end_city"), better));
+    }
+
+    @Test
+    @DisplayName("a Biomes O' Plenty pass builds only vanilla and BoP structures")
+    void bopExclusions() {
+        CycleLayout.Style bop = CycleLayout.Style.BOP;
+        assertFalse(EndBandStructures.isExcluded(id("minecraft", "end_city"), bop));
+        assertFalse(EndBandStructures.isExcluded(id("biomesoplenty", "anything"), bop));
+        assertTrue(EndBandStructures.isExcluded(id("betterend", "end_bridge"), bop), "listed on vanilla End biomes");
+        assertTrue(EndBandStructures.isExcluded(id("betterend", "eternal_portal"), bop));
+        assertTrue(EndBandStructures.isExcluded(id("dungeontrain", "end_city"), bop));
+        assertTrue(EndBandStructures.isExcluded(id("othermod", "tower"), bop));
+    }
+
+    @Test
+    @DisplayName("only a Biomes O' Plenty pass spaces End cities like the vanilla End band")
+    void bandCitySpacing() {
+        assertTrue(EndBandStructures.usesBandCitySpacing(id("minecraft", "end_cities"), CycleLayout.Style.BOP));
+        assertFalse(EndBandStructures.usesBandCitySpacing(id("minecraft", "end_cities"), CycleLayout.Style.BETTER));
+        assertFalse(EndBandStructures.usesBandCitySpacing(id("biomesoplenty", "anything"), CycleLayout.Style.BOP));
     }
 
     @Test
