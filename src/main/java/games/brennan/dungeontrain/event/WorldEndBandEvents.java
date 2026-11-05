@@ -23,6 +23,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -439,6 +440,8 @@ public final class WorldEndBandEvents {
      */
     private static void apply(ServerLevel level, LevelChunk chunk, EndBandSampler.Result r) {
         boolean changed = fill(level, chunk, r);
+        EndBandTerrainWriter.admitEntities(level, chunk, r, tag ->
+                EntityType.create(tag, level).ifPresent(level::tryAddFreshEntityWithPassengers));
         chunk.setData(ModDataAttachments.END_BAND_PENDING, Boolean.FALSE);
         chunk.setUnsaved(true);
         for (EndBandSpill spill : SPILL_WAITING.take(chunk.getPos().toLong())) changed |= writeSpill(level, chunk, spill);
