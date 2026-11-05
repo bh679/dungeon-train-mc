@@ -28,8 +28,10 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 /**
- * The real End's structures for a sampled <b>BetterEnd</b> band chunk: its bridges, small islands, lakes,
- * mountains, ice stars, giant glowshrooms, sulphuric caves, villages and End cities.
+ * The real End's structures for a sampled band chunk: for a <b>BetterEnd</b> pass its bridges, small islands,
+ * lakes, mountains, ice stars, giant glowshrooms, sulphuric caves, villages and End cities; for a
+ * <b>Biomes O' Plenty</b> pass ({@link BopEnd}) the End cities, read through BoP's own generator and structure
+ * sets, since BetterEnd's structures also list the vanilla End biomes the BoP End shares.
  *
  * <p>A sample is a throwaway chunk that never went through vanilla's {@code STRUCTURE_STARTS} and
  * {@code STRUCTURE_REFERENCES} steps, so decoration found no starts and built nothing. Those steps would need
@@ -38,8 +40,8 @@ import java.util.function.Supplier;
  * places the pieces as vanilla does: each step in order, clipped to the chunk, so a bridge carries on across
  * every sample it reaches.</p>
  *
- * <p>A start depends only on its chunk, the End's seed and its biomes, so each chunk's starts are generated
- * once and shared between samples ({@link #STARTS}).</p>
+ * <p>A start depends only on its look, its chunk, the End's seed and its biomes, so each chunk's starts are
+ * generated once per look and shared between samples ({@link #STARTS}).</p>
  *
  * <p><b>Left out:</b> {@link #isExcluded Eternal portals}, which are working portals and would lead out of the
  * train's world, and DT's own structures, which belong to the display world.</p>
@@ -67,16 +69,18 @@ public final class EndBandStructures {
     private EndBandStructures() {}
 
     /**
-     * {@code workspace} answering structure lookups for End chunk {@code endPos} from the End's structure sets,
-     * or unchanged when {@code endBandStructures} is off. {@code biomes} is the band's remapped source; the
-     * per-sample memo must not reach here, since a start outlives the sample that first asked for it.
+     * {@code workspace} answering structure lookups for End chunk {@code endPos} of look {@code style} from
+     * {@code state}'s structure sets, or unchanged when {@code endBandStructures} is off. {@code biomes} is the
+     * pass's own source; the per-sample memo must not reach here, since a start outlives the sample that first
+     * asked for it.
      */
     public static OfflineChunkSampler.Workspace withStructures(ServerLevel end, NoiseBasedChunkGenerator noise,
-                                                               RandomState random, BiomeSource biomes, ChunkPos endPos,
-                                                               OfflineChunkSampler.Workspace workspace) {
+                                                               RandomState random, BiomeSource biomes,
+                                                               CycleLayout.Style style, ChunkGeneratorStructureState state,
+                                                               ChunkPos endPos, OfflineChunkSampler.Workspace workspace) {
         if (!EndBandConfig.structures()) return workspace;
         Supplier<Map<Structure, List<StructureStart>>> reaching =
-                () -> startsReaching(end, noise, random, biomes, endPos);
+                () -> startsReaching(end, noise, random, biomes, style, state, endPos);
         StructureManager manager = new SampleStructures(workspace, end, reaching);
         return new OfflineChunkSampler.Workspace(workspace.region(), manager, workspace.biomes());
     }
@@ -86,9 +90,10 @@ public final class EndBandStructures {
         STARTS.clear();
     }
 
-    /** True for a structure the band never builds. */
-    static boolean isExcluded(ResourceLocation id) {
-        return ETERNAL_PORTAL.equals(id) || DT_NAMESPACE.equals(id.getNamespace());
+    /** True for a structure a pass of look {@code style} never builds. */
+    static boolean isExcluded(ResourceLocation id, CycleLayout.Style style) {
+        if (ETERNAL_PORTAL.equals(id) || DT_NAMESPACE.equals(id.getNamespace())) return true;
+        return style == CycleLayout.Style.BOP && !VanillaOnlySample.allows(id) && !BopEnd.NAMESPACE.equals(id.getNamespace());
     }
 
     /** Whether box {@code [minX, maxX] × [minZ, maxZ]} touches {@code chunk}, as a piece must to be placed there. */
@@ -99,13 +104,15 @@ public final class EndBandStructures {
 
     /** Every start within {@link #REACH_CHUNKS} whose box touches {@code endPos}, by structure. */
     private static Map<Structure, List<StructureStart>> startsReaching(ServerLevel end, NoiseBasedChunkGenerator noise,
-                                                                       RandomState random, BiomeSource biomes, ChunkPos endPos) {
+                                                                       RandomState random, BiomeSource biomes,
+                                                                       CycleLayout.Style style, ChunkGeneratorStructureState state,
+                                                                       ChunkPos endPos) {
         Map<Structure, List<StructureStart>> out = new IdentityHashMap<>();
         for (int dx = -REACH_CHUNKS; dx <= REACH_CHUNKS; dx++) {
             for (int dz = -REACH_CHUNKS; dz <= REACH_CHUNKS; dz++) {
                 ChunkPos at = new ChunkPos(endPos.x + dx, endPos.z + dz);
-                List<Placed> placed = STARTS.get(new EndBandGroundCache.Key(CycleLayout.Style.BETTER, at.toLong()),
-                        () -> generateStarts(end, noise, random, biomes, at));
+                List<Placed> placed = STARTS.get(new EndBandGroundCache.Key(style, at.toLong()),
+                        () -> generateStarts(end, noise, random, biomes, style, state, at));
                 if (placed == null) continue;     // another thread's generation failed; a later sample retries
                 for (Placed p : placed) {
                     var box = p.start().getBoundingBox();
@@ -120,13 +127,13 @@ public final class EndBandStructures {
 
     /** What vanilla's {@code ChunkGenerator.createStructures} would start in chunk {@code at}. */
     private static List<Placed> generateStarts(ServerLevel end, NoiseBasedChunkGenerator noise, RandomState random,
-                                               BiomeSource biomes, ChunkPos at) {
-        ChunkGeneratorStructureState state = end.getChunkSource().getGeneratorState();
+                                               BiomeSource biomes, CycleLayout.Style style,
+                                               ChunkGeneratorStructureState state, ChunkPos at) {
         List<Placed> out = new ArrayList<>(0);
         for (Holder<StructureSet> set : state.possibleStructureSets()) {
             try {
                 if (!set.value().placement().isStructureChunk(state, at.x, at.z)) continue;
-                Placed placed = pick(set.value(), end, noise, random, biomes, state.getLevelSeed(), at);
+                Placed placed = pick(set.value(), end, noise, random, biomes, style, state.getLevelSeed(), at);
                 if (placed != null) {
                     out.add(placed);
                     LOGGER.debug("[DungeonTrain] End-band start {} at End chunk {}, box {}",
@@ -142,12 +149,13 @@ public final class EndBandStructures {
 
     /** One start from {@code set}: vanilla's weighted draw, falling through to the next entry when one can't site. */
     private static Placed pick(StructureSet set, ServerLevel end, NoiseBasedChunkGenerator noise, RandomState random,
-                               BiomeSource biomes, long seed, ChunkPos at) {
+                               BiomeSource biomes, CycleLayout.Style style, long seed, ChunkPos at) {
         List<StructureSet.StructureSelectionEntry> entries = new ArrayList<>(set.structures().size());
         for (StructureSet.StructureSelectionEntry e : set.structures()) {
             ResourceLocation id = e.structure().unwrapKey().map(k -> k.location()).orElse(null);
-            if (id == null || !isExcluded(id)) entries.add(e);
+            if (id == null || !isExcluded(id, style)) entries.add(e);
         }
+        if (entries.isEmpty()) return null;
         WorldgenRandom draw = new WorldgenRandom(new LegacyRandomSource(0L));
         draw.setLargeFeatureSeed(seed, at.x, at.z);
         int total = entries.stream().mapToInt(StructureSet.StructureSelectionEntry::weight).sum();

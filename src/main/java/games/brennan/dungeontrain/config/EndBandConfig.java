@@ -66,8 +66,9 @@ public final class EndBandConfig {
                         "so an existing world keeps its vanilla patches next to remapped new chunks. Default true.")
                 .define("endBandBetterEndOnly", DEFAULT_BETTER_END_ONLY);
         structures = b
-                .comment("Build the real End's structures in the BetterEnd End band: bridges, small islands, lakes,",
-                        "mountains, villages, End cities and the rest. Turn off if the band generates too slowly.",
+                .comment("Build the real End's structures in the BetterEnd and Biomes O' Plenty End bands: bridges,",
+                        "small islands, lakes, mountains, villages, End cities and the rest, whichever each band's",
+                        "End has. Turn off if the band generates too slowly.",
                         "Only chunks generated after the change are affected, so a structure can stop at the line",
                         "where new chunks begin. Default true.")
                 .define("endBandStructures", DEFAULT_STRUCTURES);
@@ -88,7 +89,7 @@ public final class EndBandConfig {
         return DungeonTrainCommonConfig.isLoaded() && betterEndOnly != null ? betterEndOnly.get() : DEFAULT_BETTER_END_ONLY;
     }
 
-    /** Whether BetterEnd band samples build the real End's structures; hardcoded default pre-load. */
+    /** Whether sampled End-band chunks build the real End's structures; hardcoded default pre-load. */
     public static boolean structures() {
         return DungeonTrainCommonConfig.isLoaded() && structures != null ? structures.get() : DEFAULT_STRUCTURES;
     }
