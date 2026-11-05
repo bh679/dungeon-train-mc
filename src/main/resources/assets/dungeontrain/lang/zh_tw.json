@@ -5589,6 +5589,7 @@
   "gui.dungeontrain.low_memory.ok": "知道了",
   "gui.dungeontrain.low_memory.dont_show": "不再顯示",
   "chat.dungeontrain.free_play.cause.keep_inventory": "本世界開啟了「保留物品欄」。",
+  "chat.dungeontrain.free_play.cause.profile_tampered": "你的進度存檔檔案在遊戲外被修改過。",
   "chat.dungeontrain.free_play.cause.player": "%s 進入了自由模式，因此本世界的所有人現在都處於自由模式。",
   "chat.dungeontrain.free_play.cause.player_used": "%s 使用了 %s，因此本世界的所有人現在都處於自由模式。",
   "chat.dungeontrain.free_play.cause.player_switched": "%s 切換到了 %s，因此本世界的所有人現在都處於自由模式。",

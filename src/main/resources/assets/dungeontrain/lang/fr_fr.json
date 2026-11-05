@@ -5641,6 +5641,7 @@
   "gui.dungeontrain.low_memory.ok": "Compris",
   "gui.dungeontrain.low_memory.dont_show": "Ne plus afficher",
   "chat.dungeontrain.free_play.cause.keep_inventory": "« Conserver l'inventaire » est activé dans ce monde.",
+  "chat.dungeontrain.free_play.cause.profile_tampered": "Tes fichiers de progression sauvegardés ont été modifiés en dehors du jeu.",
   "chat.dungeontrain.free_play.cause.player": "%s est passé en Jeu Libre, donc tout le monde dans ce monde est maintenant en Jeu Libre.",
   "chat.dungeontrain.free_play.cause.player_used": "%s a utilisé %s, donc tout le monde dans ce monde est maintenant en Jeu Libre.",
   "chat.dungeontrain.free_play.cause.player_switched": "%s est passé en %s, donc tout le monde dans ce monde est maintenant en Jeu Libre.",

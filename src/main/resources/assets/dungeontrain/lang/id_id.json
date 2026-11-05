@@ -5575,6 +5575,7 @@
   "gui.dungeontrain.low_memory.ok": "Mengerti",
   "gui.dungeontrain.low_memory.dont_show": "Jangan tampilkan lagi",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Di dunia ini \"Simpan Inventaris\" sedang menyala.",
+  "chat.dungeontrain.free_play.cause.profile_tampered": "File progres tersimpanmu diubah di luar game.",
   "chat.dungeontrain.free_play.cause.player": "%s masuk ke Main Bebas, jadi semua orang di dunia ini sekarang juga dalam Main Bebas.",
   "chat.dungeontrain.free_play.cause.player_used": "%s menggunakan %s, jadi semua orang di dunia ini sekarang juga dalam Main Bebas.",
   "chat.dungeontrain.free_play.cause.player_switched": "%s beralih ke %s, jadi semua orang di dunia ini sekarang juga dalam Main Bebas.",

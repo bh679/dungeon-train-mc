@@ -5549,6 +5549,7 @@
       "gui.dungeontrain.low_memory.ok",
       "gui.dungeontrain.low_memory.dont_show",
       "chat.dungeontrain.free_play.cause.keep_inventory",
+      "chat.dungeontrain.free_play.cause.profile_tampered",
       "chat.dungeontrain.free_play.cause.player",
       "chat.dungeontrain.free_play.cause.player_used",
       "chat.dungeontrain.free_play.cause.player_switched",

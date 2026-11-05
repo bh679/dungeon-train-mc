@@ -170,8 +170,10 @@ public final class AdvancementProfiles {
             (GlobalAchievementStore.isShared(holder.id()) ? shared : profile).add(holder.id());
         }
         UUID uuid = player.getUUID();
-        int added = GlobalAchievementStore.appendAll(uuid, profileKey, profile)
-            + GlobalAchievementStore.appendAll(uuid, GlobalAchievementStore.SHARED, shared);
+        // Absorbed, not granted: a world's advancement file is as editable as the profile, so what it
+        // says was earned is replayed but never vouched for (CompletionistAdvancement.isVerifiedEarn).
+        int added = GlobalAchievementStore.appendAllAbsorbed(uuid, profileKey, profile)
+            + GlobalAchievementStore.appendAllAbsorbed(uuid, GlobalAchievementStore.SHARED, shared);
         if (added > 0) {
             LOGGER.info("[DungeonTrain] Absorbed {} already-earned advancement(s) into the {} profile for {}",
                 added, profileKey, player.getName().getString());
@@ -336,8 +338,14 @@ public final class AdvancementProfiles {
                     }
                     if (player.getAdvancements().getOrStartProgress(holder).isDone()) {
                         ResourceLocation id = holder.id();
+                        // Progress from a file the store could not vouch for finishes as absorbed.
+                        boolean unverified = GlobalCriteriaProgress.isUnverified(uuid, partition);
                         finished.add(() -> {
-                            GlobalAchievementStore.append(uuid, partition, id);
+                            if (unverified) {
+                                GlobalAchievementStore.appendAllAbsorbed(uuid, partition, List.of(id));
+                            } else {
+                                GlobalAchievementStore.append(uuid, partition, id);
+                            }
                             GlobalCriteriaProgress.removeAdvancement(uuid, partition, id);
                         });
                     }

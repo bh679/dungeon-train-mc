@@ -5641,6 +5641,7 @@
   "gui.dungeontrain.low_memory.ok": "Verstanden",
   "gui.dungeontrain.low_memory.dont_show": "Nicht mehr anzeigen",
   "chat.dungeontrain.free_play.cause.keep_inventory": "In dieser Welt ist „Inventar behalten“ aktiviert.",
+  "chat.dungeontrain.free_play.cause.profile_tampered": "Deine gespeicherten Fortschrittsdateien wurden außerhalb des Spiels verändert.",
   "chat.dungeontrain.free_play.cause.player": "%s ist ins Freie Spiel gewechselt, daher ist jetzt jeder in dieser Welt im Freien Spiel.",
   "chat.dungeontrain.free_play.cause.player_used": "%s hat %s verwendet, daher ist jetzt jeder in dieser Welt im Freien Spiel.",
   "chat.dungeontrain.free_play.cause.player_switched": "%s hat zu %s gewechselt, daher ist jetzt jeder in dieser Welt im Freien Spiel.",

@@ -5575,6 +5575,7 @@
   "gui.dungeontrain.low_memory.ok": "확인",
   "gui.dungeontrain.low_memory.dont_show": "다시 표시 안 함",
   "chat.dungeontrain.free_play.cause.keep_inventory": "이 세계에서는 '인벤토리 유지'가 켜져 있습니다.",
+  "chat.dungeontrain.free_play.cause.profile_tampered": "저장된 진행 파일이 게임 밖에서 변경되었습니다.",
   "chat.dungeontrain.free_play.cause.player": "%s 님이 자유 플레이로 전환해서 이 세계의 모두가 자유 플레이가 되었습니다.",
   "chat.dungeontrain.free_play.cause.player_used": "%s 님이 %s 을(를) 사용해서 이 세계의 모두가 자유 플레이가 되었습니다.",
   "chat.dungeontrain.free_play.cause.player_switched": "%s 님이 %s(으)로 전환해서 이 세계의 모두가 자유 플레이가 되었습니다.",

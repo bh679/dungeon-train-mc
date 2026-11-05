@@ -1,15 +1,18 @@
 package games.brennan.dungeontrain.advancement;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import games.brennan.dungeonbackup.api.Located;
+import games.brennan.dungeontrain.cheat.ProfileIntegrity;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
+import games.brennan.dungeontrain.data.SealedJson;
 import games.brennan.dungeontrain.player.DifficultyPartition;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
@@ -64,6 +67,9 @@ public final class BurritoClock {
     /** Pre-relocation home of the stats folder. This store never lived there; kept for {@link Located}. */
     private static final String LEGACY_DIR_NAME = "dungeontrain-stats";
     private static final String FILE_SUFFIX = "-burrito.json";
+    static final String SEAL_STORE = "burrito";
+    /** Partition every clock file is sealed under; the file is not split by difficulty. */
+    private static final String SEAL_PARTITION = "all";
 
     /** One earned burrito: its play time (ticks), when, which attempt, on what difficulty and version. */
     public record Completion(long ticks, long earnedAt, int attempt, String difficulty, String modVersion) {
@@ -149,6 +155,10 @@ public final class BurritoClock {
 
     /** Players whose cached counter has moved since it was last written. */
     private static final Set<UUID> DIRTY = ConcurrentHashMap.newKeySet();
+    /** Players whose file had no seal on an install that had sealed before: kept, not vouched for. */
+    private static final Set<UUID> UNVERIFIED = ConcurrentHashMap.newKeySet();
+    /** Players whose file was caught edited: written back with the taint under the seal. */
+    private static final Set<UUID> TAINTED = ConcurrentHashMap.newKeySet();
 
     private BurritoClock() {}
 
@@ -177,6 +187,12 @@ public final class BurritoClock {
     /** This player's play-time counter: the clock every burrito attempt is measured on. */
     public static long playTicks(UUID uuid) {
         return current(uuid).playTicks();
+    }
+
+    /** Was this player's clock read from a file the store could not vouch for? */
+    public static boolean isUnverified(UUID uuid) {
+        current(uuid);
+        return UNVERIFIED.contains(uuid);
     }
 
     /** Add {@code delta} ticks of play. Cached only; written by {@link #flush} / {@link #flushAll}. */
@@ -249,6 +265,9 @@ public final class BurritoClock {
     public static synchronized boolean deleteFor(UUID uuid) throws IOException {
         CACHE.remove(uuid);
         DIRTY.remove(uuid);
+        UNVERIFIED.remove(uuid);
+        TAINTED.remove(uuid);
+        ProfileIntegrity.clear(uuid);
         boolean removed = false;
         for (Path path : located(uuid).all()) {
             removed |= Files.deleteIfExists(path);
@@ -265,19 +284,42 @@ public final class BurritoClock {
     private static Data loadFromDisk(UUID uuid) {
         Path path = file(uuid);
         if (!Files.isRegularFile(path)) return Data.EMPTY;
+        JsonElement element;
         try (Reader reader = Files.newBufferedReader(path)) {
-            JsonElement element = JsonParser.parseReader(reader);
-            var result = Data.CODEC.parse(JsonOps.INSTANCE, element);
-            if (result.error().isPresent()) {
-                LOGGER.warn("[DungeonTrain] BurritoClock: parse failed for {}: {}",
-                    path, result.error().get().message());
-                return Data.EMPTY;
-            }
-            return result.result().orElse(Data.EMPTY);
+            element = JsonParser.parseReader(reader);
         } catch (IOException | RuntimeException e) {
             LOGGER.warn("[DungeonTrain] BurritoClock: error reading {}: {}", path, e.getMessage());
             return Data.EMPTY;
         }
+        var result = Data.CODEC.parse(JsonOps.INSTANCE, element);
+        if (result.error().isPresent() || !element.isJsonObject()) {
+            LOGGER.warn("[DungeonTrain] BurritoClock: parse failed for {}: {}",
+                path, result.error().map(e -> e.message()).orElse("not an object"));
+            return Data.EMPTY;
+        }
+        Data data = result.result().orElse(Data.EMPTY);
+        SealedJson.Verdict verdict = SealedJson.verify(element.getAsJsonObject(), scope(uuid));
+        switch (verdict.provenance()) {
+            case TAMPERED -> taint(uuid, path, data);
+            case UNVERIFIED -> {
+                UNVERIFIED.add(uuid);
+                LOGGER.warn("[DungeonTrain] BurritoClock: {} has no seal on an install that has sealed "
+                    + "before; its times are kept but not vouched for.", path.getFileName());
+            }
+            default -> { if (verdict.tainted()) taint(uuid, path, data); }
+        }
+        return data;
+    }
+
+    /** The file was caught edited: mark the player and write the taint back under the seal. */
+    private static void taint(UUID uuid, Path path, Data data) {
+        TAINTED.add(uuid);
+        ProfileIntegrity.markTampered(uuid, "The burrito clock " + path.getFileName());
+        saveToDisk(uuid, data);
+    }
+
+    private static String scope(UUID uuid) {
+        return SealedJson.scope(SEAL_STORE, uuid, SEAL_PARTITION);
     }
 
     private static void saveToDisk(UUID uuid, Data data) {
@@ -295,7 +337,8 @@ public final class BurritoClock {
             LOGGER.error("[DungeonTrain] BurritoClock: encode failed: {}", result.error().get().message());
             return;
         }
-        JsonElement element = result.result().orElseThrow();
+        JsonObject element = SealedJson.seal(result.result().orElseThrow().getAsJsonObject(),
+            scope(uuid), TAINTED.contains(uuid));
         try (Writer writer = Files.newBufferedWriter(tmp)) {
             writer.write(element.toString());
         } catch (IOException e) {
