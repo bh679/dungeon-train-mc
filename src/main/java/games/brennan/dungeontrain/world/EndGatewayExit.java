@@ -6,6 +6,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.TheEndGatewayBlockEntity;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.configurations.EndGatewayConfiguration;
@@ -31,11 +32,28 @@ public final class EndGatewayExit {
     /** Ground further than this from the gateway's foot isn't the ground it stands on: a landing pad goes there. */
     private static final int GROUND_REACH = 8;
 
+    /** Above the tallest terrain near the track; the client holds the player still until the chunks arrive. */
+    private static final int WAITING_ABOVE_TRAIN = 96;
+
     private EndGatewayExit() {}
 
-    /** The gateway to arrive at for column {@code x, z}: one already near it, or a new one on the ground. */
+    /** Whether everything a gateway and its landing at column {@code x, z} touch has generated. */
+    public static boolean isReady(ServerLevel level, int x, int z) {
+        for (int cx = (x - 1) >> 4; cx <= (x + LANDING_OFFSET + 1) >> 4; cx++) {
+            for (int cz = (z - 1) >> 4; cz <= (z + 1) >> 4; cz++) {
+                if (level.getChunkSource().getChunkNow(cx, cz) == null) return false;
+            }
+        }
+        return true;
+    }
+
+    /** Where a traveller waits while the far end generates: clear of whatever stands there. */
+    public static int waitingY(ServerLevel level, int trainY) {
+        return Math.min(trainY + WAITING_ABOVE_TRAIN, level.getMaxBuildHeight() - 2);
+    }
+
+    /** The gateway to arrive at for column {@code x, z}, once {@link #isReady}: one already near it, or a new one on the ground. */
     public static BlockPos findOrBuild(ServerLevel level, int x, int z) {
-        level.getChunk(x >> 4, z >> 4);
         BlockPos near = gatewayNear(level, x, z);
         if (near != null) return near;
         int ground = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
@@ -77,7 +95,9 @@ public final class EndGatewayExit {
         double bestDistance = (double) REUSE_RADIUS * REUSE_RADIUS;
         for (int cx = (x - REUSE_RADIUS) >> 4; cx <= (x + REUSE_RADIUS) >> 4; cx++) {
             for (int cz = (z - REUSE_RADIUS) >> 4; cz <= (z + REUSE_RADIUS) >> 4; cz++) {
-                for (BlockEntity be : level.getChunk(cx, cz).getBlockEntities().values()) {
+                LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
+                if (chunk == null) continue;
+                for (BlockEntity be : chunk.getBlockEntities().values()) {
                     if (!(be instanceof TheEndGatewayBlockEntity)) continue;
                     double dx = be.getBlockPos().getX() - x;
                     double dz = be.getBlockPos().getZ() - z;

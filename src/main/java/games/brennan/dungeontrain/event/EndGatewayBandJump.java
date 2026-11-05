@@ -30,7 +30,7 @@ import java.util.OptionalLong;
  * ({@link NetherPortalBandJump}). Gateways copied into an End band keep the exit they generated with, which on the
  * ride is a spot near its start. Instead, a gateway with a partner ({@link NetherPortalLinks#getEndGateway}) returns
  * to it; any other leads to the proportional spot in the overworld band before it
- * ({@link NetherPortalJump#previousOverworldX}), where {@link EndGatewayExit} builds its partner beside the track.
+ * ({@link NetherPortalJump#previousOverworldX}), where {@link EndGatewayArrivals} builds its partner beside the track.
  *
  * <p>A player goes through, and so does a player's ender pearl, the usual way into a gateway; the pearl carries its
  * owner when it lands. Nothing else does: a mob or item is not flung along the line.</p>
@@ -70,31 +70,34 @@ public final class EndGatewayBandJump {
         if (choice == NetherPortalBandJump.ExitChoice.UNLINK_AND_JUMP) links.unlink(origin);
 
         int fromX = entity.getBlockX();
-        BlockPos arrived;
+        String who = entity.getName().getString();
+        ServerPlayer player = entity instanceof ServerPlayer p ? p : null;
+        Vec3 arrival;
         if (choice == NetherPortalBandJump.ExitChoice.LINKED) {
-            arrived = partner;
+            arrival = EndGatewayExit.landingBeside(level, partner);
+            LOGGER.info("[DungeonTrain] end gateway: {} x={} ({}) → {} ({}), linked, pair {} ↔ {}", who, fromX,
+                    BandLabel.bandAt(level, fromX), partner, BandLabel.bandAt(level, partner.getX()), origin, partner);
         } else {
-            arrived = buildExit(level, data, entity, fromX);
-            if (arrived == null) {
+            BlockPos column = exitColumn(level, data, entity, fromX);
+            if (column == null) {
                 LOGGER.info("[DungeonTrain] end gateway at x={}: no overworld band behind it", fromX);
                 return STAY;
             }
-            if (!onCarriage) links.link(origin, arrived);
+            LOGGER.info("[DungeonTrain] end gateway: {} x={} ({}) heading for {} ({})", who, fromX,
+                    BandLabel.bandAt(level, fromX), column, BandLabel.bandAt(level, column.getX()));
+            EndGatewayArrivals.expect(level, column.getX(), column.getZ(), onCarriage ? null : origin, player, who, fromX);
+            arrival = new Vec3(column.getX() + 0.5, EndGatewayExit.waitingY(level, data.getTrainY()), column.getZ() + 0.5);
         }
 
-        LOGGER.info("[DungeonTrain] end gateway: {} x={} ({}) → {} ({}), gateways {} ↔ {}",
-                entity.getName().getString(), fromX, BandLabel.bandAt(level, fromX), arrived,
-                BandLabel.bandAt(level, arrived.getX()), origin, arrived);
-        Vec3 landing = EndGatewayExit.landingBeside(level, arrived);
-        if (entity instanceof ServerPlayer player) DungeonTrainNet.sendTo(player, new PortalLoadScreenPacket());
-        return new NetherPortalBandJump.Outcome(true, new DimensionTransition(level, landing,
+        if (player != null) DungeonTrainNet.sendTo(player, new PortalLoadScreenPacket());
+        return new NetherPortalBandJump.Outcome(true, new DimensionTransition(level, arrival,
                 entity instanceof ThrownEnderpearl ? PEARL_EXIT_MOVEMENT : Vec3.ZERO,
                 entity.getYRot(), entity.getXRot(), DimensionTransition.PLACE_PORTAL_TICKET));
     }
 
-    /** The gateway at the far end of a new trip, or null when there is no overworld band to go to. */
+    /** The column at the far end of a new trip, or null when there is no overworld band to go to. */
     @Nullable
-    private static BlockPos buildExit(ServerLevel level, DungeonTrainWorldData data, Entity entity, int fromX) {
+    private static BlockPos exitColumn(ServerLevel level, DungeonTrainWorldData data, Entity entity, int fromX) {
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
         // A column the End band's disintegration has reached still reads as the overworld, but it is breaking up
         // over the void: it counts with the End, as one stretch, and is never somewhere to arrive.
@@ -102,9 +105,8 @@ public final class EndGatewayBandJump {
                 x -> cycle.endMiddleRamp(x) > 0.0 ? END_STRETCH : BandLabel.bandAt(level, x),
                 x -> cycle.endMiddleRamp(x) <= 0.0 && isOverworldBand(TrainPhase.phaseAt(level, x)), fromX);
         if (target.isEmpty()) return null;
-        BlockPos column = level.getWorldBorder().clampToBounds(target.getAsLong(), entity.getY(),
+        return level.getWorldBorder().clampToBounds(target.getAsLong(), entity.getY(),
                 NetherPortalBandJump.sideOfTrack(data, entity.getZ()));
-        return EndGatewayExit.findOrBuild(level, column.getX(), column.getZ());
     }
 
     /** A band a gateway leads back to: the overworld stretches, and the Lost City, which is overworld terrain. */
