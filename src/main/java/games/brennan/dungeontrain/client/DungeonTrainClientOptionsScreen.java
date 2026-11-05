@@ -23,6 +23,8 @@ import games.brennan.dungeontrain.client.live.StreamPreviewWidget;
 import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
 import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
 import games.brennan.dungeontrain.client.policy.AiPolicyScreen;
+import games.brennan.dungeontrain.client.sound.MicBalanceOption;
+import games.brennan.dungeontrain.client.sound.StreamVolumeOption;
 import games.brennan.dungeontrain.client.sound.TrainVolumeOption;
 import games.brennan.dungeontrain.client.version.compare.VersionCompareScreen;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -784,7 +786,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                         key + ".tip");
             }
             // One slider for game sound against voice in the mix; applies at once.
-            case MIC_MIX -> Setting.of(slider(micMixOption(key)), key + ".tip");
+            case MIC_MIX -> Setting.of(slider(MicBalanceOption.forModScreen()), key + ".tip");
+            // How loud streams play from TVs; the speakers read it every tick, so a drag is heard at once.
+            case STREAM_VOLUME -> Setting.of(slider(StreamVolumeOption.valueOnly()), key + ".tip");
             case MIC_MODE -> Setting.of(
                     CycleButton.<Boolean>builder(ptt -> Component.translatable(ptt ? key + ".push_to_talk" : key + ".always_on"))
                             .withValues(false, true)
@@ -1165,7 +1169,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // Expanded by addRow() into several rows; there is no single control for them.
             case PERFORMANCE_TIPS -> throw new IllegalStateException("PERFORMANCE_TIPS is expanded, not built");
             case DISCORD_ACCOUNT -> throw new IllegalStateException("DISCORD_ACCOUNT is expanded, not built");
-            case STREAM_SECTION_BROADCAST, STREAM_SECTION_MIC, STREAM_SECTION_PICTURE, STREAM_SECTION_CHAT,
+            case STREAM_SECTION_BROADCAST, STREAM_SECTION_SOUND, STREAM_SECTION_MIC, STREAM_SECTION_PICTURE, STREAM_SECTION_CHAT,
                  STREAM_SECTION_WATCHING -> throw new IllegalStateException(row + " is a heading, not built");
             case TWITCH_ACCOUNT -> throw new IllegalStateException("TWITCH_ACCOUNT is expanded, not built");
         };
@@ -1314,20 +1318,6 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     private static Component liveChatTranslationLabel(LiveFeedClientConfig.LiveChatTranslation mode) {
         return Component.translatable("gui.dungeontrain.options.live_chat_translation." + mode.name().toLowerCase(java.util.Locale.ROOT));
     }
-
-    /** The mic gain choices, percent. */
-    /** The game/mic balance in 5% notches: {@code Mic 30%}, with the game at {@code 100 - that}. */
-    private static OptionInstance<Integer> micMixOption(String key) {
-        return new OptionInstance<>(
-                key,
-                OptionInstance.noTooltip(),
-                (caption, notch) -> Component.translatable(key + ".value", notch * MIC_MIX_STEP),
-                new OptionInstance.IntRange(0, 100 / MIC_MIX_STEP),
-                Math.round(LiveFeedClientConfig.micMixPercent() / (float) MIC_MIX_STEP),
-                notch -> LiveFeedClientConfig.setMicMixPercent(notch * MIC_MIX_STEP));
-    }
-
-    private static final int MIC_MIX_STEP = 5;
 
     /** "" is the system default; a device name can be long, so it is cut to the button, measured with the font. */
     private static Component micDeviceLabel(String device) {
