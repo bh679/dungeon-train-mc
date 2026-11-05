@@ -22,6 +22,7 @@
     "TamableAnimalTameMixin",
     "TamableAnimalFollowTeleportMixin",
     "AbstractHorseTameMixin",
+    "WanderingTraderStockMixin",
     "LightningBoltVisualOnlyMixin",
     "RegenerationSoftCapMixin",
     "FlowingFluidExternalWaterMixin",
