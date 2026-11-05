@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.live;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.client.ClientOptionsTab;
 import games.brennan.dungeontrain.client.live.life.LiveLifeChat;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.chat.ChatReactionTracker;
@@ -254,7 +255,7 @@ public final class LiveChatBridge {
         room = LiveChatRoom.roomOf(pick);
         signatures.clear();
         Component connectedLine = Component.translatable(LiveChatRules.CONNECTED_KEY,
-            LiveOptionsCommand.pathLink(LiveChatRules.PATH_KEY)).withStyle(ChatFormatting.GRAY);
+            LiveOptionsCommand.pathLink(LiveChatRules.PATH_KEY, ClientOptionsTab.STREAM, ClientOptionsTab.Row.LIVE_CHAT)).withStyle(ChatFormatting.GRAY);
         // [Report streamer] rides on the last line: the room line when there is one.
         mc.gui.getChat().addMessage(pick == null ? withReport(connectedLine, pick) : connectedLine);
         if (pick != null) mc.gui.getChat().addMessage(withReport(roomLine(pick), pick));
@@ -505,7 +506,7 @@ public final class LiveChatBridge {
         String lang = LiveChatTranslations.readerLang(mc.options.languageCode);
         chat.addMessage(Component.translatable(LiveChatTranslations.ON_KEY,
             LiveChatTranslations.langName(lang == null ? "en_us" : lang),
-            LiveOptionsCommand.pathLink(LiveChatTranslations.PATH_KEY)).withStyle(ChatFormatting.GRAY));
+            LiveOptionsCommand.pathLink(LiveChatTranslations.PATH_KEY, ClientOptionsTab.STREAM, ClientOptionsTab.Row.LIVE_CHAT_TRANSLATION)).withStyle(ChatFormatting.GRAY));
     }
 
     static String base(boolean streaming) {

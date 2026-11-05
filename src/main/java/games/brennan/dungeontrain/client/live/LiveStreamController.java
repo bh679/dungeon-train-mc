@@ -4,6 +4,7 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.live.life.LiveLifeEvents;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.ClientOptionsTab;
 import games.brennan.dungeontrain.client.ClientLanguage;
 import games.brennan.dungeontrain.cheat.ApprovedModList;
 import games.brennan.dungeontrain.client.live.audio.AudioMirror;
@@ -334,7 +335,7 @@ public final class LiveStreamController {
         }
         if (!LiveFeedClientConfig.streamingEnabled()) {
             say(Component.translatable("chat.dungeontrain.live.disabled",
-                    LiveOptionsCommand.pathLink("chat.dungeontrain.live.disabled.path"))
+                    LiveOptionsCommand.pathLink("chat.dungeontrain.live.disabled.path", ClientOptionsTab.STREAM, ClientOptionsTab.Row.LIVESTREAM))
                 .withStyle(ChatFormatting.GRAY));
             tellServerEnded(LiveStreamEndedPacket.Reason.DISABLED);
             return;
