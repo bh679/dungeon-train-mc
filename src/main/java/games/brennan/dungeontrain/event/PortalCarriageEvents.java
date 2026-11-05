@@ -2661,6 +2661,12 @@ public final class PortalCarriageEvents {
             return existing;
         }
 
+        // Not into a chunk still generating: the stamp's first read would block the whole server until
+        // it was done. Up here, ahead of the erase, so a wait leaves the old structure standing.
+        if (!PortalCarriageBuilder.footprintReady(level, planned, dims)) {
+            return existing;
+        }
+
         // Far enough to want a new one, but not while copies of the room are still standing: the
         // erase below would have to sweep all of them in a single tick. The tiler is shedding them a
         // few per tick, faster than the train can travel the drift distance, so this waits rather

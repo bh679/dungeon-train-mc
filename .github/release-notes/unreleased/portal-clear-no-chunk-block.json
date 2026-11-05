@@ -1,0 +1,20 @@
+{
+  "id": "portal-clear-no-chunk-block",
+  "version": "0.1663.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "performance"
+  ],
+  "title": "Fewer short freezes in new terrain",
+  "summary": "Fewer short freezes while the train moves into new terrain.",
+  "highlights": [],
+  "addresses": [
+    "lag"
+  ],
+  "pr": 2488,
+  "date": "2026-11-04",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
