@@ -763,6 +763,7 @@
   "chat.dungeontrain.live_chat.translation.original": "原文：%s",
   "chat.dungeontrain.live_chat.translation.on": "直播聊天正在翻译为%s（实时翻译，一项社区福利）。在%s中更改显示方式",
   "chat.dungeontrain.live_chat.translation.path": "选项 / 地牢列车 / 直播 / 聊天翻译",
+  "chat.dungeontrain.live_chat.translated": "已翻译",
   "chat.dungeontrain.live_chat.translated_by": "由 %s 翻译",
   "chat.dungeontrain.live_chat.powered_by": "由 %s 提供支持",
   "chat.dungeontrain.live_gift.prompt": "%s 通过电视加入观看，此人还从未持有过直播摄像机。",

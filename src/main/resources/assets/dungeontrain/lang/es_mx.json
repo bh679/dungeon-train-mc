@@ -795,6 +795,7 @@
   "chat.dungeontrain.live_chat.translation.original": "Original: %s",
   "chat.dungeontrain.live_chat.translation.on": "El chat en vivo se está traduciendo al %s (Traducciones en vivo, una recompensa de la comunidad). Cambia cómo se muestra en %s",
   "chat.dungeontrain.live_chat.translation.path": "Opciones / Dungeon Train / Stream / Traducciones del chat",
+  "chat.dungeontrain.live_chat.translated": "Traducido",
   "chat.dungeontrain.live_chat.translated_by": "Traducido por %s",
   "chat.dungeontrain.live_chat.powered_by": "Con la tecnología de %s",
   "chat.dungeontrain.live_gift.prompt": "%s se une desde una tele y nunca ha tenido una videocámara de transmisión.",

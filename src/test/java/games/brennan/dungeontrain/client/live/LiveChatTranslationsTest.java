@@ -78,7 +78,7 @@ class LiveChatTranslationsTest {
     @Test
     @DisplayName("the chat's label: each known translator's wording, and nothing for an unknown id or none")
     void translatedByLabel() {
-        assertEquals(LiveChatTranslations.TRANSLATED_BY_KEY, key((MutableComponent) LiveChatTranslations.translatedBy("azure")));
+        assertEquals(LiveChatTranslations.TRANSLATED_KEY, key((MutableComponent) LiveChatTranslations.translatedBy("azure")));
         assertEquals(LiveChatTranslations.POWERED_BY_KEY, key((MutableComponent) LiveChatTranslations.translatedBy("google")));
         assertEquals(LiveChatTranslations.TRANSLATED_BY_KEY, key((MutableComponent) LiveChatTranslations.translatedBy("haiku")));
         assertNull(LiveChatTranslations.translatedBy("deepl"));

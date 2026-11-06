@@ -896,6 +896,7 @@
   "chat.dungeontrain.live_chat.translation.original": "Original: %s",
   "chat.dungeontrain.live_chat.translation.on": "Chatul live este tradus în %s (Traduceri live, o recompensă comunitară). Schimbă cum apare în %s",
   "chat.dungeontrain.live_chat.translation.path": "Opțiuni / Dungeon Train / Stream / Traducerile chatului",
+  "chat.dungeontrain.live_chat.translated": "Tradus",
   "chat.dungeontrain.live_chat.translated_by": "Tradus de %s",
   "chat.dungeontrain.live_chat.powered_by": "Oferit de %s",
   "chat.dungeontrain.live_gift.prompt": "%s se alătură printr-un televizor și n-a avut niciodată o cameră video de transmisie.",

@@ -28,6 +28,7 @@ public final class LiveChatTranslations {
     public static final String ORIGINAL_KEY = "chat.dungeontrain.live_chat.translation.original";
     public static final String ON_KEY = "chat.dungeontrain.live_chat.translation.on";
     public static final String PATH_KEY = "chat.dungeontrain.live_chat.translation.path";
+    public static final String TRANSLATED_KEY = "chat.dungeontrain.live_chat.translated";
     public static final String TRANSLATED_BY_KEY = "chat.dungeontrain.live_chat.translated_by";
     public static final String POWERED_BY_KEY = "chat.dungeontrain.live_chat.powered_by";
 
@@ -87,14 +88,14 @@ public final class LiveChatTranslations {
     }
 
     /**
-     * The chat's "Translated by X" label for the relay's id, or null for no id or one this version doesn't
-     * know. Service names stay in English in every language: Google's rules fix its wording.
+     * The chat's label for the relay's id, or null for no id or one this version doesn't know. Azure's is
+     * plain "Translated"; a named service stays in English in every language: Google's rules fix its wording.
      */
     @Nullable
     public static Component translatedBy(@Nullable String id) {
         if (id == null) return null;
         return switch (id) {
-            case "azure" -> Component.translatable(TRANSLATED_BY_KEY, "Microsoft");
+            case "azure" -> Component.translatable(TRANSLATED_KEY);
             case "google" -> Component.translatable(POWERED_BY_KEY, "Google Translate");
             case "haiku" -> Component.translatable(TRANSLATED_BY_KEY, "Claude");
             default -> null;

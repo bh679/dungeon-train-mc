@@ -23,6 +23,9 @@ public interface ChatComponentAccessor {
     @Accessor("trimmedMessages")
     List<GuiMessage.Line> dungeontrain$getTrimmedMessages();
 
+    @Accessor("chatScrollbarPos")
+    int dungeontrain$getChatScrollbarPos();
+
     @Invoker("refreshTrimmedMessages")
     void dungeontrain$refreshTrimmedMessages();
 }

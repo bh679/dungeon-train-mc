@@ -4,8 +4,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class LiveChatTranslatedPillTest {
 
@@ -26,5 +28,13 @@ class LiveChatTranslatedPillTest {
         assertEquals(2, LiveChatTranslatedPill.linesStillShowing(List.of(990, 900, 700), 1000, 10));
         assertEquals(0, LiveChatTranslatedPill.linesStillShowing(List.of(800), 1000, 10));
         assertEquals(1, LiveChatTranslatedPill.linesStillShowing(List.of(990, 985), 1000, 1));
+    }
+
+    @Test
+    @DisplayName("only a translated line on screen counts, and the newest one sets the fade")
+    void newestTranslated() {
+        assertEquals(980, LiveChatTranslatedPill.newestTranslated(List.of(990, 980, 970), Set.of(970, 980)));
+        assertNull(LiveChatTranslatedPill.newestTranslated(List.of(990, 985), Set.of(970, 980)), "scrolled or aged off screen");
+        assertNull(LiveChatTranslatedPill.newestTranslated(List.of(), Set.of(970)));
     }
 }

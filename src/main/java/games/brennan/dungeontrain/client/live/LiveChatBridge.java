@@ -120,7 +120,7 @@ public final class LiveChatBridge {
     private static boolean translationNoticeShown;
 
     /** A printed live line, whether its translation has been shown, and whether the reader wrote it (never translated). */
-    private record Printed(ChatLine line, boolean translated, boolean mine) {}
+    private record Printed(ChatLine line, boolean translated, boolean mine, int printedTick) {}
 
     private LiveChatBridge() {}
 
@@ -452,7 +452,7 @@ public final class LiveChatBridge {
             if (p == null || p.translated() || p.mine()) continue;
             String mine = LiveChatTranslations.pick(t.tr(), readerLang);
             if (mine == null) continue;
-            applyLate(mc, chat, tag, p.line(), mine);
+            applyLate(mc, chat, tag, p.line(), mine, p.printedTick());
         }
         for (LiveFeedClient.LineReactions r : page.reactions()) {
             ChatReactionTracker.applyLive(r.line(), r.list(), r.event());
@@ -471,7 +471,7 @@ public final class LiveChatBridge {
         long seq = line.seq();
         if (translation == null) {
             chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatRules.line(line), mine, line.content()), signatures.sign(seq), tag);
-            printed.put(seq, new Printed(line, false, mine));
+            printed.put(seq, new Printed(line, false, mine, mc.gui.getGuiTicks()));
             return;
         }
         switch (LiveFeedClientConfig.liveChatTranslation()) {
@@ -489,7 +489,8 @@ public final class LiveChatBridge {
                     signatures.signPart(seq, 1), tag);
             }
         }
-        printed.put(seq, new Printed(line, true, mine));
+        printed.put(seq, new Printed(line, true, mine, mc.gui.getGuiTicks()));
+        LiveChatTranslatedPill.noteTranslatedLine(mc.gui.getGuiTicks());
         noteTranslating(mc, chat);
     }
 
@@ -498,7 +499,7 @@ public final class LiveChatBridge {
      * A line added under it reads {@code ↳ text} only while the original is still the newest line in chat;
      * after anything else, live or not, it carries the author's name.
      */
-    private static void applyLate(Minecraft mc, ChatComponent chat, GuiMessageTag tag, ChatLine line, String translation) {
+    private static void applyLate(Minecraft mc, ChatComponent chat, GuiMessageTag tag, ChatLine line, String translation, int printedTick) {
         long seq = line.seq();
         boolean adjacent = signatures.isNewest(seq, newestSignature(chat));
         switch (LiveFeedClientConfig.liveChatTranslation()) {
@@ -513,7 +514,9 @@ public final class LiveChatBridge {
                     signatures.signPart(seq, 1), tag);
             }
         }
-        printed.put(seq, new Printed(line, true, false));
+        printed.put(seq, new Printed(line, true, false, printedTick));
+        // A line swapped in place keeps the tick it was printed at; one added under it is new.
+        LiveChatTranslatedPill.noteTranslatedLine(LiveFeedClientConfig.liveChatTranslation() == LiveFeedClientConfig.LiveChatTranslation.UNDER ? mc.gui.getGuiTicks() : printedTick);
         noteTranslating(mc, chat);
     }
 
@@ -526,7 +529,6 @@ public final class LiveChatBridge {
 
     /** Once a session, the first time a translation shows: what is happening, and where to change how it looks. */
     private static void noteTranslating(Minecraft mc, ChatComponent chat) {
-        LiveChatTranslatedPill.noteShown();
         if (translationNoticeShown) return;
         translationNoticeShown = true;
         String lang = LiveChatTranslations.readerLang(mc.options.languageCode);

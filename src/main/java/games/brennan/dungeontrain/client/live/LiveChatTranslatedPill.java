@@ -18,13 +18,16 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayDeque;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
- * "Translated by X": one label above the chat lines naming the service translating Live chat, once this
- * reader has been shown a translation and for as long as the relay names one ({@link LiveChatBridge} feeds
- * both). It sits on the top visible line and fades with the newest, so it leaves with the closed chat;
- * with chat open it stays. Nothing is drawn with no chat lines on screen.
+ * One label above the chat lines saying Live chat is translated, only while a translated line is on screen
+ * and the relay names a service ({@link LiveChatBridge} feeds both). A line is recognised by the tick it
+ * entered chat, which vanilla keeps through re-wrapping. In a closed chat the label fades with the newest
+ * translated line; in an open one it follows the scroll position.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveChatTranslatedPill {
@@ -39,12 +42,15 @@ public final class LiveChatTranslatedPill {
     private static final int GAP = 2;
     private static final int TEXT_RGB = 0xD8D8D8;
     private static final float BACKDROP_OPACITY = 0.72f;
+    /** Ticks of the translated lines remembered: more than chat could show at once. */
+    private static final int TICKS_KEPT = 256;
     /** Below this, Minecraft's text renderer draws nothing recognisable anyway. */
     private static final float MIN_ALPHA = 0.03f;
 
     /** The relay's id for who is translating this room now; read on the render thread, set on the client thread. */
     @Nullable private static volatile String translator;
-    private static volatile boolean shownToReader;
+    /** The ticks translated lines entered chat, oldest first. Client thread only, as is rendering. */
+    private static final ArrayDeque<Integer> TRANSLATED_TICKS = new ArrayDeque<>();
 
     private LiveChatTranslatedPill() {}
 
@@ -53,15 +59,16 @@ public final class LiveChatTranslatedPill {
         translator = id;
     }
 
-    /** A translation was just shown to this reader. */
-    static void noteShown() {
-        shownToReader = true;
+    /** A translated line, the reader's to read, stands in chat with this added-tick. */
+    static void noteTranslatedLine(int tick) {
+        TRANSLATED_TICKS.addLast(tick);
+        if (TRANSLATED_TICKS.size() > TICKS_KEPT) TRANSLATED_TICKS.removeFirst();
     }
 
     /** Off Live chat: nothing to name. */
     static void reset() {
         translator = null;
-        shownToReader = false;
+        TRANSLATED_TICKS.clear();
     }
 
     /** Vanilla's fade for a closed chat's line this many ticks old: 1 until its last 20 ticks, then to 0. */
@@ -80,28 +87,39 @@ public final class LiveChatTranslatedPill {
         return n;
     }
 
+    /** The added-tick of the newest visible line that is translated, or null when none on screen is. */
+    @Nullable
+    static Integer newestTranslated(List<Integer> visibleNewestFirst, Set<Integer> translatedTicks) {
+        for (int added : visibleNewestFirst) {
+            if (translatedTicks.contains(added)) return added;
+        }
+        return null;
+    }
+
     @SubscribeEvent
     public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(VanillaGuiLayers.CHAT, LAYER, (graphics, deltaTracker) -> render(graphics));
     }
 
     private static void render(GuiGraphics graphics) {
-        if (!shownToReader) return;
+        if (TRANSLATED_TICKS.isEmpty()) return;
         Component text = LiveChatTranslations.translatedBy(translator);
         if (text == null) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.options.hideGui || mc.options.chatVisibility().get() == ChatVisiblity.HIDDEN) return;
         ChatComponent chat = mc.gui.getChat();
-        List<GuiMessage.Line> lines = ((ChatComponentAccessor) chat).dungeontrain$getTrimmedMessages();
+        ChatComponentAccessor access = (ChatComponentAccessor) chat;
+        List<GuiMessage.Line> lines = access.dungeontrain$getTrimmedMessages();
         if (lines.isEmpty()) return;
 
         int guiTicks = mc.gui.getGuiTicks();
         boolean open = chat.isChatFocused();
-        int shown = open
-            ? Math.min(lines.size(), chat.getLinesPerPage())
-            : linesStillShowing(lines.stream().limit(chat.getLinesPerPage()).map(GuiMessage.Line::addedTime).toList(), guiTicks, chat.getLinesPerPage());
-        if (shown == 0) return;
-        float alpha = open ? 1f : fade(guiTicks - lines.get(0).addedTime());
+        int scroll = open ? Mth.clamp(access.dungeontrain$getChatScrollbarPos(), 0, lines.size()) : 0;
+        List<Integer> page = lines.subList(scroll, Math.min(lines.size(), scroll + chat.getLinesPerPage())).stream().map(GuiMessage.Line::addedTime).toList();
+        int shown = open ? page.size() : linesStillShowing(page, guiTicks, page.size());
+        Integer translated = newestTranslated(page.subList(0, shown), new HashSet<>(TRANSLATED_TICKS));
+        if (translated == null) return;
+        float alpha = open ? 1f : fade(guiTicks - translated);
         if (alpha < MIN_ALPHA) return;
 
         float scale = (float) chat.getScale();

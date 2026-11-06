@@ -832,6 +832,7 @@
   "chat.dungeontrain.live_chat.translation.original": "Оригинал: %s",
   "chat.dungeontrain.live_chat.translation.on": "Чат эфира переводится на %s (Живой перевод, награда сообщества). Изменить отображение: %s",
   "chat.dungeontrain.live_chat.translation.path": "Настройки / Dungeon Train / Стрим / Перевод чата",
+  "chat.dungeontrain.live_chat.translated": "Переведено",
   "chat.dungeontrain.live_chat.translated_by": "Перевод: %s",
   "chat.dungeontrain.live_chat.powered_by": "Работает на %s",
   "chat.dungeontrain.live_gift.prompt": "%s смотрит через телевизор, и у него ещё ни разу не было Live Eye.",
