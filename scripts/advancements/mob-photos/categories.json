@@ -33,7 +33,7 @@
   "families": {
     "_doc": "Advancement -> the mobs it asks for. A member joins once the train can spawn it, so an unplaced mob here is fine. A spawnable hostile with zombie or skeleton in its id must be in a family, or the build stops.",
     "family_photo": [
-      "minecraft:zombie", "minecraft:husk", "minecraft:drowned", "minecraft:zombie_villager", "minecraft:zombified_piglin",
+      "minecraft:zombie", "minecraft:husk", "minecraft:drowned", "minecraft:zombie_villager",
       "luminous_monsters:cherry_zombie", "luminous_monsters:crimson_walker", "luminous_monsters:dark_oak_zombie",
       "luminous_monsters:icy_zombie", "luminous_monsters:miner_zombie", "luminous_monsters:savanna_zombie",
       "luminous_monsters:swamp_zombie"

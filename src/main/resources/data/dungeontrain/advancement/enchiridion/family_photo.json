@@ -40,12 +40,6 @@
         "subject": "entity:minecraft:zombie_villager"
       }
     },
-    "minecraft:zombified_piglin": {
-      "trigger": "dungeontrain:photo_subject",
-      "conditions": {
-        "subject": "entity:minecraft:zombified_piglin"
-      }
-    },
     "luminous_monsters:cherry_zombie": {
       "trigger": "dungeontrain:photo_subject",
       "conditions": {
@@ -101,9 +95,6 @@
     ],
     [
       "minecraft:zombie_villager"
-    ],
-    [
-      "minecraft:zombified_piglin"
     ],
     [
       "luminous_monsters:cherry_zombie"
