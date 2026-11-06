@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.SectionPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -20,12 +21,16 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.chunk.PalettedContainer;
 import org.slf4j.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Captures and restores a carriage's blocks + block-entities as a portable NBT blob for the shared
@@ -193,6 +198,103 @@ public final class CarriageBlockSnapshot {
         root.put("ents", entities.ents());
         if (!entities.text().isEmpty()) text.append(text.length() > 0 ? "\n" : "").append(entities.text());
         return new Captured(root, text.toString());
+    }
+
+    /**
+     * The volume {@code [origin, origin+size)} as it stood at {@link #readLevel}, not yet a tag. Holds
+     * nothing that is shared with the level, so {@link #toTag} may run on any thread, later, and still
+     * describes that one moment.
+     */
+    public static final class LevelReading {
+        private final BlockPos origin;
+        private final Vec3i size;
+        private final Map<Long, PalettedContainer<BlockState>> sections;
+        private final Map<Long, CompoundTag> blockEntities;
+        private final ListTag ents;
+
+        private LevelReading(BlockPos origin, Vec3i size, Map<Long, PalettedContainer<BlockState>> sections,
+                             Map<Long, CompoundTag> blockEntities, ListTag ents) {
+            this.origin = origin;
+            this.size = size;
+            this.sections = sections;
+            this.blockEntities = blockEntities;
+            this.ents = ents;
+        }
+
+        /** The same tag {@link #captureLevel} makes of the same blocks. Call it once: it hands over what it holds. */
+        public CompoundTag toTag() {
+            ListTag cells = new ListTag();
+            BlockPos.MutableBlockPos abs = new BlockPos.MutableBlockPos();
+            for (int dx = 0; dx < size.getX(); dx++) {
+                for (int dy = 0; dy < size.getY(); dy++) {
+                    for (int dz = 0; dz < size.getZ(); dz++) {
+                        abs.setWithOffset(origin, dx, dy, dz);
+                        PalettedContainer<BlockState> section = sections.get(SectionPos.asLong(abs));
+                        if (section == null) continue; // Nothing but air in it, or outside the world.
+                        BlockState state = section.get(abs.getX() & 15, abs.getY() & 15, abs.getZ() & 15);
+                        if (state.isAir()) continue;
+                        CompoundTag cell = new CompoundTag();
+                        cell.put("p", new net.minecraft.nbt.IntArrayTag(new int[]{dx, dy, dz}));
+                        cell.put("s", NbtUtils.writeBlockState(state));
+                        CompoundTag beTag = blockEntities.get(abs.asLong());
+                        if (beTag != null) cell.put("b", beTag);
+                        cells.add(cell);
+                    }
+                }
+            }
+            CompoundTag root = new CompoundTag();
+            root.putInt("v", FORMAT_VERSION);
+            root.putInt("l", size.getX());
+            root.putInt("h", size.getY());
+            root.putInt("w", size.getZ());
+            root.put("cells", cells);
+            root.put("ents", ents);
+            return root;
+        }
+    }
+
+    /**
+     * {@link #captureLevel} split in two, for a capture the server thread cannot wait for: this takes
+     * what only the server thread may touch (block palettes, block entities, entities) in one go, and
+     * {@link LevelReading#toTag} does the slow part from it anywhere. Copying a palette is an array copy
+     * however many blocks it holds, which is what makes this cheap. Every chunk of the box must be loaded.
+     * No moderation text: this is for a world's own memory of itself, not for upload.
+     */
+    public static LevelReading readLevel(ServerLevel level, BlockPos origin, Vec3i size,
+                                         HolderLookup.Provider registries, int maxEntities) {
+        Map<Long, PalettedContainer<BlockState>> sections = new HashMap<>();
+        Map<Long, CompoundTag> blockEntities = new HashMap<>();
+        int maxX = origin.getX() + size.getX() - 1;
+        int maxY = origin.getY() + size.getY() - 1;
+        int maxZ = origin.getZ() + size.getZ() - 1;
+        for (int cx = origin.getX() >> 4; cx <= maxX >> 4; cx++) {
+            for (int cz = origin.getZ() >> 4; cz <= maxZ >> 4; cz++) {
+                LevelChunk chunk = level.getChunk(cx, cz);
+                for (int sy = origin.getY() >> 4; sy <= maxY >> 4; sy++) {
+                    int index = chunk.getSectionIndexFromSectionY(sy);
+                    if (index < 0 || index >= chunk.getSectionsCount()) continue;
+                    LevelChunkSection section = chunk.getSection(index);
+                    if (!section.hasOnlyAir()) sections.put(SectionPos.asLong(cx, sy, cz), section.getStates().copy());
+                }
+                // By the chunk's own list rather than by testing every cell, which is what would make
+                // the cost grow with the room's volume again. Includes the ones not yet promoted.
+                for (BlockPos pos : chunk.getBlockEntitiesPos()) {
+                    if (pos.getX() < origin.getX() || pos.getX() > maxX
+                            || pos.getY() < origin.getY() || pos.getY() > maxY
+                            || pos.getZ() < origin.getZ() || pos.getZ() > maxZ) continue;
+                    if (!chunk.getBlockState(pos).hasBlockEntity()) continue;
+                    BlockEntity be = level.getBlockEntity(pos);
+                    if (be == null) continue;
+                    CompoundTag beTag = be.saveWithFullMetadata(registries);
+                    beTag.remove("x");
+                    beTag.remove("y");
+                    beTag.remove("z");
+                    blockEntities.put(pos.asLong(), beTag);
+                }
+            }
+        }
+        return new LevelReading(origin.immutable(), size, sections, blockEntities,
+            CarriageEntitySnapshot.captureLevel(level, origin, size, maxEntities).ents());
     }
 
     // ---- delta capture (only the changed cells — the per-change upload path) ----
