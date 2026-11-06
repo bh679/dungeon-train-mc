@@ -75,6 +75,16 @@ class LiveChatTranslationsTest {
         return ((net.minecraft.network.chat.contents.TranslatableContents) c.getContents()).getKey();
     }
 
+    @Test
+    @DisplayName("the chat's label: each known translator's wording, and nothing for an unknown id or none")
+    void translatedByLabel() {
+        assertEquals(LiveChatTranslations.TRANSLATED_BY_KEY, key((MutableComponent) LiveChatTranslations.translatedBy("azure")));
+        assertEquals(LiveChatTranslations.POWERED_BY_KEY, key((MutableComponent) LiveChatTranslations.translatedBy("google")));
+        assertEquals(LiveChatTranslations.TRANSLATED_BY_KEY, key((MutableComponent) LiveChatTranslations.translatedBy("haiku")));
+        assertNull(LiveChatTranslations.translatedBy("deepl"));
+        assertNull(LiveChatTranslations.translatedBy(null));
+    }
+
     private static String arg(MutableComponent c, int i) {
         return ((net.minecraft.network.chat.Component) ((net.minecraft.network.chat.contents.TranslatableContents) c.getContents()).getArgs()[i]).getString();
     }

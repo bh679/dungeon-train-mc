@@ -343,6 +343,7 @@ public final class LiveChatBridge {
         signatures.clear();
         printed.clear();
         ChatReactionTracker.forgetLive();
+        LiveChatTranslatedPill.reset();
     }
 
     /** Logout / world change: forget the cursor and the connected line. */
@@ -457,6 +458,7 @@ public final class LiveChatBridge {
             ChatReactionTracker.applyLive(r.line(), r.list(), r.event());
         }
         if (streaming) LiveLifeChat.onReactions(page.reactions());
+        if (page != LiveFeedClient.ChatPage.EMPTY) LiveChatTranslatedPill.setTranslator(page.translatedBy());
         cursor = LiveChatRules.nextCursor(cursor, page.seq());
     }
 
@@ -524,6 +526,7 @@ public final class LiveChatBridge {
 
     /** Once a session, the first time a translation shows: what is happening, and where to change how it looks. */
     private static void noteTranslating(Minecraft mc, ChatComponent chat) {
+        LiveChatTranslatedPill.noteShown();
         if (translationNoticeShown) return;
         translationNoticeShown = true;
         String lang = LiveChatTranslations.readerLang(mc.options.languageCode);

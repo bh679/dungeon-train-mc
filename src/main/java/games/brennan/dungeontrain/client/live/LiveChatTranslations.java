@@ -28,6 +28,8 @@ public final class LiveChatTranslations {
     public static final String ORIGINAL_KEY = "chat.dungeontrain.live_chat.translation.original";
     public static final String ON_KEY = "chat.dungeontrain.live_chat.translation.on";
     public static final String PATH_KEY = "chat.dungeontrain.live_chat.translation.path";
+    public static final String TRANSLATED_BY_KEY = "chat.dungeontrain.live_chat.translated_by";
+    public static final String POWERED_BY_KEY = "chat.dungeontrain.live_chat.powered_by";
 
     /** A Minecraft locale code as the relay expects it: {@code zh_cn}. */
     private static final Pattern LOCALE = Pattern.compile("[a-z]{2,3}_[a-z0-9]{2,4}");
@@ -82,6 +84,21 @@ public final class LiveChatTranslations {
             Component.literal(LiveChatRules.clean(line.content(), LiveChatRules.MAX_CONTENT)));
         Style hover = Style.EMPTY.withColor(ChatFormatting.WHITE).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, original));
         return LiveChatRules.line(line, translation, hover);
+    }
+
+    /**
+     * The chat's "Translated by X" label for the relay's id, or null for no id or one this version doesn't
+     * know. Service names stay in English in every language: Google's rules fix its wording.
+     */
+    @Nullable
+    public static Component translatedBy(@Nullable String id) {
+        if (id == null) return null;
+        return switch (id) {
+            case "azure" -> Component.translatable(TRANSLATED_BY_KEY, "Microsoft");
+            case "google" -> Component.translatable(POWERED_BY_KEY, "Google Translate");
+            case "haiku" -> Component.translatable(TRANSLATED_BY_KEY, "Claude");
+            default -> null;
+        };
     }
 
     /** The language's own name for the one-time "being translated into …" notice: 中文, Deutsch, …; the code itself when unknown. */

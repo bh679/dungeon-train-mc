@@ -19,6 +19,10 @@ public interface ChatComponentAccessor {
     @Accessor("allMessages")
     List<GuiMessage> dungeontrain$getAllMessages();
 
+    /** The wrapped lines as drawn, newest first: where the chat's top currently is. */
+    @Accessor("trimmedMessages")
+    List<GuiMessage.Line> dungeontrain$getTrimmedMessages();
+
     @Invoker("refreshTrimmedMessages")
     void dungeontrain$refreshTrimmedMessages();
 }

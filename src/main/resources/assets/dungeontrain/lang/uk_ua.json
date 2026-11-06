@@ -896,6 +896,8 @@
   "chat.dungeontrain.live_chat.translation.original": "Оригінал: %s",
   "chat.dungeontrain.live_chat.translation.on": "Чат ефіру перекладається на %s (Живий переклад, нагорода спільноти). Змінити відображення: %s",
   "chat.dungeontrain.live_chat.translation.path": "Налаштування / Dungeon Train / Стрім / Переклад чату",
+  "chat.dungeontrain.live_chat.translated_by": "Переклад: %s",
+  "chat.dungeontrain.live_chat.powered_by": "Працює на %s",
   "chat.dungeontrain.live_gift.prompt": "%s дивиться через телевізор, і в нього ніколи не було трансляційної відеокамери.",
   "chat.dungeontrain.live_gift.give": "Подарувати",
   "chat.dungeontrain.live_gift.offered": "Пропонуємо твою трансляційну відеокамеру гравцю %s…",
