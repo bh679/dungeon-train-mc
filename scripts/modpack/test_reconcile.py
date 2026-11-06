@@ -9,6 +9,7 @@ Network fetchers are stubbed — these tests never touch CurseForge, Modrinth or
 
 Run: python3 scripts/modpack/test_reconcile.py   (or via pytest)
 """
+import contextlib
 import datetime
 import importlib.util
 import os
@@ -105,8 +106,150 @@ def test_verify_survives_a_listing_fetch_error():
     def boom():
         raise RuntimeError("cfwidget down")
     reconcile.PLATFORMS["curseforge"] = boom
-    # Must report rather than raising — a flaky listing is not a crash.
-    assert _verify("v0.1.0", authoritative=True) == reconcile.MISSING
+    # Must report rather than raising — a flaky listing is not a crash. And a listing that never
+    # loaded proves nothing, so it must not read as "uploaded but not published".
+    assert _verify("v0.1.0", authoritative=True) == reconcile.INCONCLUSIVE
+
+
+# --- verify_file(): one file's own status on the official API ---
+
+@contextlib.contextmanager
+def _api(responses):
+    """Serves each api.curseforge.com GET from `responses` in turn (the last one repeats), with
+    a key set and sleep stubbed. An Exception in the list is raised. Yields the URLs requested."""
+    real_get, real_sleep = reconcile.cf_api.get_json, reconcile.time.sleep
+    remaining = list(responses)
+    urls = []
+
+    def fake(url, headers=None, **kwargs):
+        urls.append(url)
+        response = remaining.pop(0) if len(remaining) > 1 else remaining[0]
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+    reconcile.cf_api.get_json = fake
+    reconcile.time.sleep = lambda _s: None
+    os.environ["CURSEFORGE_API_KEY"] = "test-key"
+    try:
+        yield urls
+    finally:
+        reconcile.cf_api.get_json, reconcile.time.sleep = real_get, real_sleep
+        os.environ.pop("CURSEFORGE_API_KEY", None)
+
+
+def _file(status, **fields):
+    return {"data": {"id": 42, "fileStatus": status, **fields}}
+
+
+def test_verify_file_passes_on_approved():
+    with _api([_file(4, isAvailable=True)]):
+        assert reconcile.verify_file(42, 0, 0) == reconcile.PUBLISHED
+
+
+def test_verify_file_fails_at_once_on_every_rejected_status():
+    # A long timeout must not delay the answer: these don't resolve by waiting.
+    for status in (2, 5, 6, 7, 15):
+        with _api([_file(status)]) as urls:
+            assert reconcile.verify_file(42, 300, 300) == reconcile.REJECTED, status
+            assert len(urls) == 1
+
+
+def test_verify_file_keeps_polling_a_manual_review_hold():
+    # The whole point: a held file gets watched, then settles.
+    with _api([_file(18), _file(18), _file(4)]) as urls:
+        assert reconcile.verify_file(42, 300, 300) == reconcile.PUBLISHED
+        assert len(urls) == 3
+    with _api([_file(18), _file(5)]):
+        assert reconcile.verify_file(42, 300, 300) == reconcile.REJECTED
+
+
+def test_verify_file_reports_a_hold_past_the_timeout_as_in_review():
+    with _api([_file(18)]):
+        assert reconcile.verify_file(42, 0, 0) == reconcile.IN_REVIEW
+
+
+def test_verify_file_never_calls_an_unreadable_file_rejected():
+    # The docs don't say whether a held file is visible, so a 404 must stay unknown.
+    with _api([RuntimeError("HTTP Error 404")]):
+        assert reconcile.verify_file(42, 0, 0) == reconcile.INCONCLUSIVE
+
+
+def test_verify_exit_codes_with_a_file_id():
+    argv = ["--verify", "v1.0.0", "--file-id", "42", "--timeout-minutes", "0"]
+    for response, expected in [(_file(4), 0), (_file(5), 1), (_file(18), 0),
+                               (RuntimeError("HTTP Error 404"), 0)]:
+        with _api([response]):
+            assert reconcile.main(argv) == expected, response
+
+
+def test_a_refused_key_fails_the_run_on_both_paths():
+    refused = reconcile.cf_api.AuthError("HTTP 403")
+    with _api([refused]) as urls:
+        assert reconcile.main(["--verify", "v1.0.0", "--file-id", "42"]) == 1
+        assert len(urls) == 1
+
+    def boom():
+        raise refused
+    reconcile.PLATFORMS["curseforge"] = boom
+    with _api([{}]):
+        assert reconcile.main(["--verify", "v1.0.0"]) == 1
+
+
+def test_file_id_is_ignored_without_a_key():
+    reconcile.PLATFORMS["curseforge"] = lambda: [("0.592.0", hours_ago(20))]
+    os.environ.pop("CURSEFORGE_API_KEY", None)
+    assert reconcile.main(["--verify", "v0.613.0", "--file-id", "42"]) == 0
+
+
+# --- cf_api.list_approved_files(): the official listing ---
+
+def _page(index, total, files):
+    return {"data": files, "pagination": {"index": index, "pageSize": 50,
+                                          "resultCount": len(files), "totalCount": total}}
+
+
+def _approved(n):
+    return [{"id": i, "displayName": f"Dungeon Train v0.{i}.0", "fileStatus": 4}
+            for i in range(n)]
+
+
+def test_listing_walks_every_page_within_the_documented_limit():
+    with _api([_page(0, 120, _approved(50)), _page(50, 120, _approved(50)),
+               _page(100, 120, _approved(20))]) as urls:
+        files = reconcile.cf_api.list_approved_files(7)
+    assert len(files) == 120
+    assert [u.split("?")[1] for u in urls] == [
+        "index=0&pageSize=50", "index=50&pageSize=50", "index=100&pageSize=50"]
+
+
+def test_listing_stops_on_an_exact_full_last_page():
+    with _api([_page(0, 50, _approved(50)), RuntimeError("asked for a page past the end")]):
+        assert len(reconcile.cf_api.list_approved_files(7)) == 50
+
+
+def test_listing_without_a_total_stops_on_a_short_page():
+    with _api([{"data": _approved(50)}, {"data": _approved(3)}]) as urls:
+        assert len(reconcile.cf_api.list_approved_files(7)) == 53
+        assert len(urls) == 2
+
+
+def test_listing_never_reports_a_held_or_withdrawn_file_as_published():
+    # Catch-up builds a pack from this list, and CurseForge rejects a pack that references an
+    # unapproved file.
+    files = [{"id": 1, "fileStatus": 4}, {"id": 2, "fileStatus": 18},
+             {"id": 3, "fileStatus": 5}, {"id": 4, "fileStatus": 4, "isAvailable": False}]
+    with _api([_page(0, 4, files)]):
+        assert [f["id"] for f in reconcile.cf_api.list_approved_files(7)] == [1]
+
+
+def test_listing_fails_rather_than_returning_part_of_the_files():
+    with _api([_page(0, 120, _approved(50)), RuntimeError("page 2 failed")]):
+        try:
+            reconcile.cf_api.list_approved_files(7)
+        except RuntimeError:
+            return
+    raise AssertionError("a partial list came back")
 
 
 def _stub_sources(cf, mr, releases):
