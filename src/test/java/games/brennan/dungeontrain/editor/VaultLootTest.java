@@ -194,6 +194,21 @@ final class VaultLootTest {
         assertEquals(0.008, expectedPerUnlock(green, "heavy_core"), 0.0005);
     }
 
+    @Test
+    @DisplayName("the ominous vault has no Wind Charges or Emeralds, and keeps 2-4 items and its total weight")
+    void ominousVaultRewardBalance() {
+        ContainerContentsPool ominous = VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY);
+        assertEquals(2, ominous.fillMin());
+        assertEquals(4, ominous.fillMax());
+        // The total stays put so every item not rebalanced keeps its odds.
+        assertEquals(2127, ominous.totalWeight());
+
+        Set<ResourceLocation> removed = Set.of(
+            ResourceLocation.withDefaultNamespace("emerald"),
+            ResourceLocation.withDefaultNamespace("wind_charge"));
+        assertTrue(ominous.entries().stream().noneMatch(e -> removed.contains(e.itemId())));
+    }
+
     private static double expectedPerUnlock(ContainerContentsPool pool, String item) {
         ResourceLocation id = ResourceLocation.withDefaultNamespace(item);
         int weight = pool.entries().stream().filter(e -> e.itemId().equals(id)).mapToInt(ContainerContentsEntry::weight).sum();
