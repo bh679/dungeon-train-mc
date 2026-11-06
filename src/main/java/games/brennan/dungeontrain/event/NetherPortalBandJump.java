@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.compat.mixinguard.ThirdPartyMixinTargets;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalLoadScreenPacket;
+import games.brennan.dungeontrain.portal.PortalExitWait;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.portal.TrainFrameReturns;
 import games.brennan.dungeontrain.ship.Shipyards;
@@ -45,7 +46,7 @@ import java.util.function.Supplier;
  * Nether; from the Nether → the band before it), {@link #SIDE_OFFSET} blocks off to the side of the track
  * so it never sits on the rails or in a tunnel. Everything else is vanilla: the normal time standing in
  * the portal, the exit portal found or built by {@code PortalForcer}, the portal sound and chunk ticket,
- * no train respawn, no chat. A frame built on a carriage stands in the ship plot grid, so it is never
+ * no train respawn, no chat. An exit that hasn't loaded yet waits in {@code portal/PortalExitWait}. A frame built on a carriage stands in the ship plot grid, so it is never
  * paired and no trip ever lands there ({@link #chooseExit}). Called from {@code mixin/NetherPortalBlockBandJumpMixin} at the head of
  * {@code NetherPortalBlock#getPortalDestination}, which hands the returned same-level transition to
  * vanilla's own {@code Entity#handlePortal} → {@code changeDimension}.
@@ -182,6 +183,7 @@ public final class NetherPortalBandJump {
         }
 
         BlockPos asked = exit;
+        if (PortalExitWait.holds(level, player, asked, portalPos, onCarriage, kind, finder)) return new Outcome(true, null);
         DimensionTransition transition = PortalRoofCap.under(roofTop(level, data, exit.getX()),
             () -> finder.find(level, player, portalPos, asked, false, level.getWorldBorder()));
         if (transition == null) {
