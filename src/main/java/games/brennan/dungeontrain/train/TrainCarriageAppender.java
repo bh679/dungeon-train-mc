@@ -3562,8 +3562,9 @@ public final class TrainCarriageAppender {
         // caused once a long ride exceeded it.
         boolean resumeHold = isResumeHoldActive(trainId, level.getGameTime());
         // Tell Sable's own wake-on-chunk-load which groups this train wants this tick; one
-        // outside the window stays held until a lane asks for it (see HeldGroupWakeVeto).
-        if (playerNear && !resumeHold && nearMinPIdx <= nearMaxPIdx && !train.isEmpty()) {
+        // outside the window stays held until a lane asks for it (see HeldGroupWakeVeto). A resume or
+        // save hold keeps this on: lifting it woke every group waiting on it, at each autosave.
+        if (HeldGroupWakeVeto.windowApplies(playerNear, nearMinPIdx, nearMaxPIdx, train.isEmpty())) {
             int groupSize = train.get(0).provider().getGroupSize();
             HeldGroupWakeVeto.record(trainId, nearMinPIdx, nearHoldTop(nearMaxPIdx, groupSize),
                 groupSize, level.getGameTime());

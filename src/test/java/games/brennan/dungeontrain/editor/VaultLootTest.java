@@ -17,6 +17,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -172,6 +173,50 @@ final class VaultLootTest {
                     .anyMatch(e -> e.itemId().toString().equals(VaultLoot.GREEN_KEY)),
                 key + " vault has no Dungeon Trial Key");
         }
+    }
+
+    @Test
+    @DisplayName("the green vault rolls 3-7 items, with no low-tier items and the agreed Mace and Heavy Core odds")
+    void greenVaultRewardBalance() {
+        ContainerContentsPool green = VaultLoot.defaultPool(VaultLoot.GREEN_KEY);
+        assertEquals(3, green.fillMin());
+        assertEquals(7, green.fillMax());
+
+        Set<ResourceLocation> lowTier = Set.of(
+            ResourceLocation.withDefaultNamespace("diamond"),
+            ResourceLocation.withDefaultNamespace("emerald"),
+            ResourceLocation.withDefaultNamespace("tipped_arrow"),
+            ResourceLocation.withDefaultNamespace("wind_charge"));
+        assertTrue(green.entries().stream().noneMatch(e -> lowTier.contains(e.itemId())));
+
+        // Expected items per unlock: average fill (5) x weight / total weight.
+        assertEquals(0.005, expectedPerUnlock(green, "mace"), 0.0005);
+        assertEquals(0.008, expectedPerUnlock(green, "heavy_core"), 0.0005);
+    }
+
+    @Test
+    @DisplayName("the ominous vault has no Wind Charges or Emeralds, rolls 2-4 items, and has all diamond gear")
+    void ominousVaultRewardBalance() {
+        ContainerContentsPool ominous = VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY);
+        assertEquals(2, ominous.fillMin());
+        assertEquals(4, ominous.fillMax());
+        assertEquals(2247, ominous.totalWeight());
+
+        Set<ResourceLocation> removed = Set.of(
+            ResourceLocation.withDefaultNamespace("emerald"),
+            ResourceLocation.withDefaultNamespace("wind_charge"));
+        assertTrue(ominous.entries().stream().noneMatch(e -> removed.contains(e.itemId())));
+
+        for (String piece : List.of("helmet", "chestplate", "leggings", "boots", "sword", "axe", "pickaxe", "shovel", "hoe")) {
+            ResourceLocation id = ResourceLocation.withDefaultNamespace("diamond_" + piece);
+            assertTrue(ominous.entries().stream().anyMatch(e -> e.itemId().equals(id)), id + " missing");
+        }
+    }
+
+    private static double expectedPerUnlock(ContainerContentsPool pool, String item) {
+        ResourceLocation id = ResourceLocation.withDefaultNamespace(item);
+        int weight = pool.entries().stream().filter(e -> e.itemId().equals(id)).mapToInt(ContainerContentsEntry::weight).sum();
+        return (pool.fillMin() + pool.fillMax()) / 2.0 * weight / pool.totalWeight();
     }
 
     @Test

@@ -380,6 +380,7 @@ loads (Advancement Plaques needs Iceberg).
   Deptest Cases S/T cover it; `checkCurseforgeJar` (in `check`) asserts it drops exactly those two.
   Deptest Cases A (top-level present) and G (nested only) cover both layouts. Keep Trim is hybrid
   only because its Modrinth listing is still in review (it was fully external 0.863.0–0.908.0).
+- **Sable Mob Paths (`bh679/sablemobpaths-mc`):** jarJar'd into every DT jar, no listing, no modpack entry. It gives CurseForge players mob pathing across carriages because Sable Pathfinder (All Rights Reserved) isn't listed there, and turns itself off when Sable Pathfinder is loaded. **It is clean-room: never open Sable Pathfinder's source or decompile its jar** (its `CLEANROOM.md`). Develop and test it with `-PnoSablePathfinder`. On a Sable bump, re-run its `scripts/verify-mixin-targets.sh`.
 - **Sibling-mod floors:** AIN/AIS/PMOB/ECP/TE (+ hybrid KT/DB/SFF) each have TWO versions in `gradle.properties`.
   `<mod>_version` is what DT compiles/dev-runs against and the auto-release cascade bumps it every
   tick; `<mod>_min_version` is the floor end users must clear, rendered into `neoforge.mods.toml`
@@ -420,10 +421,14 @@ loads (Advancement Plaques needs Iceberg).
   ⚠️ **Set the `CURSEFORGE_API_KEY` secret.** Without it the check reads the cached cfwidget
   mirror, which lagged 30+ min in testing; a cache can't prove absence, so `--verify` looks once,
   reports INCONCLUSIVE and won't fail (or wait). With the key it is authoritative and polls.
-  The **mod** jar's listing is checked the same way, but off the release's critical path:
-  `release.yml` fails only on a missing upload file id, then dispatches
-  `verify-curseforge-upload.yml` (300-min approval wait) — a red run there means the file was
-  rejected; recover with `reupload-curseforge.yml`. (Until Oct 2026 `release.yml` polled for
+  So a quick green verify run without the key says nothing: the public listing hides held and
+  rejected files. Setup and test steps: `modpack/README.md`.
+  The **mod** jar is checked off the release's critical path: `release.yml` fails only on a
+  missing upload file id, then dispatches `verify-curseforge-upload.yml` (300-min wait), which
+  with the key polls that file's own status (`reconcile.py --file-id`). Red means rejected (or
+  the key was refused); recover with `reupload-curseforge.yml`. Green with a "still under review"
+  or "UNKNOWN" warning is NOT a rejection, so don't re-upload. A rejection after the 300 min goes
+  unnoticed. (Until Oct 2026 `release.yml` polled for
   30 min itself, which was ~30 of every release's ~34 minutes.)
 - Both publish scripts retry transient 5xx/transport failures via
   `scripts/modpack/lib/upload-retry.sh` (never 4xx — a bad payload stays bad).

@@ -80,11 +80,7 @@ curseforge_is_authoritative = cf_api.is_authoritative
 def curseforge_versions():
     """Publicly listed pack versions on CurseForge, newest-first."""
     if cf_api.is_authoritative():
-        data = _get_json(
-            f"{cf_api.CF_API}/mods/{CF_PROJECT}/files?pageSize=10000",
-            headers=cf_api.api_headers(),
-        )
-        files = data.get("data", [])
+        files = cf_api.list_approved_files(CF_PROJECT)
         pairs = [(normalize(f.get("displayName", "")), f.get("fileDate", "")) for f in files]
     else:
         data = _get_json(f"{cf_api.CFWIDGET_API}/{CF_PROJECT}")
@@ -119,14 +115,65 @@ PLATFORMS = {"curseforge": curseforge_versions, "modrinth": modrinth_versions}
 PUBLISHED = "published"
 MISSING = "missing"
 INCONCLUSIVE = "inconclusive"
+REJECTED = "rejected"
+IN_REVIEW = "in-review"
+
+
+def _report_rejected(file_id, detail):
+    print(f"::error::CurseForge file {file_id} (project {CF_PROJECT}) has status {detail}, so "
+          "it will not publish without action.")
+    print(f"::error::See the reason at https://legacy.curseforge.com/project/{CF_PROJECT}/files "
+          "then fix it or recover with reupload-curseforge.yml.")
+
+
+def _report_still_waiting(file_id, timeout_minutes, detail, seen):
+    if seen:
+        print(f"::warning::CurseForge file {file_id} is still {detail} after {timeout_minutes} "
+              "minutes. This is NOT a rejection, so do not re-upload. This run has stopped "
+              "watching: re-dispatch this workflow to check it again.")
+    else:
+        print(f"::warning::Could not read CurseForge file {file_id} for {timeout_minutes} "
+              f"minutes (last: {detail}). Its status is UNKNOWN, neither approved nor rejected.")
+
+
+def verify_file(file_id, timeout_minutes, poll_seconds):
+    """Poll one file's own status on the official API until it settles or the timeout passes.
+
+    Returns PUBLISHED, REJECTED, IN_REVIEW (still waiting on CurseForge at the timeout; manual
+    review holds last days) or INCONCLUSIVE (the lookup failing or 404ing right up to the
+    timeout, which proves nothing: the docs don't say whether a held file is visible).
+    """
+    deadline = time.monotonic() + timeout_minutes * 60
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            state, detail = cf_api.file_status(CF_PROJECT, file_id)
+            seen = True
+        except cf_api.AuthError:
+            raise
+        except RuntimeError as exc:
+            state, detail, seen = None, f"lookup failed ({exc})", False
+            print(f"::warning::CurseForge file {file_id}: {detail}; will retry")
+        if state == cf_api.APPROVED:
+            print(f"✓ CurseForge file {file_id} is {detail} (after {attempt} check(s))")
+            return PUBLISHED
+        if state == cf_api.REJECTED:
+            _report_rejected(file_id, detail)
+            return REJECTED
+        if time.monotonic() >= deadline:
+            _report_still_waiting(file_id, timeout_minutes, detail, seen)
+            return IN_REVIEW if seen else INCONCLUSIVE
+        print(f"  CurseForge file {file_id}: {detail}; re-checking in {poll_seconds}s…")
+        time.sleep(poll_seconds)
 
 
 def verify(platform, version, timeout_minutes, poll_seconds):
     """Poll until `version` is publicly listed (an authoritative source), or look once (a cache).
 
     Returns PUBLISHED, MISSING, or INCONCLUSIVE. INCONCLUSIVE means we could not see the
-    version but our only source was a cache that cannot prove absence — the caller must
-    not treat that as a failure.
+    version but had no source able to prove absence — a cache, or a listing that never loaded
+    — so the caller must not treat that as a failure.
     """
     want = normalize(version)
     fetch = PLATFORMS[platform]
@@ -138,11 +185,15 @@ def verify(platform, version, timeout_minutes, poll_seconds):
     attempt = 0
     while True:
         attempt += 1
+        read_failed = False
         try:
             published = {v for v, _ in fetch()}
+        except cf_api.AuthError:
+            raise
         except RuntimeError as exc:
             print(f"::warning::{platform}: listing fetch failed ({exc}); will retry")
             published = set()
+            read_failed = True
         if want in published:
             print(f"✓ {platform}: {want} is publicly listed (after {attempt} check(s))")
             return PUBLISHED
@@ -155,6 +206,10 @@ def verify(platform, version, timeout_minutes, poll_seconds):
             print("::warning::Confirm by hand at "
                   "https://www.curseforge.com/minecraft/modpacks/dungeon-train/files , and "
                   "set the CURSEFORGE_API_KEY secret to make this check authoritative.")
+            return INCONCLUSIVE
+        if time.monotonic() >= deadline and read_failed:
+            print(f"::warning::{platform}: could not read the listing for {timeout_minutes} "
+                  f"minutes, so {want} is UNKNOWN, neither published nor missing.")
             return INCONCLUSIVE
         if time.monotonic() >= deadline:
             print(f"::error::{platform}: {want} was uploaded but is STILL not publicly listed "
@@ -230,6 +285,10 @@ def main(argv=None):
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--verify", metavar="VERSION",
                     help="Poll until VERSION is publicly listed; exit 1 if it never appears.")
+    ap.add_argument("--file-id", type=int,
+                    help="With --verify and CURSEFORGE_API_KEY: read this CurseForge file's own "
+                         "status instead of searching the listing, which tells a rejection from "
+                         "a file still under review. Ignored without the key.")
     ap.add_argument("--platform", choices=sorted(PLATFORMS), default="curseforge",
                     help="Platform to verify (default: curseforge).")
     ap.add_argument("--timeout-minutes", type=int, default=30,
@@ -254,8 +313,16 @@ def main(argv=None):
         MR_PROJECT = args.modrinth_project
 
     if args.verify:
-        outcome = verify(args.platform, args.verify, args.timeout_minutes, args.poll_seconds)
-        return 1 if outcome == MISSING else 0
+        try:
+            if args.file_id and args.platform == "curseforge" and curseforge_is_authoritative():
+                outcome = verify_file(args.file_id, args.timeout_minutes, args.poll_seconds)
+            else:
+                outcome = verify(args.platform, args.verify, args.timeout_minutes,
+                                 args.poll_seconds)
+        except cf_api.AuthError as exc:
+            print(f"::error::CURSEFORGE_API_KEY was refused, so nothing was verified: {exc}")
+            return 1
+        return 1 if outcome in (MISSING, REJECTED) else 0
     return drift_report(args.fail_if_stale_hours)
 
 

@@ -59,7 +59,7 @@ The NeoForge version follows `neo_version` for the same reason.
 | **I** | minus BetterNether (its libraries present) | Fails — names `betternether` with its `[x,)` floor |
 | **J** | minus BetterEnd (libraries present) | Fails — names `betterend` with its `[x,)` floor |
 | **K** | minus WWOO + Biomes O' Plenty (their libraries present) | Fails — names `wwoo` and `biomesoplenty` with their `[x,)` floors |
-| **L** | Case A minus Sable Pathfinder (CurseForge layout — it isn't listed there) | Server starts cleanly (`optional` in mods.toml). A, D and G include it, proving its mixins apply against production bytecode |
+| **L** | Case A minus Sable Pathfinder (CurseForge layout — it isn't listed there) | Server starts cleanly (`optional` in mods.toml), and the log says `[SableMobPaths] active`. A, D and G include Pathfinder, proving its mixins apply against production bytecode, and log `[SableMobPaths] off` |
 | **M** | minus VanillaBackport (Platform present) | Fails — names `vanillabackport` with its `[x,)` floor |
 | **A/O (`dmv`)** | top-level DT Mod Verify (`dtmodverify`, the Free Play file-verification engine; jarJar'd like the hybrid trio, so G runs on the nested copy) | Server starts cleanly; `JarJar: nested copy skipped` for `dtmodverify` too |
 | **N** | minus Big Lost City (the only case without it) | Fails — names `big_lost_city` with its `[x,)` floor, twice: requested by `dungeontrain` and by the jarJar'd `lostcityterrainfit` |

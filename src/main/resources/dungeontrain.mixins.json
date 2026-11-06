@@ -8,7 +8,9 @@
   "mixins": [
     "EnderManEndBandMixin",
     "NetherPortalBlockBandJumpMixin",
+    "EndGatewayBlockBandJumpMixin",
     "NetherPortalBlockInvoker",
+    "PortalForcerRoofCapMixin",
     "PhotographFrameItemPlaceMixin",
     "WitherRoseBlockCreditMixin",
     "VaultBlockMixin",

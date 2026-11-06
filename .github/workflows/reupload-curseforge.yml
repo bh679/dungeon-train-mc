@@ -190,12 +190,14 @@ jobs:
         env:
           CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
           CF_PROJECT: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          CF_FILE_ID: ${{ steps.mcpublish.outputs.curseforge-version }}
         run: |
           set -euo pipefail
           # An upload returning 200 is not a publish — CurseForge validates asynchronously and can
           # reject a file afterwards. Same rule the modpack already enforces.
           python3 scripts/modpack/reconcile.py \
             --verify "${{ inputs.tag }}" \
+            ${CF_FILE_ID:+--file-id "$CF_FILE_ID"} \
             --platform curseforge \
             --curseforge-project "$CF_PROJECT" \
             --timeout-minutes 30 \

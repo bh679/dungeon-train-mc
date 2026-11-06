@@ -99,6 +99,29 @@ def test_mirror_listing_maps_display_names_to_file_ids():
         assert catch_up.approved_mod_files() == {"0.828.0": 8845865, "0.824.0": 8838246}
 
 
+def test_official_listing_only_offers_approved_files_across_pages():
+    real, had = cf_api.get_json, os.environ.get("CURSEFORGE_API_KEY")
+    pages = [
+        {"data": [{"id": i, "displayName": f"Dungeon Train v0.{i}.0", "fileStatus": 4}
+                  for i in range(50)], "pagination": {"totalCount": 52}},
+        {"data": [{"id": 900, "displayName": "Dungeon Train v0.900.0", "fileStatus": 18},
+                  {"id": 901, "displayName": "Dungeon Train v0.901.0", "fileStatus": 4}],
+         "pagination": {"totalCount": 52}},
+    ]
+    cf_api.get_json = lambda url, headers=None, **kwargs: pages.pop(0)
+    os.environ["CURSEFORGE_API_KEY"] = "test-key"
+    try:
+        files = catch_up.approved_mod_files()
+    finally:
+        cf_api.get_json = real
+        os.environ.pop("CURSEFORGE_API_KEY", None)
+        if had is not None:
+            os.environ["CURSEFORGE_API_KEY"] = had
+    assert len(files) == 51
+    assert files["0.901.0"] == 901
+    assert "0.900.0" not in files
+
+
 # --- run(): the $GITHUB_OUTPUT contract ---
 
 @contextlib.contextmanager

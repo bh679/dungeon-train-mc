@@ -72,7 +72,7 @@ cached() { find "$GC/$1/$2" -name "*.jar" ! -name "*sources*" 2>/dev/null | head
 
 resolve() {
   case "$1" in
-    dt)       ls -t "$REPO"/build/libs/dungeontrain-*.jar 2>/dev/null | grep -v -- '-sources' | grep -v -- '-curseforge' | head -1 ;;
+    dt)       ls -t "$REPO"/build/libs/dungeontrain-*.jar 2>/dev/null | grep -v -- '-sources\.jar$' | grep -v -- '-curseforge\.jar$' | head -1 ;;
     # The CurseForge-only jar: the main jar minus the jarJar'd Stream Detect + DPI Bypass Detect.
     dtcf)     ls -t "$REPO"/build/libs/dungeontrain-*-curseforge.jar 2>/dev/null | head -1 ;;
     sable)    cached "maven.modrinth/sable"          "$(prop sable_version)" ;;
