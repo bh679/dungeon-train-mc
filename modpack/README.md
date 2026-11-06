@@ -317,7 +317,7 @@ afterwards — leaving the workflow green and the release silently missing from 
 `approval_timeout_minutes` (default `300` — the most the 360-min job limit allows after the upload + verify) runs out, the run **defers** (`--on-timeout defer`):
 nothing is uploaded, every later step is skipped, and the run ends green with a warning and a
 step-summary note. It reads `api.curseforge.com` when `CURSEFORGE_API_KEY` is set
-(authoritative: `fileStatus == 4`), otherwise the caching cfwidget mirror — where the file
+(authoritative: `fileStatus == 4` and available), otherwise the caching cfwidget mirror — where the file
 appearing proves approval but its absence may just be cache lag. Either way an unapproved file
 never reaches a manifest.
 
@@ -393,8 +393,46 @@ credential and cannot read listings.)
 / v0.592.0 for a full 30 minutes after curseforge.com already listed 261 / v0.613.0. A cache
 cannot prove absence, so without an API key `--verify` downgrades a negative result to
 `INCONCLUSIVE`: it prints a warning with a link to check by hand and **does not fail the
-release**. Set the secret and the check becomes authoritative — a genuine rejection then fails
-the run, which is the whole point.
+release**. The public listing also hides files under review and rejected ones, so a quick green
+`verify-curseforge-upload.yml` run without the key says nothing about an unlisted file.
+
+**What a verify run means with the key.** `verify-curseforge-upload.yml` and
+`reupload-curseforge.yml` pass `--file-id`, which polls that file's own status:
+
+| API says | Run | Do |
+|---|---|---|
+| Approved | Green | Nothing |
+| Rejected, ChangesRequired, MalwareDetected, Deleted, FailedPublishing | **Red at once** | See the reason in the author dashboard; `reupload-curseforge.yml` if it was a CurseForge fault |
+| Still under review at the timeout | Green + warning | **Don't re-upload.** Re-dispatch to check again |
+| File unreadable to the timeout (including 404) | Green + warning, "UNKNOWN" | Check the author dashboard |
+| Key refused (401/403) | **Red** | Replace the key |
+
+`release-modpack.yml`'s pack check has no file id, so it searches the listing: red if the version
+is not listed within 30 min. That can't tell a rejected pack file from one that is still held.
+
+**Known gap:** manual review holds last days and one run stops at 300 min, so a rejection after
+that is not caught automatically.
+
+**Setting it up.** Get a key from the [CurseForge console](https://console.curseforge.com/); the
+[API docs](https://docs.curseforge.com/rest-api/) send non-game-developers to an application form.
+Then paste it at this prompt, so it stays out of shell history:
+
+```bash
+gh secret set CURSEFORGE_API_KEY --repo bh679/dungeon-train-mc
+```
+
+To test it without a release, pick a tag whose file is under review:
+
+```bash
+gh workflow run verify-curseforge-upload.yml -f tag=<tag> -f file_id=<id> -f timeout_minutes=15
+```
+
+The log should show `UnderManualReview` readings every 5 min, ending in the "still under review"
+warning. If it reports `lookup failed … 404` instead, CurseForge hides held files from the API
+too, so holds will read as UNKNOWN.
+
+The API allows at most 50 results per page with an undocumented sort order, so
+`cf_api.list_approved_files` walks every page and keeps only approved files.
 
 If verification fails, open the pack's file list in CurseForge Studio — a rejected file
 shows the reason inline. A rejection with a `500` body is CurseForge-side; the manifest

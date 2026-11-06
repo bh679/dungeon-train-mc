@@ -420,10 +420,14 @@ loads (Advancement Plaques needs Iceberg).
   ⚠️ **Set the `CURSEFORGE_API_KEY` secret.** Without it the check reads the cached cfwidget
   mirror, which lagged 30+ min in testing; a cache can't prove absence, so `--verify` looks once,
   reports INCONCLUSIVE and won't fail (or wait). With the key it is authoritative and polls.
-  The **mod** jar's listing is checked the same way, but off the release's critical path:
-  `release.yml` fails only on a missing upload file id, then dispatches
-  `verify-curseforge-upload.yml` (300-min approval wait) — a red run there means the file was
-  rejected; recover with `reupload-curseforge.yml`. (Until Oct 2026 `release.yml` polled for
+  So a quick green verify run without the key says nothing: the public listing hides held and
+  rejected files. Setup and test steps: `modpack/README.md`.
+  The **mod** jar is checked off the release's critical path: `release.yml` fails only on a
+  missing upload file id, then dispatches `verify-curseforge-upload.yml` (300-min wait), which
+  with the key polls that file's own status (`reconcile.py --file-id`). Red means rejected (or
+  the key was refused); recover with `reupload-curseforge.yml`. Green with a "still under review"
+  or "UNKNOWN" warning is NOT a rejection, so don't re-upload. A rejection after the 300 min goes
+  unnoticed. (Until Oct 2026 `release.yml` polled for
   30 min itself, which was ~30 of every release's ~34 minutes.)
 - Both publish scripts retry transient 5xx/transport failures via
   `scripts/modpack/lib/upload-retry.sh` (never 4xx — a bad payload stays bad).

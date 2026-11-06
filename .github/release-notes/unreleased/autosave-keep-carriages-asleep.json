@@ -1,0 +1,19 @@
+{
+  "id": "autosave-keep-carriages-asleep",
+  "version": "0.1683.0",
+  "type": "perf",
+  "tags": [
+    "performance"
+  ],
+  "title": "Smoother autosaves",
+  "summary": "Less lag on the train when the game saves or you unpause.",
+  "highlights": [],
+  "addresses": [
+    "lag"
+  ],
+  "pr": 2514,
+  "date": "2026-11-06",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

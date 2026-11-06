@@ -22,9 +22,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * appender holds is left held instead.</p>
  *
  * <p><b>When it stands aside.</b> Only a fresh window counts ({@link #FRESH_TICKS}): with no
- * player near, at world load, during a resume hold, or for anything that is not a registered
- * train group, Sable decides exactly as before. That keeps the cases that depend on Sable's own
- * resurrection — a train seen for the first time this session above all — unchanged.</p>
+ * player near, at world load, or for anything that is not a registered train group, Sable decides
+ * exactly as before. That keeps the cases that depend on Sable's own resurrection — a train seen
+ * for the first time this session above all — unchanged.</p>
+ *
+ * <p><b>It stays on through a resume or save hold.</b> The hold starts at every autosave, and
+ * standing aside for it let every group waiting on this veto wake in one tick: up to 17 groups and
+ * 1,100 extra chunks, released and culled again seconds later (player log 5 Nov 2026). A rider the
+ * resume threw off reads as not near, so that case still stands aside.</p>
  *
  * <p>Fed once per tick per train by {@code TrainCarriageAppender.maintainTrailingForceLoadWindow};
  * read by {@code SubLevelHoldingChunkAutoLoadVetoMixin}. Server thread only.</p>
@@ -43,6 +48,14 @@ public final class HeldGroupWakeVeto {
     private static final Map<UUID, Window> WINDOWS = new ConcurrentHashMap<>();
 
     private HeldGroupWakeVeto() {}
+
+    /**
+     * Pure core: whether the appender has a window to veto with this tick: a player near a train
+     * that has groups, on a non-empty carriage range. Package-private for unit tests.
+     */
+    static boolean windowApplies(boolean playerNear, int nearMinPIdx, int nearMaxPIdx, boolean trainEmpty) {
+        return playerNear && nearMinPIdx <= nearMaxPIdx && !trainEmpty;
+    }
 
     /** The appender holds {@code [nearMinPIdx, holdTopPIdx]} of {@code trainId} this tick. */
     static void record(UUID trainId, int nearMinPIdx, int holdTopPIdx, int groupSize, long tick) {
