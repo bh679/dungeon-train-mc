@@ -1,0 +1,18 @@
+{
+  "id": "ender-blocks-in-vaults",
+  "version": "0.1688.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "loot",
+    "balance"
+  ],
+  "title": "Ender Blocks in vaults",
+  "summary": "Ominous vaults and the rarest vault can now reward Ender Blocks.",
+  "highlights": [],
+  "pr": 2518,
+  "date": "2026-11-06",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
