@@ -526,7 +526,10 @@
       "weight": 4,
       "minLevel": 6,
       "phases": [
-        "NETHER"
+        "NETHER",
+        "VOID",
+        "END",
+        "FAR_LANDS"
       ]
     },
     {
@@ -534,7 +537,10 @@
       "weight": 4,
       "minLevel": 6,
       "phases": [
-        "NETHER"
+        "NETHER",
+        "VOID",
+        "END",
+        "FAR_LANDS"
       ]
     },
     {
