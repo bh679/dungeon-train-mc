@@ -35,7 +35,7 @@ import uuid
 
 import changelog_io
 
-UPDATE_PAGE_URL = "https://brennan.games/dungeontrain/update/"
+UPDATE_PAGE_URL = "https://dungeon.training/update/"
 LOGO_URL = "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/src/main/resources/logo.png"
 CONTENT_LIMIT = 2000  # Discord message content cap
 ATTACHMENT_LIMIT = 10 * 1024 * 1024  # Discord's default per-file upload cap for webhooks

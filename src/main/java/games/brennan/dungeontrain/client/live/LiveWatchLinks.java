@@ -19,8 +19,8 @@ import net.minecraft.network.chat.MutableComponent;
 final class LiveWatchLinks {
 
     static final String TWITCH_URL = "https://twitch.tv/brennanhattongames";
-    static final String TV_URL = "https://brennan.games/dungeontrain/live/";
-    static final String DEV_TV_URL = "https://brennan.games/dungeontrain/livedev/";
+    static final String TV_URL = "https://dungeon.training/live/";
+    static final String DEV_TV_URL = "https://dungeon.training/livedev/";
 
     private LiveWatchLinks() {}
 

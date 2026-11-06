@@ -1,0 +1,16 @@
+{
+  "id": "website-dungeon-training",
+  "version": "0.1692.0",
+  "type": "feat",
+  "tags": [
+    "feature"
+  ],
+  "title": "The website has a new home",
+  "summary": "Dungeon Train's website is now at dungeon.training. Old links still work and take you to the right page.",
+  "highlights": [],
+  "pr": 2523,
+  "date": "2026-11-06",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

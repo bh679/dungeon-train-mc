@@ -800,7 +800,7 @@ def test_render_major_opens_notes_outside_versions() -> None:
 # --- link-changelog.py: title heading + "Read more" point at the update page ------------------
 
 LINK = os.path.join(HERE, "link-changelog.py")
-UPDATE_PAGE = "https://brennan.games/dungeontrain/update/"
+UPDATE_PAGE = "https://dungeon.training/update/"
 READ_MORE = f"[Read more]({UPDATE_PAGE})"
 
 

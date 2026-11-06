@@ -17,6 +17,7 @@ human oversight at each stage.
 - **Repos:** dungeon-train-mc
 - **GitHub Project:** https://github.com/users/bh679/projects/16 (Project #16)
 - **Wiki:** github.com/bh679/dungeon-train-mc/wiki
+- **Website:** https://dungeon.training (`brennan.games/dungeontrain` redirects there). Same box as the relay; the relay API, including `FfmpegMirror`'s download, stays on `brennan.games`, because shipped jars call it.
 
 ---
 
@@ -132,7 +133,7 @@ python3 scripts/modpack/pull-approved-hashes.py  # Refresh src/main/whitelist/ap
 ### Community item trade values
 
 What each item trades for (Trade Everything, sixteenths of an emerald) is tuned by the community
-at https://brennan.games/dungeontrain/items/ — members suggest, Brennan approves. Nothing pushes
+at https://dungeon.training/items/ — members suggest, Brennan approves. Nothing pushes
 from there: `./gradlew pullTradeValues` copies the relay's `GET /items/export` into
 `src/main/resources/data/dungeontrain/trade_values.json` (committed; `compat/TradeValueTable`
 registers it as TE's first value provider, ahead of `TradeEverythingBridge`'s hand-tuned
