@@ -18,7 +18,7 @@ import java.util.TreeMap;
  * The community-approved Trade Everything item values, bundled at build time.
  *
  * <p>Source of truth is the relay's item-values page
- * ({@code brennan.games/dungeontrain/items/}): members suggest, the approver settles, and
+ * ({@code dungeon.training/items/}): members suggest, the approver settles, and
  * {@code ./gradlew pullTradeValues} copies {@code GET /items/export} into
  * {@link #RESOURCE}. That file is committed, so a build never touches the network and each
  * pull is its own reviewable diff. Values are integer sixteenths of an emerald.</p>

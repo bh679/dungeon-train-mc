@@ -3,7 +3,7 @@
 
 A major release leads the rendered release notes (title as a heading, photo,
 then its markdown description) and gets the headline card on the web update
-page (brennan.games/dungeontrain/update/). Works on released entries too, so a
+page (dungeon.training/update/). Works on released entries too, so a
 photo can be attached after the release has shipped.
 
 Usage:

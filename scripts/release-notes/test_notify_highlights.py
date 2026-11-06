@@ -51,14 +51,14 @@ def test_message_is_markdown_heading_description_then_link_without_photo_url():
     assert "embeds" not in payload
     assert payload["content"] == (
         "# X\n\nd\n\n"
-        "[Read the full update](<https://brennan.games/dungeontrain/update/#v1.2.0>)"
+        "[Read the full update](<https://dungeon.training/update/#v1.2.0>)"
     )
     assert payload["allowed_mentions"] == {"parse": []}
 
 
 def test_fallback_message_carries_photo_url_last():
     content = nh.build_content(MAJOR, "v1.2.0", with_image_link=True)
-    assert content.endswith("(<https://brennan.games/dungeontrain/update/#v1.2.0>)\nhttps://example.com/x.jpg")
+    assert content.endswith("(<https://dungeon.training/update/#v1.2.0>)\nhttps://example.com/x.jpg")
 
 
 def test_message_falls_back_to_summary_and_omits_missing_image():

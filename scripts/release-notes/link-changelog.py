@@ -2,7 +2,7 @@
 """Point a release changelog at the update page on our website — or take that back out.
 
 Every changelog `release.yml` publishes (GitHub Release, Modrinth + CurseForge mod, both
-modpacks) leads players to https://brennan.games/dungeontrain/update/, which shows the newest
+modpacks) leads players to https://dungeon.training/update/, which shows the newest
 version on each launcher and every change since theirs:
 
   * the first top-level `# ` heading (the release summary's title) becomes a link to it — to that
