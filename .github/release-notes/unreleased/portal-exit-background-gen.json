@@ -1,17 +1,18 @@
 {
-  "id": "autosave-keep-carriages-asleep",
+  "id": "portal-exit-background-gen",
   "version": "0.1683.0",
-  "type": "perf",
+  "type": "fix",
   "tags": [
+    "fix",
     "performance"
   ],
-  "title": "Smoother autosaves",
-  "summary": "Less lag on the train when the game saves or you unpause.",
+  "title": "Freeze fix",
+  "summary": "Fixed a long freeze that could disconnect you while travelling.",
   "highlights": [],
   "addresses": [
     "lag"
   ],
-  "pr": 2514,
+  "pr": 2513,
   "date": "2026-11-06",
   "released": false,
   "released_in": null,
