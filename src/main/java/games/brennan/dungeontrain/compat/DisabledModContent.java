@@ -63,6 +63,12 @@ public final class DisabledModContent {
         Set.of("betternether", "betterend", "biomesoplenty", "vanillabackport", "exposure", "exposure_polaroid");
 
     /**
+     * Mods with no creative tab of their own whose items sit in vanilla's tabs: hidden from every tab and the search
+     * under the same two settings as {@link #HIDDEN_TAB_NAMESPACES}. Luminous Monsters' sixteen spawn eggs.
+     */
+    private static final Set<String> HIDDEN_ITEM_NAMESPACES = Set.of("luminous_monsters");
+
+    /**
      * Items from a {@link #HIDDEN_TAB_NAMESPACES} tab that recipe viewers still list. Hiding a mod's tab takes its
      * contents out of JEI too (JEI builds its list from the tabs), so these are handed back to it as extra
      * ingredients by {@code compat.jei.DungeonTrainJeiPlugin}: BetterNether's Cincinnasite Forge.
@@ -183,6 +189,11 @@ public final class DisabledModContent {
      *  the client's two creative settings say otherwise — see {@link DisabledModCreativeTabs}. */
     public static boolean isBiomeModCreativeTab(ResourceLocation tabId) {
         return tabId != null && HIDDEN_TAB_NAMESPACES.contains(tabId.getNamespace());
+    }
+
+    /** An item of a mod that fills vanilla's tabs instead of its own ({@link #HIDDEN_ITEM_NAMESPACES}). */
+    public static boolean isHiddenCreativeItem(ResourceLocation itemId) {
+        return itemId != null && HIDDEN_ITEM_NAMESPACES.contains(itemId.getNamespace());
     }
 
     /** True for a disabled mod's armour, weapon, tool, tool part, gear smithing template, metal or ore item. */

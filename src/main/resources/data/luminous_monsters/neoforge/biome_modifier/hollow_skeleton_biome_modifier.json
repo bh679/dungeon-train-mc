@@ -1,0 +1,16 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": {
+    "type": "neoforge:or",
+    "values": [
+      "#c:is_dry/overworld",
+      "#c:is_sandy"
+    ]
+  },
+  "spawners": {
+    "type": "luminous_monsters:hollow_skeleton",
+    "weight": 60,
+    "minCount": 1,
+    "maxCount": 4
+  }
+}

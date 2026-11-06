@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.train.Trains;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.protocol.game.ClientboundBlockDestructionPacket;
 import net.minecraft.server.level.ServerLevel;
@@ -43,6 +44,7 @@ import org.slf4j.Logger;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A tool-carrying mob ({@link DifficultyApplier#DIG_TIER_KEY}) digging through to a target it has
@@ -57,6 +59,10 @@ import java.util.List;
  *
  * <p>PlayerMobs always have this goal at {@link ToolTiers#MAX_TIER} (anything but floors), tool or
  * not: with no digging tool they mine at the speed of what is in their main hand, as a player would.</p>
+ *
+ * <p>Luminous Monsters' Miners always have this goal too, and may also break what their held tool can
+ * harvest ({@link ToolTiers#minerMayBreak}). {@link #bestHand} still needs a digging tool, so a bow or an
+ * empty hand digs nothing.</p>
  *
  * <p>Breaks one block at a time, taking as long as a player would with the same tool (tool speed,
  * Efficiency, Haste / Mining Fatigue, water and airborne penalties, right-tool 1/30 vs 1/100). A
@@ -91,6 +97,9 @@ public final class MobDigGoal extends Goal {
     private static final double CRACK_RANGE_SQR = 32.0 * 32.0;
     /** Padding around a carriage's box when looking for the carriage a cell belongs to. */
     private static final double CARRIAGE_PAD = 2.0;
+    /** Luminous Monsters' Miners. They dig with a tool they hold, from any level, and can't without one. */
+    private static final Set<String> MINER_IDS =
+        Set.of("luminous_monsters:miner_zombie", "luminous_monsters:miner_skeleton");
 
     /**
      * One cell to break. A carriage cell keeps its ship and plot position (the world cell moves with
@@ -109,9 +118,10 @@ public final class MobDigGoal extends Goal {
     }
 
     private final Mob mob;
-    private final int tier;
     /** Digs with whatever is in the main hand when it holds no digging tool, at that item's speed. */
     private final boolean bareHanded;
+    /** May also break what its held tool can harvest ({@link ToolTiers#minerMayBreak}), whatever its tier. */
+    private final boolean miner;
 
     private int lastSeenTick = -SEEN_MEMORY_TICKS * 2;
     private LivingEntity trackedTarget;
@@ -126,27 +136,36 @@ public final class MobDigGoal extends Goal {
     private int progressTicks;
     private int lastStage;
 
-    private MobDigGoal(Mob mob, int tier, boolean bareHanded) {
+    private MobDigGoal(Mob mob, boolean bareHanded, boolean miner) {
         this.mob = mob;
-        this.tier = tier;
         this.bareHanded = bareHanded;
+        this.miner = miner;
         setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
     }
 
     /**
-     * Give {@code mob} its dig goal if it carries a break tier and doesn't have one yet. Safe to call
-     * from both the spawn roll and a load from disk.
+     * Give {@code mob} its dig goal if it carries a break tier or is a Miner, and doesn't have one yet.
+     * Safe to call from both the spawn roll and a load from disk.
      */
     public static void attach(Mob mob) {
         if (mob.level().isClientSide()) return;
         // PlayerMobs dig like players: always at the top tier, with whatever they hold.
         boolean playerMob = mob instanceof PlayerMobEntity;
-        int tier = playerMob ? ToolTiers.MAX_TIER : mob.getPersistentData().getInt(DifficultyApplier.DIG_TIER_KEY);
-        if (tier <= ToolTiers.NO_TIER) return;
+        boolean miner = isMiner(BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).toString());
+        if (!playerMob && !miner && mob.getPersistentData().getInt(DifficultyApplier.DIG_TIER_KEY) <= ToolTiers.NO_TIER) return;
         for (WrappedGoal wrapped : mob.goalSelector.getAvailableGoals()) {
             if (wrapped.getGoal() instanceof MobDigGoal) return;
         }
-        mob.goalSelector.addGoal(PRIORITY, new MobDigGoal(mob, tier, playerMob));
+        mob.goalSelector.addGoal(PRIORITY, new MobDigGoal(mob, playerMob, miner));
+    }
+
+    static boolean isMiner(String entityId) {
+        return MINER_IDS.contains(entityId);
+    }
+
+    /** Read live: a Miner's goal attaches at spawn, and its difficulty roll may give it a tier after that. */
+    private int tier() {
+        return bareHanded ? ToolTiers.MAX_TIER : mob.getPersistentData().getInt(DifficultyApplier.DIG_TIER_KEY);
     }
 
     @Override
@@ -217,7 +236,7 @@ public final class MobDigGoal extends Goal {
         progressTicks = 0;
         lastStage = -1;
         LOGGER.debug("[DungeonTrain] MobDigGoal start: mob={} tier={} block={} at={} carriage={} ticks={}",
-                mob.getUUID(), tier, cell.state, cell.worldPos, cell.onCarriage(), cell.ticks);
+                mob.getUUID(), tier(), cell.state, cell.worldPos, cell.onCarriage(), cell.ticks);
     }
 
     @Override
@@ -382,7 +401,9 @@ public final class MobDigGoal extends Goal {
         if (hand == null) return blocked;
         ItemStack tool = mob.getItemInHand(hand);
         boolean playerPlaced = subLevel != null && PlayerPlacedTrainBlocks.isPlayerPlaced(subLevel, plotPos);
-        if (!ToolTiers.mayBreak(tier, playerPlaced, tool.isCorrectToolForDrops(state), floor)) return blocked;
+        boolean correctTool = tool.isCorrectToolForDrops(state);
+        if (!ToolTiers.mayBreak(tier(), playerPlaced, correctTool, floor)
+                && !(miner && ToolTiers.minerMayBreak(correctTool, floor))) return blocked;
 
         BlockPos levelPos = plotPos != null ? plotPos : pos;
         if (!EventHooks.onEntityDestroyBlock(mob, levelPos, state)) return blocked;

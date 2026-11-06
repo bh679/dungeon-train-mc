@@ -17,6 +17,9 @@ with no category stops the build: add one line there. Existing criteria are neve
 progress and the album keep their keys) unless their id is set to skip; new ones are appended in
 id order, vanilla first.
 
+Family Photo (every zombie) and Skeleton Crew (every skeleton) work the same way from the families
+lists in that file, holding only the members the train can spawn.
+
 Run with --check to fail instead of writing (CI). Stdlib only.
 """
 from __future__ import annotations
@@ -36,6 +39,7 @@ CATEGORIES = Path(__file__).resolve().parent / "mob-photos/categories.json"
 SIDECAR_DIRS = ("contents", "portals/room", "prefabs/block_variants")
 NBT_DIRS = ("contents", "portals/room")
 COLLECTIONS = {"hostile": "most_wanted", "animal": "nature_documentary"}
+FAMILY_WORDS = ("zombie", "skeleton")
 CATEGORY_VALUES = {"hostile", "animal", "skip"}
 TRIGGER = "dungeontrain:photo_subject"
 SUBJECT_PREFIX = "entity:"
@@ -219,16 +223,32 @@ def main() -> int:
             print(f"  {entity}  (from {source})", file=sys.stderr)
         return 1
 
+    families = {k: set(v) for k, v in doc["families"].items() if not k.startswith("_")}
+    unfamilied = sorted(e for e in seen if categories[e] == "hostile"
+                        and any(word in e.partition(":")[2] for word in FAMILY_WORDS)
+                        and not any(e in members for members in families.values()))
+    if unfamilied:
+        print(f"error: add these to a family in {CATEGORIES.relative_to(ROOT)}: {unfamilied}", file=sys.stderr)
+        return 1
+
     skipped = {e for e, c in categories.items() if c == "skip"}
-    stale = []
+    plans = []
     for category, name in COLLECTIONS.items():
-        path = ADVANCEMENTS / f"{name}.json"
-        text = path.read_text(encoding="utf-8")
-        current = json.loads(text)
+        current = json.loads((ADVANCEMENTS / f"{name}.json").read_text(encoding="utf-8"))
         wanted = {e for e in seen if categories[e] == category}
         # An id moved to the other collection leaves this one too.
         moved = {e for e in current["criteria"] if categories.get(e) not in (None, category)}
-        updated = build(current, wanted, skipped | moved)
+        plans.append((name, wanted, skipped | moved))
+    for name, members in families.items():
+        current = json.loads((ADVANCEMENTS / f"{name}.json").read_text(encoding="utf-8"))
+        plans.append((name, members & set(seen), set(current["criteria"]) - members))
+
+    stale = []
+    for name, wanted, dropped in plans:
+        path = ADVANCEMENTS / f"{name}.json"
+        text = path.read_text(encoding="utf-8")
+        current = json.loads(text)
+        updated = build(current, wanted, dropped)
         rendered = json.dumps(updated, indent=2, ensure_ascii=False) + "\n"
         if rendered == text:
             continue

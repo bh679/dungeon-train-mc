@@ -128,6 +128,8 @@ final class EnchiridionAdvancementsTest {
         Map<String, String> parents = parents();
         assertEquals("enchiridion/nature_documentary", EnchiridionAdvancements.albumOf("enchiridion/nature_documentary"));
         assertEquals("enchiridion/most_wanted", EnchiridionAdvancements.albumOf("enchiridion/most_wanted"));
+        assertEquals("enchiridion/family_photo", EnchiridionAdvancements.albumOf("enchiridion/family_photo"));
+        assertEquals("enchiridion/skeleton_crew", EnchiridionAdvancements.albumOf("enchiridion/skeleton_crew"));
         for (String tier : List.of("enchiridion/scenic_route", "enchiridion/travel_brochure", "enchiridion/coffee_table_book")) {
             assertTrue(parents.containsKey(tier), tier);
             assertEquals(EnchiridionAdvancements.BIOME_ALBUM, EnchiridionAdvancements.albumOf(tier));
