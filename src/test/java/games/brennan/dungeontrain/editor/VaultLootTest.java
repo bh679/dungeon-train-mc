@@ -200,7 +200,7 @@ final class VaultLootTest {
         ContainerContentsPool ominous = VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY);
         assertEquals(2, ominous.fillMin());
         assertEquals(4, ominous.fillMax());
-        assertEquals(2247, ominous.totalWeight());
+        assertEquals(2347, ominous.totalWeight());
 
         Set<ResourceLocation> removed = Set.of(
             ResourceLocation.withDefaultNamespace("emerald"),
@@ -211,6 +211,24 @@ final class VaultLootTest {
             ResourceLocation id = ResourceLocation.withDefaultNamespace("diamond_" + piece);
             assertTrue(ominous.entries().stream().anyMatch(e -> e.itemId().equals(id)), id + " missing");
         }
+    }
+
+    @Test
+    @DisplayName("Ender Blocks drop up to 2 from the ominous vault, rarer than Golden Apples, and up to 6 from the green vault")
+    void enderBlockRewards() {
+        ContainerContentsEntry ominous = entry(VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY), "betterend", "ender_block");
+        assertEquals(2, ominous.count());
+        assertEquals(100, ominous.weight());
+        assertTrue(ominous.weight() < entry(VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY), "minecraft", "golden_apple").weight());
+
+        ContainerContentsEntry green = entry(VaultLoot.defaultPool(VaultLoot.GREEN_KEY), "betterend", "ender_block");
+        assertEquals(6, green.count());
+        assertEquals(200, green.weight());
+    }
+
+    private static ContainerContentsEntry entry(ContainerContentsPool pool, String namespace, String path) {
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(namespace, path);
+        return pool.entries().stream().filter(e -> e.itemId().equals(id)).findFirst().orElseThrow();
     }
 
     private static double expectedPerUnlock(ContainerContentsPool pool, String item) {

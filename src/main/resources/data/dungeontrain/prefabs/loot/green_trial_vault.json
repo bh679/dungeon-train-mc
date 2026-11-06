@@ -14,6 +14,7 @@
     { "id": "minecraft:diamond_chestplate", "count": 1, "weight": 800, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 55 },
     { "id": "minecraft:book", "count": 1, "weight": 800, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 100 },
     { "id": "minecraft:diamond_block", "count": 5, "weight": 800, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
+    { "id": "betterend:ender_block", "count": 6, "weight": 200, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:enchanted_golden_apple", "count": 5, "weight": 600, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:flow_armor_trim_smithing_template", "count": 1, "weight": 500, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:flow_banner_pattern", "count": 1, "weight": 200, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
