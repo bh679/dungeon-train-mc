@@ -27,7 +27,7 @@
     { "id": "ediblebackpacks:golden_edible_backpack", "count": 1, "weight": 30, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "ediblebackpacks:edible_backpack", "count": 6, "weight": 170, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:totem_of_undying", "count": 2, "weight": 30, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-    { "id": "minecraft:diamond_sword", "count": 1, "weight": 40, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:diamond_sword", "count": 1, "weight": 40, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 75 },
     { "id": "minecraft:diamond_helmet", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 75 },
     { "id": "minecraft:diamond_leggings", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 75 },
     { "id": "minecraft:diamond_boots", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 75 },
