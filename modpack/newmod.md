@@ -67,6 +67,7 @@ existing settings, `ClientDisplayConfig#isCreativeModBlockTabs` and `#isCreative
 |---|---|
 | **Spawn pools** | Weights and every `biomes` selector. See the warning below |
 | **DT's own spawning** | The Nether band ignores biome lists: it cancels natural spawns and uses `NetherMobSpawner`'s lists. `BandMobSpawnEvents` cancels natural spawns in the upside-down and spheres bands, and `EndBandSpawnRules` admits whatever a biome lists |
+| **Natural spawns** | A mob pack's natural spawns wait for the train: add it to `GATED_NAMESPACES` in `NaturalSpawnLevelGate` **and** `derive-mob-offsets.py`. Each mob unlocks at the lowest Diff-Level a room places it, and a mob in no room never spawns naturally |
 | **Biome twins** | `VanillaBiomeTwins` keeps spawns added by biome modifiers, but replaces other changes to WWOO's biomes outside its stretch |
 | **Sable** | Anything touching physics, collision or world interaction: test on a moving train |
 | **Mob systems** | Base class decides difficulty gear (`DifficultyApplier#canHoldTools`). An `Enemy` joins `MobDifficultyEvents`. Mobs placed on the train need an entry in `scripts/advancements/mob-photos/categories.json` |

@@ -5,6 +5,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Mob;
 
 import java.util.Map;
+import java.util.OptionalInt;
 
 /**
  * How many difficulty levels later each hostile's potion buffs start, so a mob that only begins
@@ -70,6 +71,15 @@ public final class MobEffectOffsets {
     /** Pure form of {@link #offsetFor(Mob)}. Unknown ids get 0. */
     static int offsetFor(String entityId, boolean baby) {
         return OFFSETS.getOrDefault(entityId, 0) + (baby ? BABY_OFFSET : 0);
+    }
+
+    /**
+     * The lowest level any room can spawn {@code entityId}, for {@code NaturalSpawnLevelGate}'s mods only: their
+     * level-0 mobs are kept in the table, so empty means no room places them. Other mods leave level 0 out.
+     */
+    public static OptionalInt firstRoomLevel(String entityId) {
+        Integer level = OFFSETS.get(entityId);
+        return level == null ? OptionalInt.empty() : OptionalInt.of(level);
     }
 
     /** Test seam: the full table. */
