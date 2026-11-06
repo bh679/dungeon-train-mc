@@ -51,15 +51,13 @@ DT_PROJECT = int(os.environ.get("CURSEFORGE_PROJECT_ID") or 1527512)
 def approved_mod_files(project_id=DT_PROJECT):
     """{normalised version: file id} for every DT MOD file CurseForge lists publicly.
 
-    Public listing is the approval proof: CurseForge does not list files that are still
-    Processing / UnderReview / Rejected, on either the official API or the cfwidget mirror.
+    Public listing is the approval proof on the cfwidget mirror, which never shows files that
+    are still Processing / UnderReview / Rejected. The official API's docs don't promise that,
+    so cf_api.list_approved_files checks each file's status itself.
     """
     if cf_api.is_authoritative():
-        data = cf_api.get_json(
-            f"{cf_api.CF_API}/mods/{project_id}/files?pageSize=10000",
-            headers=cf_api.api_headers(),
-        )
-        entries = [(f.get("displayName", ""), f.get("id")) for f in data.get("data", [])]
+        entries = [(f.get("displayName", ""), f.get("id"))
+                   for f in cf_api.list_approved_files(project_id)]
     else:
         data = cf_api.get_json(f"{cf_api.CFWIDGET_API}/{project_id}")
         entries = [(f.get("display", ""), f.get("id")) for f in data.get("files", [])]
