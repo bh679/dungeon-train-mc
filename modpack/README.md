@@ -410,8 +410,24 @@ release**. The public listing also hides files under review and rejected ones, s
 `release-modpack.yml`'s pack check has no file id, so it searches the listing: red if the version
 is not listed within 30 min. That can't tell a rejected pack file from one that is still held.
 
-**Known gap:** manual review holds last days and one run stops at 300 min, so a rejection after
-that is not caught automatically.
+**Rejections after the 300 min.** Manual review holds last days, so `modpack-reconcile.yml` reads
+each recent mod file's status once an hour (`scripts/modpack/check-late-rejections.py`) and never
+waits. File ids come from verify run titles (`Verify <tag> file <id>`), the last 30 days of them,
+because CurseForge's file listing only returns approved files.
+
+| File says | Result |
+|---|---|
+| Rejected, ChangesRequired, MalwareDetected, Deleted, FailedPublishing | One `curseforge-rejection` issue and one red run, first time only |
+| Approved, under review, any other status, or unreadable | No alert |
+| Key unset | Step does nothing |
+| Key refused, or verify runs/issues unreadable | Warning, stays green |
+
+Closing the issue does not re-alert: its `cf-file:<id>` markers count while open or closed. A file
+already rejected inside the 300 min also goes red in its verify run. Check by hand with
+`python3 scripts/modpack/check-late-rejections.py --dry-run --check v0.1176.0=9078014`.
+
+Verified 2026-11-06 with a real key: `GET /mods/{id}/files/{fileId}` returns held and rejected
+files, and the listing leaves them out.
 
 **Setting it up.** Get a key from the [CurseForge console](https://console.curseforge.com/); the
 [API docs](https://docs.curseforge.com/rest-api/) send non-game-developers to an application form.

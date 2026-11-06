@@ -426,8 +426,10 @@ loads (Advancement Plaques needs Iceberg).
   missing upload file id, then dispatches `verify-curseforge-upload.yml` (300-min wait), which
   with the key polls that file's own status (`reconcile.py --file-id`). Red means rejected (or
   the key was refused); recover with `reupload-curseforge.yml`. Green with a "still under review"
-  or "UNKNOWN" warning is NOT a rejection, so don't re-upload. A rejection after the 300 min goes
-  unnoticed. (Until Oct 2026 `release.yml` polled for
+  or "UNKNOWN" warning is NOT a rejection, so don't re-upload. A rejection after the 300 min is
+  caught by `modpack-reconcile.yml`'s hourly `check-late-rejections.py`: one read per file, one
+  `curseforge-rejection` issue and one red run per newly rejected file, ids read from verify run
+  titles (`run-name`), so keep those in step. (Until Oct 2026 `release.yml` polled for
   30 min itself, which was ~30 of every release's ~34 minutes.)
 - Both publish scripts retry transient 5xx/transport failures via
   `scripts/modpack/lib/upload-retry.sh` (never 4xx — a bad payload stays bad).

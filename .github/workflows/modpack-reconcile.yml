@@ -19,6 +19,9 @@ name: Modpack Reconcile
 # prolonged CurseForge stall (see the threshold below), which is deliberately generous:
 # a quiet stretch with no operator-dispatched release is normal and must not page anyone.
 # With catch-up in place, a stall that trips it means catch-up ITSELF is broken.
+#
+# Also here because it needs the same hourly tick: the late rejection check on the MOD's files,
+# which goes red once for each new rejection (see the last step).
 
 on:
   schedule:
@@ -49,6 +52,7 @@ jobs:
     permissions:
       contents: read
       actions: write   # catch-up dispatches release-modpack.yml
+      issues: write    # the late rejection check opens an issue per pass that finds any
     steps:
       - uses: actions/checkout@v4
 
@@ -127,3 +131,16 @@ jobs:
             -f auto=false \
             -f changelog="$NOTES"
           echo "::notice::Catch-up dispatched the CurseForge modpack for $TAG (DT file $DT_FILE_ID)."
+
+      # A release's verify run stops at 300 min but manual review holds last days. One status read
+      # per recent mod file, never a wait: a new rejection opens one issue and turns this run red
+      # once. Last and always(), so it neither blocks catch-up nor is skipped by a stale report.
+      - name: Check recent mod files for late rejections
+        if: ${{ always() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURSEFORGE_PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: |
+          python3 scripts/modpack/check-late-rejections.py $DRY_RUN

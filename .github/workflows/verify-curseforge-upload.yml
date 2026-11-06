@@ -17,11 +17,15 @@ name: Verify CurseForge Upload
 #          existing artifact without burning a version number. Also red: the key was refused.
 #   Green + warning  Still under review at the timeout, or the file could not be read. Neither
 #          is a rejection, so do NOT re-upload. Manual review holds outlast any one run: a
-#          rejection after the timeout is not caught here, so re-dispatch to check again.
+#          rejection after the timeout is caught by modpack-reconcile.yml's hourly check.
 #
 # Without the key it can only read the cached cfwidget mirror, which cannot prove absence and
 # can't see files under review or rejected. It answers at once (listed, or unknown) and never
 # fails, so a quick green run there says nothing about a file that isn't listed.
+
+# scripts/modpack/check-late-rejections.py reads this title: it is the only record of a release's
+# file id, because CurseForge's listing hides unapproved files. Keep the two in step.
+run-name: Verify ${{ inputs.tag }} file ${{ inputs.file_id }}
 
 on:
   workflow_dispatch:

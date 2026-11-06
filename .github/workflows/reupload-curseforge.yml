@@ -203,6 +203,18 @@ jobs:
             --timeout-minutes 30 \
             --poll-seconds 60
 
+      # This upload is a new file id, and verify run titles are the only record of those. A short
+      # run is enough: it records the id for modpack-reconcile.yml's hourly late rejection check.
+      - name: Record the new file for the late rejection check
+        if: ${{ !inputs.dry_run && !cancelled() && steps.mcpublish.outputs.curseforge-version != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          CF_FILE_ID: ${{ steps.mcpublish.outputs.curseforge-version }}
+        run: |
+          gh workflow run verify-curseforge-upload.yml \
+            -f tag="$RELEASE_TAG" -f file_id="$CF_FILE_ID" -f timeout_minutes=1
+
       - name: Dispatch the CurseForge modpack
         if: ${{ !inputs.dry_run && success() && steps.mcpublish.outputs.curseforge-version != '' }}
         env:
