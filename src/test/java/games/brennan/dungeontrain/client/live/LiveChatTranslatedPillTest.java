@@ -4,9 +4,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 class LiveChatTranslatedPillTest {
@@ -36,5 +39,13 @@ class LiveChatTranslatedPillTest {
         assertEquals(980, LiveChatTranslatedPill.newestTranslated(List.of(990, 980, 970), Set.of(970, 980)));
         assertNull(LiveChatTranslatedPill.newestTranslated(List.of(990, 985), Set.of(970, 980)), "scrolled or aged off screen");
         assertNull(LiveChatTranslatedPill.newestTranslated(List.of(), Set.of(970)));
+    }
+
+    @Test
+    @DisplayName("one line of Google's on screen owes the credit, even if it isn't the newest")
+    void googleOnScreen() {
+        Map<Integer, Boolean> ticks = Map.of(970, true, 980, false);
+        assertTrue(LiveChatTranslatedPill.googleOnScreen(List.of(980, 970), ticks));
+        assertFalse(LiveChatTranslatedPill.googleOnScreen(List.of(990, 980), ticks));
     }
 }

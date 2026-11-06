@@ -18,16 +18,16 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayDeque;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
- * One label above the chat lines saying Live chat is translated, only while a translated line is on screen
- * and the relay names a service ({@link LiveChatBridge} feeds both). A line is recognised by the tick it
- * entered chat, which vanilla keeps through re-wrapping. In a closed chat the label fades with the newest
- * translated line; in an open one it follows the scroll position.
+ * One label above the chat lines saying Live chat is translated, whenever a translated line is on screen
+ * ({@link LiveChatBridge} reports them), whoever translated it; Google's work gets the credit its rules
+ * require. A line is recognised by the tick it entered chat, which vanilla keeps through re-wrapping. In a
+ * closed chat the label fades with the newest translated line; in an open one it follows the scroll position.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveChatTranslatedPill {
@@ -47,10 +47,10 @@ public final class LiveChatTranslatedPill {
     /** Below this, Minecraft's text renderer draws nothing recognisable anyway. */
     private static final float MIN_ALPHA = 0.03f;
 
-    /** The relay's id for who is translating this room now; read on the render thread, set on the client thread. */
-    @Nullable private static volatile String translator;
-    /** The ticks translated lines entered chat, oldest first. Client thread only, as is rendering. */
-    private static final ArrayDeque<Integer> TRANSLATED_TICKS = new ArrayDeque<>();
+    /** The relay's id for who is translating this room now. */
+    @Nullable private static String translator;
+    /** The tick each translated line entered chat, oldest first, to whether Google made it. Client thread only, as is rendering. */
+    private static final Map<Integer, Boolean> TRANSLATED_TICKS = new LinkedHashMap<>();
 
     private LiveChatTranslatedPill() {}
 
@@ -61,8 +61,9 @@ public final class LiveChatTranslatedPill {
 
     /** A translated line, the reader's to read, stands in chat with this added-tick. */
     static void noteTranslatedLine(int tick) {
-        TRANSLATED_TICKS.addLast(tick);
-        if (TRANSLATED_TICKS.size() > TICKS_KEPT) TRANSLATED_TICKS.removeFirst();
+        boolean google = LiveChatTranslations.GOOGLE.equals(translator);
+        TRANSLATED_TICKS.merge(tick, google, Boolean::logicalOr);
+        if (TRANSLATED_TICKS.size() > TICKS_KEPT) TRANSLATED_TICKS.remove(TRANSLATED_TICKS.keySet().iterator().next());
     }
 
     /** Off Live chat: nothing to name. */
@@ -96,6 +97,11 @@ public final class LiveChatTranslatedPill {
         return null;
     }
 
+    /** Whether any visible line is Google's work: one such line is enough to owe the credit. */
+    static boolean googleOnScreen(List<Integer> visible, Map<Integer, Boolean> translatedTicks) {
+        return visible.stream().anyMatch(tick -> Boolean.TRUE.equals(translatedTicks.get(tick)));
+    }
+
     @SubscribeEvent
     public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(VanillaGuiLayers.CHAT, LAYER, (graphics, deltaTracker) -> render(graphics));
@@ -103,8 +109,6 @@ public final class LiveChatTranslatedPill {
 
     private static void render(GuiGraphics graphics) {
         if (TRANSLATED_TICKS.isEmpty()) return;
-        Component text = LiveChatTranslations.translatedBy(translator);
-        if (text == null) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.options.hideGui || mc.options.chatVisibility().get() == ChatVisiblity.HIDDEN) return;
         ChatComponent chat = mc.gui.getChat();
@@ -117,8 +121,10 @@ public final class LiveChatTranslatedPill {
         int scroll = open ? Mth.clamp(access.dungeontrain$getChatScrollbarPos(), 0, lines.size()) : 0;
         List<Integer> page = lines.subList(scroll, Math.min(lines.size(), scroll + chat.getLinesPerPage())).stream().map(GuiMessage.Line::addedTime).toList();
         int shown = open ? page.size() : linesStillShowing(page, guiTicks, page.size());
-        Integer translated = newestTranslated(page.subList(0, shown), new HashSet<>(TRANSLATED_TICKS));
+        List<Integer> visible = page.subList(0, shown);
+        Integer translated = newestTranslated(visible, TRANSLATED_TICKS.keySet());
         if (translated == null) return;
+        Component text = LiveChatTranslations.translatedLabel(googleOnScreen(visible, TRANSLATED_TICKS));
         float alpha = open ? 1f : fade(guiTicks - translated);
         if (alpha < MIN_ALPHA) return;
 

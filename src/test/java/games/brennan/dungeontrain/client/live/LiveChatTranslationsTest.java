@@ -76,13 +76,10 @@ class LiveChatTranslationsTest {
     }
 
     @Test
-    @DisplayName("the chat's label: each known translator's wording, and nothing for an unknown id or none")
-    void translatedByLabel() {
-        assertEquals(LiveChatTranslations.TRANSLATED_KEY, key((MutableComponent) LiveChatTranslations.translatedBy("azure")));
-        assertEquals(LiveChatTranslations.POWERED_BY_KEY, key((MutableComponent) LiveChatTranslations.translatedBy("google")));
-        assertEquals(LiveChatTranslations.TRANSLATED_BY_KEY, key((MutableComponent) LiveChatTranslations.translatedBy("haiku")));
-        assertNull(LiveChatTranslations.translatedBy("deepl"));
-        assertNull(LiveChatTranslations.translatedBy(null));
+    @DisplayName("the chat's label: plain, or Google's credit")
+    void translatedLabel() {
+        assertEquals(LiveChatTranslations.TRANSLATED_KEY, key((MutableComponent) LiveChatTranslations.translatedLabel(false)));
+        assertEquals(LiveChatTranslations.POWERED_BY_KEY, key((MutableComponent) LiveChatTranslations.translatedLabel(true)));
     }
 
     private static String arg(MutableComponent c, int i) {

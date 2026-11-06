@@ -796,7 +796,6 @@
   "chat.dungeontrain.live_chat.translation.on": "De livechat wordt voor je vertaald naar het %s (Livevertalingen, een gemeenschapsbeloning). Pas de weergave aan in %s",
   "chat.dungeontrain.live_chat.translation.path": "Opties / Dungeon Train / Stream / Chatvertalingen",
   "chat.dungeontrain.live_chat.translated": "Vertaald",
-  "chat.dungeontrain.live_chat.translated_by": "Vertaald door %s",
   "chat.dungeontrain.live_chat.powered_by": "Mogelijk gemaakt door %s",
   "chat.dungeontrain.live_gift.prompt": "%s kijkt mee via een tv en heeft nog nooit het Live-oog gehad.",
   "chat.dungeontrain.live_gift.give": "Cadeau geven",

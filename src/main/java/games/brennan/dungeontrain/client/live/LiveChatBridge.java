@@ -362,6 +362,7 @@ public final class LiveChatBridge {
 
     private static void deliver(Minecraft mc, ChatPage page, GiftNotices gifts) {
         if (page.seq() < 0) return; // a failed poll leaves the cursor alone
+        LiveChatTranslatedPill.setTranslator(page.translatedBy()); // first: this page's lines are credited to it
         if (cursor < 0) {
             cursor = page.seq(); // joined: start from now
             return;
@@ -458,7 +459,6 @@ public final class LiveChatBridge {
             ChatReactionTracker.applyLive(r.line(), r.list(), r.event());
         }
         if (streaming) LiveLifeChat.onReactions(page.reactions());
-        if (page != LiveFeedClient.ChatPage.EMPTY) LiveChatTranslatedPill.setTranslator(page.translatedBy());
         cursor = LiveChatRules.nextCursor(cursor, page.seq());
     }
 

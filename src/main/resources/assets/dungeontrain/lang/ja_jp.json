@@ -764,7 +764,6 @@
   "chat.dungeontrain.live_chat.translation.on": "ライブチャットを%sに翻訳しています（ライブ翻訳、コミュニティ特典）。表示方法は%sで変更できます",
   "chat.dungeontrain.live_chat.translation.path": "設定 / Dungeon Train / 配信 / チャット翻訳",
   "chat.dungeontrain.live_chat.translated": "翻訳済み",
-  "chat.dungeontrain.live_chat.translated_by": "翻訳: %s",
   "chat.dungeontrain.live_chat.powered_by": "提供: %s",
   "chat.dungeontrain.live_gift.prompt": "%sがテレビから参加しました。まだライブアイを持ったことがありません。",
   "chat.dungeontrain.live_gift.give": "プレゼントする",

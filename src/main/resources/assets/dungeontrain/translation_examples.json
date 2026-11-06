@@ -15951,14 +15951,6 @@
       ]
     }
   },
-  "chat.dungeontrain.live_chat.translated_by": {
-    "1": {
-      "label": "the translation service's name, kept in English",
-      "examples": [
-        "Microsoft"
-      ]
-    }
-  },
   "chat.dungeontrain.live_chat.powered_by": {
     "1": {
       "label": "the translation service's name, kept in English",

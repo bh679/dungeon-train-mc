@@ -29,7 +29,6 @@ public final class LiveChatTranslations {
     public static final String ON_KEY = "chat.dungeontrain.live_chat.translation.on";
     public static final String PATH_KEY = "chat.dungeontrain.live_chat.translation.path";
     public static final String TRANSLATED_KEY = "chat.dungeontrain.live_chat.translated";
-    public static final String TRANSLATED_BY_KEY = "chat.dungeontrain.live_chat.translated_by";
     public static final String POWERED_BY_KEY = "chat.dungeontrain.live_chat.powered_by";
 
     /** A Minecraft locale code as the relay expects it: {@code zh_cn}. */
@@ -87,19 +86,12 @@ public final class LiveChatTranslations {
         return LiveChatRules.line(line, translation, hover);
     }
 
-    /**
-     * The chat's label for the relay's id, or null for no id or one this version doesn't know. Azure's is
-     * plain "Translated"; a named service stays in English in every language: Google's rules fix its wording.
-     */
-    @Nullable
-    public static Component translatedBy(@Nullable String id) {
-        if (id == null) return null;
-        return switch (id) {
-            case "azure" -> Component.translatable(TRANSLATED_KEY);
-            case "google" -> Component.translatable(POWERED_BY_KEY, "Google Translate");
-            case "haiku" -> Component.translatable(TRANSLATED_BY_KEY, "Claude");
-            default -> null;
-        };
+    /** The relay's id for Google: its work must be credited ({@link #translatedLabel}). */
+    public static final String GOOGLE = "google";
+
+    /** The chat's label: plain, or Google's credit, whose wording its rules fix (so the name stays in English). */
+    public static Component translatedLabel(boolean googleOnScreen) {
+        return googleOnScreen ? Component.translatable(POWERED_BY_KEY, "Google Translate") : Component.translatable(TRANSLATED_KEY);
     }
 
     /** The language's own name for the one-time "being translated into …" notice: 中文, Deutsch, …; the code itself when unknown. */
