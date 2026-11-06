@@ -87,13 +87,12 @@ public final class LiveChatTranslations {
         return replacedLine(line, translation, null);
     }
 
-    /** {@link #replacedLine(ChatLine, String)} ending with the source language's flag, when {@code flag} is one. */
+    /** {@link #replacedLine(ChatLine, String)} with the source language's flag before the text, when {@code flag} is one. */
     public static MutableComponent replacedLine(ChatLine line, String translation, @Nullable MutableComponent flag) {
         Component original = Component.translatable(ORIGINAL_KEY,
             Component.literal(LiveChatRules.clean(line.content(), LiveChatRules.MAX_CONTENT)));
         Style hover = Style.EMPTY.withColor(ChatFormatting.WHITE).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, original));
-        MutableComponent shown = LiveChatRules.line(line, translation, hover);
-        return flag == null ? shown : shown.append(" ").append(flag);
+        return LiveChatRules.line(line, translation, hover, flag);
     }
 
     /** The language's own name for the one-time "being translated into …" notice: 中文, Deutsch, …; the code itself when unknown. */

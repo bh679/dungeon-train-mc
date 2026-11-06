@@ -65,13 +65,13 @@ class LiveChatTranslationsTest {
     }
 
     @Test
-    @DisplayName("a flag starts the line under the original and ends a replaced line; without one they read as before")
+    @DisplayName("a flag comes just before the text, under the original and in a replaced line; without one they read as before")
     void flags() {
         MutableComponent flag = LanguageFlags.flag("es", "en_us");
         String glyph = flag.getString();
         assertEquals(glyph + " hola", ((MutableComponent) ((net.minecraft.network.chat.contents.TranslatableContents)
             LiveChatTranslations.underLine(LINE, "hola", true, flag).getContents()).getArgs()[0]).getString());
-        assertTrue(LiveChatTranslations.replacedLine(LINE, "hola", flag).getString().endsWith("Alice: hola " + glyph));
+        assertTrue(LiveChatTranslations.replacedLine(LINE, "hola", flag).getString().endsWith("Alice: " + glyph + " hola"));
         assertTrue(LiveChatTranslations.replacedLine(LINE, "hola", null).getString().endsWith("Alice: hola"));
     }
 
