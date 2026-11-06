@@ -381,7 +381,7 @@ loads (Advancement Plaques needs Iceberg).
   Deptest Cases S/T cover it; `checkCurseforgeJar` (in `check`) asserts it drops exactly those two.
   Deptest Cases A (top-level present) and G (nested only) cover both layouts. Keep Trim is hybrid
   only because its Modrinth listing is still in review (it was fully external 0.863.0–0.908.0).
-- **Sable Mob Paths (`bh679/sablemobpaths-mc`):** jarJar'd into every DT jar, no listing, no modpack entry. It gives CurseForge players mob pathing across carriages because Sable Pathfinder (All Rights Reserved) isn't listed there, and turns itself off when Sable Pathfinder is loaded. **It is clean-room: never open Sable Pathfinder's source or decompile its jar** (its `CLEANROOM.md`). Develop and test it with `-PnoSablePathfinder`. On a Sable bump, re-run its `scripts/verify-mixin-targets.sh`.
+- **Sable Mob Paths (`bh679/sablemobpaths-mc`):** jarJar'd into every DT jar, no listing, no modpack entry. It gives CurseForge players mob pathing across carriages, and villagers that work, sleep and raid on them, because Sable Pathfinder (All Rights Reserved) isn't listed there, and turns itself off when Sable Pathfinder is loaded. **It is clean-room: never open Sable Pathfinder's source or decompile its jar** (its `CLEANROOM.md`). Develop and test it with `-PnoSablePathfinder`. On a Sable bump, re-run its `scripts/verify-mixin-targets.sh`.
 - **Sibling-mod floors:** AIN/AIS/PMOB/ECP/TE (+ hybrid KT/DB/SFF) each have TWO versions in `gradle.properties`.
   `<mod>_version` is what DT compiles/dev-runs against and the auto-release cascade bumps it every
   tick; `<mod>_min_version` is the floor end users must clear, rendered into `neoforge.mods.toml`

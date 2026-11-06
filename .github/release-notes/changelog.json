@@ -33758,6 +33758,39 @@
       "released": true,
       "released_in": "v0.1691.0",
       "released_at": "2026-11-06T15:29:49Z"
+    },
+    {
+      "id": "sable-mob-paths-villagers",
+      "version": "0.1693.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Villagers settle in on the train on CurseForge",
+      "summary": "On CurseForge, villagers on a carriage now sleep in beds and raise families, just as they already do on Modrinth. Golems can appear aboard, and raids can start on the train and stay with it.",
+      "highlights": [],
+      "pr": 2524,
+      "date": "2026-11-06",
+      "released": true,
+      "released_in": "v0.1693.0",
+      "released_at": "2026-11-06T20:07:47Z"
+    },
+    {
+      "id": "website-dungeon-training",
+      "version": "0.1692.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "The website has a new home",
+      "summary": "Dungeon Train's website is now at dungeon.training. Old links still work and take you to the right page.",
+      "highlights": [],
+      "pr": 2523,
+      "date": "2026-11-06",
+      "released": true,
+      "released_in": "v0.1693.0",
+      "released_at": "2026-11-06T20:07:47Z"
     }
   ]
 }
