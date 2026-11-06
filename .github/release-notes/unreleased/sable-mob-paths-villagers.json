@@ -1,0 +1,17 @@
+{
+  "id": "sable-mob-paths-villagers",
+  "version": "0.1693.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "mobs"
+  ],
+  "title": "Villagers settle in on the train on CurseForge",
+  "summary": "On CurseForge, villagers on a carriage now take up jobs, sleep in beds and raise families, just as they already do on Modrinth. Golems can appear aboard, and raids can start on the train and stay with it.",
+  "highlights": [],
+  "pr": 2524,
+  "date": "2026-11-06",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
