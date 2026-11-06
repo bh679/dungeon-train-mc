@@ -198,10 +198,9 @@ public final class PortalRoomTiler {
                 candidate -> !standingIn.contains(candidate));
             if (farthest == null) break;
             // A copy a player was in is captured before it goes (rememberTile). Its server-thread part
-            // is a copy of the block palettes plus its block entities and entities, usually well under
-            // a millisecond and a few at worst (saving is PortalRoomMemoryWriter's) — still more than an
-            // erase of an untouched copy, so it ends the tick's draining rather than being paid four
-            // times over.
+            // is a copy of the block palettes plus its block entities and entities: usually well under
+            // a millisecond, about 10 for the largest room (saving is PortalRoomMemoryWriter's). That
+            // is still enough to end the tick's draining rather than be paid four times over.
             boolean captures = PortalRoomMemory.isTileTouched(pairKey, farthest);
             current = eraseTile(level, dims, current, farthest, pairKey);
             if (captures) break;
