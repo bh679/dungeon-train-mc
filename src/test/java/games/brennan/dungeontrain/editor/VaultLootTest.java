@@ -195,18 +195,22 @@ final class VaultLootTest {
     }
 
     @Test
-    @DisplayName("the ominous vault has no Wind Charges or Emeralds, and keeps 2-4 items and its total weight")
+    @DisplayName("the ominous vault has no Wind Charges or Emeralds, rolls 2-4 items, and has all diamond gear")
     void ominousVaultRewardBalance() {
         ContainerContentsPool ominous = VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY);
         assertEquals(2, ominous.fillMin());
         assertEquals(4, ominous.fillMax());
-        // The total stays put so every item not rebalanced keeps its odds.
-        assertEquals(2127, ominous.totalWeight());
+        assertEquals(2247, ominous.totalWeight());
 
         Set<ResourceLocation> removed = Set.of(
             ResourceLocation.withDefaultNamespace("emerald"),
             ResourceLocation.withDefaultNamespace("wind_charge"));
         assertTrue(ominous.entries().stream().noneMatch(e -> removed.contains(e.itemId())));
+
+        for (String piece : List.of("helmet", "chestplate", "leggings", "boots", "sword", "axe", "pickaxe", "shovel", "hoe")) {
+            ResourceLocation id = ResourceLocation.withDefaultNamespace("diamond_" + piece);
+            assertTrue(ominous.entries().stream().anyMatch(e -> e.itemId().equals(id)), id + " missing");
+        }
     }
 
     private static double expectedPerUnlock(ContainerContentsPool pool, String item) {
