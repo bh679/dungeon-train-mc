@@ -97,6 +97,9 @@ lowest level a room places that mob, read from `MobEffectOffsets`. A mob in no r
 rooms use them, this mod adds no natural spawns at all. Crimson Walker, Revenant Skeleton and Sunken Skeleton still can't
 spawn naturally for the reasons in the table above; train placement is their route into the game.
 
+Rooms so far: Cherry and Swamp from level 3, Icy and Miner from level 5. Tested live with the Swamp pair: none in a
+swamp at level 2, 49 across 5 samples at level 3, none again back at level 2.
+
 ## Miners dig
 
 A Miner holding a digging tool can break any block that tool can harvest, through DT's `combat/MobDigGoal`, from its first
