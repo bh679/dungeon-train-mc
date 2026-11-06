@@ -134,13 +134,33 @@ public final class PortalTwinChunkHold {
             hold(level, player, radiusFor(id, roomRadii.get(id)), now);
         }
         releaseUnseen(level, dim, seen);
-        // Only while somebody here is held: with nobody held, every copy is under some player's own
-        // view distance exactly as it always was, and holding them anyway would change what a world
-        // with nobody in a room keeps loaded.
-        if (!seen.isEmpty() && now - lastResidentRefresh(dim) >= REFRESH_TICKS) {
+        // While somebody here is held, and after that until the rooms have drained: a player who has
+        // just left by a far exit copy is thousands of blocks from the copies still standing, so no
+        // view distance covers them, and the tiler erasing them from unloaded chunks is a synchronous
+        // load on the server tick. With nobody held and nothing left out, this adds nothing, so a
+        // world with nobody in a room keeps exactly what it always did.
+        if (now - lastResidentRefresh(dim) >= REFRESH_TICKS
+                && holdsResidents(!seen.isEmpty(), anySpread(structures))) {
             holdResidents(level, dims, structures, occupied);
             RESIDENT_AT.put(dim, now);
         }
+    }
+
+    /** Pure core: whether standing copies need their chunks held this refresh. */
+    static boolean holdsResidents(boolean anyoneHeld, boolean anySpread) {
+        return anyoneHeld || anySpread;
+    }
+
+    private static boolean anySpread(Collection<PortalStructure> structures) {
+        for (PortalStructure structure : structures) {
+            if (isSpread(structure)) return true;
+        }
+        return false;
+    }
+
+    /** True when something of this structure stands beyond its base room. */
+    private static boolean isSpread(PortalStructure structure) {
+        return !structure.tiling().isBaseOnly() || !structure.exitCopies().isEmpty();
     }
 
     /**
@@ -217,17 +237,16 @@ public final class PortalTwinChunkHold {
     /**
      * A radius-0 ticket on every chunk a standing copy, extra corridor or occupied base structure
      * touches. Structures with nothing standing beyond their base and nobody in them are left to
-     * whatever else loads them, as before. A held player who walked on keeps the copies behind
-     * them loaded until the tiler has taken them down; another room's copies are held too while
-     * anybody is, which costs a few chunks and is simpler than telling the rooms apart.
+     * whatever else loads them, as before. Copies stay loaded until the tiler has taken them down,
+     * whether the player who left them walked on or has gone back to the train; another room's
+     * copies are held too, which costs a few chunks and is simpler than telling the rooms apart.
      */
     private static void holdResidents(ServerLevel level, CarriageDims dims,
                                       Collection<PortalStructure> structures,
                                       Collection<PortalStructure> occupied) {
         LongSet chunks = new LongOpenHashSet();
         for (PortalStructure structure : structures) {
-            boolean spread = !structure.tiling().isBaseOnly() || !structure.exitCopies().isEmpty();
-            if (!spread && !occupied.contains(structure)) continue;
+            if (!isSpread(structure) && !occupied.contains(structure)) continue;
             addResidentChunks(dims, structure, chunks);
         }
         for (long packed : chunks) {
