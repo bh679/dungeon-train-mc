@@ -405,6 +405,12 @@
       "conditions": {
         "subject": "entity:luminous_monsters:savanna_zombie"
       }
+    },
+    "luminous_monsters:hollow_skeleton": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:hollow_skeleton"
+      }
     }
   },
   "requirements": [
@@ -602,6 +608,9 @@
     ],
     [
       "luminous_monsters:savanna_zombie"
+    ],
+    [
+      "luminous_monsters:hollow_skeleton"
     ]
   ]
 }

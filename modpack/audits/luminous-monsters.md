@@ -19,7 +19,7 @@ Audited 2026-11-06 from the pinned jar, using [`../newmod.md`](../newmod.md).
 |---|---:|---|
 | Main items (armour, weapons, tools) | 0 | None |
 | Unfair or balance-breaking items | 0 | None |
-| Mobs | 16 | Kept (requested). Natural spawns gated by level; 14 placed on the train by hand |
+| Mobs | 16 | Kept (requested). Natural spawns gated by level; 15 placed on the train by hand |
 | Structures | 0 | None |
 | Loot tables | 16 | Kept: mob drops only |
 | Enchantments | 0 | None |
@@ -100,10 +100,10 @@ into the game.
 | First room level | Mobs | Rooms |
 |---:|---|---|
 | 3 | Cherry, Swamp and Dark Oak pairs | `cherry`, `swamp`, `dark` |
-| 4 | Savanna pair | `savanaledge` (Skeleton also in `sav` from 5) |
-| 5 | Icy and Miner pairs | `icey`, `minger` |
+| 4 | Savanna pair | `savanaledge` |
+| 5 | Icy and Miner pairs, Hollow Skeleton | `icey`, `minger`, `sav` |
 | 6 | Crimson Walker, Revenant Skeleton | `crimszomb`, `reverent`, Nether phase only |
-| None | Hollow Skeleton, Sunken Skeleton | **In no room: they can't appear at all** |
+| None | Sunken Skeleton | **In no room: it can't appear at all** |
 
 Tested live with the Swamp pair: none in a swamp at level 2, 49 across 5 samples at level 3, none again back at level 2.
 
