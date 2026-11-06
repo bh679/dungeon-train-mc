@@ -146,7 +146,7 @@ public final class LiveChatBridge {
         return c.watchingWithEye() ? LiveChatRoom.Role.EYE : LiveChatRoom.Role.TV;
     }
 
-    /** A hovered flag's language name sits above its line: its usual place would cover the original text it just brought up. */
+    /** A hovered flag's tooltip sits above its line: its usual place would cover the original text it just brought up. */
     @SubscribeEvent
     public static void onTooltip(RenderTooltipEvent.Pre event) {
         if (flagHover.hovering()) event.setY(event.getY() - FLAG_TOOLTIP_LIFT);
@@ -462,7 +462,7 @@ public final class LiveChatBridge {
             if (p == null || p.translated() || p.mine()) continue;
             String mine = LiveChatTranslations.pick(t.tr(), readerLang);
             if (mine == null) continue;
-            applyLate(mc, chat, tag, p.line(), mine, LanguageFlags.flag(t.src() != null ? t.src() : p.line().src(), readerLang));
+            applyLate(mc, chat, tag, p.line(), mine, LanguageFlags.flag(t.src() != null ? t.src() : p.line().src(), p.line().content()));
         }
         for (LiveFeedClient.LineReactions r : page.reactions()) {
             ChatReactionTracker.applyLive(r.line(), r.list(), r.event());
@@ -483,7 +483,7 @@ public final class LiveChatBridge {
             printed.put(seq, new Printed(line, false, mine));
             return;
         }
-        MutableComponent flag = LanguageFlags.flag(line.src(), LiveChatTranslations.readerLang(mc.options.languageCode));
+        MutableComponent flag = LanguageFlags.flag(line.src(), line.content());
         switch (LiveFeedClientConfig.liveChatTranslation()) {
             case UNDER -> {
                 chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatRules.line(line), mine, line.content()), signatures.sign(seq), tag);

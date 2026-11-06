@@ -67,7 +67,7 @@ class LiveChatTranslationsTest {
     @Test
     @DisplayName("a flag comes just before the text, under the original and in a replaced line; without one they read as before")
     void flags() {
-        MutableComponent flag = LanguageFlags.flag("es", "en_us");
+        MutableComponent flag = LanguageFlags.flag("es", "the creeper got me");
         String glyph = flag.getString();
         assertEquals(glyph + " hola", ((MutableComponent) ((net.minecraft.network.chat.contents.TranslatableContents)
             LiveChatTranslations.underLine(LINE, "hola", true, flag).getContents()).getArgs()[0]).getString());

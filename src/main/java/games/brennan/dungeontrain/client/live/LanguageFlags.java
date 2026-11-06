@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * The small flag on a translated Live chat line, showing the language it came from. One glyph per flag in
  * {@link #FONT}; {@code scripts/language-flags/make-flags.py} draws them and writes the font, in {@link #CODES}'s
- * order. A flag stands for a language here, not a country: its hover names the language.
+ * order. A flag stands for a language here, not a country: its hover shows the original message.
  */
 public final class LanguageFlags {
 
@@ -50,20 +50,15 @@ public final class LanguageFlags {
         return CODES.contains(code) ? code : null;
     }
 
-    /** The language's name in the reader's language: {@code Spanish}, {@code スペイン語}; the tag when unknown. */
-    static String nameOf(String tag, @Nullable String readerLang) {
-        Locale language = Locale.forLanguageTag(tag.strip().replace('_', '-'));
-        Locale reader = readerLang == null ? Locale.ROOT : Locale.forLanguageTag(readerLang.replace('_', '-'));
-        String name = language.getDisplayLanguage(reader);
-        return name.isBlank() ? tag : name;
-    }
-
-    /** The flag for {@code src} with its language's name on hover, white so its own colours show; null when there is none. */
+    /**
+     * The flag for {@code src} with {@code original}, the untranslated message, on hover; white so its own colours
+     * show; null when there is none. The hover text is a new object each call: {@link LiveChatFlagHover} tells flags apart by it.
+     */
     @Nullable
-    public static MutableComponent flag(@Nullable String src, @Nullable String readerLang) {
+    public static MutableComponent flag(@Nullable String src, String original) {
         String code = codeOf(src);
         if (code == null) return null;
-        Component name = Component.literal(nameOf(src, readerLang));
+        Component name = Component.literal(LiveChatRules.clean(original, LiveChatRules.MAX_CONTENT));
         return Component.literal(String.valueOf((char) (FIRST_GLYPH + CODES.indexOf(code))))
             .withStyle(s -> s.withFont(FONT).withColor(ChatFormatting.WHITE)
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, name)));

@@ -38,18 +38,17 @@ class LanguageFlagsTest {
     }
 
     @Test
-    @DisplayName("the flag is one glyph of the font, naming its language on hover in the reader's language")
+    @DisplayName("the flag is one glyph of the font, with the original message on hover")
     void flag() {
-        MutableComponent c = LanguageFlags.flag("es", "en_us");
+        MutableComponent c = LanguageFlags.flag("es", "hola amigos");
         assertNotNull(c);
         assertEquals(String.valueOf((char) (LanguageFlags.FIRST_GLYPH + LanguageFlags.CODES.indexOf("es"))), c.getString());
         assertEquals(LanguageFlags.FONT, c.getStyle().getFont());
         HoverEvent hover = c.getStyle().getHoverEvent();
         assertNotNull(hover);
-        assertEquals("Spanish", hover.getValue(HoverEvent.Action.SHOW_TEXT).getString());
-        assertEquals("Spanisch", LanguageFlags.nameOf("es", "de_de"));
-        assertNull(LanguageFlags.flag("xx", "en_us"));
-        assertNull(LanguageFlags.flag(null, "en_us"));
+        assertEquals("hola amigos", hover.getValue(HoverEvent.Action.SHOW_TEXT).getString());
+        assertNull(LanguageFlags.flag("xx", "hola"));
+        assertNull(LanguageFlags.flag(null, "hola"));
     }
 
     @Test

@@ -21,7 +21,7 @@ class LiveChatFlagHoverTest {
     private final LiveChatFlagHover hover = new LiveChatFlagHover();
 
     private Component watch(String name) {
-        MutableComponent flag = LanguageFlags.flag("es", "en_us");
+        MutableComponent flag = LanguageFlags.flag("es", "hola");
         hover.watch(flag, () -> calls.add(name + " original"), () -> calls.add(name + " translated"));
         return LiveChatFlagHover.keyOf(flag.getStyle());
     }
@@ -55,16 +55,16 @@ class LiveChatFlagHoverTest {
     void identity() {
         Component a = watch("a");
         Component b = watch("b");
-        assertEquals(a, b, "the same language's name");
+        assertEquals(a, b, "the same message");
         assertNotSame(a, b);
-        hover.hover(Component.literal("Spanish"));
+        hover.hover(Component.literal("hola"));
         assertEquals(List.of(), calls);
     }
 
     @Test
     @DisplayName("keyOf: a flag's hover text; anything else, or no flag at all, is nothing")
     void keyOf() {
-        MutableComponent flag = LanguageFlags.flag("es", "en_us");
+        MutableComponent flag = LanguageFlags.flag("es", "hola");
         assertNotNull(LiveChatFlagHover.keyOf(flag.getStyle()));
         assertSame(LiveChatFlagHover.keyOf(flag.getStyle()), LiveChatFlagHover.keyOf(flag.copy().getStyle()), "a copied line keeps its flag's identity");
         assertNull(LiveChatFlagHover.keyOf(Style.EMPTY));
