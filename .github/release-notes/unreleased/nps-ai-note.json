@@ -1,0 +1,17 @@
+{
+  "id": "nps-ai-note",
+  "version": "0.1696.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "A note from the developer about AI",
+  "summary": "If your feedback brings up AI, the game now replies with a short note from the developer about who made it and who writes the stories, with a link to the AI Policy.",
+  "highlights": [],
+  "pr": 2529,
+  "date": "2026-11-06",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
