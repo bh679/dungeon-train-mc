@@ -1,6 +1,10 @@
 package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
+import dev.ryanhcode.sable.api.sublevel.ClientSubLevelContainer;
+import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
+import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
+import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -11,6 +15,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
+
+import java.util.List;
 
 /**
  * Client-side "deck hold": keeps the local player from sinking below the train
@@ -74,8 +80,32 @@ public final class SpawnDeckHold {
         SpawnDeckHold.clampsFired = 0;
         SpawnDeckHold.verifyRemaining = 0;
         active = true;
-        LOGGER.debug("[DungeonTrain] Spawn deck-hold begin: deckTopY={} cap={}t",
-            String.format("%.2f", deckTopY), SpawnDeckHold.remaining);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("[DungeonTrain] Spawn deck-hold begin: deckTopY={} cap={}t carriage={}",
+                String.format("%.2f", deckTopY), SpawnDeckHold.remaining, carriageState());
+        }
+    }
+
+    /**
+     * Whether this client has a carriage around the local player yet, for the hold's log lines: tells
+     * a carriage that never arrived from one that arrived and was not drawn.
+     */
+    private static String carriageState() {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer player = mc.player;
+        if (player == null || mc.level == null) return "no player";
+        ClientSubLevelContainer container = SubLevelContainer.getContainer(mc.level);
+        if (container == null) return "no container";
+        List<ClientSubLevel> subLevels = container.getAllSubLevels();
+        for (ClientSubLevel subLevel : subLevels) {
+            BoundingBox3dc box = subLevel.boundingBox();
+            if (box == null) continue;
+            if (player.getX() >= box.minX() && player.getX() <= box.maxX()
+                && player.getZ() >= box.minZ() && player.getZ() <= box.maxZ()) {
+                return "present finalized=" + subLevel.isFinalized();
+            }
+        }
+        return "none of " + subLevels.size();
     }
 
     /**
@@ -135,8 +165,10 @@ public final class SpawnDeckHold {
                 cleanStreak = 0;
             } else if (++cleanStreak >= RELEASE_CLEAN_TICKS) {
                 // Player stayed on the deck unaided — Sable's carry has taken over.
-                LOGGER.debug("[DungeonTrain] Spawn deck-hold released: carry engaged after {} corrections ({}t cap left)",
-                    clampsFired, remaining);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("[DungeonTrain] Spawn deck-hold released: carry engaged after {} corrections ({}t cap left) carriage={}",
+                        clampsFired, remaining, carriageState());
+                }
                 endHold();
                 return;
             }
