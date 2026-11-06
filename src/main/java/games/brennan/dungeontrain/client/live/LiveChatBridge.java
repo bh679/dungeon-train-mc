@@ -27,6 +27,7 @@ import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MessageSignature;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
@@ -451,7 +452,7 @@ public final class LiveChatBridge {
             if (p == null || p.translated() || p.mine()) continue;
             String mine = LiveChatTranslations.pick(t.tr(), readerLang);
             if (mine == null) continue;
-            applyLate(mc, chat, tag, p.line(), mine);
+            applyLate(mc, chat, tag, p.line(), mine, LanguageFlags.flag(t.src() != null ? t.src() : p.line().src(), readerLang));
         }
         for (LiveFeedClient.LineReactions r : page.reactions()) {
             ChatReactionTracker.applyLive(r.line(), r.list(), r.event());
@@ -472,16 +473,17 @@ public final class LiveChatBridge {
             printed.put(seq, new Printed(line, false, mine));
             return;
         }
+        MutableComponent flag = LanguageFlags.flag(line.src(), LiveChatTranslations.readerLang(mc.options.languageCode));
         switch (LiveFeedClientConfig.liveChatTranslation()) {
             case UNDER -> {
                 chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatRules.line(line), mine, line.content()), signatures.sign(seq), tag);
-                chat.addMessage(ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, translation, true)),
+                chat.addMessage(ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, translation, true, flag)),
                     signatures.signPart(seq, 1), tag);
             }
-            case REPLACE -> chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatTranslations.replacedLine(line, translation), mine, line.content()),
+            case REPLACE -> chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatTranslations.replacedLine(line, translation, flag), mine, line.content()),
                 signatures.sign(seq), tag);
             case FIRST -> {
-                chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatTranslations.replacedLine(line, translation), mine, line.content()),
+                chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatTranslations.replacedLine(line, translation, flag), mine, line.content()),
                     signatures.sign(seq), tag);
                 chat.addMessage(ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, line.content(), true)),
                     signatures.signPart(seq, 1), tag);
@@ -496,17 +498,18 @@ public final class LiveChatBridge {
      * A line added under it reads {@code ↳ text} only while the original is still the newest line in chat;
      * after anything else, live or not, it carries the author's name.
      */
-    private static void applyLate(Minecraft mc, ChatComponent chat, GuiMessageTag tag, ChatLine line, String translation) {
+    private static void applyLate(Minecraft mc, ChatComponent chat, GuiMessageTag tag, ChatLine line, String translation,
+                                  @Nullable MutableComponent flag) {
         long seq = line.seq();
         boolean adjacent = signatures.isNewest(seq, newestSignature(chat));
         switch (LiveFeedClientConfig.liveChatTranslation()) {
-            case UNDER -> chat.addMessage(ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, translation, adjacent)),
+            case UNDER -> chat.addMessage(ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, translation, adjacent, flag)),
                 signatures.signPart(seq, 1), tag);
             case REPLACE -> {
-                if (!ChatReactionTracker.replaceLive(seq, LiveChatTranslations.replacedLine(line, translation))) return;
+                if (!ChatReactionTracker.replaceLive(seq, LiveChatTranslations.replacedLine(line, translation, flag))) return;
             }
             case FIRST -> {
-                if (!ChatReactionTracker.replaceLive(seq, LiveChatTranslations.replacedLine(line, translation))) return;
+                if (!ChatReactionTracker.replaceLive(seq, LiveChatTranslations.replacedLine(line, translation, flag))) return;
                 chat.addMessage(ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, line.content(), adjacent)),
                     signatures.signPart(seq, 1), tag);
             }
