@@ -58,6 +58,10 @@ final class MenuReveal {
     /** The lead-in, cut short when the first time moves on during it. */
     private long leadIn = LEAD_IN_MS;
     private long skippedAt = -1;
+    /** Beats the player stepped past with a click or Space: their line went at once, and the next came in at once. */
+    private final boolean[] stepped = new boolean[BEATS];
+    /** When the last press stepped a line: the line that started at that moment is up at once. */
+    private long lastStepAt = -1;
     private long hoverAt = NEVER;
     private long unlockAt = NEVER;
 
@@ -85,7 +89,8 @@ final class MenuReveal {
 
     /** From beat {@code i}'s start to its layer's: the line is read on its own (never less than its fade-in). */
     private long layerDelay(int i) {
-        return Math.max(FADE_MS, reading[i]);
+        // A stepped beat's layer starts the moment it was stepped, under the next line.
+        return stepped[i] ? reading[i] : Math.max(FADE_MS, reading[i]);
     }
 
     /**
@@ -167,7 +172,8 @@ final class MenuReveal {
         if (i < 0) return 0;
         if (skippedAt >= 0) return 1;
         long start = beatStart(i);
-        double in = Math.min(1, (now - start) / (double) FADE_MS);
+        // A line reached by a press is there at once; one left by a press is gone at once.
+        double in = start == lastStepAt ? 1 : Math.min(1, (now - start) / (double) FADE_MS);
         if (i == BEAT_SELECT) return in; // stays until they hover a perk
         double out = Math.min(1, (start + beats[i] - now) / (double) LINE_OUT_MS);
         return Math.max(0, Math.min(in, out));
@@ -195,9 +201,9 @@ final class MenuReveal {
     }
 
     /**
-     * First time: a click or Space moves on. While a line is being read its layer comes in now (the
-     * next line follows once it is up); once the layer is in, the next line starts now. The lead-in is
-     * cut short the same way. Nothing past the select line, which waits for a hover.
+     * First time: a click or Space moves straight to the next line, skipping the fades: the line being
+     * read goes now, its layer starts coming in now underneath, and the next line is up at once. The
+     * lead-in is cut short the same way. Nothing past the select line, which waits for a hover.
      */
     void next(long now) {
         if (!firstTime) return;
@@ -208,12 +214,10 @@ final class MenuReveal {
         int i = lineAt(now);
         if (i < 0 || i >= BEAT_SELECT) return;
         long start = beatStart(i);
-        if (now < start + layerDelay(i)) {
-            reading[i] = Math.max(0, now - start);
-            beats[i] = beatLength(i);
-        } else {
-            beats[i] = Math.max(1, now - start);
-        }
+        if (now < start + layerDelay(i)) reading[i] = Math.max(0, now - start);
+        stepped[i] = true;
+        beats[i] = Math.max(1, now - start);
+        lastStepAt = start + beats[i];
     }
 
     /** First time and a line before "select a perk" is up (or still to come): {@link #next} has somewhere to go. */
