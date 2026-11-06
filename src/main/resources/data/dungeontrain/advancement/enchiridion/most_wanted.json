@@ -369,6 +369,42 @@
       "conditions": {
         "subject": "entity:luminous_monsters:swamp_zombie"
       }
+    },
+    "luminous_monsters:crimson_walker": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:crimson_walker"
+      }
+    },
+    "luminous_monsters:dark_oak_skeleton": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:dark_oak_skeleton"
+      }
+    },
+    "luminous_monsters:dark_oak_zombie": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:dark_oak_zombie"
+      }
+    },
+    "luminous_monsters:revenant_skeleton": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:revenant_skeleton"
+      }
+    },
+    "luminous_monsters:savanna_skeleton": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:savanna_skeleton"
+      }
+    },
+    "luminous_monsters:savanna_zombie": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:savanna_zombie"
+      }
     }
   },
   "requirements": [
@@ -548,6 +584,24 @@
     ],
     [
       "luminous_monsters:swamp_zombie"
+    ],
+    [
+      "luminous_monsters:crimson_walker"
+    ],
+    [
+      "luminous_monsters:dark_oak_skeleton"
+    ],
+    [
+      "luminous_monsters:dark_oak_zombie"
+    ],
+    [
+      "luminous_monsters:revenant_skeleton"
+    ],
+    [
+      "luminous_monsters:savanna_skeleton"
+    ],
+    [
+      "luminous_monsters:savanna_zombie"
     ]
   ]
 }
