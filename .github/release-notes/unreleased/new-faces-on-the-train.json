@@ -1,0 +1,21 @@
+{
+  "id": "new-faces-on-the-train",
+  "version": "0.1688.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "compatibility",
+    "mobs",
+    "advancements"
+  ],
+  "title": "Something new is stirring",
+  "summary": "More kinds of creature now haunt the train and the lands around it, and they get tougher to avoid as you go. Some of them won't let a wall stop them. Keep your camera handy.",
+  "highlights": [],
+  "pr": 2520,
+  "date": "2026-11-06",
+  "released": false,
+  "released_in": null,
+  "released_at": null,
+  "major": true,
+  "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/new-faces.jpg"
+}
