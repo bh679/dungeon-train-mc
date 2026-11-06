@@ -1,0 +1,16 @@
+{
+  "id": "curseforge-late-rejection-check",
+  "version": "0.1688.0",
+  "type": "ci",
+  "tags": [
+    "internal"
+  ],
+  "title": "Release checks",
+  "summary": "Behind the scenes: a release's CurseForge download keeps being checked for longer, so a problem with it gets noticed and fixed sooner.",
+  "highlights": [],
+  "pr": 2519,
+  "date": "2026-11-06",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
