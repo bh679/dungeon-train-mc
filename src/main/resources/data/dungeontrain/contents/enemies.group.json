@@ -17,11 +17,11 @@
     },
     {
       "id": "zombieroom",
-      "weight": 5
+      "weight": 4
     },
     {
       "id": "skeleton",
-      "weight": 8
+      "weight": 6
     },
     {
       "id": "pillager",
@@ -44,7 +44,7 @@
     },
     {
       "id": "slimes",
-      "weight": 9,
+      "weight": 7,
       "maxLevel": 20,
       "phases": [
         "OVERWORLD",
@@ -377,6 +377,53 @@
       "phases": [
         "VOID",
         "FAR_LANDS",
+        "DEEPER_DARK"
+      ]
+    },
+    {
+      "id": "cherry",
+      "weight": 2,
+      "minLevel": 3,
+      "phases": [
+        "OVERWORLD",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY"
+      ]
+    },
+    {
+      "id": "minger",
+      "weight": 2,
+      "minLevel": 5,
+      "phases": [
+        "OVERWORLD",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
         "DEEPER_DARK"
       ]
     }

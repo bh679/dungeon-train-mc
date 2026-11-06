@@ -137,6 +137,10 @@
       "name": "Firefly_on_ytb"
     }
   },
+  "minger": {
+    "weight": 1,
+    "name": "miner"
+  },
   "nagaspawn": {
     "weight": 1,
     "name": "skullspawn"
