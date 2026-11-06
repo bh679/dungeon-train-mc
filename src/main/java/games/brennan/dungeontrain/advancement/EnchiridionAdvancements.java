@@ -97,7 +97,8 @@ public final class EnchiridionAdvancements {
 
     /** Collections that keep a photo for every entry, not just the one that completed them. */
     private static final Set<String> ENTITY_ALBUMS = Set.of(
-            PATH_PREFIX + "nature_documentary", PATH_PREFIX + "most_wanted");
+            PATH_PREFIX + "nature_documentary", PATH_PREFIX + "most_wanted",
+            PATH_PREFIX + "family_photo", PATH_PREFIX + "skeleton_crew");
 
     /**
      * The photo-count categories' albums ({@code PhotoCounts}): every counted photo is kept, numbered,

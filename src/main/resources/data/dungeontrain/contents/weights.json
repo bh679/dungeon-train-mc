@@ -137,6 +137,10 @@
       "name": "Firefly_on_ytb"
     }
   },
+  "minger": {
+    "weight": 1,
+    "name": "miner"
+  },
   "nagaspawn": {
     "weight": 1,
     "name": "skullspawn"
@@ -193,6 +197,10 @@
     }
   },
   "sand": 0,
+  "sav": {
+    "weight": 1,
+    "name": "desertmobs"
+  },
   "shop": 6,
   "statue": 1,
   "things": {

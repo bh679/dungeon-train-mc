@@ -100,6 +100,7 @@ resolve() {
     # VanillaBackport + Platform — required; the Nether-exit sulfur caves.
     vb)       cached "maven.modrinth/vanillabackport" "$(prop vanillabackport_version)" ;;
     dd)       cached "maven.modrinth/deeperdarker" "$(prop deeperdarker_version)" ;;
+    lm)       cached "maven.modrinth/luminous-monsters" "$(prop luminous_monsters_version)" ;;
     ppro)     cached "maven.modrinth/piglin-proliferation" "$(prop piglinproliferation_version)" ;;
     pf)       cached "maven.modrinth/platform"        "$(prop platform_version)" ;;
     # Exposure + its Polaroid add-on — required; the cameras, film and photographs.

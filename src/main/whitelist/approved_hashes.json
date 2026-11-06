@@ -3737,6 +3737,23 @@
         "slug": "lmft"
       }
     },
+    "luminous_monsters": {
+      "platform": "modrinth",
+      "project": "TzC3nDsQ",
+      "slug": "luminous-monsters",
+      "name": "Luminous: Monsters",
+      "sha1": [
+        "0e89ec4c25778d3fe6634915949b1f050b69edc0",
+        "55c0948a1a83d43945ab9421823ad9403c974dd6",
+        "9ca7084ccee2ac875da37815fb10cd94359659ff",
+        "b4c0645f8d2f5a0f3bd28926e0f394bbc3f9349a",
+        "d4436e16e60e29e992dc2c36c1923de840e73fe0",
+        "e3b1a25ccb660228617583e210e612ac0c770991"
+      ],
+      "packages": [
+        "net.mcreator"
+      ]
+    },
     "mafglib": {
       "platform": "modrinth",
       "project": "SKI34J7B",

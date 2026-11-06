@@ -17,11 +17,11 @@
     },
     {
       "id": "zombieroom",
-      "weight": 5
+      "weight": 4
     },
     {
       "id": "skeleton",
-      "weight": 8
+      "weight": 5
     },
     {
       "id": "pillager",
@@ -44,8 +44,8 @@
     },
     {
       "id": "slimes",
-      "weight": 9,
-      "maxLevel": 20,
+      "weight": 7,
+      "maxLevel": 15,
       "phases": [
         "OVERWORLD",
         "NETHER",
@@ -187,11 +187,11 @@
     },
     {
       "id": "zombieroom3",
-      "weight": 4
+      "weight": 3
     },
     {
       "id": "zombie4",
-      "weight": 4
+      "weight": 2
     },
     {
       "id": "skeleton2",
@@ -378,6 +378,192 @@
         "VOID",
         "FAR_LANDS",
         "DEEPER_DARK"
+      ]
+    },
+    {
+      "id": "cherry",
+      "weight": 2,
+      "minLevel": 3,
+      "phases": [
+        "OVERWORLD",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY"
+      ]
+    },
+    {
+      "id": "minger",
+      "weight": 2,
+      "minLevel": 5,
+      "phases": [
+        "OVERWORLD",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "DEEPER_DARK"
+      ]
+    },
+    {
+      "id": "icey",
+      "weight": 1,
+      "minLevel": 5,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY"
+      ]
+    },
+    {
+      "id": "swamp",
+      "weight": 1,
+      "minLevel": 3,
+      "phases": [
+        "OVERWORLD",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY"
+      ]
+    },
+    {
+      "id": "dark",
+      "weight": 1,
+      "minLevel": 3,
+      "phases": [
+        "OVERWORLD",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY"
+      ]
+    },
+    {
+      "id": "sav",
+      "weight": 1,
+      "minLevel": 5,
+      "phases": [
+        "OVERWORLD",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY"
+      ]
+    },
+    {
+      "id": "crimszomb",
+      "weight": 4,
+      "minLevel": 6,
+      "phases": [
+        "NETHER",
+        "VOID",
+        "END",
+        "FAR_LANDS"
+      ]
+    },
+    {
+      "id": "reverent",
+      "weight": 4,
+      "minLevel": 6,
+      "phases": [
+        "NETHER",
+        "VOID",
+        "END",
+        "FAR_LANDS"
+      ]
+    },
+    {
+      "id": "savanaledge",
+      "weight": 1,
+      "minLevel": 4,
+      "phases": [
+        "OVERWORLD",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY"
       ]
     }
   ]

@@ -5,6 +5,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Mob;
 
 import java.util.Map;
+import java.util.OptionalInt;
 
 /**
  * How many difficulty levels later each hostile's potion buffs start, so a mob that only begins
@@ -29,12 +30,20 @@ public final class MobEffectOffsets {
             Map.entry("minecraft:cave_spider", 2),
             Map.entry("minecraft:pillager", 2),
             Map.entry("betternether:skull", 3),
+            Map.entry("luminous_monsters:cherry_skeleton", 3),
+            Map.entry("luminous_monsters:cherry_zombie", 3),
+            Map.entry("luminous_monsters:dark_oak_skeleton", 3),
+            Map.entry("luminous_monsters:dark_oak_zombie", 3),
+            Map.entry("luminous_monsters:swamp_skeleton", 3),
+            Map.entry("luminous_monsters:swamp_zombie", 3),
             Map.entry("minecraft:creaking", 3),
             Map.entry("minecraft:vindicator", 3),
             Map.entry("minecraft:witch", 3),
             Map.entry("betternether:jungle_skeleton", 4),
             Map.entry("deeperdarker:sculk_centipede", 4),
             Map.entry("deeperdarker:shattered", 4),
+            Map.entry("luminous_monsters:savanna_skeleton", 4),
+            Map.entry("luminous_monsters:savanna_zombie", 4),
             Map.entry("minecraft:breeze", 4),
             Map.entry("minecraft:hoglin", 4),
             Map.entry("betternether:naga", 5),
@@ -43,12 +52,19 @@ public final class MobEffectOffsets {
             Map.entry("deeperdarker:sculk_leech", 5),
             Map.entry("deeperdarker:sludge", 5),
             Map.entry("deeperdarker:sorrow_pot", 5),
+            Map.entry("luminous_monsters:hollow_skeleton", 5),
+            Map.entry("luminous_monsters:icy_skeleton", 5),
+            Map.entry("luminous_monsters:icy_zombie", 5),
+            Map.entry("luminous_monsters:miner_skeleton", 5),
+            Map.entry("luminous_monsters:miner_zombie", 5),
             Map.entry("minecraft:creeper", 5),
             Map.entry("deeperdarker:stalker", 6),
+            Map.entry("luminous_monsters:crimson_walker", 6),
+            Map.entry("luminous_monsters:revenant_skeleton", 6),
             Map.entry("minecraft:magma_cube", 6),
             Map.entry("minecraft:piglin_brute", 6),
+            Map.entry("minecraft:stray", 6),
             Map.entry("betterend:shadow_walker", 7),
-            Map.entry("minecraft:stray", 7),
             Map.entry("piglinproliferation:piglin_alchemist", 9),
             Map.entry("minecraft:guardian", 11),
             Map.entry("minecraft:evoker", 20),
@@ -70,6 +86,15 @@ public final class MobEffectOffsets {
     /** Pure form of {@link #offsetFor(Mob)}. Unknown ids get 0. */
     static int offsetFor(String entityId, boolean baby) {
         return OFFSETS.getOrDefault(entityId, 0) + (baby ? BABY_OFFSET : 0);
+    }
+
+    /**
+     * The lowest level any room can spawn {@code entityId}, for {@code NaturalSpawnLevelGate}'s mods only: their
+     * level-0 mobs are kept in the table, so empty means no room places them. Other mods leave level 0 out.
+     */
+    public static OptionalInt firstRoomLevel(String entityId) {
+        Integer level = OFFSETS.get(entityId);
+        return level == null ? OptionalInt.empty() : OptionalInt.of(level);
     }
 
     /** Test seam: the full table. */

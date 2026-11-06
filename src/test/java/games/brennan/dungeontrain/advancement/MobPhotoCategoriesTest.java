@@ -100,6 +100,24 @@ class MobPhotoCategoriesTest {
     }
 
     @Test
+    @DisplayName("each family collection holds only its own hostile mobs")
+    void familiesMatchTheirLists() throws IOException {
+        JsonObject categories = categories();
+        for (Map.Entry<String, JsonElement> family : doc().getAsJsonObject("families").entrySet()) {
+            if (family.getKey().startsWith("_")) continue;
+            Set<String> members = new HashSet<>();
+            family.getValue().getAsJsonArray().forEach(e -> members.add(e.getAsString()));
+            members.forEach(m -> assertEquals("hostile", categories.get(m).getAsString(), m));
+            JsonObject advancement = json(RepoPaths.advancements().resolve("enchiridion/" + family.getKey() + ".json"));
+            for (Map.Entry<String, JsonElement> criterion : advancement.getAsJsonObject("criteria").entrySet()) {
+                assertTrue(members.contains(criterion.getKey()), criterion.getKey() + " in " + family.getKey());
+                assertEquals("entity:" + criterion.getKey(), criterion.getValue().getAsJsonObject()
+                        .getAsJsonObject("conditions").get("subject").getAsString());
+            }
+        }
+    }
+
+    @Test
     @DisplayName("every mob a block spawns has a category")
     void blockSpawnsHaveCategories() throws IOException {
         JsonObject categories = categories();

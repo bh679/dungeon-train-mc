@@ -25,6 +25,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 final class DisabledModContentTest {
 
+    @Test
+    void luminousSpawnEggsAreHiddenFromVanillaTabsWithoutDisablingThem() {
+        ResourceLocation egg = id("luminous_monsters:miner_zombie_spawn_egg");
+        assertTrue(DisabledModContent.isHiddenCreativeItem(egg));
+        assertFalse(DisabledModContent.isDisabledItem(egg, false));
+        assertFalse(DisabledModContent.isHiddenCreativeItem(id("minecraft:zombie_spawn_egg")));
+        assertFalse(DisabledModContent.isHiddenCreativeItem(null));
+    }
+
     private static ResourceLocation id(String s) {
         return ResourceLocation.parse(s);
     }

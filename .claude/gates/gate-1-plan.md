@@ -13,6 +13,9 @@ steps below; its UI prototype step applies to every in-game screen, overlay, HUD
   candidate dependency or modpack companion. Check its licence before porting code (Big Lost City
   is All Rights Reserved: no DT processors on its templates).
 
+## New third-party mod
+Run the audit in `modpack/newmod.md` and put its summary in the plan.
+
 ## New or changed advancements
 Before plan mode, read `.claude/gates/advancement-prototype.md` and prototype them in the advancement
 editor.
