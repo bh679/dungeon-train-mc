@@ -1,0 +1,18 @@
+{
+  "id": "rarest-vault-bigger-rewards",
+  "version": "0.1689.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "loot",
+    "balance"
+  ],
+  "title": "Bigger rewards from the rarest vault",
+  "summary": "The rarest vault now hands out bigger stacks of some rewards.",
+  "highlights": [],
+  "pr": 2521,
+  "date": "2026-11-06",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
