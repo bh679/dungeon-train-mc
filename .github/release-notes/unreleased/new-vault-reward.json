@@ -1,5 +1,5 @@
 {
-  "id": "ender-blocks-in-vaults",
+  "id": "new-vault-reward",
   "version": "0.1688.0",
   "type": "feat",
   "tags": [
@@ -7,8 +7,8 @@
     "loot",
     "balance"
   ],
-  "title": "Ender Blocks in vaults",
-  "summary": "Ominous vaults and the rarest vault can now reward Ender Blocks.",
+  "title": "New vault reward",
+  "summary": "Ominous vaults and the rarest vault can now hand out something new.",
   "highlights": [],
   "pr": 2518,
   "date": "2026-11-06",
