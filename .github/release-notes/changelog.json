@@ -33625,6 +33625,63 @@
       "released": true,
       "released_in": "v0.1684.0",
       "released_at": "2026-11-06T07:45:53Z"
+    },
+    {
+      "id": "better-ominous-vault-rewards",
+      "version": "0.1686.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Better ominous vault rewards",
+      "summary": "Ominous vaults now hand out better rewards, including more diamond gear.",
+      "highlights": [],
+      "pr": 2516,
+      "date": "2026-11-06",
+      "released": true,
+      "released_in": "v0.1687.0",
+      "released_at": "2026-11-06T10:16:36Z"
+    },
+    {
+      "id": "portal-exit-background-gen",
+      "version": "0.1683.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance"
+      ],
+      "title": "Freeze fix",
+      "summary": "Fixed a long freeze that could disconnect you while travelling.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2513,
+      "date": "2026-11-06",
+      "released": true,
+      "released_in": "v0.1687.0",
+      "released_at": "2026-11-06T10:16:36Z"
+    },
+    {
+      "id": "sable-mob-paths-curseforge",
+      "version": "0.1685.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Mobs follow you around the train on CurseForge",
+      "summary": "On CurseForge, mobs can now climb aboard, step off and cross between carriages to reach you, just as they already do on Modrinth.",
+      "highlights": [
+        "Nowhere on the train is safe from a mob that has seen you."
+      ],
+      "pr": 2515,
+      "date": "2026-11-06",
+      "released": true,
+      "released_in": "v0.1687.0",
+      "released_at": "2026-11-06T10:16:36Z"
     }
   ]
 }
