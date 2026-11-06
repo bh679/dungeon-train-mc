@@ -703,6 +703,11 @@ dependencies {
         implementation "maven.modrinth:sable-pathfinder:${sablepathfinder_version}"
     }
 
+    // Sable Mob Paths — our clean-room mob pathing across sub-levels (see gradle.properties). Yields to
+    // Sable Pathfinder at load, so -PnoSablePathfinder is what exercises it in dev. Shared bh679 Ivy repo.
+    implementation "bh679:sablemobpaths:${sablemobpaths_version}"
+    jarJar(group: 'bh679', name: 'sablemobpaths', version: sablemobpaths_version)
+
     // Second-lap overworld mods (WWOO + Biomes O' Plenty) and their libraries — REQUIRED third-party
     // deps (see gradle.properties). Not bundled. DT names their biomes/features only by registry id,
     // except TerraBlender, whose Regions API builds the BoP-only biome source.

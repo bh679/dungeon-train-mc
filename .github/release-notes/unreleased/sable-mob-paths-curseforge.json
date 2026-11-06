@@ -1,0 +1,19 @@
+{
+  "id": "sable-mob-paths-curseforge",
+  "version": "0.1685.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "mobs"
+  ],
+  "title": "Mobs follow you around the train on CurseForge",
+  "summary": "On CurseForge, mobs can now climb aboard, step off and cross between carriages to reach you, just as they already do on Modrinth.",
+  "highlights": [
+    "Nowhere on the train is safe from a mob that has seen you."
+  ],
+  "pr": 2515,
+  "date": "2026-11-06",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
