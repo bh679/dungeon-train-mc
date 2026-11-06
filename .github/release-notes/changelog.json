@@ -33555,6 +33555,41 @@
       "released": true,
       "released_in": "v0.1680.0",
       "released_at": "2026-11-05T16:23:03Z"
+    },
+    {
+      "id": "end-gateway-band-return",
+      "version": "0.1681.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Exploration fix",
+      "summary": "A small fix for explorers.",
+      "highlights": [],
+      "pr": 2510,
+      "date": "2026-11-05",
+      "released": true,
+      "released_in": "v0.1682.0",
+      "released_at": "2026-11-06T07:00:37Z"
+    },
+    {
+      "id": "rarest-vault-rewards",
+      "version": "0.1682.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Rarest vault rewards",
+      "summary": "The rarest vault now gives fewer rewards, but better ones.",
+      "highlights": [],
+      "pr": 2511,
+      "date": "2026-11-06",
+      "released": true,
+      "released_in": "v0.1682.0",
+      "released_at": "2026-11-06T07:00:37Z"
     }
   ]
 }
