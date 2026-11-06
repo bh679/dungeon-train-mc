@@ -1,0 +1,20 @@
+{
+  "id": "less-lag-leaving-dimensional-carriages",
+  "version": "0.1695.0",
+  "type": "perf",
+  "tags": [
+    "performance",
+    "train"
+  ],
+  "title": "Less lag leaving dimensional carriages",
+  "summary": "Coming back to the train after a long trip through a dimensional carriage no longer causes a run of stutters a few seconds later.",
+  "highlights": [],
+  "addresses": [
+    "lag"
+  ],
+  "pr": 2526,
+  "date": "2026-11-06",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
