@@ -265,16 +265,24 @@ public final class PortalRoomTiler {
         // A copy a player has already been in comes back as they left it, not from the template —
         // otherwise walking out of the window (or the carriage) and back re-lays every block they
         // mined and refills every chest. See PortalRoomMemory.
-        net.minecraft.nbt.CompoundTag remembered = PortalTestSession.isTestStamp(pairKey) ? null
+        long started = System.nanoTime();
+        PortalRoomMemory.Recalled recalled = PortalTestSession.isTestStamp(pairKey) ? PortalRoomMemory.Recalled.NOTHING
             : PortalRoomMemory.recallTile(level, pairKey, tile, structure.roomName(), size);
-        if (remembered != null) {
-            PortalCarriageBuilder.stampTileFromBlob(level, origin, size, PortalRoomBlob.live(remembered),
+        if (recalled.snapshot() != null) {
+            long stampStarted = System.nanoTime();
+            PortalCarriageBuilder.stampTileFromBlob(level, origin, size, PortalRoomBlob.live(recalled.snapshot()),
                 clearMask, writeMask, liquidPlaneKeep(single, origin, size), pairKey, tile);
             PortalRoomMemory.markTileTouched(pairKey, tile);
-            LOGGER.debug("[DungeonTrain] Portal pair {} copy {},{} restored as it was left",
-                pairKey, tile.x(), tile.z());
+            long facesStarted = System.nanoTime();
             PortalStructure grown = structure.withTiling(structure.tiling().with(tile));
             refreshFacesAround(level, dims, grown, tile);
+            long ended = System.nanoTime();
+            // Server-thread time, split so a player's log can say whether their disk is what hurt.
+            LOGGER.debug("[DungeonTrain] Portal pair {} copy {},{} restored as it was left in {} ms "
+                    + "(check {}, read {}, stamp {}, faces {})",
+                pairKey, tile.x(), tile.z(), PortalRoomMemory.ms(ended - started),
+                PortalRoomMemory.ms(recalled.checkNanos()), PortalRoomMemory.ms(recalled.readNanos()),
+                PortalRoomMemory.ms(facesStarted - stampStarted), PortalRoomMemory.ms(ended - facesStarted));
             return grown;
         }
 
