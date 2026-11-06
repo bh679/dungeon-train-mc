@@ -29,6 +29,11 @@ public final class PerkPoints {
         return player.getData(ModDataAttachments.PERK_ACTIVE_POINTS.get());
     }
 
+    /** Set the balance outright: a difficulty swap bringing back what was parked. */
+    static void setActive(ServerPlayer player, int amount) {
+        player.setData(ModDataAttachments.PERK_ACTIVE_POINTS.get(), Math.max(0, amount));
+    }
+
     public static void addActive(ServerPlayer player, int amount) {
         player.setData(ModDataAttachments.PERK_ACTIVE_POINTS.get(), active(player) + amount);
     }

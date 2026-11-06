@@ -195,7 +195,7 @@
   "gui.dungeontrain.difficulty_confirm.body_run": "每种难度都有独立的旅程，进度和统计也各自保存。",
   "gui.dungeontrain.difficulty_confirm.restart_dies": "现在重开会结束当前 %s 难度下的旅程：你会死亡，并开启一个新世界。",
   "gui.dungeontrain.difficulty_confirm.loss_run": "你的物品栏、经验值和末影箱仍按当前难度保存；切换后将使用新难度各自的记录。",
-  "gui.dungeontrain.difficulty_confirm.stats": "每个难度的进度和统计都分别保存。",
+  "gui.dungeontrain.difficulty_confirm.stats": "每个难度的进度、统计和特权都分别保存。",
   "gui.dungeontrain.difficulty_confirm.next_run": "下轮生效",
   "gui.dungeontrain.difficulty_confirm.restart_now": "放弃旅程并立即重开",
   "chat.dungeontrain.difficulty_next_run": "下一轮旅程将使用 %s 难度，本轮保持不变。",

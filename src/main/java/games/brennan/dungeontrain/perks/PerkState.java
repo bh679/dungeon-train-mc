@@ -19,8 +19,8 @@ import java.util.Set;
  * ({@link PerkUnlocks}). Immutable: every mutator returns a new state.
  *
  * <p>Persisted on the player as {@code ModDataAttachments.PERK_STATE} ({@code copyOnDeath}, the
- * respawn hook then clears the active map) and mirrored to the owning client by
- * {@code PerkStatePacket}. Every codec field is optional so an older save still decodes; a save from
+ * respawn hook then clears the active map), with the unlock levels also saved per difficulty across
+ * worlds ({@link PerkProfiles}), and mirrored to the owning client by {@code PerkStatePacket}. Every codec field is optional so an older save still decodes; a save from
  * before repeat unlocks carries an {@code unlocked} list, read as level 1 each.</p>
  */
 public final class PerkState {
@@ -64,6 +64,13 @@ public final class PerkState {
 
     public static PerkState empty() {
         return EMPTY;
+    }
+
+    /** A state with these unlock levels and active points; points are capped at each perk's level. */
+    public static PerkState of(Map<String, Integer> unlocks, Map<String, Integer> active) {
+        Map<String, Integer> capped = new LinkedHashMap<>();
+        active.forEach((id, n) -> capped.put(id, Math.min(n, unlocks.getOrDefault(id, 0))));
+        return new PerkState(unlocks, capped);
     }
 
     // ---- reads ----

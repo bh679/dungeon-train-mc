@@ -11,7 +11,8 @@ import org.slf4j.Logger;
 /**
  * Keeps perk state and effects in step with the player entity's lifecycle:
  * <ul>
- *   <li>login: sync the client, re-apply effects on the fresh entity;</li>
+ *   <li>login: load this difficulty's saved unlocks ({@link PerkProfiles}), sync the client, re-apply
+ *       effects on the fresh entity;</li>
  *   <li>respawn after death: clear active points (unlocked set survives via
  *       {@code copyOnDeath}), sync, re-apply; the End-conquered respawn is not a death;</li>
  *   <li>dimension change: the attachment is copied but the client holder is not, so re-sync and
@@ -29,6 +30,7 @@ public final class PerkLifecycle {
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         PerkRegistry.bootstrap();
+        PerkProfiles.onLogin(player);
         Perks.sync(player);
         PerkBalances.sync(player);
         Perks.playerReady(player);
