@@ -197,6 +197,10 @@
     }
   },
   "sand": 0,
+  "sav": {
+    "weight": 1,
+    "name": "desertmobs"
+  },
   "shop": 6,
   "statue": 1,
   "things": {
