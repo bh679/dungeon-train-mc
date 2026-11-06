@@ -41,7 +41,9 @@ import java.util.Set;
  * stretch loads fewer of the mod's large templates.</p>
  *
  * <p>How a city sits in the ground — its template's natural pad and lower air yielding to the stretch's own
- * terrain — belongs to the Lost City Terrain Fit sibling mod (jarJar'd; {@code bh679/lostcityterrainfit-mc}).</p>
+ * terrain, the pad seated on the sea floor in water with footings down to the ground under anything left
+ * hanging — belongs to the Lost City Terrain Fit sibling mod (jarJar'd; {@code bh679/lostcityterrainfit-mc}),
+ * for DT's own buildings ({@code dungeontrain:lost_city/*}, the player-building slot) as for Big Lost City's.</p>
  */
 public final class LostCityStructures {
 

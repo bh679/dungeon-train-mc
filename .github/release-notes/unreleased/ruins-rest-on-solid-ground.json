@@ -1,0 +1,19 @@
+{
+  "id": "ruins-rest-on-solid-ground",
+  "version": "0.1691.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "world"
+  ],
+  "title": "Ruins rest on solid ground",
+  "summary": "Ruined buildings no longer float on platforms out at sea. They stand on the sea floor and settle into hills and slopes, with solid ground beneath them.",
+  "highlights": [
+    "Nothing empty under a ruin's base."
+  ],
+  "pr": 2522,
+  "date": "2026-11-06",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
