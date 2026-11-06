@@ -120,8 +120,8 @@ public final class LiveFeedClientConfig {
             .comment("Mirror the stream's Discord chat into your in-game chat while you stream or wear a TV (a worn TV is in the chat even with nobody live), and post what you type back to it. Off while you stream only hides the chat from you: everyone else can still talk. Always off in Kid mode, whatever this says.")
             .define("liveChat", true);
         LIVE_CHAT_TRANSLATION = b
-            .comment("While the Live Translations community reward is on, how a Live chat line translated into your language shows: UNDER the original in grey, REPLACE it (the original on hover), or FIRST with the original under it.")
-            .defineEnum("liveChatTranslation", LiveChatTranslation.UNDER);
+            .comment("How a Live chat line translated into your language shows: REPLACE the original (hover its flag for the original), UNDER the original in grey, or FIRST with the original under it.")
+            .defineEnum("liveChatTranslation", LiveChatTranslation.REPLACE);
         LIVE_MOMENT_ADVANCEMENTS = b
             .comment("While you stream with the Live Eye, say in the stream's Live chat (Discord, Twitch, the website and TV wearers) when you earn an advancement. Always off in Kid mode.")
             .define("liveMomentAdvancements", true);
@@ -387,7 +387,7 @@ public final class LiveFeedClientConfig {
     }
 
     /** Where a translated Live chat line goes; UNDER until the config loads. */
-    public static LiveChatTranslation liveChatTranslation() { return loaded() ? LIVE_CHAT_TRANSLATION.get() : LiveChatTranslation.UNDER; }
+    public static LiveChatTranslation liveChatTranslation() { return loaded() ? LIVE_CHAT_TRANSLATION.get() : LiveChatTranslation.REPLACE; }
 
     public static void setLiveChatTranslation(LiveChatTranslation value) {
         if (!loaded() || LIVE_CHAT_TRANSLATION.get() == value) return;

@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LiveChatTranslationsTest {
 
@@ -61,6 +62,17 @@ class LiveChatTranslationsTest {
         HoverEvent hover = text.getStyle().getHoverEvent();
         assertNotNull(hover);
         assertEquals("chat.dungeontrain.live_chat.translation.original", key((MutableComponent) hover.getValue(HoverEvent.Action.SHOW_TEXT)));
+    }
+
+    @Test
+    @DisplayName("a flag comes just before the text, under the original and in a replaced line; without one they read as before")
+    void flags() {
+        MutableComponent flag = LanguageFlags.flag("es", "the creeper got me");
+        String glyph = flag.getString();
+        assertEquals(glyph + " hola", ((MutableComponent) ((net.minecraft.network.chat.contents.TranslatableContents)
+            LiveChatTranslations.underLine(LINE, "hola", true, flag).getContents()).getArgs()[0]).getString());
+        assertTrue(LiveChatTranslations.replacedLine(LINE, "hola", flag).getString().endsWith("Alice: " + glyph + " hola"));
+        assertTrue(LiveChatTranslations.replacedLine(LINE, "hola", null).getString().endsWith("Alice: hola"));
     }
 
     @Test
