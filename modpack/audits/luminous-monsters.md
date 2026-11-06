@@ -97,6 +97,13 @@ lowest level a room places that mob, read from `MobEffectOffsets`. A mob in no r
 rooms use them, this mod adds no natural spawns at all. Crimson Walker, Revenant Skeleton and Sunken Skeleton still can't
 spawn naturally for the reasons in the table above; train placement is their route into the game.
 
+## Miners dig
+
+A Miner holding a digging tool can break any block that tool can harvest, through DT's `combat/MobDigGoal`, from its first
+room level rather than DT's usual level 50. A Miner with no tool can't dig: the Skeleton spawns with only a bow, and the
+Zombie's own roll leaves some empty-handed. All other dig limits apply: no floors, no block entities, 30 seconds at most,
+and no digging with `mobGriefing` off.
+
 ## Spawn dilution
 
 10 mobs ship with `neoforge:any`, adding weight 630 to every biome against plains' vanilla 515. DT overrides those 10 files

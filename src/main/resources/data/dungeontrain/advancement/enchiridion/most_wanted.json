@@ -321,6 +321,54 @@
       "conditions": {
         "subject": "entity:piglinproliferation:piglin_alchemist"
       }
+    },
+    "luminous_monsters:cherry_skeleton": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:cherry_skeleton"
+      }
+    },
+    "luminous_monsters:cherry_zombie": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:cherry_zombie"
+      }
+    },
+    "luminous_monsters:icy_skeleton": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:icy_skeleton"
+      }
+    },
+    "luminous_monsters:icy_zombie": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:icy_zombie"
+      }
+    },
+    "luminous_monsters:miner_skeleton": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:miner_skeleton"
+      }
+    },
+    "luminous_monsters:miner_zombie": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:miner_zombie"
+      }
+    },
+    "luminous_monsters:swamp_skeleton": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:swamp_skeleton"
+      }
+    },
+    "luminous_monsters:swamp_zombie": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:swamp_zombie"
+      }
     }
   },
   "requirements": [
@@ -476,6 +524,30 @@
     ],
     [
       "piglinproliferation:piglin_alchemist"
+    ],
+    [
+      "luminous_monsters:cherry_skeleton"
+    ],
+    [
+      "luminous_monsters:cherry_zombie"
+    ],
+    [
+      "luminous_monsters:icy_skeleton"
+    ],
+    [
+      "luminous_monsters:icy_zombie"
+    ],
+    [
+      "luminous_monsters:miner_skeleton"
+    ],
+    [
+      "luminous_monsters:miner_zombie"
+    ],
+    [
+      "luminous_monsters:swamp_skeleton"
+    ],
+    [
+      "luminous_monsters:swamp_zombie"
     ]
   ]
 }
