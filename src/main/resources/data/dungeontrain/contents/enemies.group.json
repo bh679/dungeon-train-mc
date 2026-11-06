@@ -187,11 +187,11 @@
     },
     {
       "id": "zombieroom3",
-      "weight": 4
+      "weight": 3
     },
     {
       "id": "zombie4",
-      "weight": 3
+      "weight": 2
     },
     {
       "id": "skeleton2",
@@ -502,6 +502,45 @@
       "id": "sav",
       "weight": 1,
       "minLevel": 5,
+      "phases": [
+        "OVERWORLD",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY"
+      ]
+    },
+    {
+      "id": "crimszomb",
+      "weight": 4,
+      "minLevel": 6,
+      "phases": [
+        "NETHER"
+      ]
+    },
+    {
+      "id": "reverent",
+      "weight": 4,
+      "minLevel": 6,
+      "phases": [
+        "NETHER"
+      ]
+    },
+    {
+      "id": "savanaledge",
+      "weight": 1,
+      "minLevel": 4,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
