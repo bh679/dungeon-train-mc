@@ -30,6 +30,21 @@
     "_doc": "Ids in the minecraft namespace that VanillaBackport adds; Minecraft 1.21.1 itself has no such entity, so MobPhotoCategoriesTest cannot check them against the vanilla registry.",
     "ids": ["minecraft:creaking", "minecraft:happy_ghast", "minecraft:sulfur_cube"]
   },
+  "families": {
+    "_doc": "Advancement -> the mobs it asks for. A member joins once the train can spawn it, so an unplaced mob here is fine. A spawnable hostile with zombie or skeleton in its id must be in a family, or the build stops.",
+    "family_photo": [
+      "minecraft:zombie", "minecraft:husk", "minecraft:drowned", "minecraft:zombie_villager", "minecraft:zombified_piglin",
+      "luminous_monsters:cherry_zombie", "luminous_monsters:crimson_walker", "luminous_monsters:dark_oak_zombie",
+      "luminous_monsters:icy_zombie", "luminous_monsters:miner_zombie", "luminous_monsters:savanna_zombie",
+      "luminous_monsters:swamp_zombie"
+    ],
+    "skeleton_crew": [
+      "minecraft:skeleton", "minecraft:stray", "minecraft:bogged", "minecraft:wither_skeleton", "betternether:jungle_skeleton",
+      "luminous_monsters:cherry_skeleton", "luminous_monsters:dark_oak_skeleton", "luminous_monsters:hollow_skeleton",
+      "luminous_monsters:icy_skeleton", "luminous_monsters:miner_skeleton", "luminous_monsters:revenant_skeleton",
+      "luminous_monsters:savanna_skeleton", "luminous_monsters:sunken_skeleton", "luminous_monsters:swamp_skeleton"
+    ]
+  },
   "categories": {
     "minecraft:blaze": "hostile",
     "minecraft:bogged": "hostile",

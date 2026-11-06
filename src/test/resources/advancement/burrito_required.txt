@@ -134,6 +134,7 @@ dungeontrain:enchiridion/danger_close
 dungeontrain:enchiridion/darkroom
 dungeontrain:enchiridion/end_credits
 dungeontrain:enchiridion/familiar_faces
+dungeontrain:enchiridion/family_photo
 dungeontrain:enchiridion/field_guide
 dungeontrain:enchiridion/final_moments
 dungeontrain:enchiridion/found_footage
@@ -186,6 +187,7 @@ dungeontrain:enchiridion/self_care
 dungeontrain:enchiridion/self_employed_photographer
 dungeontrain:enchiridion/shameless_self_promotion
 dungeontrain:enchiridion/shh
+dungeontrain:enchiridion/skeleton_crew
 dungeontrain:enchiridion/some_pig
 dungeontrain:enchiridion/spirit_photography
 dungeontrain:enchiridion/supporting_artists

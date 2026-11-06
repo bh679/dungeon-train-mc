@@ -1,0 +1,130 @@
+{
+  "parent": "dungeontrain:enchiridion/say_cheese",
+  "display": {
+    "icon": {
+      "id": "minecraft:zombie_head"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.family_photo.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.family_photo.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "minecraft:drowned": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:drowned"
+      }
+    },
+    "minecraft:husk": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:husk"
+      }
+    },
+    "minecraft:zombie": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:zombie"
+      }
+    },
+    "minecraft:zombie_villager": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:zombie_villager"
+      }
+    },
+    "minecraft:zombified_piglin": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:zombified_piglin"
+      }
+    },
+    "luminous_monsters:cherry_zombie": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:cherry_zombie"
+      }
+    },
+    "luminous_monsters:icy_zombie": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:icy_zombie"
+      }
+    },
+    "luminous_monsters:miner_zombie": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:miner_zombie"
+      }
+    },
+    "luminous_monsters:swamp_zombie": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:swamp_zombie"
+      }
+    },
+    "luminous_monsters:crimson_walker": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:crimson_walker"
+      }
+    },
+    "luminous_monsters:dark_oak_zombie": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:dark_oak_zombie"
+      }
+    },
+    "luminous_monsters:savanna_zombie": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:luminous_monsters:savanna_zombie"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "minecraft:drowned"
+    ],
+    [
+      "minecraft:husk"
+    ],
+    [
+      "minecraft:zombie"
+    ],
+    [
+      "minecraft:zombie_villager"
+    ],
+    [
+      "minecraft:zombified_piglin"
+    ],
+    [
+      "luminous_monsters:cherry_zombie"
+    ],
+    [
+      "luminous_monsters:icy_zombie"
+    ],
+    [
+      "luminous_monsters:miner_zombie"
+    ],
+    [
+      "luminous_monsters:swamp_zombie"
+    ],
+    [
+      "luminous_monsters:crimson_walker"
+    ],
+    [
+      "luminous_monsters:dark_oak_zombie"
+    ],
+    [
+      "luminous_monsters:savanna_zombie"
+    ]
+  ]
+}
