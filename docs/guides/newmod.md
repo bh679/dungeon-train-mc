@@ -76,13 +76,16 @@ listing/
   "license_url": "https://polyformproject.org/licenses/shield/1.0.0",
   "source_url": "https://github.com/bh679/example-mc",
   "issues_url": "https://dungeon.training/issues#example",
-  "discord_url": "https://discord.gg/dungeontrain",
+  "discord_url": "https://discord.gg/hnj5G7duHU",
   "icon": "icon.png",
   "screenshots": [
     {"file": "screenshots/01-what-it-shows.png", "title": "Short caption", "description": "One line", "featured": true}
   ]
 }
 ```
+
+Use the Discord invite exactly as above, on both stores: `discord.gg/dungeontrain` is not a real
+invite.
 
 Our mods default to PolyForm Shield 1.0.0: put it in the repo's `LICENSE` too. Modrinth has no
 SPDX id for it, so it needs both `license_id` and `license_url` as above. `live_url` entries appear on screenshots after
