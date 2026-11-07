@@ -216,6 +216,8 @@
     "dungeontrain:enchiridion/run_away": "always",
     "dungeontrain:enchiridion/shh": "always",
     "dungeontrain:enchiridion/wither_watcher": "always",
+    "dungeontrain:enchiridion/skeleton_crew": "always",
+    "dungeontrain:enchiridion/most_wanted": "always",
     "dungeontrain:dungeon_train/completionist": "always",
     "dungeontrain:dungeon_train/all_out_of_secrets": "earned",
     "dungeontrain:dungeon_train/secrete_menu": "earned",

@@ -123,6 +123,25 @@ final class EnchiridionAdvancementsTest {
     }
 
     @Test
+    @DisplayName("every mob collection is on screen once Say Cheese is earned, so its photos get a chat line")
+    void mobCollectionsVisibleAfterSayCheese() throws IOException {
+        Map<String, String> parents = parents();
+        TabGateways.Layout layout;
+        try (java.io.Reader in = Files.newBufferedReader(
+                RepoPaths.resources().resolve("dungeontrain/advancement_tabs.json"), StandardCharsets.UTF_8)) {
+            layout = TabGateways.Layout.parse(in);
+        }
+        // Earned: Say Cheese and everything above it; no collection yet.
+        Set<String> earned = new java.util.HashSet<>();
+        for (String at = "enchiridion/say_cheese"; at != null; at = parents.get(at)) earned.add(at);
+        for (String collection : List.of("enchiridion/family_photo", "enchiridion/skeleton_crew", "enchiridion/most_wanted")) {
+            assertTrue(AdvancementVisibilityRule.isVisible(collection, parents::get, earned::contains,
+                    p -> AdvancementVisibilityRule.Mode.parse(layout.visibility().get(rl(p).toString())),
+                    p -> false), collection);
+        }
+    }
+
+    @Test
     @DisplayName("collections keep an album; the biome tiers share one; everything else has none")
     void albums() throws IOException {
         Map<String, String> parents = parents();
