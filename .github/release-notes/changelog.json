@@ -34171,6 +34171,72 @@
       "released": true,
       "released_in": "v0.1717.0",
       "released_at": "2026-11-07T13:20:40Z"
+    },
+    {
+      "id": "faster-deep-stretch-generation",
+      "version": "0.1721.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Faster world generation",
+      "summary": "One stretch of the journey now generates much faster, so it loads with less lag. The world it builds is exactly the same.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2554,
+      "date": "2026-11-07",
+      "released": true,
+      "released_in": "v0.1722.0",
+      "released_at": "2026-11-07T17:19:12Z"
+    },
+    {
+      "id": "newmod-discord-link",
+      "version": "0.1722.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Mod page guide fix",
+      "summary": "Behind-the-scenes fix to how our mods' store pages are set up.",
+      "highlights": [],
+      "date": "2026-11-07",
+      "released": true,
+      "released_in": "v0.1722.0",
+      "released_at": "2026-11-07T17:19:12Z"
+    },
+    {
+      "id": "refresh-translation-counts-after-merge",
+      "version": "0.1711.0",
+      "type": "ci",
+      "tags": [
+        "internal"
+      ],
+      "title": "Translation counts stay correct when updates land together",
+      "summary": "Behind-the-scenes fix so the translation progress figures stay accurate when several updates that add text are released close together.",
+      "highlights": [],
+      "pr": 2548,
+      "date": "2026-11-07",
+      "released": true,
+      "released_in": "v0.1722.0",
+      "released_at": "2026-11-07T17:19:12Z"
+    },
+    {
+      "id": "store-listing-tooling",
+      "version": "0.1719.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Store page tooling",
+      "summary": "Behind-the-scenes improvements to how our mods' store pages are set up.",
+      "highlights": [],
+      "date": "2026-11-07",
+      "released": true,
+      "released_in": "v0.1722.0",
+      "released_at": "2026-11-07T17:19:12Z"
     }
   ]
 }
