@@ -1,0 +1,310 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/gb.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue100"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/es.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue101"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/mx.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue102"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/de.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue103"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/fr.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue104"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/it.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue105"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/nl.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue106"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/pl.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue107"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/pt.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue108"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/br.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue109"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/ro.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue10a"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/ru.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue10b"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/ua.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue10c"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/th.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue10d"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/vn.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue10e"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/cn.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue10f"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/tw.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue110"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/jp.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue111"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/kr.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue112"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/id.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue113"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/my.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue114"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/ph.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue115"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/sa.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue116"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/tr.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue117"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/in.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue118"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/se.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue119"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/no.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue11a"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/dk.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue11b"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/fi.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue11c"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/cz.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue11d"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/hu.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue11e"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/gr.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue11f"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/il.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue120"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "dungeontrain:font/language_flags/bg.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue121"
+      ]
+    }
+  ]
+}

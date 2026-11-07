@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LiveChatTranslationsTest {
 
@@ -64,6 +65,17 @@ class LiveChatTranslationsTest {
     }
 
     @Test
+    @DisplayName("a flag comes just before the text, under the original and in a replaced line; without one they read as before")
+    void flags() {
+        MutableComponent flag = LanguageFlags.flag("es", "the creeper got me");
+        String glyph = flag.getString();
+        assertEquals(glyph + " hola", ((MutableComponent) ((net.minecraft.network.chat.contents.TranslatableContents)
+            LiveChatTranslations.underLine(LINE, "hola", true, flag).getContents()).getArgs()[0]).getString());
+        assertTrue(LiveChatTranslations.replacedLine(LINE, "hola", flag).getString().endsWith("Alice: " + glyph + " hola"));
+        assertTrue(LiveChatTranslations.replacedLine(LINE, "hola", null).getString().endsWith("Alice: hola"));
+    }
+
+    @Test
     @DisplayName("a language's own name for the notice; the code when the JDK has none")
     void langName() {
         assertEquals("Deutsch", LiveChatTranslations.langName("de_de"));
@@ -73,6 +85,13 @@ class LiveChatTranslationsTest {
 
     private static String key(MutableComponent c) {
         return ((net.minecraft.network.chat.contents.TranslatableContents) c.getContents()).getKey();
+    }
+
+    @Test
+    @DisplayName("the chat's label: plain, or Google's credit")
+    void translatedLabel() {
+        assertEquals(LiveChatTranslations.TRANSLATED_KEY, key((MutableComponent) LiveChatTranslations.translatedLabel(false)));
+        assertEquals(LiveChatTranslations.POWERED_BY_KEY, key((MutableComponent) LiveChatTranslations.translatedLabel(true)));
     }
 
     private static String arg(MutableComponent c, int i) {

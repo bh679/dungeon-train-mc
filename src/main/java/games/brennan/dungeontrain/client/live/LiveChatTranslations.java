@@ -28,6 +28,8 @@ public final class LiveChatTranslations {
     public static final String ORIGINAL_KEY = "chat.dungeontrain.live_chat.translation.original";
     public static final String ON_KEY = "chat.dungeontrain.live_chat.translation.on";
     public static final String PATH_KEY = "chat.dungeontrain.live_chat.translation.path";
+    public static final String TRANSLATED_KEY = "chat.dungeontrain.live_chat.translated";
+    public static final String POWERED_BY_KEY = "chat.dungeontrain.live_chat.powered_by";
 
     /** A Minecraft locale code as the relay expects it: {@code zh_cn}. */
     private static final Pattern LOCALE = Pattern.compile("[a-z]{2,3}_[a-z0-9]{2,4}");
@@ -66,10 +68,16 @@ public final class LiveChatTranslations {
      * printed in between ({@code adjacent} false), so the reader knows whose it is.
      */
     public static MutableComponent underLine(ChatLine line, String translation, boolean adjacent) {
-        String text = LiveChatRules.clean(translation, LiveChatRules.MAX_CONTENT);
-        if (adjacent) return Component.translatable(TRANSLATION_KEY, Component.literal(text)).withStyle(ChatFormatting.GRAY);
+        return underLine(line, translation, adjacent, null);
+    }
+
+    /** {@link #underLine(ChatLine, String, boolean)} starting with the source language's flag, when {@code flag} is one. */
+    public static MutableComponent underLine(ChatLine line, String translation, boolean adjacent, @Nullable MutableComponent flag) {
+        MutableComponent text = Component.literal(LiveChatRules.clean(translation, LiveChatRules.MAX_CONTENT));
+        MutableComponent shown = flag == null ? text : Component.empty().append(flag).append(" ").append(text);
+        if (adjacent) return Component.translatable(TRANSLATION_KEY, shown).withStyle(ChatFormatting.GRAY);
         return Component.translatable(TRANSLATION_NAMED_KEY,
-            Component.literal(LiveChatRules.clean(line.author(), LiveChatRules.MAX_AUTHOR)), Component.literal(text))
+            Component.literal(LiveChatRules.clean(line.author(), LiveChatRules.MAX_AUTHOR)), shown)
             .withStyle(ChatFormatting.GRAY);
     }
 
@@ -78,10 +86,23 @@ public final class LiveChatTranslations {
      * and coloured name as {@link LiveChatRules#line}.
      */
     public static MutableComponent replacedLine(ChatLine line, String translation) {
+        return replacedLine(line, translation, null);
+    }
+
+    /** {@link #replacedLine(ChatLine, String)} with the source language's flag before the text, when {@code flag} is one. */
+    public static MutableComponent replacedLine(ChatLine line, String translation, @Nullable MutableComponent flag) {
         Component original = Component.translatable(ORIGINAL_KEY,
             Component.literal(LiveChatRules.clean(line.content(), LiveChatRules.MAX_CONTENT)));
         Style hover = Style.EMPTY.withColor(ChatFormatting.WHITE).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, original));
-        return LiveChatRules.line(line, translation, hover);
+        return LiveChatRules.line(line, translation, hover, flag);
+    }
+
+    /** The relay's id for Google: its work must be credited ({@link #translatedLabel}). */
+    public static final String GOOGLE = "google";
+
+    /** The chat's label: plain, or Google's credit, whose wording its rules fix (so the name stays in English). */
+    public static Component translatedLabel(boolean googleOnScreen) {
+        return googleOnScreen ? Component.translatable(POWERED_BY_KEY, "Google Translate") : Component.translatable(TRANSLATED_KEY);
     }
 
     /** The language's own name for the one-time "being translated into …" notice: 中文, Deutsch, …; the code itself when unknown. */

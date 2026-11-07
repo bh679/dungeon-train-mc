@@ -66,6 +66,8 @@ public final class UiAnalytics {
     // ModOfTheYear.Ask#analyticsTarget (one per ask, plus _done / _later), not constants here.
     // Lock-step with ui-events.js SURFACES + TARGETS.
     public static final String SURFACE_MOTY_POPUP = "moty_popup";
+    // The note after a low NPS score that mentions AI (client/survey/NpsAiNoteScreen): note, policy, close.
+    public static final String SURFACE_NPS_AI_NOTE = "nps_ai_note";
     // Targets
     public static final String TARGET_PAGE = "page";
     public static final String TARGET_SUPPORT = "support";

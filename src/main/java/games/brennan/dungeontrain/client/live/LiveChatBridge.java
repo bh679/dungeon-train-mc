@@ -27,6 +27,7 @@ import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MessageSignature;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
@@ -35,6 +36,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientChatEvent;
 import net.neoforged.neoforge.client.event.ClientChatReceivedEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RenderTooltipEvent;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -108,6 +110,8 @@ public final class LiveChatBridge {
     private static long lastRestartTs;
     private static long lastRestartPrintedMs;
     private static final LiveChatSignatures signatures = new LiveChatSignatures();
+    private static final LiveChatFlagHover flagHover = new LiveChatFlagHover();
+    private static final int FLAG_TOOLTIP_LIFT = 12;
     private static final LiveChannelLink channelLink = new LiveChannelLink();
     /** Lines printed this session, by seq, waiting on a translation; bounded like the signatures. */
     private static final Map<Long, Printed> printed = new LinkedHashMap<>(16, 0.75f, false) {
@@ -120,7 +124,7 @@ public final class LiveChatBridge {
     private static boolean translationNoticeShown;
 
     /** A printed live line, whether its translation has been shown, and whether the reader wrote it (never translated). */
-    private record Printed(ChatLine line, boolean translated, boolean mine) {}
+    private record Printed(ChatLine line, boolean translated, boolean mine, int printedTick) {}
 
     private LiveChatBridge() {}
 
@@ -142,6 +146,12 @@ public final class LiveChatBridge {
         return c.watchingWithEye() ? LiveChatRoom.Role.EYE : LiveChatRoom.Role.TV;
     }
 
+    /** A hovered flag's tooltip sits above its line: its usual place would cover the original text it just brought up. */
+    @SubscribeEvent
+    public static void onTooltip(RenderTooltipEvent.Pre event) {
+        if (flagHover.hovering()) event.setY(event.getY() - FLAG_TOOLTIP_LIFT);
+    }
+
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
@@ -149,6 +159,7 @@ public final class LiveChatBridge {
             if (connected) reset();
             return;
         }
+        flagHover.tick(mc);
         boolean streaming = LiveStreamController.get().streaming();
         // A Live Eye waiting on a takeover works as a TV: its wearer reads the room, and sees the vote.
         boolean wearingTv = !streaming && (TvItems.isTv(mc.player.getItemBySlot(EquipmentSlot.HEAD))
@@ -343,6 +354,7 @@ public final class LiveChatBridge {
         signatures.clear();
         printed.clear();
         ChatReactionTracker.forgetLive();
+        LiveChatTranslatedPill.reset();
     }
 
     /** Logout / world change: forget the cursor and the connected line. */
@@ -361,6 +373,7 @@ public final class LiveChatBridge {
 
     private static void deliver(Minecraft mc, ChatPage page, GiftNotices gifts) {
         if (page.seq() < 0) return; // a failed poll leaves the cursor alone
+        LiveChatTranslatedPill.setTranslator(page.translatedBy()); // first: this page's lines are credited to it
         if (cursor < 0) {
             cursor = page.seq(); // joined: start from now
             return;
@@ -451,7 +464,7 @@ public final class LiveChatBridge {
             if (p == null || p.translated() || p.mine()) continue;
             String mine = LiveChatTranslations.pick(t.tr(), readerLang);
             if (mine == null) continue;
-            applyLate(mc, chat, tag, p.line(), mine);
+            applyLate(mc, chat, tag, p.line(), mine, LanguageFlags.flag(t.src() != null ? t.src() : p.line().src(), p.line().content()), p.printedTick());
         }
         for (LiveFeedClient.LineReactions r : page.reactions()) {
             ChatReactionTracker.applyLive(r.line(), r.list(), r.event());
@@ -469,25 +482,30 @@ public final class LiveChatBridge {
         long seq = line.seq();
         if (translation == null) {
             chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatRules.line(line), mine, line.content()), signatures.sign(seq), tag);
-            printed.put(seq, new Printed(line, false, mine));
+            printed.put(seq, new Printed(line, false, mine, mc.gui.getGuiTicks()));
             return;
         }
+        MutableComponent flag = LanguageFlags.flag(line.src(), line.content());
         switch (LiveFeedClientConfig.liveChatTranslation()) {
             case UNDER -> {
                 chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatRules.line(line), mine, line.content()), signatures.sign(seq), tag);
-                chat.addMessage(ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, translation, true)),
-                    signatures.signPart(seq, 1), tag);
+                printUnder(chat, tag, line, translation, true, flag);
             }
-            case REPLACE -> chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatTranslations.replacedLine(line, translation), mine, line.content()),
-                signatures.sign(seq), tag);
-            case FIRST -> {
-                chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatTranslations.replacedLine(line, translation), mine, line.content()),
+            case REPLACE -> {
+                chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatTranslations.replacedLine(line, translation, flag), mine, line.content()),
                     signatures.sign(seq), tag);
+                flagHover.watchReplaced(flag, line, translation);
+            }
+            case FIRST -> {
+                chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatTranslations.replacedLine(line, translation, flag), mine, line.content()),
+                    signatures.sign(seq), tag);
+                flagHover.watchReplaced(flag, line, translation);
                 chat.addMessage(ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, line.content(), true)),
                     signatures.signPart(seq, 1), tag);
             }
         }
-        printed.put(seq, new Printed(line, true, mine));
+        printed.put(seq, new Printed(line, true, mine, mc.gui.getGuiTicks()));
+        LiveChatTranslatedPill.noteTranslatedLine(mc.gui.getGuiTicks());
         noteTranslating(mc, chat);
     }
 
@@ -496,23 +514,35 @@ public final class LiveChatBridge {
      * A line added under it reads {@code ↳ text} only while the original is still the newest line in chat;
      * after anything else, live or not, it carries the author's name.
      */
-    private static void applyLate(Minecraft mc, ChatComponent chat, GuiMessageTag tag, ChatLine line, String translation) {
+    private static void applyLate(Minecraft mc, ChatComponent chat, GuiMessageTag tag, ChatLine line, String translation,
+                                  @Nullable MutableComponent flag, int printedTick) {
         long seq = line.seq();
         boolean adjacent = signatures.isNewest(seq, newestSignature(chat));
         switch (LiveFeedClientConfig.liveChatTranslation()) {
-            case UNDER -> chat.addMessage(ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, translation, adjacent)),
-                signatures.signPart(seq, 1), tag);
+            case UNDER -> printUnder(chat, tag, line, translation, adjacent, flag);
             case REPLACE -> {
-                if (!ChatReactionTracker.replaceLive(seq, LiveChatTranslations.replacedLine(line, translation))) return;
+                if (!ChatReactionTracker.replaceLive(seq, LiveChatTranslations.replacedLine(line, translation, flag))) return;
+                flagHover.watchReplaced(flag, line, translation);
             }
             case FIRST -> {
-                if (!ChatReactionTracker.replaceLive(seq, LiveChatTranslations.replacedLine(line, translation))) return;
+                if (!ChatReactionTracker.replaceLive(seq, LiveChatTranslations.replacedLine(line, translation, flag))) return;
+                flagHover.watchReplaced(flag, line, translation);
                 chat.addMessage(ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, line.content(), adjacent)),
                     signatures.signPart(seq, 1), tag);
             }
         }
-        printed.put(seq, new Printed(line, true, false));
+        printed.put(seq, new Printed(line, true, false, printedTick));
+        // A line swapped in place keeps the tick it was printed at; one added under it is new.
+        LiveChatTranslatedPill.noteTranslatedLine(LiveFeedClientConfig.liveChatTranslation() == LiveFeedClientConfig.LiveChatTranslation.UNDER ? mc.gui.getGuiTicks() : printedTick);
         noteTranslating(mc, chat);
+    }
+
+    /** A translation added under its line, its flag watched so hovering it shows the original. */
+    private static void printUnder(ChatComponent chat, GuiMessageTag tag, ChatLine line, String translation, boolean adjacent,
+                                   @Nullable MutableComponent flag) {
+        Component shown = ChatReactionTracker.onOtherChat(LiveChatTranslations.underLine(line, translation, adjacent, flag));
+        chat.addMessage(shown, signatures.signPart(line.seq(), 1), tag);
+        flagHover.watchUnder(flag, line, adjacent, shown);
     }
 
     /** The signature of the newest line in chat (null when it has none, or chat is empty). */

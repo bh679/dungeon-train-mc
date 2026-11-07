@@ -70,4 +70,13 @@ class LiveFeedClientTranslationsParseTest {
         assertEquals("/live/chat?since=5", LiveFeedClient.chatPath(5, null, "en-US&x=1"));
         assertEquals("/live/chat?since=5&room=main", LiveFeedClient.chatPath(5, "main"));
     }
+
+    @Test
+    @DisplayName("translatedBy: a short id is kept; missing or odd values are nothing")
+    void translatedBy() {
+        assertEquals("azure", parse("{\"ok\":true,\"seq\":1,\"translatedBy\":\"azure\"}").translatedBy());
+        assertNull(parse("{\"ok\":true,\"seq\":1}").translatedBy());
+        assertNull(parse("{\"ok\":true,\"seq\":1,\"translatedBy\":\"<b>Evil Corp</b>\"}").translatedBy());
+        assertNull(parse("{\"ok\":true,\"seq\":1,\"translatedBy\":{\"id\":\"azure\"}}").translatedBy());
+    }
 }

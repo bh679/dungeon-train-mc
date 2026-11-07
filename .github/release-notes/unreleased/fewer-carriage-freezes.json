@@ -1,0 +1,20 @@
+{
+  "id": "fewer-carriage-freezes",
+  "version": "0.1699.0",
+  "type": "perf",
+  "tags": [
+    "performance",
+    "train"
+  ],
+  "title": "Fewer long freezes",
+  "summary": "Removed a rare long freeze that could hit as carriages came back into range, most often just after leaving a dimensional carriage.",
+  "highlights": [],
+  "addresses": [
+    "lag"
+  ],
+  "pr": 2531,
+  "date": "2026-11-07",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
