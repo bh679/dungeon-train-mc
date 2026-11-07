@@ -120,6 +120,8 @@ jobs:
           python3 scripts/modpack/test_reconcile.py
           python3 scripts/modpack/test_wait_for_approval.py
           python3 scripts/modpack/test_catch_up.py
+          python3 scripts/listing/test_listing.py
+          python3 scripts/release-notes/test_preview_update_page.py
 
       - name: Lost City templates + data match their recipes
         # DT's own Lost City buildings are generated (scripts/lost-city). Fails if a committed .nbt or
