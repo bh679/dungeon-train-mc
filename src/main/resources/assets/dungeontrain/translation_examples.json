@@ -15951,14 +15951,6 @@
       ]
     }
   },
-  "chat.dungeontrain.live_chat.powered_by": {
-    "1": {
-      "label": "the translation service's name, kept in English",
-      "examples": [
-        "Google Translate"
-      ]
-    }
-  },
   "chat.dungeontrain.live_chat.translation.on": {
     "1": {
       "label": "the reader's language, named in itself",
@@ -17566,6 +17558,15 @@
       "examples": [
         "Kestrel",
         "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.rewards.status.free_thanks": {
+    "1": {
+      "label": "the name of the person keeping the translations free",
+      "examples": [
+        "Brennan",
+        "Kestrel"
       ]
     }
   },

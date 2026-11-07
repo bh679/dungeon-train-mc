@@ -867,7 +867,6 @@
   "chat.dungeontrain.live_chat.translation.on": "Live chat is being translated into %s. Change how it shows in %s",
   "chat.dungeontrain.live_chat.translation.path": "Options / Dungeon Train / Stream / Chat translations",
   "chat.dungeontrain.live_chat.translated": "Translated",
-  "chat.dungeontrain.live_chat.powered_by": "Powered by %s",
   "chat.dungeontrain.live_gift.prompt": "%s joins via a TV, they have never had the Live Eye.",
   "chat.dungeontrain.live_gift.give": "Gift it to them",
   "chat.dungeontrain.live_gift.offered": "Offering %s your Live Eye…",
@@ -1688,6 +1687,7 @@
   "gui.dungeontrain.rewards.status.on_for_hours.one": "ON for %s more hour · kept on by %s",
   "gui.dungeontrain.rewards.status.on_for_hours.other": "ON for %s more hours · kept on by %s",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "ON until tomorrow · kept on by %s",
+  "gui.dungeontrain.rewards.status.free_thanks": "Free translations are running thanks to %s",
   "gui.dungeontrain.rewards.give.soon": "Soon",
   "gui.dungeontrain.rewards.give.month": "Give %s",
   "gui.dungeontrain.rewards.give.amount": "Give %s",
@@ -5674,5 +5674,6 @@
   "dungeontrain.plaque.everything_complete": "Everything Complete!",
   "tooltip.dungeontrain.enchant_damage.undead": "+%s vs Undead",
   "tooltip.dungeontrain.enchant_damage.arthropods": "+%s vs Arthropods",
-  "tooltip.dungeontrain.enchant_damage.aquatic": "+%s vs Aquatic"
+  "tooltip.dungeontrain.enchant_damage.aquatic": "+%s vs Aquatic",
+  "attribute.name.adventureitemstats.ranged_damage": "Ranged Damage"
 }
