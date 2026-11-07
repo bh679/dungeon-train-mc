@@ -85,14 +85,15 @@ public record EditorStatusPacket(String category, String model, String modelId, 
      * {@code PortalRoomCopies.BLOCK_ID_MAX} runs to about a hundred and thirty characters. The cap
      * was 32 when the tag topped out at thirty-one, which left it one setting away from
      * {@code writeUtf} throwing on a perfectly ordinary room; 64 stopped fitting the moment Books
-     * grew its author range, and 96 stopped fitting the moment Single let an author name a block.
+     * grew its author range, 96 stopped fitting the moment Single let an author name a block, and
+     * 160 stopped fitting once a raised ground wrote every segment out behind it.
      * This has headroom for the next segment; {@link EditorPlotLabelsPacket} carries the same tag
      * and must keep the same cap.</p>
      *
      * <p>{@code PortalRoomSettingsTest.longestTagFitsThePacket} sweeps every settings combination
      * against this number, so a future setting fails a test rather than a live {@code writeUtf}.</p>
      */
-    public static final int MODE_TAG_MAX = 160;
+    public static final int MODE_TAG_MAX = 192;
 
     /** {@code maxLevel} sentinel mirroring {@code TemplateGate.ALL} — "no upper level bound". */
     public static final int MAX_LEVEL_ALL = -1;

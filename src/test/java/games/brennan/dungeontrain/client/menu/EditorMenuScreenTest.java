@@ -628,6 +628,25 @@ final class EditorMenuScreenTest {
         assertEquals("dungeontrain editor portals fog next", fog.command());
     }
 
+    @Test
+    @DisplayName("Ground shows only under Endless Open; its checkbox only once the ground is raised")
+    void groundRows() {
+        assertNull(EditorMenuPortalRows.groundRowFor("bedrock"));
+        assertNull(EditorMenuPortalRows.groundRowFor("endless_repetition"));
+        assertNull(EditorMenuPortalRows.groundBelowRowFor("endless_open"));
+
+        CommandMenuEntry.Stay ground = (CommandMenuEntry.Stay) EditorMenuPortalRows.groundRowFor("endless_open");
+        assertEquals("dungeontrain editor portals ground next", ground.command());
+        assertEquals("Ground: Bottom (Y 0)", ground.label());
+
+        // Door height 4 is segment nine, the ground is segment fifteen.
+        String raised = "endless_open/exact/off/off/off/none/sealed/0/4/0/4/bedrock/auto/on/door:below";
+        assertEquals("Ground: Door (Y 5)", EditorMenuPortalRows.groundRowFor(raised).label());
+        CommandMenuEntry.Stay below = (CommandMenuEntry.Stay) EditorMenuPortalRows.groundBelowRowFor(raised);
+        assertEquals("dungeontrain editor portals ground below", below.command());
+        assertEquals("[x] Everything below", below.label());
+    }
+
     /** Every command string a row (or its cells) would run. */
     private static List<String> commandsOf(CommandMenuEntry row) {
         List<String> out = new java.util.ArrayList<>();

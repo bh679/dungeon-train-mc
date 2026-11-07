@@ -6720,6 +6720,22 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.plot.ground": {
+    "1": {
+      "label": "the Ground level, already translated",
+      "examples": [
+        "Bottom",
+        "Door"
+      ]
+    },
+    "2": {
+      "label": "the block row inside the room",
+      "examples": [
+        "0",
+        "5"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.plot.fog": {
     "1": {
       "label": "the Fog setting, already translated",
@@ -11300,6 +11316,16 @@
     }
   },
   "chat.dungeontrain.editor.unknown_door_wall_option": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_ground_option_try": {
     "1": {
       "label": "what the player typed",
       "examples": [
