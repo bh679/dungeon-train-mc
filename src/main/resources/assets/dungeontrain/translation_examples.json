@@ -17561,6 +17561,15 @@
       ]
     }
   },
+  "gui.dungeontrain.rewards.status.free_thanks": {
+    "1": {
+      "label": "the name of the person keeping the translations free",
+      "examples": [
+        "Brennan",
+        "Kestrel"
+      ]
+    }
+  },
   "gui.dungeontrain.rewards.status.on_until_tomorrow": {
     "1": {
       "label": "the name of the player who gave",
