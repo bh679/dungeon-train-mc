@@ -439,11 +439,15 @@ public final class LiveChatBridge {
             }
             // A player's own line names their uuid: what a streamer mute keys on once they rename.
             if (line.source() == LiveFeedClient.Source.GAME) LiveViewerMutes.learn(line.author(), line.uuid());
+            boolean mine = me != null && line.uuid() != null && line.uuid().equalsIgnoreCase(me.toString().replace("-", ""));
             if (LiveChatRules.shouldShow(line, me, here, names)) {
-                boolean mine = me != null && line.uuid() != null && line.uuid().equalsIgnoreCase(me.toString().replace("-", ""));
                 // The reader's own words are shown as typed, never translated back at them.
                 printLine(mc, chat, tag, line, mine, mine ? null : LiveChatTranslations.pick(line.tr(), readerLang));
+            } else if (mine && line.fromGame()) {
+                // Vanilla chat already printed it: remembered only for the flags of where it was translated to.
+                printed.put(line.seq(), new Printed(line, false, true, mc.gui.getGuiTicks()));
             }
+            if (mine) showReach(line, line.tr(), line.src(), readerLang);
             if (line.logRequest() != null && line.logRequest().isFor(myName, streaming)) {
                 LogRequestClient.onLiveRequest(line.logRequest().id());
             }
@@ -461,6 +465,7 @@ public final class LiveChatBridge {
         }
         for (LineTranslations t : page.translations()) {
             Printed p = printed.get(t.line());
+            if (p != null && p.mine()) showReach(p.line(), t.tr(), t.src() != null ? t.src() : p.line().src(), readerLang);
             if (p == null || p.translated() || p.mine()) continue;
             String mine = LiveChatTranslations.pick(t.tr(), readerLang);
             if (mine == null) continue;
@@ -471,6 +476,14 @@ public final class LiveChatBridge {
         }
         if (streaming) LiveLifeChat.onReactions(page.reactions());
         cursor = LiveChatRules.nextCursor(cursor, page.seq());
+    }
+
+    /** The reader's own line ends with the flags of the languages it was translated into, once there are any. */
+    private static void showReach(ChatLine line, @Nullable Map<String, String> tr, @Nullable String src, @Nullable String readerLang) {
+        MutableComponent flags = LanguageFlags.reach(tr, src, readerLang);
+        if (flags == null) return;
+        if (line.fromGame()) ChatReactionTracker.flagOwnChat(line.seq(), line.content(), flags);
+        else ChatReactionTracker.replaceLive(line.seq(), LiveChatRules.line(line).append(" ").append(flags));
     }
 
     /**

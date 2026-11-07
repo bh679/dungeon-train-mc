@@ -8,9 +8,14 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /**
  * The small flag on a translated Live chat line, showing the language it came from. One glyph per flag in
@@ -34,6 +39,9 @@ public final class LanguageFlags {
         Map.entry("ko", "kr"), Map.entry("ms", "my"), Map.entry("fil", "ph"), Map.entry("tl", "ph"), Map.entry("ar", "sa"),
         Map.entry("hi", "in"), Map.entry("sv", "se"), Map.entry("nb", "no"), Map.entry("nn", "no"), Map.entry("da", "dk"),
         Map.entry("cs", "cz"), Map.entry("el", "gr"), Map.entry("he", "il"), Map.entry("iw", "il"));
+
+    /** The most flags a line of the reader's own ends with; the other languages become {@code +N}. */
+    static final int MAX_REACH_FLAGS = 3;
 
     private LanguageFlags() {}
 
@@ -62,5 +70,48 @@ public final class LanguageFlags {
         return Component.literal(String.valueOf((char) (FIRST_GLYPH + CODES.indexOf(code))))
             .withStyle(s -> s.withFont(FONT).withColor(ChatFormatting.WHITE)
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, name)));
+    }
+
+    /**
+     * The languages a line was translated into out of the relay's {@code tr}, sorted so the flags stay put as more
+     * arrive: the first {@link #MAX_REACH_FLAGS} with a flag in {@code flagged}, every other one in {@code rest}. One
+     * per flag, and neither the line's own language nor the reader's.
+     */
+    record Reach(List<String> flagged, List<String> rest) {}
+
+    static Reach reachOf(@Nullable Map<String, String> tr, @Nullable String src, @Nullable String reader) {
+        if (tr == null) return new Reach(List.of(), List.of());
+        String srcCode = codeOf(src);
+        String readerCode = codeOf(reader);
+        List<String> flagged = new ArrayList<>();
+        List<String> rest = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (String tag : new TreeSet<>(tr.keySet())) {
+            String code = codeOf(tag);
+            if (code == null) {
+                rest.add(tag);
+            } else if (!code.equals(srcCode) && !code.equals(readerCode) && seen.add(code)) {
+                (flagged.size() < MAX_REACH_FLAGS ? flagged : rest).add(tag);
+            }
+        }
+        return new Reach(List.copyOf(flagged), List.copyOf(rest));
+    }
+
+    /**
+     * What ends a line of the reader's own: a flag per language it reached with that translation on hover, then
+     * {@code +N} naming the others on hover; null when it reached none. Not {@link LiveChatFlagHover}'s to swap.
+     */
+    @Nullable
+    static MutableComponent reach(@Nullable Map<String, String> tr, @Nullable String src, @Nullable String reader) {
+        Reach reach = reachOf(tr, src, reader);
+        if (reach.flagged().isEmpty() && reach.rest().isEmpty()) return null;
+        MutableComponent out = Component.empty();
+        for (String tag : reach.flagged()) {
+            out.append(flag(tag, tr.get(tag))).append(" ");
+        }
+        if (reach.rest().isEmpty()) return out;
+        String names = reach.rest().stream().map(LiveChatTranslations::langName).collect(Collectors.joining(", "));
+        return out.append(Component.literal("+" + reach.rest().size()).withStyle(s -> s.withColor(ChatFormatting.GRAY)
+            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(names)))));
     }
 }
