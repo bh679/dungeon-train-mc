@@ -581,7 +581,7 @@ public final class DungeonTrainCommonConfig {
             + "legacy:amplified=4000:beta=2500:far_lands=4320:caves_of_chaos=3500:skylands=4000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:650, chuncks:2000, mix:4000, stacks:5000";
 
-    public static final int CURRENT_CONFIG_VERSION = 16;
+    public static final int CURRENT_CONFIG_VERSION = 17;
     public static final boolean DEFAULT_MIX_ENABLED = true;
     public static final String DEFAULT_MIX_EXCLUDE = "";
 
@@ -1528,6 +1528,11 @@ public final class DungeonTrainCommonConfig {
             LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> Deeper Dark on Lap 2.",
                     from, CURRENT_CONFIG_VERSION);
             WorldGenCycle.invalidateCache();
+        }
+
+        // v16 -> v17: End-band features cross chunk borders for everyone, not only servers that opted in.
+        if (from < 17) {
+            EndBandConfig.migrateV16FeatureSpill(from);
         }
 
         CONFIG_VERSION.set(CURRENT_CONFIG_VERSION);

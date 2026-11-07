@@ -1,0 +1,17 @@
+{
+  "id": "end-band-features-cross-chunks",
+  "version": "0.1707.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "world"
+  ],
+  "title": "Fuller scenery on a stranger stretch",
+  "summary": "Trees and plants on one of the stranger stretches of the journey no longer stop dead in straight lines, which left some patches of ground looking bare beside overgrown ones. Only ground generated after updating changes.",
+  "highlights": [],
+  "pr": 2542,
+  "date": "2026-11-07",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
