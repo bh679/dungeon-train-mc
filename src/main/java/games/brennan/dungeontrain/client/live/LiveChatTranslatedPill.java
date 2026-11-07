@@ -177,7 +177,8 @@ public final class LiveChatTranslatedPill {
         int height = BADGE_H + 2 * PAD_Y;
         int width = badgeWidth(BADGE_H);
         int top = labelTop(bottom, height);
-        graphics.fill(CHAT_LEFT, top, CHAT_LEFT + width + 2 * PAD_X, top + height, argb(alpha * BACKDROP_OPACITY, 0x000000));
+        // Opaque: nothing on the HUD beneath may show through Google's credit.
+        graphics.fill(CHAT_LEFT, top, CHAT_LEFT + width + 2 * PAD_X, top + height, argb(alpha, 0x000000));
         RenderSystem.enableBlend();
         RenderSystem.setShaderColor(1f, 1f, 1f, alpha);
         graphics.blit(GOOGLE_BADGE, CHAT_LEFT + PAD_X, top + PAD_Y, width, BADGE_H, 0f, 0f, BADGE_TEXTURE_W, BADGE_TEXTURE_H, BADGE_TEXTURE_W, BADGE_TEXTURE_H);
