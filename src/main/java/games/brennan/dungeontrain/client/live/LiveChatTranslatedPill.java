@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.live;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import com.mojang.blaze3d.systems.RenderSystem;
 import games.brennan.dungeontrain.mixin.client.ChatComponentAccessor;
 import net.minecraft.client.GuiMessage;
 import net.minecraft.client.Minecraft;
@@ -12,10 +13,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.ChatVisiblity;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
-import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
@@ -25,14 +26,14 @@ import java.util.Set;
 
 /**
  * One label above the chat lines saying Live chat is translated, whenever a translated line is on screen
- * ({@link LiveChatBridge} reports them), whoever translated it; Google's work gets the credit its rules
- * require. A line is recognised by the tick it entered chat, which vanilla keeps through re-wrapping. In a
+ * ({@link LiveChatBridge} reports them), whoever translated it. While any of them is Google's work it is
+ * Google's own unaltered "translated by Google" badge instead, as its rules require: drawn above other
+ * HUD panels and held on screen, as the credit must never be covered or missing. A line is recognised by the tick it entered chat, which vanilla keeps through re-wrapping. In a
  * closed chat the label fades with the newest translated line; in an open one it follows the scroll position.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveChatTranslatedPill {
 
-    private static final ResourceLocation LAYER = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live_chat_translated_pill");
     /** Vanilla: a closed chat's line is gone after this many ticks, and the chat's bottom sits this far up. */
     private static final int LINE_LIFE_TICKS = 200;
     private static final int CHAT_BOTTOM_OFFSET = 40;
@@ -41,7 +42,14 @@ public final class LiveChatTranslatedPill {
     private static final int PAD_Y = 1;
     private static final int GAP = 2;
     private static final int TEXT_RGB = 0xD8D8D8;
-    private static final float BACKDROP_OPACITY = 0.72f;
+    /** Google's short badge, byte for byte as Google ships it (white-short@3x), and how large to draw it. */
+    private static final ResourceLocation GOOGLE_BADGE = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "textures/gui/live/google_translate_badge.png");
+    private static final int BADGE_TEXTURE_W = 366;
+    private static final int BADGE_TEXTURE_H = 48;
+    private static final int BADGE_H = 12;
+    private static final float BADGE_SCALE = 0.8f;
+    /** The label's backing, as a share of the chat lines' own. */
+    private static final float BACKDROP_OF_CHAT = 0.5f;
     /** Ticks of the translated lines remembered: more than chat could show at once. */
     private static final int TICKS_KEPT = 256;
     /** Below this, Minecraft's text renderer draws nothing recognisable anyway. */
@@ -97,14 +105,25 @@ public final class LiveChatTranslatedPill {
         return null;
     }
 
+    /** The label's top edge: above the chat lines when there is room, else held at the top of the screen. */
+    static int labelTop(int bottom, int height) {
+        return Math.max(0, bottom - height);
+    }
+
+    /** The badge's width at {@code height}, in its own proportions: Google's marks must not be distorted. */
+    static int badgeWidth(int height) {
+        return Math.round(height * (float) BADGE_TEXTURE_W / BADGE_TEXTURE_H);
+    }
+
     /** Whether any visible line is Google's work: one such line is enough to owe the credit. */
     static boolean googleOnScreen(List<Integer> visible, Map<Integer, Boolean> translatedTicks) {
         return visible.stream().anyMatch(tick -> Boolean.TRUE.equals(translatedTicks.get(tick)));
     }
 
-    @SubscribeEvent
-    public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
-        event.registerAbove(VanillaGuiLayers.CHAT, LAYER, (graphics, deltaTracker) -> render(graphics));
+    /** After the whole HUD, other mods' panels included: Google's credit must never be covered. */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onRenderHud(RenderGuiEvent.Post event) {
+        render(event.getGuiGraphics());
     }
 
     private static void render(GuiGraphics graphics) {
@@ -124,24 +143,55 @@ public final class LiveChatTranslatedPill {
         List<Integer> visible = page.subList(0, shown);
         Integer translated = newestTranslated(visible, TRANSLATED_TICKS.keySet());
         if (translated == null) return;
-        Component text = LiveChatTranslations.translatedLabel(googleOnScreen(visible, TRANSLATED_TICKS));
+        boolean google = googleOnScreen(visible, TRANSLATED_TICKS);
         float alpha = open ? 1f : fade(guiTicks - translated);
         if (alpha < MIN_ALPHA) return;
 
         float scale = (float) chat.getScale();
         int lineHeight = (int) (9.0 * (mc.options.chatLineSpacing().get() + 1.0));
         int chatBottom = Mth.floor((graphics.guiHeight() - CHAT_BOTTOM_OFFSET) / scale);
-        Font font = mc.font;
-        int height = font.lineHeight + 2 * PAD_Y;
         int bottom = chatBottom - shown * lineHeight - GAP;
-        if (bottom - height < 0) return;
+        // Lighter than the shade vanilla puts behind the chat lines, and following it, so the label stays quiet.
+        float backdrop = mc.options.textBackgroundOpacity().get().floatValue() * BACKDROP_OF_CHAT;
 
         graphics.pose().pushPose();
         graphics.pose().scale(scale, scale, 1f);
-        int width = font.width(text) + 2 * PAD_X;
-        graphics.fill(CHAT_LEFT, bottom - height, CHAT_LEFT + width, bottom, argb(alpha * BACKDROP_OPACITY, 0x000000));
-        graphics.drawString(font, text, CHAT_LEFT + PAD_X, bottom - height + PAD_Y, argb(alpha, TEXT_RGB), false);
+        if (google) {
+            // HUD layers stack higher in depth one after another: only drawing last, untested, puts this on top.
+            graphics.flush();
+            RenderSystem.disableDepthTest();
+            drawGoogleBadge(graphics, bottom, alpha, backdrop);
+            graphics.flush();
+            RenderSystem.enableDepthTest();
+        } else {
+            drawTranslatedLabel(graphics, mc.font, bottom, alpha, backdrop);
+        }
         graphics.pose().popPose();
+    }
+
+    private static void drawTranslatedLabel(GuiGraphics graphics, Font font, int bottom, float alpha, float backdrop) {
+        Component text = LiveChatTranslations.translatedLabel();
+        int height = font.lineHeight + 2 * PAD_Y;
+        int top = labelTop(bottom, height);
+        graphics.fill(CHAT_LEFT, top, CHAT_LEFT + font.width(text) + 2 * PAD_X, top + height, argb(alpha * backdrop, 0x000000));
+        graphics.drawString(font, text, CHAT_LEFT + PAD_X, top + PAD_Y, argb(alpha, TEXT_RGB), false);
+    }
+
+    private static void drawGoogleBadge(GuiGraphics graphics, int bottom, float alpha, float backdrop) {
+        int shownWidth = Math.round(badgeWidth(BADGE_H) * BADGE_SCALE);
+        int shownHeight = Mth.ceil(BADGE_H * BADGE_SCALE);
+        int height = shownHeight + 2 * PAD_Y;
+        int top = labelTop(bottom, height);
+        graphics.fill(CHAT_LEFT, top, CHAT_LEFT + shownWidth + 2 * PAD_X, top + height, argb(alpha * backdrop, 0x000000));
+        RenderSystem.enableBlend();
+        RenderSystem.setShaderColor(1f, 1f, 1f, alpha);
+        graphics.pose().pushPose();
+        graphics.pose().translate(CHAT_LEFT + PAD_X, top + PAD_Y, 0f);
+        graphics.pose().scale(BADGE_SCALE, BADGE_SCALE, 1f);
+        graphics.blit(GOOGLE_BADGE, 0, 0, badgeWidth(BADGE_H), BADGE_H, 0f, 0f, BADGE_TEXTURE_W, BADGE_TEXTURE_H, BADGE_TEXTURE_W, BADGE_TEXTURE_H);
+        graphics.pose().popPose();
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        RenderSystem.disableBlend();
     }
 
     private static int argb(float alpha, int rgb) {

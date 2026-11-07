@@ -48,4 +48,18 @@ class LiveChatTranslatedPillTest {
         assertTrue(LiveChatTranslatedPill.googleOnScreen(List.of(980, 970), ticks));
         assertFalse(LiveChatTranslatedPill.googleOnScreen(List.of(990, 980), ticks));
     }
+
+    @Test
+    @DisplayName("the label stays on screen: above the lines with room, at the top edge without")
+    void labelTop() {
+        assertEquals(20, LiveChatTranslatedPill.labelTop(31, 11));
+        assertEquals(0, LiveChatTranslatedPill.labelTop(5, 11));
+        assertEquals(0, LiveChatTranslatedPill.labelTop(-40, 11));
+    }
+
+    @Test
+    @DisplayName("Google's badge keeps its own proportions")
+    void badgeWidth() {
+        assertEquals(Math.round(24 * (float) 366 / 48), LiveChatTranslatedPill.badgeWidth(24));
+    }
 }
