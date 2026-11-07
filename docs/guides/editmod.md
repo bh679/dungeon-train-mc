@@ -15,6 +15,10 @@ both) and the exact text or image, given after he has seen it. Nothing else coun
 When in doubt, ask in plain words: "Change the Modrinth description to add this line: …?" and wait.
 Save the live page (step 1) before any edit, so it can be restored exactly.
 
+**Every change is previewed first:** before asking, draft an exact copy of the whole page as it will
+look after the change, served on localhost, and send Brennan the link (step 4). He confirms from that
+page, never from a diff or a description of the change.
+
 ## 1. Copy the live page
 
 The live page is the truth. Someone may have edited it on the site, so don't start from an old copy.
@@ -55,7 +59,15 @@ DT's own mod and modpack pages can't use the "designed for Dungeon Train" senten
 
 ## 4. Confirm with Brennan
 
-Show him the dry-run output, and render any new screenshots in chat. Wait for a clear yes.
+1. **Build the localhost preview.** One page per store, served on `127.0.0.1`, holding an exact copy
+   of the whole profile after the change: title, summary, icon, links, screenshots and captions, and
+   the full description rendered the way that store renders it (Modrinth Markdown and HTML, or the
+   CurseForge text). Start from the live page pulled in step 1, never from memory, so everything
+   that isn't changing is shown exactly as it is now. Mark the changed parts so they're easy to find.
+2. **Send Brennan the link** to each preview, with the dry-run output and the exact change written
+   out. If the CurseForge text differs from Modrinth's, preview both.
+3. **Wait for a clear yes** that names the store and the change, given after he has opened the
+   preview. Any change he asks for means a new preview and a new yes.
 
 ## 5. Apply on both stores
 
