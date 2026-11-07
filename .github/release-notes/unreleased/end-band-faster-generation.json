@@ -1,0 +1,20 @@
+{
+  "id": "end-band-faster-generation",
+  "version": "0.1702.0",
+  "type": "perf",
+  "tags": [
+    "performance",
+    "world"
+  ],
+  "title": "Smoother world generation",
+  "summary": "One of the stranger stretches of the journey now generates new ground much faster, so the long freezes as you ride into it should be far rarer. A few caves in newly generated ground may come out slightly differently.",
+  "highlights": [],
+  "addresses": [
+    "lag"
+  ],
+  "pr": 2533,
+  "date": "2026-11-07",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
