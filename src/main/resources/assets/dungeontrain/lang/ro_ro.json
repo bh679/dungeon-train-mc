@@ -894,6 +894,8 @@
   "chat.dungeontrain.live_chat.translation": "    ↳ %s",
   "chat.dungeontrain.live_chat.translation.named": "    ↳ %s: %s",
   "chat.dungeontrain.live_chat.translation.original": "Original: %s",
+  "chat.dungeontrain.live_chat.translation.flip_hide": "Tradus. Dă clic pentru a ascunde traducerea",
+  "chat.dungeontrain.live_chat.translation.flip_show": "Dă clic pentru a traduce",
   "chat.dungeontrain.live_chat.translation.on": "Chatul live este tradus în %s. Schimbă cum apare în %s",
   "chat.dungeontrain.live_chat.translation.path": "Opțiuni / Dungeon Train / Stream / Traducerile chatului",
   "chat.dungeontrain.live_chat.translated": "Tradus",

@@ -9,7 +9,10 @@
   ],
   "title": "See where your Live chat messages reached",
   "summary": "Your own Live chat messages now show a small flag for each language they were translated into. Hover a flag to read your message in that language.",
-  "highlights": [],
+  "highlights": [
+    "Translated messages now show on their own for everyone. Hover a message's flag for the original, or click the message to flip between the two.",
+    "Your chat translation setting goes back to translation only once. You can change it in Options."
+  ],
   "pr": 2535,
   "date": "2026-11-07",
   "released": false,

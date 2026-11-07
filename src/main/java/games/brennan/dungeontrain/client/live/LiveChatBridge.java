@@ -296,6 +296,7 @@ public final class LiveChatBridge {
         signatures.clear();
         printed.clear();
         ChatReactionTracker.forgetLive();
+        LiveChatFlip.forget();
         if (pick != null) mc.gui.getChat().addMessage(withReport(roomLine(pick), pick));
         channelLink.reset();
         if (joinedViaTv) {
@@ -354,6 +355,7 @@ public final class LiveChatBridge {
         signatures.clear();
         printed.clear();
         ChatReactionTracker.forgetLive();
+        LiveChatFlip.forget();
         LiveChatTranslatedPill.reset();
     }
 
@@ -384,6 +386,7 @@ public final class LiveChatBridge {
             signatures.clear();
             printed.clear();
             ChatReactionTracker.forgetLive();
+            LiveChatFlip.forget();
             if (joinedViaTv) join(mc); // the restart forgot this viewer was in the room
             if (LiveRelayRestart.inWindow(System.currentTimeMillis())) {
                 // An announced restart: the new ring holds only what was said since the boot (the "back"
@@ -510,9 +513,10 @@ public final class LiveChatBridge {
                 printUnder(chat, tag, line, translation, true, flag);
             }
             case REPLACE -> {
-                chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatTranslations.replacedLine(line, translation, flag), mine, line.content()),
+                chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatTranslations.flippableLine(line, translation, flag), mine, line.content()),
                     signatures.sign(seq), tag);
-                flagHover.watchReplaced(flag, line, translation);
+                flagHover.watchFlippable(flag, line, translation);
+                LiveChatFlip.track(line, translation, flag);
             }
             case FIRST -> {
                 chat.addMessage(ChatReactionTracker.printLive(seq, LiveChatTranslations.replacedLine(line, translation, flag), mine, line.content()),
@@ -539,8 +543,9 @@ public final class LiveChatBridge {
         switch (LiveFeedClientConfig.liveChatTranslation()) {
             case UNDER -> printUnder(chat, tag, line, translation, adjacent, flag);
             case REPLACE -> {
-                if (!ChatReactionTracker.replaceLive(seq, LiveChatTranslations.replacedLine(line, translation, flag))) return;
-                flagHover.watchReplaced(flag, line, translation);
+                if (!ChatReactionTracker.replaceLive(seq, LiveChatTranslations.flippableLine(line, translation, flag))) return;
+                flagHover.watchFlippable(flag, line, translation);
+                LiveChatFlip.track(line, translation, flag);
             }
             case FIRST -> {
                 if (!ChatReactionTracker.replaceLive(seq, LiveChatTranslations.replacedLine(line, translation, flag))) return;

@@ -40,6 +40,13 @@ final class LiveChatFlagHover {
             () -> ChatReactionTracker.replaceLive(line.seq(), LiveChatTranslations.replacedLine(line, translation, flag)));
     }
 
+    /** Watch a line showing its translation alone, as {@link LiveChatTranslations#flippableLine}. */
+    void watchFlippable(@Nullable MutableComponent flag, ChatLine line, String translation) {
+        watch(flag,
+            () -> ChatReactionTracker.replaceLive(line.seq(), LiveChatTranslations.flippableLine(line, line.content(), flag)),
+            () -> ChatReactionTracker.replaceLive(line.seq(), LiveChatTranslations.flippableLine(line, translation, flag)));
+    }
+
     /** Watch a translation printed under its line as {@code printed}. */
     void watchUnder(@Nullable MutableComponent flag, ChatLine line, boolean adjacent, Component printed) {
         Component[] current = {printed};
