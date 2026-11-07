@@ -1,0 +1,20 @@
+{
+  "id": "live-chat-translated-label",
+  "version": "0.1699.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Translated label in Live Eye chat",
+  "summary": "Live Eye chat now shows a small label while translated messages are on screen, so it's clear when you're reading a translation.",
+  "highlights": [
+    "In game, it sits just above your chat and fades with it",
+    "On the website, it shows under the chat's title, and also covers translations made by your browser"
+  ],
+  "pr": 2530,
+  "date": "2026-11-07",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
