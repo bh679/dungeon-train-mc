@@ -761,6 +761,8 @@
   "chat.dungeontrain.live_chat.translation": "    ↳ %s",
   "chat.dungeontrain.live_chat.translation.named": "    ↳ %s: %s",
   "chat.dungeontrain.live_chat.translation.original": "Asli: %s",
+  "chat.dungeontrain.live_chat.translation.flip_hide": "Diterjemahkan. Klik untuk menyembunyikan terjemahan",
+  "chat.dungeontrain.live_chat.translation.flip_show": "Klik untuk menerjemahkan",
   "chat.dungeontrain.live_chat.translation.on": "Obrolan langsung sedang diterjemahkan ke %s. Ubah tampilannya di %s",
   "chat.dungeontrain.live_chat.translation.path": "Opsi / Dungeon Train / Stream / Terjemahan obrolan",
   "chat.dungeontrain.live_chat.translated": "Diterjemahkan",

@@ -15,9 +15,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -49,7 +49,9 @@ public final class ChatReactionTracker {
 
     /** A tracked line: what it was printed from, what it shows now, and its reactions. */
     private static final class Line {
-        Component source; // swapped once by replaceLive: a live line's translation in place of it
+        Component source; // swapped by replaceLive (a live line's translation) and flagOwn (its flags)
+        final Component printed;
+        @Nullable Component ownFlags;
         final boolean mine;
         final String snippet;
         Component shown;
@@ -58,6 +60,7 @@ public final class ChatReactionTracker {
 
         Line(Component source, Component shown, Set<String> pendingEmoji, boolean mine, String snippet) {
             this.source = source;
+            this.printed = source;
             this.shown = shown;
             this.pendingEmoji = pendingEmoji;
             this.mine = mine;
@@ -65,8 +68,8 @@ public final class ChatReactionTracker {
         }
     }
 
-    /** A player chat line this client printed, waiting to learn its Discord id. */
-    private record Recent(UUID sender, String raw, Component source, Component shown, Set<String> pending, long atMs) {}
+    /** A player chat line this client printed, waiting to learn its Discord id and its Live seq: either may come first. */
+    private record Recent(UUID sender, String raw, Line line, long atMs, boolean onDiscord, boolean onLive) {}
 
     private static final Map<String, Line> LINES = new LinkedHashMap<>(64, 0.75f, false) {
         @Override
@@ -87,7 +90,8 @@ public final class ChatReactionTracker {
         EmojiText.Result r = EmojiText.convert(display);
         // A distinct instance per line even when nothing changed, so two identical lines stay apart.
         Component shown = r.component() == display ? display.copy() : r.component();
-        RECENT.add(0, new Recent(sender, raw, display, shown, r.pendingIds(), System.currentTimeMillis()));
+        Line line = new Line(display, shown, r.pendingIds(), sender.equals(me()), snippet(raw));
+        RECENT.add(0, new Recent(sender, raw, line, System.currentTimeMillis(), false, false));
         while (RECENT.size() > MAX_RECENT) RECENT.remove(RECENT.size() - 1);
         return shown;
     }
@@ -105,14 +109,66 @@ public final class ChatReactionTracker {
     /** The server says {@code sender}'s line {@code raw} is Discord message {@code messageId}. */
     public static void bind(String messageId, UUID sender, String raw) {
         long now = System.currentTimeMillis();
-        for (Iterator<Recent> it = RECENT.iterator(); it.hasNext(); ) {
+        for (ListIterator<Recent> it = RECENT.listIterator(); it.hasNext(); ) {
             Recent r = it.next();
             if (now - r.atMs() > BIND_WINDOW_MS) break; // newest first: everything after is older still
-            if (!r.sender().equals(sender) || !r.raw().equals(raw)) continue;
-            it.remove();
-            LINES.put("d:" + messageId, new Line(r.source(), r.shown(), r.pending(), sender.equals(me()), snippet(raw)));
+            if (r.onDiscord() || !r.sender().equals(sender) || !r.raw().equals(raw)) continue;
+            it.set(new Recent(r.sender(), r.raw(), r.line(), r.atMs(), true, r.onLive()));
+            LINES.put("d:" + messageId, r.line());
             return;
         }
+    }
+
+    /**
+     * This player's own chat line, Live seq {@code seq} with text {@code content}, shows {@code flags} before its text,
+     * redrawn in place with its reaction chips kept. That line is printed by vanilla chat, not as a Live line, so the
+     * first call finds it among the recent ones. A separate key from {@code live:}, so Live reactions stay off it. One
+     * printed as a Live line (sent from the website, linked to this player) keeps its {@code live:} key. False when it
+     * is not there (it scrolled out, or the relay's text differs from what the server echoed).
+     */
+    public static boolean flagOwn(long seq, String content, Component flags) {
+        Line line = ownLine(seq);
+        if (line == null) line = bindOwn(seq, content);
+        if (line == null) return false;
+        line.ownFlags = flags;
+        return drawOwn(line, content, content);
+    }
+
+    /** Line {@code seq} of this player's own, {@link #flagOwn flagged}: reads {@code shown} now, its flags kept. */
+    public static void showOwn(long seq, String content, String shown) {
+        Line line = ownLine(seq);
+        if (line != null && line.ownFlags != null) drawOwn(line, content, shown);
+    }
+
+    @Nullable
+    private static Line ownLine(long seq) {
+        Line own = LINES.get("own:" + seq);
+        return own != null ? own : LINES.get("live:" + seq);
+    }
+
+    private static boolean drawOwn(Line line, String content, String shown) {
+        Component body = Component.empty().append(line.ownFlags).append(" ").append(Component.literal(shown));
+        Component swapped = ChatBodySwap.withBody(line.printed, content, body);
+        // A line reformatted past recognising keeps its words: the flags go after them, and a hover changes nothing.
+        line.source = swapped != null ? swapped : Component.empty().append(line.printed).append(" ").append(line.ownFlags);
+        return redraw(line) >= 0;
+    }
+
+    @Nullable
+    private static Line bindOwn(long seq, String content) {
+        UUID me = me();
+        if (me == null) return null;
+        long now = System.currentTimeMillis();
+        // Oldest first: two identical lines go out, and come back, in the order they were typed.
+        for (ListIterator<Recent> it = RECENT.listIterator(RECENT.size()); it.hasPrevious(); ) {
+            Recent r = it.previous();
+            if (now - r.atMs() > BIND_WINDOW_MS || r.onLive()) continue;
+            if (!r.sender().equals(me) || !r.raw().strip().equals(content)) continue;
+            it.set(new Recent(r.sender(), r.raw(), r.line(), r.atMs(), r.onDiscord(), true));
+            LINES.put("own:" + seq, r.line());
+            return r.line();
+        }
+        return null;
     }
 
     /** Print a Discord reply / Developer message the server sent with its Discord id. */
@@ -143,7 +199,7 @@ public final class ChatReactionTracker {
 
     /** The Live ring restarted or the client left the stream: its seqs mean nothing now. */
     public static void forgetLive() {
-        LINES.keySet().removeIf(k -> k.startsWith("live:"));
+        LINES.keySet().removeIf(k -> k.startsWith("live:") || k.startsWith("own:"));
     }
 
     /** Logout / world change. */
@@ -216,13 +272,8 @@ public final class ChatReactionTracker {
             redraw(e.getValue());
             if (e.getKey().startsWith("e:") && e.getValue().pendingEmoji.isEmpty()) LINES.remove(e.getKey());
         }
-        for (int i = 0; i < RECENT.size(); i++) {
-            Recent r = RECENT.get(i);
-            if (!r.pending().contains(id)) continue;
-            EmojiText.Result c = EmojiText.convert(r.source());
-            Component next = c.component() == r.source() ? r.source().copy() : c.component();
-            ChatLineEditor.replace(r.shown(), next);
-            RECENT.set(i, new Recent(r.sender(), r.raw(), r.source(), next, c.pendingIds(), r.atMs()));
+        for (Recent r : RECENT) {
+            if (r.line().pendingEmoji.contains(id)) redraw(r.line()); // a line also in LINES is done by now
         }
     }
 

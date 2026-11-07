@@ -761,6 +761,8 @@
   "chat.dungeontrain.live_chat.translation": "    ↳ %s",
   "chat.dungeontrain.live_chat.translation.named": "    ↳ %s: %s",
   "chat.dungeontrain.live_chat.translation.original": "Orihinal: %s",
+  "chat.dungeontrain.live_chat.translation.flip_hide": "Isinalin. I-click para itago ang salin",
+  "chat.dungeontrain.live_chat.translation.flip_show": "I-click para isalin",
   "chat.dungeontrain.live_chat.translation.on": "Isinasalin ang live chat sa %s. Baguhin kung paano ito lumalabas sa %s",
   "chat.dungeontrain.live_chat.translation.path": "Mga Opsyon / Dungeon Train / Stream / Mga salin ng chat",
   "chat.dungeontrain.live_chat.translated": "Isinalin",
