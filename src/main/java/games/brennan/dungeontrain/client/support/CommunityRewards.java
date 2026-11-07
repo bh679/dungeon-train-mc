@@ -102,6 +102,16 @@ public final class CommunityRewards {
         return state.active(reward.id(), now);
     }
 
+    /** Whether a gift's month of {@code reward} is running: free credits leave a new gift starting now, not queued. */
+    static boolean giftRunning(LiveRewards state, Reward reward, long now) {
+        return active(state, reward, now) && !state.find(reward.id()).free();
+    }
+
+    /** Whether {@code reward} is on through free credits, thanking {@link LiveRewards.Reward#by()} instead of a giver. */
+    static boolean onFreeCredits(LiveRewards state, Reward reward, long now) {
+        return active(state, reward, now) && state.find(reward.id()).free();
+    }
+
     /**
      * When the next gift to {@code reward} would start: now when it is off, else after its current
      * term and every term already queued behind it. Mirrors the relay's stacking
