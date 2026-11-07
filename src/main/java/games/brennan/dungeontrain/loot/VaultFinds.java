@@ -86,8 +86,9 @@ public final class VaultFinds {
     private static void find(ServerPlayer player, VaultRarity.Kind kind, ResourceLocation id, ItemStack stack) {
         UUID claim = UUID.randomUUID();
         String name = player.getGameProfile().getName();
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.put(TAG, claimTag(claim)));
         if (kind.numbered()) {
+            // A plain vault's find only counts: it is left exactly as rolled.
+            CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.put(TAG, claimTag(claim)));
             String date = LocalDate.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_LOCAL_DATE);
             writeLore(stack, withLine(lore(stack), -1, styled(Component.translatable(LORE_PULLED_BY, name, date))));
         }
