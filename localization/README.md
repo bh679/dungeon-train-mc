@@ -45,6 +45,16 @@ player-visible counterparts are the [manifests](#shipped-manifests) and
   "% translated" a player sees (Credits, the website). A translator's own count still
   includes the editor lines they did, so their share can pass 100%.
 
+  **Two PRs adding keys at once.** Each branch's `--sync` moves every count by the same
+  amount, so when both merge git keeps that identical edit once and main's counts fall short
+  (#2541). Nothing to do by hand: `version-bump.yml` runs `stamp-provenance.py --refresh`
+  after every merge and commits the regenerated counts with the bump, and on `main`
+  `build.yml` judges the counts as that refresh leaves them. `--refresh` rewrites only the
+  generated files (credit counts, `translation_contributors.json`, the manifests), never a
+  sidecar, so no author or reviewer can move. PRs stay strict. To see it happen,
+  `python3 scripts/localization/repro-collapsed-counts.py` merges two key-adding branches in
+  both orders in a throwaway clone.
+
 ## Schema
 
 Flat JSON object, one entry per line, **keys in the same order as the locale's lang

@@ -38,10 +38,19 @@ check-provenance.py fails hard when either drifts, so never hand-edit them:
     Those manifests span the narrative books too, so they are rebuilt globally
     regardless of any --namespace / --locale filter.
 
+  Derived files only (no sidecar or lang file is written, so no author/reviewer moves):
+      python3 scripts/localization/stamp-provenance.py --refresh
+    Rebuilds just the generated files below from the sidecars as they stand. version-bump.yml
+    runs it on main after every merge: two PRs that each add a key from the same base both
+    write the SAME count edit (5678 -> 5679), git keeps it once, and main would ship counts
+    one short (#2541). Needs the complete checkout: the manifests span the narrative books
+    under src/main/resources/data, and a copy without them would drop those entries.
+
 There is no --dry-run: sidecars are git-tracked, so ``git diff`` is the dry run.
 
 Usage:
   python3 scripts/localization/stamp-provenance.py --sync --author NAME
+  python3 scripts/localization/stamp-provenance.py --refresh
   python3 scripts/localization/stamp-provenance.py [--locale L ...] \
       [--author NAME] [--reviewer NAME] (--keys K ... | --prefix P | --all)
 """
@@ -183,7 +192,7 @@ def process_locale(locale: str, lang_dir: Path, prov_dir: Path,
         prov = stamp_locale(prov, targets, args.author, args.reviewer, english)
         stamped = len(targets)
 
-    parts = []
+    parts = ["counts only"] if not (args.sync or args.selecting) else []
     if args.sync:
         parts.append(f"added {added}, removed {removed}, order synced")
     if args.selecting:
@@ -228,7 +237,9 @@ def run_namespace(ns: provenance_io.Namespace, args: argparse.Namespace,
             print(f"Provenance stamp FAILED:\n  - {label}: {exc}", file=sys.stderr)
             return 1
     for locale, prov, summary in results:
-        provenance_io.write_provenance(ns.prov_dir / f"{locale}.json", prov)
+        # --refresh alone never writes a sidecar: it must not be able to move a credit.
+        if args.sync or args.selecting:
+            provenance_io.write_provenance(ns.prov_dir / f"{locale}.json", prov)
         if ns.credits_dir is not None:
             stamped = refresh_credit_counts(locale, prov, authors, ns.credits_dir)
             if stamped:
@@ -290,6 +301,9 @@ def main(argv: list[str] | None = None) -> int:
                         help="restrict to specific locale(s); default all non-en_us")
     parser.add_argument("--sync", action="store_true",
                         help="align each sidecar's key set + order to its lang file")
+    parser.add_argument("--refresh", action="store_true",
+                        help="only regenerate the derived count/credit/manifest files from "
+                             "the sidecars as they stand (implied by --sync and any stamp)")
     parser.add_argument("--author", help="author name: fills new keys under --sync, "
                                          "restamps selected keys with --keys/--prefix/--all")
     parser.add_argument("--reviewer", help="reviewer name for the selected keys")
@@ -309,8 +323,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.reviewer is not None and not args.selecting:
         print("ERROR: --reviewer needs a selection (--keys / --prefix / --all)", file=sys.stderr)
         return 2
-    if not args.sync and not args.selecting:
-        print("ERROR: nothing to do — pass --sync and/or a stamp selection", file=sys.stderr)
+    if not args.sync and not args.selecting and not args.refresh:
+        print("ERROR: nothing to do — pass --sync, --refresh and/or a stamp selection",
+              file=sys.stderr)
         return 2
 
     if not args.authors_file.is_file():

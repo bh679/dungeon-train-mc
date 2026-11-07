@@ -230,6 +230,22 @@ jobs:
             | sed 's/\.json$//' | grep -v '^en_us$' | tr '\n' ' ')
           python3 scripts/localization/validate-locale.py $locales
 
+      # Main only. Two PRs that each add a key from the same base both write the SAME count edit
+      # (5678 -> 5679) to the generated credit/contributor files, and git keeps it once (#2541).
+      # The merge commit is right, its counts are one short, and version-bump.yml commits the
+      # regenerated counts with the bump. So on main the check below judges the counts as that
+      # bump will leave them. PRs skip this and stay strict: a branch that forgets to stamp fails.
+      - name: Regenerate translation counts as version-bump will (main only)
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          python3 scripts/localization/stamp-provenance.py --refresh > /dev/null
+          CHANGED=$(git status --porcelain -- src/main/resources/assets/dungeontrain)
+          if [ -n "$CHANGED" ]; then
+            echo "::notice::This merge left the translation counts stale; version-bump.yml regenerates them:"
+            echo "$CHANGED"
+          fi
+
       - name: Per-line translation provenance aligned with lang files (all namespaces)
         run: python3 scripts/localization/check-provenance.py
 

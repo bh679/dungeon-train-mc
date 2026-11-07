@@ -414,6 +414,42 @@ def test_output_format_lock():
     assert open(path, "rb").read() == first
 
 
+def test_refresh_corrects_counts_collapsed_by_a_merge():
+    # Two branches each moved total_keys 2 -> 3; git kept the identical edit once.
+    collapsed = dict(CREDIT, total_keys=2, ai_authored=1, ai_unreviewed=1, counted_keys=2)
+    lang_dir, prov_dir = workspace(credits={"xx_yy": collapsed})
+    proc = run(lang_dir, prov_dir, "--refresh")
+    assert proc.returncode == 0, proc.stderr
+    credit = read_credit(lang_dir)
+    assert (credit["total_keys"], credit["ai_authored"], credit["ai_unreviewed"]) == (3, 2, 2)
+    assert "counts refreshed in xx_yy.json" in proc.stdout
+    assert read_contributors(lang_dir)  # the global credits file is rebuilt too
+
+
+def test_refresh_never_writes_a_sidecar():
+    # Out of lang order AND missing c.key: a --sync would rewrite this file, --refresh must not.
+    prov = {"b.key": PROV["b.key"], "a.key": PROV["a.key"]}
+    lang_dir, prov_dir = workspace(prov=prov, credits={"xx_yy": CREDIT})
+    path = os.path.join(prov_dir, "xx_yy.json")
+    before = open(path, "rb").read()
+    proc = run(lang_dir, prov_dir, "--refresh")
+    assert proc.returncode == 0, proc.stderr  # no --author needed: nothing is added
+    assert open(path, "rb").read() == before
+    assert read(prov_dir)["b.key"] == {"author": "老本願", "reviewer": "老本願", "source_hash": ""}
+
+
+def test_refresh_on_a_current_tree_writes_nothing():
+    lang_dir, prov_dir = workspace(credits={"xx_yy": CREDIT})
+    assert run(lang_dir, prov_dir, "--sync", "--author", "unused").returncode == 0
+    ws = os.path.dirname(lang_dir)
+    files = [credit_path(lang_dir), os.path.join(ws, "translation_contributors.json")]
+    before = [open(f, "rb").read() for f in files]
+    proc = run(lang_dir, prov_dir, "--refresh")
+    assert proc.returncode == 0, proc.stderr
+    assert "counts refreshed" not in proc.stdout and "regenerated" not in proc.stdout
+    assert [open(f, "rb").read() for f in files] == before
+
+
 def _main():
     funcs = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failures = 0
