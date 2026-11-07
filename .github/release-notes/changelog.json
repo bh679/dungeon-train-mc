@@ -33884,6 +33884,82 @@
       "released": true,
       "released_in": "v0.1698.0",
       "released_at": "2026-11-06T21:41:48Z"
+    },
+    {
+      "id": "clearer-lag-reports",
+      "version": "0.1701.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Clearer lag reports",
+      "summary": "Bug reports now say more about what caused a slow moment, so lag can be tracked down faster.",
+      "highlights": [],
+      "pr": 2532,
+      "date": "2026-11-07",
+      "released": true,
+      "released_in": "v0.1702.0",
+      "released_at": "2026-11-07T06:21:57Z"
+    },
+    {
+      "id": "end-band-faster-generation",
+      "version": "0.1702.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Smoother world generation",
+      "summary": "One of the stranger stretches of the journey now generates new ground much faster, so the long freezes as you ride into it should be far rarer. A few caves in newly generated ground may come out slightly differently.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2533,
+      "date": "2026-11-07",
+      "released": true,
+      "released_in": "v0.1702.0",
+      "released_at": "2026-11-07T06:21:57Z"
+    },
+    {
+      "id": "fewer-carriage-freezes",
+      "version": "0.1699.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "train"
+      ],
+      "title": "Fewer long freezes",
+      "summary": "Removed a rare long freeze that could hit as carriages came back into range, most often just after leaving a dimensional carriage.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2531,
+      "date": "2026-11-07",
+      "released": true,
+      "released_in": "v0.1702.0",
+      "released_at": "2026-11-07T06:21:57Z"
+    },
+    {
+      "id": "live-chat-translated-label",
+      "version": "0.1699.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Translated label in Live Eye chat",
+      "summary": "Live Eye chat now shows a small label while translated messages are on screen, so it's clear when you're reading a translation.",
+      "highlights": [
+        "In game, it sits just above your chat and fades with it",
+        "On the website, it shows under the chat's title, and also covers translations made by your browser"
+      ],
+      "pr": 2530,
+      "date": "2026-11-07",
+      "released": true,
+      "released_in": "v0.1702.0",
+      "released_at": "2026-11-07T06:21:57Z"
     }
   ]
 }

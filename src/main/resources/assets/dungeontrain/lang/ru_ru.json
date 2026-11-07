@@ -830,6 +830,8 @@
   "chat.dungeontrain.live_chat.translation": "    ↳ %s",
   "chat.dungeontrain.live_chat.translation.named": "    ↳ %s: %s",
   "chat.dungeontrain.live_chat.translation.original": "Оригинал: %s",
+  "chat.dungeontrain.live_chat.translation.flip_hide": "Переведено. Нажмите, чтобы скрыть перевод",
+  "chat.dungeontrain.live_chat.translation.flip_show": "Нажмите, чтобы перевести",
   "chat.dungeontrain.live_chat.translation.on": "Чат эфира переводится на %s. Изменить отображение: %s",
   "chat.dungeontrain.live_chat.translation.path": "Настройки / Dungeon Train / Стрим / Перевод чата",
   "chat.dungeontrain.live_chat.translated": "Переведено",

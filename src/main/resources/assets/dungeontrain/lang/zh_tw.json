@@ -761,6 +761,8 @@
   "chat.dungeontrain.live_chat.translation": "    ↳ %s",
   "chat.dungeontrain.live_chat.translation.named": "    ↳ %s：%s",
   "chat.dungeontrain.live_chat.translation.original": "原文：%s",
+  "chat.dungeontrain.live_chat.translation.flip_hide": "已翻譯。點擊隱藏譯文",
+  "chat.dungeontrain.live_chat.translation.flip_show": "點擊翻譯",
   "chat.dungeontrain.live_chat.translation.on": "直播聊天正在翻譯成%s。在%s中更改顯示方式",
   "chat.dungeontrain.live_chat.translation.path": "選項 / Dungeon Train / 直播 / 聊天翻譯",
   "chat.dungeontrain.live_chat.translated": "已翻譯",

@@ -793,6 +793,8 @@
   "chat.dungeontrain.live_chat.translation": "    ↳ %s",
   "chat.dungeontrain.live_chat.translation.named": "    ↳ %s: %s",
   "chat.dungeontrain.live_chat.translation.original": "Originale: %s",
+  "chat.dungeontrain.live_chat.translation.flip_hide": "Tradotto. Clicca per nascondere la traduzione",
+  "chat.dungeontrain.live_chat.translation.flip_show": "Clicca per tradurre",
   "chat.dungeontrain.live_chat.translation.on": "La chat live viene tradotta in %s. Cambia come appare in %s",
   "chat.dungeontrain.live_chat.translation.path": "Opzioni / Dungeon Train / Diretta / Traduzioni della chat",
   "chat.dungeontrain.live_chat.translated": "Tradotto",

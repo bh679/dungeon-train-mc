@@ -862,6 +862,8 @@
   "chat.dungeontrain.live_chat.translation": "    \u21b3 %s",
   "chat.dungeontrain.live_chat.translation.named": "    \u21b3 %s: %s",
   "chat.dungeontrain.live_chat.translation.original": "Original: %s",
+  "chat.dungeontrain.live_chat.translation.flip_hide": "Translated. Click to hide the translation",
+  "chat.dungeontrain.live_chat.translation.flip_show": "Click to translate",
   "chat.dungeontrain.live_chat.translation.on": "Live chat is being translated into %s. Change how it shows in %s",
   "chat.dungeontrain.live_chat.translation.path": "Options / Dungeon Train / Stream / Chat translations",
   "chat.dungeontrain.live_chat.translated": "Translated",
