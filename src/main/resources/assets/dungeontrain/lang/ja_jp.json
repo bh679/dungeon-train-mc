@@ -4966,6 +4966,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": "アンデッドに +%s",
   "tooltip.dungeontrain.enchant_damage.arthropods": "虫系に +%s",
   "tooltip.dungeontrain.enchant_damage.aquatic": "水生生物に +%s",
+  "attribute.name.adventureitemstats.ranged_damage": "遠距離ダメージ",
   "chat.dungeontrain.free_play.cause.portal_rate": "このワールドでは、次元車両の出現頻度が変更されています。",
   "chat.dungeontrain.free_play.portal_rate_changed": "このワールドが生成する線路は、もう Dungeon Train が調整対象としているものではありません。そのためこのワールドはフリープレイのままになります。",
   "chat.dungeontrain.free_play.cause.dt_config": "Dungeon Train の難易度設定が変更されています。",

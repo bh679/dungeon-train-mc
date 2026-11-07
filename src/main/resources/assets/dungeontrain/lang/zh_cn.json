@@ -4980,6 +4980,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": "对亡灵 +%s",
   "tooltip.dungeontrain.enchant_damage.arthropods": "对节肢生物 +%s",
   "tooltip.dungeontrain.enchant_damage.aquatic": "对水生生物 +%s",
+  "attribute.name.adventureitemstats.ranged_damage": "远程伤害",
   "chat.dungeontrain.free_play.cause.portal_rate": "本世界中维度车厢出现的频率已被更改。",
   "chat.dungeontrain.free_play.portal_rate_changed": "本世界生成的列车路线已偏离《地牢列车》的默认平衡设定，因此将始终处于自由模式。",
   "chat.dungeontrain.free_play.cause.dt_config": "《地牢列车》的难度设置已被更改。",

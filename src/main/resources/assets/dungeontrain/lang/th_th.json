@@ -4966,6 +4966,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": "+%s ต่ออันเดด",
   "tooltip.dungeontrain.enchant_damage.arthropods": "+%s ต่อสัตว์ขาปล้อง",
   "tooltip.dungeontrain.enchant_damage.aquatic": "+%s ต่อสัตว์น้ำ",
+  "attribute.name.adventureitemstats.ranged_damage": "ความเสียหายระยะไกล",
   "chat.dungeontrain.free_play.cause.portal_rate": "ความถี่ที่ตู้ข้ามมิติจะปรากฏถูกเปลี่ยนไปในโลกนี้",
   "chat.dungeontrain.free_play.portal_rate_changed": "รางที่โลกนี้สร้างขึ้นไม่ใช่รางที่ Dungeon Train ปรับสมดุลไว้อีกต่อไป โลกนี้จึงยังอยู่ในโหมดเล่นอิสระ",
   "chat.dungeontrain.free_play.cause.dt_config": "การตั้งค่าความยากของ Dungeon Train ถูกเปลี่ยนไป",

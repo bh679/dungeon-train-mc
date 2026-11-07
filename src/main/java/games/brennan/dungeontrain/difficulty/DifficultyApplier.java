@@ -8,6 +8,7 @@ import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.HolderSet;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -163,6 +164,8 @@ public final class DifficultyApplier {
                     ItemStatLevelScaling.pastCapTier(tierIndex, ProceduralTiers.MATERIAL_CAP_LEVEL);
         };
 
+        int heldBowStatTier = ItemStatLevelScaling.heldBowTier(statScaling != StatScaling.NONE, tierIndex);
+
         boolean armorOk = supportsArmor(mob);
         ServerLevel serverLevel = mob.level() instanceof ServerLevel sl ? sl : null;
         HolderLookup.Provider registries = serverLevel != null ? serverLevel.registryAccess() : null;
@@ -172,7 +175,7 @@ public final class DifficultyApplier {
             applyArmorSlot(mob, EquipmentSlot.CHEST, tier.armor().chestplate(), tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier, tierIndex);
             applyArmorSlot(mob, EquipmentSlot.LEGS,  tier.armor().leggings(),   tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier, tierIndex);
             applyArmorSlot(mob, EquipmentSlot.FEET,  tier.armor().boots(),      tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier, tierIndex);
-            applyWeaponSlot(mob, tier.weapon().mainhand(), tier.weapon().chance(), tier.enchant(), registries, rng, statScalingTier, tierIndex);
+            applyWeaponSlot(mob, tier.weapon().mainhand(), tier.weapon().chance(), tier.enchant(), registries, rng, statScalingTier, heldBowStatTier, tierIndex);
             applyToolSlot(mob, tier.enchant(), registries, rng, statScalingTier, tierIndex);
         }
 
@@ -259,9 +262,9 @@ public final class DifficultyApplier {
      * <em>empty</em> mainhand (weighted-pick the tier weapon, enchant, name, drop
      * chance). When the mob already holds a <em>ranged</em> weapon — a bow or
      * crossbow from its vanilla default equipment ({@code finalizeSpawn}) — the
-     * weapon is kept and merely enchanted with the tier enchant, so higher tiers
-     * scale a skeleton's bow / pillager's crossbow instead of swapping it for a
-     * melee weapon (which would strip the mob of its ranged attack). Any other
+     * weapon is kept, enchanted with the tier enchant and rolled for AIS Ranged Damage,
+     * so higher tiers scale a skeleton's bow / pillager's crossbow instead of swapping
+     * it for a melee weapon (which would strip the mob of its ranged attack). Any other
      * pre-existing mainhand (melee default, author-baked) is left untouched — the
      * same "empty slots only" contract the armor slots honour.
      */
@@ -272,11 +275,13 @@ public final class DifficultyApplier {
                                         HolderLookup.Provider registries,
                                         RandomSource rng,
                                         int statScalingTier,
+                                        int heldBowStatTier,
                                         int tierIndex) {
         ItemStack current = mob.getItemBySlot(EquipmentSlot.MAINHAND);
         if (!current.isEmpty()) {
             if (isRangedWeapon(current)) {
                 maybeEnchant(current, enchant, registries, rng, tierIndex);
+                rollHeldBow(current, rng, heldBowStatTier);
                 mob.setItemSlot(EquipmentSlot.MAINHAND, current);
             }
             return;
@@ -288,6 +293,12 @@ public final class DifficultyApplier {
         if (stack == null) return;
         mob.setItemSlot(EquipmentSlot.MAINHAND, stack);
         mob.setDropChance(EquipmentSlot.MAINHAND, DIFFICULTY_DROP_CHANCE);
+    }
+
+    /** AIS stats for a bow from default equipment. A bow already carrying its own stats (author-baked) keeps them. */
+    private static void rollHeldBow(ItemStack bow, RandomSource rng, int heldBowStatTier) {
+        if (bow.getComponentsPatch().get(DataComponents.ATTRIBUTE_MODIFIERS) != null) return;
+        StatsModifier.applyStats(bow, rng, ItemStatLevelScaling.primaryStatBonus(bow, heldBowStatTier));
     }
 
     /**

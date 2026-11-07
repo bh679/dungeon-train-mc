@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.difficulty;
 
 import games.brennan.dungeontrain.block.VaultGreen;
+import games.brennan.adventureitemstats.api.StatsModifier;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -80,7 +81,7 @@ public final class VaultStatBoost {
         return out;
     }
 
-    /** {@code entry} at {@code tier}; the entry itself unless it is an added amount of one of the four stats. */
+    /** {@code entry} at {@code tier}; the entry itself unless it is an added amount of one of the combat stats. */
     private static ItemAttributeModifiers.Entry boosted(ItemAttributeModifiers.Entry entry, Tier tier) {
         AttributeModifier modifier = entry.modifier();
         if (modifier.operation() != AttributeModifier.Operation.ADD_VALUE) return entry;
@@ -89,6 +90,8 @@ public final class VaultStatBoost {
         if (attribute.equals(Attributes.ATTACK_DAMAGE)) {
             amount = boostedAmount(PLAYER_BASE_ATTACK_DAMAGE, modifier.amount(), tier.primary);
         } else if (attribute.equals(Attributes.ARMOR)) {
+            amount = boostedAmount(0.0, modifier.amount(), tier.primary);
+        } else if (isRangedDamage(attribute)) {
             amount = boostedAmount(0.0, modifier.amount(), tier.primary);
         } else if (attribute.equals(Attributes.ATTACK_SPEED)) {
             amount = boostedAmount(PLAYER_BASE_ATTACK_SPEED, modifier.amount(), tier.secondary);
@@ -99,6 +102,12 @@ public final class VaultStatBoost {
         }
         AttributeModifier scaled = new AttributeModifier(modifier.id(), amount, modifier.operation());
         return new ItemAttributeModifiers.Entry(attribute, scaled, entry.slot());
+    }
+
+    private static boolean isRangedDamage(Holder<Attribute> attribute) {
+        return StatsModifier.rangedDamageAttribute()
+            .filter(ranged -> ranged.value() == attribute.value())
+            .isPresent();
     }
 
     /** The modifier amount that makes {@code playerBase + amount} worth {@code multiplier} times as much. Pure. */
