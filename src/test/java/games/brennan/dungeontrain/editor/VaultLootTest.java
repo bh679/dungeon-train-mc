@@ -9,8 +9,11 @@ import net.minecraft.data.registries.VanillaRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.Bootstrap;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.VaultBlock;
+import net.minecraft.world.level.block.entity.vault.VaultBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -35,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class VaultLootTest {
 
     private static final ResourceLocation DIAMOND = ResourceLocation.withDefaultNamespace("diamond");
+    private static final ResourceLocation EMERALD = ResourceLocation.withDefaultNamespace("emerald");
     private static final BlockPos CELL = new BlockPos(3, 0, 2);
     private static final long SEED = 12345L;
 
@@ -259,6 +263,77 @@ final class VaultLootTest {
         UUID b = UUID.fromString("00000000-0000-0000-0000-000000000002");
         assertEquals(VaultLoot.playerSalt(a), VaultLoot.playerSalt(a));
         assertNotEquals(VaultLoot.playerSalt(a), VaultLoot.playerSalt(b));
+    }
+
+    @Test
+    @DisplayName("the shown item's entries double, every other entry stays, and the rest of the pool is kept")
+    void shownItemWeightDoubles() {
+        ContainerContentsEntry diamond = new ContainerContentsEntry(DIAMOND, 2, 3).withEnchantmentChance(77);
+        ContainerContentsEntry diamondAgain = new ContainerContentsEntry(DIAMOND, 5, 4);
+        ContainerContentsEntry emerald = new ContainerContentsEntry(EMERALD, 1, 5);
+        ContainerContentsPool pool = new ContainerContentsPool(
+            List.of(diamond, emerald, diamondAgain), 1, 3, VaultLoot.GREEN_KEY);
+
+        ContainerContentsPool boosted = VaultLoot.withShownItemBoosted(pool, new ItemStack(Items.DIAMOND));
+
+        assertEquals(List.of(diamond.withWeight(6), emerald, diamondAgain.withWeight(8)), boosted.entries());
+        assertEquals(1, boosted.fillMin());
+        assertEquals(3, boosted.fillMax());
+        assertEquals(VaultLoot.GREEN_KEY, boosted.vaultKey());
+        assertEquals(List.of(diamond, emerald, diamondAgain), pool.entries(), "the cached pool is not touched");
+    }
+
+    @Test
+    @DisplayName("nothing on show, or an item the pool lacks, changes no weight")
+    void noShownItemNoBoost() {
+        ContainerContentsPool pool = new ContainerContentsPool(
+            List.of(new ContainerContentsEntry(DIAMOND, 1, 1), ContainerContentsEntry.air(2)));
+        assertSame(pool, VaultLoot.withShownItemBoosted(pool, ItemStack.EMPTY));
+        assertEquals(pool.entries(), VaultLoot.withShownItemBoosted(pool, new ItemStack(Items.EMERALD)).entries());
+    }
+
+    @Test
+    @DisplayName("of two equal items, the one on show lands about two thirds of the time")
+    void shownItemWinsTwoThirds() {
+        ContainerContentsPool pool = new ContainerContentsPool(List.of(
+            new ContainerContentsEntry(DIAMOND, 1, 1), new ContainerContentsEntry(EMERALD, 1, 1)));
+        ContainerContentsPool boosted = VaultLoot.withShownItemBoosted(pool, new ItemStack(Items.EMERALD));
+
+        int rolls = 30_000;
+        int emeralds = 0;
+        for (int seed = 0; seed < rolls; seed++) {
+            ContainerContentsEntry picked = ContainerContentsRoller.pickFiltered(boosted, e -> true, CELL, seed, 0, 0);
+            if (picked.itemId().equals(EMERALD)) emeralds++;
+        }
+        assertEquals(2.0 / 3.0, emeralds / (double) rolls, 0.02);
+    }
+
+    /** Share of 3000 players whose one-item reward from a real vault showing {@code shown} is an emerald. */
+    private static double emeraldShare(ItemStack shown) {
+        ContainerContentsPool pool = new ContainerContentsPool(List.of(
+            new ContainerContentsEntry(DIAMOND, 1, 1), new ContainerContentsEntry(EMERALD, 1, 1)),
+            1, 1, ContainerContentsPool.DEFAULT_VAULT_KEY);
+        CompoundTag placed = VaultLoot.writeVault(pool, CELL, SEED, 0, 0, null, registries);
+        VaultBlockEntity vault = new VaultBlockEntity(BlockPos.ZERO, Blocks.VAULT.defaultBlockState());
+        vault.getPersistentData().put(VaultLoot.TAG_VAULT,
+            placed.getCompound("NeoForgeData").getCompound(VaultLoot.TAG_VAULT));
+        vault.getSharedData().setDisplayItem(shown);
+
+        int players = 3000;
+        int emeralds = 0;
+        for (int i = 0; i < players; i++) {
+            List<ItemStack> reward = VaultLoot.rollForPlayer(vault, new UUID(i * 31L, i), registries).orElseThrow();
+            if (reward.get(0).is(Items.EMERALD)) emeralds++;
+        }
+        return emeralds / (double) players;
+    }
+
+    @Test
+    @DisplayName("a real vault's reward leans to the item it is showing, and is even with nothing on show")
+    void rollReadsTheVaultsShownItem() {
+        assertEquals(0.5, emeraldShare(ItemStack.EMPTY), 0.05);
+        assertEquals(2.0 / 3.0, emeraldShare(new ItemStack(Items.EMERALD)), 0.05);
+        assertEquals(1.0 / 3.0, emeraldShare(new ItemStack(Items.DIAMOND)), 0.05);
     }
 
     @Test

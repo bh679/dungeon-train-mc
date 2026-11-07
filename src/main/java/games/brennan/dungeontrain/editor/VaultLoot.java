@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.VaultBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.vault.VaultBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nullable;
@@ -34,9 +35,12 @@ import java.util.UUID;
  *
  * <p><b>Rolled per player, not at placement.</b> Placement ({@link #writeVault}) stores the pool
  * and its roll frame in the block entity's NeoForge data; {@code VaultServerMixin} rolls it when a
- * player unlocks the vault, salted with that player's UUID, so two players get two rewards while
- * one player gets the same reward from the same vault every time. Vanilla keeps doing the rest:
- * checking and taking the key, and remembering who has been rewarded.</p>
+ * player unlocks the vault, salted with that player's UUID, so two players get two rewards. Vanilla
+ * keeps doing the rest: checking and taking the key, and remembering who has been rewarded.</p>
+ *
+ * <p><b>The item on show counts.</b> Whatever the vault is showing when the key goes in has its
+ * weight multiplied by {@link #SHOWN_ITEM_WEIGHT_MULTIPLIER} for that roll
+ * ({@link #withShownItemBoosted}).</p>
  *
  * <p>A vault with no authored pool takes the bundled {@link #DEFAULT_PREFAB} (or
  * {@link #OMINOUS_PREFAB}), hand-copied from vanilla's trial-chamber reward tables, every time.
@@ -47,6 +51,9 @@ public final class VaultLoot {
 
     /** Most items one player gets from one unlock: the pool's fill range is clamped to this. */
     public static final int VAULT_SLOTS = 9;
+
+    /** How much heavier the item on show when the key goes in weighs in that player's roll. */
+    static final int SHOWN_ITEM_WEIGHT_MULTIPLIER = 2;
 
     public static final String OMINOUS_KEY = "minecraft:ominous_trial_key";
     public static final String GREEN_KEY = "dungeontrain:dungeon_trial_key";
@@ -230,16 +237,37 @@ public final class VaultLoot {
         long seed = vault.getLong(TAG_SEED) ^ playerSalt(player);
         int carriage = vault.getInt(TAG_CARRIAGE);
         int diff = vault.getInt(TAG_DIFF);
-        // At least one item: vanilla refuses the key on an empty reward, and the roll is the same
-        // for this player every time, so an empty one would lock them out of this vault for good.
+        // At least one item: vanilla refuses the key on an empty reward, and the fill roll is the
+        // same for this player every time, so an empty one could lock them out of this vault for good.
         ContainerContentsPool atLeastOne = pool.withFillMin(Math.max(1, pool.fillMin()));
-        List<ItemStack> rolled = ContainerContentsRoller.rollStacks(atLeastOne, VAULT_SLOTS, localPos, seed,
+        ContainerContentsPool boosted = withShownItemBoosted(atLeastOne, shownItem(be));
+        List<ItemStack> rolled = ContainerContentsRoller.rollStacks(boosted, VAULT_SLOTS, localPos, seed,
             carriage, diff, registries);
         if (rolled.isEmpty()) {
             rolled = ContainerContentsRoller.rollStacks(defaultPool(pool.vaultKey()), VAULT_SLOTS, localPos, seed,
                 carriage, diff, registries);
         }
         return Optional.of(rolled);
+    }
+
+    /** What {@code be} is showing right now. Vanilla rolls the reward before unlocking, so this is still it. */
+    private static ItemStack shownItem(BlockEntity be) {
+        return be instanceof VaultBlockEntity vault ? vault.getSharedData().getDisplayItem() : ItemStack.EMPTY;
+    }
+
+    /**
+     * {@code pool} with every entry of {@code shown}'s item {@link #SHOWN_ITEM_WEIGHT_MULTIPLIER}
+     * times as heavy. By item, not entry: the player sees "a diamond", whichever entry showed it.
+     * Nothing on show leaves the pool as it is.
+     */
+    static ContainerContentsPool withShownItemBoosted(ContainerContentsPool pool, ItemStack shown) {
+        if (shown.isEmpty()) return pool;
+        List<ContainerContentsEntry> entries = pool.entries().stream()
+            .map(e -> ContainerContentsRoller.resolveItem(e.itemId()) == shown.getItem()
+                ? e.withWeight(e.weight() * SHOWN_ITEM_WEIGHT_MULTIPLIER)
+                : e)
+            .toList();
+        return new ContainerContentsPool(entries, pool.fillMin(), pool.fillMax(), pool.vaultKey());
     }
 
     /** Seed salt for one player: distinct per UUID, stable across sessions. */
