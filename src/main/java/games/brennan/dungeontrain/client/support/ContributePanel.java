@@ -78,7 +78,7 @@ public final class ContributePanel {
 
     private static final int COLOUR_WHITE = 0xFFFFFFFF;
     private static final int COLOUR_YOU = 0xFF8FE08A;
-    private static final int COLOUR_ON = 0xFF8FE08A;
+    static final int COLOUR_ON = 0xFF8FE08A;
     private static final int COLOUR_REWARDS_TITLE = 0xB99BF0;
     private static final int COLOUR_GIVE_NOTE = 0xFFF0B35A;
     private static final int COLOUR_RAISED = 0xFFA0A0A0;
@@ -271,7 +271,7 @@ public final class ContributePanel {
             cardH = h;
             int gx = x + w - sideW - CARD_PAD;
             int gy = y + (h - sideH) / 2;
-            giveOnCard = giveButton(reward, CommunityRewards.active(state, reward, now), state, now,
+            giveOnCard = giveButton(reward, CommunityRewards.giftRunning(state, reward, now), state, now,
                     gx, gy, sideW, GIVE_H, this, true);
             add.accept(giveOnCard);
             // "For everyone", under the button even while it reads Soon: it says what the reward is.
@@ -303,8 +303,10 @@ public final class ContributePanel {
             ty += lh + 1;
         }
         if (CommunityRewards.active(state, reward, now)) {
-            Component status = onStatus(state.find(reward.id()).activeUntilMs(), now,
-                    CommunityRewards.keptOnBy(state, reward, now));
+            LiveRewards.Reward live = state.find(reward.id());
+            Component status = live.free()
+                    ? freeThanks(live)
+                    : onStatus(live.activeUntilMs(), now, CommunityRewards.keptOnBy(state, reward, now));
             for (FormattedCharSequence l : font.split(status, textW)) {
                 out.add(new Text(l, textX, ty, COLOUR_ON, false));
                 ty += lh + 1;
@@ -508,6 +510,11 @@ public final class ContributePanel {
             return Component.translatable(reward.lineKey(), d.normal(), d.quick());
         }
         return Component.translatable(reward.lineKey());
+    }
+
+    /** The green line of a reward on through free credits, thanking who keeps it free. */
+    static Component freeThanks(LiveRewards.Reward live) {
+        return Component.translatable("gui.dungeontrain.rewards.status.free_thanks", live.by());
     }
 
     /**

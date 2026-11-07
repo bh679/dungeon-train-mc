@@ -1687,6 +1687,7 @@
   "gui.dungeontrain.rewards.status.on_for_hours.one": "ON for %s more hour · kept on by %s",
   "gui.dungeontrain.rewards.status.on_for_hours.other": "ON for %s more hours · kept on by %s",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "ON until tomorrow · kept on by %s",
+  "gui.dungeontrain.rewards.status.free_thanks": "Free translations are running thanks to %s",
   "gui.dungeontrain.rewards.give.soon": "Soon",
   "gui.dungeontrain.rewards.give.month": "Give %s",
   "gui.dungeontrain.rewards.give.amount": "Give %s",
