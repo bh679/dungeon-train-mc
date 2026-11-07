@@ -48,6 +48,8 @@ public final class LiveChatTranslatedPill {
     private static final int BADGE_TEXTURE_H = 48;
     private static final int BADGE_H = 12;
     private static final float BADGE_SCALE = 0.8f;
+    /** The label's backing, as a share of the chat lines' own. */
+    private static final float BACKDROP_OF_CHAT = 0.5f;
     /** Ticks of the translated lines remembered: more than chat could show at once. */
     private static final int TICKS_KEPT = 256;
     /** Below this, Minecraft's text renderer draws nothing recognisable anyway. */
@@ -149,8 +151,8 @@ public final class LiveChatTranslatedPill {
         int lineHeight = (int) (9.0 * (mc.options.chatLineSpacing().get() + 1.0));
         int chatBottom = Mth.floor((graphics.guiHeight() - CHAT_BOTTOM_OFFSET) / scale);
         int bottom = chatBottom - shown * lineHeight - GAP;
-        // The same shade vanilla puts behind the chat lines, so the label reads as part of the chat.
-        float backdrop = mc.options.textBackgroundOpacity().get().floatValue();
+        // Lighter than the shade vanilla puts behind the chat lines, and following it, so the label stays quiet.
+        float backdrop = mc.options.textBackgroundOpacity().get().floatValue() * BACKDROP_OF_CHAT;
 
         graphics.pose().pushPose();
         graphics.pose().scale(scale, scale, 1f);
