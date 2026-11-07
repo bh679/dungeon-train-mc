@@ -22,18 +22,18 @@ class PortalRoomGroundTest {
     }
 
     @Test
-    @DisplayName("Levels name the room bottom, the door's floor line, and the row above it")
+    @DisplayName("Levels name the room bottom, the row at your feet, and the row the door sits on")
     void levelsNameTheirRows() {
         assertEquals(new PortalRoomGround.Rows(0, 0), PortalRoomGround.DEFAULT.rows(4, 12));
-        assertEquals(new PortalRoomGround.Rows(4, 4), ENTER.rows(4, 12));
-        assertEquals(new PortalRoomGround.Rows(5, 5),
+        assertEquals(new PortalRoomGround.Rows(5, 5), ENTER.rows(4, 12));
+        assertEquals(new PortalRoomGround.Rows(4, 4),
             new PortalRoomGround(PortalRoomGround.Level.DOOR, false).rows(4, 12));
     }
 
     @Test
     @DisplayName("Everything Below reaches down to the room's bottom row")
     void belowReachesTheBottom() {
-        assertEquals(new PortalRoomGround.Rows(0, 5), DOOR_BELOW.rows(4, 12));
+        assertEquals(new PortalRoomGround.Rows(0, 4), DOOR_BELOW.rows(4, 12));
     }
 
     @Test
@@ -111,7 +111,7 @@ class PortalRoomGroundTest {
     void groundFollowsTheClampedDoor() {
         CarriageDims dims = CarriageDims.DEFAULT;
         int height = PortalRoomLayout.MAX_HEIGHT;
-        PortalRoomSettings raised = open().withGround(ENTER)
+        PortalRoomSettings raised = open().withGround(new PortalRoomGround(PortalRoomGround.Level.DOOR, false))
             .withDoorHeightOffset(new PortalRoomDoorHeightOffset(5));
         assertEquals(new PortalRoomGround.Rows(5, 5), raised.groundRows(dims, height));
 
@@ -124,7 +124,7 @@ class PortalRoomGroundTest {
     @Test
     @DisplayName("A room's exit door does not move the ground")
     void exitDoorDoesNotMoveTheGround() {
-        PortalRoomSettings raised = open().withGround(ENTER)
+        PortalRoomSettings raised = open().withGround(new PortalRoomGround(PortalRoomGround.Level.DOOR, false))
             .withDoorHeightOffset(new PortalRoomDoorHeightOffset(5))
             .withExitDoorHeightOffset(new PortalRoomDoorHeightOffset(2));
         assertEquals(new PortalRoomGround.Rows(5, 5),

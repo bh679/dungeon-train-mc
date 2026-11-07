@@ -520,7 +520,7 @@ public final class EditorPlotLabelsRenderer {
             != games.brennan.dungeontrain.portal.PortalRoomGround.Level.BOTTOM;
     }
 
-    /** What the Ground row reads, e.g. {@code "Ground: Enter (Y 4)"}. */
+    /** What the Ground row reads, e.g. {@code "Ground: Door (Y 4)"}. */
     public static String groundLabel(String modeTag) {
         games.brennan.dungeontrain.portal.PortalRoomSettings settings =
             games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag);

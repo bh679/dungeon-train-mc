@@ -38,10 +38,10 @@ public record PortalRoomGround(Level level, boolean below) {
         /** The room's own bottom row. The default. */
         BOTTOM("bottom", "Bottom"),
 
-        /** The entry door's floor line — the row a player stands on walking in. */
+        /** The row of the door's bottom block, where a player's feet are walking in. */
         ENTER("enter", "Enter"),
 
-        /** One row above that, the bottom block of the door opening. */
+        /** One row below that, the entry door's floor line — the row the door sits on. */
         DOOR("door", "Door");
 
         private final String id;
@@ -128,8 +128,8 @@ public record PortalRoomGround(Level level, boolean below) {
     public int row(int doorFloor) {
         return switch (level) {
             case BOTTOM -> 0;
-            case ENTER -> doorFloor;
-            case DOOR -> doorFloor + 1;
+            case ENTER -> doorFloor + 1;
+            case DOOR -> doorFloor;
         };
     }
 

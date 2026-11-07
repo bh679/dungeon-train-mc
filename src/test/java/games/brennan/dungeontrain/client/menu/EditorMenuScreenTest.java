@@ -641,7 +641,7 @@ final class EditorMenuScreenTest {
 
         // Door height 4 is segment nine, the ground is segment fifteen.
         String raised = "endless_open/exact/off/off/off/none/sealed/0/4/0/4/bedrock/auto/on/door:below";
-        assertEquals("Ground: Door (Y 5)", EditorMenuPortalRows.groundRowFor(raised).label());
+        assertEquals("Ground: Door (Y 4)", EditorMenuPortalRows.groundRowFor(raised).label());
         CommandMenuEntry.Stay below = (CommandMenuEntry.Stay) EditorMenuPortalRows.groundBelowRowFor(raised);
         assertEquals("dungeontrain editor portals ground below", below.command());
         assertEquals("[x] Everything below", below.label());
