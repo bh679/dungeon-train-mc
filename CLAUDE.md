@@ -205,6 +205,11 @@ example does NOT apply to this project.
 
 ## Releasing (post-Gate 3)
 
+Step-by-step guides, read these when doing the job:
+- Shipping a release: [docs/guides/release.md](docs/guides/release.md) (includes the required localhost preview)
+- Making and publishing a mod of ours: [docs/guides/newmod.md](docs/guides/newmod.md)
+- Editing a live store page: [docs/guides/editmod.md](docs/guides/editmod.md)
+
 Not every Gate 3 merge ships a public release. Tags exist only for releases — there is
 no `push: tags` trigger on `release.yml`; the workflow is dispatch-only and creates the
 tag itself.
