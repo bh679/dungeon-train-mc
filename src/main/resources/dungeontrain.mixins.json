@@ -7,6 +7,9 @@
   "plugin": "games.brennan.dungeontrain.mixin.CoreMixinPlugin",
   "mixins": [
     "EnderManEndBandMixin",
+    "OreFeatureTargetSkipMixin",
+    "RandomBlockMatchTestAccessor",
+    "RandomBlockStateMatchTestAccessor",
     "NetherPortalBlockBandJumpMixin",
     "EndGatewayBlockBandJumpMixin",
     "NetherPortalBlockInvoker",
