@@ -164,7 +164,9 @@ license or category name, the tool prints its error message.
 
 ## 7. Confirm with Brennan
 
-Send him all of this and wait for a clear yes:
+First build a localhost preview of each store page, an exact copy of how the whole profile will
+look, as in [editmod.md step 4](editmod.md#4-confirm-with-brennan), and send him the link. Then send
+him all of this and wait for a clear yes:
 
 - **Text:** title, summary and full page text
 - **Screenshots:** the images rendered in chat, with captions, and which is featured
