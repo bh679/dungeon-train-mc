@@ -34004,6 +34004,139 @@
       "released": true,
       "released_in": "v0.1704.0",
       "released_at": "2026-11-07T07:53:21Z"
+    },
+    {
+      "id": "endless-open-ground-level",
+      "version": "0.1705.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Editor: choose the ground level for Endless Open",
+      "summary": "Endless Open dimensional carriages in the editor can now choose which level repeats as the ground.",
+      "highlights": [
+        "Pick the room's bottom, the level at your feet, or the level the door sits on",
+        "Tick Everything below to fill in the levels under it, or leave it off for open air"
+      ],
+      "date": "2026-11-07",
+      "released": true,
+      "released_in": "v0.1715.0",
+      "released_at": "2026-11-07T12:44:16Z",
+      "pr": 2539
+    },
+    {
+      "id": "floating-stretch-smoother-generation",
+      "version": "0.1708.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Smoother world generation",
+      "summary": "Another stretch of the journey now prepares new ground ahead of the train, so riding into it should stutter much less.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2543,
+      "date": "2026-11-07",
+      "released": true,
+      "released_in": "v0.1715.0",
+      "released_at": "2026-11-07T12:44:16Z"
+    },
+    {
+      "id": "free-live-chat-translations",
+      "version": "0.1703.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Free Live Eye translations",
+      "summary": "Live Eye chat is now translated for everyone for free while free credits last, thanks to Brennan. Gifting Live Translations can start higher quality AI translations right away, or wait until the free credits run out.",
+      "highlights": [],
+      "pr": 2537,
+      "date": "2026-11-07",
+      "released": true,
+      "released_in": "v0.1715.0",
+      "released_at": "2026-11-07T12:44:16Z",
+      "major": true,
+      "notable": true,
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/free-live-eye-translations.jpg"
+    },
+    {
+      "id": "loyalty-tridents-always-return",
+      "version": "0.1711.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot"
+      ],
+      "title": "Loyalty tridents always come back",
+      "summary": "A thrown Loyalty trident now always finds its way home, even when the train carries you far away, you head through a portal, or it falls into the void. If your inventory is full it lands at your feet.",
+      "highlights": [],
+      "pr": 2546,
+      "date": "2026-11-07",
+      "released": true,
+      "released_in": "v0.1715.0",
+      "released_at": "2026-11-07T12:44:16Z"
+    },
+    {
+      "id": "passenger-log-durable-posts",
+      "version": "0.1708.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Passenger log fix",
+      "summary": "Deaths and echo encounters now reach the passenger log even if the connection drops for a moment. They may just arrive a little late.",
+      "highlights": [],
+      "date": "2026-11-07",
+      "released": true,
+      "released_in": "v0.1715.0",
+      "released_at": "2026-11-07T12:44:16Z"
+    },
+    {
+      "id": "sable-mob-paths-crowd-crossing",
+      "version": "0.1704.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "mobs"
+      ],
+      "title": "Mob crowds cross between carriages faster on CurseForge",
+      "summary": "On CurseForge, crowds of mobs bunch up far less where two carriages meet, so they reach you sooner.",
+      "highlights": [],
+      "pr": 2538,
+      "date": "2026-11-07",
+      "released": true,
+      "released_in": "v0.1715.0",
+      "released_at": "2026-11-07T12:44:16Z"
+    },
+    {
+      "id": "vault-rare-finds-numbered",
+      "version": "0.1711.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "loot"
+      ],
+      "title": "Rare vault finds are remembered",
+      "summary": "The rarest rewards in vaults are now counted across every passenger. Pull one that nobody has ever pulled before and you will be told you are the first. Rare finds from the tougher vaults also carry their number, who pulled them and the date.",
+      "highlights": [
+        "Be the first passenger ever to pull a rare vault reward and you will hear about it",
+        "Rare finds from the tougher vaults show which number they are, who pulled them and when"
+      ],
+      "pr": 2547,
+      "date": "2026-11-07",
+      "released": true,
+      "released_in": "v0.1715.0",
+      "released_at": "2026-11-07T12:44:16Z"
     }
   ]
 }
