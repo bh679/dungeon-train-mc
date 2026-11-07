@@ -3,8 +3,17 @@
 For changing the text, links or screenshots of a mod that is already on Modrinth or CurseForge. The
 [page rules in newmod.md](newmod.md#page-rules) apply here too.
 
-**The one rule:** the page is public, so nothing changes until Brennan has confirmed the exact
-change. Approval for one edit doesn't cover the next one.
+**The one rule:** the Modrinth and CurseForge pages are NEVER changed without Brennan's explicit,
+direct go-ahead for that exact change. That means a yes that names the page (Modrinth, CurseForge or
+both) and the exact text or image, given after he has seen it. Nothing else counts:
+
+- Not agreeing to a feature, a release or a plan that mentions the page.
+- Not "publish it", "ship it" or "do it" when the page edit wasn't the question asked.
+- Not a requirement from elsewhere, such as a provider's terms asking for an attribution line.
+- Not an earlier approval: each edit needs its own, and so does putting a page back.
+
+When in doubt, ask in plain words: "Change the Modrinth description to add this line: …?" and wait.
+Save the live page (step 1) before any edit, so it can be restored exactly.
 
 ## 1. Copy the live page
 
