@@ -1,0 +1,20 @@
+{
+  "id": "bow-crossbow-depth-damage",
+  "version": "0.1703.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "mobs",
+    "loot",
+    "ui",
+    "balance"
+  ],
+  "title": "Stronger bows the deeper you go",
+  "summary": "Bows and crossbows now show their damage and get stronger the further along the train you go. That includes the ones shooting at you.",
+  "highlights": [],
+  "pr": 2536,
+  "date": "2026-11-07",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
