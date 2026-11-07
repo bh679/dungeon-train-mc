@@ -87,6 +87,13 @@ class LiveChatTranslationsTest {
         return ((net.minecraft.network.chat.contents.TranslatableContents) c.getContents()).getKey();
     }
 
+    @Test
+    @DisplayName("the chat's label: plain, or Google's credit")
+    void translatedLabel() {
+        assertEquals(LiveChatTranslations.TRANSLATED_KEY, key((MutableComponent) LiveChatTranslations.translatedLabel(false)));
+        assertEquals(LiveChatTranslations.POWERED_BY_KEY, key((MutableComponent) LiveChatTranslations.translatedLabel(true)));
+    }
+
     private static String arg(MutableComponent c, int i) {
         return ((net.minecraft.network.chat.Component) ((net.minecraft.network.chat.contents.TranslatableContents) c.getContents()).getArgs()[i]).getString();
     }

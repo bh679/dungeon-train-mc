@@ -152,6 +152,7 @@
     "SubLevelHoldingChunkMapSaveTimingMixin",
     "SubLevelStorageFileNoDsyncMixin",
     "SubLevelSerializerTimingMixin",
+    "ServerSubLevelContainerReloadBiomeMixin",
     "SubLevelTrackingOrderedSnapshotMixin",
     "NetherFortressStructureMixin",
     "NetherFossilStructureMixin",

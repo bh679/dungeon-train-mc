@@ -33791,6 +33791,99 @@
       "released": true,
       "released_in": "v0.1693.0",
       "released_at": "2026-11-06T20:07:47Z"
+    },
+    {
+      "id": "dimensional-carriage-fewer-freezes",
+      "version": "0.1694.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Fewer freezes in dimensional carriages",
+      "summary": "Exploring dimensional carriages is smoother, with fewer freezes along the way.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2525,
+      "date": "2026-11-06",
+      "released": true,
+      "released_in": "v0.1698.0",
+      "released_at": "2026-11-06T21:41:48Z"
+    },
+    {
+      "id": "less-lag-leaving-dimensional-carriages",
+      "version": "0.1695.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "train"
+      ],
+      "title": "Less lag leaving dimensional carriages",
+      "summary": "Coming back to the train after a long trip through a dimensional carriage no longer causes a run of stutters a few seconds later.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2526,
+      "date": "2026-11-06",
+      "released": true,
+      "released_in": "v0.1698.0",
+      "released_at": "2026-11-06T21:41:48Z"
+    },
+    {
+      "id": "live-chat-free-translations",
+      "version": "0.1696.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live chat translations for everyone",
+      "summary": "Live chat can now reach you in your own language for free, whenever someone is watching on the website. A small flag shows the language each line came from: hover it to read the original.",
+      "highlights": [
+        "Translated lines now show on their own, with the original one hover away.",
+        "The Live Translations reward now means faster, higher quality translations."
+      ],
+      "pr": 2528,
+      "date": "2026-11-06",
+      "released": true,
+      "released_in": "v0.1698.0",
+      "released_at": "2026-11-06T21:41:48Z"
+    },
+    {
+      "id": "nps-ai-note",
+      "version": "0.1696.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "A note from the developer about AI",
+      "summary": "If your feedback brings up AI, the game now replies with a short note from the developer about who made it and who writes the stories, with a link to the AI Policy.",
+      "highlights": [],
+      "pr": 2529,
+      "date": "2026-11-06",
+      "released": true,
+      "released_in": "v0.1698.0",
+      "released_at": "2026-11-06T21:41:48Z"
+    },
+    {
+      "id": "room-copy-restore-timing",
+      "version": "0.1696.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Better lag diagnostics",
+      "summary": "Bug reports now say more about what slows the game down.",
+      "highlights": [],
+      "pr": 2527,
+      "date": "2026-11-06",
+      "released": true,
+      "released_in": "v0.1698.0",
+      "released_at": "2026-11-06T21:41:48Z"
     }
   ]
 }

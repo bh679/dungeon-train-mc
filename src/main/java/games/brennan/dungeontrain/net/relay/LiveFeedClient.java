@@ -360,10 +360,16 @@ public final class LiveFeedClient {
     /**
      * A chat poll: whether anyone is on air, the ring's head seq, the lines after {@code since}, and the
      * seqs of earlier lines removed since then ({@code deleted} — a Twitch mod deleted them).
+     * {@code translatedBy}: the relay's id for the service translating this room just now, else null.
      */
     public record ChatPage(boolean live, long seq, List<ChatLine> lines, List<Long> deleted, List<LineReactions> reactions,
-                           List<LineTranslations> translations) {
-        public static final ChatPage EMPTY = new ChatPage(false, -1, List.of(), List.of(), List.of(), List.of());
+                           List<LineTranslations> translations, @Nullable String translatedBy) {
+        public static final ChatPage EMPTY = new ChatPage(false, -1, List.of(), List.of(), List.of(), List.of(), null);
+
+        public ChatPage(boolean live, long seq, List<ChatLine> lines, List<Long> deleted, List<LineReactions> reactions,
+                        List<LineTranslations> translations) {
+            this(live, seq, lines, deleted, reactions, translations, null);
+        }
 
         public ChatPage(boolean live, long seq, List<ChatLine> lines, List<Long> deleted, List<LineReactions> reactions) {
             this(live, seq, lines, deleted, reactions, List.of());
@@ -402,6 +408,14 @@ public final class LiveFeedClient {
     private static final Pattern LANGUAGE_TAG = Pattern.compile("[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,2}");
     /** Most languages a line is read in at once; a longer map is cut, not refused. */
     static final int MAX_TRANSLATIONS = 32;
+
+    /** A chat page's {@code translatedBy}: a short lower-case id, else null. Package-private for tests. */
+    @Nullable
+    static String parseTranslatedBy(JsonObject b) {
+        if (!b.has("translatedBy") || !b.get("translatedBy").isJsonPrimitive()) return null;
+        String id = b.get("translatedBy").getAsString();
+        return id.matches("[a-z0-9_]{1,24}") ? id : null;
+    }
 
     /** The {@code translations} array of a chat page; malformed entries are skipped. Package-private for tests. */
     static List<LineTranslations> parseTranslations(JsonObject b) {
@@ -1099,7 +1113,7 @@ public final class LiveFeedClient {
                     if (el.isJsonPrimitive() && el.getAsJsonPrimitive().isNumber()) deleted.add(el.getAsLong());
                 }
             }
-            return new ChatPage(live, seq, List.copyOf(lines), List.copyOf(deleted), parseReactions(b), parseTranslations(b));
+            return new ChatPage(live, seq, List.copyOf(lines), List.copyOf(deleted), parseReactions(b), parseTranslations(b), parseTranslatedBy(b));
         } catch (RuntimeException e) {
             return ChatPage.EMPTY;
         }
