@@ -7,7 +7,7 @@ Rules: [attribution](https://docs.cloud.google.com/translate/attribution), [mark
 ## Done in code
 
 - Google's unaltered badge (`white-regular@3x` from its attribution pack) replaces the "Translated" label while a Google line is visible: in game (`client/live/LiveChatTranslatedPill`) and on the Live page, linked to translate.google.com.
-- In game it draws in front of other HUD panels and stays on screen at the top edge.
+- In game it draws after the rest of the HUD on an opaque backing, and stays on screen at the top edge. The dev-only HUD still draws over it when chat is very tall (cause unknown; release builds hide that HUD). An actual overlap with Jade's panel, for example in a narrow window, has not been seen, so check that before relying on it.
 - Live page lines Google translated carry `lang="<to>-x-mtfrom-<from>"`.
 - The required warranty disclaimer and a Cloud Translation link are on the AI policy page (`public/dungeontrain/ai-policy/`) and the wiki.
 
