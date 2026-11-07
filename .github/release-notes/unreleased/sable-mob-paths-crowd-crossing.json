@@ -1,0 +1,17 @@
+{
+  "id": "sable-mob-paths-crowd-crossing",
+  "version": "0.1704.0",
+  "type": "perf",
+  "tags": [
+    "performance",
+    "mobs"
+  ],
+  "title": "Mob crowds cross between carriages faster on CurseForge",
+  "summary": "On CurseForge, crowds of mobs bunch up far less where two carriages meet, so they reach you sooner.",
+  "highlights": [],
+  "pr": 2538,
+  "date": "2026-11-07",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

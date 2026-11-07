@@ -1459,6 +1459,7 @@
   "gui.dungeontrain.rewards.status.on_for_minutes.other": "เปิดอีก %s นาที · เปิดไว้โดย %s",
   "gui.dungeontrain.rewards.status.on_for_hours.other": "เปิดอีก %s ชั่วโมง · เปิดไว้โดย %s",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "เปิดถึงพรุ่งนี้ · เปิดไว้โดย %s",
+  "gui.dungeontrain.rewards.status.free_thanks": "การแปลฟรีกำลังทำงานอยู่ ขอบคุณ %s",
   "gui.dungeontrain.rewards.give.soon": "เร็วๆ นี้",
   "gui.dungeontrain.rewards.give.month": "มอบ %s",
   "gui.dungeontrain.rewards.give.amount": "มอบ %s",

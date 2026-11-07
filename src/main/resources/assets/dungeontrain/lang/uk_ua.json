@@ -1741,6 +1741,7 @@
   "gui.dungeontrain.rewards.status.on_for_hours.few": "УВІМК. ще %s години · завдяки %s",
   "gui.dungeontrain.rewards.status.on_for_hours.many": "УВІМК. ще %s годин · завдяки %s",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "УВІМК. до завтра · завдяки %s",
+  "gui.dungeontrain.rewards.status.free_thanks": "Безкоштовні переклади працюють завдяки: %s",
   "gui.dungeontrain.rewards.give.soon": "Скоро",
   "gui.dungeontrain.rewards.give.month": "Подарувати %s",
   "gui.dungeontrain.rewards.give.amount": "Подарувати %s",
