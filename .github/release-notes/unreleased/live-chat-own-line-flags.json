@@ -1,0 +1,18 @@
+{
+  "id": "live-chat-own-line-flags",
+  "version": "0.1703.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community",
+    "ui"
+  ],
+  "title": "See where your Live chat messages reached",
+  "summary": "Your own Live chat messages now show a small flag for each language they were translated into. Hover a flag to read your message in that language.",
+  "highlights": [],
+  "pr": 2535,
+  "date": "2026-11-07",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
