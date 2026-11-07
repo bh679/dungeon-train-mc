@@ -763,6 +763,8 @@
   "chat.dungeontrain.live_chat.translation.original": "Asli: %s",
   "chat.dungeontrain.live_chat.translation.on": "Obrolan langsung sedang diterjemahkan ke %s. Ubah tampilannya di %s",
   "chat.dungeontrain.live_chat.translation.path": "Opsi / Dungeon Train / Stream / Terjemahan obrolan",
+  "chat.dungeontrain.live_chat.translated": "Diterjemahkan",
+  "chat.dungeontrain.live_chat.powered_by": "Didukung oleh %s",
   "chat.dungeontrain.live_gift.prompt": "%s bergabung lewat TV dan belum pernah punya Live Eye.",
   "chat.dungeontrain.live_gift.give": "Hadiahkan",
   "chat.dungeontrain.live_gift.offered": "Menawarkan Live Eye-mu kepada %s…",

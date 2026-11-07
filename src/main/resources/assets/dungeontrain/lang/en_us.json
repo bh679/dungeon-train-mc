@@ -864,6 +864,8 @@
   "chat.dungeontrain.live_chat.translation.original": "Original: %s",
   "chat.dungeontrain.live_chat.translation.on": "Live chat is being translated into %s. Change how it shows in %s",
   "chat.dungeontrain.live_chat.translation.path": "Options / Dungeon Train / Stream / Chat translations",
+  "chat.dungeontrain.live_chat.translated": "Translated",
+  "chat.dungeontrain.live_chat.powered_by": "Powered by %s",
   "chat.dungeontrain.live_gift.prompt": "%s joins via a TV, they have never had the Live Eye.",
   "chat.dungeontrain.live_gift.give": "Gift it to them",
   "chat.dungeontrain.live_gift.offered": "Offering %s your Live Eye…",
