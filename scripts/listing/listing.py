@@ -75,7 +75,7 @@ IMAGE_TYPES = {
 }
 
 REQUIRED_FIELDS = (
-    "slug", "title", "summary", "categories", "client_side", "server_side",
+    "slug", "title", "summary", "categories",
     "license_id", "source_url", "issues_url", "icon", "screenshots",
 )
 LINK_FIELDS = ("issues_url", "source_url", "wiki_url", "discord_url")
@@ -362,9 +362,13 @@ def multipart(fields: dict, files: dict) -> tuple[str, bytes]:
 
 
 def probe_modrinth(token: str) -> str:
-    # A project that can't exist: 404 means the token was accepted for writing and nothing changed.
-    status, _ = modrinth_json("PATCH", "/project/zzzzzzzz", token, {})
-    return "ok" if status == 404 else f"failed (HTTP {status})"
+    # A project that can't exist, so nothing can change. Modrinth checks the token first: a bad one
+    # gets "authenticating API request", a good one gets as far as this project-level refusal.
+    status, payload = modrinth_json("PATCH", "/project/zzzzzzzz", token, {})
+    accepted = status == 404 or (
+        status == 401 and "permission to edit this project" in str(payload)
+    )
+    return "ok" if accepted else f"failed (HTTP {status})"
 
 
 def probe_curseforge_upload(token: str) -> str:
@@ -422,12 +426,19 @@ def draft_data(listing: dict) -> dict:
         "body": listing["body"],
         "categories": listing["categories"],
         "additional_categories": listing.get("additional_categories", []),
-        "client_side": listing["client_side"],
-        "server_side": listing["server_side"],
+        # Modrinth ignores these on the page: a project's sides come from its versions, which the
+        # mod's release.yml sets. These values are simply known to be accepted on create.
+        "client_side": "optional",
+        "server_side": "optional",
         "license_id": listing["license_id"],
         "initial_versions": [],
         **{field: listing.get(field) for field in LINK_FIELDS},
     }
+
+
+def description_field(shot: dict) -> dict:
+    # Modrinth rejects an empty description, so a screenshot without one leaves the field out.
+    return {"description": shot["description"]} if shot.get("description") else {}
 
 
 def upload_screenshot(token: str, slug: str, folder: str, shot: dict, ordering: int) -> None:
@@ -437,8 +448,8 @@ def upload_screenshot(token: str, slug: str, folder: str, shot: dict, ordering: 
             "ext": ext,
             "featured": "true" if shot.get("featured") else "false",
             "title": shot["title"],
-            "description": shot.get("description", ""),
             "ordering": ordering,
+            **description_field(shot),
         }
     )
     expect(
@@ -453,6 +464,22 @@ def upload_screenshot(token: str, slug: str, folder: str, shot: dict, ordering: 
         204,
         doing=f"uploading {shot['file']}",
     )
+
+
+def record_live_urls(folder: str, slug: str, token: str) -> None:
+    """Note each uploaded screenshot's live URL in listing.json, so a later caption edit finds it."""
+    gallery = live_project(slug, token).get("gallery") or []
+    urls = {g.get("title"): g.get("url") for g in gallery}
+    path = os.path.join(folder, "listing.json")
+    with open(path, encoding="utf-8") as f:
+        listing = json.load(f)
+    shots = [
+        {**s, "live_url": urls[s["title"]]} if not s.get("live_url") and s["title"] in urls else s
+        for s in listing["screenshots"]
+    ]
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump({**listing, "screenshots": shots}, f, indent=2, ensure_ascii=False)
+        f.write("\n")
 
 
 def cmd_draft(args: argparse.Namespace) -> int:
@@ -472,6 +499,7 @@ def cmd_draft(args: argparse.Namespace) -> int:
     )
     for ordering, shot in enumerate(listing["screenshots"]):
         upload_screenshot(token, listing["slug"], args.dir, shot, ordering)
+    record_live_urls(args.dir, listing["slug"], token)
     print(f"Private draft: https://modrinth.com/mod/{listing['slug']}")
     print("Nothing is public. Next: confirm text, screenshots and links with Brennan.")
     return 0
@@ -537,7 +565,7 @@ def update_caption(token: str, slug: str, shot: dict) -> None:
             "url": shot["live_url"],
             "featured": "true" if shot.get("featured") else "false",
             "title": shot["title"],
-            "description": shot.get("description", ""),
+            **description_field(shot),
         }
     )
     expect(
@@ -615,12 +643,14 @@ def cmd_update(args: argparse.Namespace) -> int:
     next_order = len(project.get("gallery") or [])
     for offset, shot in enumerate(additions):
         upload_screenshot(token, listing["slug"], args.dir, shot, next_order + offset)
+    if additions:
+        record_live_urls(args.dir, listing["slug"], token)
     print(f"Updated https://modrinth.com/mod/{listing['slug']}")
     return 0
 
 
 def cmd_pull(args: argparse.Namespace) -> int:
-    project = live_project(args.slug)
+    project = live_project(args.slug, optional_modrinth_token())
     live = live_fields(project)
     os.makedirs(os.path.join(args.out, "screenshots"), exist_ok=True)
     gallery = sorted(project.get("gallery") or [], key=lambda g: g.get("ordering", 0))
@@ -645,8 +675,6 @@ def cmd_pull(args: argparse.Namespace) -> int:
     listing = {
         "slug": project["slug"],
         **{key: live[key] for key in ("title", "summary", "categories", "license_id")},
-        "client_side": project.get("client_side"),
-        "server_side": project.get("server_side"),
         **{field: live[field] for field in LINK_FIELDS if live[field]},
         "icon": icon,
         "screenshots": shots,

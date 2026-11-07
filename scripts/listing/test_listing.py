@@ -12,6 +12,7 @@ import os
 import sys
 import tempfile
 import unittest
+import urllib.parse
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -33,8 +34,6 @@ def base_listing(**overrides) -> dict:
         "title": "Example Mod",
         "summary": "Does an example thing.",
         "categories": ["utility"],
-        "client_side": "required",
-        "server_side": "required",
         "license_id": "MIT",
         "source_url": "https://github.com/bh679/example-mc",
         "issues_url": "https://dungeon.training/issues/#example",
@@ -66,6 +65,11 @@ class FakeStore:
         self.requests.append((method, url, headers or {}, data))
         if method == "GET" and url.endswith("/version"):
             return 200, self.versions
+        if method == "POST" and "/gallery?" in url:
+            title = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)["title"][0]
+            self.project = self.project or {"gallery": []}
+            self.project["gallery"].append({"title": title, "url": f"https://cdn/{title}.png"})
+            return 204, None
         if method == "GET":
             return (200, self.project) if self.project else (404, None)
         if method == "POST" and url.endswith("/project"):
@@ -287,19 +291,59 @@ class SignOff(Base):
         self.assertEqual(code, 0)
         self.assertEqual(store.writes(), [])
 
+    def test_empty_screenshot_description_is_left_out(self):
+        shot = {"file": "one.png", "title": "One", "description": "", "featured": True}
+        write_folder(self.dir, base_listing(screenshots=[shot]))
+        store = FakeStore()
+        with mock.patch.object(tool, "call", store):
+            self.run_cli("draft", self.dir, "--offline")
+        self.assertNotIn("description=", store.writes()[1][1])
+
+    def test_draft_records_where_each_screenshot_went(self):
+        write_folder(self.dir, base_listing())
+        with mock.patch.object(tool, "call", FakeStore()):
+            self.run_cli("draft", self.dir, "--offline")
+        saved = tool.load_listing(self.dir)["screenshots"][0]
+        self.assertEqual(saved["live_url"], "https://cdn/One.png")
+
+    def test_a_folder_made_by_draft_can_change_a_caption(self):
+        write_folder(self.dir, base_listing())
+        store = FakeStore()
+        with mock.patch.object(tool, "call", store):
+            self.run_cli("draft", self.dir, "--offline")
+            listing = tool.load_listing(self.dir)
+            shot = {**listing["screenshots"][0], "title": "New caption"}
+            del listing["body"]
+            write_folder(self.dir, {**listing, "screenshots": [shot]})
+            store.project = {**self.live(), "gallery": store.project["gallery"]}
+            store.requests.clear()
+            code, _ = self.run_cli("update", self.dir, "--offline", "--confirmed")
+        self.assertEqual(code, 0)
+        self.assertEqual([r[0] for r in store.writes()], ["PATCH"])
+
     def test_draft_is_private_and_uploads_screenshots(self):
         write_folder(self.dir, base_listing())
         store = FakeStore()
         with mock.patch.object(tool, "call", store):
             code, _ = self.run_cli("draft", self.dir, "--offline")
         self.assertEqual(code, 0)
-        create, gallery = store.writes()
+        create, gallery = store.writes()[:2]
         self.assertIn(b'"is_draft": true', create[3])
         self.assertIn("/gallery?", gallery[1])
         self.assertIn("featured=true", gallery[1])
 
 
 class Tokens(Base):
+    def test_modrinth_probe_accepts_a_token_refused_only_by_the_project(self):
+        refused = {"error": "auth_error", "description": "You do not have permission to edit this project!"}
+        with mock.patch.object(tool, "call", return_value=(401, refused)):
+            self.assertEqual(tool.probe_modrinth(SECRET), "ok")
+
+    def test_modrinth_probe_fails_a_bad_token(self):
+        bad = {"error": "auth_error", "description": "authenticating API request"}
+        with mock.patch.object(tool, "call", return_value=(401, bad)):
+            self.assertEqual(tool.probe_modrinth(SECRET), "failed (HTTP 401)")
+
     def test_values_never_appear_in_output(self):
         with mock.patch.object(tool, "call", return_value=(404, None)):
             _, out = self.run_cli("tokens")

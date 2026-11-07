@@ -59,8 +59,6 @@ listing/
   "title": "Example Mod",
   "summary": "One line, up to 256 characters.",
   "categories": ["utility"],
-  "client_side": "required",
-  "server_side": "required",
   "license_id": "GPL-3.0-or-later",
   "source_url": "https://github.com/bh679/example-mc",
   "issues_url": "https://dungeon.training/issues/#example",
@@ -72,7 +70,8 @@ listing/
 }
 ```
 
-Match `license_id` to the repo's `LICENSE` file.
+Match `license_id` to the repo's `LICENSE` file. `live_url` entries appear on screenshots after
+upload: leave them in place, as that is how a later caption edit finds the image.
 
 `LISTING.md` holds the page text and nothing else. A good shape is: first section, what it does,
 what it doesn't do, setup. See `LISTING.md` in `bh679/dtmodverify-mc` for the tone.
@@ -163,6 +162,10 @@ grep '^CURSEFORGE_TOKEN=' ~/.config/dungeontrain/publish-tokens.env | cut -d= -f
 Create the CurseForge project (step 9) to get its id, then set `CURSEFORGE_PROJECT_ID` the same way.
 Run the mod's first release: see [release.md](release.md#sibling-mod-releases). Modrinth won't review
 a project with no version.
+
+Client and server sides aren't part of the page: Modrinth takes them from versions. Check that the
+"Set Modrinth side metadata" step in the copied `release.yml` has the right values for this mod, and
+confirm the sides on the draft after the first release.
 
 ## 9. Publish on both stores
 
