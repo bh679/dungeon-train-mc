@@ -242,6 +242,12 @@ public final class VaultLoot {
         return Optional.of(rolled);
     }
 
+    /** Does {@code be} carry a DT pool? False for a vanilla vault, which keeps its loot table. */
+    public static boolean hasPool(BlockEntity be) {
+        CompoundTag vault = vaultTag(be);
+        return vault != null && poolOf(vault) != null;
+    }
+
     /** Seed salt for one player: distinct per UUID, stable across sessions. */
     static long playerSalt(UUID player) {
         return player.getMostSignificantBits() * PLAYER_MIX_HI ^ player.getLeastSignificantBits() * PLAYER_MIX_LO;

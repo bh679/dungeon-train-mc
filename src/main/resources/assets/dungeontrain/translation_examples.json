@@ -6720,6 +6720,22 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.plot.ground": {
+    "1": {
+      "label": "the Ground level, already translated",
+      "examples": [
+        "Bottom",
+        "Door"
+      ]
+    },
+    "2": {
+      "label": "the block row inside the room",
+      "examples": [
+        "0",
+        "5"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.plot.fog": {
     "1": {
       "label": "the Fog setting, already translated",
@@ -11309,6 +11325,16 @@
       ]
     }
   },
+  "chat.dungeontrain.editor.unknown_ground_option_try": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
   "chat.dungeontrain.editor.unknown_fog_option_try": {
     "1": {
       "label": "what the player typed",
@@ -15629,6 +15655,38 @@
       "examples": [
         "Cross-Country",
         "Everything Burrito"
+      ]
+    }
+  },
+  "chat.dungeontrain.vault_first": {
+    "1": {
+      "label": "the item's name",
+      "examples": [
+        "Mace",
+        "Fox Spawn Egg"
+      ]
+    }
+  },
+  "lore.dungeontrain.vault_find.serial": {
+    "1": {
+      "label": "the item's number: how many of it have ever come out of a vault, counting this one",
+      "examples": [
+        "1",
+        "37"
+      ]
+    }
+  },
+  "lore.dungeontrain.vault_find.pulled_by": {
+    "1": {
+      "label": "the player who opened the vault",
+      "examples": [
+        "Steve"
+      ]
+    },
+    "2": {
+      "label": "the date it came out of the vault, year-month-day",
+      "examples": [
+        "2026-11-07"
       ]
     }
   },

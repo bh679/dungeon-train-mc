@@ -1,5 +1,8 @@
 # Adding a new mod to Dungeon Train
 
+This audit is for bringing **someone else's** mod into DT or the modpacks. To make and publish a mod of our own, see
+[docs/guides/newmod.md](../docs/guides/newmod.md).
+
 Run this audit before adding any mod to the modpacks or to DT's dependencies. Save the result as
 `modpack/audits/<slug>.md` and put its summary tables in the Gate 1 plan. Run it again whenever the mod's pin moves.
 
