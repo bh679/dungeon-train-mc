@@ -427,13 +427,17 @@ public final class TrainTickEvents {
         // Kill-ahead runs once per train, against the lead carriage's
         // runway. Other carriages of the train are inside the train's
         // AABB, which is what the kill-ahead filter spares.
+        int killVictims = 0;
         for (List<Trains.Carriage> train : trainsById.values()) {
-            killEntitiesAhead(level, train);
+            killVictims += killEntitiesAhead(level, train);
+        }
+        long tAfterKill = System.nanoTime();
+        for (List<Trains.Carriage> train : trainsById.values()) {
             // Mobs stuck in a carriage floor (head through the deck) go out beside the carriage;
             // kill-ahead no longer catches them since walked-off mobs were spared.
             WedgedMobEjector.eject(level, train);
         }
-        long tAfterKill = System.nanoTime();
+        long tAfterWedged = System.nanoTime();
 
         // One pass over each carriage's footprint doing both block-breaking and fluid displacement.
         //
@@ -462,7 +466,7 @@ public final class TrainTickEvents {
             blocksBroken += PlayerBlockBreakOff.checkPhysicsContacts(level, train, MAX_BLOCK_BREAKS_PER_TICK - blocksBroken);
         }
         long tAfterFluid = System.nanoTime();
-        recordSweepPerf(tAfterFluid - tAfterKill, blocksBroken);
+        recordSweepPerf(tAfterFluid - tAfterWedged, blocksBroken);
 
         // ShipyardShifter intentionally NOT invoked on the per-carriage
         // architecture: it would shift each carriage's pivot independently
@@ -507,17 +511,18 @@ public final class TrainTickEvents {
             for (List<Trains.Carriage> train : trainsById.values()) totalCarriages += train.size();
             int nearCarriages = countNearCarriages(level, trainsById);
             AsyncPerfLog.debug(PERF_LOGGER, 
-                "[stuck.timing] tick={} total={}ms appender={}ms overlay={}ms find={}ms kill={}ms sweep={}ms tracks={}ms mirror={}ms tunnels={}ms trains={} carriages={} near={} broke={} slowTicks={}",
+                "[stuck.timing] tick={} total={}ms appender={}ms overlay={}ms find={}ms kill={}ms wedged={}ms sweep={}ms tracks={}ms mirror={}ms tunnels={}ms trains={} carriages={} near={} killed={} broke={} slowTicks={}",
                 level.getGameTime(), totalMs,
                 (tAfterAppender - t0) / 1_000_000,
                 (tAfterOverlay - tAfterAppender) / 1_000_000,
                 (tAfterFindTrains - tAfterOverlay) / 1_000_000,
                 (tAfterKill - tAfterFindTrains) / 1_000_000,
-                (tAfterFluid - tAfterKill) / 1_000_000,
+                (tAfterWedged - tAfterKill) / 1_000_000,
+                (tAfterFluid - tAfterWedged) / 1_000_000,
                 (tAfterTracks - tAfterFluid) / 1_000_000,
                 (tAfterMirror - tAfterTracks) / 1_000_000,
                 (tAfterTunnels - tAfterMirror) / 1_000_000,
-                trainsById.size(), totalCarriages, nearCarriages, blocksBroken, slowTicks.getAsLong());
+                trainsById.size(), totalCarriages, nearCarriages, killVictims, blocksBroken, slowTicks.getAsLong());
         }
         tickCounter++;
     }
@@ -1126,21 +1131,21 @@ public final class TrainTickEvents {
      * extended by {@link #LOOKAHEAD_BLOCKS} along each axis whose velocity
      * component is non-zero.</p>
      */
-    private static void killEntitiesAhead(ServerLevel level, List<Trains.Carriage> train) {
-        if (train.isEmpty()) return;
+    private static int killEntitiesAhead(ServerLevel level, List<Trains.Carriage> train) {
+        if (train.isEmpty()) return 0;
         AABB aabb = CarriageFootprint.activeWorldAABB(train);
-        if (aabb.getXsize() <= 0 || aabb.getYsize() <= 0 || aabb.getZsize() <= 0) return;
+        if (aabb.getXsize() <= 0 || aabb.getYsize() <= 0 || aabb.getZsize() <= 0) return 0;
 
         // Velocity is shared across all carriages of a train (they advance
         // in lockstep) — read from any carriage, lead is convenient.
         Trains.Carriage lead = Trains.lead(train);
-        if (lead == null) return;
+        if (lead == null) return 0;
         Vector3dc velocity = lead.provider().getTargetVelocity();
 
         double signX = Math.signum(velocity.x());
         double signY = Math.signum(velocity.y());
         double signZ = Math.signum(velocity.z());
-        if (signX == 0 && signY == 0 && signZ == 0) return; // idle train
+        if (signX == 0 && signY == 0 && signZ == 0) return 0; // idle train
 
         double expX = signX * LOOKAHEAD_BLOCKS;
         double expY = signY * LOOKAHEAD_BLOCKS;
@@ -1184,6 +1189,7 @@ public final class TrainTickEvents {
         for (Entity e : victims) {
             e.discard();
         }
+        return victims.size();
     }
 
     /**
