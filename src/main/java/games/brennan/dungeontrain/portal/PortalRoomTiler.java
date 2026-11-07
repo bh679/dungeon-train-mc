@@ -246,6 +246,7 @@ public final class PortalRoomTiler {
      */
     private static PortalStructure stampTile(ServerLevel level, CarriageDims dims,
                                              PortalStructure structure, Tile tile, int pairKey) {
+        PortalCopyTiming.begin();
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
@@ -268,14 +269,18 @@ public final class PortalRoomTiler {
         long started = System.nanoTime();
         PortalRoomMemory.Recalled recalled = PortalTestSession.isTestStamp(pairKey) ? PortalRoomMemory.Recalled.NOTHING
             : PortalRoomMemory.recallTile(level, pairKey, tile, structure.roomName(), size);
+        PortalCopyTiming.mark(PortalCopyTiming.Phase.READ);
         if (recalled.snapshot() != null) {
             long stampStarted = System.nanoTime();
             PortalCarriageBuilder.stampTileFromBlob(level, origin, size, PortalRoomBlob.live(recalled.snapshot()),
                 clearMask, writeMask, liquidPlaneKeep(single, origin, size), pairKey, tile);
             PortalRoomMemory.markTileTouched(pairKey, tile);
+            PortalCopyTiming.mark(PortalCopyTiming.Phase.PASSES);
             long facesStarted = System.nanoTime();
             PortalStructure grown = structure.withTiling(structure.tiling().with(tile));
             refreshFacesAround(level, dims, grown, tile);
+            PortalCopyTiming.mark(PortalCopyTiming.Phase.FACES);
+            PortalCopyTiming.finish(PortalCopyTiming.Kind.RESTORED, structure.roomName(), pairKey, tile);
             long ended = System.nanoTime();
             // Server-thread time, split so a player's log can say whether their disk is what hurt.
             LOGGER.debug("[DungeonTrain] Portal pair {} copy {},{} restored as it was left in {} ms "
@@ -303,6 +308,7 @@ public final class PortalRoomTiler {
         // an appended tile is in that case.
         PortalRoomSinglePlanes.write(level, origin, size, single, clearMask, /*relight*/ true,
             level.getSeed(), structure.variantIndexFor(tile, pairKey));
+        PortalCopyTiming.mark(PortalCopyTiming.Phase.PASSES);
 
         // Nothing closes what the copy's own wall left open in a mouth's seal plane. Under Kept
         // (the default) the plane is that copy's end column, stamped as the author drew it — air
@@ -313,6 +319,8 @@ public final class PortalRoomTiler {
 
         PortalStructure grown = structure.withTiling(structure.tiling().with(tile));
         refreshFacesAround(level, dims, grown, tile);
+        PortalCopyTiming.mark(PortalCopyTiming.Phase.FACES);
+        PortalCopyTiming.finish(PortalCopyTiming.Kind.FRESH, structure.roomName(), pairKey, tile);
         return grown;
     }
 
@@ -438,6 +446,7 @@ public final class PortalRoomTiler {
      */
     private static PortalStructure eraseTile(ServerLevel level, CarriageDims dims,
                                              PortalStructure structure, Tile tile, int pairKey) {
+        PortalCopyTiming.begin();
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
@@ -451,6 +460,7 @@ public final class PortalRoomTiler {
         // While its blocks are still there to read, and before the mob sweep: the next stamp of this
         // tile lays the copy as it was left (stampTile).
         rememberTile(level, dims, structure, tile, pairKey);
+        PortalCopyTiming.mark(PortalCopyTiming.Phase.SAVE);
 
         // Before the blocks go, and separately from PortalClear: `isLoose` spares mobs on purpose,
         // because a structure that RELOCATES should carry its occupants. A copy falling out of the
@@ -461,9 +471,11 @@ public final class PortalRoomTiler {
         // The whole volume, not only what this copy placed: a mob that had walked one tile over used
         // to be matched by no copy's reap at all. See PortalRoomMobs#sweepVolume.
         PortalRoomMobs.sweepVolume(level, box, pairKey, "copy " + tile.x() + "," + tile.z());
+        PortalCopyTiming.mark(PortalCopyTiming.Phase.SWEEP);
 
         PortalCorridorMask mask = maskFor(structure, dims, tile);
         PortalClear.clearBox(level, box, mask);
+        PortalCopyTiming.mark(PortalCopyTiming.Phase.CLEAR);
 
         PortalStructure shrunk = structure.withTiling(structure.tiling().without(tile));
         // The neighbours that were open onto this copy now face nothing, so they close again — which
@@ -472,6 +484,8 @@ public final class PortalRoomTiler {
             Tile neighbour = tile.offset(d[0], d[1]);
             if (shrunk.tiling().has(neighbour)) refreshFace(level, dims, shrunk, neighbour, -d[0], -d[1]);
         }
+        PortalCopyTiming.mark(PortalCopyTiming.Phase.FACES);
+        PortalCopyTiming.finish(PortalCopyTiming.Kind.ERASED, structure.roomName(), pairKey, tile);
         return shrunk;
     }
 
