@@ -421,7 +421,7 @@
     "weight": 4,
     "minLevel": 2,
     "maxLevel": 40,
-    "mode": "endless_open/exact/off/off/off/none/sealed/0/1"
+    "mode": "endless_open/exact/off/off/off/none/sealed/0/2/0/2/minecraft:bedrock/auto/on/door"
   },
   "singlesomething": {
     "weight": 1,

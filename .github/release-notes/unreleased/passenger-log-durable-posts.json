@@ -1,0 +1,16 @@
+{
+  "id": "passenger-log-durable-posts",
+  "version": "0.1708.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "community"
+  ],
+  "title": "Passenger log fix",
+  "summary": "Deaths and echo encounters now reach the passenger log even if the connection drops for a moment. They may just arrive a little late.",
+  "highlights": [],
+  "date": "2026-11-07",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

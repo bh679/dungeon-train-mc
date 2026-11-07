@@ -1,0 +1,21 @@
+{
+  "id": "endless-open-ground-level",
+  "version": "0.1705.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor",
+    "train"
+  ],
+  "title": "Editor: choose the ground level for Endless Open",
+  "summary": "Endless Open dimensional carriages in the editor can now choose which level repeats as the ground.",
+  "highlights": [
+    "Pick the room's bottom, the level at your feet, or the level the door sits on",
+    "Tick Everything below to fill in the levels under it, or leave it off for open air"
+  ],
+  "date": "2026-11-07",
+  "released": false,
+  "released_in": null,
+  "released_at": null,
+  "pr": 2539
+}
