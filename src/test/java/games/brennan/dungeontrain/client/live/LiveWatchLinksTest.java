@@ -12,14 +12,14 @@ class LiveWatchLinksTest {
     @Test
     void mainBuildLinksTwitchAndTheLivePage() {
         assertEquals("https://twitch.tv/brennanhattongames", LiveWatchLinks.twitchUrlForBranch("main"));
-        assertEquals("https://brennan.games/dungeontrain/live/", LiveWatchLinks.tvUrlForBranch("main"));
+        assertEquals("https://dungeon.training/live/", LiveWatchLinks.tvUrlForBranch("main"));
     }
 
     @Test
     void devBuildLinksOnlyTheDevPage() {
         for (String branch : new String[] {"dev/some-feature", "?", ""}) {
             assertNull(LiveWatchLinks.twitchUrlForBranch(branch), branch);
-            assertEquals("https://brennan.games/dungeontrain/livedev/", LiveWatchLinks.tvUrlForBranch(branch), branch);
+            assertEquals("https://dungeon.training/livedev/", LiveWatchLinks.tvUrlForBranch(branch), branch);
         }
     }
 

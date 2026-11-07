@@ -29,7 +29,7 @@ import java.nio.file.Path;
 
 /**
  * Dev-only: renders every registered item's inventory icon to a PNG, for the relay's item-values
- * page ({@code brennan.games/dungeontrain/items/}, which shows them next to each row).
+ * page ({@code dungeon.training/items/}, which shows them next to each row).
  *
  * <p>Launch with {@code ./gradlew runClient -PtradeValueIcons}. Once the title screen is up
  * (models baked, textures stitched) every item is drawn through {@link GuiGraphics#renderItem}

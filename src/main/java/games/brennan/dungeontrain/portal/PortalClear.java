@@ -278,9 +278,9 @@ public final class PortalClear {
 
     /**
      * The fallback for a column that is not loaded: correct, relighting, and slow, since it blocks
-     * until the column has generated. Reached if a structure's own chunks have gone while it was still
-     * standing, or from a command, both rare — but dropping the write instead would leave blocks behind
-     * that nothing would ever sweep.
+     * until the column has generated. {@code PortalTwinChunkHold} keeps a standing structure's chunks
+     * loaded so the tiler does not come here; what is left is a command, or a chunk that went anyway —
+     * and dropping the write instead would leave blocks behind that nothing would ever sweep.
      */
     private static int clearSpanUnloaded(ServerLevel level, BlockPos.MutableBlockPos pos,
                                          PortalCorridorMask mask,

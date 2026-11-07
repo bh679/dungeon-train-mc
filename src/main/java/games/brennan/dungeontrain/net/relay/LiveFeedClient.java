@@ -156,13 +156,21 @@ public final class LiveFeedClient {
     public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
                            @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
                            @Nullable Moment moment, @Nullable RestartNotice restart, @Nullable Death death,
-                           @Nullable Map<String, String> tr, @Nullable LinkedChannel channel) {
+                           @Nullable Map<String, String> tr, @Nullable LinkedChannel channel, @Nullable String src) {
         /**
          * {@code tr}: the relay's translations of this line already known when it was read (locale → text), else null.
          * {@code channel}: the streamer's Twitch this line links, else null.
+         * {@code src}: the language the line was found in (a language tag), for its translation's flag, else null.
          */
         public ChatLine {
             tr = tr == null || tr.isEmpty() ? null : Map.copyOf(tr);
+        }
+
+        public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
+                        @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
+                        @Nullable Moment moment, @Nullable RestartNotice restart, @Nullable Death death,
+                        @Nullable Map<String, String> tr, @Nullable LinkedChannel channel) {
+            this(seq, ts, author, uuid, content, source, logRequest, via, poll, moment, restart, death, tr, channel, null);
         }
 
         public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
@@ -352,10 +360,16 @@ public final class LiveFeedClient {
     /**
      * A chat poll: whether anyone is on air, the ring's head seq, the lines after {@code since}, and the
      * seqs of earlier lines removed since then ({@code deleted} — a Twitch mod deleted them).
+     * {@code translatedBy}: the relay's id for the service translating this room just now, else null.
      */
     public record ChatPage(boolean live, long seq, List<ChatLine> lines, List<Long> deleted, List<LineReactions> reactions,
-                           List<LineTranslations> translations) {
-        public static final ChatPage EMPTY = new ChatPage(false, -1, List.of(), List.of(), List.of(), List.of());
+                           List<LineTranslations> translations, @Nullable String translatedBy) {
+        public static final ChatPage EMPTY = new ChatPage(false, -1, List.of(), List.of(), List.of(), List.of(), null);
+
+        public ChatPage(boolean live, long seq, List<ChatLine> lines, List<Long> deleted, List<LineReactions> reactions,
+                        List<LineTranslations> translations) {
+            this(live, seq, lines, deleted, reactions, translations, null);
+        }
 
         public ChatPage(boolean live, long seq, List<ChatLine> lines, List<Long> deleted, List<LineReactions> reactions) {
             this(live, seq, lines, deleted, reactions, List.of());
@@ -378,16 +392,30 @@ public final class LiveFeedClient {
      * languages the room's readers asked for. Arrives a poll or two after the line, while the Live
      * Translations reward is on.
      */
-    public record LineTranslations(long line, Map<String, String> tr) {
+    public record LineTranslations(long line, Map<String, String> tr, @Nullable String src) {
         public LineTranslations {
             tr = Map.copyOf(tr);
+        }
+
+        public LineTranslations(long line, Map<String, String> tr) {
+            this(line, tr, null);
         }
     }
 
     /** A translation map's keys: the mod's locale codes ({@code zh_cn}); anything else is dropped. */
     private static final Pattern LOCALE_KEY = Pattern.compile("[a-z]{2,3}_[a-z0-9]{2,4}");
+    /** A language tag as the relay sends it: {@code es}, {@code zh-cn}. */
+    private static final Pattern LANGUAGE_TAG = Pattern.compile("[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,2}");
     /** Most languages a line is read in at once; a longer map is cut, not refused. */
     static final int MAX_TRANSLATIONS = 32;
+
+    /** A chat page's {@code translatedBy}: a short lower-case id, else null. Package-private for tests. */
+    @Nullable
+    static String parseTranslatedBy(JsonObject b) {
+        if (!b.has("translatedBy") || !b.get("translatedBy").isJsonPrimitive()) return null;
+        String id = b.get("translatedBy").getAsString();
+        return id.matches("[a-z0-9_]{1,24}") ? id : null;
+    }
 
     /** The {@code translations} array of a chat page; malformed entries are skipped. Package-private for tests. */
     static List<LineTranslations> parseTranslations(JsonObject b) {
@@ -398,9 +426,17 @@ public final class LiveFeedClient {
             JsonObject o = el.getAsJsonObject();
             if (!o.has("line") || !o.get("line").isJsonPrimitive() || !o.get("line").getAsJsonPrimitive().isNumber()) continue;
             Map<String, String> tr = parseTr(o);
-            if (tr != null) out.add(new LineTranslations(o.get("line").getAsLong(), tr));
+            if (tr != null) out.add(new LineTranslations(o.get("line").getAsLong(), tr, parseSrc(o)));
         }
         return List.copyOf(out);
+    }
+
+    /** The {@code src} of a message or a translations entry: a language tag, else null. Package-private for tests. */
+    @Nullable
+    static String parseSrc(JsonObject o) {
+        if (!o.has("src") || !o.get("src").isJsonPrimitive() || !o.get("src").getAsJsonPrimitive().isString()) return null;
+        String src = o.get("src").getAsString();
+        return LANGUAGE_TAG.matcher(src).matches() ? src : null;
     }
 
     /**
@@ -1068,7 +1104,7 @@ public final class LiveFeedClient {
                     Via via = Via.parse(m.has("via") && !m.get("via").isJsonNull() ? m.get("via").getAsString() : null);
                     lines.add(new ChatLine(m.get("seq").getAsLong(), m.has("ts") ? m.get("ts").getAsLong() : 0L,
                         author.isBlank() ? "Someone" : author, uuid, content, source, parseLogRequest(m), via,
-                        LiveTakeoverClient.parsePollLine(m), parseMoment(m), parseRestart(m), parseDeath(m), parseTr(m), parseChannel(m)));
+                        LiveTakeoverClient.parsePollLine(m), parseMoment(m), parseRestart(m), parseDeath(m), parseTr(m), parseChannel(m), parseSrc(m)));
                 }
             }
             List<Long> deleted = new ArrayList<>();
@@ -1077,7 +1113,7 @@ public final class LiveFeedClient {
                     if (el.isJsonPrimitive() && el.getAsJsonPrimitive().isNumber()) deleted.add(el.getAsLong());
                 }
             }
-            return new ChatPage(live, seq, List.copyOf(lines), List.copyOf(deleted), parseReactions(b), parseTranslations(b));
+            return new ChatPage(live, seq, List.copyOf(lines), List.copyOf(deleted), parseReactions(b), parseTranslations(b), parseTranslatedBy(b));
         } catch (RuntimeException e) {
             return ChatPage.EMPTY;
         }

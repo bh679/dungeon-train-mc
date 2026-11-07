@@ -657,6 +657,8 @@ public final class PortalCarriageEvents {
         EVICTED.clear();
         games.brennan.dungeontrain.portal.PortalTwinChunkHold.clear();
         OVERLAP_WARNED_AT.clear();
+        // The ServerStopping captures are all queued by now. Nobody is left to feel the wait.
+        PortalRoomMemory.flushSaves();
         PortalRoomMemory.clearSession();
         games.brennan.dungeontrain.portal.PortalCorridorResync.clear();
         // Each pairing holds its carriage's plot; a pair key names a different carriage next world.

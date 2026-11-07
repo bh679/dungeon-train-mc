@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LiveChatTranslationsTest {
 
@@ -64,6 +65,38 @@ class LiveChatTranslationsTest {
     }
 
     @Test
+    @DisplayName("a flag comes just before the text, under the original and in a replaced line; without one they read as before")
+    void flags() {
+        MutableComponent flag = LanguageFlags.flag("es", "the creeper got me");
+        String glyph = flag.getString();
+        assertEquals(glyph + " hola", ((MutableComponent) ((net.minecraft.network.chat.contents.TranslatableContents)
+            LiveChatTranslations.underLine(LINE, "hola", true, flag).getContents()).getArgs()[0]).getString());
+        assertTrue(LiveChatTranslations.replacedLine(LINE, "hola", flag).getString().endsWith("Alice: " + glyph + " hola"));
+        assertTrue(LiveChatTranslations.replacedLine(LINE, "hola", null).getString().endsWith("Alice: hola"));
+    }
+
+    @Test
+    @DisplayName("translation alone: flag and translation, a click flips to the original with no flag, and back")
+    void flip() {
+        MutableComponent flag = LanguageFlags.flag("es", "the creeper got me");
+        MutableComponent shown = LiveChatTranslations.flippableLine(LINE, "hola", flag);
+        assertTrue(shown.getString().endsWith("Alice: " + flag.getString() + " hola"));
+        var text = shown.getSiblings().get(shown.getSiblings().size() - 1);
+        assertEquals("dungeontrain:live-chat-flip/" + LINE.seq(), text.getStyle().getClickEvent().getValue());
+        assertEquals(LiveChatTranslations.FLIP_HIDE_KEY, key((MutableComponent) text.getStyle().getHoverEvent().getValue(HoverEvent.Action.SHOW_TEXT)));
+
+        LiveChatFlip.track(LINE, "hola", flag);
+        var original = (MutableComponent) LiveChatFlip.toggle(LINE.seq());
+        assertTrue(original.getString().endsWith("Alice: " + LINE.content()));
+        var originalText = original.getSiblings().get(original.getSiblings().size() - 1);
+        assertEquals(LiveChatTranslations.FLIP_SHOW_KEY, key((MutableComponent) originalText.getStyle().getHoverEvent().getValue(HoverEvent.Action.SHOW_TEXT)));
+        assertTrue(LiveChatFlip.toggle(LINE.seq()).getString().endsWith("Alice: " + flag.getString() + " hola"));
+
+        LiveChatFlip.forget();
+        assertNull(LiveChatFlip.toggle(LINE.seq()));
+    }
+
+    @Test
     @DisplayName("a language's own name for the notice; the code when the JDK has none")
     void langName() {
         assertEquals("Deutsch", LiveChatTranslations.langName("de_de"));
@@ -73,6 +106,13 @@ class LiveChatTranslationsTest {
 
     private static String key(MutableComponent c) {
         return ((net.minecraft.network.chat.contents.TranslatableContents) c.getContents()).getKey();
+    }
+
+    @Test
+    @DisplayName("the chat's label: plain, or Google's credit")
+    void translatedLabel() {
+        assertEquals(LiveChatTranslations.TRANSLATED_KEY, key((MutableComponent) LiveChatTranslations.translatedLabel(false)));
+        assertEquals(LiveChatTranslations.POWERED_BY_KEY, key((MutableComponent) LiveChatTranslations.translatedLabel(true)));
     }
 
     private static String arg(MutableComponent c, int i) {

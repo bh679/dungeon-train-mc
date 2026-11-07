@@ -5,6 +5,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.bugresponse.BugResponseChatNotifier;
 import games.brennan.dungeontrain.client.moty.ModOfTheYearPopupHandler;
+import games.brennan.dungeontrain.client.survey.NpsAiNoteHandler;
 import games.brennan.discordpresence.survey.SurveyRegistry;
 import org.slf4j.Logger;
 import net.neoforged.api.distmarker.Dist;
@@ -15,6 +16,7 @@ import games.brennan.dungeontrain.client.skybox.SkyboxStencil;
 import games.brennan.dungeontrain.client.live.FfmpegHint;
 import games.brennan.dungeontrain.client.live.LiveTakeoverOffer;
 import games.brennan.dungeontrain.client.live.LiveTakeoverChat;
+import games.brennan.dungeontrain.client.live.LiveChatFlip;
 import games.brennan.dungeontrain.client.live.LiveGiftClient;
 import games.brennan.dungeontrain.client.live.LiveReportButton;
 import games.brennan.dungeontrain.client.live.LiveOptionsCommand;
@@ -47,6 +49,7 @@ public final class DungeonTrainClient {
         LiveTakeoverOffer.registerClicks();
         LiveTakeoverChat.registerClicks();
         LiveGiftClient.registerClicks();
+        LiveChatFlip.registerClicks();
         LiveReportButton.registerClicks();
         LiveOptionsCommand.registerClicks();
         LogRequestClient.registerClicks();
@@ -82,6 +85,14 @@ public final class DungeonTrainClient {
                 }
             } catch (Exception ex) {
                 LOGGER.warn("[DungeonTrain] Recording the NPS answer failed: {}", ex.toString());
+            }
+            try {
+                if (entry.scaleMax() >= entry.scaleMin() && SurveyRegistry.NPS_ID.equals(entry.id())) {
+                    NpsAiNoteHandler.onNpsAnswered(score,
+                            BugResponseChatNotifier.surveyComment(net.minecraft.client.Minecraft.getInstance()));
+                }
+            } catch (Exception ex) {
+                LOGGER.warn("[DungeonTrain] The NPS AI note failed: {}", ex.toString());
             }
         });
 

@@ -68,8 +68,12 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>The first dump used to wait 5 s. What players report as "lag spikes" are mostly shorter than
  * that: a log of October 2026 (jumping off the train) held two real stalls of 2.6 s and 4.0 s with
  * the client at 100 fps, and the watchdog said nothing about either. So the first dump now comes at
- * {@link #STALL_LOG_MS} = 1.5 s, and the counter is sampled every 250 ms so a stall that short is
- * seen while it is still happening rather than on the tick after it.</p>
+ * {@link #STALL_LOG_MS}, and the counter is sampled every 250 ms so a stall that short is seen while
+ * it is still happening rather than on the tick after it.</p>
+ *
+ * <p>That was 1.5 s until November 2026, when three logs of one player held stalls of about 1.2 s that
+ * nothing could name: the client drew on at 60 fps and the watchdog said nothing. A stall under 1 s
+ * can end between two samples, so 750 ms reliably catches those from about 1 s up.</p>
  *
  * <p>Short stalls are far more common than long ones (0 to 21 tick-lag warnings in the 1.5-5 s
  * band per session across 36 player logs, pause resumes included), so a stall that has not yet
@@ -86,7 +90,7 @@ public final class ServerStallWatchdog {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /** A tick stuck longer than this gets its first stack dump. */
-    static final long STALL_LOG_MS = 1_500;
+    static final long STALL_LOG_MS = 750;
     /** A stall this long is always dumped; shorter ones share {@link #SHORT_DUMP_COOLDOWN_MS}. */
     static final long LONG_STALL_MS = 5_000;
     /** At most one short-stall dump this often, so a laggy session cannot fill the log tail. */

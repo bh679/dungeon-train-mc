@@ -114,22 +114,31 @@ public final class OfflineChunkSampler {
      */
     public static Holder<Biome> biomeInSample(WorldGenLevel level, BlockPos pos) {
         try {
-            return level.getBiome(pos);                   // inside the region: the sample's own biomes
-        } catch (RuntimeException outsideTheRegion) {
-            // fall through to the source
-        }
-        try {
             ServerLevel server = level.getLevel();
             // The source the sample was generated from — the End band's remapped one — else the level's.
-            BiomeSource source = SAMPLE_BIOMES.get();
-            if (source == null) source = server.getChunkSource().getGenerator().getBiomeSource();
-            return source.getNoiseBiome(QuartPos.fromBlock(pos.getX()),
-                QuartPos.fromBlock(pos.getY()), QuartPos.fromBlock(pos.getZ()),
-                server.getChunkSource().randomState().sampler());
+            BiomeSource sampled = SAMPLE_BIOMES.get();
+            BiomeSource source = sampled != null ? sampled : server.getChunkSource().getGenerator().getBiomeSource();
+            Climate.Sampler sampler = server.getChunkSource().randomState().sampler();
+            if (!(level instanceof WorldGenRegion region)) {
+                return source.getNoiseBiome(QuartPos.fromBlock(pos.getX()),
+                    QuartPos.fromBlock(pos.getY()), QuartPos.fromBlock(pos.getZ()), sampler);
+            }
+            // Never ask the region past its eight neighbours: only they have biomes in the FEATURES step, and
+            // beyond them WorldGenRegion builds a full crash report just to throw, whose system report runs a
+            // native memory query as a subprocess (~0.5 s each). The biome fuzz picks its quart here, so a
+            // position inside can still land outside: the check belongs on the quart, not on pos.
+            ChunkPos centre = region.getCenter();
+            return level.getBiomeManager().withDifferentSource((qx, qy, qz) ->
+                centre.getChessboardDistance(QuartPos.toSection(qx), QuartPos.toSection(qz)) <= BIOME_RADIUS
+                    ? level.getNoiseBiome(qx, qy, qz)     // the sample's own biomes
+                    : source.getNoiseBiome(qx, qy, qz, sampler)).getBiome(pos);
         } catch (RuntimeException e) {
             return null;
         }
     }
+
+    /** How far from a region's centre chunks have biomes during decoration (vanilla's FEATURES step: CARVERS at 1). */
+    static final int BIOME_RADIUS = 1;
 
     /**
      * Run the biome decoration pass over a sample. The one way consumers should decorate: while it runs,

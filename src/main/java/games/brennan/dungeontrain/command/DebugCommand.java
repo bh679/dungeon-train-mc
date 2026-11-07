@@ -194,7 +194,7 @@ public final class DebugCommand {
                     games.brennan.dungeontrain.worldgen.LostCityTemplatePreload.Mode.LEGACY))))
             // /dungeontrain debug trade-values dump — every registered item with its name, Trade
             // Everything's current value and where it comes from, to <server dir>/trade-values-catalog.json.
-            // Copied verbatim to the relay page's catalog.json (brennan.games/dungeontrain/items/).
+            // Copied verbatim to the relay page's catalog.json (dungeon.training/items/).
             .then(Commands.literal("trade-values")
                 .then(Commands.literal("dump").executes(ctx -> dumpTradeValues(ctx.getSource()))))
             // /dungeontrain debug cycle-layout [runs] — every band slot's world-X range (run 0 and the doubled

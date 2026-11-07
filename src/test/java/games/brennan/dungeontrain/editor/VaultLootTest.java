@@ -214,7 +214,7 @@ final class VaultLootTest {
     }
 
     @Test
-    @DisplayName("Ender Blocks drop up to 2 from the ominous vault, rarer than Golden Apples, and up to 6 from the green vault")
+    @DisplayName("Ender Blocks drop up to 2 from the ominous vault, rarer than Golden Apples, and up to 10 from the green vault")
     void enderBlockRewards() {
         ContainerContentsEntry ominous = entry(VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY), "betterend", "ender_block");
         assertEquals(2, ominous.count());
@@ -222,8 +222,14 @@ final class VaultLootTest {
         assertTrue(ominous.weight() < entry(VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY), "minecraft", "golden_apple").weight());
 
         ContainerContentsEntry green = entry(VaultLoot.defaultPool(VaultLoot.GREEN_KEY), "betterend", "ender_block");
-        assertEquals(6, green.count());
+        assertEquals(10, green.count());
         assertEquals(200, green.weight());
+    }
+
+    @Test
+    @DisplayName("Golden Apples drop up to 20 from the green vault")
+    void greenVaultGoldenApples() {
+        assertEquals(20, entry(VaultLoot.defaultPool(VaultLoot.GREEN_KEY), "minecraft", "golden_apple").count());
     }
 
     private static ContainerContentsEntry entry(ContainerContentsPool pool, String namespace, String path) {
