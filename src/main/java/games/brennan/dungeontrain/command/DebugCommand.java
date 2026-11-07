@@ -160,6 +160,14 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setLostCityMemo(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setLostCityMemo(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> lostCityMemoStatus(ctx.getSource()))))
+            // /dungeontrain debug disk-memo <on|off|verify|status> — toggles DiskTestMemo, which skips the disk
+            // feature's repeated block tests (WWOO's cliff disks). OFF = vanilla's path; VERIFY re-runs the real
+            // test on every remembered answer and counts mismatches (expect 0). status prints and resets counts.
+            .then(Commands.literal("disk-memo")
+                .then(Commands.literal("on").executes(ctx -> setDiskMemo(ctx.getSource(), games.brennan.dungeontrain.worldgen.DiskTestMemo.Mode.ON)))
+                .then(Commands.literal("off").executes(ctx -> setDiskMemo(ctx.getSource(), games.brennan.dungeontrain.worldgen.DiskTestMemo.Mode.OFF)))
+                .then(Commands.literal("verify").executes(ctx -> setDiskMemo(ctx.getSource(), games.brennan.dungeontrain.worldgen.DiskTestMemo.Mode.VERIFY)))
+                .then(Commands.literal("status").executes(ctx -> diskMemoStatus(ctx.getSource()))))
             // /dungeontrain debug lod-lite <auto|force|off|status> — Distant Horizons LOD-lite Nether-core
             // decoration (see LodGeneration). `auto` (default) = lite only on DH-World Gen threads; `force`
             // = lite on every worldgen thread so a headless server measures the saving with no DH
@@ -651,6 +659,23 @@ public final class DebugCommand {
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Biome-source column memo " + (on ? "ON" : "OFF")
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), false);
+        return 1;
+    }
+
+    private static int setDiskMemo(CommandSourceStack source, games.brennan.dungeontrain.worldgen.DiskTestMemo.Mode mode) {
+        games.brennan.dungeontrain.worldgen.DiskTestMemo.mode = mode;
+        boolean off = mode == games.brennan.dungeontrain.worldgen.DiskTestMemo.Mode.OFF;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Disk test memo " + mode + (off ? " (vanilla path, A/B mode)" : "")
+        ).withStyle(off ? ChatFormatting.GOLD : ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    private static int diskMemoStatus(CommandSourceStack source) {
+        String counters = games.brennan.dungeontrain.worldgen.DiskTestMemo.drainCounters();
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Disk test memo " + games.brennan.dungeontrain.worldgen.DiskTestMemo.mode + " " + counters
+        ), false);
         return 1;
     }
 

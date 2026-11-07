@@ -6,6 +6,12 @@
   "refmap": "dungeontrain.refmap.json",
   "plugin": "games.brennan.dungeontrain.mixin.CoreMixinPlugin",
   "mixins": [
+    "CombiningPredicateAccessor",
+    "DiskFeatureTestMemoMixin",
+    "NotPredicateAccessor",
+    "PlacedFeatureDiskMemoMixin",
+    "StateTestingPredicateAccessor",
+    "WorldGenRegionDiskMemoMixin",
     "EnderManEndBandMixin",
     "NetherPortalBlockBandJumpMixin",
     "EndGatewayBlockBandJumpMixin",
