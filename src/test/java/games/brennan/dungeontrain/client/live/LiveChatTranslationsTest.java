@@ -109,10 +109,9 @@ class LiveChatTranslationsTest {
     }
 
     @Test
-    @DisplayName("the chat's label: plain, or Google's credit")
+    @DisplayName("the chat's plain label")
     void translatedLabel() {
-        assertEquals(LiveChatTranslations.TRANSLATED_KEY, key((MutableComponent) LiveChatTranslations.translatedLabel(false)));
-        assertEquals(LiveChatTranslations.POWERED_BY_KEY, key((MutableComponent) LiveChatTranslations.translatedLabel(true)));
+        assertEquals(LiveChatTranslations.TRANSLATED_KEY, key((MutableComponent) LiveChatTranslations.translatedLabel()));
     }
 
     private static String arg(MutableComponent c, int i) {
