@@ -764,7 +764,6 @@
   "chat.dungeontrain.live_chat.translation.on": "แชทไลฟ์กำลังถูกแปลเป็น%s เปลี่ยนวิธีแสดงได้ที่ %s",
   "chat.dungeontrain.live_chat.translation.path": "ตัวเลือก / Dungeon Train / สตรีม / การแปลแชท",
   "chat.dungeontrain.live_chat.translated": "แปลแล้ว",
-  "chat.dungeontrain.live_chat.powered_by": "ขับเคลื่อนโดย %s",
   "chat.dungeontrain.live_gift.prompt": "%s เข้ามาดูผ่านทีวี และยังไม่เคยมีกล้องวิดีโอถ่ายทอดเลย",
   "chat.dungeontrain.live_gift.give": "มอบให้เขา",
   "chat.dungeontrain.live_gift.offered": "กำลังมอบกล้องวิดีโอถ่ายทอดของคุณให้ %s…",

@@ -764,7 +764,6 @@
   "chat.dungeontrain.live_chat.translation.on": "라이브 채팅이 %s로 번역되고 있습니다. 표시 방식은 %s에서 바꿀 수 있습니다",
   "chat.dungeontrain.live_chat.translation.path": "설정 / Dungeon Train / 방송 / 채팅 번역",
   "chat.dungeontrain.live_chat.translated": "번역됨",
-  "chat.dungeontrain.live_chat.powered_by": "제공: %s",
   "chat.dungeontrain.live_gift.prompt": "%s 님이 TV로 들어왔어요. 아직 방송 캠코더를 가져 본 적이 없어요.",
   "chat.dungeontrain.live_gift.give": "선물하기",
   "chat.dungeontrain.live_gift.offered": "%s 님에게 내 방송 캠코더를 넘기는 중…",

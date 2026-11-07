@@ -796,7 +796,6 @@
   "chat.dungeontrain.live_chat.translation.on": "Der Live-Chat wird für dich auf %s übersetzt. Ändere die Anzeige unter %s",
   "chat.dungeontrain.live_chat.translation.path": "Optionen / Dungeon Train / Stream / Chat-Übersetzungen",
   "chat.dungeontrain.live_chat.translated": "Übersetzt",
-  "chat.dungeontrain.live_chat.powered_by": "Bereitgestellt von %s",
   "chat.dungeontrain.live_gift.prompt": "%s schaut über einen Fernseher zu und hatte noch nie einen Sende-Camcorder.",
   "chat.dungeontrain.live_gift.give": "Schenk ihn",
   "chat.dungeontrain.live_gift.offered": "%s wird dein Sende-Camcorder angeboten …",
