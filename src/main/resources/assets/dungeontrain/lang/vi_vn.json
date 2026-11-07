@@ -761,6 +761,8 @@
   "chat.dungeontrain.live_chat.translation": "    ↳ %s",
   "chat.dungeontrain.live_chat.translation.named": "    ↳ %s: %s",
   "chat.dungeontrain.live_chat.translation.original": "Bản gốc: %s",
+  "chat.dungeontrain.live_chat.translation.flip_hide": "Đã dịch. Nhấp để ẩn bản dịch",
+  "chat.dungeontrain.live_chat.translation.flip_show": "Nhấp để dịch",
   "chat.dungeontrain.live_chat.translation.on": "Trò chuyện trực tiếp đang được dịch sang %s. Đổi cách hiển thị tại %s",
   "chat.dungeontrain.live_chat.translation.path": "Tùy chọn / Dungeon Train / Phát trực tiếp / Dịch trò chuyện",
   "chat.dungeontrain.live_chat.translated": "Đã dịch",

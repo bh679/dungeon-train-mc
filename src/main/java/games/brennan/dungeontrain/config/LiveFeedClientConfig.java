@@ -120,8 +120,9 @@ public final class LiveFeedClientConfig {
             .comment("Mirror the stream's Discord chat into your in-game chat while you stream or wear a TV (a worn TV is in the chat even with nobody live), and post what you type back to it. Off while you stream only hides the chat from you: everyone else can still talk. Always off in Kid mode, whatever this says.")
             .define("liveChat", true);
         LIVE_CHAT_TRANSLATION = b
-            .comment("How a Live chat line translated into your language shows: REPLACE the original (hover its flag for the original), UNDER the original in grey, or FIRST with the original under it.")
-            .defineEnum("liveChatTranslation", LiveChatTranslation.REPLACE);
+            .comment("How a Live chat line translated into your language shows: REPLACE the original (hover its flag for the original, click it to flip), UNDER the original in grey, or FIRST with the original under it.")
+            // Renamed from liveChatTranslation: the old default, UNDER, was saved in every player's file, so a new default never reached them.
+            .defineEnum("liveChatTranslationMode", LiveChatTranslation.REPLACE);
         LIVE_MOMENT_ADVANCEMENTS = b
             .comment("While you stream with the Live Eye, say in the stream's Live chat (Discord, Twitch, the website and TV wearers) when you earn an advancement. Always off in Kid mode.")
             .define("liveMomentAdvancements", true);
