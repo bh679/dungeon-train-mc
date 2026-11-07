@@ -48,6 +48,7 @@ public final class LiveChatTranslatedPill {
     private static final int BADGE_TEXTURE_W = 528;
     private static final int BADGE_TEXTURE_H = 48;
     private static final int BADGE_H = 12;
+    private static final float BADGE_SCALE = 0.8f;
     /** Ticks of the translated lines remembered: more than chat could show at once. */
     private static final int TICKS_KEPT = 256;
     /** Below this, Minecraft's text renderer draws nothing recognisable anyway. */
@@ -174,14 +175,19 @@ public final class LiveChatTranslatedPill {
     }
 
     private static void drawGoogleBadge(GuiGraphics graphics, int bottom, float alpha) {
-        int height = BADGE_H + 2 * PAD_Y;
-        int width = badgeWidth(BADGE_H);
+        int shownWidth = Math.round(badgeWidth(BADGE_H) * BADGE_SCALE);
+        int shownHeight = Mth.ceil(BADGE_H * BADGE_SCALE);
+        int height = shownHeight + 2 * PAD_Y;
         int top = labelTop(bottom, height);
         // Opaque: nothing on the HUD beneath may show through Google's credit.
-        graphics.fill(CHAT_LEFT, top, CHAT_LEFT + width + 2 * PAD_X, top + height, argb(alpha, 0x000000));
+        graphics.fill(CHAT_LEFT, top, CHAT_LEFT + shownWidth + 2 * PAD_X, top + height, argb(alpha, 0x000000));
         RenderSystem.enableBlend();
         RenderSystem.setShaderColor(1f, 1f, 1f, alpha);
-        graphics.blit(GOOGLE_BADGE, CHAT_LEFT + PAD_X, top + PAD_Y, width, BADGE_H, 0f, 0f, BADGE_TEXTURE_W, BADGE_TEXTURE_H, BADGE_TEXTURE_W, BADGE_TEXTURE_H);
+        graphics.pose().pushPose();
+        graphics.pose().translate(CHAT_LEFT + PAD_X, top + PAD_Y, 0f);
+        graphics.pose().scale(BADGE_SCALE, BADGE_SCALE, 1f);
+        graphics.blit(GOOGLE_BADGE, 0, 0, badgeWidth(BADGE_H), BADGE_H, 0f, 0f, BADGE_TEXTURE_W, BADGE_TEXTURE_H, BADGE_TEXTURE_W, BADGE_TEXTURE_H);
+        graphics.pose().popPose();
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         RenderSystem.disableBlend();
     }
