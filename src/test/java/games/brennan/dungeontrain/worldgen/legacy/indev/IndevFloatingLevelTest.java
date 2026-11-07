@@ -108,7 +108,7 @@ final class IndevFloatingLevelTest {
     @Test
     @DisplayName("tile cache: one build per tile, chunks map to their tile, LRU stays capped")
     void tileCache() {
-        IndevLevels levels = new IndevLevels(0x1D5EEDL);
+        IndevLevels levels = new IndevLevels(0x1D5EEDL, r -> { });
         IndevFloatingLevel a = levels.level(3, -2);
         assertSame(a, levels.level(3, -2));
         // Tile (3,-2) spans chunk X 48..63 and, shifted half a tile in Z, chunk Z -40..-25.

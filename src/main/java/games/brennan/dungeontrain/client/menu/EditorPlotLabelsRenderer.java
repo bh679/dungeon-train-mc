@@ -102,6 +102,10 @@ public final class EditorPlotLabelsRenderer {
         COPIES_ROOF_EDIT,
         /** The furnishing row — whether the room takes a contents template, and how it is fitted. */
         ROOM_CONTENTS_CYCLE,
+        /** The ground row — which row an Endless Open copy repeats as its floor. */
+        GROUND_CYCLE,
+        /** The Everything Below checkbox under it. */
+        GROUND_BELOW_TOGGLE,
         /** The door-wall row — whether a copy carries its own wall through a corridor mouth. */
         DOOR_WALL_CYCLE,
         /** The sky row — whether the room is lit as though it stood outdoors, and under which sky. */
@@ -133,7 +137,8 @@ public final class EditorPlotLabelsRenderer {
      * {@link #rows} now, so the three cannot drift.</p>
      */
     public enum RowKind {
-        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, LOCK, COPIES, COPIES_FLOOR, COPIES_ROOF, DOOR_WALL,
+        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, LOCK, COPIES, COPIES_FLOOR, COPIES_ROOF, GROUND, GROUND_BELOW,
+        DOOR_WALL,
         DOOR_OFFSET, ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, ROOM_FOG, ROOM_DRIFT, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER,
         ACTION, CONTENTS
     }
@@ -163,6 +168,8 @@ public final class EditorPlotLabelsRenderer {
             buf[n++] = RowKind.COPIES_FLOOR;
             buf[n++] = RowKind.COPIES_ROOF;
         }
+        if (hasGroundRow(entry)) buf[n++] = RowKind.GROUND;
+        if (hasGroundBelowRow(entry)) buf[n++] = RowKind.GROUND_BELOW;
         if (hasDoorWallRow(entry)) buf[n++] = RowKind.DOOR_WALL;
         if (hasDoorOffsetRow(entry)) buf[n++] = RowKind.DOOR_OFFSET;
         if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
@@ -488,6 +495,46 @@ public final class EditorPlotLabelsRenderer {
      */
     public static boolean hasDoorWallRow(EditorPlotLabelsPacket.Entry entry) {
         return hasModeRow(entry) && hasDoorWallRow(entry.roomMode());
+    }
+
+    /** Whether the Ground row shows: see {@link #hasGroundRow(String)}. */
+    public static boolean hasGroundRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry) && hasGroundRow(entry.roomMode());
+    }
+
+    /** Whether the Ground row shows: only under Endless Open, the one mode it means anything in. */
+    public static boolean hasGroundRow(String modeTag) {
+        if (modeTag == null) return false;
+        return games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).groundApplies();
+    }
+
+    /** Whether the Everything Below box shows: see {@link #hasGroundBelowRow(String)}. */
+    public static boolean hasGroundBelowRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry) && hasGroundBelowRow(entry.roomMode());
+    }
+
+    /** Whether the Everything Below box shows: only with a raised ground, which has rows under it. */
+    public static boolean hasGroundBelowRow(String modeTag) {
+        if (modeTag == null) return false;
+        return games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).effectiveGround().level()
+            != games.brennan.dungeontrain.portal.PortalRoomGround.Level.BOTTOM;
+    }
+
+    /** What the Ground row reads, e.g. {@code "Ground: Door (Y 4)"}. */
+    public static String groundLabel(String modeTag) {
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag);
+        games.brennan.dungeontrain.portal.PortalRoomGround ground = settings.effectiveGround();
+        return MenuLang.t("plot.ground",
+            MenuLang.named("portal.ground", ground.level().id(), ground.level().displayName()),
+            ground.row(settings.doorHeightOffset().value()));
+    }
+
+    /** What the Everything Below row reads, a bracket checkbox like the parts rows draw. */
+    public static String groundBelowLabel(String modeTag) {
+        boolean below = games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .effectiveGround().below();
+        return (below ? "[x] " : "[ ] ") + MenuLang.t("plot.ground_below");
     }
 
     /**
@@ -966,6 +1013,8 @@ public final class EditorPlotLabelsRenderer {
             case COPIES_FLOOR -> copiesFloorCell(halfW, hitX);
             case COPIES_ROOF -> copiesBlockHitIsEdit(halfW, hitX)
                 ? CellKind.COPIES_ROOF_EDIT : CellKind.COPIES_ROOF_HELD;
+            case GROUND -> CellKind.GROUND_CYCLE;
+            case GROUND_BELOW -> CellKind.GROUND_BELOW_TOGGLE;
             case DOOR_WALL -> CellKind.DOOR_WALL_CYCLE;
             // Read-only — there is nothing to click. The door offset is detected from a placed door,
             // not dialled in here; see PortalRoomDoorDetection.
@@ -1201,6 +1250,18 @@ public final class EditorPlotLabelsRenderer {
                         drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                         drawCenteredText(ps, buffer, font, roomBooksLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                     }
+                }
+                // Ground — which row an Endless Open copy repeats as its floor. Same one-cell cycle
+                // as Sky; the checkbox under it is one cell too.
+                case GROUND -> {
+                    int bg = hovered == CellKind.GROUND_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, groundLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                case GROUND_BELOW -> {
+                    int bg = hovered == CellKind.GROUND_BELOW_TOGGLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, groundBelowLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
                 // Door Wall — whether the copies standing against the portal carriages carry their
                 // own end wall through the corridor mouth's plane. Sealed by default, which is what
