@@ -36,7 +36,7 @@ def base_listing(**overrides) -> dict:
         "categories": ["utility"],
         "license_id": "MIT",
         "source_url": "https://github.com/bh679/example-mc",
-        "issues_url": "https://dungeon.training/issues/#example",
+        "issues_url": "https://dungeon.training/issues#example",
         "icon": "icon.png",
         "screenshots": [{"file": "one.png", "title": "One", "featured": True}],
         **overrides,
@@ -151,6 +151,19 @@ class PageRules(Base):
         found = self.problems(page='<tr id="other">')
         self.assertTrue(any("no row" in p for p in found))
 
+    def test_issues_anchor_found_in_the_relays_list(self):
+        answers = {
+            tool.ISSUES_API: json.dumps({"ok": True, "projects": [{"id": "example"}]}),
+            tool.ISSUES_PAGE: "<html>built-in rows only</html>",
+        }
+        write_folder(self.dir, base_listing())
+        found = tool.page_problems(tool.load_listing(self.dir), self.dir, fetch_page=answers.__getitem__)
+        self.assertEqual(found, [])
+
+    def test_issues_link_with_a_slash_before_the_anchor_fails(self):
+        found = self.problems(base_listing(issues_url="https://dungeon.training/issues/#example"))
+        self.assertTrue(any("issues_url" in p for p in found))
+
     def test_screenshots_are_required_and_must_exist(self):
         self.assertTrue(any("screenshots" in p for p in self.problems(base_listing(screenshots=[]))))
         shot = {"file": "gone.png", "title": "Gone", "featured": True}
@@ -178,7 +191,7 @@ class SignOff(Base):
             "categories": ["utility"],
             "license": {"id": "MIT"},
             "source_url": "https://github.com/bh679/example-mc",
-            "issues_url": "https://dungeon.training/issues/#example",
+            "issues_url": "https://dungeon.training/issues#example",
             "gallery": [{"title": "One", "url": "https://cdn/one.png"}],
             **overrides,
         }
@@ -369,6 +382,63 @@ class Tokens(Base):
         code, out = self.run_cli("tokens")
         self.assertEqual(code, 1)
         self.assertIn("no token file", out)
+
+
+ADMIN_SECRET = "adminCapNeverPrinted0000"
+
+
+class IssuesAdd(Base):
+    def setUp(self):
+        super().setUp()
+        self.admin_file = os.path.join(self.dir, "relay-admin-url.txt")
+        with open(self.admin_file, "w", encoding="utf-8") as f:
+            f.write(f"https://brennan.games/api/dp-relay/{ADMIN_SECRET}\n")
+        patcher = mock.patch.object(tool, "RELAY_ADMIN_URL_FILE", self.admin_file)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        write_folder(self.dir, base_listing())
+
+    def test_without_confirmed_it_only_shows_the_row(self):
+        store = FakeStore()
+        with mock.patch.object(tool, "call", store):
+            code, out = self.run_cli("issues-add", self.dir)
+        self.assertEqual(code, 0)
+        self.assertIn("Example Mod (#example)", out)
+        self.assertIn("--confirmed", out)
+        self.assertEqual(store.requests, [])
+
+    def test_confirmed_puts_the_row_to_the_relay(self):
+        store = mock.Mock(return_value=(200, {"ok": True, "projects": []}))
+        with mock.patch.object(tool, "call", store):
+            code, out = self.run_cli("issues-add", self.dir, "--confirmed")
+        self.assertEqual(code, 0)
+        method, url = store.call_args.args
+        self.assertEqual(method, "PUT")
+        self.assertTrue(url.endswith(f"/{ADMIN_SECRET}/issues/projects"))
+        sent = json.loads(store.call_args.kwargs["data"])
+        self.assertEqual(sent, {"id": "example", "name": "Example Mod", "repo": "bh679/example-mc"})
+        self.assertIn("https://dungeon.training/issues#example", out)
+        self.assertNotIn(ADMIN_SECRET, out)
+
+    def test_a_refusal_names_the_reason_but_never_the_admin_url(self):
+        with mock.patch.object(tool, "call", return_value=(400, {"error": "repo_taken"})):
+            code, out = self.run_cli("issues-add", self.dir, "--confirmed")
+        self.assertEqual(code, 1)
+        self.assertIn("repo_taken", out)
+        self.assertNotIn(ADMIN_SECRET, out)
+
+    def test_an_unreachable_relay_never_prints_the_admin_url(self):
+        failing = mock.Mock(side_effect=tool.ListingError(f"PUT https://x/{ADMIN_SECRET} failed"))
+        with mock.patch.object(tool, "call", failing):
+            code, out = self.run_cli("issues-add", self.dir, "--confirmed")
+        self.assertEqual(code, 1)
+        self.assertNotIn(ADMIN_SECRET, out)
+
+    def test_source_must_be_one_of_our_github_repos(self):
+        write_folder(self.dir, base_listing(source_url="https://gitlab.com/someone/x"))
+        code, out = self.run_cli("issues-add", self.dir, "--confirmed")
+        self.assertEqual(code, 1)
+        self.assertIn("source_url", out)
 
 
 if __name__ == "__main__":
