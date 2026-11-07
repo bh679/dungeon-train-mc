@@ -1167,6 +1167,7 @@
       "gui.dungeontrain.rewards.status.on_for_hours.few",
       "gui.dungeontrain.rewards.status.on_for_hours.many",
       "gui.dungeontrain.rewards.status.on_until_tomorrow",
+      "gui.dungeontrain.rewards.status.free_thanks",
       "gui.dungeontrain.rewards.give.soon",
       "gui.dungeontrain.rewards.give.month",
       "gui.dungeontrain.rewards.give.amount",

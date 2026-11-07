@@ -303,8 +303,10 @@ public final class ContributePanel {
             ty += lh + 1;
         }
         if (CommunityRewards.active(state, reward, now)) {
-            Component status = onStatus(state.find(reward.id()).activeUntilMs(), now,
-                    CommunityRewards.keptOnBy(state, reward, now));
+            LiveRewards.Reward live = state.find(reward.id());
+            Component status = live.free()
+                    ? Component.translatable("gui.dungeontrain.rewards.status.free_thanks", live.by())
+                    : onStatus(live.activeUntilMs(), now, CommunityRewards.keptOnBy(state, reward, now));
             for (FormattedCharSequence l : font.split(status, textW)) {
                 out.add(new Text(l, textX, ty, COLOUR_ON, false));
                 ty += lh + 1;

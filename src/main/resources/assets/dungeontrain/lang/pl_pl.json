@@ -1554,6 +1554,7 @@
   "gui.dungeontrain.rewards.status.on_for_hours.few": "WŁĄCZONE jeszcze przez %s godziny · utrzymuje: %s",
   "gui.dungeontrain.rewards.status.on_for_hours.many": "WŁĄCZONE jeszcze przez %s godzin · utrzymuje: %s",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "WŁĄCZONE do jutra · utrzymuje: %s",
+  "gui.dungeontrain.rewards.status.free_thanks": "Darmowe tłumaczenia działają dzięki: %s",
   "gui.dungeontrain.rewards.give.soon": "Wkrótce",
   "gui.dungeontrain.rewards.give.month": "Podaruj %s",
   "gui.dungeontrain.rewards.give.amount": "Podaruj %s",

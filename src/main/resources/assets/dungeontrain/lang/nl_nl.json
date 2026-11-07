@@ -1506,6 +1506,7 @@
   "gui.dungeontrain.rewards.status.on_for_hours.one": "AAN nog %s uur · aangehouden door %s",
   "gui.dungeontrain.rewards.status.on_for_hours.other": "AAN nog %s uur · aangehouden door %s",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "AAN tot morgen · aangehouden door %s",
+  "gui.dungeontrain.rewards.status.free_thanks": "Gratis vertalingen draaien dankzij %s",
   "gui.dungeontrain.rewards.give.soon": "Binnenkort",
   "gui.dungeontrain.rewards.give.month": "Geef %s",
   "gui.dungeontrain.rewards.give.amount": "Geef %s",

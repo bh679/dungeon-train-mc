@@ -1506,6 +1506,7 @@
   "gui.dungeontrain.rewards.status.on_for_hours.one": "ACTIVO %s hora más · gracias a %s",
   "gui.dungeontrain.rewards.status.on_for_hours.other": "ACTIVO %s horas más · gracias a %s",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "ACTIVO hasta mañana · gracias a %s",
+  "gui.dungeontrain.rewards.status.free_thanks": "Las traducciones gratuitas funcionan gracias a %s",
   "gui.dungeontrain.rewards.give.soon": "Pronto",
   "gui.dungeontrain.rewards.give.month": "Dona %s",
   "gui.dungeontrain.rewards.give.amount": "Dona %s",

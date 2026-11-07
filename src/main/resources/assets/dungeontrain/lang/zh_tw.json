@@ -1458,6 +1458,7 @@
   "gui.dungeontrain.rewards.status.on_for_minutes.other": "開啟中，還剩 %s 分鐘 · 由 %s 贊助開啟",
   "gui.dungeontrain.rewards.status.on_for_hours.other": "開啟中，還剩 %s 小時 · 由 %s 贊助開啟",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "開啟至明天 · 由 %s 贊助開啟",
+  "gui.dungeontrain.rewards.status.free_thanks": "免費翻譯正在運作，感謝 %s",
   "gui.dungeontrain.rewards.give.soon": "即將推出",
   "gui.dungeontrain.rewards.give.month": "贊助 %s",
   "gui.dungeontrain.rewards.give.amount": "贊助 %s",

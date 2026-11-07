@@ -1458,6 +1458,7 @@
   "gui.dungeontrain.rewards.status.on_for_minutes.other": "%s분 더 켜짐 · %s 님이 유지 중",
   "gui.dungeontrain.rewards.status.on_for_hours.other": "%s시간 더 켜짐 · %s 님이 유지 중",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "내일까지 켜짐 · %s 님이 유지 중",
+  "gui.dungeontrain.rewards.status.free_thanks": "%s 덕분에 무료 번역이 작동 중입니다",
   "gui.dungeontrain.rewards.give.soon": "곧",
   "gui.dungeontrain.rewards.give.month": "%s분 후원",
   "gui.dungeontrain.rewards.give.amount": "%s 후원",
