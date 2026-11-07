@@ -42,7 +42,6 @@ public final class LiveChatTranslatedPill {
     private static final int PAD_Y = 1;
     private static final int GAP = 2;
     private static final int TEXT_RGB = 0xD8D8D8;
-    private static final float BACKDROP_OPACITY = 0.72f;
     /** Google's short badge, byte for byte as Google ships it (white-short@3x), and how large to draw it. */
     private static final ResourceLocation GOOGLE_BADGE = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "textures/gui/live/google_translate_badge.png");
     private static final int BADGE_TEXTURE_W = 366;
@@ -150,6 +149,8 @@ public final class LiveChatTranslatedPill {
         int lineHeight = (int) (9.0 * (mc.options.chatLineSpacing().get() + 1.0));
         int chatBottom = Mth.floor((graphics.guiHeight() - CHAT_BOTTOM_OFFSET) / scale);
         int bottom = chatBottom - shown * lineHeight - GAP;
+        // The same shade vanilla puts behind the chat lines, so the label reads as part of the chat.
+        float backdrop = mc.options.textBackgroundOpacity().get().floatValue();
 
         graphics.pose().pushPose();
         graphics.pose().scale(scale, scale, 1f);
@@ -157,29 +158,29 @@ public final class LiveChatTranslatedPill {
             // HUD layers stack higher in depth one after another: only drawing last, untested, puts this on top.
             graphics.flush();
             RenderSystem.disableDepthTest();
-            drawGoogleBadge(graphics, bottom, alpha);
+            drawGoogleBadge(graphics, bottom, alpha, backdrop);
             graphics.flush();
             RenderSystem.enableDepthTest();
         } else {
-            drawTranslatedLabel(graphics, mc.font, bottom, alpha);
+            drawTranslatedLabel(graphics, mc.font, bottom, alpha, backdrop);
         }
         graphics.pose().popPose();
     }
 
-    private static void drawTranslatedLabel(GuiGraphics graphics, Font font, int bottom, float alpha) {
+    private static void drawTranslatedLabel(GuiGraphics graphics, Font font, int bottom, float alpha, float backdrop) {
         Component text = LiveChatTranslations.translatedLabel();
         int height = font.lineHeight + 2 * PAD_Y;
         int top = labelTop(bottom, height);
-        graphics.fill(CHAT_LEFT, top, CHAT_LEFT + font.width(text) + 2 * PAD_X, top + height, argb(alpha * BACKDROP_OPACITY, 0x000000));
+        graphics.fill(CHAT_LEFT, top, CHAT_LEFT + font.width(text) + 2 * PAD_X, top + height, argb(alpha * backdrop, 0x000000));
         graphics.drawString(font, text, CHAT_LEFT + PAD_X, top + PAD_Y, argb(alpha, TEXT_RGB), false);
     }
 
-    private static void drawGoogleBadge(GuiGraphics graphics, int bottom, float alpha) {
+    private static void drawGoogleBadge(GuiGraphics graphics, int bottom, float alpha, float backdrop) {
         int shownWidth = Math.round(badgeWidth(BADGE_H) * BADGE_SCALE);
         int shownHeight = Mth.ceil(BADGE_H * BADGE_SCALE);
         int height = shownHeight + 2 * PAD_Y;
         int top = labelTop(bottom, height);
-        graphics.fill(CHAT_LEFT, top, CHAT_LEFT + shownWidth + 2 * PAD_X, top + height, argb(alpha * BACKDROP_OPACITY, 0x000000));
+        graphics.fill(CHAT_LEFT, top, CHAT_LEFT + shownWidth + 2 * PAD_X, top + height, argb(alpha * backdrop, 0x000000));
         RenderSystem.enableBlend();
         RenderSystem.setShaderColor(1f, 1f, 1f, alpha);
         graphics.pose().pushPose();
