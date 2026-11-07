@@ -218,13 +218,13 @@ public final class PortalRoomTiler {
      * floor and above the roof are still dammed.
      */
     private static java.util.function.Predicate<BlockPos> liquidPlaneKeep(
-            PortalRoomCopiesVariant single, BlockPos origin, Vec3i size) {
+            PortalRoomCopiesVariant single, BlockPos origin, Vec3i size, PortalRoomGround.Rows ground) {
         boolean floor = single.hasLiquid(PortalRoomCopiesVariant.Plane.FLOOR);
         boolean roof = single.hasLiquid(PortalRoomCopiesVariant.Plane.ROOF);
         if (!floor && !roof) return pos -> false;
-        int floorY = origin.getY();
-        int floorTop = floorY + PortalRoomSinglePlanes.floorHeightFor(single, size) - 1;
-        int ceilingY = floorY + size.getY() - 1;
+        int floorY = origin.getY() + ground.bottom();
+        int floorTop = origin.getY() + PortalRoomSinglePlanes.floorTopRow(single, size, ground);
+        int ceilingY = origin.getY() + size.getY() - 1;
         return pos -> (floor && pos.getY() >= floorY && pos.getY() <= floorTop)
             || (roof && pos.getY() == ceilingY);
     }
@@ -260,8 +260,9 @@ public final class PortalRoomTiler {
         // name that no longer resolves — a mod uninstalled between two launches, a hand-edited tag —
         // falls through to stamping the room as it always did, rather than to a floorless tile.
         PortalRoomCopiesVariant single = singlePalette(structure);
+        PortalRoomGround.Rows ground = structure.settings().groundRows(dims, size.getY());
         PortalCorridorMask writeMask =
-            writeMaskFor(structure, clearMask, origin, size, !single.isEmpty());
+            writeMaskFor(structure, clearMask, origin, size, !single.isEmpty(), ground);
 
         // A copy a player has already been in comes back as they left it, not from the template —
         // otherwise walking out of the window (or the carriage) and back re-lays every block they
@@ -273,7 +274,7 @@ public final class PortalRoomTiler {
         if (recalled.snapshot() != null) {
             long stampStarted = System.nanoTime();
             PortalCarriageBuilder.stampTileFromBlob(level, origin, size, PortalRoomBlob.live(recalled.snapshot()),
-                clearMask, writeMask, liquidPlaneKeep(single, origin, size), pairKey, tile);
+                clearMask, writeMask, liquidPlaneKeep(single, origin, size, ground), pairKey, tile);
             PortalRoomMemory.markTileTouched(pairKey, tile);
             PortalCopyTiming.mark(PortalCopyTiming.Phase.PASSES);
             long facesStarted = System.nanoTime();
@@ -301,13 +302,13 @@ public final class PortalRoomTiler {
             // The structure's own setting, not a fresh read of the variant: a portal already standing
             // keeps what it was built with, the same promise planStructure makes about the room.
             structure.settings().contents(), structure.settings().books(),
-            liquidPlaneKeep(single, origin, size));
+            liquidPlaneKeep(single, origin, size, ground));
 
         // After the stamp, not instead of it: the stamp is what clears the rock this tile landed in,
         // and under Single its write half put nothing back. These two planes are the whole of what
         // an appended tile is in that case.
         PortalRoomSinglePlanes.write(level, origin, size, single, clearMask, /*relight*/ true,
-            level.getSeed(), structure.variantIndexFor(tile, pairKey));
+            level.getSeed(), structure.variantIndexFor(tile, pairKey), ground);
         PortalCopyTiming.mark(PortalCopyTiming.Phase.PASSES);
 
         // Nothing closes what the copy's own wall left open in a mouth's seal plane. Under Kept
@@ -326,8 +327,7 @@ public final class PortalRoomTiler {
 
     /**
      * What this copy must not write into: whatever the clear mask already protects, plus — for
-     * {@link PortalRoomMode#ENDLESS_OPEN} — everything strictly between the tile's floor and its
-     * ceiling.
+     * {@link PortalRoomMode#ENDLESS_OPEN} — every row of the tile but its ground and its ceiling.
      *
      * <p>Under {@link PortalRoomCopies.Kind#SINGLE} it is the <b>whole</b> tile instead, planes
      * included: those are written afterwards from one block, so the stamp has nothing to contribute
@@ -347,7 +347,7 @@ public final class PortalRoomTiler {
     static PortalCorridorMask writeMaskFor(PortalStructure structure,
                                            PortalCorridorMask clearMask,
                                            BlockPos origin, Vec3i size,
-                                           boolean singlePlanes) {
+                                           boolean singlePlanes, PortalRoomGround.Rows ground) {
         if (structure.mode() != PortalRoomMode.ENDLESS_OPEN) return clearMask;
         if (singlePlanes) {
             // The whole box, floor and roof included. Under Single the two planes are written
@@ -360,10 +360,17 @@ public final class PortalRoomTiler {
                 origin.getY() + size.getY() - 1,
                 origin.getZ() + size.getZ() - 1));
         }
-        return clearMask.plus(new BoundingBox(
-            origin.getX(), origin.getY() + 1, origin.getZ(),
+        PortalCorridorMask above = clearMask.plus(new BoundingBox(
+            origin.getX(), origin.getY() + ground.top() + 1, origin.getZ(),
             origin.getX() + size.getX() - 1,
             origin.getY() + size.getY() - 2,
+            origin.getZ() + size.getZ() - 1));
+        if (ground.bottom() == 0) return above;
+        // A raised ground with open air under it: those rows are as empty as the ones above it.
+        return above.plus(new BoundingBox(
+            origin.getX(), origin.getY(), origin.getZ(),
+            origin.getX() + size.getX() - 1,
+            origin.getY() + ground.bottom() - 1,
             origin.getZ() + size.getZ() - 1));
     }
 
@@ -748,6 +755,9 @@ public final class PortalRoomTiler {
         // they are the only thing that repeats.
         int yLow = origin.getY() + 1;
         int yHigh = origin.getY() + size.getY() - 2;
+        // A raised Endless Open ground is floor too. Its row is mostly air behind the edge column
+        // when the room's own floor is lower, so a face would otherwise cut the plain's edge away.
+        PortalRoomGround.Rows ground = structure.settings().groundRows(dims, size.getY());
 
         int inset = interiorOnly ? 1 : 0;
 
@@ -755,6 +765,7 @@ public final class PortalRoomTiler {
             int wallZ = dz > 0 ? z1 : z0;
             for (int x = x0 + inset; x <= x1 - inset; x++) {
                 for (int y = yLow; y <= yHigh; y++) {
+                    if (ground.contains(y - origin.getY())) continue;
                     BlockPos wall = new BlockPos(x, y, wallZ);
                     if (mask.covers(wall) || mask.facedBy(wall, 0, dz)) continue;
                     body.accept(wall, wall.offset(0, 0, -dz));
@@ -765,6 +776,7 @@ public final class PortalRoomTiler {
         int wallX = dx > 0 ? x1 : x0;
         for (int z = z0 + inset; z <= z1 - inset; z++) {
             for (int y = yLow; y <= yHigh; y++) {
+                if (ground.contains(y - origin.getY())) continue;
                 BlockPos wall = new BlockPos(wallX, y, z);
                 // The room's own end column is not masked — the mask stops at the door plane — but
                 // the door is what stands in front of it, so it is the corridor's all the same.

@@ -1,0 +1,20 @@
+{
+  "id": "floating-stretch-smoother-generation",
+  "version": "0.1708.0",
+  "type": "perf",
+  "tags": [
+    "performance",
+    "world"
+  ],
+  "title": "Smoother world generation",
+  "summary": "Another stretch of the journey now prepares new ground ahead of the train, so riding into it should stutter much less.",
+  "highlights": [],
+  "addresses": [
+    "lag"
+  ],
+  "pr": 2543,
+  "date": "2026-11-07",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

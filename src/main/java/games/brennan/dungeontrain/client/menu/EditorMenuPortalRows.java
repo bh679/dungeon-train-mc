@@ -120,6 +120,30 @@ public final class EditorMenuPortalRows {
     }
 
     /**
+     * The Ground row, or null unless the walls are Endless Open — the one mode whose copies repeat
+     * a floor and nothing else, so the one where it matters which row that floor is.
+     */
+    public static CommandMenuEntry groundRowFor(String currentMode, String prefix) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        if (!EditorPlotLabelsRenderer.hasGroundRow(currentMode)) return null;
+        return new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.groundLabel(currentMode),
+            prefix + " ground next");
+    }
+
+    /**
+     * The Everything Below checkbox, or null unless the ground is raised. Hidden rather than dimmed
+     * at the bottom row, which has nothing under it for the box to describe.
+     */
+    public static CommandMenuEntry groundBelowRowFor(String currentMode, String prefix) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        if (!EditorPlotLabelsRenderer.hasGroundBelowRow(currentMode)) return null;
+        return new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.groundBelowLabel(currentMode),
+            prefix + " ground below");
+    }
+
+    /**
      * The Door Wall row, or null unless the walls are set to Endless Repetition — the one mode whose
      * appended tiles carry a wall of their own.
      *
@@ -298,6 +322,16 @@ public final class EditorMenuPortalRows {
     /** {@link #copiesRowFor(String, String)} for the room the author is standing in. */
     public static CommandMenuEntry copiesRowFor(String currentMode) {
         return copiesRowFor(currentMode, STOOD_IN_PREFIX);
+    }
+
+    /** {@link #groundRowFor(String, String)} for the room the author is standing in. */
+    public static CommandMenuEntry groundRowFor(String currentMode) {
+        return groundRowFor(currentMode, STOOD_IN_PREFIX);
+    }
+
+    /** {@link #groundBelowRowFor(String, String)} for the room the author is standing in. */
+    public static CommandMenuEntry groundBelowRowFor(String currentMode) {
+        return groundBelowRowFor(currentMode, STOOD_IN_PREFIX);
     }
 
     /** {@link #doorWallRowFor(String, String)} for the room the author is standing in. */
