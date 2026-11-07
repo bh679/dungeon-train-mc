@@ -76,6 +76,27 @@ class LiveChatTranslationsTest {
     }
 
     @Test
+    @DisplayName("translation alone: flag and translation, a click flips to the original with no flag, and back")
+    void flip() {
+        MutableComponent flag = LanguageFlags.flag("es", "the creeper got me");
+        MutableComponent shown = LiveChatTranslations.flippableLine(LINE, "hola", flag);
+        assertTrue(shown.getString().endsWith("Alice: " + flag.getString() + " hola"));
+        var text = shown.getSiblings().get(shown.getSiblings().size() - 1);
+        assertEquals("dungeontrain:live-chat-flip/" + LINE.seq(), text.getStyle().getClickEvent().getValue());
+        assertEquals(LiveChatTranslations.FLIP_HIDE_KEY, key((MutableComponent) text.getStyle().getHoverEvent().getValue(HoverEvent.Action.SHOW_TEXT)));
+
+        LiveChatFlip.track(LINE, "hola", flag);
+        var original = (MutableComponent) LiveChatFlip.toggle(LINE.seq());
+        assertTrue(original.getString().endsWith("Alice: " + LINE.content()));
+        var originalText = original.getSiblings().get(original.getSiblings().size() - 1);
+        assertEquals(LiveChatTranslations.FLIP_SHOW_KEY, key((MutableComponent) originalText.getStyle().getHoverEvent().getValue(HoverEvent.Action.SHOW_TEXT)));
+        assertTrue(LiveChatFlip.toggle(LINE.seq()).getString().endsWith("Alice: " + flag.getString() + " hola"));
+
+        LiveChatFlip.forget();
+        assertNull(LiveChatFlip.toggle(LINE.seq()));
+    }
+
+    @Test
     @DisplayName("a language's own name for the notice; the code when the JDK has none")
     void langName() {
         assertEquals("Deutsch", LiveChatTranslations.langName("de_de"));
@@ -88,10 +109,9 @@ class LiveChatTranslationsTest {
     }
 
     @Test
-    @DisplayName("the chat's label: plain, or Google's credit")
+    @DisplayName("the chat's plain label")
     void translatedLabel() {
-        assertEquals(LiveChatTranslations.TRANSLATED_KEY, key((MutableComponent) LiveChatTranslations.translatedLabel(false)));
-        assertEquals(LiveChatTranslations.POWERED_BY_KEY, key((MutableComponent) LiveChatTranslations.translatedLabel(true)));
+        assertEquals(LiveChatTranslations.TRANSLATED_KEY, key((MutableComponent) LiveChatTranslations.translatedLabel()));
     }
 
     private static String arg(MutableComponent c, int i) {

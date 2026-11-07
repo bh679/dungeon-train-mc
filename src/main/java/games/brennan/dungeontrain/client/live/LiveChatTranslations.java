@@ -26,10 +26,11 @@ public final class LiveChatTranslations {
     public static final String TRANSLATION_KEY = "chat.dungeontrain.live_chat.translation";
     public static final String TRANSLATION_NAMED_KEY = "chat.dungeontrain.live_chat.translation.named";
     public static final String ORIGINAL_KEY = "chat.dungeontrain.live_chat.translation.original";
+    public static final String FLIP_HIDE_KEY = "chat.dungeontrain.live_chat.translation.flip_hide";
+    public static final String FLIP_SHOW_KEY = "chat.dungeontrain.live_chat.translation.flip_show";
     public static final String ON_KEY = "chat.dungeontrain.live_chat.translation.on";
     public static final String PATH_KEY = "chat.dungeontrain.live_chat.translation.path";
     public static final String TRANSLATED_KEY = "chat.dungeontrain.live_chat.translated";
-    public static final String POWERED_BY_KEY = "chat.dungeontrain.live_chat.powered_by";
 
     /** A Minecraft locale code as the relay expects it: {@code zh_cn}. */
     private static final Pattern LOCALE = Pattern.compile("[a-z]{2,3}_[a-z0-9]{2,4}");
@@ -97,12 +98,28 @@ public final class LiveChatTranslations {
         return LiveChatRules.line(line, translation, hover, flag);
     }
 
-    /** The relay's id for Google: its work must be credited ({@link #translatedLabel}). */
+    /** The line reading {@code shown} (its translation, or the original while its flag is hovered) with its flag; a click on the text flips it ({@link LiveChatFlip}). */
+    static MutableComponent flippableLine(ChatLine line, String shown, @Nullable MutableComponent flag) {
+        return LiveChatRules.line(line, shown, flipStyle(line, FLIP_HIDE_KEY), flag);
+    }
+
+    /** The line flipped to its original: no flag, as nothing about it is translated now; a click flips it back. */
+    static MutableComponent flippedLine(ChatLine line) {
+        return LiveChatRules.line(line, line.content(), flipStyle(line, FLIP_SHOW_KEY), null);
+    }
+
+    private static Style flipStyle(ChatLine line, String tipKey) {
+        return Style.EMPTY.withColor(ChatFormatting.WHITE)
+            .withClickEvent(LiveChatFlip.click(line.seq()))
+            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable(tipKey)));
+    }
+
+    /** The relay's id for Google: its work must be credited with Google's own badge ({@link LiveChatTranslatedPill}). */
     public static final String GOOGLE = "google";
 
-    /** The chat's label: plain, or Google's credit, whose wording its rules fix (so the name stays in English). */
-    public static Component translatedLabel(boolean googleOnScreen) {
-        return googleOnScreen ? Component.translatable(POWERED_BY_KEY, "Google Translate") : Component.translatable(TRANSLATED_KEY);
+    /** The chat's label for any translator but Google, whose credit is its own badge. */
+    public static Component translatedLabel() {
+        return Component.translatable(TRANSLATED_KEY);
     }
 
     /** The language's own name for the one-time "being translated into …" notice: 中文, Deutsch, …; the code itself when unknown. */

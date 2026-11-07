@@ -5,7 +5,7 @@ import net.minecraft.world.item.ItemStack;
 
 /**
  * Difficulty-driven flat bonus added to an item's <em>primary</em> AIS stat (attack
- * damage for weapons, armor for armor pieces). The bonus grows linearly with the
+ * damage for weapons, armor for armor pieces, Ranged Damage for bows and crossbows). The bonus grows linearly with the
  * carriage's {@link DifficultyProgression#tierForTravelled difficulty tier}:
  * {@code rate * tier}, where the rate is {@link #PER_LEVEL_AXE} for axes and
  * {@link #PER_LEVEL_DEFAULT} for everything else. Tier 0 (and below) yields no bonus.
@@ -47,6 +47,16 @@ public final class ItemStatLevelScaling {
      */
     static int pastCapTier(int difficultyTier, int materialCapLevel) {
         return Math.max(0, difficultyTier - materialCapLevel);
+    }
+
+    /**
+     * The tier feeding the bonus on a bow a mob already holds. Melee hostiles wait for
+     * {@link #pastCapTier} because their material improves up to the cap; a bow has no material
+     * ladder, so it would otherwise stay flat for the first 50 tiers. Scales off the full tier
+     * unless stat scaling is off. Pure.
+     */
+    static int heldBowTier(boolean statScalingOn, int difficultyTier) {
+        return statScalingOn ? difficultyTier : 0;
     }
 
     /**
