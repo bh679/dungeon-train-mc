@@ -761,6 +761,8 @@
   "chat.dungeontrain.live_chat.translation": "    ↳ %s",
   "chat.dungeontrain.live_chat.translation.named": "    ↳ %s: %s",
   "chat.dungeontrain.live_chat.translation.original": "원문: %s",
+  "chat.dungeontrain.live_chat.translation.flip_hide": "번역됨. 클릭하면 번역을 숨깁니다",
+  "chat.dungeontrain.live_chat.translation.flip_show": "클릭하면 번역합니다",
   "chat.dungeontrain.live_chat.translation.on": "라이브 채팅이 %s로 번역되고 있습니다. 표시 방식은 %s에서 바꿀 수 있습니다",
   "chat.dungeontrain.live_chat.translation.path": "설정 / Dungeon Train / 방송 / 채팅 번역",
   "chat.dungeontrain.live_chat.translated": "번역됨",

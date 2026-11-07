@@ -894,6 +894,8 @@
   "chat.dungeontrain.live_chat.translation": "    ↳ %s",
   "chat.dungeontrain.live_chat.translation.named": "    ↳ %s: %s",
   "chat.dungeontrain.live_chat.translation.original": "Оригінал: %s",
+  "chat.dungeontrain.live_chat.translation.flip_hide": "Перекладено. Натисніть, щоб приховати переклад",
+  "chat.dungeontrain.live_chat.translation.flip_show": "Натисніть, щоб перекласти",
   "chat.dungeontrain.live_chat.translation.on": "Чат ефіру перекладається на %s. Змінити відображення: %s",
   "chat.dungeontrain.live_chat.translation.path": "Налаштування / Dungeon Train / Стрім / Переклад чату",
   "chat.dungeontrain.live_chat.translated": "Перекладено",
