@@ -13,8 +13,9 @@ Private drafts are fine without asking.
 | Rule | Detail |
 |---|---|
 | No long dashes | No em or en dashes in the title, summary, page text or screenshot captions. Use a comma, colon or new sentence |
-| New issues link | `https://dungeon.training/issues/#<anchor>`, never the GitHub issues URL |
+| New issues link | `https://dungeon.training/issues#<anchor>`, never the GitHub issues URL |
 | Dungeon Train in the first section | The exact sentence below, with links to both the DT mod and the modpack |
+| Icon | The Dungeon Train logo with a small, very simple icon for the mod in the middle. See "The icon" below |
 | Screenshots | At least one, exactly one featured, each with a title. Icon up to 256 KiB, screenshots up to 5 MiB |
 | Appropriate screenshots | Your judgement: see step 4 |
 
@@ -30,6 +31,18 @@ On CurseForge, use the CurseForge links:
 `"requires_dungeon_train": true` and write this instead, keeping both links in the first section:
 
 > Built for Dungeon Train and only does something when Dungeon Train is installed.
+
+## The icon
+
+Every mod of ours uses the same icon, on both stores and as the CurseForge logo: the
+[Dungeon Train logo](../../src/main/resources/logo.png) with a small, very simple picture in the
+middle of the ring that says what the mod is about. Use the real Minecraft texture for it, scaled
+up with nearest-neighbour so the pixels stay sharp: Sable Mob Paths uses the villager's face from
+`textures/entity/villager/villager.png`, nose included, a little wider than the ring's hole. Keep
+the logo's transparent background.
+
+Make it 512 x 512 and under 256 KiB, and save it as `listing/icon.png`. CurseForge asks you to
+crop the logo on upload: drag the crop box out to the whole image.
 
 ## 1. Make the repo
 
@@ -59,10 +72,11 @@ listing/
   "title": "Example Mod",
   "summary": "One line, up to 256 characters.",
   "categories": ["utility"],
-  "license_id": "GPL-3.0-or-later",
+  "license_id": "LicenseRef-PolyForm-Shield-1.0.0",
+  "license_url": "https://polyformproject.org/licenses/shield/1.0.0",
   "source_url": "https://github.com/bh679/example-mc",
-  "issues_url": "https://dungeon.training/issues/#example",
-  "discord_url": "https://discord.gg/dungeontrain",
+  "issues_url": "https://dungeon.training/issues#example",
+  "discord_url": "https://discord.gg/hnj5G7duHU",
   "icon": "icon.png",
   "screenshots": [
     {"file": "screenshots/01-what-it-shows.png", "title": "Short caption", "description": "One line", "featured": true}
@@ -70,7 +84,11 @@ listing/
 }
 ```
 
-Match `license_id` to the repo's `LICENSE` file. `live_url` entries appear on screenshots after
+Use the Discord invite exactly as above, on both stores: `discord.gg/dungeontrain` is not a real
+invite.
+
+Our mods default to PolyForm Shield 1.0.0: put it in the repo's `LICENSE` too. Modrinth has no
+SPDX id for it, so it needs both `license_id` and `license_url` as above. `live_url` entries appear on screenshots after
 upload: leave them in place, as that is how a later caption edit finds the image.
 
 `LISTING.md` holds the page text and nothing else. A good shape is: first section, what it does,
@@ -81,12 +99,24 @@ the network: store reviewers and players both look for that.
 
 ## 3. Add the issues row
 
-Add a row for the mod to `public/dungeontrain/issues/index.html` in `bh679/dp-relay`, with an `id`
-matching your anchor, and deploy it. `check` looks at the live page, so it fails until then. Use
-`--offline` to skip this while drafting.
+The issues page draws its list from the relay, so adding a mod takes one command, with no dp-relay
+PR or deploy:
 
-Modrinth moderators may still question this link, as it hasn't been proven with them yet. If one
-does, tell Brennan rather than switching back to GitHub on your own.
+```bash
+python3 scripts/listing/listing.py issues-add <repo>/listing             # shows the row
+python3 scripts/listing/listing.py issues-add <repo>/listing --confirmed # adds it
+```
+
+It takes the anchor from `issues_url`, the name from `title` and the repo from `source_url`, which
+must be `https://github.com/bh679/<repo>`. Running it again with the same anchor updates the row. The
+row shows on the page within a minute, and `check` reads the same list. The call uses the relay admin
+URL in `~/.config/dungeontrain/relay-admin-url.txt` and never prints it. The page is public, so add
+the row once the mod's name and repo are settled. Use `--offline` on `check` while drafting before
+then.
+
+Write the link with no slash before the `#`: Modrinth refuses `https://dungeon.training/issues/#<anchor>`
+as an unknown link, but accepts `https://dungeon.training/issues#<anchor>`. If a moderator questions
+it, tell Brennan rather than switching back to GitHub on your own.
 
 ## 4. Take the screenshots
 
@@ -185,10 +215,16 @@ Reload once the limit resets.
 **CurseForge has no API for pages,** so this happens on Brennan's signed-in session with Claude in
 Chrome at https://authors.curseforge.com:
 
-1. Create the project: name, summary, category, license, and the same links as `listing.json`.
+1. Create the project: name, summary, category, and the same links as `listing.json`. Defaults:
+   - **Allow Comments:** on.
+   - **License:** PolyForm Shield License 1.0.0 (it is in CurseForge's list).
+   - **Project distribution:** Allow distribution to 3rd party, so modpacks and launchers can
+     include the file.
 2. Set the description to `LISTING.md`, using the CurseForge links in the first section.
-3. Upload the icon and screenshots.
-4. Check the form against what Brennan approved, then submit.
+3. Set the issues link: the new portal's Issues tab opens the legacy settings page. Choose
+   External and enter the same `https://dungeon.training/issues#<anchor>` as `listing.json`.
+4. Upload the icon and screenshots.
+5. Check the form against what Brennan approved, then submit.
 
 If Chrome hits a sign-in page, ask Brennan to sign in. Never type a password.
 
