@@ -112,8 +112,9 @@ def run_order(clone: Path, base: str, order: list[str]) -> None:
     proc = check_provenance(clone)
     assert proc.returncode == 0, f"still failing after --refresh:\n{proc.stdout}{proc.stderr}"
     assert total_keys(clone) == before + 2
-    changed = git(clone, "status", "--porcelain").splitlines()
-    stray = [c for c in changed if not c[3:].startswith(GENERATED)]
+    changed = (git(clone, "diff", "--name-only").splitlines()
+               + git(clone, "ls-files", "--others", "--exclude-standard").splitlines())
+    stray = [c for c in changed if not c.startswith(GENERATED)]
     assert not stray, f"--refresh touched non-generated files: {stray}"
     assert sidecar_credit(clone) == credit_before, "--refresh moved an author or reviewer"
     print(f"   after --refresh: total_keys {total_keys(clone)}; check-provenance.py: OK")
