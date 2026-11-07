@@ -68,10 +68,16 @@ public final class LiveChatTranslations {
      * printed in between ({@code adjacent} false), so the reader knows whose it is.
      */
     public static MutableComponent underLine(ChatLine line, String translation, boolean adjacent) {
-        String text = LiveChatRules.clean(translation, LiveChatRules.MAX_CONTENT);
-        if (adjacent) return Component.translatable(TRANSLATION_KEY, Component.literal(text)).withStyle(ChatFormatting.GRAY);
+        return underLine(line, translation, adjacent, null);
+    }
+
+    /** {@link #underLine(ChatLine, String, boolean)} starting with the source language's flag, when {@code flag} is one. */
+    public static MutableComponent underLine(ChatLine line, String translation, boolean adjacent, @Nullable MutableComponent flag) {
+        MutableComponent text = Component.literal(LiveChatRules.clean(translation, LiveChatRules.MAX_CONTENT));
+        MutableComponent shown = flag == null ? text : Component.empty().append(flag).append(" ").append(text);
+        if (adjacent) return Component.translatable(TRANSLATION_KEY, shown).withStyle(ChatFormatting.GRAY);
         return Component.translatable(TRANSLATION_NAMED_KEY,
-            Component.literal(LiveChatRules.clean(line.author(), LiveChatRules.MAX_AUTHOR)), Component.literal(text))
+            Component.literal(LiveChatRules.clean(line.author(), LiveChatRules.MAX_AUTHOR)), shown)
             .withStyle(ChatFormatting.GRAY);
     }
 
@@ -80,10 +86,15 @@ public final class LiveChatTranslations {
      * and coloured name as {@link LiveChatRules#line}.
      */
     public static MutableComponent replacedLine(ChatLine line, String translation) {
+        return replacedLine(line, translation, null);
+    }
+
+    /** {@link #replacedLine(ChatLine, String)} with the source language's flag before the text, when {@code flag} is one. */
+    public static MutableComponent replacedLine(ChatLine line, String translation, @Nullable MutableComponent flag) {
         Component original = Component.translatable(ORIGINAL_KEY,
             Component.literal(LiveChatRules.clean(line.content(), LiveChatRules.MAX_CONTENT)));
         Style hover = Style.EMPTY.withColor(ChatFormatting.WHITE).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, original));
-        return LiveChatRules.line(line, translation, hover);
+        return LiveChatRules.line(line, translation, hover, flag);
     }
 
     /** The relay's id for Google: its work must be credited ({@link #translatedLabel}). */

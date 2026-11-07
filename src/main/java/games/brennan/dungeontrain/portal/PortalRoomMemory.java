@@ -31,6 +31,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -111,6 +112,17 @@ public final class PortalRoomMemory {
             this(roomName, snapshot, "");
         }
     }
+
+    /**
+     * What a recall found, and what the disk cost the server thread to find it. {@code snapshot} is null
+     * when there is nothing to lay. Both times are zero for a copy still queued, which never touches the disk.
+     */
+    public record Recalled(CompoundTag snapshot, long checkNanos, long readNanos) {
+        static final Recalled NOTHING = new Recalled(null, 0, 0);
+    }
+
+    /** A file check slower than this is worth a log line: the disk normally answers in microseconds. */
+    private static final long SLOW_CHECK_NANOS = 1_000_000;
 
     /** Pairs a player has stood inside this session — the rooms worth capturing before an erase. */
     private static final Map<Integer, Touch> TOUCHED = new HashMap<>();
@@ -212,7 +224,7 @@ public final class PortalRoomMemory {
      * {@code size}; null otherwise. A stale entry (another room, another size) is deleted on the way.
      */
     public static CompoundTag recall(ServerLevel level, int pairKey, String roomName, Vec3i size) {
-        return read(level, fileFor(level, pairKey), roomName, size, "portal pair " + pairKey + "'s room");
+        return read(level, fileFor(level, pairKey), roomName, size, "portal pair " + pairKey + "'s room").snapshot();
     }
 
     /** Drop pair {@code pairKey}'s remembered room, if any. */
@@ -251,9 +263,9 @@ public final class PortalRoomMemory {
         PortalRoomMemoryWriter.flush();
     }
 
-    /** As {@link #recall}, for copy {@code tile} of pair {@code pairKey}'s room. */
-    public static CompoundTag recallTile(ServerLevel level, int pairKey, PortalRoomTiling.Tile tile,
-                                         String roomName, Vec3i size) {
+    /** As {@link #recall}, for copy {@code tile} of pair {@code pairKey}'s room, with what the disk cost. */
+    public static Recalled recallTile(ServerLevel level, int pairKey, PortalRoomTiling.Tile tile,
+                                      String roomName, Vec3i size) {
         return read(level, tileFileFor(level, pairKey, tile), roomName, size, describeTile(pairKey, tile));
     }
 
@@ -261,32 +273,51 @@ public final class PortalRoomMemory {
         return "portal pair " + pairKey + "'s copy " + tile.x() + "," + tile.z();
     }
 
-    private static CompoundTag read(ServerLevel level, Path file, String roomName, Vec3i size, String what) {
+    private static Recalled read(ServerLevel level, Path file, String roomName, Vec3i size, String what) {
         Entry entry;
+        long checkNanos = 0;
+        long readNanos = 0;
         PortalRoomMemoryWriter.Queued queued = PortalRoomMemoryWriter.pending(file);
         if (queued != null) {
             // Still on its way to the disk, so the file is the old one or nothing at all.
-            if (queued.isDelete()) return null;
+            if (queued.isDelete()) return Recalled.NOTHING;
             Entry waiting = queued.entry();
             // A copy, for the same reason remember takes one: the writer may be reading this right now.
             entry = waiting == null ? null : new Entry(waiting.roomName(), waiting.snapshot().copy(), waiting.difficulty());
         } else {
-            if (!Files.isRegularFile(file)) return null;
+            long started = System.nanoTime();
+            boolean exists = Files.isRegularFile(file);
+            checkNanos = System.nanoTime() - started;
+            if (!exists) {
+                // Every stamp pays this, most of them for a room nobody has been in, and leaves no
+                // other line in a log. Silent while the disk answers promptly.
+                if (checkNanos >= SLOW_CHECK_NANOS) {
+                    LOGGER.debug("[DungeonTrain] {}: looking for a remembered copy took {} ms", what, ms(checkNanos));
+                }
+                return Recalled.NOTHING;
+            }
+            long readStarted = System.nanoTime();
             try {
                 entry = decode(NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap()));
             } catch (IOException e) {
                 LOGGER.warn("[DungeonTrain] Could not read {} remembered at {} — stamping its template: {}",
                     what, file, e.toString());
-                return null;
+                return Recalled.NOTHING;
             }
+            readNanos = System.nanoTime() - readStarted;
         }
         if (!fits(entry, roomName, size)) {
             LOGGER.info("[DungeonTrain] {} as remembered no longer fits ('{}' vs '{}' at {}) — forgetting it",
                 what, entry == null ? "?" : entry.roomName(), roomName, size);
             PortalRoomMemoryWriter.delete(file, what);
-            return null;
+            return Recalled.NOTHING;
         }
-        return forCurrentDifficulty(level, entry, what);
+        return new Recalled(forCurrentDifficulty(level, entry, what), checkNanos, readNanos);
+    }
+
+    /** {@code nanos} as milliseconds, the way this package's timing lines print them. */
+    static String ms(long nanos) {
+        return String.format(Locale.ROOT, "%.2f", nanos / 1_000_000.0);
     }
 
     /**
