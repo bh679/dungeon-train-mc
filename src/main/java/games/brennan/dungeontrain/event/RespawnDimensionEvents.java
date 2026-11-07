@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.SpawnDeckHoldPacket;
+import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -21,6 +22,8 @@ import org.slf4j.Logger;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.IntPredicate;
+import java.util.stream.Collectors;
 
 /**
  * Rolls a random starting dimension when the player clicks the vanilla
@@ -186,6 +189,35 @@ public final class RespawnDimensionEvents {
     }
 
     /**
+     * The anchors worth asking back for somebody to land on: everything but portal groups, since a
+     * deck beside a portal swaps the arrival straight into its room (#2133). All of them if that
+     * leaves none, because a portal deck still beats no train.
+     */
+    static Set<Integer> anchorsToLandOn(Set<Integer> anchors, IntPredicate isPortalGroup) {
+        Set<Integer> safe = anchors.stream()
+            .filter(a -> !isPortalGroup.test(a))
+            .collect(Collectors.toUnmodifiableSet());
+        return safe.isEmpty() ? anchors : safe;
+    }
+
+    /**
+     * Ask one held group of each sleeping train in {@code target} back from Sable holding.
+     * {@code tried} carries the sub-levels already asked for, so a retrying caller moves along the
+     * train after a snatch-miss. Returns how many were reloaded.
+     */
+    static int wakeHeldTrains(ServerLevel target, Set<UUID> tried) {
+        int woken = 0;
+        for (UUID trainId : TrainBootstrapEvents.heldTrainIdsIn(target)) {
+            Set<Integer> anchors = anchorsToLandOn(Trains.knownGroups(trainId).keySet(),
+                a -> PortalCarriageSelection.isPortalGroup(target, a));
+            Integer anchor = pickAnchorToWake(anchors, TrainCarriageAppender.lastFixedAnchor(trainId));
+            if (anchor == null) continue;
+            if (TrainCarriageAppender.wakeHeldGroup(target, trainId, anchor, tried)) woken++;
+        }
+        return woken;
+    }
+
+    /**
      * Put the player on {@code target}'s train: land, wake-and-defer, or spawn-and-place per
      * {@link #decide}. {@code why} only labels the log lines.
      */
@@ -210,13 +242,7 @@ public final class RespawnDimensionEvents {
      */
     private static void wakeAndDefer(
             ServerPlayer player, ServerLevel target, DungeonTrainWorldData data, String why) {
-        int woken = 0;
-        for (UUID trainId : TrainBootstrapEvents.heldTrainIdsIn(target)) {
-            Integer anchor = pickAnchorToWake(
-                Trains.knownGroups(trainId).keySet(), TrainCarriageAppender.lastFixedAnchor(trainId));
-            if (anchor == null) continue;
-            if (TrainCarriageAppender.wakeHeldGroup(target, trainId, anchor, new HashSet<>())) woken++;
-        }
+        int woken = wakeHeldTrains(target, new HashSet<>());
         PlayerJoinEvents.SpawnPlacement sp = PlayerJoinEvents.computeBootstrapPlacement(
                 target, data.dims(), data.getTrainY());
         LOGGER.info("[DungeonTrain] {}: train in {} is in Sable holding — woke {} group(s), holding {} at ({}, {}, {}) until a deck settles",
