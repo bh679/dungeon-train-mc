@@ -49,8 +49,9 @@ public final class ChatReactionTracker {
 
     /** A tracked line: what it was printed from, what it shows now, and its reactions. */
     private static final class Line {
-        Component source; // swapped by replaceLive (a live line's translation) and flagOwnChat (its flags)
+        Component source; // swapped by replaceLive (a live line's translation) and flagOwn (its flags)
         final Component printed;
+        @Nullable Component ownFlags;
         final boolean mine;
         final String snippet;
         Component shown;
@@ -119,16 +120,37 @@ public final class ChatReactionTracker {
     }
 
     /**
-     * This player's own chat line, Live seq {@code seq} with text {@code content}, ends with {@code flags}, redrawn in
-     * place with its reaction chips kept. That line is printed by vanilla chat, not as a Live line, so the first call
-     * finds it among the recent ones. A separate key from {@code live:}, so Live reactions stay off it. False when it
+     * This player's own chat line, Live seq {@code seq} with text {@code content}, shows {@code flags} before its text,
+     * redrawn in place with its reaction chips kept. That line is printed by vanilla chat, not as a Live line, so the
+     * first call finds it among the recent ones. A separate key from {@code live:}, so Live reactions stay off it. One
+     * printed as a Live line (sent from the website, linked to this player) keeps its {@code live:} key. False when it
      * is not there (it scrolled out, or the relay's text differs from what the server echoed).
      */
-    public static boolean flagOwnChat(long seq, String content, Component flags) {
-        Line line = LINES.get("own:" + seq);
+    public static boolean flagOwn(long seq, String content, Component flags) {
+        Line line = ownLine(seq);
         if (line == null) line = bindOwn(seq, content);
         if (line == null) return false;
-        line.source = Component.empty().append(line.printed).append(" ").append(flags);
+        line.ownFlags = flags;
+        return drawOwn(line, content, content);
+    }
+
+    /** Line {@code seq} of this player's own, {@link #flagOwn flagged}: reads {@code shown} now, its flags kept. */
+    public static void showOwn(long seq, String content, String shown) {
+        Line line = ownLine(seq);
+        if (line != null && line.ownFlags != null) drawOwn(line, content, shown);
+    }
+
+    @Nullable
+    private static Line ownLine(long seq) {
+        Line own = LINES.get("own:" + seq);
+        return own != null ? own : LINES.get("live:" + seq);
+    }
+
+    private static boolean drawOwn(Line line, String content, String shown) {
+        Component body = Component.empty().append(line.ownFlags).append(" ").append(Component.literal(shown));
+        Component swapped = ChatBodySwap.withBody(line.printed, content, body);
+        // A line reformatted past recognising keeps its words: the flags go after them, and a hover changes nothing.
+        line.source = swapped != null ? swapped : Component.empty().append(line.printed).append(" ").append(line.ownFlags);
         return redraw(line) >= 0;
     }
 

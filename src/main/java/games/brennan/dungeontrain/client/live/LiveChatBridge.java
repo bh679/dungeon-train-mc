@@ -478,12 +478,17 @@ public final class LiveChatBridge {
         cursor = LiveChatRules.nextCursor(cursor, page.seq());
     }
 
-    /** The reader's own line ends with the flags of the languages it was translated into, once there are any. */
+    /** The reader's own line shows the flags of the languages it was translated into, once there are any; hovering one shows that translation. */
     private static void showReach(ChatLine line, @Nullable Map<String, String> tr, @Nullable String src, @Nullable String readerLang) {
         MutableComponent flags = LanguageFlags.reach(tr, src, readerLang);
-        if (flags == null) return;
-        if (line.fromGame()) ChatReactionTracker.flagOwnChat(line.seq(), line.content(), flags);
-        else ChatReactionTracker.replaceLive(line.seq(), LiveChatRules.line(line).append(" ").append(flags));
+        if (flags == null || !ChatReactionTracker.flagOwn(line.seq(), line.content(), flags)) return;
+        for (Component part : flags.getSiblings()) {
+            Component translation = LiveChatFlagHover.keyOf(part.getStyle());
+            if (translation == null) continue;
+            flagHover.watch(part,
+                () -> ChatReactionTracker.showOwn(line.seq(), line.content(), translation.getString()),
+                () -> ChatReactionTracker.showOwn(line.seq(), line.content(), line.content()));
+        }
     }
 
     /**

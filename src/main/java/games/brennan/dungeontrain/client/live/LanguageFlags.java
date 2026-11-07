@@ -98,8 +98,9 @@ public final class LanguageFlags {
     }
 
     /**
-     * What ends a line of the reader's own: a flag per language it reached with that translation on hover, then
-     * {@code +N} naming the others on hover; null when it reached none. Not {@link LiveChatFlagHover}'s to swap.
+     * What goes before the text of a line of the reader's own: a flag per language it reached with that translation on
+     * hover, then {@code +N} naming the others on hover; null when it reached none. Before the text, as a hover changes
+     * its length: a flag after it would move out from under the mouse.
      */
     @Nullable
     static MutableComponent reach(@Nullable Map<String, String> tr, @Nullable String src, @Nullable String reader) {
@@ -107,9 +108,11 @@ public final class LanguageFlags {
         if (reach.flagged().isEmpty() && reach.rest().isEmpty()) return null;
         MutableComponent out = Component.empty();
         for (String tag : reach.flagged()) {
-            out.append(flag(tag, tr.get(tag))).append(" ");
+            if (!out.getSiblings().isEmpty()) out.append(" ");
+            out.append(flag(tag, tr.get(tag)));
         }
         if (reach.rest().isEmpty()) return out;
+        if (!out.getSiblings().isEmpty()) out.append(" ");
         String names = reach.rest().stream().map(LiveChatTranslations::langName).collect(Collectors.joining(", "));
         return out.append(Component.literal("+" + reach.rest().size()).withStyle(s -> s.withColor(ChatFormatting.GRAY)
             .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(names)))));
