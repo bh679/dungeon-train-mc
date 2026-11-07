@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import games.brennan.dungeontrain.difficulty.VaultStatBoost;
 import games.brennan.dungeontrain.editor.VaultLoot;
+import games.brennan.dungeontrain.loot.VaultFinds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -38,13 +39,19 @@ public abstract class VaultServerMixin {
 
     /**
      * Hooked on the call rather than the method's return: a pool reward cancels the method at its
-     * head above, and would skip a return hook. Covers pool and loot-table rewards alike.
+     * head above, and would skip a return hook. Covers pool and loot-table rewards alike. Rare finds
+     * ({@link VaultFinds}) are claimed here too, after the boost, from the stacks that will be ejected.
      */
     @ModifyExpressionValue(method = "tryInsertKey", at = @At(value = "INVOKE",
         target = "Lnet/minecraft/world/level/block/entity/vault/VaultBlockEntity$Server;resolveItemsToEject(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/block/entity/vault/VaultConfig;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/entity/player/Player;)Ljava/util/List;"))
     private static List<ItemStack> dungeontrain$boostRewardStats(List<ItemStack> rewards,
-                                                                 @Local(argsOnly = true) BlockState state) {
-        return VaultStatBoost.boosted(rewards, VaultStatBoost.tierOf(state));
+                                                                 @Local(argsOnly = true) ServerLevel level,
+                                                                 @Local(argsOnly = true) BlockPos pos,
+                                                                 @Local(argsOnly = true) BlockState state,
+                                                                 @Local(argsOnly = true) Player player) {
+        List<ItemStack> boosted = VaultStatBoost.boosted(rewards, VaultStatBoost.tierOf(state));
+        VaultFinds.onRewards(level, pos, state, player, boosted);
+        return boosted;
     }
 
     @Inject(method = "getRandomDisplayItemFromLootTable", at = @At("HEAD"), cancellable = true)

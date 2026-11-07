@@ -15658,6 +15658,38 @@
       ]
     }
   },
+  "chat.dungeontrain.vault_first": {
+    "1": {
+      "label": "the item's name",
+      "examples": [
+        "Mace",
+        "Fox Spawn Egg"
+      ]
+    }
+  },
+  "lore.dungeontrain.vault_find.serial": {
+    "1": {
+      "label": "the item's number: how many of it have ever come out of a vault, counting this one",
+      "examples": [
+        "1",
+        "37"
+      ]
+    }
+  },
+  "lore.dungeontrain.vault_find.pulled_by": {
+    "1": {
+      "label": "the player who opened the vault",
+      "examples": [
+        "Steve"
+      ]
+    },
+    "2": {
+      "label": "the date it came out of the vault, year-month-day",
+      "examples": [
+        "2026-11-07"
+      ]
+    }
+  },
   "gui.dungeontrain.update_prompt.body": {
     "1": {
       "label": "the mod's name and newest version, shown in green",
