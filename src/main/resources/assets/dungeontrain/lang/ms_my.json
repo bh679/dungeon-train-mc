@@ -1459,6 +1459,7 @@
   "gui.dungeontrain.rewards.status.on_for_minutes.other": "HIDUP %s minit lagi · dikekalkan oleh %s",
   "gui.dungeontrain.rewards.status.on_for_hours.other": "HIDUP %s jam lagi · dikekalkan oleh %s",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "HIDUP hingga esok · dikekalkan oleh %s",
+  "gui.dungeontrain.rewards.status.free_thanks": "Terjemahan percuma sedang berjalan terima kasih kepada %s",
   "gui.dungeontrain.rewards.give.soon": "Akan Datang",
   "gui.dungeontrain.rewards.give.month": "Sumbang %s",
   "gui.dungeontrain.rewards.give.amount": "Sumbang %s",

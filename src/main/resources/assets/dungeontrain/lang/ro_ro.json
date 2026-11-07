@@ -1741,6 +1741,7 @@
   "gui.dungeontrain.rewards.status.on_for_hours.few": "PORNIT încă %s ore · ținut pornit de %s",
   "gui.dungeontrain.rewards.status.on_for_hours.other": "PORNIT încă %s de ore · ținut pornit de %s",
   "gui.dungeontrain.rewards.status.on_until_tomorrow": "PORNIT până mâine · ținut pornit de %s",
+  "gui.dungeontrain.rewards.status.free_thanks": "Traducerile gratuite funcționează datorită lui %s",
   "gui.dungeontrain.rewards.give.soon": "Curând",
   "gui.dungeontrain.rewards.give.month": "Donează %s",
   "gui.dungeontrain.rewards.give.amount": "Donează %s",

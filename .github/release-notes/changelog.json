@@ -33960,6 +33960,50 @@
       "released": true,
       "released_in": "v0.1702.0",
       "released_at": "2026-11-07T06:21:57Z"
+    },
+    {
+      "id": "bow-crossbow-depth-damage",
+      "version": "0.1703.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "loot",
+        "ui",
+        "balance"
+      ],
+      "title": "Bow Stats",
+      "summary": "Bows and crossbows now get stronger as you go deeper into the train.",
+      "highlights": [],
+      "pr": 2536,
+      "major": true,
+      "notable": true,
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/bow-stats.png",
+      "date": "2026-11-07",
+      "released": true,
+      "released_in": "v0.1704.0",
+      "released_at": "2026-11-07T07:53:21Z"
+    },
+    {
+      "id": "live-chat-own-line-flags",
+      "version": "0.1703.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "See where your Live chat messages reached",
+      "summary": "Your own Live chat messages now show a small flag for each language they were translated into. Hover a flag to read your message in that language.",
+      "highlights": [
+        "Translated messages now show on their own for everyone. Hover a message's flag for the original, or click the message to flip between the two.",
+        "Your chat translation setting goes back to translation only once. You can change it in Options."
+      ],
+      "pr": 2535,
+      "date": "2026-11-07",
+      "released": true,
+      "released_in": "v0.1704.0",
+      "released_at": "2026-11-07T07:53:21Z"
     }
   ]
 }
