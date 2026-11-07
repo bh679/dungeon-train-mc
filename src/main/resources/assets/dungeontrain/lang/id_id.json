@@ -4965,6 +4965,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": "+%s melawan Undead",
   "tooltip.dungeontrain.enchant_damage.arthropods": "+%s melawan Artropoda",
   "tooltip.dungeontrain.enchant_damage.aquatic": "+%s melawan makhluk air",
+  "attribute.name.adventureitemstats.ranged_damage": "Kerusakan Jarak Jauh",
   "chat.dungeontrain.free_play.cause.portal_rate": "Seberapa sering gerbong dimensi muncul telah diubah di dunia ini.",
   "chat.dungeontrain.free_play.portal_rate_changed": "Rel yang dihasilkan dunia ini bukan lagi rel yang menjadi acuan penyeimbangan Dungeon Train, jadi dunia ini tetap dalam Main Bebas.",
   "chat.dungeontrain.free_play.cause.dt_config": "Pengaturan tingkat kesulitan Dungeon Train telah diubah.",

@@ -5593,6 +5593,7 @@
       "tooltip.dungeontrain.enchant_damage.undead",
       "tooltip.dungeontrain.enchant_damage.arthropods",
       "tooltip.dungeontrain.enchant_damage.aquatic",
+      "attribute.name.adventureitemstats.ranged_damage",
       "item.dungeontrain.live_cassette",
       "item.dungeontrain.live_cassette.tooltip",
       "item.dungeontrain.live_cassette_2",

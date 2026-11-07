@@ -5672,5 +5672,6 @@
   "dungeontrain.plaque.everything_complete": "Everything Complete!",
   "tooltip.dungeontrain.enchant_damage.undead": "+%s vs Undead",
   "tooltip.dungeontrain.enchant_damage.arthropods": "+%s vs Arthropods",
-  "tooltip.dungeontrain.enchant_damage.aquatic": "+%s vs Aquatic"
+  "tooltip.dungeontrain.enchant_damage.aquatic": "+%s vs Aquatic",
+  "attribute.name.adventureitemstats.ranged_damage": "Ranged Damage"
 }

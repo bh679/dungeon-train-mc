@@ -4311,6 +4311,7 @@
       "tooltip.dungeontrain.enchant_damage.undead",
       "tooltip.dungeontrain.enchant_damage.arthropods",
       "tooltip.dungeontrain.enchant_damage.aquatic",
+      "attribute.name.adventureitemstats.ranged_damage",
       "chat.dungeontrain.free_play.cause.soup_stacking",
       "chat.dungeontrain.free_play.cause.cpm_scaling",
       "effect.dungeontrain.free_play.trigger.detail",

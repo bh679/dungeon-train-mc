@@ -5025,6 +5025,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": "+%s gegen Untote",
   "tooltip.dungeontrain.enchant_damage.arthropods": "+%s gegen Gliederfüßer",
   "tooltip.dungeontrain.enchant_damage.aquatic": "+%s gegen Wassertiere",
+  "attribute.name.adventureitemstats.ranged_damage": "Fernkampfschaden",
   "chat.dungeontrain.free_play.cause.portal_rate": "Wie oft dimensionale Waggons erscheinen, wurde in dieser Welt geändert.",
   "chat.dungeontrain.free_play.portal_rate_changed": "Die Strecke, die diese Welt erzeugt, ist nicht mehr die, auf die Dungeon Train abgestimmt ist, deshalb bleibt diese Welt im Freien Spiel.",
   "chat.dungeontrain.free_play.cause.dt_config": "Die Schwierigkeitseinstellungen von Dungeon Train wurden geändert.",

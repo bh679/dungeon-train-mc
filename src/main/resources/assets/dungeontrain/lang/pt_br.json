@@ -5025,6 +5025,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": "+%s contra mortos-vivos",
   "tooltip.dungeontrain.enchant_damage.arthropods": "+%s contra artrópodes",
   "tooltip.dungeontrain.enchant_damage.aquatic": "+%s contra criaturas aquáticas",
+  "attribute.name.adventureitemstats.ranged_damage": "Dano à distância",
   "chat.dungeontrain.free_play.cause.portal_rate": "A frequência com que os vagões dimensionais aparecem foi alterada neste mundo.",
   "chat.dungeontrain.free_play.portal_rate_changed": "Os trilhos que este mundo gera não são mais aqueles para os quais o Dungeon Train foi balanceado, então este mundo continua em Jogo Livre.",
   "chat.dungeontrain.free_play.cause.dt_config": "As configurações de dificuldade do Dungeon Train foram alteradas.",

@@ -5025,6 +5025,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "bc6462a41eccb47f"},
   "tooltip.dungeontrain.enchant_damage.arthropods": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "7cafa662e0f78be4"},
   "tooltip.dungeontrain.enchant_damage.aquatic": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "85d457d3cbc224f9"},
+  "attribute.name.adventureitemstats.ranged_damage": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "ed353d2b643bf868"},
   "chat.dungeontrain.free_play.cause.portal_rate": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "904c6067abd4d0e5"},
   "chat.dungeontrain.free_play.portal_rate_changed": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "db14541fde8a24ae"},
   "chat.dungeontrain.free_play.cause.dt_config": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "a18c5657dd0a162b"},

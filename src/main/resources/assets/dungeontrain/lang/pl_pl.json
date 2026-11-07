@@ -5085,6 +5085,7 @@
   "tooltip.dungeontrain.enchant_damage.undead": "+%s przeciw nieumarłym",
   "tooltip.dungeontrain.enchant_damage.arthropods": "+%s przeciw stawonogom",
   "tooltip.dungeontrain.enchant_damage.aquatic": "+%s przeciw stworzeniom wodnym",
+  "attribute.name.adventureitemstats.ranged_damage": "Obrażenia dystansowe",
   "chat.dungeontrain.free_play.cause.portal_rate": "W tym świecie zmieniono, jak często pojawiają się wagony wymiarowe.",
   "chat.dungeontrain.free_play.portal_rate_changed": "Tor, który generuje ten świat, nie jest już tym, pod który wyważono Dungeon Train, więc ten świat zostaje w Swobodnej Grze.",
   "chat.dungeontrain.free_play.cause.dt_config": "Zmieniono ustawienia trudności Dungeon Train.",
