@@ -1904,6 +1904,7 @@ public final class PortalCarriageBuilder {
                                               PortalRoomBooks books,
                                               java.util.function.Predicate<BlockPos> keepFluid) {
         stampRoomAt(level, roomOrigin, dims, roomName, size, relight, clearMask, writeMask, keepFluid);
+        PortalCopyTiming.mark(PortalCopyTiming.Phase.TEMPLATE);
         // Claim the pictures that stamp just hung, before anything else can walk in and be mistaken
         // for one. A dimensional carriage REPEATS — the tiling window is 121 copies and it has no
         // memory, so walking back over ground you left re-stamps it — and an item frame is a
@@ -2230,6 +2231,7 @@ public final class PortalCarriageBuilder {
         clearRoomBox(level, roomOrigin, size, clearMask, relight);
         clearIntruders(level, roomOrigin, size);
         plugFluidsAround(level, roomOrigin, size, keepFluid);
+        PortalCopyTiming.mark(PortalCopyTiming.Phase.CLEAR);
 
         Optional<StructureTemplate> stored = PortalRoomTemplateStore.get(level, roomName, dims);
         if (stored.isEmpty()) {
@@ -2322,6 +2324,7 @@ public final class PortalCarriageBuilder {
             clearRoomBox(level, origin, size, clearMask, /*relight*/ true);
             clearIntruders(level, origin, size);
             plugFluidsAround(level, origin, size, keepFluid);
+            PortalCopyTiming.mark(PortalCopyTiming.Phase.CLEAR);
             StructureTemplate template = games.brennan.dungeontrain.train.CarriageSnapshotTemplate.toTemplate(
                 blob.snapshot(), level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BLOCK));
             if (!template.getSize().equals(size)) {
@@ -2329,6 +2332,7 @@ public final class PortalCarriageBuilder {
             }
             CarriagePlacer.stampTemplateAt(level, origin, template, clipTo(origin, size, writeMask),
                 /*relight*/ true, boxOf(origin, size), TemplateDecor.Rule.ROOM);
+            PortalCopyTiming.mark(PortalCopyTiming.Phase.TEMPLATE);
             PortalRoomMobs.markDecor(level, origin, size, pairKey, tile, 0);
         });
     }
