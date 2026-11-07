@@ -14,6 +14,7 @@ Commands:
   draft  <dir>                 create a private Modrinth draft
   update <dir> [--dry-run | --confirmed]   apply edits to a live Modrinth page
   submit <slug> --confirmed    send a draft to Modrinth's reviewers
+  issues-add <dir> [--confirmed]   add the mod's row to dungeon.training/issues (relay admin call)
 
 Anything other people can see needs --confirmed, which means Brennan has approved the text,
 screenshots and links. CurseForge has no API for pages, so its pages are made in the browser.
@@ -42,6 +43,12 @@ TOKENS_FILE = os.environ.get(
     "LISTING_TOKENS_FILE", os.path.expanduser("~/.config/dungeontrain/publish-tokens.env")
 )
 ISSUES_PAGE = "https://dungeon.training/issues/"
+# The page's mod list lives in dp-relay (issue-projects.js): read it here, edit it under the admin cap.
+ISSUES_API = "https://brennan.games/api/dp-relay/issues/projects"
+RELAY_ADMIN_URL_FILE = os.environ.get(
+    "LISTING_RELAY_ADMIN_URL_FILE", os.path.expanduser("~/.config/dungeontrain/relay-admin-url.txt")
+)
+SOURCE_REPO = re.compile(r"^https://github\.com/(bh679/[A-Za-z0-9._-]+?)/?$")
 
 LONG_DASHES = "‒–—―"
 STANDALONE_SENTENCE = (
@@ -58,7 +65,8 @@ DT_PACK_LINK = re.compile(
     r"https://(modrinth\.com/modpack/(bEFyz3ji|dungeon-train)"
     r"|www\.curseforge\.com/(projects/1556213|minecraft/modpacks/dungeon-train))\b"
 )
-ISSUES_LINK = re.compile(r"^https://dungeon\.training/issues/#([a-z0-9-]+)$")
+# No slash before "#": Modrinth's link allowlist refuses ".../issues/#anchor" but accepts this.
+ISSUES_LINK = re.compile(r"^https://dungeon\.training/issues#([a-z0-9-]+)$")
 SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{2,63}$")
 
 # Modrinth's limits, from its API docs.
@@ -209,15 +217,25 @@ def image_problems(listing: dict, folder: str) -> list[str]:
 def issues_link_problems(listing: dict, offline: bool, fetch_page: Callable | None = None) -> list[str]:
     match = ISSUES_LINK.match(listing.get("issues_url") or "")
     if not match:
-        return [f"issues_url must be {ISSUES_PAGE}#<anchor>"]
+        return ["issues_url must be https://dungeon.training/issues#<anchor>"]
     if offline:
         return []
+    fetch = fetch_page or fetch_text
+    anchor = match.group(1)
+    # The page draws its rows from the relay, so the relay's list is the truth. A relay without the
+    # route yet (or a test's HTML stub) falls back to the rows built into the page.
     try:
-        page = (fetch_page or fetch_text)(ISSUES_PAGE)
+        ids = [p.get("id") for p in json.loads(fetch(ISSUES_API)).get("projects", [])]
+        if anchor in ids:
+            return []
+    except (OSError, ListingError, ValueError, AttributeError):
+        pass
+    try:
+        page = fetch(ISSUES_PAGE)
     except (OSError, ListingError) as e:
         return [f"couldn't read the issues page to check the anchor: {e}"]
-    if f'id="{match.group(1)}"' not in page:
-        return [f'{ISSUES_PAGE} has no row "{match.group(1)}" yet: add it in dp-relay first']
+    if f'id="{anchor}"' not in page:
+        return [f'the issues page has no row "{anchor}" yet: run `listing.py issues-add <dir> --confirmed`']
     return []
 
 
@@ -431,6 +449,8 @@ def draft_data(listing: dict) -> dict:
         "client_side": "optional",
         "server_side": "optional",
         "license_id": listing["license_id"],
+        # A LicenseRef- id is refused on create without the licence's URL.
+        **({"license_url": listing["license_url"]} if listing.get("license_url") else {}),
         "initial_versions": [],
         **{field: listing.get(field) for field in LINK_FIELDS},
     }
@@ -716,6 +736,51 @@ def cmd_submit(args: argparse.Namespace) -> int:
     return 0
 
 
+def issues_row(listing: dict) -> dict:
+    """The issues page row for a listing: its anchor, its title, and the GitHub repo its source link names."""
+    match = ISSUES_LINK.match(listing.get("issues_url") or "")
+    if not match:
+        raise ListingError("issues_url must be https://dungeon.training/issues#<anchor>")
+    repo = SOURCE_REPO.match(listing.get("source_url") or "")
+    if not repo:
+        raise ListingError("source_url must be https://github.com/bh679/<repo>: the page links its issues")
+    return {"id": match.group(1), "name": listing["title"], "repo": repo.group(1)}
+
+
+def relay_admin_url() -> str:
+    """The relay's admin base URL. It holds the admin secret, so it is never printed or put in an error."""
+    try:
+        with open(RELAY_ADMIN_URL_FILE, encoding="utf-8") as f:
+            url = f.read().strip()
+    except OSError as e:
+        raise ListingError(f"no relay admin URL at {RELAY_ADMIN_URL_FILE}: see its README.md") from e
+    if not url.startswith("https://"):
+        raise ListingError(f"{RELAY_ADMIN_URL_FILE} doesn't hold an https URL")
+    return url.rstrip("/")
+
+
+def cmd_issues_add(args: argparse.Namespace) -> int:
+    row = issues_row(load_listing(args.dir))
+    print(f"Row: {row['name']} (#{row['id']}) -> https://github.com/{row['repo']}/issues")
+    if not args.confirmed:
+        print("The issues page is public: re-run with --confirmed to add it.")
+        return 0
+    try:
+        status, payload = call(
+            "PUT",
+            relay_admin_url() + "/issues/projects",
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(row).encode("utf-8"),
+        )
+    except ListingError:
+        raise ListingError("couldn't reach the relay to add the row") from None
+    if status != 200:
+        error = payload.get("error") if isinstance(payload, dict) else None
+        raise ListingError(f"the relay refused the row (HTTP {status}{', ' + error if error else ''})")
+    print(f"Added: https://dungeon.training/issues#{row['id']} (shows within a minute)")
+    return 0
+
+
 def parser() -> argparse.ArgumentParser:
     top = argparse.ArgumentParser(description="Create and edit our mods' store pages.")
     commands = top.add_subparsers(dest="command", required=True)
@@ -742,6 +807,10 @@ def parser() -> argparse.ArgumentParser:
     submit.add_argument("slug")
     submit.add_argument("--confirmed", action="store_true")
     submit.set_defaults(run=cmd_submit)
+    issues_add = commands.add_parser("issues-add")
+    issues_add.add_argument("dir")
+    issues_add.add_argument("--confirmed", action="store_true")
+    issues_add.set_defaults(run=cmd_issues_add)
     return top
 
 
