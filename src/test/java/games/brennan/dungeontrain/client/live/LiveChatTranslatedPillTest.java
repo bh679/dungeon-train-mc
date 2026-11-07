@@ -60,6 +60,6 @@ class LiveChatTranslatedPillTest {
     @Test
     @DisplayName("Google's badge keeps its own proportions")
     void badgeWidth() {
-        assertEquals(Math.round(24 * (float) 528 / 48), LiveChatTranslatedPill.badgeWidth(24));
+        assertEquals(Math.round(24 * (float) 366 / 48), LiveChatTranslatedPill.badgeWidth(24));
     }
 }

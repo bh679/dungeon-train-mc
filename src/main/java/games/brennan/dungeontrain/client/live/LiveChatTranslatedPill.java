@@ -27,7 +27,7 @@ import java.util.Set;
 /**
  * One label above the chat lines saying Live chat is translated, whenever a translated line is on screen
  * ({@link LiveChatBridge} reports them), whoever translated it. While any of them is Google's work it is
- * Google's own unaltered "powered by Google Translate" badge instead, as its rules require: drawn above other
+ * Google's own unaltered "translated by Google" badge instead, as its rules require: drawn above other
  * HUD panels and held on screen, as the credit must never be covered or missing. A line is recognised by the tick it entered chat, which vanilla keeps through re-wrapping. In a
  * closed chat the label fades with the newest translated line; in an open one it follows the scroll position.
  */
@@ -43,9 +43,9 @@ public final class LiveChatTranslatedPill {
     private static final int GAP = 2;
     private static final int TEXT_RGB = 0xD8D8D8;
     private static final float BACKDROP_OPACITY = 0.72f;
-    /** Google's badge, byte for byte as Google ships it (white-regular@3x), and how large to draw it. */
+    /** Google's short badge, byte for byte as Google ships it (white-short@3x), and how large to draw it. */
     private static final ResourceLocation GOOGLE_BADGE = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "textures/gui/live/google_translate_badge.png");
-    private static final int BADGE_TEXTURE_W = 528;
+    private static final int BADGE_TEXTURE_W = 366;
     private static final int BADGE_TEXTURE_H = 48;
     private static final int BADGE_H = 12;
     private static final float BADGE_SCALE = 0.8f;
@@ -179,8 +179,7 @@ public final class LiveChatTranslatedPill {
         int shownHeight = Mth.ceil(BADGE_H * BADGE_SCALE);
         int height = shownHeight + 2 * PAD_Y;
         int top = labelTop(bottom, height);
-        // Opaque: nothing on the HUD beneath may show through Google's credit.
-        graphics.fill(CHAT_LEFT, top, CHAT_LEFT + shownWidth + 2 * PAD_X, top + height, argb(alpha, 0x000000));
+        graphics.fill(CHAT_LEFT, top, CHAT_LEFT + shownWidth + 2 * PAD_X, top + height, argb(alpha * BACKDROP_OPACITY, 0x000000));
         RenderSystem.enableBlend();
         RenderSystem.setShaderColor(1f, 1f, 1f, alpha);
         graphics.pose().pushPose();
