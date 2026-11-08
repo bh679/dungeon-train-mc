@@ -275,12 +275,30 @@ public final class CinematicPreloadGate {
         // zeroed and on-ground, so they never drop into the void.
         if (placeElapsed >= placeTimeout * PLACE_HARD_CAP_MULT) {
             LOGGER.warn("[DungeonTrain] Cinematic preload gate: placing hard cap reached ({}t) — releasing player pinned at entry pose", placeElapsed);
+            releaseAtEntryPose(mc);
+        }
+    }
+
+    /**
+     * The server gave up placing the player ({@link games.brennan.dungeontrain.net.CinematicPreloadEndPacket}),
+     * so nothing is coming to wait for. No-op once the placement landed, or if never armed.
+     */
+    public static void abandonPlacing() {
+        if (phase != Phase.PLACING) return;
+        LOGGER.info("[DungeonTrain] Cinematic preload gate: server gave up placing after {}t — releasing player at entry pose", placeElapsed);
+        releaseAtEntryPose(Minecraft.getInstance());
+    }
+
+    /** Leave the placing hold standing at the pinned pose, velocity zeroed, so nobody drops into the void. */
+    private static void releaseAtEntryPose(Minecraft mc) {
+        LocalPlayer p = mc.player;
+        if (p != null && freezePos != null) {
             p.setDeltaMovement(Vec3.ZERO);
             p.setPos(freezePos.x, freezePos.y, freezePos.z);
             p.setOnGround(true);
             p.fallDistance = 0.0f;
-            release(mc);
         }
+        release(mc);
     }
 
     /**

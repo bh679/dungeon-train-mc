@@ -27,6 +27,21 @@ final class PlayerJoinSpawnSearchTest {
     }
 
     @Test
+    @DisplayName("wakesTrainOnRetry — a player who never boarded asks at once, then on the interval")
+    void neverBoardedWakesOnInterval() {
+        assertTrue(PlayerJoinEvents.wakesTrainOnRetry(true, 0));
+        assertFalse(PlayerJoinEvents.wakesTrainOnRetry(true, 1));
+        assertTrue(PlayerJoinEvents.wakesTrainOnRetry(true, PlayerJoinEvents.LOGIN_WAKE_INTERVAL_TICKS));
+    }
+
+    @Test
+    @DisplayName("wakesTrainOnRetry — a returning player never wakes the train")
+    void returningPlayerNeverWakes() {
+        assertFalse(PlayerJoinEvents.wakesTrainOnRetry(false, 0));
+        assertFalse(PlayerJoinEvents.wakesTrainOnRetry(false, PlayerJoinEvents.LOGIN_WAKE_INTERVAL_TICKS));
+    }
+
+    @Test
     @DisplayName("chunksAlongRay — a straight +X ray visits every chunk column it crosses, in order")
     void straightRayVisitsEachChunk() {
         Set<Long> chunks = PlayerJoinEvents.chunksAlongRay(0.5, 0.5, 40.5, 0.5);

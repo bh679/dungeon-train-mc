@@ -192,7 +192,7 @@ public final class PlayerJoinEvents {
      * for the train lookup, whose race resolves in 1–2 ticks; sized to clear
      * {@link #SCAN_WAIT_TICKS}.
      */
-    private static final int MAX_RETRY_TICKS = 240;
+    static final int MAX_RETRY_TICKS = 240;
 
     /**
      * How long since login the track scan may hold placement for chunks that are still generating.
@@ -208,8 +208,14 @@ public final class PlayerJoinEvents {
     private static final TicketType<ChunkPos> JOIN_SCAN_TICKET =
         TicketType.create("dungeontrain_join_scan", Comparator.comparingLong(ChunkPos::toLong), 200);
 
+    /** How often a player who has never boarded asks a sleeping train back. Sable answers a reload synchronously. */
+    static final int LOGIN_WAKE_INTERVAL_TICKS = 20;
+
     /** Player UUID → tick count of pending retry. Cleared on success/timeout/logout. */
     private static final Map<UUID, Integer> PENDING = new ConcurrentHashMap<>();
+
+    /** Sub-levels already asked back for the logins now queued, so a snatch-miss moves along the train. */
+    private static final Set<UUID> LOGIN_WAKES_TRIED = ConcurrentHashMap.newKeySet();
 
     /**
      * Pre-computed placement from {@code TrainBootstrapEvents}. Read by
@@ -226,6 +232,20 @@ public final class PlayerJoinEvents {
     /** Read accessor for {@code PlayerFudgeSpawnMixin}. */
     public static SpawnPlacement getBootstrapPlacement() {
         return bootstrapPlacement;
+    }
+
+    /** True while somebody who just logged in is still waiting to be placed on the train. */
+    public static boolean isLoginPlacementPending() {
+        return !PENDING.isEmpty();
+    }
+
+    /**
+     * Whether a queued login with no loaded train should ask a sleeping one back on this retry. Only
+     * a player who has never boarded: a returning one logging in away from a sleeping train stays
+     * where they left off.
+     */
+    static boolean wakesTrainOnRetry(boolean neverBoarded, int ticksWaited) {
+        return neverBoarded && ticksWaited % LOGIN_WAKE_INTERVAL_TICKS == 0;
     }
 
     /**
@@ -321,7 +341,7 @@ public final class PlayerJoinEvents {
                 ? BookSuspensionSyncPacket.of(suspendedFor, 0)
                 : BookSuspensionSyncPacket.cleared());
         // Only queue the train-placement retry loop in worlds that actually have a train.
-        // Otherwise every join to an editor or builder world burns MAX_RETRY_TICKS (5 s) of
+        // Otherwise every join to an editor or builder world burns MAX_RETRY_TICKS (12 s) of
         // per-tick lookups that can never succeed, and ends in a timeout log that reads like
         // a failure rather than "this world has no train by design".
         if (bandData.startsWithTrain()) {
@@ -373,7 +393,10 @@ public final class PlayerJoinEvents {
         // Deliver any editor welcome whose 2.2s post-entry delay has elapsed.
         EditorWelcome.tick(server);
 
-        if (PENDING.isEmpty()) return;
+        if (PENDING.isEmpty()) {
+            LOGIN_WAKES_TRIED.clear();
+            return;
+        }
         Iterator<Map.Entry<UUID, Integer>> it = PENDING.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<UUID, Integer> entry = it.next();
@@ -390,6 +413,7 @@ public final class PlayerJoinEvents {
             if (ticks >= MAX_RETRY_TICKS) {
                 LOGGER.warn("[DungeonTrain] Login spawn placement timed out for {} after {} ticks — train never appeared",
                     player.getName().getString(), MAX_RETRY_TICKS);
+                CinematicIntroService.abandonPreload(player);
                 it.remove();
             } else {
                 entry.setValue(ticks);
@@ -425,7 +449,19 @@ public final class PlayerJoinEvents {
         // cinematic camera and is invisible. So no cached no-op fast path — we
         // always wait for the live train and recompute from it.
         ManagedShip trainShip = findTrain(trainLevel);
-        if (trainShip == null) return false; // no settled train group yet — retry next tick
+        if (trainShip == null) {
+            // No settled train group yet — retry next tick. If the train is asleep in Sable holding
+            // nothing will bring it back on its own: the player is at world spawn, too far along the
+            // line for the appender's remote catch-up.
+            if (wakesTrainOnRetry(CinematicIntroService.shouldPlay(player), ticksWaited)) {
+                int woken = RespawnDimensionEvents.wakeHeldTrains(trainLevel, LOGIN_WAKES_TRIED);
+                if (woken > 0) {
+                    LOGGER.info("[DungeonTrain] Login spawn for {}: train in {} is in Sable holding, woke {} group(s)",
+                        player.getName().getString(), trainLevel.dimension().location(), woken);
+                }
+            }
+            return false;
+        }
 
         TrainTransformProvider provider =
             (TrainTransformProvider) trainShip.getKinematicDriver();
