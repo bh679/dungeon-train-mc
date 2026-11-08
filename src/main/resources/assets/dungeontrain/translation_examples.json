@@ -16182,25 +16182,11 @@
       ]
     }
   },
-  "chat.dungeontrain.live.watch_links": {
-    "1": {
-      "label": "the clickable word Twitch, already translated (chat.dungeontrain.live.link.twitch)",
-      "examples": [
-        "Twitch"
-      ]
-    },
-    "2": {
-      "label": "the clickable name of the website's live page, already translated (chat.dungeontrain.live.link.tv)",
-      "examples": [
-        "DungeonTrain TV"
-      ]
-    }
-  },
   "chat.dungeontrain.live.watch_link": {
     "1": {
-      "label": "the clickable name of the website's live page, already translated (chat.dungeontrain.live.link.tv)",
+      "label": "a row of clickable platform logos (DungeonTrain TV, Twitch, YouTube, Kick), shown as small icons, not words",
       "examples": [
-        "DungeonTrain TV"
+        "[TV] [Twitch] [YouTube] [Kick]"
       ]
     }
   },
@@ -16373,48 +16359,38 @@
   "chat.dungeontrain.live.channel.live": {
     "1": {
       "label": "the name of the player who just went live",
-      "examples": ["AshSeven", "Steve"]
+      "examples": [
+        "AshSeven",
+        "Steve"
+      ]
     },
     "2": {
       "label": "a link to their Twitch channel",
-      "examples": ["twitch.tv/ashseven"]
+      "examples": [
+        "twitch.tv/ashseven"
+      ]
     }
   },
   "chat.dungeontrain.live.channel.join": {
     "1": {
       "label": "the name of the player whose stream you are watching",
-      "examples": ["AshSeven", "Steve"]
+      "examples": [
+        "AshSeven",
+        "Steve"
+      ]
     },
     "2": {
       "label": "a link to their Twitch channel",
-      "examples": ["twitch.tv/ashseven"]
-    }
-  },
-  "chat.dungeontrain.live.watch_links_own": {
-    "1": {
-      "label": "the word Twitch, a link to the Dungeon Train Twitch channel",
       "examples": [
-        "Twitch"
-      ]
-    },
-    "2": {
-      "label": "the words DungeonTrain TV, a link to the website's live page",
-      "examples": [
-        "DungeonTrain TV"
-      ]
-    },
-    "3": {
-      "label": "the streamer's Twitch channel, shown as a clickable link",
-      "examples": [
-        "twitch.tv/brennanhattongames"
+        "twitch.tv/ashseven"
       ]
     }
   },
   "chat.dungeontrain.live.watch_link_own": {
     "1": {
-      "label": "the words DungeonTrain TV, a link to the website's live page",
+      "label": "a row of clickable platform logos (DungeonTrain TV, Twitch, YouTube, Kick), shown as small icons, not words",
       "examples": [
-        "DungeonTrain TV"
+        "[TV] [Twitch] [YouTube] [Kick]"
       ]
     },
     "2": {
