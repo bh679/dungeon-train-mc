@@ -58,9 +58,10 @@ public final class DisabledModContent {
         "deeperdarker:sculk_smite", "deeperdarker:catalysis", "deeperdarker:reverberation");
 
     /** Mods whose own creative tabs are hidden by default: the ones above, plus VanillaBackport — its gear is
-     *  kept — and Exposure with its Polaroid add-on, whose one item players get is DT's own disposable camera. */
+     *  kept — and Exposure with its Polaroid add-on, whose one item players get is DT's own disposable camera, and Creeper Overhaul (its spawn eggs and tiny cactus). */
     private static final Set<String> HIDDEN_TAB_NAMESPACES =
-        Set.of("betternether", "betterend", "biomesoplenty", "vanillabackport", "exposure", "exposure_polaroid");
+        Set.of("betternether", "betterend", "biomesoplenty", "vanillabackport", "exposure", "exposure_polaroid",
+            "creeperoverhaul");
 
     /**
      * Mods with no creative tab of their own whose items sit in vanilla's tabs: hidden from every tab and the search

@@ -498,6 +498,82 @@
       "modrinth_version": "eRQ6VuD1"
     },
     {
+      "name": "Creeper Overhaul",
+      "slug": "creeper-overhaul",
+      "mod_ids": [
+        "creeperoverhaul"
+      ],
+      "sha1": "5a07cc032df790e7d110ad3dedb7a76253ffd565",
+      "packages": [
+        "tech.thatgravyboat.creeperoverhaul"
+      ],
+      "project_id": 561625,
+      "file_id": 6051279,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "creeperoverhaul_min_version",
+      "version": "4.0.6",
+      "modrinth_project": "creeper-overhaul",
+      "modrinth_version": "HNrAYCLH"
+    },
+    {
+      "name": "GeckoLib",
+      "slug": "geckolib",
+      "mod_ids": [
+        "geckolib"
+      ],
+      "sha1": "5cfe835472a5c5457ae9ac192d9d7b317454d5ac",
+      "packages": [
+        "software.bernie.geckolib"
+      ],
+      "project_id": 388172,
+      "file_id": 8893490,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "geckolib_min_version",
+      "version": "4.9.3",
+      "modrinth_project": "geckolib",
+      "modrinth_version": "Grwn5rUB"
+    },
+    {
+      "name": "Resourceful Lib",
+      "slug": "resourceful-lib",
+      "mod_ids": [
+        "resourcefullib"
+      ],
+      "sha1": "24389c8e48ff0e8594e4686b750c494c66a5f8df",
+      "packages": [
+        "com.teamresourceful.resourcefullib"
+      ],
+      "project_id": 570073,
+      "file_id": 5973188,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "resourcefullib_min_version",
+      "version": "3.0.12",
+      "modrinth_project": "resourceful-lib",
+      "modrinth_version": "x99nCLTm"
+    },
+    {
+      "name": "Resourceful Config",
+      "slug": "resourceful-config",
+      "mod_ids": [
+        "resourcefulconfig"
+      ],
+      "sha1": "6bf2b6ea9c071c00a2abcdc552667fb6f7d21031",
+      "packages": [
+        "com.teamresourceful.resourcefulconfig"
+      ],
+      "project_id": 714059,
+      "file_id": 6467772,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "resourcefulconfig_min_version",
+      "version": "3.0.11",
+      "modrinth_project": "resourceful-config",
+      "modrinth_version": "lSbyRD6v"
+    },
+    {
       "name": "Piglin Proliferation",
       "slug": "piglin-proliferation",
       "mod_ids": [

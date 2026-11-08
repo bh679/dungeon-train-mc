@@ -743,6 +743,13 @@ dependencies {
     // them by registry id only.
     implementation "maven.modrinth:luminous-monsters:${luminous_monsters_version}"
 
+    // Creeper Overhaul + its libraries — REQUIRED third-party deps (see gradle.properties). Biome creepers placed in
+    // carriage rooms; DT names them by registry id only, so nothing compiles against these jars.
+    implementation "maven.modrinth:creeper-overhaul:${creeperoverhaul_version}"
+    implementation "maven.modrinth:geckolib:${geckolib_version}"
+    implementation "maven.modrinth:resourceful-lib:${resourcefullib_version}"
+    implementation "maven.modrinth:resourceful-config:${resourcefulconfig_version}"
+
     // Piglin Proliferation — REQUIRED third-party dep (see gradle.properties). Its piglins stand in carriages;
     // DT names its entities and items by registry id only.
     implementation "maven.modrinth:piglin-proliferation:${piglinproliferation_version}"
@@ -1109,6 +1116,8 @@ tasks.register('generateModMetadata', ProcessResources) {
         deeperdarker_min_version          : deeperdarker_min_version,
         // Luminous Monsters — floor only.
         luminous_monsters_min_version     : luminous_monsters_min_version,
+        // Creeper Overhaul — floor only.
+        creeperoverhaul_min_version       : creeperoverhaul_min_version,
         // Piglin Proliferation — floor only.
         piglinproliferation_min_version   : piglinproliferation_min_version,
         // Exposure + its Polaroid add-on — floors only.

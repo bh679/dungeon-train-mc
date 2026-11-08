@@ -39,5 +39,16 @@ final class NaturalSpawnLevelGateTest {
         assertTrue(NaturalSpawnLevelGate.isGated("luminous_monsters:swamp_zombie"));
         assertFalse(NaturalSpawnLevelGate.isGated("minecraft:zombie"));
         assertFalse(NaturalSpawnLevelGate.isGated("deeperdarker:stalker"));
+        assertTrue(NaturalSpawnLevelGate.isGated("creeperoverhaul:desert_creeper"));
+    }
+
+    @Test
+    @DisplayName("a biome's own overhaul creeper replaces the vanilla creeper; the everywhere cave creeper does not")
+    void biomeCreepersReplaceVanilla() {
+        assertTrue(NaturalSpawnLevelGate.replacesVanillaCreeper("creeperoverhaul:desert_creeper"));
+        assertTrue(NaturalSpawnLevelGate.replacesVanillaCreeper("creeperoverhaul:dripstone_creeper"));
+        assertFalse(NaturalSpawnLevelGate.replacesVanillaCreeper("creeperoverhaul:cave_creeper"));
+        assertFalse(NaturalSpawnLevelGate.replacesVanillaCreeper("minecraft:creeper"));
+        assertFalse(NaturalSpawnLevelGate.replacesVanillaCreeper("luminous_monsters:swamp_zombie"));
     }
 }
