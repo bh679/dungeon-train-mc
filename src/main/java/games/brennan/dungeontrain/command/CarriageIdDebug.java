@@ -116,7 +116,8 @@ final class CarriageIdDebug {
             back(source);
             return fail(source, "The rebuild failed; see the server log.");
         }
-        BlockPos stand = result.slotOrigin().offset(dims.length() / 2, 1, dims.width() / 2);
+        // On the group's back pad looking down the run, the way a rider boards it from the flatbed.
+        BlockPos stand = origin.offset(1, 2, dims.width() / 2);
         player.teleportTo(overworld, stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5, FACE_EAST, 0.0f);
         source.sendSuccess(() -> Component.literal("Rebuilt ").withStyle(ChatFormatting.GREEN)
             .append(copyable(id.format(), ChatFormatting.WHITE))
@@ -159,7 +160,7 @@ final class CarriageIdDebug {
         ChatFormatting colour = c.same == c.total ? ChatFormatting.GREEN : ChatFormatting.YELLOW;
         source.sendSuccess(() -> Component.literal(String.format("Verify %s: %d of %d cells match (%.2f%%).",
             id.format(), c.same, c.total, pct)).withStyle(colour), false);
-        for (String diff : c.diffs) {
+        for (String diff : c.diffs.subList(0, Math.min(MAX_LISTED_DIFFS, c.diffs.size()))) {
             source.sendSuccess(() -> Component.literal("  " + diff).withStyle(ChatFormatting.GRAY), false);
         }
         for (String note : result.notes()) {
@@ -185,7 +186,7 @@ final class CarriageIdDebug {
             total++;
             if (live.equals(rebuilt)) {
                 same++;
-            } else if (diffs.size() < MAX_LISTED_DIFFS) {
+            } else {
                 diffs.add(offset.toShortString() + ": train " + live + " / rebuild " + rebuilt);
             }
         }

@@ -12,6 +12,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.AABB;
@@ -89,8 +91,10 @@ public final class CarriageRebuilder {
         RebuildScope scope = new RebuildScope(context.portal(), context.transitionMask());
         BoundingBox box = boxFor(origin, dims, groupSize);
         discardEntities(overworld, box);
+        clearMargin(overworld, box);
         Set<BlockPos> blocks = TestGate.with(gate,
-            () -> RebuildScope.with(scope, () -> TrainAssembler.rebuildGroup(overworld, origin, anchor, groupSize, dims)));
+            () -> RebuildScope.with(scope, () -> TrainAssembler.rebuildGroup(overworld, origin, anchor, groupSize, dims,
+                () -> settleShapes(overworld, box))));
         relightAndSync(overworld, box);
 
         int enclosedStart = groupSize > 1 ? CarriagePlacer.halfPadLen(dims) : 0;
@@ -118,6 +122,37 @@ public final class CarriageRebuilder {
         AABB area = AABB.of(box).inflate(1.0);
         for (Entity e : level.getEntities((Entity) null, area, e -> !(e instanceof Player))) {
             e.discard();
+        }
+    }
+
+    /**
+     * Air out a one-block shell around the box. On the train a group has open air on every side; in
+     * the basement its panes, fences and walls would otherwise join up with the rock around it.
+     */
+    private static void clearMargin(ServerLevel level, BoundingBox box) {
+        BoundingBox outer = box.inflatedBy(1);
+        BlockState air = Blocks.AIR.defaultBlockState();
+        BlockPos.betweenClosedStream(outer).map(BlockPos::immutable)
+            .filter(pos -> !box.isInside(pos))
+            .forEach(pos -> level.setBlock(pos, air, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE));
+    }
+
+    /**
+     * Let every cell take the shape its neighbours give it: panes and fences joining, walls rising,
+     * stairs turning corners. The train's stamp skips these updates and its group gets them when Sable
+     * lifts it; a rebuild is never lifted, so it settles them here. Twice, because a stair's corner can
+     * depend on a neighbour that itself changed on the first pass. Runs before the contents go in, as the
+     * lift does; cells an author locked are put back after it, as the train re-locks them.
+     */
+    private static void settleShapes(ServerLevel level, BoundingBox box) {
+        for (int pass = 0; pass < 2; pass++) {
+            BlockPos.betweenClosedStream(box).map(BlockPos::immutable).forEach(pos -> {
+                BlockState state = level.getBlockState(pos);
+                BlockState settled = Block.updateFromNeighbourShapes(state, level, pos);
+                if (settled != state) {
+                    level.setBlock(pos, settled, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
+                }
+            });
         }
     }
 

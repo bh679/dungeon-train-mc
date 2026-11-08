@@ -436,6 +436,8 @@ public final class TrainAssembler {
 
     /** The blocks the last {@link #rebuildGroup} stood up; server-thread only, like the placement. */
     private static Set<BlockPos> rebuiltBlocks = Set.of();
+    /** The running rebuild's stand-in for the lift's shape pass; see {@link #rebuildGroup}. */
+    private static Runnable rebuildSettle = () -> {};
 
     /**
      * Stand group {@code anchorPIdx} up again as ordinary world blocks at {@code origin}, through the
@@ -443,17 +445,22 @@ public final class TrainAssembler {
      * {@link games.brennan.dungeontrain.template.TestGate} carrying the recorded context; this does the
      * placing, and returns every block it wrote.
      *
-     * @param origin where the back pad's lowest corner goes (the enclosed run starts a half pad after it
-     *               when the group has more than one carriage)
+     * @param origin  where the back pad's lowest corner goes (the enclosed run starts a half pad after it
+     *                when the group has more than one carriage)
+     * @param settle  run where the train lifts the group: after the shells and pads, before the locked
+     *                fence / wall / pane arms are put back and before the contents go in, which the
+     *                train lays after the lift and so never re-shapes
      */
     public static Set<BlockPos> rebuildGroup(ServerLevel level, BlockPos origin, int anchorPIdx, int groupSize,
-                                             CarriageDims dims) {
+                                             CarriageDims dims, Runnable settle) {
         if (!RebuildScope.active()) throw new IllegalStateException("rebuildGroup needs a RebuildScope");
         rebuiltBlocks = Set.of();
         ConnectPass.beginLiftCapture();
         try {
+            rebuildSettle = settle;
             CarriageStampGuard.call(() -> spawnGroupGuarded(level, origin, null, anchorPIdx, groupSize, dims, UUID.randomUUID()));
         } finally {
+            rebuildSettle = () -> {};
             ConnectPass.endLiftCapture();
         }
         Set<BlockPos> out = rebuiltBlocks;
@@ -778,8 +785,11 @@ public final class TrainAssembler {
             sharedBuildsBySlot(pickBySlot, groupLeasePick, groupSize)));
 
         if (rebuild != null) {
-            // A rebuild stands as world blocks: no Sable ship, and the contents and entities the train
-            // defers until a group settles go straight in.
+            // A rebuild stands as world blocks: no Sable ship. In the lift's place, its shape pass and the
+            // re-lock of locked cells; then the contents and entities the train defers until a group
+            // settles go straight in.
+            rebuildSettle.run();
+            ConnectPass.commitLiftCapture(level, origin, origin);
             furnishRebuild(level, origin, dims, genCfg, anchorPIdx, groupSize, enclosedStartOffset,
                 groupAnchorWorldX, enclosedBySlot, roomBySlot, groupPick, fullPick, halfPick);
             LOGGER.info("[DungeonTrain] Rebuilt group anchorPIdx={} groupSize={} enclosed=[{}] stages=[{}] whole={} at {}",
