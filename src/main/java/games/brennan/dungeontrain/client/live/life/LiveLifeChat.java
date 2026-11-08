@@ -82,6 +82,11 @@ public final class LiveLifeChat {
             case GAME -> "game";
             case WEB -> "web";
             case TWITCH -> "twitch";
+            case KICK -> "kick";
+            case YOUTUBE -> "youtube";
+            case TIKTOK -> "tiktok";
+            case FACEBOOK -> "facebook";
+            case INSTAGRAM -> "instagram";
             case DISCORD -> "discord";
             default -> "other";
         };

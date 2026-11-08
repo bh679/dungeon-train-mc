@@ -247,6 +247,11 @@ public final class CrowdPage {
             case "web" -> "source.web";
             case "twitch" -> "=Twitch";
             case "discord" -> "=Discord";
+            case "kick" -> "=Kick";
+            case "youtube" -> "=YouTube";
+            case "tiktok" -> "=TikTok";
+            case "facebook" -> "=Facebook";
+            case "instagram" -> "=Instagram";
             default -> null;
         };
     }
