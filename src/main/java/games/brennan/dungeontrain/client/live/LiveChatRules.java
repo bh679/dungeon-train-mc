@@ -38,7 +38,8 @@ public final class LiveChatRules {
 
     /** The source icon before a name: one glyph each in {@link #ICON_FONT}. {@link #OTHER} is a plain chat bubble. */
     public enum Icon {
-        EYE('\uE000'), TV('\uE001'), WEB('\uE002'), DISCORD('\uE003'), TWITCH('\uE004'), KICK('\uE005'), OTHER('\uE006');
+        EYE('\uE000'), TV('\uE001'), WEB('\uE002'), DISCORD('\uE003'), TWITCH('\uE004'), KICK('\uE005'), OTHER('\uE006'),
+        YOUTUBE('\uE007'), TIKTOK('\uE008'), FACEBOOK('\uE009'), INSTAGRAM('\uE00A');
 
         public final char glyph;
 
@@ -230,6 +231,10 @@ public final class LiveChatRules {
         return switch (source) {
             case TWITCH -> ChatFormatting.LIGHT_PURPLE;
             case KICK -> ChatFormatting.DARK_GREEN;
+            case YOUTUBE -> ChatFormatting.RED;
+            case TIKTOK -> ChatFormatting.DARK_AQUA;
+            case FACEBOOK -> ChatFormatting.BLUE;
+            case INSTAGRAM -> ChatFormatting.GOLD;
             case GAME -> ChatFormatting.GREEN;
             case DISCORD, WEB, OTHER -> ChatFormatting.AQUA;
         };
@@ -237,7 +242,7 @@ public final class LiveChatRules {
 
     /**
      * The source icon for a line: a game line's player in the Live Eye (the streamer) or a TV — a TV
-     * when an older relay says neither — the website's globe, the Discord, Twitch and Kick logos, and a
+     * when an older relay says neither — the website's globe, the Discord, Twitch, Kick, YouTube, TikTok, Facebook and Instagram logos, and a
      * plain chat bubble for a source this client doesn't know. Never null.
      */
     public static Icon icon(ChatLine line) {
@@ -247,6 +252,10 @@ public final class LiveChatRules {
             case DISCORD -> Icon.DISCORD;
             case TWITCH -> Icon.TWITCH;
             case KICK -> Icon.KICK;
+            case YOUTUBE -> Icon.YOUTUBE;
+            case TIKTOK -> Icon.TIKTOK;
+            case FACEBOOK -> Icon.FACEBOOK;
+            case INSTAGRAM -> Icon.INSTAGRAM;
             case OTHER -> Icon.OTHER; // a room this client doesn't know yet still says it came from somewhere
         };
     }

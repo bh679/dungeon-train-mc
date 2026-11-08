@@ -164,6 +164,11 @@ class LiveChatRulesTest {
         assertEquals(LiveChatRules.Icon.TWITCH, LiveChatRules.icon(new ChatLine(1, 0, "T", null, "x", Source.TWITCH)));
         assertEquals(LiveChatRules.Icon.KICK, LiveChatRules.icon(new ChatLine(1, 0, "K", null, "x", Source.KICK)));
         assertEquals(LiveChatRules.Icon.OTHER, LiveChatRules.icon(new ChatLine(1, 0, "O", null, "x", Source.OTHER)), "an unknown room: the plain bubble");
+        assertEquals(LiveChatRules.Icon.YOUTUBE, LiveChatRules.icon(new ChatLine(1, 0, "Y", null, "x", Source.YOUTUBE)));
+        assertEquals(LiveChatRules.Icon.TIKTOK, LiveChatRules.icon(new ChatLine(1, 0, "T", null, "x", Source.TIKTOK)));
+        assertEquals(LiveChatRules.Icon.FACEBOOK, LiveChatRules.icon(new ChatLine(1, 0, "F", null, "x", Source.FACEBOOK)));
+        assertEquals(LiveChatRules.Icon.INSTAGRAM, LiveChatRules.icon(new ChatLine(1, 0, "I", null, "x", Source.INSTAGRAM)));
+        assertEquals(ChatFormatting.RED, LiveChatRules.nameColour(Source.YOUTUBE));
     }
 
     @Test

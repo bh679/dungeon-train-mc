@@ -117,9 +117,9 @@ public final class LiveFeedClient {
 
     /** Where a chat line was typed: the relay's {@code source} field. */
     public enum Source {
-        GAME, DISCORD, TWITCH, KICK, WEB, OTHER;
+        GAME, DISCORD, TWITCH, KICK, YOUTUBE, TIKTOK, FACEBOOK, INSTAGRAM, WEB, OTHER;
 
-        /** {@code "game"} → GAME, {@code "discord"} → DISCORD, {@code "twitch"} → TWITCH, {@code "kick"} → KICK, {@code "web"} → WEB; anything else OTHER. */
+        /** {@code "game"} → GAME, {@code "discord"} → DISCORD, {@code "twitch"} → TWITCH, {@code "kick"} → KICK, {@code "youtube"}, {@code "tiktok"}, {@code "facebook"}, {@code "instagram"} → theirs, {@code "web"} → WEB; anything else OTHER. */
         public static Source parse(@Nullable String s) {
             if (s == null) return OTHER;
             return switch (s) {
@@ -127,6 +127,10 @@ public final class LiveFeedClient {
                 case "discord" -> DISCORD;
                 case "twitch" -> TWITCH;
                 case "kick" -> KICK;
+                case "youtube" -> YOUTUBE;
+                case "tiktok" -> TIKTOK;
+                case "facebook" -> FACEBOOK;
+                case "instagram" -> INSTAGRAM;
                 case "web" -> WEB;
                 default -> OTHER;
             };
