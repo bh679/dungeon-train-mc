@@ -240,6 +240,10 @@ public final class BookFactory {
             // finishing it — the world simply stops offering its letters and lecterns fall through to
             // mod stories. Honouring the setting immediately beats honouring an earlier commitment.
             if (skipPolitical && series.political()) continue;
+            // A reader reported this series from a lectern: the world stops serving the rest of it at
+            // once, without waiting for the relay to pull it. (Starting it again can't happen either —
+            // a reported series was read here, so it is already in the started set pickUnstarted skips.)
+            if (data.isSeriesReported(series.seriesId())) continue;
             Optional<NarrativePool.SeriesLetter> next = nextUnreadPlayerLetter(data, series);
             if (next.isPresent()) return Optional.of(buildPlayerSeriesLetter(series, next.get()));
         }
