@@ -62,6 +62,18 @@ class SharedPhotoCriteriaTest {
     }
 
     @Test
+    @DisplayName("Zombie and skeleton horses are not family: no list in the group names them")
+    void undeadHorsesLeftOut() throws IOException {
+        for (String path : SharedPhotoCriteria.GROUP) {
+            Map<String, String> criteria = subjects(path);
+            for (String horse : new String[] {"minecraft:zombie_horse", "minecraft:skeleton_horse"}) {
+                assertFalse(criteria.containsKey(horse), path + " names " + horse);
+                assertFalse(criteria.containsValue("entity:" + horse), path + " counts " + horse);
+            }
+        }
+    }
+
+    @Test
     @DisplayName("Only the three mob collections are in the group")
     void groupMembership() {
         assertTrue(SharedPhotoCriteria.inGroup(ResourceLocation.fromNamespaceAndPath("dungeontrain", "enchiridion/family_photo")));
