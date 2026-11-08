@@ -1,0 +1,21 @@
+{
+  "id": "live-eye-platform-logos",
+  "version": "0.1735.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community",
+    "ui"
+  ],
+  "title": "Stream logos",
+  "summary": "When you go live with the Live Eye, the chat now shows a row of logos for everywhere the stream can be watched. Click one to open it.",
+  "highlights": [
+    "Dungeon Train, Twitch, YouTube and Kick logos, each a link",
+    "Hover a logo to see where it goes"
+  ],
+  "pr": 2569,
+  "date": "2026-11-08",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
