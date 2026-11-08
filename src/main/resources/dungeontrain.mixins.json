@@ -254,6 +254,7 @@
     "client.DimensionAmbientLightBandMixin",
     "client.DimensionSpecialEffectsCloudHeightMixin",
     "client.ClientLevelBandSkyColorMixin",
+    "client.SablePoseLookupThreadGuardMixin",
     "client.LightTextureEndBandMixin",
     "client.ClockBandSpinMixin",
     "client.CompassBandSpinMixin",
