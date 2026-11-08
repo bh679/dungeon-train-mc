@@ -61,7 +61,7 @@ final class PerkDetailsBar {
     /** The death screen's menu: Unlock only, no Activate and no Active Points. */
     private boolean unlockOnly;
     private boolean noUnlock;
-    /** The menu in play: Activate only, no Unlock tab; unlock points are spent after death. */
+    /** The menu in play: the tab is Activate, not Unlock; unlock points are spent after death. */
     private boolean activeOnly;
     private String builtFor = "";
     private PointsGraph graph;
@@ -102,7 +102,7 @@ final class PerkDetailsBar {
         builtFor = "";
     }
 
-    /** Activate only: the Unlock tab and its why-not line drop out. */
+    /** Activate only: the tab activates, in Cosmic Apples, and the right-hand Activate button drops out. */
     void activeOnly(boolean on) {
         if (on == activeOnly) return;
         activeOnly = on;
@@ -124,7 +124,7 @@ final class PerkDetailsBar {
 
     /** How many buttons sit at the right of the bar: Activate, unless unlocking only (Unlock is the tab above). */
     private int buttonCount() {
-        return unlockOnly ? 0 : 1;
+        return unlockOnly || activeOnly ? 0 : 1;
     }
 
     /** Over the Unlock tab standing on the bar's top edge. */
@@ -157,9 +157,7 @@ final class PerkDetailsBar {
         // Small and grey until the perk's points are filled, though it can still be pressed; points are gone
         // at death, so the death screen's menu has nothing to fill
         if (activeOnly) {
-            unlockButton = null;
-            unlockReason = null;
-            activateButton = isLocked ? activateButton(shown, snap) : null;
+            buildActivateTab(shown, isLocked, snap);
             return true;
         }
         int level = snap.unlockLevel(shown.id());
@@ -183,6 +181,26 @@ final class PerkDetailsBar {
         }
         activateButton = activateButton(shown, snap);
         return true;
+    }
+
+    /**
+     * In play the tab is Activate, in the Unlock tab's place: the badge is the point it puts in, the cost
+     * in Cosmic Apples. A hovered perk gets the outline when a point could go in once selected; the
+     * selected one says why not under the tab, as Unlock does.
+     */
+    private void buildActivateTab(PerkTree.Perk shown, boolean isLocked, PerkMenuSnapshot snap) {
+        activateButton = null;
+        unlockButton = UnlockTab.activate(font, width / 2, top, Component.translatable(KEY + "activate"),
+            Math.min(snap.points(shown.id()), Math.max(0, snap.unlockLevel(shown.id()) - 1)) + 1, snap.nextRankCost(),
+            b -> activate.accept(shown));
+        Component why = activateBlocked(shown, snap);
+        if (!isLocked) {
+            unlockButton.look(why == null ? UnlockTab.Look.AVAILABLE : UnlockTab.Look.BLOCKED);
+            unlockReason = null;
+            return;
+        }
+        unlockReason = why;
+        unlockButton.look(why == null ? UnlockTab.Look.READY : UnlockTab.Look.BLOCKED);
     }
 
     /** The Activate button at the bar's right, greyed with why when it can't be pressed. */
