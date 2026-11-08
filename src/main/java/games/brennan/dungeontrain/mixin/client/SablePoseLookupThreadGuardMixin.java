@@ -37,7 +37,10 @@ import org.spongepowered.asm.mixin.injection.At;
 public abstract class SablePoseLookupThreadGuardMixin {
 
     @WrapOperation(
-            method = "projectOutOfSubLevel",
+            method = {
+                    "projectOutOfSubLevel(Lnet/minecraft/world/level/Level;Lorg/joml/Vector3dc;Lorg/joml/Vector3d;)Lorg/joml/Vector3d;",
+                    "projectOutOfSubLevel(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/Position;)Lnet/minecraft/world/phys/Vec3;"
+            },
             at = @At(
                     value = "INVOKE",
                     target = "Ldev/ryanhcode/sable/mixinterface/clip_overwrite/LevelPoseProviderExtension;"
