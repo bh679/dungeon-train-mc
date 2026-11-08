@@ -150,6 +150,14 @@ public final class LuckyBonusRoller {
     }
 
     /**
+     * How many reward rolls a player unlocking a vault gets: two with any Luck at all (double the
+     * drops, each roll its own), one otherwise (Bad Luck never removes items).
+     */
+    public static int vaultRollsFor(float luck) {
+        return luck > 0f ? 2 : 1;
+    }
+
+    /**
      * How many of a vase's candidates a lucky breaker claims: with any Luck at all, the single
      * baked stack half the time; zero otherwise (Bad Luck never removes items). A coin flip
      * rather than a tiered range because a vase only ever holds one item to begin with.

@@ -5586,6 +5586,7 @@
   "chat.dungeontrain.custom_content.dev_ignored": "Eigen treininhoud blijft aan en deze run telt nog steeds mee (dev-build).",
   "chat.dungeontrain.lucky_loot.bonus": "Geluk gehad! Er zijn %s extra voorwerp(en) in deze kist opgedoken.",
   "chat.dungeontrain.lucky_loot.vase_bonus": "Geluk gehad! Er is een extra voorwerp uit deze vaas gevallen.",
+  "chat.dungeontrain.lucky_loot.vault_bonus": "Geluk gehad! Deze kluis gaf je het dubbele.",
   "gui.dungeontrain.custom_content.title": "Eigen treininhoud",
   "gui.dungeontrain.custom_content.card.custom.name": "Eigen trein",
   "gui.dungeontrain.custom_content.card.custom.tag": "Vrij Spel",

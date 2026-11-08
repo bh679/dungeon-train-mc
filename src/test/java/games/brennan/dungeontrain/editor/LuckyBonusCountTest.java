@@ -80,4 +80,13 @@ final class LuckyBonusCountTest {
             assertTrue(rate > 0.45 && rate < 0.55, "luck " + luck + " bonus rate " + rate);
         }
     }
+
+    @Test
+    @DisplayName("any Luck doubles a vault's rolls; none or Bad Luck keeps the one")
+    void vaultRolls() {
+        assertEquals(1, LuckyBonusRoller.vaultRollsFor(0f));
+        assertEquals(1, LuckyBonusRoller.vaultRollsFor(-1f));
+        assertEquals(2, LuckyBonusRoller.vaultRollsFor(1f));
+        assertEquals(2, LuckyBonusRoller.vaultRollsFor(3f));
+    }
 }

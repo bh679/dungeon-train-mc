@@ -5520,6 +5520,7 @@
   "chat.dungeontrain.custom_content.dev_ignored": "カスタムの列車コンテンツは有効のままで、このプレイは記録対象のままです（開発ビルド）。",
   "chat.dungeontrain.lucky_loot.bonus": "ラッキー！このチェストに追加のアイテムが%s個現れた。",
   "chat.dungeontrain.lucky_loot.vase_bonus": "ラッキー！この壺から追加のアイテムが1個出てきた。",
+  "chat.dungeontrain.lucky_loot.vault_bonus": "ラッキー！この宝物庫から2倍の報酬が出てきた。",
   "gui.dungeontrain.custom_content.title": "カスタムの列車コンテンツ",
   "gui.dungeontrain.custom_content.card.custom.name": "カスタム列車",
   "gui.dungeontrain.custom_content.card.custom.tag": "フリープレイ",

@@ -262,6 +262,15 @@ final class VaultLootTest {
     }
 
     @Test
+    @DisplayName("pass 0 keeps the original per-player seed; a lucky pass rolls on a seed of its own")
+    void luckyPassSeed() {
+        UUID a = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        assertEquals(SEED ^ VaultLoot.playerSalt(a), VaultLoot.rollSeed(SEED, a, 0));
+        assertNotEquals(VaultLoot.rollSeed(SEED, a, 0), VaultLoot.rollSeed(SEED, a, 1));
+        assertEquals(VaultLoot.rollSeed(SEED, a, 1), VaultLoot.rollSeed(SEED, a, 1));
+    }
+
+    @Test
     @DisplayName("the key survives the store, prefab and clipboard formats; the default is never written")
     void keyRoundTrips() {
         ContainerContentsPool ominous = diamondPool(VaultLoot.OMINOUS_KEY);

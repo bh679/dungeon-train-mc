@@ -5534,6 +5534,7 @@
   "chat.dungeontrain.custom_content.dev_ignored": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "f0af926b7e17fbcd"},
   "chat.dungeontrain.lucky_loot.bonus": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "8bdfeb97168e7902"},
   "chat.dungeontrain.lucky_loot.vase_bonus": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "4454725759754254"},
+  "chat.dungeontrain.lucky_loot.vault_bonus": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "ed2387098a50ed51"},
   "gui.dungeontrain.custom_content.title": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "8c48396076388909"},
   "gui.dungeontrain.custom_content.card.custom.name": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "f51271886edda9da"},
   "gui.dungeontrain.custom_content.card.custom.tag": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "54e153469e082194"},

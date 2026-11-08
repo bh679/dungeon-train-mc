@@ -4167,6 +4167,7 @@
   "chat.dungeontrain.custom_content.dev_ignored": "Conținutul personalizat pentru tren rămâne pornit, iar această cursă contează în continuare (build de dezvoltare).",
   "chat.dungeontrain.lucky_loot.bonus": "Noroc! %s obiect(e) în plus au apărut în acest cufăr.",
   "chat.dungeontrain.lucky_loot.vase_bonus": "Noroc! Un obiect în plus a căzut din această vază.",
+  "chat.dungeontrain.lucky_loot.vault_bonus": "Noroc! Acest seif ți-a dat dublu.",
   "gui.dungeontrain.custom_content.title": "Conținut personalizat pentru tren",
   "gui.dungeontrain.custom_content.card.custom.name": "Tren personalizat",
   "gui.dungeontrain.custom_content.card.custom.tag": "Joc Liber",
