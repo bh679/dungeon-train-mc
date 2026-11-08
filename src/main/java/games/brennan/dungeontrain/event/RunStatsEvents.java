@@ -34,6 +34,7 @@ import games.brennan.dungeontrain.util.SecondPersonDeathMessage;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.locale.Language;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -343,12 +344,15 @@ public final class RunStatsEvents {
      * Vanilla and modded death messages always lead with the victim's display name (e.g.
      * "Brennan was slain by Zombie") — swap that name for "You", then fix the dominant
      * "was …" verb agreement ("You was" → "You were"). If the message doesn't begin with
-     * the player's name (an unusual modded format), it is returned unchanged.
+     * the player's name (an unusual modded format), it is returned unchanged. A message in
+     * another language is also returned unchanged, so the line never mixes in English.
      */
     private static String secondPersonCause(ServerPlayer player) {
         String msg = deathMessage(player);
         String name = player.getDisplayName().getString();
-        return SecondPersonDeathMessage.rewrite(msg, name);
+        // The language the message was rendered in: the player's own in singleplayer, en_us on a server.
+        String lang = Language.getInstance().getOrDefault("language.code", "en_us");
+        return SecondPersonDeathMessage.rewrite(msg, name, lang);
     }
 
     /**
