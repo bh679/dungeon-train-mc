@@ -226,7 +226,7 @@ final class VaultLootTest {
 
         // Expected items per unlock: average fill (4) x weight / total weight.
         assertEquals(0.005, expectedPerUnlock(green, "mace"), 0.0005);
-        assertEquals(0.008, expectedPerUnlock(green, "heavy_core"), 0.0005);
+        assertEquals(0.010, expectedPerUnlock(green, "heavy_core"), 0.0005);
     }
 
     @Test
@@ -235,7 +235,8 @@ final class VaultLootTest {
         ContainerContentsPool ominous = VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY);
         assertEquals(2, ominous.fillMin());
         assertEquals(4, ominous.fillMax());
-        assertEquals(2347, ominous.totalWeight());
+        assertEquals(2346, ominous.totalWeight());
+        assertEquals(0.005, expectedPerUnlock(ominous, "heavy_core"), 0.0005);
 
         Set<ResourceLocation> removed = Set.of(
             ResourceLocation.withDefaultNamespace("emerald"),
@@ -272,8 +273,8 @@ final class VaultLootTest {
     @DisplayName("the green vault keeps the heavy core and mace at their per-opening odds, and the spawn eggs at their weights")
     void greenVaultRaritiesKeepTheirOdds() {
         ContainerContentsPool green = VaultLoot.defaultPool(VaultLoot.GREEN_KEY);
-        assertEquals(16174, green.totalWeight());
-        assertEquals(32, entry(green, "minecraft", "heavy_core").weight());
+        assertEquals(16182, green.totalWeight());
+        assertEquals(40, entry(green, "minecraft", "heavy_core").weight());
         assertEquals(20, entry(green, "minecraft", "mace").weight());
         assertEquals(22, green.entries().stream().filter(e -> e.itemId().getPath().endsWith("_spawn_egg"))
             .mapToInt(ContainerContentsEntry::weight).sum());
