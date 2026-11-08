@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.menu.containercontents;
 import games.brennan.dungeontrain.client.menu.MenuLang;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
+import games.brennan.dungeontrain.client.menu.CountRangeInputScreen;
 import games.brennan.dungeontrain.client.menu.WorldPanelInput;
 import games.brennan.dungeontrain.client.menu.MenuClickModifiers;
 import games.brennan.dungeontrain.client.menu.number.NumberField;
@@ -169,9 +170,14 @@ public final class ContainerContentsMenuInputHandler {
             case CLOSE -> DungeonTrainNet.sendToServer(new ContainerContentsMenuTogglePacket(false));
             case ENTRY_COUNT_PLUS, ENTRY_WEIGHT_PLUS, ENTRY_DUR_CHANCE, ENTRY_ENCH_CHANCE -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
-                NumberStepper.click(entryNumber(hit.kind(), plotKey, local, hit.index(),
-                        ContainerContentsMenu.entries().get(hit.index())),
-                    button, shift, MenuClickModifiers.cmdDown(), pad());
+                ContainerContentsSyncPacket.Entry entry = ContainerContentsMenu.entries().get(hit.index());
+                // The count cell's clicks step the max; its cmd-click types min and max together,
+                // the only way to set the min.
+                NumberStepper.Typing typing = hit.kind() == ContainerContentsMenu.CellKind.ENTRY_COUNT_PLUS
+                    ? countRangePad(plotKey, local, hit.index(), entry)
+                    : pad();
+                NumberStepper.click(entryNumber(hit.kind(), plotKey, local, hit.index(), entry),
+                    button, shift, MenuClickModifiers.cmdDown(), typing);
             }
             case ENTRY_ICON -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
@@ -270,6 +276,16 @@ public final class ContainerContentsMenuInputHandler {
     private static NumberStepper.Typing pad() {
         return NumberPad.returningToBuilt(
             () -> ContainerContentsMenu.space().isScreenspace() ? new ContainerContentsMenuScreen() : null);
+    }
+
+    /** Cmd-click on a count cell: the min/max pad, returning where {@link #pad()} would. */
+    private static NumberStepper.Typing countRangePad(String plotKey, net.minecraft.core.BlockPos local, int row,
+                                                      ContainerContentsSyncPacket.Entry e) {
+        return field -> Minecraft.getInstance().setScreen(new CountRangeInputScreen(
+            net.minecraft.network.chat.Component.literal(field.title()), e.minCount(), e.count(), 64,
+            (min, max) -> DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                ContainerContentsEditPacket.Op.SET_COUNT_RANGE, plotKey, local, row, "", max, min)),
+            ContainerContentsMenu.space().isScreenspace() ? new ContainerContentsMenuScreen() : null));
     }
 
     private static void dispatchSearch(ContainerContentsMenu.Hit hit) {

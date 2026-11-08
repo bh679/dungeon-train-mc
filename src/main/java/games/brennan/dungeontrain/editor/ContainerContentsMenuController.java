@@ -287,7 +287,7 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
         List<ContainerContentsSyncPacket.Entry> entries = new ArrayList<>(pool.entries().size());
         for (ContainerContentsEntry e : pool.entries()) {
             entries.add(new ContainerContentsSyncPacket.Entry(
-                e.itemId().toString(), e.count(), e.weight(),
+                e.itemId().toString(), e.count(), e.minCount(), e.weight(),
                 e.randomDurability(), e.durabilityChance(),
                 e.randomEnchantment(), e.enchantmentChance(),
                 e.slotOverride(),
@@ -518,6 +518,15 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                 int newCount = Math.max(1, Math.min(64, packet.delta()));
                 if (newCount == e.count()) return;
                 next = current.replaced(idx, e.withCount(newCount));
+                dirty = true;
+            }
+            case SET_COUNT_RANGE -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                ContainerContentsEntry ranged = e.withCountRange(packet.value2(), packet.delta());
+                if (ranged.count() == e.count() && ranged.minCount() == e.minCount()) return;
+                next = current.replaced(idx, ranged);
                 dirty = true;
             }
             case SET_DUR_CHANCE -> {

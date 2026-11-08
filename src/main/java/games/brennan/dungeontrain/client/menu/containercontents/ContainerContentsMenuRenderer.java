@@ -103,6 +103,13 @@ public final class ContainerContentsMenuRenderer {
      */
     static final double SEARCH_COLUMN_WIDTH = 1.9;
 
+    /** Count cell text: {@code x5} when the stack rolls from 1, {@code x2-5} once a min is set. */
+    static String countLabel(ContainerContentsSyncPacket.Entry entry) {
+        return entry.minCount() > 1
+            ? "x" + entry.minCount() + "-" + entry.count()
+            : "x" + entry.count();
+    }
+
     /** True when the menu currently has a link sub-row to draw. */
     static boolean hasLinkRow() {
         return ContainerContentsMenu.linkedPrefabId() != null;
@@ -385,7 +392,7 @@ public final class ContainerContentsMenuRenderer {
             int countTint = countHover ? 0xC0FFCC33 : 0x40FFFFFF;
             drawQuad(ps, buffer, countL + 0.005, rowBottom + 0.005,
                 countR - 0.005, rowTop - 0.005, countTint);
-            drawCenteredText(ps, buffer, font, "x" + entry.count(),
+            drawCenteredText(ps, buffer, font, countLabel(entry),
                 (countL + countR) / 2.0, rowCY,
                 countHover ? 0xFF000000 : 0xFFFFFFFF);
 
