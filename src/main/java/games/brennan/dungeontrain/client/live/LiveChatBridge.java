@@ -184,6 +184,7 @@ public final class LiveChatBridge {
             switchRoom(mc, pick);
         }
         long now = System.currentTimeMillis();
+        LiveChatSources.refresh(base(streaming), now); // the relay's look for sources this build doesn't know
         printRestartLines(mc, now);
         Component channelLine = channelLink.joinLine(pick != null && pick.stream() == 2 ? status.second() : status, now);
         if (channelLine != null) mc.gui.getChat().addMessage(channelLine);

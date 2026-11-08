@@ -45,6 +45,8 @@ class LiveFeedClientChatParseTest {
         assertFalse(p.lines().get(2).fromGame());
         assertEquals(Source.OTHER, p.lines().get(3).source(), "an unknown room is still shown");
         assertEquals(Source.KICK, Source.parse("kick"));
+        assertEquals("matrix", p.lines().get(3).sourceId(), "an unknown room keeps its name for the relay's catalog");
+        assertNull(Source.id("Bad Id"));
     }
 
     @Test

@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client.live;
 
+import games.brennan.dungeontrain.client.chat.emoji.EmojiText;
+
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
@@ -129,11 +131,17 @@ public final class LiveChatRules {
     /** {@link #line(ChatLine, String, Style)} with {@code flag}, when there is one, just before the text. */
     public static MutableComponent line(ChatLine line, String content, Style contentStyle, @Nullable MutableComponent flag) {
         MutableComponent out = Component.translatable(PREFIX_KEY).withStyle(ChatFormatting.DARK_GRAY);
+        // A source this build has no constant for draws from the relay's catalog (LiveChatSources): its icon once loaded
+        // (a runtime glyph in the Discord-emoji font), its name colour. Until then, or without an entry, the bubble.
+        LiveChatSources.Entry ext = line.source() == Source.OTHER ? LiveChatSources.entry(line.sourceId()) : null;
+        java.util.OptionalInt extGlyph = ext != null ? LiveChatSources.glyph(line.sourceId()) : java.util.OptionalInt.empty();
+        String glyph = extGlyph.isPresent() ? new String(Character.toChars(extGlyph.getAsInt())) : String.valueOf(icon(line).glyph);
+        ResourceLocation font = extGlyph.isPresent() ? EmojiText.DISCORD_EMOJI_FONT : ICON_FONT;
         // White so the glyph's own colours show; text colour tints a bitmap glyph.
         out.append(Component.literal(" "))
-            .append(Component.literal(String.valueOf(icon(line).glyph))
-                .withStyle(s -> s.withFont(ICON_FONT).withColor(ChatFormatting.WHITE)));
-        out.append(Component.literal(" " + clean(line.author(), MAX_AUTHOR)).withStyle(nameColour(line.source())))
+            .append(Component.literal(glyph).withStyle(s -> s.withFont(font).withColor(ChatFormatting.WHITE)));
+        Style name = ext != null && ext.color() != null ? Style.EMPTY.withColor(ext.color()) : Style.EMPTY.applyFormat(nameColour(line.source()));
+        out.append(Component.literal(" " + clean(line.author(), MAX_AUTHOR)).withStyle(name))
             .append(Component.literal(": ").withStyle(ChatFormatting.GRAY));
         if (flag != null) out.append(flag).append(" ");
         return out.append(Component.literal(clean(content, MAX_CONTENT)).withStyle(contentStyle));

@@ -131,6 +131,14 @@ public final class LiveFeedClient {
                 default -> OTHER;
             };
         }
+
+        /** The relay's source name when it is a well-formed id ({@code [a-z0-9_]{1,24}}), else null. Pure. */
+        @Nullable
+        public static String id(@Nullable String s) {
+            return s != null && SOURCE_ID.matcher(s).matches() ? s : null;
+        }
+
+        private static final java.util.regex.Pattern SOURCE_ID = java.util.regex.Pattern.compile("[a-z0-9_]{1,24}");
     }
 
     /** How a game line's player is in the room: the relay's {@code via} — the Live Eye (the streamer) or a TV. */
@@ -157,14 +165,25 @@ public final class LiveFeedClient {
     public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
                            @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
                            @Nullable Moment moment, @Nullable RestartNotice restart, @Nullable Death death,
-                           @Nullable Map<String, String> tr, @Nullable LinkedChannel channel, @Nullable String src) {
+                           @Nullable Map<String, String> tr, @Nullable LinkedChannel channel, @Nullable String src,
+                           @Nullable String sourceId) {
         /**
          * {@code tr}: the relay's translations of this line already known when it was read (locale → text), else null.
          * {@code channel}: the streamer's Twitch this line links, else null.
          * {@code src}: the language the line was found in (a language tag), for its translation's flag, else null.
+         * {@code sourceId}: the relay's own name for the source ({@link Source#id}), kept so a source this build has
+         * no constant for still finds its icon and colour in the relay's catalog ({@code LiveChatSources}); else null.
          */
         public ChatLine {
             tr = tr == null || tr.isEmpty() ? null : Map.copyOf(tr);
+            sourceId = Source.id(sourceId);
+        }
+
+        public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
+                        @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
+                        @Nullable Moment moment, @Nullable RestartNotice restart, @Nullable Death death,
+                        @Nullable Map<String, String> tr, @Nullable LinkedChannel channel, @Nullable String src) {
+            this(seq, ts, author, uuid, content, source, logRequest, via, poll, moment, restart, death, tr, channel, src, null);
         }
 
         public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
@@ -822,6 +841,16 @@ public final class LiveFeedClient {
         return send(RELAY, req);
     }
 
+    /**
+     * The relay's chat source catalog on {@code base} ({@code GET /live/chat/sources}: each bridged source's label,
+     * colour and icon path). An older relay answers 404, and every source then keeps this build's own look.
+     */
+    public static CompletableFuture<Result> chatSources(String base) {
+        HttpRequest req = HttpRequest.newBuilder(URI.create(base + "/live/chat/sources"))
+            .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
+        return send(RELAY, req);
+    }
+
     /** The chat read path: {@code since} when known, {@code room} when one stream's room is named. Pure. */
     static String chatPath(long since, @Nullable String room) {
         return chatPath(since, room, null);
@@ -1101,11 +1130,12 @@ public final class LiveFeedClient {
                     String author = LiveChatRules.clean(m.has("author") && !m.get("author").isJsonNull() ? m.get("author").getAsString() : null,
                         LiveChatRules.MAX_AUTHOR);
                     String uuid = m.has("uuid") && !m.get("uuid").isJsonNull() ? m.get("uuid").getAsString() : null;
-                    Source source = Source.parse(m.has("source") && !m.get("source").isJsonNull() ? m.get("source").getAsString() : null);
+                    String sourceName = m.has("source") && m.get("source").isJsonPrimitive() ? m.get("source").getAsString() : null;
+                    Source source = Source.parse(sourceName);
                     Via via = Via.parse(m.has("via") && !m.get("via").isJsonNull() ? m.get("via").getAsString() : null);
                     lines.add(new ChatLine(m.get("seq").getAsLong(), m.has("ts") ? m.get("ts").getAsLong() : 0L,
                         author.isBlank() ? "Someone" : author, uuid, content, source, parseLogRequest(m), via,
-                        LiveTakeoverClient.parsePollLine(m), parseMoment(m), parseRestart(m), parseDeath(m), parseTr(m), parseChannel(m), parseSrc(m)));
+                        LiveTakeoverClient.parsePollLine(m), parseMoment(m), parseRestart(m), parseDeath(m), parseTr(m), parseChannel(m), parseSrc(m), sourceName));
                 }
             }
             List<Long> deleted = new ArrayList<>();
