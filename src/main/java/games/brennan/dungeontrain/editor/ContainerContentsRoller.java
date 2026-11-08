@@ -469,6 +469,19 @@ public final class ContainerContentsRoller {
                                               BlockPos localPos, long worldSeed, int carriageIndex,
                                               int diffIndex,
                                               HolderLookup.Provider registries) {
+        return rollStacks(pool, slotCount, localPos, worldSeed, carriageIndex, diffIndex, false, registries);
+    }
+
+    /**
+     * {@link #rollStacks(ContainerContentsPool, int, BlockPos, long, int, int, HolderLookup.Provider)},
+     * and with {@code splitOverflow} a rolled count above the item's stack size is handed out as
+     * several stacks ({@link #overflowStacks}) instead of being cut to one. Vault rewards split, so
+     * "totem 3-7" gives 3 to 7 totems; chests and entity fills do not.
+     */
+    public static List<ItemStack> rollStacks(ContainerContentsPool pool, int slotCount,
+                                              BlockPos localPos, long worldSeed, int carriageIndex,
+                                              int diffIndex, boolean splitOverflow,
+                                              HolderLookup.Provider registries) {
         if (pool == null || pool.isEmpty()) return List.of();
         if (slotCount <= 0) return List.of();
         int totalWeight = pool.totalWeight();
@@ -489,6 +502,25 @@ public final class ContainerContentsRoller {
             ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, diffIndex, slot, registries);
             if (stack.isEmpty()) continue;
             out.add(stack);
+            if (splitOverflow) out.addAll(overflowStacks(stack, rolledCount));
+        }
+        return out;
+    }
+
+    /**
+     * The stacks beyond {@code first} that a roll of {@code rolledCount} still owes once
+     * {@link #rollItemStack} has cut {@code first} to its max stack: copies of {@code first},
+     * each at most a full stack, until the count is met. Empty when nothing was cut.
+     */
+    static List<ItemStack> overflowStacks(ItemStack first, int rolledCount) {
+        int max = first.getMaxStackSize();
+        int remaining = rolledCount - first.getCount();
+        if (remaining <= 0 || first.getCount() < max) return List.of();
+        List<ItemStack> out = new ArrayList<>();
+        while (remaining > 0) {
+            int n = Math.min(max, remaining);
+            out.add(first.copyWithCount(n));
+            remaining -= n;
         }
         return out;
     }
