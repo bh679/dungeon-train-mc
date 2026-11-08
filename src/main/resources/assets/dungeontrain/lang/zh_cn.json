@@ -5534,6 +5534,7 @@
   "chat.dungeontrain.custom_content.dev_ignored": "自定义列车内容保持开启，本轮旅程仍然计入（开发版）。",
   "chat.dungeontrain.lucky_loot.bonus": "好运！这个箱子里多出了 %s 件物品。",
   "chat.dungeontrain.lucky_loot.vase_bonus": "好运！这个陶罐里多掉出了一件物品。",
+  "chat.dungeontrain.lucky_loot.vault_bonus": "好运！这个宝库额外给了你%s件物品。",
   "gui.dungeontrain.custom_content.title": "自定义列车内容",
   "gui.dungeontrain.custom_content.card.custom.name": "自定义列车",
   "gui.dungeontrain.custom_content.card.custom.tag": "自由模式",

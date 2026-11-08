@@ -5520,6 +5520,7 @@
   "chat.dungeontrain.custom_content.dev_ignored": "Nananatiling naka-on ang sariling nilalaman ng tren at binibilang pa rin ang larong ito (dev build).",
   "chat.dungeontrain.lucky_loot.bonus": "Suwerte! May %s dagdag na item na lumitaw sa kabang ito.",
   "chat.dungeontrain.lucky_loot.vase_bonus": "Suwerte! May dagdag na item na nahulog mula sa plorera na ito.",
+  "chat.dungeontrain.lucky_loot.vault_bonus": "Suwerte! Binigyan ka ng kaha-de-yero na ito ng %s dagdag na item.",
   "gui.dungeontrain.custom_content.title": "Sariling nilalaman ng tren",
   "gui.dungeontrain.custom_content.card.custom.name": "Sariling Tren",
   "gui.dungeontrain.custom_content.card.custom.tag": "Malayang Paglalaro",

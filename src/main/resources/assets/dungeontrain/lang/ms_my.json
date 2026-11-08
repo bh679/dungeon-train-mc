@@ -5520,6 +5520,7 @@
   "chat.dungeontrain.custom_content.dev_ignored": "Kandungan kereta api tersuai kekal dihidupkan dan permainan ini masih dikira (binaan dev).",
   "chat.dungeontrain.lucky_loot.bonus": "Bertuah! %s item tambahan muncul dalam peti ini.",
   "chat.dungeontrain.lucky_loot.vase_bonus": "Bertuah! Satu item tambahan jatuh dari pasu ini.",
+  "chat.dungeontrain.lucky_loot.vault_bonus": "Bertuah! Peti kebal ini memberi anda %s item tambahan.",
   "gui.dungeontrain.custom_content.title": "Kandungan kereta api tersuai",
   "gui.dungeontrain.custom_content.card.custom.name": "Kereta Api Tersuai",
   "gui.dungeontrain.custom_content.card.custom.tag": "Main Bebas",

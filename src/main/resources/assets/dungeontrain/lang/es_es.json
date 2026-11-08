@@ -5586,6 +5586,7 @@
   "chat.dungeontrain.custom_content.dev_ignored": "El contenido de tren personalizado sigue activado y esta partida sigue contando (versión de desarrollo).",
   "chat.dungeontrain.lucky_loot.bonus": "¡Qué suerte! Han aparecido %s objeto(s) extra en este cofre.",
   "chat.dungeontrain.lucky_loot.vase_bonus": "¡Qué suerte! Ha caído un objeto extra de este jarrón.",
+  "chat.dungeontrain.lucky_loot.vault_bonus": "¡Qué suerte! Este arca te ha dado %s objeto(s) extra.",
   "gui.dungeontrain.custom_content.title": "Contenido de tren personalizado",
   "gui.dungeontrain.custom_content.card.custom.name": "Tren personalizado",
   "gui.dungeontrain.custom_content.card.custom.tag": "Juego Libre",

@@ -75,6 +75,8 @@ public final class VaultLoot {
 
     private static final long PLAYER_MIX_HI = 0x9E3779B97F4A7C15L;
     private static final long PLAYER_MIX_LO = 0xC2B2AE3D27D4EB4FL;
+    /** Seed salt per extra roll, so a lucky player's second roll ({@code pass} 1) differs from the first. */
+    private static final long PASS_MIX = 0xD6E8FEB86659FD93L;
 
     /** Parsed pools by their text: the display item re-reads the pool every couple of seconds. */
     private static final int POOL_CACHE_SIZE = 64;
@@ -221,13 +223,22 @@ public final class VaultLoot {
      */
     public static Optional<List<ItemStack>> rollForPlayer(BlockEntity be, UUID player,
                                                           HolderLookup.Provider registries) {
+        return rollForPlayer(be, player, registries, 0);
+    }
+
+    /**
+     * Roll number {@code pass} of {@code player}'s reward: pass 0 is the reward itself, a later pass
+     * is a Luck extra ({@link LuckyBonusRoller#vaultExtraCount}). Each pass is its own fixed roll.
+     */
+    public static Optional<List<ItemStack>> rollForPlayer(BlockEntity be, UUID player,
+                                                          HolderLookup.Provider registries, int pass) {
         CompoundTag vault = vaultTag(be);
         if (vault == null) return Optional.empty();
         ContainerContentsPool pool = poolOf(vault);
         if (pool == null) return Optional.empty();
         int[] p = vault.getIntArray(TAG_POS);
         BlockPos localPos = p.length == 3 ? new BlockPos(p[0], p[1], p[2]) : BlockPos.ZERO;
-        long seed = vault.getLong(TAG_SEED) ^ playerSalt(player);
+        long seed = rollSeed(vault.getLong(TAG_SEED), player, pass);
         int carriage = vault.getInt(TAG_CARRIAGE);
         int diff = vault.getInt(TAG_DIFF);
         // At least one item: vanilla refuses the key on an empty reward, and the roll is the same
@@ -246,6 +257,11 @@ public final class VaultLoot {
     public static boolean hasPool(BlockEntity be) {
         CompoundTag vault = vaultTag(be);
         return vault != null && poolOf(vault) != null;
+    }
+
+    /** The roll seed for {@code player}'s pass {@code pass}; pass 0 keeps the original per-player seed. */
+    static long rollSeed(long worldSeed, UUID player, int pass) {
+        return worldSeed ^ playerSalt(player) ^ (pass * PASS_MIX);
     }
 
     /** Seed salt for one player: distinct per UUID, stable across sessions. */

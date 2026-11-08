@@ -5586,6 +5586,7 @@
   "chat.dungeontrain.custom_content.dev_ignored": "I contenuti del treno personalizzati restano attivi e questa partita conta comunque (build di sviluppo).",
   "chat.dungeontrain.lucky_loot.bonus": "Che fortuna! %s oggetto/i in più sono comparsi in questo baule.",
   "chat.dungeontrain.lucky_loot.vase_bonus": "Che fortuna! Un oggetto in più è caduto da questo vaso.",
+  "chat.dungeontrain.lucky_loot.vault_bonus": "Che fortuna! Questa cassaforte ti ha dato %s oggetto/i in più.",
   "gui.dungeontrain.custom_content.title": "Contenuti del treno personalizzati",
   "gui.dungeontrain.custom_content.card.custom.name": "Treno personalizzato",
   "gui.dungeontrain.custom_content.card.custom.tag": "Gioco Libero",

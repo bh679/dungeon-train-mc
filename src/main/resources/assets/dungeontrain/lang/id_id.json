@@ -5520,6 +5520,7 @@
   "chat.dungeontrain.custom_content.dev_ignored": "Konten kereta buatan sendiri tetap menyala dan permainan ini tetap dihitung (build dev).",
   "chat.dungeontrain.lucky_loot.bonus": "Beruntung! %s item tambahan muncul di peti ini.",
   "chat.dungeontrain.lucky_loot.vase_bonus": "Beruntung! Satu item tambahan jatuh dari vas ini.",
+  "chat.dungeontrain.lucky_loot.vault_bonus": "Beruntung! Brankas ini memberimu %s item tambahan.",
   "gui.dungeontrain.custom_content.title": "Konten kereta buatan sendiri",
   "gui.dungeontrain.custom_content.card.custom.name": "Kereta Buatan Sendiri",
   "gui.dungeontrain.custom_content.card.custom.tag": "Main Bebas",

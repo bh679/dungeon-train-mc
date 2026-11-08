@@ -1,0 +1,17 @@
+{
+  "id": "luck-vault-drops",
+  "version": "0.1729.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "loot",
+    "balance"
+  ],
+  "title": "Luck pays off at vaults",
+  "summary": "Luck now works on vaults too: with Luck I a vault gives you about one and a half times its usual reward, and with Luck II or stronger it doubles.",
+  "highlights": [],
+  "date": "2026-11-08",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

@@ -5652,6 +5652,7 @@
   "chat.dungeontrain.custom_content.dev_ignored": "Пользовательский контент остаётся включённым, и эта игра по-прежнему засчитывается (dev-сборка).",
   "chat.dungeontrain.lucky_loot.bonus": "Повезло! В этом сундуке появилось ещё %s предмет(ов).",
   "chat.dungeontrain.lucky_loot.vase_bonus": "Повезло! Из этой вазы выпал дополнительный предмет.",
+  "chat.dungeontrain.lucky_loot.vault_bonus": "Повезло! Это хранилище выдало дополнительных предметов: %s.",
   "gui.dungeontrain.custom_content.title": "Пользовательский контент поезда",
   "gui.dungeontrain.custom_content.card.custom.name": "Пользовательский поезд",
   "gui.dungeontrain.custom_content.card.custom.tag": "Свободная игра",

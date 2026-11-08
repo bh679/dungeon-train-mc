@@ -4164,6 +4164,7 @@
   "chat.dungeontrain.custom_content.dev_ignored": "Користувацький вміст потяга залишається увімкненим, і цей забіг усе одно зараховується (dev-збірка).",
   "chat.dungeontrain.lucky_loot.bonus": "Пощастило! У цій скрині знайшлося ще %s предмет(ів).",
   "chat.dungeontrain.lucky_loot.vase_bonus": "Пощастило! З цієї вази випав додатковий предмет.",
+  "chat.dungeontrain.lucky_loot.vault_bonus": "Пощастило! Це сховище дало тобі додаткових предметів: %s.",
   "gui.dungeontrain.custom_content.title": "Власний вміст потяга",
   "gui.dungeontrain.custom_content.card.custom.name": "Власний потяг",
   "gui.dungeontrain.custom_content.card.custom.tag": "Вільна гра",

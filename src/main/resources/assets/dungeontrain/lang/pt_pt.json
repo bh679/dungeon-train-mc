@@ -5586,6 +5586,7 @@
   "chat.dungeontrain.custom_content.dev_ignored": "O conteúdo de comboio personalizado continua ligado e esta partida continua a contar (build de desenvolvimento).",
   "chat.dungeontrain.lucky_loot.bonus": "Que sorte! Apareceram %s item(ns) extra neste baú.",
   "chat.dungeontrain.lucky_loot.vase_bonus": "Que sorte! Caiu um item extra deste vaso.",
+  "chat.dungeontrain.lucky_loot.vault_bonus": "Que sorte! Este cofre deu-te %s item(ns) extra.",
   "gui.dungeontrain.custom_content.title": "Conteúdo de comboio personalizado",
   "gui.dungeontrain.custom_content.card.custom.name": "Comboio personalizado",
   "gui.dungeontrain.custom_content.card.custom.tag": "Jogo Livre",
