@@ -505,7 +505,7 @@
       ],
       "sha1": "5a07cc032df790e7d110ad3dedb7a76253ffd565",
       "packages": [
-        "tech.thatgravyboat.creeperoverhaul"
+        "tech.thatgravyboat"
       ],
       "project_id": 561625,
       "file_id": 6051279,
@@ -524,7 +524,7 @@
       ],
       "sha1": "5cfe835472a5c5457ae9ac192d9d7b317454d5ac",
       "packages": [
-        "software.bernie.geckolib"
+        "software.bernie"
       ],
       "project_id": 388172,
       "file_id": 8893490,
@@ -543,7 +543,7 @@
       ],
       "sha1": "24389c8e48ff0e8594e4686b750c494c66a5f8df",
       "packages": [
-        "com.teamresourceful.resourcefullib"
+        "com.teamresourceful"
       ],
       "project_id": 570073,
       "file_id": 5973188,
@@ -562,7 +562,7 @@
       ],
       "sha1": "6bf2b6ea9c071c00a2abcdc552667fb6f7d21031",
       "packages": [
-        "com.teamresourceful.resourcefulconfig"
+        "com.teamresourceful"
       ],
       "project_id": 714059,
       "file_id": 6467772,
