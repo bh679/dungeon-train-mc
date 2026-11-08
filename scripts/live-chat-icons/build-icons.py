@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Draws the Live chat source icons: one 8x8 glyph each, in a strip, for the bitmap font
-assets/dungeontrain/font/live_chat_icons.json (U+E000..U+E004, in this order).
+assets/dungeontrain/font/live_chat_icons.json (U+E000..U+E006, in this order; append new ones, never reorder).
 
 Re-run after editing a glyph; commit the PNG. Needs Pillow.
 """
@@ -23,6 +23,9 @@ PALETTE = {
     "l": (90, 190, 80, 255),     # land
     "D": (88, 101, 242, 255),    # Discord blurple
     "P": (145, 70, 255, 255),    # Twitch purple
+    "K": (83, 252, 24, 255),     # Kick green
+    "b": (10, 10, 10, 255),      # Kick's black
+    "c": (190, 190, 190, 255),   # bubble grey
 }
 
 # U+E000 eye (the streamer, in the Live Eye)
@@ -81,7 +84,30 @@ TWITCH = [
     "..P.....",
 ]
 
-GLYPHS = [EYE, TV, GLOBE, DISCORD, TWITCH]
+# U+E005 Kick (its block "K" on Kick green)
+KICK = [
+    "KKKKKKKK",
+    "KbbKKbbK",
+    "KbbKbbKK",
+    "KbbbbKKK",
+    "KbbbbKKK",
+    "KbbKbbKK",
+    "KbbKKbbK",
+    "KKKKKKKK",
+]
+# U+E006 chat bubble (a room this client doesn't know yet)
+BUBBLE = [
+    "........",
+    ".cccccc.",
+    "cccccccc",
+    "ccWWWWcc",
+    "cccccccc",
+    ".cccccc.",
+    ".cc.....",
+    ".c......",
+]
+
+GLYPHS = [EYE, TV, GLOBE, DISCORD, TWITCH, KICK, BUBBLE]
 
 
 def main() -> int:

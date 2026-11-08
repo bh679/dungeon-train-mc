@@ -34,9 +34,9 @@ public final class LiveChatRules {
     /** The bitmap font holding the source icons ({@code assets/dungeontrain/font/live_chat_icons.json}). */
     public static final ResourceLocation ICON_FONT = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live_chat_icons");
 
-    /** The source icon before a name: one glyph each in {@link #ICON_FONT}. */
+    /** The source icon before a name: one glyph each in {@link #ICON_FONT}. {@link #OTHER} is a plain chat bubble. */
     public enum Icon {
-        EYE('\uE000'), TV('\uE001'), WEB('\uE002'), DISCORD('\uE003'), TWITCH('\uE004');
+        EYE('\uE000'), TV('\uE001'), WEB('\uE002'), DISCORD('\uE003'), TWITCH('\uE004'), KICK('\uE005'), OTHER('\uE006');
 
         public final char glyph;
 
@@ -129,13 +129,10 @@ public final class LiveChatRules {
     /** {@link #line(ChatLine, String, Style)} with {@code flag}, when there is one, just before the text. */
     public static MutableComponent line(ChatLine line, String content, Style contentStyle, @Nullable MutableComponent flag) {
         MutableComponent out = Component.translatable(PREFIX_KEY).withStyle(ChatFormatting.DARK_GRAY);
-        Icon icon = icon(line);
-        if (icon != null) {
-            // White so the glyph's own colours show; text colour tints a bitmap glyph.
-            out.append(Component.literal(" "))
-                .append(Component.literal(String.valueOf(icon.glyph))
-                    .withStyle(s -> s.withFont(ICON_FONT).withColor(ChatFormatting.WHITE)));
-        }
+        // White so the glyph's own colours show; text colour tints a bitmap glyph.
+        out.append(Component.literal(" "))
+            .append(Component.literal(String.valueOf(icon(line).glyph))
+                .withStyle(s -> s.withFont(ICON_FONT).withColor(ChatFormatting.WHITE)));
         out.append(Component.literal(" " + clean(line.author(), MAX_AUTHOR)).withStyle(nameColour(line.source())))
             .append(Component.literal(": ").withStyle(ChatFormatting.GRAY));
         if (flag != null) out.append(flag).append(" ");
@@ -224,6 +221,7 @@ public final class LiveChatRules {
     public static ChatFormatting nameColour(Source source) {
         return switch (source) {
             case TWITCH -> ChatFormatting.LIGHT_PURPLE;
+            case KICK -> ChatFormatting.DARK_GREEN;
             case GAME -> ChatFormatting.GREEN;
             case DISCORD, WEB, OTHER -> ChatFormatting.AQUA;
         };
@@ -231,17 +229,17 @@ public final class LiveChatRules {
 
     /**
      * The source icon for a line: a game line's player in the Live Eye (the streamer) or a TV — a TV
-     * when an older relay says neither — the website's globe, the Discord and Twitch logos. Null for a
-     * source this client doesn't know.
+     * when an older relay says neither — the website's globe, the Discord, Twitch and Kick logos, and a
+     * plain chat bubble for a source this client doesn't know. Never null.
      */
-    @Nullable
     public static Icon icon(ChatLine line) {
         return switch (line.source()) {
             case GAME -> line.via() == Via.EYE ? Icon.EYE : Icon.TV;
             case WEB -> Icon.WEB;
             case DISCORD -> Icon.DISCORD;
             case TWITCH -> Icon.TWITCH;
-            case OTHER -> null;
+            case KICK -> Icon.KICK;
+            case OTHER -> Icon.OTHER; // a room this client doesn't know yet still says it came from somewhere
         };
     }
 

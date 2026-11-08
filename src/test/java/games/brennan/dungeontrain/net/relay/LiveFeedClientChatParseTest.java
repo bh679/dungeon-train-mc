@@ -44,6 +44,7 @@ class LiveFeedClientChatParseTest {
         assertEquals(Source.TWITCH, p.lines().get(2).source());
         assertFalse(p.lines().get(2).fromGame());
         assertEquals(Source.OTHER, p.lines().get(3).source(), "an unknown room is still shown");
+        assertEquals(Source.KICK, Source.parse("kick"));
     }
 
     @Test

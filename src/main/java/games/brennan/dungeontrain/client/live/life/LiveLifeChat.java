@@ -82,6 +82,7 @@ public final class LiveLifeChat {
             case GAME -> "game";
             case WEB -> "web";
             case TWITCH -> "twitch";
+            case KICK -> "kick";
             case DISCORD -> "discord";
             default -> "other";
         };
