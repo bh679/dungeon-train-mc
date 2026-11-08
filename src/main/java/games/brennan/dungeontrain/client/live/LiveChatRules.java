@@ -36,10 +36,13 @@ public final class LiveChatRules {
     /** The bitmap font holding the source icons ({@code assets/dungeontrain/font/live_chat_icons.json}). */
     public static final ResourceLocation ICON_FONT = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live_chat_icons");
 
-    /** The source icon before a name: one glyph each in {@link #ICON_FONT}. {@link #OTHER} is a plain chat bubble. */
+    /**
+     * The source icon before a name: one glyph each in {@link #ICON_FONT}. {@link #OTHER} is a plain chat bubble.
+     * {@link #DUNGEON_TRAIN} (the ring logo, a 16 px glyph drawn at chat height) marks the website's live page.
+     */
     public enum Icon {
         EYE('\uE000'), TV('\uE001'), WEB('\uE002'), DISCORD('\uE003'), TWITCH('\uE004'), KICK('\uE005'), OTHER('\uE006'),
-        YOUTUBE('\uE007'), TIKTOK('\uE008'), FACEBOOK('\uE009'), INSTAGRAM('\uE00A');
+        YOUTUBE('\uE007'), TIKTOK('\uE008'), FACEBOOK('\uE009'), INSTAGRAM('\uE00A'), DUNGEON_TRAIN('\uE00B');
 
         public final char glyph;
 

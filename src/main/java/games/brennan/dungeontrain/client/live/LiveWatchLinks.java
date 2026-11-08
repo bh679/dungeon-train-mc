@@ -12,7 +12,7 @@ import net.minecraft.network.chat.MutableComponent;
 import java.util.List;
 
 /**
- * The "You are live on [TV] [Twitch] [YouTube] [Kick]" line said with the going-live line: where the
+ * The "You are live on [Dungeon Train] [Twitch] [YouTube] [Kick]" line said with the going-live line: where the
  * streamer's audience is watching, as a row of clickable logos ({@link LiveChatRules#ICON_FONT} glyphs,
  * hover for the name and address). Which logos follow the cap the stream goes to
  * ({@code DungeonTrain.relayBaseUrlForBranch}): a {@code main} build streams on the live cap, which the
@@ -46,7 +46,7 @@ final class LiveWatchLinks {
 
     /** The logos for this build, in the order they are shown. */
     static List<Destination> destinations(String branch) {
-        Destination tv = new Destination(LiveChatRules.Icon.TV, "chat.dungeontrain.live.link.tv", tvUrlForBranch(branch));
+        Destination tv = new Destination(LiveChatRules.Icon.DUNGEON_TRAIN, "chat.dungeontrain.live.link.tv", tvUrlForBranch(branch));
         if (!isLiveCap(branch)) return List.of(tv);
         return List.of(
             tv,

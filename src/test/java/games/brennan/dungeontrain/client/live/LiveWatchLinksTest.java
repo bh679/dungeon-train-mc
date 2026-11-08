@@ -46,7 +46,7 @@ class LiveWatchLinksTest {
     @Test
     void mainBuildShowsTvTwitchYouTubeAndKickInThatOrder() {
         List<LiveWatchLinks.Destination> d = LiveWatchLinks.destinations("main");
-        assertEquals(List.of(LiveChatRules.Icon.TV, LiveChatRules.Icon.TWITCH, LiveChatRules.Icon.YOUTUBE, LiveChatRules.Icon.KICK),
+        assertEquals(List.of(LiveChatRules.Icon.DUNGEON_TRAIN, LiveChatRules.Icon.TWITCH, LiveChatRules.Icon.YOUTUBE, LiveChatRules.Icon.KICK),
             d.stream().map(LiveWatchLinks.Destination::icon).toList());
         assertEquals(List.of(LiveWatchLinks.TV_URL, LiveWatchLinks.TWITCH_URL, LiveWatchLinks.YOUTUBE_URL, LiveWatchLinks.KICK_URL),
             d.stream().map(LiveWatchLinks.Destination::url).toList());
@@ -54,7 +54,7 @@ class LiveWatchLinksTest {
 
     @Test
     void devBuildShowsOnlyTheDevPage() {
-        assertEquals(List.of(new LiveWatchLinks.Destination(LiveChatRules.Icon.TV, "chat.dungeontrain.live.link.tv", LiveWatchLinks.DEV_TV_URL)),
+        assertEquals(List.of(new LiveWatchLinks.Destination(LiveChatRules.Icon.DUNGEON_TRAIN, "chat.dungeontrain.live.link.tv", LiveWatchLinks.DEV_TV_URL)),
             LiveWatchLinks.destinations("dev/x"));
     }
 

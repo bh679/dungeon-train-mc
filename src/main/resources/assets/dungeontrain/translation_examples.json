@@ -16184,9 +16184,9 @@
   },
   "chat.dungeontrain.live.watch_link": {
     "1": {
-      "label": "a row of clickable platform logos (DungeonTrain TV, Twitch, YouTube, Kick), shown as small icons, not words",
+      "label": "a row of clickable platform logos (the Dungeon Train logo for the website, Twitch, YouTube, Kick), shown as small icons, not words",
       "examples": [
-        "[TV] [Twitch] [YouTube] [Kick]"
+        "[Dungeon Train] [Twitch] [YouTube] [Kick]"
       ]
     }
   },
@@ -16388,9 +16388,9 @@
   },
   "chat.dungeontrain.live.watch_link_own": {
     "1": {
-      "label": "a row of clickable platform logos (DungeonTrain TV, Twitch, YouTube, Kick), shown as small icons, not words",
+      "label": "a row of clickable platform logos (the Dungeon Train logo for the website, Twitch, YouTube, Kick), shown as small icons, not words",
       "examples": [
-        "[TV] [Twitch] [YouTube] [Kick]"
+        "[Dungeon Train] [Twitch] [YouTube] [Kick]"
       ]
     },
     "2": {
