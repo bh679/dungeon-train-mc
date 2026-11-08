@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 9,
+  "variants": {
+    "3,4,1": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "creeperoverhaul:snowy_creeper", "difficulty": {"min": 10, "max": "all"}}],
+    "3,4,3": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "creeperoverhaul:snowy_creeper", "difficulty": {"min": 15, "max": "all"}}],
+    "4,4,2": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "creeperoverhaul:snowy_creeper", "difficulty": {"min": 20, "max": "all"}}]
+  }
+}

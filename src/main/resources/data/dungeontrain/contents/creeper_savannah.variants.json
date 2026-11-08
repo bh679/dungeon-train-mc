@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 9,
+  "variants": {
+    "3,4,1": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "creeperoverhaul:savannah_creeper", "difficulty": {"min": 6, "max": "all"}}],
+    "3,4,3": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "creeperoverhaul:savannah_creeper", "difficulty": {"min": 11, "max": "all"}}],
+    "4,4,2": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "creeperoverhaul:savannah_creeper", "difficulty": {"min": 16, "max": "all"}}]
+  }
+}

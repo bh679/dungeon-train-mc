@@ -115,7 +115,7 @@ inflicts Blindness. The Stray is listed as an entity one type avoids. Strengths 
 | Natural spawns | `creeperoverhaul` in `GATED_NAMESPACES` (Java and `derive-mob-offsets.py`): each creeper unlocks at its first room level, and one in no room never spawns naturally |
 | Nether band, upside-down, spheres | Natural spawns cancelled there as for every mob; selectors are overworld tags |
 | Biome twins | Spawns come from biome modifiers, so `VanillaBiomeTwins` keeps them |
-| Rooms | Placed by Brennan in the editor (none yet) |
+| Rooms | 15 seeded `enemies` sub-variants, `contents/creeper_<biome>`: the creeper room re-skinned in that biome's blocks, three slots of its creeper (room level, +5, +10). Levels 4 (birch, spruce) to 14 (mushroom), so biomes go over to their own creepers gradually. The ocean creeper has no room: it is a water mob |
 | Photos | All 16 in `scripts/advancements/mob-photos/categories.json` as hostile |
 | Fair play | Auto-whitelisted with the pack. Ask at Gate 3 |
 | Network | Its cosmetics screen links to `creeperoverhaul.thatgravyboat.tech`; check for background calls at Gate 2 |
