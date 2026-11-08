@@ -58,6 +58,31 @@ public final class CarriageContentsPools {
         return byMember().get(contentsId.toLowerCase(Locale.ROOT));
     }
 
+    /**
+     * {@code name} as the editor shows it: a pooled group's own weight is never read, so its name says which
+     * slot it shares instead, e.g. {@code "Creepers (shares enemies slot, weight 8)"}.
+     */
+    public static String editorName(String contentsId, String name) {
+        Pool pool = poolOf(contentsId);
+        if (pool == null) return name;
+        return name + editorSuffix(pool);
+    }
+
+    /**
+     * {@link #editorName} undone: the stored name, for anything that writes a name back (the rename box starts
+     * from the shown one). Reads the client's own bundled file, which matches the server's.
+     */
+    public static String storedName(String contentsId, String shown) {
+        Pool pool = poolOf(contentsId);
+        if (pool == null || shown == null) return shown;
+        String suffix = editorSuffix(pool);
+        return shown.endsWith(suffix) ? shown.substring(0, shown.length() - suffix.length()) : shown;
+    }
+
+    private static String editorSuffix(Pool pool) {
+        return " (shares " + pool.id() + " slot, weight " + pool.weight() + ")";
+    }
+
     public static void clearCache() {
         BY_MEMBER = null;
     }

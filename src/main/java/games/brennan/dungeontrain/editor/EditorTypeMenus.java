@@ -462,7 +462,8 @@ public final class EditorTypeMenus {
                 g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
                 cat, c.id(), c.id(), p.isUser(), p.isImported(),
                 subVariantsFor(c.id(), cat), stageId == null ? "" : stageId)
-                .withDisplayName(weights.nameFor(c.id()))
+                .withDisplayName(games.brennan.dungeontrain.train.CarriageContentsPools.editorName(
+                    c.id(), weights.nameFor(c.id())))
                 .withBuilder(builderUuid(TemplateBuilderLookup.contents(weights, c.id())),
                     builderName(TemplateBuilderLookup.contents(weights, c.id()))));
         }

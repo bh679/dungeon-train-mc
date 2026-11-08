@@ -241,7 +241,8 @@ public final class EditorPlotLabels {
             int w = weights.weightFor(c.id());
             Provenance p = provenanceOf(CarriageContentsStore.fileForId(c.id()));
             out.add(new Label(anchorAbove(origin, footprint),
-                weights.nameFor(c.id()), w, category, c.id(), c.id(), false, p.isUser, p.isImported));
+                games.brennan.dungeontrain.train.CarriageContentsPools.editorName(c.id(), weights.nameFor(c.id())),
+                w, category, c.id(), c.id(), false, p.isUser, p.isImported));
         }
         return out;
     }

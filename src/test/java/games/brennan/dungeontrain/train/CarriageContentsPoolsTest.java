@@ -115,6 +115,16 @@ final class CarriageContentsPoolsTest {
     }
 
     @Test
+    @DisplayName("the editor names a pooled group's shared slot, and the stored name comes back out")
+    void editorNameRoundTrips() {
+        String shown = CarriageContentsPools.editorName("enemies_creepers", "Creepers");
+        assertEquals("Creepers (shares enemies slot, weight 8)", shown);
+        assertEquals("Creepers", CarriageContentsPools.storedName("enemies_creepers", shown));
+        assertEquals("Books", CarriageContentsPools.editorName("books", "Books"));
+        assertEquals("Books", CarriageContentsPools.storedName("books", "Books"));
+    }
+
+    @Test
     @DisplayName("the bundled pools.json splits enemies into its eight groups")
     void bundledEnemiesPool() {
         CarriageContentsPools.Pool pool = CarriageContentsPools.poolOf("enemies_creepers");

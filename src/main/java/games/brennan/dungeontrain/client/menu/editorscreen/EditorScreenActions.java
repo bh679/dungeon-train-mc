@@ -295,7 +295,10 @@ public final class EditorScreenActions {
         VariantKey sel = ctx.selection();
         String id = sel.modelId();
         String label = EditorScreenLang.text(EditorScreenLang.ICON_RENAME);
-        String current = ctx.variant().displayName();
+        // A pooled contents group's row names its shared slot; the field starts on the stored name.
+        String current = sel.category() == PlotCategory.CONTENTS
+            ? games.brennan.dungeontrain.train.CarriageContentsPools.storedName(id, ctx.variant().displayName())
+            : ctx.variant().displayName();
         // A frame has no label: its row renames the file, and the field starts on the name.
         String start = sel.category() == PlotCategory.CHUNK_FRAMES ? sel.modelName() : current;
         return sel.category().command(PlotCategory.Verb.LABEL, id, sel.modelName())
