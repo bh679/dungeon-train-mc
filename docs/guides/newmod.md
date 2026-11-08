@@ -199,6 +199,14 @@ Client and server sides aren't part of the page: Modrinth takes them from versio
 "Set Modrinth side metadata" step in the copied `release.yml` has the right values for this mod, and
 confirm the sides on the draft after the first release.
 
+Modrinth's content disclosures unlock once the first version is up (Settings, Disclosures). Turn on
+only "Contains AI-generated content", tick Code and Text (not Assets), and use this explanation
+exactly:
+
+> I am a software engineer with 20 years of experience coding games. AI Guidance was used when writing this code.
+
+Leave every other disclosure off.
+
 ## 9. Publish on both stores
 
 Only after step 7.
