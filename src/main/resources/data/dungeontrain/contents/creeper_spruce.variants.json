@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 9,
+  "schemaVersion": 10,
   "variants": {
-    "3,4,1": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "creeperoverhaul:spruce_creeper", "difficulty": {"min": 6, "max": "all"}}],
-    "3,4,3": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "creeperoverhaul:spruce_creeper", "difficulty": {"min": 11, "max": "all"}}],
-    "4,4,2": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "creeperoverhaul:spruce_creeper", "difficulty": {"min": 16, "max": "all"}}]
+    "3,0,2": [{"entity": "creeperoverhaul:spruce_creeper"}],
+    "2,0,1": ["dungeontrain:variant_placeholder", {"entity": "creeperoverhaul:spruce_creeper", "difficulty": {"min": 12, "max": "all"}}],
+    "4,0,3": [{"state": "dungeontrain:variant_placeholder", "weight": 10}, {"entity": "creeperoverhaul:spruce_creeper", "difficulty": {"min": 21, "max": "all"}}]
   }
 }

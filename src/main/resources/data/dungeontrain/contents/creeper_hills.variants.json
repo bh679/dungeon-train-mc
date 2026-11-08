@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 9,
+  "schemaVersion": 10,
   "variants": {
-    "3,4,1": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "creeperoverhaul:hills_creeper", "difficulty": {"min": 8, "max": "all"}}],
-    "3,4,3": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "creeperoverhaul:hills_creeper", "difficulty": {"min": 13, "max": "all"}}],
-    "4,4,2": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "creeperoverhaul:hills_creeper", "difficulty": {"min": 18, "max": "all"}}]
+    "3,0,2": [{"entity": "creeperoverhaul:hills_creeper"}],
+    "2,0,1": ["dungeontrain:variant_placeholder", {"entity": "creeperoverhaul:hills_creeper", "difficulty": {"min": 14, "max": "all"}}],
+    "4,0,3": [{"state": "dungeontrain:variant_placeholder", "weight": 10}, {"entity": "creeperoverhaul:hills_creeper", "difficulty": {"min": 23, "max": "all"}}]
   }
 }
