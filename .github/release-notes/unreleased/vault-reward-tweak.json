@@ -1,0 +1,18 @@
+{
+  "id": "vault-reward-tweak",
+  "version": "0.1739.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "loot",
+    "balance"
+  ],
+  "title": "Vault reward tweak",
+  "summary": "Vault rewards have been rebalanced.",
+  "highlights": [],
+  "pr": 2573,
+  "date": "2026-11-08",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

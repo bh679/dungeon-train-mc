@@ -22,7 +22,7 @@
     { "id": "minecraft:flow_armor_trim_smithing_template", "count": 1, "weight": 50, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:flow_banner_pattern", "count": 1, "weight": 20, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "minecraft:music_disc_creator", "count": 1, "weight": 40, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
-    { "id": "minecraft:heavy_core", "count": 1, "weight": 5, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
+    { "id": "minecraft:heavy_core", "count": 1, "weight": 3, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 0 },
     { "id": "exposure_polaroid:instant_camera", "count": 4, "weight": 80, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "dungeontrain:live_headpiece", "count": 1, "weight": 30, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "ediblebackpacks:golden_edible_backpack", "count": 1, "weight": 30, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
