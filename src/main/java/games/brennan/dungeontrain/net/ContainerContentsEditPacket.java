@@ -32,12 +32,21 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *       per-entry random-durability / random-enchantment master toggle.</li>
  *   <li>{@link Op#BUMP_DUR_CHANCE} / {@link Op#BUMP_ENCH_CHANCE} — adjust the
  *       0-100 % chance that the effect applies, wrapping at the boundaries.</li>
+ *   <li>{@link Op#SET_COUNT_RANGE} — set the entry's smallest and largest stack at once,
+ *       {@code delta} the max and {@code value2} the min (clamped server-side, min ≤ max).</li>
  * </ul>
  *
  * <p>Server validates OP + plot membership before mutating.</p>
  */
 public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localPos,
-                                          int entryIndex, String itemId, int delta) implements CustomPacketPayload {
+                                          int entryIndex, String itemId, int delta, int value2)
+    implements CustomPacketPayload {
+
+    /** Every op but {@link Op#SET_COUNT_RANGE} carries one value; {@code value2} is 0. */
+    public ContainerContentsEditPacket(Op op, String plotKey, BlockPos localPos,
+                                       int entryIndex, String itemId, int delta) {
+        this(op, plotKey, localPos, entryIndex, itemId, delta, 0);
+    }
 
     // Ordinals are the wire encoding — append new ops, never reorder.
     public enum Op {
@@ -54,7 +63,9 @@ public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localP
          */
         SET_FILL_MIN, SET_FILL_MAX, SET_COUNT, SET_DUR_CHANCE, SET_ENCH_CHANCE,
         /** Step a vault's unlock key (Trial Key → Ominous Trial Key), which also sets the vault type. */
-        CYCLE_VAULT_KEY
+        CYCLE_VAULT_KEY,
+        /** Typed min and max stack from the count cell's cmd-click pad: {@code delta} max, {@code value2} min. */
+        SET_COUNT_RANGE
     }
 
     public static final Type<ContainerContentsEditPacket> TYPE =
@@ -75,6 +86,7 @@ public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localP
         buf.writeVarInt(entryIndex);
         buf.writeUtf(itemId == null ? "" : itemId, 256);
         buf.writeVarInt(delta);
+        buf.writeVarInt(value2);
     }
 
     public static ContainerContentsEditPacket decode(FriendlyByteBuf buf) {
@@ -85,7 +97,8 @@ public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localP
         int idx = buf.readVarInt();
         String itemId = buf.readUtf(256);
         int delta = buf.readVarInt();
-        return new ContainerContentsEditPacket(op, key, local, idx, itemId, delta);
+        int value2 = buf.readVarInt();
+        return new ContainerContentsEditPacket(op, key, local, idx, itemId, delta, value2);
     }
 
     @Override

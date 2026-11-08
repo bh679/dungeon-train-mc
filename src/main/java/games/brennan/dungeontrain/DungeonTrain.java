@@ -38,6 +38,7 @@ import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.registry.ModDataComponents;
 import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.registry.ModMobEffects;
+import games.brennan.dungeontrain.registry.ModPotions;
 import games.brennan.dungeontrain.registry.ModSounds;
 import games.brennan.dungeontrain.registry.ModMenuTypes;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
@@ -348,6 +349,7 @@ public class DungeonTrain {
         ModFeatures.register(modBus);
         ModStructureTypes.register(modBus);
         ModMobEffects.register(modBus);
+        ModPotions.register(modBus);
         ModSounds.register(modBus);
         games.brennan.dungeontrain.registry.ModStructureProcessors.register(modBus);
         ModMenuTypes.register(modBus);

@@ -9,6 +9,8 @@ import net.minecraft.data.registries.VanillaRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.Bootstrap;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.VaultBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -49,6 +51,39 @@ final class VaultLootTest {
 
     private static ContainerContentsPool diamondPool(String key) {
         return new ContainerContentsPool(List.of(new ContainerContentsEntry(DIAMOND, 2, 1)), 1, 3, key);
+    }
+
+    private static final ResourceLocation TOTEM = ResourceLocation.withDefaultNamespace("totem_of_undying");
+
+    @Test
+    @DisplayName("a vault reward rolled above the item's stack size pays out as several items; a chest roll cuts it to one")
+    void vaultSplitsOverflow() {
+        ContainerContentsPool totems = new ContainerContentsPool(
+            List.of(new ContainerContentsEntry(TOTEM, 7, 1).withMinCount(3)), 1, 1);
+        for (long seed = 1; seed <= 40; seed++) {
+            List<ItemStack> vault = ContainerContentsRoller.rollStacks(totems, VaultLoot.VAULT_SLOTS, CELL, seed,
+                0, 0, true, registries);
+            int total = vault.stream().mapToInt(ItemStack::getCount).sum();
+            assertTrue(total >= 3 && total <= 7, "vault totems " + total);
+            assertTrue(vault.stream().allMatch(st -> st.getCount() == 1), "every totem is its own stack");
+
+            List<ItemStack> chest = ContainerContentsRoller.rollStacks(totems, VaultLoot.VAULT_SLOTS, CELL, seed,
+                0, 0, registries);
+            assertEquals(1, chest.size());
+            assertEquals(1, chest.get(0).getCount());
+        }
+    }
+
+    @Test
+    @DisplayName("overflow splits into full stacks, and nothing is added when the roll fit")
+    void overflowStacks() {
+        ItemStack apples = new ItemStack(Items.GOLDEN_APPLE, 64);
+        List<ItemStack> extra = ContainerContentsRoller.overflowStacks(apples, 150);
+        assertEquals(2, extra.size());
+        assertEquals(64, extra.get(0).getCount());
+        assertEquals(22, extra.get(1).getCount());
+        assertTrue(ContainerContentsRoller.overflowStacks(new ItemStack(Items.GOLDEN_APPLE, 5), 5).isEmpty());
+        assertTrue(ContainerContentsRoller.overflowStacks(new ItemStack(Items.TOTEM_OF_UNDYING), 1).isEmpty());
     }
 
     @Test
@@ -214,22 +249,34 @@ final class VaultLootTest {
     }
 
     @Test
-    @DisplayName("Ender Blocks drop up to 2 from the ominous vault, rarer than Golden Apples, and up to 10 from the green vault")
+    @DisplayName("Ender Blocks drop up to 2 from the ominous vault, rarer than Golden Apples; the green vault has none")
     void enderBlockRewards() {
         ContainerContentsEntry ominous = entry(VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY), "betterend", "ender_block");
         assertEquals(2, ominous.count());
         assertEquals(100, ominous.weight());
         assertTrue(ominous.weight() < entry(VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY), "minecraft", "golden_apple").weight());
 
-        ContainerContentsEntry green = entry(VaultLoot.defaultPool(VaultLoot.GREEN_KEY), "betterend", "ender_block");
-        assertEquals(10, green.count());
-        assertEquals(200, green.weight());
+        ResourceLocation ender = ResourceLocation.fromNamespaceAndPath("betterend", "ender_block");
+        assertTrue(VaultLoot.defaultPool(VaultLoot.GREEN_KEY).entries().stream().noneMatch(e -> e.itemId().equals(ender)));
     }
 
     @Test
-    @DisplayName("Golden Apples drop up to 20 from the green vault")
+    @DisplayName("Golden Apples drop 10 to 30 from the green vault")
     void greenVaultGoldenApples() {
-        assertEquals(20, entry(VaultLoot.defaultPool(VaultLoot.GREEN_KEY), "minecraft", "golden_apple").count());
+        ContainerContentsEntry apples = entry(VaultLoot.defaultPool(VaultLoot.GREEN_KEY), "minecraft", "golden_apple");
+        assertEquals(10, apples.minCount());
+        assertEquals(30, apples.count());
+    }
+
+    @Test
+    @DisplayName("the green vault keeps the heavy core, mace and spawn eggs at their old odds")
+    void greenVaultRaritiesKeepTheirOdds() {
+        ContainerContentsPool green = VaultLoot.defaultPool(VaultLoot.GREEN_KEY);
+        assertEquals(16164, green.totalWeight());
+        assertEquals(26, entry(green, "minecraft", "heavy_core").weight());
+        assertEquals(16, entry(green, "minecraft", "mace").weight());
+        assertEquals(22, green.entries().stream().filter(e -> e.itemId().getPath().endsWith("_spawn_egg"))
+            .mapToInt(ContainerContentsEntry::weight).sum());
     }
 
     private static ContainerContentsEntry entry(ContainerContentsPool pool, String namespace, String path) {

@@ -244,11 +244,12 @@ public final class VaultLoot {
         // At least one item: vanilla refuses the key on an empty reward, and the roll is the same
         // for this player every time, so an empty one would lock them out of this vault for good.
         ContainerContentsPool atLeastOne = pool.withFillMin(Math.max(1, pool.fillMin()));
+        // Split: a reward rolled above the item's stack size ("totem 3-7") pays out as several items.
         List<ItemStack> rolled = ContainerContentsRoller.rollStacks(atLeastOne, VAULT_SLOTS, localPos, seed,
-            carriage, diff, registries);
+            carriage, diff, true, registries);
         if (rolled.isEmpty()) {
             rolled = ContainerContentsRoller.rollStacks(defaultPool(pool.vaultKey()), VAULT_SLOTS, localPos, seed,
-                carriage, diff, registries);
+                carriage, diff, true, registries);
         }
         return Optional.of(rolled);
     }

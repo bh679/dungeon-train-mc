@@ -54,18 +54,30 @@ public record ContainerContentsSyncPacket(
      * Single pool entry on the wire — item registry id, max stack count, weight,
      * plus the per-entry random-durability / random-enchantment master toggles
      * and their 0-100 % chances.
-     * {@code count} is a max — roll-time produces a uniform-random value in {@code [1, count]}.
+     * {@code count} is a max and {@code minCount} the min — roll-time produces a uniform-random
+     * value in {@code [minCount, count]} ({@code minCount} is 1 unless the author raised it).
      * {@code potionId} is the stored vanilla potion id for a potion entry, or {@code ""} when none.
      * {@code scaleWithDistance} is the random-potion placeholder's tier toggle and
      * {@code potionForm} its bottle-form ordinal ({@code PotionForm}).
      * {@code bookTitle} is the title of a written-book entry's stored book (label only — the
      * pages stay server-side), or {@code ""} when none.
      */
-    public record Entry(String itemId, int count, int weight,
+    public record Entry(String itemId, int count, int minCount, int weight,
                         boolean randomDurability, int durabilityChance,
                         boolean randomEnchantment, int enchantmentChance,
                         int slotOverride, String potionId, boolean scaleWithDistance,
                         int potionForm, String bookTitle) {
+
+        /** Back-compat: entry with no minimum count (rolls from 1). */
+        public Entry(String itemId, int count, int weight,
+                     boolean randomDurability, int durabilityChance,
+                     boolean randomEnchantment, int enchantmentChance,
+                     int slotOverride, String potionId, boolean scaleWithDistance,
+                     int potionForm, String bookTitle) {
+            this(itemId, count, 1, weight, randomDurability, durabilityChance,
+                randomEnchantment, enchantmentChance, slotOverride, potionId, scaleWithDistance,
+                potionForm, bookTitle);
+        }
 
         /** Back-compat: entry with no stored book. */
         public Entry(String itemId, int count, int weight,
@@ -131,6 +143,7 @@ public record ContainerContentsSyncPacket(
         for (Entry e : entries) {
             buf.writeUtf(e.itemId(), 256);
             buf.writeVarInt(e.count());
+            buf.writeVarInt(e.minCount());
             buf.writeVarInt(e.weight());
             buf.writeBoolean(e.randomDurability());
             buf.writeVarInt(e.durabilityChance());
@@ -176,6 +189,7 @@ public record ContainerContentsSyncPacket(
         for (int i = 0; i < n; i++) {
             String id = buf.readUtf(256);
             int count = buf.readVarInt();
+            int minCount = buf.readVarInt();
             int weight = buf.readVarInt();
             boolean randDur = buf.readBoolean();
             int durChance = buf.readVarInt();
@@ -186,7 +200,7 @@ public record ContainerContentsSyncPacket(
             boolean scale = buf.readBoolean();
             int form = buf.readByte();
             String bookTitle = buf.readUtf(64);
-            entries.add(new Entry(id, count, weight, randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, bookTitle));
+            entries.add(new Entry(id, count, minCount, weight, randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, bookTitle));
         }
         String link = buf.readBoolean() ? buf.readUtf(64) : null;
         String vaultKey = buf.readBoolean() ? buf.readUtf(256) : null;

@@ -415,9 +415,9 @@ public final class ContainerContentsRoller {
         for (int slot : slotsToFill) {
             ContainerContentsEntry picked = pickEntry(pool, totalWeight, localPos, worldSeed, carriageIndex, slot);
             if (picked == null || picked.isAir()) continue;
-            // Per-entry count is treated as a max — roll the actual stack
-            // count uniformly in [1, picked.count()] for variety per slot.
-            int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, slot);
+            // Per-entry count is a max — roll the actual stack count
+            // uniformly in [picked.minCount(), picked.count()] for variety per slot.
+            int rolledCount = rollItemCount(picked.minCount(), picked.count(), localPos, worldSeed, carriageIndex, slot);
             ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, diffIndex, slot, registries);
             if (stack.isEmpty()) continue;
             CompoundTag stackTag = (CompoundTag) stack.save(registries, new CompoundTag());
@@ -469,6 +469,19 @@ public final class ContainerContentsRoller {
                                               BlockPos localPos, long worldSeed, int carriageIndex,
                                               int diffIndex,
                                               HolderLookup.Provider registries) {
+        return rollStacks(pool, slotCount, localPos, worldSeed, carriageIndex, diffIndex, false, registries);
+    }
+
+    /**
+     * {@link #rollStacks(ContainerContentsPool, int, BlockPos, long, int, int, HolderLookup.Provider)},
+     * and with {@code splitOverflow} a rolled count above the item's stack size is handed out as
+     * several stacks ({@link #overflowStacks}) instead of being cut to one. Vault rewards split, so
+     * "totem 3-7" gives 3 to 7 totems; chests and entity fills do not.
+     */
+    public static List<ItemStack> rollStacks(ContainerContentsPool pool, int slotCount,
+                                              BlockPos localPos, long worldSeed, int carriageIndex,
+                                              int diffIndex, boolean splitOverflow,
+                                              HolderLookup.Provider registries) {
         if (pool == null || pool.isEmpty()) return List.of();
         if (slotCount <= 0) return List.of();
         int totalWeight = pool.totalWeight();
@@ -485,10 +498,29 @@ public final class ContainerContentsRoller {
         for (int slot : slotsToFill) {
             ContainerContentsEntry picked = pickEntry(pool, totalWeight, localPos, worldSeed, carriageIndex, slot);
             if (picked == null || picked.isAir()) continue;
-            int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, slot);
+            int rolledCount = rollItemCount(picked.minCount(), picked.count(), localPos, worldSeed, carriageIndex, slot);
             ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, diffIndex, slot, registries);
             if (stack.isEmpty()) continue;
             out.add(stack);
+            if (splitOverflow) out.addAll(overflowStacks(stack, rolledCount));
+        }
+        return out;
+    }
+
+    /**
+     * The stacks beyond {@code first} that a roll of {@code rolledCount} still owes once
+     * {@link #rollItemStack} has cut {@code first} to its max stack: copies of {@code first},
+     * each at most a full stack, until the count is met. Empty when nothing was cut.
+     */
+    static List<ItemStack> overflowStacks(ItemStack first, int rolledCount) {
+        int max = first.getMaxStackSize();
+        int remaining = rolledCount - first.getCount();
+        if (remaining <= 0 || first.getCount() < max) return List.of();
+        List<ItemStack> out = new ArrayList<>();
+        while (remaining > 0) {
+            int n = Math.min(max, remaining);
+            out.add(first.copyWithCount(n));
+            remaining -= n;
         }
         return out;
     }
@@ -517,14 +549,19 @@ public final class ContainerContentsRoller {
     }
 
     /**
-     * Deterministic stack count for a slot — uniform in {@code [1, max]}.
+     * Deterministic stack count for a slot — uniform in {@code [min, max]}.
      * Independent salt so it doesn't correlate with the entry pick.
+     *
+     * <p>With {@code min == 1} this is exactly the {@code [1, max]} roll every
+     * pool used before entries had a minimum, so existing worlds roll the same
+     * stacks.</p>
      *
      * <p>Package-private so {@link EntityVariantApplicator} can roll counts
      * the same way per equipment slot.</p>
      */
-    static int rollItemCount(int max, BlockPos localPos, long worldSeed, int carriageIndex, int slot) {
-        if (max <= 1) return 1;
+    static int rollItemCount(int min, int max, BlockPos localPos, long worldSeed, int carriageIndex, int slot) {
+        if (min < 1) min = 1;
+        if (max <= min) return Math.max(1, max);
         long state = worldSeed
             ^ ((long) localPos.getX() * MIX_X)
             ^ ((long) localPos.getY() * MIX_Y)
@@ -535,7 +572,7 @@ public final class ContainerContentsRoller {
         state = (state ^ (state >>> 30)) * 0xBF58476D1CE4E5B9L;
         state = (state ^ (state >>> 27)) * 0x94D049BB133111EBL;
         state = state ^ (state >>> 31);
-        return 1 + (int) ((state & 0x7FFFFFFFFFFFFFFFL) % max);
+        return min + (int) ((state & 0x7FFFFFFFFFFFFFFFL) % (max - min + 1));
     }
 
     /**
@@ -683,7 +720,7 @@ public final class ContainerContentsRoller {
         ContainerContentsEntry picked = pickEntry(pool, totalWeight, localPos, worldSeed, carriageIndex, /*slot*/ 0);
         if (picked == null || picked.isAir()) return out;
 
-        int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, /*slot*/ 0);
+        int rolledCount = rollItemCount(picked.minCount(), picked.count(), localPos, worldSeed, carriageIndex, /*slot*/ 0);
         ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, diffIndex, /*slot*/ 0, registries);
         if (stack.isEmpty()) return out;
         CompoundTag stackTag = (CompoundTag) stack.save(registries, new CompoundTag());
@@ -962,7 +999,7 @@ public final class ContainerContentsRoller {
                                         BlockPos localPos, long worldSeed, int carriageIndex, int diffIndex,
                                         HolderLookup.Provider registries) {
         if (picked == null || picked.isAir()) return false;
-        int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, slot);
+        int rolledCount = rollItemCount(picked.minCount(), picked.count(), localPos, worldSeed, carriageIndex, slot);
         ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, diffIndex, slot, registries);
         if (stack.isEmpty()) return false;
         CompoundTag stackTag = (CompoundTag) stack.save(registries, new CompoundTag());
