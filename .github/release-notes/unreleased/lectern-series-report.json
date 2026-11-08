@@ -1,0 +1,19 @@
+{
+  "id": "lectern-series-report",
+  "version": "0.1738.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "community",
+    "books",
+    "ui"
+  ],
+  "title": "Report lectern letters",
+  "summary": "Letters written by other players can now be reported from the lectern they sit on. The report button is on the last page of the letter, and reporting one letter reports its whole series.",
+  "highlights": [],
+  "pr": 2571,
+  "date": "2026-11-08",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

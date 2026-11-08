@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "175";
+    public static final String PROTOCOL_VERSION = "176";
 
     private DungeonTrainNet() {}
 
@@ -205,6 +205,9 @@ public final class DungeonTrainNet {
         // control on the same vote page); server re-validates the held stack, stamps
         // dt_book_reported, and consent-gates the relay POST. Shared books only.
         registrar.playToServer(BookReportPacket.TYPE, BookReportPacket.STREAM_CODEC, BookReportPacket::handle);
+        // ⚠ on a lectern's player-written letter: reports its whole series. Server reads the series
+        // off the lectern at the sent position after a reach check — the client names no identity.
+        registrar.playToServer(LecternReportPacket.TYPE, LecternReportPacket.STREAM_CODEC, LecternReportPacket::handle);
         // The author-only siblings of Report — see BookVoteClientEvents for which book gets which.
         registrar.playToServer(BookProtestPacket.TYPE, BookProtestPacket.STREAM_CODEC, BookProtestPacket::handle);
         registrar.playToServer(BookPrivatePacket.TYPE, BookPrivatePacket.STREAM_CODEC, BookPrivatePacket::handle);

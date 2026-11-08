@@ -103,6 +103,14 @@ public final class NarrativeProgressData extends SavedData {
      * recently started last). World-local and never fed into {@code GlobalNarrativeProgress}/advancements.
      */
     private static final String TAG_PLAYER_LETTERS_EVER_READ = "player_letters_ever_read";
+    /**
+     * Root-level string-list of {@code "seriesId|playerUuid"} keys: a player reported that player-written
+     * letter series from a lectern (⚠ on the lectern screen, {@code LecternReportPacket}). A report on one
+     * letter is a report on the whole series, so the key carries no letter index. One-way, like a book
+     * report. Drives the per-player "Reported" state on every lectern of that series, and stops this world
+     * serving any more of it.
+     */
+    private static final String TAG_REPORTED_SERIES = "reported_player_series";
 
     private final Map<String, NarrativeProgress> byStory;
     /** World-wide seen-variant tracking for the random-book pool. */
@@ -154,13 +162,15 @@ public final class NarrativeProgressData extends SavedData {
      * progress or advancements. See {@link #TAG_PLAYER_LETTERS_EVER_READ}.
      */
     private final Set<String> playerLettersEverRead;
+    /** {@code "seriesId|playerUuid"} report keys. See {@link #TAG_REPORTED_SERIES}. */
+    private final Set<String> reportedSeries;
 
     /** Stored letter-series cursor for one player: which life ({@code seriesDeaths}), the series id, and the highest index signed. */
     private record LetterSeriesState(long seriesDeaths, String seriesId, int letterIndex) {}
 
     private NarrativeProgressData() {
         this(new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashSet<>(),
-                new HashMap<>(), new HashSet<>(), new HashMap<>(), new LinkedHashSet<>());
+                new HashMap<>(), new HashSet<>(), new HashMap<>(), new LinkedHashSet<>(), new LinkedHashSet<>());
     }
 
     private NarrativeProgressData(Map<String, NarrativeProgress> byStory,
@@ -171,7 +181,8 @@ public final class NarrativeProgressData extends SavedData {
                                   Map<String, NarrativeProgress> randomBookVariantsEverRead,
                                   Set<Integer> sharedBooksEverRead,
                                   Map<UUID, LetterSeriesState> letterSeries,
-                                  Set<String> playerLettersEverRead) {
+                                  Set<String> playerLettersEverRead,
+                                  Set<String> reportedSeries) {
         this.byStory = byStory;
         this.randomBooksSeen = randomBooksSeen;
         this.startingBooksSeen = startingBooksSeen;
@@ -181,6 +192,7 @@ public final class NarrativeProgressData extends SavedData {
         this.sharedBooksEverRead = sharedBooksEverRead;
         this.letterSeries = letterSeries;
         this.playerLettersEverRead = playerLettersEverRead;
+        this.reportedSeries = reportedSeries;
     }
 
     public static NarrativeProgressData get(ServerLevel overworld) {
@@ -334,6 +346,37 @@ public final class NarrativeProgressData extends SavedData {
             if (!hasReadPlayerLetter(seriesId, letterIndex)) return false;
         }
         return true;
+    }
+
+    /**
+     * Record that {@code player} reported player narrative series {@code seriesId}. One-way. Returns
+     * {@code true} on this player's first report of the series (a repeat is a no-op).
+     */
+    public boolean markSeriesReported(String seriesId, UUID player) {
+        if (seriesId == null || seriesId.isEmpty() || player == null) return false;
+        boolean added = reportedSeries.add(reportKey(seriesId, player));
+        if (added) setDirty();
+        return added;
+    }
+
+    /** Whether {@code player} has reported {@code seriesId} — the lectern shows "Reported" for them. */
+    public boolean hasReportedSeries(String seriesId, UUID player) {
+        if (seriesId == null || seriesId.isEmpty() || player == null) return false;
+        return reportedSeries.contains(reportKey(seriesId, player));
+    }
+
+    /** Whether anyone in this world reported {@code seriesId} — the world then stops serving it. */
+    public boolean isSeriesReported(String seriesId) {
+        if (seriesId == null || seriesId.isEmpty()) return false;
+        String prefix = seriesId + "|";
+        for (String key : reportedSeries) {
+            if (key.startsWith(prefix)) return true;
+        }
+        return false;
+    }
+
+    private static String reportKey(String seriesId, UUID player) {
+        return seriesId + "|" + player;
     }
 
     /**
@@ -779,6 +822,11 @@ public final class NarrativeProgressData extends SavedData {
         ListTag playerLetters = new ListTag();
         for (String key : playerLettersEverRead) playerLetters.add(StringTag.valueOf(key));
         tag.put(TAG_PLAYER_LETTERS_EVER_READ, playerLetters);
+
+        // One-way series reports — a flat string-list of "seriesId|playerUuid".
+        ListTag reported = new ListTag();
+        for (String key : reportedSeries) reported.add(StringTag.valueOf(key));
+        tag.put(TAG_REPORTED_SERIES, reported);
         return tag;
     }
 
@@ -864,13 +912,22 @@ public final class NarrativeProgressData extends SavedData {
                 if (!s.isEmpty()) playerLettersEverRead.add(s);
             }
         }
+        // Missing tag → empty set (worlds saved before lectern reports landed have reported nothing).
+        Set<String> reportedSeries = new LinkedHashSet<>();
+        if (tag.contains(TAG_REPORTED_SERIES, Tag.TAG_LIST)) {
+            ListTag list = tag.getList(TAG_REPORTED_SERIES, Tag.TAG_STRING);
+            for (int i = 0; i < list.size(); i++) {
+                String s = list.getString(i);
+                if (!s.isEmpty()) reportedSeries.add(s);
+            }
+        }
         // Legacy per-player community-book read-set (TAG "shared_books_read_by_player") is intentionally
         // NOT loaded: read history is now GLOBAL + client-side (dungeontrain-client.toml, mirrored via
         // SharedBookReadSyncPacket), so a per-world set would defeat the point. An old world carrying the
         // tag simply drops it on load — no migration, no crash.
         return new NarrativeProgressData(stories, randomBooks, startingBooksSeen, storyVariants,
                 startingBookReceived, randomBookVariantsEverRead, sharedBooksEverRead, letterSeries,
-                playerLettersEverRead);
+                playerLettersEverRead, reportedSeries);
     }
 
     /** Inverse of {@link #encodeStoryProgress}; tolerates missing tag (returns empty). */
