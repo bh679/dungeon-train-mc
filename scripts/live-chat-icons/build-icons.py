@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Draws the Live chat source icons: one 8x8 glyph each, in a strip, for the bitmap font
-assets/dungeontrain/font/live_chat_icons.json (U+E000..U+E004, in this order).
+assets/dungeontrain/font/live_chat_icons.json (U+E000..U+E00A, in this order; append new ones, never reorder).
 
 Re-run after editing a glyph; commit the PNG. Needs Pillow.
 """
@@ -23,6 +23,17 @@ PALETTE = {
     "l": (90, 190, 80, 255),     # land
     "D": (88, 101, 242, 255),    # Discord blurple
     "P": (145, 70, 255, 255),    # Twitch purple
+    "K": (83, 252, 24, 255),     # Kick green
+    "b": (10, 10, 10, 255),      # Kick's black
+    "c": (190, 190, 190, 255),   # bubble grey
+    "Y": (255, 0, 51, 255),      # YouTube red
+    "n": (37, 244, 238, 255),    # TikTok cyan
+    "m": (254, 44, 85, 255),     # TikTok pink
+    "F": (24, 119, 242, 255),    # Facebook blue
+    "1": (131, 58, 180, 255),    # Instagram purple
+    "2": (225, 48, 108, 255),    # Instagram pink
+    "3": (247, 119, 55, 255),    # Instagram orange
+    "4": (252, 175, 69, 255),    # Instagram yellow
 }
 
 # U+E000 eye (the streamer, in the Live Eye)
@@ -81,7 +92,75 @@ TWITCH = [
     "..P.....",
 ]
 
-GLYPHS = [EYE, TV, GLOBE, DISCORD, TWITCH]
+# U+E005 Kick (its block "K" on Kick green)
+KICK = [
+    "KKKKKKKK",
+    "KbbKKbbK",
+    "KbbKbbKK",
+    "KbbbbKKK",
+    "KbbbbKKK",
+    "KbbKbbKK",
+    "KbbKKbbK",
+    "KKKKKKKK",
+]
+# U+E006 chat bubble (a room this client doesn't know yet)
+BUBBLE = [
+    "........",
+    ".cccccc.",
+    "cccccccc",
+    "ccWWWWcc",
+    "cccccccc",
+    ".cccccc.",
+    ".cc.....",
+    ".c......",
+]
+
+# U+E007 YouTube (the white play button on red)
+YOUTUBE = [
+    "........",
+    ".YYYYYY.",
+    "YYYWYYYY",
+    "YYYWWYYY",
+    "YYYWWWYY",
+    "YYYWWYYY",
+    "YYYWYYYY",
+    ".YYYYYY.",
+]
+# U+E008 TikTok (the note, with its cyan and pink edges, on black)
+TIKTOK = [
+    "bbbbbbbb",
+    "bbbbnWbb",
+    "bbbbnWmb",
+    "bbbbnWbm",
+    "bbnWnWbb",
+    "bnWbmWbb",
+    "bbnWWmbb",
+    "bbbbbbbb",
+]
+# U+E009 Facebook (the white "f" on blue)
+FACEBOOK = [
+    ".FFFFFF.",
+    "FFFFWWWF",
+    "FFFFWFFF",
+    "FFWWWWWF",
+    "FFFFWFFF",
+    "FFFFWFFF",
+    "FFFFWFFF",
+    ".FFFWFF.",
+]
+# U+E00A Instagram (the camera outline on its purple-to-yellow gradient)
+INSTAGRAM = [
+    ".111122.",
+    "1WWWWWW2",
+    "1W1222W2",
+    "1W2WW2W3",
+    "2W2WW3W3",
+    "2W233WW3",
+    "2WWWWWW4",
+    ".223344.",
+]
+
+GLYPHS = [EYE, TV, GLOBE, DISCORD, TWITCH, KICK, BUBBLE, YOUTUBE, TIKTOK, FACEBOOK, INSTAGRAM]
 
 
 def main() -> int:
