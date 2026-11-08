@@ -1,0 +1,20 @@
+{
+  "id": "perks-unlock-after-death",
+  "version": "0.1694.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Perks are unlocked after death",
+  "summary": "Advancement Points are now spent after you die, on the perks screen that opens with your death. While you are alive, the perks menu is for activating the perks you have, with Cosmic Apples.",
+  "highlights": [
+    "The perks menu in play has an Activate button where Unlock used to be.",
+    "Earning Advancement Points tells you to spend them after death."
+  ],
+  "pr": 2572,
+  "date": "2026-11-08",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
