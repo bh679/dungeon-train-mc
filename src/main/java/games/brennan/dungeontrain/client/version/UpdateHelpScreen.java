@@ -158,7 +158,8 @@ public final class UpdateHelpScreen extends Screen {
         keptLines = List.copyOf(font.split(Component.translatable(KEY + keptKey), innerWidth));
 
         int contentH = font.lineHeight + GAP_TITLE + bodyHeight()
-                + PARA_GAP + keptLines.size() * LINE_STEP + GAP_BODY + BUTTON_H;
+                + PARA_GAP + keptLines.size() * LINE_STEP + GAP_BODY + BUTTON_H
+                + (variant.manual() ? BUTTON_H + BUTTON_GAP : 0);
         panelW = CARD_W;
         panelH = PAD + contentH + PAD;
         panelX = (width - panelW) / 2;
@@ -170,22 +171,21 @@ public final class UpdateHelpScreen extends Screen {
         addButtons(variant.manual(), panelX + PAD, buttonY, innerWidth);
     }
 
-    private void addButtons(boolean manual, int left, int y, int innerWidth) {
-        List<Button.Builder> row = new ArrayList<>();
+    /**
+     * Back always fills the bottom row. The manual steps put Download and Open mods folder side by
+     * side above it: three across left too little room for "Open mods folder" in most languages.
+     */
+    private void addButtons(boolean manual, int left, int backY, int innerWidth) {
         if (manual) {
-            row.add(Button.builder(Component.translatable(KEY + "download"), b -> openDownload()));
-            row.add(Button.builder(Component.translatable(KEY + "open_mods"), b -> openModsFolder()));
+            int y = backY - BUTTON_H - BUTTON_GAP;
+            int half = (innerWidth - BUTTON_GAP) / 2;
+            addRenderableWidget(Button.builder(Component.translatable(KEY + "download"), b -> openDownload())
+                    .bounds(left, y, half, BUTTON_H).build());
+            addRenderableWidget(Button.builder(Component.translatable(KEY + "open_mods"), b -> openModsFolder())
+                    .bounds(left + half + BUTTON_GAP, y, innerWidth - half - BUTTON_GAP, BUTTON_H).build());
         }
-        row.add(Button.builder(CommonComponents.GUI_BACK, b -> onClose()));
-
-        int count = row.size();
-        int buttonW = (innerWidth - BUTTON_GAP * (count - 1)) / count;
-        for (int i = 0; i < count; i++) {
-            int x = left + i * (buttonW + BUTTON_GAP);
-            // The last button takes the rounding remainder so the row ends flush with the card.
-            int w = i == count - 1 ? left + innerWidth - x : buttonW;
-            addRenderableWidget(row.get(i).bounds(x, y, w, BUTTON_H).build());
-        }
+        addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> onClose())
+                .bounds(left, backY, innerWidth, BUTTON_H).build());
     }
 
     private int bodyHeight() {
