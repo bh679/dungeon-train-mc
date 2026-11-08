@@ -13,8 +13,10 @@ import javax.annotation.Nullable;
  * BlockEntity implements {@link net.minecraft.world.Container}.
  *
  * <p>Identity is by {@link ResourceLocation} so the wire / disk format is
- * stable across Item-instance reloads. {@code count} is the stack size when
- * this entry rolls; {@code weight} is the proportional roll weight (≥ 1).</p>
+ * stable across Item-instance reloads. A roll spawns a stack uniformly in
+ * {@code [minCount, count]}: {@code count} is the largest stack, {@code minCount}
+ * the smallest (1 unless the author raised it, never above {@code count});
+ * {@code weight} is the proportional roll weight (≥ 1).</p>
  *
  * <p>{@link #AIR_ID} is the empty-slot sentinel: an entry with this id rolls
  * to "leave the slot empty," giving authors a way to control fill density
@@ -49,6 +51,7 @@ import javax.annotation.Nullable;
 public record ContainerContentsEntry(
     ResourceLocation itemId,
     int count,
+    int minCount,
     int weight,
     boolean randomDurability,
     int durabilityChance,
@@ -63,6 +66,8 @@ public record ContainerContentsEntry(
 
     public static final ResourceLocation AIR_ID = ResourceLocation.fromNamespaceAndPath("minecraft", "air");
 
+    /** Smallest stack an entry rolls when no minimum was set — today's behaviour, {@code [1, count]}. */
+    public static final int DEFAULT_MIN_COUNT = 1;
     public static final boolean DEFAULT_RANDOM_DURABILITY = true;
     public static final int DEFAULT_DURABILITY_CHANCE = 100;
     public static final boolean DEFAULT_RANDOM_ENCHANTMENT = true;
@@ -89,6 +94,8 @@ public record ContainerContentsEntry(
         if (itemId == null) throw new IllegalArgumentException("itemId");
         if (count < 1) count = 1;
         if (count > 64) count = 64;
+        if (minCount < 1) minCount = 1;
+        if (minCount > count) minCount = count;
         if (weight < 1) weight = 1;
         if (durabilityChance < 0) durabilityChance = 0;
         if (durabilityChance > 100) durabilityChance = 100;
@@ -97,6 +104,18 @@ public record ContainerContentsEntry(
         if (slotOverride < SLOT_AUTO) slotOverride = SLOT_AUTO;
         if (slotOverride > MAX_SLOT_OVERRIDE) slotOverride = SLOT_AUTO;
         if (potionForm == null) potionForm = DEFAULT_POTION_FORM;
+    }
+
+    /** Back-compat constructor — every field but the minimum count, which defaults to 1. */
+    public ContainerContentsEntry(ResourceLocation itemId, int count, int weight,
+                                  boolean randomDurability, int durabilityChance,
+                                  boolean randomEnchantment, int enchantmentChance,
+                                  int slotOverride, @Nullable ResourceLocation potionId,
+                                  boolean scaleWithDistance, PotionForm potionForm,
+                                  @Nullable StoredBook book) {
+        this(itemId, count, DEFAULT_MIN_COUNT, weight, randomDurability, durabilityChance,
+            randomEnchantment, enchantmentChance, slotOverride, potionId, scaleWithDistance,
+            potionForm, book);
     }
 
     /** Back-compat constructor — every field but the stored book. */
@@ -185,67 +204,84 @@ public record ContainerContentsEntry(
     }
 
     public ContainerContentsEntry withWeight(int newWeight) {
-        return new ContainerContentsEntry(itemId, count, newWeight,
+        return new ContainerContentsEntry(itemId, count, minCount, newWeight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
             slotOverride, potionId, scaleWithDistance, potionForm, book);
     }
 
     public ContainerContentsEntry withCount(int newCount) {
-        return new ContainerContentsEntry(itemId, newCount, weight,
+        return new ContainerContentsEntry(itemId, newCount, minCount, weight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
             slotOverride, potionId, scaleWithDistance, potionForm, book);
     }
 
+    /** Set the smallest stack this entry rolls; clamped to {@code [1, count]}. */
+    public ContainerContentsEntry withMinCount(int newMinCount) {
+        return new ContainerContentsEntry(itemId, count, newMinCount, weight,
+            randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
+            slotOverride, potionId, scaleWithDistance, potionForm, book);
+    }
+
+    /** Set both ends of the rolled stack size at once — the number pad's min/max submit. */
+    public ContainerContentsEntry withCountRange(int newMinCount, int newCount) {
+        return withCount(newCount).withMinCount(newMinCount);
+    }
+
+    /** True when this entry rolls a stack of at least 2 — the only case the min is saved. */
+    public boolean hasMinCount() {
+        return minCount > DEFAULT_MIN_COUNT;
+    }
+
     public ContainerContentsEntry withRandomDurability(boolean v) {
-        return new ContainerContentsEntry(itemId, count, weight,
+        return new ContainerContentsEntry(itemId, count, minCount, weight,
             v, durabilityChance, randomEnchantment, enchantmentChance,
             slotOverride, potionId, scaleWithDistance, potionForm, book);
     }
 
     public ContainerContentsEntry withDurabilityChance(int v) {
-        return new ContainerContentsEntry(itemId, count, weight,
+        return new ContainerContentsEntry(itemId, count, minCount, weight,
             randomDurability, v, randomEnchantment, enchantmentChance,
             slotOverride, potionId, scaleWithDistance, potionForm, book);
     }
 
     public ContainerContentsEntry withRandomEnchantment(boolean v) {
-        return new ContainerContentsEntry(itemId, count, weight,
+        return new ContainerContentsEntry(itemId, count, minCount, weight,
             randomDurability, durabilityChance, v, enchantmentChance,
             slotOverride, potionId, scaleWithDistance, potionForm, book);
     }
 
     public ContainerContentsEntry withEnchantmentChance(int v) {
-        return new ContainerContentsEntry(itemId, count, weight,
+        return new ContainerContentsEntry(itemId, count, minCount, weight,
             randomDurability, durabilityChance, randomEnchantment, v,
             slotOverride, potionId, scaleWithDistance, potionForm, book);
     }
 
     public ContainerContentsEntry withSlotOverride(int v) {
-        return new ContainerContentsEntry(itemId, count, weight,
+        return new ContainerContentsEntry(itemId, count, minCount, weight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
             v, potionId, scaleWithDistance, potionForm, book);
     }
 
     public ContainerContentsEntry withPotion(@Nullable ResourceLocation v) {
-        return new ContainerContentsEntry(itemId, count, weight,
+        return new ContainerContentsEntry(itemId, count, minCount, weight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
             slotOverride, v, scaleWithDistance, potionForm, book);
     }
 
     public ContainerContentsEntry withScaleWithDistance(boolean v) {
-        return new ContainerContentsEntry(itemId, count, weight,
+        return new ContainerContentsEntry(itemId, count, minCount, weight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
             slotOverride, potionId, v, potionForm, book);
     }
 
     public ContainerContentsEntry withPotionForm(PotionForm v) {
-        return new ContainerContentsEntry(itemId, count, weight,
+        return new ContainerContentsEntry(itemId, count, minCount, weight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
             slotOverride, potionId, scaleWithDistance, v, book);
     }
 
     public ContainerContentsEntry withBook(@Nullable StoredBook v) {
-        return new ContainerContentsEntry(itemId, count, weight,
+        return new ContainerContentsEntry(itemId, count, minCount, weight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
             slotOverride, potionId, scaleWithDistance, potionForm, v);
     }

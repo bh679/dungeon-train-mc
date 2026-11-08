@@ -90,7 +90,7 @@ public final class LuckyBonusRoller {
             ContainerContentsEntry picked =
                 ContainerContentsRoller.pickEntry(eligible, totalWeight, localPos, worldSeed, carriageIndex, slotKey);
             if (picked == null || picked.isAir()) continue;
-            int count = ContainerContentsRoller.rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, slotKey);
+            int count = ContainerContentsRoller.rollItemCount(picked.minCount(), picked.count(), localPos, worldSeed, carriageIndex, slotKey);
             ItemStack stack = ContainerContentsRoller.rollItemStack(
                 picked, count, localPos, worldSeed, carriageIndex, diffIndex, slotKey, registries);
             if (stack.isEmpty()) continue;
