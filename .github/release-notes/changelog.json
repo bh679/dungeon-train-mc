@@ -34294,14 +34294,14 @@
       "released_at": "2026-11-08T04:35:30Z"
     },
     {
-      "id": "social-launch-kick",
+      "id": "social-launch-2026-11-08",
       "version": "0.1724.0",
       "type": "docs",
       "tags": [
         "internal"
       ],
-      "title": "Dungeon Train is live on Kick",
-      "summary": "Live Eye runs now stream to Kick as well, with the same stream Twitch gets.",
+      "title": "Dungeon Train is on Kick, TikTok, Instagram and Facebook",
+      "summary": "Dungeon Train is now on Kick, TikTok, Instagram and Facebook. Live Eye runs stream to Kick alongside Twitch, and the others carry clips, screenshots and update news.",
       "highlights": [],
       "date": "2026-11-08",
       "released": true,
@@ -34309,65 +34309,8 @@
       "released_at": "2026-11-08T08:00:00Z",
       "major": true,
       "milestone": true,
-      "description": "Live Eye runs now stream to Kick as well, with the same stream Twitch gets.\n\n[https://kick.com/dungeontrain](https://kick.com/dungeontrain)",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/social-launch-kick.jpg"
-    },
-    {
-      "id": "social-launch-tiktok",
-      "version": "0.1724.0",
-      "type": "docs",
-      "tags": [
-        "internal"
-      ],
-      "title": "Dungeon Train is on TikTok",
-      "summary": "Dungeon Train has an official TikTok. Follow along for clips, and live streams once the channel can go live.",
-      "highlights": [],
-      "date": "2026-11-08",
-      "released": true,
-      "released_in": "v0.1724.0",
-      "released_at": "2026-11-08T08:00:00Z",
-      "major": true,
-      "milestone": true,
-      "description": "Dungeon Train has an official TikTok. Follow along for clips, and live streams once the channel can go live.\n\n[https://www.tiktok.com/@dungeontrain](https://www.tiktok.com/@dungeontrain)",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/social-launch-tiktok.jpg"
-    },
-    {
-      "id": "social-launch-instagram",
-      "version": "0.1724.0",
-      "type": "docs",
-      "tags": [
-        "internal"
-      ],
-      "title": "Dungeon Train is on Instagram",
-      "summary": "Dungeon Train has an official Instagram for screenshots and update news.",
-      "highlights": [],
-      "date": "2026-11-08",
-      "released": true,
-      "released_in": "v0.1724.0",
-      "released_at": "2026-11-08T08:00:00Z",
-      "major": true,
-      "milestone": true,
-      "description": "Dungeon Train has an official Instagram for screenshots and update news.\n\n[https://www.instagram.com/dungeontrain](https://www.instagram.com/dungeontrain)",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/social-launch-instagram.jpg"
-    },
-    {
-      "id": "social-launch-facebook",
-      "version": "0.1724.0",
-      "type": "docs",
-      "tags": [
-        "internal"
-      ],
-      "title": "Dungeon Train is on Facebook",
-      "summary": "Dungeon Train's Facebook Page is now its official home on Facebook, for update news and, soon, live streams.",
-      "highlights": [],
-      "date": "2026-11-08",
-      "released": true,
-      "released_in": "v0.1724.0",
-      "released_at": "2026-11-08T08:00:00Z",
-      "major": true,
-      "milestone": true,
-      "description": "Dungeon Train's Facebook Page is now its official home on Facebook, for update news and, soon, live streams.\n\n[https://www.facebook.com/100746411470742](https://www.facebook.com/100746411470742)",
-      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/social-launch-facebook.jpg"
+      "description": "Dungeon Train is now on Kick, TikTok, Instagram and Facebook. Live Eye runs stream to Kick alongside Twitch, and the others carry clips, screenshots and update news.\n\n- [https://kick.com/dungeontrain](https://kick.com/dungeontrain)\n- [https://www.tiktok.com/@dungeontrain](https://www.tiktok.com/@dungeontrain)\n- [https://www.instagram.com/dungeontrain](https://www.instagram.com/dungeontrain)\n- [https://www.facebook.com/100746411470742](https://www.facebook.com/100746411470742)",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/social-launch-2026-11-08.jpg"
     }
   ]
 }
