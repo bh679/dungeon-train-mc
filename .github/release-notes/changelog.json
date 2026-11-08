@@ -34311,6 +34311,91 @@
       "milestone": true,
       "description": "Dungeon Train is now on Kick, TikTok, Instagram and Facebook. Live Eye runs stream to Kick alongside Twitch, and the others carry clips, screenshots and update news.\n\n- [https://kick.com/dungeontrain](https://kick.com/dungeontrain)\n- [https://www.tiktok.com/@dungeontrain](https://www.tiktok.com/@dungeontrain)\n- [https://www.instagram.com/dungeontrain](https://www.instagram.com/dungeontrain)\n- [https://www.facebook.com/100746411470742](https://www.facebook.com/100746411470742)",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/social-launch-2026-11-08.jpg"
+    },
+    {
+      "id": "death-cause-one-language",
+      "version": "0.1729.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "translations"
+      ],
+      "title": "Death message language fix",
+      "summary": "Death messages in languages other than English now read cleanly, without stray English words.",
+      "highlights": [],
+      "date": "2026-11-08",
+      "released": true,
+      "released_in": "v0.1733.0",
+      "released_at": "2026-11-08T14:16:10Z"
+    },
+    {
+      "id": "kick-chat-icon",
+      "version": "0.1726.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Kick chat in the Live chat",
+      "summary": "Messages from the official stream's Kick chat now show in the in-game Live chat with a Kick icon, and every Live chat line shows an icon for where it came from.",
+      "highlights": [],
+      "date": "2026-11-08",
+      "released": true,
+      "released_in": "v0.1733.0",
+      "released_at": "2026-11-08T14:16:10Z"
+    },
+    {
+      "id": "luck-vault-drops",
+      "version": "0.1730.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Luck pays off at vaults",
+      "summary": "Luck now works on vaults too: with Luck I a vault gives you about one and a half times its usual reward, and with Luck II or stronger it doubles.",
+      "highlights": [],
+      "date": "2026-11-08",
+      "released": true,
+      "released_in": "v0.1733.0",
+      "released_at": "2026-11-08T14:16:10Z"
+    },
+    {
+      "id": "photo-collection-fix",
+      "version": "0.1731.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Photo collection fix",
+      "summary": "Some photos you had already taken were not counting toward every collection they belong to. They do now, including photos taken before this update.",
+      "highlights": [],
+      "pr": 2562,
+      "date": "2026-11-08",
+      "released": true,
+      "released_in": "v0.1733.0",
+      "released_at": "2026-11-08T14:16:10Z"
+    },
+    {
+      "id": "sable-pose-race-crash",
+      "version": "0.1732.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Crash fix",
+      "summary": "Fixed a rare crash while riding the train.",
+      "highlights": [],
+      "pr": 2563,
+      "date": "2026-11-08",
+      "released": true,
+      "released_in": "v0.1733.0",
+      "released_at": "2026-11-08T14:16:10Z"
     }
   ]
 }
