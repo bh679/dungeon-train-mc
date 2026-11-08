@@ -13,9 +13,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class CarriageIdTest {
 
     private static final CarriageId.Full PLAIN =
-        new CarriageId.Full(42, 3, 0b100001, 1720, false, false, false, OptionalInt.empty());
+        new CarriageId.Full(42, 3, 0b100001, 1720, false, 0, false, OptionalInt.empty());
     private static final CarriageId.Full EVERY_FLAG =
-        new CarriageId.Full(255, 31, 63, 46655, true, true, true, OptionalInt.of(1234));
+        new CarriageId.Full(255, 31, 63, 46655, true, 0b101, true, OptionalInt.of(1234));
 
     @Test
     @DisplayName("short form reads mark, number and check character")
@@ -47,7 +47,7 @@ final class CarriageIdTest {
     @DisplayName("flags appear in order after the context and version")
     void flags_order() {
         String text = CarriageId.fullForm("QXRT", 7, EVERY_FLAG).format();
-        assertTrue(text.endsWith(" P T F S1234"), text);
+        assertTrue(text.endsWith(" P T5 F S1234"), text);
         assertEquals(8, text.split(" ").length, text);
     }
 
@@ -86,7 +86,7 @@ final class CarriageIdTest {
     void transposition_rejected() {
         // One check character over a 36-symbol alphabet can't catch every swap (that needs a 37th
         // symbol); MOD 37,36 misses exactly one unordered pair of the 630 at each position.
-        String payload = "QXRT4821" + "7B2C1BSPTFS1234";
+        String payload = "QXRT4821" + "7B2C1BSPT5FS1234";
         for (int i = 0; i + 1 < payload.length(); i++) {
             int missed = 0;
             for (char a : CarriageId.ALPHABET.toCharArray()) {
@@ -118,13 +118,13 @@ final class CarriageIdTest {
     @DisplayName("out-of-range context values are refused when building an id")
     void full_rangeChecks() {
         assertThrows(IllegalArgumentException.class,
-            () -> new CarriageId.Full(256, 0, 0, 0, false, false, false, OptionalInt.empty()));
+            () -> new CarriageId.Full(256, 0, 0, 0, false, 0, false, OptionalInt.empty()));
         assertThrows(IllegalArgumentException.class,
-            () -> new CarriageId.Full(0, 32, 0, 0, false, false, false, OptionalInt.empty()));
+            () -> new CarriageId.Full(0, 32, 0, 0, false, 0, false, OptionalInt.empty()));
         assertThrows(IllegalArgumentException.class,
-            () -> new CarriageId.Full(0, 0, 64, 0, false, false, false, OptionalInt.empty()));
+            () -> new CarriageId.Full(0, 0, 64, 0, false, 0, false, OptionalInt.empty()));
         assertThrows(IllegalArgumentException.class,
-            () -> new CarriageId.Full(0, 0, 0, 46656, false, false, false, OptionalInt.empty()));
+            () -> new CarriageId.Full(0, 0, 0, 46656, false, 0, false, OptionalInt.empty()));
     }
 
     private static void assertRejected(String text) {

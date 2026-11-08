@@ -18,7 +18,8 @@ import java.util.regex.Pattern;
  *   -K         check character over the whole id (ISO 7064 MOD 37,36)
  *   7B2C       build context: difficulty level, phase and bands when the group was placed
  *   1BS        content version: the mod's minor version, base 36
- *   P T F S12  flags, only when set: portal, transition flatbed, forced, shared build 12
+ *   P T5 F S12 flags, only when set: portal, transition flatbeds (slot bits, base 36), an admin
+ *              forcing setting was on, shared build 12
  * </pre>
  *
  * <p>The <b>short form</b> is the first two tokens only. It names the carriage inside its own world,
@@ -48,6 +49,7 @@ public record CarriageId(String mark, int pIdx, Optional<Full> context) {
     private static final Pattern MARK = Pattern.compile("[A-Z]{4}");
     private static final Pattern NUMBER = Pattern.compile("(R?)(\\d{1,10})-([0-9A-Z])");
     private static final Pattern SHARED = Pattern.compile("S(\\d{1,9})");
+    private static final Pattern TRANSITION = Pattern.compile("T([0-9A-Z]{1,5})");
 
     public CarriageId {
         Objects.requireNonNull(mark, "mark");
@@ -79,18 +81,21 @@ public record CarriageId(String mark, int pIdx, Optional<Full> context) {
      * @param bandMask     {@code BandFlavor} bits ({@code 1 << ordinal}) the group sat in, 0–63
      * @param version      the mod's minor version when the group was built, 0–46655
      * @param portal       the portal lottery fired for this group
-     * @param transition   a transition flatbed claimed a slot in this group
-     * @param forced       an admin forced a full or whole-group carriage here
+     * @param transitionMask slots of this group a transition flatbed claimed ({@code 1 << slot}),
+     *                       0 for none
+     * @param forced       an admin forcing setting (Full / Whole Group cadence) was on; the rebuild
+     *                     doesn't replay it, so the flag only warns
      * @param sharedBuild  the relay build stamped into this group, when one was
      */
     public record Full(int level, int phase, int bandMask, int version,
-                       boolean portal, boolean transition, boolean forced, OptionalInt sharedBuild) {
+                       boolean portal, int transitionMask, boolean forced, OptionalInt sharedBuild) {
         public Full {
             Objects.requireNonNull(sharedBuild, "sharedBuild");
             requireRange("level", level, MAX_LEVEL);
             requireRange("phase", phase, MAX_PHASE);
             requireRange("bandMask", bandMask, MAX_BANDS);
             requireRange("version", version, MAX_VERSION);
+            if (transitionMask < 0) throw new IllegalArgumentException("transitionMask must not be negative");
             if (sharedBuild.isPresent() && sharedBuild.getAsInt() < 0) {
                 throw new IllegalArgumentException("sharedBuild must not be negative");
             }
@@ -101,10 +106,10 @@ public record CarriageId(String mark, int pIdx, Optional<Full> context) {
             return (level << 11) | (phase << 6) | bandMask;
         }
 
-        static Full unpack(int packed, int version, boolean portal, boolean transition, boolean forced,
+        static Full unpack(int packed, int version, boolean portal, int transitionMask, boolean forced,
                            OptionalInt sharedBuild) {
             return new Full((packed >>> 11) & MAX_LEVEL, (packed >>> 6) & MAX_PHASE, packed & MAX_BANDS,
-                version, portal, transition, forced, sharedBuild);
+                version, portal, transitionMask, forced, sharedBuild);
         }
     }
 
@@ -133,7 +138,7 @@ public record CarriageId(String mark, int pIdx, Optional<Full> context) {
             tokens.add(base36(c.packed(), CONTEXT_WIDTH));
             tokens.add(base36(c.version(), VERSION_WIDTH));
             if (c.portal()) tokens.add("P");
-            if (c.transition()) tokens.add("T");
+            if (c.transitionMask() != 0) tokens.add("T" + Integer.toString(c.transitionMask(), 36).toUpperCase(Locale.ROOT));
             if (c.forced()) tokens.add("F");
             c.sharedBuild().ifPresent(b -> tokens.add("S" + b));
         });
@@ -172,23 +177,30 @@ public record CarriageId(String mark, int pIdx, Optional<Full> context) {
     private static Full parseFull(String[] tokens) {
         int packed = parseBase36(tokens[2], CONTEXT_WIDTH, "context");
         int version = parseBase36(tokens[3], VERSION_WIDTH, "version");
-        boolean portal = false, transition = false, forced = false;
+        boolean portal = false, forced = false;
+        int transitionMask = 0;
         OptionalInt shared = OptionalInt.empty();
         for (int i = 4; i < tokens.length; i++) {
             String flag = tokens[i];
             Matcher s = SHARED.matcher(flag);
             switch (flag) {
                 case "P" -> portal = true;
-                case "T" -> transition = true;
                 case "F" -> forced = true;
                 default -> {
-                    if (!s.matches()) throw new IllegalArgumentException("Unknown flag: " + flag);
-                    shared = OptionalInt.of(Integer.parseInt(s.group(1)));
+                    Matcher t = TRANSITION.matcher(flag);
+                    if (t.matches()) {
+                        transitionMask = Integer.parseInt(t.group(1), 36);
+                        if (transitionMask == 0) throw new IllegalArgumentException("A transition flag needs at least one slot.");
+                    } else if (s.matches()) {
+                        shared = OptionalInt.of(Integer.parseInt(s.group(1)));
+                    } else {
+                        throw new IllegalArgumentException("Unknown flag: " + flag);
+                    }
                 }
             }
         }
         if (((packed >>> 11) & ~MAX_LEVEL) != 0) throw new IllegalArgumentException("Context token is out of range: " + tokens[2]);
-        return Full.unpack(packed, version, portal, transition, forced, shared);
+        return Full.unpack(packed, version, portal, transitionMask, forced, shared);
     }
 
     /**
