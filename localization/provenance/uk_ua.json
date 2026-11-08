@@ -5629,7 +5629,7 @@
   "item.dungeontrain.violet_core.tooltip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "8dc05493950bcf47"},
   "chat.dungeontrain.perks.active_gained": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "488a7f930b64cd67"},
   "chat.dungeontrain.perks.ready_to_spend": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "845bfc89e99b97eb"},
-  "chat.dungeontrain.perks.unlock_gained": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "2c176b4c69bf08b3"},
+  "chat.dungeontrain.perks.unlock_gained": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "812cccc5c59c0bd5"},
   "gui.dungeontrain.advancements.points": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "4dccaed8fd50629f"},
   "gui.dungeontrain.perks.title": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "c339bf736e4a210b"},
   "key.dungeontrain.perks": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "3d2a76bc6fb542ba"},

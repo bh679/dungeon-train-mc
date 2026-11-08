@@ -5566,7 +5566,7 @@
   "item.dungeontrain.violet_core.tooltip": "Mange-le pour gagner 10 points d'atout. Dépense-les avant de mourir.",
   "chat.dungeontrain.perks.active_gained": "%1$s mangé. Points d'atout pour cette vie : %3$s (+%2$s).",
   "chat.dungeontrain.perks.ready_to_spend": "Tu as %s points d'atout à dépenser.",
-  "chat.dungeontrain.perks.unlock_gained": "+%s points de progrès (%s non dépensés).",
+  "chat.dungeontrain.perks.unlock_gained": "+%s points de progrès. Dépense-les après ta mort.",
   "gui.dungeontrain.advancements.points": "Points de progrès",
   "gui.dungeontrain.perks.title": "Atouts",
   "key.dungeontrain.perks": "Ouvrir les atouts",

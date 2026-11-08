@@ -61,6 +61,8 @@ final class PerkDetailsBar {
     /** The death screen's menu: Unlock only, no Activate and no Active Points. */
     private boolean unlockOnly;
     private boolean noUnlock;
+    /** The menu in play: Activate only, no Unlock tab; unlock points are spent after death. */
+    private boolean activeOnly;
     private String builtFor = "";
     private PointsGraph graph;
     private int graphX, graphY, graphW, graphHover = -1;
@@ -100,6 +102,13 @@ final class PerkDetailsBar {
         builtFor = "";
     }
 
+    /** Activate only: the Unlock tab and its why-not line drop out. */
+    void activeOnly(boolean on) {
+        if (on == activeOnly) return;
+        activeOnly = on;
+        builtFor = "";
+    }
+
     /** The death menu's points are all spent: the Unlock tab and why-not line give way to its Next button. */
     void noUnlock(boolean on) {
         if (on == noUnlock) return;
@@ -109,7 +118,7 @@ final class PerkDetailsBar {
 
     /** The buttons, rebuilt when the perk or its state changes; empty while nothing is shown. */
     List<Button> buttons() {
-        if (unlockButton == null) return List.of();
+        if (unlockButton == null) return activateButton == null ? List.of() : List.of(activateButton);
         return activateButton == null ? List.of(unlockButton) : List.of(unlockButton, activateButton);
     }
 
@@ -147,6 +156,12 @@ final class PerkDetailsBar {
         // Unlock: the tab centred on the bar's top edge, naming the level it buys; why not, under it in the bar.
         // Small and grey until the perk's points are filled, though it can still be pressed; points are gone
         // at death, so the death screen's menu has nothing to fill
+        if (activeOnly) {
+            unlockButton = null;
+            unlockReason = null;
+            activateButton = isLocked ? activateButton(shown, snap) : null;
+            return true;
+        }
         int level = snap.unlockLevel(shown.id());
         boolean unfilled = !unlockOnly && level > 0 && snap.points(shown.id()) < level;
         unlockButton = UnlockTab.centred(font, screenW / 2, top, Component.translatable(KEY + "unlock"),
@@ -166,13 +181,19 @@ final class PerkDetailsBar {
             activateButton = null;
             return true;
         }
-        int bx = screenW - PAD - BUTTON_W, by = top + (HEIGHT - BUTTON_H) / 2;
-        activateButton = new CostButton(bx, by, BUTTON_W, BUTTON_H, CostButton.Currency.APPLE, snap.nextRankCost(),
+        activateButton = activateButton(shown, snap);
+        return true;
+    }
+
+    /** The Activate button at the bar's right, greyed with why when it can't be pressed. */
+    private Button activateButton(PerkTree.Perk shown, PerkMenuSnapshot snap) {
+        int bx = width - PAD - BUTTON_W, by = top + (HEIGHT - BUTTON_H) / 2;
+        Button button = new CostButton(bx, by, BUTTON_W, BUTTON_H, CostButton.Currency.APPLE, snap.nextRankCost(),
             Component.translatable(KEY + "activate"), b -> activate.accept(shown));
         Component activateWhy = activateBlocked(shown, snap);
-        activateButton.active = activateWhy == null;
-        if (activateWhy != null) activateButton.setTooltip(Tooltip.create(activateWhy));
-        return true;
+        button.active = activateWhy == null;
+        if (activateWhy != null) button.setTooltip(Tooltip.create(activateWhy));
+        return button;
     }
 
     /** Why Unlock can't be pressed now, or null when it can. Unlocks a locked perk, or again for one more point. */

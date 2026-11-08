@@ -102,7 +102,10 @@ public final class AdvancementPerksButton {
             super(0, 0, HEIGHT, HEIGHT, LABEL, b -> PerksScreen.open(false));
         }
 
+        /** The unlock points held, or empty while alive: they are spent after death, so play shows none. */
         private static String count() {
+            net.minecraft.client.player.LocalPlayer player = net.minecraft.client.Minecraft.getInstance().player;
+            if (player != null && !player.isDeadOrDying()) return "";
             return Integer.toString(PerkClientBalances.unlockPoints());
         }
 
@@ -119,8 +122,9 @@ public final class AdvancementPerksButton {
             g.pose().scale(STAR_SCALE, STAR_SCALE, 1F);
             g.renderItem(ICON, 0, 0);
             g.pose().popPose();
-            // Always shown, 0 included, unlike a real stack's count; above the item, as vanilla draws it.
+            // Shown 0 included, unlike a real stack's count; above the item, as vanilla draws it.
             String count = count();
+            if (count.isEmpty()) return;
             g.pose().pushPose();
             g.pose().translate(0, 0, 200);
             g.drawString(font, count, getX() + getWidth() - INSET + 1 - font.width(count), y + COUNT_DROP, colour, true);

@@ -5629,7 +5629,7 @@
   "item.dungeontrain.violet_core.tooltip": "З'їж, щоб отримати 10 очок навички. Витрать їх до смерті.",
   "chat.dungeontrain.perks.active_gained": "З'їдено: %1$s. Очок навички на це життя: %3$s (+%2$s).",
   "chat.dungeontrain.perks.ready_to_spend": "У тебе %s очок навичок для витрат.",
-  "chat.dungeontrain.perks.unlock_gained": "+%s очок досягнень (%s не витрачено).",
+  "chat.dungeontrain.perks.unlock_gained": "+%s очок досягнень. Витратити їх можна після смерті.",
   "gui.dungeontrain.advancements.points": "Очки досягнень",
   "gui.dungeontrain.perks.title": "Перки",
   "key.dungeontrain.perks": "Відкрити перки",

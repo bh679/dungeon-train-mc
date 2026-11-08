@@ -5566,7 +5566,7 @@
   "item.dungeontrain.violet_core.tooltip": "Coma para ganhar 10 pontos de vantagem. Gaste antes de morrer.",
   "chat.dungeontrain.perks.active_gained": "%1$s comido. Pontos de vantagem nesta vida: %3$s (+%2$s).",
   "chat.dungeontrain.perks.ready_to_spend": "Você tem %s pontos de vantagem para gastar.",
-  "chat.dungeontrain.perks.unlock_gained": "+%s pontos de progresso (%s não gastos).",
+  "chat.dungeontrain.perks.unlock_gained": "+%s pontos de progresso. Gaste-os depois de morrer.",
   "gui.dungeontrain.advancements.points": "Pontos de progresso",
   "gui.dungeontrain.perks.title": "Vantagens",
   "key.dungeontrain.perks": "Abrir vantagens",

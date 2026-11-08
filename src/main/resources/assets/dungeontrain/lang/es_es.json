@@ -5566,7 +5566,7 @@
   "item.dungeontrain.violet_core.tooltip": "Cómetelo para ganar 10 puntos de ventaja. Gástalos antes de morir.",
   "chat.dungeontrain.perks.active_gained": "Has comido %1$s. Puntos de ventaja para esta vida: %3$s (+%2$s).",
   "chat.dungeontrain.perks.ready_to_spend": "Tienes %s puntos de ventaja para gastar.",
-  "chat.dungeontrain.perks.unlock_gained": "+%s puntos de progreso (%s sin gastar).",
+  "chat.dungeontrain.perks.unlock_gained": "+%s puntos de progreso. Gástalos después de morir.",
   "gui.dungeontrain.advancements.points": "Puntos de progreso",
   "gui.dungeontrain.perks.title": "Ventajas",
   "key.dungeontrain.perks": "Abrir ventajas",

@@ -133,6 +133,10 @@ public final class PerksScreen extends Screen {
         this.reveal = death != null ? death.reveal() : MenuReveal.allUp();
         bar.unlockOnly(death != null);
         counters.unlockOnly(death != null);
+        // unlock points are spent after death only: in play the menu activates, and shows no unlock points
+        bar.activeOnly(death == null);
+        counters.activeOnly(death == null);
+        card.activeOnly(death == null);
     }
 
     /** The height the sky gets: the screen, less the details bar when it is on. */
@@ -319,9 +323,9 @@ public final class PerksScreen extends Screen {
     }
 
     /**
-     * A click on a star in the card modes (web {@code testClick}): unlock it when locked and reachable;
-     * add a point while it holds fewer than its unlock level; once full, unlock it again for room for one
-     * more. Short of points, the matching counter shakes and nothing is sent.
+     * A click on a star in the card modes (web {@code testClick}): on death, unlock it (again, once full);
+     * in play, add a point while it holds fewer than its unlock level. Short of points, the matching
+     * counter shakes and nothing is sent.
      */
     private void act(PerkTree.Perk p) {
         if (p.isRoot()) return;
@@ -329,14 +333,12 @@ public final class PerksScreen extends Screen {
             unlockAction(p);
             return;
         }
-        int level = last.unlockLevel(p.id());
-        if (level > 0 && last.points(p.id()) < level) activateAction(p);
-        else unlockAction(p);
+        activateAction(p);
     }
 
     /** Unlock {@code p} (first time, or again for room for one more point). */
     private void unlockAction(PerkTree.Perk p) {
-        if (p.isRoot()) return;
+        if (p.isRoot() || death == null) return;
         PerkMenuSnapshot s = last;
         long now = Util.getMillis();
         PerkRegistry.bootstrap();
@@ -400,7 +402,8 @@ public final class PerksScreen extends Screen {
         String classHover = listHover != null ? listHover : titleHover;
         preview = classHover != null && off.contains(classHover) ? classHover : null;
 
-        vis = new ClassVisibility(tree, off, preview, snap.unlocks(), snap.active(), snap.unlockPoints());
+        // held unlock points only open up the sky on death, where they can be spent
+        vis = new ClassVisibility(tree, off, preview, snap.unlocks(), snap.active(), death != null ? snap.unlockPoints() : 0);
         drawn = tree.withPositions(layout.positions(tree, vis, now));
         hovered = card.contains(mouseX, mouseY) || bar.tabContains(mouseX, mouseY) || classesList.rowHover(mouseX, mouseY) != null || headEyeHover
             || titleHover != null ? null : starAt(mouseX, mouseY);
@@ -711,7 +714,7 @@ public final class PerksScreen extends Screen {
         }
         boolean wasDrag = dragging && dragMoved > 3;
         dragging = false;
-        // right-click a star: unlock it (again, once full)
+        // right-click a star: unlock it (again, once full), on death only
         if (button == 1 && !(DETAILS == DetailsMode.BAR && bar.contains(mx, my))) {
             String id = starAt(mx, my);
             if (id != null) tree.perk(id).ifPresent(this::unlockAction);
