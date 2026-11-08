@@ -15,7 +15,7 @@
     {
       "id": "creeper_birch",
       "weight": 1,
-      "minLevel": 5,
+      "minLevel": 6,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
@@ -38,7 +38,7 @@
     {
       "id": "creeper_spruce",
       "weight": 1,
-      "minLevel": 6,
+      "minLevel": 7,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
@@ -61,7 +61,7 @@
     {
       "id": "creeper_jungle",
       "weight": 1,
-      "minLevel": 5,
+      "minLevel": 6,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
@@ -84,7 +84,7 @@
     {
       "id": "creeper_bamboo",
       "weight": 1,
-      "minLevel": 4,
+      "minLevel": 5,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
@@ -107,7 +107,7 @@
     {
       "id": "creeper_savannah",
       "weight": 1,
-      "minLevel": 6,
+      "minLevel": 7,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
@@ -130,7 +130,7 @@
     {
       "id": "creeper_desert",
       "weight": 1,
-      "minLevel": 8,
+      "minLevel": 9,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
@@ -153,7 +153,7 @@
     {
       "id": "creeper_badlands",
       "weight": 1,
-      "minLevel": 12,
+      "minLevel": 13,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
@@ -176,7 +176,7 @@
     {
       "id": "creeper_swamp",
       "weight": 1,
-      "minLevel": 6,
+      "minLevel": 7,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
@@ -199,7 +199,7 @@
     {
       "id": "creeper_beach",
       "weight": 1,
-      "minLevel": 4,
+      "minLevel": 5,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
@@ -222,7 +222,7 @@
     {
       "id": "creeper_hills",
       "weight": 1,
-      "minLevel": 8,
+      "minLevel": 9,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
@@ -245,7 +245,7 @@
     {
       "id": "creeper_snowy",
       "weight": 1,
-      "minLevel": 5,
+      "minLevel": 6,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
@@ -268,7 +268,7 @@
     {
       "id": "creeper_dark_oak",
       "weight": 1,
-      "minLevel": 9,
+      "minLevel": 10,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
@@ -291,7 +291,7 @@
     {
       "id": "creeper_cave",
       "weight": 1,
-      "minLevel": 10,
+      "minLevel": 11,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
@@ -314,7 +314,7 @@
     {
       "id": "creeper_dripstone",
       "weight": 1,
-      "minLevel": 4,
+      "minLevel": 5,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
@@ -337,7 +337,7 @@
     {
       "id": "creeper_mushroom",
       "weight": 1,
-      "minLevel": 3,
+      "minLevel": 4,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",

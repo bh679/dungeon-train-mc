@@ -2,7 +2,7 @@
   "schemaVersion": 10,
   "variants": {
     "3,0,2": [{"entity": "creeperoverhaul:snowy_creeper"}],
-    "2,0,1": ["dungeontrain:variant_placeholder", {"entity": "creeperoverhaul:snowy_creeper", "difficulty": {"min": 11, "max": "all"}}],
-    "4,0,3": [{"state": "dungeontrain:variant_placeholder", "weight": 10}, {"entity": "creeperoverhaul:snowy_creeper", "difficulty": {"min": 20, "max": "all"}}]
+    "2,0,1": ["dungeontrain:variant_placeholder", {"entity": "creeperoverhaul:snowy_creeper", "difficulty": {"min": 12, "max": "all"}}],
+    "4,0,3": [{"state": "dungeontrain:variant_placeholder", "weight": 10}, {"entity": "creeperoverhaul:snowy_creeper", "difficulty": {"min": 21, "max": "all"}}]
   }
 }
