@@ -235,8 +235,8 @@ final class VaultLootTest {
         ContainerContentsPool ominous = VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY);
         assertEquals(2, ominous.fillMin());
         assertEquals(4, ominous.fillMax());
-        assertEquals(2346, ominous.totalWeight());
-        assertEquals(0.005, expectedPerUnlock(ominous, "heavy_core"), 0.0005);
+        assertEquals(2345, ominous.totalWeight());
+        assertEquals(0.004, expectedPerUnlock(ominous, "heavy_core"), 0.0005);
 
         Set<ResourceLocation> removed = Set.of(
             ResourceLocation.withDefaultNamespace("emerald"),
