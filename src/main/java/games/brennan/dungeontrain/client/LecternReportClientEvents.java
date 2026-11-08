@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.mixin.client.BookViewScreenAccessor;
 import games.brennan.dungeontrain.narrative.PlayerNarrativeBookTag;
@@ -32,7 +33,8 @@ import org.lwjgl.glfw.GLFW;
  * whole SERIES: every lectern of it then reads "Reported" for this player, and the world stops serving it.
  *
  * <p>Same glyph, same wording, same two-tap: the first click arms it (the tooltip turns to the
- * confirmation), a second on the icon commits, a click anywhere else disarms. It sits just outside the
+ * confirmation), a second on the icon commits, a click anywhere else disarms; once spent it dims and
+ * says "Reported" beneath. It sits just outside the
  * page's top-right corner, clear of the letter's text and the page-turn buttons. Unlike a held book the
  * screen stays open after reporting — a lectern has no "I'm done with this" moment to fold it into — and
  * the icon dims to show it is spent.</p>
@@ -54,6 +56,7 @@ public final class LecternReportClientEvents {
     private static final int ICON_DY = 12;          // level with the top of the text column
     private static final int ICON_SIZE = 18;
     private static final float REPORTED_ALPHA = 0.4F;
+    private static final int COLOR_REPORTED = 0xA0A0A0; // grey, on the dark world behind the book
     private static final int REPORT_RESPONSE_COUNT = 5;
 
     private static final ResourceLocation REPORT_SPRITE =
@@ -96,14 +99,24 @@ public final class LecternReportClientEvents {
         boolean hover = inIcon(mx, my);
         boolean lit = !reported && (armed || hover);
 
-        if (reported) gfx.setColor(1F, 1F, 1F, REPORTED_ALPHA);
+        if (reported) {
+            // Off the parchment the dim only shows if the sprite is actually blended over the world.
+            RenderSystem.enableBlend();
+            gfx.setColor(1F, 1F, 1F, REPORTED_ALPHA);
+        }
         gfx.blitSprite(lit ? REPORT_HIGHLIGHTED_SPRITE : REPORT_SPRITE, iconX(), iconY(), ICON_SIZE, ICON_SIZE);
-        if (reported) gfx.setColor(1F, 1F, 1F, 1F);
+        if (reported) {
+            gfx.setColor(1F, 1F, 1F, 1F);
+            RenderSystem.disableBlend();
+            // A spent icon says so without a hover, like the held book's "Reported" line.
+            Component done = Component.translatable("gui.dungeontrain.book_vote.reported");
+            gfx.drawString(Minecraft.getInstance().font, done, iconX(), iconY() + ICON_SIZE + 3, COLOR_REPORTED, true);
+            return;
+        }
 
         // Off the page there is no parchment to write a status line on, so the words ride a tooltip:
         // on hover always, and pinned to the icon while armed so the confirmation can't be missed.
-        Component line = reported ? Component.translatable("gui.dungeontrain.book_vote.reported")
-            : armed ? Component.translatable("gui.dungeontrain.book_vote.report_confirm")
+        Component line = armed ? Component.translatable("gui.dungeontrain.book_vote.report_confirm")
             : hover ? Component.translatable("gui.dungeontrain.book_vote.report") : null;
         if (line == null) return;
         if (hover) {
