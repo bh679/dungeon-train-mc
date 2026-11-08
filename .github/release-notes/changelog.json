@@ -34420,6 +34420,46 @@
       "released": true,
       "released_in": "v0.1735.0",
       "released_at": "2026-11-08T15:45:32Z"
+    },
+    {
+      "id": "live-eye-platform-logos",
+      "version": "0.1735.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Stream logos",
+      "summary": "When you go live with the Live Eye, the chat now shows a row of logos for everywhere the stream can be watched. Click one to open it.",
+      "highlights": [
+        "Dungeon Train, Twitch, YouTube and Kick logos, each a link",
+        "Hover a logo to see where it goes"
+      ],
+      "pr": 2569,
+      "date": "2026-11-08",
+      "released": true,
+      "released_in": "v0.1737.0",
+      "released_at": "2026-11-08T21:34:24Z"
+    },
+    {
+      "id": "update-help-button",
+      "version": "0.1737.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Update help",
+      "summary": "The new version prompt has a small ? button that shows how to update for the launcher you play on, with a download button and a shortcut to your mods folder where you update by hand.",
+      "highlights": [
+        "Your builds, unlocks and stats are kept whichever way you update."
+      ],
+      "pr": 2570,
+      "date": "2026-11-08",
+      "released": true,
+      "released_in": "v0.1737.0",
+      "released_at": "2026-11-08T21:34:24Z"
     }
   ]
 }
