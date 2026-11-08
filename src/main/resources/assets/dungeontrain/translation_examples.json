@@ -15699,6 +15699,26 @@
       ]
     }
   },
+  "gui.dungeontrain.update_help.intro.modpack": {
+    "1": {
+      "label": "the launcher's name, a brand name left untranslated",
+      "examples": [
+        "CurseForge",
+        "Modrinth App",
+        "Prism Launcher"
+      ]
+    }
+  },
+  "gui.dungeontrain.update_help.intro.mod": {
+    "1": {
+      "label": "the launcher's name, a brand name left untranslated",
+      "examples": [
+        "CurseForge",
+        "Modrinth App",
+        "ATLauncher"
+      ]
+    }
+  },
   "gui.dungeontrain.update_prompt.body": {
     "1": {
       "label": "the mod's name and newest version, shown in green",

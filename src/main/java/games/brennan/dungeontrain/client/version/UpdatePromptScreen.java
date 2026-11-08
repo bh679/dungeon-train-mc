@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.narrative.PluralRules;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -21,8 +22,9 @@ import java.util.Optional;
 /**
  * "A new version is out" — shown once at boot over the title screen when a newer real release is on
  * any launcher ({@link UpdatePromptHandler}). Deliberately minimal and launcher-agnostic: the newest
- * version, then the player's own and how many releases behind it is — nothing else. "See what's new" opens DT's update page, which lists each launcher
+ * version, then the player's own and how many releases behind it is. "See what's new" opens DT's update page, which lists each launcher
  * and what changed ({@link UpdatePage}); the full Versions page stays on the title-screen version line.
+ * The {@code ?} between the buttons opens {@link UpdateHelpScreen}, the steps for this launcher.
  *
  * <p>Same flat card as {@link games.brennan.dungeontrain.client.LowMemoryPromptScreen}, so every
  * one-time title-screen message looks like it came from the same place.</p>
@@ -40,6 +42,8 @@ public final class UpdatePromptScreen extends Screen {
     private static final int LINE_STEP = 12;
     private static final int BUTTON_H = 20;
     private static final int BUTTON_GAP = 8;
+    /** The square "?" between the two buttons. */
+    private static final int HELP_W = 20;
     private static final int GAP_TITLE = 9;
     private static final int GAP_BODY = 12;
 
@@ -104,20 +108,31 @@ public final class UpdatePromptScreen extends Screen {
         bodyY = cursor;
         cursor += bodyLines.size() * LINE_STEP + GAP_BODY;
 
-        // One row: the page on the left, the way out on the right.
+        // One row: the page on the left, the way out on the right, and the "how do I update?" between.
         int innerLeft = panelX + PAD;
-        int buttonW = (innerWidth - BUTTON_GAP) / 2;
+        int buttonW = (innerWidth - HELP_W - 2 * BUTTON_GAP) / 2;
         addRenderableWidget(Button.builder(Component.translatable(KEY + "see"), b -> openPage())
                 .bounds(innerLeft, cursor, buttonW, BUTTON_H)
                 .build());
-        addRenderableWidget(Button.builder(Component.translatable(KEY + "later"), b -> onClose())
-                .bounds(innerLeft + buttonW + BUTTON_GAP, cursor, innerWidth - buttonW - BUTTON_GAP, BUTTON_H)
+        int helpX = innerLeft + buttonW + BUTTON_GAP;
+        addRenderableWidget(Button.builder(Component.literal("?"),
+                        b -> this.minecraft.setScreen(new UpdateHelpScreen(this, pageUrl())))
+                .bounds(helpX, cursor, HELP_W, BUTTON_H)
+                .tooltip(Tooltip.create(Component.translatable(KEY + "help")))
                 .build());
+        int laterX = helpX + HELP_W + BUTTON_GAP;
+        addRenderableWidget(Button.builder(Component.translatable(KEY + "later"), b -> onClose())
+                .bounds(laterX, cursor, innerLeft + innerWidth - laterX, BUTTON_H)
+                .build());
+    }
+
+    private String pageUrl() {
+        return UpdatePage.url(Optional.of(installed), Platform.current());
     }
 
     /** DT's update page, behind vanilla's "open this link?" confirmation; back to this card either way. */
     private void openPage() {
-        String url = UpdatePage.url(Optional.of(installed), Platform.current());
+        String url = pageUrl();
         this.minecraft.setScreen(new ConfirmLinkScreen(yes -> {
             if (yes) Util.getPlatform().openUri(URI.create(url));
             this.minecraft.setScreen(this);
