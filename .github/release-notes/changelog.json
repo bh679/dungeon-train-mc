@@ -34396,6 +34396,30 @@
       "released": true,
       "released_in": "v0.1733.0",
       "released_at": "2026-11-08T14:16:10Z"
+    },
+    {
+      "id": "richer-rarest-vault-rewards",
+      "version": "0.1735.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "loot",
+        "balance"
+      ],
+      "title": "Richer rewards from the rarest vault",
+      "summary": "The rarest vault's best rewards now arrive in generous piles instead of the odd one or two, it can hand out something new, and its rarest prizes stay just as rare. Vault rewards that don't stack now pay out every item they roll.",
+      "highlights": [
+        "Bigger stacks of the good stuff from the rarest vault.",
+        "Something new to find in the rarest vault.",
+        "Fewer bulk blocks, more treasure.",
+        "Builders can now set a smallest stack size for any loot."
+      ],
+      "pr": 2568,
+      "date": "2026-11-08",
+      "released": true,
+      "released_in": "v0.1735.0",
+      "released_at": "2026-11-08T15:45:32Z"
     }
   ]
 }
