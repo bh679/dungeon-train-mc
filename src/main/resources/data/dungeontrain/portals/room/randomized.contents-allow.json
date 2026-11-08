@@ -1,7 +1,14 @@
 {
   "schemaVersion": 1,
   "excluded": [
-    "enemies",
+    "enemies_creepers",
+    "enemies_deeper_dark",
+    "enemies_end",
+    "enemies_nether",
+    "enemies_odd",
+    "enemies_pillagers",
+    "enemies_spiders_slimes",
+    "enemies_undead",
     "narrative",
     "portal",
     "portal_short"

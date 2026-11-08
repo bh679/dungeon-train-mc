@@ -1,0 +1,16 @@
+{
+  "_doc": "Top-level group parents that share one slot of the top-level draw (train/CarriageContentsPools). The slot has the pool's weight; a won slot draws a member by the weight its group can offer at that spot, so each room keeps the chance it had when all of them were one group. Members' own weights.json weights are not used.",
+  "enemies": {
+    "weight": 8,
+    "members": [
+      "enemies_undead",
+      "enemies_pillagers",
+      "enemies_nether",
+      "enemies_end",
+      "enemies_deeper_dark",
+      "enemies_creepers",
+      "enemies_spiders_slimes",
+      "enemies_odd"
+    ]
+  }
+}

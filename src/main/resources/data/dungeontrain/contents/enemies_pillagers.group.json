@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 0,
+  "variants": [
+    {
+      "id": "pillager",
+      "weight": 4,
+      "minLevel": 2
+    },
+    {
+      "id": "vindicator",
+      "weight": 1,
+      "minLevel": 2
+    },
+    {
+      "id": "evoker",
+      "weight": 1,
+      "minLevel": 4
+    },
+    {
+      "id": "evoker2",
+      "weight": 3,
+      "minLevel": 30
+    },
+    {
+      "id": "ravanger",
+      "weight": 3,
+      "minLevel": 40
+    },
+    {
+      "id": "witch",
+      "weight": 1,
+      "minLevel": 2
+    }
+  ]
+}

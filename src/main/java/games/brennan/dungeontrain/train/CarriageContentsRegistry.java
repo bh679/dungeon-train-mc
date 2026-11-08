@@ -329,30 +329,103 @@ public final class CarriageContentsRegistry {
             }
         }
 
-        int m = effective.size();
+        List<Slot> slots = slotsOf(effective);
+        int m = slots.size();
         int[] cumulative = new int[m];
         int total = 0;
         for (int i = 0; i < m; i++) {
-            String id = effective.get(i).id();
-            total += LiveTvWeighting.contentsWeight(id, weights.weightFor(id), carriageIndex);
+            total += slots.get(i).weight(weights, carriageIndex);
             cumulative[i] = total;
         }
         long seed = worldSeed ^ ((long) carriageIndex * 0x9E3779B97F4A7C15L);
         Random rng = new Random(seed);
-        CarriageContents picked;
+        Slot pickedSlot;
         if (total <= 0) {
             warnAllZeroOnce();
-            picked = effective.get(rng.nextInt(m));
+            pickedSlot = slots.get(rng.nextInt(m));
         } else {
             int r = rng.nextInt(total);
-            CarriageContents tail = effective.get(m - 1);
-            CarriageContents found = tail;
+            Slot found = slots.get(m - 1);
             for (int i = 0; i < m; i++) {
-                if (r < cumulative[i]) { found = effective.get(i); break; }
+                if (r < cumulative[i]) { found = slots.get(i); break; }
             }
-            picked = found;
+            pickedSlot = found;
         }
+        CarriageContents picked = pickedSlot.pool() == null
+            ? pickedSlot.members().get(0)
+            : pickPooled(pickedSlot.members(), gateCtx, carriageIndex, rng);
         return new PickContext(picked, rng, false);
+    }
+
+    /**
+     * One entry of the top-level draw: a contents on its own, or every pooled group parent of one
+     * {@link CarriageContentsPools pool} sharing the pool's slot.
+     */
+    private record Slot(CarriageContentsPools.Pool pool, List<CarriageContents> members) {
+        int weight(CarriageContentsWeights weights, int carriageIndex) {
+            if (pool != null) return pool.weight();
+            String id = members.get(0).id();
+            return LiveTvWeighting.contentsWeight(id, weights.weightFor(id), carriageIndex);
+        }
+    }
+
+    /** {@code effective} as draw slots, in order, with each pool's members folded into its first one's place. */
+    private static List<Slot> slotsOf(List<CarriageContents> effective) {
+        List<Slot> slots = new ArrayList<>(effective.size());
+        java.util.Map<String, List<CarriageContents>> pooled = new java.util.HashMap<>();
+        for (CarriageContents c : effective) {
+            CarriageContentsPools.Pool pool = CarriageContentsPools.poolOf(c.id());
+            if (pool == null) {
+                slots.add(new Slot(null, List.of(c)));
+                continue;
+            }
+            List<CarriageContents> members = pooled.get(pool.id());
+            if (members == null) {
+                members = new ArrayList<>();
+                pooled.put(pool.id(), members);
+                slots.add(new Slot(pool, members));
+            }
+            members.add(c);
+        }
+        return slots;
+    }
+
+    /**
+     * The pooled group parent a won pool slot resolves to: drawn in proportion to the weight each can offer
+     * here, which is exactly the pool {@link #resolveGroup} will draw from for it. That makes a room's chance
+     * the same as if every pooled group were one group.
+     */
+    private static CarriageContents pickPooled(List<CarriageContents> members, GateContext gateCtx,
+                                               int carriageIndex, Random rng) {
+        int[] offered = new int[members.size()];
+        for (int i = 0; i < offered.length; i++) {
+            offered[i] = offeredWeight(members.get(i).id(), gateCtx, carriageIndex);
+        }
+        return members.get(CarriageContentsPools.pickMember(offered, rng));
+    }
+
+    /** Total weight of the pool {@link #resolveGroup} would draw from for {@code parentId} here. */
+    private static int offeredWeight(String parentId, GateContext gateCtx, int carriageIndex) {
+        Optional<CarriageContentsGroup> groupOpt = CarriageContentsGroupStore.get(parentId);
+        if (groupOpt.isEmpty() || groupOpt.get().isEmpty()) {
+            return groupWeight(parentId, CarriageContentsWeights.current().weightFor(parentId), carriageIndex);
+        }
+        CarriageContentsGroup group = groupOpt.get();
+        int total = groupWeight(parentId, group.selfWeight(), carriageIndex);
+        for (CarriageContentsGroup.Member m : eligibleMembers(group, gateCtx)) {
+            total += groupWeight(m.id(), m.weight(), carriageIndex);
+        }
+        return total;
+    }
+
+    /** The members of {@code group} whose own gates admit {@code gateCtx} (all of them without one). */
+    private static List<CarriageContentsGroup.Member> eligibleMembers(CarriageContentsGroup group, GateContext gateCtx) {
+        if (gateCtx == null) return group.members();
+        List<CarriageContentsGroup.Member> gated = new ArrayList<>(group.members().size());
+        for (CarriageContentsGroup.Member m : group.members()) {
+            if (memberAllows(gateCtx, m)) gated.add(m);
+        }
+        return gated;
     }
 
     /**
@@ -429,17 +502,8 @@ public final class CarriageContentsRegistry {
         // Members eligible for the current spawn context — the per-member gate (or its linked Stage's
         // gate) filters here. Strict: an emptied member pool falls through to self-only, never the
         // ungated list (see method doc).
-        List<CarriageContentsGroup.Member> members = group.members();
-        if (gateCtx != null) {
-            List<CarriageContentsGroup.Member> gated = new ArrayList<>(members.size());
-            for (CarriageContentsGroup.Member m : members) {
-                if (memberAllows(gateCtx, m)) {
-                    gated.add(m);
-                }
-            }
-            if (members.size() != gated.size() && gated.isEmpty()) warnGroupGateEmptyOnce(picked.id());
-            members = gated;
-        }
+        List<CarriageContentsGroup.Member> members = eligibleMembers(group, gateCtx);
+        if (members.isEmpty() && !group.members().isEmpty()) warnGroupGateEmptyOnce(picked.id());
 
         // Pool: synthetic self + every eligible member, no allow-list filter.
         // Self-weight is read from the group sidecar (defaults to
@@ -584,6 +648,7 @@ public final class CarriageContentsRegistry {
 
     /** Reload custom contents from the bundled classpath scan + the per-install config dir. */
     public static synchronized void reload() {
+        CarriageContentsPools.clearCache();
         CUSTOMS.clear();
         customsChanged();
         int bundled = loadBundledScan();
