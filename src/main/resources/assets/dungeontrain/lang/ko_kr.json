@@ -5520,7 +5520,7 @@
   "chat.dungeontrain.custom_content.dev_ignored": "사용자 지정 열차 콘텐츠가 켜진 채로 이 플레이는 계속 기록됩니다 (개발 빌드).",
   "chat.dungeontrain.lucky_loot.bonus": "행운! 이 상자에 추가 아이템 %s개가 나타났습니다.",
   "chat.dungeontrain.lucky_loot.vase_bonus": "행운! 이 항아리에서 추가 아이템 1개가 나왔습니다.",
-  "chat.dungeontrain.lucky_loot.vault_bonus": "행운! 이 금고에서 두 배의 보상이 나왔습니다.",
+  "chat.dungeontrain.lucky_loot.vault_bonus": "행운! 이 금고에서 추가 아이템 %s개가 나왔습니다.",
   "gui.dungeontrain.custom_content.title": "사용자 지정 열차 콘텐츠",
   "gui.dungeontrain.custom_content.card.custom.name": "사용자 지정 열차",
   "gui.dungeontrain.custom_content.card.custom.tag": "자유 플레이",

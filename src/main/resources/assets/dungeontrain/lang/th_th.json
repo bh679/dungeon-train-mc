@@ -5520,7 +5520,7 @@
   "chat.dungeontrain.custom_content.dev_ignored": "เนื้อหาขบวนรถแบบกำหนดเองยังเปิดอยู่ และรอบนี้ยังนับผลอยู่ (บิลด์นักพัฒนา)",
   "chat.dungeontrain.lucky_loot.bonus": "โชคดี! มีไอเทมเพิ่มอีก %s ชิ้นโผล่มาในหีบนี้",
   "chat.dungeontrain.lucky_loot.vase_bonus": "โชคดี! มีไอเทมเพิ่มอีกชิ้นหล่นออกมาจากแจกันนี้",
-  "chat.dungeontrain.lucky_loot.vault_bonus": "โชคดี! กรงนิรภัยนี้ให้ของคุณเป็นสองเท่า",
+  "chat.dungeontrain.lucky_loot.vault_bonus": "โชคดี! กรงนิรภัยนี้ให้ไอเทมเพิ่มแก่คุณ %s ชิ้น",
   "gui.dungeontrain.custom_content.title": "เนื้อหาขบวนรถแบบกำหนดเอง",
   "gui.dungeontrain.custom_content.card.custom.name": "ขบวนรถแบบกำหนดเอง",
   "gui.dungeontrain.custom_content.card.custom.tag": "โหมดเล่นอิสระ",

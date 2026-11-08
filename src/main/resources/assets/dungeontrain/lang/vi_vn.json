@@ -5520,7 +5520,7 @@
   "chat.dungeontrain.custom_content.dev_ignored": "Nội dung đoàn tàu tùy chỉnh vẫn bật và lượt chơi này vẫn được tính (bản dev).",
   "chat.dungeontrain.lucky_loot.bonus": "May mắn! Có thêm %s vật phẩm xuất hiện trong rương này.",
   "chat.dungeontrain.lucky_loot.vase_bonus": "May mắn! Có thêm một vật phẩm rơi ra từ chiếc bình này.",
-  "chat.dungeontrain.lucky_loot.vault_bonus": "May mắn! Hòm báu vật này đã cho bạn gấp đôi.",
+  "chat.dungeontrain.lucky_loot.vault_bonus": "May mắn! Hòm báu vật này đã cho bạn thêm %s vật phẩm.",
   "gui.dungeontrain.custom_content.title": "Nội dung đoàn tàu tùy chỉnh",
   "gui.dungeontrain.custom_content.card.custom.name": "Đoàn tàu tùy chỉnh",
   "gui.dungeontrain.custom_content.card.custom.tag": "Chơi Tự Do",

@@ -150,11 +150,15 @@ public final class LuckyBonusRoller {
     }
 
     /**
-     * How many reward rolls a player unlocking a vault gets: two with any Luck at all (double the
-     * drops, each roll its own), one otherwise (Bad Luck never removes items).
+     * How many of a vault's extra reward roll ({@code extraRolled} items) a player unlocking it keeps:
+     * all of it with Luck II and up (double the drops), half with Luck I (1.5x; an odd count rounds
+     * up on a coin flip so the average stays exact), none otherwise (Bad Luck never removes items).
      */
-    public static int vaultRollsFor(float luck) {
-        return luck > 0f ? 2 : 1;
+    public static int vaultExtraCount(float luck, int extraRolled, RandomSource random) {
+        if (luck <= 0f || extraRolled <= 0) return 0;
+        if (luck >= LUCK_II_THRESHOLD) return extraRolled;
+        int half = extraRolled / 2;
+        return extraRolled % 2 == 1 && random.nextBoolean() ? half + 1 : half;
     }
 
     /**

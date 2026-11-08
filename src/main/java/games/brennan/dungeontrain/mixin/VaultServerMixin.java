@@ -29,13 +29,13 @@ import java.util.List;
  * A vault that carries a DT loot pool ({@link VaultLoot}) rewards from that pool, rolled for the
  * player unlocking it, and shows the pool's items spinning inside. A vault without one is left to
  * vanilla's loot table. Either way the reward's stats get the vault's boost ({@link VaultStatBoost}),
- * and a player with Luck gets a second roll on top ({@link LuckyBonusRoller#vaultRollsFor}).
+ * and a player with Luck gets some or all of a second roll on top ({@link LuckyBonusRoller#vaultExtraCount}).
  * Everything else (the key check, taking the key, remembering who has been rewarded) stays vanilla.
  */
 @Mixin(VaultBlockEntity.Server.class)
 public abstract class VaultServerMixin {
 
-    /** Action-bar line shown when Luck doubles a vault's reward. */
+    /** Action-bar line shown when Luck adds to a vault's reward; {@code %s} = items added. */
     private static final String MSG_VAULT_BONUS = "chat.dungeontrain.lucky_loot.vault_bonus";
 
     @Shadow
@@ -72,20 +72,20 @@ public abstract class VaultServerMixin {
     }
 
     /**
-     * {@code rewards} plus one more roll per extra {@link LuckyBonusRoller#vaultRollsFor} grants: the
-     * vault's pool rolled again on a pass of its own, or vanilla's loot table rolled again.
+     * {@code rewards} plus what Luck keeps of one more roll ({@link LuckyBonusRoller#vaultExtraCount}):
+     * the vault's pool rolled again on a pass of its own, or vanilla's loot table rolled again.
      */
     private static List<ItemStack> withLuckyRolls(List<ItemStack> rewards, ServerLevel level, VaultConfig config,
                                                   BlockPos pos, Player player) {
-        int rolls = LuckyBonusRoller.vaultRollsFor(player.getLuck());
-        if (rolls <= 1 || rewards.isEmpty()) return rewards;
+        if (player.getLuck() <= 0f || rewards.isEmpty()) return rewards;
+        List<ItemStack> extra = VaultLoot.rollForPlayer(level.getBlockEntity(pos), player.getUUID(),
+                level.registryAccess(), 1)
+            .orElseGet(() -> resolveItemsToEject(level, config, pos, player));
+        int kept = LuckyBonusRoller.vaultExtraCount(player.getLuck(), extra.size(), level.getRandom());
+        if (kept <= 0) return rewards;
         List<ItemStack> all = new ArrayList<>(rewards);
-        for (int pass = 1; pass < rolls; pass++) {
-            int p = pass;
-            all.addAll(VaultLoot.rollForPlayer(level.getBlockEntity(pos), player.getUUID(), level.registryAccess(), p)
-                .orElseGet(() -> resolveItemsToEject(level, config, pos, player)));
-        }
-        player.displayClientMessage(Component.translatable(MSG_VAULT_BONUS), true);
+        all.addAll(extra.subList(0, kept));
+        player.displayClientMessage(Component.translatable(MSG_VAULT_BONUS, kept), true);
         return List.copyOf(all);
     }
 

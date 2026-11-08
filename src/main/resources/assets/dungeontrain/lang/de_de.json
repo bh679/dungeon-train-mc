@@ -5586,7 +5586,7 @@
   "chat.dungeontrain.custom_content.dev_ignored": "Eigene Zuginhalte bleiben eingeschaltet und diese Partie wird trotzdem gewertet (Dev-Build).",
   "chat.dungeontrain.lucky_loot.bonus": "Glück gehabt! %s Gegenstand/Gegenstände extra in dieser Truhe.",
   "chat.dungeontrain.lucky_loot.vase_bonus": "Glück gehabt! Aus dieser Vase ist ein zusätzlicher Gegenstand gefallen.",
-  "chat.dungeontrain.lucky_loot.vault_bonus": "Glück gehabt! Dieser Tresor hat dir doppelt so viel gegeben.",
+  "chat.dungeontrain.lucky_loot.vault_bonus": "Glück gehabt! %s Gegenstand/Gegenstände extra aus diesem Tresor.",
   "gui.dungeontrain.custom_content.title": "Eigene Zuginhalte",
   "gui.dungeontrain.custom_content.card.custom.name": "Eigener Zug",
   "gui.dungeontrain.custom_content.card.custom.tag": "Freies Spiel",

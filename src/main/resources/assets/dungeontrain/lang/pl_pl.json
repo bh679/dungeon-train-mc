@@ -5652,7 +5652,7 @@
   "chat.dungeontrain.custom_content.dev_ignored": "Własne treści pociągu pozostają włączone, a ta rozgrywka nadal się liczy (wersja deweloperska).",
   "chat.dungeontrain.lucky_loot.bonus": "Szczęście! W tej skrzyni pojawiło się %s dodatkowych przedmiotów.",
   "chat.dungeontrain.lucky_loot.vase_bonus": "Szczęście! Z tej wazy wypadł dodatkowy przedmiot.",
-  "chat.dungeontrain.lucky_loot.vault_bonus": "Szczęście! Ten skarbiec dał ci podwójnie.",
+  "chat.dungeontrain.lucky_loot.vault_bonus": "Szczęście! Ten skarbiec dał ci dodatkowe przedmioty: %s.",
   "gui.dungeontrain.custom_content.title": "Własne treści pociągu",
   "gui.dungeontrain.custom_content.card.custom.name": "Własny pociąg",
   "gui.dungeontrain.custom_content.card.custom.tag": "Swobodna Gra",

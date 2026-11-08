@@ -228,7 +228,7 @@ public final class VaultLoot {
 
     /**
      * Roll number {@code pass} of {@code player}'s reward: pass 0 is the reward itself, a later pass
-     * is a Luck extra ({@link LuckyBonusRoller#vaultRollsFor}). Each pass is its own fixed roll.
+     * is a Luck extra ({@link LuckyBonusRoller#vaultExtraCount}). Each pass is its own fixed roll.
      */
     public static Optional<List<ItemStack>> rollForPlayer(BlockEntity be, UUID player,
                                                           HolderLookup.Provider registries, int pass) {
