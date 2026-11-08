@@ -16,6 +16,9 @@ import net.neoforged.api.distmarker.OnlyIn;
  * filled yet; {@link Look#AVAILABLE} a gold outline, a hovered perk that could be unlocked once
  * selected; {@link Look#BLOCKED} grey, it can't be unlocked (the bar says why for the selected perk).
  * While a perk's points aren't filled the whole tab draws small, whichever look it has.
+ *
+ * <p>In play, where unlock points are not spent, the same tab is Activate ({@link #activate}): the badge
+ * is the point it puts in, the cost is in Cosmic Apples.</p>
  */
 @OnlyIn(Dist.CLIENT)
 final class UnlockTab extends Button {
@@ -31,15 +34,19 @@ final class UnlockTab extends Button {
 
     private final int level;
     private final String cost;
+    /** Paid in Cosmic Apples (Activate), not Advancement Points. */
+    private final boolean apple;
     /** The width it draws at before {@link #scale}. */
     private final int fullW;
     private final float scale;
     private Look look = Look.READY;
 
-    private UnlockTab(int x, int y, int w, int h, int fullW, float scale, Component label, int level, int cost, OnPress onPress) {
+    private UnlockTab(int x, int y, int w, int h, int fullW, float scale, Component label, int level, int cost, boolean apple,
+                      OnPress onPress) {
         super(x, y, w, h, label, onPress, DEFAULT_NARRATION);
         this.level = level;
         this.cost = Integer.toString(cost);
+        this.apple = apple;
         this.fullW = fullW;
         this.scale = scale;
     }
@@ -49,10 +56,20 @@ final class UnlockTab extends Button {
      * {@code small} shrinks it, hit box and all.
      */
     static UnlockTab centred(Font font, int centreX, int barTop, Component label, int level, int cost, boolean small, OnPress onPress) {
+        return centred(font, centreX, barTop, label, level, cost, small, false, onPress);
+    }
+
+    /** The tab as Activate: putting in point {@code point} for {@code cost} Cosmic Apples. */
+    static UnlockTab activate(Font font, int centreX, int barTop, Component label, int point, int cost, OnPress onPress) {
+        return centred(font, centreX, barTop, label, point, cost, false, true, onPress);
+    }
+
+    private static UnlockTab centred(Font font, int centreX, int barTop, Component label, int level, int cost, boolean small,
+                                     boolean apple, OnPress onPress) {
         int fullW = leftWidth(font, label, level) + costWidth(font, Integer.toString(cost));
         float scale = small ? SMALL_SCALE : 1F;
         int w = (int) Math.ceil(fullW * scale), h = (int) Math.ceil(H * scale);
-        return new UnlockTab(centreX - w / 2, barTop - h, w, h, fullW, scale, label, level, cost, onPress);
+        return new UnlockTab(centreX - w / 2, barTop - h, w, h, fullW, scale, label, level, cost, apple, onPress);
     }
 
     /** Sets how it looks; {@link Look#READY} and {@link Look#UNFILLED} can be pressed. */
@@ -109,10 +126,18 @@ final class UnlockTab extends Button {
         g.drawString(font, getMessage(), tx, ty, argb(a, ink), false);
         // cost: the coin and the number, light on dark
         int cx = split + COST_PAD, iy = y + 1 + (H - 1 - ICON) / 2;
-        g.setColor(1F, 1F, 1F, alpha * (on ? 1F : 0.5F));
-        g.blit(PerkCounters.ADVANCEMENT_ICON, cx, iy, ICON, ICON, 0, 0, PerkCounters.ICON_TEX, PerkCounters.ICON_TEX,
-            PerkCounters.ICON_TEX, PerkCounters.ICON_TEX);
-        g.setColor(1F, 1F, 1F, 1F);
+        if (apple) {
+            g.pose().pushPose();
+            g.pose().translate(cx, iy, 0);
+            g.pose().scale(ICON / 16F, ICON / 16F, 1F);
+            g.renderItem(new net.minecraft.world.item.ItemStack(games.brennan.dungeontrain.registry.ModItems.COSMIC_APPLE.get()), 0, 0);
+            g.pose().popPose();
+        } else {
+            g.setColor(1F, 1F, 1F, alpha * (on ? 1F : 0.5F));
+            g.blit(PerkCounters.ADVANCEMENT_ICON, cx, iy, ICON, ICON, 0, 0, PerkCounters.ICON_TEX, PerkCounters.ICON_TEX,
+                PerkCounters.ICON_TEX, PerkCounters.ICON_TEX);
+            g.setColor(1F, 1F, 1F, 1F);
+        }
         g.drawString(font, cost, cx + ICON + ICON_GAP, ty, argb(a, on ? EDGE : OFF_TEXT), false);
     }
 

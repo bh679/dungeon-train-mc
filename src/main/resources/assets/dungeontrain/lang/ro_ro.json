@@ -5632,7 +5632,7 @@
   "item.dungeontrain.violet_core.tooltip": "Mănâncă-l pentru 10 puncte de atu. Cheltuie-le înainte să mori.",
   "chat.dungeontrain.perks.active_gained": "Ai mâncat: %1$s. Puncte de atu pentru viața asta: %3$s (+%2$s).",
   "chat.dungeontrain.perks.ready_to_spend": "Ai %s puncte de atu de cheltuit.",
-  "chat.dungeontrain.perks.unlock_gained": "+%s puncte de progres (%s necheltuite).",
+  "chat.dungeontrain.perks.unlock_gained": "+%s puncte de progres. Cheltuiește-le după moarte.",
   "gui.dungeontrain.advancements.points": "Puncte de progres",
   "gui.dungeontrain.perks.title": "Avantaje",
   "key.dungeontrain.perks": "Deschide avantajele",

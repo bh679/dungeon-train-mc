@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.perks.PerkSpend;
 import games.brennan.dungeontrain.perks.PerkTreeLoader;
 import games.brennan.dungeontrain.perks.PerkUnlocks;
 import games.brennan.dungeontrain.perks.Perks;
+import games.brennan.dungeontrain.portal.tribute.TributeRoomVisitSessions;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -22,7 +23,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * Client → server: unlock a perk with unlock points. The server is the judge: the id must be in the
  * tree and the registry, reachable under {@link PerkTree#reachable} (first unlock only), under the
  * spent-gated level limit ({@link PerkUnlocks}), and affordable. An unlocked perk unlocks again to hold
- * one more point.
+ * one more point. Unlocking happens after death only: while dead, or standing in the tribute room the
+ * death menu carries on in ({@link #afterDeath}); in play the menu only activates.
  * A refusal answers with {@link PerkRefusedPacket} plus a fresh state and balance sync so a stale
  * client corrects itself. Free Play buys like everyone else.
  */
@@ -61,6 +63,9 @@ public record PerkUnlockPacket(String perkId) implements CustomPacketPayload {
 
     /** The refusal lang key, or null when the unlock may go ahead. Package-visible for tests. */
     static String refusal(ServerPlayer player, String id) {
+        if (!afterDeath(player.isDeadOrDying(), TributeRoomVisitSessions.isVisiting(player.getUUID()))) {
+            return "gui.dungeontrain.perks.death.unlock_hint";
+        }
         PerkTree tree = PerkTreeLoader.get();
         PerkTree.Perk perk = tree.perk(id).orElse(null);
         if (perk == null || perk.isRoot()) return "gui.dungeontrain.perks.refused.unknown";
@@ -73,5 +78,13 @@ public record PerkUnlockPacket(String perkId) implements CustomPacketPayload {
         }
         if (PerkPoints.unlockAvailable(player) < perk.unlockCost()) return "gui.dungeontrain.perks.refused.points";
         return null;
+    }
+
+    /**
+     * Whether unlock points can be spent now: dead, or respawned into the tribute room while the death
+     * menu still shows on its TV. Package-visible for tests.
+     */
+    static boolean afterDeath(boolean dead, boolean visitingTributeRoom) {
+        return dead || visitingTributeRoom;
     }
 }

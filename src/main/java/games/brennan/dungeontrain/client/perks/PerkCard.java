@@ -40,6 +40,8 @@ final class PerkCard {
     private PerkTree.Perk perk;
     private int x, y, w, h;
     private List<Line> body = List.of();
+    /** The menu in play: no unlock costs; unlock points are spent after death. */
+    private boolean activeOnly;
     private int dividerAt;
     private String refusalKey;
     private long refusedAt;
@@ -150,8 +152,13 @@ final class PerkCard {
         g.pose().popPose();
     }
 
+    void activeOnly(boolean on) {
+        activeOnly = on;
+    }
+
     /** Where the perk stands and what a click does (web {@code testControls}). Hints carry no colour. */
     List<Component> testLines(PerkTree.Perk p, PerkMenuSnapshot snap) {
+        // in play unlock points are hidden: no cost or what-a-click-unlocks lines (they are spent after death)
         List<Component> out = new ArrayList<>();
         if (p.isRoot()) {
             out.add(state(Component.translatable(KEY + "always_active")));
@@ -163,6 +170,7 @@ final class PerkCard {
         if (level <= 0) {
             out.add(state(Component.translatable(KEY + "locked", p.tier(), ap(cost))));
             if (!PerkRegistry.isBuilt(p.id())) out.add(Component.translatable("gui.dungeontrain.perks.not_built"));
+            else if (activeOnly) return out;
             else if (!tree.reachableNow(p.id(), snap::isUnlocked)) out.add(Component.translatable(KEY + "needs_path"));
             else if (snap.unlockPoints() < cost) out.add(Component.translatable(KEY + "you_hold", snap.unlockPoints()));
             else out.add(Component.translatable(KEY + "click_unlock"));
@@ -176,6 +184,7 @@ final class PerkCard {
                 : Component.translatable(KEY + "click_add", next));
             return out;
         }
+        if (activeOnly) return out;
         int spent = snap.unlockSpent(tree);
         if (!PerkUnlocks.allowed(level + 1, spent)) {
             out.add(Component.translatable(KEY + "gate", ap(PerkUnlocks.spentNeeded(level + 1) - spent), PerkUnlocks.levelLimit(spent)));

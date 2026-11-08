@@ -5632,7 +5632,7 @@
   "item.dungeontrain.violet_core.tooltip": "Zjedz, by dostać 10 punktów atutu. Wydaj je, zanim zginiesz.",
   "chat.dungeontrain.perks.active_gained": "Zjedzono: %1$s. Punkty atutu w tym życiu: %3$s (+%2$s).",
   "chat.dungeontrain.perks.ready_to_spend": "Masz %s punktów atutu do wydania.",
-  "chat.dungeontrain.perks.unlock_gained": "+%s punktów postępu (%s niewydanych).",
+  "chat.dungeontrain.perks.unlock_gained": "+%s punktów postępu. Wydasz je po śmierci.",
   "gui.dungeontrain.advancements.points": "Punkty postępu",
   "gui.dungeontrain.perks.title": "Perki",
   "key.dungeontrain.perks": "Otwórz perki",

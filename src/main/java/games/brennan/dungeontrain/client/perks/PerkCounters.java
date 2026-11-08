@@ -36,6 +36,8 @@ final class PerkCounters {
     private final long[] shookAt = {-1, -1};
     /** The death screen's menu: the Advancement Points counter alone. */
     private boolean unlockOnly;
+    /** The menu in play: the Active Points counter alone; unlock points are spent after death. */
+    private boolean activeOnly;
 
     PerkCounters(Font font) {
         this.font = font;
@@ -45,8 +47,12 @@ final class PerkCounters {
         unlockOnly = on;
     }
 
+    void activeOnly(boolean on) {
+        activeOnly = on;
+    }
+
     private boolean shown(Kind k) {
-        return k == Kind.UNLOCK || !unlockOnly;
+        return k == Kind.UNLOCK ? !activeOnly : !unlockOnly;
     }
 
     void shake(Kind k, long now) {
