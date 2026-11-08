@@ -1,8 +1,8 @@
 {
   "schemaVersion": 9,
   "variants": {
-    "3,4,1": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "creeperoverhaul:swamp_creeper", "difficulty": {"min": 8, "max": "all"}}],
-    "3,4,3": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "creeperoverhaul:swamp_creeper", "difficulty": {"min": 13, "max": "all"}}],
-    "4,4,2": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "creeperoverhaul:swamp_creeper", "difficulty": {"min": 18, "max": "all"}}]
+    "3,4,1": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "creeperoverhaul:swamp_creeper", "difficulty": {"min": 6, "max": "all"}}],
+    "3,4,3": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "creeperoverhaul:swamp_creeper", "difficulty": {"min": 11, "max": "all"}}],
+    "4,4,2": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "creeperoverhaul:swamp_creeper", "difficulty": {"min": 16, "max": "all"}}]
   }
 }
