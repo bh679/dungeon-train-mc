@@ -34237,6 +34237,42 @@
       "released": true,
       "released_in": "v0.1722.0",
       "released_at": "2026-11-07T17:19:12Z"
+    },
+    {
+      "id": "wwoo-disk-test-memo",
+      "version": "0.1723.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Faster world generation",
+      "summary": "Some regions of the world generate noticeably faster, with exactly the same terrain.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2556,
+      "date": "2026-11-07",
+      "released": true,
+      "released_in": "v0.1724.0",
+      "released_at": "2026-11-08T04:35:30Z"
+    },
+    {
+      "id": "backpack-shift-click-equips-armour",
+      "version": "0.1724.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Backpack armour shift-click",
+      "summary": "Shift-clicking armour or a shield in a backpack slot now puts it on when that slot is empty.",
+      "highlights": [],
+      "date": "2026-11-08",
+      "released": true,
+      "released_in": "v0.1724.0",
+      "released_at": "2026-11-08T04:35:30Z"
     }
   ]
 }
