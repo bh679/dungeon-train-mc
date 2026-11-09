@@ -5,6 +5,7 @@ import games.brennan.adventureitemnames.api.NameComposer;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
+import games.brennan.dungeontrain.difficulty.NewJobMendingBlock;
 import games.brennan.dungeontrain.difficulty.ProceduralTiers;
 import games.brennan.dungeontrain.difficulty.TradeGearScaler;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
@@ -188,6 +189,13 @@ public final class VillagerTrainSpawnEvents {
         for (MerchantOffer offer : offers) {
             scaled.add(TradeGearScaler.scale(offer, carriageIndex, posTier,
                 villager.getRandom(), serverLevel.registryAccess()));
+        }
+        // Only a librarian the train spawns may sell Mending. A roll on reload is a villager
+        // that took its job in play (or claimed a placed lectern), so its Mending books go.
+        if (event.loadedFromDisk()) {
+            NewJobMendingBlock.replaceMendingBooks(villager, scaled, 0);
+        } else {
+            villager.addTag(NewJobMendingBlock.MENDING_OK_TAG);
         }
         villager.setOffers(scaled);
         villager.addTag(REROLLED_TAG);
