@@ -230,6 +230,13 @@ public final class CarriageContentsPlacer {
     }
 
     /**
+     * How far outside its interior a contents template's variant conditions may look: the one-block
+     * ring that is the carriage's own floor, walls and ceiling. The shell is stamped first, so an edge
+     * cell's touching condition reads the carriage it sits in rather than air.
+     */
+    static final int CARRIAGE_RING = 1;
+
+    /**
      * Stamp the interior contents for {@code contents} at the given carriage
      * {@code carriageOrigin} (shell's min corner). Only places blocks inside
      * the interior volume — the shell's floor/walls/ceiling placed by
@@ -278,7 +285,7 @@ public final class CarriageContentsPlacer {
             Flip flip = carriageFlip(contents, seed, carriageIndex);
             placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ true, mask);
             applyVariantBlocks(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-                contents, seed, carriageIndex, mask, flip);
+                contents, seed, carriageIndex, mask, flip, CARRIAGE_RING);
             applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
                 contents, seed, carriageIndex, mask, flip);
             applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
@@ -390,7 +397,7 @@ public final class CarriageContentsPlacer {
             Flip flip = carriageFlip(contents, seed, carriageIndex);
             placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false, mask);
             applyVariantBlocks(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-                contents, seed, carriageIndex, mask, flip);
+                contents, seed, carriageIndex, mask, flip, CARRIAGE_RING);
             applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
                 contents, seed, carriageIndex, mask, flip);
             applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
@@ -436,7 +443,7 @@ public final class CarriageContentsPlacer {
         CarriageStampGuard.run(() -> {
             stampTemplateBlocks(level, anchor, stored.get(), safeMask, flip);
             clearBakedNarrativeLecternBooks(level, anchor, box);
-            applyVariantBlocks(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
+            applyVariantBlocks(level, anchor, box, contents, seed, carriageIndex, safeMask, flip, /*ring*/ 0);
             applyContentPools(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
             games.brennan.dungeontrain.compat.photo.RandomFramePhotos.resolveIn(level, anchor, box, seed, carriageIndex,
                 safeMask, flip);
@@ -626,12 +633,14 @@ public final class CarriageContentsPlacer {
      * <p>Takes the interior {@code origin} and {@code size} outright rather than re-deriving them
      * from a carriage, because the portal-room path anchors the same template somewhere that is not
      * {@code carriageOrigin.offset(1,1,1)} — see {@code placeBlocksAt}. {@code mask} is the volume
-     * this pass must not write into, {@link PortalCorridorMask#NONE} for a carriage.</p>
+     * this pass must not write into, {@link PortalCorridorMask#NONE} for a carriage. {@code ring} is how
+     * far past the box a touching condition may read the world: {@link #CARRIAGE_RING} for a carriage,
+     * 0 in a portal room, whose surroundings are not a shell stamped first.</p>
      */
     private static void applyVariantBlocks(ServerLevel level, BlockPos origin, Vec3i size,
                                             CarriageContents contents,
                                             long seed, int carriageIndex,
-                                            PortalCorridorMask mask, Flip flip) {
+                                            PortalCorridorMask mask, Flip flip, int ring) {
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
         VariantDoc sidecar = CarriageContentsVariantBlocks.loadFor(contents, size);
         if (sidecar.isEmpty()) return;
@@ -649,7 +658,7 @@ public final class CarriageContentsPlacer {
         try (ConnectPass.Scope ignored = ConnectPass.open();
              GrowthPass.Scope grown = GrowthPass.open();
              VariantConditions.Scope conds = VariantConditions.open(
-                 VariantConditions.stamped(level, p -> origin.offset(ContentsFlip.mapLocal(p, size, flip)), size),
+                 VariantConditions.stamped(level, p -> origin.offset(ContentsFlip.mapLocal(p, size, flip)), size, ring),
                  filterByDifficulty ? states -> CarriageContentsVariantBlocks.inBand(states, diffTier)
                      : java.util.function.UnaryOperator.identity())) {
             for (var entry : sidecar.entries()) {
@@ -1496,7 +1505,8 @@ public final class CarriageContentsPlacer {
         int diffTier = DifficultyProgression.positionTier(carriagePIdx);
         int spawned = 0;
         try (VariantConditions.Scope conds = VariantConditions.open(
-                 VariantConditions.stamped(level, p -> origin.offset(ContentsFlip.mapLocal(p, size, flip)), size),
+                 VariantConditions.stamped(level, p -> origin.offset(ContentsFlip.mapLocal(p, size, flip)), size,
+                     CARRIAGE_RING),
                  states -> CarriageContentsVariantBlocks.inBand(states, diffTier))) {
             for (var entry : sidecar.entries()) {
                 VariantState picked = sidecar.resolve(entry.localPos(), seed, carriagePIdx, diffTier);
