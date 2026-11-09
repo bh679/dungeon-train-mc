@@ -8,6 +8,7 @@
       "minLevel": 6,
       "phases": [
         "OVERWORLD",
+        "NETHER",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -31,6 +32,7 @@
       "minLevel": 7,
       "phases": [
         "OVERWORLD",
+        "NETHER",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -54,6 +56,7 @@
       "minLevel": 6,
       "phases": [
         "OVERWORLD",
+        "NETHER",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -77,6 +80,7 @@
       "minLevel": 4,
       "phases": [
         "OVERWORLD",
+        "NETHER",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -100,6 +104,7 @@
       "minLevel": 4,
       "phases": [
         "OVERWORLD",
+        "NETHER",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -123,6 +128,7 @@
       "minLevel": 9,
       "phases": [
         "OVERWORLD",
+        "NETHER",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -146,6 +152,7 @@
       "minLevel": 13,
       "phases": [
         "OVERWORLD",
+        "NETHER",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -169,6 +176,7 @@
       "minLevel": 7,
       "phases": [
         "OVERWORLD",
+        "NETHER",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -192,6 +200,7 @@
       "minLevel": 5,
       "phases": [
         "OVERWORLD",
+        "NETHER",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -215,6 +224,7 @@
       "minLevel": 9,
       "phases": [
         "OVERWORLD",
+        "NETHER",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -261,6 +271,7 @@
       "minLevel": 10,
       "phases": [
         "OVERWORLD",
+        "NETHER",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -336,6 +347,7 @@
       "minLevel": 4,
       "phases": [
         "OVERWORLD",
+        "NETHER",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
