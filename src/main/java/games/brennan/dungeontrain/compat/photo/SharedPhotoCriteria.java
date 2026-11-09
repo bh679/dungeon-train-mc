@@ -16,6 +16,7 @@ import java.util.List;
  * subsets of Most Wanted, each criterion named for the mob and keyed on the same subject, so a new
  * shot already ticks every list it is in. A tick earned before a list gained that mob (the Luminous
  * Monsters variants), or restored onto one list from another world, is copied across by name here.
+ * A copied tick brings no photo; the album borrows Most Wanted's ({@code EarnedPhotos#visibleEntries}).
  */
 final class SharedPhotoCriteria {
 
@@ -29,22 +30,28 @@ final class SharedPhotoCriteria {
 
     /** Login: bring every list in the group level with the others. */
     static void shareAll(ServerPlayer player) {
-        for (AdvancementHolder holder : members(player)) share(player, holder);
+        for (AdvancementHolder holder : members(player)) {
+            AdvancementProgress progress = player.getAdvancements().getOrStartProgress(holder);
+            List<String> held = new ArrayList<>();
+            for (String criterion : progress.getCompletedCriteria()) held.add(criterion);
+            for (String criterion : held) copy(player, holder, criterion);
+        }
     }
 
-    /** Copy {@code from}'s ticked mobs onto the other lists in the group that name them. */
-    static void share(ServerPlayer player, AdvancementHolder from) {
-        if (!inGroup(from.id())) return;
-        AdvancementProgress progress = player.getAdvancements().getOrStartProgress(from);
-        List<String> held = new ArrayList<>();
-        for (String criterion : progress.getCompletedCriteria()) held.add(criterion);
-        if (held.isEmpty()) return;
+    /**
+     * {@code criterion} was just ticked on {@code from}: tick it on the other lists in the group that name it.
+     * Only that one: a shot's photo is current while this runs and shows that criterion's mob, so copying
+     * the rest of {@code from}'s ticks here would give each of them this shot's photo.
+     */
+    static void share(ServerPlayer player, AdvancementHolder from, String criterion) {
+        if (inGroup(from.id())) copy(player, from, criterion);
+    }
+
+    private static void copy(ServerPlayer player, AdvancementHolder from, String criterion) {
         for (AdvancementHolder to : members(player)) {
             if (to.id().equals(from.id())) continue;
-            for (String criterion : held) {
-                // award() refuses a criterion the list doesn't name or already holds.
-                if (to.value().criteria().containsKey(criterion)) player.getAdvancements().award(to, criterion);
-            }
+            // award() refuses a criterion the list doesn't name or already holds.
+            if (to.value().criteria().containsKey(criterion)) player.getAdvancements().award(to, criterion);
         }
     }
 

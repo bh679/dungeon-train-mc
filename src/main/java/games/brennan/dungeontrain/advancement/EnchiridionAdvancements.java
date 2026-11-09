@@ -101,6 +101,16 @@ public final class EnchiridionAdvancements {
             PATH_PREFIX + "family_photo", PATH_PREFIX + "skeleton_crew");
 
     /**
+     * Where a collection borrows a mob's photo when its own album has none: Family Photo and Skeleton Crew
+     * are subsets of Most Wanted, and a tick copied across from it ({@code SharedPhotoCriteria}) brings no photo.
+     * {@code null} for every other advancement.
+     */
+    public static String photoFallbackAlbum(String path) {
+        return (PATH_PREFIX + "family_photo").equals(path) || (PATH_PREFIX + "skeleton_crew").equals(path)
+                ? PATH_PREFIX + "most_wanted" : null;
+    }
+
+    /**
      * The photo-count categories' albums ({@code PhotoCounts}): every counted photo is kept, numbered,
      * in one album per category, kept under the category's first tier.
      */

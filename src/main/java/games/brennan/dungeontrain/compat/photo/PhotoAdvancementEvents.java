@@ -189,7 +189,7 @@ public final class PhotoAdvancementEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         AdvancementPhotoCapture.onCriterion(player, event.getAdvancement(), event.getCriterionName());
         PhotoProgressNotice.noteCollection(player, event.getAdvancement());
-        SharedPhotoCriteria.share(player, event.getAdvancement());
+        SharedPhotoCriteria.share(player, event.getAdvancement(), event.getCriterionName());
     }
 
     /** A print a PlayerMob took and tossed to its subject: whoever catches it earned "Candid". */

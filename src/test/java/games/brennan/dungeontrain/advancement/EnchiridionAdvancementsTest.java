@@ -159,6 +159,16 @@ final class EnchiridionAdvancementsTest {
     }
 
     @Test
+    @DisplayName("Family Photo and Skeleton Crew borrow a missing photo from Most Wanted, nothing else does")
+    void photoFallbackAlbums() {
+        assertEquals("enchiridion/most_wanted", EnchiridionAdvancements.photoFallbackAlbum("enchiridion/family_photo"));
+        assertEquals("enchiridion/most_wanted", EnchiridionAdvancements.photoFallbackAlbum("enchiridion/skeleton_crew"));
+        assertNull(EnchiridionAdvancements.photoFallbackAlbum("enchiridion/most_wanted"));
+        assertNull(EnchiridionAdvancements.photoFallbackAlbum("enchiridion/nature_documentary"));
+        assertNull(EnchiridionAdvancements.photoFallbackAlbum(null));
+    }
+
+    @Test
     @DisplayName("the album's biome targets match the tiers' JSON thresholds")
     void biomeTargets() throws IOException {
         for (Map.Entry<String, Integer> t : EnchiridionAdvancements.BIOME_TIER_TARGETS.entrySet()) {
