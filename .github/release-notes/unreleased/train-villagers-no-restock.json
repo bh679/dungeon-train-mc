@@ -1,0 +1,18 @@
+{
+  "id": "train-villagers-no-restock",
+  "version": "0.1740.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "mobs",
+    "loot",
+    "balance"
+  ],
+  "title": "Train villagers no longer restock",
+  "summary": "Villagers on the train keep the stock they start with. Once a trade sells out, it stays sold out.",
+  "highlights": [],
+  "date": "2026-11-09",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
