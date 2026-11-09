@@ -4,6 +4,30 @@
     "weight": 1,
     "optIn": true
   },
+  "biome_creepers": {
+    "weight": 1,
+    "minLevel": 4,
+    "phases": [
+      "OVERWORLD",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "optIn": true,
+    "name": "Biome Creepers"
+  },
   "books": 11,
   "caggedzombs2": 1,
   "cargocontents": 15,
@@ -69,7 +93,7 @@
     "optIn": true
   },
   "enemies_creepers": {
-    "weight": 4,
+    "weight": 2,
     "name": "Creepers"
   },
   "enemies_deeper_dark": {

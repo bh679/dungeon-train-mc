@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "excluded": [
     "2ndlevel",
     "armor",
@@ -31,5 +31,8 @@
     "smelt",
     "traps",
     "upgrade"
+  ],
+  "included": [
+    "biome_creepers"
   ]
 }
