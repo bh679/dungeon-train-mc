@@ -38,6 +38,7 @@
     "LightningBoltVisualOnlyMixin",
     "RegenerationSoftCapMixin",
     "FlowingFluidExternalWaterMixin",
+    "FlowingFluidPortalRoomMixin",
     "AdvancementVisibilityEvaluatorMixin",
     "AdvancementTreeOrderMixin",
     "PlayerAdvancementsRehomeMixin",
