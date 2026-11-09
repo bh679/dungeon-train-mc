@@ -26,6 +26,7 @@ public final class MobEffectOffsets {
     public static final int BABY_OFFSET = 5;
 
     private static final Map<String, Integer> OFFSETS = Map.ofEntries(
+            Map.entry("luminous_monsters:miner_zombie", 0),
             Map.entry("minecraft:bogged", 2),
             Map.entry("minecraft:cave_spider", 2),
             Map.entry("minecraft:pillager", 2),
@@ -34,6 +35,7 @@ public final class MobEffectOffsets {
             Map.entry("luminous_monsters:cherry_zombie", 3),
             Map.entry("luminous_monsters:dark_oak_skeleton", 3),
             Map.entry("luminous_monsters:dark_oak_zombie", 3),
+            Map.entry("luminous_monsters:miner_skeleton", 3),
             Map.entry("luminous_monsters:swamp_skeleton", 3),
             Map.entry("luminous_monsters:swamp_zombie", 3),
             Map.entry("minecraft:creaking", 3),
@@ -62,8 +64,6 @@ public final class MobEffectOffsets {
             Map.entry("luminous_monsters:hollow_skeleton", 5),
             Map.entry("luminous_monsters:icy_skeleton", 5),
             Map.entry("luminous_monsters:icy_zombie", 5),
-            Map.entry("luminous_monsters:miner_skeleton", 5),
-            Map.entry("luminous_monsters:miner_zombie", 5),
             Map.entry("minecraft:creeper", 5),
             Map.entry("creeperoverhaul:birch_creeper", 6),
             Map.entry("creeperoverhaul:jungle_creeper", 6),
