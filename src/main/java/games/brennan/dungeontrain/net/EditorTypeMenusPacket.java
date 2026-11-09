@@ -229,11 +229,11 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         }
 
         /**
-         * Copy as a member of contents pool {@code poolId}: no gate cells (a pooled group's chance is set by
-         * its weight inside the pool's slot), drawn indented under the pool's header row.
+         * Copy as a member of contents pool {@code poolId}, drawn indented under the pool's header row. It keeps
+         * its gate and Stage cells: a group its gate shuts out drops out of the pool's slot there.
          */
         public Variant inPool(String poolId) {
-            return new Variant(name, weight, 0, -1, NO_GATE, category, modelId, modelName,
+            return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
                 isUser, isImported, subVariants, stageIds, displayName, builderUuid, builderName, groupIds, poolId, false);
         }
 

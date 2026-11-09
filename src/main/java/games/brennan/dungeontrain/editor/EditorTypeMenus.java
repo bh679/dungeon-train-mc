@@ -472,7 +472,7 @@ public final class EditorTypeMenus {
     /**
      * {@code rows} as the in-world Contents menu lists them: each {@link CarriageContentsPools pool}'s groups
      * gathered under a header row carrying the pool's slot weight, in the pool's member order, where the
-     * first of them stood. A pooled row drops its gate cells, since the pool's slot decides its chance.
+     * first of them stood. A pooled row keeps its gate and Stage cells, which still decide where it can spawn.
      */
     static List<EditorTypeMenusPacket.Variant> withPoolHeaders(List<EditorTypeMenusPacket.Variant> rows) {
         java.util.Map<String, EditorTypeMenusPacket.Variant> byId = new java.util.HashMap<>();

@@ -26,20 +26,23 @@ final class ContentsPoolRows {
 
     private ContentsPoolRows() {}
 
-    /** {@code menus} with folded pools' groups left out; also refreshes the shares and counts. */
+    /**
+     * {@code menus} with folded pools' groups left out; also refreshes the shares and counts. Counted per menu:
+     * the same pool's rows can reach the client in more than one menu, and each lists all of its groups.
+     */
     static List<EditorTypeMenusPacket.Menu> view(List<EditorTypeMenusPacket.Menu> menus) {
-        Map<String, Integer> totals = new HashMap<>();
         Map<String, Integer> nextCounts = new HashMap<>();
-        for (EditorTypeMenusPacket.Menu m : menus) {
-            for (EditorTypeMenusPacket.Variant v : m.variants()) {
-                if (!v.isPooled()) continue;
-                totals.merge(v.pool(), Math.max(0, v.weight()), Integer::sum);
-                nextCounts.merge(v.pool(), 1, Integer::sum);
-            }
-        }
         Map<String, Integer> nextShares = new HashMap<>();
         List<EditorTypeMenusPacket.Menu> out = new ArrayList<>(menus.size());
         for (EditorTypeMenusPacket.Menu m : menus) {
+            Map<String, Integer> totals = new HashMap<>();
+            Map<String, Integer> menuCounts = new HashMap<>();
+            for (EditorTypeMenusPacket.Variant v : m.variants()) {
+                if (!v.isPooled()) continue;
+                totals.merge(v.pool(), Math.max(0, v.weight()), Integer::sum);
+                menuCounts.merge(v.pool(), 1, Integer::sum);
+            }
+            menuCounts.forEach(nextCounts::putIfAbsent);
             List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(m.variants().size());
             boolean dropped = false;
             for (EditorTypeMenusPacket.Variant v : m.variants()) {

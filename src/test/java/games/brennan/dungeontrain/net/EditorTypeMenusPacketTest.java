@@ -120,7 +120,7 @@ final class EditorTypeMenusPacketTest {
         assertEquals(8, rows.get(0).weight());
         assertTrue(rows.get(1).isPooled());
         assertEquals("enemies", rows.get(1).pool());
-        assertEquals(EditorTypeMenusPacket.Variant.NO_GATE, rows.get(1).phaseMask(), "a pooled group draws no gate cells");
+        assertEquals(1, rows.get(1).phaseMask(), "a pooled group keeps its gate cells");
         assertFalse(rows.get(0).isPooled(), "the header is not one of its own groups");
     }
 }

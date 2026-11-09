@@ -47,4 +47,14 @@ final class ContentsPoolRowsTest {
         }
         assertEquals(4, ContentsPoolRows.view(menus()).get(0).variants().size());
     }
+
+    @Test
+    @DisplayName("the same pool in two menus is counted once per menu, not summed across them")
+    void countedPerMenu() {
+        List<EditorTypeMenusPacket.Menu> twice = new java.util.ArrayList<>(menus());
+        twice.addAll(menus());
+        List<EditorTypeMenusPacket.Variant> rows = ContentsPoolRows.view(twice).get(0).variants();
+        assertEquals("75%", ContentsPoolRows.shareLabel(rows.get(2)));
+        assertEquals("▾ Pool (2)", ContentsPoolRows.headerLabel(rows.get(1)));
+    }
 }

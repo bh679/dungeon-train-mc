@@ -36,7 +36,7 @@ final class EditorTypeMenusPoolHeadersTest {
         assertEquals("Enemies", header.displayName());
         assertEquals(8, header.weight());
         assertTrue(rows.get(2).isPooled());
-        assertEquals(EditorTypeMenusPacket.Variant.NO_GATE, rows.get(2).phaseMask());
+        assertEquals(1, rows.get(2).phaseMask(), "a pooled group keeps its gate cells");
         assertFalse(rows.get(0).isPooled());
         assertEquals(1, rows.get(0).phaseMask(), "rows outside a pool keep their gate");
     }
