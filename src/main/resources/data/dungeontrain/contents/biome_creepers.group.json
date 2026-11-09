@@ -78,6 +78,7 @@
       "id": "creeper_bamboo",
       "weight": 1,
       "minLevel": 4,
+      "maxLevel": 25,
       "phases": [
         "OVERWORLD",
         "NETHER",
@@ -102,6 +103,7 @@
       "id": "creeper_savannah",
       "weight": 1,
       "minLevel": 4,
+      "maxLevel": 25,
       "phases": [
         "OVERWORLD",
         "NETHER",
@@ -198,6 +200,7 @@
       "id": "creeper_beach",
       "weight": 1,
       "minLevel": 5,
+      "maxLevel": 30,
       "phases": [
         "OVERWORLD",
         "NETHER",
@@ -221,7 +224,7 @@
     {
       "id": "creeper_hills",
       "weight": 1,
-      "minLevel": 9,
+      "minLevel": 5,
       "phases": [
         "OVERWORLD",
         "NETHER",
@@ -245,7 +248,8 @@
     {
       "id": "creeper_snowy",
       "weight": 1,
-      "minLevel": 6,
+      "minLevel": 4,
+      "maxLevel": 25,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
@@ -319,6 +323,7 @@
       "id": "creeper_dripstone",
       "weight": 1,
       "minLevel": 5,
+      "maxLevel": 30,
       "phases": [
         "OVERWORLD",
         "NETHER",
@@ -345,6 +350,7 @@
       "id": "creeper_mushroom",
       "weight": 1,
       "minLevel": 4,
+      "maxLevel": 20,
       "phases": [
         "OVERWORLD",
         "NETHER",
@@ -364,6 +370,11 @@
         "AMPLIFIED",
         "LOST_CITY"
       ]
+    },
+    {
+      "id": "creeper_deserttemple",
+      "weight": 1,
+      "minLevel": 9
     }
   ]
 }

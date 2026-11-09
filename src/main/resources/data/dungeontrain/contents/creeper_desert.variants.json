@@ -1,8 +1,32 @@
 {
   "schemaVersion": 10,
   "variants": {
-    "3,0,2": [{"entity": "creeperoverhaul:desert_creeper"}],
-    "2,0,1": ["dungeontrain:variant_placeholder", {"entity": "creeperoverhaul:desert_creeper", "difficulty": {"min": 15, "max": "all"}}],
-    "4,0,3": [{"state": "dungeontrain:variant_placeholder", "weight": 10}, {"entity": "creeperoverhaul:desert_creeper", "difficulty": {"min": 24, "max": "all"}}]
+    "4,0,4": ["minecraft:sand", "dungeontrain:variant_placeholder"],
+    "5,0,3": ["minecraft:sand", "dungeontrain:variant_placeholder"],
+    "5,0,2": ["minecraft:sand", "dungeontrain:variant_placeholder"],
+    "5,0,1": ["minecraft:sand", "dungeontrain:variant_placeholder"],
+    "4,0,0": ["minecraft:sand", "dungeontrain:variant_placeholder"],
+    "2,0,0": ["minecraft:sand", "dungeontrain:variant_placeholder"],
+    "1,0,3": ["minecraft:sand", "dungeontrain:variant_placeholder"],
+    "1,0,2": ["minecraft:sand", "dungeontrain:variant_placeholder"],
+    "1,0,1": ["minecraft:sand", "dungeontrain:variant_placeholder"],
+    "2,0,4": ["minecraft:sand", "dungeontrain:variant_placeholder"],
+    "3,1,4": ["minecraft:sand", "dungeontrain:variant_placeholder"],
+    "4,1,3": ["minecraft:sand", "dungeontrain:variant_placeholder"],
+    "4,2,3": [{"state": "dungeontrain:variant_placeholder", "weight": 10}, {"entity": "creeperoverhaul:desert_creeper", "difficulty": {"min": 24, "max": "all"}}],
+    "2,2,1": ["dungeontrain:variant_placeholder", {"entity": "creeperoverhaul:desert_creeper", "difficulty": {"min": 15, "max": "all"}}],
+    "3,1,1": [{"state": "minecraft:sand", "weight": 12}, {"state": "dungeontrain:variant_placeholder", "weight": 8}, {"state": "creeperoverhaul:tiny_cactus", "weight": 2}, {"state": "minecraft:cactus[age=0]", "weight": 3, "growth": "up 2-3"}, "biomesoplenty:tiny_cactus"],
+    "3,1,0": [{"state": "minecraft:sand", "weight": 12}, {"state": "dungeontrain:variant_placeholder", "weight": 8}, {"state": "creeperoverhaul:tiny_cactus", "weight": 2}, {"state": "minecraft:cactus[age=0]", "weight": 3, "growth": "up 2-3"}, "biomesoplenty:tiny_cactus"],
+    "2,1,1": [{"state": "minecraft:sand", "weight": 12}, {"state": "dungeontrain:variant_placeholder", "weight": 8}, {"state": "creeperoverhaul:tiny_cactus", "weight": 2}, {"state": "minecraft:cactus[age=0]", "weight": 3, "growth": "up 2-3"}, "biomesoplenty:tiny_cactus"],
+    "2,1,2": [{"state": "minecraft:sand", "weight": 12}, {"state": "dungeontrain:variant_placeholder", "weight": 8}, {"state": "creeperoverhaul:tiny_cactus", "weight": 2}, {"state": "minecraft:cactus[age=0]", "weight": 3, "growth": "up 2-3"}, "biomesoplenty:tiny_cactus", {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "3,2,2": [{"state": "minecraft:sand", "weight": 12}, {"state": "dungeontrain:variant_placeholder", "weight": 8}, {"state": "creeperoverhaul:tiny_cactus", "weight": 2}, {"state": "minecraft:cactus[age=0]", "weight": 3, "growth": "up 2-3"}, "biomesoplenty:tiny_cactus"],
+    "2,1,3": [{"state": "minecraft:sand", "weight": 12}, {"state": "dungeontrain:variant_placeholder", "weight": 8}, {"state": "creeperoverhaul:tiny_cactus", "weight": 2}, {"state": "minecraft:cactus[age=0]", "weight": 3, "growth": "up 2-3"}, "biomesoplenty:tiny_cactus", {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "3,1,3": [{"state": "minecraft:sand", "weight": 12}, {"state": "dungeontrain:variant_placeholder", "weight": 8}, {"state": "creeperoverhaul:tiny_cactus", "weight": 2}, {"state": "minecraft:cactus[age=0]", "weight": 3, "growth": "up 2-3"}, "biomesoplenty:tiny_cactus", {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "4,1,2": [{"state": "minecraft:sand", "weight": 12}, {"state": "dungeontrain:variant_placeholder", "weight": 8}, {"state": "creeperoverhaul:tiny_cactus", "weight": 2}, {"state": "minecraft:cactus[age=0]", "weight": 3, "growth": "up 2-3"}, "biomesoplenty:tiny_cactus", {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "4,1,1": [{"state": "minecraft:sand", "weight": 12}, {"state": "dungeontrain:variant_placeholder", "weight": 8}, {"state": "creeperoverhaul:tiny_cactus", "weight": 2}, {"state": "minecraft:cactus[age=0]", "weight": 3, "growth": "up 2-3"}, "biomesoplenty:tiny_cactus", {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "6,0,0": [{"state": "dungeontrain:variant_placeholder", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "6,0,4": [{"state": "dungeontrain:variant_placeholder", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "0,0,4": [{"state": "dungeontrain:variant_placeholder", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "0,0,0": [{"state": "dungeontrain:variant_placeholder", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}]
   }
 }
