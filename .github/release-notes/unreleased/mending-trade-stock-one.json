@@ -7,8 +7,8 @@
     "loot",
     "balance"
   ],
-  "title": "Mending trades limited to one",
-  "summary": "Villagers and other traders who sell Mending now only have one in stock at a time.",
+  "title": "Mending trades limited to a few",
+  "summary": "Villagers and other traders who sell Mending now only have one to three in stock at a time.",
   "highlights": [],
   "pr": 2574,
   "date": "2026-11-08",

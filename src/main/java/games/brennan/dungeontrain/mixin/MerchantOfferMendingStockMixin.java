@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Optional;
 
 /**
- * Caps a Mending trade's stock at {@link MendingTradeStock#MAX_STOCK}. Every public constructor,
+ * Rolls a Mending trade's stock to 1-3 ({@link MendingTradeStock#limitStock}). Every public constructor,
  * the copy constructor and both codecs (save load, client sync) end in the private 10-arg
  * constructor, so one inject there covers new, saved and synced offers alike.
  */
