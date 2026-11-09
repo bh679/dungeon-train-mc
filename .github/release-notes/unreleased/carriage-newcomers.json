@@ -1,0 +1,20 @@
+{
+  "id": "carriage-newcomers",
+  "version": "0.1746.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "compatibility",
+    "mobs"
+  ],
+  "title": "Something new in the pens",
+  "summary": "The grassy open carriages now hide more than farm animals, and what waits inside grows bolder the further you ride. This update needs a few more mods; the CurseForge and Modrinth apps install them for you.",
+  "highlights": [],
+  "pr": 2581,
+  "date": "2026-11-09",
+  "released": false,
+  "released_in": null,
+  "released_at": null,
+  "major": true,
+  "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/carriage-newcomers.jpg"
+}
