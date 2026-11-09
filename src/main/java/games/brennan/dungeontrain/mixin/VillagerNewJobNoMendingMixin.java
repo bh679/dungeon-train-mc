@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin;
 
 import games.brennan.dungeontrain.difficulty.NewJobMendingBlock;
+import games.brennan.dungeontrain.event.VillagerTrainSpawnEvents;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.npc.Villager;
@@ -14,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Vanilla trade generation never sells Mending ({@link NewJobMendingBlock}): {@code updateTrades}
  * runs when a villager takes a job and on every level-up. HEAD notes how many offers there were,
- * TAIL swaps Mending books among the new ones, unless the train rolled this merchant at spawn.
+ * TAIL swaps Mending books among the new ones, unless the train spawned this merchant with its job.
  * Reads the {@code offers} field directly: {@code getOffers()} would re-enter {@code updateTrades}
  * while it is still null.
  */
@@ -36,7 +37,7 @@ public abstract class VillagerNewJobNoMendingMixin extends AbstractVillager {
     @Inject(method = "updateTrades", at = @At("TAIL"))
     private void dungeontrain$noMendingOnNewJob(CallbackInfo ci) {
         if (this.offers == null || this.level().isClientSide) return;
-        if (NewJobMendingBlock.mayOfferMending(this)) return;
+        if (NewJobMendingBlock.mayOfferMending(this, VillagerTrainSpawnEvents.REROLLED_TAG)) return;
         NewJobMendingBlock.replaceMendingBooks(this, this.offers, dungeontrain$offersBefore);
     }
 }

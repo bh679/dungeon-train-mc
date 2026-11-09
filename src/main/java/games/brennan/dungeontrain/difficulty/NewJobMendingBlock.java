@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.difficulty;
 
+import games.brennan.dungeontrain.train.TrainMembership;
 import net.minecraft.tags.EnchantmentTags;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.npc.VillagerTrades;
@@ -10,33 +11,37 @@ import net.minecraft.world.item.trading.MerchantOffers;
 import java.util.Collection;
 
 /**
- * Only librarians the train spawns may sell Mending. Every other villager that picks up a job (off
- * the train, or a jobless train villager that takes a lectern a player placed) gets its Mending
- * books swapped for another tradeable book, at every level.
+ * Stops players forcing a villager into a Mending trade. Only merchants the train spawned with a job
+ * keep vanilla Mending odds (level-ups included). A villager that picks up a job instead (off the
+ * train, or a jobless train villager that takes a lectern a player placed) gets its Mending books
+ * swapped for another tradeable book, at every level.
  *
- * <p>The train's spawn roll ({@code VillagerTrainSpawnEvents}) marks its merchants with
- * {@link #MENDING_OK_TAG}. Vanilla trade generation ({@code Villager#updateTrades}, on taking a job
- * and on each level-up) is scrubbed by {@code VillagerNewJobNoMendingMixin} unless the villager
- * carries it; a DT roll on reload (the in-play job case) is scrubbed by the spawn handler.</p>
+ * <p>A train-spawned merchant is one the train rolled at spawn ({@code dungeontrain_trades_rerolled})
+ * that isn't marked {@link #BLOCKED_TAG}. The spawn handler adds that marker when it rolls a villager
+ * on reload, which is the in-play job case. Vanilla trade generation ({@code Villager#updateTrades},
+ * on taking a job and on each level-up) is scrubbed by {@code VillagerNewJobNoMendingMixin}.</p>
  */
 public final class NewJobMendingBlock {
 
-    /** Marker on a merchant whose trades the train rolled at spawn: it may sell Mending. */
-    public static final String MENDING_OK_TAG = "dungeontrain_mending_ok";
+    /** Marker on a train villager that took its job in play: it may not sell Mending. */
+    public static final String BLOCKED_TAG = "dungeontrain_mending_blocked";
 
     /** Re-roll attempts for a non-Mending book before the offer is dropped (Mending is ~1 in 40). */
     private static final int MAX_REROLLS = 32;
 
     private NewJobMendingBlock() {}
 
-    /** True when a villager with these tags may sell Mending. Package-private for unit tests. */
-    static boolean mayOfferMending(Collection<String> tags) {
-        return tags != null && tags.contains(MENDING_OK_TAG);
+    /**
+     * True when a villager may sell Mending: it is on the train, the train rolled its trades at spawn,
+     * and it hasn't been marked as taking its job in play. Package-private for unit tests.
+     */
+    static boolean mayOfferMending(boolean onTrain, Collection<String> tags, String rerolledTag) {
+        return onTrain && tags != null && tags.contains(rerolledTag) && !tags.contains(BLOCKED_TAG);
     }
 
     /** True when {@code villager} may sell Mending. */
-    public static boolean mayOfferMending(AbstractVillager villager) {
-        return mayOfferMending(villager.getTags());
+    public static boolean mayOfferMending(AbstractVillager villager, String rerolledTag) {
+        return mayOfferMending(TrainMembership.isOnTrain(villager), villager.getTags(), rerolledTag);
     }
 
     /**

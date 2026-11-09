@@ -194,8 +194,7 @@ public final class VillagerTrainSpawnEvents {
         // that took its job in play (or claimed a placed lectern), so its Mending books go.
         if (event.loadedFromDisk()) {
             NewJobMendingBlock.replaceMendingBooks(villager, scaled, 0);
-        } else {
-            villager.addTag(NewJobMendingBlock.MENDING_OK_TAG);
+            villager.addTag(NewJobMendingBlock.BLOCKED_TAG);
         }
         villager.setOffers(scaled);
         villager.addTag(REROLLED_TAG);
