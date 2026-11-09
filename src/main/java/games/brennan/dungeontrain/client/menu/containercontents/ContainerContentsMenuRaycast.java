@@ -65,11 +65,16 @@ public final class ContainerContentsMenuRaycast {
             hitY /= worldScale;
         }
 
-        if (ContainerContentsMenu.screen() == ContainerContentsMenu.Screen.ROOT) {
-            ContainerContentsMenu.setHovered(rootHit(hitX, hitY));
-        } else {
-            ContainerContentsMenu.setHovered(searchHit(hitX, hitY));
-        }
+        ContainerContentsMenu.setHovered(hitFor(hitX, hitY));
+    }
+
+    /** The cell at these panel-local coordinates on whichever face of the panel is up. */
+    static ContainerContentsMenu.Hit hitFor(double hitX, double hitY) {
+        return switch (ContainerContentsMenu.screen()) {
+            case ROOT -> rootHit(hitX, hitY);
+            case BOOK_ENCHANTS -> BookEnchantListPanel.hit(hitX, hitY);
+            default -> searchHit(hitX, hitY);
+        };
     }
 
     /**
@@ -182,13 +187,18 @@ public final class ContainerContentsMenuRaycast {
                     : new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_POTION_FORM, idx);
             }
             boolean showBookEnch = layout.showBookEnch()[idx];
+            boolean bookOn = showBookEnch && idx < ContainerContentsMenu.entries().size()
+                && ContainerContentsMenu.entries().get(idx).hasRandomBookEnchants();
+            // A book's range, when on, takes the sub-row: Enchants, Level, then the List button in
+            // place of the random-enchant toggle and %, which are not drawn.
+            if (bookOn) {
+                ContainerContentsMenu.CellKind kind = hitX <= dur1R ? ContainerContentsMenu.CellKind.ENTRY_BOOK_ENCH
+                    : hitX <= dur2R ? ContainerContentsMenu.CellKind.ENTRY_BOOK_LEVEL
+                    : ContainerContentsMenu.CellKind.ENTRY_BOOK_LIST;
+                return new ContainerContentsMenu.Hit(kind, idx);
+            }
             if (showBookEnch && hitX <= dur2R) {
                 return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_BOOK_ENCH, idx);
-            }
-            // A book's range, when on, replaces the random-enchant toggle and %, which are not drawn.
-            if (showBookEnch && idx < ContainerContentsMenu.entries().size()
-                && ContainerContentsMenu.entries().get(idx).hasRandomBookEnchants()) {
-                return ContainerContentsMenu.Hit.NONE;
             }
             if (hitX <= dur1R) {
                 return showDur

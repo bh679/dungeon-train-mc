@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.ContainerContentsEnchants;
 import games.brennan.dungeontrain.editor.ContainerContentsPool;
 import games.brennan.dungeontrain.editor.ContainerContentsRoller;
 import games.brennan.dungeontrain.editor.VaultLoot;
@@ -10,10 +11,13 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 import org.slf4j.Logger;
 
@@ -37,6 +41,7 @@ final class VaultRollDebug {
 
     static LiteralArgumentBuilder<CommandSourceStack> node() {
         return Commands.literal("vault-roll")
+            .then(Commands.literal("enchants").executes(ctx -> listEnchants(ctx.getSource())))
             .then(type("trial", ContainerContentsPool.DEFAULT_VAULT_KEY))
             .then(type("ominous", VaultLoot.OMINOUS_KEY))
             .then(type("green", VaultLoot.GREEN_KEY));
@@ -47,6 +52,23 @@ final class VaultRollDebug {
             .executes(ctx -> roll(ctx.getSource(), name, key, DEFAULT_TIMES))
             .then(Commands.argument("times", IntegerArgumentType.integer(1, MAX_TIMES))
                 .executes(ctx -> roll(ctx.getSource(), name, key, IntegerArgumentType.getInteger(ctx, "times"))));
+    }
+
+    /**
+     * Every enchantment a book's random roll could pick on this server, with the default on/off
+     * (curses and Mending off), as one {@code [DT-vault-roll] enchants} log line per id: the list a
+     * bundled pool's {@code "list"} should hold.
+     */
+    private static int listEnchants(CommandSourceStack source) {
+        List<Holder<Enchantment>> all = source.getLevel().registryAccess().lookup(Registries.ENCHANTMENT)
+            .map(ContainerContentsEnchants::listCandidates).orElse(List.of());
+        for (Holder<Enchantment> holder : all) {
+            LOGGER.info("[DT-vault-roll] enchants {} {}", holder.unwrapKey().map(k -> k.location().toString()).orElse("?"),
+                ContainerContentsEnchants.onByDefault(holder));
+        }
+        source.sendSuccess(() -> Component.literal("[DungeonTrain] " + all.size() + " book enchantments logged")
+            .withStyle(ChatFormatting.GRAY), false);
+        return all.size();
     }
 
     private static int roll(CommandSourceStack source, String name, String key, int times) {

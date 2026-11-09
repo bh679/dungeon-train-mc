@@ -1,15 +1,9 @@
 package games.brennan.dungeontrain.editor;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.mojang.logging.LogUtils;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.HolderSet;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.EnchantmentTags;
@@ -19,15 +13,14 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
-import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
 /**
  * The enchantment side of a book {@link ContainerContentsEntry}: reading the stored enchantments off
@@ -35,15 +28,6 @@ import java.util.Optional;
  * entry's {@link BookEnchants}.
  */
 public final class ContainerContentsEnchants {
-
-    private static final Logger LOGGER = LogUtils.getLogger();
-
-    /** Entry JSON key for the exact enchantments, id to level. */
-    public static final String JSON_EXACT = "enchants";
-    /** Entry JSON key for the random range, {@code {"min": 1, "max": 7}}. */
-    public static final String JSON_RANDOM = "bookEnchants";
-    private static final String KEY_MIN = "min";
-    private static final String KEY_MAX = "max";
 
     private ContainerContentsEnchants() {}
 
@@ -106,8 +90,11 @@ public final class ContainerContentsEnchants {
             .ifPresent(holder -> stored.set(holder, level)));
         if (enchants.hasRandom()) {
             int n = enchants.randomMin() + rng.nextInt(enchants.randomMax() - enchants.randomMin() + 1);
-            for (Holder<Enchantment> holder : rollRandom(lookup.get(), stored.keySet(), n, rng)) {
-                stored.set(holder, holder.value().getMaxLevel());
+            for (Holder<Enchantment> holder : rollRandom(lookup.get(), enchants, stored.keySet(), n, rng)) {
+                int top = holder.value().getMaxLevel();
+                int lo = enchants.levelLow(top);
+                int hi = enchants.levelHigh(top);
+                stored.set(holder, lo >= hi ? hi : lo + rng.nextInt(hi - lo + 1));
             }
         }
         if (stored.keySet().isEmpty()) return stack;
@@ -119,28 +106,88 @@ public final class ContainerContentsEnchants {
     }
 
     /**
-     * What a book's random enchantments are drawn from: {@code #minecraft:on_random_loot} (so other
-     * mods' enchantments come along), never a curse and never Mending, which a loot table offers as
-     * its own entry. Sorted by id, as tag order follows datapack load order and the same seed must
-     * always roll the same book.
+     * Every enchantment a book's random roll could pick, and so every row of the menu's list:
+     * {@code #minecraft:on_random_loot} (so other mods' enchantments come along) plus the curses, which
+     * a builder may switch on. Sorted by id, as tag order follows datapack load order and the same
+     * seed must always roll the same book.
      */
-    static List<Holder<Enchantment>> randomCandidates(HolderLookup.RegistryLookup<Enchantment> lookup) {
-        Optional<HolderSet.Named<Enchantment>> pool = lookup.get(EnchantmentTags.ON_RANDOM_LOOT);
-        if (pool.isEmpty()) return List.of();
-        List<Holder<Enchantment>> candidates = new ArrayList<>();
-        for (Holder<Enchantment> holder : pool.get()) {
-            if (holder.unwrapKey().isEmpty()) continue;
-            if (holder.is(EnchantmentTags.CURSE) || holder.is(Enchantments.MENDING)) continue;
-            candidates.add(holder);
+    public static List<Holder<Enchantment>> listCandidates(HolderLookup.RegistryLookup<Enchantment> lookup) {
+        Map<ResourceLocation, Holder<Enchantment>> byId = new TreeMap<>();
+        for (var tag : List.of(EnchantmentTags.ON_RANDOM_LOOT, EnchantmentTags.CURSE)) {
+            lookup.get(tag).ifPresent(set -> {
+                for (Holder<Enchantment> holder : set) {
+                    holder.unwrapKey().ifPresent(key -> byId.putIfAbsent(key.location(), holder));
+                }
+            });
         }
-        candidates.sort(Comparator.comparing(h -> h.unwrapKey().get().location()));
-        return candidates;
+        return List.copyOf(byId.values());
     }
 
-    /** Up to {@code n} different enchantments from {@link #randomCandidates} for a book already holding {@code held}. */
-    static List<Holder<Enchantment>> rollRandom(HolderLookup.RegistryLookup<Enchantment> lookup,
+    /** The rule for a pool saved before the list existed: everything but curses and Mending. */
+    public static boolean onByDefault(Holder<Enchantment> holder) {
+        return !holder.is(EnchantmentTags.CURSE) && !holder.is(Enchantments.MENDING);
+    }
+
+    /** Whether {@code enchants}' random roll may pick {@code holder}; undecided ones never roll. */
+    public static boolean allowed(BookEnchants enchants, Holder<Enchantment> holder) {
+        if (enchants.list() == null) return onByDefault(holder);
+        return holder.unwrapKey()
+            .map(key -> Boolean.TRUE.equals(enchants.list().get(key.location())))
+            .orElse(false);
+    }
+
+    /** {@code candidates} the builder has not decided on yet; none while the pool keeps the old rule. */
+    public static List<ResourceLocation> undecided(BookEnchants enchants, List<Holder<Enchantment>> candidates) {
+        if (enchants.list() == null) return List.of();
+        List<ResourceLocation> out = new ArrayList<>();
+        for (Holder<Enchantment> holder : candidates) {
+            holder.unwrapKey().map(ResourceKey::location)
+                .filter(id -> !enchants.list().containsKey(id))
+                .ifPresent(out::add);
+        }
+        return out;
+    }
+
+    /**
+     * The list as decisions for every candidate: a saved list is copied as is; the old rule is written
+     * out. Every toggle starts from this, so the first edit of an old pool records the whole list.
+     */
+    public static Map<ResourceLocation, Boolean> decisions(BookEnchants enchants, List<Holder<Enchantment>> candidates) {
+        if (enchants.list() != null) return new TreeMap<>(enchants.list());
+        Map<ResourceLocation, Boolean> out = new TreeMap<>();
+        for (Holder<Enchantment> holder : candidates) {
+            holder.unwrapKey().ifPresent(key -> out.put(key.location(), onByDefault(holder)));
+        }
+        return out;
+    }
+
+    /** {@code enchants} with {@code id} switched; an undecided one switches on. */
+    public static BookEnchants toggled(BookEnchants enchants, ResourceLocation id, List<Holder<Enchantment>> candidates) {
+        Map<ResourceLocation, Boolean> list = decisions(enchants, candidates);
+        list.put(id, !Boolean.TRUE.equals(list.get(id)));
+        return enchants.withList(list);
+    }
+
+    /** {@code enchants} with every candidate on (curses excepted, they stay as they were) or every one off. */
+    public static BookEnchants allSet(BookEnchants enchants, boolean on, List<Holder<Enchantment>> candidates) {
+        Map<ResourceLocation, Boolean> list = decisions(enchants, candidates);
+        for (Holder<Enchantment> holder : candidates) {
+            holder.unwrapKey().ifPresent(key -> {
+                if (on && holder.is(EnchantmentTags.CURSE)) list.putIfAbsent(key.location(), false);
+                else list.put(key.location(), on);
+            });
+        }
+        return enchants.withList(list);
+    }
+
+    /** Up to {@code n} different enchantments {@code enchants} allows, for a book already holding {@code held}. */
+    static List<Holder<Enchantment>> rollRandom(HolderLookup.RegistryLookup<Enchantment> lookup, BookEnchants enchants,
                                                 Iterable<Holder<Enchantment>> held, int n, RandomSource rng) {
-        return pick(randomCandidates(lookup), held, n, rng);
+        List<Holder<Enchantment>> candidates = new ArrayList<>();
+        for (Holder<Enchantment> holder : listCandidates(lookup)) {
+            if (allowed(enchants, holder)) candidates.add(holder);
+        }
+        return pick(candidates, held, n, rng);
     }
 
     /**
@@ -167,78 +214,5 @@ public final class ContainerContentsEnchants {
             if (fits) chosen.add(next);
         }
         return List.copyOf(chosen.subList(heldCount, chosen.size()));
-    }
-
-    // ---- JSON (store files) -----------------------------------------------------------------
-
-    /** The book enchantments on entry object {@code entry}, or {@code null} when it has none. */
-    public static @Nullable BookEnchants fromJson(JsonObject entry) {
-        try {
-            Map<ResourceLocation, Integer> exact = new LinkedHashMap<>();
-            JsonElement ex = entry.get(JSON_EXACT);
-            if (ex != null && ex.isJsonObject()) {
-                for (var e : ex.getAsJsonObject().entrySet()) {
-                    ResourceLocation id = ResourceLocation.tryParse(e.getKey());
-                    if (id != null && e.getValue().isJsonPrimitive()) exact.put(id, e.getValue().getAsInt());
-                }
-            }
-            int min = 0;
-            int max = 0;
-            JsonElement rnd = entry.get(JSON_RANDOM);
-            if (rnd != null && rnd.isJsonObject()) {
-                JsonObject o = rnd.getAsJsonObject();
-                max = o.has(KEY_MAX) ? o.get(KEY_MAX).getAsInt() : 0;
-                min = o.has(KEY_MIN) ? o.get(KEY_MIN).getAsInt() : max;
-            }
-            BookEnchants enchants = new BookEnchants(exact, min, max);
-            return enchants.isEmpty() ? null : enchants;
-        } catch (RuntimeException e) {
-            LOGGER.warn("[DungeonTrain] Loot book enchantments: malformed JSON, dropping them — {}", e.toString());
-            return null;
-        }
-    }
-
-    /** {@code , "enchants": {...}, "bookEnchants": {...}} for the hand-built store writers. */
-    public static void appendJson(StringBuilder sb, @Nullable BookEnchants enchants) {
-        if (enchants == null || enchants.isEmpty()) return;
-        if (!enchants.exact().isEmpty()) {
-            sb.append(", \"").append(JSON_EXACT).append("\": {");
-            boolean first = true;
-            for (var e : enchants.exact().entrySet()) {
-                if (!first) sb.append(", ");
-                sb.append('"').append(e.getKey()).append("\": ").append(e.getValue());
-                first = false;
-            }
-            sb.append('}');
-        }
-        if (enchants.hasRandom()) {
-            sb.append(", \"").append(JSON_RANDOM).append("\": { \"").append(KEY_MIN).append("\": ")
-                .append(enchants.randomMin()).append(", \"").append(KEY_MAX).append("\": ")
-                .append(enchants.randomMax()).append(" }");
-        }
-    }
-
-    // ---- NBT (clipboard) --------------------------------------------------------------------
-
-    public static CompoundTag toNbt(BookEnchants enchants) {
-        CompoundTag tag = new CompoundTag();
-        CompoundTag exact = new CompoundTag();
-        enchants.exact().forEach((id, level) -> exact.putInt(id.toString(), level));
-        tag.put(JSON_EXACT, exact);
-        tag.putInt(KEY_MIN, enchants.randomMin());
-        tag.putInt(KEY_MAX, enchants.randomMax());
-        return tag;
-    }
-
-    public static @Nullable BookEnchants fromNbt(@Nullable CompoundTag tag) {
-        if (tag == null) return null;
-        Map<ResourceLocation, Integer> exact = new LinkedHashMap<>();
-        CompoundTag ex = tag.getCompound(JSON_EXACT);
-        for (String key : ex.getAllKeys()) {
-            ResourceLocation id = ResourceLocation.tryParse(key);
-            if (id != null && ex.contains(key, Tag.TAG_INT)) exact.put(id, ex.getInt(key));
-        }
-        BookEnchants enchants = new BookEnchants(exact, tag.getInt(KEY_MIN), tag.getInt(KEY_MAX));
-        return enchants.isEmpty() ? null : enchants;
     }
 }

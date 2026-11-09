@@ -17,6 +17,7 @@ import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.registries.BuiltInRegistries;
+import games.brennan.dungeontrain.editor.BookEnchants;
 import games.brennan.dungeontrain.editor.ContainerContentsEnchants;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -193,6 +194,9 @@ public final class ContainerContentsMenuRenderer {
     record PanelSize(double panelW, double panelH) {}
 
     static PanelSize panelSize() {
+        if (ContainerContentsMenu.screen() == ContainerContentsMenu.Screen.BOOK_ENCHANTS) {
+            return BookEnchantListPanel.size();
+        }
         if (ContainerContentsMenu.screen() != ContainerContentsMenu.Screen.ROOT) {
             List<String> filtered = ContainerContentsMenu.filteredItemIds();
             int maxRows = ContainerContentsMenu.ROWS_PER_COLUMN * 4;
@@ -222,6 +226,8 @@ public final class ContainerContentsMenuRenderer {
                           @Nullable PanelIconBatch icons) {
         if (ContainerContentsMenu.screen() == ContainerContentsMenu.Screen.ROOT) {
             drawRoot(ps, buffer, font, icons);
+        } else if (ContainerContentsMenu.screen() == ContainerContentsMenu.Screen.BOOK_ENCHANTS) {
+            BookEnchantListPanel.draw(ps, buffer, font);
         } else {
             drawSearch(ps, buffer, font);
         }
@@ -511,22 +517,40 @@ public final class ContainerContentsMenuRenderer {
             }
 
             if (showBookEnch) {
-                // A book's random-enchantment range, on the left half (books have no durability cells).
-                // While it is on it decides the book's enchantments, so the toggle and % give way.
+                // A book's random-enchantment range. Off, it takes the left half (books have no
+                // durability cells). On, it decides the book's enchantments, so the ordinary toggle
+                // and % give way to its Level and List cells.
                 boolean bookHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_BOOK_ENCH && hovered.index() == i;
                 boolean bookOn = entry.hasRandomBookEnchants();
+                double bookR = bookOn ? dur1R : dur2R;
                 int bookTint = bookHover
                     ? (bookOn ? 0xC0CCAAFF : 0xC0AAAAAA)
                     : (bookOn ? 0x806A4A9F : 0x40555555);
                 drawQuad(ps, buffer, dur1L + 0.005, subBottom + 0.005,
-                    dur2R - 0.005, subTop - 0.005, bookTint);
+                    bookR - 0.005, subTop - 0.005, bookTint);
                 String range = entry.bookEnchMin() == entry.bookEnchMax()
                     ? Integer.toString(entry.bookEnchMax())
                     : entry.bookEnchMin() + "-" + entry.bookEnchMax();
                 drawCenteredText(ps, buffer, font,
                     bookOn ? MenuLang.t("container.book_ench", range) : MenuLang.t("container.book_ench_off"),
-                    (dur1L + dur2R) / 2.0, subCY,
+                    (dur1L + bookR) / 2.0, subCY,
                     bookHover ? 0xFF000000 : 0xFFFFFFFF);
+                if (bookOn) {
+                    boolean levelHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_BOOK_LEVEL && hovered.index() == i;
+                    drawQuad(ps, buffer, dur2L + 0.005, subBottom + 0.005,
+                        dur2R - 0.005, subTop - 0.005, levelHover ? 0xC0CCAAFF : 0x806A4A9F);
+                    drawCenteredText(ps, buffer, font,
+                        MenuLang.t("container.book_level", BookEnchants.levelLabel(entry.bookLevelMin(), entry.bookLevelMax())
+                            .replace("max", MenuLang.t("container.book_level_max"))),
+                        (dur2L + dur2R) / 2.0, subCY, levelHover ? 0xFF000000 : 0xFFFFFFFF);
+                    boolean listHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_BOOK_LIST && hovered.index() == i;
+                    boolean undecided = BookEnchantListPanel.hasUndecided(entry);
+                    drawQuad(ps, buffer, ench1L + 0.005, subBottom + 0.005,
+                        ench2R - 0.005, subTop - 0.005,
+                        listHover ? 0xC0FFCC33 : undecided ? 0xA0B07A10 : 0x6033AACC);
+                    drawCenteredText(ps, buffer, font, BookEnchantListPanel.summary(entry) + " >",
+                        (ench1L + ench2R) / 2.0, subCY, listHover ? 0xFF000000 : 0xFFFFFFFF);
+                }
             }
 
             if (showEnch && !(showBookEnch && entry.hasRandomBookEnchants())) {

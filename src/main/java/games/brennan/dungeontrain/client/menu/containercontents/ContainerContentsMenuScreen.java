@@ -64,15 +64,18 @@ public final class ContainerContentsMenuScreen extends PanelScreenHost {
         ContainerContentsMenuInputHandler.dispatch(hit, shift, button);
     }
 
-    /** The panel has two faces — the entry list and the Add-search list — with their own layouts. */
+    /** The panel's faces (entries, Add-search, a book's enchantment list) each have their own layout. */
     private static ContainerContentsMenu.Hit hitAt(double localX, double localY) {
-        return ContainerContentsMenu.screen() == ContainerContentsMenu.Screen.ROOT
-            ? ContainerContentsMenuRaycast.rootHit(localX, localY)
-            : ContainerContentsMenuRaycast.searchHit(localX, localY);
+        return ContainerContentsMenuRaycast.hitFor(localX, localY);
     }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (ContainerContentsMenu.screen() == ContainerContentsMenu.Screen.BOOK_ENCHANTS
+            && keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            ContainerContentsMenu.backToRoot();
+            return true;
+        }
         if (ContainerContentsMenu.screen() == ContainerContentsMenu.Screen.ADD_SEARCH) {
             switch (keyCode) {
                 case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER, GLFW.GLFW_KEY_ESCAPE -> {

@@ -4,7 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.ContainerContentsBooks;
-import games.brennan.dungeontrain.editor.ContainerContentsEnchants;
+import games.brennan.dungeontrain.editor.BookEnchantsCodec;
 import games.brennan.dungeontrain.editor.ContainerContentsEntry;
 import games.brennan.dungeontrain.editor.StoredBook;
 import games.brennan.dungeontrain.editor.PotionForm;
@@ -520,7 +520,7 @@ public final class VariantClipboardItem extends Item {
             if (!e.scaleWithDistance()) et.putBoolean(NBT_POOL_ENTRY_SCALE, false);
             if (e.potionForm() != PotionForm.ANY) et.putString(NBT_POOL_ENTRY_FORM, e.potionForm().id());
             if (e.book() != null) et.put(NBT_POOL_ENTRY_BOOK, ContainerContentsBooks.toNbt(e.book()));
-            if (e.enchants() != null) et.put(NBT_POOL_ENTRY_ENCHANTS, ContainerContentsEnchants.toNbt(e.enchants()));
+            if (e.enchants() != null) et.put(NBT_POOL_ENTRY_ENCHANTS, BookEnchantsCodec.toNbt(e.enchants()));
             entries.add(et);
         }
         tag.put(NBT_POOL_ENTRIES, entries);
@@ -567,7 +567,7 @@ public final class VariantClipboardItem extends Item {
                     .withPotion(potionId).withScaleWithDistance(scale).withPotionForm(form)
                     .withBook(book)
                     .withEnchants(et.contains(NBT_POOL_ENTRY_ENCHANTS, Tag.TAG_COMPOUND)
-                        ? ContainerContentsEnchants.fromNbt(et.getCompound(NBT_POOL_ENTRY_ENCHANTS)) : null));
+                        ? BookEnchantsCodec.fromNbt(et.getCompound(NBT_POOL_ENTRY_ENCHANTS)) : null));
             }
         }
         return new ContainerContentsPool(entries, fillMin, fillMax, vaultKey);

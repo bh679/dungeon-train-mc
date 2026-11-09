@@ -166,6 +166,7 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
         INSTANCE.put(player, new OpenMenu(plot.key(), clampedLocal, face, up,
             LootPrefabStore.CATEGORY_LOOT));
         sendSync(player, plot, clampedLocal, clampedWorld, face, up);
+        BookEnchantsMenuOps.askAboutNew(player, ContainerContentsStore.loadFor(plot.key()).poolAt(clampedLocal));
     }
 
     /**
@@ -219,6 +220,7 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
             : LootPrefabStore.CATEGORY_ITEM_FRAME;
         INSTANCE.put(player, new OpenMenu(plot.key(), clampedLocal, face, up, category));
         sendSync(player, plot, clampedLocal, clampedWorld, face, up);
+        BookEnchantsMenuOps.askAboutNew(player, ContainerContentsStore.loadFor(plot.key()).poolAt(clampedLocal));
     }
 
     /**
@@ -305,7 +307,10 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                 e.potionForm().ordinal(),
                 rowBookLabel(e),
                 e.enchants() == null ? 0 : e.enchants().randomMin(),
-                e.enchants() == null ? 0 : e.enchants().randomMax()));
+                e.enchants() == null ? 0 : e.enchants().randomMax(),
+                e.enchants() == null ? 0 : e.enchants().levelMin(),
+                e.enchants() == null ? 0 : e.enchants().levelMax(),
+                BookEnchantsMenuOps.syncList(e.enchants())));
         }
         return new ContainerContentsSyncPacket(plot.key(), localPos, entries,
             pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link, vaultKey);
@@ -333,6 +338,7 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
         INSTANCE.put(player, new OpenMenu(plot.key(), clamped, face, up,
             LootPrefabStore.CATEGORY_LOOT));
         sendSync(player, plot, clamped, worldPos, face, up);
+        BookEnchantsMenuOps.askAboutNew(player, ContainerContentsStore.loadFor(plot.key()).poolAt(clamped));
     }
 
     /**
@@ -569,18 +575,14 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                 next = current.replaced(idx, e.withRandomDurability(!e.randomDurability()));
                 dirty = true;
             }
-            case BUMP_BOOK_ENCH, SET_BOOK_ENCH_RANGE -> {
+            case BUMP_BOOK_ENCH, SET_BOOK_ENCH_RANGE, BUMP_BOOK_ENCH_LEVEL, SET_BOOK_ENCH_LEVEL_RANGE,
+                 TOGGLE_BOOK_ENCH, SET_BOOK_ENCH_ALL -> {
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= current.size()) return;
                 ContainerContentsEntry e = current.entries().get(idx);
-                BookEnchants be = e.enchants();
-                int min = be == null ? 0 : be.randomMin();
-                int max = be == null ? 0 : be.randomMax();
-                ContainerContentsEntry ranged = packet.op() == ContainerContentsEditPacket.Op.BUMP_BOOK_ENCH
-                    ? ContainerContentsEnchants.withRandomRange(e, Math.max(1, min), max + packet.delta())
-                    : ContainerContentsEnchants.withRandomRange(e, packet.value2(), packet.delta());
-                if (ranged.equals(e)) return;
-                next = current.replaced(idx, ranged);
+                ContainerContentsEntry edited = BookEnchantsMenuOps.apply(packet, e, player.registryAccess());
+                if (edited.equals(e)) return;
+                next = current.replaced(idx, edited);
                 dirty = true;
             }
             case TOGGLE_RAND_ENCH -> {

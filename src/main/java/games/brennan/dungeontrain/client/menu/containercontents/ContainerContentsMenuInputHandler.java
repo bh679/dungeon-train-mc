@@ -115,6 +115,8 @@ public final class ContainerContentsMenuInputHandler {
         }
         if (ContainerContentsMenu.screen() == ContainerContentsMenu.Screen.ROOT) {
             dispatchRoot(hit, shift, button);
+        } else if (ContainerContentsMenu.screen() == ContainerContentsMenu.Screen.BOOK_ENCHANTS) {
+            dispatchBookList(hit);
         } else {
             dispatchSearch(hit);
         }
@@ -125,7 +127,7 @@ public final class ContainerContentsMenuInputHandler {
         if (ContainerContentsMenu.screen() != ContainerContentsMenu.Screen.ROOT) return false;
         return switch (hit.kind()) {
             case FILL_MIN, FILL_MAX, ENTRY_COUNT_PLUS, ENTRY_WEIGHT_PLUS, ENTRY_DUR_CHANCE, ENTRY_ENCH_CHANCE,
-                 ENTRY_BOOK_ENCH -> true;
+                 ENTRY_BOOK_ENCH, ENTRY_BOOK_LEVEL -> true;
             default -> false;
         };
     }
@@ -186,6 +188,16 @@ public final class ContainerContentsMenuInputHandler {
                 ContainerContentsSyncPacket.Entry entry = ContainerContentsMenu.entries().get(hit.index());
                 NumberStepper.click(bookEnchNumber(plotKey, local, hit.index(), entry),
                     button, shift, MenuClickModifiers.cmdDown(), bookEnchRangePad(plotKey, local, hit.index(), entry));
+            }
+            case ENTRY_BOOK_LEVEL -> {
+                if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
+                ContainerContentsSyncPacket.Entry entry = ContainerContentsMenu.entries().get(hit.index());
+                NumberStepper.click(bookLevelNumber(plotKey, local, hit.index(), entry),
+                    button, shift, MenuClickModifiers.cmdDown(), bookLevelRangePad(plotKey, local, hit.index(), entry));
+            }
+            case ENTRY_BOOK_LIST -> {
+                if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
+                ContainerContentsMenu.enterBookEnchants(hit.index());
             }
             case ENTRY_ICON -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
@@ -292,6 +304,55 @@ public final class ContainerContentsMenuInputHandler {
             (min, max) -> DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                 ContainerContentsEditPacket.Op.SET_BOOK_ENCH_RANGE, plotKey, local, row, "", max, min)),
             ContainerContentsMenu.space().isScreenspace() ? new ContainerContentsMenuScreen() : null));
+    }
+
+    /**
+     * A book's Level cell: clicks step the lowest level (0, shown "max", means top level only; it wraps),
+     * typing sets the lowest level with the highest kept.
+     */
+    private static NumberField bookLevelNumber(String plotKey, net.minecraft.core.BlockPos local, int row,
+                                               ContainerContentsSyncPacket.Entry e) {
+        return new NumberField(NumberTitle.of("book_level"), e.bookLevelMin(), BookEnchants.LEVEL_TOP,
+            BookEnchants.MAX_LEVEL_SETTING, false,
+            () -> send(ContainerContentsEditPacket.Op.BUMP_BOOK_ENCH_LEVEL, plotKey, local, row, 1),
+            () -> send(ContainerContentsEditPacket.Op.BUMP_BOOK_ENCH_LEVEL, plotKey, local, row, -1),
+            v -> DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                ContainerContentsEditPacket.Op.SET_BOOK_ENCH_LEVEL_RANGE, plotKey, local, row, "",
+                e.bookLevelMax(), v)));
+    }
+
+    /** Cmd-click on a book's Level cell: the min/max pad; a max of 10 means each enchantment's top level. */
+    private static NumberStepper.Typing bookLevelRangePad(String plotKey, net.minecraft.core.BlockPos local, int row,
+                                                          ContainerContentsSyncPacket.Entry e) {
+        int top = BookEnchants.MAX_LEVEL_SETTING;
+        int max = e.bookLevelMax() == BookEnchants.LEVEL_TOP ? top : e.bookLevelMax();
+        int min = e.bookLevelMin() == BookEnchants.LEVEL_TOP ? max : e.bookLevelMin();
+        return field -> Minecraft.getInstance().setScreen(new CountRangeInputScreen(
+            net.minecraft.network.chat.Component.literal(field.title()), min, max, top,
+            (lo, hi) -> DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                ContainerContentsEditPacket.Op.SET_BOOK_ENCH_LEVEL_RANGE, plotKey, local, row, "", hi, lo)),
+            ContainerContentsMenu.space().isScreenspace() ? new ContainerContentsMenuScreen() : null));
+    }
+
+    /** Clicks on a book's enchantment list. */
+    private static void dispatchBookList(ContainerContentsMenu.Hit hit) {
+        net.minecraft.core.BlockPos local = ContainerContentsMenu.localPos();
+        if (local == null) return;
+        String plotKey = ContainerContentsMenu.plotKey();
+        int row = ContainerContentsMenu.bookRow();
+        switch (hit.kind()) {
+            case BOOK_LIST_BACK -> ContainerContentsMenu.backToRoot();
+            case BOOK_LIST_ALL_ON -> send(ContainerContentsEditPacket.Op.SET_BOOK_ENCH_ALL, plotKey, local, row, 1);
+            case BOOK_LIST_ALL_OFF -> send(ContainerContentsEditPacket.Op.SET_BOOK_ENCH_ALL, plotKey, local, row, 0);
+            case BOOK_LIST_ROW -> {
+                var all = BookEnchantListPanel.candidates();
+                if (hit.index() < 0 || hit.index() >= all.size()) return;
+                all.get(hit.index()).unwrapKey().ifPresent(key -> DungeonTrainNet.sendToServer(
+                    new ContainerContentsEditPacket(ContainerContentsEditPacket.Op.TOGGLE_BOOK_ENCH, plotKey, local, row,
+                        key.location().toString(), 0)));
+            }
+            default -> {}
+        }
     }
 
     private static void send(ContainerContentsEditPacket.Op op, String plotKey, net.minecraft.core.BlockPos local,
