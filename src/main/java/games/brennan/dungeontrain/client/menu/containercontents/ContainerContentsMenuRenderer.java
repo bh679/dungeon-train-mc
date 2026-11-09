@@ -604,7 +604,8 @@ public final class ContainerContentsMenuRenderer {
             rowDispTop[i] = colTotalH[col];
             colTotalH[col] += h;
             if (ContainerContentsMenu.isExpanded(i)) {
-                double nameW = font.width(shortenItemLabel(id)) * TEXT_SCALE + NAME_PAD;
+                // The full row label: a book title or enchantments widen it past the item name.
+                double nameW = font.width(entryLabel(entries.get(i))) * TEXT_SCALE + NAME_PAD;
                 colNameW[col] = Math.max(colNameW[col], nameW);
             }
         }
