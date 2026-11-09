@@ -1,0 +1,20 @@
+{
+  "id": "sculk-snapper-no-mending",
+  "version": "0.1748.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "loot",
+    "balance"
+  ],
+  "title": "Mending fix",
+  "summary": "Mending is now as rare as it was meant to be: a tame companion could hand it out for free.",
+  "highlights": [
+    "Books dropped by a tame companion no longer carry Mending."
+  ],
+  "pr": 2583,
+  "date": "2026-11-09",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
