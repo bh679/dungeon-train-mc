@@ -34497,6 +34497,159 @@
       "released": true,
       "released_in": "v0.1739.0",
       "released_at": "2026-11-08T23:06:08Z"
+    },
+    {
+      "id": "mending-trade-stock-one",
+      "version": "0.1740.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Mending trades limited to a few",
+      "summary": "Villagers and other traders who sell Mending now only have one to three in stock at a time.",
+      "highlights": [],
+      "pr": 2574,
+      "date": "2026-11-08",
+      "released": true,
+      "released_in": "v0.1747.0",
+      "released_at": "2026-11-09T12:57:53Z"
+    },
+    {
+      "id": "carriage-newcomers",
+      "version": "0.1746.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "mobs"
+      ],
+      "title": "More Mobs Creeping Aboard",
+      "summary": "Several new faces join the line, some of you may recognise them. Not all will be so scary, but as the train gets deeper that will change.",
+      "highlights": [],
+      "pr": 2581,
+      "date": "2026-11-09",
+      "released": true,
+      "released_in": "v0.1747.0",
+      "released_at": "2026-11-09T12:57:53Z",
+      "major": true,
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/carriage-newcomers.gif"
+    },
+    {
+      "id": "contents-touch-sees-carriage",
+      "version": "0.1726.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Rooms fit their carriage",
+      "summary": "Decorations at the edges of a carriage room now take the carriage around them into account, so things hang from real ceilings and sit on real floors.",
+      "highlights": [
+        "Room decorations along the walls, floor and ceiling now follow the carriage they are in"
+      ],
+      "pr": 2580,
+      "date": "2026-11-09",
+      "released": true,
+      "released_in": "v0.1747.0",
+      "released_at": "2026-11-09T12:57:53Z"
+    },
+    {
+      "id": "dimensional-carriage-water",
+      "version": "0.1740.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage fix",
+      "summary": "Water no longer leaks into dimensional carriages.",
+      "highlights": [],
+      "pr": 2575,
+      "date": "2026-11-09",
+      "released": true,
+      "released_in": "v0.1747.0",
+      "released_at": "2026-11-09T12:57:53Z"
+    },
+    {
+      "id": "librarian-trade-tweak",
+      "version": "0.1743.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "loot",
+        "balance"
+      ],
+      "title": "Librarian trade tweak",
+      "summary": "Librarians who take up a new job now offer a slightly different selection of books.",
+      "highlights": [],
+      "pr": 2579,
+      "date": "2026-11-09",
+      "released": true,
+      "released_in": "v0.1747.0",
+      "released_at": "2026-11-09T12:57:53Z"
+    },
+    {
+      "id": "rarest-vault-books",
+      "version": "0.1743.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "loot",
+        "balance"
+      ],
+      "title": "Better books from the rarest vault",
+      "summary": "The rarest vault can now hand out several powerful enchanted books at once, and something new.",
+      "highlights": [
+        "Books from the rarest vault carry several strong enchantments, never a curse.",
+        "Builders can set how many random enchantments a book in their loot gets, and an enchanted book added from the hand keeps its own."
+      ],
+      "pr": 2578,
+      "date": "2026-11-09",
+      "released": true,
+      "released_in": "v0.1747.0",
+      "released_at": "2026-11-09T12:57:53Z"
+    },
+    {
+      "id": "terra-omnia-ominous-woods",
+      "version": "0.1746.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements",
+        "balance"
+      ],
+      "title": "Terra Omnia rare biomes tweak",
+      "summary": "Ominous Woods is now one of Terra Omnia's rare biomes and turns up more often. Terra Omnia now asks for any 3 of the 6 rare biomes.",
+      "highlights": [],
+      "pr": 2582,
+      "date": "2026-11-09",
+      "released": true,
+      "released_in": "v0.1747.0",
+      "released_at": "2026-11-09T12:57:53Z"
+    },
+    {
+      "id": "train-villagers-no-restock",
+      "version": "0.1740.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "loot",
+        "balance"
+      ],
+      "title": "Train villagers no longer restock",
+      "summary": "Villagers on the train keep the stock they start with. Once a trade sells out, it stays sold out.",
+      "highlights": [],
+      "date": "2026-11-09",
+      "released": true,
+      "released_in": "v0.1747.0",
+      "released_at": "2026-11-09T12:57:53Z"
     }
   ]
 }
