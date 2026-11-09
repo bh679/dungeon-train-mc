@@ -1,11 +1,12 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "excluded": [
     "chest",
     "cows",
     "craft",
     "default",
     "ender",
+    "enemies_creepers",
     "featurefancy",
     "features",
     "fire",

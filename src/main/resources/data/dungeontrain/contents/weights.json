@@ -7,28 +7,6 @@
   "biome_creepers": {
     "weight": 1,
     "minLevel": 4,
-    "phases": [
-      "OVERWORLD",
-      "NETHER",
-      "VOID",
-      "END",
-      "UPSIDE_DOWN",
-      "CHUNCKS",
-      "SPHERES",
-      "STACKS",
-      "BETA",
-      "ALPHA",
-      "SKYLANDS",
-      "INFDEV",
-      "FLOATING",
-      "FAR_LANDS",
-      "CLASSIC",
-      "CAVES_OF_CHAOS",
-      "LARGE_BIOMES",
-      "AMPLIFIED",
-      "LOST_CITY",
-      "DEEPER_DARK"
-    ],
     "name": "Biome Creepers",
     "optIn": true
   },
@@ -37,6 +15,7 @@
   "cargocontents": 15,
   "cows": 15,
   "craft": 7,
+  "creeper_cave": 2,
   "dangerous_1": {
     "weight": 1,
     "name": "tntbarrel",
