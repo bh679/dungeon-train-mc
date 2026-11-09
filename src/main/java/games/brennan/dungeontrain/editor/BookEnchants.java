@@ -41,6 +41,11 @@ public record BookEnchants(Map<ResourceLocation, Integer> exact, int randomMin, 
         return new BookEnchants(Map.of(), min, max);
     }
 
+    /** These exact enchantments with the random range set to {@code min}..{@code max} (max 0: none). */
+    public BookEnchants withRandom(int min, int max) {
+        return new BookEnchants(exact, min, max);
+    }
+
     public boolean isEmpty() {
         return exact.isEmpty() && randomMax == 0;
     }

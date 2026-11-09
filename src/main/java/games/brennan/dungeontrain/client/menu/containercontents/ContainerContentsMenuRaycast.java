@@ -181,6 +181,15 @@ public final class ContainerContentsMenuRaycast {
                     ? new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_SCALE_TOGGLE, idx)
                     : new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_POTION_FORM, idx);
             }
+            boolean showBookEnch = layout.showBookEnch()[idx];
+            if (showBookEnch && hitX <= dur2R) {
+                return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_BOOK_ENCH, idx);
+            }
+            // A book's range, when on, replaces the random-enchant toggle and %, which are not drawn.
+            if (showBookEnch && idx < ContainerContentsMenu.entries().size()
+                && ContainerContentsMenu.entries().get(idx).hasRandomBookEnchants()) {
+                return ContainerContentsMenu.Hit.NONE;
+            }
             if (hitX <= dur1R) {
                 return showDur
                     ? new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_RAND_DUR_TOGGLE, idx)

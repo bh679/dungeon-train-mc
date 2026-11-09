@@ -61,13 +61,25 @@ public record ContainerContentsSyncPacket(
      * {@code potionForm} its bottle-form ordinal ({@code PotionForm}).
      * {@code bookTitle} is the row's book label: a written-book entry's stored title (the pages
      * stay server-side), or a book entry's enchantments ("mending 1", "1-7 random"); {@code ""}
-     * when none.
+     * when none. {@code bookEnchMin}..{@code bookEnchMax} is a book entry's random-enchantment
+     * range ({@code BookEnchants}); max 0 when it has none.
      */
     public record Entry(String itemId, int count, int minCount, int weight,
                         boolean randomDurability, int durabilityChance,
                         boolean randomEnchantment, int enchantmentChance,
                         int slotOverride, String potionId, boolean scaleWithDistance,
-                        int potionForm, String bookTitle) {
+                        int potionForm, String bookTitle, int bookEnchMin, int bookEnchMax) {
+
+        /** Back-compat: entry with no random book enchantments. */
+        public Entry(String itemId, int count, int minCount, int weight,
+                     boolean randomDurability, int durabilityChance,
+                     boolean randomEnchantment, int enchantmentChance,
+                     int slotOverride, String potionId, boolean scaleWithDistance,
+                     int potionForm, String bookTitle) {
+            this(itemId, count, minCount, weight, randomDurability, durabilityChance,
+                randomEnchantment, enchantmentChance, slotOverride, potionId, scaleWithDistance,
+                potionForm, bookTitle, 0, 0);
+        }
 
         /** Back-compat: entry with no minimum count (rolls from 1). */
         public Entry(String itemId, int count, int weight,
@@ -106,6 +118,10 @@ public record ContainerContentsSyncPacket(
 
         public boolean hasBook() {
             return bookTitle != null && !bookTitle.isEmpty();
+        }
+
+        public boolean hasRandomBookEnchants() {
+            return bookEnchMax > 0;
         }
     }
 
@@ -155,6 +171,8 @@ public record ContainerContentsSyncPacket(
             buf.writeBoolean(e.scaleWithDistance());
             buf.writeByte(e.potionForm());
             buf.writeUtf(e.bookTitle() == null ? "" : e.bookTitle(), 64);
+            buf.writeVarInt(e.bookEnchMin());
+            buf.writeVarInt(e.bookEnchMax());
         }
         if (linkedPrefabId == null || linkedPrefabId.isEmpty()) {
             buf.writeBoolean(false);
@@ -201,7 +219,10 @@ public record ContainerContentsSyncPacket(
             boolean scale = buf.readBoolean();
             int form = buf.readByte();
             String bookTitle = buf.readUtf(64);
-            entries.add(new Entry(id, count, minCount, weight, randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, bookTitle));
+            int bookEnchMin = buf.readVarInt();
+            int bookEnchMax = buf.readVarInt();
+            entries.add(new Entry(id, count, minCount, weight, randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, bookTitle,
+                bookEnchMin, bookEnchMax));
         }
         String link = buf.readBoolean() ? buf.readUtf(64) : null;
         String vaultKey = buf.readBoolean() ? buf.readUtf(256) : null;

@@ -17,6 +17,7 @@ import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.registries.BuiltInRegistries;
+import games.brennan.dungeontrain.editor.ContainerContentsEnchants;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -439,7 +440,8 @@ public final class ContainerContentsMenuRenderer {
             boolean showDur = layout.showDur[i];
             boolean showEnch = layout.showEnch[i];
             boolean showScale = layout.showScale[i];
-            if (!showDur && !showEnch && !showScale) continue;
+            boolean showBookEnch = layout.showBookEnch[i];
+            if (!layout.hasSubRow(i)) continue;
 
             double subTop = rowBottom;
             double subBottom = subTop - SUB_ROW_HEIGHT;
@@ -508,7 +510,26 @@ public final class ContainerContentsMenuRenderer {
                     durChanceHover ? 0xFF000000 : 0xFFFFFFFF);
             }
 
-            if (showEnch) {
+            if (showBookEnch) {
+                // A book's random-enchantment range, on the left half (books have no durability cells).
+                // While it is on it decides the book's enchantments, so the toggle and % give way.
+                boolean bookHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_BOOK_ENCH && hovered.index() == i;
+                boolean bookOn = entry.hasRandomBookEnchants();
+                int bookTint = bookHover
+                    ? (bookOn ? 0xC0CCAAFF : 0xC0AAAAAA)
+                    : (bookOn ? 0x806A4A9F : 0x40555555);
+                drawQuad(ps, buffer, dur1L + 0.005, subBottom + 0.005,
+                    dur2R - 0.005, subTop - 0.005, bookTint);
+                String range = entry.bookEnchMin() == entry.bookEnchMax()
+                    ? Integer.toString(entry.bookEnchMax())
+                    : entry.bookEnchMin() + "-" + entry.bookEnchMax();
+                drawCenteredText(ps, buffer, font,
+                    bookOn ? MenuLang.t("container.book_ench", range) : MenuLang.t("container.book_ench_off"),
+                    (dur1L + dur2R) / 2.0, subCY,
+                    bookHover ? 0xFF000000 : 0xFFFFFFFF);
+            }
+
+            if (showEnch && !(showBookEnch && entry.hasRandomBookEnchants())) {
                 // Random-enchantment toggle.
                 boolean enchTogHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_RAND_ENCH_TOGGLE && hovered.index() == i;
                 boolean enchOn = entry.randomEnchantment();
@@ -551,11 +572,12 @@ public final class ContainerContentsMenuRenderer {
      * is.</p>
      */
     record EntryLayout(double[] rowDispTop, boolean[] showDur, boolean[] showEnch, boolean[] showScale,
+                       boolean[] showBookEnch,
                        double gridHeight, double[] colWidth, double[] colLeft, double panelWidth) {
 
         /** True when entry {@code i} draws a sub-row (any of its per-entry options applies). */
         boolean hasSubRow(int i) {
-            return showDur[i] || showEnch[i] || showScale[i];
+            return showDur[i] || showEnch[i] || showScale[i] || showBookEnch[i];
         }
     }
 
@@ -566,6 +588,7 @@ public final class ContainerContentsMenuRenderer {
         boolean[] showDur = new boolean[n];
         boolean[] showEnch = new boolean[n];
         boolean[] showScale = new boolean[n];
+        boolean[] showBookEnch = new boolean[n];
         double[] colTotalH = new double[cols];
         // Extra width each column needs for the longest name revealed inside it.
         double[] colNameW = new double[cols];
@@ -576,7 +599,8 @@ public final class ContainerContentsMenuRenderer {
             showDur[i] = isDamageable(id);
             showEnch[i] = isEnchantable(id);
             showScale[i] = isRandomPotionPlaceholder(id);
-            double h = (showDur[i] || showEnch[i] || showScale[i]) ? ENTRY_BLOCK_HEIGHT : ROW_HEIGHT;
+            showBookEnch[i] = isBook(id);
+            double h = (showDur[i] || showEnch[i] || showScale[i] || showBookEnch[i]) ? ENTRY_BLOCK_HEIGHT : ROW_HEIGHT;
             rowDispTop[i] = colTotalH[col];
             colTotalH[col] += h;
             if (ContainerContentsMenu.isExpanded(i)) {
@@ -606,7 +630,13 @@ public final class ContainerContentsMenuRenderer {
         }
         double[] colLeft = new double[cols];
         for (int c = 1; c < cols; c++) colLeft[c] = colLeft[c - 1] + colWidth[c - 1];
-        return new EntryLayout(rowDispTop, showDur, showEnch, showScale, gridH, colWidth, colLeft, sumW);
+        return new EntryLayout(rowDispTop, showDur, showEnch, showScale, showBookEnch, gridH, colWidth, colLeft, sumW);
+    }
+
+    /** True for a plain or enchanted book: its row offers the random-enchantment range. */
+    static boolean isBook(String itemId) {
+        ResourceLocation id = ResourceLocation.tryParse(itemId);
+        return id != null && ContainerContentsEnchants.isBookId(id);
     }
 
     /**

@@ -7204,6 +7204,15 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.container.book_ench": {
+    "1": {
+      "label": "how many random enchantments the book gets, one number or a range",
+      "examples": [
+        "1-7",
+        "3"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.container.vault_key": {
     "1": {
       "label": "the name of the key item that unlocks the vault",

@@ -59,6 +59,8 @@ public final class ContainerContentsMenu {
         ENTRY_POTION_FORM,
         /** Per-entry sub-row %NN cell: bump random-enchantment chance (0-100). */
         ENTRY_ENCH_CHANCE,
+        /** Per-entry sub-row cell on books: the random-enchantment range (steps the max, cmd-click types both). */
+        ENTRY_BOOK_ENCH,
         /** Per-entry main-row cell: cycle slot override (auto / in / fuel / out). */
         ENTRY_SLOT_ASSIGN,
         SEARCH_FIELD,

@@ -42,7 +42,7 @@ public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localP
                                           int entryIndex, String itemId, int delta, int value2)
     implements CustomPacketPayload {
 
-    /** Every op but {@link Op#SET_COUNT_RANGE} carries one value; {@code value2} is 0. */
+    /** Every op but {@link Op#SET_COUNT_RANGE} and {@link Op#SET_BOOK_ENCH_RANGE} carries one value; {@code value2} is 0. */
     public ContainerContentsEditPacket(Op op, String plotKey, BlockPos localPos,
                                        int entryIndex, String itemId, int delta) {
         this(op, plotKey, localPos, entryIndex, itemId, delta, 0);
@@ -65,7 +65,11 @@ public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localP
         /** Step a vault's unlock key (Trial Key → Ominous Trial Key), which also sets the vault type. */
         CYCLE_VAULT_KEY,
         /** Typed min and max stack from the count cell's cmd-click pad: {@code delta} max, {@code value2} min. */
-        SET_COUNT_RANGE
+        SET_COUNT_RANGE,
+        /** Step a book entry's most random enchantments by {@code delta} (0 turns them off). */
+        BUMP_BOOK_ENCH,
+        /** Typed random-enchantment range of a book entry: {@code delta} max, {@code value2} min. */
+        SET_BOOK_ENCH_RANGE
     }
 
     public static final Type<ContainerContentsEditPacket> TYPE =

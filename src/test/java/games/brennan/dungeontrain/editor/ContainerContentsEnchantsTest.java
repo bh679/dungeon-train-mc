@@ -82,6 +82,26 @@ final class ContainerContentsEnchantsTest {
     }
 
     @Test
+    @DisplayName("the menu's range: keeps exact enchants, starts at 1, caps at 16, turns the ordinary roll off; 0 clears it")
+    void menuRange() {
+        ContainerContentsEntry mending = new ContainerContentsEntry(ENCHANTED_BOOK, 1, 1)
+            .withEnchants(BookEnchants.exact(Map.of(MENDING, 1)));
+        ContainerContentsEntry ranged = ContainerContentsEnchants.withRandomRange(mending, 0, 99);
+        assertEquals(new BookEnchants(Map.of(MENDING, 1), 1, BookEnchants.MAX_RANDOM), ranged.enchants());
+        assertFalse(ranged.randomEnchantment());
+        assertEquals(BookEnchants.exact(Map.of(MENDING, 1)),
+            ContainerContentsEnchants.withRandomRange(ranged, 1, 0).enchants());
+
+        ContainerContentsEntry plain = new ContainerContentsEntry(BOOK, 1, 1);
+        assertEquals(BookEnchants.random(2, 5), ContainerContentsEnchants.withRandomRange(plain, 2, 5).enchants());
+        assertNull(ContainerContentsEnchants.withRandomRange(
+            ContainerContentsEnchants.withRandomRange(plain, 2, 5), 2, 0).enchants());
+
+        ContainerContentsEntry apple = new ContainerContentsEntry(ResourceLocation.withDefaultNamespace("apple"), 1, 1);
+        assertEquals(apple, ContainerContentsEnchants.withRandomRange(apple, 1, 7));
+    }
+
+    @Test
     @DisplayName("NBT round-trips for the clipboard")
     void nbtRoundTrip() {
         BookEnchants both = new BookEnchants(Map.of(MENDING, 1), 2, 5);

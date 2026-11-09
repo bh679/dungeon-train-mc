@@ -52,6 +52,28 @@ public final class ContainerContentsEnchants {
         return stack.is(Items.BOOK) || stack.is(Items.ENCHANTED_BOOK);
     }
 
+    private static final ResourceLocation BOOK_ID = ResourceLocation.withDefaultNamespace("book");
+    private static final ResourceLocation ENCHANTED_BOOK_ID = ResourceLocation.withDefaultNamespace("enchanted_book");
+
+    /** True for the two item ids a {@link BookEnchants} applies to: the menu offers the range only on these. */
+    public static boolean isBookId(ResourceLocation itemId) {
+        return BOOK_ID.equals(itemId) || ENCHANTED_BOOK_ID.equals(itemId);
+    }
+
+    /**
+     * {@code entry} with its random-enchantment range set to {@code min}..{@code max}, its exact
+     * enchantments kept. On, the range starts at 1 and replaces the ordinary random-enchant roll,
+     * so the entry's own toggle goes off; max 0 turns the range off. Not a book: unchanged.
+     */
+    public static ContainerContentsEntry withRandomRange(ContainerContentsEntry entry, int min, int max) {
+        if (!isBookId(entry.itemId())) return entry;
+        int hi = Math.max(0, Math.min(BookEnchants.MAX_RANDOM, max));
+        int lo = hi == 0 ? 0 : Math.max(1, Math.min(hi, min));
+        BookEnchants current = entry.enchants() == null ? BookEnchants.exact(Map.of()) : entry.enchants();
+        ContainerContentsEntry next = entry.withEnchants(current.withRandom(lo, hi));
+        return hi > 0 ? next.withRandomEnchantment(false) : next;
+    }
+
     /** The stored enchantments on a held enchanted book, or {@code null} for anything else. */
     public static @Nullable BookEnchants enchantsOf(ItemStack stack) {
         if (stack == null || !stack.is(Items.ENCHANTED_BOOK)) return null;

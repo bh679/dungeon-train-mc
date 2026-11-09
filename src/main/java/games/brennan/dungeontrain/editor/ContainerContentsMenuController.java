@@ -233,6 +233,15 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
         return open == null ? LootPrefabStore.CATEGORY_LOOT : open.category();
     }
 
+
+    /** Most characters of a row's book label the sync packet carries. */
+    private static final int BOOK_LABEL_MAX = 64;
+
+    /** A row's book label: a signed book's title, or a book entry's enchantments; cut to fit the packet. */
+    private static String rowBookLabel(ContainerContentsEntry e) {
+        String label = e.book() != null ? e.book().title() : e.enchants() != null ? e.enchants().label() : "";
+        return label.length() <= BOOK_LABEL_MAX ? label : label.substring(0, BOOK_LABEL_MAX - 3) + "...";
+    }
     /**
      * Entity raycast for the {@link #toggle} menu. Mirrors the vanilla
      * {@code Entity#pick}-like pattern using
@@ -294,7 +303,9 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                 e.potionId() == null ? "" : e.potionId().toString(),
                 e.scaleWithDistance(),
                 e.potionForm().ordinal(),
-                e.book() != null ? e.book().title() : e.enchants() != null ? e.enchants().label() : ""));
+                rowBookLabel(e),
+                e.enchants() == null ? 0 : e.enchants().randomMin(),
+                e.enchants() == null ? 0 : e.enchants().randomMax()));
         }
         return new ContainerContentsSyncPacket(plot.key(), localPos, entries,
             pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link, vaultKey);
@@ -556,6 +567,20 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                 if (idx < 0 || idx >= current.size()) return;
                 ContainerContentsEntry e = current.entries().get(idx);
                 next = current.replaced(idx, e.withRandomDurability(!e.randomDurability()));
+                dirty = true;
+            }
+            case BUMP_BOOK_ENCH, SET_BOOK_ENCH_RANGE -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                BookEnchants be = e.enchants();
+                int min = be == null ? 0 : be.randomMin();
+                int max = be == null ? 0 : be.randomMax();
+                ContainerContentsEntry ranged = packet.op() == ContainerContentsEditPacket.Op.BUMP_BOOK_ENCH
+                    ? ContainerContentsEnchants.withRandomRange(e, Math.max(1, min), max + packet.delta())
+                    : ContainerContentsEnchants.withRandomRange(e, packet.value2(), packet.delta());
+                if (ranged.equals(e)) return;
+                next = current.replaced(idx, ranged);
                 dirty = true;
             }
             case TOGGLE_RAND_ENCH -> {
