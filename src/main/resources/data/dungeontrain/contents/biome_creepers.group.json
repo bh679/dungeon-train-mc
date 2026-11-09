@@ -224,7 +224,7 @@
     {
       "id": "creeper_hills",
       "weight": 1,
-      "minLevel": 9,
+      "minLevel": 5,
       "phases": [
         "OVERWORLD",
         "NETHER",
