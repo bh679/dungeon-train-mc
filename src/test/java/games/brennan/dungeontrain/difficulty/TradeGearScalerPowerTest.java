@@ -4,8 +4,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Pure-logic coverage of {@link TradeGearScaler#enchantPower}: the step curve
@@ -47,15 +45,5 @@ final class TradeGearScalerPowerTest {
         assertEquals(2, TradeGearScaler.statLookaheadMax(10));
         assertEquals(4, TradeGearScaler.statLookaheadMax(20));
         assertEquals(8, TradeGearScaler.statLookaheadMax(40));
-    }
-
-    @Test
-    @DisplayName("a book holding an enchant outside the re-roll pool (Mending) is kept")
-    void bookOutsidePoolKept() {
-        java.util.Set<String> pool = java.util.Set.of("sharpness", "efficiency");
-        assertTrue(TradeGearScaler.anyOutsidePool(java.util.List.of("mending"), pool::contains));
-        assertTrue(TradeGearScaler.anyOutsidePool(java.util.List.of("sharpness", "mending"), pool::contains));
-        assertFalse(TradeGearScaler.anyOutsidePool(java.util.List.of("sharpness"), pool::contains));
-        assertFalse(TradeGearScaler.anyOutsidePool(java.util.List.<String>of(), pool::contains));
     }
 }

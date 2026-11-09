@@ -18,7 +18,6 @@ import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
 
 import java.util.Optional;
-import java.util.function.Predicate;
 
 /**
  * Scales villager-SOLD items with the villager's own carriage position —
@@ -103,8 +102,7 @@ public final class TradeGearScaler {
     /**
      * Strip-and-re-roll enchants at {@code power} for enchantable results and
      * (enchanted) books. Returns the new stack, or null when the item takes no
-     * enchants or is a book holding an enchant the table pool lacks, e.g. Mending
-     * (leave the offer's enchant state alone).
+     * enchants (leave the offer's enchant state alone).
      */
     private static ItemStack rescaleEnchants(ItemStack result, int power, int posTier,
                                              RandomSource rng, HolderLookup.Provider registries) {
@@ -116,10 +114,6 @@ public final class TradeGearScaler {
 
         ItemStack base;
         if (result.is(Items.ENCHANTED_BOOK)) {
-            // Mending (and the curses) are tradeable but not in the table pool, so a re-roll could
-            // never give them back: keep vanilla's book as it rolled.
-            ItemEnchantments stored = result.getOrDefault(DataComponents.STORED_ENCHANTMENTS, ItemEnchantments.EMPTY);
-            if (anyOutsidePool(stored.keySet(), pool.get()::contains)) return null;
             // Re-roll the book from scratch; enchantItem turns BOOK back into
             // an ENCHANTED_BOOK with table-rolled stored enchants.
             base = new ItemStack(Items.BOOK, result.getCount());
@@ -135,17 +129,6 @@ public final class TradeGearScaler {
         // shop gear past the villager's difficulty tier; inert without such a mod. Runs before
         // repriceForEnchants, so trade pricing reflects the capped levels.
         return EnchantLevelCap.clampToProgression(rolled, posTier);
-    }
-
-    /**
-     * True when any of {@code enchants} is outside the re-roll pool — a book the
-     * re-roll could not reproduce. Package-private for unit tests.
-     */
-    static <T> boolean anyOutsidePool(Iterable<T> enchants, Predicate<T> inPool) {
-        for (T enchant : enchants) {
-            if (!inPool.test(enchant)) return true;
-        }
-        return false;
     }
 
     /**

@@ -39,8 +39,7 @@ import java.util.Random;
  * range unlocks as mob weapons advance. Sticky: established merchants carry a
  * {@code dungeontrain_trades_rerolled} tag so reloads don't re-roll their
  * offers — the one exception is a jobless villager that reloads next to a job
- * block, which is repaired (claims the job + gets a fresh trade set). A villager
- * that took a job in play reloads with its vanilla trades kept, not re-rolled.
+ * block, which is repaired (claims the job + gets a fresh trade set).
  *
  * <p>Hooks {@link EntityJoinLevelEvent} on the server side and filters to
  * entities carrying the {@link CarriageContentsPlacer#DT_CONTENTS_TAG_PREFIX}
@@ -160,16 +159,6 @@ public final class VillagerTrainSpawnEvents {
         // keeps its saved offers — we must not re-roll its trades on every chunk
         // load. (Nor do they restock by themselves: TrainVillagerNoRestockMixin.)
         if (villager.getTags().contains(REROLLED_TAG) && !justClaimed) return;
-
-        // A train villager that took its job in play (it joined jobless, so it was never
-        // tagged) reloads with the trades vanilla gave it. Keep those: re-rolling them here
-        // replaced the book a player found, Mending included.
-        if (event.loadedFromDisk() && !justClaimed && !villager.getOffers().isEmpty()) {
-            villager.addTag(REROLLED_TAG);
-            LOGGER.info("[DungeonTrain] Kept in-play trades of train villager {} ({})",
-                villager.getUUID(), profession);
-            return;
-        }
 
         Int2ObjectMap<VillagerTrades.ItemListing[]> tradeMap = VillagerTrades.TRADES.get(profession);
         if (tradeMap == null) return;
