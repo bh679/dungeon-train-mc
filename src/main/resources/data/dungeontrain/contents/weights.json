@@ -26,7 +26,8 @@
       "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY"
+      "LOST_CITY",
+      "DEEPER_DARK"
     ],
     "name": "Biome Creepers",
     "optIn": true

@@ -9,6 +9,8 @@
       "phases": [
         "OVERWORLD",
         "NETHER",
+        "VOID",
+        "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -23,7 +25,8 @@
         "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY"
+        "LOST_CITY",
+        "DEEPER_DARK"
       ]
     },
     {
@@ -33,6 +36,8 @@
       "phases": [
         "OVERWORLD",
         "NETHER",
+        "VOID",
+        "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -47,7 +52,8 @@
         "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY"
+        "LOST_CITY",
+        "DEEPER_DARK"
       ]
     },
     {
@@ -57,6 +63,8 @@
       "phases": [
         "OVERWORLD",
         "NETHER",
+        "VOID",
+        "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -71,7 +79,8 @@
         "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY"
+        "LOST_CITY",
+        "DEEPER_DARK"
       ]
     },
     {
@@ -82,6 +91,8 @@
       "phases": [
         "OVERWORLD",
         "NETHER",
+        "VOID",
+        "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -96,7 +107,8 @@
         "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY"
+        "LOST_CITY",
+        "DEEPER_DARK"
       ]
     },
     {
@@ -107,6 +119,8 @@
       "phases": [
         "OVERWORLD",
         "NETHER",
+        "VOID",
+        "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -121,7 +135,8 @@
         "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY"
+        "LOST_CITY",
+        "DEEPER_DARK"
       ]
     },
     {
@@ -131,6 +146,8 @@
       "phases": [
         "OVERWORLD",
         "NETHER",
+        "VOID",
+        "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -145,7 +162,8 @@
         "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY"
+        "LOST_CITY",
+        "DEEPER_DARK"
       ]
     },
     {
@@ -155,6 +173,8 @@
       "phases": [
         "OVERWORLD",
         "NETHER",
+        "VOID",
+        "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -169,7 +189,8 @@
         "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY"
+        "LOST_CITY",
+        "DEEPER_DARK"
       ]
     },
     {
@@ -179,6 +200,8 @@
       "phases": [
         "OVERWORLD",
         "NETHER",
+        "VOID",
+        "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -193,7 +216,8 @@
         "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY"
+        "LOST_CITY",
+        "DEEPER_DARK"
       ]
     },
     {
@@ -204,6 +228,8 @@
       "phases": [
         "OVERWORLD",
         "NETHER",
+        "VOID",
+        "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -218,7 +244,8 @@
         "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY"
+        "LOST_CITY",
+        "DEEPER_DARK"
       ]
     },
     {
@@ -228,6 +255,8 @@
       "phases": [
         "OVERWORLD",
         "NETHER",
+        "VOID",
+        "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -242,7 +271,8 @@
         "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY"
+        "LOST_CITY",
+        "DEEPER_DARK"
       ]
     },
     {
@@ -252,6 +282,8 @@
       "maxLevel": 25,
       "phases": [
         "OVERWORLD",
+        "VOID",
+        "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -266,7 +298,8 @@
         "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY"
+        "LOST_CITY",
+        "DEEPER_DARK"
       ]
     },
     {
@@ -276,6 +309,8 @@
       "phases": [
         "OVERWORLD",
         "NETHER",
+        "VOID",
+        "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -290,7 +325,8 @@
         "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY"
+        "LOST_CITY",
+        "DEEPER_DARK"
       ]
     },
     {
@@ -316,7 +352,8 @@
         "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY"
+        "LOST_CITY",
+        "DEEPER_DARK"
       ]
     },
     {
@@ -343,7 +380,8 @@
         "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY"
+        "LOST_CITY",
+        "DEEPER_DARK"
       ]
     },
     {
@@ -354,6 +392,8 @@
       "phases": [
         "OVERWORLD",
         "NETHER",
+        "VOID",
+        "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -368,13 +408,36 @@
         "CAVES_OF_CHAOS",
         "LARGE_BIOMES",
         "AMPLIFIED",
-        "LOST_CITY"
+        "LOST_CITY",
+        "DEEPER_DARK"
       ]
     },
     {
       "id": "creeper_deserttemple",
       "weight": 1,
-      "minLevel": 9
+      "minLevel": 9,
+      "phases": [
+        "OVERWORLD",
+        "NETHER",
+        "VOID",
+        "END",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "DEEPER_DARK"
+      ]
     }
   ]
 }
