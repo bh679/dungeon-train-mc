@@ -114,6 +114,16 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Creeper Overhaul — REQUIRED. Its creepers stand in carriages and spawn naturally, so its entities have to exist on
+# both sides. AFTER also lets DT's data/creeperoverhaul/neoforge/biome_modifier overrides win over the mod's own
+# (remove_vanilla.json is emptied: event/NaturalSpawnLevelGate drops the vanilla creeper per biome instead).
+[[dependencies.${mod_id}]]
+    modId="creeperoverhaul"
+    type="required"
+    versionRange="[${creeperoverhaul_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # Piglin Proliferation — REQUIRED. Its Piglin Alchemist and Piglin Traveler stand in carriages; its entities,
 # items and blocks have to exist on both sides.
 [[dependencies.${mod_id}]]
