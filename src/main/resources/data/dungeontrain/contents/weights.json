@@ -69,7 +69,7 @@
     "optIn": true
   },
   "enemies_creepers": {
-    "weight": 2,
+    "weight": 4,
     "name": "Creepers"
   },
   "enemies_deeper_dark": {
@@ -104,11 +104,11 @@
   },
   "enemies_spiders_slimes": {
     "weight": 11,
-    "name": "Spiders & Slimes"
+    "name": "Spiders \u0026 Slimes"
   },
   "enemies_undead": {
     "weight": 67,
-    "name": "Zombies & Skeletons"
+    "name": "Zombies \u0026 Skeletons"
   },
   "enemiesgroup2": {
     "weight": 5,
