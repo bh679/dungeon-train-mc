@@ -47,6 +47,16 @@
         "LOST_CITY",
         "DEEPER_DARK"
       ]
+    },
+    {
+      "id": "creeper",
+      "weight": 1,
+      "minLevel": 8
+    },
+    {
+      "id": "creeperdrop",
+      "weight": 1,
+      "minLevel": 20
     }
   ]
 }

@@ -75,10 +75,6 @@
     ],
     "optIn": true
   },
-  "enemies_creepers": {
-    "weight": 2,
-    "name": "Creepers"
-  },
   "enemies_deeper_dark": {
     "weight": 28,
     "name": "Deeper Dark"
@@ -97,7 +93,7 @@
     "name": "Nether"
   },
   "enemies_odd": {
-    "weight": 7,
+    "weight": 9,
     "name": "Odd ones"
   },
   "enemies_path": {

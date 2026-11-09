@@ -169,11 +169,11 @@ final class CarriageContentsPoolsTest {
     }
 
     @Test
-    @DisplayName("the bundled pools.json splits enemies into its eight groups")
+    @DisplayName("the bundled pools.json splits enemies into its seven groups")
     void bundledEnemiesPool() {
-        CarriageContentsPools.Pool pool = CarriageContentsPools.poolOf("enemies_creepers");
+        CarriageContentsPools.Pool pool = CarriageContentsPools.poolOf("enemies_odd");
         assertEquals("enemies", pool.id());
         assertEquals(8, pool.weight());
-        assertEquals(8, pool.members().size());
+        assertEquals(7, pool.members().size());
     }
 }

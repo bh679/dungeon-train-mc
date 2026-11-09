@@ -24,7 +24,7 @@ import java.util.Random;
  * slot of the top-level draw instead of each holding its own.
  *
  * <pre>{@code
- * {"enemies": {"weight": 8, "members": ["enemies_undead", "enemies_creepers", ...]}}
+ * {"enemies": {"weight": 8, "members": ["enemies_undead", "enemies_odd", ...]}}
  * }</pre>
  *
  * <p>The slot carries the pool's {@code weight}. When it wins, one member is drawn by its own weights.json
