@@ -23,7 +23,7 @@ import java.util.Set;
  * list the biomes in one order: the vanilla Overworld, the Nether, the End, then Biomes O' Plenty,
  * BetterNether, BetterEnd and Deeper Darker, then anything else; alphabetical within each.
  *
- * <p>Five Biomes O' Plenty biomes are so rare that riding every one of them was the wall at the end, so
+ * <p>Six Biomes O' Plenty biomes are so rare that riding every one of them was the wall at the end, so
  * Terra Omnia asks for only {@link #RARE_NEEDED} of the {@link #RARE} ones. Coffee Table Book still wants a
  * photo in all of them ({@link #holdsEvery}).</p>
  */
@@ -73,10 +73,11 @@ public final class TerraOmnia {
         ResourceLocation.fromNamespaceAndPath("biomesoplenty", "origin_valley"),
         ResourceLocation.fromNamespaceAndPath("biomesoplenty", "hot_springs"),
         ResourceLocation.fromNamespaceAndPath("biomesoplenty", "auroral_garden"),
-        ResourceLocation.fromNamespaceAndPath("biomesoplenty", "tropics"));
+        ResourceLocation.fromNamespaceAndPath("biomesoplenty", "tropics"),
+        ResourceLocation.fromNamespaceAndPath("biomesoplenty", "ominous_woods"));
 
     /** How many of {@link #RARE} Terra Omnia asks for. */
-    public static final int RARE_NEEDED = 2;
+    public static final int RARE_NEEDED = 3;
 
     private static final int OVERWORLD = 0;
     private static final int NETHER = 1;
