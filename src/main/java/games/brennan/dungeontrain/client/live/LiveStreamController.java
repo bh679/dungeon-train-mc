@@ -474,7 +474,7 @@ public final class LiveStreamController {
     }
 
     /**
-     * "You are now live on [Twitch] &amp; [DungeonTrain TV]" ({@link LiveWatchLinks}) then "N people
+     * "You are now live on" and its logo row ({@link LiveWatchLinks}) then "N people
      * watching" once the relay's first viewer count lands (or after
      * {@link #LIVE_LINE_FALLBACK_MS} with none, as 0), then a line each time the count settles in a
      * new band ({@link LiveViewerBands}).

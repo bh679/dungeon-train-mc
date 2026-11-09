@@ -5,6 +5,7 @@ import games.brennan.adventureitemnames.api.NameComposer;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
+import games.brennan.dungeontrain.difficulty.NewJobMendingBlock;
 import games.brennan.dungeontrain.difficulty.ProceduralTiers;
 import games.brennan.dungeontrain.difficulty.TradeGearScaler;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
@@ -157,8 +158,7 @@ public final class VillagerTrainSpawnEvents {
         // villager as a merchant: a fresh spawn we haven't rerolled, or one that
         // just claimed a job this tick. An established villager loaded from disk
         // keeps its saved offers — we must not re-roll its trades on every chunk
-        // load. (Restocking never happens regardless — our offers are pre-baked,
-        // not workstation-driven.)
+        // load. (Nor do they restock by themselves: TrainVillagerNoRestockMixin.)
         if (villager.getTags().contains(REROLLED_TAG) && !justClaimed) return;
 
         Int2ObjectMap<VillagerTrades.ItemListing[]> tradeMap = VillagerTrades.TRADES.get(profession);
@@ -189,6 +189,12 @@ public final class VillagerTrainSpawnEvents {
         for (MerchantOffer offer : offers) {
             scaled.add(TradeGearScaler.scale(offer, carriageIndex, posTier,
                 villager.getRandom(), serverLevel.registryAccess()));
+        }
+        // Only a librarian the train spawns may sell Mending. A roll on reload is a villager
+        // that took its job in play (or claimed a placed lectern), so its Mending books go.
+        if (event.loadedFromDisk()) {
+            NewJobMendingBlock.replaceMendingBooks(villager, scaled, 0);
+            villager.addTag(NewJobMendingBlock.BLOCKED_TAG);
         }
         villager.setOffers(scaled);
         villager.addTag(REROLLED_TAG);

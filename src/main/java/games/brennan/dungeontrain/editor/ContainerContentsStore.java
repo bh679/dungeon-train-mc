@@ -572,6 +572,9 @@ public final class ContainerContentsStore {
                     .append(" \"durChance\": ").append(ce.durabilityChance()).append(",")
                     .append(" \"randEnch\": ").append(ce.randomEnchantment()).append(",")
                     .append(" \"enchChance\": ").append(ce.enchantmentChance());
+                if (ce.hasMinCount()) {
+                    sb.append(", \"minCount\": ").append(ce.minCount());
+                }
                 if (ce.slotOverride() != ContainerContentsEntry.SLOT_AUTO) {
                     sb.append(", \"slot\": ").append(ce.slotOverride());
                 }
@@ -587,6 +590,7 @@ public final class ContainerContentsStore {
                 if (ce.book() != null) {
                     sb.append(", \"book\": ").append(ContainerContentsBooks.toJsonText(ce.book()));
                 }
+                BookEnchantsCodec.appendJson(sb, ce.enchants());
                 sb.append(" }");
                 firstEntry = false;
             }
@@ -700,6 +704,9 @@ public final class ContainerContentsStore {
                         ResourceLocation id = ResourceLocation.tryParse(eo.get("id").getAsString());
                         if (id == null) continue;
                         int count = eo.has("count") ? eo.get("count").getAsInt() : 1;
+                        int minCount = eo.has("minCount") && eo.get("minCount").isJsonPrimitive()
+                            ? eo.get("minCount").getAsInt()
+                            : ContainerContentsEntry.DEFAULT_MIN_COUNT;
                         int weight = eo.has("weight") ? eo.get("weight").getAsInt() : 1;
                         boolean randDur = eo.has("randDur")
                             ? eo.get("randDur").getAsBoolean()
@@ -726,8 +733,9 @@ public final class ContainerContentsStore {
                             ? PotionForm.parse(eo.get("form").getAsString())
                             : ContainerContentsEntry.DEFAULT_POTION_FORM;
                         StoredBook book = ContainerContentsBooks.fromJson(eo.get("book"));
-                        entries.add(new ContainerContentsEntry(id, count, weight,
-                            randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, book));
+                        entries.add(new ContainerContentsEntry(id, count, minCount, weight,
+                            randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, book,
+                            BookEnchantsCodec.fromJson(eo)));
                     }
                     if (!entries.isEmpty()) {
                         out.put(pos.immutable(), new ContainerContentsPool(entries, fillMin, fillMax, vaultKey));

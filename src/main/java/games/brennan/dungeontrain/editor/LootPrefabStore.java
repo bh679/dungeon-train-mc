@@ -464,6 +464,8 @@ public final class LootPrefabStore {
                 if (rl == null) continue;
                 int count = e.has("count") && e.get("count").isJsonPrimitive()
                     ? e.get("count").getAsInt() : 1;
+                int minCount = e.has("minCount") && e.get("minCount").isJsonPrimitive()
+                    ? e.get("minCount").getAsInt() : ContainerContentsEntry.DEFAULT_MIN_COUNT;
                 int weight = e.has("weight") && e.get("weight").isJsonPrimitive()
                     ? e.get("weight").getAsInt() : 1;
                 boolean randDur = e.has("randDur") && e.get("randDur").isJsonPrimitive()
@@ -491,8 +493,9 @@ public final class LootPrefabStore {
                     ? PotionForm.parse(e.get("form").getAsString())
                     : ContainerContentsEntry.DEFAULT_POTION_FORM;
                 StoredBook book = ContainerContentsBooks.fromJson(e.get("book"));
-                entries.add(new ContainerContentsEntry(rl, count, weight,
-                    randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, book));
+                entries.add(new ContainerContentsEntry(rl, count, minCount, weight,
+                    randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, book,
+                    BookEnchantsCodec.fromJson(e)));
             }
         }
         return Optional.of(new Data(key, block, category, new ContainerContentsPool(entries, fillMin, fillMax, vaultKey)));
@@ -525,6 +528,9 @@ public final class LootPrefabStore {
                 .append(" \"durChance\": ").append(e.durabilityChance()).append(",")
                 .append(" \"randEnch\": ").append(e.randomEnchantment()).append(",")
                 .append(" \"enchChance\": ").append(e.enchantmentChance());
+            if (e.hasMinCount()) {
+                sb.append(", \"minCount\": ").append(e.minCount());
+            }
             if (e.slotOverride() != ContainerContentsEntry.SLOT_AUTO) {
                 sb.append(", \"slot\": ").append(e.slotOverride());
             }
@@ -540,6 +546,7 @@ public final class LootPrefabStore {
             if (e.book() != null) {
                 sb.append(", \"book\": ").append(ContainerContentsBooks.toJsonText(e.book()));
             }
+            BookEnchantsCodec.appendJson(sb, e.enchants());
             sb.append(" }");
             first = false;
         }

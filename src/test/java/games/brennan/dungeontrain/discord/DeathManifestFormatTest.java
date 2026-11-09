@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.discord;
 
 import games.brennan.discordpresence.discord.DeathField;
 import games.brennan.dungeontrain.net.DeathNarrative;
+import games.brennan.dungeontrain.util.SecondPersonDeathMessage;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -144,5 +145,15 @@ final class DeathManifestFormatTest {
         assertEquals(3, f.size(), "no advancement row when none earned");
         assertFalse(f.stream().anyMatch(x -> x.name().equals("Advancements")), "no Advancements field");
         assertFalse(f.get(1).value().contains("🏆"), "no advancement marker in the This run column");
+    }
+
+    @Test
+    void nonEnglishCauseStaysInOneLanguage() {
+        // zh_cn singleplayer death: the cause line must not gain an English "They"/"You".
+        String cause = SecondPersonDeathMessage.rewrite("Hiro_659掉出了这个世界", "Hiro_659", "zh_cn");
+        String fall = DeathManifestFormat.fields(cause,
+                100.0, 200L, 0.0, 0.0, 0, 0, List.of(), 0, 0, 0, 0).get(0).value();
+        String causeLine = fall.lines().findFirst().orElse("");
+        assertEquals("🪦 Hiro\\_659掉出了这个世界", causeLine);
     }
 }

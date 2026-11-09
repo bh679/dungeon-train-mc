@@ -6530,6 +6530,15 @@
       ]
     }
   },
+  "chat.dungeontrain.lucky_loot.vault_bonus": {
+    "1": {
+      "label": "how many extra items the Luck effect added to the vault's reward (1 to 10)",
+      "examples": [
+        "1",
+        "4"
+      ]
+    }
+  },
   "chat.dungeontrain.editor_welcome.line3": {
     "1": {
       "label": "the clickable @brennanhatton mention tag",
@@ -7194,6 +7203,28 @@
         "kitchen"
       ]
     }
+  },
+  "gui.dungeontrain.editor_menu.container.book_ench": {
+    "1": {
+      "label": "how many random enchantments the book gets, one number or a range",
+      "examples": [
+        "1-7",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.container.book_level": {
+    "1": { "label": "the levels the book's random enchantments roll at", "examples": ["max", "3-max", "2-4"] }
+  },
+  "gui.dungeontrain.editor_menu.container.book_list": {
+    "1": { "label": "how many enchantments are switched on", "examples": ["38", "12"] },
+    "2": { "label": "how many enchantments the list holds", "examples": ["42"] }
+  },
+  "gui.dungeontrain.editor_menu.container.book_list_new": {
+    "1": { "label": "how many enchantments the builder has not decided on yet", "examples": ["3", "1"] }
+  },
+  "chat.dungeontrain.editor_bar.contents_menu.book_ench_new": {
+    "1": { "label": "how many enchantments the builder has not decided on yet", "examples": ["3", "1"] }
   },
   "gui.dungeontrain.editor_menu.container.vault_key": {
     "1": {
@@ -15690,6 +15721,26 @@
       ]
     }
   },
+  "gui.dungeontrain.update_help.intro.modpack": {
+    "1": {
+      "label": "the launcher's name, a brand name left untranslated",
+      "examples": [
+        "CurseForge",
+        "Modrinth App",
+        "Prism Launcher"
+      ]
+    }
+  },
+  "gui.dungeontrain.update_help.intro.mod": {
+    "1": {
+      "label": "the launcher's name, a brand name left untranslated",
+      "examples": [
+        "CurseForge",
+        "Modrinth App",
+        "ATLauncher"
+      ]
+    }
+  },
   "gui.dungeontrain.update_prompt.body": {
     "1": {
       "label": "the mod's name and newest version, shown in green",
@@ -16173,25 +16224,11 @@
       ]
     }
   },
-  "chat.dungeontrain.live.watch_links": {
-    "1": {
-      "label": "the clickable word Twitch, already translated (chat.dungeontrain.live.link.twitch)",
-      "examples": [
-        "Twitch"
-      ]
-    },
-    "2": {
-      "label": "the clickable name of the website's live page, already translated (chat.dungeontrain.live.link.tv)",
-      "examples": [
-        "DungeonTrain TV"
-      ]
-    }
-  },
   "chat.dungeontrain.live.watch_link": {
     "1": {
-      "label": "the clickable name of the website's live page, already translated (chat.dungeontrain.live.link.tv)",
+      "label": "a row of clickable platform logos (the Dungeon Train logo for the website, Twitch, YouTube, Kick), shown as small icons, not words",
       "examples": [
-        "DungeonTrain TV"
+        "[Dungeon Train] [Twitch] [YouTube] [Kick]"
       ]
     }
   },
@@ -16364,48 +16401,38 @@
   "chat.dungeontrain.live.channel.live": {
     "1": {
       "label": "the name of the player who just went live",
-      "examples": ["AshSeven", "Steve"]
+      "examples": [
+        "AshSeven",
+        "Steve"
+      ]
     },
     "2": {
       "label": "a link to their Twitch channel",
-      "examples": ["twitch.tv/ashseven"]
+      "examples": [
+        "twitch.tv/ashseven"
+      ]
     }
   },
   "chat.dungeontrain.live.channel.join": {
     "1": {
       "label": "the name of the player whose stream you are watching",
-      "examples": ["AshSeven", "Steve"]
+      "examples": [
+        "AshSeven",
+        "Steve"
+      ]
     },
     "2": {
       "label": "a link to their Twitch channel",
-      "examples": ["twitch.tv/ashseven"]
-    }
-  },
-  "chat.dungeontrain.live.watch_links_own": {
-    "1": {
-      "label": "the word Twitch, a link to the Dungeon Train Twitch channel",
       "examples": [
-        "Twitch"
-      ]
-    },
-    "2": {
-      "label": "the words DungeonTrain TV, a link to the website's live page",
-      "examples": [
-        "DungeonTrain TV"
-      ]
-    },
-    "3": {
-      "label": "the streamer's Twitch channel, shown as a clickable link",
-      "examples": [
-        "twitch.tv/brennanhattongames"
+        "twitch.tv/ashseven"
       ]
     }
   },
   "chat.dungeontrain.live.watch_link_own": {
     "1": {
-      "label": "the words DungeonTrain TV, a link to the website's live page",
+      "label": "a row of clickable platform logos (the Dungeon Train logo for the website, Twitch, YouTube, Kick), shown as small icons, not words",
       "examples": [
-        "DungeonTrain TV"
+        "[Dungeon Train] [Twitch] [YouTube] [Kick]"
       ]
     },
     "2": {

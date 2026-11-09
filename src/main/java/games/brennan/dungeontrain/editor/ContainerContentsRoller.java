@@ -97,6 +97,13 @@ public final class ContainerContentsRoller {
     private static final long SALT_ENCH_CHANCE = 0xFEEDFACECAFEBABEL;
     /** Seed source for the vanilla EnchantmentHelper RandomSource. */
     private static final long SALT_ENCH_VALUE  = 0xBADDCAFE0FF1CE00L;
+    /** Salt for a book entry's {@link BookEnchants} roll (which random enchantments, how many). */
+    private static final long SALT_BOOK_ENCHANTS = 0xB00CE7C4A7750BE5L;
+    /**
+     * Slot offset for each extra book a vault hands out from one rich-book roll, so book 2 and 3 roll
+     * their own enchantments instead of copying book 1. Past any real container's slot count.
+     */
+    private static final int EXTRA_BOOK_SLOT_STRIDE = 1 << 16;
     /** Salt for the random-book placeholder substitution. */
     private static final long SALT_RANDOM_BOOK = 0xB0011AB1ECAFEBE0L;
     private static final long SALT_LEADERBOARD_BOOK = 0x1EADE7B0A2DB00C5L;
@@ -415,9 +422,9 @@ public final class ContainerContentsRoller {
         for (int slot : slotsToFill) {
             ContainerContentsEntry picked = pickEntry(pool, totalWeight, localPos, worldSeed, carriageIndex, slot);
             if (picked == null || picked.isAir()) continue;
-            // Per-entry count is treated as a max — roll the actual stack
-            // count uniformly in [1, picked.count()] for variety per slot.
-            int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, slot);
+            // Per-entry count is a max — roll the actual stack count
+            // uniformly in [picked.minCount(), picked.count()] for variety per slot.
+            int rolledCount = rollItemCount(picked.minCount(), picked.count(), localPos, worldSeed, carriageIndex, slot);
             ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, diffIndex, slot, registries);
             if (stack.isEmpty()) continue;
             CompoundTag stackTag = (CompoundTag) stack.save(registries, new CompoundTag());
@@ -469,6 +476,19 @@ public final class ContainerContentsRoller {
                                               BlockPos localPos, long worldSeed, int carriageIndex,
                                               int diffIndex,
                                               HolderLookup.Provider registries) {
+        return rollStacks(pool, slotCount, localPos, worldSeed, carriageIndex, diffIndex, false, registries);
+    }
+
+    /**
+     * {@link #rollStacks(ContainerContentsPool, int, BlockPos, long, int, int, HolderLookup.Provider)},
+     * and with {@code splitOverflow} a rolled count above the item's stack size is handed out as
+     * several stacks ({@link #overflowStacks}) instead of being cut to one. Vault rewards split, so
+     * "totem 3-7" gives 3 to 7 totems; chests and entity fills do not.
+     */
+    public static List<ItemStack> rollStacks(ContainerContentsPool pool, int slotCount,
+                                              BlockPos localPos, long worldSeed, int carriageIndex,
+                                              int diffIndex, boolean splitOverflow,
+                                              HolderLookup.Provider registries) {
         if (pool == null || pool.isEmpty()) return List.of();
         if (slotCount <= 0) return List.of();
         int totalWeight = pool.totalWeight();
@@ -485,10 +505,54 @@ public final class ContainerContentsRoller {
         for (int slot : slotsToFill) {
             ContainerContentsEntry picked = pickEntry(pool, totalWeight, localPos, worldSeed, carriageIndex, slot);
             if (picked == null || picked.isAir()) continue;
-            int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, slot);
+            int rolledCount = rollItemCount(picked.minCount(), picked.count(), localPos, worldSeed, carriageIndex, slot);
             ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, diffIndex, slot, registries);
             if (stack.isEmpty()) continue;
             out.add(stack);
+            if (splitOverflow) {
+                out.addAll(rollsEachBook(picked)
+                    ? extraBooks(picked, stack, rolledCount, localPos, worldSeed, carriageIndex, diffIndex, slot, registries)
+                    : overflowStacks(stack, rolledCount));
+            }
+        }
+        return out;
+    }
+
+    /** True for an entry whose books each roll their own random enchantments. */
+    static boolean rollsEachBook(ContainerContentsEntry picked) {
+        return picked.hasEnchants() && picked.enchants().hasRandom();
+    }
+
+    /**
+     * The books beyond {@code first} that a rich-book roll of {@code rolledCount} still owes, each
+     * rolled on its own ({@link #EXTRA_BOOK_SLOT_STRIDE}) so a vault's 1-3 books are all different.
+     */
+    private static List<ItemStack> extraBooks(ContainerContentsEntry picked, ItemStack first, int rolledCount,
+                                              BlockPos localPos, long worldSeed, int carriageIndex,
+                                              int diffIndex, int slot, HolderLookup.Provider registries) {
+        List<ItemStack> out = new ArrayList<>();
+        for (int i = 1; i <= rolledCount - first.getCount(); i++) {
+            ItemStack book = rollItemStack(picked, 1, localPos, worldSeed, carriageIndex, diffIndex,
+                slot + EXTRA_BOOK_SLOT_STRIDE * i, registries);
+            if (!book.isEmpty()) out.add(book);
+        }
+        return out;
+    }
+
+    /**
+     * The stacks beyond {@code first} that a roll of {@code rolledCount} still owes once
+     * {@link #rollItemStack} has cut {@code first} to its max stack: copies of {@code first},
+     * each at most a full stack, until the count is met. Empty when nothing was cut.
+     */
+    static List<ItemStack> overflowStacks(ItemStack first, int rolledCount) {
+        int max = first.getMaxStackSize();
+        int remaining = rolledCount - first.getCount();
+        if (remaining <= 0 || first.getCount() < max) return List.of();
+        List<ItemStack> out = new ArrayList<>();
+        while (remaining > 0) {
+            int n = Math.min(max, remaining);
+            out.add(first.copyWithCount(n));
+            remaining -= n;
         }
         return out;
     }
@@ -517,14 +581,19 @@ public final class ContainerContentsRoller {
     }
 
     /**
-     * Deterministic stack count for a slot — uniform in {@code [1, max]}.
+     * Deterministic stack count for a slot — uniform in {@code [min, max]}.
      * Independent salt so it doesn't correlate with the entry pick.
+     *
+     * <p>With {@code min == 1} this is exactly the {@code [1, max]} roll every
+     * pool used before entries had a minimum, so existing worlds roll the same
+     * stacks.</p>
      *
      * <p>Package-private so {@link EntityVariantApplicator} can roll counts
      * the same way per equipment slot.</p>
      */
-    static int rollItemCount(int max, BlockPos localPos, long worldSeed, int carriageIndex, int slot) {
-        if (max <= 1) return 1;
+    static int rollItemCount(int min, int max, BlockPos localPos, long worldSeed, int carriageIndex, int slot) {
+        if (min < 1) min = 1;
+        if (max <= min) return Math.max(1, max);
         long state = worldSeed
             ^ ((long) localPos.getX() * MIX_X)
             ^ ((long) localPos.getY() * MIX_Y)
@@ -535,7 +604,7 @@ public final class ContainerContentsRoller {
         state = (state ^ (state >>> 30)) * 0xBF58476D1CE4E5B9L;
         state = (state ^ (state >>> 27)) * 0x94D049BB133111EBL;
         state = state ^ (state >>> 31);
-        return 1 + (int) ((state & 0x7FFFFFFFFFFFFFFFL) % max);
+        return min + (int) ((state & 0x7FFFFFFFFFFFFFFFL) % (max - min + 1));
     }
 
     /**
@@ -683,7 +752,7 @@ public final class ContainerContentsRoller {
         ContainerContentsEntry picked = pickEntry(pool, totalWeight, localPos, worldSeed, carriageIndex, /*slot*/ 0);
         if (picked == null || picked.isAir()) return out;
 
-        int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, /*slot*/ 0);
+        int rolledCount = rollItemCount(picked.minCount(), picked.count(), localPos, worldSeed, carriageIndex, /*slot*/ 0);
         ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, diffIndex, /*slot*/ 0, registries);
         if (stack.isEmpty()) return out;
         CompoundTag stackTag = (CompoundTag) stack.save(registries, new CompoundTag());
@@ -962,7 +1031,7 @@ public final class ContainerContentsRoller {
                                         BlockPos localPos, long worldSeed, int carriageIndex, int diffIndex,
                                         HolderLookup.Provider registries) {
         if (picked == null || picked.isAir()) return false;
-        int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, slot);
+        int rolledCount = rollItemCount(picked.minCount(), picked.count(), localPos, worldSeed, carriageIndex, slot);
         ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, diffIndex, slot, registries);
         if (stack.isEmpty()) return false;
         CompoundTag stackTag = (CompoundTag) stack.save(registries, new CompoundTag());
@@ -1127,6 +1196,13 @@ public final class ContainerContentsRoller {
         ContainerContentsPotions.applyStoredPotion(stack, picked.potionId(), registries);
         // A written-book entry carries the signed book the author added from their hand.
         ContainerContentsBooks.applyStoredBook(stack, picked.book(), registries);
+        // A book entry's own enchantments: exact ones (a Mending book) and/or a roll of different
+        // max-level ones. It becomes an enchanted book, which the random-enchant roll below skips.
+        if (picked.hasEnchants()) {
+            stack = ContainerContentsEnchants.apply(stack, picked.enchants(),
+                RandomSource.create(mix(localPos, worldSeed, carriageIndex, slot, SALT_BOOK_ENCHANTS)), registries);
+            stack = EnchantLevelCap.clampToProgression(stack, DifficultyProgression.positionTier(diffIndex));
+        }
 
         if (picked.randomDurability() && stack.isDamageableItem()
             && rollChance(picked.durabilityChance(), localPos, worldSeed,

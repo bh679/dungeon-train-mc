@@ -1,0 +1,17 @@
+{
+  "id": "dimensional-carriage-water",
+  "version": "0.1740.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "train"
+  ],
+  "title": "Dimensional carriage fix",
+  "summary": "Water no longer leaks into dimensional carriages.",
+  "highlights": [],
+  "pr": 2575,
+  "date": "2026-11-09",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

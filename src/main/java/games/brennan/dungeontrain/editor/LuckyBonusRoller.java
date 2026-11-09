@@ -90,7 +90,7 @@ public final class LuckyBonusRoller {
             ContainerContentsEntry picked =
                 ContainerContentsRoller.pickEntry(eligible, totalWeight, localPos, worldSeed, carriageIndex, slotKey);
             if (picked == null || picked.isAir()) continue;
-            int count = ContainerContentsRoller.rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, slotKey);
+            int count = ContainerContentsRoller.rollItemCount(picked.minCount(), picked.count(), localPos, worldSeed, carriageIndex, slotKey);
             ItemStack stack = ContainerContentsRoller.rollItemStack(
                 picked, count, localPos, worldSeed, carriageIndex, diffIndex, slotKey, registries);
             if (stack.isEmpty()) continue;
@@ -147,6 +147,18 @@ public final class LuckyBonusRoller {
         int min = luck >= LUCK_II_THRESHOLD ? LUCK_II_MIN_BONUS : LUCK_I_MIN_BONUS;
         int max = luck >= LUCK_II_THRESHOLD ? LUCK_II_MAX_BONUS : LUCK_I_MAX_BONUS;
         return min + random.nextInt(max - min + 1);
+    }
+
+    /**
+     * How many of a vault's extra reward roll ({@code extraRolled} items) a player unlocking it keeps:
+     * all of it with Luck II and up (double the drops), half with Luck I (1.5x; an odd count rounds
+     * up on a coin flip so the average stays exact), none otherwise (Bad Luck never removes items).
+     */
+    public static int vaultExtraCount(float luck, int extraRolled, RandomSource random) {
+        if (luck <= 0f || extraRolled <= 0) return 0;
+        if (luck >= LUCK_II_THRESHOLD) return extraRolled;
+        int half = extraRolled / 2;
+        return extraRolled % 2 == 1 && random.nextBoolean() ? half + 1 : half;
     }
 
     /**
