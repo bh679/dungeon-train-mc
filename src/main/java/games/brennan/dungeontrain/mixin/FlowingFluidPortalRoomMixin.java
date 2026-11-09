@@ -45,4 +45,36 @@ public class FlowingFluidPortalRoomMixin {
             cir.setReturnValue(false);
         }
     }
+
+    /**
+     * The same boundary for the search that decides which way a fluid flows.
+     *
+     * <p>{@code getSpread} looks up to four blocks out for a drop and, finding one, sends the fluid
+     * only that way. It tests each step with {@code canPassThrough}, which never consults
+     * {@code canSpreadTo}, so on a room's open edge it found the drop outside, chose it, and the veto
+     * above then refused the move: water on the edge row stood still instead of spreading along the
+     * room. Refused here as well, the boundary reads as a wall to the search too, and the fluid
+     * spreads inside as it would against one.</p>
+     */
+    @Inject(
+        method = "canPassThrough(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/level/material/Fluid;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/Direction;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/material/FluidState;)Z",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private void dungeontrain$portalRoomWallForSlopeSearch(
+        BlockGetter level,
+        Fluid fluid,
+        BlockPos pos,
+        BlockState state,
+        Direction direction,
+        BlockPos spreadPos,
+        BlockState spreadState,
+        FluidState fluidState,
+        CallbackInfoReturnable<Boolean> cir
+    ) {
+        if (level instanceof ServerLevel server
+            && PortalFluidBarrier.blocksFlow(server, pos, spreadPos)) {
+            cir.setReturnValue(false);
+        }
+    }
 }
