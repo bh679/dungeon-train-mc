@@ -370,6 +370,11 @@
         "AMPLIFIED",
         "LOST_CITY"
       ]
+    },
+    {
+      "id": "creeper_deserttemple",
+      "weight": 1,
+      "minLevel": 9
     }
   ]
 }
