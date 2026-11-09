@@ -74,7 +74,7 @@
     {
       "id": "creeper_bamboo",
       "weight": 1,
-      "minLevel": 5,
+      "minLevel": 4,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
@@ -97,7 +97,7 @@
     {
       "id": "creeper_savannah",
       "weight": 1,
-      "minLevel": 7,
+      "minLevel": 4,
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
@@ -284,6 +284,9 @@
       "minLevel": 11,
       "phases": [
         "OVERWORLD",
+        "NETHER",
+        "VOID",
+        "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
@@ -307,6 +310,9 @@
       "minLevel": 5,
       "phases": [
         "OVERWORLD",
+        "NETHER",
+        "VOID",
+        "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",

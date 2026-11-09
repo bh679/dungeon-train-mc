@@ -9,6 +9,9 @@
     "minLevel": 4,
     "phases": [
       "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "END",
       "UPSIDE_DOWN",
       "CHUNCKS",
       "SPHERES",
@@ -25,8 +28,8 @@
       "AMPLIFIED",
       "LOST_CITY"
     ],
-    "optIn": true,
-    "name": "Biome Creepers"
+    "name": "Biome Creepers",
+    "optIn": true
   },
   "books": 11,
   "caggedzombs2": 1,
