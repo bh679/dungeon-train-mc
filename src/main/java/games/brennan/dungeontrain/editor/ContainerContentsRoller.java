@@ -97,6 +97,13 @@ public final class ContainerContentsRoller {
     private static final long SALT_ENCH_CHANCE = 0xFEEDFACECAFEBABEL;
     /** Seed source for the vanilla EnchantmentHelper RandomSource. */
     private static final long SALT_ENCH_VALUE  = 0xBADDCAFE0FF1CE00L;
+    /** Salt for a book entry's {@link BookEnchants} roll (which random enchantments, how many). */
+    private static final long SALT_BOOK_ENCHANTS = 0xB00CE7C4A7750BE5L;
+    /**
+     * Slot offset for each extra book a vault hands out from one rich-book roll, so book 2 and 3 roll
+     * their own enchantments instead of copying book 1. Past any real container's slot count.
+     */
+    private static final int EXTRA_BOOK_SLOT_STRIDE = 1 << 16;
     /** Salt for the random-book placeholder substitution. */
     private static final long SALT_RANDOM_BOOK = 0xB0011AB1ECAFEBE0L;
     private static final long SALT_LEADERBOARD_BOOK = 0x1EADE7B0A2DB00C5L;
@@ -502,7 +509,32 @@ public final class ContainerContentsRoller {
             ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, diffIndex, slot, registries);
             if (stack.isEmpty()) continue;
             out.add(stack);
-            if (splitOverflow) out.addAll(overflowStacks(stack, rolledCount));
+            if (splitOverflow) {
+                out.addAll(rollsEachBook(picked)
+                    ? extraBooks(picked, stack, rolledCount, localPos, worldSeed, carriageIndex, diffIndex, slot, registries)
+                    : overflowStacks(stack, rolledCount));
+            }
+        }
+        return out;
+    }
+
+    /** True for an entry whose books each roll their own random enchantments. */
+    static boolean rollsEachBook(ContainerContentsEntry picked) {
+        return picked.hasEnchants() && picked.enchants().hasRandom();
+    }
+
+    /**
+     * The books beyond {@code first} that a rich-book roll of {@code rolledCount} still owes, each
+     * rolled on its own ({@link #EXTRA_BOOK_SLOT_STRIDE}) so a vault's 1-3 books are all different.
+     */
+    private static List<ItemStack> extraBooks(ContainerContentsEntry picked, ItemStack first, int rolledCount,
+                                              BlockPos localPos, long worldSeed, int carriageIndex,
+                                              int diffIndex, int slot, HolderLookup.Provider registries) {
+        List<ItemStack> out = new ArrayList<>();
+        for (int i = 1; i <= rolledCount - first.getCount(); i++) {
+            ItemStack book = rollItemStack(picked, 1, localPos, worldSeed, carriageIndex, diffIndex,
+                slot + EXTRA_BOOK_SLOT_STRIDE * i, registries);
+            if (!book.isEmpty()) out.add(book);
         }
         return out;
     }
@@ -1164,6 +1196,13 @@ public final class ContainerContentsRoller {
         ContainerContentsPotions.applyStoredPotion(stack, picked.potionId(), registries);
         // A written-book entry carries the signed book the author added from their hand.
         ContainerContentsBooks.applyStoredBook(stack, picked.book(), registries);
+        // A book entry's own enchantments: exact ones (a Mending book) and/or a roll of different
+        // max-level ones. It becomes an enchanted book, which the random-enchant roll below skips.
+        if (picked.hasEnchants()) {
+            stack = ContainerContentsEnchants.apply(stack, picked.enchants(),
+                RandomSource.create(mix(localPos, worldSeed, carriageIndex, slot, SALT_BOOK_ENCHANTS)), registries);
+            stack = EnchantLevelCap.clampToProgression(stack, DifficultyProgression.positionTier(diffIndex));
+        }
 
         if (picked.randomDurability() && stack.isDamageableItem()
             && rollChance(picked.durabilityChance(), localPos, worldSeed,

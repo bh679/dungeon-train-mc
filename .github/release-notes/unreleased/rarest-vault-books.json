@@ -1,0 +1,22 @@
+{
+  "id": "rarest-vault-books",
+  "version": "0.1743.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor",
+    "loot",
+    "balance"
+  ],
+  "title": "Better books from the rarest vault",
+  "summary": "The rarest vault can now hand out several powerful enchanted books at once, and something new.",
+  "highlights": [
+    "Books from the rarest vault carry several strong enchantments, never a curse.",
+    "Builders can set how many random enchantments a book in their loot gets, and an enchanted book added from the hand keeps its own."
+  ],
+  "pr": 2578,
+  "date": "2026-11-09",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

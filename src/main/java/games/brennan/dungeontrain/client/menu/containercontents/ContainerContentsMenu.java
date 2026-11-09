@@ -27,7 +27,7 @@ public final class ContainerContentsMenu {
 
     public static final int ROWS_PER_COLUMN = 10;
 
-    public enum Screen { ROOT, ADD_SEARCH }
+    public enum Screen { ROOT, ADD_SEARCH, BOOK_ENCHANTS }
 
     public enum CellKind {
         NONE,
@@ -59,6 +59,20 @@ public final class ContainerContentsMenu {
         ENTRY_POTION_FORM,
         /** Per-entry sub-row %NN cell: bump random-enchantment chance (0-100). */
         ENTRY_ENCH_CHANCE,
+        /** Per-entry sub-row cell on books: the random-enchantment range (steps the max, cmd-click types both). */
+        ENTRY_BOOK_ENCH,
+        /** Per-entry sub-row cell on books: the level range the random enchantments roll at. */
+        ENTRY_BOOK_LEVEL,
+        /** Per-entry sub-row cell on books: opens the enchantment list. */
+        ENTRY_BOOK_LIST,
+        /** Enchantment list: back to the entries. */
+        BOOK_LIST_BACK,
+        /** Enchantment list: one enchantment's on/off cell. */
+        BOOK_LIST_ROW,
+        /** Enchantment list: every enchantment on (curses kept as they are). */
+        BOOK_LIST_ALL_ON,
+        /** Enchantment list: every enchantment off. */
+        BOOK_LIST_ALL_OFF,
         /** Per-entry main-row cell: cycle slot override (auto / in / fuel / out). */
         ENTRY_SLOT_ASSIGN,
         SEARCH_FIELD,
@@ -108,6 +122,8 @@ public final class ContainerContentsMenu {
     private static final Set<Integer> expandedRows = new HashSet<>();
 
     private static Screen screen = Screen.ROOT;
+    /** The book row the enchantment list is showing, while {@link Screen#BOOK_ENCHANTS} is up. */
+    private static int bookRow = -1;
     private static String searchBuffer = "";
     private static Hit hovered = Hit.NONE;
 
@@ -138,6 +154,7 @@ public final class ContainerContentsMenu {
     @Nullable public static String vaultKey() { return vaultKey; }
     public static Screen screen() { return screen; }
     public static String searchBuffer() { return searchBuffer; }
+    public static int bookRow() { return bookRow; }
     public static Hit hovered() { return hovered; }
 
     public static void setHovered(Hit h) { hovered = h == null ? Hit.NONE : h; }
@@ -189,6 +206,8 @@ public final class ContainerContentsMenu {
             searchBuffer = "";
         }
         if (newCell || sizeChanged) expandedRows.clear();
+        // A removed row takes its list with it.
+        if (screen == Screen.BOOK_ENCHANTS && (bookRow < 0 || bookRow >= entries.size())) screen = Screen.ROOT;
         hovered = Hit.NONE;
         // Re-pushed after every edit so the rows stay live, so only the first sync of an opening
         // puts the screen up; the ones after it just refresh what it is drawing.
@@ -215,8 +234,16 @@ public final class ContainerContentsMenu {
         hovered = Hit.NONE;
     }
 
+    /** Show book row {@code row}'s enchantment list. */
+    public static void enterBookEnchants(int row) {
+        screen = Screen.BOOK_ENCHANTS;
+        bookRow = row;
+        hovered = Hit.NONE;
+    }
+
     public static void backToRoot() {
         screen = Screen.ROOT;
+        bookRow = -1;
         searchBuffer = "";
         hovered = Hit.NONE;
     }

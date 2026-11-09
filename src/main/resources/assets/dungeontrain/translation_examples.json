@@ -7204,6 +7204,28 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.container.book_ench": {
+    "1": {
+      "label": "how many random enchantments the book gets, one number or a range",
+      "examples": [
+        "1-7",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.container.book_level": {
+    "1": { "label": "the levels the book's random enchantments roll at", "examples": ["max", "3-max", "2-4"] }
+  },
+  "gui.dungeontrain.editor_menu.container.book_list": {
+    "1": { "label": "how many enchantments are switched on", "examples": ["38", "12"] },
+    "2": { "label": "how many enchantments the list holds", "examples": ["42"] }
+  },
+  "gui.dungeontrain.editor_menu.container.book_list_new": {
+    "1": { "label": "how many enchantments the builder has not decided on yet", "examples": ["3", "1"] }
+  },
+  "chat.dungeontrain.editor_bar.contents_menu.book_ench_new": {
+    "1": { "label": "how many enchantments the builder has not decided on yet", "examples": ["3", "1"] }
+  },
   "gui.dungeontrain.editor_menu.container.vault_key": {
     "1": {
       "label": "the name of the key item that unlocks the vault",
