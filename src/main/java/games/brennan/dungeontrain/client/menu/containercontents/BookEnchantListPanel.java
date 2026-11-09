@@ -25,8 +25,8 @@ import static games.brennan.dungeontrain.client.menu.containercontents.Container
  */
 final class BookEnchantListPanel {
 
-    /** Rows per column: the list runs to ~45 with this modpack, so three columns. */
-    static final int ROWS = 15;
+    /** Rows per column: the list runs to 46 with this modpack, so three columns. */
+    static final int ROWS = 16;
     static final double COLUMN_WIDTH = 2.2;
     private static final double BACK_W = 0.6;
     private static final double ALL_W = 0.9;
