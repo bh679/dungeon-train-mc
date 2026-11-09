@@ -35,6 +35,7 @@
     "TamableAnimalFollowTeleportMixin",
     "AbstractHorseTameMixin",
     "WanderingTraderStockMixin",
+    "TrainVillagerNoRestockMixin",
     "LightningBoltVisualOnlyMixin",
     "RegenerationSoftCapMixin",
     "FlowingFluidExternalWaterMixin",
