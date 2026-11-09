@@ -1,0 +1,18 @@
+{
+  "id": "more-keys-in-chests",
+  "version": "0.1749.0",
+  "type": "content",
+  "tags": [
+    "content",
+    "loot",
+    "balance"
+  ],
+  "title": "More keys in chests and pots",
+  "summary": "Trial Keys and Ominous Trial Keys turn up more often in chests, pots and vases.",
+  "highlights": [],
+  "pr": 2584,
+  "date": "2026-11-09",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
