@@ -583,7 +583,9 @@ public final class CarriageContentsPlacer {
      *       trades and its persistence logic re-applies cleanly.</li>
      *   <li>The {@link games.brennan.dungeontrain.event.VillagerTrainSpawnEvents#REROLLED_TAG}
      *       marker — removed from {@code Tags} so the reroll handler actually fires
-     *       (a captured template freezes this tag in, which would suppress the reroll).</li>
+     *       (a captured template freezes this tag in, which would suppress the reroll), and
+     *       the {@code NewJobMendingBlock#BLOCKED_TAG} marker, so a captured villager that took its
+     *       job in play doesn't spawn unable to sell Mending.</li>
      *   <li>The Pigman Villagers roll ({@code PigmanVillager} / {@code PigmanRolled}) — cleared
      *       via {@link games.brennan.dungeontrain.compat.PigmanVillagersBridge#freshRoll} so each
      *       spawn rolls its own pigman chance instead of copying the captured villager's.</li>
@@ -606,6 +608,8 @@ public final class CarriageContentsPlacer {
         if (entityNbt.contains("Tags", Tag.TAG_LIST)) {
             ListTag tags = entityNbt.getList("Tags", Tag.TAG_STRING);
             tags.removeIf(t -> games.brennan.dungeontrain.event.VillagerTrainSpawnEvents.REROLLED_TAG
+                .equals(t.getAsString())
+                || games.brennan.dungeontrain.difficulty.NewJobMendingBlock.BLOCKED_TAG
                 .equals(t.getAsString()));
             if (tags.isEmpty()) {
                 entityNbt.remove("Tags");

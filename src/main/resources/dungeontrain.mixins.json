@@ -37,6 +37,7 @@
     "AbstractHorseTameMixin",
     "WanderingTraderStockMixin",
     "TrainVillagerNoRestockMixin",
+    "VillagerNewJobNoMendingMixin",
     "LightningBoltVisualOnlyMixin",
     "RegenerationSoftCapMixin",
     "FlowingFluidExternalWaterMixin",
