@@ -50,9 +50,13 @@ final class CarriageContentsPoolsTest {
     }
 
     private static Map<String, Double> frequencies(GateContext ctx) {
+        return frequencies(ctx, CarriageContentsAllowList.EMPTY);
+    }
+
+    private static Map<String, Double> frequencies(GateContext ctx, CarriageContentsAllowList allow) {
         Map<String, Integer> counts = new HashMap<>();
         for (int i = 0; i < SAMPLES; i++) {
-            String id = CarriageContentsRegistry.pick(0x5EEDL, i, CarriageContentsAllowList.EMPTY, ctx).id();
+            String id = CarriageContentsRegistry.pick(0x5EEDL, i, allow, ctx).id();
             counts.merge(id, 1, Integer::sum);
         }
         Map<String, Double> out = new HashMap<>();
@@ -93,6 +97,27 @@ final class CarriageContentsPoolsTest {
             assertNull(pooled.get("g1"), "a pooled group with no room of its own is never stamped itself");
             if (level == 0) assertNull(pooled.get("e"), "gated room stays out below its level");
         }
+    }
+
+    @Test
+    @DisplayName("a carriage that excludes one pooled group leaves every other group's rooms at their chance")
+    void excludedGroupGivesItsShareBack() {
+        GateContext ctx = new GateContext(10, TrainPhase.OVERWORLD);
+        register("other", "g1", "g2", "a", "b", "c", "d", "e");
+        List<CarriageContentsGroup.Member> all = rooms();
+        CarriageContentsGroupStore.injectForTesting("g1", new CarriageContentsGroup(0, all.subList(0, 2)));
+        CarriageContentsGroupStore.injectForTesting("g2", new CarriageContentsGroup(0, all.subList(2, 5)));
+        CarriageContentsPools.injectForTesting(List.of(new CarriageContentsPools.Pool("p", 4, List.of("g1", "g2"))));
+        CarriageContentsWeights.injectForTesting(Map.of("g1", 13, "g2", 18, "other", 2, "default", 2));
+        Map<String, Double> open = frequencies(ctx);
+        Map<String, Double> shut = frequencies(ctx, new CarriageContentsAllowList(java.util.Set.of("g1")));
+        for (String room : List.of("c", "d", "e")) {
+            assertEquals(open.getOrDefault(room, 0.0), shut.getOrDefault(room, 0.0), 0.012, "room " + room);
+        }
+        assertNull(shut.get("a"), "the excluded group's rooms never come up");
+        double rest = shut.getOrDefault("other", 0.0) + shut.getOrDefault("default", 0.0);
+        double restOpen = open.getOrDefault("other", 0.0) + open.getOrDefault("default", 0.0);
+        assertTrue(rest > restOpen + 0.05, "the excluded share goes to the rest of the carriage");
     }
 
     @Test
