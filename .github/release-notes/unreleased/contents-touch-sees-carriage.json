@@ -1,0 +1,20 @@
+{
+  "id": "contents-touch-sees-carriage",
+  "version": "0.1726.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "editor",
+    "train"
+  ],
+  "title": "Rooms fit their carriage",
+  "summary": "Decorations at the edges of a carriage room now take the carriage around them into account, so things hang from real ceilings and sit on real floors.",
+  "highlights": [
+    "Room decorations along the walls, floor and ceiling now follow the carriage they are in"
+  ],
+  "pr": 2580,
+  "date": "2026-11-09",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
