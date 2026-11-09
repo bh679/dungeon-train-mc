@@ -1,0 +1,19 @@
+{
+  "id": "terra-omnia-ominous-woods",
+  "version": "0.1746.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "world",
+    "advancements",
+    "balance"
+  ],
+  "title": "Terra Omnia rare biomes tweak",
+  "summary": "Ominous Woods is now one of Terra Omnia's rare biomes and turns up more often. Terra Omnia now asks for any 3 of the 6 rare biomes.",
+  "highlights": [],
+  "pr": 2582,
+  "date": "2026-11-09",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
