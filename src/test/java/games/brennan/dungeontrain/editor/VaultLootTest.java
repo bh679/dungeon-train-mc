@@ -273,7 +273,7 @@ final class VaultLootTest {
     @DisplayName("the green vault keeps the heavy core and mace at their per-opening odds, and the spawn eggs at their weights")
     void greenVaultRaritiesKeepTheirOdds() {
         ContainerContentsPool green = VaultLoot.defaultPool(VaultLoot.GREEN_KEY);
-        assertEquals(16182, green.totalWeight());
+        assertEquals(16425, green.totalWeight());
         assertEquals(40, entry(green, "minecraft", "heavy_core").weight());
         assertEquals(20, entry(green, "minecraft", "mace").weight());
         assertEquals(22, green.entries().stream().filter(e -> e.itemId().getPath().endsWith("_spawn_egg"))

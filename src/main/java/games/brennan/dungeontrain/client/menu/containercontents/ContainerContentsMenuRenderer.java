@@ -725,7 +725,7 @@ public final class ContainerContentsMenuRenderer {
     /**
      * Row label for an entry: the short item id, plus the stored potion in parentheses for a
      * potion entry so "potion (healing)" and "potion (water)" are told apart at a glance, and the
-     * stored book's title for a signed-book entry.
+     * stored book's title for a signed-book entry (or its enchantments for an enchanted-book one).
      */
     static String entryLabel(ContainerContentsSyncPacket.Entry entry) {
         String base = shortenItemLabel(entry.itemId());

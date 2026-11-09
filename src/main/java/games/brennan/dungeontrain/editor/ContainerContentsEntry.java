@@ -47,6 +47,10 @@ import javax.annotation.Nullable;
  * <p>{@code book} is the signed book carried by a {@code minecraft:written_book} entry, captured
  * from the stack the author added from their hand so the chest spawns that exact book. {@code null}
  * for every other item and for written-book entries added by id alone (a blank written book).</p>
+ *
+ * <p>{@code enchants} is what a book entry is enchanted with ({@link BookEnchants}): exact stored
+ * enchantments (a Mending book), and/or a range of random high-level ones. {@code null} for every
+ * other entry; the roller then leaves the book to the ordinary random-enchant roll.</p>
  */
 public record ContainerContentsEntry(
     ResourceLocation itemId,
@@ -61,7 +65,8 @@ public record ContainerContentsEntry(
     @Nullable ResourceLocation potionId,
     boolean scaleWithDistance,
     PotionForm potionForm,
-    @Nullable StoredBook book
+    @Nullable StoredBook book,
+    @Nullable BookEnchants enchants
 ) {
 
     public static final ResourceLocation AIR_ID = ResourceLocation.fromNamespaceAndPath("minecraft", "air");
@@ -104,6 +109,19 @@ public record ContainerContentsEntry(
         if (slotOverride < SLOT_AUTO) slotOverride = SLOT_AUTO;
         if (slotOverride > MAX_SLOT_OVERRIDE) slotOverride = SLOT_AUTO;
         if (potionForm == null) potionForm = DEFAULT_POTION_FORM;
+        if (enchants != null && enchants.isEmpty()) enchants = null;
+    }
+
+    /** Back-compat constructor — every field but the book enchantments. */
+    public ContainerContentsEntry(ResourceLocation itemId, int count, int minCount, int weight,
+                                  boolean randomDurability, int durabilityChance,
+                                  boolean randomEnchantment, int enchantmentChance,
+                                  int slotOverride, @Nullable ResourceLocation potionId,
+                                  boolean scaleWithDistance, PotionForm potionForm,
+                                  @Nullable StoredBook book) {
+        this(itemId, count, minCount, weight, randomDurability, durabilityChance,
+            randomEnchantment, enchantmentChance, slotOverride, potionId, scaleWithDistance,
+            potionForm, book, null);
     }
 
     /** Back-compat constructor — every field but the minimum count, which defaults to 1. */
@@ -197,6 +215,11 @@ public record ContainerContentsEntry(
         return book != null;
     }
 
+    /** True when this entry's book carries exact or random enchantments. */
+    public boolean hasEnchants() {
+        return enchants != null;
+    }
+
     /** Resolve the registered Item, falling back to AIR if the id is unknown. */
     public Item resolveItem() {
         Item item = BuiltInRegistries.ITEM.get(itemId);
@@ -206,20 +229,20 @@ public record ContainerContentsEntry(
     public ContainerContentsEntry withWeight(int newWeight) {
         return new ContainerContentsEntry(itemId, count, minCount, newWeight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
-            slotOverride, potionId, scaleWithDistance, potionForm, book);
+            slotOverride, potionId, scaleWithDistance, potionForm, book, enchants);
     }
 
     public ContainerContentsEntry withCount(int newCount) {
         return new ContainerContentsEntry(itemId, newCount, minCount, weight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
-            slotOverride, potionId, scaleWithDistance, potionForm, book);
+            slotOverride, potionId, scaleWithDistance, potionForm, book, enchants);
     }
 
     /** Set the smallest stack this entry rolls; clamped to {@code [1, count]}. */
     public ContainerContentsEntry withMinCount(int newMinCount) {
         return new ContainerContentsEntry(itemId, count, newMinCount, weight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
-            slotOverride, potionId, scaleWithDistance, potionForm, book);
+            slotOverride, potionId, scaleWithDistance, potionForm, book, enchants);
     }
 
     /** Set both ends of the rolled stack size at once — the number pad's min/max submit. */
@@ -235,55 +258,61 @@ public record ContainerContentsEntry(
     public ContainerContentsEntry withRandomDurability(boolean v) {
         return new ContainerContentsEntry(itemId, count, minCount, weight,
             v, durabilityChance, randomEnchantment, enchantmentChance,
-            slotOverride, potionId, scaleWithDistance, potionForm, book);
+            slotOverride, potionId, scaleWithDistance, potionForm, book, enchants);
     }
 
     public ContainerContentsEntry withDurabilityChance(int v) {
         return new ContainerContentsEntry(itemId, count, minCount, weight,
             randomDurability, v, randomEnchantment, enchantmentChance,
-            slotOverride, potionId, scaleWithDistance, potionForm, book);
+            slotOverride, potionId, scaleWithDistance, potionForm, book, enchants);
     }
 
     public ContainerContentsEntry withRandomEnchantment(boolean v) {
         return new ContainerContentsEntry(itemId, count, minCount, weight,
             randomDurability, durabilityChance, v, enchantmentChance,
-            slotOverride, potionId, scaleWithDistance, potionForm, book);
+            slotOverride, potionId, scaleWithDistance, potionForm, book, enchants);
     }
 
     public ContainerContentsEntry withEnchantmentChance(int v) {
         return new ContainerContentsEntry(itemId, count, minCount, weight,
             randomDurability, durabilityChance, randomEnchantment, v,
-            slotOverride, potionId, scaleWithDistance, potionForm, book);
+            slotOverride, potionId, scaleWithDistance, potionForm, book, enchants);
     }
 
     public ContainerContentsEntry withSlotOverride(int v) {
         return new ContainerContentsEntry(itemId, count, minCount, weight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
-            v, potionId, scaleWithDistance, potionForm, book);
+            v, potionId, scaleWithDistance, potionForm, book, enchants);
     }
 
     public ContainerContentsEntry withPotion(@Nullable ResourceLocation v) {
         return new ContainerContentsEntry(itemId, count, minCount, weight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
-            slotOverride, v, scaleWithDistance, potionForm, book);
+            slotOverride, v, scaleWithDistance, potionForm, book, enchants);
     }
 
     public ContainerContentsEntry withScaleWithDistance(boolean v) {
         return new ContainerContentsEntry(itemId, count, minCount, weight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
-            slotOverride, potionId, v, potionForm, book);
+            slotOverride, potionId, v, potionForm, book, enchants);
     }
 
     public ContainerContentsEntry withPotionForm(PotionForm v) {
         return new ContainerContentsEntry(itemId, count, minCount, weight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
-            slotOverride, potionId, scaleWithDistance, v, book);
+            slotOverride, potionId, scaleWithDistance, v, book, enchants);
     }
 
     public ContainerContentsEntry withBook(@Nullable StoredBook v) {
         return new ContainerContentsEntry(itemId, count, minCount, weight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
-            slotOverride, potionId, scaleWithDistance, potionForm, v);
+            slotOverride, potionId, scaleWithDistance, potionForm, v, enchants);
+    }
+
+    public ContainerContentsEntry withEnchants(@Nullable BookEnchants v) {
+        return new ContainerContentsEntry(itemId, count, minCount, weight,
+            randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
+            slotOverride, potionId, scaleWithDistance, potionForm, book, v);
     }
 
     /** Step the bottle form: {@code Any → Potion → Splash → Lingering → Any}. */

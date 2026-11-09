@@ -59,8 +59,9 @@ public record ContainerContentsSyncPacket(
      * {@code potionId} is the stored vanilla potion id for a potion entry, or {@code ""} when none.
      * {@code scaleWithDistance} is the random-potion placeholder's tier toggle and
      * {@code potionForm} its bottle-form ordinal ({@code PotionForm}).
-     * {@code bookTitle} is the title of a written-book entry's stored book (label only — the
-     * pages stay server-side), or {@code ""} when none.
+     * {@code bookTitle} is the row's book label: a written-book entry's stored title (the pages
+     * stay server-side), or a book entry's enchantments ("mending 1", "1-7 random"); {@code ""}
+     * when none.
      */
     public record Entry(String itemId, int count, int minCount, int weight,
                         boolean randomDurability, int durabilityChance,

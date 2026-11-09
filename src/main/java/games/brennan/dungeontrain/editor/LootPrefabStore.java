@@ -494,7 +494,8 @@ public final class LootPrefabStore {
                     : ContainerContentsEntry.DEFAULT_POTION_FORM;
                 StoredBook book = ContainerContentsBooks.fromJson(e.get("book"));
                 entries.add(new ContainerContentsEntry(rl, count, minCount, weight,
-                    randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, book));
+                    randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, book,
+                    ContainerContentsEnchants.fromJson(e)));
             }
         }
         return Optional.of(new Data(key, block, category, new ContainerContentsPool(entries, fillMin, fillMax, vaultKey)));
@@ -545,6 +546,7 @@ public final class LootPrefabStore {
             if (e.book() != null) {
                 sb.append(", \"book\": ").append(ContainerContentsBooks.toJsonText(e.book()));
             }
+            ContainerContentsEnchants.appendJson(sb, e.enchants());
             sb.append(" }");
             first = false;
         }

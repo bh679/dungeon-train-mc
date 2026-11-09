@@ -294,7 +294,7 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                 e.potionId() == null ? "" : e.potionId().toString(),
                 e.scaleWithDistance(),
                 e.potionForm().ordinal(),
-                e.book() == null ? "" : e.book().title()));
+                e.book() != null ? e.book().title() : e.enchants() != null ? e.enchants().label() : ""));
         }
         return new ContainerContentsSyncPacket(plot.key(), localPos, entries,
             pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link, vaultKey);
@@ -376,6 +376,7 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                 int count;
                 ResourceLocation potionId = null;
                 StoredBook book = null;
+                BookEnchants enchants = null;
                 if (packet.itemId() != null && !packet.itemId().isEmpty()) {
                     id = ResourceLocation.tryParse(packet.itemId());
                     if (id == null) {
@@ -399,13 +400,16 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                     potionId = ContainerContentsPotions.potionIdOf(held);
                     // Likewise a signed book keeps its title, author and pages.
                     book = ContainerContentsBooks.bookOf(held, player.registryAccess());
+                    // And an enchanted book keeps its enchantments.
+                    enchants = ContainerContentsEnchants.enchantsOf(held);
                 }
                 if (current.size() >= ContainerContentsPool.MAX_ENTRIES) {
                     actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.pool_full", ContainerContentsPool.MAX_ENTRIES),
                         ChatFormatting.YELLOW);
                     return;
                 }
-                next = current.added(new ContainerContentsEntry(id, count, 1).withPotion(potionId).withBook(book));
+                next = current.added(new ContainerContentsEntry(id, count, 1).withPotion(potionId).withBook(book)
+                    .withEnchants(enchants));
                 dirty = true;
             }
             case REMOVE -> {
