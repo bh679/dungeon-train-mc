@@ -20,8 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * {@link CarriageContentsPools}: groups sharing a pool slot give each room the chance it had when all of them
- * were one group, at every level, because the slot splits by the weight each group can offer there.
+ * {@link CarriageContentsPools}: a pooled group is drawn by its own weight, scaled by the share of its rooms open
+ * at that spot. Weighted at their full room totals, groups sharing a slot give each room the chance it had when
+ * all of them were one group, at every level; and adding rooms to a group never makes the group more common.
  */
 final class CarriageContentsPoolsTest {
 
@@ -32,6 +33,7 @@ final class CarriageContentsPoolsTest {
         CarriageContentsRegistry.clear();
         CarriageContentsGroupStore.clearCache();
         CarriageContentsPools.clearCache();
+        CarriageContentsWeights.clear();
     }
 
     @AfterEach
@@ -80,6 +82,7 @@ final class CarriageContentsPoolsTest {
             CarriageContentsGroupStore.injectForTesting("g1", new CarriageContentsGroup(0, all.subList(0, 2)));
             CarriageContentsGroupStore.injectForTesting("g2", new CarriageContentsGroup(0, all.subList(2, 5)));
             CarriageContentsPools.injectForTesting(List.of(new CarriageContentsPools.Pool("p", 1, List.of("g1", "g2"))));
+            CarriageContentsWeights.injectForTesting(Map.of("g1", 13, "g2", 18));
             Map<String, Double> pooled = frequencies(ctx);
 
             for (String room : List.of("other", "a", "b", "c", "d", "e")) {
@@ -93,14 +96,40 @@ final class CarriageContentsPoolsTest {
     }
 
     @Test
+    @DisplayName("a group's weight holds however many rooms it has")
+    void groupWeightHoldsAsRoomsAreAdded() {
+        GateContext ctx = new GateContext(10, TrainPhase.OVERWORLD);
+        register("small", "big", "s1", "b1", "b2", "b3", "b4", "b5", "b6", "b7", "b8", "b9", "b10");
+        CarriageContentsGroupStore.injectForTesting("small", new CarriageContentsGroup(0, List.of(member("s1", 1, 0))));
+        CarriageContentsGroupStore.injectForTesting("big", new CarriageContentsGroup(0, List.of(
+            member("b1", 1, 0), member("b2", 1, 0), member("b3", 1, 0), member("b4", 1, 0), member("b5", 1, 0),
+            member("b6", 1, 0), member("b7", 1, 0), member("b8", 1, 0), member("b9", 1, 0), member("b10", 1, 0))));
+        CarriageContentsPools.injectForTesting(List.of(new CarriageContentsPools.Pool("p", 1, List.of("small", "big"))));
+        CarriageContentsWeights.injectForTesting(Map.of("small", 1, "big", 1));
+        Map<String, Double> f = frequencies(ctx);
+        double big = 0;
+        for (int i = 1; i <= 10; i++) big += f.getOrDefault("b" + i, 0.0);
+        assertEquals(big, f.get("s1"), 0.012, "one room against ten, equal group weights " + f);
+    }
+
+    @Test
+    @DisplayName("a group offers its weight times the share of its rooms open, nothing when none are")
+    void offeredShare() {
+        assertEquals(6.0, CarriageContentsPools.offeredShare(12, 5, 10), 1e-9);
+        assertEquals(12.0, CarriageContentsPools.offeredShare(12, 10, 10), 1e-9);
+        assertEquals(0.0, CarriageContentsPools.offeredShare(12, 0, 10), 1e-9);
+        assertEquals(0.0, CarriageContentsPools.offeredShare(0, 10, 10), 1e-9);
+    }
+
+    @Test
     @DisplayName("pickMember draws by offered weight, and uniformly when nothing is offered")
     void pickMemberWeights() {
         Random rng = new Random(1);
         int[] hits = new int[3];
-        for (int i = 0; i < 30_000; i++) hits[CarriageContentsPools.pickMember(new int[] {1, 0, 3}, rng)]++;
+        for (int i = 0; i < 30_000; i++) hits[CarriageContentsPools.pickMember(new double[] {1, 0, 3}, rng)]++;
         assertEquals(0, hits[1]);
         assertEquals(0.75, hits[2] / 30_000.0, 0.02);
-        assertTrue(CarriageContentsPools.pickMember(new int[] {0, 0}, rng) < 2);
+        assertTrue(CarriageContentsPools.pickMember(new double[] {0, 0}, rng) < 2);
     }
 
     @Test
@@ -112,16 +141,6 @@ final class CarriageContentsPoolsTest {
         assertEquals(1, pools.size());
         assertEquals(8, pools.get(0).weight());
         assertEquals(List.of("enemies_undead", "enemies_end"), pools.get(0).members());
-    }
-
-    @Test
-    @DisplayName("the editor names a pooled group's shared slot, and the stored name comes back out")
-    void editorNameRoundTrips() {
-        String shown = CarriageContentsPools.editorName("enemies_creepers", "Creepers");
-        assertEquals("Creepers (shares enemies slot, weight 8)", shown);
-        assertEquals("Creepers", CarriageContentsPools.storedName("enemies_creepers", shown));
-        assertEquals("Books", CarriageContentsPools.editorName("books", "Books"));
-        assertEquals("Books", CarriageContentsPools.storedName("books", "Books"));
     }
 
     @Test

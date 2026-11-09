@@ -391,15 +391,22 @@ public final class CarriageContentsRegistry {
     }
 
     /**
-     * The pooled group parent a won pool slot resolves to: drawn in proportion to the weight each can offer
-     * here, which is exactly the pool {@link #resolveGroup} will draw from for it. That makes a room's chance
-     * the same as if every pooled group were one group.
+     * The pooled group parent a won pool slot resolves to. Each group's weights.json weight is how common it
+     * is with all of its rooms open; rooms its gates shut here take their share of that weight with them
+     * ({@link CarriageContentsPools#offeredShare}). So adding rooms to a group never makes the group itself
+     * more common, and a group weighted at its full room total gives every room the chance it had when all
+     * the pooled groups were one group.
      */
     private static CarriageContents pickPooled(List<CarriageContents> members, GateContext gateCtx,
                                                int carriageIndex, Random rng) {
-        int[] offered = new int[members.size()];
+        CarriageContentsWeights weights = CarriageContentsWeights.current();
+        double[] offered = new double[members.size()];
         for (int i = 0; i < offered.length; i++) {
-            offered[i] = offeredWeight(members.get(i).id(), gateCtx, carriageIndex);
+            String id = members.get(i).id();
+            offered[i] = CarriageContentsPools.offeredShare(
+                groupWeight(id, weights.weightFor(id), carriageIndex),
+                offeredWeight(id, gateCtx, carriageIndex),
+                offeredWeight(id, null, carriageIndex));
         }
         return members.get(CarriageContentsPools.pickMember(offered, rng));
     }

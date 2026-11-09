@@ -199,7 +199,9 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         String displayName,
         String builderUuid,
         String builderName,
-        List<String> groupIds
+        List<String> groupIds,
+        String pool,
+        boolean poolHeader
     ) {
         /**
          * {@code phaseMask == NO_GATE} marks a row with no per-template spawn gate (sub-variants /
@@ -214,6 +216,39 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
             builderUuid = builderUuid == null ? "" : builderUuid;
             builderName = builderName == null ? "" : builderName;
             groupIds = groupIds == null ? List.of() : List.copyOf(groupIds);
+            pool = pool == null ? "" : pool;
+        }
+
+        /** The 16-field shape from before contents pools — in no pool. */
+        public Variant(String name, int weight, int minLevel, int maxLevel, int phaseMask,
+                       String category, String modelId, String modelName, boolean isUser, boolean isImported,
+                       List<Variant> subVariants, List<String> stageIds, String displayName,
+                       String builderUuid, String builderName, List<String> groupIds) {
+            this(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
+                isUser, isImported, subVariants, stageIds, displayName, builderUuid, builderName, groupIds, "", false);
+        }
+
+        /**
+         * Copy as a member of contents pool {@code poolId}: no gate cells (a pooled group's chance is set by
+         * its weight inside the pool's slot), drawn indented under the pool's header row.
+         */
+        public Variant inPool(String poolId) {
+            return new Variant(name, weight, 0, -1, NO_GATE, category, modelId, modelName,
+                isUser, isImported, subVariants, stageIds, displayName, builderUuid, builderName, groupIds, poolId, false);
+        }
+
+        /**
+         * The header row of contents pool {@code poolId}: its shared slot's {@code weight} under the pool's
+         * {@code label}. Not a template, so it has no model to teleport to.
+         */
+        public static Variant poolHeader(String poolId, String label, int weight, String category) {
+            return new Variant(poolId, weight, 0, -1, NO_GATE, category, "", "", false, false,
+                List.of(), List.of(), label, "", "", List.of(), poolId, true);
+        }
+
+        /** True when this row sits in a contents pool as one of its groups (not the header). */
+        public boolean isPooled() {
+            return !pool.isEmpty() && !poolHeader;
         }
 
         /** The 15-field shape from before template groups — in no group. */
@@ -228,7 +263,7 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         /** Copy with the template-group memberships replaced (tunnel templates only today). */
         public Variant withGroups(List<String> groups) {
             return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, subVariants, stageIds, displayName, builderUuid, builderName, groups);
+                isUser, isImported, subVariants, stageIds, displayName, builderUuid, builderName, groups, pool, poolHeader);
         }
 
         /** The 13-field shape the label-aware builders used — no builder credit. */
@@ -250,13 +285,13 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         /** Copy with the drawn label replaced; {@code null} / blank falls back to the name. */
         public Variant withDisplayName(String label) {
             return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, subVariants, stageIds, label, builderUuid, builderName, groupIds);
+                isUser, isImported, subVariants, stageIds, label, builderUuid, builderName, groupIds, pool, poolHeader);
         }
 
         /** Copy with the builder credit replaced; {@code null} for either half means "none". */
         public Variant withBuilder(String uuid, String builderName) {
             return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, subVariants, stageIds, displayName, uuid, builderName, groupIds);
+                isUser, isImported, subVariants, stageIds, displayName, uuid, builderName, groupIds, pool, poolHeader);
         }
 
         /** True when somebody is credited as this template's original builder. */
@@ -424,6 +459,8 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         buf.writeUtf(v.builderName(), 64);
         buf.writeVarInt(v.groupIds().size());
         for (String g : v.groupIds()) buf.writeUtf(g, 64);
+        buf.writeUtf(v.pool(), 64);
+        buf.writeBoolean(v.poolHeader());
     }
 
     static Variant decodeVariant(FriendlyByteBuf buf) {
@@ -453,9 +490,11 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         int groupCount = buf.readVarInt();
         List<String> groupIds = new ArrayList<>(groupCount);
         for (int k = 0; k < groupCount; k++) groupIds.add(buf.readUtf(64));
+        String pool = buf.readUtf(64);
+        boolean poolHeader = buf.readBoolean();
         return new Variant(name, weight, minLevel, maxLevel, phaseMask,
             category, modelId, modelName, isUser, isImported, subs, stageIds, displayName,
-            builderUuid, builderName, groupIds);
+            builderUuid, builderName, groupIds, pool, poolHeader);
     }
 
     public static EditorTypeMenusPacket decode(FriendlyByteBuf buf) {

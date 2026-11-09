@@ -146,7 +146,7 @@ public final class EditorTypeMenus {
         CarriageDims box = resident.boxOrRoom(dims, games.brennan.dungeontrain.config.DungeonTrainConfig.getGroupSize());
         Vec3i footprint = new Vec3i(box.length(), box.height(), box.width());
         BlockPos anchor = anchorForXRow(firstOrigin, footprint);
-        List<EditorTypeMenusPacket.Variant> rows = contentsRows(shown);
+        List<EditorTypeMenusPacket.Variant> rows = withPoolHeaders(contentsRows(shown));
         return List.of(new EditorTypeMenusPacket.Menu(
             anchor, contentsTypeName(resident), rows, false,
             EditorCategory.CONTENTS.id(), buildCategoryBar(), buildContentsTypeStrip(topLevel)));
@@ -462,12 +462,39 @@ public final class EditorTypeMenus {
                 g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
                 cat, c.id(), c.id(), p.isUser(), p.isImported(),
                 subVariantsFor(c.id(), cat), stageId == null ? "" : stageId)
-                .withDisplayName(games.brennan.dungeontrain.train.CarriageContentsPools.editorName(
-                    c.id(), weights.nameFor(c.id())))
+                .withDisplayName(weights.nameFor(c.id()))
                 .withBuilder(builderUuid(TemplateBuilderLookup.contents(weights, c.id())),
                     builderName(TemplateBuilderLookup.contents(weights, c.id()))));
         }
         return rows;
+    }
+
+    /**
+     * {@code rows} as the in-world Contents menu lists them: each {@link CarriageContentsPools pool}'s groups
+     * gathered under a header row carrying the pool's slot weight, in the pool's member order, where the
+     * first of them stood. A pooled row drops its gate cells, since the pool's slot decides its chance.
+     */
+    static List<EditorTypeMenusPacket.Variant> withPoolHeaders(List<EditorTypeMenusPacket.Variant> rows) {
+        java.util.Map<String, EditorTypeMenusPacket.Variant> byId = new java.util.HashMap<>();
+        for (EditorTypeMenusPacket.Variant v : rows) byId.put(v.name(), v);
+        String cat = EditorCategory.CONTENTS.name();
+        List<EditorTypeMenusPacket.Variant> out = new ArrayList<>(rows.size() + 1);
+        java.util.Set<String> placed = new java.util.HashSet<>();
+        for (EditorTypeMenusPacket.Variant v : rows) {
+            games.brennan.dungeontrain.train.CarriageContentsPools.Pool pool =
+                games.brennan.dungeontrain.train.CarriageContentsPools.poolOf(v.name());
+            if (pool == null) {
+                out.add(v);
+                continue;
+            }
+            if (!placed.add(pool.id())) continue;
+            out.add(EditorTypeMenusPacket.Variant.poolHeader(pool.id(), pool.name(), pool.weight(), cat));
+            for (String member : pool.members()) {
+                EditorTypeMenusPacket.Variant m = byId.get(member);
+                if (m != null) out.add(m.inPool(pool.id()));
+            }
+        }
+        return out;
     }
 
     /** One packet row per top-level variant of a track-side kind, owned by {@code owner}'s category. */

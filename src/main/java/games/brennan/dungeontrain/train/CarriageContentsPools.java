@@ -27,12 +27,12 @@ import java.util.Random;
  * {"enemies": {"weight": 8, "members": ["enemies_undead", "enemies_creepers", ...]}}
  * }</pre>
  *
- * <p>The slot carries the pool's {@code weight}. When it wins, one member is drawn in proportion to the
- * weight its group can actually offer at that spot (self plus every sub-variant its gates admit), and that
- * group then draws its room as usual. A room's chance is therefore {@code weight/T × w_room/E}, with
- * {@code E} the eligible weight of every room in the pool: the same as one group holding all of them, which
- * is what lets a big group be split into themed groups without moving any room's odds. A member's own
- * weights.json weight is not used.</p>
+ * <p>The slot carries the pool's {@code weight}. When it wins, one member is drawn by its own weights.json
+ * weight {@code G}, scaled by the share of its room weight its gates leave open at that spot
+ * ({@code G × open/full}), and that group then draws its room as usual. {@code G} is how common the group is
+ * with every room open, so adding rooms to a group shares its weight out rather than raising it. With
+ * {@code G} set to the group's full room weight, a room's chance is {@code weight/T × w_room/E}, {@code E}
+ * the open weight of every room in the pool: the same as one group holding all of them.</p>
  *
  * <p>Bundled only: pools are part of how the shipped contents are organised, not something an install edits.</p>
  */
@@ -41,11 +41,23 @@ public final class CarriageContentsPools {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String RESOURCE = "/data/dungeontrain/contents/pools.json";
 
-    /** One pool: the shared slot's weight and the group parents that share it. */
-    public record Pool(String id, int weight, List<String> members) {
+    /** One pool: the shared slot's weight, the group parents that share it, and the editor's name for it. */
+    public record Pool(String id, int weight, List<String> members, String name) {
         public Pool {
             members = List.copyOf(members);
+            if (name == null || name.isBlank()) name = id.isEmpty() ? id : Character.toUpperCase(id.charAt(0)) + id.substring(1);
         }
+
+        public Pool(String id, int weight, List<String> members) {
+            this(id, weight, members, null);
+        }
+    }
+
+    /** Every pool, in file order. */
+    public static List<Pool> all() {
+        List<Pool> out = new ArrayList<>();
+        for (Pool p : byMember().values()) if (!out.contains(p)) out.add(p);
+        return out;
     }
 
     private static volatile Map<String, Pool> BY_MEMBER;
@@ -58,31 +70,6 @@ public final class CarriageContentsPools {
         return byMember().get(contentsId.toLowerCase(Locale.ROOT));
     }
 
-    /**
-     * {@code name} as the editor shows it: a pooled group's own weight is never read, so its name says which
-     * slot it shares instead, e.g. {@code "Creepers (shares enemies slot, weight 8)"}.
-     */
-    public static String editorName(String contentsId, String name) {
-        Pool pool = poolOf(contentsId);
-        if (pool == null) return name;
-        return name + editorSuffix(pool);
-    }
-
-    /**
-     * {@link #editorName} undone: the stored name, for anything that writes a name back (the rename box starts
-     * from the shown one). Reads the client's own bundled file, which matches the server's.
-     */
-    public static String storedName(String contentsId, String shown) {
-        Pool pool = poolOf(contentsId);
-        if (pool == null || shown == null) return shown;
-        String suffix = editorSuffix(pool);
-        return shown.endsWith(suffix) ? shown.substring(0, shown.length() - suffix.length()) : shown;
-    }
-
-    private static String editorSuffix(Pool pool) {
-        return " (shares " + pool.id() + " slot, weight " + pool.weight() + ")";
-    }
-
     public static void clearCache() {
         BY_MEMBER = null;
     }
@@ -93,16 +80,25 @@ public final class CarriageContentsPools {
     }
 
     /**
+     * What a pooled group offers at one spot: its own {@code groupWeight}, scaled by the share of its room
+     * weight open there ({@code openWeight} of {@code fullWeight}). Nothing when no room weight is open.
+     */
+    static double offeredShare(int groupWeight, int openWeight, int fullWeight) {
+        if (groupWeight <= 0 || openWeight <= 0 || fullWeight <= 0) return 0;
+        return groupWeight * (openWeight / (double) fullWeight);
+    }
+
+    /**
      * Index of the member drawn from {@code offered}, the weight each member can offer at this spot. Falls back
      * to a uniform draw when every member offers nothing, so the slot still resolves to a group (whose own
      * draw then keeps the old "self only" behaviour).
      */
-    static int pickMember(int[] offered, Random rng) {
-        int total = 0;
-        for (int w : offered) total += Math.max(0, w);
+    static int pickMember(double[] offered, Random rng) {
+        double total = 0;
+        for (double w : offered) total += Math.max(0, w);
         if (total <= 0) return rng.nextInt(offered.length);
-        int r = rng.nextInt(total);
-        int cumulative = 0;
+        double r = rng.nextDouble() * total;
+        double cumulative = 0;
         for (int i = 0; i < offered.length; i++) {
             cumulative += Math.max(0, offered[i]);
             if (r < cumulative) return i;
@@ -156,7 +152,8 @@ public final class CarriageContentsPools {
             if (o.get("members") instanceof JsonArray array) {
                 for (JsonElement m : array) members.add(m.getAsString().toLowerCase(Locale.ROOT));
             }
-            if (!members.isEmpty()) pools.add(new Pool(e.getKey(), weight, members));
+            String name = o.has("name") ? o.get("name").getAsString() : null;
+            if (!members.isEmpty()) pools.add(new Pool(e.getKey(), weight, members, name));
         }
         return pools;
     }

@@ -69,15 +69,15 @@
     "optIn": true
   },
   "enemies_creepers": {
-    "weight": 1,
+    "weight": 2,
     "name": "Creepers"
   },
   "enemies_deeper_dark": {
-    "weight": 1,
+    "weight": 28,
     "name": "Deeper Dark"
   },
   "enemies_end": {
-    "weight": 1,
+    "weight": 12,
     "name": "End"
   },
   "enemies_group": {
@@ -86,11 +86,11 @@
     "optIn": true
   },
   "enemies_nether": {
-    "weight": 1,
+    "weight": 60,
     "name": "Nether"
   },
   "enemies_odd": {
-    "weight": 1,
+    "weight": 7,
     "name": "Odd ones"
   },
   "enemies_path": {
@@ -99,15 +99,15 @@
     "optIn": true
   },
   "enemies_pillagers": {
-    "weight": 1,
+    "weight": 13,
     "name": "Pillagers"
   },
   "enemies_spiders_slimes": {
-    "weight": 1,
+    "weight": 11,
     "name": "Spiders & Slimes"
   },
   "enemies_undead": {
-    "weight": 1,
+    "weight": 67,
     "name": "Zombies & Skeletons"
   },
   "enemiesgroup2": {
