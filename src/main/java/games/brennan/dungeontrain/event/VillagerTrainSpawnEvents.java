@@ -158,8 +158,7 @@ public final class VillagerTrainSpawnEvents {
         // villager as a merchant: a fresh spawn we haven't rerolled, or one that
         // just claimed a job this tick. An established villager loaded from disk
         // keeps its saved offers — we must not re-roll its trades on every chunk
-        // load. (Restocking never happens regardless — our offers are pre-baked,
-        // not workstation-driven.)
+        // load. (Nor do they restock by themselves: TrainVillagerNoRestockMixin.)
         if (villager.getTags().contains(REROLLED_TAG) && !justClaimed) return;
 
         // A train villager that took its job in play (it joined jobless, so it was never
