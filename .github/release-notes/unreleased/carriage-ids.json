@@ -1,0 +1,17 @@
+{
+  "id": "carriage-ids",
+  "version": "0.1768.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "internal"
+  ],
+  "title": "Dev command improvement",
+  "summary": "Improved a developer command.",
+  "highlights": [],
+  "pr": 2603,
+  "date": "2026-11-10",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
