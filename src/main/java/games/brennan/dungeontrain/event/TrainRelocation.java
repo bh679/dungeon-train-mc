@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.difficulty.BoardingProgressData;
 import games.brennan.dungeontrain.difficulty.DifficultyOffset;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.track.TrackGeometry;
@@ -143,6 +144,12 @@ public final class TrainRelocation {
             return Result.failed(Component.translatable("chat.dungeontrain.package.spawntrain_failed",
                 t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
         }
+
+        // The new train numbers its carriages afresh, so the boarding leader's last carriage now
+        // points into a train that no longer exists: left in place, the first scan on the new train
+        // books the gap between the two numberings as carriages travelled (it took a restored run
+        // from 237 to 219). Dropping the leader makes the next scan re-anchor with no delta.
+        BoardingProgressData.get(trainLevel).clearLeader();
 
         DtpPlacementService.enqueue(player, trainLevel, x, holdY, holdZ);
         return new Result(true, tier, null);
