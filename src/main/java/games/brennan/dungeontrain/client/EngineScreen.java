@@ -23,9 +23,18 @@ public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
     private static final ResourceLocation TEXTURE =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "textures/gui/container/drifting_engine_block.png");
 
-    /** Flame sprite on the texture, drawn over the slot while lit. */
-    private static final int FLAME_U = 176, FLAME_V = 0, FLAME_SIZE = 14;
-    private static final int FLAME_X = 14, FLAME_Y = 22;
+    /**
+     * The furnace's own flame over the coal slot: its unlit outline (drawn into the furnace background,
+     * not a sprite of its own) always, and its lit sprite over it while there is coal. Read from vanilla
+     * at draw time, so a resource pack that restyles the furnace restyles this too.
+     */
+    private static final ResourceLocation FURNACE =
+        ResourceLocation.withDefaultNamespace("textures/gui/container/furnace.png");
+    private static final ResourceLocation FURNACE_LIT =
+        ResourceLocation.withDefaultNamespace("container/furnace/lit_progress");
+    private static final int FURNACE_UNLIT_U = 56, FURNACE_UNLIT_V = 36, FLAME_SIZE = 14;
+    /** Sat over the coal slot exactly as the furnace sits it over its fuel slot: 1 px in, 2 px gap. */
+    private static final int FLAME_X = 13, FLAME_Y = 23;
     /** Gauge trough on the panel and its fill sprite. */
     private static final int GAUGE_X = 37, GAUGE_Y = 23, GAUGE_W = 130, GAUGE_H = 5;
     private static final int GAUGE_FILL_U = 0, GAUGE_FILL_V = 170;
@@ -46,9 +55,10 @@ public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         int x = leftPos, y = topPos;
         graphics.blit(TEXTURE, x, y, 0, 0, imageWidth, imageHeight);
+        graphics.blit(FURNACE, x + FLAME_X, y + FLAME_Y, FURNACE_UNLIT_U, FURNACE_UNLIT_V, FLAME_SIZE, FLAME_SIZE);
         int coal = menu.coal();
         if (coal > 0) {
-            graphics.blit(TEXTURE, x + FLAME_X, y + FLAME_Y, FLAME_U, FLAME_V, FLAME_SIZE, FLAME_SIZE);
+            graphics.blitSprite(FURNACE_LIT, x + FLAME_X, y + FLAME_Y, FLAME_SIZE, FLAME_SIZE);
             int fill = Math.max(1, Math.round(GAUGE_W * (coal / (float) DriftEngine.MAX_COAL)));
             graphics.blit(TEXTURE, x + GAUGE_X, y + GAUGE_Y, GAUGE_FILL_U, GAUGE_FILL_V, fill, GAUGE_H);
         }

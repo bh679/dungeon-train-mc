@@ -167,47 +167,19 @@ def slot(d, x, y, w=18, h=18):
     d.line([x + w - 1, y + 1, x + w - 1, y + h - 1], fill=LIGHT)
 
 
-FLAME = [  # 14x14, '#' = outline, 'o' = outer flame, 'i' = inner, '.' = clear
-    "......#.......",
-    ".....#o#......",
-    ".....#o#...#..",
-    "....#oo#..#o#.",
-    "...#ooo##.#o#.",
-    "...#ooio#.#oo#",
-    "..#ooiio##ooo#",
-    "..#oiiioo#oio#",
-    ".#ooiiiioooio#",
-    ".#oiiiiiiiiio#",
-    "#ooiiiiiiiiioo#"[:14],
-    "#oiiiiiiiiiio#",
-    "#ooiiiiiiiioo#",
-    ".############.",
-]
-
-
-def flame(d, x0, y0, lit):
-    colours = {"#": (60, 30, 10) if lit else (90, 90, 90),
-               "o": (232, 80, 28) if lit else (120, 120, 120),
-               "i": (255, 210, 58) if lit else (150, 150, 150)}
-    for y, row in enumerate(FLAME):
-        for x, ch in enumerate(row):
-            if ch in colours:
-                d.point((x0 + x, y0 + y), fill=colours[ch])
-
-
 def write_screen(path):
+    """The panel, slots, gauge trough and gauge fill. The flame over the coal slot is the furnace's own,
+    drawn by EngineScreen straight from vanilla, so it is not on this texture."""
     im = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
     panel(d, 0, 0, 176, 166)
-    slot(d, 12, 39)                       # coal slot: item at (13, 40)
-    flame(d, 14, 22, False)               # cold flame on the panel; the lit sprite draws over it
+    slot(d, 12, 39)                       # coal slot: item at (13, 40); furnace flame above at (13, 23)
     slot(d, 36, 22, 132, 7)               # gauge trough: fill at (37, 23) 130x5
     for row in range(3):
         for col in range(9):
             slot(d, 7 + col * 18, 83 + row * 18)
     for col in range(9):
         slot(d, 7 + col * 18, 141)
-    flame(d, 176, 0, True)                # lit flame sprite
     for x in range(130):                  # gauge fill sprite, ember gradient
         t = x / 129
         c = (int(168 + (255 - 168) * t), int(50 + (191 - 50) * t), int(26 + (60 - 26) * t))
