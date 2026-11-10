@@ -225,8 +225,9 @@ final class VaultLootTest {
         assertTrue(green.entries().stream().noneMatch(e -> lowTier.contains(e.itemId())));
 
         // Expected items per unlock: average fill (4) x weight / total weight.
-        assertEquals(0.005, expectedPerUnlock(green, "mace"), 0.0005);
-        assertEquals(0.010, expectedPerUnlock(green, "heavy_core"), 0.0005);
+        // Raised from 0.5% / 1.0% when the 2026-11-10 rebalance removed four items and kept the rest's weights.
+        assertEquals(0.0058, expectedPerUnlock(green, "mace"), 0.0005);
+        assertEquals(0.0117, expectedPerUnlock(green, "heavy_core"), 0.0005);
     }
 
     @Test
@@ -250,10 +251,11 @@ final class VaultLootTest {
     }
 
     @Test
-    @DisplayName("Ender Blocks drop up to 2 from the ominous vault, rarer than Golden Apples; the green vault has none")
+    @DisplayName("Ender Blocks drop 1 to 3 from the ominous vault, rarer than Golden Apples; the green vault has none")
     void enderBlockRewards() {
         ContainerContentsEntry ominous = entry(VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY), "betterend", "ender_block");
-        assertEquals(2, ominous.count());
+        assertEquals(1, ominous.minCount());
+        assertEquals(3, ominous.count());
         assertEquals(100, ominous.weight());
         assertTrue(ominous.weight() < entry(VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY), "minecraft", "golden_apple").weight());
 
@@ -273,11 +275,43 @@ final class VaultLootTest {
     @DisplayName("the green vault keeps the heavy core and mace at their per-opening odds, and the spawn eggs at their weights")
     void greenVaultRaritiesKeepTheirOdds() {
         ContainerContentsPool green = VaultLoot.defaultPool(VaultLoot.GREEN_KEY);
-        assertEquals(16425, green.totalWeight());
+        assertEquals(13699, green.totalWeight());
         assertEquals(40, entry(green, "minecraft", "heavy_core").weight());
         assertEquals(20, entry(green, "minecraft", "mace").weight());
         assertEquals(22, green.entries().stream().filter(e -> e.itemId().getPath().endsWith("_spawn_egg"))
             .mapToInt(ContainerContentsEntry::weight).sum());
+    }
+
+    @Test
+    @DisplayName("the 2026-11-10 rebalance: green drops four items, gains a bow, fewer cameras, more enchanted apples")
+    void greenVaultRebalance() {
+        ContainerContentsPool green = VaultLoot.defaultPool(VaultLoot.GREEN_KEY);
+        Set<ResourceLocation> removed = Set.of(
+            ResourceLocation.fromNamespaceAndPath("dungeontrain", "live_headpiece"),
+            ResourceLocation.withDefaultNamespace("emerald_block"),
+            ResourceLocation.withDefaultNamespace("flow_armor_trim_smithing_template"),
+            ResourceLocation.withDefaultNamespace("music_disc_creator"));
+        assertTrue(green.entries().stream().noneMatch(e -> removed.contains(e.itemId())));
+        assertEquals(entry(green, "minecraft", "crossbow").weight(), entry(green, "minecraft", "bow").weight());
+        assertEquals(195, entry(green, "exposure_polaroid", "instant_camera").weight());
+        ContainerContentsEntry gapples = entry(green, "minecraft", "enchanted_golden_apple");
+        assertEquals(10, gapples.minCount());
+        assertEquals(20, gapples.count());
+        // The Creator disc lives on in the ominous vault.
+        entry(VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY), "minecraft", "music_disc_creator");
+    }
+
+    @Test
+    @DisplayName("the ominous vault's staples drop in their 2026-11-10 ranges")
+    void ominousVaultCounts() {
+        ContainerContentsPool ominous = VaultLoot.defaultPool(VaultLoot.OMINOUS_KEY);
+        int[][] ranges = {{12, 32}, {4, 15}, {3, 8}};
+        String[] items = {"golden_carrot", "experience_bottle", "diamond"};
+        for (int i = 0; i < items.length; i++) {
+            ContainerContentsEntry e = entry(ominous, "minecraft", items[i]);
+            assertEquals(ranges[i][0], e.minCount(), items[i]);
+            assertEquals(ranges[i][1], e.count(), items[i]);
+        }
     }
 
     private static ContainerContentsEntry entry(ContainerContentsPool pool, String namespace, String path) {
@@ -351,5 +385,13 @@ final class VaultLootTest {
         assertEquals(ContainerContentsPool.DEFAULT_VAULT_KEY,
             new ContainerContentsPool(List.of(), 0, ContainerContentsPool.FILL_ALL, " ").vaultKey());
         assertTrue(diamondPool(null).isDefaultVaultKey());
+    }
+
+    @Test
+    @DisplayName("a green vault rolls 2000 carriages further from spawn, either side of it")
+    void greenDiffMovesAwayFromSpawn() {
+        assertEquals(2000, VaultLoot.greenDiff(0));
+        assertEquals(2150, VaultLoot.greenDiff(150));
+        assertEquals(-2150, VaultLoot.greenDiff(-150));
     }
 }

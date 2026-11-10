@@ -62,7 +62,7 @@ final class VaultStatBoostTest {
     @DisplayName("a diamond sword takes each tier's damage and speed")
     void swordAtEachTier() {
         ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
-        double[][] expected = {{8.4, 1.76}, {9.8, 1.92}, {10.5, 2.0}};
+        double[][] expected = {{8.4, 1.76}, {9.8, 1.92}, {7.0, 1.6}};
         Tier[] tiers = {Tier.REGULAR, Tier.OMINOUS, Tier.GREEN};
         for (int i = 0; i < tiers.length; i++) {
             ItemStack boosted = VaultStatBoost.boosted(sword, tiers[i]);
@@ -75,7 +75,7 @@ final class VaultStatBoostTest {
     @DisplayName("a diamond chestplate takes each tier's armor and toughness")
     void chestplateAtEachTier() {
         ItemStack chest = new ItemStack(Items.DIAMOND_CHESTPLATE);
-        double[][] expected = {{9.6, 2.2}, {11.2, 2.4}, {12.0, 2.5}};
+        double[][] expected = {{9.6, 2.2}, {11.2, 2.4}, {8.0, 2.0}};
         Tier[] tiers = {Tier.REGULAR, Tier.OMINOUS, Tier.GREEN};
         for (int i = 0; i < tiers.length; i++) {
             ItemStack boosted = VaultStatBoost.boosted(chest, tiers[i]);
@@ -93,9 +93,9 @@ final class VaultStatBoostTest {
             .build();
         rolled.set(DataComponents.ATTRIBUTE_MODIFIERS, mods);
 
-        ItemStack boosted = VaultStatBoost.boosted(rolled, Tier.GREEN);
+        ItemStack boosted = VaultStatBoost.boosted(rolled, Tier.OMINOUS);
 
-        assertEquals(15.0, amount(boosted, Attributes.ARMOR), EPS);
+        assertEquals(14.0, amount(boosted, Attributes.ARMOR), EPS);
         assertEquals(10.0, amount(rolled, Attributes.ARMOR), EPS);
     }
 
@@ -110,7 +110,14 @@ final class VaultStatBoostTest {
             .build();
         stack.set(DataComponents.ATTRIBUTE_MODIFIERS, mods);
 
-        assertSame(stack, VaultStatBoost.boosted(stack, Tier.GREEN));
+        assertSame(stack, VaultStatBoost.boosted(stack, Tier.OMINOUS));
+    }
+
+    @Test
+    @DisplayName("a green vault multiplies nothing: its reward is rolled further along the train instead")
+    void greenTierUnscaled() {
+        ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
+        assertSame(sword, VaultStatBoost.boosted(sword, Tier.GREEN));
     }
 
     @Test

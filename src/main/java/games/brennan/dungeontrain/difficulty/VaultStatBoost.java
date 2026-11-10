@@ -17,7 +17,8 @@ import java.util.List;
 
 /**
  * Vault rewards carry stronger stats than other loot, by vault type: damage and armor take the full
- * boost, attack speed and toughness half of it.
+ * boost, attack speed and toughness half of it. A Dungeon Trial (green) vault takes no multiplier: its
+ * reward is rolled as if found {@code VaultLoot#GREEN_CARRIAGE_BONUS} carriages further on instead.
  *
  * <p>Applied to the finished reward as the vault hands it over ({@code VaultServerMixin}), so it covers
  * DT pool rolls and vanilla loot tables alike, and includes AIS's roll and DT's tier bonus. Each stat
@@ -34,7 +35,8 @@ public final class VaultStatBoost {
     public enum Tier {
         REGULAR(1.2, 1.1),
         OMINOUS(1.4, 1.2),
-        GREEN(1.5, 1.25);
+        /** Unscaled: green rewards are rolled further along the train instead ({@code VaultLoot#greenDiff}). */
+        GREEN(1.0, 1.0);
 
         final double primary;
         final double secondary;
@@ -62,6 +64,7 @@ public final class VaultStatBoost {
 
     /** A copy of {@code stack} with its combat stats at {@code tier}; the stack itself when it has none. */
     public static ItemStack boosted(ItemStack stack, Tier tier) {
+        if (tier.primary == 1.0 && tier.secondary == 1.0) return stack;
         ItemAttributeModifiers current = stack.getOrDefault(
             DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
         // Armor that never went through AIS keeps its stats on the item, not the component.

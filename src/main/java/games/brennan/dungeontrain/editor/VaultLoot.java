@@ -58,6 +58,12 @@ public final class VaultLoot {
     public static final String OMINOUS_PREFAB = "ominous_trial_vault";
     public static final String GREEN_PREFAB = "green_trial_vault";
 
+    /**
+     * How many carriages further along the train a Dungeon Trial (green) vault's reward is rolled:
+     * its stats, enchantment cap and potion strength come out as if found that much deeper.
+     */
+    public static final int GREEN_CARRIAGE_BONUS = 2000;
+
     /** Sub-compound of the block entity's {@code NeoForgeData} holding the pool and its roll frame. */
     static final String TAG_VAULT = "dungeontrain_vault";
     private static final String NBT_NEOFORGE_DATA = "NeoForgeData";
@@ -100,6 +106,14 @@ public final class VaultLoot {
 
     public static boolean isGreenKey(String key) {
         return GREEN_KEY.equals(key);
+    }
+
+    /**
+     * {@code diff} moved {@link #GREEN_CARRIAGE_BONUS} carriages further from spawn. The difficulty
+     * tier reads the distance either side of spawn, so a negative index moves down, not up. Pure.
+     */
+    static int greenDiff(int diff) {
+        return diff >= 0 ? diff + GREEN_CARRIAGE_BONUS : diff - GREEN_CARRIAGE_BONUS;
     }
 
     /** The key after {@code key} in {@link #KEY_CYCLE}; an unknown key starts the cycle over. */
@@ -240,7 +254,8 @@ public final class VaultLoot {
         BlockPos localPos = p.length == 3 ? new BlockPos(p[0], p[1], p[2]) : BlockPos.ZERO;
         long seed = rollSeed(vault.getLong(TAG_SEED), player, pass);
         int carriage = vault.getInt(TAG_CARRIAGE);
-        int diff = vault.getInt(TAG_DIFF);
+        int stored = vault.getInt(TAG_DIFF);
+        int diff = isGreenKey(pool.vaultKey()) ? greenDiff(stored) : stored;
         // At least one item: vanilla refuses the key on an empty reward, and the roll is the same
         // for this player every time, so an empty one would lock them out of this vault for good.
         ContainerContentsPool atLeastOne = pool.withFillMin(Math.max(1, pool.fillMin()));
