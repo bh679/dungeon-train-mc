@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -61,9 +62,9 @@ public final class EngineStamp {
     }
 
     /**
-     * Make sure the box has an engine holding {@code coal}: the one already there, or a new one on a
-     * free floor cell. Returns the coal the box's engine holds afterwards, or -1 when there was no
-     * engine and nowhere to put one.
+     * Make sure the box has an engine holding {@code coal}: the one already there, or a new one in place
+     * of a stone-type block facing the room, else on a free floor cell ({@link EngineSpot}). Returns the
+     * coal the box's engine holds afterwards, or -1 when there was no engine and nowhere to put one.
      */
     public static int ensure(ServerLevel level, BlockPos origin, Vec3i size, int coal) {
         EngineBlockEntity existing = find(level, origin, size);
@@ -71,11 +72,12 @@ public final class EngineStamp {
             existing.setCoal(coal);
             return existing.coal();
         }
-        int[] spot = EngineSpot.find(size.getX(), size.getY(), size.getZ(),
-                (x, y, z) -> !level.getBlockState(origin.offset(x, y, z)).isAir());
+        EngineSpot.Spot spot = EngineSpot.find(size.getX(), size.getY(), size.getZ(),
+                (x, y, z) -> !level.getBlockState(origin.offset(x, y, z)).isAir(),
+                (x, y, z) -> isStoneLike(level, origin.offset(x, y, z)));
         if (spot == null) return -1;
-        BlockPos pos = origin.offset(spot[0], spot[1], spot[2]);
-        Direction facing = "south".equals(EngineSpot.facing(spot, size.getZ())) ? Direction.SOUTH : Direction.NORTH;
+        BlockPos pos = origin.offset(spot.x(), spot.y(), spot.z());
+        Direction facing = "south".equals(spot.facing()) ? Direction.SOUTH : Direction.NORTH;
         BlockState state = ModBlocks.ENGINE_BLOCK.get().defaultBlockState()
                 .setValue(EngineBlock.FACING, facing)
                 .setValue(EngineBlock.LIT, coal > 0);
@@ -85,5 +87,12 @@ public final class EngineStamp {
             return engine.coal();
         }
         return -1;
+    }
+
+    /** A full, plain stone-type block with nothing stored in it — see {@link EngineSpot#isStoneLike}. */
+    private static boolean isStoneLike(ServerLevel level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (state.hasBlockEntity() || !state.isCollisionShapeFullBlock(level, pos)) return false;
+        return EngineSpot.isStoneLike(BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString());
     }
 }

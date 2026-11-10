@@ -188,17 +188,17 @@ public final class ModBlocks {
 
     /**
      * The Drifting Engine Block: what makes a carriage drift — see {@link EngineBlock}. Creative and
-     * editor only, so no recipe, and it drops nothing (no loot table; its coal is burnt). Blast-proof
-     * like obsidian, so TNT is no way round the rule that only a carriage's builder may break it.
+     * editor only, so no recipe. Mines exactly like obsidian (same hardness and blast resistance, and
+     * the {@code mineable/pickaxe} + {@code needs_diamond_tool} tags, so a diamond pickaxe is fast and
+     * anything else slow), but always drops itself whatever the tool — see
+     * {@link EngineBlock#canHarvestBlock}. Its coal is burnt and never drops.
      */
     public static final DeferredBlock<EngineBlock> ENGINE_BLOCK = BLOCKS.register(
         "drifting_engine_block",
         () -> new EngineBlock(
-            BlockBehaviour.Properties.of()
+            BlockBehaviour.Properties.ofFullCopy(Blocks.OBSIDIAN)
                 .mapColor(MapColor.COLOR_BLACK)
-                .strength(3.5F, 1200.0F)
                 .lightLevel(EngineBlock::lightLevel)
-                .noLootTable()
                 .sound(SoundType.METAL)
         )
     );

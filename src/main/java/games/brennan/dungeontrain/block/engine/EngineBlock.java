@@ -8,6 +8,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
@@ -30,9 +31,9 @@ import net.minecraft.world.phys.BlockHitResult;
  *
  * <p>{@link #LIT} follows the coal: lit while there is any, cold at zero, so a dying carriage is
  * visible from across the room. Coal goes in and never comes out — not through the screen, not
- * through a hopper, not by breaking the block, which drops nothing. Only the carriage's builder may
- * break it ({@code EngineBlockEvents}); the blocks come only from creative and the editor, and one
- * carried off would turn any carriage it was set down in into a drifting one.</p>
+ * through a hopper, not by breaking the block. Only the carriage's builder may break it
+ * ({@code EngineBlockEvents}); it takes as long as obsidian and always drops itself, empty. Set down
+ * in an ordinary carriage, it makes that carriage drift.</p>
  */
 public class EngineBlock extends BaseEntityBlock {
 
@@ -97,6 +98,16 @@ public class EngineBlock extends BaseEntityBlock {
             }
         }
         super.onRemove(state, level, pos, newState, movedByPiston);
+    }
+
+    /**
+     * Always drops, whatever the tool. Break speed is untouched: NeoForge times a break from the
+     * player's harvest check against the block's tags (obsidian's diamond-pickaxe rule), while the drop
+     * asks this method — so it mines as slowly as obsidian without the right pickaxe, yet still drops.
+     */
+    @Override
+    public boolean canHarvestBlock(BlockState state, BlockGetter level, BlockPos pos, Player player) {
+        return true;
     }
 
     @Override

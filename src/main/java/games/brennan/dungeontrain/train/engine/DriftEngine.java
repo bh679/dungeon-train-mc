@@ -86,9 +86,10 @@ public final class DriftEngine {
 
     /**
      * {@code snap} with its engine holding {@code coal}: the existing engine updated, or — when the build
-     * has none (built before engines, or saved by a version that dropped the unknown block) — a new one
-     * stamped on a free floor cell. Returns {@code snap} unchanged if there is no engine and no room for
-     * one. Never mutates the argument.
+     * has none (built before engines, or saved by a version that dropped the unknown block) — a new one,
+     * in place of a stone-type block facing the room or else on a free floor cell ({@link EngineSpot}).
+     * Returns {@code snap} unchanged if there is no engine and no place for one. Never mutates the
+     * argument.
      */
     public static CompoundTag withEngineCoal(CompoundTag snap, int coal) {
         CompoundTag out = snap.copy();
@@ -103,19 +104,19 @@ public final class DriftEngine {
         }
         int l = out.getInt("l"), h = out.getInt("h"), w = out.getInt("w");
         Occupancy occ = Occupancy.of(cells);
-        int[] spot = EngineSpot.find(l, h, w, occ::solid);
+        EngineSpot.Spot spot = EngineSpot.find(l, h, w, occ::solid, occ::stoneLike);
         if (spot == null) return snap;
-        CompoundTag cell = new CompoundTag();
-        cell.put("p", new IntArrayTag(spot.clone()));
         CompoundTag state = new CompoundTag();
         state.putString("Name", ENGINE_ID);
         CompoundTag props = new CompoundTag();
-        props.putString("facing", EngineSpot.facing(spot, w));
+        props.putString("facing", spot.facing());
         props.putString("lit", clamped > 0 ? "true" : "false");
         state.put("Properties", props);
+        CompoundTag cell = spot.replaces() ? cells.getCompound(occ.index(spot.x(), spot.y(), spot.z())) : new CompoundTag();
+        cell.put("p", new IntArrayTag(spot.pos()));
         cell.put("s", state);
         cell.put("b", engineTag(new CompoundTag(), clamped));
-        cells.add(cell);
+        if (!spot.replaces()) cells.add(cell);
         out.put("cells", cells);
         return out;
     }
@@ -217,19 +218,34 @@ public final class DriftEngine {
         return ((long) (x & 0x1FFFFF) << 42) | ((long) (y & 0x1FFFFF) << 21) | (z & 0x1FFFFF);
     }
 
-    /** Which cells of a snapshot hold a block. */
-    private record Occupancy(java.util.Set<Long> filled) {
+    /** Which cells of a snapshot hold a block, and which of those are plain stone-type masonry. */
+    private record Occupancy(Map<Long, Integer> index, java.util.Set<Long> stone) {
         static Occupancy of(ListTag cells) {
-            java.util.Set<Long> set = new java.util.HashSet<>();
+            Map<Long, Integer> index = new HashMap<>();
+            java.util.Set<Long> stone = new java.util.HashSet<>();
             for (int i = 0; i < cells.size(); i++) {
-                int[] p = cells.getCompound(i).getIntArray("p");
-                if (p.length == 3) set.add(key(p));
+                CompoundTag cell = cells.getCompound(i);
+                int[] p = cell.getIntArray("p");
+                if (p.length != 3) continue;
+                index.put(key(p), i);
+                // A block entity (a chest, a sign) is never masonry, whatever it is called.
+                if (!cell.contains("b") && EngineSpot.isStoneLike(cell.getCompound("s").getString("Name"))) {
+                    stone.add(key(p));
+                }
             }
-            return new Occupancy(set);
+            return new Occupancy(index, stone);
         }
 
         boolean solid(int x, int y, int z) {
-            return filled.contains(key(x, y, z));
+            return index.containsKey(key(x, y, z));
+        }
+
+        boolean stoneLike(int x, int y, int z) {
+            return stone.contains(key(x, y, z));
+        }
+
+        int index(int x, int y, int z) {
+            return index.get(key(x, y, z));
         }
     }
 }
