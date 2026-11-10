@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.dungeontrain.client.logo.LogoRingPlacement;
+import games.brennan.dungeontrain.client.logo.LogoRingRenderer;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -52,6 +54,12 @@ public final class LoadingScreenTheme {
      */
     private static final int TEXT_ALPHA_FLOOR = 4;
 
+    // The ring logo above the title (drawLogo): its largest size, the gap under it and the margin over it.
+    private static final float LOGO_MAX = 110f;
+    private static final float LOGO_MIN = 40f;
+    private static final float LOGO_GAP = 6f;
+    private static final float LOGO_TOP_MARGIN = 6f;
+
     /** Width the story/status line wraps at, shared by every screen that shows one. */
     public static final int TIP_MAX_WIDTH = 260;
 
@@ -79,10 +87,23 @@ public final class LoadingScreenTheme {
         int railLeft = cx - railW / 2;
         int railY = cy + 8;
 
+        drawLogo(g, cx, cy - 30, a);
         drawTitle(g, font, Component.translatable("gui.dungeontrain.loading.title"), cx, cy - 30, a);
         drawFillingTrain(g, font, railLeft, railW, railY, progress, animNanos, a);
         drawPercent(g, font, progress, cx, cy + 34, a);
         drawTip(g, font, LoadingStories.currentLine(), cx, cy + 52, TIP_MAX_WIDTH, a);
+    }
+
+    /**
+     * The animated ring logo ({@link LogoRingRenderer}) centred above the title line at
+     * {@code titleY}: up to {@link #LOGO_MAX} GUI units, shrinking to the room above the title on
+     * short windows, and left out where there is too little room for it to read.
+     */
+    public static void drawLogo(GuiGraphics g, int cx, int titleY, float alpha) {
+        if (!LogoRingPlacement.onLoadingScreens()) return;
+        float size = Math.min(LOGO_MAX, titleY - LOGO_GAP - LOGO_TOP_MARGIN);
+        if (size < LOGO_MIN) return;
+        LogoRingRenderer.get().draw(g, cx - size / 2f, titleY - LOGO_GAP - size, size, alpha, 2f);
     }
 
     /** Opaque gradient fill replacing the vanilla world blur/grid — never a flash of vanilla UI. */

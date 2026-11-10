@@ -236,6 +236,7 @@
     "client.CreativeStageBlocksLayoutMixin",
     "client.AbstractContainerScreenPrefabTintMixin",
     "client.MainMenuLogoMixin",
+    "client.TitleScreenLogoRingMixin",
     "client.SplashUpdateCountsMixin",
     "client.LevelLoadingScreenThemeMixin",
     "client.ReceivingLevelScreenThemeMixin",
