@@ -40,6 +40,12 @@ public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
     }
 
     @Override
+    protected void init() {
+        super.init();
+        EmptyCoalIcon.refresh();
+    }
+
+    @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
         renderTooltip(graphics, mouseX, mouseY);
@@ -49,6 +55,7 @@ public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         int x = leftPos, y = topPos;
         graphics.blit(TEXTURE, x, y, 0, 0, imageWidth, imageHeight);
+        if (menu.getSlot(0).getItem().isEmpty()) EmptyCoalIcon.draw(graphics, x + EngineMenu.COAL_X, y + EngineMenu.COAL_Y);
         int banked = gaugeWidth(menu.banked());
         int total = gaugeWidth(menu.coal());
         if (banked > 0) {

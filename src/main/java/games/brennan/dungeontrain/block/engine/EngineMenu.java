@@ -2,15 +2,12 @@ package games.brennan.dungeontrain.block.engine;
 
 import games.brennan.dungeontrain.registry.ModMenuTypes;
 import games.brennan.dungeontrain.train.engine.DriftEngine;
-import com.mojang.datafixers.util.Pair;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
-import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -20,15 +17,12 @@ import net.minecraft.world.item.Items;
  * The Drifting Engine Block screen's container: the input slot over the player inventory, plus the
  * banked coal synced as menu data so the gauge and the "more worlds" line read it without a packet of
  * their own. The input takes coal only, up to what the banked coal leaves of
- * {@link DriftEngine#MAX_COAL}, and gives it back on request; an empty input shows a faded coal.
+ * {@link DriftEngine#MAX_COAL}, and gives it back on request. The screen draws the faded coal an empty input shows.
  */
 public class EngineMenu extends AbstractContainerMenu {
 
     /** Where the coal slot sits on the screen texture. */
     public static final int COAL_X = 13, COAL_Y = 20;
-    /** The faded coal an empty input shows, from the block atlas like vanilla's empty armour slots. */
-    public static final ResourceLocation EMPTY_COAL =
-        ResourceLocation.fromNamespaceAndPath(games.brennan.dungeontrain.DungeonTrain.MOD_ID, "item/empty_slot_coal");
 
     private final Container engine;
     private final ContainerData data;
@@ -49,9 +43,6 @@ public class EngineMenu extends AbstractContainerMenu {
             @Override public boolean mayPlace(ItemStack stack) { return stack.is(Items.COAL); }
             @Override public int getMaxStackSize() { return Math.max(0, DriftEngine.MAX_COAL - banked()); }
             @Override public int getMaxStackSize(ItemStack stack) { return getMaxStackSize(); }
-            @Override public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
-                return Pair.of(InventoryMenu.BLOCK_ATLAS, EMPTY_COAL);
-            }
         });
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
