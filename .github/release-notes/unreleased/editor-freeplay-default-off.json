@@ -1,0 +1,22 @@
+{
+  "id": "editor-freeplay-default-off",
+  "version": "0.1766.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "editor",
+    "ui"
+  ],
+  "title": "Free Play is off by default",
+  "summary": "Your own train designs no longer switch on by themselves. Every new world starts Live on the built-in trains unless you turn your designs on with the button beside New World, and only then are you asked to confirm. Just opening the Train Editor no longer counts as changing anything.",
+  "highlights": [
+    "New worlds start Live by default, with no popup",
+    "Turning your designs on still asks you to confirm each new world",
+    "Opening the Train Editor, or a vault's loot menu, no longer puts runs into Free Play"
+  ],
+  "pr": 2601,
+  "date": "2026-11-10",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
