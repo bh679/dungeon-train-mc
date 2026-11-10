@@ -34853,6 +34853,30 @@
       "released": true,
       "released_in": "v0.1759.0",
       "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "stat-based-gear-prices",
+      "version": "0.1760.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "ui",
+        "balance"
+      ],
+      "title": "Gear sells for what it's worth",
+      "summary": "Villagers now pay for gear and enchanted books by how good they are. Better stats, better rolls and stronger enchantments sell for more, and netherite no longer sells for far more than diamond. Expensive trades can ask for more than two stacks, with extra payment slots.",
+      "highlights": [
+        "Sell prices follow damage, armour, durability and enchantments",
+        "Netherite gear sells for about twice diamond, not over ten times",
+        "Mending and Silk Touch are worth much more",
+        "Big trades show extra payment slots, four to a row, scrolling past twelve"
+      ],
+      "pr": 2596,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1760.0",
+      "released_at": "2026-11-10T09:32:19Z"
     }
   ]
 }
