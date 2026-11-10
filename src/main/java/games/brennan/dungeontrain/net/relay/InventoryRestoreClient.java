@@ -25,10 +25,12 @@ import java.util.function.Consumer;
  * <pre>
  * GET  &lt;relayBase&gt;/restore/pending?uuid=&lt;no-dash uuid&gt;
  *   200 { "ok": true, "restore": { "id": "r_…", "inventory": [Stack], "armor": [Stack],
- *                                  "offhand": [Stack], "xpLevels": 32 } }
+ *                                  "offhand": [Stack], "xpLevels": 32, "run": Run } }
  *   200 { "ok": true, "restore": null }
  *   Stack = { "slot": 0, "id": "minecraft:…", "count": 1, "nbt": "&lt;SNBT&gt;" }
- * POST /restore/ack  { uuid, id, state: "applied"|"declined", reason, placed, displaced, skipped }
+ *   Run   = { "x": 9140.6, "runState": "&lt;SNBT of dungeontrain:player_run_state&gt;",
+ *             "longWayBackMaxCarriage": 237 }   (optional; returns the player to that depth)
+ * POST /restore/ack  { uuid, id, state: "applied"|"declined", reason, placed, displaced, skipped, relocatedX }
  * </pre>
  *
  * <p>Restores are queued by hand on the relay's admin explorer, only after Brennan has seen a bug
@@ -40,6 +42,9 @@ public final class InventoryRestoreClient {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     static final String ACK_PATH = "/restore/ack";
+
+    /** Furthest world-X a {@code run} may name: inside the world border with room for the train. */
+    static final double MAX_RUN_X = 29_000_000;
 
     // Pin HTTP/1.1 for local cleartext testing — see BookStatsClient for the rationale.
     private static final HttpClient HTTP = HttpClient.newBuilder()
@@ -54,8 +59,19 @@ public final class InventoryRestoreClient {
     /** One stack as the relay stores it. {@code nbt} is authoritative; {@code id}/{@code count} are for logs. */
     public record Stack(int slot, String id, int count, String nbt) {}
 
-    /** A pending restore. {@code xpLevels} is negative when the admin didn't set one. */
-    public record Restore(String id, List<Stack> inventory, List<Stack> armor, List<Stack> offhand, int xpLevels) {
+    /**
+     * Where a crashed or bugged run was, to put the player back there: world-X {@code x}, the run
+     * state as SNBT (authoritative, decoded by {@code PlayerRunState.CODEC}), and Long Way Back's
+     * furthest carriage, or negative when the save had none.
+     */
+    public record Run(double x, String runState, int longWayBackMaxCarriage) {}
+
+    /**
+     * A pending restore. {@code xpLevels} is negative when the admin didn't set one; {@code run} is
+     * null unless the admin also asked to return the player to their depth.
+     */
+    public record Restore(String id, List<Stack> inventory, List<Stack> armor, List<Stack> offhand, int xpLevels,
+                          Run run) {
         public List<Stack> all() {
             List<Stack> out = new ArrayList<>(inventory);
             out.addAll(armor);
@@ -99,7 +115,15 @@ public final class InventoryRestoreClient {
     }
 
     /** What happened to a restore, as reported back to the relay. */
-    public record Outcome(boolean applied, String reason, int placed, int displaced, int skipped) {}
+    public record Outcome(boolean applied, String reason, int placed, int displaced, int skipped, Double relocatedX) {
+        public Outcome(boolean applied, String reason, int placed, int displaced, int skipped) {
+            this(applied, reason, placed, displaced, skipped, null);
+        }
+
+        public Outcome withRelocatedX(double x) {
+            return new Outcome(applied, reason, placed, displaced, skipped, x);
+        }
+    }
 
     /** Queue the answer for delivery through {@link RelayOutbox}, which retries. Never throws. */
     public static void ack(UUID player, String id, Outcome outcome) {
@@ -115,6 +139,7 @@ public final class InventoryRestoreClient {
         o.addProperty("placed", outcome.placed());
         o.addProperty("displaced", outcome.displaced());
         o.addProperty("skipped", outcome.skipped());
+        if (outcome.relocatedX() != null) o.addProperty("relocatedX", outcome.relocatedX());
         return o.toString();
     }
 
@@ -133,8 +158,26 @@ public final class InventoryRestoreClient {
         String id = r.get("id").getAsString();
         if (id.isBlank()) return null;
         int xp = r.has("xpLevels") && r.get("xpLevels").isJsonPrimitive() ? r.get("xpLevels").getAsInt() : -1;
-        Restore restore = new Restore(id, stacks(r, "inventory"), stacks(r, "armor"), stacks(r, "offhand"), xp);
-        return restore.all().isEmpty() && xp < 0 ? null : restore;
+        Run run = run(r);
+        Restore restore = new Restore(id, stacks(r, "inventory"), stacks(r, "armor"), stacks(r, "offhand"), xp, run);
+        return restore.all().isEmpty() && xp < 0 && run == null ? null : restore;
+    }
+
+    /**
+     * The optional {@code run} block, or null when absent or malformed — a bad {@code run} never costs
+     * the player their items, it only means they stay where they are.
+     */
+    private static Run run(JsonObject r) {
+        if (!r.has("run") || !r.get("run").isJsonObject()) return null;
+        JsonObject o = r.getAsJsonObject("run");
+        if (!o.has("x") || !o.get("x").isJsonPrimitive() || !o.get("x").getAsJsonPrimitive().isNumber()) return null;
+        if (!o.has("runState") || !o.get("runState").isJsonPrimitive()) return null;
+        double x = o.get("x").getAsDouble();
+        String state = o.get("runState").getAsString();
+        if (!Double.isFinite(x) || Math.abs(x) > MAX_RUN_X || state.isBlank()) return null;
+        int lwb = o.has("longWayBackMaxCarriage") && o.get("longWayBackMaxCarriage").isJsonPrimitive()
+            ? o.get("longWayBackMaxCarriage").getAsInt() : -1;
+        return new Run(x, state, lwb);
     }
 
     /** Stacks under {@code key}; an entry missing its slot or SNBT is dropped, never guessed at. */
