@@ -4110,6 +4110,8 @@
   "gui.dungeontrain.editor_menu.container.slot_auto": "auto",
   "gui.dungeontrain.editor_menu.container.scale_on": "Skala ✓",
   "gui.dungeontrain.editor_menu.container.scale_off": "Skala ✗",
+  "gui.dungeontrain.editor_menu.container.luck_on": "Szczęście ✓",
+  "gui.dungeontrain.editor_menu.container.luck_off": "Szczęście ✗",
   "gui.dungeontrain.editor_menu.container.dur_on": "Wytrz. ✓",
   "gui.dungeontrain.editor_menu.container.dur_off": "Wytrz. ✗",
   "gui.dungeontrain.editor_menu.container.ench_on": "Zakl. ✓",

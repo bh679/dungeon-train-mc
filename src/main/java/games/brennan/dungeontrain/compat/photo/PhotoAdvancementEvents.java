@@ -131,8 +131,8 @@ public final class PhotoAdvancementEvents {
         PhotoBiomeRideCredit.apply(player, world.biomes());
         // Photos that already cover every biome Terra Omnia asks for earn Coffee Table Book without another shot.
         checkEveryBiome(player, player.getPersistentData().getList(PHOTO_BIOMES_KEY, Tag.TAG_STRING));
-        // Zombies and skeletons already in Most Wanted count toward Family Photo and Skeleton Crew.
-        SharedPhotoCriteria.shareAll(player);
+        // Zombies and skeletons already in Most Wanted count toward Family Photo and Skeleton Crew once the
+        // client reports their photos (PhotoAlbumReportPacket → SharedPhotoCriteria#onAlbumReport).
         syncPhotographedBiomes(player);
     }
 
@@ -189,7 +189,7 @@ public final class PhotoAdvancementEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         AdvancementPhotoCapture.onCriterion(player, event.getAdvancement(), event.getCriterionName());
         PhotoProgressNotice.noteCollection(player, event.getAdvancement());
-        SharedPhotoCriteria.share(player, event.getAdvancement());
+        SharedPhotoCriteria.share(player, event.getAdvancement(), event.getCriterionName());
     }
 
     /** A print a PlayerMob took and tossed to its subject: whoever catches it earned "Candid". */

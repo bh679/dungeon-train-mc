@@ -220,6 +220,14 @@ public final class ContainerContentsRoller {
     }
 
     /**
+     * Potion of Luck and DT's Luck II. Both sit in the random / random-good tables but only roll
+     * when the entry's Luck toggle is on ({@link ContainerContentsEntry#includeLuck()}).
+     */
+    static final ResourceLocation LUCK_POTION = ResourceLocation.withDefaultNamespace("luck");
+    static final ResourceLocation STRONG_LUCK_POTION =
+        ResourceLocation.fromNamespaceAndPath(games.brennan.dungeontrain.DungeonTrain.MOD_ID, "strong_luck");
+
+    /**
      * Ordered, escalating tiers of vanilla potions for the
      * {@code dungeontrain:random_potion} placeholder found in loot. Unlike
      * the offensive arrow table these span ALL effect kinds (beneficial +
@@ -239,7 +247,7 @@ public final class ContainerContentsRoller {
         tierIds("poison", "regeneration", "invisibility", "slow_falling"),                       // T2 — carts 100–149
         tierIds("harming", "strength", "infested", "luck"),                                      // T3 — carts 150–199
         tierIds("strong_poison", "strong_healing", "strong_swiftness", "weaving"),               // T4 — carts 200–249
-        tierIds("strong_harming", "strong_regeneration", "strong_strength", "oozing", "strong_leaping") // T5 — carts 250+
+        withStrongLuck(tierIds("strong_harming", "strong_regeneration", "strong_strength", "oozing", "strong_leaping")) // T5 — carts 250+
     );
 
     /** Test seam: read-only view of the configured potion-effect tiers. */
@@ -259,7 +267,7 @@ public final class ContainerContentsRoller {
         tierIds("healing", "night_vision", "water_breathing", "leaping"),               // T0 — carts 0–49
         tierIds("swiftness", "fire_resistance", "slow_falling", "invisibility"),        // T1 — carts 50–99
         tierIds("regeneration", "strength", "strong_leaping", "luck"),                  // T2 — carts 100–149
-        tierIds("strong_healing", "strong_swiftness", "strong_regeneration", "strong_strength") // T3 — carts 150+
+        withStrongLuck(tierIds("strong_healing", "strong_swiftness", "strong_regeneration", "strong_strength")) // T3 — carts 150+
     );
 
     /** Test seam: read-only view of the good-potion tiers. */
@@ -318,6 +326,22 @@ public final class ContainerContentsRoller {
         List<ResourceLocation> out = new ArrayList<>();
         for (List<ResourceLocation> tier : tiers) out.addAll(tier);
         return out;
+    }
+
+    /** {@code ids} without Luck and Luck II, unless {@code includeLuck}. Test seam. */
+    static List<ResourceLocation> luckFiltered(List<ResourceLocation> ids, boolean includeLuck) {
+        if (includeLuck) return ids;
+        List<ResourceLocation> out = new ArrayList<>(ids.size());
+        for (ResourceLocation id : ids) {
+            if (!LUCK_POTION.equals(id) && !STRONG_LUCK_POTION.equals(id)) out.add(id);
+        }
+        return List.copyOf(out);
+    }
+
+    private static List<ResourceLocation> withStrongLuck(List<ResourceLocation> tier) {
+        List<ResourceLocation> out = new ArrayList<>(tier);
+        out.add(STRONG_LUCK_POTION);
+        return List.copyOf(out);
     }
 
     private static List<ResourceLocation> tierIds(String... potionPaths) {
@@ -1142,15 +1166,15 @@ public final class ContainerContentsRoller {
         // harmful vanilla potion in a random bottle form. The entry's scale toggle decides
         // whether the power tier follows carriages travelled or the pick is flat.
         if (item == ModItems.RANDOM_POTION.get()) {
-            return bakeRandomPotion(POTION_EFFECT_TIERS, picked.scaleWithDistance(), picked.potionForm(),
+            return bakeRandomPotion(POTION_EFFECT_TIERS, picked.scaleWithDistance(), picked.includeLuck(), picked.potionForm(),
                 localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
         }
         if (item == ModItems.RANDOM_GOOD_POTION.get()) {
-            return bakeRandomPotion(GOOD_POTION_TIERS, picked.scaleWithDistance(), picked.potionForm(),
+            return bakeRandomPotion(GOOD_POTION_TIERS, picked.scaleWithDistance(), picked.includeLuck(), picked.potionForm(),
                 localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
         }
         if (item == ModItems.RANDOM_BAD_POTION.get()) {
-            return bakeRandomPotion(BAD_POTION_TIERS, picked.scaleWithDistance(), picked.potionForm(),
+            return bakeRandomPotion(BAD_POTION_TIERS, picked.scaleWithDistance(), picked.includeLuck(), picked.potionForm(),
                 localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
         }
 
@@ -1343,18 +1367,21 @@ public final class ContainerContentsRoller {
      * slot)} so two random potions in the same 50-carriage band can differ, yet a fixed
      * chest/slot stays deterministic (re-opens identical).</p>
      *
+     * <p>{@code includeLuck} off drops Potion of Luck and Luck II from the pick.</p>
+     *
      * <p>{@code form} pins the bottle (drinkable / splash / lingering); {@link PotionForm#ANY}
      * rolls it per spawn.</p>
      *
      * <p>Returns {@link ItemStack#EMPTY} only when no potion resolves (a stripped or modded
      * potion registry), so the slot is skipped rather than filled with a blank bottle.</p>
      */
-    static ItemStack bakeRandomPotion(List<List<ResourceLocation>> tiers, boolean scale, PotionForm form,
+    static ItemStack bakeRandomPotion(List<List<ResourceLocation>> tiers, boolean scale, boolean includeLuck,
+                                      PotionForm form,
                                       BlockPos localPos, long worldSeed, int carriageIndex,
                                       int slot, int count, HolderLookup.Provider registries) {
         int level = epochLevel(carriageIndex);
         int tier = scale ? epochTierIndex(level, tiers.size()) : -1;
-        List<ResourceLocation> ids = scale ? tiers.get(tier) : flattenTiers(tiers);
+        List<ResourceLocation> ids = luckFiltered(scale ? tiers.get(tier) : flattenTiers(tiers), includeLuck);
         List<Holder<Potion>> pool = resolvePotions(ids, registries);
         if (pool.isEmpty()) return ItemStack.EMPTY;
 

@@ -10472,6 +10472,16 @@
   "screen",
   "world"
  ],
+ "gui.dungeontrain.editor_menu.container.luck_on": [
+  "button",
+  "screen",
+  "world"
+ ],
+ "gui.dungeontrain.editor_menu.container.luck_off": [
+  "button",
+  "screen",
+  "world"
+ ],
  "gui.dungeontrain.editor_menu.container.dur_on": [
   "button",
   "screen",

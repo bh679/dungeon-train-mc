@@ -310,7 +310,8 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                 e.enchants() == null ? 0 : e.enchants().randomMax(),
                 e.enchants() == null ? 0 : e.enchants().levelMin(),
                 e.enchants() == null ? 0 : e.enchants().levelMax(),
-                BookEnchantsMenuOps.syncList(e.enchants())));
+                BookEnchantsMenuOps.syncList(e.enchants()),
+                e.includeLuck()));
         }
         return new ContainerContentsSyncPacket(plot.key(), localPos, entries,
             pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link, vaultKey);
@@ -620,6 +621,13 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                 if (idx < 0 || idx >= current.size()) return;
                 ContainerContentsEntry e = current.entries().get(idx);
                 next = current.replaced(idx, e.withScaleWithDistance(!e.scaleWithDistance()));
+                dirty = true;
+            }
+            case TOGGLE_LUCK -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                next = current.replaced(idx, e.withIncludeLuck(!e.includeLuck()));
                 dirty = true;
             }
             case CYCLE_POTION_FORM -> {
