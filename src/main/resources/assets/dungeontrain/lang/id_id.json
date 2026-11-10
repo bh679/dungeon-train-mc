@@ -3539,7 +3539,7 @@
   "dungeontrain.leaderboard.you_beyond": "Kamu ada di daftar ini dengan %s, di luar %s besar.",
   "gui.dungeontrain.unsupported_mods.title": "Mod Tidak Didukung Terdeteksi",
   "gui.dungeontrain.unsupported_mods.body": "Mod-mod ini tidak dikenali oleh Dungeon Train. Game tetap berjalan, tapi dalam Main Bebas. %s",
-  "gui.dungeontrain.unsupported_mods.live_hint": "Untuk bermain sesi normal / live, keluar dan nonaktifkan mod-mod ini.",
+  "gui.dungeontrain.unsupported_mods.live_hint": "Untuk bermain sesi normal / dihitung, keluar dan nonaktifkan mod-mod ini.",
   "gui.dungeontrain.unsupported_mods.unverified_file": "%s — berkas tidak terverifikasi",
   "gui.dungeontrain.unsupported_mods.update_essential": "Perbarui ke terbaru",
   "gui.dungeontrain.unsupported_mods.quit_disable": "Keluar & Nonaktifkan",

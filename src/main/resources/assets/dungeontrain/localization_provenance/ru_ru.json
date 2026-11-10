@@ -4980,6 +4980,7 @@
       "gui.dungeontrain.editor_settings.container_contents_menu.tip",
       "gui.dungeontrain.editor_settings.block_variant_menu.tip",
       "gui.dungeontrain.options.translate.tip",
+      "gui.dungeontrain.unsupported_mods.live_hint",
       "gui.dungeontrain.builder.profile.withheld",
       "gui.dungeontrain.builder.profile.no_stage",
       "gui.dungeontrain.builder.profile.in_use",
@@ -4993,6 +4994,8 @@
       "gui.dungeontrain.builder.profile.collision.load_as_new",
       "gui.dungeontrain.builder.profile.name.rename_existing",
       "gui.dungeontrain.custom_content.card.custom.tag",
+      "gui.dungeontrain.custom_content.card.default.tag",
+      "gui.dungeontrain.custom_content.dev_ignore.tip",
       "gui.dungeontrain.custom_content.toggle.off",
       "gui.dungeontrain.options.book_author_chat.tip"
     ],

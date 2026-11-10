@@ -3539,7 +3539,7 @@
   "dungeontrain.leaderboard.you_beyond": "Anda ada dalam senarai ini dengan %s, di luar %s teratas.",
   "gui.dungeontrain.unsupported_mods.title": "Mod Tidak Disokong Dikesan",
   "gui.dungeontrain.unsupported_mods.body": "Mod-mod ini tidak dikenali oleh Dungeon Train. Permainan akan tetap berjalan, tetapi dalam Main Bebas. %s",
-  "gui.dungeontrain.unsupported_mods.live_hint": "Untuk bermain larian biasa / live, keluar dan lumpuhkan mod-mod ini.",
+  "gui.dungeontrain.unsupported_mods.live_hint": "Untuk bermain larian biasa / dikira, keluar dan lumpuhkan mod-mod ini.",
   "gui.dungeontrain.unsupported_mods.unverified_file": "%s — fail tidak disahkan",
   "gui.dungeontrain.unsupported_mods.update_essential": "Kemas kini ke versi terbaharu",
   "gui.dungeontrain.unsupported_mods.quit_disable": "Keluar & Lumpuhkan",

@@ -8,11 +8,12 @@
     "ui"
   ],
   "title": "Free Play is off by default",
-  "summary": "Your own train designs no longer switch on by themselves. Every new world starts Live on the built-in trains unless you turn your designs on with the button beside New World, and only then are you asked to confirm. Just opening the Train Editor no longer counts as changing anything.",
+  "summary": "Your own train designs no longer switch on by themselves. Every new world starts on the built-in trains, without Free Play, unless you turn your designs on with the button beside New World, and only then are you asked to confirm. Just opening the Train Editor no longer counts as changing anything.",
   "highlights": [
-    "New worlds start Live by default, with no popup",
+    "New worlds start without Free Play by default, with no popup",
     "Turning your designs on still asks you to confirm each new world",
-    "Opening the Train Editor, or a vault's loot menu, no longer puts runs into Free Play"
+    "Opening the Train Editor, or a vault's loot menu, no longer puts runs into Free Play",
+    "Runs that count for your stats are now called Ranked"
   ],
   "pr": 2601,
   "date": "2026-11-10",

@@ -3594,7 +3594,7 @@
   "dungeontrain.leaderboard.you_beyond": "Je staat met %s in deze lijst, buiten de top %s.",
   "gui.dungeontrain.unsupported_mods.title": "Niet-ondersteunde Mod(s) Gevonden",
   "gui.dungeontrain.unsupported_mods.body": "Deze mods zijn onbekend bij Dungeon Train. Het spel blijft werken, maar in Vrij Spel. %s",
-  "gui.dungeontrain.unsupported_mods.live_hint": "Om een normale / live run te spelen, sluit het spel af en schakel deze mods uit.",
+  "gui.dungeontrain.unsupported_mods.live_hint": "Om een normale run te spelen die meetelt, sluit het spel af en schakel deze mods uit.",
   "gui.dungeontrain.unsupported_mods.unverified_file": "%s — bestand niet geverifieerd",
   "gui.dungeontrain.unsupported_mods.update_essential": "Bijwerken naar nieuwste",
   "gui.dungeontrain.unsupported_mods.quit_disable": "Afsluiten & Uitschakelen",

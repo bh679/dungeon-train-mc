@@ -3539,7 +3539,7 @@
   "dungeontrain.leaderboard.you_beyond": "Nasa listahang ito ka na may %s, labas sa nangungunang %s.",
   "gui.dungeontrain.unsupported_mods.title": "May Nakitang Hindi Suportadong Mod(s)",
   "gui.dungeontrain.unsupported_mods.body": "Hindi kilala ng Dungeon Train ang mga mod na ito. Tatakbo pa rin ang laro, pero nasa Malayang Paglalaro. %s",
-  "gui.dungeontrain.unsupported_mods.live_hint": "Para makapaglaro ng normal / live run, mag-quit at i-disable ang mga mod na ito.",
+  "gui.dungeontrain.unsupported_mods.live_hint": "Para makapaglaro ng normal / binibilang na takbo, mag-quit at i-disable ang mga mod na ito.",
   "gui.dungeontrain.unsupported_mods.unverified_file": "%s — hindi na-verify ang file",
   "gui.dungeontrain.unsupported_mods.update_essential": "I-update sa pinakabago",
   "gui.dungeontrain.unsupported_mods.quit_disable": "I-quit at I-disable",

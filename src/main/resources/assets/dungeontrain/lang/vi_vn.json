@@ -3539,7 +3539,7 @@
   "dungeontrain.leaderboard.you_beyond": "Bạn có tên trong danh sách này với %s, nhưng ngoài top %s.",
   "gui.dungeontrain.unsupported_mods.title": "Phát Hiện Mod Không Được Hỗ Trợ",
   "gui.dungeontrain.unsupported_mods.body": "Những mod này Dungeon Train không nhận biết được. Game vẫn sẽ chạy, nhưng ở chế độ Chơi Tự Do. %s",
-  "gui.dungeontrain.unsupported_mods.live_hint": "Để chơi một lượt bình thường / phát trực tiếp, hãy thoát và tắt các mod này.",
+  "gui.dungeontrain.unsupported_mods.live_hint": "Để chơi một lượt bình thường / được tính, hãy thoát và tắt các mod này.",
   "gui.dungeontrain.unsupported_mods.unverified_file": "%s — tệp chưa xác minh",
   "gui.dungeontrain.unsupported_mods.update_essential": "Cập nhật bản mới",
   "gui.dungeontrain.unsupported_mods.quit_disable": "Thoát và Tắt",
