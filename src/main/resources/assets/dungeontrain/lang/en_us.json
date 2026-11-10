@@ -1203,6 +1203,8 @@
   "chat.dungeontrain.narrative.all_complete": "All narratives complete.",
   "effect.dungeontrain.warmth_of_the_fire": "Warmth Of The Fire",
   "effect.dungeontrain.warmth_of_the_fire.description": "Slow Healing",
+  "effect.dungeontrain.drifting": "Drifting",
+  "effect.dungeontrain.drifting.description": "The train remembers changes you make here",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Flat)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",

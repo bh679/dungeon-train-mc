@@ -1,0 +1,9 @@
+{
+  "sources": [
+    {
+      "type": "single",
+      "resource": "minecraft:item/minecart",
+      "sprite": "dungeontrain:drifting"
+    }
+  ]
+}

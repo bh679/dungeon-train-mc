@@ -1031,6 +1031,8 @@
   "chat.dungeontrain.narrative.all_complete": "Toutes les narrations sont terminées.",
   "effect.dungeontrain.warmth_of_the_fire": "Chaleur du Feu",
   "effect.dungeontrain.warmth_of_the_fire.description": "Guérison Lente",
+  "effect.dungeontrain.drifting": "À la dérive",
+  "effect.dungeontrain.drifting.description": "Le train se souvient de ce que tu modifies ici",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Superplat)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",

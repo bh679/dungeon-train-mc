@@ -994,6 +994,8 @@
   "chat.dungeontrain.narrative.all_complete": "すべての物語が完結した。",
   "effect.dungeontrain.warmth_of_the_fire": "炎の温もり",
   "effect.dungeontrain.warmth_of_the_fire.description": "ゆっくりとした回復",
+  "effect.dungeontrain.drifting": "漂流中",
+  "effect.dungeontrain.drifting.description": "ここで加えた変更を、列車は覚えている",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train（フラット）",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train（ネザー）",

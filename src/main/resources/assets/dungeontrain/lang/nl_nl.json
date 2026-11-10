@@ -1031,6 +1031,8 @@
   "chat.dungeontrain.narrative.all_complete": "Alle verhalen voltooid.",
   "effect.dungeontrain.warmth_of_the_fire": "Warmte Van Het Vuur",
   "effect.dungeontrain.warmth_of_the_fire.description": "Langzame Genezing",
+  "effect.dungeontrain.drifting": "Drijvend",
+  "effect.dungeontrain.drifting.description": "De trein onthoudt wat je hier verandert",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Supervlak)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",
