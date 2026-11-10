@@ -18,9 +18,10 @@ import java.util.function.IntPredicate;
 
 /**
  * The <b>mix zone</b>: a hard-edged {@link CycleLayout.Type#MIX} slot where every chunk, with equal odds,
- * generates as one of the bands the run has already passed — any overworld style, Nether, BetterNether,
- * Deeper Dark, End, BetterEnd, upside-down, spheres, a legacy era, or the Lost City. Overworld and Lost City
- * picks wear their stretch's biomes too ({@link #biomeCycleFor}); every other pick keeps the base biome.
+ * generates as one of the bands the run has already passed — any overworld style, either look of the Nether,
+ * BetterNether, Deeper Dark, either look of the End, BetterEnd, upside-down, spheres, a legacy era, or the Lost
+ * City. Overworld and Lost City picks wear their stretch's biomes too ({@link #biomeCycleFor}); every other pick
+ * keeps the base biome. A Lost City pick always starts a building ({@link LostCityMixStarts}).
  *
  * <p>It works by handing each chunk a {@link WorldGenCycle#shifted shifted} cycle. The chunk rolls a
  * {@link Candidate} and a representative chunk inside that candidate's core (same doubling run), and gets
@@ -61,8 +62,8 @@ public final class MixBand {
 
     /**
      * Every band behind the first mix slot of {@code cycle}'s layout, minus {@code exclude} (tokens). Each
-     * distinct band once: overworld styles keep their longest gap, Nether / End keep one slot per style,
-     * each legacy era its own core (Lost City's at full building density). Chuncks, stacks and later mix
+     * distinct band once: overworld styles keep their longest gap, Nether / End keep one slot per look (a
+     * split Nether slot gives both), each legacy era its own core (Lost City's at full building density). Chuncks, stacks and later mix
      * slots are never candidates. Empty without a layout or a mix slot.
      */
     public static List<Candidate> candidates(WorldGenCycle cycle, Set<String> exclude) {
@@ -83,17 +84,18 @@ public final class MixBand {
                     add(out, exclude, token, slot, null, window(cycle, layout, i, x -> cycle.slotIndexAt(x) == slotIndex));
                 }
                 case NETHER -> {
-                    String token = netherToken(slot.style());
-                    if (!seen.add(token)) continue;
-                    // A Deeper Dark slot may be joined to the Nether slot before it (one unbroken range between the
-                    // two cores), so its window is the part of its core that wears the Otherside look.
-                    boolean otherside = slot.style() == CycleLayout.Style.OTHERSIDE;
-                    add(out, exclude, token, slot, null, window(cycle, layout, i,
-                            x -> cycle.slotIndexAt(x) == slotIndex && cycle.isNetherCore(x)
-                                    && (!otherside || cycle.netherLookAt(x) == CycleLayout.Style.OTHERSIDE)));
+                    // One candidate per look: a split slot (nether:vanilla=1000~400+bop) is two, and a Deeper Dark
+                    // slot joined to the Nether slot before it keeps only the part of its core wearing the Otherside.
+                    for (CycleLayout.Style look : netherLooks(slot)) {
+                        String token = netherToken(look);
+                        if (!seen.add(token)) continue;
+                        add(out, exclude, token, slot, look, null, window(cycle, layout, i,
+                                x -> cycle.slotIndexAt(x) == slotIndex && cycle.isNetherCore(x)
+                                        && cycle.netherLookAt(x) == look));
+                    }
                 }
                 case END -> {
-                    String token = slot.style() == CycleLayout.Style.BETTER ? "end_better" : "end";
+                    String token = endToken(slot.style());
                     if (!seen.add(token)) continue;
                     add(out, exclude, token, slot, null, window(cycle, layout, i,
                             x -> cycle.slotIndexAt(x) == slotIndex && cycle.isEndCore(x)));
@@ -128,15 +130,35 @@ public final class MixBand {
 
     private static void add(List<Candidate> out, Set<String> exclude, String token, CycleLayout.Slot slot,
                             LegacyBandKind era, long[] window) {
+        add(out, exclude, token, slot, slot.style(), era, window);
+    }
+
+    private static void add(List<Candidate> out, Set<String> exclude, String token, CycleLayout.Slot slot,
+                            CycleLayout.Style style, LegacyBandKind era, long[] window) {
         if (window == null || exclude.contains(token)) return;
-        out.add(new Candidate(token, slot.type(), slot.style(), era, window[0], window[1]));
+        out.add(new Candidate(token, slot.type(), style, era, window[0], window[1]));
+    }
+
+    /** The looks a Nether slot's first run wears: its own, then its split's second look if it has one. */
+    private static List<CycleLayout.Style> netherLooks(CycleLayout.Slot slot) {
+        return slot.splitStyle() == null || slot.splitStyle() == slot.style()
+                ? List.of(slot.style()) : List.of(slot.style(), slot.splitStyle());
     }
 
     static String netherToken(CycleLayout.Style style) {
         return switch (style) {
             case BETTER -> "nether_better";
             case OTHERSIDE -> "nether_otherside";
+            case BOP -> "nether_bop";
             default -> "nether";
+        };
+    }
+
+    static String endToken(CycleLayout.Style style) {
+        return switch (style) {
+            case BETTER -> "end_better";
+            case BOP -> "end_bop";
+            default -> "end";
         };
     }
 
@@ -291,6 +313,16 @@ public final class MixBand {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         if (!data.startsWithTrain()) return null;
         return cachedPick(base, data.getGenerationSeed(), chunkX, chunkZ);
+    }
+
+    /**
+     * Whether overworld chunk {@code (chunkX, chunkZ)} of {@code level} picked the Lost City. Every such chunk
+     * is a start of DT's Lost City set ({@link LostCityMixStarts}), so a pick always shows a building.
+     */
+    public static boolean picksLostCity(ServerLevel level, int chunkX, int chunkZ) {
+        if (!level.dimension().equals(Level.OVERWORLD)) return false;
+        Pick p = pickAt(level, chunkX, chunkZ);
+        return p != null && p.candidate().era() == LegacyBandKind.LOST_CITY;
     }
 
     /** The live candidate table (config exclusions applied). */

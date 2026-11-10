@@ -38,7 +38,7 @@ final class MixBandTest {
     @Test
     @DisplayName("every band behind the zone is a candidate once; chuncks and stacks never are")
     void candidateTable() {
-        assertEquals(23, CANDIDATES.size(), CANDIDATES.toString());
+        assertEquals(25, CANDIDATES.size(), CANDIDATES.toString());
         Set<String> tokens = new java.util.HashSet<>();
         for (MixBand.Candidate c : CANDIDATES) {
             assertTrue(tokens.add(c.token()), "duplicate " + c.token());
@@ -46,9 +46,22 @@ final class MixBandTest {
             assertFalse(c.type() == CycleLayout.Type.CHUNCKS || c.type() == CycleLayout.Type.STACKS
                     || c.type() == CycleLayout.Type.MIX);
         }
-        assertTrue(tokens.containsAll(Set.of("ow", "ow_wwoo", "ow_bop", "ow_sunk", "nether", "nether_better",
-                "nether_otherside", "end", "end_better", "upside_down", "spheres", "amplified", "void", "lost_city")));
-        assertEquals(21, MixBand.candidates(C, Set.of("nether", "beta")).size());
+        assertTrue(tokens.containsAll(Set.of("ow", "ow_wwoo", "ow_bop", "ow_sunk", "nether", "nether_bop", "nether_better",
+                "nether_otherside", "end", "end_bop", "end_better", "upside_down", "spheres", "amplified", "void",
+                "lost_city")));
+        assertEquals(23, MixBand.candidates(C, Set.of("nether", "beta")).size());
+    }
+
+    @Test
+    @DisplayName("LostCityMixStarts names the salt of DT's Lost City structure set")
+    void lostCitySetSalt() throws java.io.IOException {
+        String json;
+        try (java.io.InputStream in = MixBandTest.class.getResourceAsStream(
+                "/data/dungeontrain/worldgen/structure_set/lost_city.json")) {
+            assertTrue(in != null, "lost_city.json not on the classpath");
+            json = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        }
+        assertTrue(json.contains("\"salt\": " + LostCityMixStarts.SET_SALT), "salt changed in lost_city.json");
     }
 
     @Test
@@ -105,7 +118,9 @@ final class MixBandTest {
             case OVERWORLD -> x -> s.slotIndexAt(x) >= 0
                     && LAYOUT.slot(s.slotIndexAt(x)).type() == CycleLayout.Type.OVERWORLD
                     && LAYOUT.slot(s.slotIndexAt(x)).style() == c.style();
-            case NETHER -> x -> s.isNetherCore(x) && s.netherStyleAt(x) == styleOnRun(c, run);
+            // run 0 wears the first-run split's looks; later runs the slot's later look
+            case NETHER -> x -> s.isNetherCore(x)
+                    && (run == 0 ? s.netherLookAt(x) == c.style() : s.netherStyleAt(x) == styleOnRun(c, run));
             case END -> x -> s.isEndCore(x) && s.endStyleAt(x) == styleOnRun(c, run);
             case UPSIDE_DOWN -> s::isInUpsideDownBand;
             case SPHERES -> s::isInSpheresBand;

@@ -71,6 +71,17 @@ public final class LostCityStructures {
         return id != null && "lostcityterrainfit".equals(id.getNamespace()) && id.getPath().startsWith("all_biome/");
     }
 
+    /** Big Lost City's street props, not buildings: cars, decorations, tents and shipping containers. */
+    private static final java.util.regex.Pattern PROP = java.util.regex.Pattern.compile("(car|deco|tent)_\\d+|\\w*shippingcontainer");
+
+    /**
+     * Whether {@code id} places a building rather than a street prop ({@link #PROP}) — what a mix-zone Lost City
+     * chunk shows ({@link LostCityMixStarts}).
+     */
+    public static boolean isBuilding(ResourceLocation id) {
+        return isLostCityStructure(id) && !PROP.matcher(building(id)).matches();
+    }
+
     /** Whether {@code id} is one of DT's copies of a big building. */
     public static boolean isTracksideCopy(ResourceLocation id) {
         return id != null && "dungeontrain".equals(id.getNamespace()) && id.getPath().startsWith(TRACKSIDE_PREFIX);
