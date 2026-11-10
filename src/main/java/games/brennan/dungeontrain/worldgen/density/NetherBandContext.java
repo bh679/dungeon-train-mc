@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen.density;
 
+import games.brennan.dungeontrain.worldgen.CycleLayout;
 import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
 import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import games.brennan.dungeontrain.worldgen.OthersideSettings;
@@ -68,6 +69,16 @@ public record NetherBandContext(boolean enabled, long generationSeed, int seaLev
     public int othersideSlabBottom() {
         return games.brennan.dungeontrain.worldgen.OthersideCore.slabBottom(
                 netherTop - games.brennan.dungeontrain.event.NetherBandContextEvents.NETHER_TOP_ABOVE_BED);
+    }
+
+    /**
+     * The Nether look column {@code (worldX, worldZ)} wears ({@link WorldGenCycle#netherLookAt(int, int, long)}), on
+     * the cycle its chunk generates with: in the mix zone a Nether pick answers as its own pass, not as the
+     * Deeper Dark pass the zone's real X last crossed ({@link games.brennan.dungeontrain.worldgen.MixBand}).
+     */
+    public CycleLayout.Style netherLookAt(int worldX, int worldZ) {
+        WorldGenCycle c = games.brennan.dungeontrain.worldgen.MixBand.cycleFor(cycle, generationSeed, worldX >> 4, worldZ >> 4);
+        return c.netherLookAt(worldX, worldZ, netherCoreBiomes.seed());
     }
 
     /** The active context, or {@code null} before {@link #publish} / after {@link #clear}. */
