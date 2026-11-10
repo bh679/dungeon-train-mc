@@ -34,8 +34,11 @@ public final class VaultStatBoost {
     /** A vault type's multipliers: {@code primary} for damage and armor, {@code secondary} for speed and toughness. */
     public enum Tier {
         REGULAR(1.2, 1.1),
-        OMINOUS(1.4, 1.2),
-        /** On a reward already rolled further along the train ({@code VaultLoot#greenDiff}). */
+        OMINOUS(1.25, 1.125),
+        /**
+         * The same multipliers as {@link #OMINOUS}, on a reward already rolled further along the train
+         * ({@code VaultLoot#greenDiff}) — so green always beats ominous at the same spot.
+         */
         GREEN(1.25, 1.125);
 
         final double primary;

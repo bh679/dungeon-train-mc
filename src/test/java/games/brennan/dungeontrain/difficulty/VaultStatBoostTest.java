@@ -62,7 +62,7 @@ final class VaultStatBoostTest {
     @DisplayName("a diamond sword takes each tier's damage and speed")
     void swordAtEachTier() {
         ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
-        double[][] expected = {{8.4, 1.76}, {9.8, 1.92}, {8.75, 1.8}};
+        double[][] expected = {{8.4, 1.76}, {8.75, 1.8}, {8.75, 1.8}};
         Tier[] tiers = {Tier.REGULAR, Tier.OMINOUS, Tier.GREEN};
         for (int i = 0; i < tiers.length; i++) {
             ItemStack boosted = VaultStatBoost.boosted(sword, tiers[i]);
@@ -75,13 +75,20 @@ final class VaultStatBoostTest {
     @DisplayName("a diamond chestplate takes each tier's armor and toughness")
     void chestplateAtEachTier() {
         ItemStack chest = new ItemStack(Items.DIAMOND_CHESTPLATE);
-        double[][] expected = {{9.6, 2.2}, {11.2, 2.4}, {10.0, 2.25}};
+        double[][] expected = {{9.6, 2.2}, {10.0, 2.25}, {10.0, 2.25}};
         Tier[] tiers = {Tier.REGULAR, Tier.OMINOUS, Tier.GREEN};
         for (int i = 0; i < tiers.length; i++) {
             ItemStack boosted = VaultStatBoost.boosted(chest, tiers[i]);
             assertEquals(expected[i][0], amount(boosted, Attributes.ARMOR), ITEM_EPS, tiers[i].name());
             assertEquals(expected[i][1], amount(boosted, Attributes.ARMOR_TOUGHNESS), ITEM_EPS, tiers[i].name());
         }
+    }
+
+    @Test
+    @DisplayName("green shares ominous's multipliers; its extra strength comes from rolling deeper")
+    void greenMatchesOminous() {
+        assertEquals(Tier.OMINOUS.primary, Tier.GREEN.primary, EPS);
+        assertEquals(Tier.OMINOUS.secondary, Tier.GREEN.secondary, EPS);
     }
 
     @Test
@@ -95,7 +102,7 @@ final class VaultStatBoostTest {
 
         ItemStack boosted = VaultStatBoost.boosted(rolled, Tier.OMINOUS);
 
-        assertEquals(14.0, amount(boosted, Attributes.ARMOR), EPS);
+        assertEquals(12.5, amount(boosted, Attributes.ARMOR), EPS);
         assertEquals(10.0, amount(rolled, Attributes.ARMOR), EPS);
     }
 
