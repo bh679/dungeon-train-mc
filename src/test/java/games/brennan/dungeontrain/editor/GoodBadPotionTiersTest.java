@@ -56,4 +56,36 @@ final class GoodBadPotionTiersTest {
         assertEquals(tiers.get(0).get(0), flat.get(0));
         assertTrue(flat.containsAll(tiers.get(tiers.size() - 1)));
     }
+
+    @Test
+    void luck_rollsOnlyWhenTheEntryAsksForIt() {
+        for (List<List<ResourceLocation>> tiers : List.of(
+                ContainerContentsRoller.potionEffectTiersView(), ContainerContentsRoller.goodPotionTiersView())) {
+            List<ResourceLocation> flat = ContainerContentsRoller.flattenTiers(tiers);
+            assertTrue(flat.contains(ContainerContentsRoller.LUCK_POTION));
+            assertTrue(flat.contains(ContainerContentsRoller.STRONG_LUCK_POTION));
+
+            List<ResourceLocation> off = ContainerContentsRoller.luckFiltered(flat, false);
+            assertFalse(off.contains(ContainerContentsRoller.LUCK_POTION));
+            assertFalse(off.contains(ContainerContentsRoller.STRONG_LUCK_POTION));
+            assertEquals(flat.size() - 2, off.size());
+            assertEquals(flat, ContainerContentsRoller.luckFiltered(flat, true));
+
+            // No tier is left empty with Luck out, so a scaled roll always lands a potion.
+            for (List<ResourceLocation> tier : tiers) {
+                assertFalse(ContainerContentsRoller.luckFiltered(tier, false).isEmpty());
+            }
+        }
+    }
+
+    @Test
+    void entry_luckDefaultsOffAndSurvivesCopies() {
+        ContainerContentsEntry e = new ContainerContentsEntry(
+            ResourceLocation.fromNamespaceAndPath("dungeontrain", "random_good_potion"), 1, 1);
+        assertFalse(e.includeLuck());
+        ContainerContentsEntry on = e.withIncludeLuck(true);
+        assertTrue(on.includeLuck());
+        assertTrue(on.withWeight(3).withCount(2).withScaleWithDistance(false).cyclePotionForm().includeLuck());
+        assertFalse(on.withIncludeLuck(false).includeLuck());
+    }
 }

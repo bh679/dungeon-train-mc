@@ -3995,6 +3995,8 @@
       "gui.dungeontrain.editor_menu.container.slot_auto",
       "gui.dungeontrain.editor_menu.container.scale_on",
       "gui.dungeontrain.editor_menu.container.scale_off",
+      "gui.dungeontrain.editor_menu.container.luck_on",
+      "gui.dungeontrain.editor_menu.container.luck_off",
       "gui.dungeontrain.editor_menu.container.dur_on",
       "gui.dungeontrain.editor_menu.container.dur_off",
       "gui.dungeontrain.editor_menu.container.ench_on",
