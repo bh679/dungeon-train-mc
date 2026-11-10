@@ -225,6 +225,20 @@ class DriftEngineTest {
     }
 
     @Test
+    void joiningANewWorldBanksTheInput() {
+        // Left the last world with 10: 6 banked, 4 put in that world. It arrives with 9, all banked.
+        CompoundTag left = DriftEngine.withEngineCoal(shell(), 10);
+        ListTag cells = left.getList("cells", Tag.TAG_COMPOUND);
+        cells.getCompound(DriftEngine.findEngine(cells)).getCompound("b").putInt(DriftEngine.TAG_INPUT, 4);
+        assertEquals(10, DriftEngine.coalIn(left), "the blob's count is the whole fuel, input included");
+        CompoundTag arrived = DriftEngine.withEngineCoal(left, DriftEngine.burn(DriftEngine.coalIn(left)));
+        ListTag out = arrived.getList("cells", Tag.TAG_COMPOUND);
+        CompoundTag b = out.getCompound(DriftEngine.findEngine(out)).getCompound("b");
+        assertEquals(9, b.getInt(DriftEngine.TAG_COAL));
+        org.junit.jupiter.api.Assertions.assertFalse(b.contains(DriftEngine.TAG_INPUT), "the input starts empty");
+    }
+
+    @Test
     void neverMutatesItsArgument() {
         CompoundTag snap = shell();
         CompoundTag before = snap.copy();

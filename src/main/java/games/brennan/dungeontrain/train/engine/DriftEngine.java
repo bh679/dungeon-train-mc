@@ -33,6 +33,12 @@ public final class DriftEngine {
 
     /** The block entity's coal count key, in the world save and in the relay blob alike. */
     public static final String TAG_COAL = "Coal";
+    /**
+     * How much of {@link #TAG_COAL} sits in the input slot — coal put in during the current world,
+     * which can still be taken back. Cleared whenever the engine joins a new world: it all becomes
+     * banked then.
+     */
+    public static final String TAG_INPUT = "Input";
     /** The block's registry name as the snapshot writes it. */
     public static final String ENGINE_ID = "dungeontrain:drifting_engine_block";
     private static final String BLOCK_ENTITY_ID = "dungeontrain:drifting_engine_block";
@@ -125,6 +131,7 @@ public final class DriftEngine {
         CompoundTag b = existing.copy();
         b.putString("id", BLOCK_ENTITY_ID);
         b.putInt(TAG_COAL, coal);
+        b.remove(TAG_INPUT); // a new world: everything is banked, the input starts empty
         return b;
     }
 

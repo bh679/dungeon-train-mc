@@ -2,25 +2,33 @@ package games.brennan.dungeontrain.block.engine;
 
 import games.brennan.dungeontrain.registry.ModMenuTypes;
 import games.brennan.dungeontrain.train.engine.DriftEngine;
+import com.mojang.datafixers.util.Pair;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 /**
- * The Drifting Engine Block screen's container: the coal slot (in only, never out) over the player inventory, plus the coal count
- * synced as menu data so the gauge and the "more worlds" line read it without a packet of their own.
+ * The Drifting Engine Block screen's container: the input slot over the player inventory, plus the
+ * banked coal synced as menu data so the gauge and the "more worlds" line read it without a packet of
+ * their own. The input takes coal only, up to what the banked coal leaves of
+ * {@link DriftEngine#MAX_COAL}, and gives it back on request; an empty input shows a faded coal.
  */
 public class EngineMenu extends AbstractContainerMenu {
 
     /** Where the coal slot sits on the screen texture. */
     public static final int COAL_X = 13, COAL_Y = 20;
+    /** The faded coal an empty input shows, from the block atlas like vanilla's empty armour slots. */
+    public static final ResourceLocation EMPTY_COAL =
+        ResourceLocation.fromNamespaceAndPath(games.brennan.dungeontrain.DungeonTrain.MOD_ID, "item/empty_slot_coal");
 
     private final Container engine;
     private final ContainerData data;
@@ -39,9 +47,11 @@ public class EngineMenu extends AbstractContainerMenu {
         engine.startOpen(inventory.player);
         addSlot(new Slot(engine, 0, COAL_X, COAL_Y) {
             @Override public boolean mayPlace(ItemStack stack) { return stack.is(Items.COAL); }
-            /** Coal goes in and burns; it never comes back out. */
-            @Override public boolean mayPickup(Player player) { return false; }
-            @Override public int getMaxStackSize() { return DriftEngine.MAX_COAL; }
+            @Override public int getMaxStackSize() { return Math.max(0, DriftEngine.MAX_COAL - banked()); }
+            @Override public int getMaxStackSize(ItemStack stack) { return getMaxStackSize(); }
+            @Override public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
+                return Pair.of(InventoryMenu.BLOCK_ATLAS, EMPTY_COAL);
+            }
         });
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
@@ -52,9 +62,20 @@ public class EngineMenu extends AbstractContainerMenu {
         addDataSlots(data);
     }
 
-    /** Coal in the engine, as last synced. */
-    public int coal() {
+    /** Coal the engine arrived with, as last synced: shown, never taken out. */
+    public int banked() {
         return data.get(0);
+    }
+
+    /** Coal put in during this world: the input slot. */
+    public int input() {
+        ItemStack stack = slots.get(0).getItem();
+        return stack.is(Items.COAL) ? stack.getCount() : 0;
+    }
+
+    /** All the fuel: banked plus input. */
+    public int coal() {
+        return banked() + input();
     }
 
     @Override
@@ -64,7 +85,7 @@ public class EngineMenu extends AbstractContainerMenu {
         ItemStack stack = slot.getItem();
         ItemStack before = stack.copy();
         if (index == 0) {
-            return ItemStack.EMPTY; // coal never comes back out
+            if (!moveItemStackTo(stack, 1, slots.size(), true)) return ItemStack.EMPTY;
         } else if (stack.is(Items.COAL)) {
             if (!moveItemStackTo(stack, 0, 1, false)) return ItemStack.EMPTY;
         } else {

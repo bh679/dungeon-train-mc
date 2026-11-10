@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -30,10 +31,11 @@ import net.minecraft.world.phys.BlockHitResult;
  * is retired from the relay pool — see {@link games.brennan.dungeontrain.train.engine.DriftEngine}.
  *
  * <p>{@link #LIT} follows the coal: lit while there is any, cold at zero, so a dying carriage is
- * visible from across the room. Coal goes in and never comes out — not through the screen, not
- * through a hopper, not by breaking the block. Only the carriage's builder may break it
- * ({@code EngineBlockEvents}); it takes as long as obsidian and always drops itself, empty. Set down
- * in an ordinary carriage, it makes that carriage drift.</p>
+ * visible from across the room. Coal put in during this world can be taken back out (or spills when the
+ * block breaks); what the engine arrived with is banked and never comes out — see
+ * {@link EngineBlockEntity}. Only the carriage's builder may break it ({@code EngineBlockEvents}); it
+ * takes as long as obsidian and always drops itself. Set down in an ordinary carriage, it makes that
+ * carriage drift.</p>
  */
 public class EngineBlock extends BaseEntityBlock {
 
@@ -92,9 +94,10 @@ public class EngineBlock extends BaseEntityBlock {
     @Override
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         if (!state.is(newState.getBlock())) {
-            if (level.getBlockEntity(pos) instanceof EngineBlockEntity
-                    && level instanceof ServerLevel server) {
-                EngineFuelTracker.onEngineRemoved(server, pos);
+            if (level.getBlockEntity(pos) instanceof EngineBlockEntity engine) {
+                // Coal put in this world comes back out; banked coal is burnt for good.
+                Containers.dropContents(level, pos, engine);
+                if (level instanceof ServerLevel server) EngineFuelTracker.onEngineRemoved(server, pos);
             }
         }
         super.onRemove(state, level, pos, newState, movedByPiston);

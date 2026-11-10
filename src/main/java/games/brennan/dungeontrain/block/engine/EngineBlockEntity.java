@@ -24,11 +24,21 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * The Drifting Engine Block's coal. One slot, coal only, at most {@link DriftEngine#MAX_COAL}, and it
- * only goes in: the screen's slot refuses to give it back and hoppers may feed it but never drain it.
+ * The Drifting Engine Block's coal, in two parts.
  *
- * <p>Saved as a plain count ({@value DriftEngine#TAG_COAL}) rather than an item stack, so the relay
- * blob, the retrofit and the burn all read the same number without parsing an item.</p>
+ * <ul>
+ *   <li><b>Banked</b>: what the engine arrived with — the three it spawned with, and whatever earlier
+ *       worlds put in it, less one burnt for each world it has joined. Nobody can take it out; the
+ *       screen's gauge shows it.</li>
+ *   <li><b>Input</b>: the one slot, coal put in during this world. It counts as fuel straight away and
+ *       can be taken back out until the carriage leaves; when it joins its next world it all becomes
+ *       banked and the slot starts empty again.</li>
+ * </ul>
+ *
+ * <p>Together they never pass {@link DriftEngine#MAX_COAL}. Saved as the total
+ * ({@value DriftEngine#TAG_COAL} — what the relay blob, the retrofit and the burn read) plus the input
+ * count ({@value DriftEngine#TAG_INPUT}), so a reload inside this world keeps the two apart. Hoppers
+ * may feed the input but never drain it.</p>
  *
  * <p>Every change tells {@link EngineFuelTracker}, which updates the drifting build's live fuel (sent
  * to the relay with its next call) and queues the cell for upload.</p>
@@ -37,15 +47,18 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
 
     private static final int[] SLOTS = {0};
 
+    private int banked;
+
     /**
-     * The coal, as a real stack: vanilla slot code edits the stack {@link #getItem} returns in place,
+     * The input, as a real stack: vanilla slot code edits the stack {@link #getItem} returns in place,
      * so a stack built fresh on every call would drop those edits.
      */
-    private ItemStack stack = ItemStack.EMPTY;
+    private ItemStack input = ItemStack.EMPTY;
 
+    /** Synced to the screen: index 0 is the banked coal; the input arrives through the slot itself. */
     private final ContainerData data = new ContainerData() {
-        @Override public int get(int index) { return coal(); }
-        @Override public void set(int index, int value) { stack = coalStack(value); }
+        @Override public int get(int index) { return banked; }
+        @Override public void set(int index, int value) { banked = DriftEngine.clampCoal(value); }
         @Override public int getCount() { return 1; }
     };
 
@@ -53,37 +66,51 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
         super(ModBlockEntities.ENGINE_BLOCK.get(), pos, state);
     }
 
+    /** All the fuel: banked plus input. */
     public int coal() {
-        return stack.is(Items.COAL) ? stack.getCount() : 0;
+        return banked + inputCount();
     }
 
-    /** Set the coal outright — the spawn and lease paths, never a player. Clamped to 0..64. */
+    public int banked() {
+        return banked;
+    }
+
+    private int inputCount() {
+        return input.is(Items.COAL) ? input.getCount() : 0;
+    }
+
+    /** Room left in the input: whatever the banked coal leaves of {@link DriftEngine#MAX_COAL}. */
+    public int inputCapacity() {
+        return Math.max(0, DriftEngine.MAX_COAL - banked);
+    }
+
+    /**
+     * Set the fuel outright, all of it banked and the input empty — the spawn and lease paths, never a
+     * player. Clamped to 0..64.
+     */
     public void setCoal(int value) {
-        if (DriftEngine.clampCoal(value) == coal()) return;
-        stack = coalStack(value);
+        int clamped = DriftEngine.clampCoal(value);
+        if (clamped == banked && input.isEmpty()) return;
+        banked = clamped;
+        input = ItemStack.EMPTY;
         setChanged();
     }
 
-    private static ItemStack coalStack(int count) {
-        int clamped = DriftEngine.clampCoal(count);
-        return clamped > 0 ? new ItemStack(Items.COAL, clamped) : ItemStack.EMPTY;
-    }
-
-    // ---- Container ----
+    // ---- Container: the input slot ----
 
     @Override public int getContainerSize() { return 1; }
 
-    @Override public boolean isEmpty() { return stack.isEmpty(); }
+    @Override public boolean isEmpty() { return input.isEmpty(); }
 
     @Override
     public ItemStack getItem(int slot) {
-        return slot == 0 ? stack : ItemStack.EMPTY;
+        return slot == 0 ? input : ItemStack.EMPTY;
     }
 
     @Override
     public ItemStack removeItem(int slot, int amount) {
-        if (slot != 0 || stack.isEmpty() || amount <= 0) return ItemStack.EMPTY;
-        ItemStack taken = stack.split(amount);
+        if (slot != 0 || input.isEmpty() || amount <= 0) return ItemStack.EMPTY;
+        ItemStack taken = input.split(amount);
         setChanged();
         return taken;
     }
@@ -91,24 +118,24 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
     @Override
     public ItemStack removeItemNoUpdate(int slot) {
         if (slot != 0) return ItemStack.EMPTY;
-        ItemStack out = stack;
-        stack = ItemStack.EMPTY;
+        ItemStack out = input;
+        input = ItemStack.EMPTY;
         return out;
     }
 
     @Override
     public void setItem(int slot, ItemStack newStack) {
         if (slot != 0) return;
-        stack = newStack.is(Items.COAL) ? newStack : ItemStack.EMPTY;
-        if (stack.getCount() > DriftEngine.MAX_COAL) stack.setCount(DriftEngine.MAX_COAL);
+        input = newStack.is(Items.COAL) ? newStack : ItemStack.EMPTY;
+        if (input.getCount() > inputCapacity()) input.setCount(inputCapacity());
         setChanged();
     }
 
-    @Override public int getMaxStackSize() { return DriftEngine.MAX_COAL; }
+    @Override public int getMaxStackSize() { return inputCapacity(); }
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack candidate) {
-        return slot == 0 && candidate.is(Items.COAL);
+        return slot == 0 && candidate.is(Items.COAL) && inputCount() < inputCapacity();
     }
 
     @Override
@@ -118,7 +145,7 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
 
     @Override
     public void clearContent() {
-        stack = ItemStack.EMPTY;
+        input = ItemStack.EMPTY;
         setChanged();
     }
 
@@ -169,12 +196,16 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putInt(DriftEngine.TAG_COAL, coal());
+        if (inputCount() > 0) tag.putInt(DriftEngine.TAG_INPUT, inputCount());
     }
 
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        stack = coalStack(tag.getInt(DriftEngine.TAG_COAL));
+        int total = DriftEngine.clampCoal(tag.getInt(DriftEngine.TAG_COAL));
+        int in = Math.max(0, Math.min(total, tag.getInt(DriftEngine.TAG_INPUT)));
+        banked = total - in;
+        input = in > 0 ? new ItemStack(Items.COAL, in) : ItemStack.EMPTY;
     }
 
     @Override

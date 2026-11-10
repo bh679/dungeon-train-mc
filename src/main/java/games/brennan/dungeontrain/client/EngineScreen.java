@@ -23,9 +23,14 @@ public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
     private static final ResourceLocation TEXTURE =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "textures/gui/container/drifting_engine_block.png");
 
-    /** Gauge fill inside the trough beside the coal slot, centred on the slot's row; and its sprite. */
+    /**
+     * Gauge fill inside the trough beside the coal slot, centred on the slot's row. Banked coal fills it
+     * in ember; coal put in this world carries on from there in a lighter ember, so both read as fuel
+     * while showing which part can still be taken back. Both sprites span the full width, so the light
+     * part picks up the gradient where the banked part leaves off.
+     */
     private static final int GAUGE_X = 37, GAUGE_Y = 25, GAUGE_W = 130, GAUGE_H = 5;
-    private static final int GAUGE_FILL_U = 0, GAUGE_FILL_V = 170;
+    private static final int GAUGE_FILL_U = 0, GAUGE_FILL_V = 170, GAUGE_INPUT_V = 176;
     /** The status line, under the slot row at the full width of the panel. */
     private static final int TEXT_X = 12, STATUS_Y = 42, TEXT_WIDTH = 156;
     private static final int TEXT_COLOUR = 0x404040;
@@ -44,11 +49,20 @@ public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         int x = leftPos, y = topPos;
         graphics.blit(TEXTURE, x, y, 0, 0, imageWidth, imageHeight);
-        int coal = menu.coal();
-        if (coal > 0) {
-            int fill = Math.max(1, Math.round(GAUGE_W * (coal / (float) DriftEngine.MAX_COAL)));
-            graphics.blit(TEXTURE, x + GAUGE_X, y + GAUGE_Y, GAUGE_FILL_U, GAUGE_FILL_V, fill, GAUGE_H);
+        int banked = gaugeWidth(menu.banked());
+        int total = gaugeWidth(menu.coal());
+        if (banked > 0) {
+            graphics.blit(TEXTURE, x + GAUGE_X, y + GAUGE_Y, GAUGE_FILL_U, GAUGE_FILL_V, banked, GAUGE_H);
         }
+        if (total > banked) {
+            graphics.blit(TEXTURE, x + GAUGE_X + banked, y + GAUGE_Y, GAUGE_FILL_U + banked, GAUGE_INPUT_V,
+                    total - banked, GAUGE_H);
+        }
+    }
+
+    /** Pixels of gauge for {@code coal}; at least one for any coal at all, so a single lump still shows. */
+    private static int gaugeWidth(int coal) {
+        return coal <= 0 ? 0 : Math.max(1, Math.round(GAUGE_W * (coal / (float) DriftEngine.MAX_COAL)));
     }
 
     @Override

@@ -6,6 +6,7 @@ Writes into src/main/resources/assets/dungeontrain/textures/:
   block/drifting_engine_block_{front,side,top}_cold.png   0 coal
   block/drifting_engine_block_bottom.png
   gui/container/drifting_engine_block.png                 the coal screen
+  item/empty_slot_coal.png                                the faded coal an empty input shows
 
 Only the fire animates: the iron has no randomness at all and the fire draws from its own seeded
 stream, so every frame's iron is identical. Re-run after tuning a colour; the output is deterministic.
@@ -197,11 +198,47 @@ def write_screen(path):
             slot(d, 7 + col * 18, 83 + row * 18)
     for col in range(9):
         slot(d, 7 + col * 18, 141)
-    for x in range(130):                  # gauge fill sprite, ember gradient
+    for x in range(130):                  # gauge fill sprites: banked (row 170), this world's input (row 176)
         t = x / 129
         c = (int(168 + (255 - 168) * t), int(50 + (191 - 50) * t), int(26 + (60 - 26) * t))
+        light = tuple(int(v + (p - v) * .55) for v, p in zip(c, (255, 226, 143)))
         for y in range(5):
-            d.point((x, 170 + y), fill=c if y not in (0, 4) else tuple(int(v * .8) for v in c))
+            edge = y in (0, 4)
+            d.point((x, 170 + y), fill=c if not edge else tuple(int(v * .8) for v in c))
+            d.point((x, 176 + y), fill=light if not edge else tuple(int(v * .85) for v in light))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    im.save(path)
+
+
+COAL_LUMP = [  # 16x16 lump of coal, ours rather than a copy of vanilla's item: '#' face, '+' facet edge
+    "................",
+    "................",
+    "........##......",
+    "......####+.....",
+    "....#####+##....",
+    "...####++####...",
+    "..###++######+..",
+    "..##+#######+##.",
+    ".###+######+###.",
+    ".####+####+####.",
+    "..###+#++######.",
+    "..####+#######..",
+    "...#####+####...",
+    ".....######.....",
+    "................",
+    "................",
+]
+
+
+def write_empty_slot_icon(path):
+    """The faded coal an empty input slot shows: one solid grey a shade lighter than the slot, as vanilla's
+    empty armour slots are. Empty-slot icons are drawn without blending, so translucency would show
+    as solid white; the fade has to be in the colour."""
+    im = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    for y, row in enumerate(COAL_LUMP):
+        for x, ch in enumerate(row):
+            if ch in "#+":
+                im.putpixel((x, y), (160, 160, 160, 255) if ch == "#" else (149, 149, 149, 255))
     os.makedirs(os.path.dirname(path), exist_ok=True)
     im.save(path)
 
@@ -209,4 +246,5 @@ def write_screen(path):
 if __name__ == "__main__":
     write_block_textures(os.path.join(ROOT, "block"))
     write_screen(os.path.join(ROOT, "gui", "container", "drifting_engine_block.png"))
+    write_empty_slot_icon(os.path.join(ROOT, "item", "empty_slot_coal.png"))
     print("wrote drifting engine block textures under", os.path.normpath(ROOT))
