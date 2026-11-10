@@ -34686,6 +34686,197 @@
       "released": true,
       "released_in": "v0.1750.0",
       "released_at": "2026-11-10T03:03:32Z"
+    },
+    {
+      "id": "farmers-delight-not-approved",
+      "version": "0.1755.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Farmer's Delight",
+      "summary": "Farmer's Delight is no longer an approved mod. Runs with it installed are Free Play, because its food and drinks give advantages a normal run doesn't have.",
+      "highlights": [],
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1759.0",
+      "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "low-disk-space-warning",
+      "version": "0.1757.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Low storage warning",
+      "summary": "The game now warns you when your drive is nearly full, before it runs out of space and crashes mid-run.",
+      "highlights": [
+        "A warning pops up when your drive has less than 5 GB free, so you can clear space before it becomes a problem.",
+        "Under 1 GB free, a red warning repeats every couple of minutes telling you to save and quit.",
+        "Server owners get the same warning for the server's drive."
+      ],
+      "pr": 2592,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1759.0",
+      "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "photo-collection-shared-photos",
+      "version": "0.1751.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements",
+        "ui"
+      ],
+      "title": "Photo collection fix",
+      "summary": "Photo collections now show the photo you already took of a mob, and name every mob you've already counted. Collections that were finished without their photos need those photos taken again.",
+      "highlights": [],
+      "pr": 2587,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1759.0",
+      "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "prefilled-loot-containers",
+      "version": "0.1752.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "loot"
+      ],
+      "title": "Editor: pre-filled loot containers",
+      "summary": "Builders can now set up loot that comes out already packed with its own roll of items.",
+      "highlights": [],
+      "pr": 2588,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1759.0",
+      "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "random-potions-luck-toggle",
+      "version": "0.1751.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "loot",
+        "balance"
+      ],
+      "title": "Potion loot tweak",
+      "summary": "Random potions found on the train are a little different",
+      "highlights": [],
+      "pr": 2586,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1759.0",
+      "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "rarest-vault-stronger-gear",
+      "version": "0.1753.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot",
+        "balance"
+      ],
+      "title": "Stronger gear from the rarest vault",
+      "summary": "Weapons and armour from the rarest vault now come out far stronger, rolled as if found much deeper down the line. Vault rewards have also been reshuffled, with bigger piles of the good stuff.",
+      "highlights": [
+        "Rarest vault gear hits much harder and protects much better.",
+        "Rarest and ominous vault rewards rebalanced."
+      ],
+      "pr": 2589,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1759.0",
+      "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "restore-support-tooling",
+      "version": "0.1758.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "internal"
+      ],
+      "title": "Support tooling fix",
+      "summary": "Behind-the-scenes improvements to how we help players who lose a run to a bug.",
+      "highlights": [],
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1759.0",
+      "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "smite-modded-undead",
+      "version": "0.1757.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "mobs"
+      ],
+      "title": "Smite works on every zombie and skeleton",
+      "summary": "Smite now deals its bonus damage to all zombies and skeletons, not just the classic ones. Healing and Harming potions also work on them the right way round.",
+      "highlights": [],
+      "pr": 2594,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1759.0",
+      "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "vault-gear-rebalance",
+      "version": "0.1754.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot",
+        "balance"
+      ],
+      "title": "Vault gear rebalance",
+      "summary": "Gear from regular and ominous vaults gets a gentle boost, and the rarest vault's gear is now always the strongest of the three, however far down the line you are.",
+      "highlights": [
+        "The rarest vault now always beats an ominous vault at the same spot."
+      ],
+      "pr": 2590,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1759.0",
+      "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "stat-based-gear-prices",
+      "version": "0.1760.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "ui",
+        "balance"
+      ],
+      "title": "Gear sells for what it's worth",
+      "summary": "Villagers now pay for gear and enchanted books by how good they are. Better stats, better rolls and stronger enchantments sell for more, and netherite no longer sells for far more than diamond. Expensive trades can ask for more than two stacks, with extra payment slots.",
+      "highlights": [
+        "Sell prices follow damage, armour, durability and enchantments",
+        "Netherite gear sells for about twice diamond, not over ten times",
+        "Mending and Silk Touch are worth much more",
+        "Big trades show extra payment slots, four to a row, scrolling past twelve"
+      ],
+      "pr": 2596,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1760.0",
+      "released_at": "2026-11-10T09:32:19Z"
     }
   ]
 }

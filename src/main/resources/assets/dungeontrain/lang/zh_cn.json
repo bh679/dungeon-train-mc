@@ -5562,6 +5562,7 @@
   "gui.dungeontrain.translate.edit.blocked.missing_vars": "你的译文缺少 %s。游戏会在那里填入内容，所以这行需要它。",
   "gui.dungeontrain.translate.edit.blocked.extra_vars": "你的译文多了英文没有的 %s。游戏没有内容可以填进去。",
   "chat.dungeontrain.free_play.cause.custom_content": "本世界正在使用自定义列车内容。",
+  "chat.dungeontrain.free_play.cause.relay_override": "游戏被设置为使用 Dungeon Train 官方以外的服务器。",
   "chat.dungeontrain.custom_content.packages": "自定义内容来自：%s",
   "chat.dungeontrain.custom_content.disable_link": "点击此处可为本世界关闭自定义内容并正常游玩。",
   "chat.dungeontrain.custom_content.enable_link": "点击此处可重新开启。",

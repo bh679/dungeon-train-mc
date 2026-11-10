@@ -34,7 +34,8 @@ import java.util.TreeMap;
  *
  * <p>{@code source} is one of: {@code approved} (from {@link TradeValueTable}), {@code dt-bridge}
  * (a hand-tuned constant in {@link TradeEverythingBridge}), {@code dynamic} (priced per stack —
- * potions, written books — so a fixed value would override that logic), or {@code te-default}.</p>
+ * potions, written books, gear and enchanted books — so a fixed value would override that logic),
+ * or {@code te-default}.</p>
  *
  * <p>Hard-imports the TE API like the bridge does; the caller gates on
  * {@code ModList.isLoaded("tradeeverything")} + {@code catch (Throwable)}.</p>
@@ -157,8 +158,10 @@ public final class TradeValuesCatalogDump {
     }
 
     static String sourceOf(ResourceLocation id, Item item, ItemStack stack) {
+        // Gear and enchanted books are priced from each stack's stats (GearValueProvider), ahead of
+        // the approved table, so an approved value would never apply to them.
+        if (DYNAMIC.contains(item) || item == Items.ENCHANTED_BOOK || GearStats.slotOf(stack).isPresent()) return "dynamic";
         if (TradeValueTable.valueOf(id).isPresent()) return "approved";
-        if (DYNAMIC.contains(item)) return "dynamic";
         if (TradeEverythingBridge.isHandTuned(id, stack)) return "dt-bridge";
         return "te-default";
     }

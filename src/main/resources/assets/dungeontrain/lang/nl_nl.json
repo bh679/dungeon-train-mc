@@ -5614,6 +5614,7 @@
   "gui.dungeontrain.translate.edit.blocked.missing_vars": "In je tekst ontbreekt %s. Het spel vult dat in, dus de regel heeft het nodig.",
   "gui.dungeontrain.translate.edit.blocked.extra_vars": "Je tekst bevat %s die niet in het Engels staat. Het spel heeft daar niets voor.",
   "chat.dungeontrain.free_play.cause.custom_content": "Deze wereld gebruikt eigen treininhoud.",
+  "chat.dungeontrain.free_play.cause.relay_override": "Het spel is ingesteld om een andere server te gebruiken dan die van Dungeon Train.",
   "chat.dungeontrain.custom_content.packages": "Eigen inhoud van: %s",
   "chat.dungeontrain.custom_content.disable_link": "Klik hier om eigen inhoud voor deze wereld uit te zetten en normaal te spelen.",
   "chat.dungeontrain.custom_content.enable_link": "Klik hier om het weer aan te zetten.",

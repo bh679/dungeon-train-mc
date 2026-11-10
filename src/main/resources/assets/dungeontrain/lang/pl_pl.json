@@ -5680,6 +5680,7 @@
   "gui.dungeontrain.translate.edit.blocked.missing_vars": "W twoim tekście brakuje %s. Gra to wstawia, więc linijka tego potrzebuje.",
   "gui.dungeontrain.translate.edit.blocked.extra_vars": "Twój tekst zawiera %s, którego nie ma w angielskim. Gra nie ma tam czego wstawić.",
   "chat.dungeontrain.free_play.cause.custom_content": "Ten świat korzysta z własnych treści pociągu.",
+  "chat.dungeontrain.free_play.cause.relay_override": "Gra jest ustawiona tak, by korzystać z innego serwera niż serwer Dungeon Train.",
   "chat.dungeontrain.custom_content.packages": "Własne treści z: %s",
   "chat.dungeontrain.custom_content.disable_link": "Kliknij tutaj, aby wyłączyć własne treści w tym świecie i grać normalnie.",
   "chat.dungeontrain.custom_content.enable_link": "Kliknij tutaj, aby włączyć je z powrotem.",

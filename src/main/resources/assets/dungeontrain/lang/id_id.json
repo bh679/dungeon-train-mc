@@ -5548,6 +5548,7 @@
   "gui.dungeontrain.translate.edit.blocked.missing_vars": "Teksmu kurang %s. Permainan mengisikan itu, jadi baris ini memerlukannya.",
   "gui.dungeontrain.translate.edit.blocked.extra_vars": "Teksmu punya %s yang tidak ada di teks Inggris. Permainan tidak punya apa-apa untuk diisikan di situ.",
   "chat.dungeontrain.free_play.cause.custom_content": "Dunia ini memakai konten kereta buatan sendiri.",
+  "chat.dungeontrain.free_play.cause.relay_override": "Game diatur untuk memakai server selain server milik Dungeon Train.",
   "chat.dungeontrain.custom_content.packages": "Konten buatan sendiri dari: %s",
   "chat.dungeontrain.custom_content.disable_link": "Klik di sini untuk mematikan konten buatan sendiri di dunia ini dan bermain seperti biasa.",
   "chat.dungeontrain.custom_content.enable_link": "Klik di sini untuk menyalakannya kembali.",

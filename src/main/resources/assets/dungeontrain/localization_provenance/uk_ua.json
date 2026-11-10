@@ -4051,6 +4051,7 @@
       "gui.dungeontrain.translate.sent.rejected",
       "gui.dungeontrain.translate.submit.blocked.nothing_new",
       "chat.dungeontrain.free_play.cause.custom_content",
+      "chat.dungeontrain.free_play.cause.relay_override",
       "chat.dungeontrain.custom_content.packages",
       "chat.dungeontrain.custom_content.disable_link",
       "chat.dungeontrain.custom_content.enable_link",

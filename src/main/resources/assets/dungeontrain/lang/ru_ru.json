@@ -5680,6 +5680,7 @@
   "gui.dungeontrain.translate.edit.blocked.missing_vars": "В вашем тексте нет %s. Игра подставляет это сюда, и строке это нужно.",
   "gui.dungeontrain.translate.edit.blocked.extra_vars": "В вашем тексте есть %s, которого нет в английском. Игре нечего туда подставить.",
   "chat.dungeontrain.free_play.cause.custom_content": "Мир использует пользовательский контент поезда.",
+  "chat.dungeontrain.free_play.cause.relay_override": "Игра настроена на использование другого сервера, а не сервера Dungeon Train.",
   "chat.dungeontrain.custom_content.packages": "Пользовательский контент из: %s",
   "chat.dungeontrain.custom_content.disable_link": "Нажмите сюда, чтобы выключить пользовательский контент для мира и играть в обычном режиме.",
   "chat.dungeontrain.custom_content.enable_link": "Нажмите сюда, чтобы включить.",
