@@ -152,6 +152,7 @@
     "CombatRulesArmorCurveMixin",
     "RapierPipelineNoSyncLoadMixin",
     "RapierPipelineBlockChangeNoLoadMixin",
+    "RapierNativeLockedDllMixin",
     "FluidInteractionNoLoadMixin",
     "SableBlockChangeGuardMixin",
     "SignBlockEntityEditMixin",
