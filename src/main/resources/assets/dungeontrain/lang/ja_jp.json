@@ -996,6 +996,8 @@
   "effect.dungeontrain.warmth_of_the_fire.description": "ゆっくりとした回復",
   "effect.dungeontrain.drifting": "漂流中",
   "effect.dungeontrain.drifting.description": "ここで加えた変更を、列車は覚えている",
+  "effect.dungeontrain.live": "配信中",
+  "effect.dungeontrain.live.description": "配信中です。視聴者にはあなたの見ているものが見えます",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train（フラット）",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train（ネザー）",

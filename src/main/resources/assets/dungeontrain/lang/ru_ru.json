@@ -1075,6 +1075,8 @@
   "effect.dungeontrain.warmth_of_the_fire.description": "Медленное исцеление",
   "effect.dungeontrain.drifting": "Дрейф",
   "effect.dungeontrain.drifting.description": "Поезд помнит изменения, которые ты здесь вносишь",
+  "effect.dungeontrain.live": "В эфире",
+  "effect.dungeontrain.live.description": "Ты в эфире. Зрители видят то же, что и ты",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Суперплоский)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Нижний мир)",

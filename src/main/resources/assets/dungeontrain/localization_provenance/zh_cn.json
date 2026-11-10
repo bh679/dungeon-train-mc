@@ -505,6 +505,8 @@
       "chat.dungeontrain.shared_carriage.noun.room",
       "effect.dungeontrain.drifting",
       "effect.dungeontrain.drifting.description",
+      "effect.dungeontrain.live",
+      "effect.dungeontrain.live.description",
       "gui.dungeontrain.version.compare.installed",
       "gui.dungeontrain.version.compare.count.other",
       "gui.dungeontrain.version.compare.behind",

@@ -1248,6 +1248,8 @@
   "effect.dungeontrain.warmth_of_the_fire.description": "Повільне зцілення",
   "effect.dungeontrain.drifting": "Дрейф",
   "effect.dungeontrain.drifting.description": "Потяг пам'ятає зміни, які ти тут вносиш",
+  "effect.dungeontrain.live": "Наживо",
+  "effect.dungeontrain.live.description": "Ти в ефірі. Глядачі бачать те, що бачиш ти",
   "generator.dungeontrain.dungeon_train": "Потяг-Підземелля",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Плаский)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Нижній світ)",

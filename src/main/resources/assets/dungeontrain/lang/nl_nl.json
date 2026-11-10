@@ -1033,6 +1033,8 @@
   "effect.dungeontrain.warmth_of_the_fire.description": "Langzame Genezing",
   "effect.dungeontrain.drifting": "Drijvend",
   "effect.dungeontrain.drifting.description": "De trein onthoudt wat je hier verandert",
+  "effect.dungeontrain.live": "Live",
+  "effect.dungeontrain.live.description": "Je bent live. Kijkers zien wat jij ziet",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Supervlak)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",

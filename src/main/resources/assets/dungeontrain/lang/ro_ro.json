@@ -1248,6 +1248,8 @@
   "effect.dungeontrain.warmth_of_the_fire.description": "Vindecare lentă",
   "effect.dungeontrain.drifting": "În derivă",
   "effect.dungeontrain.drifting.description": "Trenul ține minte schimbările pe care le faci aici",
+  "effect.dungeontrain.live": "Live",
+  "effect.dungeontrain.live.description": "Ești live. Spectatorii văd ce vezi tu",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Plat)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",

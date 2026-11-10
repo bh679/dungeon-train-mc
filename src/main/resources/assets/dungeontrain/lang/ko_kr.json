@@ -996,6 +996,8 @@
   "effect.dungeontrain.warmth_of_the_fire.description": "느린 치유",
   "effect.dungeontrain.drifting": "표류 중",
   "effect.dungeontrain.drifting.description": "열차는 여기서 바꾼 것을 기억합니다",
+  "effect.dungeontrain.live": "방송 중",
+  "effect.dungeontrain.live.description": "방송 중입니다. 시청자는 당신이 보는 것을 봅니다",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (평지)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (네더)",
