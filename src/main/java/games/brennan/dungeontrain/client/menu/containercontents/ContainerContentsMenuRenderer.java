@@ -466,6 +466,23 @@ public final class ContainerContentsMenuRenderer {
             double ench2L = ench1R;
             double ench2R = colXR - 0.01;
 
+            if (layout.showContents[i]) {
+                // Shulker box: one wide cell naming the loot prefab it is packed from. Click while holding
+                // a loot prefab to pack it from that prefab, with anything else to empty it.
+                boolean contentsHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_CONTENTS && hovered.index() == i;
+                boolean packed = entry.contents() != null && !entry.contents().isEmpty();
+                int contentsTint = contentsHover
+                    ? (packed ? 0xC0CC99FF : 0xC0AAAAAA)
+                    : (packed ? 0x73A06EDC : 0x40555555);
+                drawQuad(ps, buffer, dur1L + 0.005, subBottom + 0.005,
+                    ench2R - 0.005, subTop - 0.005, contentsTint);
+                drawCenteredText(ps, buffer, font,
+                    packed ? MenuLang.t("container.contents", entry.contents()) : MenuLang.t("container.contents_empty"),
+                    (dur1L + ench2R) / 2.0, subCY,
+                    contentsHover ? 0xFF000000 : 0xFFFFFFFF);
+                continue;
+            }
+
             if (showScale) {
                 // Random-potion placeholder: scale-with-distance toggle. Potions are
                 // neither damageable nor enchantable, so this is the sub-row's only cell.
@@ -613,12 +630,12 @@ public final class ContainerContentsMenuRenderer {
      * is.</p>
      */
     record EntryLayout(double[] rowDispTop, boolean[] showDur, boolean[] showEnch, boolean[] showScale,
-                       boolean[] showBookEnch,
+                       boolean[] showBookEnch, boolean[] showContents,
                        double gridHeight, double[] colWidth, double[] colLeft, double panelWidth) {
 
         /** True when entry {@code i} draws a sub-row (any of its per-entry options applies). */
         boolean hasSubRow(int i) {
-            return showDur[i] || showEnch[i] || showScale[i] || showBookEnch[i];
+            return showDur[i] || showEnch[i] || showScale[i] || showBookEnch[i] || showContents[i];
         }
     }
 
@@ -630,6 +647,7 @@ public final class ContainerContentsMenuRenderer {
         boolean[] showEnch = new boolean[n];
         boolean[] showScale = new boolean[n];
         boolean[] showBookEnch = new boolean[n];
+        boolean[] showContents = new boolean[n];
         double[] colTotalH = new double[cols];
         // Extra width each column needs for the longest name revealed inside it.
         double[] colNameW = new double[cols];
@@ -641,7 +659,9 @@ public final class ContainerContentsMenuRenderer {
             showEnch[i] = isEnchantable(id);
             showScale[i] = isRandomPotionPlaceholder(id);
             showBookEnch[i] = isBook(id);
-            double h = (showDur[i] || showEnch[i] || showScale[i] || showBookEnch[i]) ? ENTRY_BLOCK_HEIGHT : ROW_HEIGHT;
+            showContents[i] = isShulkerBox(id);
+            double h = (showDur[i] || showEnch[i] || showScale[i] || showBookEnch[i] || showContents[i])
+                ? ENTRY_BLOCK_HEIGHT : ROW_HEIGHT;
             rowDispTop[i] = colTotalH[col];
             colTotalH[col] += h;
             if (ContainerContentsMenu.isExpanded(i)) {
@@ -672,7 +692,8 @@ public final class ContainerContentsMenuRenderer {
         }
         double[] colLeft = new double[cols];
         for (int c = 1; c < cols; c++) colLeft[c] = colLeft[c - 1] + colWidth[c - 1];
-        return new EntryLayout(rowDispTop, showDur, showEnch, showScale, showBookEnch, gridH, colWidth, colLeft, sumW);
+        return new EntryLayout(rowDispTop, showDur, showEnch, showScale, showBookEnch, showContents, gridH, colWidth,
+            colLeft, sumW);
     }
 
     /** True for a plain or enchanted book: its row offers the random-enchantment range. */
@@ -716,6 +737,12 @@ public final class ContainerContentsMenuRenderer {
      * {@code random_bad_potion} placeholders — the only entries that carry the
      * scale-with-distance toggle.
      */
+    /** A shulker box of any colour: its sub-row is the Contents cell. */
+    static boolean isShulkerBox(String itemId) {
+        net.minecraft.resources.ResourceLocation id = net.minecraft.resources.ResourceLocation.tryParse(itemId);
+        return id != null && games.brennan.dungeontrain.editor.ContainerContentsEntry.isShulkerBox(id);
+    }
+
     static boolean isRandomPotionPlaceholder(String itemId) {
         Item item = resolveItem(itemId);
         return item != null

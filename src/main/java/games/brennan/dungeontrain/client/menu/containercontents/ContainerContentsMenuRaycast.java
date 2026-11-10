@@ -180,6 +180,9 @@ public final class ContainerContentsMenuRaycast {
             double dur1R = dur1L + subCellW;
             double dur2R = dur1R + subCellW;
             double ench1R = dur2R + subCellW;
+            if (layout.showContents()[idx]) {
+                return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_CONTENTS, idx);
+            }
             if (showScale) {
                 // Random-potion placeholder: scale toggle on the left half, bottle form on the right.
                 // Placeholders that can roll Luck split the left half: scale, then the Luck toggle.
