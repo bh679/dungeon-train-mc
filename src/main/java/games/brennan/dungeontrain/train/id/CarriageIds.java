@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train.id;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.BandFlavor;
@@ -32,13 +33,22 @@ public final class CarriageIds {
         String mark = WorldMark.of(data.getGenerationConfig().seed());
         int groupSize = Math.max(1, data.getGenerationConfig().groupSize());
         int anchor = GateContext.groupAnchorPIdx(pIdx, groupSize);
+        int baseline = baselineLevel(anchor);
         GroupRecord record = CarriageIdLedger.get(overworld).get(anchor);
         if (record != null) {
-            return new Lookup(CarriageId.fullForm(mark, pIdx, record.contextFor(pIdx - anchor)), true);
+            return new Lookup(new CarriageId(mark, pIdx, record.contextFor(pIdx - anchor, baseline)), true);
         }
         GateContext derived = GateContext.forCarriage(overworld, pIdx, data.dims().length());
         GroupRecord guess = recordOf(derived, groupSize, false, null, false, null);
-        return new Lookup(CarriageId.fullForm(mark, pIdx, guess.contextFor(pIdx - anchor)), false);
+        return new Lookup(new CarriageId(mark, pIdx, guess.contextFor(pIdx - anchor, baseline)), false);
+    }
+
+    /**
+     * The difficulty level the group anchored at {@code anchorPIdx} gets from its carriage number
+     * alone, with no difficulty offset. An id leaves its level out when it is this one.
+     */
+    public static int baselineLevel(int anchorPIdx) {
+        return DifficultyProgression.tierForTravelled(Math.abs(anchorPIdx));
     }
 
     /** The world mark of the world {@code level} is in. */

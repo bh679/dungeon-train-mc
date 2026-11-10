@@ -24,8 +24,16 @@ final class GroupRecordTest {
     @Test
     @DisplayName("each slot gets the group's context and only its own shared build")
     void contextFor_slot() {
-        assertEquals(new CarriageId.Full(17, 2, 0b10, 1737, true, 0b100, false, OptionalInt.empty()), RECORD.contextFor(0));
-        assertEquals(OptionalInt.of(88), RECORD.contextFor(1).sharedBuild());
+        assertEquals(new CarriageId.Full(OptionalInt.of(17), 2, 0b10, 1737 % 1296, true, 0b100, false, OptionalInt.empty()),
+            RECORD.contextFor(0, 0));
+        assertEquals(OptionalInt.of(88), RECORD.contextFor(1, 0).sharedBuild());
+    }
+
+    @Test
+    @DisplayName("the level is left out when the carriage number gives it")
+    void contextFor_baselineLevel() {
+        assertEquals(OptionalInt.empty(), RECORD.contextFor(0, 17).level());
+        assertEquals(OptionalInt.of(17), RECORD.contextFor(0, 16).level());
     }
 
     @Test
@@ -43,8 +51,8 @@ final class GroupRecordTest {
         GroupRecord r = new GroupRecord(3, 0, 0, 0, 0, false, 0, false, shared);
         shared[0] = 5;
         r.sharedBySlot()[1] = 6;
-        assertEquals(OptionalInt.empty(), r.contextFor(0).sharedBuild());
-        assertEquals(OptionalInt.empty(), r.contextFor(1).sharedBuild());
+        assertEquals(OptionalInt.empty(), r.contextFor(0, 0).sharedBuild());
+        assertEquals(OptionalInt.empty(), r.contextFor(1, 0).sharedBuild());
     }
 
     @Test

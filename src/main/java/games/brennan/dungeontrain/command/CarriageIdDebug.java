@@ -77,11 +77,8 @@ final class CarriageIdDebug {
         if (pIdx == null) return fail(source, "You aren't in a carriage.");
         CarriageIds.Lookup lookup = CarriageIds.idFor(overworld, pIdx);
         String full = lookup.id().format();
-        String shortForm = lookup.id().toShort().format();
         source.sendSuccess(() -> Component.literal("Carriage ").withStyle(ChatFormatting.GRAY)
-            .append(copyable(shortForm, ChatFormatting.AQUA))
-            .append(Component.literal("  full ").withStyle(ChatFormatting.GRAY))
-            .append(copyable(full, ChatFormatting.WHITE))
+            .append(copyable(full, ChatFormatting.AQUA))
             .append(lookup.recorded() ? Component.empty()
                 : Component.literal("  (no record: worked out from the carriage number)").withStyle(ChatFormatting.YELLOW)), false);
         LOGGER.info("[DungeonTrain] carriage-id: {} is in carriage {} → {} (recorded={})",

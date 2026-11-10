@@ -64,21 +64,15 @@ public final class CarriageRebuilder {
         int anchor = GateContext.groupAnchorPIdx(id.pIdx(), groupSize);
 
         List<String> notes = new ArrayList<>();
-        CarriageId.Full context = id.context().orElse(null);
-        if (context == null) {
-            CarriageIds.Lookup lookup = CarriageIds.idFor(overworld, id.pIdx());
-            context = lookup.id().context().orElseThrow();
-            if (!lookup.recorded()) {
-                notes.add("No record of this group was kept (built before carriage ids), so its difficulty and band were worked out from the carriage number.");
-            }
-        }
+        CarriageId.Full context = id.context();
         if (context.phase() >= TrainPhase.values().length) {
             throw new IllegalArgumentException("This id names a phase this version doesn't have; it needs a newer version.");
         }
         int version = CarriageIds.currentVersion();
-        if (context.version() != version) {
-            notes.add("Built on v0." + context.version() + ", rebuilt on v0." + version + ": templates may have changed since.");
+        if (context.version() != Math.floorMod(version, CarriageId.VERSION_MODULUS)) {
+            notes.add("Built on a different version than v0." + version + ": templates may have changed since.");
         }
+        int level = context.level().orElse(CarriageIds.baselineLevel(anchor));
         if (context.forced()) {
             notes.add("An admin forcing setting was on when it was built; the rebuild uses the normal draw.");
         }
@@ -87,7 +81,7 @@ public final class CarriageRebuilder {
                 + "); the rebuild stands the carriage generated here instead.");
         }
 
-        TestGate gate = new TestGate(null, context.level(), TrainPhase.values()[context.phase()], bandsOf(context.bandMask()));
+        TestGate gate = new TestGate(null, level,TrainPhase.values()[context.phase()], bandsOf(context.bandMask()));
         RebuildScope scope = new RebuildScope(context.portal(), context.transitionMask());
         BoundingBox box = boxFor(origin, dims, groupSize);
         discardEntities(overworld, box);

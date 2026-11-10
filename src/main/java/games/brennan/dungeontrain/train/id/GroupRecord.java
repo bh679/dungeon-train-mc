@@ -39,10 +39,15 @@ public record GroupRecord(int groupSize, int level, int phase, int bandMask, int
         return sharedBySlot.clone();
     }
 
-    /** The full-form context for the carriage in {@code slot} of this group. */
-    public CarriageId.Full contextFor(int slot) {
+    /**
+     * The id context for the carriage in {@code slot} of this group. The level is left out when it is
+     * {@code baselineLevel}, the level the group's carriage number gives, so most ids don't carry it.
+     */
+    public CarriageId.Full contextFor(int slot, int baselineLevel) {
         int shared = slot >= 0 && slot < groupSize ? sharedBySlot[slot] : NOT_SHARED;
-        return new CarriageId.Full(clamp(level, 0xFF), phase, bandMask, clamp(version, 36 * 36 * 36 - 1),
+        int lvl = Math.max(0, level);
+        return new CarriageId.Full(lvl == baselineLevel ? OptionalInt.empty() : OptionalInt.of(lvl),
+            phase, bandMask, Math.floorMod(version, CarriageId.VERSION_MODULUS),
             portal, transitionMask, forced, shared == NOT_SHARED ? OptionalInt.empty() : OptionalInt.of(shared));
     }
 
@@ -71,10 +76,6 @@ public record GroupRecord(int groupSize, int level, int phase, int bandMask, int
         } catch (IllegalArgumentException e) {
             return null;
         }
-    }
-
-    private static int clamp(int value, int max) {
-        return Math.max(0, Math.min(max, value));
     }
 
     @Override
