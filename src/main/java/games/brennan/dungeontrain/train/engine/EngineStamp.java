@@ -12,7 +12,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * Engine Blocks in placed boxes: finding one, and setting a fresh one down. Works at whatever
+ * Drifting Engine Blocks in placed boxes: finding one, and setting a fresh one down. Works at whatever
  * coordinates the box was placed at — world space for a room, shipyard space for a carriage after
  * assembly, just as the contents pass writes.
  */

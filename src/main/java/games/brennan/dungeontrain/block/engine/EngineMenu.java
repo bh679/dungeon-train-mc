@@ -14,7 +14,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 /**
- * The Engine Block screen's container: the coal slot over the player inventory, plus the coal count
+ * The Drifting Engine Block screen's container: the coal slot (in only, never out) over the player inventory, plus the coal count
  * synced as menu data so the gauge and the "more worlds" line read it without a packet of their own.
  */
 public class EngineMenu extends AbstractContainerMenu {
@@ -39,6 +39,8 @@ public class EngineMenu extends AbstractContainerMenu {
         engine.startOpen(inventory.player);
         addSlot(new Slot(engine, 0, COAL_X, COAL_Y) {
             @Override public boolean mayPlace(ItemStack stack) { return stack.is(Items.COAL); }
+            /** Coal goes in and burns; it never comes back out. */
+            @Override public boolean mayPickup(Player player) { return false; }
             @Override public int getMaxStackSize() { return DriftEngine.MAX_COAL; }
         });
         for (int row = 0; row < 3; row++) {
@@ -62,7 +64,7 @@ public class EngineMenu extends AbstractContainerMenu {
         ItemStack stack = slot.getItem();
         ItemStack before = stack.copy();
         if (index == 0) {
-            if (!moveItemStackTo(stack, 1, slots.size(), true)) return ItemStack.EMPTY;
+            return ItemStack.EMPTY; // coal never comes back out
         } else if (stack.is(Items.COAL)) {
             if (!moveItemStackTo(stack, 0, 1, false)) return ItemStack.EMPTY;
         } else {

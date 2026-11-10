@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The rules of a drifting carriage's Engine Block, worked on the relay snapshot ({@code {l,h,w,cells:[{p,s,b?}]}}
+ * The rules of a drifting carriage's Drifting Engine Block, worked on the relay snapshot ({@code {l,h,w,cells:[{p,s,b?}]}}
  * — see {@code CarriageBlockSnapshot}) so they need no world and can be tested on their own.
  *
  * <ul>
@@ -34,8 +34,8 @@ public final class DriftEngine {
     /** The block entity's coal count key, in the world save and in the relay blob alike. */
     public static final String TAG_COAL = "Coal";
     /** The block's registry name as the snapshot writes it. */
-    public static final String ENGINE_ID = "dungeontrain:engine_block";
-    private static final String BLOCK_ENTITY_ID = "dungeontrain:engine_block";
+    public static final String ENGINE_ID = "dungeontrain:drifting_engine_block";
+    private static final String BLOCK_ENTITY_ID = "dungeontrain:drifting_engine_block";
 
     private DriftEngine() {}
 

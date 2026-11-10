@@ -187,15 +187,16 @@ public final class ModBlocks {
     );
 
     /**
-     * The Engine Block: what makes a carriage drift — see {@link EngineBlock}. Creative and editor
-     * only, so no recipe; it never drops itself (no loot table), only the coal inside it.
+     * The Drifting Engine Block: what makes a carriage drift — see {@link EngineBlock}. Creative and
+     * editor only, so no recipe, and it drops nothing (no loot table; its coal is burnt). Blast-proof
+     * like obsidian, so TNT is no way round the rule that only a carriage's builder may break it.
      */
     public static final DeferredBlock<EngineBlock> ENGINE_BLOCK = BLOCKS.register(
-        "engine_block",
+        "drifting_engine_block",
         () -> new EngineBlock(
             BlockBehaviour.Properties.of()
                 .mapColor(MapColor.COLOR_BLACK)
-                .strength(3.5F)
+                .strength(3.5F, 1200.0F)
                 .lightLevel(EngineBlock::lightLevel)
                 .noLootTable()
                 .sound(SoundType.METAL)
@@ -203,7 +204,7 @@ public final class ModBlocks {
     );
 
     public static final DeferredItem<BlockItem> ENGINE_BLOCK_ITEM = BLOCK_ITEMS.register(
-        "engine_block", () -> new BlockItem(ENGINE_BLOCK.get(), new Item.Properties()));
+        "drifting_engine_block", () -> new BlockItem(ENGINE_BLOCK.get(), new Item.Properties()));
 
     /**
      * The stage placeholder blocks ({@code stage_block_1..10}, stairs/slab slots, button, plate and

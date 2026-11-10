@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Setting an Engine Block down in an ordinary carriage makes it a drifting one.
+ * Setting a Drifting Engine Block down in an ordinary carriage makes it a drifting one.
  *
  * <p>Registering a drifting carriage needs what only the spawn knew — the slot's stage and shell
  * variant — so the spawn path {@link #remember remembers} them for every carriage that could drift
@@ -92,7 +92,7 @@ public final class EngineConversion {
             // Queue the whole box: the carriage has never been uploaded, and the first flush must carry all of it.
             inst.enqueue(pos);
             inst.markBlockEdited();
-            LOGGER.info("[DungeonTrain] Engine Block set down in carriage pIdx={} — it drifts now (stage={}).",
+            LOGGER.info("[DungeonTrain] Drifting Engine Block set down in carriage pIdx={} — it drifts now (stage={}).",
                     pIdx, cand.stageId());
             return inst;
         }

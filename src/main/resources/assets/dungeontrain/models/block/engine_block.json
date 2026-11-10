@@ -1,9 +1,0 @@
-{
-  "parent": "minecraft:block/orientable_with_bottom",
-  "textures": {
-    "top": "dungeontrain:block/engine_block_top",
-    "bottom": "dungeontrain:block/engine_block_bottom",
-    "side": "dungeontrain:block/engine_block_side",
-    "front": "dungeontrain:block/engine_block_front"
-  }
-}

@@ -4,7 +4,6 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -25,14 +24,15 @@ import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 
 /**
- * The Engine Block: what makes a carriage drift. It holds coal (only coal, at most 64), and a drifting
- * carriage burns one each time it joins a world. A carriage that leaves a world with none left is
- * retired from the relay pool — see {@link games.brennan.dungeontrain.train.engine.DriftEngine}.
+ * The Drifting Engine Block: what makes a carriage drift. It holds coal (only coal, at most 64), and a
+ * drifting carriage burns one each time it joins a world. A carriage that leaves a world with none left
+ * is retired from the relay pool — see {@link games.brennan.dungeontrain.train.engine.DriftEngine}.
  *
  * <p>{@link #LIT} follows the coal: lit while there is any, cold at zero, so a dying carriage is
- * visible from across the room. Breaking it spills the coal but never drops the block itself; Engine
- * Blocks come only from creative and the editor, and one carried off would turn any carriage it was
- * set down in into a drifting one.</p>
+ * visible from across the room. Coal goes in and never comes out — not through the screen, not
+ * through a hopper, not by breaking the block, which drops nothing. Only the carriage's builder may
+ * break it ({@code EngineBlockEvents}); the blocks come only from creative and the editor, and one
+ * carried off would turn any carriage it was set down in into a drifting one.</p>
  */
 public class EngineBlock extends BaseEntityBlock {
 
@@ -91,9 +91,9 @@ public class EngineBlock extends BaseEntityBlock {
     @Override
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         if (!state.is(newState.getBlock())) {
-            if (level.getBlockEntity(pos) instanceof EngineBlockEntity engine) {
-                Containers.dropContents(level, pos, engine);
-                if (level instanceof ServerLevel server) EngineFuelTracker.onEngineRemoved(server, pos);
+            if (level.getBlockEntity(pos) instanceof EngineBlockEntity
+                    && level instanceof ServerLevel server) {
+                EngineFuelTracker.onEngineRemoved(server, pos);
             }
         }
         super.onRemove(state, level, pos, newState, movedByPiston);

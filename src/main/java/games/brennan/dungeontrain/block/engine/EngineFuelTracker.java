@@ -8,7 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 
 /**
- * Keeps a drifting build's live fuel in step with the coal in its Engine Block. The count travels to
+ * Keeps a drifting build's live fuel in step with the coal in its Drifting Engine Block. The count travels to
  * the relay with the build's next save, delta, heartbeat or return, and the engine's cell is queued so
  * the blob catches up too.
  */

@@ -24,12 +24,11 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * The Engine Block's coal. One slot, coal only, at most {@link DriftEngine#MAX_COAL}.
+ * The Drifting Engine Block's coal. One slot, coal only, at most {@link DriftEngine#MAX_COAL}, and it
+ * only goes in: the screen's slot refuses to give it back and hoppers may feed it but never drain it.
  *
  * <p>Saved as a plain count ({@value DriftEngine#TAG_COAL}) rather than an item stack, so the relay
- * blob, the retrofit and the burn all read the same number without parsing an item. Hoppers may feed
- * it but never drain it — a hopper under a stranger's engine should not be a way to retire their
- * carriage.</p>
+ * blob, the retrofit and the burn all read the same number without parsing an item.</p>
  *
  * <p>Every change tells {@link EngineFuelTracker}, which updates the drifting build's live fuel (sent
  * to the relay with its next call) and queues the cell for upload.</p>
@@ -141,7 +140,7 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
 
     @Override
     public Component getDisplayName() {
-        return Component.translatable("block.dungeontrain.engine_block");
+        return Component.translatable("block.dungeontrain.drifting_engine_block");
     }
 
     @Override

@@ -21,9 +21,9 @@ public final class ModBlockEntities {
             .of(PhotographFrameBlockEntity::new, ModBlocks.PHOTOGRAPH_FRAME.get())
             .build(null));
 
-    /** The Engine Block's coal — see {@link EngineBlockEntity}. */
+    /** The Drifting Engine Block's coal — see {@link EngineBlockEntity}. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EngineBlockEntity>> ENGINE_BLOCK =
-        BLOCK_ENTITY_TYPES.register("engine_block", () -> BlockEntityType.Builder
+        BLOCK_ENTITY_TYPES.register("drifting_engine_block", () -> BlockEntityType.Builder
             .of(EngineBlockEntity::new, ModBlocks.ENGINE_BLOCK.get())
             .build(null));
 

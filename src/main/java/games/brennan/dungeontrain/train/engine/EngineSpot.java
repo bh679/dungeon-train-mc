@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.train.engine;
 
 /**
- * Where an Engine Block goes in a box that has none: a free floor cell, the same one every time for the
+ * Where a Drifting Engine Block goes in a box that has none: a free floor cell, the same one every time for the
  * same blocks.
  *
  * <p>A cell qualifies when it and the cell above it are empty and the cell below is solid — the engine

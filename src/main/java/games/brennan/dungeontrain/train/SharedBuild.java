@@ -94,7 +94,7 @@ public interface SharedBuild {
     String stageId();
 
     /**
-     * Coal in the build's Engine Block, as last seen, or -1 when unknown (a build placed before this
+     * Coal in the build's Drifting Engine Block, as last seen, or -1 when unknown (a build placed before this
      * session had anything to say about it). Sent with every relay call that holds the lease; the relay
      * retires a build that leaves a world at zero.
      */

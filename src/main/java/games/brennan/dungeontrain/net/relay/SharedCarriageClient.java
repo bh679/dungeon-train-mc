@@ -1363,7 +1363,7 @@ public final class SharedCarriageClient {
         return delta(id, token, seq, cellsBase64, text, -1);
     }
 
-    /** As above, carrying the build's Engine Block {@code fuel} (-1 says nothing). */
+    /** As above, carrying the build's Drifting Engine Block {@code fuel} (-1 says nothing). */
     public static CompletableFuture<DeltaResult> delta(int id, String token, int seq, String cellsBase64, String text,
                                                        int fuel) {
         JsonObject body = new JsonObject();
@@ -1407,7 +1407,7 @@ public final class SharedCarriageClient {
         return save(id, token, blocksBase64, text, baseSeq, null);
     }
 
-    /** The in-play save carrying the build's Engine Block {@code fuel} (-1 says nothing). */
+    /** The in-play save carrying the build's Drifting Engine Block {@code fuel} (-1 says nothing). */
     public static CompletableFuture<CallStatus> saveWithFuel(int id, String token, String blocksBase64, String text,
                                                              int baseSeq, int fuel) {
         return save(id, token, blocksBase64, text, baseSeq, null, null, fuel);
@@ -1445,7 +1445,7 @@ public final class SharedCarriageClient {
     }
 
     /**
-     * The {@code fuel} field: the coal left in the build's Engine Block. Sent only for a real count
+     * The {@code fuel} field: the coal left in the build's Drifting Engine Block. Sent only for a real count
      * (0..64); -1 means this world knows nothing about it, and the relay then keeps what it has.
      */
     private static void addFuel(JsonObject body, int fuel) {
@@ -1523,7 +1523,7 @@ public final class SharedCarriageClient {
         return heartbeat(id, token, holderUuid, holderName, -1);
     }
 
-    /** As above, carrying the build's Engine Block {@code fuel} (-1 says nothing). */
+    /** As above, carrying the build's Drifting Engine Block {@code fuel} (-1 says nothing). */
     public static CompletableFuture<CallStatus> heartbeat(int id, String token, String holderUuid, String holderName,
                                                           int fuel) {
         JsonObject body = new JsonObject();
@@ -1545,7 +1545,7 @@ public final class SharedCarriageClient {
     }
 
     /**
-     * As above, carrying the build's Engine Block {@code fuel} (-1 says nothing). A build returned at
+     * As above, carrying the build's Drifting Engine Block {@code fuel} (-1 says nothing). A build returned at
      * zero is retired: the relay never leases it again.
      */
     public static CompletableFuture<CallStatus> returnLease(int id, String token, String blocksBase64, String text,

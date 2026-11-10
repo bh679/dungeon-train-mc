@@ -902,7 +902,7 @@ public final class TrainAssembler {
             // The portal exclusion mirrors tryLeaseShared's: what stands in a portal slot is a corridor
             // (or the sealed cart between two of them), not this slot's rolled variant, so registering
             // it would upload a corridor to the community pool the first time anyone edited one.
-            // An ordinary carriage whose template carries an Engine Block drifts too: the engine is what
+            // An ordinary carriage whose template carries a Drifting Engine Block drifts too: the engine is what
             // makes a carriage drift. Every fresh drifting carriage gets one, holding three coal, set down
             // before registering so it is not mistaken for somebody's edit.
             if (games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()
@@ -923,7 +923,7 @@ public final class TrainAssembler {
                     && !PortalCarriageSelection.isPortalPart(level, carriagePIdx)
                     && stageBySlot[slot] != null && !stageBySlot[slot].isEmpty()
                     && !(variant instanceof CarriageVariant.Builtin b && b.type() == CarriagePlacer.CarriageType.FLATBED)) {
-                // Not drifting, but could be: setting an Engine Block down in it later makes it drift.
+                // Not drifting, but could be: setting a Drifting Engine Block down in it later makes it drift.
                 games.brennan.dungeontrain.train.engine.EngineConversion.remember(
                         carriagePIdx, stageBySlot[slot], variant.id());
             }

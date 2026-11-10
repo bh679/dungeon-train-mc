@@ -26,7 +26,7 @@ import java.util.Objects;
  * @param token    the lease token that authorises writing back, or null with {@code relayId}
  * @param owner    dashless uuid of the relay-recorded author, "" when unknown
  * @param seqSeed  the delta floor the room's own edits must clear
- * @param fuel     coal in the room's Engine Block after this world's burn; -1 for a live capture
+ * @param fuel     coal in the room's Drifting Engine Block after this world's burn; -1 for a live capture
  */
 public record PortalRoomBlob(CompoundTag snapshot, Integer relayId, String token, String owner,
                              Credits credits, Deaths deaths, int seqSeed, boolean authoredHere, int fuel) {

@@ -117,7 +117,7 @@ public final class SharedCarriageRegistry {
         private final AtomicInteger seq;
         /** Set once this carriage is being culled — the flusher stops issuing new POSTs for it. */
         private volatile boolean culled;
-        /** Coal in this build's Engine Block; -1 until something reports it. See {@link SharedBuild#fuel}. */
+        /** Coal in this build's Drifting Engine Block; -1 until something reports it. See {@link SharedBuild#fuel}. */
         private volatile int fuel = -1;
         /** Set when the relay asked for a re-baseline (delta log near/at full) — flusher does a full save. */
         private volatile boolean rebaseline;

@@ -17,7 +17,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  * <p>The Free Play Ender Chest, which needs its own type because vanilla has no
  * nine-row chest menu and the client must know how many rows (and whether to offer the expand button)
  * before the screen opens — {@link IMenuTypeExtension#create} carries that in the open-screen packet —
- * and the Engine Block's coal screen.</p>
+ * and the Drifting Engine Block's coal screen.</p>
  */
 public final class ModMenuTypes {
 
@@ -27,9 +27,9 @@ public final class ModMenuTypes {
     public static final DeferredHolder<MenuType<?>, MenuType<FreePlayEnderChestMenu>> FREE_PLAY_ENDER_CHEST =
         MENU_TYPES.register("ender_chest", () -> IMenuTypeExtension.create(FreePlayEnderChestMenu::fromNetwork));
 
-    /** The Engine Block's coal screen — see {@link EngineMenu}. */
+    /** The Drifting Engine Block's coal screen — see {@link EngineMenu}. */
     public static final DeferredHolder<MenuType<?>, MenuType<EngineMenu>> ENGINE_BLOCK =
-        MENU_TYPES.register("engine_block", () -> new MenuType<>(EngineMenu::new, FeatureFlags.DEFAULT_FLAGS));
+        MENU_TYPES.register("drifting_engine_block", () -> new MenuType<>(EngineMenu::new, FeatureFlags.DEFAULT_FLAGS));
 
     private ModMenuTypes() {}
 

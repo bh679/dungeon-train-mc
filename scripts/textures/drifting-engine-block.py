@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Generate the Engine Block's textures and its screen (design C, the coal stove).
+"""Generate the Drifting Engine Block's textures and its screen (design C, the coal stove).
 
 Writes into src/main/resources/assets/dungeontrain/textures/:
-  block/engine_block_{front,side,top}.png        lit, 6-frame animated strips (+ .mcmeta)
-  block/engine_block_{front,side,top}_cold.png   0 coal
-  block/engine_block_bottom.png
-  gui/container/engine_block.png                 the coal screen
+  block/drifting_engine_block_{front,side,top}.png        lit, 6-frame animated strips (+ .mcmeta)
+  block/drifting_engine_block_{front,side,top}_cold.png   0 coal
+  block/drifting_engine_block_bottom.png
+  gui/container/drifting_engine_block.png                 the coal screen
 
 Only the fire animates: the iron is drawn from one seeded stream and the fire from another, so
 every frame's iron is identical. Re-run after tuning a colour; the output is deterministic.
@@ -133,12 +133,12 @@ def write_block_textures(out):
         strip = Image.new("RGB", (16, 16 * FRAMES))
         for k in range(FRAMES):
             strip.paste(face_image(textures(True, k)[key]), (0, 16 * k))
-        strip.save(os.path.join(out, f"engine_block_{name}.png"))
-        with open(os.path.join(out, f"engine_block_{name}.png.mcmeta"), "w") as f:
+        strip.save(os.path.join(out, f"drifting_engine_block_{name}.png"))
+        with open(os.path.join(out, f"drifting_engine_block_{name}.png.mcmeta"), "w") as f:
             json.dump({"animation": {"frametime": FRAME_TICKS}}, f, indent=2)
             f.write("\n")
-        face_image(textures(False)[key]).save(os.path.join(out, f"engine_block_{name}_cold.png"))
-    face_image(textures(False)["B"]).save(os.path.join(out, "engine_block_bottom.png"))
+        face_image(textures(False)[key]).save(os.path.join(out, f"drifting_engine_block_{name}_cold.png"))
+    face_image(textures(False)["B"]).save(os.path.join(out, "drifting_engine_block_bottom.png"))
 
 
 # ---- the screen: vanilla container panel colours ----
@@ -219,5 +219,5 @@ def write_screen(path):
 
 if __name__ == "__main__":
     write_block_textures(os.path.join(ROOT, "block"))
-    write_screen(os.path.join(ROOT, "gui", "container", "engine_block.png"))
-    print("wrote engine block textures under", os.path.normpath(ROOT))
+    write_screen(os.path.join(ROOT, "gui", "container", "drifting_engine_block.png"))
+    print("wrote drifting engine block textures under", os.path.normpath(ROOT))

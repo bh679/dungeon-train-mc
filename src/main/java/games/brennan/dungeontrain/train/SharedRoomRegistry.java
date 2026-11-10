@@ -69,7 +69,7 @@ public final class SharedRoomRegistry {
         private final Set<BlockPos> outbox = ConcurrentHashMap.newKeySet();
         private final AtomicInteger seq;
         private volatile boolean culled;
-        /** Coal in this build's Engine Block; -1 until something reports it. See {@link SharedBuild#fuel}. */
+        /** Coal in this build's Drifting Engine Block; -1 until something reports it. See {@link SharedBuild#fuel}. */
         private volatile int fuel = -1;
         private volatile boolean rebaseline;
         private volatile boolean callInFlight;

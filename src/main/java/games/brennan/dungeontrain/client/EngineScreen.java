@@ -15,13 +15,13 @@ import net.minecraft.world.entity.player.Inventory;
 import java.util.List;
 
 /**
- * The Engine Block screen: a coal slot with a flame over it while there is any, a gauge, the count,
+ * The Drifting Engine Block screen: a coal slot with a flame over it while there is any, a gauge, the count,
  * and how many more worlds that coal carries the carriage through.
  */
 public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
 
     private static final ResourceLocation TEXTURE =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "textures/gui/container/engine_block.png");
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "textures/gui/container/drifting_engine_block.png");
 
     /** Flame sprite on the texture, drawn over the slot while lit. */
     private static final int FLAME_U = 176, FLAME_V = 0, FLAME_SIZE = 14;
