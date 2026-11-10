@@ -8,7 +8,7 @@
     "ui"
   ],
   "title": "Photo collection fix",
-  "summary": "Photo collections now show the photo you already took of a mob, and name every mob you've already counted.",
+  "summary": "Photo collections now show the photo you already took of a mob, and name every mob you've already counted. Collections that were finished without their photos need those photos taken again.",
   "highlights": [],
   "date": "2026-11-09",
   "released": false,
