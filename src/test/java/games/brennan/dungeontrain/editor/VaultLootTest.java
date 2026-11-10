@@ -389,11 +389,10 @@ final class VaultLootTest {
     }
 
     @Test
-    @DisplayName("a green vault rolls 20 levels further from spawn, either side of it")
+    @DisplayName("a green vault rolls 2000 carriages further from spawn, either side of it")
     void greenDiffMovesAwayFromSpawn() {
-        assertEquals(400, VaultLoot.greenDiff(0, 20));
-        assertEquals(550, VaultLoot.greenDiff(150, 20));
-        assertEquals(-550, VaultLoot.greenDiff(-150, 20));
-        assertEquals(1150, VaultLoot.greenDiff(150, 50));
+        assertEquals(2000, VaultLoot.greenDiff(0));
+        assertEquals(2150, VaultLoot.greenDiff(150));
+        assertEquals(-2150, VaultLoot.greenDiff(-150));
     }
 }

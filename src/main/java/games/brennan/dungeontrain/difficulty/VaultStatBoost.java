@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Vault rewards carry stronger stats than other loot, by vault type: damage and armor take the full
  * boost, attack speed and toughness half of it. A Dungeon Trial (green) vault's reward is also rolled
- * {@code VaultLoot#GREEN_LEVEL_BONUS} difficulty levels deeper before its multiplier applies.
+ * {@code VaultLoot#GREEN_CARRIAGE_BONUS} carriages further on before its multiplier applies.
  *
  * <p>Applied to the finished reward as the vault hands it over ({@code VaultServerMixin}), so it covers
  * DT pool rolls and vanilla loot tables alike, and includes AIS's roll and DT's tier bonus. Each stat
@@ -35,8 +35,8 @@ public final class VaultStatBoost {
     public enum Tier {
         REGULAR(1.2, 1.1),
         OMINOUS(1.4, 1.2),
-        /** Same multiplier as a regular vault, on a reward rolled further along the train ({@code VaultLoot#greenDiff}). */
-        GREEN(1.2, 1.1);
+        /** On a reward already rolled further along the train ({@code VaultLoot#greenDiff}). */
+        GREEN(1.25, 1.125);
 
         final double primary;
         final double secondary;
