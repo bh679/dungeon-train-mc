@@ -3994,6 +3994,8 @@
   "gui.dungeontrain.editor_menu.container.slot_auto": "auto",
   "gui.dungeontrain.editor_menu.container.scale_on": "Skala ✓",
   "gui.dungeontrain.editor_menu.container.scale_off": "Skala ✗",
+  "gui.dungeontrain.editor_menu.container.luck_on": "Tuah ✓",
+  "gui.dungeontrain.editor_menu.container.luck_off": "Tuah ✗",
   "gui.dungeontrain.editor_menu.container.dur_on": "Kthn ✓",
   "gui.dungeontrain.editor_menu.container.dur_off": "Kthn ✗",
   "gui.dungeontrain.editor_menu.container.ench_on": "Sihir ✓",

@@ -4053,6 +4053,8 @@
   "gui.dungeontrain.editor_menu.container.slot_auto": "auto",
   "gui.dungeontrain.editor_menu.container.scale_on": "Skal. ✓",
   "gui.dungeontrain.editor_menu.container.scale_off": "Skal. ✗",
+  "gui.dungeontrain.editor_menu.container.luck_on": "Glück ✓",
+  "gui.dungeontrain.editor_menu.container.luck_off": "Glück ✗",
   "gui.dungeontrain.editor_menu.container.dur_on": "Halt. ✓",
   "gui.dungeontrain.editor_menu.container.dur_off": "Halt. ✗",
   "gui.dungeontrain.editor_menu.container.ench_on": "Verz. ✓",

@@ -4766,6 +4766,8 @@
   "gui.dungeontrain.editor_menu.container.slot_auto": "auto",
   "gui.dungeontrain.editor_menu.container.scale_on": "Scală ✓",
   "gui.dungeontrain.editor_menu.container.scale_off": "Scală ✗",
+  "gui.dungeontrain.editor_menu.container.luck_on": "Noroc ✓",
+  "gui.dungeontrain.editor_menu.container.luck_off": "Noroc ✗",
   "gui.dungeontrain.editor_menu.container.dur_on": "Dur ✓",
   "gui.dungeontrain.editor_menu.container.dur_off": "Dur ✗",
   "gui.dungeontrain.editor_menu.container.ench_on": "Vrăji ✓",

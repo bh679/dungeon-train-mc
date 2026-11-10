@@ -4053,6 +4053,8 @@
   "gui.dungeontrain.editor_menu.container.slot_auto": "auto",
   "gui.dungeontrain.editor_menu.container.scale_on": "Schaal ✓",
   "gui.dungeontrain.editor_menu.container.scale_off": "Schaal ✗",
+  "gui.dungeontrain.editor_menu.container.luck_on": "Geluk ✓",
+  "gui.dungeontrain.editor_menu.container.luck_off": "Geluk ✗",
   "gui.dungeontrain.editor_menu.container.dur_on": "Duurz ✓",
   "gui.dungeontrain.editor_menu.container.dur_off": "Duurz ✗",
   "gui.dungeontrain.editor_menu.container.ench_on": "Bet ✓",

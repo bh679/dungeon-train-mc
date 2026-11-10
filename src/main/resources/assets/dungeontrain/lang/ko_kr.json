@@ -3994,6 +3994,8 @@
   "gui.dungeontrain.editor_menu.container.slot_auto": "자동",
   "gui.dungeontrain.editor_menu.container.scale_on": "수량 ✓",
   "gui.dungeontrain.editor_menu.container.scale_off": "수량 ✗",
+  "gui.dungeontrain.editor_menu.container.luck_on": "행운 ✓",
+  "gui.dungeontrain.editor_menu.container.luck_off": "행운 ✗",
   "gui.dungeontrain.editor_menu.container.dur_on": "내구 ✓",
   "gui.dungeontrain.editor_menu.container.dur_off": "내구 ✗",
   "gui.dungeontrain.editor_menu.container.ench_on": "마법 ✓",

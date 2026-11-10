@@ -3994,6 +3994,8 @@
   "gui.dungeontrain.editor_menu.container.slot_auto": "otomatis",
   "gui.dungeontrain.editor_menu.container.scale_on": "Skala ✓",
   "gui.dungeontrain.editor_menu.container.scale_off": "Skala ✗",
+  "gui.dungeontrain.editor_menu.container.luck_on": "Untung ✓",
+  "gui.dungeontrain.editor_menu.container.luck_off": "Untung ✗",
   "gui.dungeontrain.editor_menu.container.dur_on": "Daya ✓",
   "gui.dungeontrain.editor_menu.container.dur_off": "Daya ✗",
   "gui.dungeontrain.editor_menu.container.ench_on": "Pesona ✓",

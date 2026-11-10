@@ -4702,6 +4702,8 @@
   "gui.dungeontrain.editor_menu.container.slot_auto": "auto",
   "gui.dungeontrain.editor_menu.container.scale_on": "Scale ✓",
   "gui.dungeontrain.editor_menu.container.scale_off": "Scale ✗",
+  "gui.dungeontrain.editor_menu.container.luck_on": "Luck ✓",
+  "gui.dungeontrain.editor_menu.container.luck_off": "Luck ✗",
   "gui.dungeontrain.editor_menu.container.dur_on": "Dur ✓",
   "gui.dungeontrain.editor_menu.container.dur_off": "Dur ✗",
   "gui.dungeontrain.editor_menu.container.ench_on": "Ench ✓",

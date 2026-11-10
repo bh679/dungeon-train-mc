@@ -3994,6 +3994,8 @@
   "gui.dungeontrain.editor_menu.container.slot_auto": "อัตโนมัติ",
   "gui.dungeontrain.editor_menu.container.scale_on": "สเกล ✓",
   "gui.dungeontrain.editor_menu.container.scale_off": "สเกล ✗",
+  "gui.dungeontrain.editor_menu.container.luck_on": "โชค ✓",
+  "gui.dungeontrain.editor_menu.container.luck_off": "โชค ✗",
   "gui.dungeontrain.editor_menu.container.dur_on": "ความทน ✓",
   "gui.dungeontrain.editor_menu.container.dur_off": "ความทน ✗",
   "gui.dungeontrain.editor_menu.container.ench_on": "เสก ✓",

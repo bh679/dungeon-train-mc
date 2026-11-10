@@ -3994,6 +3994,8 @@
   "gui.dungeontrain.editor_menu.container.slot_auto": "自動",
   "gui.dungeontrain.editor_menu.container.scale_on": "倍率 ✓",
   "gui.dungeontrain.editor_menu.container.scale_off": "倍率 ✗",
+  "gui.dungeontrain.editor_menu.container.luck_on": "幸運 ✓",
+  "gui.dungeontrain.editor_menu.container.luck_off": "幸運 ✗",
   "gui.dungeontrain.editor_menu.container.dur_on": "耐久 ✓",
   "gui.dungeontrain.editor_menu.container.dur_off": "耐久 ✗",
   "gui.dungeontrain.editor_menu.container.ench_on": "エンチャ ✓",

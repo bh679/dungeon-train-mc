@@ -185,6 +185,11 @@ public final class ContainerContentsMenuRaycast {
             }
             if (showScale) {
                 // Random-potion placeholder: scale toggle on the left half, bottle form on the right.
+                // Placeholders that can roll Luck split the left half: scale, then the Luck toggle.
+                if (hitX > dur1R && hitX <= dur2R && idx < ContainerContentsMenu.entries().size()
+                    && ContainerContentsMenuRenderer.hasLuckToggle(ContainerContentsMenu.entries().get(idx).itemId())) {
+                    return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_LUCK_TOGGLE, idx);
+                }
                 return hitX <= dur2R
                     ? new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_SCALE_TOGGLE, idx)
                     : new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_POTION_FORM, idx);

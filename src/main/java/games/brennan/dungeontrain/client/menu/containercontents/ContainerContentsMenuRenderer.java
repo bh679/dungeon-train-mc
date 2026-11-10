@@ -486,16 +486,33 @@ public final class ContainerContentsMenuRenderer {
             if (showScale) {
                 // Random-potion placeholder: scale-with-distance toggle. Potions are
                 // neither damageable nor enchantable, so this is the sub-row's only cell.
+                // Placeholders that can roll Luck give its right quarter to the Luck toggle.
+                boolean showLuck = hasLuckToggle(entry.itemId());
+                double scaleR = showLuck ? dur1R : dur2R;
                 boolean scaleHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_SCALE_TOGGLE && hovered.index() == i;
                 boolean scaleOn = entry.scaleWithDistance();
                 int scaleTint = scaleHover
                     ? (scaleOn ? 0xC0FFCC99 : 0xC0AAAAAA)
                     : (scaleOn ? 0x60CC8833 : 0x40555555);
                 drawQuad(ps, buffer, dur1L + 0.005, subBottom + 0.005,
-                    dur2R - 0.005, subTop - 0.005, scaleTint);
+                    scaleR - 0.005, subTop - 0.005, scaleTint);
                 drawCenteredText(ps, buffer, font, MenuLang.t(scaleOn ? "container.scale_on" : "container.scale_off"),
-                    (dur1L + dur2R) / 2.0, subCY,
+                    (dur1L + scaleR) / 2.0, subCY,
                     scaleHover ? 0xFF000000 : 0xFFFFFFFF);
+
+                if (showLuck) {
+                    // Luck toggle: off leaves Potion of Luck and Luck II out of the pick.
+                    boolean luckHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_LUCK_TOGGLE && hovered.index() == i;
+                    boolean luckOn = entry.includeLuck();
+                    int luckTint = luckHover
+                        ? (luckOn ? 0xC066FF99 : 0xC0AAAAAA)
+                        : (luckOn ? 0x6033CC66 : 0x40555555);
+                    drawQuad(ps, buffer, dur2L + 0.005, subBottom + 0.005,
+                        dur2R - 0.005, subTop - 0.005, luckTint);
+                    drawCenteredText(ps, buffer, font, MenuLang.t(luckOn ? "container.luck_on" : "container.luck_off"),
+                        (dur2L + dur2R) / 2.0, subCY,
+                        luckHover ? 0xFF000000 : 0xFFFFFFFF);
+                }
 
                 // Bottle form cell: Any / Potion / Splash / Lingering, click to step.
                 boolean formHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_POTION_FORM && hovered.index() == i;
@@ -732,6 +749,17 @@ public final class ContainerContentsMenuRenderer {
             && (item == games.brennan.dungeontrain.registry.ModItems.RANDOM_POTION.get()
                 || item == games.brennan.dungeontrain.registry.ModItems.RANDOM_GOOD_POTION.get()
                 || item == games.brennan.dungeontrain.registry.ModItems.RANDOM_BAD_POTION.get());
+    }
+
+    /**
+     * True for the placeholders whose pick can hold Potion of Luck ({@code random_potion} /
+     * {@code random_good_potion}) — the entries that carry the Luck toggle.
+     */
+    static boolean hasLuckToggle(String itemId) {
+        Item item = resolveItem(itemId);
+        return item != null
+            && (item == games.brennan.dungeontrain.registry.ModItems.RANDOM_POTION.get()
+                || item == games.brennan.dungeontrain.registry.ModItems.RANDOM_GOOD_POTION.get());
     }
 
     private static Item resolveItem(String itemId) {
