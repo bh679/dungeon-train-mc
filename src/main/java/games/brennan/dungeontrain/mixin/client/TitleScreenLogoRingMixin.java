@@ -30,6 +30,8 @@ public abstract class TitleScreenLogoRingMixin extends Screen {
     /** The ring's centre, as a share of the screen's width and height (bottom right). */
     private static final float CENTRE_X = 0.8f;
     private static final float CENTRE_Y = 0.85f;
+    /** The menu's ring turns at this share of the website's pace: slow, behind the buttons. */
+    private static final float RING_SPEED = 0.4f;
     /** Target pixels per screen pixel: the ring is huge, so a little under 1 keeps it cheap. */
     private static final float RING_RENDER_SCALE = 0.75f;
 
@@ -42,7 +44,7 @@ public abstract class TitleScreenLogoRingMixin extends Screen {
         LoadingScreenTheme.fillBackground(g, this.width, this.height);
         MenuBackdrop.get().draw(g, this.width, this.height);
         float size = Math.max(this.width, this.height) * RING_SHARE;
-        LogoRingRenderer.get().drawRing(g, this.width * CENTRE_X - size / 2f, this.height * CENTRE_Y - size / 2f, size, 1f, RING_RENDER_SCALE);
+        LogoRingRenderer.get().drawRing(g, this.width * CENTRE_X - size / 2f, this.height * CENTRE_Y - size / 2f, size, 1f, RING_RENDER_SCALE, RING_SPEED);
         ci.cancel();
     }
 }

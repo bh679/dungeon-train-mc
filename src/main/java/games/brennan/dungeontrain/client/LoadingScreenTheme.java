@@ -85,7 +85,7 @@ public final class LoadingScreenTheme {
 
         drawTitle(g, font, Component.translatable("gui.dungeontrain.loading.title"), cx, cy - 30, a);
         drawFillingTrain(g, font, railLeft, railW, railY, progress, animNanos, a);
-        drawPercent(g, font, progress, cx, cy + 34, a);
+        drawPercent(g, font, progress, cx, cy + 34, a * (1f - LogoRingRenderer.get().barFinish()));
         drawTip(g, font, LoadingStories.currentLine(), cx, cy + 52, TIP_MAX_WIDTH, a);
     }
 

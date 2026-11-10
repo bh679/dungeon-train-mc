@@ -40,11 +40,11 @@ final class LogoCanvas {
     /**
      * Renders the geometry {@code build} emits (called once for the surface, once for the outline).
      *
-     * @param straight  true for the straight bar: the shader's along direction is then +x
+     * @param centre    the centre the tube curves round (x, y), or null for a straight bar along +x
      * @param lineWidth the edge lines, in target pixels
      */
     void render(ShaderInstance shader, int texture, int w, int h, Matrix4f view, Matrix4f projection,
-                boolean straight, float lineWidth, Consumer<Emitter> build) {
+                float[] centre, float lineWidth, Consumer<Emitter> build) {
         Minecraft mc = Minecraft.getInstance();
         if (target == null) {
             target = new TextureTarget(w, h, true, Minecraft.ON_OSX);
@@ -72,7 +72,8 @@ final class LogoCanvas {
 
             // The segments, then the outline shell's inside faces behind them.
             shader.safeGetUniform("LineWidth").set(lineWidth);
-            shader.safeGetUniform("Straight").set(straight ? 1f : 0f);
+            shader.safeGetUniform("Straight").set(centre == null ? 1f : 0f);
+            if (centre != null) shader.safeGetUniform("Centre").set(centre[0], centre[1]);
             shader.safeGetUniform("Atlas").set((float) LogoCracks.ATLAS_W, (float) LogoCracks.ATLAS_ROW,
                     (float) LogoCracks.ATLAS_LEN, (float) (LogoRingGeometry.PIECES * 4));
             RenderSystem.setShader(() -> shader);

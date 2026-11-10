@@ -78,6 +78,27 @@ public final class LogoRingGeometry {
         segment(new Straight(faceOn), start, start + length, piece, sink);
     }
 
+    /**
+     * A straight segment part-way to being curled into a circle (the loading bar's finish): the
+     * line is bent upward round its midpoint {@code mid} at curvature {@code kappa} (0 = straight;
+     * 1 / (2R) closes eight carriages into a circle of radius 2R). Lengths along the tube are kept,
+     * and it twists at the ring's rate, {@code twistOffset} turning it as a whole.
+     */
+    public static void buildBent(double kappa, double mid, double start, double length, double twistOffset, int piece, Sink sink) {
+        segment(new Bent(kappa, mid, twistOffset), start, start + length, piece, sink);
+    }
+
+    /**
+     * A segment on a circle centred at ({@code cx}, {@code cy}): ring angles {@code a0} to
+     * {@code a1}, its cross-section twisting by {@code (phi - phiRef) * twistRate + twist0}, and
+     * {@code alongScale} world units of surface (for the cracks and edge lines) per radian. The
+     * logo ring is radius R, rate 1/2 and along scale R.
+     */
+    public static void buildArc(double cx, double cy, double radius, double a0, double a1, double twistRate, double phiRef,
+                                double twist0, double alongScale, int piece, Sink sink) {
+        segment(new Arc(cx, cy, radius, twistRate, phiRef, twist0, alongScale), a0, a1, piece, sink);
+    }
+
     /** The gap between neighbouring segments, as a length along the tube. */
     public static double gapLength() { return GAP * R; }
 
@@ -111,6 +132,28 @@ public final class LogoRingGeometry {
         public double[] tangent(double x) { return new double[] { 1, 0, 0 }; }
         public double twist(double x) { return x * TWIST / (2 * Math.PI * R) - faceOn; }
         public double scale() { return 1; }
+    }
+
+    /** A line bent round its midpoint: radial = (sin a, -cos a), so straight it is the {@link Straight} frame. */
+    private record Bent(double kappa, double mid, double twistOffset) implements Path {
+        private double angle(double s) { return kappa * (s - mid); }
+        public double[] centre(double s) {
+            if (kappa < 1e-9) return new double[] { s, 0, 0 };
+            double a = angle(s);
+            return new double[] { mid + Math.sin(a) / kappa, (1 - Math.cos(a)) / kappa, 0 };
+        }
+        public double[] radial(double s) { double a = angle(s); return new double[] { Math.sin(a), -Math.cos(a), 0 }; }
+        public double[] tangent(double s) { double a = angle(s); return new double[] { Math.cos(a), Math.sin(a), 0 }; }
+        public double twist(double s) { return s * TWIST / (2 * Math.PI * R) - twistOffset; }
+        public double scale() { return 1; }
+    }
+
+    private record Arc(double cx, double cy, double radius, double twistRate, double phiRef, double twist0, double alongScale) implements Path {
+        public double[] centre(double phi) { return new double[] { cx + radius * Math.cos(phi), cy + radius * Math.sin(phi), 0 }; }
+        public double[] radial(double phi) { return new double[] { Math.cos(phi), Math.sin(phi), 0 }; }
+        public double[] tangent(double phi) { return new double[] { -Math.sin(phi), Math.cos(phi), 0 }; }
+        public double twist(double phi) { return (phi - phiRef) * twistRate + twist0; }
+        public double scale() { return alongScale; }
     }
 
     private static double[] pathNormal(Path path, double u, int k) {

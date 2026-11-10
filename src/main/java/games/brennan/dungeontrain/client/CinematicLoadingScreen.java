@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import games.brennan.dungeontrain.client.logo.LogoRingRenderer;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -156,7 +157,8 @@ public final class CinematicLoadingScreen extends Screen {
 
         LoadingScreenTheme.drawTitle(g, this.font, heading, cx, cy - 30, titleAlpha);
         LoadingScreenTheme.drawFillingTrain(g, this.font, railLeft, railW, railY, progress, animNanos, trainAlpha);
-        LoadingScreenTheme.drawPercent(g, this.font, progress, cx, cy + 34);
+        // The bar curls up into the logo at 100%; the percentage makes way for it.
+        LoadingScreenTheme.drawPercent(g, this.font, progress, cx, cy + 34, 1f - LogoRingRenderer.get().barFinish());
         LoadingScreenTheme.drawTip(g, this.font, LoadingStories.currentLine(), cx, cy + 52, TIP_MAX_WIDTH);
 
         if (CinematicPreloadGate.isWaitingForStory()) {
