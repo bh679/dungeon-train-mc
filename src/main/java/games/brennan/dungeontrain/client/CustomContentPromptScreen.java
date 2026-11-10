@@ -229,9 +229,9 @@ public final class CustomContentPromptScreen extends Screen {
     /**
      * What dismissing means depends on which question this is.
      *
-     * <p><b>Join-time:</b> ESC answers "continue" rather than cancelling. There is nothing to back
-     * out of — the world is already running with the content — so dismissing must mean "leave
-     * things as they are", not silently disable someone's builds.</p>
+     * <p><b>Join-time:</b> ESC answers "play without them" rather than cancelling. The world is
+     * already running on the bundled content (an unanswered world suppresses custom content), so
+     * dismissing leaves things as they are: Live. Free Play is only ever a choice someone made.</p>
      *
      * <p><b>Pre-world:</b> nothing has started, so dismissing backs out of starting it. No answer
      * is recorded and the player lands back where they were; pressing New World again asks again.
@@ -251,7 +251,7 @@ public final class CustomContentPromptScreen extends Screen {
         if (!responded) {
             responded = true;
             CustomContentPromptClient.answered();
-            DungeonTrainNet.sendToServer(new CustomContentChoicePacket(CustomContentChoice.ALLOW));
+            DungeonTrainNet.sendToServer(new CustomContentChoicePacket(CustomContentChoice.DISABLE));
         }
         super.onClose();
     }

@@ -38,13 +38,16 @@ public final class CustomContentGate {
     /**
      * Will a world started from here play the player's own train designs?
      *
-     * <p>{@link CustomContentPreference#ASK} counts as <b>yes</b>. It means no standing answer has
-     * been given, and the popup that would ask defaults to nothing being turned off — the content
-     * is there and a world would load it. Reporting "off" for an install that is about to play its
-     * custom designs would be the wrong half of the truth for the title-screen toggle to show.</p>
+     * <p>Only a standing yes counts ({@link CustomContentPreference#CONTINUE}, or the dev build's
+     * {@link CustomContentPreference#DEV_IGNORE}). {@link CustomContentPreference#ASK} reads as
+     * <b>no</b>: Free Play is off until the player turns it on, so the title-screen toggle starts
+     * unlit even when the install has designs.</p>
      */
     public static boolean contentEnabled() {
-        return ClientDisplayConfig.getCustomContentPreference() != CustomContentPreference.DISABLE;
+        return switch (ClientDisplayConfig.getCustomContentPreference()) {
+            case CONTINUE, DEV_IGNORE -> true;
+            case ASK, DISABLE -> false;
+        };
     }
 
     /**
