@@ -594,6 +594,9 @@ public final class ContainerContentsStore {
                     sb.append(", \"book\": ").append(ContainerContentsBooks.toJsonText(ce.book()));
                 }
                 BookEnchantsCodec.appendJson(sb, ce.enchants());
+                if (ce.hasContents()) {
+                    sb.append(", \"contents\": \"").append(ce.contents()).append("\"");
+                }
                 sb.append(" }");
                 firstEntry = false;
             }
@@ -741,7 +744,9 @@ public final class ContainerContentsStore {
                         StoredBook book = ContainerContentsBooks.fromJson(eo.get("book"));
                         entries.add(new ContainerContentsEntry(id, count, minCount, weight,
                             randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, book,
-                            BookEnchantsCodec.fromJson(eo), luck));
+                            BookEnchantsCodec.fromJson(eo), luck,
+                            eo.has("contents") && eo.get("contents").isJsonPrimitive()
+                                ? eo.get("contents").getAsString() : null));
                     }
                     if (!entries.isEmpty()) {
                         out.put(pos.immutable(), new ContainerContentsPool(entries, fillMin, fillMax, vaultKey));

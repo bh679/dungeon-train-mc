@@ -168,6 +168,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_POOL_ENTRY_LUCK = "lk";
     /** Random-potion bottle form id; absent means Any. */
     private static final String NBT_POOL_ENTRY_FORM = "f";
+    /** Loot prefab a shulker box entry is filled from; absent for an empty box. */
+    private static final String NBT_POOL_ENTRY_CONTENTS = "c";
 
     public VariantClipboardItem(Properties properties) {
         super(properties);
@@ -524,6 +526,7 @@ public final class VariantClipboardItem extends Item {
             if (e.potionForm() != PotionForm.ANY) et.putString(NBT_POOL_ENTRY_FORM, e.potionForm().id());
             if (e.book() != null) et.put(NBT_POOL_ENTRY_BOOK, ContainerContentsBooks.toNbt(e.book()));
             if (e.enchants() != null) et.put(NBT_POOL_ENTRY_ENCHANTS, BookEnchantsCodec.toNbt(e.enchants()));
+            if (e.hasContents()) et.putString(NBT_POOL_ENTRY_CONTENTS, e.contents());
             entries.add(et);
         }
         tag.put(NBT_POOL_ENTRIES, entries);
@@ -571,7 +574,9 @@ public final class VariantClipboardItem extends Item {
                     .withIncludeLuck(et.getBoolean(NBT_POOL_ENTRY_LUCK))
                     .withBook(book)
                     .withEnchants(et.contains(NBT_POOL_ENTRY_ENCHANTS, Tag.TAG_COMPOUND)
-                        ? BookEnchantsCodec.fromNbt(et.getCompound(NBT_POOL_ENTRY_ENCHANTS)) : null));
+                        ? BookEnchantsCodec.fromNbt(et.getCompound(NBT_POOL_ENTRY_ENCHANTS)) : null)
+                    .withContents(et.contains(NBT_POOL_ENTRY_CONTENTS, Tag.TAG_STRING)
+                        ? et.getString(NBT_POOL_ENTRY_CONTENTS) : null));
             }
         }
         return new ContainerContentsPool(entries, fillMin, fillMax, vaultKey);

@@ -19,6 +19,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.Potion;
 import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.item.component.SuspiciousStewEffects;
 import net.minecraft.world.item.crafting.AbstractCookingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
@@ -37,6 +38,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import com.mojang.logging.LogUtils;
@@ -146,6 +148,17 @@ public final class ContainerContentsRoller {
 
     /** Salt for the brushable-block (suspicious sand/gravel) archaeology LootTableSeed. */
     private static final long SALT_BRUSHABLE_SEED = 0x5A5DB00C0FFEE123L;
+    /** Seed of the roll that packs a shulker box entry's {@code contents} prefab into the box. */
+    private static final long SALT_SHULKER_CONTENTS = 0x5B01CE7B0C5EED11L;
+    /** Slots in a shulker box. */
+    static final int SHULKER_SLOTS = 27;
+
+    /**
+     * Where a shulker entry's {@code contents} prefab id is looked up. The store in play; a test swaps in
+     * its own map ({@link #setContentsLookup}) because the store reads the game directory.
+     */
+    private static volatile Function<String, Optional<ContainerContentsPool>> contentsLookup =
+        id -> LootPrefabStore.load(id).map(LootPrefabStore.Data::pool);
 
     /**
      * BE NBT key on {@code decorated_pot} that holds the single contained
@@ -542,9 +555,12 @@ public final class ContainerContentsRoller {
         return out;
     }
 
-    /** True for an entry whose books each roll their own random enchantments. */
+    /**
+     * True for an entry whose items each roll on their own: books with random enchantments, and packed
+     * shulker boxes, so two from one vault are not copies of each other.
+     */
     static boolean rollsEachBook(ContainerContentsEntry picked) {
-        return picked.hasEnchants() && picked.enchants().hasRandom();
+        return (picked.hasEnchants() && picked.enchants().hasRandom()) || picked.hasContents();
     }
 
     /**
@@ -1220,6 +1236,10 @@ public final class ContainerContentsRoller {
         ContainerContentsPotions.applyStoredPotion(stack, picked.potionId(), registries);
         // A written-book entry carries the signed book the author added from their hand.
         ContainerContentsBooks.applyStoredBook(stack, picked.book(), registries);
+        // A shulker box entry naming a loot prefab comes out packed with a roll of that prefab.
+        if (picked.hasContents()) {
+            packShulker(stack, picked.contents(), localPos, worldSeed, carriageIndex, diffIndex, slot, registries);
+        }
         // A book entry's own enchantments: exact ones (a Mending book) and/or a roll of different
         // max-level ones. It becomes an enchanted book, which the random-enchant roll below skips.
         if (picked.hasEnchants()) {
@@ -1850,6 +1870,55 @@ public final class ContainerContentsRoller {
             if (target < 0) return e;
         }
         return pool.entries().get(pool.entries().size() - 1);
+    }
+
+    /**
+     * Fill {@code box} with a roll of loot prefab {@code prefabId}, the way a chest of that prefab fills:
+     * {@code [fillMin, fillMax]} of the 27 slots, each rolled item in the slot it rolled into. Seeded from the
+     * outer roll's frame and {@code slot}, so the same box always packs the same, and two boxes differ.
+     * One level deep only: the prefab's own shulker entries come out empty, so a prefab naming itself (or
+     * two naming each other) cannot loop. A prefab that is missing or empty leaves the box empty.
+     */
+    static void packShulker(ItemStack box, String prefabId, BlockPos localPos, long worldSeed,
+                            int carriageIndex, int diffIndex, int slot, HolderLookup.Provider registries) {
+        Optional<ContainerContentsPool> found = contentsLookup.apply(prefabId);
+        if (found.isEmpty() || found.get().isEmpty()) {
+            LOGGER.warn("[DungeonTrain] Shulker loot entry names loot prefab '{}', which {} — the box spawns empty",
+                prefabId, found.isEmpty() ? "does not exist" : "has no entries");
+            return;
+        }
+        ContainerContentsPool pool = withoutContents(found.get());
+        int totalWeight = pool.totalWeight();
+        if (totalWeight <= 0) return;
+        long seed = mix(localPos, worldSeed, carriageIndex, slot, SALT_SHULKER_CONTENTS);
+        int effectiveMax = pool.fillMax() == ContainerContentsPool.FILL_ALL
+            ? SHULKER_SLOTS : Math.min(pool.fillMax(), SHULKER_SLOTS);
+        int effectiveMin = Math.max(0, Math.min(pool.fillMin(), effectiveMax));
+        int k = rollKCount(effectiveMin, effectiveMax, localPos, seed, carriageIndex);
+        List<ItemStack> items = new ArrayList<>(SHULKER_SLOTS);
+        for (int i = 0; i < SHULKER_SLOTS; i++) items.add(ItemStack.EMPTY);
+        for (int s : resolveSlotSubset(SHULKER_SLOTS, k, localPos, seed, carriageIndex)) {
+            ContainerContentsEntry e = pickEntry(pool, totalWeight, localPos, seed, carriageIndex, s);
+            if (e == null || e.isAir()) continue;
+            int count = rollItemCount(e.minCount(), e.count(), localPos, seed, carriageIndex, s);
+            items.set(s, rollItemStack(e, count, localPos, seed, carriageIndex, diffIndex, s, registries));
+        }
+        box.set(DataComponents.CONTAINER, ItemContainerContents.fromItems(items));
+    }
+
+    /** {@code pool} with every entry's {@code contents} dropped: what an inner roll rolls from. */
+    static ContainerContentsPool withoutContents(ContainerContentsPool pool) {
+        List<ContainerContentsEntry> out = new ArrayList<>(pool.size());
+        for (ContainerContentsEntry e : pool.entries()) out.add(e.contents() == null ? e : e.withContents(null));
+        return new ContainerContentsPool(out, pool.fillMin(), pool.fillMax(), pool.vaultKey());
+    }
+
+    /** Swap where {@code contents} prefab ids resolve; tests only. Returns the lookup it replaced. */
+    static Function<String, Optional<ContainerContentsPool>> setContentsLookup(
+            Function<String, Optional<ContainerContentsPool>> lookup) {
+        Function<String, Optional<ContainerContentsPool>> previous = contentsLookup;
+        contentsLookup = lookup;
+        return previous;
     }
 
     /**

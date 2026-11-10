@@ -7235,6 +7235,24 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.container.contents": {
+    "1": {
+      "label": "the id of the loot prefab the shulker box is filled from",
+      "examples": [
+        "shulker_supplies",
+        "mining"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor_bar.contents_menu.contents_set": {
+    "1": {
+      "label": "the id of the loot prefab the shulker box is filled from",
+      "examples": [
+        "shulker_supplies",
+        "mining"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.container.form": {
     "1": {
       "label": "the potion form, already translated",

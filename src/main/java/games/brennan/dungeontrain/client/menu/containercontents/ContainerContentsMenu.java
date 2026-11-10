@@ -59,6 +59,8 @@ public final class ContainerContentsMenu {
         ENTRY_LUCK_TOGGLE,
         /** Per-entry sub-row cell on random-potion placeholders: step the bottle form. */
         ENTRY_POTION_FORM,
+        /** Per-entry sub-row cell on shulker boxes: pack from the held loot prefab, or empty. */
+        ENTRY_CONTENTS,
         /** Per-entry sub-row %NN cell: bump random-enchantment chance (0-100). */
         ENTRY_ENCH_CHANCE,
         /** Per-entry sub-row cell on books: the random-enchantment range (steps the max, cmd-click types both). */

@@ -79,7 +79,12 @@ public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localP
         /** Every enchantment in a book's list on ({@code delta} 1, curses kept) or off (0). */
         SET_BOOK_ENCH_ALL,
         /** Flip a random-potion placeholder entry's Luck toggle (Luck / Luck II in the pick). */
-        TOGGLE_LUCK
+        TOGGLE_LUCK,
+        /**
+         * Pack a shulker box entry from the loot prefab the author holds, or empty it when they hold no
+         * loot prefab. The prefab id comes from the server's view of the held item, never the packet.
+         */
+        SET_CONTENTS
     }
 
     public static final Type<ContainerContentsEditPacket> TYPE =
