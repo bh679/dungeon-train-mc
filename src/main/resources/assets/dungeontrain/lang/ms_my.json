@@ -5546,6 +5546,7 @@
   "gui.dungeontrain.translate.edit.blocked.missing_vars": "Teks anda kekurangan %s. Permainan mengisi bahagian itu, jadi baris ini memerlukannya.",
   "gui.dungeontrain.translate.edit.blocked.extra_vars": "Teks anda mempunyai %s yang tiada dalam teks Inggeris. Permainan tiada apa-apa untuk diisi di situ.",
   "chat.dungeontrain.free_play.cause.custom_content": "Dunia ini menggunakan kandungan kereta api tersuai.",
+  "chat.dungeontrain.free_play.cause.relay_override": "Permainan ditetapkan untuk menggunakan pelayan lain selain pelayan Dungeon Train sendiri.",
   "chat.dungeontrain.custom_content.packages": "Kandungan tersuai daripada: %s",
   "chat.dungeontrain.custom_content.disable_link": "Klik di sini untuk mematikan kandungan tersuai bagi dunia ini dan bermain seperti biasa.",
   "chat.dungeontrain.custom_content.enable_link": "Klik di sini untuk menghidupkannya semula.",

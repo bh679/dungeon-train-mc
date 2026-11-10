@@ -4189,6 +4189,7 @@
   "gui.dungeontrain.translate.sent.rejected": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "dccafe55abe3dd98"},
   "gui.dungeontrain.translate.submit.blocked.nothing_new": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "76163ba3394b0b4f"},
   "chat.dungeontrain.free_play.cause.custom_content": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "fe61eb76689f4b1b"},
+  "chat.dungeontrain.free_play.cause.relay_override": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "105ceeb8e401ed7d"},
   "chat.dungeontrain.custom_content.packages": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "7d1f4e16cf496152"},
   "chat.dungeontrain.custom_content.disable_link": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "f0eb8a9ae17f7661"},
   "chat.dungeontrain.custom_content.enable_link": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "ee8e8eecfc050205"},

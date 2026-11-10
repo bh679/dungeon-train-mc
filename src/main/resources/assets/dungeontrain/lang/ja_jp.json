@@ -5546,6 +5546,7 @@
   "gui.dungeontrain.translate.edit.blocked.missing_vars": "訳文に %s がありません。ゲームがここに差し込むので必要です。",
   "gui.dungeontrain.translate.edit.blocked.extra_vars": "訳文に英語にはない %s があります。ゲームには入れるものがありません。",
   "chat.dungeontrain.free_play.cause.custom_content": "このワールドはカスタムの列車コンテンツを使っています。",
+  "chat.dungeontrain.free_play.cause.relay_override": "ゲームが Dungeon Train 公式とは別のサーバーを使うように設定されています。",
   "chat.dungeontrain.custom_content.packages": "カスタムコンテンツの提供元: %s",
   "chat.dungeontrain.custom_content.disable_link": "ここをクリックすると、このワールドのカスタムコンテンツを無効にして通常どおり遊べます。",
   "chat.dungeontrain.custom_content.enable_link": "ここをクリックすると、また有効になります。",

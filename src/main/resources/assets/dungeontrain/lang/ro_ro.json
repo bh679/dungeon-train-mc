@@ -4189,6 +4189,7 @@
   "gui.dungeontrain.translate.sent.rejected": "Nefolosit",
   "gui.dungeontrain.translate.submit.blocked.nothing_new": "Tot ce ai editat a fost deja trimis.",
   "chat.dungeontrain.free_play.cause.custom_content": "Această lume folosește conținut personalizat pentru tren.",
+  "chat.dungeontrain.free_play.cause.relay_override": "Jocul este setat să folosească alt server decât cel al Dungeon Train.",
   "chat.dungeontrain.custom_content.packages": "Conținut personalizat din: %s",
   "chat.dungeontrain.custom_content.disable_link": "Apasă aici ca să oprești conținutul personalizat în această lume și să joci normal.",
   "chat.dungeontrain.custom_content.enable_link": "Apasă aici ca să îl pornești la loc.",

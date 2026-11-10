@@ -5546,6 +5546,7 @@
   "gui.dungeontrain.translate.edit.blocked.missing_vars": "번역문에 %s 가 없습니다. 게임이 여기에 채워 넣으므로 꼭 필요합니다.",
   "gui.dungeontrain.translate.edit.blocked.extra_vars": "번역문에 영어에 없는 %s 가 있습니다. 게임이 채워 넣을 것이 없습니다.",
   "chat.dungeontrain.free_play.cause.custom_content": "이 세계는 사용자 지정 열차 콘텐츠를 사용합니다.",
+  "chat.dungeontrain.free_play.cause.relay_override": "게임이 Dungeon Train 공식 서버가 아닌 다른 서버를 사용하도록 설정되어 있습니다.",
   "chat.dungeontrain.custom_content.packages": "사용자 지정 콘텐츠 출처: %s",
   "chat.dungeontrain.custom_content.disable_link": "여기를 클릭하면 이 세계의 사용자 지정 콘텐츠를 끄고 정상적으로 플레이합니다.",
   "chat.dungeontrain.custom_content.enable_link": "여기를 클릭하면 다시 켭니다.",
