@@ -110,6 +110,10 @@ public final class ContainerContentsRoller {
     private static final long SALT_RANDOM_BOOK = 0xB0011AB1ECAFEBE0L;
     private static final long SALT_LEADERBOARD_BOOK = 0x1EADE7B0A2DB00C5L;
     private static final long SALT_STAT_BOOK = 0x5A7B00C0FA017A11L;
+    /** Salt for the random_pottery_sherd placeholder's pick. */
+    private static final long SALT_RANDOM_SHERD = 0x5E2D5E2D90770E12L;
+    /** Salt for a goat horn's instrument (the random_goat_horn placeholder, or a plain horn entry). */
+    private static final long SALT_HORN_INSTRUMENT = 0x6047A0E2B1A57E27L;
     /** Salt for the coin flip that turns an unfilled random_playerphoto slot into a disposable camera. */
     private static final long SALT_PHOTO_CAMERA = 0xCA3E2AF0705A11E5L;
 
@@ -1228,8 +1232,22 @@ public final class ContainerContentsRoller {
             return rollPlayerBook(localPos, worldSeed, carriageIndex, slot);
         }
 
+        // Editor placeholders dungeontrain:random_pottery_sherd / random_goat_horn — any sherd /
+        // any horn instrument, from the vanilla tags (see RandomVariantLoot).
+        if (item == ModItems.RANDOM_POTTERY_SHERD.get()) {
+            return RandomVariantLoot.bakeSherd(
+                mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_SHERD), rolledCount, registries);
+        }
+        if (item == ModItems.RANDOM_GOAT_HORN.get()) {
+            return RandomVariantLoot.bakeGoatHorn(
+                mix(localPos, worldSeed, carriageIndex, slot, SALT_HORN_INSTRUMENT), registries);
+        }
+
         int maxStack = new ItemStack(item).getMaxStackSize();
         ItemStack stack = new ItemStack(item, Math.max(1, Math.min(maxStack, rolledCount)));
+        // A loot entry cannot store a horn's instrument, and a horn without one never plays.
+        RandomVariantLoot.fillMissingInstrument(
+            stack, mix(localPos, worldSeed, carriageIndex, slot, SALT_HORN_INSTRUMENT), registries);
 
         // A potion entry carries the potion the author added from their hand. Whether
         // that potion is kept or randomised is decided further down.

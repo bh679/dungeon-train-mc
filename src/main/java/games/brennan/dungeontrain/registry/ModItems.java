@@ -234,6 +234,26 @@ public final class ModItems {
     );
 
     /**
+     * Editor-only placeholder for "any pottery sherd". Substituted at chest spawn time by
+     * {@code editor.RandomVariantLoot#bakeSherd} for a real sherd from the
+     * {@code minecraft:decorated_pot_sherds} tag; the entry's count is kept.
+     */
+    public static final DeferredItem<Item> RANDOM_POTTERY_SHERD = ITEMS.register(
+        "random_pottery_sherd",
+        () -> new Item(new Item.Properties())
+    );
+
+    /**
+     * Editor-only placeholder for "a goat horn of any sound". Substituted at chest spawn time by
+     * {@code editor.RandomVariantLoot#bakeGoatHorn} for a goat horn with a random instrument from
+     * the {@code minecraft:goat_horns} tag.
+     */
+    public static final DeferredItem<Item> RANDOM_GOAT_HORN = ITEMS.register(
+        "random_goat_horn",
+        () -> new Item(new Item.Properties().stacksTo(1))
+    );
+
+    /**
      * The loot-facing book, and the only one of these five that ordinary loot tables place: a
      * coin-flip between the two above. Half the time the slot becomes a tall
      * {@link #RANDOM_LEADERBOARD_BOOK} — a ranked board of the whole server — and half the time a

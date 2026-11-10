@@ -5641,6 +5641,8 @@
   "item.dungeontrain.random_potion": "Ramuan Acak",
   "item.dungeontrain.random_good_potion": "Ramuan Baik Acak",
   "item.dungeontrain.random_bad_potion": "Ramuan Buruk Acak",
+  "item.dungeontrain.random_pottery_sherd": "Pecahan Tembikar Acak",
+  "item.dungeontrain.random_goat_horn": "Tanduk Kambing Acak",
   "item.dungeontrain.disposable_camera": "Kamera Sekali Pakai",
   "gui.dungeontrain.options.book_author_chat": "Penulis buku di obrolan",
   "gui.dungeontrain.options.book_author_chat.hint": "Sebut penulis buku yang terbakar",

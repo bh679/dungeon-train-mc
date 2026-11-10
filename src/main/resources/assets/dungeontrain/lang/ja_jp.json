@@ -5641,6 +5641,8 @@
   "item.dungeontrain.random_potion": "ランダムなポーション",
   "item.dungeontrain.random_good_potion": "ランダムな良いポーション",
   "item.dungeontrain.random_bad_potion": "ランダムな悪いポーション",
+  "item.dungeontrain.random_pottery_sherd": "ランダムな土器の欠片",
+  "item.dungeontrain.random_goat_horn": "ランダムなヤギの角笛",
   "item.dungeontrain.disposable_camera": "使い捨てカメラ",
   "gui.dungeontrain.options.book_author_chat": "本の著者をチャットに表示",
   "gui.dungeontrain.options.book_author_chat.hint": "燃える本の作者を表示",

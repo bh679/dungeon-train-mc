@@ -2697,6 +2697,8 @@
       "item.dungeontrain.random_potion",
       "item.dungeontrain.random_good_potion",
       "item.dungeontrain.random_bad_potion",
+      "item.dungeontrain.random_pottery_sherd",
+      "item.dungeontrain.random_goat_horn",
       "item.dungeontrain.disposable_camera",
       "gui.dungeontrain.prefab_tab.variants",
       "gui.dungeontrain.prefab_tab.loot",
