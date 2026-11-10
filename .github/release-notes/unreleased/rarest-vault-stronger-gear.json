@@ -1,0 +1,21 @@
+{
+  "id": "rarest-vault-stronger-gear",
+  "version": "0.1753.0",
+  "type": "content",
+  "tags": [
+    "content",
+    "loot",
+    "balance"
+  ],
+  "title": "Stronger gear from the rarest vault",
+  "summary": "Weapons and armour from the rarest vault now come out far stronger, rolled as if found much deeper down the line. Vault rewards have also been reshuffled, with bigger piles of the good stuff.",
+  "highlights": [
+    "Rarest vault gear hits much harder and protects much better.",
+    "Rarest and ominous vault rewards rebalanced."
+  ],
+  "pr": 2589,
+  "date": "2026-11-10",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
