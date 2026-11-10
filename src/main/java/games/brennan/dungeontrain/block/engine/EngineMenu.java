@@ -20,7 +20,7 @@ import net.minecraft.world.item.Items;
 public class EngineMenu extends AbstractContainerMenu {
 
     /** Where the coal slot sits on the screen texture. */
-    public static final int COAL_X = 13, COAL_Y = 40;
+    public static final int COAL_X = 13, COAL_Y = 20;
 
     private final Container engine;
     private final ContainerData data;

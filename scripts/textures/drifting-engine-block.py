@@ -168,13 +168,12 @@ def slot(d, x, y, w=18, h=18):
 
 
 def write_screen(path):
-    """The panel, slots, gauge trough and gauge fill. The flame over the coal slot is the furnace's own,
-    drawn by EngineScreen straight from vanilla, so it is not on this texture."""
+    """The panel, slots, gauge trough and gauge fill: the coal slot and the gauge share a row."""
     im = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
     panel(d, 0, 0, 176, 166)
-    slot(d, 12, 39)                       # coal slot: item at (13, 40); furnace flame above at (13, 23)
-    slot(d, 36, 22, 132, 7)               # gauge trough: fill at (37, 23) 130x5
+    slot(d, 12, 19)                       # coal slot: item at (13, 20)
+    slot(d, 36, 24, 132, 7)               # gauge trough, centred on the slot: fill at (37, 25) 130x5
     for row in range(3):
         for col in range(9):
             slot(d, 7 + col * 18, 83 + row * 18)
