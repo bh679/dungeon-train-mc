@@ -14,7 +14,7 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 
-/** Loads the ring logo's shader and frees its GPU memory once no screen is drawing it. */
+/** Loads the ring logo's shader, and frees its (and the menu backdrop's) GPU memory once no screen is drawing them. */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LogoRingClient {
 
@@ -36,5 +36,6 @@ public final class LogoRingClient {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         LogoRingRenderer.get().releaseIfIdle();
+        MenuBackdrop.get().releaseIfIdle();
     }
 }
