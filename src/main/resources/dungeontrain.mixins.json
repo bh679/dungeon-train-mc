@@ -13,7 +13,10 @@
     "StateTestingPredicateAccessor",
     "WorldGenRegionDiskMemoMixin",
     "EnderManEndBandMixin",
+    "MerchantContainerExtraCostsMixin",
+    "MerchantMenuExtraCostsMixin",
     "MerchantOfferMendingStockMixin",
+    "MerchantResultSlotExtraCostsMixin",
     "OreFeatureTargetSkipMixin",
     "RandomBlockMatchTestAccessor",
     "RandomBlockStateMatchTestAccessor",
@@ -182,6 +185,8 @@
     "PlayerEnderChestContainerSizeMixin"
   ],
   "client": [
+    "client.MerchantScreenExtraCostsMixin",
+    "client.SlotPositionAccessor",
     "client.IntegratedServerPublishGameModeMixin",
     "client.LevelRendererWeatherSlantMixin",
     "client.ParticleEngineWindDriftMixin",

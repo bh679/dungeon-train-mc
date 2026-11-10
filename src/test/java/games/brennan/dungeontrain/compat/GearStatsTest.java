@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -73,6 +74,18 @@ final class GearStatsTest {
         ItemStack sword = new ItemStack(Items.IRON_SWORD);
         sword.setDamageValue(100);
         assertEquals(150, GearStats.read(sword, Slot.SWORD).durability(), EPS);
+    }
+
+    @Test
+    @DisplayName("the floor fills A, then a free B, then full extra stacks, the last one partial")
+    void floorSplit() {
+        assertArrayEquals(new int[] {64, 64}, GearResaleFloor.splitBlocks(128, true));
+        assertArrayEquals(new int[] {64, 64, 56}, GearResaleFloor.splitBlocks(184, true));
+        assertArrayEquals(new int[] {64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 46}, GearResaleFloor.splitBlocks(750, true));
+        assertEquals(13, GearResaleFloor.splitBlocks(12 * 64 + 1, true).length);
+        assertEquals(32, GearResaleFloor.splitBlocks(100_000, true).length);
+        assertEquals(31, GearResaleFloor.splitBlocks(100_000, false).length, "B holds a book: one place fewer");
+        assertEquals(7, GearResaleFloor.splitBlocks(7, true)[0]);
     }
 
     @Test
