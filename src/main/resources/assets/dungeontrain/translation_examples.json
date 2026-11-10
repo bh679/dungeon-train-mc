@@ -1000,6 +1000,51 @@
       ]
     }
   },
+  "chat.dungeontrain.low_disk": {
+    "1": {
+      "label": "the free space left on the drive, with its unit",
+      "examples": [
+        "3.2 GB",
+        "4.8 GB"
+      ]
+    }
+  },
+  "chat.dungeontrain.low_disk.critical": {
+    "1": {
+      "label": "the free space left on the drive, with its unit",
+      "examples": [
+        "412 MB",
+        "950 MB"
+      ]
+    }
+  },
+  "chat.dungeontrain.low_disk.server": {
+    "1": {
+      "label": "the free space left on the drive, with its unit",
+      "examples": [
+        "812 MB",
+        "2.4 GB"
+      ]
+    }
+  },
+  "toast.dungeontrain.low_disk.body": {
+    "1": {
+      "label": "the free space left on the drive, with its unit",
+      "examples": [
+        "3.2 GB",
+        "4.8 GB"
+      ]
+    }
+  },
+  "toast.dungeontrain.low_disk.critical_body": {
+    "1": {
+      "label": "the free space left on the drive, with its unit",
+      "examples": [
+        "412 MB",
+        "950 MB"
+      ]
+    }
+  },
   "chat.dungeontrain.update_notice": {
     "1": {
       "label": "the version number of the new Dungeon Train release",
