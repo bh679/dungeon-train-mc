@@ -4006,6 +4006,8 @@
   "gui.dungeontrain.editor_menu.container.slot_auto": "自动",
   "gui.dungeontrain.editor_menu.container.scale_on": "缩放 ✓",
   "gui.dungeontrain.editor_menu.container.scale_off": "缩放 ✗",
+  "gui.dungeontrain.editor_menu.container.luck_on": "幸运 ✓",
+  "gui.dungeontrain.editor_menu.container.luck_off": "幸运 ✗",
   "gui.dungeontrain.editor_menu.container.dur_on": "耐久 ✓",
   "gui.dungeontrain.editor_menu.container.dur_off": "耐久 ✗",
   "gui.dungeontrain.editor_menu.container.ench_on": "附魔 ✓",

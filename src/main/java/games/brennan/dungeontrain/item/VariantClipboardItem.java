@@ -164,6 +164,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_POOL_ENTRY_ENCHANTS = "e";
     /** Random-potion scale-with-distance toggle; absent means the default (on). */
     private static final String NBT_POOL_ENTRY_SCALE = "s";
+    /** Random-potion Luck toggle; absent means the default (off). */
+    private static final String NBT_POOL_ENTRY_LUCK = "lk";
     /** Random-potion bottle form id; absent means Any. */
     private static final String NBT_POOL_ENTRY_FORM = "f";
 
@@ -518,6 +520,7 @@ public final class VariantClipboardItem extends Item {
             et.putInt(NBT_POOL_ENTRY_WEIGHT, e.weight());
             if (e.potionId() != null) et.putString(NBT_POOL_ENTRY_POTION, e.potionId().toString());
             if (!e.scaleWithDistance()) et.putBoolean(NBT_POOL_ENTRY_SCALE, false);
+            if (e.includeLuck()) et.putBoolean(NBT_POOL_ENTRY_LUCK, true);
             if (e.potionForm() != PotionForm.ANY) et.putString(NBT_POOL_ENTRY_FORM, e.potionForm().id());
             if (e.book() != null) et.put(NBT_POOL_ENTRY_BOOK, ContainerContentsBooks.toNbt(e.book()));
             if (e.enchants() != null) et.put(NBT_POOL_ENTRY_ENCHANTS, BookEnchantsCodec.toNbt(e.enchants()));
@@ -565,6 +568,7 @@ public final class VariantClipboardItem extends Item {
                     ? ContainerContentsBooks.fromNbt(et.getCompound(NBT_POOL_ENTRY_BOOK)) : null;
                 entries.add(new ContainerContentsEntry(id, count, weight)
                     .withPotion(potionId).withScaleWithDistance(scale).withPotionForm(form)
+                    .withIncludeLuck(et.getBoolean(NBT_POOL_ENTRY_LUCK))
                     .withBook(book)
                     .withEnchants(et.contains(NBT_POOL_ENTRY_ENCHANTS, Tag.TAG_COMPOUND)
                         ? BookEnchantsCodec.fromNbt(et.getCompound(NBT_POOL_ENTRY_ENCHANTS)) : null));

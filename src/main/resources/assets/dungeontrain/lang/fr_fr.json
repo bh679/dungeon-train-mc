@@ -4051,6 +4051,8 @@
   "gui.dungeontrain.editor_menu.container.slot_auto": "auto",
   "gui.dungeontrain.editor_menu.container.scale_on": "Échelle ✓",
   "gui.dungeontrain.editor_menu.container.scale_off": "Échelle ✗",
+  "gui.dungeontrain.editor_menu.container.luck_on": "Chance ✓",
+  "gui.dungeontrain.editor_menu.container.luck_off": "Chance ✗",
   "gui.dungeontrain.editor_menu.container.dur_on": "Dur. ✓",
   "gui.dungeontrain.editor_menu.container.dur_off": "Dur. ✗",
   "gui.dungeontrain.editor_menu.container.ench_on": "Ench. ✓",

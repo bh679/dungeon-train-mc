@@ -4761,6 +4761,8 @@
   "gui.dungeontrain.editor_menu.container.slot_auto": "авто",
   "gui.dungeontrain.editor_menu.container.scale_on": "Масшт ✓",
   "gui.dungeontrain.editor_menu.container.scale_off": "Масшт ✗",
+  "gui.dungeontrain.editor_menu.container.luck_on": "Удача ✓",
+  "gui.dungeontrain.editor_menu.container.luck_off": "Удача ✗",
   "gui.dungeontrain.editor_menu.container.dur_on": "Міцн ✓",
   "gui.dungeontrain.editor_menu.container.dur_off": "Міцн ✗",
   "gui.dungeontrain.editor_menu.container.ench_on": "Зачар ✓",

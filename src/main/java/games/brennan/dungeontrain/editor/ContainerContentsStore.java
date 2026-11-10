@@ -581,6 +581,9 @@ public final class ContainerContentsStore {
                 if (ce.potionId() != null) {
                     sb.append(", \"potion\": \"").append(ce.potionId()).append("\"");
                 }
+                if (ce.includeLuck()) {
+                    sb.append(", \"luck\": true");
+                }
                 if (!ce.scaleWithDistance()) {
                     sb.append(", \"scale\": false");
                 }
@@ -732,10 +735,13 @@ public final class ContainerContentsStore {
                         PotionForm form = eo.has("form") && eo.get("form").isJsonPrimitive()
                             ? PotionForm.parse(eo.get("form").getAsString())
                             : ContainerContentsEntry.DEFAULT_POTION_FORM;
+                        boolean luck = eo.has("luck") && eo.get("luck").isJsonPrimitive()
+                            ? eo.get("luck").getAsBoolean()
+                            : ContainerContentsEntry.DEFAULT_INCLUDE_LUCK;
                         StoredBook book = ContainerContentsBooks.fromJson(eo.get("book"));
                         entries.add(new ContainerContentsEntry(id, count, minCount, weight,
                             randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, book,
-                            BookEnchantsCodec.fromJson(eo)));
+                            BookEnchantsCodec.fromJson(eo), luck));
                     }
                     if (!entries.isEmpty()) {
                         out.put(pos.immutable(), new ContainerContentsPool(entries, fillMin, fillMax, vaultKey));
