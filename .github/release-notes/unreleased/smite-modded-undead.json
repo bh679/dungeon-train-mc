@@ -1,0 +1,18 @@
+{
+  "id": "smite-modded-undead",
+  "version": "0.1757.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "compatibility",
+    "mobs"
+  ],
+  "title": "Smite works on every zombie and skeleton",
+  "summary": "Smite now deals its bonus damage to all zombies and skeletons, not just the classic ones. Healing and Harming potions also work on them the right way round.",
+  "highlights": [],
+  "pr": 2594,
+  "date": "2026-11-10",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
