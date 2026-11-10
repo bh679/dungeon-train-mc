@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.mixin.client;
 import games.brennan.dungeontrain.client.LoadingScreenTheme;
 import games.brennan.dungeontrain.client.logo.LogoRingRenderer;
 import games.brennan.dungeontrain.client.logo.MenuBackdrop;
+import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -13,8 +14,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * The main menu's backdrop: in place of the vanilla panorama, a dimmed slideshow of Dungeon Train
- * ride photos ({@link MenuBackdrop}, over the loading screens' dark gradient until they are ready)
+ * The main menu's backdrop: in place of the vanilla panorama, the Live Feed when someone is
+ * streaming, else a dimmed slideshow of tributed photos ({@link MenuBackdrop}, over the loading
+ * screens' dark gradient until the first is ready)
  * with the animated ring logo huge across it: half again the screen's longer side, centred low
  * and to the right so the ring sweeps in from the bottom-right corner and runs off the edges. The
  * buttons and wordmark draw on top.
@@ -42,7 +44,7 @@ public abstract class TitleScreenLogoRingMixin extends Screen {
     @Inject(method = "renderPanorama(Lnet/minecraft/client/gui/GuiGraphics;F)V", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$logoBackdrop(GuiGraphics g, float partialTick, CallbackInfo ci) {
         LoadingScreenTheme.fillBackground(g, this.width, this.height);
-        MenuBackdrop.get().draw(g, this.width, this.height);
+        MenuBackdrop.get().draw(g, this.width, this.height, (int) (Util.getMillis() / 50L), partialTick);
         float size = Math.max(this.width, this.height) * RING_SHARE;
         LogoRingRenderer.get().drawRing(g, this.width * CENTRE_X - size / 2f, this.height * CENTRE_Y - size / 2f, size, 1f, RING_RENDER_SCALE, RING_SPEED);
         ci.cancel();

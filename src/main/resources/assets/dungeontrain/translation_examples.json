@@ -1,4 +1,22 @@
 {
+  "gui.dungeontrain.menu.backdrop.live_named": {
+    "1": {
+      "label": "the name of the player streaming live, shown over the main menu",
+      "examples": [
+        "Iffy8251",
+        "Steve"
+      ]
+    }
+  },
+  "gui.dungeontrain.menu.backdrop.photo_by": {
+    "1": {
+      "label": "the name of the player who took the tributed photo behind the main menu",
+      "examples": [
+        "Iffy8251",
+        "Alex"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.stages.delete_confirm": {
     "1": {
       "label": "the display name of the stage about to be deleted",
