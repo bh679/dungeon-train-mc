@@ -5702,7 +5702,8 @@
       "gui.dungeontrain.editor_settings.mod_block_tabs.tip",
       "gui.dungeontrain.options.translate.tip",
       "gui.dungeontrain.options.confirm_build_restore.tip",
-      "gui.dungeontrain.options.custom_content.tip"
+      "gui.dungeontrain.options.custom_content.tip",
+      "gui.dungeontrain.unsupported_mods.live_hint"
     ],
     "adventureitemnames": [],
     "playermob": [],

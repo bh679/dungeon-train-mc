@@ -4047,11 +4047,9 @@
       "gui.dungeontrain.custom_content.title",
       "gui.dungeontrain.custom_content.card.custom.name",
       "gui.dungeontrain.custom_content.card.default.name",
-      "gui.dungeontrain.custom_content.card.default.tag",
       "gui.dungeontrain.custom_content.packages",
       "gui.dungeontrain.custom_content.remember",
       "gui.dungeontrain.custom_content.dev_ignore",
-      "gui.dungeontrain.custom_content.dev_ignore.tip",
       "gui.dungeontrain.custom_content.toggle.narration",
       "gui.dungeontrain.options.confirm_build_restore",
       "gui.dungeontrain.options.confirm_build_restore.hint",
@@ -4264,7 +4262,10 @@
       "gui.dungeontrain.options.mic_support.hint",
       "gui.dungeontrain.options.live_chat.tip",
       "gui.dungeontrain.options.content_mode.tip",
-      "gui.dungeontrain.options.editor_settings.tip"
+      "gui.dungeontrain.options.editor_settings.tip",
+      "gui.dungeontrain.unsupported_mods.live_hint",
+      "gui.dungeontrain.custom_content.card.default.tag",
+      "gui.dungeontrain.custom_content.dev_ignore.tip"
     ],
     "adventureitemnames": [],
     "playermob": [],
