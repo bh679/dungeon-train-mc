@@ -5,9 +5,12 @@ import games.brennan.dungeontrain.compat.GearValueFormula.Reference;
 import games.brennan.dungeontrain.compat.GearValueFormula.Slot;
 import games.brennan.dungeontrain.compat.GearValueFormula.Stats;
 import games.brennan.tradeeverything.api.TradeEverythingApi;
+import games.brennan.tradeeverything.trade.RecipeValues;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 
 import java.util.AbstractMap;
@@ -23,7 +26,10 @@ import java.util.OptionalInt;
  *
  * <p>Each slot is scored against its iron item, whose price is asked of Trade Everything itself —
  * so iron gear keeps the value it has today. That nested ask runs every provider again, this one
- * included; {@link #IN_REFERENCE} makes it step aside so the iron item is priced by recipe.</p>
+ * included; {@link #IN_REFERENCE} makes it step aside so the iron item is priced by recipe.
+ * Trade Everything builds its recipe prices lazily (the first time someone trades), so the provider
+ * builds them first; where it can't (a client), it uses {@link #IRON_RECIPE_SIXTEENTHS}, the same
+ * recipe prices worked out from Trade Everything's default ingot and stick values.</p>
  */
 public final class GearValueProvider {
 
@@ -44,6 +50,18 @@ public final class GearValueProvider {
         Slot.SWORD, Items.NETHERITE_SWORD, Slot.AXE, Items.NETHERITE_AXE, Slot.PICKAXE, Items.NETHERITE_PICKAXE,
         Slot.SHOVEL, Items.NETHERITE_SHOVEL, Slot.HOE, Items.NETHERITE_HOE, Slot.HELMET, Items.NETHERITE_HELMET,
         Slot.CHESTPLATE, Items.NETHERITE_CHESTPLATE, Slot.LEGGINGS, Items.NETHERITE_LEGGINGS, Slot.BOOTS, Items.NETHERITE_BOOTS));
+
+    /**
+     * Iron items' prices in sixteenths as Trade Everything gives them once its recipe table is built
+     * (iron ingot 8, stick 1/8; the chestplate is DT's villager-stock price in
+     * {@link TradeEverythingBridge#VILLAGER_STOCK_VALUES_256THS}). Used where the table isn't built —
+     * a client — which would otherwise price every iron tool at 1 sixteenth.
+     */
+    private static final Map<Slot, Double> IRON_RECIPE_SIXTEENTHS = new EnumMap<>(Map.of(
+        Slot.SWORD, 16.125, Slot.AXE, 24.25, Slot.PICKAXE, 24.25, Slot.SHOVEL, 8.25, Slot.HOE, 16.25,
+        Slot.HELMET, 40.0,
+        Slot.CHESTPLATE, TradeEverythingBridge.VILLAGER_STOCK_VALUES_256THS.get("iron_chestplate") / 16.0,
+        Slot.LEGGINGS, 56.0, Slot.BOOTS, 32.0));
 
     /** True while this thread asks Trade Everything for an iron reference price. */
     private static final ThreadLocal<Boolean> IN_REFERENCE = ThreadLocal.withInitial(() -> false);
@@ -88,9 +106,16 @@ public final class GearValueProvider {
     }
 
     private static double ironEmeralds(Slot slot) {
+        Item iron = IRON.get(slot);
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        // Build on the server thread only; a singleplayer client thread reads whatever is built.
+        if (server != null && server.isSameThread()) RecipeValues.ensureIndexed(server);
+        if (RecipeValues.derivedValue(iron).isEmpty()) {
+            return IRON_RECIPE_SIXTEENTHS.get(slot) / 16.0;
+        }
         IN_REFERENCE.set(true);
         try {
-            return TradeEverythingApi.getValueSixteenths(new ItemStack(IRON.get(slot))) / 16.0;
+            return TradeEverythingApi.getValueSixteenths(new ItemStack(iron)) / 16.0;
         } finally {
             IN_REFERENCE.set(false);
         }
