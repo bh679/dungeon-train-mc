@@ -4731,6 +4731,7 @@
       "chat.dungeontrain.lucky_loot.bonus",
       "chat.dungeontrain.lucky_loot.vase_bonus",
       "chat.dungeontrain.lucky_loot.vault_bonus",
+      "gui.dungeontrain.custom_content.card.default.tag",
       "gui.dungeontrain.custom_content.info",
       "gui.dungeontrain.custom_content.dev_ignore",
       "gui.dungeontrain.custom_content.dev_ignore.tip",

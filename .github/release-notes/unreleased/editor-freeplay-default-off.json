@@ -12,7 +12,8 @@
   "highlights": [
     "New worlds start without Free Play by default, with no popup",
     "Turning your designs on still asks you to confirm each new world",
-    "Opening the Train Editor, or a vault's loot menu, no longer puts runs into Free Play"
+    "Opening the Train Editor, or a vault's loot menu, no longer puts runs into Free Play",
+    "Runs that count for your stats are now called Ranked"
   ],
   "pr": 2601,
   "date": "2026-11-10",
