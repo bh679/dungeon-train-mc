@@ -127,6 +127,27 @@ public final class LiveHeadViewer {
             && isViewerHat(mc.player.getItemBySlot(EquipmentSlot.HEAD));
     }
 
+    /**
+     * GUI y just below the box pinned top-right on the HUD (all its panes, and its caption while watching),
+     * or 0 when there is none. The status-effect icons move below this ({@link HudEffectsBelowViewer}). The
+     * streaming settings button is left out: it shows only in the inventory, where the HUD's icons are not drawn.
+     */
+    static int hudBottom(Minecraft mc) {
+        if (!shown(mc) || mc.options.hideGui) return 0;
+        if (LiveStreamController.get().streaming()) {
+            var panes = streamerPanes(mc);
+            if (panes.isEmpty()) return 0;
+            Box lowest = panes.get(panes.size() - 1).box();
+            return lowest.y() + lowest.h() + BORDER;
+        }
+        var window = mc.getWindow();
+        var panes = panes(window.getGuiScaledWidth(), window.getGuiScaledHeight(), LiveFeedClientConfig.headViewerWidth(false),
+            secondLive(), LiveFeedClientConfig.headViewerAtMaxSize(false));
+        if (panes.isEmpty()) return 0;
+        Box lowest = HeadViewerCaption.withCaption(panes.get(panes.size() - 1).box());
+        return lowest.y() + lowest.h() + BORDER;
+    }
+
     /** Watching: a HUD layer, under every screen and toast. */
     @SubscribeEvent
     public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
