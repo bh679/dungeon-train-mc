@@ -148,6 +148,7 @@
     "ServerChunkCacheWaitTimingMixin",
     "RapierPipelineRotationLockMixin",
     "LevelAcceleratorNoSyncLoadMixin",
+    "ServerChunkCacheWorldEdgeMixin",
     "SubLevelEntityCollisionNoLoadMixin",
     "EntityOnPosNoSyncLoadMixin",
     "StructureManagerNoSyncLoadMixin",
