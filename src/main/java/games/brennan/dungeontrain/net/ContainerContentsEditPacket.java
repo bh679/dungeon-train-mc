@@ -77,7 +77,12 @@ public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localP
         /** Switch one enchantment, named in {@code itemId}, on or off in a book's list. */
         TOGGLE_BOOK_ENCH,
         /** Every enchantment in a book's list on ({@code delta} 1, curses kept) or off (0). */
-        SET_BOOK_ENCH_ALL
+        SET_BOOK_ENCH_ALL,
+        /**
+         * Pack a shulker box entry from the loot prefab the author holds, or empty it when they hold no
+         * loot prefab. The prefab id comes from the server's view of the held item, never the packet.
+         */
+        SET_CONTENTS
     }
 
     public static final Type<ContainerContentsEditPacket> TYPE =

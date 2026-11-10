@@ -12,6 +12,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import games.brennan.dungeontrain.event.PrefabUseHandler;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -310,7 +311,8 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                 e.enchants() == null ? 0 : e.enchants().randomMax(),
                 e.enchants() == null ? 0 : e.enchants().levelMin(),
                 e.enchants() == null ? 0 : e.enchants().levelMax(),
-                BookEnchantsMenuOps.syncList(e.enchants())));
+                BookEnchantsMenuOps.syncList(e.enchants()),
+                e.hasContents() ? e.contents() : ""));
         }
         return new ContainerContentsSyncPacket(plot.key(), localPos, entries,
             pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link, vaultKey);
@@ -394,6 +396,7 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                 ResourceLocation potionId = null;
                 StoredBook book = null;
                 BookEnchants enchants = null;
+                String contents = null;
                 if (packet.itemId() != null && !packet.itemId().isEmpty()) {
                     id = ResourceLocation.tryParse(packet.itemId());
                     if (id == null) {
@@ -419,6 +422,8 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                     book = ContainerContentsBooks.bookOf(held, player.registryAccess());
                     // And an enchanted book keeps its enchantments.
                     enchants = ContainerContentsEnchants.enchantsOf(held);
+                    // And a loot prefab that is a shulker box adds a shulker packed from that prefab.
+                    contents = ContainerContentsEntry.isShulkerBox(id) ? PrefabUseHandler.lootPrefabIdOf(held) : null;
                 }
                 if (current.size() >= ContainerContentsPool.MAX_ENTRIES) {
                     actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.pool_full", ContainerContentsPool.MAX_ENTRIES),
@@ -426,7 +431,7 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                     return;
                 }
                 next = current.added(new ContainerContentsEntry(id, count, 1).withPotion(potionId).withBook(book)
-                    .withEnchants(enchants));
+                    .withEnchants(enchants).withContents(contents));
                 dirty = true;
             }
             case REMOVE -> {
@@ -627,6 +632,21 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                 if (idx < 0 || idx >= current.size()) return;
                 ContainerContentsEntry e = current.entries().get(idx);
                 next = current.replaced(idx, e.cyclePotionForm());
+                dirty = true;
+            }
+            case SET_CONTENTS -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                if (!e.isShulkerBox()) return;
+                String held = PrefabUseHandler.lootPrefabIdOf(player.getMainHandItem());
+                if (held != null && !LootPrefabStore.contains(held)) held = null;
+                if (java.util.Objects.equals(held, e.contents())) return;
+                next = current.replaced(idx, e.withContents(held));
+                actionBar(player, held == null
+                    ? Component.translatable("chat.dungeontrain.editor_bar.contents_menu.contents_cleared")
+                    : Component.translatable("chat.dungeontrain.editor_bar.contents_menu.contents_set", held),
+                    ChatFormatting.GREEN);
                 dirty = true;
             }
             case CYCLE_VAULT_KEY -> {

@@ -225,6 +225,11 @@ public final class ContainerContentsMenuInputHandler {
                 DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.TOGGLE_SCALE, plotKey, local, hit.index(), "", 0));
             }
+            case ENTRY_CONTENTS -> {
+                if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
+                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                    ContainerContentsEditPacket.Op.SET_CONTENTS, plotKey, local, hit.index(), "", 0));
+            }
             case ENTRY_POTION_FORM -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
                 DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(

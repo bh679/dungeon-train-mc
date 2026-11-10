@@ -67,13 +67,27 @@ public record ContainerContentsSyncPacket(
      * range ({@code BookEnchants}); max 0 when it has none. {@code bookLevelMin}..{@code bookLevelMax}
      * is the level range they roll at (0 = top level), and {@code bookEnchList} the builder's on/off
      * list, enchantment id to on, or {@code null} while the pool keeps the default rule.
+     * {@code contents} is the loot prefab a shulker box entry is packed from, {@code ""} when none.
      */
     public record Entry(String itemId, int count, int minCount, int weight,
                         boolean randomDurability, int durabilityChance,
                         boolean randomEnchantment, int enchantmentChance,
                         int slotOverride, String potionId, boolean scaleWithDistance,
                         int potionForm, String bookTitle, int bookEnchMin, int bookEnchMax,
-                        int bookLevelMin, int bookLevelMax, @Nullable Map<String, Boolean> bookEnchList) {
+                        int bookLevelMin, int bookLevelMax, @Nullable Map<String, Boolean> bookEnchList,
+                        String contents) {
+
+        /** Back-compat: an entry packed from no loot prefab. */
+        public Entry(String itemId, int count, int minCount, int weight,
+                     boolean randomDurability, int durabilityChance,
+                     boolean randomEnchantment, int enchantmentChance,
+                     int slotOverride, String potionId, boolean scaleWithDistance,
+                     int potionForm, String bookTitle, int bookEnchMin, int bookEnchMax,
+                     int bookLevelMin, int bookLevelMax, @Nullable Map<String, Boolean> bookEnchList) {
+            this(itemId, count, minCount, weight, randomDurability, durabilityChance,
+                randomEnchantment, enchantmentChance, slotOverride, potionId, scaleWithDistance,
+                potionForm, bookTitle, bookEnchMin, bookEnchMax, bookLevelMin, bookLevelMax, bookEnchList, "");
+        }
 
         /** Back-compat: random book enchantments at their top level, default list. */
         public Entry(String itemId, int count, int minCount, int weight,
@@ -202,6 +216,7 @@ public record ContainerContentsSyncPacket(
                     buf.writeBoolean(on);
                 });
             }
+            buf.writeUtf(e.contents() == null ? "" : e.contents(), 64);
         }
         if (linkedPrefabId == null || linkedPrefabId.isEmpty()) {
             buf.writeBoolean(false);
@@ -259,7 +274,7 @@ public record ContainerContentsSyncPacket(
                 for (int j = 0; j < listSize; j++) bookEnchList.put(buf.readUtf(256), buf.readBoolean());
             }
             entries.add(new Entry(id, count, minCount, weight, randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, bookTitle,
-                bookEnchMin, bookEnchMax, bookLevelMin, bookLevelMax, bookEnchList));
+                bookEnchMin, bookEnchMax, bookLevelMin, bookLevelMax, bookEnchList, buf.readUtf(64)));
         }
         String link = buf.readBoolean() ? buf.readUtf(64) : null;
         String vaultKey = buf.readBoolean() ? buf.readUtf(256) : null;
