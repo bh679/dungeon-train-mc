@@ -329,30 +329,181 @@ public final class CarriageContentsRegistry {
             }
         }
 
-        int m = effective.size();
+        List<Slot> slots = slotsOf(effective);
+        int m = slots.size();
+        int[] weightsOf = new int[m];
+        for (int i = 0; i < m; i++) weightsOf[i] = slots.get(i).weight(weights, carriageIndex);
+        double[] drawn = poolAdjustedWeights(slots, weightsOf, gateCtx, carriageIndex, sizeOk);
         int[] cumulative = new int[m];
         int total = 0;
         for (int i = 0; i < m; i++) {
-            String id = effective.get(i).id();
-            total += LiveTvWeighting.contentsWeight(id, weights.weightFor(id), carriageIndex);
+            total += drawn == null ? weightsOf[i] : (int) Math.round(drawn[i] * POOL_SHARE_SCALE);
             cumulative[i] = total;
         }
         long seed = worldSeed ^ ((long) carriageIndex * 0x9E3779B97F4A7C15L);
         Random rng = new Random(seed);
-        CarriageContents picked;
+        Slot pickedSlot;
         if (total <= 0) {
             warnAllZeroOnce();
-            picked = effective.get(rng.nextInt(m));
+            pickedSlot = slots.get(rng.nextInt(m));
         } else {
             int r = rng.nextInt(total);
-            CarriageContents tail = effective.get(m - 1);
-            CarriageContents found = tail;
+            Slot found = slots.get(m - 1);
             for (int i = 0; i < m; i++) {
-                if (r < cumulative[i]) { found = effective.get(i); break; }
+                if (r < cumulative[i]) { found = slots.get(i); break; }
             }
-            picked = found;
+            pickedSlot = found;
         }
+        CarriageContents picked = pickedSlot.pool() == null
+            ? pickedSlot.members().get(0)
+            : pickPooled(pickedSlot.members(), gateCtx, carriageIndex, rng);
         return new PickContext(picked, rng, false);
+    }
+
+    /**
+     * One entry of the top-level draw: a contents on its own, or every pooled group parent of one
+     * {@link CarriageContentsPools pool} sharing the pool's slot.
+     */
+    private record Slot(CarriageContentsPools.Pool pool, List<CarriageContents> members) {
+        int weight(CarriageContentsWeights weights, int carriageIndex) {
+            if (pool != null) return pool.weight();
+            String id = members.get(0).id();
+            return LiveTvWeighting.contentsWeight(id, weights.weightFor(id), carriageIndex);
+        }
+    }
+
+    /**
+     * The draw's weights when this carriage excludes some of a pool's groups, or null when it excludes none
+     * (the draw then runs on the plain weights, unchanged). Each such pool slot keeps exactly the chance its
+     * allowed groups had with every group allowed ({@link #keptShare} of its chance), so their rooms come up
+     * as often as on a carriage that excludes nothing; the excluded part goes to the carriage's other
+     * contents, in proportion to their weights. With nothing else to give it to, the pool keeps it.
+     */
+    private static double[] poolAdjustedWeights(List<Slot> slots, int[] w, GateContext gateCtx,
+                                                int carriageIndex, Predicate<String> sizeOk) {
+        int m = slots.size();
+        double[] kept = new double[m];
+        boolean partial = false;
+        double total = 0;
+        double rest = 0;
+        for (int i = 0; i < m; i++) {
+            Slot s = slots.get(i);
+            kept[i] = s.pool() == null ? 1.0 : keptShare(s, gateCtx, carriageIndex, sizeOk);
+            if (kept[i] < 1.0) partial = true;
+            total += Math.max(0, w[i]);
+            if (s.pool() == null) rest += Math.max(0, w[i]);
+        }
+        if (!partial || total <= 0) return null;
+        double pooledChance = 0;
+        for (int i = 0; i < m; i++) {
+            if (slots.get(i).pool() != null) pooledChance += Math.max(0, w[i]) / total * kept[i];
+        }
+        double[] out = new double[m];
+        for (int i = 0; i < m; i++) {
+            if (slots.get(i).pool() == null) {
+                out[i] = Math.max(0, w[i]);
+            } else if (rest <= 0 || pooledChance >= 1.0) {
+                out[i] = Math.max(0, w[i]);
+            } else {
+                // Solve for the weight that gives this slot chance (w/total)·kept against the others.
+                out[i] = Math.max(0, w[i]) / total * kept[i] * rest / (1.0 - pooledChance);
+            }
+        }
+        return out;
+    }
+
+    /** Units per weight point in a draw where some pool keeps only part of its slot. */
+    private static final int POOL_SHARE_SCALE = 1000;
+
+    /**
+     * The part of {@code slot}'s pool weight this carriage keeps: what its allowed groups offer here over what
+     * every group of the pool would offer here, gates applied to both. 1 when the carriage excludes none of
+     * the pool's groups. Groups gated out here count in neither sum, so a gate still moves weight inside the
+     * pool as it always did; only an allow-list exclusion gives weight back to the rest of the carriage.
+     */
+    private static double keptShare(Slot slot, GateContext gateCtx, int carriageIndex, Predicate<String> sizeOk) {
+        CarriageContentsWeights weights = CarriageContentsWeights.current();
+        double all = 0;
+        double allowed = 0;
+        java.util.Set<String> here = new java.util.HashSet<>();
+        for (CarriageContents c : slot.members()) here.add(c.id());
+        for (String member : slot.pool().members()) {
+            if (find(member).isEmpty() || !sizeOk.test(member)) continue;
+            if (gateCtx != null && !gateCtx.allows(weights.gateFor(member))) continue;
+            double offered = CarriageContentsPools.offeredShare(
+                groupWeight(member, weights.weightFor(member), carriageIndex),
+                offeredWeight(member, gateCtx, carriageIndex),
+                offeredWeight(member, null, carriageIndex));
+            all += offered;
+            if (here.contains(member)) allowed += offered;
+        }
+        return all <= 0 ? 1.0 : Math.min(1.0, allowed / all);
+    }
+
+    /** {@code effective} as draw slots, in order, with each pool's members folded into its first one's place. */
+    private static List<Slot> slotsOf(List<CarriageContents> effective) {
+        List<Slot> slots = new ArrayList<>(effective.size());
+        java.util.Map<String, List<CarriageContents>> pooled = new java.util.HashMap<>();
+        for (CarriageContents c : effective) {
+            CarriageContentsPools.Pool pool = CarriageContentsPools.poolOf(c.id());
+            if (pool == null) {
+                slots.add(new Slot(null, List.of(c)));
+                continue;
+            }
+            List<CarriageContents> members = pooled.get(pool.id());
+            if (members == null) {
+                members = new ArrayList<>();
+                pooled.put(pool.id(), members);
+                slots.add(new Slot(pool, members));
+            }
+            members.add(c);
+        }
+        return slots;
+    }
+
+    /**
+     * The pooled group parent a won pool slot resolves to. Each group's weights.json weight is how common it
+     * is with all of its rooms open; rooms its gates shut here take their share of that weight with them
+     * ({@link CarriageContentsPools#offeredShare}). So adding rooms to a group never makes the group itself
+     * more common, and a group weighted at its full room total gives every room the chance it had when all
+     * the pooled groups were one group.
+     */
+    private static CarriageContents pickPooled(List<CarriageContents> members, GateContext gateCtx,
+                                               int carriageIndex, Random rng) {
+        CarriageContentsWeights weights = CarriageContentsWeights.current();
+        double[] offered = new double[members.size()];
+        for (int i = 0; i < offered.length; i++) {
+            String id = members.get(i).id();
+            offered[i] = CarriageContentsPools.offeredShare(
+                groupWeight(id, weights.weightFor(id), carriageIndex),
+                offeredWeight(id, gateCtx, carriageIndex),
+                offeredWeight(id, null, carriageIndex));
+        }
+        return members.get(CarriageContentsPools.pickMember(offered, rng));
+    }
+
+    /** Total weight of the pool {@link #resolveGroup} would draw from for {@code parentId} here. */
+    private static int offeredWeight(String parentId, GateContext gateCtx, int carriageIndex) {
+        Optional<CarriageContentsGroup> groupOpt = CarriageContentsGroupStore.get(parentId);
+        if (groupOpt.isEmpty() || groupOpt.get().isEmpty()) {
+            return groupWeight(parentId, CarriageContentsWeights.current().weightFor(parentId), carriageIndex);
+        }
+        CarriageContentsGroup group = groupOpt.get();
+        int total = groupWeight(parentId, group.selfWeight(), carriageIndex);
+        for (CarriageContentsGroup.Member m : eligibleMembers(group, gateCtx)) {
+            total += groupWeight(m.id(), m.weight(), carriageIndex);
+        }
+        return total;
+    }
+
+    /** The members of {@code group} whose own gates admit {@code gateCtx} (all of them without one). */
+    private static List<CarriageContentsGroup.Member> eligibleMembers(CarriageContentsGroup group, GateContext gateCtx) {
+        if (gateCtx == null) return group.members();
+        List<CarriageContentsGroup.Member> gated = new ArrayList<>(group.members().size());
+        for (CarriageContentsGroup.Member m : group.members()) {
+            if (memberAllows(gateCtx, m)) gated.add(m);
+        }
+        return gated;
     }
 
     /**
@@ -429,17 +580,8 @@ public final class CarriageContentsRegistry {
         // Members eligible for the current spawn context — the per-member gate (or its linked Stage's
         // gate) filters here. Strict: an emptied member pool falls through to self-only, never the
         // ungated list (see method doc).
-        List<CarriageContentsGroup.Member> members = group.members();
-        if (gateCtx != null) {
-            List<CarriageContentsGroup.Member> gated = new ArrayList<>(members.size());
-            for (CarriageContentsGroup.Member m : members) {
-                if (memberAllows(gateCtx, m)) {
-                    gated.add(m);
-                }
-            }
-            if (members.size() != gated.size() && gated.isEmpty()) warnGroupGateEmptyOnce(picked.id());
-            members = gated;
-        }
+        List<CarriageContentsGroup.Member> members = eligibleMembers(group, gateCtx);
+        if (members.isEmpty() && !group.members().isEmpty()) warnGroupGateEmptyOnce(picked.id());
 
         // Pool: synthetic self + every eligible member, no allow-list filter.
         // Self-weight is read from the group sidecar (defaults to
@@ -584,6 +726,7 @@ public final class CarriageContentsRegistry {
 
     /** Reload custom contents from the bundled classpath scan + the per-install config dir. */
     public static synchronized void reload() {
+        CarriageContentsPools.clearCache();
         CUSTOMS.clear();
         customsChanged();
         int bundled = loadBundledScan();

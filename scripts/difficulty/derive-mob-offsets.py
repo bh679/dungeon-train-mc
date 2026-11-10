@@ -41,7 +41,7 @@ HEART_BLOCK = "minecraft:creaking_heart"
 HEART_MOB = "minecraft:creaking"
 
 # Kept in step with NaturalSpawnLevelGate.GATED_NAMESPACES.
-GATED_NAMESPACES = ("luminous_monsters",)
+GATED_NAMESPACES = ("luminous_monsters", "creeperoverhaul")
 
 TABLE_START = "private static final Map<String, Integer> OFFSETS = Map.ofEntries("
 TABLE_RE = re.compile(re.escape(TABLE_START) + r"(.*?)\n(\s*)\);", re.S)

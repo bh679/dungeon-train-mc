@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 0,
+  "variants": [
+    {
+      "id": "endslime",
+      "weight": 5,
+      "phases": [
+        "VOID",
+        "END",
+        "UPSIDE_DOWN",
+        "SPHERES",
+        "STACKS",
+        "FAR_LANDS"
+      ]
+    },
+    {
+      "id": "shadowwalker",
+      "weight": 4,
+      "minLevel": 7,
+      "phases": [
+        "VOID",
+        "END",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "FLOATING",
+        "FAR_LANDS",
+        "DEEPER_DARK"
+      ]
+    },
+    {
+      "id": "shadowwalker2",
+      "weight": 1,
+      "minLevel": 8,
+      "phases": [
+        "VOID",
+        "END",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "FLOATING",
+        "FAR_LANDS",
+        "DEEPER_DARK"
+      ]
+    },
+    {
+      "id": "shulker",
+      "weight": 2,
+      "minLevel": 20
+    }
+  ]
+}

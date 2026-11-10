@@ -239,7 +239,10 @@ public final class ThirdPartyMixinTargets {
                             + "Lnet/minecraft/world/level/portal/DimensionTransition;")),
                 DD + "world.otherside.OthersideDimension", List.of(
                     staticField("OTHERSIDE_PORTAL", "Lnet/neoforged/neoforge/registries/DeferredHolder;"))),
-            OTHERSIDE_REAL, false))
+            OTHERSIDE_REAL, false)),
+        Map.entry(MIXIN_PACKAGE + "deeperdarker.SculkSnapperNoMendingMixin", new Spec(
+            Map.of(DD + "content.entities.SculkSnapper", List.of(method("tick", "()V"))),
+            Map.of(), "tamed sculk snappers can drop Mending books", false))
     );
 
     /** Mod id by package prefix, for every class a {@link Spec} checks. */

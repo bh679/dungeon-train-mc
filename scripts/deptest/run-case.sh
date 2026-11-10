@@ -101,6 +101,11 @@ resolve() {
     vb)       cached "maven.modrinth/vanillabackport" "$(prop vanillabackport_version)" ;;
     dd)       cached "maven.modrinth/deeperdarker" "$(prop deeperdarker_version)" ;;
     lm)       cached "maven.modrinth/luminous-monsters" "$(prop luminous_monsters_version)" ;;
+    # Creeper Overhaul + its libraries — required; biome creepers in carriages.
+    co)       cached "maven.modrinth/creeper-overhaul" "$(prop creeperoverhaul_version)" ;;
+    gl)       cached "maven.modrinth/geckolib"         "$(prop geckolib_version)" ;;
+    rlib)     cached "maven.modrinth/resourceful-lib"  "$(prop resourcefullib_version)" ;;
+    rcfg)     cached "maven.modrinth/resourceful-config" "$(prop resourcefulconfig_version)" ;;
     ppro)     cached "maven.modrinth/piglin-proliferation" "$(prop piglinproliferation_version)" ;;
     pf)       cached "maven.modrinth/platform"        "$(prop platform_version)" ;;
     # Exposure + its Polaroid add-on — required; the cameras, film and photographs.
