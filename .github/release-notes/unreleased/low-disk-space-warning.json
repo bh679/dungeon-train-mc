@@ -1,0 +1,21 @@
+{
+  "id": "low-disk-space-warning",
+  "version": "0.1757.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "ui"
+  ],
+  "title": "Low storage warning",
+  "summary": "The game now warns you when your drive is nearly full, before it runs out of space and crashes mid-run.",
+  "highlights": [
+    "A warning pops up when your drive has less than 5 GB free, so you can clear space before it becomes a problem.",
+    "Under 1 GB free, a red warning repeats every couple of minutes telling you to save and quit.",
+    "Server owners get the same warning for the server's drive."
+  ],
+  "pr": 2592,
+  "date": "2026-11-10",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
