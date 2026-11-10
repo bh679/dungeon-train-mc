@@ -5612,6 +5612,7 @@
   "gui.dungeontrain.translate.edit.blocked.missing_vars": "Nel tuo testo manca %s. Il gioco lo inserisce, quindi la riga ne ha bisogno.",
   "gui.dungeontrain.translate.edit.blocked.extra_vars": "Il tuo testo ha %s che l'inglese non ha. Il gioco non ha niente da metterci.",
   "chat.dungeontrain.free_play.cause.custom_content": "Questo mondo usa contenuti del treno personalizzati.",
+  "chat.dungeontrain.free_play.cause.relay_override": "Il gioco è impostato per usare un server diverso da quello di Dungeon Train.",
   "chat.dungeontrain.custom_content.packages": "Contenuti personalizzati da: %s",
   "chat.dungeontrain.custom_content.disable_link": "Fai clic qui per disattivare i contenuti personalizzati in questo mondo e giocare normalmente.",
   "chat.dungeontrain.custom_content.enable_link": "Fai clic qui per riattivarli.",

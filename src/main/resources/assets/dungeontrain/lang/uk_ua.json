@@ -4179,6 +4179,7 @@
   "gui.dungeontrain.translate.sent.rejected": "Не використано",
   "gui.dungeontrain.translate.submit.blocked.nothing_new": "Усе, що ти змінив, уже надіслано.",
   "chat.dungeontrain.free_play.cause.custom_content": "Цей світ використовує користувацький вміст потяга.",
+  "chat.dungeontrain.free_play.cause.relay_override": "Гру налаштовано на використання іншого сервера, а не сервера Dungeon Train.",
   "chat.dungeontrain.custom_content.packages": "Користувацький вміст від: %s",
   "chat.dungeontrain.custom_content.disable_link": "Натисни тут, щоб вимкнути користувацький вміст для цього світу і грати як звично.",
   "chat.dungeontrain.custom_content.enable_link": "Натисни тут, щоб увімкнути його знову.",

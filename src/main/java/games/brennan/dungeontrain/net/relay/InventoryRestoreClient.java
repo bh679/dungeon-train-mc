@@ -12,6 +12,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.security.PublicKey;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +28,9 @@ import java.util.function.Consumer;
  *   200 { "ok": true, "restore": { "id": "r_…", "inventory": [Stack], "armor": [Stack],
  *                                  "offhand": [Stack], "xpLevels": 32, "run": Run } }
  *   200 { "ok": true, "restore": null }
+ *   Only the signed copy is read: "signed" is {"v":1,"uuid":"&lt;no-dash&gt;","exp":&lt;ms&gt;,"restore":{…}} as a
+ *   string and "sig" its Ed25519 signature ({@link RestoreSignature}). Unsigned, wrong player or
+ *   expired answers are ignored.
  *   Stack = { "slot": 0, "id": "minecraft:…", "count": 1, "nbt": "&lt;SNBT&gt;" }
  *   Run   = { "x": 9140.6, "runState": "&lt;SNBT of dungeontrain:player_run_state&gt;",
  *             "longWayBackMaxCarriage": 237 }   (optional; returns the player to that depth)
@@ -103,7 +107,8 @@ public final class InventoryRestoreClient {
                                 LOGGER.debug("[DungeonTrain] restore fetch -> HTTP {}", resp.statusCode());
                                 return;
                             }
-                            Restore restore = parse(resp.body());
+                            Restore restore = parseSigned(resp.body(), player, System.currentTimeMillis(),
+                                RestoreSignature.relayKey());
                             if (restore != null) callback.accept(restore);
                         } catch (Throwable t) {
                             LOGGER.debug("[DungeonTrain] restore parse failed: {}", t.toString());
@@ -144,8 +149,38 @@ public final class InventoryRestoreClient {
     }
 
     /**
-     * Parse the relay body, or null when there is no usable restore — none pending, or a shape we
-     * don't understand. Package-private so the wire contract is pinned in a test.
+     * The restore in a relay answer, or null unless it is signed by {@code key}, addressed to
+     * {@code player} and not yet expired at {@code nowMs}. The restore is read out of the signed
+     * string itself, so nothing outside the signature is ever trusted.
+     */
+    static Restore parseSigned(String body, UUID player, long nowMs, PublicKey key) {
+        JsonElement root = JsonParser.parseString(body);
+        if (!root.isJsonObject()) return null;
+        JsonObject o = root.getAsJsonObject();
+        if (!o.has("signed") || !o.get("signed").isJsonPrimitive() || !o.has("sig") || !o.get("sig").isJsonPrimitive()) {
+            return null;
+        }
+        String signed = o.get("signed").getAsString();
+        if (!RestoreSignature.verify(key, signed, o.get("sig").getAsString())) {
+            LOGGER.warn("[DungeonTrain] Ignoring a restore with a bad signature");
+            return null;
+        }
+        JsonElement inner = JsonParser.parseString(signed);
+        if (!inner.isJsonObject()) return null;
+        JsonObject s = inner.getAsJsonObject();
+        if (!s.has("v") || s.get("v").getAsInt() != 1) return null;
+        if (!s.has("uuid") || !noDashes(player).equals(s.get("uuid").getAsString())) return null;
+        if (!s.has("exp") || s.get("exp").getAsLong() < nowMs) return null;
+        JsonObject wrapped = new JsonObject();
+        wrapped.addProperty("ok", true);
+        if (s.has("restore")) wrapped.add("restore", s.get("restore"));
+        return parse(wrapped.toString());
+    }
+
+    /**
+     * The restore object's shape, or null when there is no usable restore — none pending, or a shape
+     * we don't understand. Only reached through {@link #parseSigned}; package-private so the wire
+     * contract is pinned in a test.
      */
     static Restore parse(String body) {
         JsonElement root = JsonParser.parseString(body);

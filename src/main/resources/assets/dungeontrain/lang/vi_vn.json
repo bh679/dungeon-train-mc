@@ -5546,6 +5546,7 @@
   "gui.dungeontrain.translate.edit.blocked.missing_vars": "Văn bản của bạn thiếu %s. Trò chơi điền phần đó vào, nên dòng này cần nó.",
   "gui.dungeontrain.translate.edit.blocked.extra_vars": "Văn bản của bạn có %s mà tiếng Anh không có. Trò chơi không có gì để điền vào đó.",
   "chat.dungeontrain.free_play.cause.custom_content": "Thế giới này đang dùng nội dung đoàn tàu tùy chỉnh.",
+  "chat.dungeontrain.free_play.cause.relay_override": "Trò chơi được đặt để dùng một máy chủ khác thay vì máy chủ của Dungeon Train.",
   "chat.dungeontrain.custom_content.packages": "Nội dung tùy chỉnh từ: %s",
   "chat.dungeontrain.custom_content.disable_link": "Nhấp vào đây để tắt nội dung tùy chỉnh cho thế giới này và chơi bình thường.",
   "chat.dungeontrain.custom_content.enable_link": "Nhấp vào đây để bật lại.",
