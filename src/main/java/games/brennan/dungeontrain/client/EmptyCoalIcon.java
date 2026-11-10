@@ -13,7 +13,7 @@ import java.io.InputStream;
 
 /**
  * The faded coal an empty Drifting Engine Block input shows: the game's own coal item, every pixel of
- * it one flat grey a shade lighter than the slot.
+ * it one flat grey a shade darker than the slot (the slot is #8B8B8B).
  *
  * <p>Built at runtime from whatever coal texture the game has loaded rather than shipped as a copy, so
  * the outline is exactly coal's — a resource pack's coal included — and none of the art is ours to
@@ -25,7 +25,7 @@ final class EmptyCoalIcon {
     private static final ResourceLocation COAL = ResourceLocation.withDefaultNamespace("textures/item/coal.png");
     private static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dynamic/empty_slot_coal");
     /** Opaque, ABGR as NativeImage stores it (a grey, so the channel order does not matter). */
-    private static final int GREY = 0xFFA0A0A0;
+    private static final int GREY = 0xFF7F7F7F;
 
     private static int width, height;
 
