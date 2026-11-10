@@ -55,7 +55,7 @@ public final class ServerLowDiskSpaceWarning {
         if (now - lastCheckMs < CHECK_INTERVAL_MS || !IN_FLIGHT.compareAndSet(false, true)) return;
         lastCheckMs = now;
 
-        Path worldDir = server.getWorldPath(LevelResource.ROOT);
+        Path worldDir = server.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize();
         boolean dev = DungeonTrain.isDevBuild();
         CompletableFuture.supplyAsync(() -> DiskSpace.usableBytes(worldDir, dev), Util.ioPool())
             .whenCompleteAsync((free, error) -> {

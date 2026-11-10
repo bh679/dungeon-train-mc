@@ -36,17 +36,22 @@ public final class LowDiskSpaceWarning {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final long CHECK_INTERVAL_MS = 30_000L;
+    /** First check waits this long after the loading screen clears, past the join plaques and chat. */
+    private static final long SETTLE_MS = 10_000L;
 
     private static final AtomicBoolean IN_FLIGHT = new AtomicBoolean(false);
 
     private static long lastCheckMs;
+    /** When the loading screen and intro last cleared; 0 while they're up. */
+    private static long inGameSinceMs;
     private static DiskSpace.Alarm alarm = DiskSpace.Alarm.START;
 
     private LowDiskSpaceWarning() {}
 
     @SubscribeEvent
     public static void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
-        lastCheckMs = 0; // check as soon as the world is up
+        lastCheckMs = 0; // check soon after the world is up
+        inGameSinceMs = 0;
     }
 
     @SubscribeEvent
@@ -58,11 +63,18 @@ public final class LowDiskSpaceWarning {
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
+        // Behind the loading screen or intro cinematic the toast would be missed; wait them out.
         long now = System.currentTimeMillis();
+        if (CinematicPreloadGate.isActive() || CinematicCameraController.isActive()) {
+            inGameSinceMs = 0;
+            return;
+        }
+        if (inGameSinceMs == 0) inGameSinceMs = now;
+        if (now - inGameSinceMs < SETTLE_MS) return;
         if (now - lastCheckMs < CHECK_INTERVAL_MS || !IN_FLIGHT.compareAndSet(false, true)) return;
         lastCheckMs = now;
 
-        Path gameDir = mc.gameDirectory.toPath();
+        Path gameDir = mc.gameDirectory.toPath().toAbsolutePath();
         boolean dev = DungeonTrain.isDevBuild();
         CompletableFuture.supplyAsync(() -> DiskSpace.usableBytes(gameDir, dev), Util.ioPool())
             .whenCompleteAsync((free, error) -> {
