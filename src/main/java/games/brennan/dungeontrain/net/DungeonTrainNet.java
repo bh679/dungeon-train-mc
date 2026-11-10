@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "179";
+    public static final String PROTOCOL_VERSION = "180";
 
     private DungeonTrainNet() {}
 
@@ -441,6 +441,8 @@ public final class DungeonTrainNet {
         registrar.playToClient(CometPacket.TYPE, CometPacket.STREAM_CODEC, CometPacket::handle);
         // A shower of far-off comets around one about to strike the train (lap 0). See client/DistantComets.
         registrar.playToClient(CometShowerPacket.TYPE, CometShowerPacket.STREAM_CODEC, CometShowerPacket::handle);
+        // Login: which mobs the client holds photos of, for the shared mob collections. See compat/photo/SharedPhotoCriteria.
+        registrar.playToServer(PhotoAlbumReportPacket.TYPE, PhotoAlbumReportPacket.STREAM_CODEC, PhotoAlbumReportPacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

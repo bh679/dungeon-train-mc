@@ -11,7 +11,9 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -79,5 +81,30 @@ class SharedPhotoCriteriaTest {
         assertTrue(SharedPhotoCriteria.inGroup(ResourceLocation.fromNamespaceAndPath("dungeontrain", "enchiridion/family_photo")));
         assertFalse(SharedPhotoCriteria.inGroup(ResourceLocation.fromNamespaceAndPath("dungeontrain", "enchiridion/nature_documentary")));
         assertFalse(SharedPhotoCriteria.inGroup(ResourceLocation.fromNamespaceAndPath("other", "enchiridion/family_photo")));
+    }
+    private static final String MOST_WANTED = "enchiridion/most_wanted";
+    private static final String FAMILY = "enchiridion/family_photo";
+
+    @Test
+    @DisplayName("A subset list has a photo when its own album or Most Wanted's holds one; Most Wanted only its own")
+    void hasPhoto() {
+        Map<String, Set<String>> photos = Map.of(FAMILY, Set.of("minecraft:husk"), MOST_WANTED, Set.of("minecraft:drowned"));
+        assertTrue(SharedPhotoCriteria.hasPhoto(photos, FAMILY, "minecraft:husk"));
+        assertTrue(SharedPhotoCriteria.hasPhoto(photos, FAMILY, "minecraft:drowned"));
+        assertFalse(SharedPhotoCriteria.hasPhoto(photos, FAMILY, "minecraft:zombie"));
+        assertFalse(SharedPhotoCriteria.hasPhoto(photos, MOST_WANTED, "minecraft:husk"));
+        assertFalse(SharedPhotoCriteria.hasPhoto(Map.of(), FAMILY, "minecraft:husk"));
+    }
+
+    @Test
+    @DisplayName("The one-time revoke takes only photoless ticks, only from a finished subset list")
+    void photolessTicks() {
+        Map<String, Set<String>> photos = Map.of(FAMILY, Set.of("minecraft:husk"), MOST_WANTED, Set.of("minecraft:drowned"));
+        List<String> ticked = List.of("minecraft:husk", "minecraft:drowned", "minecraft:zombie");
+        assertEquals(List.of("minecraft:zombie"), SharedPhotoCriteria.photolessTicks(FAMILY, true, ticked, photos));
+        assertEquals(List.of(), SharedPhotoCriteria.photolessTicks(FAMILY, false, ticked, photos), "not finished");
+        assertEquals(List.of(), SharedPhotoCriteria.photolessTicks(MOST_WANTED, true, ticked, photos), "Most Wanted untouched");
+        assertEquals(List.of(), SharedPhotoCriteria.photolessTicks(FAMILY, true,
+                List.of("minecraft:husk", "minecraft:drowned"), photos), "every photo held");
     }
 }
