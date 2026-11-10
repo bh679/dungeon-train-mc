@@ -62,7 +62,7 @@ final class VaultStatBoostTest {
     @DisplayName("a diamond sword takes each tier's damage and speed")
     void swordAtEachTier() {
         ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
-        double[][] expected = {{8.4, 1.76}, {9.8, 1.92}, {7.0, 1.6}};
+        double[][] expected = {{8.4, 1.76}, {9.8, 1.92}, {8.4, 1.76}};
         Tier[] tiers = {Tier.REGULAR, Tier.OMINOUS, Tier.GREEN};
         for (int i = 0; i < tiers.length; i++) {
             ItemStack boosted = VaultStatBoost.boosted(sword, tiers[i]);
@@ -75,7 +75,7 @@ final class VaultStatBoostTest {
     @DisplayName("a diamond chestplate takes each tier's armor and toughness")
     void chestplateAtEachTier() {
         ItemStack chest = new ItemStack(Items.DIAMOND_CHESTPLATE);
-        double[][] expected = {{9.6, 2.2}, {11.2, 2.4}, {8.0, 2.0}};
+        double[][] expected = {{9.6, 2.2}, {11.2, 2.4}, {9.6, 2.2}};
         Tier[] tiers = {Tier.REGULAR, Tier.OMINOUS, Tier.GREEN};
         for (int i = 0; i < tiers.length; i++) {
             ItemStack boosted = VaultStatBoost.boosted(chest, tiers[i]);
@@ -111,13 +111,6 @@ final class VaultStatBoostTest {
         stack.set(DataComponents.ATTRIBUTE_MODIFIERS, mods);
 
         assertSame(stack, VaultStatBoost.boosted(stack, Tier.OMINOUS));
-    }
-
-    @Test
-    @DisplayName("a green vault multiplies nothing: its reward is rolled further along the train instead")
-    void greenTierUnscaled() {
-        ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
-        assertSame(sword, VaultStatBoost.boosted(sword, Tier.GREEN));
     }
 
     @Test

@@ -49,7 +49,6 @@
     { "id": "minecraft:blaze_spawn_egg", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:creaking_spawn_egg", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:sulfur_cube_spawn_egg", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-    { "id": "vista:mirror", "count": 1, "weight": 12, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:potion", "count": 2, "weight": 316, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "potion": "minecraft:luck" },
     { "id": "minecraft:potion", "count": 2, "weight": 158, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "potion": "dungeontrain:strong_luck" },
     { "id": "minecraft:splash_potion", "count": 2, "weight": 243, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "potion": "minecraft:luck" },

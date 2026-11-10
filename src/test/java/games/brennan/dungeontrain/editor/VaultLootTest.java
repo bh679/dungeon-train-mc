@@ -275,7 +275,7 @@ final class VaultLootTest {
     @DisplayName("the green vault keeps the heavy core and mace at their per-opening odds, and the spawn eggs at their weights")
     void greenVaultRaritiesKeepTheirOdds() {
         ContainerContentsPool green = VaultLoot.defaultPool(VaultLoot.GREEN_KEY);
-        assertEquals(13699, green.totalWeight());
+        assertEquals(13687, green.totalWeight());
         assertEquals(40, entry(green, "minecraft", "heavy_core").weight());
         assertEquals(20, entry(green, "minecraft", "mace").weight());
         assertEquals(22, green.entries().stream().filter(e -> e.itemId().getPath().endsWith("_spawn_egg"))
@@ -283,14 +283,15 @@ final class VaultLootTest {
     }
 
     @Test
-    @DisplayName("the 2026-11-10 rebalance: green drops four items, gains a bow, fewer cameras, more enchanted apples")
+    @DisplayName("the 2026-11-10 rebalance: green drops five items, gains a bow, fewer cameras, more enchanted apples")
     void greenVaultRebalance() {
         ContainerContentsPool green = VaultLoot.defaultPool(VaultLoot.GREEN_KEY);
         Set<ResourceLocation> removed = Set.of(
             ResourceLocation.fromNamespaceAndPath("dungeontrain", "live_headpiece"),
             ResourceLocation.withDefaultNamespace("emerald_block"),
             ResourceLocation.withDefaultNamespace("flow_armor_trim_smithing_template"),
-            ResourceLocation.withDefaultNamespace("music_disc_creator"));
+            ResourceLocation.withDefaultNamespace("music_disc_creator"),
+            ResourceLocation.fromNamespaceAndPath("vista", "mirror"));
         assertTrue(green.entries().stream().noneMatch(e -> removed.contains(e.itemId())));
         assertEquals(entry(green, "minecraft", "crossbow").weight(), entry(green, "minecraft", "bow").weight());
         assertEquals(195, entry(green, "exposure_polaroid", "instant_camera").weight());
@@ -388,10 +389,11 @@ final class VaultLootTest {
     }
 
     @Test
-    @DisplayName("a green vault rolls 2000 carriages further from spawn, either side of it")
+    @DisplayName("a green vault rolls 20 levels further from spawn, either side of it")
     void greenDiffMovesAwayFromSpawn() {
-        assertEquals(2000, VaultLoot.greenDiff(0));
-        assertEquals(2150, VaultLoot.greenDiff(150));
-        assertEquals(-2150, VaultLoot.greenDiff(-150));
+        assertEquals(400, VaultLoot.greenDiff(0, 20));
+        assertEquals(550, VaultLoot.greenDiff(150, 20));
+        assertEquals(-550, VaultLoot.greenDiff(-150, 20));
+        assertEquals(1150, VaultLoot.greenDiff(150, 50));
     }
 }

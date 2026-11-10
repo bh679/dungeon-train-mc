@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.block.VaultGreen;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -59,10 +60,11 @@ public final class VaultLoot {
     public static final String GREEN_PREFAB = "green_trial_vault";
 
     /**
-     * How many carriages further along the train a Dungeon Trial (green) vault's reward is rolled:
-     * its stats, enchantment cap and potion strength come out as if found that much deeper.
+     * How many difficulty levels deeper a Dungeon Trial (green) vault's reward is rolled: its stats,
+     * enchantment cap and potion strength come out as if found that many levels further along the train.
+     * Its {@code VaultStatBoost} multiplier then applies on top.
      */
-    public static final int GREEN_CARRIAGE_BONUS = 2000;
+    public static final int GREEN_LEVEL_BONUS = 20;
 
     /** Sub-compound of the block entity's {@code NeoForgeData} holding the pool and its roll frame. */
     static final String TAG_VAULT = "dungeontrain_vault";
@@ -109,11 +111,13 @@ public final class VaultLoot {
     }
 
     /**
-     * {@code diff} moved {@link #GREEN_CARRIAGE_BONUS} carriages further from spawn. The difficulty
-     * tier reads the distance either side of spawn, so a negative index moves down, not up. Pure.
+     * {@code diff} moved {@link #GREEN_LEVEL_BONUS} levels ({@code carriagesPerTier} carriages each) further
+     * from spawn. The difficulty tier reads the distance either side of spawn, so a negative index moves
+     * down, not up. Pure.
      */
-    static int greenDiff(int diff) {
-        return diff >= 0 ? diff + GREEN_CARRIAGE_BONUS : diff - GREEN_CARRIAGE_BONUS;
+    static int greenDiff(int diff, int carriagesPerTier) {
+        int shift = GREEN_LEVEL_BONUS * carriagesPerTier;
+        return diff >= 0 ? diff + shift : diff - shift;
     }
 
     /** The key after {@code key} in {@link #KEY_CYCLE}; an unknown key starts the cycle over. */
@@ -255,7 +259,7 @@ public final class VaultLoot {
         long seed = rollSeed(vault.getLong(TAG_SEED), player, pass);
         int carriage = vault.getInt(TAG_CARRIAGE);
         int stored = vault.getInt(TAG_DIFF);
-        int diff = isGreenKey(pool.vaultKey()) ? greenDiff(stored) : stored;
+        int diff = isGreenKey(pool.vaultKey()) ? greenDiff(stored, DungeonTrainConfig.getCarriagesPerTier()) : stored;
         // At least one item: vanilla refuses the key on an empty reward, and the roll is the same
         // for this player every time, so an empty one would lock them out of this vault for good.
         ContainerContentsPool atLeastOne = pool.withFillMin(Math.max(1, pool.fillMin()));
