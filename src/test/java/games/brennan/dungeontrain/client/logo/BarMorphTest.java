@@ -52,14 +52,15 @@ class BarMorphTest {
     }
 
     @Test
-    @DisplayName("the track runs on from the bar's end, and its loop hangs from the top line over the bar's middle")
+    @DisplayName("the track runs on from the bar's end, and spirals in to a loop over the bar's middle")
     void track() {
         LogoTrack track = BarMorph.TRACK;
         double[] end = track.point(BarMorph.TOTAL);
         assertEquals(BarMorph.TOTAL, end[0], 1e-9);
         assertEquals(0, end[1], 1e-9);
         double[] entry = track.point(track.loopStart);
-        assertEquals(Math.PI, entry[2], 1e-6, "heading back left into the loop");
+        assertEquals(Math.PI, Math.floorMod(Math.round(entry[2] * 1e6), Math.round(2 * Math.PI * 1e6)) / 1e6, 1e-5,
+                "heading back left into the loop (after however many turns of spiral)");
         assertEquals(BarMorph.TOTAL / 2, entry[0], 0.01);
         assertEquals(track.loopX, entry[0], 1e-9);
         double[] round = track.point(track.loopStart + Math.PI * LogoTrack.LOOP_R);

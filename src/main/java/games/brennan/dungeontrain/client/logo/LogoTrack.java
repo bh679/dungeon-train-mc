@@ -3,9 +3,10 @@ package games.brennan.dungeontrain.client.logo;
 /**
  * The track the loading bar's carriages drive off along once loaded, in the bar's own world units
  * (the bar lies on y = 0 from x = 0 to {@code barLength}, y up). On past the bar's end, a bend up,
- * a climb, a bend back, a run back left along the top, then a loop: a circle of radius
- * {@link #LOOP_R} hanging from the top line, whose circumference the eight carriages and their gaps
- * fill exactly, so the train closes into a ring.
+ * a climb, a bend back and a run back left along the top to over the bar's middle; then it spirals
+ * in, one wide turn round the loading area whose quarter-turns tighten ({@link #SPIRAL}), straight
+ * into a loop: a circle of radius {@link #LOOP_R}, whose circumference the eight carriages and their
+ * gaps fill exactly, so the train closes into a ring.
  *
  * <p>Sampled once into a table of points with their exact arc lengths; {@link #point} interpolates
  * it (and runs straight on past either end).</p>
@@ -16,7 +17,9 @@ final class LogoTrack {
     static final double LOOP_R = 2 * LogoRingGeometry.R;
     private static final double RUN_ON = 0.5;
     private static final double BEND_R = 0.8;
-    private static final double TOP_Y = 2.6;
+    private static final double TOP_Y = 2.85;
+    /** The spiral's quarter-turn radii, tightening towards the loop's own. */
+    private static final double[] SPIRAL = { 2.5, 2.3, 2.1, 1.9 };
     private static final double STEP = 0.004;
 
     private final double[] xs, ys, headings, lengths;
@@ -32,6 +35,7 @@ final class LogoTrack {
         b.line(TOP_Y - 2 * BEND_R);                           // climb
         b.arc(BEND_R, Math.PI / 2);                           // bend back left
         b.line(b.x - barLength / 2);                          // back along the top, to over the bar's middle
+        for (double r : SPIRAL) b.arc(r, Math.PI / 2);       // the spiral in
         loopStart = b.length;
         loopX = b.x;                // heading back left (pi), so the loop's centre is straight below
         loopY = b.y - LOOP_R;

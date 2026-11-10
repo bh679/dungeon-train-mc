@@ -6,8 +6,8 @@ import static games.brennan.dungeontrain.client.logo.LogoRingGeometry.R;
 /**
  * The loading bar and its finish, as geometry. Eight carriages in a line on y = 0 fill with the
  * progress, the line acting as their track. Once loaded the train pulls away along
- * {@link LogoTrack}: on past the bar, up, back along the top and into a loop it exactly fills,
- * closing into a ring. The ring then draws in to the logo, each pair of carriages sliding together
+ * {@link LogoTrack}: on past the bar, up, back along the top, then spiralling in to a loop it
+ * exactly fills, closing into a ring. The ring then draws in to the logo, each pair of carriages sliding together
  * into one of its four segments while the twist eases from a full turn to the logo's half turn.
  * The logo keeps turning after that.
  *
@@ -18,7 +18,7 @@ import static games.brennan.dungeontrain.client.logo.LogoRingGeometry.R;
 final class BarMorph {
 
     static final int CARRIAGES = 8;
-    static final double TRAVEL_SECONDS = 4.5;
+    static final double TRAVEL_SECONDS = 6.5;
     static final double MERGE_SECONDS = 1.4;
 
     static final double CAR = LogoRingGeometry.segmentLength();
