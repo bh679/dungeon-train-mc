@@ -994,6 +994,8 @@
   "chat.dungeontrain.narrative.all_complete": "所有故事均已读完。",
   "effect.dungeontrain.warmth_of_the_fire": "炉火暖意",
   "effect.dungeontrain.warmth_of_the_fire.description": "缓慢恢复生命",
+  "effect.dungeontrain.drifting": "漂流",
+  "effect.dungeontrain.drifting.description": "你在这里做的改动会漂往其他世界。",
   "generator.dungeontrain.dungeon_train": "地牢列车",
   "generator.dungeontrain.dungeon_train_flat": "地牢列车（超平坦）",
   "generator.dungeontrain.dungeon_train_nether": "地牢列车（下界）",

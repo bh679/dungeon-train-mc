@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.registry.effect.DriftingEffect;
 import games.brennan.dungeontrain.registry.effect.FreePlayEffect;
 import games.brennan.dungeontrain.registry.effect.WarmthOfTheFireEffect;
 import net.minecraft.core.registries.Registries;
@@ -24,6 +25,10 @@ public final class ModMobEffects {
     /** "Free Play" — run-scoped marker shown while the run is unranked. */
     public static final DeferredHolder<MobEffect, FreePlayEffect> FREE_PLAY =
         MOB_EFFECTS.register("free_play", FreePlayEffect::new);
+
+    /** "Drifting" — marker shown while inside a drifting carriage or drifting room. */
+    public static final DeferredHolder<MobEffect, DriftingEffect> DRIFTING =
+        MOB_EFFECTS.register("drifting", DriftingEffect::new);
 
     private ModMobEffects() {}
 

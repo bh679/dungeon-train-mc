@@ -1246,6 +1246,8 @@
   "chat.dungeontrain.narrative.all_complete": "Toate narațiunile sunt complete.",
   "effect.dungeontrain.warmth_of_the_fire": "Căldura focului",
   "effect.dungeontrain.warmth_of_the_fire.description": "Vindecare lentă",
+  "effect.dungeontrain.drifting": "În derivă",
+  "effect.dungeontrain.drifting.description": "Ce schimbi aici călătorește în alte lumi.",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Plat)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",

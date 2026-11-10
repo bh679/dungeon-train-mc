@@ -994,6 +994,8 @@
   "chat.dungeontrain.narrative.all_complete": "Đã hoàn thành mọi câu chuyện.",
   "effect.dungeontrain.warmth_of_the_fire": "Hơi Ấm Của Ngọn Lửa",
   "effect.dungeontrain.warmth_of_the_fire.description": "Hồi Máu Chậm",
+  "effect.dungeontrain.drifting": "Trôi dạt",
+  "effect.dungeontrain.drifting.description": "Những gì bạn thay đổi ở đây sẽ trôi sang thế giới khác.",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Phẳng)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Địa Ngục)",

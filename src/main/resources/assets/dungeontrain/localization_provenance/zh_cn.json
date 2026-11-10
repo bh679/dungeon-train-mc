@@ -503,6 +503,8 @@
       "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
       "chat.dungeontrain.shared_carriage.deaths.count.times.other",
       "chat.dungeontrain.shared_carriage.noun.room",
+      "effect.dungeontrain.drifting",
+      "effect.dungeontrain.drifting.description",
       "gui.dungeontrain.version.compare.installed",
       "gui.dungeontrain.version.compare.count.other",
       "gui.dungeontrain.version.compare.behind",

@@ -994,6 +994,8 @@
   "chat.dungeontrain.narrative.all_complete": "เรื่องเล่าครบทั้งหมดแล้ว",
   "effect.dungeontrain.warmth_of_the_fire": "ไออุ่นแห่งกองไฟ",
   "effect.dungeontrain.warmth_of_the_fire.description": "การรักษาแบบช้า",
+  "effect.dungeontrain.drifting": "ล่องลอย",
+  "effect.dungeontrain.drifting.description": "สิ่งที่คุณเปลี่ยนที่นี่จะเดินทางไปยังโลกอื่น",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (พื้นราบ)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (เนเธอร์)",

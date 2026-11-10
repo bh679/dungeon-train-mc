@@ -994,6 +994,8 @@
   "chat.dungeontrain.narrative.all_complete": "Semua naratif selesai.",
   "effect.dungeontrain.warmth_of_the_fire": "Kehangatan Api",
   "effect.dungeontrain.warmth_of_the_fire.description": "Penyembuhan Perlahan",
+  "effect.dungeontrain.drifting": "Hanyut",
+  "effect.dungeontrain.drifting.description": "Perubahan yang anda buat di sini bergerak ke dunia lain.",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Rata)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",

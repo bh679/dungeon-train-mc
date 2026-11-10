@@ -1031,6 +1031,8 @@
   "chat.dungeontrain.narrative.all_complete": "Todas as narrativas concluídas.",
   "effect.dungeontrain.warmth_of_the_fire": "Calor do Fogo",
   "effect.dungeontrain.warmth_of_the_fire.description": "Cura Lenta",
+  "effect.dungeontrain.drifting": "À deriva",
+  "effect.dungeontrain.drifting.description": "O que mudares aqui viaja para outros mundos.",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Superplano)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",

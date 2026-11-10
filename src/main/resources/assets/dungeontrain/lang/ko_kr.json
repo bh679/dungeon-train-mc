@@ -994,6 +994,8 @@
   "chat.dungeontrain.narrative.all_complete": "모든 서사 완료.",
   "effect.dungeontrain.warmth_of_the_fire": "불의 온기",
   "effect.dungeontrain.warmth_of_the_fire.description": "느린 치유",
+  "effect.dungeontrain.drifting": "표류 중",
+  "effect.dungeontrain.drifting.description": "여기서 바꾼 것은 다른 세계로 떠납니다.",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (평지)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (네더)",
