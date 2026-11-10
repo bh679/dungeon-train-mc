@@ -22,6 +22,11 @@ python3 -I scripts/restore/decode-player-items.py --uuid <uuid> --name <name> \
   --level level.dat --note "why" --out snapshot.json
 ```
 
+Add `--with-run` to also return the player to the depth they had reached: the snapshot gains
+a `run` block (the save's world-X, its `dungeontrain:player_run_state` as SNBT, Long Way Back's
+furthest carriage) and `xpLevels`. Use it when a crash or bug ended a run the player wants back,
+and they are starting a new world. The script refuses a save from outside the overworld.
+
 This prints a readable list (slot, count, id, enchantments, names) and writes a JSON snapshot
 (`schemaVersion` 1.0). Each stack keeps its full NBT as SNBT under `nbt`, which is what the mod
 restores from. `id`/`count`/`summary` are only for people. Needs `pip install nbtlib`.
@@ -43,3 +48,9 @@ online arrives at their next login), then applies it once they have been in the 
 - The id is recorded in `dungeontrain/outbox/restores-applied.txt`, and the relay is acked, so it
   never applies twice.
 - Log line: `[DungeonTrain] Inventory restore <id> applied for <name>`.
+- **With a `run` block:** after the items, the player's run stats are set from the snapshot and
+  they are moved onto a fresh train at its world-X (the `/dtp` move, without a command, so the
+  run stays clean). Difficulty follows from the restored stats. It only happens when they are
+  alone, alive, in the overworld of a train world; otherwise the whole restore waits for a later
+  login. The ack carries `relocatedX`, and the log says
+  `[DungeonTrain] Run restore for <name>: x=… carriage=…`.

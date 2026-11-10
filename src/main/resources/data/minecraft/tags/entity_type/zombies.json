@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "luminous_monsters:cherry_zombie", "required": false },
+    { "id": "luminous_monsters:crimson_walker", "required": false },
+    { "id": "luminous_monsters:dark_oak_zombie", "required": false },
+    { "id": "luminous_monsters:icy_zombie", "required": false },
+    { "id": "luminous_monsters:miner_zombie", "required": false },
+    { "id": "luminous_monsters:savanna_zombie", "required": false },
+    { "id": "luminous_monsters:swamp_zombie", "required": false }
+  ]
+}
