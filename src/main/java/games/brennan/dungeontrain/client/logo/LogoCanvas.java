@@ -29,6 +29,8 @@ final class LogoCanvas {
 
     /** Segment length to vertex units: {@code logo_ring.vsh} divides UV2.x by the same. */
     static final float SEG_LEN_SCALE = 30000f;
+    /** The along direction's angle to vertex units (UV2.y): {@code logo_ring.vsh} divides by the same. */
+    static final double TANGENT_SCALE = 10000.0;
 
     /** Feeds a pass its geometry; {@link #withSegLen} names the length of the segment that follows. */
     interface Emitter {
@@ -40,11 +42,10 @@ final class LogoCanvas {
     /**
      * Renders the geometry {@code build} emits (called once for the surface, once for the outline).
      *
-     * @param centre    the centre the tube curves round (x, y), or null for a straight bar along +x
      * @param lineWidth the edge lines, in target pixels
      */
     void render(ShaderInstance shader, int texture, int w, int h, Matrix4f view, Matrix4f projection,
-                float[] centre, float lineWidth, Consumer<Emitter> build) {
+                float lineWidth, Consumer<Emitter> build) {
         Minecraft mc = Minecraft.getInstance();
         if (target == null) {
             target = new TextureTarget(w, h, true, Minecraft.ON_OSX);
@@ -72,8 +73,6 @@ final class LogoCanvas {
 
             // The segments, then the outline shell's inside faces behind them.
             shader.safeGetUniform("LineWidth").set(lineWidth);
-            shader.safeGetUniform("Straight").set(centre == null ? 1f : 0f);
-            if (centre != null) shader.safeGetUniform("Centre").set(centre[0], centre[1]);
             shader.safeGetUniform("Atlas").set((float) LogoCracks.ATLAS_W, (float) LogoCracks.ATLAS_ROW,
                     (float) LogoCracks.ATLAS_LEN, (float) (LogoRingGeometry.PIECES * 4));
             RenderSystem.setShader(() -> shader);
@@ -81,9 +80,10 @@ final class LogoCanvas {
             BufferBuilder surface = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.BLOCK);
             build.accept(segLen -> {
                 int len = Math.round(segLen * SEG_LEN_SCALE);
-                return (vx, vy, vz, nx, ny, nz, face, along, across, hx, hy, hz, piece) ->
+                return (vx, vy, vz, nx, ny, nz, face, along, across, hx, hy, hz, piece, tangent) ->
                         surface.addVertex((float) vx, (float) vy, (float) vz).setColor(face, piece, 0, 255)
-                                .setUv((float) along, (float) across).setUv2(len, 0).setNormal((float) nx, (float) ny, (float) nz);
+                                .setUv((float) along, (float) across).setUv2(len, (int) Math.round(tangent * TANGENT_SCALE))
+                                .setNormal((float) nx, (float) ny, (float) nz);
             });
             MeshData surfaceMesh = surface.build();
             if (surfaceMesh == null) return; // nothing to draw yet (an empty loading bar): the cleared target stays blank
@@ -94,7 +94,7 @@ final class LogoCanvas {
             GL11.glCullFace(GL11.GL_FRONT);
             BufferBuilder hull = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION);
             float o = (float) LogoRingGeometry.OUTLINE;
-            build.accept(segLen -> (vx, vy, vz, nx, ny, nz, face, along, across, hx, hy, hz, piece) ->
+            build.accept(segLen -> (vx, vy, vz, nx, ny, nz, face, along, across, hx, hy, hz, piece, tangent) ->
                     hull.addVertex((float) (vx + hx * o), (float) (vy + hy * o), (float) (vz + hz * o)));
             MeshData hullMesh = hull.build();
             if (hullMesh != null) BufferUploader.drawWithShader(hullMesh);

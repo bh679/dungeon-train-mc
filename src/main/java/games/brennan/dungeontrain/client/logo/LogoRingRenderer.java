@@ -18,7 +18,7 @@ import org.slf4j.Logger;
  *       viewer. A port of the website's {@code logo-ring/logo-ring.js}, with Brennan's tuned look.</li>
  *   <li>{@link #drawBar}: the same tube unrolled into a straight line of carriages, the loading
  *       bar. Its front grows with the progress, a carriage at a time; the twist keeps rolling. At
- *       100% the line curls into a circle and draws in to the logo ({@link BarMorph}).</li>
+ *       100% the train drives off up the screen, loops and draws in to the logo ({@link BarMorph}).</li>
  * </ul>
  *
  * <p>Each shape renders into its own {@link LogoCanvas} and is blitted into the GUI. One shared
@@ -42,8 +42,10 @@ public final class LogoRingRenderer {
 
     /** The progress that reads 100% (the real bar is capped just under 1). */
     private static final double FINISHED = 0.995;
-    /** How far below the bar's line the finished logo settles, in GUI units. */
-    private static final float FINISH_DROP = 13f;
+    /** The bar's view margin round the line's ends, in world units. */
+    private static final double BAR_MARGIN = 0.12;
+    /** How long the title and percentage take to fade once the train pulls away. */
+    private static final double FINISH_FADE_SECONDS = 0.8;
     /** How fast the bar's front catches up with the progress it is given, per second. */
     private static final float BAR_CATCH_UP = 5f;
 
@@ -97,7 +99,7 @@ public final class LogoRingRenderer {
         Matrix4f view = new Matrix4f().lookAt(CAMERA_AT, new Vector3f(), new Vector3f(0f, 1f, 0f));
         Matrix4f projection = new Matrix4f().perspective(FOV, 1f, 0.1f, 50f);
         float segLen = (float) LogoRingGeometry.segmentLength();
-        ringCanvas.render(shader, texture, px, px, view, projection, new float[] { 0f, 0f }, Math.max(1f, LINE_PER_PIXEL * px),
+        ringCanvas.render(shader, texture, px, px, view, projection, Math.max(1f, LINE_PER_PIXEL * px),
                 sink -> LogoRingGeometry.build(offset, faceOn, sink.withSegLen(segLen)));
         ringCanvas.blit(g, x, y, size, size, alpha * shown);
         return true;
@@ -106,8 +108,8 @@ public final class LogoRingRenderer {
     /**
      * The loading bar: the tube laid straight across {@code width} GUI units, centred on
      * {@code centreY}, its carriages filling in from the left as {@code progress} goes 0 to 1.
-     * Once it reads 100% it curls into a circle and draws in to the logo ({@link BarMorph}), which
-     * settles {@link #FINISH_DROP} lower, clear of the title above.
+     * Once it reads 100% the train drives off along its track, loops and draws in to the logo
+     * ({@link BarMorph}); it draws over the whole screen so it can leave the bar's area.
      *
      * @return false while it can't draw, so the caller can fall back to its own bar
      */
@@ -125,27 +127,33 @@ public final class LogoRingRenderer {
             barSpin += CUT_SPEED * dt * BarMorph.merge(morphTime);
         }
 
-        // A square view the bar's width, so the circle and the logo have room as it curls up.
+        // The whole screen is the view, so the train can leave the loading area: the bar's world
+        // units map to GUI units at the bar's own scale, its line on centreY, its left end at x
+        // (plus the margin). The camera keeps the ring's tilt, so heights come out a touch shorter.
         double t = morphTime;
-        double viewW = BarMorph.viewWidth(t);
-        int px = pixels(width, renderScale);
-        double[] look = BarMorph.lookAt(t);
-        Matrix4f view = new Matrix4f().lookAt(new Vector3f((float) look[0], (float) look[1] - 1.6f, 4.6f),
-                new Vector3f((float) look[0], (float) look[1], 0f), new Vector3f(0f, 1f, 0f));
-        float half = (float) (viewW / 2);
-        Matrix4f projection = new Matrix4f().ortho(-half, half, -half, half, 0.1f, 50f);
-        float tubePx = (float) (px * 2 * LogoRingGeometry.HALF / viewW);
+        int screenW = g.guiWidth(), screenH = g.guiHeight();
+        double k = width / (BarMorph.TOTAL + 2 * BAR_MARGIN), x0 = x + BAR_MARGIN * k;
+        double cos = Math.cos(Math.atan2(1.6, 4.6));
+        double lookX = (screenW / 2.0 - x0) / k, lookY = (centreY - screenH / 2.0) / k / cos;
+        Matrix4f view = new Matrix4f().lookAt(new Vector3f((float) lookX, (float) lookY - 1.6f, 4.6f),
+                new Vector3f((float) lookX, (float) lookY, 0f), new Vector3f(0f, 1f, 0f));
+        float halfW = (float) (screenW / (2 * k)), halfH = (float) (screenH / (2 * k));
+        Matrix4f projection = new Matrix4f().ortho(-halfW, halfW, -halfH, halfH, 0.1f, 50f);
+        int pxW = pixels(screenW, renderScale), pxH = pixels(screenH, renderScale);
+        float tubePx = (float) (pxW / (double) screenW * k * 2 * LogoRingGeometry.HALF);
         double front = barFront, drift = FACE_ON + barDrift, spin = barSpin;
         g.flush();
-        barCanvas.render(shader, texture, px, px, view, projection, BarMorph.curveCentre(t), Math.max(1f, 0.03f * tubePx),
+        barCanvas.render(shader, texture, pxW, pxH, view, projection, Math.max(1f, 0.03f * tubePx),
                 sink -> BarMorph.emit(t, front, drift, spin, sink));
-        float drop = FINISH_DROP * (float) BarMorph.bend(t);
-        barCanvas.blit(g, x, centreY + drop - width / 2f, width, width, alpha * shown);
+        barCanvas.blit(g, 0, 0, screenW, screenH, alpha * shown);
         return true;
     }
 
-    /** 0 while the bar loads, rising to 1 as it curls up at 100%: screens fade their percentage out with it. */
-    public float barFinish() { return morphTime < 0 ? 0f : (float) BarMorph.bend(morphTime); }
+    /**
+     * 0 while the bar loads, rising to 1 as the train pulls away at 100%: screens fade their title
+     * and percentage out with it, since the train's loop runs through them.
+     */
+    public float barFinish() { return morphTime < 0 ? 0f : (float) Mth.clamp(morphTime / FINISH_FADE_SECONDS, 0.0, 1.0); }
 
     /** Frees the render targets and texture once nothing has drawn the logo for a while. Render thread. */
     public void releaseIfIdle() {

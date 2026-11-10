@@ -19,7 +19,7 @@ class BarMorphTest {
     /** The logo's cuts only start turning as it draws in, so the spin is 0 where the circle begins. */
     private static List<double[]> positions(double t, double front, double spin) {
         List<double[]> out = new ArrayList<>();
-        BarMorph.emit(t, front, DRIFT, spin, segLen -> (x, y, z, nx, ny, nz, face, along, across, hx, hy, hz, piece) ->
+        BarMorph.emit(t, front, DRIFT, spin, segLen -> (x, y, z, nx, ny, nz, face, along, across, hx, hy, hz, piece, tangent) ->
                 out.add(new double[] { x, y, z, along }));
         return out;
     }
@@ -38,23 +38,39 @@ class BarMorphTest {
     }
 
     @Test
-    @DisplayName("the fully bent line is the circle of eight the draw-in starts from")
-    void bendToCircle() {
-        assertSame(positions(BarMorph.BEND_SECONDS - 1e-9, 1.0, 0), positions(BarMorph.BEND_SECONDS, 1.0, 0), 1e-6);
+    @DisplayName("the train that has just filled the loop is the ring the draw-in starts from")
+    void loopToRing() {
+        // The track is a sampled table, the ring exact maths: they agree to within a ten-thousandth of a unit, far below a pixel.
+        assertSame(positions(BarMorph.TRAVEL_SECONDS - 1e-9, 1.0, 0), positions(BarMorph.TRAVEL_SECONDS, 1.0, 0), 1e-4);
     }
 
     @Test
     @DisplayName("eight carriages and their gaps close exactly round a circle of radius 2R")
     void circleCloses() {
         double circumference = BarMorph.CARRIAGES * (BarMorph.CAR + BarMorph.GAP_LEN);
-        assertEquals(2 * Math.PI * BarMorph.CIRCLE_R, circumference, 1e-9);
+        assertEquals(2 * Math.PI * LogoTrack.LOOP_R, circumference, 1e-9);
+    }
+
+    @Test
+    @DisplayName("the track runs on from the bar's end, and its loop hangs from the top line over the bar's middle")
+    void track() {
+        LogoTrack track = BarMorph.TRACK;
+        double[] end = track.point(BarMorph.TOTAL);
+        assertEquals(BarMorph.TOTAL, end[0], 1e-9);
+        assertEquals(0, end[1], 1e-9);
+        double[] entry = track.point(track.loopStart);
+        assertEquals(Math.PI, entry[2], 1e-6, "heading back left into the loop");
+        assertEquals(BarMorph.TOTAL / 2, entry[0], 0.01);
+        assertEquals(track.loopX, entry[0], 1e-9);
+        double[] round = track.point(track.loopStart + Math.PI * LogoTrack.LOOP_R);
+        assertEquals(track.loopY - LogoTrack.LOOP_R, round[1], 0.01, "half way round is the loop's bottom");
     }
 
     @Test
     @DisplayName("the drawn-in pairs span exactly the logo's four segments")
     void circleToLogo() {
-        List<double[]> pairs = positions(BarMorph.BEND_SECONDS + BarMorph.MERGE_SECONDS - 1e-9, 1.0);
-        List<double[]> logo = positions(BarMorph.BEND_SECONDS + BarMorph.MERGE_SECONDS, 1.0);
+        List<double[]> pairs = positions(BarMorph.TRAVEL_SECONDS + BarMorph.MERGE_SECONDS - 1e-9, 1.0);
+        List<double[]> logo = positions(BarMorph.TRAVEL_SECONDS + BarMorph.MERGE_SECONDS, 1.0);
         double[] a = bounds(pairs), b = bounds(logo);
         // Within a sliver: the pairs sample each segment in two runs of steps, the logo in one.
         for (int i = 0; i < a.length; i++) assertEquals(a[i], b[i], 1e-3);

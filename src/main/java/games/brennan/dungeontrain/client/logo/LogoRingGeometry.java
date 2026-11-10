@@ -32,10 +32,11 @@ public final class LogoRingGeometry {
     public interface Sink {
         /**
          * One vertex: position, flat face normal, surface coordinates (face, along, across), the
-         * outline push direction, and the segment it belongs to.
+         * outline push direction, the segment it belongs to, and the direction "along" runs there
+         * (an angle in the xy-plane, where every path here lies).
          */
         void vertex(double x, double y, double z, double nx, double ny, double nz,
-                    int face, double along, double across, double hx, double hy, double hz, int piece);
+                    int face, double along, double across, double hx, double hy, double hz, int piece, double tangent);
     }
 
     private LogoRingGeometry() {}
@@ -99,6 +100,14 @@ public final class LogoRingGeometry {
         segment(new Arc(cx, cy, radius, twistRate, phiRef, twist0, alongScale), a0, a1, piece, sink);
     }
 
+    /**
+     * A carriage riding a {@link LogoTrack}: from track position {@code start} for {@code length},
+     * having travelled {@code travel} from where it stood on the bar. Its twist rides with it.
+     */
+    static void buildTrack(LogoTrack track, double start, double length, double travel, double twistOffset, int piece, Sink sink) {
+        segment(new OnTrack(track, travel, twistOffset), start, start + length, piece, sink);
+    }
+
     /** The gap between neighbouring segments, as a length along the tube. */
     public static double gapLength() { return GAP * R; }
 
@@ -148,6 +157,15 @@ public final class LogoRingGeometry {
         public double scale() { return 1; }
     }
 
+    /** Along a track: radial = (sin h, -cos h) for heading h, so a straight run is the {@link Straight} frame. */
+    private record OnTrack(LogoTrack track, double travel, double twistOffset) implements Path {
+        public double[] centre(double s) { double[] p = track.point(s); return new double[] { p[0], p[1], 0 }; }
+        public double[] radial(double s) { double h = track.point(s)[2]; return new double[] { Math.sin(h), -Math.cos(h), 0 }; }
+        public double[] tangent(double s) { double h = track.point(s)[2]; return new double[] { Math.cos(h), Math.sin(h), 0 }; }
+        public double twist(double s) { return (s - travel) * TWIST / (2 * Math.PI * R) - twistOffset; }
+        public double scale() { return 1; }
+    }
+
     private record Arc(double cx, double cy, double radius, double twistRate, double phiRef, double twist0, double alongScale) implements Path {
         public double[] centre(double phi) { return new double[] { cx + radius * Math.cos(phi), cy + radius * Math.sin(phi), 0 }; }
         public double[] radial(double phi) { return new double[] { Math.cos(phi), Math.sin(phi), 0 }; }
@@ -162,7 +180,7 @@ public final class LogoRingGeometry {
         return new double[] { Math.cos(g) * r[0], Math.cos(g) * r[1], Math.sin(g) };
     }
 
-    private record V(double[] p, double[] h, int face, double along, double across) {}
+    private record V(double[] p, double[] h, int face, double along, double across, double tangent) {}
 
     private static V vert(Path path, double u, int j, double a, double b, int face, double along, double across) {
         double beta = path.twist(u) + Math.PI / 4 + j * Math.PI / 2, r = HALF * Math.sqrt(2);
@@ -176,7 +194,8 @@ public final class LogoRingGeometry {
             h[1] += t[1] * endSign;
             h[2] += t[2] * endSign;
         }
-        return new V(p, h, face, along, across);
+        double[] t = path.tangent(u);
+        return new V(p, h, face, along, across, Math.atan2(t[1], t[0]));
     }
 
     /** One segment from path parameter a to b. Shared corners come from the same corner index and parameter, so neighbouring faces meet exactly. */
@@ -213,7 +232,7 @@ public final class LogoRingGeometry {
         double[] cr = { e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0] };
         V[] order = cr[0] * n[0] + cr[1] * n[1] + cr[2] * n[2] >= 0 ? new V[] { p, q, r } : new V[] { p, r, q };
         for (V v : order) {
-            sink.vertex(v.p[0], v.p[1], v.p[2], n[0], n[1], n[2], v.face, v.along, v.across, v.h[0], v.h[1], v.h[2], piece);
+            sink.vertex(v.p[0], v.p[1], v.p[2], n[0], n[1], n[2], v.face, v.along, v.across, v.h[0], v.h[1], v.h[2], piece, v.tangent);
         }
     }
 

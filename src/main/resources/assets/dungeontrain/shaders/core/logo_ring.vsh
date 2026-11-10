@@ -2,9 +2,9 @@
 
 // The in-game ring logo (client/logo/LogoRingRenderer). Vertices come from LogoRingGeometry:
 // Color.r = face (0-3 long faces, 4 = cut end), Color.g = segment, UV0 = (along, across),
-// UV2.x = the segment's length x SEG_LEN_SCALE (a growing loading-bar carriage is shorter).
-// The along/across frame for the crack depth map follows from the position and the face normal:
-// round the arc centred at Centre (or along +x for the straight bar), and across the face (normal x along).
+// UV2.x = the segment's length x SEG_LEN_SCALE (a growing loading-bar carriage is shorter),
+// UV2.y = the direction "along" runs, an xy-plane angle x TANGENT_SCALE (the tube can follow any
+// track). The across direction for the crack depth map is normal x along.
 
 in vec3 Position;
 in vec4 Color;
@@ -14,8 +14,6 @@ in vec3 Normal;
 
 uniform mat4 ModelViewMat;
 uniform mat4 ProjMat;
-uniform float Straight;
-uniform vec2 Centre;
 
 out vec3 vNormalV;
 out vec3 vViewDir;
@@ -25,14 +23,15 @@ out vec3 vSurf;
 out float vPiece;
 out float vSegLen;
 
-const float SEG_LEN_SCALE = 30000.0; // LogoRingRenderer.SEG_LEN_SCALE
+const float SEG_LEN_SCALE = 30000.0; // LogoCanvas.SEG_LEN_SCALE
+const float TANGENT_SCALE = 10000.0; // LogoCanvas.TANGENT_SCALE
 
 void main() {
     vec4 mv = ModelViewMat * vec4(Position, 1.0);
     mat3 nm = mat3(ModelViewMat);
     vec3 n = normalize(Normal);
-    vec2 r = normalize(Position.xy - Centre);
-    vec3 t = Straight > 0.5 ? vec3(1.0, 0.0, 0.0) : vec3(-r.y, r.x, 0.0);
+    float along = float(UV2.y) / TANGENT_SCALE;
+    vec3 t = vec3(cos(along), sin(along), 0.0);
     vNormalV = nm * n;
     vTangentV = nm * t;
     vBitangentV = nm * cross(n, t);

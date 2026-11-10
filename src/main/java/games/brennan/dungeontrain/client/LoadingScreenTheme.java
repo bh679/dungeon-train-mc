@@ -83,9 +83,10 @@ public final class LoadingScreenTheme {
         int railLeft = cx - railW / 2;
         int railY = cy + 8;
 
-        drawTitle(g, font, Component.translatable("gui.dungeontrain.loading.title"), cx, cy - 30, a);
+        float finish = LogoRingRenderer.get().barFinish(); // the train's loop runs through the title
+        drawTitle(g, font, Component.translatable("gui.dungeontrain.loading.title"), cx, cy - 30, a * (1f - finish));
         drawFillingTrain(g, font, railLeft, railW, railY, progress, animNanos, a);
-        drawPercent(g, font, progress, cx, cy + 34, a * (1f - LogoRingRenderer.get().barFinish()));
+        drawPercent(g, font, progress, cx, cy + 34, a * (1f - finish));
         drawTip(g, font, LoadingStories.currentLine(), cx, cy + 52, TIP_MAX_WIDTH, a);
     }
 
@@ -199,7 +200,7 @@ public final class LoadingScreenTheme {
     public static void drawFillingTrain(GuiGraphics g, Font font, int railLeft, int railW, int railY, double progress, long animNanos, float alpha) {
         float a = Mth.clamp(alpha, 0.0f, 1.0f);
         if (a <= 0.0f) return;
-        if (LogoRingRenderer.get().drawBar(g, railLeft, railY - LOGO_BAR_LIFT, railW, progress, a, 2f)) return;
+        if (LogoRingRenderer.get().drawBar(g, railLeft, railY - LOGO_BAR_LIFT, railW, progress, a, 1.5f)) return;
         int railRight = railLeft + railW;
         int startX = railLeft + 2;
         int slots = Math.max(1, (railW - INF_RESERVE) / SPACING);

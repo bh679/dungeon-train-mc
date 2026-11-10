@@ -18,7 +18,7 @@ class LogoRingGeometryTest {
 
     private static List<Vert> build(double offset, double faceOn) {
         List<Vert> out = new ArrayList<>();
-        LogoRingGeometry.build(offset, faceOn, (x, y, z, nx, ny, nz, face, along, across, hx, hy, hz, piece) ->
+        LogoRingGeometry.build(offset, faceOn, (x, y, z, nx, ny, nz, face, along, across, hx, hy, hz, piece, tangent) ->
                 out.add(new Vert(x, y, z, nx, ny, nz, face, along, across, piece)));
         return out;
     }
@@ -99,7 +99,7 @@ class LogoRingGeometryTest {
     @DisplayName("a straight carriage is wound outward and spans exactly its length along x")
     void straightCarriage() {
         List<Vert> v = new ArrayList<>();
-        LogoRingGeometry.buildStraight(1.5, 0.4, 0.7, 2, (x, y, z, nx, ny, nz, face, along, across, hx, hy, hz, piece) ->
+        LogoRingGeometry.buildStraight(1.5, 0.4, 0.7, 2, (x, y, z, nx, ny, nz, face, along, across, hx, hy, hz, piece, tangent) ->
                 v.add(new Vert(x, y, z, nx, ny, nz, face, along, across, piece)));
         double minX = Double.MAX_VALUE, maxX = -Double.MAX_VALUE, maxAlong = 0;
         for (Vert p : v) { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); if (p.face < 4) maxAlong = Math.max(maxAlong, p.along); }
@@ -119,7 +119,7 @@ class LogoRingGeometryTest {
     @DisplayName("on the straight bar too, the across direction (corner k to k+1) is normal x along (+x)")
     void straightBitangent() {
         List<Vert> v = new ArrayList<>();
-        LogoRingGeometry.buildStraight(0, 0.5, 1.1, 0, (x, y, z, nx, ny, nz, face, along, across, hx, hy, hz, piece) ->
+        LogoRingGeometry.buildStraight(0, 0.5, 1.1, 0, (x, y, z, nx, ny, nz, face, along, across, hx, hy, hz, piece, tangent) ->
                 v.add(new Vert(x, y, z, nx, ny, nz, face, along, across, piece)));
         // First quad of each face: vertex 0 is (f0, across -1); find its across +1 partner at the same x.
         for (int i = 0; i < v.size(); i += 6) {
