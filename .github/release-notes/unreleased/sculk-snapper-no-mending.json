@@ -8,10 +8,8 @@
     "balance"
   ],
   "title": "Mending fix",
-  "summary": "Mending is now as rare as it was meant to be: a tame companion could hand it out for free.",
-  "highlights": [
-    "Books dropped by a tame companion no longer carry Mending."
-  ],
+  "summary": "Mending is now as rare as it was meant to be.",
+  "highlights": [],
   "pr": 2583,
   "date": "2026-11-09",
   "released": false,
