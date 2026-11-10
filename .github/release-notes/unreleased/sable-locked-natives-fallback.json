@@ -1,0 +1,17 @@
+{
+  "id": "sable-locked-natives-fallback",
+  "version": "0.1760.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "compatibility"
+  ],
+  "title": "Startup crash fix",
+  "summary": "Fixed a crash when loading a world that could happen on Windows after the game had previously crashed or was still running in the background.",
+  "highlights": [],
+  "pr": 2595,
+  "date": "2026-11-10",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
