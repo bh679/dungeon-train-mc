@@ -3041,7 +3041,6 @@
   "block.dungeontrain.narrative_lectern": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "4da87b137b982eb4"},
   "block.dungeontrain.variant_placeholder": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "5e90c31f7ba73bf6"},
   "block.dungeontrain.drifting_engine_block": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "819f005dacc5e1e6"},
-  "gui.dungeontrain.engine_block.coal": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "4c0c2efe712008d3"},
   "gui.dungeontrain.engine_block.worlds.one": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "e6c05ac5fffb8c84"},
   "gui.dungeontrain.engine_block.worlds.few": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
   "gui.dungeontrain.engine_block.worlds.other": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "cf42185cfeaefbc3"},

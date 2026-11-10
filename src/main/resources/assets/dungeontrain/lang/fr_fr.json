@@ -2447,7 +2447,6 @@
   "block.dungeontrain.narrative_lectern": "Pupitre narratif",
   "block.dungeontrain.variant_placeholder": "Espace réservé de variante",
   "block.dungeontrain.drifting_engine_block": "Bloc moteur à la dérive",
-  "gui.dungeontrain.engine_block.coal": "%s / %s charbon",
   "gui.dungeontrain.engine_block.worlds.one": "Assez pour %s monde de plus",
   "gui.dungeontrain.engine_block.worlds.other": "Assez pour %s mondes de plus",
   "gui.dungeontrain.engine_block.empty": "Plus de charbon : cesse de dériver après ce monde",

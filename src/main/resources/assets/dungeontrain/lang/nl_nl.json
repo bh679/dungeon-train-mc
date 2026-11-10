@@ -2447,7 +2447,6 @@
   "block.dungeontrain.narrative_lectern": "Verhaallessenaar",
   "block.dungeontrain.variant_placeholder": "Variant-plaatshouder",
   "block.dungeontrain.drifting_engine_block": "Zwervend motorblok",
-  "gui.dungeontrain.engine_block.coal": "%s / %s steenkool",
   "gui.dungeontrain.engine_block.worlds.one": "Genoeg voor nog %s wereld",
   "gui.dungeontrain.engine_block.worlds.other": "Genoeg voor nog %s werelden",
   "gui.dungeontrain.engine_block.empty": "Geen steenkool meer: stopt met zwerven na deze wereld",

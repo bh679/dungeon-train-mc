@@ -2399,7 +2399,6 @@
   "block.dungeontrain.narrative_lectern": "서사 독서대",
   "block.dungeontrain.variant_placeholder": "변형 자리표시자",
   "block.dungeontrain.drifting_engine_block": "떠도는 엔진 블록",
-  "gui.dungeontrain.engine_block.coal": "석탄 %s / %s",
   "gui.dungeontrain.engine_block.worlds.other": "앞으로 세계 %s곳을 더 갈 수 있음",
   "gui.dungeontrain.engine_block.empty": "석탄 없음: 이 세계를 끝으로 더 떠돌지 않음",
   "message.dungeontrain.engine_block.second": "이 객차에는 이미 떠도는 엔진 블록이 있음",

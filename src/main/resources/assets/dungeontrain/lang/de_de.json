@@ -2447,7 +2447,6 @@
   "block.dungeontrain.narrative_lectern": "Erzähl-Lesepult",
   "block.dungeontrain.variant_placeholder": "Varianten-Platzhalter",
   "block.dungeontrain.drifting_engine_block": "Treibwagen-Motorblock",
-  "gui.dungeontrain.engine_block.coal": "%s / %s Kohle",
   "gui.dungeontrain.engine_block.worlds.one": "Reicht für %s weitere Welt",
   "gui.dungeontrain.engine_block.worlds.other": "Reicht für %s weitere Welten",
   "gui.dungeontrain.engine_block.empty": "Keine Kohle mehr: treibt nach dieser Welt nicht weiter",

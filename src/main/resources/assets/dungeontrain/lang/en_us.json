@@ -2988,7 +2988,6 @@
   "block.dungeontrain.narrative_lectern": "Narrative Lectern",
   "block.dungeontrain.variant_placeholder": "Variant Placeholder",
   "block.dungeontrain.drifting_engine_block": "Drifting Engine Block",
-  "gui.dungeontrain.engine_block.coal": "%s / %s coal",
   "gui.dungeontrain.engine_block.worlds.one": "Enough for %s more world",
   "gui.dungeontrain.engine_block.worlds.other": "Enough for %s more worlds",
   "gui.dungeontrain.engine_block.empty": "Out of coal: stops drifting after this world",

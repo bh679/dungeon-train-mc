@@ -2399,7 +2399,6 @@
   "block.dungeontrain.narrative_lectern": "Mimbar Narasi",
   "block.dungeontrain.variant_placeholder": "Placeholder Varian",
   "block.dungeontrain.drifting_engine_block": "Blok Mesin Hanyut",
-  "gui.dungeontrain.engine_block.coal": "%s / %s batu bara",
   "gui.dungeontrain.engine_block.worlds.other": "Cukup untuk %s dunia lagi",
   "gui.dungeontrain.engine_block.empty": "Batu bara habis: berhenti hanyut setelah dunia ini",
   "message.dungeontrain.engine_block.second": "Gerbong ini sudah punya Blok Mesin Hanyut",

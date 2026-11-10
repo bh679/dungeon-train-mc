@@ -15,8 +15,8 @@ import net.minecraft.world.entity.player.Inventory;
 import java.util.List;
 
 /**
- * The Drifting Engine Block screen: a coal slot with a flame over it while there is any, a gauge, the count,
- * and how many more worlds that coal carries the carriage through.
+ * The Drifting Engine Block screen: a coal slot with a flame over it while there is any, a gauge, and how
+ * many more worlds that coal carries the carriage through.
  */
 public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
 
@@ -38,7 +38,7 @@ public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
     /** Gauge trough on the panel and its fill sprite. */
     private static final int GAUGE_X = 37, GAUGE_Y = 23, GAUGE_W = 130, GAUGE_H = 5;
     private static final int GAUGE_FILL_U = 0, GAUGE_FILL_V = 170;
-    private static final int TEXT_X = 36, COUNT_Y = 33, STATUS_Y = 45, TEXT_WIDTH = 132;
+    private static final int TEXT_X = 36, STATUS_Y = 33, TEXT_WIDTH = 132;
     private static final int TEXT_COLOUR = 0x404040;
 
     public EngineScreen(EngineMenu menu, Inventory inventory, Component title) {
@@ -67,10 +67,7 @@ public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         super.renderLabels(graphics, mouseX, mouseY);
-        int coal = menu.coal();
-        graphics.drawString(font, Component.translatable("gui.dungeontrain.engine_block.coal", coal,
-                DriftEngine.MAX_COAL), TEXT_X, COUNT_Y, TEXT_COLOUR, false);
-        List<FormattedCharSequence> lines = font.split(status(coal), TEXT_WIDTH);
+        List<FormattedCharSequence> lines = font.split(status(menu.coal()), TEXT_WIDTH);
         for (int i = 0; i < lines.size(); i++) {
             graphics.drawString(font, lines.get(i), TEXT_X, STATUS_Y + i * (font.lineHeight + 1), TEXT_COLOUR, false);
         }

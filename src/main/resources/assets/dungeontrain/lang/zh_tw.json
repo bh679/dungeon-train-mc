@@ -2399,7 +2399,6 @@
   "block.dungeontrain.narrative_lectern": "敘事講台",
   "block.dungeontrain.variant_placeholder": "變體佔位方塊",
   "block.dungeontrain.drifting_engine_block": "漂流引擎方塊",
-  "gui.dungeontrain.engine_block.coal": "煤炭 %s / %s",
   "gui.dungeontrain.engine_block.worlds.other": "還夠再去 %s 個世界",
   "gui.dungeontrain.engine_block.empty": "煤炭耗盡：離開這個世界後停止漂流",
   "message.dungeontrain.engine_block.second": "這節車廂已經有漂流引擎方塊了",

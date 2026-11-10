@@ -2447,7 +2447,6 @@
   "block.dungeontrain.narrative_lectern": "Estante Narrativa",
   "block.dungeontrain.variant_placeholder": "Marcador de variante",
   "block.dungeontrain.drifting_engine_block": "Bloco de motor à deriva",
-  "gui.dungeontrain.engine_block.coal": "%s / %s de carvão",
   "gui.dungeontrain.engine_block.worlds.one": "Dá para mais %s mundo",
   "gui.dungeontrain.engine_block.worlds.other": "Dá para mais %s mundos",
   "gui.dungeontrain.engine_block.empty": "Sem carvão: para de vagar à deriva depois deste mundo",

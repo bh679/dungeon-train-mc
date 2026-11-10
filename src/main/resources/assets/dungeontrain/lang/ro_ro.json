@@ -3041,7 +3041,6 @@
   "block.dungeontrain.narrative_lectern": "Pupitru narativ",
   "block.dungeontrain.variant_placeholder": "Substituent de variantă",
   "block.dungeontrain.drifting_engine_block": "Bloc motor rătăcitor",
-  "gui.dungeontrain.engine_block.coal": "%s / %s cărbune",
   "gui.dungeontrain.engine_block.worlds.one": "Ajunge pentru încă %s lume",
   "gui.dungeontrain.engine_block.worlds.few": "Ajunge pentru încă %s lumi",
   "gui.dungeontrain.engine_block.worlds.other": "Ajunge pentru încă %s de lumi",

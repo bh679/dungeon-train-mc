@@ -2447,7 +2447,6 @@
   "block.dungeontrain.narrative_lectern": "Leggio narrativo",
   "block.dungeontrain.variant_placeholder": "Segnaposto variante",
   "block.dungeontrain.drifting_engine_block": "Blocco motore alla deriva",
-  "gui.dungeontrain.engine_block.coal": "%s / %s carbone",
   "gui.dungeontrain.engine_block.worlds.one": "Basta per %s altro mondo",
   "gui.dungeontrain.engine_block.worlds.other": "Basta per altri %s mondi",
   "gui.dungeontrain.engine_block.empty": "Senza carbone: smette di andare alla deriva dopo questo mondo",

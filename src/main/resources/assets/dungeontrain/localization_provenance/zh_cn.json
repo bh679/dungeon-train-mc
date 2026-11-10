@@ -1489,7 +1489,6 @@
       "gui.dungeontrain.number_input.menu_distance",
       "block.dungeontrain.variant_placeholder",
       "block.dungeontrain.drifting_engine_block",
-      "gui.dungeontrain.engine_block.coal",
       "gui.dungeontrain.engine_block.worlds.other",
       "gui.dungeontrain.engine_block.empty",
       "message.dungeontrain.engine_block.second",

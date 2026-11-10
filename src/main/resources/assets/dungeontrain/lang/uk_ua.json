@@ -3038,7 +3038,6 @@
   "block.dungeontrain.narrative_lectern": "Оповідна кафедра",
   "block.dungeontrain.variant_placeholder": "Заповнювач варіанта",
   "block.dungeontrain.drifting_engine_block": "Блок двигуна мандрівного вагона",
-  "gui.dungeontrain.engine_block.coal": "Вугілля: %s / %s",
   "gui.dungeontrain.engine_block.worlds.one": "Вистачить ще на %s світ",
   "gui.dungeontrain.engine_block.worlds.few": "Вистачить ще на %s світи",
   "gui.dungeontrain.engine_block.worlds.many": "Вистачить ще на %s світів",

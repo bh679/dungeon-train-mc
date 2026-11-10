@@ -2447,7 +2447,6 @@
   "block.dungeontrain.narrative_lectern": "Atril narrativo",
   "block.dungeontrain.variant_placeholder": "Marcador de variante",
   "block.dungeontrain.drifting_engine_block": "Bloque motor a la deriva",
-  "gui.dungeontrain.engine_block.coal": "%s / %s de carbón",
   "gui.dungeontrain.engine_block.worlds.one": "Suficiente para %s mundo más",
   "gui.dungeontrain.engine_block.worlds.other": "Suficiente para %s mundos más",
   "gui.dungeontrain.engine_block.empty": "Sin carbón: deja de ir a la deriva tras este mundo",

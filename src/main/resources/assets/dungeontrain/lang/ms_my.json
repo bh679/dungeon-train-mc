@@ -2399,7 +2399,6 @@
   "block.dungeontrain.narrative_lectern": "Rihal Naratif",
   "block.dungeontrain.variant_placeholder": "Pemegang Tempat Varian",
   "block.dungeontrain.drifting_engine_block": "Blok Enjin Hanyut",
-  "gui.dungeontrain.engine_block.coal": "%s / %s arang batu",
   "gui.dungeontrain.engine_block.worlds.other": "Cukup untuk %s dunia lagi",
   "gui.dungeontrain.engine_block.empty": "Arang batu habis: berhenti hanyut selepas dunia ini",
   "message.dungeontrain.engine_block.second": "Gerabak ini sudah ada Blok Enjin Hanyut",

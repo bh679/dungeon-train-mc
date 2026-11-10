@@ -2399,7 +2399,6 @@
   "block.dungeontrain.narrative_lectern": "แท่นวางหนังสือเรื่องเล่า",
   "block.dungeontrain.variant_placeholder": "ตัวยึดตำแหน่งตัวแปร",
   "block.dungeontrain.drifting_engine_block": "บล็อกเครื่องยนต์ล่องลอย",
-  "gui.dungeontrain.engine_block.coal": "ถ่านหิน %s / %s",
   "gui.dungeontrain.engine_block.worlds.other": "พอสำหรับอีก %s โลก",
   "gui.dungeontrain.engine_block.empty": "ถ่านหินหมด: จะหยุดล่องลอยหลังจากโลกนี้",
   "message.dungeontrain.engine_block.second": "ตู้นี้มีบล็อกเครื่องยนต์ล่องลอยอยู่แล้ว",
