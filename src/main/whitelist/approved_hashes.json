@@ -19,7 +19,6 @@
     "cristellib": "cristel-lib",
     "cupboard": "cupboard",
     "customskinloader": "customskinloader",
-    "cuttingdelight": "cutting-delight",
     "cwb": "cubes-without-borders",
     "drippyloadingscreen": "drippy-loading-screen",
     "durabilitytooltip": "durability-tooltip",
@@ -36,7 +35,6 @@
     "euphoria_patcher": "euphoria-patches",
     "explosiveenhancement": "explosive-enhancement-neoforge",
     "exposure_polaroid": "exposure-polaroid",
-    "farmersdelight": "farmers-delight",
     "fastpaintings": "fast-paintings",
     "firstperson": "first-person-model",
     "forgified_fabric_api": "forgified-fabric-api",
@@ -1605,28 +1603,6 @@
         "slug": "customskinloader"
       }
     },
-    "cuttingdelight": {
-      "platform": "modrinth",
-      "project": "5oqQBDcS",
-      "slug": "cutting-delight",
-      "name": "Cutting Delight",
-      "sha1": [
-        "08ed7fc510eaf068a676374426034a3a912e99db",
-        "1da77bf999b33827e2a2ffcfe68052cc2359d14e",
-        "232a4efb9202794fa60fd92ee8c6e6dc37cd658c",
-        "4b8f5c3405f637d8085e4236dfbde2a78d565165",
-        "824942571f18ee099faf64d463fa557461521c4b",
-        "a6feaf9da4532181e94990969e472ede02d36e21",
-        "beb439f5331151d602764497003f801d48eb5148",
-        "d26fdecd93a2831ee888f4a9dec1d1fb3e20115c",
-        "d5c36f59d87abf9e515b65552173a3379365b8fe",
-        "dad8d75521fe850ade39fd16d43b4b216995e135",
-        "e2c98dbc6dae230b6451804678bec4802493fb86"
-      ],
-      "packages": [
-        "dev.jaronline"
-      ]
-    },
     "cwb": {
       "platform": "modrinth",
       "project": "ETlrkaYF",
@@ -2348,31 +2324,6 @@
         "com.madgag",
         "de.keksuccino",
         "net.ellerton"
-      ]
-    },
-    "farmersdelight": {
-      "platform": "modrinth",
-      "project": "R2OftAxM",
-      "slug": "farmers-delight",
-      "name": "Farmer's Delight",
-      "sha1": [
-        "2415b91d6437977e676985b4a2ef877208d202e1",
-        "26c017b7900e3c97a58e58e4ec6a98b0ae74778d",
-        "27675ddfcb8cc37e6ea1ab6c15051c7949d94657",
-        "2aad9222ed1972f14907c195990a6cde13a09255",
-        "49477fafca740e7ae348d934b552fb313358e8fe",
-        "55ea87dec84a632690a748857db08a35941980b6",
-        "8c34405e5c45a4dc9228f7a5402cfb53f696cc0a",
-        "93f4de62fce2b90ee8c87e4f6d9b82edb132003d",
-        "9abe078f48781e4b87288dbc59691c8ba1152d8d",
-        "a63092cb1e9cd1fb40a9bf1e9a5042d241eddb21",
-        "b5660fc7c6096b8d9746f47de789e54b5c91b326",
-        "bf7e7dede99e832de20e191b1f6c11f7a9b9a622",
-        "d4205362f00c78bbc28fa2ce230bd50f807d3156",
-        "f77488e2b8b145867b9d5c6094abc84d662e76c9"
-      ],
-      "packages": [
-        "vectorwing.farmersdelight"
       ]
     },
     "fastpaintings": {
