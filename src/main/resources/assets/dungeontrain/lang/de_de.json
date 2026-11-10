@@ -1032,7 +1032,7 @@
   "effect.dungeontrain.warmth_of_the_fire": "Wärme des Feuers",
   "effect.dungeontrain.warmth_of_the_fire.description": "Langsame Heilung",
   "effect.dungeontrain.drifting": "Treibend",
-  "effect.dungeontrain.drifting.description": "Was du hier veränderst, reist in andere Welten.",
+  "effect.dungeontrain.drifting.description": "Der Zug merkt sich, was du hier veränderst",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Superflach)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",

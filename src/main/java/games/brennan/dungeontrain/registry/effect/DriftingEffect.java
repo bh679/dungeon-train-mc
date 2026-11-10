@@ -7,7 +7,8 @@ import net.minecraft.world.effect.MobEffectCategory;
  * "Drifting" — a marker effect held while the player is inside a drifting carriage or drifting
  * room (see {@link games.brennan.dungeontrain.event.DriftingEffectEvents}), the places whose
  * changes travel the shared-carriage relay to other worlds. Purely cosmetic: no gameplay tick, no
- * attributes. Its inventory tooltip line is added by
+ * attributes. Its inventory row (name only, no duration) is drawn by
+ * {@link games.brennan.dungeontrain.client.DriftingEffectClient}; its tooltip line by
  * {@link games.brennan.dungeontrain.client.DriftingTooltip}.
  */
 public final class DriftingEffect extends MobEffect {

@@ -1069,7 +1069,7 @@
   "effect.dungeontrain.warmth_of_the_fire": "Ciepło Ognia",
   "effect.dungeontrain.warmth_of_the_fire.description": "Powolne leczenie",
   "effect.dungeontrain.drifting": "Dryf",
-  "effect.dungeontrain.drifting.description": "To, co tu zmienisz, wędruje do innych światów.",
+  "effect.dungeontrain.drifting.description": "Pociąg pamięta zmiany, które tu wprowadzasz",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Superpłaski)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",

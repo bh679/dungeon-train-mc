@@ -11,23 +11,34 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Keeps the {@link games.brennan.dungeontrain.registry.effect.DriftingEffect "Drifting"} marker on
  * a player for as long as they are inside a drifting carriage (standing on it) or a drifting room
- * (inside its box). Polled on the same coarse cadence as {@link SharedCarriageEnterEvents}; each hit
- * refreshes a short effect, so leaving lets it run out on its own within {@link #EFFECT_TICKS}.
+ * (inside its box). Polled on the same coarse cadence as {@link SharedCarriageEnterEvents}.
+ *
+ * <p>The effect is indefinite while inside — no countdown, and no end-of-effect blinking on the HUD
+ * icon — and is removed once the player has been outside for {@link #OFF_GRACE_POLLS} polls in a
+ * row.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DriftingEffectEvents {
 
     static final int CHECK_INTERVAL_TICKS = 10;
     /**
-     * Long enough to outlast a jump: footing needs a block at the feet, so a jump on a carriage reads
-     * as "off" for a poll or two. Short enough that walking out clears the icon within ~2 s.
+     * Consecutive polls outside before the effect comes off (~2 s). Footing needs a block at the feet,
+     * so a jump on a carriage reads as "outside" for a poll or two; this rides that out.
      */
-    static final int EFFECT_TICKS = 40;
+    static final int OFF_GRACE_POLLS = 4;
+
+    /** Consecutive polls each player holding the effect has been found outside. */
+    private static final Map<UUID, Integer> OFF_POLLS = new ConcurrentHashMap<>();
 
     private DriftingEffectEvents() {}
 
@@ -36,17 +47,36 @@ public final class DriftingEffectEvents {
         Player p = event.getEntity();
         if (p.level().isClientSide() || !(p instanceof ServerPlayer player)) return;
         if (player.tickCount % CHECK_INTERVAL_TICKS != 0) return;
-        if (player.isSpectator() || player.isDeadOrDying()) return;
-        if (!SharedCarriageGate.canDiscover()) return;
         if (!(player.level() instanceof ServerLevel level)) return;
-        if (!isDrifting(level, player)) return;
-        player.addEffect(new MobEffectInstance(
-            ModMobEffects.DRIFTING,
-            EFFECT_TICKS,
-            0,
-            true,   // ambient — quieter HUD swirls
-            true    // showIcon
-        ));
+        boolean inside = !player.isSpectator() && !player.isDeadOrDying()
+                && SharedCarriageGate.canDiscover() && isDrifting(level, player);
+        if (inside) {
+            OFF_POLLS.remove(player.getUUID());
+            MobEffectInstance current = player.getEffect(ModMobEffects.DRIFTING);
+            if (current == null || !current.isInfiniteDuration()) {
+                player.addEffect(new MobEffectInstance(
+                    ModMobEffects.DRIFTING,
+                    MobEffectInstance.INFINITE_DURATION,
+                    0,
+                    true,   // ambient — quieter HUD swirls
+                    true    // showIcon
+                ));
+            }
+            return;
+        }
+        if (!player.hasEffect(ModMobEffects.DRIFTING)) {
+            OFF_POLLS.remove(player.getUUID());
+            return;
+        }
+        if (OFF_POLLS.merge(player.getUUID(), 1, Integer::sum) >= OFF_GRACE_POLLS) {
+            player.removeEffect(ModMobEffects.DRIFTING);
+            OFF_POLLS.remove(player.getUUID());
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        OFF_POLLS.remove(event.getEntity().getUUID());
     }
 
     private static boolean isDrifting(ServerLevel level, ServerPlayer player) {

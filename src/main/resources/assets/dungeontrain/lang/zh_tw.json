@@ -995,7 +995,7 @@
   "effect.dungeontrain.warmth_of_the_fire": "爐火暖意",
   "effect.dungeontrain.warmth_of_the_fire.description": "緩慢治療",
   "effect.dungeontrain.drifting": "漂流",
-  "effect.dungeontrain.drifting.description": "你在這裡做的改動會漂往其他世界。",
+  "effect.dungeontrain.drifting.description": "列車會記住你在這裡做的改動",
   "generator.dungeontrain.dungeon_train": "地牢列車",
   "generator.dungeontrain.dungeon_train_flat": "地牢列車（超平坦）",
   "generator.dungeontrain.dungeon_train_nether": "地牢列車（地獄）",
