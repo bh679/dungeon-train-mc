@@ -199,7 +199,8 @@ public final class TrainAssembler {
      * captured entities, which are NOT spawned here — they wait for the group to settle, exactly like a
      * local carriage's contents entities ({@link PendingRelayEntitySpawn}).
      */
-    private record RelayPlacement(Set<BlockPos> blocks, net.minecraft.nbt.ListTag ents) {}
+    /** A stamped lease: its blocks, its entities, and the coal its engine holds after this world's burn. */
+    private record RelayPlacement(Set<BlockPos> blocks, net.minecraft.nbt.ListTag ents, int fuel) {}
 
     /** {@code group=<id>} or {@code rooms=[a,-,b]} for the spawn log — what a re-spawn must reproduce. */
     private static String summariseWhole(WholeGroupSelection.GroupPick groupPick,
@@ -236,13 +237,17 @@ public final class TrainAssembler {
                 LOGGER.warn("[DungeonTrain] leased carriage id={} dims mismatch — falling back to fresh.", lease.id());
                 return null;
             }
+            // Joining this world costs the build one coal, burnt in the snapshot so the engine lands holding it.
+            games.brennan.dungeontrain.train.engine.EngineLease.Fuelled fuelled =
+                    games.brennan.dungeontrain.train.engine.EngineLease.burnOnArrival(lease, snap);
+            snap = fuelled.snap();
             int cellCount = snap.getList("cells", net.minecraft.nbt.Tag.TAG_COMPOUND).size();
             Set<BlockPos> placed = CarriageBlockSnapshot.place(level, carriageOrigin, snap);
             net.minecraft.nbt.ListTag ents = snap.getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND);
             LOGGER.debug("[DungeonTrain] relay carriage id={} at {}: {} cells → {} blocks in world ({} entities, baseSeq={} deltas={})",
                     lease.id(), carriageOrigin, cellCount, placed == null ? "FAILED" : placed.size(),
                     ents.size(), lease.baseSeq(), lease.deltas() == null ? 0 : lease.deltas().size());
-            return placed == null ? null : new RelayPlacement(placed, ents);
+            return placed == null ? null : new RelayPlacement(placed, ents, fuelled.coal());
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Failed to place leased carriage id={}: {}", lease.id(), e.toString());
             return null;
@@ -252,13 +257,24 @@ public final class TrainAssembler {
     /** Register a leased Group carriage so later edits save back to the relay — one instance over the box. */
     private static void registerLeasedGroup(ServerLevel level, UUID subLevelId, UUID trainId, int anchorPIdx,
                                             BlockPos shipyardOrigin, CarriageDims box, CarriageVariant shell,
-                                            String stageId, SharedGroupDrift.Pick pick) {
+                                            String stageId, SharedGroupDrift.Pick pick, int fuel) {
         SharedCarriageClient.PoolLease lease = pick.lease();
         SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
             level, subLevelId, trainId, anchorPIdx, shipyardOrigin, box, shell.id(), true,
             pick.authoredHere(), lease.owner(), lease.id(), lease.token(), LeaseSnapshots.seqSeed(lease),
             stageId, lease.credits(), lease.deaths(), SharedCarriageClient.PoolLease.KIND_CARRIAGE_GROUP);
-        inst.stampContact(System.currentTimeMillis()); // fresh lease → no immediate heartbeat needed
+        reportArrival(inst, fuel);
+    }
+
+    /**
+     * A leased build has joined this world and burnt a coal. The relay hears the new count straight
+     * away rather than at the next idle heartbeat, so a world that closes in the next minute still
+     * paid for its visit.
+     */
+    private static void reportArrival(SharedCarriageRegistry.Instance inst, int fuel) {
+        inst.setFuel(fuel);
+        inst.stampContact(System.currentTimeMillis());
+        games.brennan.dungeontrain.event.SharedUploadFlow.heartbeat(inst);
     }
 
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
@@ -520,6 +536,7 @@ public final class TrainAssembler {
         SharedPick[] pickBySlot = new SharedPick[groupSize];
         // Each leased slot's captured entities, carried from placement to the deferred spawn below.
         net.minecraft.nbt.ListTag[] relayEntsBySlot = new net.minecraft.nbt.ListTag[groupSize];
+        int[] relayFuelBySlot = new int[groupSize];
         // Whose builds count as "own" for this group — resolved once, since it can't change mid-spawn.
         List<String> onlineUuids = onlinePlayerUuids(level);
         // Whole-room slots and the whole-group verdict — see WholeCarriageSelection / WholeGroupSelection.
@@ -562,6 +579,7 @@ public final class TrainAssembler {
             && SharedGroupDrift.drifts(anchorPIdx, groupSize, genCfg.seed(), fullStage);
         SharedGroupDrift.Pick groupLease = null;
         net.minecraft.nbt.ListTag groupLeaseEnts = null;
+        int groupLeaseFuelValue = -1;
         if (fullGroup) {
             BlockPos runOrigin = origin.offset(enclosedStartOffset, 0, 0);
             if (groupDrifts) {
@@ -578,6 +596,7 @@ public final class TrainAssembler {
                         blocks.addAll(placement.blocks());
                         groupLease = pick;
                         groupLeaseEnts = placement.ents();
+                        groupLeaseFuelValue = placement.fuel();
                     }
                 }
                 if (groupLease == null) SharedGroupDrift.logFresh(anchorPIdx);
@@ -588,6 +607,7 @@ public final class TrainAssembler {
             }
         }
         final SharedGroupDrift.Pick groupLeasePick = groupLease;
+        final int groupLeaseFuel = groupLeaseFuelValue;
         // A Half pair: two Half shells end to end, each its own pick — see HalfCarriageSelection.
         HalfCarriageSelection.HalfPick halfPick = layout == CarriageLayout.HALVES && !wholeGroup
             ? HalfCarriageSelection.pick(level, anchorPIdx, groupSize, dims, genCfg.seed(), anchorGate) : null;
@@ -670,6 +690,7 @@ public final class TrainAssembler {
                 } else {
                     carriageBlocks = placement.blocks();
                     relayEntsBySlot[slot] = placement.ents();
+                    relayFuelBySlot[slot] = placement.fuel();
                     pickBySlot[slot] = pick;
                     // This slot now holds somebody else's build, and this path never reaches
                     // CarriagePlacer.placeAt — so the record has to be cleared here or nowhere. The
@@ -786,7 +807,7 @@ public final class TrainAssembler {
                     lease.id(), lease.token(),
                     LeaseSnapshots.seqSeed(lease), // seq floor = max(baseSeq, delta seqs) so our edits clear the relay watermark
                     stageBySlot[slot], lease.credits(), lease.deaths());
-                inst.stampContact(System.currentTimeMillis()); // fresh lease → no immediate heartbeat needed
+                reportArrival(inst, relayFuelBySlot[slot]);
                 continue;
             }
             if (fullGroup) {
@@ -798,7 +819,7 @@ public final class TrainAssembler {
                     // A leased Group carriage: its blocks and entities are the build as its world left it,
                     // so nothing is generated. Registered once, at the first carriage, over the whole box.
                     registerLeasedGroup(level, ship.subLevelId(), trainId, carriagePIdx, carriageShipyardOrigin,
-                        groupBox, fullPick.shell(), fullStage, groupLeasePick);
+                        groupBox, fullPick.shell(), fullStage, groupLeasePick, groupLeaseFuel);
                     if (groupLeaseEnts != null && !groupLeaseEnts.isEmpty()) {
                         pendingRelayEntities[slot] = new PendingRelayEntitySpawn(
                             carriageShipyardOrigin, groupLeaseEnts, carriagePIdx, length, groupSize);
@@ -816,10 +837,12 @@ public final class TrainAssembler {
                         // A fresh drifting Group carriage: uploads whole the first time someone changes it.
                         // Registered AFTER the contents pass, as a fresh shared slot is — registered before
                         // it, every contents block would count as an edit and upload an untouched build.
+                        int coal = games.brennan.dungeontrain.train.engine.EngineStamp.ensure(level,
+                            carriageShipyardOrigin, groupBox, games.brennan.dungeontrain.train.engine.DriftEngine.FRESH_COAL);
                         SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,
                             carriageShipyardOrigin, groupBox, fullPick.shell().id(), false, false, "", null, null, 0,
                             fullStage, SharedCarriageClient.Credits.EMPTY, SharedCarriageClient.Deaths.EMPTY,
-                            SharedCarriageClient.PoolLease.KIND_CARRIAGE_GROUP);
+                            SharedCarriageClient.PoolLease.KIND_CARRIAGE_GROUP).setFuel(coal);
                     }
                 }
                 continue;
@@ -879,16 +902,30 @@ public final class TrainAssembler {
             // The portal exclusion mirrors tryLeaseShared's: what stands in a portal slot is a corridor
             // (or the sealed cart between two of them), not this slot's rolled variant, so registering
             // it would upload a corridor to the community pool the first time anyone edited one.
+            // An ordinary carriage whose template carries an Engine Block drifts too: the engine is what
+            // makes a carriage drift. Every fresh drifting carriage gets one, holding three coal, set down
+            // before registering so it is not mistaken for somebody's edit.
             if (games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()
-                    && SharedCarriageFlags.isSharedVariant(variant.id())
                     && !PortalCarriageSelection.isPortalPart(level, carriagePIdx)
-                    && stageBySlot[slot] != null && !stageBySlot[slot].isEmpty()) {
+                    && stageBySlot[slot] != null && !stageBySlot[slot].isEmpty()
+                    && (SharedCarriageFlags.isSharedVariant(variant.id())
+                        || games.brennan.dungeontrain.train.engine.EngineStamp.find(level, carriageShipyardOrigin,
+                            games.brennan.dungeontrain.train.engine.EngineStamp.size(dims)) != null)) {
+                int coal = games.brennan.dungeontrain.train.engine.EngineStamp.ensure(level, carriageShipyardOrigin,
+                        dims, games.brennan.dungeontrain.train.engine.DriftEngine.FRESH_COAL);
                 // No credits and no deaths: nobody has contributed to — or died in — a brand-new local
                 // build yet.
                 SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,
                         carriageShipyardOrigin, dims, variant.id(), false, false, "", null, null, 0,
                         stageBySlot[slot], SharedCarriageClient.Credits.EMPTY,
-                        SharedCarriageClient.Deaths.EMPTY);
+                        SharedCarriageClient.Deaths.EMPTY).setFuel(coal);
+            } else if (games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()
+                    && !PortalCarriageSelection.isPortalPart(level, carriagePIdx)
+                    && stageBySlot[slot] != null && !stageBySlot[slot].isEmpty()
+                    && !(variant instanceof CarriageVariant.Builtin b && b.type() == CarriagePlacer.CarriageType.FLATBED)) {
+                // Not drifting, but could be: setting an Engine Block down in it later makes it drift.
+                games.brennan.dungeontrain.train.engine.EngineConversion.remember(
+                        carriagePIdx, stageBySlot[slot], variant.id());
             }
         }
         long tAfterContents = System.nanoTime();

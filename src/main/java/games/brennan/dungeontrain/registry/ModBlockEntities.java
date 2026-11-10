@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.block.engine.EngineBlockEntity;
 import games.brennan.dungeontrain.block.entity.PhotographFrameBlockEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -18,6 +19,12 @@ public final class ModBlockEntities {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PhotographFrameBlockEntity>> PHOTOGRAPH_FRAME =
         BLOCK_ENTITY_TYPES.register("photograph_frame", () -> BlockEntityType.Builder
             .of(PhotographFrameBlockEntity::new, ModBlocks.PHOTOGRAPH_FRAME.get())
+            .build(null));
+
+    /** The Engine Block's coal — see {@link EngineBlockEntity}. */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EngineBlockEntity>> ENGINE_BLOCK =
+        BLOCK_ENTITY_TYPES.register("engine_block", () -> BlockEntityType.Builder
+            .of(EngineBlockEntity::new, ModBlocks.ENGINE_BLOCK.get())
             .build(null));
 
     private ModBlockEntities() {}

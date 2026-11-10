@@ -18050,5 +18050,37 @@
         "12"
       ]
     }
+  },
+  "gui.dungeontrain.engine_block.coal": {
+    "1": {
+      "label": "coal in the Engine Block",
+      "examples": [
+        "3",
+        "40"
+      ]
+    },
+    "2": {
+      "label": "the most coal it holds (always 64)",
+      "examples": [
+        "64"
+      ]
+    }
+  },
+  "gui.dungeontrain.engine_block.worlds.one": {
+    "1": {
+      "label": "worlds the coal lasts (always 1)",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.engine_block.worlds.other": {
+    "1": {
+      "label": "how many more worlds the coal lasts",
+      "examples": [
+        "3",
+        "40"
+      ]
+    }
   }
 }

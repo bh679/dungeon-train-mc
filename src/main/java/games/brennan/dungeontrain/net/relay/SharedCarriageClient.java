@@ -145,7 +145,7 @@ public final class SharedCarriageClient {
      */
     public record PoolLease(int id, String token, String blocks, int l, int h, int w,
                             int baseSeq, List<DeltaRec> deltas, String owner, Credits credits,
-                            Deaths deaths, String kind, String subKind) {
+                            Deaths deaths, String kind, String subKind, int fuel, String originBlocks) {
 
         /** The relay's name for a whole carriage — what every lease was before rooms could drift. */
         public static final String KIND_CARRIAGE = "carriage";
@@ -159,6 +159,16 @@ public final class SharedCarriageClient {
             // a carriage — the SQL literal saw to that.
             if (kind == null || kind.isEmpty()) kind = KIND_CARRIAGE;
             if (subKind == null) subKind = "";
+            // -1: the relay has no count (built before engines, or a relay too old to keep one).
+            if (fuel < 0) fuel = -1;
+            if (originBlocks == null) originBlocks = "";
+        }
+
+        /** The shape this record had before the relay kept an engine's fuel. */
+        public PoolLease(int id, String token, String blocks, int l, int h, int w,
+                         int baseSeq, List<DeltaRec> deltas, String owner, Credits credits,
+                         Deaths deaths, String kind, String subKind) {
+            this(id, token, blocks, l, h, w, baseSeq, deltas, owner, credits, deaths, kind, subKind, -1, "");
         }
 
         /** The shape this record had before a lease could name its kind. */
@@ -1215,7 +1225,9 @@ public final class SharedCarriageClient {
             String owner = o.has("owner") && !o.get("owner").isJsonNull() ? o.get("owner").getAsString() : "";
             PoolLease lease = new PoolLease(o.get("id").getAsInt(), o.get("token").getAsString(),
                     o.get("blocks").getAsString(), dl, dh, dw, baseSeq, parseDeltas(o), owner,
-                    parseCredits(o), parseDeaths(o), str(o, "kind"), str(o, "subKind"));
+                    parseCredits(o), parseDeaths(o), str(o, "kind"), str(o, "subKind"),
+                    o.has("fuel") && !o.get("fuel").isJsonNull() ? o.get("fuel").getAsInt() : -1,
+                    str(o, "originBlocks"));
             if (wantsRoom && (!lease.isRoom() || !lease.subKind().equals(subKind))) {
                 LOGGER.warn("[DungeonTrain] asked the relay for room '{}' and was served kind={} subKind='{}' "
                         + "(id={}) — an older relay ignores the kind; returning it unused. Update the relay.",
@@ -1348,7 +1360,14 @@ public final class SharedCarriageClient {
      * lease), or {@code ERROR} with {@code mustCompact} set when the relay's delta log is full (409).
      */
     public static CompletableFuture<DeltaResult> delta(int id, String token, int seq, String cellsBase64, String text) {
+        return delta(id, token, seq, cellsBase64, text, -1);
+    }
+
+    /** As above, carrying the build's Engine Block {@code fuel} (-1 says nothing). */
+    public static CompletableFuture<DeltaResult> delta(int id, String token, int seq, String cellsBase64, String text,
+                                                       int fuel) {
         JsonObject body = new JsonObject();
+        addFuel(body, fuel);
         body.addProperty("id", id);
         body.addProperty("token", token);
         body.addProperty("seq", seq);
@@ -1388,6 +1407,12 @@ public final class SharedCarriageClient {
         return save(id, token, blocksBase64, text, baseSeq, null);
     }
 
+    /** The in-play save carrying the build's Engine Block {@code fuel} (-1 says nothing). */
+    public static CompletableFuture<CallStatus> saveWithFuel(int id, String token, String blocksBase64, String text,
+                                                             int baseSeq, int fuel) {
+        return save(id, token, blocksBase64, text, baseSeq, null, null, fuel);
+    }
+
     /**
      * As above, replacing the build's sidecar document too — the builder/editor re-save path.
      *
@@ -1402,7 +1427,13 @@ public final class SharedCarriageClient {
     /** As above, with the loot prefabs the build's chests link to — see {@link #submitBuild}. */
     public static CompletableFuture<CallStatus> save(int id, String token, String blocksBase64, String text,
                                                      int baseSeq, String sidecars, String lootPrefabs) {
+        return save(id, token, blocksBase64, text, baseSeq, sidecars, lootPrefabs, -1);
+    }
+
+    private static CompletableFuture<CallStatus> save(int id, String token, String blocksBase64, String text,
+                                                      int baseSeq, String sidecars, String lootPrefabs, int fuel) {
         JsonObject body = new JsonObject();
+        addFuel(body, fuel);
         body.addProperty("id", id);
         body.addProperty("token", token);
         body.addProperty("blocks", blocksBase64);
@@ -1411,6 +1442,16 @@ public final class SharedCarriageClient {
         if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
         addLootPrefabs(body, lootPrefabs);
         return statusPost("/carriages/save", body);
+    }
+
+    /**
+     * The {@code fuel} field: the coal left in the build's Engine Block. Sent only for a real count
+     * (0..64); -1 means this world knows nothing about it, and the relay then keeps what it has.
+     */
+    private static void addFuel(JsonObject body, int fuel) {
+        if (fuel >= 0 && fuel <= games.brennan.dungeontrain.train.engine.DriftEngine.MAX_COAL) {
+            body.addProperty("fuel", fuel);
+        }
     }
 
     /**
@@ -1479,7 +1520,14 @@ public final class SharedCarriageClient {
     }
 
     public static CompletableFuture<CallStatus> heartbeat(int id, String token, String holderUuid, String holderName) {
+        return heartbeat(id, token, holderUuid, holderName, -1);
+    }
+
+    /** As above, carrying the build's Engine Block {@code fuel} (-1 says nothing). */
+    public static CompletableFuture<CallStatus> heartbeat(int id, String token, String holderUuid, String holderName,
+                                                          int fuel) {
         JsonObject body = new JsonObject();
+        addFuel(body, fuel);
         body.addProperty("id", id);
         body.addProperty("token", token);
         // Carries the host uuid so the relay can backfill a lease claimed before any player was in the
@@ -1493,7 +1541,17 @@ public final class SharedCarriageClient {
 
     /** Return the lease. A non-empty {@code blocksBase64} does a final compacting save (advances {@code baseSeq}). */
     public static CompletableFuture<CallStatus> returnLease(int id, String token, String blocksBase64, String text, int baseSeq) {
+        return returnLease(id, token, blocksBase64, text, baseSeq, -1);
+    }
+
+    /**
+     * As above, carrying the build's Engine Block {@code fuel} (-1 says nothing). A build returned at
+     * zero is retired: the relay never leases it again.
+     */
+    public static CompletableFuture<CallStatus> returnLease(int id, String token, String blocksBase64, String text,
+                                                            int baseSeq, int fuel) {
         JsonObject body = new JsonObject();
+        addFuel(body, fuel);
         body.addProperty("id", id);
         body.addProperty("token", token);
         if (blocksBase64 != null && !blocksBase64.isEmpty()) {
