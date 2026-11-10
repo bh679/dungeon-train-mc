@@ -7,10 +7,10 @@ Writes into src/main/resources/assets/dungeontrain/textures/:
   block/drifting_engine_block_bottom.png
   gui/container/drifting_engine_block.png                 the coal screen
 
-Only the fire animates: the iron is drawn from one seeded stream and the fire from another, so
-every frame's iron is identical. Re-run after tuning a colour; the output is deterministic.
+Only the fire animates: the iron has no randomness at all and the fire draws from its own seeded
+stream, so every frame's iron is identical. Re-run after tuning a colour; the output is deterministic.
 
-    python3 scripts/textures/engine-block.py
+    python3 scripts/textures/drifting-engine-block.py
 """
 import json
 import math
@@ -24,8 +24,12 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..",
 FRAMES = 6
 FRAME_TICKS = 3
 
-IRON = ["#1a1a1e", "#202025", "#26262c", "#2c2c33", "#33333b"]
-EDGE, HI, RIVET, SLOT = "#111114", "#3d3d46", "#55555f", "#151518"
+# Iron, lightest to darkest. Smooth on purpose: no per-pixel noise, only a soft gradient and a brushed grain.
+IRON = ["#303038", "#2b2b32", "#26262c", "#212126", "#1c1c21"]
+# Outline and seams are dark grey a step under the iron, not black, so they read as edges rather than ink.
+EDGE, HI, RIVET, SLOT = "#1c1c21", "#3d3d46", "#55555f", "#1e1e23"
+# Brushed grain, one entry per row: -1 a lighter streak, +1 a darker one.
+BRUSH = [0, 0, -1, 0, 1, 0, 0, -1, 0, 0, 1, 0, -1, 0, 0, 0]
 GLOW = ["#ffe28f", "#ffbf3c", "#f58a23", "#e0561c", "#a8321a"]
 COLD = ["#0a0a0c", "#121012", "#1a1311"]
 
@@ -38,12 +42,26 @@ def rng(s):
     return r
 
 
-def iron_px(x, y, r):
-    v = r()
-    i = 0 if v < .12 else 1 if v < .35 else 2 if v < .7 else 3 if v < .92 else 4
-    if x == 1 or y == 1: i = min(4, i + 1)
-    if x == 14 or y == 14: i = max(0, i - 1)
-    return IRON[i]
+def _iron(x: int, y: int, tone: int) -> str:
+    """`tone` (0 lightest .. 4 darkest) plus the brushed grain, lit along the top-left inner
+    edge and shaded along the bottom-right, as vanilla blocks are."""
+    i = tone + BRUSH[y]
+    if x == 1 or y == 1:
+        i -= 1
+    if x == 14 or y == 14:
+        i += 1
+    return IRON[max(0, min(4, i))]
+
+
+def iron_px(x: int, y: int, r) -> str:
+    """Front and sides: a soft gradient, lighter top-left to darker bottom-right, brushed across."""
+    t = (x + y) / 30
+    return _iron(x, y, 1 if t < .3 else 2 if t < .7 else 3)
+
+
+def iron_flat(x: int, y: int, r) -> str:
+    """Top and bottom: one even tone, brushed across."""
+    return _iron(x, y, 2)
 
 
 ANIM = [None]
@@ -95,11 +113,11 @@ def top(x, y, r, lit):
     if d < 2.1: return (GLOW[3] if ANIM[0]() < .5 else GLOW[4]) if lit else "#08080a"
     if d < 3.2: return SLOT if d < 2.7 else HI
     if x in (4, 11) and 1 < y < 14: return SLOT
-    return iron_px(x, y, r)
+    return iron_flat(x, y, r)
 
 
 def bottom(x, y, r, lit):
-    return EDGE if fr(x, y) else iron_px(x, y, r)
+    return EDGE if fr(x, y) else iron_flat(x, y, r)
 
 
 def grid(fn, seed, lit, k=0):
