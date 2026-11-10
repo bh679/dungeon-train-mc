@@ -13,8 +13,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * The main menu's backdrop: in place of the vanilla panorama, the loading screens' dark gradient
- * with the animated ring logo huge across it (half again the screen's longer side, so the ring
- * runs off the edges and the menu sits in its middle). The buttons and wordmark draw on top.
+ * with the animated ring logo huge across it: half again the screen's longer side, centred low
+ * and to the right so the ring sweeps in from the bottom-right corner and runs off the edges. The
+ * buttons and wordmark draw on top.
  *
  * <p>Where the ring can't draw (its shader missing, or its cracks still building) the gradient
  * shows alone.</p>
@@ -24,6 +25,9 @@ public abstract class TitleScreenLogoRingMixin extends Screen {
 
     /** The ring's size as a share of the screen's longer side. */
     private static final float RING_SHARE = 1.5f;
+    /** The ring's centre, as a share of the screen's width and height (bottom right). */
+    private static final float CENTRE_X = 0.8f;
+    private static final float CENTRE_Y = 0.85f;
     /** Target pixels per screen pixel: the ring is huge, so a little under 1 keeps it cheap. */
     private static final float RING_RENDER_SCALE = 0.75f;
 
@@ -35,7 +39,7 @@ public abstract class TitleScreenLogoRingMixin extends Screen {
     private void dungeontrain$logoBackdrop(GuiGraphics g, float partialTick, CallbackInfo ci) {
         LoadingScreenTheme.fillBackground(g, this.width, this.height);
         float size = Math.max(this.width, this.height) * RING_SHARE;
-        LogoRingRenderer.get().drawRing(g, (this.width - size) / 2f, (this.height - size) / 2f, size, 1f, RING_RENDER_SCALE);
+        LogoRingRenderer.get().drawRing(g, this.width * CENTRE_X - size / 2f, this.height * CENTRE_Y - size / 2f, size, 1f, RING_RENDER_SCALE);
         ci.cancel();
     }
 }
