@@ -34877,6 +34877,78 @@
       "released": true,
       "released_in": "v0.1760.0",
       "released_at": "2026-11-10T09:32:19Z"
+    },
+    {
+      "id": "carriage-mob-freeze-fix",
+      "version": "0.1760.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Freeze fix",
+      "summary": "Fixed a rare freeze where the train, mobs and chests suddenly stopped while you could still look around and move. It could happen when a mob in a carriage room went for a wander.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2597,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1764.0",
+      "released_at": "2026-11-10T14:22:29Z"
+    },
+    {
+      "id": "drifting-effect",
+      "version": "0.1762.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Drifting effect",
+      "summary": "A new Drifting effect shows while you're inside a drifting carriage, so you know the train will remember the changes you make there.",
+      "highlights": [],
+      "pr": 2598,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1764.0",
+      "released_at": "2026-11-10T14:22:29Z"
+    },
+    {
+      "id": "mix-zone-every-band",
+      "version": "0.1763.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "The patchwork stretch shows more",
+      "summary": "Late in the journey, the patchwork of floating ground now draws on every kind of place you have passed, each wearing its own scenery. Some patches hold a ruined building.",
+      "highlights": [],
+      "pr": 2599,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1764.0",
+      "released_at": "2026-11-10T14:22:29Z"
+    },
+    {
+      "id": "sable-locked-natives-fallback",
+      "version": "0.1760.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Startup crash fix",
+      "summary": "Fixed a crash when loading a world that could happen on Windows after the game had previously crashed or was still running in the background.",
+      "highlights": [],
+      "pr": 2595,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1764.0",
+      "released_at": "2026-11-10T14:22:29Z"
     }
   ]
 }
