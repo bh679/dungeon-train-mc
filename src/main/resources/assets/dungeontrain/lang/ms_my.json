@@ -996,6 +996,8 @@
   "effect.dungeontrain.warmth_of_the_fire.description": "Penyembuhan Perlahan",
   "effect.dungeontrain.drifting": "Hanyut",
   "effect.dungeontrain.drifting.description": "Kereta api mengingati perubahan yang anda buat di sini",
+  "effect.dungeontrain.live": "Siaran langsung",
+  "effect.dungeontrain.live.description": "Anda sedang bersiaran langsung. Penonton melihat apa yang anda lihat",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Rata)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",

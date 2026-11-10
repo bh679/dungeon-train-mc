@@ -996,6 +996,8 @@
   "effect.dungeontrain.warmth_of_the_fire.description": "การรักษาแบบช้า",
   "effect.dungeontrain.drifting": "ล่องลอย",
   "effect.dungeontrain.drifting.description": "รถไฟจดจำสิ่งที่คุณเปลี่ยนที่นี่",
+  "effect.dungeontrain.live": "ถ่ายทอดสด",
+  "effect.dungeontrain.live.description": "คุณกำลังถ่ายทอดสด ผู้ชมเห็นสิ่งที่คุณเห็น",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (พื้นราบ)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (เนเธอร์)",

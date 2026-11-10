@@ -996,6 +996,8 @@
   "effect.dungeontrain.warmth_of_the_fire.description": "Hồi Máu Chậm",
   "effect.dungeontrain.drifting": "Trôi dạt",
   "effect.dungeontrain.drifting.description": "Đoàn tàu ghi nhớ những thay đổi bạn tạo ra ở đây",
+  "effect.dungeontrain.live": "Trực tiếp",
+  "effect.dungeontrain.live.description": "Bạn đang phát trực tiếp. Người xem thấy những gì bạn thấy",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Phẳng)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Địa Ngục)",

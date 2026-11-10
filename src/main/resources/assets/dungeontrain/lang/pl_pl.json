@@ -1070,6 +1070,8 @@
   "effect.dungeontrain.warmth_of_the_fire.description": "Powolne leczenie",
   "effect.dungeontrain.drifting": "Dryf",
   "effect.dungeontrain.drifting.description": "Pociąg pamięta zmiany, które tu wprowadzasz",
+  "effect.dungeontrain.live": "Na żywo",
+  "effect.dungeontrain.live.description": "Jesteś na żywo. Widzowie widzą to, co ty",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Superpłaski)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",

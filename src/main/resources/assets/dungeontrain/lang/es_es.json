@@ -1033,6 +1033,8 @@
   "effect.dungeontrain.warmth_of_the_fire.description": "Curación Lenta",
   "effect.dungeontrain.drifting": "A la deriva",
   "effect.dungeontrain.drifting.description": "El tren recuerda los cambios que haces aquí",
+  "effect.dungeontrain.live": "En directo",
+  "effect.dungeontrain.live.description": "Estás en directo. Los espectadores ven lo que ves",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Superplano)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",

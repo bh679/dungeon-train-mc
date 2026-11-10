@@ -1000,6 +1000,8 @@
       "effect.dungeontrain.warmth_of_the_fire.description",
       "effect.dungeontrain.drifting",
       "effect.dungeontrain.drifting.description",
+      "effect.dungeontrain.live",
+      "effect.dungeontrain.live.description",
       "generator.dungeontrain.dungeon_train",
       "generator.dungeontrain.dungeon_train_flat",
       "generator.dungeontrain.dungeon_train_nether",

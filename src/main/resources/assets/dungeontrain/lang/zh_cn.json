@@ -996,6 +996,8 @@
   "effect.dungeontrain.warmth_of_the_fire.description": "缓慢恢复生命",
   "effect.dungeontrain.drifting": "漂流",
   "effect.dungeontrain.drifting.description": "列车会记住你在这里做的改动",
+  "effect.dungeontrain.live": "直播中",
+  "effect.dungeontrain.live.description": "你正在直播。观众能看到你看到的一切",
   "generator.dungeontrain.dungeon_train": "地牢列车",
   "generator.dungeontrain.dungeon_train_flat": "地牢列车（超平坦）",
   "generator.dungeontrain.dungeon_train_nether": "地牢列车（下界）",

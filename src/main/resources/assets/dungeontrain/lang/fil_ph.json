@@ -996,6 +996,8 @@
   "effect.dungeontrain.warmth_of_the_fire.description": "Mabagal na Paggaling",
   "effect.dungeontrain.drifting": "Palutang-lutang",
   "effect.dungeontrain.drifting.description": "Naaalala ng tren ang mga binabago mo rito",
+  "effect.dungeontrain.live": "Live",
+  "effect.dungeontrain.live.description": "Live ka. Nakikita ng mga manonood ang nakikita mo",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Patag)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",

@@ -1205,6 +1205,8 @@
   "effect.dungeontrain.warmth_of_the_fire.description": "Slow Healing",
   "effect.dungeontrain.drifting": "Drifting",
   "effect.dungeontrain.drifting.description": "The train remembers changes you make here",
+  "effect.dungeontrain.live": "Live",
+  "effect.dungeontrain.live.description": "You're live. Viewers see what you see",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Flat)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",

@@ -1070,6 +1070,8 @@
   "effect.dungeontrain.warmth_of_the_fire.description": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "19c5eb154798a008"},
   "effect.dungeontrain.drifting": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "8ca6967b2b3b7065"},
   "effect.dungeontrain.drifting.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "ba89c4e5f8179c1a"},
+  "effect.dungeontrain.live": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "b64ac05f17e64d03"},
+  "effect.dungeontrain.live.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0d049f0fbe69feca"},
   "generator.dungeontrain.dungeon_train": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "e48b62180976725b"},
   "generator.dungeontrain.dungeon_train_flat": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "e535e326eecdd97b"},
   "generator.dungeontrain.dungeon_train_nether": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "0af5ce18dc8e4ab8"},
