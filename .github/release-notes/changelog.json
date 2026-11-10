@@ -34650,6 +34650,42 @@
       "released": true,
       "released_in": "v0.1747.0",
       "released_at": "2026-11-09T12:57:53Z"
+    },
+    {
+      "id": "more-keys-in-chests",
+      "version": "0.1749.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot",
+        "balance"
+      ],
+      "title": "More keys in chests and pots",
+      "summary": "Trial Keys and Ominous Trial Keys turn up more often in chests, pots and vases.",
+      "highlights": [],
+      "pr": 2584,
+      "date": "2026-11-09",
+      "released": true,
+      "released_in": "v0.1750.0",
+      "released_at": "2026-11-10T03:03:32Z"
+    },
+    {
+      "id": "sculk-snapper-no-mending",
+      "version": "0.1748.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot",
+        "balance"
+      ],
+      "title": "Mending fix",
+      "summary": "Small improvement to how mending is found",
+      "highlights": [],
+      "pr": 2583,
+      "date": "2026-11-09",
+      "released": true,
+      "released_in": "v0.1750.0",
+      "released_at": "2026-11-10T03:03:32Z"
     }
   ]
 }
