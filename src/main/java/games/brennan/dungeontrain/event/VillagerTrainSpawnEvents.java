@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.adventureitemnames.api.NameComposer;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.compat.GearResaleFloor;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.difficulty.NewJobMendingBlock;
@@ -22,6 +23,7 @@ import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import org.slf4j.Logger;
@@ -196,11 +198,28 @@ public final class VillagerTrainSpawnEvents {
             NewJobMendingBlock.replaceMendingBooks(villager, scaled, 0);
             villager.addTag(NewJobMendingBlock.BLOCKED_TAG);
         }
-        villager.setOffers(scaled);
+        villager.setOffers(withResaleFloor(scaled));
         villager.addTag(REROLLED_TAG);
 
         LOGGER.info("[DungeonTrain] Rerolled train villager: uuid={} profession={} level={}",
             villager.getUUID(), profession, newLevel);
+    }
+
+    /**
+     * Raises every gear and enchanted-book offer to at least what Trade Everything would pay for it
+     * ({@link GearResaleFloor}), so buying here and selling to another villager can't profit. Without
+     * Trade Everything, or if its API throws, the offers are returned unchanged.
+     */
+    private static MerchantOffers withResaleFloor(MerchantOffers offers) {
+        if (!ModList.get().isLoaded("tradeeverything")) return offers;
+        try {
+            MerchantOffers floored = new MerchantOffers();
+            for (MerchantOffer offer : offers) floored.add(GearResaleFloor.apply(offer));
+            return floored;
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Could not apply the gear resale floor; offers left as rolled: {}", t.toString());
+            return offers;
+        }
     }
 
     /**
