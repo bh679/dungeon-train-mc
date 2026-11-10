@@ -87,7 +87,7 @@ public final class DriftEngine {
     /**
      * {@code snap} with its engine holding {@code coal}: the existing engine updated, or — when the build
      * has none (built before engines, or saved by a version that dropped the unknown block) — a new one,
-     * in place of a stone-type block facing the room or else on a free floor cell ({@link EngineSpot}).
+     * in place of a block facing the room or else on a free floor cell ({@link EngineSpot}).
      * Returns {@code snap} unchanged if there is no engine and no place for one. Never mutates the
      * argument.
      */
@@ -104,7 +104,7 @@ public final class DriftEngine {
         }
         int l = out.getInt("l"), h = out.getInt("h"), w = out.getInt("w");
         Occupancy occ = Occupancy.of(cells);
-        EngineSpot.Spot spot = EngineSpot.find(l, h, w, occ::solid, occ::stoneLike);
+        EngineSpot.Spot spot = EngineSpot.find(l, h, w, occ::solid, occ::grade);
         if (spot == null) return snap;
         CompoundTag state = new CompoundTag();
         state.putString("Name", ENGINE_ID);
@@ -218,30 +218,28 @@ public final class DriftEngine {
         return ((long) (x & 0x1FFFFF) << 42) | ((long) (y & 0x1FFFFF) << 21) | (z & 0x1FFFFF);
     }
 
-    /** Which cells of a snapshot hold a block, and which of those are plain stone-type masonry. */
-    private record Occupancy(Map<Long, Integer> index, java.util.Set<Long> stone) {
+    /** Which cells of a snapshot hold a block, and how readily the engine may take each one's place. */
+    private record Occupancy(Map<Long, Integer> index, Map<Long, Integer> grades) {
         static Occupancy of(ListTag cells) {
             Map<Long, Integer> index = new HashMap<>();
-            java.util.Set<Long> stone = new java.util.HashSet<>();
+            Map<Long, Integer> grades = new HashMap<>();
             for (int i = 0; i < cells.size(); i++) {
                 CompoundTag cell = cells.getCompound(i);
                 int[] p = cell.getIntArray("p");
                 if (p.length != 3) continue;
                 index.put(key(p), i);
-                // A block entity (a chest, a sign) is never masonry, whatever it is called.
-                if (!cell.contains("b") && EngineSpot.isStoneLike(cell.getCompound("s").getString("Name"))) {
-                    stone.add(key(p));
-                }
+                // A block entity (a chest, a sign) is never building material, whatever it is called.
+                if (!cell.contains("b")) grades.put(key(p), EngineSpot.grade(cell.getCompound("s").getString("Name")));
             }
-            return new Occupancy(index, stone);
+            return new Occupancy(index, grades);
         }
 
         boolean solid(int x, int y, int z) {
             return index.containsKey(key(x, y, z));
         }
 
-        boolean stoneLike(int x, int y, int z) {
-            return stone.contains(key(x, y, z));
+        int grade(int x, int y, int z) {
+            return grades.getOrDefault(key(x, y, z), EngineSpot.NONE);
         }
 
         int index(int x, int y, int z) {

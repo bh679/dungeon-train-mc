@@ -63,7 +63,7 @@ public final class EngineStamp {
 
     /**
      * Make sure the box has an engine holding {@code coal}: the one already there, or a new one in place
-     * of a stone-type block facing the room, else on a free floor cell ({@link EngineSpot}). Returns the
+     * of a block facing the room, else on a free floor cell ({@link EngineSpot}). Returns the
      * coal the box's engine holds afterwards, or -1 when there was no engine and nowhere to put one.
      */
     public static int ensure(ServerLevel level, BlockPos origin, Vec3i size, int coal) {
@@ -74,7 +74,7 @@ public final class EngineStamp {
         }
         EngineSpot.Spot spot = EngineSpot.find(size.getX(), size.getY(), size.getZ(),
                 (x, y, z) -> !level.getBlockState(origin.offset(x, y, z)).isAir(),
-                (x, y, z) -> isStoneLike(level, origin.offset(x, y, z)));
+                (x, y, z) -> grade(level, origin.offset(x, y, z)));
         if (spot == null) return -1;
         BlockPos pos = origin.offset(spot.x(), spot.y(), spot.z());
         Direction facing = "south".equals(spot.facing()) ? Direction.SOUTH : Direction.NORTH;
@@ -89,10 +89,10 @@ public final class EngineStamp {
         return -1;
     }
 
-    /** A full, plain stone-type block with nothing stored in it — see {@link EngineSpot#isStoneLike}. */
-    private static boolean isStoneLike(ServerLevel level, BlockPos pos) {
+    /** How readily the engine takes this block's place: only a full block with nothing stored in it, by {@link EngineSpot#grade}. */
+    private static int grade(ServerLevel level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
-        if (state.hasBlockEntity() || !state.isCollisionShapeFullBlock(level, pos)) return false;
-        return EngineSpot.isStoneLike(BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString());
+        if (state.hasBlockEntity() || !state.isCollisionShapeFullBlock(level, pos)) return EngineSpot.NONE;
+        return EngineSpot.grade(BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString());
     }
 }

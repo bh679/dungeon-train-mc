@@ -115,15 +115,21 @@ class DriftEngineTest {
 
     // ---- writing the engine ----
 
-    /** {@link #shell()} with its walls built of {@code wall} instead of stone. */
-    private static CompoundTag shellWalls(String wall) {
+    /** {@link #shell()} with its stone walls built of {@code wall} and its plank floor of {@code floor}. */
+    private static CompoundTag shellOf(String wall, String floor) {
         CompoundTag snap = shell();
         ListTag cells = snap.getList("cells", Tag.TAG_COMPOUND);
         for (int i = 0; i < cells.size(); i++) {
             CompoundTag s = cells.getCompound(i).getCompound("s");
             if (s.getString("Name").equals("minecraft:stone")) s.putString("Name", wall);
+            else if (s.getString("Name").equals("minecraft:oak_planks")) s.putString("Name", floor);
         }
         return snap;
+    }
+
+    private static int[] enginePos(CompoundTag snap) {
+        ListTag cells = snap.getList("cells", Tag.TAG_COMPOUND);
+        return cells.getCompound(DriftEngine.findEngine(cells)).getIntArray("p");
     }
 
     @Test
@@ -140,8 +146,8 @@ class DriftEngineTest {
     }
 
     @Test
-    void withNoStoneItStandsOnAFreeFloorCellAgainstAWall() {
-        CompoundTag before = shellWalls("minecraft:oak_planks");
+    void withNothingReplaceableItStandsOnAFreeFloorCellAgainstAWall() {
+        CompoundTag before = shellOf("minecraft:glass", "minecraft:glass");
         CompoundTag snap = DriftEngine.withEngineCoal(before, 3);
         ListTag cells = snap.getList("cells", Tag.TAG_COMPOUND);
         assertEquals(before.getList("cells", Tag.TAG_COMPOUND).size() + 1, cells.size(), "added, not replaced");
@@ -151,7 +157,7 @@ class DriftEngineTest {
     @Test
     void neverTakesTheEndPlanesOrABlockEntity() {
         // Bricks only in the door plane (x=0) and a stone-named chest mid-wall: neither may be taken.
-        CompoundTag snap = shellWalls("minecraft:oak_planks");
+        CompoundTag snap = shellOf("minecraft:glass", "minecraft:glass");
         CompoundTag stoneChest = cell(4, 1, 0, "minecraft:stone");
         stoneChest.put("b", new CompoundTag());
         ListTag cells = snap.getList("cells", Tag.TAG_COMPOUND);
@@ -168,18 +174,42 @@ class DriftEngineTest {
     }
 
     @Test
-    void stoneTypeBlocks() {
+    void masonryBeatsWoodWhereverItIs() {
+        // Wooden walls, stone floor: the stone floor wins over the wooden wall.
+        int[] p = enginePos(DriftEngine.withEngineCoal(shellOf("minecraft:oak_planks", "minecraft:stone"), 3));
+        assertEquals(0, p[1], "in the floor");
+    }
+
+    @Test
+    void woodIsUsedWhenThereIsNoMasonry() {
+        int[] p = enginePos(DriftEngine.withEngineCoal(shellOf("minecraft:spruce_planks", "minecraft:glass"), 3));
+        assertArrayEquals(new int[]{4, 1, 0}, p, "in the wooden side wall");
+    }
+
+    @Test
+    void grades() {
         for (String yes : new String[]{"minecraft:stone", "minecraft:stone_bricks", "minecraft:cobblestone",
                 "minecraft:mossy_cobblestone", "minecraft:sandstone", "minecraft:cut_red_sandstone", "minecraft:tuff",
                 "minecraft:tuff_bricks", "minecraft:polished_deepslate", "minecraft:andesite", "minecraft:bricks",
-                "minecraft:nether_bricks", "minecraft:blackstone", "minecraft:basalt", "minecraft:end_stone"}) {
-            org.junit.jupiter.api.Assertions.assertTrue(EngineSpot.isStoneLike(yes), yes);
+                "minecraft:nether_bricks", "minecraft:blackstone", "minecraft:basalt", "minecraft:end_stone",
+                "minecraft:copper_block", "minecraft:oxidized_cut_copper", "minecraft:waxed_chiseled_copper",
+                "minecraft:quartz_block", "minecraft:smooth_quartz", "minecraft:obsidian", "minecraft:crying_obsidian",
+                "minecraft:mud_bricks"}) {
+            assertEquals(EngineSpot.PRIMARY, EngineSpot.grade(yes), yes);
+        }
+        for (String wood : new String[]{"minecraft:oak_planks", "minecraft:spruce_log", "minecraft:stripped_birch_wood",
+                "minecraft:crimson_stem", "minecraft:warped_hyphae", "minecraft:bamboo_block", "minecraft:dirt",
+                "minecraft:coarse_dirt", "minecraft:rooted_dirt", "minecraft:mud", "minecraft:packed_mud",
+                "minecraft:moss_block", "minecraft:clay", "minecraft:terracotta", "minecraft:white_glazed_terracotta"}) {
+            assertEquals(EngineSpot.SECONDARY, EngineSpot.grade(wood), wood);
         }
         for (String no : new String[]{"minecraft:stone_stairs", "minecraft:stone_brick_slab", "minecraft:cobblestone_wall",
                 "minecraft:stone_button", "minecraft:redstone_block", "minecraft:glowstone", "minecraft:iron_ore",
-                "minecraft:deepslate_iron_ore", "minecraft:stonecutter", "minecraft:infested_stone",
-                "minecraft:oak_planks", "minecraft:glass", "dungeontrain:stage_stone_bricks"}) {
-            org.junit.jupiter.api.Assertions.assertFalse(EngineSpot.isStoneLike(no), no);
+                "minecraft:deepslate_iron_ore", "minecraft:copper_ore", "minecraft:nether_quartz_ore",
+                "minecraft:stonecutter", "minecraft:infested_stone", "minecraft:copper_door", "minecraft:copper_bulb",
+                "minecraft:oak_door", "minecraft:oak_fence", "minecraft:dirt_path", "minecraft:moss_carpet",
+                "minecraft:glass", "betternether:obsidian_glass", "betternether:quartz_glass_framed", "minecraft:white_wool", "dungeontrain:stage_stone_bricks"}) {
+            assertEquals(EngineSpot.NONE, EngineSpot.grade(no), no);
         }
     }
 
@@ -288,7 +318,7 @@ class DriftEngineTest {
         solid[0][1][2] = false;
         solid[0][2][2] = false;
         solid[2][1][2] = false; // has floor, but the cell above is solid
-        EngineSpot.Cell noStone = (x, y, z) -> false;
+        EngineSpot.Grade noStone = (x, y, z) -> EngineSpot.NONE;
         assertNull(EngineSpot.find(5, 4, 5, (x, y, z) -> solid[x][y][z], noStone));
         solid[2][2][2] = false;
         EngineSpot.Spot spot = EngineSpot.find(5, 4, 5, (x, y, z) -> solid[x][y][z], noStone);
