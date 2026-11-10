@@ -62,7 +62,7 @@ final class VaultStatBoostTest {
     @DisplayName("a diamond sword takes each tier's damage and speed")
     void swordAtEachTier() {
         ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
-        double[][] expected = {{8.4, 1.76}, {8.75, 1.8}, {8.75, 1.8}};
+        double[][] expected = {{7.7, 1.68}, {8.75, 1.8}, {8.75, 1.8}};
         Tier[] tiers = {Tier.REGULAR, Tier.OMINOUS, Tier.GREEN};
         for (int i = 0; i < tiers.length; i++) {
             ItemStack boosted = VaultStatBoost.boosted(sword, tiers[i]);
@@ -75,7 +75,7 @@ final class VaultStatBoostTest {
     @DisplayName("a diamond chestplate takes each tier's armor and toughness")
     void chestplateAtEachTier() {
         ItemStack chest = new ItemStack(Items.DIAMOND_CHESTPLATE);
-        double[][] expected = {{9.6, 2.2}, {10.0, 2.25}, {10.0, 2.25}};
+        double[][] expected = {{8.8, 2.1}, {10.0, 2.25}, {10.0, 2.25}};
         Tier[] tiers = {Tier.REGULAR, Tier.OMINOUS, Tier.GREEN};
         for (int i = 0; i < tiers.length; i++) {
             ItemStack boosted = VaultStatBoost.boosted(chest, tiers[i]);

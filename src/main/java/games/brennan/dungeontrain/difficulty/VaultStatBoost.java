@@ -33,7 +33,7 @@ public final class VaultStatBoost {
 
     /** A vault type's multipliers: {@code primary} for damage and armor, {@code secondary} for speed and toughness. */
     public enum Tier {
-        REGULAR(1.2, 1.1),
+        REGULAR(1.1, 1.05),
         OMINOUS(1.25, 1.125),
         /**
          * The same multipliers as {@link #OMINOUS}, on a reward already rolled further along the train
