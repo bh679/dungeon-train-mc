@@ -156,7 +156,9 @@ public final class CustomContentPromptScreen extends Screen {
         rememberBox = Checkbox.builder(
                 Component.translatable("gui.dungeontrain.custom_content.remember"), this.font)
             .pos(panelX + PADDING, panelY + checkboxRelY)
-            .selected(!ClientDisplayConfig.getCustomContentPreference().asks())
+            // Starts unticked. The popup only appears while Free Play is on, so a pre-ticked box
+            // would turn Free Play off for good the first time someone picks Default for one world.
+            .selected(false)
             .build();
         addRenderableWidget(rememberBox);
 

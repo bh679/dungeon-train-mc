@@ -52,9 +52,8 @@ public final class CustomContentGate {
 
     /**
      * Flip the standing answer, for the title-screen toggle. Always lands on CONTINUE or DISABLE,
-     * never back on ASK, so pressing the button also retires the per-world question — which is the
-     * behaviour asked for: someone who has an opinion shouldn't be asked every world. Options →
-     * Custom Train Content can still restore "Ask each world".
+     * never back on ASK. Off starts every world Live without a word; on still confirms each New
+     * World ({@link #askFirst}), because that is the run that gives up its stats.
      *
      * <p>The last-answer mirror is written too. {@link #answerFromMemory()} reads it for the
      * automatic reboard, and leaving it stale would have the death-screen path disagree with the
@@ -166,12 +165,16 @@ public final class CustomContentGate {
         }
 
         CustomContentPreference remembered = ClientDisplayConfig.getCustomContentPreference();
-        if (!remembered.asks()) {
-            // "Remember decision" was ticked on an earlier world, or the preference was set in
-            // Options → Dungeon Train. Answer silently and let the world start uninterrupted.
-            CustomContentChoice choice = remembered.toChoice();
-            LOGGER.info("[DungeonTrain] Custom content answered from the remembered preference "
-                + "before the world starts: {}", choice);
+        if (remembered != CustomContentPreference.CONTINUE) {
+            // Free Play is off (DISABLE, or ASK, which the title-screen toggle also shows as off):
+            // the world plays the built-in designs and there is nothing to confirm. The dev waiver
+            // answers silently too. Only Free Play being ON earns the popup below — it is the one
+            // answer that costs the run its stats, so the player confirms it every world.
+            CustomContentChoice choice = remembered.asks()
+                ? CustomContentChoice.DISABLE
+                : remembered.toChoice();
+            LOGGER.info("[DungeonTrain] Free Play is off for new worlds ({}); starting without "
+                + "asking: {}", remembered, choice);
             PendingCustomContentChoice.set(choice);
             return false;
         }

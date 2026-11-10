@@ -5705,7 +5705,7 @@
   "gui.dungeontrain.custom_content.dev_ignore": "Я разработчик — игнорировать",
   "gui.dungeontrain.custom_content.dev_ignore.tip": "Оставить пользовательский контент и продолжить обычную игру — статистика и достижения по-прежнему засчитываются.\nТолько для dev-сборок; релизная сборка воспринимает это как «Пользовательский поезд».",
   "gui.dungeontrain.custom_content.toggle.narration": "Пользовательский контент поезда",
-  "gui.dungeontrain.custom_content.toggle.on": "Ваши дизайны поезда в игре, поэтому забеги идут в Свободной игре. %s\nНажмите, чтобы использовать встроенные дизайны. В любом случае миры больше не будут спрашивать.",
+  "gui.dungeontrain.custom_content.toggle.on": "Ваши дизайны поезда в игре, поэтому забеги идут в Свободной игре. %s\nНажмите, чтобы использовать встроенные дизайны.",
   "gui.dungeontrain.custom_content.toggle.off": "Будут использоваться встроенные дизайны поезда, а статистика будет считаться в общем зачёте.",
   "gui.dungeontrain.options.confirm_build_restore": "Подтверждать восстановление",
   "gui.dungeontrain.options.confirm_build_restore.hint": "Спрашивать перед повторной загрузкой построек",
