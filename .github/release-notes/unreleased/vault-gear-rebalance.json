@@ -8,9 +8,8 @@
     "balance"
   ],
   "title": "Vault gear rebalance",
-  "summary": "Gear from regular and ominous vaults gets a gentler boost, and the rarest vault's gear is now always the strongest of the three, however far down the line you are.",
+  "summary": "Gear from regular and ominous vaults gets a gentle boost, and the rarest vault's gear is now always the strongest of the three, however far down the line you are.",
   "highlights": [
-    "Regular and ominous vault gear evened out.",
     "The rarest vault now always beats an ominous vault at the same spot."
   ],
   "pr": 2590,
