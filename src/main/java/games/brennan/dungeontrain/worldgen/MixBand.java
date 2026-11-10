@@ -19,7 +19,8 @@ import java.util.function.IntPredicate;
 /**
  * The <b>mix zone</b>: a hard-edged {@link CycleLayout.Type#MIX} slot where every chunk, with equal odds,
  * generates as one of the bands the run has already passed — any overworld style, Nether, BetterNether,
- * Deeper Dark, End, BetterEnd, upside-down, spheres, or a legacy era.
+ * Deeper Dark, End, BetterEnd, upside-down, spheres, a legacy era, or the Lost City. Overworld and Lost City
+ * picks wear their stretch's biomes too ({@link #biomeCycleFor}); every other pick keeps the base biome.
  *
  * <p>It works by handing each chunk a {@link WorldGenCycle#shifted shifted} cycle. The chunk rolls a
  * {@link Candidate} and a representative chunk inside that candidate's core (same doubling run), and gets
@@ -61,8 +62,8 @@ public final class MixBand {
     /**
      * Every band behind the first mix slot of {@code cycle}'s layout, minus {@code exclude} (tokens). Each
      * distinct band once: overworld styles keep their longest gap, Nether / End keep one slot per style,
-     * each legacy era its own core. Chuncks, stacks and later mix slots are never candidates. Empty without
-     * a layout or a mix slot.
+     * each legacy era its own core (Lost City's at full building density). Chuncks, stacks and later mix
+     * slots are never candidates. Empty without a layout or a mix slot.
      */
     public static List<Candidate> candidates(WorldGenCycle cycle, Set<String> exclude) {
         List<Candidate> out = new ArrayList<>();
@@ -110,12 +111,13 @@ public final class MixBand {
                 case LEGACY_RUN -> {
                     for (LegacySpan era : layout.eras(i)) {
                         LegacyBandKind kind = era.kind();
-                        // Lost City is plain overworld terrain; its cities are multi-chunk structures a lone
-                        // mix chunk can't carry, so as a pick it would only repeat "ow".
-                        if (kind.usesVanillaTerrain()) continue;
                         if (!seen.add(kind.token())) continue;
+                        // Lost City's window is the city at full building density (LostCityStructures#density),
+                        // so a pick lands on city ground: a building cut to the floating chunk.
+                        boolean city = kind.usesVanillaTerrain();
                         add(out, exclude, kind.token(), slot, kind, window(cycle, layout, i,
-                                x -> cycle.slotIndexAt(x) == slotIndex && cycle.isInLegacyBand(kind, x)));
+                                x -> cycle.slotIndexAt(x) == slotIndex && cycle.isInLegacyBand(kind, x)
+                                        && (!city || LostCityStructures.density(cycle, x >> 4) >= 1.0D)));
                     }
                 }
                 case CHUNCKS, STACKS, MIX -> { }                   // never picked: the zone's own neighbours
@@ -237,6 +239,23 @@ public final class MixBand {
         if (!base.mixPicksAt(chunkX << 4)) return base;               // cheap gate — no table, no hash
         Pick p = cachedPick(base, seed, chunkX, chunkZ);
         return p == null ? base : shiftedCached(base, p.dx());
+    }
+
+    /**
+     * The cycle chunk {@code (chunkX, chunkZ)}'s <b>biome</b> reads: {@link #cycleFor} when the chunk picked an
+     * overworld style or Lost City, so it wears that stretch's biomes (BoP's included), else {@code base}. A
+     * Nether, End, spheres or legacy-era pick keeps the base biome, so its fog never re-tints the sky chunk by
+     * chunk. Pure given the seed.
+     */
+    public static WorldGenCycle biomeCycleFor(WorldGenCycle base, long seed, int chunkX, int chunkZ) {
+        if (!base.mixPicksAt(chunkX << 4)) return base;               // cheap gate — no table, no hash
+        Pick p = cachedPick(base, seed, chunkX, chunkZ);
+        return p == null || !wearsOwnBiome(p.candidate()) ? base : shiftedCached(base, p.dx());
+    }
+
+    /** Whether a pick of {@code c} takes its biome from its own stretch: an overworld style or Lost City. */
+    static boolean wearsOwnBiome(Candidate c) {
+        return c.type() == CycleLayout.Type.OVERWORLD || (c.era() != null && c.era().usesVanillaTerrain());
     }
 
     /**

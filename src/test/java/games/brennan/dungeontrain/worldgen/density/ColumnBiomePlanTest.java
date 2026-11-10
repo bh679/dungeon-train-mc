@@ -57,7 +57,7 @@ final class ColumnBiomePlanTest {
             return "end@" + blockX + "," + blockZ + "/" + epoch;
         }
 
-        @Override public SecondLapOverworld.Stretch look(int blockX) {
+        @Override public SecondLapOverworld.Stretch look(int blockX, int blockZ) {
             lookCalls++;
             return blockX >= 3000 ? SecondLapOverworld.Stretch.BOP : SecondLapOverworld.Stretch.VANILLA;
         }
@@ -196,7 +196,7 @@ final class ColumnBiomePlanTest {
             return LiveColumnProviders.netherCoreLook(cycle, seed, blockX, blockZ);
         }
         @Override public CycleLayout.Style endCore(int blockX, int blockZ) { return null; }
-        @Override public SecondLapOverworld.Stretch look(int blockX) { return SecondLapOverworld.Stretch.VANILLA; }
+        @Override public SecondLapOverworld.Stretch look(int blockX, int blockZ) { return SecondLapOverworld.Stretch.VANILLA; }
     }
 
     @Test

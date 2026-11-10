@@ -86,8 +86,11 @@ public final class LostCityStructures {
         if (!data.startsWithTrain()) return false;
         long seed = data.getGenerationSeed();
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        // A mix-zone chunk that picked the Lost City answers as the city it stands for (MixBand), so a building
+        // may start on it, cut to the floating chunk. The WWOO census below stays on the real cycle.
+        WorldGenCycle chunkCycle = MixBand.cycleFor(cycle, seed, chunkX, chunkZ);
         // the chunk part once per chunk — vanilla retries the whole set in a refused one (LostCityChunkVeto)
-        return switch (LostCityChunkVeto.verdict(seed, cycle, chunkX, chunkZ)) {
+        return switch (LostCityChunkVeto.verdict(seed, chunkCycle, chunkX, chunkZ)) {
             case DENY -> false;
             case ALLOW -> true;
             // The new-building slot stands outside the WWOO pick — see isNewBuildingSlot.
