@@ -4993,6 +4993,7 @@
       "gui.dungeontrain.builder.profile.collision.load_as_new",
       "gui.dungeontrain.builder.profile.name.rename_existing",
       "gui.dungeontrain.custom_content.card.custom.tag",
+      "gui.dungeontrain.custom_content.toggle.off",
       "gui.dungeontrain.options.book_author_chat.tip"
     ],
     "adventureitemnames": [],
