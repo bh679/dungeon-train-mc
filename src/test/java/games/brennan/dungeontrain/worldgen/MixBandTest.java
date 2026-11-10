@@ -159,6 +159,24 @@ final class MixBandTest {
     }
 
     @Test
+    @DisplayName("a Lost City pick lets a building start; on the base cycle the mix chunk never does")
+    void lostCityPicksAllowBuildings() {
+        int picks = 0;
+        int c0 = mixChunk(0);
+        int chunks = (int) LAYOUT.length(mixSlot()) / 16;
+        for (int cx = c0; cx < c0 + chunks; cx++) {
+            for (int cz = -40; cz <= 40; cz++) {
+                assertFalse(LostCityStructures.allowedAt(SEED, C, cx, cz), "base cycle chunk " + cx + "," + cz);
+                MixBand.Pick p = MixBand.pickAt(C, CANDIDATES, SEED, cx, cz);
+                if (p == null || !"lost_city".equals(p.candidate().token())) continue;
+                picks++;
+                assertTrue(LostCityStructures.allowedAt(SEED, C.shifted(p.dx()), cx, cz), "lost_city chunk " + cx + "," + cz);
+            }
+        }
+        assertTrue(picks > 20, "lost_city picks " + picks);
+    }
+
+    @Test
     @DisplayName("each candidate is picked about equally often")
     void uniform() {
         Map<String, Integer> counts = new HashMap<>();
