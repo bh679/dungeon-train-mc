@@ -60,7 +60,8 @@ public abstract class ServerChunkCacheWorldEdgeMixin {
     @Inject(method = "getChunkFutureMainThread", at = @At("HEAD"), cancellable = true)
     private void dungeonTrain$noChunkPastWorldEdge(int x, int z, ChunkStatus status, boolean load,
                                                    CallbackInfoReturnable<CompletableFuture<ChunkResult<ChunkAccess>>> cir) {
-        if (Math.abs(x) <= dungeonTrain$EDGE_CHUNK && Math.abs(z) <= dungeonTrain$EDGE_CHUNK) return;
+        // A non-loading lookup already answers "not loaded" out there; only a load would generate.
+        if (!load || Math.abs(x) <= dungeonTrain$EDGE_CHUNK && Math.abs(z) <= dungeonTrain$EDGE_CHUNK) return;
         SubLevelContainer plots = SubLevelContainer.getContainer(level);
         if (plots != null && plots.inBounds(x, z)) return;
         if (!dungeonTrain$logged) {
