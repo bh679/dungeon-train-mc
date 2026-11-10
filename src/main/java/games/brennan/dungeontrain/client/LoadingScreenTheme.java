@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.client;
 
-import games.brennan.dungeontrain.client.logo.LogoRingPlacement;
 import games.brennan.dungeontrain.client.logo.LogoRingRenderer;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -54,11 +53,8 @@ public final class LoadingScreenTheme {
      */
     private static final int TEXT_ALPHA_FLOOR = 4;
 
-    // The ring logo above the title (drawLogo): its largest size, the gap under it and the margin over it.
-    private static final float LOGO_MAX = 110f;
-    private static final float LOGO_MIN = 40f;
-    private static final float LOGO_GAP = 6f;
-    private static final float LOGO_TOP_MARGIN = 6f;
+    /** The logo bar's centre sits this far above the rail line the old train stood on. */
+    private static final float LOGO_BAR_LIFT = 6f;
 
     /** Width the story/status line wraps at, shared by every screen that shows one. */
     public static final int TIP_MAX_WIDTH = 260;
@@ -87,23 +83,10 @@ public final class LoadingScreenTheme {
         int railLeft = cx - railW / 2;
         int railY = cy + 8;
 
-        drawLogo(g, cx, cy - 30, a);
         drawTitle(g, font, Component.translatable("gui.dungeontrain.loading.title"), cx, cy - 30, a);
         drawFillingTrain(g, font, railLeft, railW, railY, progress, animNanos, a);
         drawPercent(g, font, progress, cx, cy + 34, a);
         drawTip(g, font, LoadingStories.currentLine(), cx, cy + 52, TIP_MAX_WIDTH, a);
-    }
-
-    /**
-     * The animated ring logo ({@link LogoRingRenderer}) centred above the title line at
-     * {@code titleY}: up to {@link #LOGO_MAX} GUI units, shrinking to the room above the title on
-     * short windows, and left out where there is too little room for it to read.
-     */
-    public static void drawLogo(GuiGraphics g, int cx, int titleY, float alpha) {
-        if (!LogoRingPlacement.onLoadingScreens()) return;
-        float size = Math.min(LOGO_MAX, titleY - LOGO_GAP - LOGO_TOP_MARGIN);
-        if (size < LOGO_MIN) return;
-        LogoRingRenderer.get().draw(g, cx - size / 2f, titleY - LOGO_GAP - size, size, alpha, 2f);
     }
 
     /** Opaque gradient fill replacing the vanilla world blur/grid — never a flash of vanilla UI. */
@@ -208,10 +191,15 @@ public final class LoadingScreenTheme {
     /**
      * The same graphic at {@code alpha} (0..1) of its own opacity, for fading the whole train
      * away as the panel dissolves into the world. At 1.0 it is identical to the opaque call.
+     *
+     * <p>Normally this is the logo itself unrolled into a line of carriages
+     * ({@link LogoRingRenderer#drawBar}), its front growing with the progress; the flat train
+     * below only draws where the logo can't (its shader missing, or its cracks still building).</p>
      */
     public static void drawFillingTrain(GuiGraphics g, Font font, int railLeft, int railW, int railY, double progress, long animNanos, float alpha) {
         float a = Mth.clamp(alpha, 0.0f, 1.0f);
         if (a <= 0.0f) return;
+        if (LogoRingRenderer.get().drawBar(g, railLeft, railY - LOGO_BAR_LIFT, railW, progress, a, 2f)) return;
         int railRight = railLeft + railW;
         int startX = railLeft + 2;
         int slots = Math.max(1, (railW - INF_RESERVE) / SPACING);

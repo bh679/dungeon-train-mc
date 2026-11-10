@@ -154,7 +154,6 @@ public final class CinematicLoadingScreen extends Screen {
         float trainAlpha = 1.0f - Mth.clamp(reveal / TRAIN_FADE_SHARE, 0.0f, 1.0f);
         float titleAlpha = 1.0f - Mth.clamp((reveal - TRAIN_FADE_SHARE) / (1.0f - TRAIN_FADE_SHARE), 0.0f, 1.0f);
 
-        LoadingScreenTheme.drawLogo(g, cx, cy - 30, titleAlpha);
         LoadingScreenTheme.drawTitle(g, this.font, heading, cx, cy - 30, titleAlpha);
         LoadingScreenTheme.drawFillingTrain(g, this.font, railLeft, railW, railY, progress, animNanos, trainAlpha);
         LoadingScreenTheme.drawPercent(g, this.font, progress, cx, cy + 34);

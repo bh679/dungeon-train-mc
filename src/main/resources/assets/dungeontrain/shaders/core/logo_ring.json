@@ -11,7 +11,7 @@
     { "name": "GrooveDepth", "type": "float", "count": 1, "values": [ 0.014 ] },
     { "name": "GrooveShadow", "type": "float", "count": 1, "values": [ 0.8 ] },
     { "name": "LineWidth", "type": "float", "count": 1, "values": [ 3.0 ] },
-    { "name": "SegLen", "type": "float", "count": 1, "values": [ 0.9 ] },
+    { "name": "Straight", "type": "float", "count": 1, "values": [ 0.0 ] },
     { "name": "Atlas", "type": "float", "count": 4, "values": [ 768.0, 256.0, 1.2, 16.0 ] }
   ]
 }

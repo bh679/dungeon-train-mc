@@ -63,41 +63,97 @@ public final class LogoRingGeometry {
     /** All segments, the cuts at {@code offset} (radians round the ring), the faces drifted to {@code faceOn}. */
     public static void build(double offset, double faceOn, Sink sink) {
         double span = 2 * Math.PI / PIECES;
+        Path ring = new Ring(faceOn);
         for (int i = 0; i < PIECES; i++) {
-            segment(offset + i * span + GAP / 2, offset + (i + 1) * span - GAP / 2, faceOn, i, sink);
+            segment(ring, offset + i * span + GAP / 2, offset + (i + 1) * span - GAP / 2, i, sink);
         }
+    }
+
+    /**
+     * The same tube laid out straight along +x (the loading bar's carriages): one segment from
+     * {@code start} to {@code start + length}, twisting at the ring's rate (a half turn per ring
+     * circumference) from {@code faceOn} at x = 0. Its cracks come from atlas segment {@code piece}.
+     */
+    public static void buildStraight(double start, double length, double faceOn, int piece, Sink sink) {
+        segment(new Straight(faceOn), start, start + length, piece, sink);
+    }
+
+    /** The gap between neighbouring segments, as a length along the tube. */
+    public static double gapLength() { return GAP * R; }
+
+    /**
+     * Where the tube runs: its centre line, the frame its square cross-section turns in, and the
+     * twist, all by a path parameter (ring angle for the ring, x for the straight bar).
+     * {@code radial} x {@code tangent} = up, so the faces' across direction is normal x tangent
+     * for both, as {@code logo_ring.vsh} assumes.
+     */
+    private interface Path {
+        double[] centre(double u);
+        /** The cross-section's in-plane axis; its other axis is world z. */
+        double[] radial(double u);
+        double[] tangent(double u);
+        double twist(double u);
+        /** Distance along the tube per unit of u. */
+        double scale();
+    }
+
+    private record Ring(double faceOn) implements Path {
+        public double[] centre(double phi) { return new double[] { R * Math.cos(phi), R * Math.sin(phi), 0 }; }
+        public double[] radial(double phi) { return new double[] { Math.cos(phi), Math.sin(phi), 0 }; }
+        public double[] tangent(double phi) { return new double[] { -Math.sin(phi), Math.cos(phi), 0 }; }
+        public double twist(double phi) { return twistAt(phi, faceOn); }
+        public double scale() { return R; }
+    }
+
+    private record Straight(double faceOn) implements Path {
+        public double[] centre(double x) { return new double[] { x, 0, 0 }; }
+        public double[] radial(double x) { return new double[] { 0, -1, 0 }; }
+        public double[] tangent(double x) { return new double[] { 1, 0, 0 }; }
+        public double twist(double x) { return x * TWIST / (2 * Math.PI * R) - faceOn; }
+        public double scale() { return 1; }
+    }
+
+    private static double[] pathNormal(Path path, double u, int k) {
+        double g = path.twist(u) + Math.PI / 2 + k * Math.PI / 2;
+        double[] r = path.radial(u);
+        return new double[] { Math.cos(g) * r[0], Math.cos(g) * r[1], Math.sin(g) };
     }
 
     private record V(double[] p, double[] h, int face, double along, double across) {}
 
-    private static V vert(double phi, int j, double a, double b, double faceOn, int face, double along, double across) {
-        double[] p = corner(phi, twistAt(phi, faceOn) + Math.PI / 4 + j * Math.PI / 2);
-        double[] h = normalize(new double[] { p[0] - R * Math.cos(phi), p[1] - R * Math.sin(phi), p[2] });
-        int endSign = phi == a ? -1 : phi == b ? 1 : 0;
+    private static V vert(Path path, double u, int j, double a, double b, int face, double along, double across) {
+        double beta = path.twist(u) + Math.PI / 4 + j * Math.PI / 2, r = HALF * Math.sqrt(2);
+        double[] c = path.centre(u), rad = path.radial(u);
+        double[] p = { c[0] + Math.cos(beta) * r * rad[0], c[1] + Math.cos(beta) * r * rad[1], Math.sin(beta) * r };
+        double[] h = normalize(new double[] { p[0] - c[0], p[1] - c[1], p[2] });
+        int endSign = u == a ? -1 : u == b ? 1 : 0;
         if (endSign != 0) {
-            h[0] += -Math.sin(phi) * endSign;
-            h[1] += Math.cos(phi) * endSign;
+            double[] t = path.tangent(u);
+            h[0] += t[0] * endSign;
+            h[1] += t[1] * endSign;
+            h[2] += t[2] * endSign;
         }
         return new V(p, h, face, along, across);
     }
 
-    /** One segment from ring angle a to b. Shared corners come from the same corner index and angle, so neighbouring faces meet exactly. */
-    private static void segment(double a, double b, double faceOn, int piece, Sink sink) {
+    /** One segment from path parameter a to b. Shared corners come from the same corner index and parameter, so neighbouring faces meet exactly. */
+    private static void segment(Path path, double a, double b, int piece, Sink sink) {
         for (int k = 0; k < 4; k++) {
             for (int i = 0; i < STEPS; i++) {
-                double f0 = ringAt(a, b, i), f1 = ringAt(a, b, i + 1), s0 = (f0 - a) * R, s1 = (f1 - a) * R;
-                double[] n = faceNormal((f0 + f1) / 2, k, faceOn);
-                quad(vert(f0, k, a, b, faceOn, k, s0, -1), vert(f1, k, a, b, faceOn, k, s1, -1),
-                        vert(f1, k + 1, a, b, faceOn, k, s1, 1), vert(f0, k + 1, a, b, faceOn, k, s0, 1), n, piece, sink);
+                double f0 = ringAt(a, b, i), f1 = ringAt(a, b, i + 1), s0 = (f0 - a) * path.scale(), s1 = (f1 - a) * path.scale();
+                double[] n = pathNormal(path, (f0 + f1) / 2, k);
+                quad(vert(path, f0, k, a, b, k, s0, -1), vert(path, f1, k, a, b, k, s1, -1),
+                        vert(path, f1, k + 1, a, b, k, s1, 1), vert(path, f0, k + 1, a, b, k, s0, 1), n, piece, sink);
             }
         }
         // The cut faces, face index 4: across = the square's own (u, v), u scaled by HALF as in tube.js.
         double[][] capUV = { { -1, -1 }, { 1, -1 }, { 1, 1 }, { -1, 1 } };
         for (double[] end : new double[][] { { a, -1 }, { b, 1 } }) {
-            double phi = end[0], sign = end[1];
+            double u = end[0], sign = end[1];
             V[] c = new V[4];
-            for (int k = 0; k < 4; k++) c[k] = vert(phi, k, a, b, faceOn, 4, capUV[k][0] * HALF, capUV[k][1]);
-            quad(c[0], c[1], c[2], c[3], new double[] { -Math.sin(phi) * sign, Math.cos(phi) * sign, 0 }, piece, sink);
+            for (int k = 0; k < 4; k++) c[k] = vert(path, u, k, a, b, 4, capUV[k][0] * HALF, capUV[k][1]);
+            double[] t = path.tangent(u);
+            quad(c[0], c[1], c[2], c[3], new double[] { t[0] * sign, t[1] * sign, t[2] * sign }, piece, sink);
         }
     }
 

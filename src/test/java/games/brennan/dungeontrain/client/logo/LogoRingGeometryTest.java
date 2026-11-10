@@ -96,11 +96,45 @@ class LogoRingGeometryTest {
     }
 
     @Test
-    @DisplayName("the placement property defaults to the background and ignores junk")
-    void placement() {
-        assertEquals(LogoRingPlacement.Title.BACKGROUND, LogoRingPlacement.parse(null));
-        assertEquals(LogoRingPlacement.Title.WORDMARK, LogoRingPlacement.parse(" wordmark "));
-        assertEquals(LogoRingPlacement.Title.OFF, LogoRingPlacement.parse("off"));
-        assertEquals(LogoRingPlacement.Title.BACKGROUND, LogoRingPlacement.parse("sideways"));
+    @DisplayName("a straight carriage is wound outward and spans exactly its length along x")
+    void straightCarriage() {
+        List<Vert> v = new ArrayList<>();
+        LogoRingGeometry.buildStraight(1.5, 0.4, 0.7, 2, (x, y, z, nx, ny, nz, face, along, across, hx, hy, hz, piece) ->
+                v.add(new Vert(x, y, z, nx, ny, nz, face, along, across, piece)));
+        double minX = Double.MAX_VALUE, maxX = -Double.MAX_VALUE, maxAlong = 0;
+        for (Vert p : v) { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); if (p.face < 4) maxAlong = Math.max(maxAlong, p.along); }
+        assertEquals(1.5, minX, 1e-9);
+        assertEquals(1.9, maxX, 1e-9);
+        assertEquals(0.4, maxAlong, 1e-9);
+        for (int i = 0; i < v.size(); i += 3) {
+            Vert p = v.get(i), q = v.get(i + 1), r = v.get(i + 2);
+            double e1x = q.x - p.x, e1y = q.y - p.y, e1z = q.z - p.z, e2x = r.x - p.x, e2y = r.y - p.y, e2z = r.z - p.z;
+            double cx = e1y * e2z - e1z * e2y, cy = e1z * e2x - e1x * e2z, cz = e1x * e2y - e1y * e2x;
+            assertTrue(cx * p.nx + cy * p.ny + cz * p.nz >= 0, "triangle " + i / 3);
+            assertEquals(2, p.piece);
+        }
+    }
+
+    @Test
+    @DisplayName("on the straight bar too, the across direction (corner k to k+1) is normal x along (+x)")
+    void straightBitangent() {
+        List<Vert> v = new ArrayList<>();
+        LogoRingGeometry.buildStraight(0, 0.5, 1.1, 0, (x, y, z, nx, ny, nz, face, along, across, hx, hy, hz, piece) ->
+                v.add(new Vert(x, y, z, nx, ny, nz, face, along, across, piece)));
+        // First quad of each face: vertex 0 is (f0, across -1); find its across +1 partner at the same x.
+        for (int i = 0; i < v.size(); i += 6) {
+            Vert a = v.get(i);
+            if (a.face == 4) continue;
+            for (int j = i; j < i + 6; j++) {
+                Vert b = v.get(j);
+                if (Math.abs(b.x - a.x) < 1e-12 && b.across != a.across) {
+                    Vert lo = a.across < 0 ? a : b, hi = a.across < 0 ? b : a;
+                    double bx = hi.x - lo.x, by = hi.y - lo.y, bz = hi.z - lo.z;
+                    double cy = a.nz, cz = -a.ny; // n x (1,0,0) = (0, nz, -ny)
+                    assertTrue(by * cy + bz * cz > 0, "face " + a.face);
+                    assertEquals(0, bx, 1e-12);
+                }
+            }
+        }
     }
 }

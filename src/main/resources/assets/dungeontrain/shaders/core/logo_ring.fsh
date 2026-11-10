@@ -16,7 +16,6 @@ uniform float Relief;
 uniform float GrooveDepth;
 uniform float GrooveShadow;
 uniform float LineWidth;
-uniform float SegLen;
 uniform vec4 Atlas; // atlas width px, row height px, world length per row, rows
 
 in vec3 vNormalV;
@@ -25,6 +24,7 @@ in vec3 vTangentV;
 in vec3 vBitangentV;
 in vec3 vSurf;
 in float vPiece;
+in float vSegLen;
 
 out vec4 fragColor;
 
@@ -60,7 +60,7 @@ vec2 traceDepth(vec2 uv0, vec3 viewT) {
 float edgePixels(float k) {
     if (k < 3.5) {
         float across = (1.0 - abs(vSurf.z)) / max(fwidth(vSurf.z), 1e-6);
-        float along = min(vSurf.y, SegLen - vSurf.y) / max(fwidth(vSurf.y), 1e-6);
+        float along = min(vSurf.y, vSegLen - vSurf.y) / max(fwidth(vSurf.y), 1e-6);
         return min(across, along);
     }
     float u = vSurf.y / HALF;
