@@ -1,0 +1,16 @@
+{
+  "id": "farmers-delight-not-approved",
+  "version": "0.1755.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "compatibility"
+  ],
+  "title": "Farmer's Delight",
+  "summary": "Farmer's Delight is no longer an approved mod. Runs with it installed are Free Play, because its food and drinks give advantages a normal run doesn't have.",
+  "highlights": [],
+  "date": "2026-11-10",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
