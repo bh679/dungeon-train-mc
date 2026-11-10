@@ -353,6 +353,9 @@ public final class DebugCommand {
             .then(Commands.literal("loot-rolls")
                 .then(Commands.literal("on").executes(ctx -> setLogLootRolls(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setLogLootRolls(ctx.getSource(), false))))
+            // /dungeontrain debug vault-roll <trial|ominous|green> [times] — rolls a vault type's default
+            // reward as that many players and logs every item ([DT-vault-roll]); chat gets the tally.
+            .then(VaultRollDebug.node())
             // /dungeontrain debug traingen on|off|status — the backward-generation
             // investigation switch. `on` arms EVERY probe the backward lane has in one
             // go (the [bwdgen] decision trace, the spawn-stall detector, the

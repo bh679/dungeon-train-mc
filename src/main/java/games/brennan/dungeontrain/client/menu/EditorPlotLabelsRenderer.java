@@ -137,7 +137,7 @@ public final class EditorPlotLabelsRenderer {
      * {@link #rows} now, so the three cannot drift.</p>
      */
     public enum RowKind {
-        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, LOCK, COPIES, COPIES_FLOOR, COPIES_ROOF, GROUND, GROUND_BELOW,
+        NAME, NOTE, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, LOCK, COPIES, COPIES_FLOOR, COPIES_ROOF, GROUND, GROUND_BELOW,
         DOOR_WALL,
         DOOR_OFFSET, ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, ROOM_FOG, ROOM_DRIFT, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER,
         ACTION, CONTENTS
@@ -155,6 +155,7 @@ public final class EditorPlotLabelsRenderer {
         RowKind[] buf = new RowKind[RowKind.values().length];
         int n = 0;
         buf[n++] = RowKind.NAME;
+        if (!entry.note().isEmpty()) buf[n++] = RowKind.NOTE;
         if (entry.weight() != EditorPlotLabelsPacket.NO_WEIGHT) buf[n++] = RowKind.WEIGHT;
         if (hasDimensionRows(entry)) {
             buf[n++] = RowKind.LENGTH;
@@ -743,6 +744,8 @@ public final class EditorPlotLabelsRenderer {
 
     private static final int NAME_COLOR = 0xFFFFFFFF;
     private static final int WEIGHT_COLOR = 0xFFFFEEBB;
+    /** The note row's band: a pale wash of the weight colour. */
+    private static final int NOTE_BG = 0x28FFEEBB;
     private static final int BUTTON_TEXT_COLOR = 0xFFFFFFFF;
     private static final int BUTTON_TEXT_DIM_COLOR = 0xFFAAAAAA;
     /** The Copies Block row's "nothing here yet" hint — dimmer than a value. */
@@ -864,6 +867,9 @@ public final class EditorPlotLabelsRenderer {
         // The name stays centred, so the face button's square is reserved on both sides of it.
         double w = Math.max(MIN_HALF_W * 2.0,
             measure.applyAsInt(entry.name()) * TEXT_SCALE + 2 * PAD_X + 2 * EditorPanelFacing.BUTTON_W);
+        if (!entry.note().isEmpty()) {
+            w = Math.max(w, measure.applyAsInt(entry.note()) * TEXT_SCALE + 2 * PAD_X);
+        }
         if (hasModeRow(entry)) {
             w = Math.max(w, measure.applyAsInt(modeLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
         }
@@ -995,6 +1001,7 @@ public final class EditorPlotLabelsRenderer {
             // Name — clickable teleport target, except on parts plots, which have an empty
             // category and stay non-interactive to match their lack of action buttons.
             case NAME -> entry.category().isEmpty() ? CellKind.NONE : CellKind.NAME;
+            case NOTE -> CellKind.NONE;
             // Weight is always visible (display only) but its arrows are clickable only from
             // inside the plot.
             case WEIGHT -> hasWeightArrows(entry) ? CellKind.WEIGHT_NUMBER : CellKind.NONE;
@@ -1157,6 +1164,12 @@ public final class EditorPlotLabelsRenderer {
                     }
                     drawCenteredText(ps, buffer, font, EditorPanelFacing.BUTTON_GLYPH,
                         faceLeft + EditorPanelFacing.BUTTON_W / 2.0, rCY, EditorPanelFacing.BUTTON_COLOR);
+                }
+                // Note — a read-only line under the name, e.g. which pool slot a contents group shares.
+                case NOTE -> {
+                    drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
+                    drawQuad(ps, buffer, -halfW + 0.005, rBot + 0.005, halfW - 0.005, rTop - 0.005, NOTE_BG);
+                    drawCenteredText(ps, buffer, font, entry.note(), 0, rCY, WEIGHT_COLOR);
                 }
                 // Weight — display always when there's a weight pool; arrows only when inside
                 // the plot (the player has to step into the cage to edit).

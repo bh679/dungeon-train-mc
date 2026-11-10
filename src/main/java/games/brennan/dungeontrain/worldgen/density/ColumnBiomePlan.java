@@ -79,8 +79,8 @@ public final class ColumnBiomePlan {
         /** The sampled real-End core biome for the column. */
         T endCore(int blockX, int blockZ);
 
-        /** The stretch look the column wears ({@code SecondLapOverworld#lookAt}). */
-        SecondLapOverworld.Stretch look(int blockX);
+        /** The stretch look the column wears ({@code SecondLapOverworld#lookAt}, on its mix pick's biome cycle). */
+        SecondLapOverworld.Stretch look(int blockX, int blockZ);
     }
 
     private static final ThreadLocal<Column<?>[]> SLOT_TABLE = ThreadLocal.withInitial(() -> new Column<?>[SLOTS]);
@@ -132,7 +132,7 @@ public final class ColumnBiomePlan {
         };
         int caveTop = aboveSea == BandBiomeDecision.Result.HIGHLAND
                 ? providers.caveWindowTop(blockX, blockZ) : BandBiomeDecision.NO_CAVE;
-        SecondLapOverworld.Stretch look = providers.look(blockX);
+        SecondLapOverworld.Stretch look = providers.look(blockX, blockZ);
         return new Column<>(blockX, blockZ, ctx, stretchTables, cycle, legacyToken, reverseSlide,
                 null, aboveSea, caveTop, core, look);
     }

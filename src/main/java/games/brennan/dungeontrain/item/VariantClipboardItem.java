@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.ContainerContentsBooks;
+import games.brennan.dungeontrain.editor.BookEnchantsCodec;
 import games.brennan.dungeontrain.editor.ContainerContentsEntry;
 import games.brennan.dungeontrain.editor.StoredBook;
 import games.brennan.dungeontrain.editor.PotionForm;
@@ -159,10 +160,16 @@ public final class VariantClipboardItem extends Item {
     /** Stored vanilla potion id of a potion entry; absent when the entry has none. */
     private static final String NBT_POOL_ENTRY_POTION = "p";
     private static final String NBT_POOL_ENTRY_BOOK = "b";
+    /** A book entry's enchantments ({@code BookEnchants}); absent when the entry has none. */
+    private static final String NBT_POOL_ENTRY_ENCHANTS = "e";
     /** Random-potion scale-with-distance toggle; absent means the default (on). */
     private static final String NBT_POOL_ENTRY_SCALE = "s";
+    /** Random-potion Luck toggle; absent means the default (off). */
+    private static final String NBT_POOL_ENTRY_LUCK = "lk";
     /** Random-potion bottle form id; absent means Any. */
     private static final String NBT_POOL_ENTRY_FORM = "f";
+    /** Loot prefab a shulker box entry is filled from; absent for an empty box. */
+    private static final String NBT_POOL_ENTRY_CONTENTS = "c";
 
     public VariantClipboardItem(Properties properties) {
         super(properties);
@@ -515,8 +522,11 @@ public final class VariantClipboardItem extends Item {
             et.putInt(NBT_POOL_ENTRY_WEIGHT, e.weight());
             if (e.potionId() != null) et.putString(NBT_POOL_ENTRY_POTION, e.potionId().toString());
             if (!e.scaleWithDistance()) et.putBoolean(NBT_POOL_ENTRY_SCALE, false);
+            if (e.includeLuck()) et.putBoolean(NBT_POOL_ENTRY_LUCK, true);
             if (e.potionForm() != PotionForm.ANY) et.putString(NBT_POOL_ENTRY_FORM, e.potionForm().id());
             if (e.book() != null) et.put(NBT_POOL_ENTRY_BOOK, ContainerContentsBooks.toNbt(e.book()));
+            if (e.enchants() != null) et.put(NBT_POOL_ENTRY_ENCHANTS, BookEnchantsCodec.toNbt(e.enchants()));
+            if (e.hasContents()) et.putString(NBT_POOL_ENTRY_CONTENTS, e.contents());
             entries.add(et);
         }
         tag.put(NBT_POOL_ENTRIES, entries);
@@ -561,7 +571,12 @@ public final class VariantClipboardItem extends Item {
                     ? ContainerContentsBooks.fromNbt(et.getCompound(NBT_POOL_ENTRY_BOOK)) : null;
                 entries.add(new ContainerContentsEntry(id, count, weight)
                     .withPotion(potionId).withScaleWithDistance(scale).withPotionForm(form)
-                    .withBook(book));
+                    .withIncludeLuck(et.getBoolean(NBT_POOL_ENTRY_LUCK))
+                    .withBook(book)
+                    .withEnchants(et.contains(NBT_POOL_ENTRY_ENCHANTS, Tag.TAG_COMPOUND)
+                        ? BookEnchantsCodec.fromNbt(et.getCompound(NBT_POOL_ENTRY_ENCHANTS)) : null)
+                    .withContents(et.contains(NBT_POOL_ENTRY_CONTENTS, Tag.TAG_STRING)
+                        ? et.getString(NBT_POOL_ENTRY_CONTENTS) : null));
             }
         }
         return new ContainerContentsPool(entries, fillMin, fillMax, vaultKey);

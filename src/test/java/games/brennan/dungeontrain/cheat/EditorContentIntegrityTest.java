@@ -71,4 +71,32 @@ class EditorContentIntegrityTest {
         Files.writeString(file, "dropped in by hand");
         assertFalse(EditorContentIntegrity.containsAnyFile(file));
     }
+
+    @Test
+    @DisplayName("OS files dropped by opening the folder (.DS_Store, Thumbs.db, desktop.ini) are not content")
+    void osFilesAreClean(@TempDir Path tmp) throws IOException {
+        Path pkg = Files.createDirectories(tmp.resolve("unsaved"));
+        Path portals = Files.createDirectories(pkg.resolve("portals"));
+        Files.writeString(pkg.resolve(".DS_Store"), "x");
+        Files.writeString(portals.resolve(".DS_Store"), "x");
+        Files.writeString(pkg.resolve("Thumbs.db"), "x");
+        Files.writeString(portals.resolve("desktop.ini"), "x");
+        assertFalse(EditorContentIntegrity.containsAnyFile(pkg));
+    }
+
+    @Test
+    @DisplayName("The editor's Reroll carriage choice alone is not content")
+    void rerollChoiceIsClean(@TempDir Path tmp) throws IOException {
+        Path pkg = Files.createDirectories(tmp.resolve("unsaved"));
+        Files.writeString(pkg.resolve(EditorContentIntegrity.EDITOR_VIEW_FILE), "{}");
+        assertFalse(EditorContentIntegrity.containsAnyFile(pkg));
+    }
+
+    @Test
+    @DisplayName("A file named like the reroll choice inside a subfolder still counts")
+    void nestedViewFileNameCounts(@TempDir Path tmp) throws IOException {
+        Path sub = Files.createDirectories(tmp.resolve("unsaved").resolve("contents"));
+        Files.writeString(sub.resolve(EditorContentIntegrity.EDITOR_VIEW_FILE), "{}");
+        assertTrue(EditorContentIntegrity.containsAnyFile(tmp.resolve("unsaved")));
+    }
 }

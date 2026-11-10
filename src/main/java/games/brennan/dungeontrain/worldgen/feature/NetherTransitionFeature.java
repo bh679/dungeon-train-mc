@@ -592,7 +592,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             int x0 = cp.getMinBlockX(), z0 = cp.getMinBlockZ(), x1 = cp.getMaxBlockX(), z1 = cp.getMaxBlockZ();
             int[][] pts = {{x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}, {(x0 + x1) >> 1, (z0 + z1) >> 1}};
             for (int[] p : pts) {
-                Holder<Biome> b = ncb.biomeAt(p[0], p[1], bandCtx.cycle().netherLookAt(p[0], p[1], ncb.seed()));
+                Holder<Biome> b = ncb.biomeAt(p[0], p[1], bandCtx.netherLookAt(p[0], p[1]));
                 if (b != null) out.add(b);
             }
         }
@@ -623,7 +623,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         NetherCoreBiomes ncb = bandCtx.netherCoreBiomes();
         NetherCoreBiomes.SampleMemo samples = new NetherCoreBiomes.SampleMemo();
         return new CoreBiomeFilter.ColumnBiomes(
-                (x, z) -> ncb.biomeAt(x, z, bandCtx.cycle().netherLookAt(x, z, ncb.seed()), samples));
+                (x, z) -> ncb.biomeAt(x, z, bandCtx.netherLookAt(x, z), samples));
     }
 
     /** Registry namespace of a holder's key, or {@code null} for an unkeyed (direct) holder. */

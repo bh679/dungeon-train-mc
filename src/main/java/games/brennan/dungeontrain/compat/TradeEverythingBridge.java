@@ -134,7 +134,12 @@ public final class TradeEverythingBridge {
     private TradeEverythingBridge() {}
 
     public static void install() {
-        // FIRST: the community-approved values bundled from the relay's item-values page
+        // FIRST: gear and enchanted books, priced from each stack's own stats and enchantments
+        // (GearValueProvider). Ahead of the approved table on purpose: a per-id value would price
+        // a level-200 rolled sword the same as a plain one.
+        TradeEverythingApi.registerValueProvider(GearValueProvider::value);
+
+        // Then the community-approved values bundled from the relay's item-values page
         // (TradeValueTable). TE takes the first non-empty provider answer, so an approved
         // value beats every hand-tuned constant below and TE's own defaults. Per item id —
         // a plain lookup, no stack inspection.

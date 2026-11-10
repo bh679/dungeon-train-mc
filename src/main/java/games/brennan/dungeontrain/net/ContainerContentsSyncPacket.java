@@ -12,7 +12,9 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Server → client: container-contents menu state for one cell.
@@ -58,15 +60,71 @@ public record ContainerContentsSyncPacket(
      * value in {@code [minCount, count]} ({@code minCount} is 1 unless the author raised it).
      * {@code potionId} is the stored vanilla potion id for a potion entry, or {@code ""} when none.
      * {@code scaleWithDistance} is the random-potion placeholder's tier toggle and
-     * {@code potionForm} its bottle-form ordinal ({@code PotionForm}).
-     * {@code bookTitle} is the title of a written-book entry's stored book (label only — the
-     * pages stay server-side), or {@code ""} when none.
+     * {@code potionForm} its bottle-form ordinal ({@code PotionForm}); {@code includeLuck} its
+     * Luck toggle.
+     * {@code bookTitle} is the row's book label: a written-book entry's stored title (the pages
+     * stay server-side), or a book entry's enchantments ("mending 1", "1-7 random"); {@code ""}
+     * when none. {@code bookEnchMin}..{@code bookEnchMax} is a book entry's random-enchantment
+     * range ({@code BookEnchants}); max 0 when it has none. {@code bookLevelMin}..{@code bookLevelMax}
+     * is the level range they roll at (0 = top level), and {@code bookEnchList} the builder's on/off
+     * list, enchantment id to on, or {@code null} while the pool keeps the default rule.
+     * {@code contents} is the loot prefab a shulker box entry is packed from, {@code ""} when none.
      */
     public record Entry(String itemId, int count, int minCount, int weight,
                         boolean randomDurability, int durabilityChance,
                         boolean randomEnchantment, int enchantmentChance,
                         int slotOverride, String potionId, boolean scaleWithDistance,
-                        int potionForm, String bookTitle) {
+                        int potionForm, String bookTitle, int bookEnchMin, int bookEnchMax,
+                        int bookLevelMin, int bookLevelMax, @Nullable Map<String, Boolean> bookEnchList,
+                        boolean includeLuck, String contents) {
+
+        /** Back-compat: an entry packed from no loot prefab. */
+        public Entry(String itemId, int count, int minCount, int weight,
+                     boolean randomDurability, int durabilityChance,
+                     boolean randomEnchantment, int enchantmentChance,
+                     int slotOverride, String potionId, boolean scaleWithDistance,
+                     int potionForm, String bookTitle, int bookEnchMin, int bookEnchMax,
+                     int bookLevelMin, int bookLevelMax, @Nullable Map<String, Boolean> bookEnchList,
+                     boolean includeLuck) {
+            this(itemId, count, minCount, weight, randomDurability, durabilityChance,
+                randomEnchantment, enchantmentChance, slotOverride, potionId, scaleWithDistance,
+                potionForm, bookTitle, bookEnchMin, bookEnchMax, bookLevelMin, bookLevelMax, bookEnchList,
+                includeLuck, "");
+        }
+
+        /** Back-compat: Luck toggle off. */
+        public Entry(String itemId, int count, int minCount, int weight,
+                     boolean randomDurability, int durabilityChance,
+                     boolean randomEnchantment, int enchantmentChance,
+                     int slotOverride, String potionId, boolean scaleWithDistance,
+                     int potionForm, String bookTitle, int bookEnchMin, int bookEnchMax,
+                     int bookLevelMin, int bookLevelMax, @Nullable Map<String, Boolean> bookEnchList) {
+            this(itemId, count, minCount, weight, randomDurability, durabilityChance,
+                randomEnchantment, enchantmentChance, slotOverride, potionId, scaleWithDistance,
+                potionForm, bookTitle, bookEnchMin, bookEnchMax, bookLevelMin, bookLevelMax, bookEnchList, false);
+        }
+
+        /** Back-compat: random book enchantments at their top level, default list. */
+        public Entry(String itemId, int count, int minCount, int weight,
+                     boolean randomDurability, int durabilityChance,
+                     boolean randomEnchantment, int enchantmentChance,
+                     int slotOverride, String potionId, boolean scaleWithDistance,
+                     int potionForm, String bookTitle, int bookEnchMin, int bookEnchMax) {
+            this(itemId, count, minCount, weight, randomDurability, durabilityChance,
+                randomEnchantment, enchantmentChance, slotOverride, potionId, scaleWithDistance,
+                potionForm, bookTitle, bookEnchMin, bookEnchMax, 0, 0, null);
+        }
+
+        /** Back-compat: entry with no random book enchantments. */
+        public Entry(String itemId, int count, int minCount, int weight,
+                     boolean randomDurability, int durabilityChance,
+                     boolean randomEnchantment, int enchantmentChance,
+                     int slotOverride, String potionId, boolean scaleWithDistance,
+                     int potionForm, String bookTitle) {
+            this(itemId, count, minCount, weight, randomDurability, durabilityChance,
+                randomEnchantment, enchantmentChance, slotOverride, potionId, scaleWithDistance,
+                potionForm, bookTitle, 0, 0);
+        }
 
         /** Back-compat: entry with no minimum count (rolls from 1). */
         public Entry(String itemId, int count, int weight,
@@ -106,7 +164,14 @@ public record ContainerContentsSyncPacket(
         public boolean hasBook() {
             return bookTitle != null && !bookTitle.isEmpty();
         }
+
+        public boolean hasRandomBookEnchants() {
+            return bookEnchMax > 0;
+        }
     }
+
+    /** Most enchantments a row's list carries; far above any modpack's count, only a guard on a bad packet. */
+    private static final int MAX_BOOK_LIST = 1024;
 
     public static final Type<ContainerContentsSyncPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "container_contents_sync"));
@@ -153,7 +218,21 @@ public record ContainerContentsSyncPacket(
             buf.writeUtf(e.potionId() == null ? "" : e.potionId(), 256);
             buf.writeBoolean(e.scaleWithDistance());
             buf.writeByte(e.potionForm());
+            buf.writeBoolean(e.includeLuck());
             buf.writeUtf(e.bookTitle() == null ? "" : e.bookTitle(), 64);
+            buf.writeVarInt(e.bookEnchMin());
+            buf.writeVarInt(e.bookEnchMax());
+            buf.writeVarInt(e.bookLevelMin());
+            buf.writeVarInt(e.bookLevelMax());
+            buf.writeBoolean(e.bookEnchList() != null);
+            if (e.bookEnchList() != null) {
+                buf.writeVarInt(e.bookEnchList().size());
+                e.bookEnchList().forEach((id, on) -> {
+                    buf.writeUtf(id, 256);
+                    buf.writeBoolean(on);
+                });
+            }
+            buf.writeUtf(e.contents() == null ? "" : e.contents(), 64);
         }
         if (linkedPrefabId == null || linkedPrefabId.isEmpty()) {
             buf.writeBoolean(false);
@@ -199,8 +278,20 @@ public record ContainerContentsSyncPacket(
             String potionId = buf.readUtf(256);
             boolean scale = buf.readBoolean();
             int form = buf.readByte();
+            boolean luck = buf.readBoolean();
             String bookTitle = buf.readUtf(64);
-            entries.add(new Entry(id, count, minCount, weight, randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, bookTitle));
+            int bookEnchMin = buf.readVarInt();
+            int bookEnchMax = buf.readVarInt();
+            int bookLevelMin = buf.readVarInt();
+            int bookLevelMax = buf.readVarInt();
+            Map<String, Boolean> bookEnchList = null;
+            if (buf.readBoolean()) {
+                int listSize = Math.min(buf.readVarInt(), MAX_BOOK_LIST);
+                bookEnchList = new LinkedHashMap<>();
+                for (int j = 0; j < listSize; j++) bookEnchList.put(buf.readUtf(256), buf.readBoolean());
+            }
+            entries.add(new Entry(id, count, minCount, weight, randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, bookTitle,
+                bookEnchMin, bookEnchMax, bookLevelMin, bookLevelMax, bookEnchList, luck, buf.readUtf(64)));
         }
         String link = buf.readBoolean() ? buf.readUtf(64) : null;
         String vaultKey = buf.readBoolean() ? buf.readUtf(256) : null;

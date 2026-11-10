@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
+import games.brennan.dungeontrain.worldgen.MixBand;
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
 import games.brennan.dungeontrain.worldgen.OthersideCore;
 import games.brennan.dungeontrain.worldgen.SecondLapOverworld;
@@ -187,12 +188,14 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
         return OverworldStretchBiomes.vanillaFallback(source, x, y, z, sampler);
     }
 
-    /** The second-lap stretch biome (BoP or vanilla), or {@code null} to leave the live source's pick. */
+    /** The stretch biome (BoP, WWOO or vanilla), or {@code null} to leave the live source's pick. */
     private static Holder<Biome> dungeontrain$stretchBiome(NetherBandContext ctx, MultiNoiseBiomeSource source,
                                                          int x, int y, int z, Climate.Sampler sampler) {
         OverworldStretchBiomes stretchBiomes = OverworldStretchBiomes.current();
         if (stretchBiomes == null) return null;
-        WorldGenCycle cycle = ctx.cycle();   // base cycle even in the mix zone: see dungeontrain$bandBiome
+        // In the mix zone an overworld or Lost City pick wears its own stretch's biomes; any other pick keeps
+        // the base cycle's (see dungeontrain$bandBiome).
+        WorldGenCycle cycle = MixBand.biomeCycleFor(ctx.cycle(), ctx.generationSeed(), x >> 2, z >> 2);
         return dungeontrain$pick(stretchBiomes, SecondLapOverworld.lookAt(cycle, x << 2), source, x, y, z, sampler);
     }
 

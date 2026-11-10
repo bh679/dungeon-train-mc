@@ -1,0 +1,14 @@
+{
+  "sources": [
+    {
+      "type": "single",
+      "resource": "minecraft:item/minecart",
+      "sprite": "dungeontrain:drifting"
+    },
+    {
+      "type": "single",
+      "resource": "dungeontrain:item/live_headpiece_icon",
+      "sprite": "dungeontrain:live"
+    }
+  ]
+}

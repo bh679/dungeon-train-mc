@@ -305,6 +305,11 @@ neoForge {
             if (project.hasProperty('updatePollSeconds')) {
                 systemProperty 'dungeontrain.updatePollSeconds', project.property('updatePollSeconds').toString()
             }
+            // Low-storage warning seam: ./gradlew runClient -PfakeFreeMB=4000 (low) or =800 (critical)
+            // makes DiskSpace report that much free space instead of reading the drive. Dev builds only.
+            if (project.hasProperty('fakeFreeMB')) {
+                systemProperty 'dungeontrain.diskSpace.fakeFreeMB', project.property('fakeFreeMB').toString()
+            }
             // DPI-bypass notice seam: ./gradlew runClient -PdpiBypassTest=winws.exe makes the
             // DPI Bypass Detect add-on report that process without looking at the real process table, so
             // the title-screen notice can be seen and screenshotted on a machine that isn't running
@@ -365,6 +370,10 @@ neoForge {
                 gameDirectory = file(project.property('serverDir').toString())
             }
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Low-storage warning seam (see the client run): ./gradlew runServer -PfakeFreeMB=800
+            if (project.hasProperty('fakeFreeMB')) {
+                systemProperty 'dungeontrain.diskSpace.fakeFreeMB', project.property('fakeFreeMB').toString()
+            }
             // Jitter-namespace DEBUG is on by default in dev (DtLogging: not FMLEnvironment.production);
             // -PjitterDebug=false logs like a player: jitter capped at INFO ([mspt] kept) and the dev
             // traingen trace (DevTraceDefaults) left off.
@@ -743,6 +752,13 @@ dependencies {
     // them by registry id only.
     implementation "maven.modrinth:luminous-monsters:${luminous_monsters_version}"
 
+    // Creeper Overhaul + its libraries — REQUIRED third-party deps (see gradle.properties). Biome creepers placed in
+    // carriage rooms; DT names them by registry id only, so nothing compiles against these jars.
+    implementation "maven.modrinth:creeper-overhaul:${creeperoverhaul_version}"
+    implementation "maven.modrinth:geckolib:${geckolib_version}"
+    implementation "maven.modrinth:resourceful-lib:${resourcefullib_version}"
+    implementation "maven.modrinth:resourceful-config:${resourcefulconfig_version}"
+
     // Piglin Proliferation — REQUIRED third-party dep (see gradle.properties). Its piglins stand in carriages;
     // DT names its entities and items by registry id only.
     implementation "maven.modrinth:piglin-proliferation:${piglinproliferation_version}"
@@ -1109,6 +1125,8 @@ tasks.register('generateModMetadata', ProcessResources) {
         deeperdarker_min_version          : deeperdarker_min_version,
         // Luminous Monsters — floor only.
         luminous_monsters_min_version     : luminous_monsters_min_version,
+        // Creeper Overhaul — floor only.
+        creeperoverhaul_min_version       : creeperoverhaul_min_version,
         // Piglin Proliferation — floor only.
         piglinproliferation_min_version   : piglinproliferation_min_version,
         // Exposure + its Polaroid add-on — floors only.

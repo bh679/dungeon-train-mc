@@ -1227,13 +1227,15 @@ public final class DungeonTrainCommonConfig {
         ModConfigSpec.BooleanValue mixEnabled = b
                 .comment("Mix zone — a hard-edged stretch (the order's mix:<core> slot) where every chunk, with equal",
                         "odds, generates as one of the bands the run has already passed: any overworld style, Nether,",
-                        "BetterNether, Deeper Dark, End, BetterEnd, upside-down, spheres, or a legacy era. Seed-stable per chunk.",
+                        "BetterNether, Deeper Dark, End, BetterEnd, upside-down, spheres, a legacy era, or the Lost City. Seed-stable",
+                        "per chunk. Overworld and Lost City chunks wear their stretch's biomes.",
                         "Set false to drop the mix slot from the cycle.")
                 .define("mixEnabled", DEFAULT_MIX_ENABLED);
         ModConfigSpec.ConfigValue<String> mixExclude = b
                 .comment("Comma-separated candidates the mix zone never picks. Tokens: ow, ow_wwoo, ow_bop, ow_sunk,",
-                        "nether, nether_better, nether_otherside, end, end_better, upside_down, spheres, and a legacy era name",
-                        "(amplified, beta, far_lands, …). Blank = every band behind the zone.")
+                        "nether, nether_bop, nether_better, nether_otherside, end, end_bop, end_better, upside_down, spheres,",
+                        "and a legacy era name",
+                        "(amplified, beta, far_lands, …, lost_city). Blank = every band behind the zone.")
                 .define("mixExclude", DEFAULT_MIX_EXCLUDE);
         games.brennan.dungeontrain.worldgen.legacy.LegacyBandConfig.define(b);
         ModConfigSpec.ConfigValue<String> worldgenCycleOrder = b

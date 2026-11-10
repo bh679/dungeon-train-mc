@@ -85,7 +85,7 @@ final class TerraOmniaTest {
 
     private static final List<ResourceLocation> RARE = List.of(
             id("biomesoplenty:wintry_origin_valley"), id("biomesoplenty:origin_valley"), id("biomesoplenty:hot_springs"),
-            id("biomesoplenty:auroral_garden"), id("biomesoplenty:tropics"));
+            id("biomesoplenty:auroral_garden"), id("biomesoplenty:tropics"), id("biomesoplenty:ominous_woods"));
 
     private static Set<ResourceLocation> with(List<ResourceLocation> base, ResourceLocation... more) {
         Set<ResourceLocation> out = new java.util.HashSet<>(base);
@@ -94,20 +94,20 @@ final class TerraOmniaTest {
     }
 
     @Test
-    @DisplayName("the five rare biomes: any 2 complete it, 1 does not; the rest are all still needed")
-    void twoOfFiveRare() {
+    @DisplayName("the six rare biomes: any 3 complete it, 2 do not; the rest are all still needed")
+    void threeOfSixRare() {
         assertEquals(Set.copyOf(RARE), TerraOmnia.RARE);
         List<ResourceLocation> common = List.of(id("minecraft:plains"), id("biomesoplenty:bayou"));
         List<ResourceLocation> all = new java.util.ArrayList<>(common);
         all.addAll(RARE);
-        assertTrue(TerraOmnia.isComplete(with(common, RARE.get(0), RARE.get(4)), all));
-        assertTrue(TerraOmnia.isComplete(with(common, RARE.get(1), RARE.get(2), RARE.get(3)), all));
-        assertFalse(TerraOmnia.isComplete(with(common, RARE.get(2)), all));
-        assertFalse(TerraOmnia.isComplete(with(List.of(id("minecraft:plains")), RARE.get(0), RARE.get(1)), all));
+        assertTrue(TerraOmnia.isComplete(with(common, RARE.get(0), RARE.get(4), RARE.get(5)), all));
+        assertTrue(TerraOmnia.isComplete(with(common, RARE.get(1), RARE.get(2), RARE.get(3), RARE.get(5)), all));
+        assertFalse(TerraOmnia.isComplete(with(common, RARE.get(2), RARE.get(5)), all));
+        assertFalse(TerraOmnia.isComplete(with(List.of(id("minecraft:plains")), RARE.get(0), RARE.get(1), RARE.get(2)), all));
     }
 
     @Test
-    @DisplayName("fewer than 2 rare biomes in the registry: those present are all needed")
+    @DisplayName("fewer than 3 rare biomes in the registry: those present are all needed")
     void rareMissingFromRegistry() {
         List<ResourceLocation> all = List.of(id("minecraft:plains"), RARE.get(3));
         assertFalse(TerraOmnia.isComplete(Set.of(id("minecraft:plains")), all));
@@ -116,39 +116,39 @@ final class TerraOmniaTest {
     }
 
     @Test
-    @DisplayName("progress counts the rare ones only up to 2, out of the rest plus 2")
+    @DisplayName("progress counts the rare ones only up to 3, out of the rest plus 3")
     void progress() {
         List<ResourceLocation> all = new java.util.ArrayList<>(List.of(id("minecraft:plains"), id("minecraft:taiga")));
         all.addAll(RARE);
-        assertEquals(new TerraOmnia.Progress(0, 4), TerraOmnia.progress(Set.of(), all));
-        assertEquals(new TerraOmnia.Progress(3, 4),
-                TerraOmnia.progress(Set.of(id("minecraft:plains"), RARE.get(0), RARE.get(1), RARE.get(2)), all));
+        assertEquals(new TerraOmnia.Progress(0, 5), TerraOmnia.progress(Set.of(), all));
+        assertEquals(new TerraOmnia.Progress(4, 5),
+                TerraOmnia.progress(Set.of(id("minecraft:plains"), RARE.get(0), RARE.get(1), RARE.get(2), RARE.get(3)), all));
     }
 
     @Test
-    @DisplayName("spare rare: unridden rare biomes once 2 are ridden; never a ridden or common one")
+    @DisplayName("spare rare: unridden rare biomes once 3 are ridden; never a ridden or common one")
     void spareRare() {
-        Set<ResourceLocation> one = Set.of(RARE.get(0));
         Set<ResourceLocation> two = Set.of(RARE.get(0), RARE.get(1));
-        assertFalse(TerraOmnia.isSpareRare(RARE.get(2), one));
-        assertTrue(TerraOmnia.isSpareRare(RARE.get(2), two));
-        assertFalse(TerraOmnia.isSpareRare(RARE.get(0), two));
-        assertFalse(TerraOmnia.isSpareRare(id("minecraft:plains"), two));
+        Set<ResourceLocation> three = Set.of(RARE.get(0), RARE.get(1), RARE.get(5));
+        assertFalse(TerraOmnia.isSpareRare(RARE.get(2), two));
+        assertTrue(TerraOmnia.isSpareRare(RARE.get(2), three));
+        assertFalse(TerraOmnia.isSpareRare(RARE.get(0), three));
+        assertFalse(TerraOmnia.isSpareRare(id("minecraft:plains"), three));
     }
 
     @Test
-    @DisplayName("enough rare: 2 of the 5 or more, all of them when the registry holds fewer, never when it holds none")
+    @DisplayName("enough rare: 3 of the 6 or more, all of them when the registry holds fewer, never when it holds none")
     void enoughRare() {
-        assertFalse(TerraOmnia.hasEnoughRare(Set.of(RARE.get(0)), RARE));
-        assertTrue(TerraOmnia.hasEnoughRare(Set.of(RARE.get(0), RARE.get(1)), RARE));
-        assertTrue(TerraOmnia.hasEnoughRare(Set.of(RARE.get(0), RARE.get(1), RARE.get(2)), RARE));
+        assertFalse(TerraOmnia.hasEnoughRare(Set.of(RARE.get(0), RARE.get(1)), RARE));
+        assertTrue(TerraOmnia.hasEnoughRare(Set.of(RARE.get(0), RARE.get(1), RARE.get(5)), RARE));
+        assertTrue(TerraOmnia.hasEnoughRare(Set.of(RARE.get(0), RARE.get(1), RARE.get(2), RARE.get(3)), RARE));
         assertTrue(TerraOmnia.hasEnoughRare(Set.of(RARE.get(0)), List.of(RARE.get(0))));
         assertFalse(TerraOmnia.hasEnoughRare(Set.of(RARE.get(1)), List.of(RARE.get(0))));
         assertFalse(TerraOmnia.hasEnoughRare(Set.of(id("minecraft:plains")), List.of(id("minecraft:plains"))));
     }
 
     @Test
-    @DisplayName("Coffee Table Book's check still needs every biome, all five rare ones included")
+    @DisplayName("Coffee Table Book's check still needs every biome, all six rare ones included")
     void holdsEveryStaysStrict() {
         List<ResourceLocation> all = new java.util.ArrayList<>(List.of(id("minecraft:plains")));
         all.addAll(RARE);

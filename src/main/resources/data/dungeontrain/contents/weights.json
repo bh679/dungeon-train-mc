@@ -4,11 +4,18 @@
     "weight": 1,
     "optIn": true
   },
+  "biome_creepers": {
+    "weight": 1,
+    "minLevel": 4,
+    "name": "Biome Creepers",
+    "optIn": true
+  },
   "books": 11,
   "caggedzombs2": 1,
   "cargocontents": 15,
   "cows": 15,
   "craft": 7,
+  "creeper_cave": 2,
   "dangerous_1": {
     "weight": 1,
     "name": "tntbarrel",
@@ -44,7 +51,6 @@
   "dirt2": 2,
   "enchant": 2,
   "ender": 1,
-  "enemies": 8,
   "enemies_box": {
     "weight": 5,
     "phases": [
@@ -69,15 +75,43 @@
     ],
     "optIn": true
   },
+  "enemies_deeper_dark": {
+    "weight": 28,
+    "name": "Deeper Dark"
+  },
+  "enemies_end": {
+    "weight": 12,
+    "name": "End"
+  },
   "enemies_group": {
     "weight": 20,
     "minLevel": 1,
     "optIn": true
   },
+  "enemies_nether": {
+    "weight": 60,
+    "name": "Nether"
+  },
+  "enemies_odd": {
+    "weight": 9,
+    "name": "Odd ones"
+  },
   "enemies_path": {
     "weight": 1,
     "minLevel": 1,
     "optIn": true
+  },
+  "enemies_pillagers": {
+    "weight": 13,
+    "name": "Pillagers"
+  },
+  "enemies_spiders_slimes": {
+    "weight": 11,
+    "name": "Spiders \u0026 Slimes"
+  },
+  "enemies_undead": {
+    "weight": 67,
+    "name": "Zombies \u0026 Skeletons"
   },
   "enemiesgroup2": {
     "weight": 5,

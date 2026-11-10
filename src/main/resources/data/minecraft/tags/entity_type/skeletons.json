@@ -1,0 +1,15 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "luminous_monsters:cherry_skeleton", "required": false },
+    { "id": "luminous_monsters:dark_oak_skeleton", "required": false },
+    { "id": "luminous_monsters:hollow_skeleton", "required": false },
+    { "id": "luminous_monsters:icy_skeleton", "required": false },
+    { "id": "luminous_monsters:miner_skeleton", "required": false },
+    { "id": "luminous_monsters:revenant_skeleton", "required": false },
+    { "id": "luminous_monsters:savanna_skeleton", "required": false },
+    { "id": "luminous_monsters:sunken_skeleton", "required": false },
+    { "id": "luminous_monsters:swamp_skeleton", "required": false },
+    { "id": "betternether:jungle_skeleton", "required": false }
+  ]
+}

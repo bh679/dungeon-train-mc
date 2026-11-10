@@ -63,6 +63,51 @@ final class InventoryRestoreClientTest {
     }
 
     @Test
+    @DisplayName("a run block parses its x, run state and Long Way Back carriage")
+    void parseRun() {
+        InventoryRestoreClient.Restore r = InventoryRestoreClient.parse(
+            "{\"ok\":true,\"restore\":{\"id\":\"r\",\"inventory\":[],\"xpLevels\":17,"
+                + "\"run\":{\"x\":9140.6,\"runState\":\"{travelledCarriageIndex:237}\",\"longWayBackMaxCarriage\":237}}}");
+        assertNotNull(r);
+        assertNotNull(r.run());
+        assertEquals(9140.6, r.run().x());
+        assertEquals("{travelledCarriageIndex:237}", r.run().runState());
+        assertEquals(237, r.run().longWayBackMaxCarriage());
+    }
+
+    @Test
+    @DisplayName("a run block alone is still a restore, and its absence leaves run null")
+    void parseRunOnlyAndAbsent() {
+        InventoryRestoreClient.Restore runOnly = InventoryRestoreClient.parse(
+            "{\"ok\":true,\"restore\":{\"id\":\"r\",\"run\":{\"x\":10,\"runState\":\"{}\"}}}");
+        assertNotNull(runOnly);
+        assertEquals(-1, runOnly.run().longWayBackMaxCarriage());
+
+        InventoryRestoreClient.Restore none = InventoryRestoreClient.parse(
+            "{\"ok\":true,\"restore\":{\"id\":\"r\",\"xpLevels\":3}}");
+        assertNotNull(none);
+        assertNull(none.run());
+    }
+
+    @Test
+    @DisplayName("a malformed run block is dropped, and the items still arrive")
+    void parseMalformedRunKeepsItems() {
+        String items = "\"inventory\":[{\"slot\":3,\"id\":\"minecraft:dirt\",\"count\":1,\"nbt\":\"{id:\\\"minecraft:dirt\\\",count:1}\"}]";
+        for (String run : new String[] {
+            "{\"runState\":\"{}\"}",                    // no x
+            "{\"x\":\"far\",\"runState\":\"{}\"}",        // x not a number
+            "{\"x\":4.0E7,\"runState\":\"{}\"}",          // past the world border
+            "{\"x\":10,\"runState\":\"  \"}",             // blank state
+            "[1,2]"}) {
+            InventoryRestoreClient.Restore r = InventoryRestoreClient.parse(
+                "{\"ok\":true,\"restore\":{\"id\":\"r\"," + items + ",\"run\":" + run + "}}");
+            assertNotNull(r, run);
+            assertNull(r.run(), run);
+            assertEquals(1, r.inventory().size(), run);
+        }
+    }
+
+    @Test
     @DisplayName("the ack carries a dashless uuid, the state and the counts")
     void ackBody() {
         UUID uuid = UUID.fromString("7b7774bd-61fc-44b5-9b8b-3f38ce70a443");
@@ -75,6 +120,10 @@ final class InventoryRestoreClientTest {
         assertEquals(2, o.get("displaced").getAsInt());
         assertEquals(0, o.get("skipped").getAsInt());
         assertFalse(o.has("reason"));
+        assertFalse(o.has("relocatedX"));
+        JsonObject moved = JsonParser.parseString(InventoryRestoreClient.ackBody(uuid, "r_1",
+            new InventoryRestoreClient.Outcome(true, null, 1, 0, 0).withRelocatedX(9140.6))).getAsJsonObject();
+        assertEquals(9140.6, moved.get("relocatedX").getAsDouble());
 
         JsonObject declined = JsonParser.parseString(InventoryRestoreClient.ackBody(uuid, "r_1",
             new InventoryRestoreClient.Outcome(false, "nope", 0, 0, 0))).getAsJsonObject();

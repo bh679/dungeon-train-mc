@@ -730,6 +730,14 @@ public final class PortalCarriageEvents {
      * not in {@link #STRUCTURES} — {@code PortalTestCommand} builds its structure itself — so its
      * one pair key falls back to the live session's own.</p>
      */
+    /**
+     * Every live pair's structure, read-only. Test rooms are not in it — see {@link #liveStructure}.
+     * Server thread only, like everything else that reads {@link #STRUCTURES}.
+     */
+    public static java.util.Collection<PortalStructure> liveStructures() {
+        return java.util.Collections.unmodifiableCollection(STRUCTURES.values());
+    }
+
     private static PortalStructure liveStructure(int pairKey) {
         PortalStructure live = STRUCTURES.get(pairKey);
         if (live != null) return live;

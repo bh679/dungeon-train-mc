@@ -42,7 +42,7 @@ public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localP
                                           int entryIndex, String itemId, int delta, int value2)
     implements CustomPacketPayload {
 
-    /** Every op but {@link Op#SET_COUNT_RANGE} carries one value; {@code value2} is 0. */
+    /** Only the {@code SET_*_RANGE} ops carry a second value; every other op's {@code value2} is 0. */
     public ContainerContentsEditPacket(Op op, String plotKey, BlockPos localPos,
                                        int entryIndex, String itemId, int delta) {
         this(op, plotKey, localPos, entryIndex, itemId, delta, 0);
@@ -65,7 +65,26 @@ public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localP
         /** Step a vault's unlock key (Trial Key → Ominous Trial Key), which also sets the vault type. */
         CYCLE_VAULT_KEY,
         /** Typed min and max stack from the count cell's cmd-click pad: {@code delta} max, {@code value2} min. */
-        SET_COUNT_RANGE
+        SET_COUNT_RANGE,
+        /** Step a book entry's most random enchantments by {@code delta} (0 turns them off). */
+        BUMP_BOOK_ENCH,
+        /** Typed random-enchantment range of a book entry: {@code delta} max, {@code value2} min. */
+        SET_BOOK_ENCH_RANGE,
+        /** Step the lowest level a book's random enchantments roll at by {@code delta} (0 = top level only). */
+        BUMP_BOOK_ENCH_LEVEL,
+        /** Typed level range of a book's random enchantments: {@code delta} max, {@code value2} min (0 = top). */
+        SET_BOOK_ENCH_LEVEL_RANGE,
+        /** Switch one enchantment, named in {@code itemId}, on or off in a book's list. */
+        TOGGLE_BOOK_ENCH,
+        /** Every enchantment in a book's list on ({@code delta} 1, curses kept) or off (0). */
+        SET_BOOK_ENCH_ALL,
+        /** Flip a random-potion placeholder entry's Luck toggle (Luck / Luck II in the pick). */
+        TOGGLE_LUCK,
+        /**
+         * Pack a shulker box entry from the loot prefab the author holds, or empty it when they hold no
+         * loot prefab. The prefab id comes from the server's view of the held item, never the packet.
+         */
+        SET_CONTENTS
     }
 
     public static final Type<ContainerContentsEditPacket> TYPE =

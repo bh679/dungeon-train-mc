@@ -19,6 +19,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.Potion;
 import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.item.component.SuspiciousStewEffects;
 import net.minecraft.world.item.crafting.AbstractCookingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
@@ -37,6 +38,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import com.mojang.logging.LogUtils;
@@ -97,6 +99,13 @@ public final class ContainerContentsRoller {
     private static final long SALT_ENCH_CHANCE = 0xFEEDFACECAFEBABEL;
     /** Seed source for the vanilla EnchantmentHelper RandomSource. */
     private static final long SALT_ENCH_VALUE  = 0xBADDCAFE0FF1CE00L;
+    /** Salt for a book entry's {@link BookEnchants} roll (which random enchantments, how many). */
+    private static final long SALT_BOOK_ENCHANTS = 0xB00CE7C4A7750BE5L;
+    /**
+     * Slot offset for each extra book a vault hands out from one rich-book roll, so book 2 and 3 roll
+     * their own enchantments instead of copying book 1. Past any real container's slot count.
+     */
+    private static final int EXTRA_BOOK_SLOT_STRIDE = 1 << 16;
     /** Salt for the random-book placeholder substitution. */
     private static final long SALT_RANDOM_BOOK = 0xB0011AB1ECAFEBE0L;
     private static final long SALT_LEADERBOARD_BOOK = 0x1EADE7B0A2DB00C5L;
@@ -139,6 +148,17 @@ public final class ContainerContentsRoller {
 
     /** Salt for the brushable-block (suspicious sand/gravel) archaeology LootTableSeed. */
     private static final long SALT_BRUSHABLE_SEED = 0x5A5DB00C0FFEE123L;
+    /** Seed of the roll that packs a shulker box entry's {@code contents} prefab into the box. */
+    private static final long SALT_SHULKER_CONTENTS = 0x5B01CE7B0C5EED11L;
+    /** Slots in a shulker box. */
+    static final int SHULKER_SLOTS = 27;
+
+    /**
+     * Where a shulker entry's {@code contents} prefab id is looked up. The store in play; a test swaps in
+     * its own map ({@link #setContentsLookup}) because the store reads the game directory.
+     */
+    private static volatile Function<String, Optional<ContainerContentsPool>> contentsLookup =
+        id -> LootPrefabStore.load(id).map(LootPrefabStore.Data::pool);
 
     /**
      * BE NBT key on {@code decorated_pot} that holds the single contained
@@ -213,6 +233,14 @@ public final class ContainerContentsRoller {
     }
 
     /**
+     * Potion of Luck and DT's Luck II. Both sit in the random / random-good tables but only roll
+     * when the entry's Luck toggle is on ({@link ContainerContentsEntry#includeLuck()}).
+     */
+    static final ResourceLocation LUCK_POTION = ResourceLocation.withDefaultNamespace("luck");
+    static final ResourceLocation STRONG_LUCK_POTION =
+        ResourceLocation.fromNamespaceAndPath(games.brennan.dungeontrain.DungeonTrain.MOD_ID, "strong_luck");
+
+    /**
      * Ordered, escalating tiers of vanilla potions for the
      * {@code dungeontrain:random_potion} placeholder found in loot. Unlike
      * the offensive arrow table these span ALL effect kinds (beneficial +
@@ -232,7 +260,7 @@ public final class ContainerContentsRoller {
         tierIds("poison", "regeneration", "invisibility", "slow_falling"),                       // T2 — carts 100–149
         tierIds("harming", "strength", "infested", "luck"),                                      // T3 — carts 150–199
         tierIds("strong_poison", "strong_healing", "strong_swiftness", "weaving"),               // T4 — carts 200–249
-        tierIds("strong_harming", "strong_regeneration", "strong_strength", "oozing", "strong_leaping") // T5 — carts 250+
+        withStrongLuck(tierIds("strong_harming", "strong_regeneration", "strong_strength", "oozing", "strong_leaping")) // T5 — carts 250+
     );
 
     /** Test seam: read-only view of the configured potion-effect tiers. */
@@ -252,7 +280,7 @@ public final class ContainerContentsRoller {
         tierIds("healing", "night_vision", "water_breathing", "leaping"),               // T0 — carts 0–49
         tierIds("swiftness", "fire_resistance", "slow_falling", "invisibility"),        // T1 — carts 50–99
         tierIds("regeneration", "strength", "strong_leaping", "luck"),                  // T2 — carts 100–149
-        tierIds("strong_healing", "strong_swiftness", "strong_regeneration", "strong_strength") // T3 — carts 150+
+        withStrongLuck(tierIds("strong_healing", "strong_swiftness", "strong_regeneration", "strong_strength")) // T3 — carts 150+
     );
 
     /** Test seam: read-only view of the good-potion tiers. */
@@ -311,6 +339,22 @@ public final class ContainerContentsRoller {
         List<ResourceLocation> out = new ArrayList<>();
         for (List<ResourceLocation> tier : tiers) out.addAll(tier);
         return out;
+    }
+
+    /** {@code ids} without Luck and Luck II, unless {@code includeLuck}. Test seam. */
+    static List<ResourceLocation> luckFiltered(List<ResourceLocation> ids, boolean includeLuck) {
+        if (includeLuck) return ids;
+        List<ResourceLocation> out = new ArrayList<>(ids.size());
+        for (ResourceLocation id : ids) {
+            if (!LUCK_POTION.equals(id) && !STRONG_LUCK_POTION.equals(id)) out.add(id);
+        }
+        return List.copyOf(out);
+    }
+
+    private static List<ResourceLocation> withStrongLuck(List<ResourceLocation> tier) {
+        List<ResourceLocation> out = new ArrayList<>(tier);
+        out.add(STRONG_LUCK_POTION);
+        return List.copyOf(out);
     }
 
     private static List<ResourceLocation> tierIds(String... potionPaths) {
@@ -502,7 +546,35 @@ public final class ContainerContentsRoller {
             ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, diffIndex, slot, registries);
             if (stack.isEmpty()) continue;
             out.add(stack);
-            if (splitOverflow) out.addAll(overflowStacks(stack, rolledCount));
+            if (splitOverflow) {
+                out.addAll(rollsEachBook(picked)
+                    ? extraBooks(picked, stack, rolledCount, localPos, worldSeed, carriageIndex, diffIndex, slot, registries)
+                    : overflowStacks(stack, rolledCount));
+            }
+        }
+        return out;
+    }
+
+    /**
+     * True for an entry whose items each roll on their own: books with random enchantments, and packed
+     * shulker boxes, so two from one vault are not copies of each other.
+     */
+    static boolean rollsEachBook(ContainerContentsEntry picked) {
+        return (picked.hasEnchants() && picked.enchants().hasRandom()) || picked.hasContents();
+    }
+
+    /**
+     * The books beyond {@code first} that a rich-book roll of {@code rolledCount} still owes, each
+     * rolled on its own ({@link #EXTRA_BOOK_SLOT_STRIDE}) so a vault's 1-3 books are all different.
+     */
+    private static List<ItemStack> extraBooks(ContainerContentsEntry picked, ItemStack first, int rolledCount,
+                                              BlockPos localPos, long worldSeed, int carriageIndex,
+                                              int diffIndex, int slot, HolderLookup.Provider registries) {
+        List<ItemStack> out = new ArrayList<>();
+        for (int i = 1; i <= rolledCount - first.getCount(); i++) {
+            ItemStack book = rollItemStack(picked, 1, localPos, worldSeed, carriageIndex, diffIndex,
+                slot + EXTRA_BOOK_SLOT_STRIDE * i, registries);
+            if (!book.isEmpty()) out.add(book);
         }
         return out;
     }
@@ -1110,15 +1182,15 @@ public final class ContainerContentsRoller {
         // harmful vanilla potion in a random bottle form. The entry's scale toggle decides
         // whether the power tier follows carriages travelled or the pick is flat.
         if (item == ModItems.RANDOM_POTION.get()) {
-            return bakeRandomPotion(POTION_EFFECT_TIERS, picked.scaleWithDistance(), picked.potionForm(),
+            return bakeRandomPotion(POTION_EFFECT_TIERS, picked.scaleWithDistance(), picked.includeLuck(), picked.potionForm(),
                 localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
         }
         if (item == ModItems.RANDOM_GOOD_POTION.get()) {
-            return bakeRandomPotion(GOOD_POTION_TIERS, picked.scaleWithDistance(), picked.potionForm(),
+            return bakeRandomPotion(GOOD_POTION_TIERS, picked.scaleWithDistance(), picked.includeLuck(), picked.potionForm(),
                 localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
         }
         if (item == ModItems.RANDOM_BAD_POTION.get()) {
-            return bakeRandomPotion(BAD_POTION_TIERS, picked.scaleWithDistance(), picked.potionForm(),
+            return bakeRandomPotion(BAD_POTION_TIERS, picked.scaleWithDistance(), picked.includeLuck(), picked.potionForm(),
                 localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
         }
 
@@ -1164,6 +1236,17 @@ public final class ContainerContentsRoller {
         ContainerContentsPotions.applyStoredPotion(stack, picked.potionId(), registries);
         // A written-book entry carries the signed book the author added from their hand.
         ContainerContentsBooks.applyStoredBook(stack, picked.book(), registries);
+        // A shulker box entry naming a loot prefab comes out packed with a roll of that prefab.
+        if (picked.hasContents()) {
+            packShulker(stack, picked.contents(), localPos, worldSeed, carriageIndex, diffIndex, slot, registries);
+        }
+        // A book entry's own enchantments: exact ones (a Mending book) and/or a roll of different
+        // max-level ones. It becomes an enchanted book, which the random-enchant roll below skips.
+        if (picked.hasEnchants()) {
+            stack = ContainerContentsEnchants.apply(stack, picked.enchants(),
+                RandomSource.create(mix(localPos, worldSeed, carriageIndex, slot, SALT_BOOK_ENCHANTS)), registries);
+            stack = EnchantLevelCap.clampToProgression(stack, DifficultyProgression.positionTier(diffIndex));
+        }
 
         if (picked.randomDurability() && stack.isDamageableItem()
             && rollChance(picked.durabilityChance(), localPos, worldSeed,
@@ -1304,18 +1387,21 @@ public final class ContainerContentsRoller {
      * slot)} so two random potions in the same 50-carriage band can differ, yet a fixed
      * chest/slot stays deterministic (re-opens identical).</p>
      *
+     * <p>{@code includeLuck} off drops Potion of Luck and Luck II from the pick.</p>
+     *
      * <p>{@code form} pins the bottle (drinkable / splash / lingering); {@link PotionForm#ANY}
      * rolls it per spawn.</p>
      *
      * <p>Returns {@link ItemStack#EMPTY} only when no potion resolves (a stripped or modded
      * potion registry), so the slot is skipped rather than filled with a blank bottle.</p>
      */
-    static ItemStack bakeRandomPotion(List<List<ResourceLocation>> tiers, boolean scale, PotionForm form,
+    static ItemStack bakeRandomPotion(List<List<ResourceLocation>> tiers, boolean scale, boolean includeLuck,
+                                      PotionForm form,
                                       BlockPos localPos, long worldSeed, int carriageIndex,
                                       int slot, int count, HolderLookup.Provider registries) {
         int level = epochLevel(carriageIndex);
         int tier = scale ? epochTierIndex(level, tiers.size()) : -1;
-        List<ResourceLocation> ids = scale ? tiers.get(tier) : flattenTiers(tiers);
+        List<ResourceLocation> ids = luckFiltered(scale ? tiers.get(tier) : flattenTiers(tiers), includeLuck);
         List<Holder<Potion>> pool = resolvePotions(ids, registries);
         if (pool.isEmpty()) return ItemStack.EMPTY;
 
@@ -1784,6 +1870,55 @@ public final class ContainerContentsRoller {
             if (target < 0) return e;
         }
         return pool.entries().get(pool.entries().size() - 1);
+    }
+
+    /**
+     * Fill {@code box} with a roll of loot prefab {@code prefabId}, the way a chest of that prefab fills:
+     * {@code [fillMin, fillMax]} of the 27 slots, each rolled item in the slot it rolled into. Seeded from the
+     * outer roll's frame and {@code slot}, so the same box always packs the same, and two boxes differ.
+     * One level deep only: the prefab's own shulker entries come out empty, so a prefab naming itself (or
+     * two naming each other) cannot loop. A prefab that is missing or empty leaves the box empty.
+     */
+    static void packShulker(ItemStack box, String prefabId, BlockPos localPos, long worldSeed,
+                            int carriageIndex, int diffIndex, int slot, HolderLookup.Provider registries) {
+        Optional<ContainerContentsPool> found = contentsLookup.apply(prefabId);
+        if (found.isEmpty() || found.get().isEmpty()) {
+            LOGGER.warn("[DungeonTrain] Shulker loot entry names loot prefab '{}', which {} — the box spawns empty",
+                prefabId, found.isEmpty() ? "does not exist" : "has no entries");
+            return;
+        }
+        ContainerContentsPool pool = withoutContents(found.get());
+        int totalWeight = pool.totalWeight();
+        if (totalWeight <= 0) return;
+        long seed = mix(localPos, worldSeed, carriageIndex, slot, SALT_SHULKER_CONTENTS);
+        int effectiveMax = pool.fillMax() == ContainerContentsPool.FILL_ALL
+            ? SHULKER_SLOTS : Math.min(pool.fillMax(), SHULKER_SLOTS);
+        int effectiveMin = Math.max(0, Math.min(pool.fillMin(), effectiveMax));
+        int k = rollKCount(effectiveMin, effectiveMax, localPos, seed, carriageIndex);
+        List<ItemStack> items = new ArrayList<>(SHULKER_SLOTS);
+        for (int i = 0; i < SHULKER_SLOTS; i++) items.add(ItemStack.EMPTY);
+        for (int s : resolveSlotSubset(SHULKER_SLOTS, k, localPos, seed, carriageIndex)) {
+            ContainerContentsEntry e = pickEntry(pool, totalWeight, localPos, seed, carriageIndex, s);
+            if (e == null || e.isAir()) continue;
+            int count = rollItemCount(e.minCount(), e.count(), localPos, seed, carriageIndex, s);
+            items.set(s, rollItemStack(e, count, localPos, seed, carriageIndex, diffIndex, s, registries));
+        }
+        box.set(DataComponents.CONTAINER, ItemContainerContents.fromItems(items));
+    }
+
+    /** {@code pool} with every entry's {@code contents} dropped: what an inner roll rolls from. */
+    static ContainerContentsPool withoutContents(ContainerContentsPool pool) {
+        List<ContainerContentsEntry> out = new ArrayList<>(pool.size());
+        for (ContainerContentsEntry e : pool.entries()) out.add(e.contents() == null ? e : e.withContents(null));
+        return new ContainerContentsPool(out, pool.fillMin(), pool.fillMax(), pool.vaultKey());
+    }
+
+    /** Swap where {@code contents} prefab ids resolve; tests only. Returns the lookup it replaced. */
+    static Function<String, Optional<ContainerContentsPool>> setContentsLookup(
+            Function<String, Optional<ContainerContentsPool>> lookup) {
+        Function<String, Optional<ContainerContentsPool>> previous = contentsLookup;
+        contentsLookup = lookup;
+        return previous;
     }
 
     /**

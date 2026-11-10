@@ -34460,6 +34460,536 @@
       "released": true,
       "released_in": "v0.1737.0",
       "released_at": "2026-11-08T21:34:24Z"
+    },
+    {
+      "id": "lectern-series-report",
+      "version": "0.1738.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "books",
+        "ui"
+      ],
+      "title": "Report lectern letters",
+      "summary": "Letters written by other players can now be reported from the lectern they sit on. The report button is on the last page of the letter, and reporting one letter reports its whole series.",
+      "highlights": [],
+      "pr": 2571,
+      "date": "2026-11-08",
+      "released": true,
+      "released_in": "v0.1739.0",
+      "released_at": "2026-11-08T23:06:08Z"
+    },
+    {
+      "id": "vault-reward-tweak",
+      "version": "0.1739.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Vault reward tweak",
+      "summary": "Vault rewards have been rebalanced.",
+      "highlights": [],
+      "pr": 2573,
+      "date": "2026-11-08",
+      "released": true,
+      "released_in": "v0.1739.0",
+      "released_at": "2026-11-08T23:06:08Z"
+    },
+    {
+      "id": "mending-trade-stock-one",
+      "version": "0.1740.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Mending trades limited to a few",
+      "summary": "Villagers and other traders who sell Mending now only have one to three in stock at a time.",
+      "highlights": [],
+      "pr": 2574,
+      "date": "2026-11-08",
+      "released": true,
+      "released_in": "v0.1747.0",
+      "released_at": "2026-11-09T12:57:53Z"
+    },
+    {
+      "id": "carriage-newcomers",
+      "version": "0.1746.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "mobs"
+      ],
+      "title": "More Mobs Creeping Aboard",
+      "summary": "Several new faces join the line, some of you may recognise them. Not all will be so scary, but as the train gets deeper that will change.",
+      "highlights": [],
+      "pr": 2581,
+      "date": "2026-11-09",
+      "released": true,
+      "released_in": "v0.1747.0",
+      "released_at": "2026-11-09T12:57:53Z",
+      "major": true,
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/carriage-newcomers.gif"
+    },
+    {
+      "id": "contents-touch-sees-carriage",
+      "version": "0.1726.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Rooms fit their carriage",
+      "summary": "Decorations at the edges of a carriage room now take the carriage around them into account, so things hang from real ceilings and sit on real floors.",
+      "highlights": [
+        "Room decorations along the walls, floor and ceiling now follow the carriage they are in"
+      ],
+      "pr": 2580,
+      "date": "2026-11-09",
+      "released": true,
+      "released_in": "v0.1747.0",
+      "released_at": "2026-11-09T12:57:53Z"
+    },
+    {
+      "id": "dimensional-carriage-water",
+      "version": "0.1740.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage fix",
+      "summary": "Water no longer leaks into dimensional carriages.",
+      "highlights": [],
+      "pr": 2575,
+      "date": "2026-11-09",
+      "released": true,
+      "released_in": "v0.1747.0",
+      "released_at": "2026-11-09T12:57:53Z"
+    },
+    {
+      "id": "librarian-trade-tweak",
+      "version": "0.1743.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "loot",
+        "balance"
+      ],
+      "title": "Librarian trade tweak",
+      "summary": "Librarians who take up a new job now offer a slightly different selection of books.",
+      "highlights": [],
+      "pr": 2579,
+      "date": "2026-11-09",
+      "released": true,
+      "released_in": "v0.1747.0",
+      "released_at": "2026-11-09T12:57:53Z"
+    },
+    {
+      "id": "rarest-vault-books",
+      "version": "0.1743.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "loot",
+        "balance"
+      ],
+      "title": "Better books from the rarest vault",
+      "summary": "The rarest vault can now hand out several powerful enchanted books at once, and something new.",
+      "highlights": [
+        "Books from the rarest vault carry several strong enchantments, never a curse.",
+        "Builders can set how many random enchantments a book in their loot gets, and an enchanted book added from the hand keeps its own."
+      ],
+      "pr": 2578,
+      "date": "2026-11-09",
+      "released": true,
+      "released_in": "v0.1747.0",
+      "released_at": "2026-11-09T12:57:53Z"
+    },
+    {
+      "id": "terra-omnia-ominous-woods",
+      "version": "0.1746.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements",
+        "balance"
+      ],
+      "title": "Terra Omnia rare biomes tweak",
+      "summary": "Ominous Woods is now one of Terra Omnia's rare biomes and turns up more often. Terra Omnia now asks for any 3 of the 6 rare biomes.",
+      "highlights": [],
+      "pr": 2582,
+      "date": "2026-11-09",
+      "released": true,
+      "released_in": "v0.1747.0",
+      "released_at": "2026-11-09T12:57:53Z"
+    },
+    {
+      "id": "train-villagers-no-restock",
+      "version": "0.1740.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "loot",
+        "balance"
+      ],
+      "title": "Train villagers no longer restock",
+      "summary": "Villagers on the train keep the stock they start with. Once a trade sells out, it stays sold out.",
+      "highlights": [],
+      "date": "2026-11-09",
+      "released": true,
+      "released_in": "v0.1747.0",
+      "released_at": "2026-11-09T12:57:53Z"
+    },
+    {
+      "id": "more-keys-in-chests",
+      "version": "0.1749.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot",
+        "balance"
+      ],
+      "title": "More keys in chests and pots",
+      "summary": "Trial Keys and Ominous Trial Keys turn up more often in chests, pots and vases.",
+      "highlights": [],
+      "pr": 2584,
+      "date": "2026-11-09",
+      "released": true,
+      "released_in": "v0.1750.0",
+      "released_at": "2026-11-10T03:03:32Z"
+    },
+    {
+      "id": "sculk-snapper-no-mending",
+      "version": "0.1748.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot",
+        "balance"
+      ],
+      "title": "Mending fix",
+      "summary": "Small improvement to how mending is found",
+      "highlights": [],
+      "pr": 2583,
+      "date": "2026-11-09",
+      "released": true,
+      "released_in": "v0.1750.0",
+      "released_at": "2026-11-10T03:03:32Z"
+    },
+    {
+      "id": "farmers-delight-not-approved",
+      "version": "0.1755.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Farmer's Delight",
+      "summary": "Farmer's Delight is no longer an approved mod. Runs with it installed are Free Play, because its food and drinks give advantages a normal run doesn't have.",
+      "highlights": [],
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1759.0",
+      "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "low-disk-space-warning",
+      "version": "0.1757.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Low storage warning",
+      "summary": "The game now warns you when your drive is nearly full, before it runs out of space and crashes mid-run.",
+      "highlights": [
+        "A warning pops up when your drive has less than 5 GB free, so you can clear space before it becomes a problem.",
+        "Under 1 GB free, a red warning repeats every couple of minutes telling you to save and quit.",
+        "Server owners get the same warning for the server's drive."
+      ],
+      "pr": 2592,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1759.0",
+      "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "photo-collection-shared-photos",
+      "version": "0.1751.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements",
+        "ui"
+      ],
+      "title": "Photo collection fix",
+      "summary": "Photo collections now show the photo you already took of a mob, and name every mob you've already counted. Collections that were finished without their photos need those photos taken again.",
+      "highlights": [],
+      "pr": 2587,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1759.0",
+      "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "prefilled-loot-containers",
+      "version": "0.1752.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "loot"
+      ],
+      "title": "Editor: pre-filled loot containers",
+      "summary": "Builders can now set up loot that comes out already packed with its own roll of items.",
+      "highlights": [],
+      "pr": 2588,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1759.0",
+      "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "random-potions-luck-toggle",
+      "version": "0.1751.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "loot",
+        "balance"
+      ],
+      "title": "Potion loot tweak",
+      "summary": "Random potions found on the train are a little different",
+      "highlights": [],
+      "pr": 2586,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1759.0",
+      "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "rarest-vault-stronger-gear",
+      "version": "0.1753.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot",
+        "balance"
+      ],
+      "title": "Stronger gear from the rarest vault",
+      "summary": "Weapons and armour from the rarest vault now come out far stronger, rolled as if found much deeper down the line. Vault rewards have also been reshuffled, with bigger piles of the good stuff.",
+      "highlights": [
+        "Rarest vault gear hits much harder and protects much better.",
+        "Rarest and ominous vault rewards rebalanced."
+      ],
+      "pr": 2589,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1759.0",
+      "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "restore-support-tooling",
+      "version": "0.1758.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "internal"
+      ],
+      "title": "Support tooling fix",
+      "summary": "Behind-the-scenes improvements to how we help players who lose a run to a bug.",
+      "highlights": [],
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1759.0",
+      "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "smite-modded-undead",
+      "version": "0.1757.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "mobs"
+      ],
+      "title": "Smite works on every zombie and skeleton",
+      "summary": "Smite now deals its bonus damage to all zombies and skeletons, not just the classic ones. Healing and Harming potions also work on them the right way round.",
+      "highlights": [],
+      "pr": 2594,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1759.0",
+      "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "vault-gear-rebalance",
+      "version": "0.1754.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot",
+        "balance"
+      ],
+      "title": "Vault gear rebalance",
+      "summary": "Gear from regular and ominous vaults gets a gentle boost, and the rarest vault's gear is now always the strongest of the three, however far down the line you are.",
+      "highlights": [
+        "The rarest vault now always beats an ominous vault at the same spot."
+      ],
+      "pr": 2590,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1759.0",
+      "released_at": "2026-11-10T09:01:25Z"
+    },
+    {
+      "id": "stat-based-gear-prices",
+      "version": "0.1760.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "ui",
+        "balance"
+      ],
+      "title": "Gear sells for what it's worth",
+      "summary": "Villagers now pay for gear and enchanted books by how good they are. Better stats, better rolls and stronger enchantments sell for more, and netherite no longer sells for far more than diamond. Expensive trades can ask for more than two stacks, with extra payment slots.",
+      "highlights": [
+        "Sell prices follow damage, armour, durability and enchantments",
+        "Netherite gear sells for about twice diamond, not over ten times",
+        "Mending and Silk Touch are worth much more",
+        "Big trades show extra payment slots, four to a row, scrolling past twelve"
+      ],
+      "pr": 2596,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1760.0",
+      "released_at": "2026-11-10T09:32:19Z"
+    },
+    {
+      "id": "carriage-mob-freeze-fix",
+      "version": "0.1760.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Freeze fix",
+      "summary": "Fixed a rare freeze where the train, mobs and chests suddenly stopped while you could still look around and move. It could happen when a mob in a carriage room went for a wander.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2597,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1764.0",
+      "released_at": "2026-11-10T14:22:29Z"
+    },
+    {
+      "id": "drifting-effect",
+      "version": "0.1762.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Drifting effect",
+      "summary": "A new Drifting effect shows while you're inside a drifting carriage, so you know the train will remember the changes you make there.",
+      "highlights": [],
+      "pr": 2598,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1764.0",
+      "released_at": "2026-11-10T14:22:29Z"
+    },
+    {
+      "id": "mix-zone-every-band",
+      "version": "0.1763.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "The patchwork stretch shows more",
+      "summary": "Late in the journey, the patchwork of floating ground now draws on every kind of place you have passed, each wearing its own scenery. Some patches hold a ruined building.",
+      "highlights": [],
+      "pr": 2599,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1764.0",
+      "released_at": "2026-11-10T14:22:29Z"
+    },
+    {
+      "id": "sable-locked-natives-fallback",
+      "version": "0.1760.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Startup crash fix",
+      "summary": "Fixed a crash when loading a world that could happen on Windows after the game had previously crashed or was still running in the background.",
+      "highlights": [],
+      "pr": 2595,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1764.0",
+      "released_at": "2026-11-10T14:22:29Z"
+    },
+    {
+      "id": "editor-freeplay-default-off",
+      "version": "0.1766.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Free Play is off by default",
+      "summary": "Your own train designs no longer switch on by themselves. Every new world starts on the built-in trains, without Free Play, unless you turn your designs on with the button beside New World, and only then are you asked to confirm. Just opening the Train Editor no longer counts as changing anything.",
+      "highlights": [
+        "New worlds start without Free Play by default, with no popup",
+        "Turning your designs on still asks you to confirm each new world",
+        "Opening the Train Editor, or a vault's loot menu, no longer puts runs into Free Play",
+        "Runs that count for your stats are now called Ranked"
+      ],
+      "pr": 2601,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1767.0",
+      "released_at": "2026-11-10T23:26:03Z"
+    },
+    {
+      "id": "live-effect",
+      "version": "0.1765.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live effect",
+      "summary": "A new Live effect shows while you're streaming with the Live Eye, and your status effects now sit just below the stream box instead of hiding behind it.",
+      "highlights": [],
+      "pr": 2600,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1767.0",
+      "released_at": "2026-11-10T23:26:03Z"
     }
   ]
 }

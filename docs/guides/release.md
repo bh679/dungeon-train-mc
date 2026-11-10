@@ -70,9 +70,32 @@ changed in a way it can't patch. If that happens, fix the script rather than ski
 
 Stop the preview when you are done.
 
+### Social posts (when the release has a major or notable update)
+
+Once the release ships, the relay posts every major and notable update to the Facebook Page and
+Instagram, with a story, and the Socials page offers "Copy post" text for the other platforms.
+Render those before asking, too:
+
+```bash
+python3 scripts/release-notes/preview-social-posts.py
+```
+
+Open http://127.0.0.1:8766/ in the browser pane and show Brennan each update's posts. Check that:
+
+- the Facebook and Instagram media show the picture well. An animated GIF becomes a 4:5 video for
+  both; a still becomes the Facebook photo and the Instagram card.
+- the title fits on the card, and the story frame reads cleanly
+- the captions (title line, summary, link, hashtags) say nothing that spoils hidden content, and
+  have no long dashes
+
+It renders with dp-relay's own code at its `origin/main` and reads each picture from
+`.github/release-notes/images/`, so it works before the merge too. It needs `node` and that clone's
+`node_modules`. The hashtags rotate by the update's place in the live list, so the five shown can
+differ from the ones that post. Stop it when you are done.
+
 ## 5. Ask for confirmation
 
-Ask Brennan, with the preview in front of him:
+Ask Brennan, with both previews in front of him:
 
 > Release v`<version>`? These are the notes (all changes since the last release): ... Publishes to
 > GitHub Releases, Modrinth, CurseForge and Discord.

@@ -12,6 +12,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import games.brennan.dungeontrain.event.PrefabUseHandler;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -166,12 +167,18 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
         INSTANCE.put(player, new OpenMenu(plot.key(), clampedLocal, face, up,
             LootPrefabStore.CATEGORY_LOOT));
         sendSync(player, plot, clampedLocal, clampedWorld, face, up);
+        BookEnchantsMenuOps.askAboutNew(player, ContainerContentsStore.loadFor(plot.key()).poolAt(clampedLocal));
     }
 
     /**
      * A vault with no loot of its own opens with vanilla's trial reward already in it, as an
      * ordinary local pool the author can edit: that is what it rolls at spawn anyway, so the menu
      * shows it instead of an empty list. A linked vault keeps its prefab.
+     *
+     * <p>Held in the cached store, not saved. Opening a menu is not an edit, and a file written here
+     * would count as custom content and put every later run into Free Play. The first real edit
+     * through the menu saves the store, prefill included; until then the vault rolls this same pool
+     * at spawn without it.</p>
      */
     private static void prefillVault(ServerLevel level, BlockVariantPlot plot, BlockPos localPos, BlockPos worldPos) {
         if (!VaultLoot.isVault(level.getBlockState(worldPos))) return;
@@ -180,12 +187,6 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
         ContainerContentsPool pool = VaultLoot.defaultPool(ContainerContentsPool.DEFAULT_VAULT_KEY);
         if (pool.isEmpty()) return;
         store.putPool(localPos, pool);
-        try {
-            store.save();
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Vault prefill save failed for {}: {}", plot.key(), e.toString());
-            return;
-        }
         rerollLocalContainer(level, plot, localPos, pool);
     }
 
@@ -219,6 +220,7 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
             : LootPrefabStore.CATEGORY_ITEM_FRAME;
         INSTANCE.put(player, new OpenMenu(plot.key(), clampedLocal, face, up, category));
         sendSync(player, plot, clampedLocal, clampedWorld, face, up);
+        BookEnchantsMenuOps.askAboutNew(player, ContainerContentsStore.loadFor(plot.key()).poolAt(clampedLocal));
     }
 
     /**
@@ -233,6 +235,15 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
         return open == null ? LootPrefabStore.CATEGORY_LOOT : open.category();
     }
 
+
+    /** Most characters of a row's book label the sync packet carries. */
+    private static final int BOOK_LABEL_MAX = 64;
+
+    /** A row's book label: a signed book's title, or a book entry's enchantments; cut to fit the packet. */
+    private static String rowBookLabel(ContainerContentsEntry e) {
+        String label = e.book() != null ? e.book().title() : e.enchants() != null ? e.enchants().label() : "";
+        return label.length() <= BOOK_LABEL_MAX ? label : label.substring(0, BOOK_LABEL_MAX - 3) + "...";
+    }
     /**
      * Entity raycast for the {@link #toggle} menu. Mirrors the vanilla
      * {@code Entity#pick}-like pattern using
@@ -294,7 +305,14 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                 e.potionId() == null ? "" : e.potionId().toString(),
                 e.scaleWithDistance(),
                 e.potionForm().ordinal(),
-                e.book() == null ? "" : e.book().title()));
+                rowBookLabel(e),
+                e.enchants() == null ? 0 : e.enchants().randomMin(),
+                e.enchants() == null ? 0 : e.enchants().randomMax(),
+                e.enchants() == null ? 0 : e.enchants().levelMin(),
+                e.enchants() == null ? 0 : e.enchants().levelMax(),
+                BookEnchantsMenuOps.syncList(e.enchants()),
+                e.includeLuck(),
+                e.hasContents() ? e.contents() : ""));
         }
         return new ContainerContentsSyncPacket(plot.key(), localPos, entries,
             pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link, vaultKey);
@@ -322,6 +340,7 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
         INSTANCE.put(player, new OpenMenu(plot.key(), clamped, face, up,
             LootPrefabStore.CATEGORY_LOOT));
         sendSync(player, plot, clamped, worldPos, face, up);
+        BookEnchantsMenuOps.askAboutNew(player, ContainerContentsStore.loadFor(plot.key()).poolAt(clamped));
     }
 
     /**
@@ -376,6 +395,8 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                 int count;
                 ResourceLocation potionId = null;
                 StoredBook book = null;
+                BookEnchants enchants = null;
+                String contents = null;
                 if (packet.itemId() != null && !packet.itemId().isEmpty()) {
                     id = ResourceLocation.tryParse(packet.itemId());
                     if (id == null) {
@@ -399,13 +420,18 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                     potionId = ContainerContentsPotions.potionIdOf(held);
                     // Likewise a signed book keeps its title, author and pages.
                     book = ContainerContentsBooks.bookOf(held, player.registryAccess());
+                    // And an enchanted book keeps its enchantments.
+                    enchants = ContainerContentsEnchants.enchantsOf(held);
+                    // And a loot prefab that is a shulker box adds a shulker packed from that prefab.
+                    contents = ContainerContentsEntry.isShulkerBox(id) ? PrefabUseHandler.lootPrefabIdOf(held) : null;
                 }
                 if (current.size() >= ContainerContentsPool.MAX_ENTRIES) {
                     actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.pool_full", ContainerContentsPool.MAX_ENTRIES),
                         ChatFormatting.YELLOW);
                     return;
                 }
-                next = current.added(new ContainerContentsEntry(id, count, 1).withPotion(potionId).withBook(book));
+                next = current.added(new ContainerContentsEntry(id, count, 1).withPotion(potionId).withBook(book)
+                    .withEnchants(enchants).withContents(contents));
                 dirty = true;
             }
             case REMOVE -> {
@@ -554,6 +580,16 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                 next = current.replaced(idx, e.withRandomDurability(!e.randomDurability()));
                 dirty = true;
             }
+            case BUMP_BOOK_ENCH, SET_BOOK_ENCH_RANGE, BUMP_BOOK_ENCH_LEVEL, SET_BOOK_ENCH_LEVEL_RANGE,
+                 TOGGLE_BOOK_ENCH, SET_BOOK_ENCH_ALL -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                ContainerContentsEntry edited = BookEnchantsMenuOps.apply(packet, e, player.registryAccess());
+                if (edited.equals(e)) return;
+                next = current.replaced(idx, edited);
+                dirty = true;
+            }
             case TOGGLE_RAND_ENCH -> {
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= current.size()) return;
@@ -591,11 +627,33 @@ public final class ContainerContentsMenuController extends PlayerMenuController<
                 next = current.replaced(idx, e.withScaleWithDistance(!e.scaleWithDistance()));
                 dirty = true;
             }
+            case TOGGLE_LUCK -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                next = current.replaced(idx, e.withIncludeLuck(!e.includeLuck()));
+                dirty = true;
+            }
             case CYCLE_POTION_FORM -> {
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= current.size()) return;
                 ContainerContentsEntry e = current.entries().get(idx);
                 next = current.replaced(idx, e.cyclePotionForm());
+                dirty = true;
+            }
+            case SET_CONTENTS -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                if (!e.isShulkerBox()) return;
+                String held = PrefabUseHandler.lootPrefabIdOf(player.getMainHandItem());
+                if (held != null && !LootPrefabStore.contains(held)) held = null;
+                if (java.util.Objects.equals(held, e.contents())) return;
+                next = current.replaced(idx, e.withContents(held));
+                actionBar(player, held == null
+                    ? Component.translatable("chat.dungeontrain.editor_bar.contents_menu.contents_cleared")
+                    : Component.translatable("chat.dungeontrain.editor_bar.contents_menu.contents_set", held),
+                    ChatFormatting.GREEN);
                 dirty = true;
             }
             case CYCLE_VAULT_KEY -> {

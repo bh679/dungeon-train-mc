@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 0,
+  "variants": [
+    {
+      "id": "creeper_birch",
+      "weight": 2,
+      "minLevel": 6
+    },
+    {
+      "id": "creeper_spruce",
+      "weight": 2,
+      "minLevel": 7
+    },
+    {
+      "id": "creeper_jungle",
+      "weight": 2,
+      "minLevel": 6
+    },
+    {
+      "id": "creeper_bamboo",
+      "weight": 1,
+      "minLevel": 4,
+      "maxLevel": 25
+    },
+    {
+      "id": "creeper_savannah",
+      "weight": 1,
+      "minLevel": 4,
+      "maxLevel": 25
+    },
+    {
+      "id": "creeper_desert",
+      "weight": 4,
+      "minLevel": 9
+    },
+    {
+      "id": "creeper_badlands",
+      "weight": 6,
+      "minLevel": 13
+    },
+    {
+      "id": "creeper_swamp",
+      "weight": 2,
+      "minLevel": 7
+    },
+    {
+      "id": "creeper_beach",
+      "weight": 1,
+      "minLevel": 5,
+      "maxLevel": 30
+    },
+    {
+      "id": "creeper_hills",
+      "weight": 1,
+      "minLevel": 5
+    },
+    {
+      "id": "creeper_snowy",
+      "weight": 1,
+      "minLevel": 4,
+      "maxLevel": 25,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "DEEPER_DARK"
+      ]
+    },
+    {
+      "id": "creeper_dark_oak",
+      "weight": 5,
+      "minLevel": 10
+    },
+    {
+      "id": "creeper_cave",
+      "weight": 4,
+      "minLevel": 11
+    },
+    {
+      "id": "creeper_dripstone",
+      "weight": 1,
+      "minLevel": 5,
+      "maxLevel": 30
+    },
+    {
+      "id": "creeper_mushroom",
+      "weight": 1,
+      "minLevel": 4,
+      "maxLevel": 20
+    },
+    {
+      "id": "creeper_deserttemple",
+      "weight": 1,
+      "minLevel": 9
+    }
+  ]
+}
