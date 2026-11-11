@@ -35129,6 +35129,104 @@
       "released": true,
       "released_in": "v0.1775.0",
       "released_at": "2026-11-11T05:59:08Z"
+    },
+    {
+      "id": "drifting-engine-embers",
+      "version": "0.1778.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "balance"
+      ],
+      "title": "Engines glow low on their last coal",
+      "summary": "New drifting carriages now start with 2 coal. An engine down to its last coal burns as dim embers, so you can see which carriage is about to stop drifting.",
+      "highlights": [
+        "With several engines, each engine's screen shows its own coal and how far all of them carry the carriage"
+      ],
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1780.0",
+      "released_at": "2026-11-11T10:48:31Z",
+      "pr": 2614
+    },
+    {
+      "id": "drifting-engine-twelve-and-several",
+      "version": "0.1776.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "balance"
+      ],
+      "title": "More engines, further drift",
+      "summary": "A Drifting Engine Block now holds up to 12 coal, and a carriage can carry as many engines as you can fit. They burn one at a time, so every engine you add carries the carriage through more worlds.",
+      "highlights": [
+        "Each engine burns until it runs dry and goes dark, then the next one takes over",
+        "The screen shows how many worlds all of the carriage's engines can reach together",
+        "Engines already holding more than 12 keep their coal until it burns away"
+      ],
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1780.0",
+      "released_at": "2026-11-11T10:48:31Z",
+      "pr": 2612
+    },
+    {
+      "id": "goat-ram-depth-scaling",
+      "version": "0.1779.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Feistier goats further down the line",
+      "summary": "Goats riding the train get feistier the further you travel. Far enough out they headbutt much more often and hit a lot harder, so keep your footing near them.",
+      "highlights": [],
+      "pr": 2616,
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1780.0",
+      "released_at": "2026-11-11T10:48:31Z"
+    },
+    {
+      "id": "late-run-phantoms",
+      "version": "0.1779.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Phantoms on the long haul",
+      "summary": "Ride far enough and the night sky turns hostile. Phantoms start hunting riders under open skies whether or not they have slept, and they keep coming more often the further the train goes.",
+      "highlights": [
+        "Deep into a run, phantoms find you even if you sleep",
+        "They come more often the further you travel, and some brave the daylight",
+        "Go far enough and they arrive with buffs, like other monsters"
+      ],
+      "pr": 2615,
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1780.0",
+      "released_at": "2026-11-11T10:48:31Z"
+    },
+    {
+      "id": "release-song-selection",
+      "version": "0.1776.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Update videos get a chosen song",
+      "summary": "The videos announcing big updates on our socials now carry a song picked for each update.",
+      "highlights": [],
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1780.0",
+      "released_at": "2026-11-11T10:48:31Z",
+      "pr": 2613
     }
   ]
 }
