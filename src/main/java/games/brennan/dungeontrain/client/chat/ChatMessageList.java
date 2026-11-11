@@ -217,8 +217,9 @@ public final class ChatMessageList extends AbstractWidget {
             // "[View it]" line instead of the address; clicking it opens the link.
             String link = trailingLink(shown);
             if (link != null) shown = shown.substring(0, shown.length() - link.length()).stripTrailing();
-            // Discord emoji in colour (custom ones once their image has loaded on a later rebuild).
-            Component text = EmojiText.convert(shown, net.minecraft.network.chat.Style.EMPTY, false);
+            // Discord emoji in colour (custom ones once their image has loaded on a later rebuild), and
+            // markdown links ("[Instagram](https://…)") as clickable names.
+            Component text = withLinks(shown);
             for (FormattedCharSequence l : font.split(text, wrap)) {
                 e.lines.add(new Line(l, CONTENT, 0));
             }
@@ -610,6 +611,40 @@ public final class ChatMessageList extends AbstractWidget {
         }
     }
 
+    /** {@code [name](https://…)} in a message: the name is shown, the address opened on click. */
+    private static final java.util.regex.Pattern MARKDOWN_LINK =
+            java.util.regex.Pattern.compile("\\[([^\\]\\n]{1,40})\\]\\((https://[^)\\s]+)\\)");
+
+    /** {@code text} with each markdown link as a clickable name, the rest emoji-converted. */
+    private static Component withLinks(String text) {
+        net.minecraft.network.chat.Style plain = net.minecraft.network.chat.Style.EMPTY;
+        net.minecraft.network.chat.MutableComponent out = Component.empty();
+        int at = 0;
+        for (Span span : markdownLinks(text)) {
+            if (span.start() > at) out.append(EmojiText.convert(text.substring(at, span.start()), plain, false));
+            out.append(Component.literal(span.name()).withStyle(st -> st.withColor(LINK & 0xFFFFFF).withUnderlined(true)
+                    .withClickEvent(new net.minecraft.network.chat.ClickEvent(
+                            net.minecraft.network.chat.ClickEvent.Action.OPEN_URL, span.url()))
+                    .withHoverEvent(new net.minecraft.network.chat.HoverEvent(
+                            net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT, Component.literal(span.url())))));
+            at = span.end();
+        }
+        if (at < text.length()) out.append(EmojiText.convert(text.substring(at), plain, false));
+        return out;
+    }
+
+    /** One markdown link in a message: where it sits, its shown name and its https address. */
+    record Span(int start, int end, String name, String url) {}
+
+    /** Every {@code [name](https://…)} in {@code text}, in order. Pure. */
+    static List<Span> markdownLinks(String text) {
+        List<Span> out = new ArrayList<>();
+        if (text == null) return out;
+        java.util.regex.Matcher m = MARKDOWN_LINK.matcher(text);
+        while (m.find()) out.add(new Span(m.start(), m.end(), m.group(1), m.group(2)));
+        return out;
+    }
+
     /** The https link that ends {@code text} (after a space or at its start), or null. Pure. */
     static String trailingLink(String text) {
         if (text == null) return null;
@@ -631,9 +666,15 @@ public final class ChatMessageList extends AbstractWidget {
         for (Entry e : entries) {
             int ly = y + e.top;
             for (Line line : e.lines) {
-                if (line.url != null && my >= ly && my < ly + font.lineHeight
-                        && mx <= getX() + PAD + line.indent + font.width(line.seq)) {
-                    return line.url;
+                if (my >= ly && my < ly + font.lineHeight) {
+                    int x = getX() + PAD + line.indent;
+                    if (line.url != null && mx <= x + font.width(line.seq)) return line.url;
+                    // A markdown link inside the text: the style under the cursor carries its address.
+                    net.minecraft.network.chat.Style style = font.getSplitter().componentStyleAtWidth(line.seq, (int) mx - x);
+                    net.minecraft.network.chat.ClickEvent click = style == null ? null : style.getClickEvent();
+                    if (click != null && click.getAction() == net.minecraft.network.chat.ClickEvent.Action.OPEN_URL) {
+                        return click.getValue();
+                    }
                 }
                 ly += font.lineHeight;
             }
