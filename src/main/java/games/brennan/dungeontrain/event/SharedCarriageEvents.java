@@ -130,9 +130,10 @@ public final class SharedCarriageEvents {
             if (!inst.isOnRelay()) continue;
             Integer id = inst.relayId();
             String token = inst.leaseToken();
+            int fuel = inst.fuel();
             inst.clearRelayLease(); // stop the flusher touching it before the return lands
             if (id != null && token != null) {
-                SharedCarriageClient.returnLease(id, token, null, null, 0);
+                SharedCarriageClient.returnLease(id, token, null, null, 0, fuel);
                 detached++;
             }
         }
@@ -451,6 +452,7 @@ public final class SharedCarriageEvents {
         SharedCarriageRegistry.clear();
         SharedCarriagePool.clear();
         SharedGroupPool.clear();
+        games.brennan.dungeontrain.train.engine.EngineConversion.clear();
         lastMode = null; // the next world decides its own pool from scratch
     }
 }

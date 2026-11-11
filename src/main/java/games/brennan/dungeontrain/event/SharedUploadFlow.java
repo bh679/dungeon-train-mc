@@ -114,7 +114,7 @@ public final class SharedUploadFlow {
         }
         build.setCallInFlight(true);
         long now = System.currentTimeMillis();
-        SharedCarriageClient.delta(build.relayId(), build.leaseToken(), seq, blob.base64(), blob.text())
+        SharedCarriageClient.delta(build.relayId(), build.leaseToken(), seq, blob.base64(), blob.text(), build.fuel())
                 .whenComplete((res, err) -> {
                     try {
                         if (err != null || res == null) {
@@ -150,7 +150,8 @@ public final class SharedUploadFlow {
         int baseSeq = build.currentSeq();
         build.setCallInFlight(true);
         long now = System.currentTimeMillis();
-        SharedCarriageClient.save(build.relayId(), build.leaseToken(), blob.base64(), blob.text(), baseSeq)
+        SharedCarriageClient.saveWithFuel(build.relayId(), build.leaseToken(), blob.base64(), blob.text(), baseSeq,
+                        build.fuel())
                 .whenComplete((status, err) -> {
                     try {
                         if (status == CallStatus.OK) {
@@ -173,7 +174,7 @@ public final class SharedUploadFlow {
         build.setCallInFlight(true);
         long now = System.currentTimeMillis();
         SharedCarriageClient.heartbeat(build.relayId(), build.leaseToken(),
-                        SharedCarriagePool.hostUuid(), SharedCarriagePool.hostName())
+                        SharedCarriagePool.hostUuid(), SharedCarriagePool.hostName(), build.fuel())
                 .whenComplete((status, err) -> {
                     try {
                         if (status == CallStatus.OK) build.stampContact(now);
@@ -207,7 +208,7 @@ public final class SharedUploadFlow {
                 captured = true;
             }
         }
-        SharedCarriageClient.returnLease(id, token, blocks, text, baseSeq);
+        SharedCarriageClient.returnLease(id, token, blocks, text, baseSeq, build.fuel());
         return captured;
     }
 }
