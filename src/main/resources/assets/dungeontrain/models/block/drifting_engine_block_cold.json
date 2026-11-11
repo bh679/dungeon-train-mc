@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/orientable_with_bottom",
+  "textures": {
+    "top": "dungeontrain:block/drifting_engine_block_top_cold",
+    "bottom": "dungeontrain:block/drifting_engine_block_bottom",
+    "side": "dungeontrain:block/drifting_engine_block_side_cold",
+    "front": "dungeontrain:block/drifting_engine_block_front_cold"
+  }
+}

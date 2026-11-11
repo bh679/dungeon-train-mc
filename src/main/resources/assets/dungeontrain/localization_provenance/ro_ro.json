@@ -27,7 +27,10 @@
       "item.dungeontrain.random_live_headpiece",
       "gui.dungeontrain.options.stream_audio.hint",
       "gui.dungeontrain.options.stream_audio.tip",
-      "gui.dungeontrain.options.mic_support.hint"
+      "gui.dungeontrain.options.mic_support.hint",
+      "gui.dungeontrain.custom_content.card.default.tag",
+      "gui.dungeontrain.custom_content.dev_ignore.tip",
+      "gui.dungeontrain.unsupported_mods.live_hint"
     ],
     "adventureitemnames": [],
     "playermob": [],

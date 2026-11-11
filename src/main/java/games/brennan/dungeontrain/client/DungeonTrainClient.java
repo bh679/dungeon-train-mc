@@ -133,5 +133,6 @@ public final class DungeonTrainClient {
     @SubscribeEvent
     public static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenuTypes.FREE_PLAY_ENDER_CHEST.get(), FreePlayEnderChestScreen::new);
+        event.register(ModMenuTypes.ENGINE_BLOCK.get(), EngineScreen::new);
     }
 }

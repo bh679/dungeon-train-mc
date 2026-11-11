@@ -315,6 +315,7 @@ public final class ClientDisplayConfig {
      */
     public static final ModConfigSpec.EnumValue<ContentMode> CONTENT_MODE;
     public static final ModConfigSpec.BooleanValue DEV_CHAT_ENABLED;
+    public static final ModConfigSpec.BooleanValue PUBLIC_POSTS;
     /**
      * The config deviation the player last chose to keep, as a stable signature (see
      * {@code ConfigDeviationPromptHandler}). Empty when they have never dismissed the launch
@@ -488,6 +489,7 @@ public final class ClientDisplayConfig {
         HUMAN_ONLY_TRANSLATIONS = pair.getLeft().humanOnlyTranslations;
         CONTENT_MODE = pair.getLeft().contentMode;
         DEV_CHAT_ENABLED = pair.getLeft().devChatEnabled;
+        PUBLIC_POSTS = pair.getLeft().publicPosts;
         CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
         CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
         NEW_RUN_DIFFICULTY = pair.getLeft().newRunDifficulty;
@@ -833,19 +835,26 @@ public final class ClientDisplayConfig {
                 .comment("Chat with the developer in-game, both ways. A switch on the first-launch consent card",
                          "(Adult only) and an Options row. Kid mode keeps developer chat off regardless.")
                 .define("devChat", true);
+        ModConfigSpec.BooleanValue publicPosts = b
+                .comment("Public posts: your photos and deaths may be shared on the Dungeon Train Discord and socials",
+                         "(Instagram, Facebook stories), and you get a message with a link when one is. Off keeps",
+                         "them off Discord and the socials. A switch on the first-launch consent card (on for Adult,",
+                         "off for Kid) and an Options row; synced to the server and the relay.")
+                .define("publicPosts", true);
         b.pop();
 
         b.push("customContent");
         ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference = b
                 .comment("What to do when a world starts with custom Train Editor content active",
                          "(your own edits, or an imported dtpack).",
-                         "ASK (default) — show the prompt each time a world is entered for the first time.",
+                         "DISABLE (default) — turn custom content off, so the world runs the bundled game",
+                         "  and your stats count. Free Play is off until you turn it on.",
                          "CONTINUE — always play with the custom content. Those runs are Free Play: they",
                          "  earn advancements live but don't count towards your cross-world profile or stats.",
-                         "DISABLE — always turn custom content off, so the world runs the bundled game and",
-                         "  your stats count. Set from the prompt's \"Remember decision\" checkbox, or the",
-                         "Custom Train Content row in Options -> Dungeon Train...")
-                .defineEnum("preference", CustomContentPreference.ASK);
+                         "ASK — show the prompt each time a world is entered for the first time.",
+                         "Set from the title screen's Free Play button, the prompt's \"Remember decision\"",
+                         "checkbox, or the Custom Train Content row in Options -> Dungeon Train...")
+                .defineEnum("preference", CustomContentPreference.DISABLE);
         ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer = b
                 .comment("The last answer you gave the custom-content prompt, recorded whether or not",
                          "you ticked \"Remember decision\". Reused when a run reboards automatically",
@@ -1030,7 +1039,7 @@ public final class ClientDisplayConfig {
                 sharedBooksRead, sharedBooksLanguages, sharedBooksGameLanguageWeight,
                 deathScreenLastNps, deathFormAnsweredIds, deathFormMutedIds,
                 npsRecommendedHigh, motyNominated, motyVoted, motyModNominated, motyModVoted,
-                politicalFilter, contentMode, devChatEnabled, customContentPreference,
+                politicalFilter, contentMode, devChatEnabled, publicPosts, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, bookCopyButton, protectOwnPets, updateNoticeChat,
                 lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs, hideOtherAdvancementCards,
@@ -2164,15 +2173,31 @@ public final class ClientDisplayConfig {
         DEV_CHAT_ENABLED.save();
     }
 
+    /**
+     * The Public posts switch (consent card, Options row): whether this player's photos and deaths may be
+     * posted to Discord and the socials. Defaults on, including pre-load, so an unanswered install behaves
+     * as before; the consent card sets the per-mode default (off for Kid).
+     */
+    public static boolean isPublicPosts() {
+        return !isLoaded() || PUBLIC_POSTS.get();
+    }
+
+    /** Persist the Public posts switch. Idempotent; no-op pre-load. */
+    public static void setPublicPosts(boolean value) {
+        if (!isLoaded() || PUBLIC_POSTS.get() == value) return;
+        PUBLIC_POSTS.set(value);
+        PUBLIC_POSTS.save();
+    }
+
     // ----- Custom Train Editor content prompt (see CustomContentPromptClient) -----
 
     /**
      * This client's remembered answer to the custom-content prompt. Defaults to
-     * {@link CustomContentPreference#ASK}, including before the config loads — a pre-load read must
-     * never silently answer a prompt on the player's behalf.
+     * {@link CustomContentPreference#DISABLE}, including before the config loads: Free Play is off
+     * until the player turns it on, and a pre-load read must never turn it on for them.
      */
     public static CustomContentPreference getCustomContentPreference() {
-        return isLoaded() ? CUSTOM_CONTENT_PREFERENCE.get() : CustomContentPreference.ASK;
+        return isLoaded() ? CUSTOM_CONTENT_PREFERENCE.get() : CustomContentPreference.DISABLE;
     }
 
     /**
@@ -2448,6 +2473,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
             ModConfigSpec.EnumValue<ContentMode> contentMode,
             ModConfigSpec.BooleanValue devChatEnabled,
+            ModConfigSpec.BooleanValue publicPosts,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer,
             ModConfigSpec.ConfigValue<String> configDeviationAcknowledged,

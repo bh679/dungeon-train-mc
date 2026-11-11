@@ -34949,6 +34949,47 @@
       "released": true,
       "released_in": "v0.1764.0",
       "released_at": "2026-11-10T14:22:29Z"
+    },
+    {
+      "id": "editor-freeplay-default-off",
+      "version": "0.1766.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Free Play is off by default",
+      "summary": "Your own train designs no longer switch on by themselves. Every new world starts on the built-in trains, without Free Play, unless you turn your designs on with the button beside New World, and only then are you asked to confirm. Just opening the Train Editor no longer counts as changing anything.",
+      "highlights": [
+        "New worlds start without Free Play by default, with no popup",
+        "Turning your designs on still asks you to confirm each new world",
+        "Opening the Train Editor, or a vault's loot menu, no longer puts runs into Free Play",
+        "Runs that count for your stats are now called Ranked"
+      ],
+      "pr": 2601,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1767.0",
+      "released_at": "2026-11-10T23:26:03Z"
+    },
+    {
+      "id": "live-effect",
+      "version": "0.1765.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live effect",
+      "summary": "A new Live effect shows while you're streaming with the Live Eye, and your status effects now sit just below the stream box instead of hiding behind it.",
+      "highlights": [],
+      "pr": 2600,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1767.0",
+      "released_at": "2026-11-10T23:26:03Z"
     }
   ]
 }

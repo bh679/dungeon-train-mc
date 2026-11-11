@@ -1,0 +1,17 @@
+{
+  "id": "carriage-ids",
+  "version": "0.1768.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "internal"
+  ],
+  "title": "Carriages remember how they were built",
+  "summary": "Every carriage now keeps a record of how it was built, laying the groundwork for an upcoming feature.",
+  "highlights": [],
+  "pr": 2603,
+  "date": "2026-11-10",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}

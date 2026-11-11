@@ -6,6 +6,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
@@ -48,6 +49,7 @@ public final class ChatMessageList extends AbstractWidget {
     private static final int EMBED_ACCENT = 0xFF8AB4F8;
     private static final int FIELD_NAME = 0xFFB7BFCC;
     private static final int ATTACH = 0xFFE0B060;
+    private static final int LINK = 0xFF55FFFF; // aqua, like a vanilla chat link
     private static final int STATUS = 0xFF8A8F99;
     private static final int SCROLLBAR = 0x80AAB0BE;
 
@@ -211,10 +213,21 @@ public final class ChatMessageList extends AbstractWidget {
 
         if (m.content() != null && !m.content().isBlank()) {
             String shown = MenuChatFilter.prettifyMentions(m.content()); // "<@123…>" → "@dev"
+            // A note ending in a link (the relay's "your death is on our story" notes) shows a short
+            // "[View it]" line instead of the address; clicking it opens the link.
+            String link = trailingLink(shown);
+            if (link != null) shown = shown.substring(0, shown.length() - link.length()).stripTrailing();
             // Discord emoji in colour (custom ones once their image has loaded on a later rebuild).
             Component text = EmojiText.convert(shown, net.minecraft.network.chat.Style.EMPTY, false);
             for (FormattedCharSequence l : font.split(text, wrap)) {
                 e.lines.add(new Line(l, CONTENT, 0));
+            }
+            if (link != null) {
+                Component view = Component.literal("[")
+                        .append(Component.translatable("chat.dungeontrain.public_posts.view"))
+                        .append("]")
+                        .withStyle(st -> st.withUnderlined(true));
+                e.lines.add(new Line(view.getVisualOrderText(), LINK, 0, link));
             }
         }
         if (m.hasEmbeds()) {
@@ -428,6 +441,11 @@ public final class ChatMessageList extends AbstractWidget {
             if (!isWithin(mouseX, mouseY)) {
                 return false;
             }
+            String link = linkAt(mouseX, mouseY);
+            if (link != null) {
+                openLink(link);
+                return true;
+            }
             if (overInput(mouseX, mouseY)) {
                 input.mouseClicked(mouseX, mouseY, button); // place the caret within the box
             }
@@ -435,6 +453,11 @@ public final class ChatMessageList extends AbstractWidget {
             return true;
         }
         if (isWithin(mouseX, mouseY)) {
+            String link = selected ? linkAt(mouseX, mouseY) : null;
+            if (link != null) {
+                openLink(link);
+                return true;
+            }
             if (!selected) {
                 selected = true;              // first click raises and readies the send box for typing
                 focusInput(true);
@@ -580,5 +603,47 @@ public final class ChatMessageList extends AbstractWidget {
         }
     }
 
-    private record Line(FormattedCharSequence seq, int color, int indent) {}
+    /** One drawn line; {@code url} is set on a "[View it]" line, which opens it when clicked. */
+    private record Line(FormattedCharSequence seq, int color, int indent, String url) {
+        Line(FormattedCharSequence seq, int color, int indent) {
+            this(seq, color, indent, null);
+        }
+    }
+
+    /** The https link that ends {@code text} (after a space or at its start), or null. Pure. */
+    static String trailingLink(String text) {
+        if (text == null) return null;
+        String t = text.stripTrailing();
+        int at = t.lastIndexOf("https://");
+        if (at < 0 || (at > 0 && !Character.isWhitespace(t.charAt(at - 1)))) return null;
+        String link = t.substring(at);
+        for (int i = 0; i < link.length(); i++) {
+            if (Character.isWhitespace(link.charAt(i))) return null;
+        }
+        return link.length() > "https://".length() ? link : null;
+    }
+
+    /** The link of the "[View it]" line under {@code (mx,my)}, or null. */
+    private String linkAt(double mx, double my) {
+        int cTop = contentTop();
+        if (status != null || my < cTop || my > cTop + contentHeight() || mx < getX() + PAD) return null;
+        int y = cTop - scroll;
+        for (Entry e : entries) {
+            int ly = y + e.top;
+            for (Line line : e.lines) {
+                if (line.url != null && my >= ly && my < ly + font.lineHeight
+                        && mx <= getX() + PAD + line.indent + font.width(line.seq)) {
+                    return line.url;
+                }
+                ly += font.lineHeight;
+            }
+        }
+        return null;
+    }
+
+    /** Ask before leaving the game for {@code url}, as vanilla chat links do. */
+    private static void openLink(String url) {
+        Minecraft mc = Minecraft.getInstance();
+        ConfirmLinkScreen.confirmLinkNow(mc.screen, url);
+    }
 }
