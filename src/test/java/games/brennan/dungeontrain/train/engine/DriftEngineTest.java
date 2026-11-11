@@ -361,11 +361,55 @@ class DriftEngineTest {
         assertArrayEquals(new int[]{39}, coals(DriftEngine.burnOne(snap)));
     }
 
+    // ---- the last coal burns as embers ----
+
+    private static String prop(CompoundTag snap, int k, String name) {
+        ListTag cells = snap.getList("cells", Tag.TAG_COMPOUND);
+        return cells.getCompound(DriftEngine.findEngines(cells).get(k)).getCompound("s")
+                .getCompound("Properties").getString(name);
+    }
+
+    @Test
+    void aFreshCarriageStartsWithTwo() {
+        assertEquals(2, DriftEngine.FRESH_COAL);
+    }
+
+    @Test
+    void anEngineOnItsLastCoalIsLowAndStillLit() {
+        CompoundTag one = DriftEngine.withEngineCoal(shell(), 1);
+        assertEquals("true", prop(one, 0, "lit"));
+        assertEquals("true", prop(one, 0, "low"), "the last coal burns as embers");
+        CompoundTag two = DriftEngine.withEngineCoal(shell(), 2);
+        assertEquals("false", prop(two, 0, "low"));
+        CompoundTag none = DriftEngine.withEngineCoal(shell(), 0);
+        assertEquals("false", prop(none, 0, "lit"));
+        assertEquals("false", prop(none, 0, "low"), "cold is not embers");
+    }
+
+    @Test
+    void burningDownGoesFullThenEmbersThenCold() {
+        CompoundTag snap = with(shell(), engine(2, 1, 1, 2));
+        snap = DriftEngine.burnOne(snap);
+        assertEquals("true", prop(snap, 0, "low"), "2 to 1: embers");
+        assertEquals("true", prop(snap, 0, "lit"));
+        snap = DriftEngine.burnOne(snap);
+        assertEquals("false", prop(snap, 0, "lit"), "1 to 0: cold");
+        assertEquals("false", prop(snap, 0, "low"));
+    }
+
+    @Test
+    void embersArePerEngine() {
+        // Two engines sharing 13: the first holds 1 (embers), the second 12 (full).
+        CompoundTag snap = DriftEngine.withEngineCoal(with(shell(), engine(2, 1, 1, 0), engine(6, 1, 1, 0)), 13);
+        assertEquals("true", prop(snap, 0, "low"));
+        assertEquals("false", prop(snap, 1, "low"));
+    }
+
     // ---- retrofit ----
 
     @Test
-    void retrofitWithNoHistoryIsThree() {
-        assertEquals(3, DriftEngine.retrofitCoal(null, shell()));
+    void retrofitWithNoHistoryIsTheFreshTwo() {
+        assertEquals(DriftEngine.FRESH_COAL, DriftEngine.retrofitCoal(null, shell()));
     }
 
     @Test
@@ -373,7 +417,7 @@ class DriftEngineTest {
         CompoundTag origin = shell();
         CompoundTag now = with(origin, cell(2, 1, 2, "minecraft:lantern"), cell(3, 1, 2, "minecraft:lantern"),
                 cell(4, 1, 2, "minecraft:lantern"), cell(5, 1, 2, "minecraft:lantern"), cell(6, 1, 2, "minecraft:lantern"));
-        assertEquals(3, DriftEngine.retrofitCoal(origin, now));
+        assertEquals(DriftEngine.FRESH_COAL, DriftEngine.retrofitCoal(origin, now));
     }
 
     @Test
@@ -382,7 +426,7 @@ class DriftEngineTest {
         CompoundTag now = with(origin, cell(1, 1, 2, "minecraft:lantern"), cell(2, 1, 2, "minecraft:lantern"),
                 cell(3, 1, 2, "minecraft:lantern"), cell(4, 1, 2, "minecraft:lantern"), cell(5, 1, 2, "minecraft:lantern"),
                 cell(6, 1, 2, "minecraft:lantern"));
-        assertEquals(3 + 6, DriftEngine.retrofitCoal(origin, now));
+        assertEquals(DriftEngine.FRESH_COAL + 6, DriftEngine.retrofitCoal(origin, now));
     }
 
     @Test
@@ -391,7 +435,7 @@ class DriftEngineTest {
         CompoundTag now = shell();
         ListTag cells = now.getList("cells", Tag.TAG_COMPOUND);
         for (int i = 0; i < 6; i++) cells.getCompound(i).getCompound("s").putString("Name", "minecraft:gold_block");
-        assertEquals(3 + 6, DriftEngine.retrofitCoal(origin, now));
+        assertEquals(DriftEngine.FRESH_COAL + 6, DriftEngine.retrofitCoal(origin, now));
     }
 
     @Test
@@ -399,14 +443,14 @@ class DriftEngineTest {
         CompoundTag origin = with(shell(), chest(2, 1, 2, item("minecraft:bread", 4)));
         CompoundTag now = with(shell(), chest(2, 1, 2, item("minecraft:bread", 4), item("minecraft:torch", 2), shulker(5)));
         // 2 torches + 1 shulker box + 5 diamonds inside it
-        assertEquals(3 + 8, DriftEngine.retrofitCoal(origin, now));
+        assertEquals(DriftEngine.FRESH_COAL + 8, DriftEngine.retrofitCoal(origin, now));
     }
 
     @Test
     void retrofitIgnoresItemsTaken() {
         CompoundTag origin = with(shell(), chest(2, 1, 2, item("minecraft:bread", 9)));
         CompoundTag now = with(shell(), chest(2, 1, 2, item("minecraft:bread", 1)));
-        assertEquals(3, DriftEngine.retrofitCoal(origin, now));
+        assertEquals(DriftEngine.FRESH_COAL, DriftEngine.retrofitCoal(origin, now));
     }
 
     @Test

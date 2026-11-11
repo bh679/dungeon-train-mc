@@ -205,8 +205,10 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
         BlockState state = getBlockState();
         int coal = coal();
         boolean lit = coal > 0;
-        if (state.hasProperty(EngineBlock.LIT) && state.getValue(EngineBlock.LIT) != lit) {
-            level.setBlock(worldPosition, state.setValue(EngineBlock.LIT, lit), Block.UPDATE_ALL);
+        boolean low = coal == 1;
+        if (state.hasProperty(EngineBlock.LIT) && state.hasProperty(EngineBlock.LOW)
+                && (state.getValue(EngineBlock.LIT) != lit || state.getValue(EngineBlock.LOW) != low)) {
+            level.setBlock(worldPosition, state.setValue(EngineBlock.LIT, lit).setValue(EngineBlock.LOW, low), Block.UPDATE_ALL);
         }
         if (level instanceof ServerLevel server) EngineFuelTracker.onEngineChanged(server, worldPosition, coal);
     }

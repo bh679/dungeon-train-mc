@@ -110,7 +110,8 @@ public final class EngineStamp {
         Direction facing = "south".equals(spot.facing()) ? Direction.SOUTH : Direction.NORTH;
         BlockState state = ModBlocks.ENGINE_BLOCK.get().defaultBlockState()
                 .setValue(EngineBlock.FACING, facing)
-                .setValue(EngineBlock.LIT, coal > 0);
+                .setValue(EngineBlock.LIT, coal > 0)
+                .setValue(EngineBlock.LOW, coal == 1);
         level.setBlock(pos, state, Block.UPDATE_CLIENTS);
         if (level.getBlockEntity(pos) instanceof EngineBlockEntity engine) {
             engine.setCoal(coal);

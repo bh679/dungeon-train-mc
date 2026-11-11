@@ -26,12 +26,12 @@ import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 
 /**
- * The Drifting Engine Block: what makes a carriage drift. It holds coal (only coal, at most 64), and a
- * drifting carriage burns one each time it joins a world. A carriage that leaves a world with none left
+ * The Drifting Engine Block: what makes a carriage drift. It holds coal or charcoal (up to 12 in its
+ * input), and a drifting carriage burns one each time it joins a world. A carriage that leaves a world with none left
  * is retired from the relay pool — see {@link games.brennan.dungeontrain.train.engine.DriftEngine}.
  *
- * <p>{@link #LIT} follows the coal: lit while there is any, cold at zero, so a dying carriage is
- * visible from across the room. Coal put in during this world can be taken back out (or spills when the
+ * <p>{@link #LIT} follows the coal: lit while there is any, cold at zero, and {@link #LOW} marks the last
+ * coal, which burns as dim embers, so a dying carriage is visible from across the room. Coal put in during this world can be taken back out (or spills when the
  * block breaks); what the engine arrived with is banked and never comes out — see
  * {@link EngineBlockEntity}. Anyone may break it; it takes as long as obsidian and always drops
  * itself. Set down in an ordinary carriage, it makes that
@@ -42,10 +42,16 @@ public class EngineBlock extends BaseEntityBlock {
     public static final MapCodec<EngineBlock> CODEC = simpleCodec(EngineBlock::new);
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty LIT = BlockStateProperties.LIT;
+    /**
+     * On its last coal: the fire burns as embers and gives half the light. Its own property beside
+     * {@link #LIT}, so every save, template and relay blob that only writes {@code lit} still loads (as not low).
+     */
+    public static final BooleanProperty LOW = BooleanProperty.create("low");
 
     public EngineBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(LIT, true));
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(LIT, true)
+                .setValue(LOW, false));
     }
 
     @Override
@@ -55,7 +61,7 @@ public class EngineBlock extends BaseEntityBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, LIT);
+        builder.add(FACING, LIT, LOW);
     }
 
     @Override
@@ -123,8 +129,9 @@ public class EngineBlock extends BaseEntityBlock {
         return AbstractContainerMenu.getRedstoneSignalFromBlockEntity(level.getBlockEntity(pos));
     }
 
-    /** Light like a lit furnace while there is coal; dark when cold. */
+    /** Light like a lit furnace while there is coal, half that on the last coal, dark when cold. */
     public static int lightLevel(BlockState state) {
-        return state.getValue(LIT) ? 13 : 0;
+        if (!state.getValue(LIT)) return 0;
+        return state.getValue(LOW) ? 7 : 13;
     }
 }
