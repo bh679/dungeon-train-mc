@@ -52,9 +52,16 @@ public final class PublicPostsRelay {
     static final String FEATURED_PATH = "/public-posts/featured";
     static final String ACK_PATH = "/public-posts/featured/ack";
 
-    /** One story that posted: where, what it showed, and the link to it. */
-    public record Featured(String id, String kind, String platform, String url,
+    /** One platform a story went to, and the link to it there. */
+    public record Link(String platform, String url) {}
+
+    /** One story that posted: what it showed, and every platform it went to, in order. Never empty. */
+    public record Featured(String id, String kind, List<Link> links,
                            @Nullable Integer carriage, @Nullable String title) {
+        public Featured {
+            links = List.copyOf(links);
+        }
+
         public boolean isDeath() {
             return "death".equals(kind);
         }
@@ -105,7 +112,10 @@ public final class PublicPostsRelay {
         post(ACK_PATH, body).exceptionally(t -> null);
     }
 
-    /** The {@code /featured} body's items, skipping any without an id or a usable https link. Pure. */
+    /**
+     * The {@code /featured} body's items, skipping any without an id or a usable https link. Each item's
+     * {@code links} list wins; an item without one falls back to its single {@code platform}/{@code url}. Pure.
+     */
     static List<Featured> parseFeatured(String body) {
         List<Featured> out = new ArrayList<>();
         try {
@@ -115,16 +125,32 @@ public final class PublicPostsRelay {
                 if (!e.isJsonObject()) continue;
                 JsonObject o = e.getAsJsonObject();
                 String id = str(o, "id");
-                String url = str(o, "url");
-                if (id == null || url == null || !url.startsWith("https://")) continue;
+                List<Link> links = links(o);
+                if (id == null || links.isEmpty()) continue;
                 Integer carriage = o.has("carriage") && o.get("carriage").isJsonPrimitive()
                     && o.get("carriage").getAsJsonPrimitive().isNumber() ? o.get("carriage").getAsInt() : null;
-                out.add(new Featured(id, str(o, "kind"), str(o, "platform"), url, carriage, str(o, "title")));
+                out.add(new Featured(id, str(o, "kind"), links, carriage, str(o, "title")));
             }
         } catch (RuntimeException ex) {
             LOGGER.debug("[DungeonTrain] public-posts featured body unreadable: {}", ex.toString());
         }
         return out;
+    }
+
+    /** An item's usable links: its {@code links} list, else its single platform/url. https only. */
+    private static List<Link> links(JsonObject o) {
+        List<Link> out = new ArrayList<>();
+        if (o.has("links") && o.get("links").isJsonArray()) {
+            for (JsonElement e : o.getAsJsonArray("links")) {
+                if (e.isJsonObject()) addLink(out, str(e.getAsJsonObject(), "platform"), str(e.getAsJsonObject(), "url"));
+            }
+        }
+        if (out.isEmpty()) addLink(out, str(o, "platform"), str(o, "url"));
+        return out;
+    }
+
+    private static void addLink(List<Link> out, @Nullable String platform, @Nullable String url) {
+        if (url != null && url.startsWith("https://")) out.add(new Link(platform == null ? "" : platform, url));
     }
 
     @Nullable

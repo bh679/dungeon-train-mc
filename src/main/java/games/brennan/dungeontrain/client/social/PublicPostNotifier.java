@@ -16,8 +16,9 @@ import java.util.List;
 
 /**
  * Tells the player in chat when one of their photos or deaths is posted as a story on our socials:
- * {@code [Dungeon Train] Your death at carriage 412 is on our Instagram story! [View it]}, the link
- * opening the post. The same note lands in their inbox from the relay.
+ * {@code [Dungeon Train] Your death at carriage 412 is on our Instagram and Facebook stories!}, each
+ * platform name a link to the post there. One line per story, however many platforms it went to. The
+ * same note lands in their inbox from the relay.
  *
  * <p>On joining a world it sends the Public posts switch to the relay ({@link PublicPostsRelay#syncNow})
  * and checks for new stories; while in a world it checks again every {@link #POLL_TICKS}. Each story is
@@ -36,7 +37,8 @@ public final class PublicPostNotifier {
     static final String DEATH_PLAIN_KEY = "chat.dungeontrain.public_posts.death.plain";
     static final String PHOTO_KEY = "chat.dungeontrain.public_posts.photo";
     static final String PHOTO_PLAIN_KEY = "chat.dungeontrain.public_posts.photo.plain";
-    static final String VIEW_KEY = "chat.dungeontrain.public_posts.view";
+    /** Suffix for the two-platform form of each key above ("…on our %s and %s stories!"). */
+    static final String TWO = ".two";
 
     /** Render thread only. */
     private static int ticksToCheck = -1;
@@ -77,27 +79,40 @@ public final class PublicPostNotifier {
         PublicPostsRelay.ack(items.stream().map(PublicPostsRelay.Featured::id).toList());
     }
 
-    /** The chat line for one story. Pure, so it is unit-tested. */
+    /** The chat line for one story, each platform name a link. Pure, so it is unit-tested. */
     static Component message(PublicPostsRelay.Featured item) {
-        Component platform = Component.literal(platformName(item.platform()));
-        Component line;
+        List<PublicPostsRelay.Link> links = item.links();
+        boolean two = links.size() >= 2;
+        // A third platform would need its own phrasing; the relay posts to two today, so name the first two.
+        Object[] names = two
+            ? new Object[] {link(links.get(0)), link(links.get(1))}
+            : new Object[] {link(links.get(0))};
+        String key;
+        Object[] args;
         if (item.isDeath()) {
-            line = item.carriage() != null
-                ? Component.translatable(DEATH_KEY, item.carriage(), platform)
-                : Component.translatable(DEATH_PLAIN_KEY, platform);
+            key = item.carriage() != null ? DEATH_KEY : DEATH_PLAIN_KEY;
+            args = item.carriage() != null ? prepend(item.carriage(), names) : names;
         } else {
-            line = item.title() != null
-                ? Component.translatable(PHOTO_KEY, item.title(), platform)
-                : Component.translatable(PHOTO_PLAIN_KEY, platform);
+            key = item.title() != null ? PHOTO_KEY : PHOTO_PLAIN_KEY;
+            args = item.title() != null ? prepend(item.title(), names) : names;
         }
-        Component link = Component.literal("[")
-            .append(Component.translatable(VIEW_KEY))
-            .append("]")
+        Component line = Component.translatable(two ? key + TWO : key, args).withStyle(ChatFormatting.WHITE);
+        return Component.translatable(PREFIX_KEY).withStyle(ChatFormatting.GOLD).append(" ").append(line);
+    }
+
+    /** A platform's name as a link: aqua, underlined, opens the post, the address on hover. */
+    static Component link(PublicPostsRelay.Link link) {
+        return Component.literal(platformName(link.platform()))
             .withStyle(s -> s.withColor(ChatFormatting.AQUA).withUnderlined(true)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, item.url()))
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(item.url()))));
-        return Component.translatable(PREFIX_KEY).withStyle(ChatFormatting.GOLD)
-            .append(" ").append(line.copy().withStyle(ChatFormatting.WHITE)).append(" ").append(link);
+                .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, link.url()))
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(link.url()))));
+    }
+
+    private static Object[] prepend(Object first, Object[] rest) {
+        Object[] out = new Object[rest.length + 1];
+        out[0] = first;
+        System.arraycopy(rest, 0, out, 1, rest.length);
+        return out;
     }
 
     /** The platform's own name, which stays untranslated. */

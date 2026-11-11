@@ -1,4 +1,77 @@
 {
+  "chat.dungeontrain.public_posts.death.two": {
+    "1": {
+      "label": "the carriage number the player died at",
+      "examples": [
+        "412",
+        "87"
+      ]
+    },
+    "2": {
+      "label": "the social platform's name, never translated; shown as a link",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    },
+    "3": {
+      "label": "the second social platform's name, never translated; shown as a link",
+      "examples": [
+        "Facebook"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.death.plain.two": {
+    "1": {
+      "label": "the social platform's name, never translated; shown as a link",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    },
+    "2": {
+      "label": "the second social platform's name, never translated; shown as a link",
+      "examples": [
+        "Facebook"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.photo.two": {
+    "1": {
+      "label": "the photo's title",
+      "examples": [
+        "Sunset Bridge"
+      ]
+    },
+    "2": {
+      "label": "the social platform's name, never translated; shown as a link",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    },
+    "3": {
+      "label": "the second social platform's name, never translated; shown as a link",
+      "examples": [
+        "Facebook"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.photo.plain.two": {
+    "1": {
+      "label": "the social platform's name, never translated; shown as a link",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    },
+    "2": {
+      "label": "the second social platform's name, never translated; shown as a link",
+      "examples": [
+        "Facebook"
+      ]
+    }
+  },
   "gui.dungeontrain.menu.backdrop.live_named": {
     "1": {
       "label": "the name of the player streaming live, shown over the main menu",
