@@ -307,7 +307,7 @@ public final class DisabledModContent {
     }
 
     /** Armour, melee weapons (swords, maces, tridents), ranged weapons, shields and every tiered tool. */
-    private static boolean isGearClass(Item item) {
+    public static boolean isGearClass(Item item) {
         return item instanceof ArmorItem
             || item instanceof TieredItem
             || item instanceof ElytraItem

@@ -4,7 +4,6 @@ import net.minecraft.SharedConstants;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.server.Bootstrap;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -22,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** A find gets its number once, above its "Pulled by" line, and the waiting number is then spent. */
+/** A find gets its number once, in its data, and the waiting number is then spent. */
 final class VaultFindStamperTest {
 
     private static final UUID CLAIM = UUID.fromString("00000000-0000-0000-0000-0000000000cd");
@@ -33,40 +32,32 @@ final class VaultFindStamperTest {
         Bootstrap.bootStrap();
     }
 
-    /** A mace as {@code VaultFinds} leaves it before the answer: claim tag, AIN line, then "Pulled by". */
+    /** A mace as {@code VaultFinds} leaves it before the answer: claim tag and an AIN line. */
     private static ItemStack pulledMace() {
         ItemStack stack = new ItemStack(Items.MACE);
         CompoundTag find = new CompoundTag();
         find.putUUID(VaultFinds.TAG_CLAIM, CLAIM);
         CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.put(VaultFinds.TAG, find));
-        stack.set(DataComponents.LORE, new ItemLore(List.of(
-            Component.literal("Heavy with old storms"),
-            Component.translatable(VaultFinds.LORE_PULLED_BY, "Steve", "2026-11-07"))));
+        stack.set(DataComponents.LORE, new ItemLore(List.of(Component.literal("Heavy with old storms"))));
         return stack;
     }
 
-    private static String keyOf(Component line) {
-        return line.getContents() instanceof TranslatableContents t ? t.getKey() : line.getString();
-    }
-
     @Test
-    @DisplayName("the number goes above the Pulled-by line and the waiting number is spent")
+    @DisplayName("the number goes into the data, the description is untouched, and the waiting number is spent")
     void stampsOnce() {
         VaultFindSerials serials = VaultFindSerials.load(new CompoundTag());
         serials.put(CLAIM, 3);
         ItemStack mace = pulledMace();
 
         assertTrue(VaultFindStamper.tryStamp(mace, serials));
-        List<Component> lines = mace.get(DataComponents.LORE).lines();
-        assertEquals(List.of("Heavy with old storms", VaultFinds.LORE_SERIAL, VaultFinds.LORE_PULLED_BY),
-            lines.stream().map(VaultFindStamperTest::keyOf).toList());
-        assertEquals(3, ((TranslatableContents) lines.get(1).getContents()).getArgs()[0]);
+        assertEquals(3, VaultFinds.serialOf(mace).orElseThrow());
+        assertEquals(1, mace.get(DataComponents.LORE).lines().size());
         assertTrue(serials.isEmpty());
         assertTrue(VaultFinds.pendingClaim(mace).isEmpty());
 
         serials.put(CLAIM, 9);                                       // a stray repeat never re-numbers
         assertFalse(VaultFindStamper.tryStamp(mace, serials));
-        assertEquals(3, mace.get(DataComponents.LORE).lines().size());
+        assertEquals(3, VaultFinds.serialOf(mace).orElseThrow());
     }
 
     @Test

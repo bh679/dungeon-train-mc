@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.provenance.ProvenanceScope;
 import games.brennan.dungeontrain.editor.VariantDoc;
 import games.brennan.dungeontrain.editor.GrowthPass;
 import games.brennan.dungeontrain.editor.ConnectPass;
@@ -310,9 +311,9 @@ public final class CarriagePlacer {
         // The stage this carriage lands in is what its stage placeholder blocks resolve to — held
         // in scope for the whole stamp (shell, parts, portal corridor, sidecars, contents).
         String stageId = stageIdFor(level, carriageIndex, dims, groupAnchorWorldX);
-        return CarriageStampGuard.call(() -> StagePlacementScope.with(stageId, () -> placeAtGuarded(
-            level, origin, variant, dims, config, carriageIndex,
-            applyContents, flatbedAtBack, flatbedAtFront, groupAnchorWorldX)));
+        return CarriageStampGuard.call(() -> StagePlacementScope.with(stageId, () -> ProvenanceScope.with(carriageIndex,
+            () -> placeAtGuarded(level, origin, variant, dims, config, carriageIndex,
+                applyContents, flatbedAtBack, flatbedAtFront, groupAnchorWorldX))));
     }
 
     /**
@@ -579,8 +580,8 @@ public final class CarriagePlacer {
         if (PortalCarriageSelection.isPortalPart(level, carriageIndex)) return null;
         // Contents stamp after Sable assembly, outside placeAt's scope — re-enter it for the same stage.
         String stageId = stageIdFor(level, carriageIndex, dims, groupAnchorWorldX);
-        return StagePlacementScope.with(stageId, () -> applyContents(level, origin, variant, dims, config,
-            carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false, groupAnchorWorldX));
+        return StagePlacementScope.with(stageId, () -> ProvenanceScope.with(carriageIndex, () -> applyContents(level,
+            origin, variant, dims, config, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false, groupAnchorWorldX)));
     }
 
     /**
@@ -593,6 +594,15 @@ public final class CarriagePlacer {
      * previous carriage at this shipyard position (rolling-window cycle).</p>
      */
     public static void applyContentsEntitiesAt(
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex, int groupAnchorWorldX
+    ) {
+        // Gear rolled onto stands and into frames here is marked with this carriage (ItemProvenance).
+        ProvenanceScope.run(carriageIndex,
+            () -> applyContentsEntitiesInScope(level, origin, variant, dims, config, carriageIndex, groupAnchorWorldX));
+    }
+
+    private static void applyContentsEntitiesInScope(
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex, int groupAnchorWorldX
     ) {

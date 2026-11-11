@@ -1,21 +1,18 @@
 package games.brennan.dungeontrain.loot;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.adventureitemnames.api.ChanceKind;
-import games.brennan.adventureitemnames.api.NamingConfig;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.VaultLoot;
 import games.brennan.dungeontrain.editor.VaultRarity;
 import games.brennan.dungeontrain.net.relay.VaultFindClient;
+import games.brennan.dungeontrain.provenance.ProvenanceSweep;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -24,14 +21,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
-import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 
-import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,12 +31,14 @@ import java.util.UUID;
 /**
  * Rare vault finds ({@link VaultRarity}). When a DT vault rolls one for a player, the relay numbers it
  * per item ({@link VaultFindClient}): the first ever is told so in chat, and a find from an ominous or
- * green vault carries its story in its description, "Vault find #3" over "Pulled by Steve, 2026-11-07".
+ * green vault carries its number, shown under Shift with who pulled it ({@code ProvenanceTooltip}).
  *
- * <p>The reward is ejected before the relay can answer, so the stack is tagged with its claim id and
- * the "Pulled by" line at once; the number follows when it comes ({@link VaultFindSerials}), stamped
- * at the eject or by {@code VaultFindEvents}' sweep of online players' inventories. No answer (relay
- * down, Free Play, relay reports off) means no first and no number, never a guessed one.</p>
+ * <p>The reward is ejected before the relay can answer, so the stack is tagged with its claim id at
+ * once and its puller written in ({@link ProvenanceSweep}); the number follows when it comes
+ * ({@link VaultFindSerials}), stamped at the eject or by {@link VaultFindStamper}'s sweep of online
+ * players' inventories. No answer (relay down, Free Play, relay reports off) means no first and no
+ * number, never a guessed one. Finds from before this carried both as description lines; those move
+ * into the data the first time they are held.</p>
  *
  * <p>Cosmetic, so every entry point is no-throw: a failure leaves the reward exactly as rolled.</p>
  */
@@ -58,8 +52,8 @@ public final class VaultFinds {
     static final String TAG_SERIAL = "serial";
 
     static final String CHAT_FIRST = "chat.dungeontrain.vault_first";
-    static final String LORE_SERIAL = "lore.dungeontrain.vault_find.serial";
-    static final String LORE_PULLED_BY = "lore.dungeontrain.vault_find.pulled_by";
+    /** The number line, now shown under Shift ({@code ProvenanceTooltip}). */
+    public static final String LORE_SERIAL = "lore.dungeontrain.vault_find.serial";
 
     private VaultFinds() {}
 
@@ -75,6 +69,7 @@ public final class VaultFinds {
             VaultRarity.Kind kind = VaultRarity.kindOf(state);
             for (ItemStack stack : rewards) {
                 if (stack.isEmpty()) continue;
+                ProvenanceSweep.claim(serverPlayer, stack);   // the puller found it, wherever it lands
                 ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
                 if (VaultRarity.isRare(id)) find(serverPlayer, kind, id, stack);
             }
@@ -87,10 +82,8 @@ public final class VaultFinds {
         UUID claim = UUID.randomUUID();
         String name = player.getGameProfile().getName();
         if (kind.numbered()) {
-            // A plain vault's find only counts: it is left exactly as rolled.
+            // A plain vault's find only counts: it never carries its number.
             CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.put(TAG, claimTag(claim)));
-            String date = LocalDate.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_LOCAL_DATE);
-            writeLore(stack, withLine(lore(stack), -1, styled(Component.translatable(LORE_PULLED_BY, name, date))));
         }
         if (!DungeonTrainConfig.isWorldInfoToRelay()) return;   // the relay is what counts; no relay, no number
         if (RunIntegrity.isCheated(player)) return;            // Free Play finds are not feats
@@ -130,11 +123,8 @@ public final class VaultFinds {
         return Optional.of(find.getUUID(TAG_CLAIM));
     }
 
-    /** Write {@code serial} onto {@code stack}: its number line goes above the "Pulled by" line. */
+    /** Write {@code serial} onto {@code stack}, where the Shift tooltip reads it. */
     static void stamp(ItemStack stack, int serial) {
-        List<Component> lines = lore(stack);
-        int pulledBy = indexOf(lines, LORE_PULLED_BY);
-        writeLore(stack, withLine(lines, pulledBy, styled(Component.translatable(LORE_SERIAL, serial))));
         CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
             CompoundTag find = tag.getCompound(TAG).copy();
             find.putInt(TAG_SERIAL, serial);
@@ -148,33 +138,11 @@ public final class VaultFinds {
         return find;
     }
 
-    private static List<Component> lore(ItemStack stack) {
-        return stack.getOrDefault(DataComponents.LORE, ItemLore.EMPTY).lines();
-    }
-
-    /** A copy of {@code lines} with {@code line} inserted at {@code index}, or appended when it is -1. */
-    static List<Component> withLine(List<Component> lines, int index, Component line) {
-        List<Component> out = new ArrayList<>(lines);
-        if (index < 0) out.add(line);
-        else out.add(index, line);
-        return List.copyOf(out);
-    }
-
-    /** Index of the first line translated from {@code key}, or -1. */
-    static int indexOf(List<Component> lines, String key) {
-        for (int i = 0; i < lines.size(); i++) {
-            if (lines.get(i).getContents() instanceof TranslatableContents t && key.equals(t.getKey())) return i;
-        }
-        return -1;
-    }
-
-    private static void writeLore(ItemStack stack, List<Component> lines) {
-        stack.set(DataComponents.LORE, new ItemLore(lines));
-    }
-
-    /** Same colour AIN gives its "Crafted by …" lines, so provenance reads as one family (see EchoDropCredit). */
-    private static Component styled(MutableComponent line) {
-        Optional<ChatFormatting> color = NamingConfig.colorFor(ChanceKind.CRAFTED_DESCRIPTION);
-        return color.isPresent() ? line.withStyle(color.get()) : line;
+    /** The serial a numbered find carries, once its number is in. */
+    public static java.util.OptionalInt serialOf(ItemStack stack) {
+        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        if (data == null || !data.contains(TAG)) return java.util.OptionalInt.empty();
+        CompoundTag find = data.copyTag().getCompound(TAG);
+        return find.contains(TAG_SERIAL) ? java.util.OptionalInt.of(find.getInt(TAG_SERIAL)) : java.util.OptionalInt.empty();
     }
 }

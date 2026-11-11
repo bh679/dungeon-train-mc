@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.provenance.ItemProvenance;
+import games.brennan.dungeontrain.provenance.ProvenanceScope;
 import games.brennan.dungeontrain.block.VaultGreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -22,6 +24,7 @@ import javax.annotation.Nullable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -71,6 +74,8 @@ public final class VaultLoot {
     private static final String TAG_POOL = "pool";
     private static final String TAG_SEED = "seed";
     private static final String TAG_CARRIAGE = "carriage";
+    /** The train carriage the vault stands in, when it was stamped in one ({@link ProvenanceScope}). */
+    private static final String TAG_TRAIN_CARRIAGE = "train_carriage";
     private static final String TAG_DIFF = "diff";
     private static final String TAG_POS = "pos";
 
@@ -218,6 +223,9 @@ public final class VaultLoot {
         vault.putLong(TAG_SEED, worldSeed);
         vault.putInt(TAG_CARRIAGE, carriageIndex);
         vault.putInt(TAG_DIFF, diffIndex);
+        // Only a train carriage's stamp names a carriage; tunnels and dimensional carriages pass other
+        // indices in carriageIndex. Rewards are marked with it at unlock (ItemProvenance).
+        ProvenanceScope.current().ifPresent(pIdx -> vault.putInt(TAG_TRAIN_CARRIAGE, pIdx));
         vault.putIntArray(TAG_POS, new int[] {localPos.getX(), localPos.getY(), localPos.getZ()});
         CompoundTag neo = out.getCompound(NBT_NEOFORGE_DATA).copy();
         neo.put(TAG_VAULT, vault);
@@ -266,6 +274,10 @@ public final class VaultLoot {
         if (rolled.isEmpty()) {
             rolled = ContainerContentsRoller.rollStacks(defaultPool(pool.vaultKey()), VAULT_SLOTS, localPos, seed,
                 carriage, diff, true, registries);
+        }
+        if (vault.contains(TAG_TRAIN_CARRIAGE)) {
+            OptionalInt pIdx = OptionalInt.of(vault.getInt(TAG_TRAIN_CARRIAGE));
+            for (ItemStack stack : rolled) ItemProvenance.markFresh(stack, pIdx);
         }
         return Optional.of(rolled);
     }
