@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.spawn.LatePhantomRate;
@@ -23,6 +24,7 @@ import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import org.slf4j.Logger;
 
 /**
  * Phantoms for the deep part of a run: once a player is past the first Far Lands exit they come without
@@ -44,6 +46,8 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class LatePhantomSpawner {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     /** Ticks between checks for each player (30 s). */
     private static final int CHECK_PERIOD_TICKS = 600;
@@ -84,8 +88,17 @@ public final class LatePhantomSpawner {
         CarriageDims dims = data.dims();
         for (ServerPlayer player : level.players()) {
             long steps = LatePhantomRate.steps(player.getX(), exitX);
-            if (steps < 0L || !eligible(level, player, cycle, dims)) continue;
-            if (rng.nextDouble() >= LatePhantomRate.chance(steps, night)) continue;
+            if (steps < 0L) continue;
+            String refused = refusal(level, player, cycle, dims);
+            if (refused != null) {
+                LOGGER.debug("[DungeonTrain] late phantoms: {} at x={} refused ({})", player.getScoreboardName(),
+                    player.getBlockX(), refused);
+                continue;
+            }
+            double chance = LatePhantomRate.chance(steps, night);
+            LOGGER.debug("[DungeonTrain] late phantoms: {} at x={} steps={} chance={} night={}",
+                player.getScoreboardName(), player.getBlockX(), steps, chance, night);
+            if (rng.nextDouble() >= chance) continue;
             AABB around = player.getBoundingBox().inflate(NEARBY_RADIUS);
             int nearby = level.getEntitiesOfClass(Phantom.class, around,
                     p -> p.getTags().contains(LATE_PHANTOM_TAG)).size();
@@ -94,17 +107,24 @@ public final class LatePhantomSpawner {
         }
     }
 
-    /** Vanilla's player tests minus insomnia, plus the sky box and the dimensional carriages. */
-    private static boolean eligible(ServerLevel level, ServerPlayer player, WorldGenCycle cycle, CarriageDims dims) {
-        if (player.isSpectator() || player.isCreative() || !player.isAlive()) return false;
+    /**
+     * Vanilla's player tests minus insomnia, plus the sky box and the dimensional carriages: {@code null} when
+     * the player qualifies, else the rule that refused them (for the debug log).
+     */
+    private static String refusal(ServerLevel level, ServerPlayer player, WorldGenCycle cycle, CarriageDims dims) {
+        if (player.isSpectator() || player.isCreative() || !player.isAlive()) return "game mode";
         BlockPos pos = player.blockPosition();
-        if (pos.getY() < level.getSeaLevel() || !level.canSeeSky(pos)) return false;
+        if (pos.getY() < level.getSeaLevel()) return "below sea level";
+        if (!level.canSeeSky(pos)) return "no sky";
         int x = pos.getX();
-        if (!LatePhantomRate.overworldSky(BandSky.endSkyIntensityAt(cycle, x), BandSky.netherSkyIntensityAt(cycle, x))) {
-            return false;
+        double end = BandSky.endSkyIntensityAt(cycle, x);
+        double nether = BandSky.netherSkyIntensityAt(cycle, x);
+        if (!LatePhantomRate.overworldSky(end, nether)) return "End/Nether sky end=" + end + " nether=" + nether;
+        if (PortalTwinSpace.isInside(level, x, player.getY())) return "twin space";
+        if (PortalCarriageEvents.isInsidePortalStructure(dims, player.getX(), player.getY(), player.getZ())) {
+            return "portal structure";
         }
-        if (PortalTwinSpace.isInside(level, x, player.getY())) return false;
-        return !PortalCarriageEvents.isInsidePortalStructure(dims, player.getX(), player.getY(), player.getZ());
+        return null;
     }
 
     private static void spawnGroup(ServerLevel level, ServerPlayer player, RandomSource rng, CarriageDims dims,
@@ -155,6 +175,8 @@ public final class LatePhantomSpawner {
             }
             cachedExitX = exit;
             cachedCycle = cycle;
+            LOGGER.info("[DungeonTrain] late phantoms start past the Far Lands exit at x={}",
+                exit == Long.MAX_VALUE ? "none" : exit);
         }
         return cachedExitX;
     }
