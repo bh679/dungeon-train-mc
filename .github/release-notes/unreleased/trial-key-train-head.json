@@ -1,0 +1,17 @@
+{
+  "id": "trial-key-train-head",
+  "version": "0.1775.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "loot"
+  ],
+  "title": "Dungeon Trial Key has a new look",
+  "summary": "The Dungeon Trial Key now has a train carriage for a head.",
+  "highlights": [],
+  "pr": 2611,
+  "date": "2026-11-11",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
