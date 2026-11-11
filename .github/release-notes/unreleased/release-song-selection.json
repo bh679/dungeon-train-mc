@@ -1,0 +1,15 @@
+{
+  "id": "release-song-selection",
+  "version": "0.1776.0",
+  "type": "docs",
+  "tags": [
+    "internal"
+  ],
+  "title": "Update videos get a chosen song",
+  "summary": "The videos announcing big updates on our socials now carry a song picked for each update.",
+  "highlights": [],
+  "date": "2026-11-11",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
