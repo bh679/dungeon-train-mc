@@ -3045,7 +3045,6 @@
   "gui.dungeontrain.engine_block.worlds.many": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
   "gui.dungeontrain.engine_block.empty": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "508e833c739e4542"},
   "message.dungeontrain.engine_block.second": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "1cf293c51b484161"},
-  "message.dungeontrain.engine_block.not_yours": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "3b4dea94725f9a19"},
   "block.dungeontrain.skybox_block": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "96529f2072063ed3"},
   "block.dungeontrain.skybox_surface": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "4da86f08ec799b20"},
   "block.dungeontrain.skybox_end": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "a0980481e3874742"},

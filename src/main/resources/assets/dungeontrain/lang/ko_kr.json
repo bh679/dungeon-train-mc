@@ -2404,7 +2404,6 @@
   "gui.dungeontrain.engine_block.worlds.other": "세계 %s곳을 더 갈 연료",
   "gui.dungeontrain.engine_block.empty": "연료 없음, 종착역",
   "message.dungeontrain.engine_block.second": "이 객차에는 이미 떠도는 엔진 블록이 있음",
-  "message.dungeontrain.engine_block.not_yours": "이 떠도는 엔진 블록은 당신 것이 아님",
   "block.dungeontrain.skybox_block": "스카이박스 블록",
   "block.dungeontrain.skybox_surface": "지표 스카이박스 블록",
   "block.dungeontrain.skybox_end": "엔드 스카이박스 블록",

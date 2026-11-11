@@ -2994,7 +2994,6 @@
   "gui.dungeontrain.engine_block.worlds.other": "Fuel for %s more worlds",
   "gui.dungeontrain.engine_block.empty": "No fuel, end of the line",
   "message.dungeontrain.engine_block.second": "This carriage already has a Drifting Engine Block",
-  "message.dungeontrain.engine_block.not_yours": "This Drifting Engine Block isn't yours to take",
   "block.dungeontrain.skybox_block": "Skybox Block",
   "block.dungeontrain.skybox_surface": "Surface Skybox Block",
   "block.dungeontrain.skybox_end": "End Skybox Block",

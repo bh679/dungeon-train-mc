@@ -2404,7 +2404,6 @@
   "gui.dungeontrain.engine_block.worlds.other": "还有能去 %s 个世界的燃料",
   "gui.dungeontrain.engine_block.empty": "没有燃料，终点站",
   "message.dungeontrain.engine_block.second": "这节车厢已经有漂流引擎方块了",
-  "message.dungeontrain.engine_block.not_yours": "这个漂流引擎方块不是你的",
   "block.dungeontrain.skybox_block": "天空盒方块",
   "block.dungeontrain.skybox_surface": "地表天空盒方块",
   "block.dungeontrain.skybox_end": "末地天空盒方块",

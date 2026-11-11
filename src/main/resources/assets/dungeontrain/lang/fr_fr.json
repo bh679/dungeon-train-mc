@@ -2453,7 +2453,6 @@
   "gui.dungeontrain.engine_block.worlds.other": "Combustible pour %s mondes de plus",
   "gui.dungeontrain.engine_block.empty": "Plus de combustible, terminus",
   "message.dungeontrain.engine_block.second": "Ce wagon a déjà un bloc moteur à la dérive",
-  "message.dungeontrain.engine_block.not_yours": "Ce bloc moteur à la dérive ne t'appartient pas",
   "block.dungeontrain.skybox_block": "Bloc de ciel",
   "block.dungeontrain.skybox_surface": "Bloc de ciel de surface",
   "block.dungeontrain.skybox_end": "Bloc de ciel de l'End",

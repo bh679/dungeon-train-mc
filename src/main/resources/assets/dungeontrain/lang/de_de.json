@@ -2453,7 +2453,6 @@
   "gui.dungeontrain.engine_block.worlds.other": "Brennstoff für %s weitere Welten",
   "gui.dungeontrain.engine_block.empty": "Kein Brennstoff, Endstation",
   "message.dungeontrain.engine_block.second": "Dieser Wagen hat schon einen Treibwagen-Motorblock",
-  "message.dungeontrain.engine_block.not_yours": "Dieser Treibwagen-Motorblock gehört nicht dir",
   "block.dungeontrain.skybox_block": "Skybox-Block",
   "block.dungeontrain.skybox_surface": "Oberflächen-Skybox-Block",
   "block.dungeontrain.skybox_end": "End-Skybox-Block",

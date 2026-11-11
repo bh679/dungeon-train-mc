@@ -3048,7 +3048,6 @@
   "gui.dungeontrain.engine_block.worlds.other": "Combustibil pentru încă %s de lumi",
   "gui.dungeontrain.engine_block.empty": "Fără combustibil, capăt de linie",
   "message.dungeontrain.engine_block.second": "Acest vagon are deja un bloc motor rătăcitor",
-  "message.dungeontrain.engine_block.not_yours": "Acest bloc motor rătăcitor nu este al tău",
   "block.dungeontrain.skybox_block": "Bloc de cer",
   "block.dungeontrain.skybox_surface": "Bloc de cer de suprafață",
   "block.dungeontrain.skybox_end": "Bloc de cer din End",

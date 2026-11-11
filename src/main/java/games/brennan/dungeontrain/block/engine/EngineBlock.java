@@ -33,8 +33,8 @@ import net.minecraft.world.phys.BlockHitResult;
  * <p>{@link #LIT} follows the coal: lit while there is any, cold at zero, so a dying carriage is
  * visible from across the room. Coal put in during this world can be taken back out (or spills when the
  * block breaks); what the engine arrived with is banked and never comes out — see
- * {@link EngineBlockEntity}. Only the carriage's builder may break it ({@code EngineBlockEvents}); it
- * takes as long as obsidian and always drops itself. Set down in an ordinary carriage, it makes that
+ * {@link EngineBlockEntity}. Anyone may break it; it takes as long as obsidian and always drops
+ * itself. Set down in an ordinary carriage, it makes that
  * carriage drift.</p>
  */
 public class EngineBlock extends BaseEntityBlock {

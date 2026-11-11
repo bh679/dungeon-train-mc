@@ -2,15 +2,8 @@
   "locale": "ms_my",
   "name": "AI tanpa semakan manusia",
   "human_reviewed": false,
-<<<<<<< HEAD
-  "total_keys": 5675,
-  "ai_authored": 5675,
-  "ai_unreviewed": 5675,
-  "counted_keys": 3745
-=======
-  "total_keys": 5672,
-  "ai_authored": 5672,
-  "ai_unreviewed": 5672,
-  "counted_keys": 3742
->>>>>>> origin/main
+  "total_keys": 5676,
+  "ai_authored": 5676,
+  "ai_unreviewed": 5676,
+  "counted_keys": 3746
 }

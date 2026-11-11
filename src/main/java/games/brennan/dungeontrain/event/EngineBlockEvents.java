@@ -20,9 +20,10 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.BlockEvent;
 
 /**
- * Setting a Drifting Engine Block down, and breaking one. In a drifting build a new one replaces a
- * broken engine (one per build; a second is refused). In an ordinary carriage it makes the carriage
- * drift, with the three coal any fresh drifting carriage starts with — see {@link EngineConversion}.
+ * Setting a Drifting Engine Block down. In a drifting build a new one replaces a broken engine (one per
+ * build; a second is refused). In an ordinary carriage it makes the carriage drift, with the three coal
+ * any fresh drifting carriage starts with — see {@link EngineConversion}. Anyone may break one; it mines
+ * as slowly as obsidian.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class EngineBlockEvents {
@@ -52,28 +53,6 @@ public final class EngineBlockEvents {
                 && level.getBlockEntity(pos) instanceof EngineBlockEntity engine) {
             engine.setCoal(DriftEngine.FRESH_COAL);
         }
-    }
-
-    /**
-     * Only the carriage's builder may break its Drifting Engine Block — a stranger breaking it would
-     * retire the carriage. A brand-new drifting carriage has no builder yet, so nobody may. Creative
-     * players are exempt, as for any block.
-     */
-    @SubscribeEvent
-    public static void onBreak(BlockEvent.BreakEvent event) {
-        if (!(event.getState().getBlock() instanceof EngineBlock)) return;
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
-        if (!(event.getPlayer() instanceof ServerPlayer player) || player.isCreative()) return;
-        SharedBuild build = EngineFuelTracker.buildAt(level, event.getPos());
-        if (build == null || build.isCulled() || isBuilder(build, player)) return;
-        event.setCanceled(true);
-        player.displayClientMessage(Component.translatable("message.dungeontrain.engine_block.not_yours"), true);
-    }
-
-    private static boolean isBuilder(SharedBuild build, ServerPlayer player) {
-        String author = build instanceof SharedCarriageRegistry.Instance c ? c.authorUuid
-                : build instanceof SharedRoomRegistry.Instance r ? r.authorUuid : "";
-        return !author.isEmpty() && author.equals(player.getUUID().toString().replace("-", ""));
     }
 
     private static int coalAt(ServerLevel level, BlockPos pos) {
