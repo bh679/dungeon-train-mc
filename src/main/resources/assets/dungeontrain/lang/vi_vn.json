@@ -2415,7 +2415,6 @@
   "block.dungeontrain.drifting_engine_block": "Khối động cơ trôi dạt",
   "gui.dungeontrain.engine_block.worlds.other": "Nhiên liệu cho thêm %s thế giới",
   "gui.dungeontrain.engine_block.empty": "Hết nhiên liệu, ga cuối",
-  "message.dungeontrain.engine_block.second": "Toa này đã có Khối động cơ trôi dạt",
   "block.dungeontrain.skybox_block": "Khối Nền Trời",
   "block.dungeontrain.skybox_surface": "Khối Nền Trời Mặt Đất",
   "block.dungeontrain.skybox_end": "Khối Nền Trời Bờ Vực",

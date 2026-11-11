@@ -2415,7 +2415,6 @@
   "block.dungeontrain.drifting_engine_block": "漂流エンジンブロック",
   "gui.dungeontrain.engine_block.worlds.other": "あと%s個の世界ぶんの燃料",
   "gui.dungeontrain.engine_block.empty": "燃料切れ、終点",
-  "message.dungeontrain.engine_block.second": "この客車にはもう漂流エンジンブロックがある",
   "block.dungeontrain.skybox_block": "スカイボックスブロック",
   "block.dungeontrain.skybox_surface": "地上のスカイボックスブロック",
   "block.dungeontrain.skybox_end": "エンドのスカイボックスブロック",

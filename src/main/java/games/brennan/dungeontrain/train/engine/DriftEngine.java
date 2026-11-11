@@ -7,16 +7,20 @@ import net.minecraft.nbt.NumericTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * The rules of a drifting carriage's Drifting Engine Block, worked on the relay snapshot ({@code {l,h,w,cells:[{p,s,b?}]}}
+ * The rules of a drifting carriage's Drifting Engine Blocks, worked on the relay snapshot ({@code {l,h,w,cells:[{p,s,b?}]}}
  * — see {@code CarriageBlockSnapshot}) so they need no world and can be tested on their own.
  *
  * <ul>
+ *   <li>A carriage may hold any number of engines; its fuel is their total.</li>
  *   <li>A fresh drifting carriage starts with {@link #FRESH_COAL}.</li>
- *   <li>Each time a carriage joins a world from a lease it burns one ({@link #burn}).</li>
+ *   <li>Each time a carriage joins a world from a lease it burns one ({@link #burn}), from the first engine
+ *       that still has coal ({@link #burnOne}): one engine runs dry and goes dark before the next is touched.</li>
  *   <li>A carriage that leaves a world at zero is retired by the relay, which refuses to lease it again.</li>
  *   <li>A carriage from before engines (the relay has no fuel for it) is retrofitted once:
  *       {@link #retrofitCoal} — three, or more for every block and item its riders added.</li>
@@ -24,8 +28,13 @@ import java.util.Map;
  */
 public final class DriftEngine {
 
-    /** Most coal an engine holds: one stack. */
-    public static final int MAX_COAL = 64;
+    /** Most coal one engine takes in: what its input accepts, and the most a retrofit gives. */
+    public static final int MAX_COAL = 12;
+    /**
+     * Sanity bound on a stored count, an engine's or a carriage's. Engines fed above {@link #MAX_COAL}
+     * before the cap came down keep their coal until it burns away, so a stored count is not held to it.
+     */
+    public static final int MAX_STORED = 10_000;
     /** Coal a brand-new drifting carriage starts with. */
     public static final int FRESH_COAL = 3;
     /** A legacy carriage needs MORE than this many added blocks (or any added item) to earn extra coal. */
@@ -45,41 +54,72 @@ public final class DriftEngine {
 
     private DriftEngine() {}
 
+    /** A stored count (one engine's, or a carriage's total) held to 0..{@link #MAX_STORED}. */
     public static int clampCoal(int coal) {
-        return Math.max(0, Math.min(MAX_COAL, coal));
+        return Math.max(0, Math.min(MAX_STORED, coal));
     }
 
-    /** One world's worth of coal burnt; never below zero. */
+    /** One world's worth of coal burnt from a carriage's total; never below zero. */
     public static int burn(int coal) {
         return clampCoal(clampCoal(coal) - 1);
     }
 
+    /**
+     * How a total is shared over {@code engines} engines when their own counts are unknown or stale: the
+     * last engines are filled to {@link #MAX_COAL} first and the first takes the rest, so the burn — which
+     * takes from the first engine with coal — drains the first one. The first may hold more than
+     * {@link #MAX_COAL} when the total needs it.
+     */
+    public static int[] share(int total, int engines) {
+        int[] out = new int[Math.max(0, engines)];
+        int left = clampCoal(total);
+        for (int i = out.length - 1; i > 0; i--) {
+            out[i] = Math.min(MAX_COAL, left);
+            left -= out[i];
+        }
+        if (out.length > 0) out[0] = left;
+        return out;
+    }
+
     // ---- reading a snapshot ----
 
-    /** Index of the first engine cell in {@code cells}, or -1 when the build has none. */
-    public static int findEngine(ListTag cells) {
+    /** Indices of every engine cell in {@code cells}, in cell order: the order they burn in. */
+    public static List<Integer> findEngines(ListTag cells) {
+        List<Integer> out = new ArrayList<>();
         for (int i = 0; i < cells.size(); i++) {
-            if (isEngineCell(cells.getCompound(i))) return i;
+            if (isEngineCell(cells.getCompound(i))) out.add(i);
         }
-        return -1;
+        return out;
+    }
+
+    /** Index of the first engine cell in {@code cells} (the one that burns first), or -1 when there is none. */
+    public static int findEngine(ListTag cells) {
+        List<Integer> engines = findEngines(cells);
+        return engines.isEmpty() ? -1 : engines.get(0);
     }
 
     static boolean isEngineCell(CompoundTag cell) {
         return ENGINE_ID.equals(cell.getCompound("s").getString("Name"));
     }
 
-    /** Coal in the build's engine, or -1 when it has none. */
+    private static int engineCoal(CompoundTag cell) {
+        return clampCoal(cell.getCompound("b").getInt(TAG_COAL));
+    }
+
+    /** Coal in all the build's engines together, or -1 when it has none. */
     public static int coalIn(CompoundTag snap) {
         ListTag cells = snap.getList("cells", Tag.TAG_COMPOUND);
-        int i = findEngine(cells);
-        if (i < 0) return -1;
-        return clampCoal(cells.getCompound(i).getCompound("b").getInt(TAG_COAL));
+        List<Integer> engines = findEngines(cells);
+        if (engines.isEmpty()) return -1;
+        int total = 0;
+        for (int i : engines) total += engineCoal(cells.getCompound(i));
+        return clampCoal(total);
     }
 
     /**
      * The coal this carriage arrives with, before this world's burn. The relay's count wins when it has
      * one ({@code relayFuel >= 0}) — a blob only changes when someone edits, so it can be older than the
-     * count. With no count, the engine in the blob; with no engine either, a one-time retrofit.
+     * count. With no count, the engines in the blob; with no engine either, a one-time retrofit.
      */
     public static int arrivingCoal(int relayFuel, CompoundTag snap, CompoundTag origin) {
         if (relayFuel >= 0) return clampCoal(relayFuel);
@@ -91,21 +131,49 @@ public final class DriftEngine {
     // ---- writing a snapshot ----
 
     /**
-     * {@code snap} with its engine holding {@code coal}: the existing engine updated, or — when the build
-     * has none (built before engines, or saved by a version that dropped the unknown block) — a new one,
-     * in place of a block facing the room or else on a free floor cell ({@link EngineSpot}).
+     * {@code snap} with one coal burnt from its first engine that still has any, which goes dark if that
+     * was its last. Unchanged when every engine is empty or there is none. Never mutates the argument.
+     */
+    public static CompoundTag burnOne(CompoundTag snap) {
+        CompoundTag out = snap.copy();
+        ListTag cells = out.getList("cells", Tag.TAG_COMPOUND);
+        for (int i : findEngines(cells)) {
+            CompoundTag cell = cells.getCompound(i);
+            int coal = engineCoal(cell);
+            if (coal <= 0) continue;
+            cell.put("b", engineTag(cell.getCompound("b"), coal - 1));
+            setLit(cell.getCompound("s"), coal - 1 > 0);
+            return out;
+        }
+        return snap;
+    }
+
+    /**
+     * {@code snap} with its engines holding {@code coal} between them. Engines whose counts already add up
+     * to it keep them; otherwise the total is shared out ({@link #share}). A build with no engine (built
+     * before engines, or saved by a version that dropped the unknown block) gets one, holding it all, in
+     * place of a block facing the room or else on a free floor cell ({@link EngineSpot}).
      * Returns {@code snap} unchanged if there is no engine and no place for one. Never mutates the
      * argument.
      */
     public static CompoundTag withEngineCoal(CompoundTag snap, int coal) {
         CompoundTag out = snap.copy();
         ListTag cells = out.getList("cells", Tag.TAG_COMPOUND);
-        int i = findEngine(cells);
+        List<Integer> engines = findEngines(cells);
         int clamped = clampCoal(coal);
-        if (i >= 0) {
-            CompoundTag cell = cells.getCompound(i);
-            cell.put("b", engineTag(cell.getCompound("b"), clamped));
-            setLit(cell.getCompound("s"), clamped > 0);
+        if (!engines.isEmpty()) {
+            int[] counts = new int[engines.size()];
+            int sum = 0;
+            for (int k = 0; k < counts.length; k++) {
+                counts[k] = engineCoal(cells.getCompound(engines.get(k)));
+                sum += counts[k];
+            }
+            if (sum != clamped) counts = share(clamped, counts.length);
+            for (int k = 0; k < counts.length; k++) {
+                CompoundTag cell = cells.getCompound(engines.get(k));
+                cell.put("b", engineTag(cell.getCompound("b"), counts[k]));
+                setLit(cell.getCompound("s"), counts[k] > 0);
+            }
             return out;
         }
         int l = out.getInt("l"), h = out.getInt("h"), w = out.getInt("w");
@@ -154,7 +222,7 @@ public final class DriftEngine {
         int blocks = blocksAdded(origin, current);
         int items = Math.max(0, itemsIn(current) - itemsIn(origin));
         if (blocks <= RETROFIT_BLOCK_THRESHOLD && items == 0) return FRESH_COAL;
-        return clampCoal(FRESH_COAL + blocks + items);
+        return Math.min(MAX_COAL, FRESH_COAL + blocks + items);
     }
 
     /** Cells holding a block now that held nothing, or a different block, in {@code origin}. */

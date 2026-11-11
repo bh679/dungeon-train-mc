@@ -2415,7 +2415,6 @@
   "block.dungeontrain.drifting_engine_block": "Naaanod na Engine Block",
   "gui.dungeontrain.engine_block.worlds.other": "Gasolina para sa %s pang mundo",
   "gui.dungeontrain.engine_block.empty": "Walang gasolina, dulo na ng linya",
-  "message.dungeontrain.engine_block.second": "May naaanod na Engine Block na ang bagon na ito",
   "block.dungeontrain.skybox_block": "Bloke ng Skybox",
   "block.dungeontrain.skybox_surface": "Bloke ng Skybox sa Ibabaw",
   "block.dungeontrain.skybox_end": "Bloke ng Skybox sa End",

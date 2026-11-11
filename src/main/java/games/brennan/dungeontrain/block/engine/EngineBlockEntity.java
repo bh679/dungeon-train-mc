@@ -36,7 +36,8 @@ import net.minecraft.world.level.block.state.BlockState;
  *       banked and the slot starts empty again.</li>
  * </ul>
  *
- * <p>Together they never pass {@link DriftEngine#MAX_COAL}. Saved as the total
+ * <p>The input only fills up to {@link DriftEngine#MAX_COAL} with the banked coal; banked coal from
+ * before that cap came down may sit above it, and burns away as usual. Saved as the total
  * ({@value DriftEngine#TAG_COAL} — what the relay blob, the retrofit and the burn read) plus the input
  * count ({@value DriftEngine#TAG_INPUT}), so a reload inside this world keeps the two apart. Hoppers
  * may feed the input but never drain it.</p>
@@ -58,11 +59,14 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
      */
     private ItemStack input = ItemStack.EMPTY;
 
-    /** Synced to the screen: index 0 is the banked coal; the input arrives through the slot itself. */
+    /**
+     * Synced to the screen: index 0 is the banked coal, index 1 the whole carriage's coal (every engine in
+     * it, or just this one outside a drifting build). The input arrives through the slot itself.
+     */
     private final ContainerData data = new ContainerData() {
-        @Override public int get(int index) { return banked; }
-        @Override public void set(int index, int value) { banked = DriftEngine.clampCoal(value); }
-        @Override public int getCount() { return 1; }
+        @Override public int get(int index) { return index == 0 ? banked : carriageCoal(); }
+        @Override public void set(int index, int value) { if (index == 0) banked = DriftEngine.clampCoal(value); }
+        @Override public int getCount() { return 2; }
     };
 
     public EngineBlockEntity(BlockPos pos, BlockState state) {
@@ -78,6 +82,15 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
         return banked;
     }
 
+    /** Coal in every engine of the drifting build this one stands in, as its tracker last summed it; this one's own outside one. */
+    private int carriageCoal() {
+        if (level instanceof ServerLevel server) {
+            games.brennan.dungeontrain.train.SharedBuild build = EngineFuelTracker.buildAt(server, worldPosition);
+            if (build != null && build.fuel() >= 0) return build.fuel();
+        }
+        return coal();
+    }
+
     private int inputCount() {
         return isFuel(input) ? input.getCount() : 0;
     }
@@ -87,7 +100,7 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
         return stack.is(Items.COAL) || stack.is(Items.CHARCOAL);
     }
 
-    /** Room left in the input: whatever the banked coal leaves of {@link DriftEngine#MAX_COAL}. */
+    /** Room left in the input: whatever the banked coal leaves of {@link DriftEngine#MAX_COAL}, never below none. */
     public int inputCapacity() {
         return Math.max(0, DriftEngine.MAX_COAL - banked);
     }

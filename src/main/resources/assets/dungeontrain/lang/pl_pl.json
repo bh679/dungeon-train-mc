@@ -2513,7 +2513,6 @@
   "gui.dungeontrain.engine_block.worlds.few": "Paliwo na jeszcze %s światy",
   "gui.dungeontrain.engine_block.worlds.many": "Paliwo na jeszcze %s światów",
   "gui.dungeontrain.engine_block.empty": "Brak paliwa, stacja końcowa",
-  "message.dungeontrain.engine_block.second": "Ten wagon ma już dryfujący blok silnika",
   "block.dungeontrain.skybox_block": "Blok nieboskłonu",
   "block.dungeontrain.skybox_surface": "Blok nieboskłonu powierzchni",
   "block.dungeontrain.skybox_end": "Blok nieboskłonu Kresu",

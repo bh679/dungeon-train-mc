@@ -15,8 +15,8 @@ import net.minecraft.world.entity.player.Inventory;
 import java.util.List;
 
 /**
- * The Drifting Engine Block screen: the coal slot and a gauge side by side, and under them how many more
- * worlds that coal carries the carriage through.
+ * The Drifting Engine Block screen: the coal slot and this engine's gauge side by side, and under them how
+ * many more worlds the coal in all the carriage's engines carries it through.
  */
 public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
 
@@ -67,15 +67,19 @@ public class EngineScreen extends AbstractContainerScreen<EngineMenu> {
         }
     }
 
-    /** Pixels of gauge for {@code coal}; at least one for any coal at all, so a single lump still shows. */
+    /**
+     * Pixels of gauge for {@code coal}, out of {@link DriftEngine#MAX_COAL}: at least one for any coal at
+     * all, so a single lump still shows, and full for an engine fed above the cap before it came down.
+     */
     private static int gaugeWidth(int coal) {
-        return coal <= 0 ? 0 : Math.max(1, Math.round(GAUGE_W * (coal / (float) DriftEngine.MAX_COAL)));
+        if (coal <= 0) return 0;
+        return Math.min(GAUGE_W, Math.max(1, Math.round(GAUGE_W * (coal / (float) DriftEngine.MAX_COAL))));
     }
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         super.renderLabels(graphics, mouseX, mouseY);
-        List<FormattedCharSequence> lines = font.split(status(menu.coal()), TEXT_WIDTH);
+        List<FormattedCharSequence> lines = font.split(status(menu.carriageCoal()), TEXT_WIDTH);
         for (int i = 0; i < lines.size(); i++) {
             graphics.drawString(font, lines.get(i), TEXT_X, STATUS_Y + i * (font.lineHeight + 1), TEXT_COLOUR, false);
         }

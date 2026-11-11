@@ -1445,11 +1445,11 @@ public final class SharedCarriageClient {
     }
 
     /**
-     * The {@code fuel} field: the coal left in the build's Drifting Engine Block. Sent only for a real count
-     * (0..64); -1 means this world knows nothing about it, and the relay then keeps what it has.
+     * The {@code fuel} field: the coal left in all the build's Drifting Engine Blocks together. Sent only for a
+     * real count; -1 means this world knows nothing about it, and the relay then keeps what it has.
      */
     private static void addFuel(JsonObject body, int fuel) {
-        if (fuel >= 0 && fuel <= games.brennan.dungeontrain.train.engine.DriftEngine.MAX_COAL) {
+        if (fuel >= 0 && fuel <= games.brennan.dungeontrain.train.engine.DriftEngine.MAX_STORED) {
             body.addProperty("fuel", fuel);
         }
     }
