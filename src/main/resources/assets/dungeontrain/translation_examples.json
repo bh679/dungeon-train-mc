@@ -18101,6 +18101,159 @@
       ]
     }
   },
+  "tooltip.dungeontrain.provenance.found_by": {
+    "1": {
+      "label": "the player who first held the item after it was found",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.made_by": {
+    "1": {
+      "label": "the player who crafted the item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.bought_by": {
+    "1": {
+      "label": "the player who bought the item from a villager",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.1": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.2": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.3": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.4": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.5": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.6": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.7": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.8": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.9": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.10": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.11": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.12": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.13": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.14": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
   "gui.dungeontrain.engine_block.worlds.one": {
     "1": {
       "label": "worlds the coal lasts (always 1)",
