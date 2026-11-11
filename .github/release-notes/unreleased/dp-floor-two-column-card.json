@@ -1,0 +1,17 @@
+{
+  "id": "dp-floor-two-column-card",
+  "version": "0.1771.0",
+  "type": "fix",
+  "tags": [
+    "fix",
+    "compatibility"
+  ],
+  "title": "Welcome card fix",
+  "summary": "The welcome card now fits small screens in the CurseForge modpack too.",
+  "highlights": [],
+  "pr": 2606,
+  "date": "2026-11-11",
+  "released": false,
+  "released_in": null,
+  "released_at": null
+}
