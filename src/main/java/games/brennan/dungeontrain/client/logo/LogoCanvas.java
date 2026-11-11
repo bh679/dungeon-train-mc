@@ -37,23 +37,28 @@ final class LogoCanvas {
         LogoRingGeometry.Sink withSegLen(float segLen);
     }
 
+    /** Real screen pixels per logo pixel in the item-sprite style. */
+    static final int ITEM_PIXEL = 4;
+
     private RenderTarget target;
 
     /**
      * Renders the geometry {@code build} emits (called once for the surface, once for the outline).
      *
      * @param lineWidth the edge lines, in target pixels
+     * @param itemStyle  drawn as a Minecraft item sprite: flat banded shading and a 1-pixel outline,
+     *                   at the low size given, then scaled up with hard edges (see {@link #ITEM_PIXEL})
      */
     void render(ShaderInstance shader, int texture, int w, int h, Matrix4f view, Matrix4f projection,
-                float lineWidth, Consumer<Emitter> build) {
+                float lineWidth, boolean itemStyle, Consumer<Emitter> build) {
         Minecraft mc = Minecraft.getInstance();
         if (target == null) {
             target = new TextureTarget(w, h, true, Minecraft.ON_OSX);
-            target.setFilterMode(GL11.GL_LINEAR);
             target.setClearColor(0f, 0f, 0f, 0f);
         } else if (target.width != w || target.height != h) {
             target.resize(w, h, Minecraft.ON_OSX);
         }
+        target.setFilterMode(itemStyle ? GL11.GL_NEAREST : GL11.GL_LINEAR);
 
         Matrix4f savedProjection = new Matrix4f(RenderSystem.getProjectionMatrix());
         VertexSorting savedSorting = RenderSystem.getVertexSorting();
@@ -72,7 +77,8 @@ final class LogoCanvas {
             RenderSystem.enableCull();
 
             // The segments, then the outline shell's inside faces behind them.
-            shader.safeGetUniform("LineWidth").set(lineWidth);
+            shader.safeGetUniform("LineWidth").set(itemStyle ? 1f : lineWidth);
+            shader.safeGetUniform("Style").set(itemStyle ? 1f : 0f);
             shader.safeGetUniform("Atlas").set((float) LogoCracks.ATLAS_W, (float) LogoCracks.ATLAS_ROW,
                     (float) LogoCracks.ATLAS_LEN, (float) (LogoRingGeometry.PIECES * 4));
             RenderSystem.setShader(() -> shader);

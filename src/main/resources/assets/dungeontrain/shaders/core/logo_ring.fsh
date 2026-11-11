@@ -17,6 +17,10 @@ uniform float GrooveDepth;
 uniform float GrooveShadow;
 uniform float LineWidth;
 uniform vec4 Atlas; // atlas width px, row height px, world length per row, rows
+// 0: smooth (the website's look, the menu's ring). 1: item sprite (the loading bar): flat two-tone
+// faces, three light bands, four brightness bands and a crisp outline, like a Minecraft item icon;
+// LogoCanvas renders it small and scales it up with hard edges.
+uniform float Style;
 
 in vec3 vNormalV;
 in vec3 vViewDir;
@@ -71,12 +75,16 @@ void main() {
     float k = floor(vSurf.x + 0.5);
     float across = clamp(vSurf.z * 0.5 + 0.5, 0.0, 1.0);
     bool pale = k < 3.5 && mod(k, 2.0) < 0.5;
+    bool item = Style > 0.5;
     vec3 col = pale ? mix(vec3(0.55, 0.51, 0.5), vec3(0.88, 0.84, 0.83), across)
                     : mix(vec3(0.06), vec3(0.2), across);
+    if (item) col = pale ? vec3(0.80, 0.76, 0.75) : vec3(0.17);
     vec3 N = normalize(vNormalV);
     vec3 V = normalize(vViewDir);
     float facing = clamp(dot(N, V), 0.0, 1.0);
-    col *= mix(1.0, 0.55 + 0.6 * facing, Relief);
+    float lit = mix(1.0, 0.55 + 0.6 * facing, Relief);
+    if (item) lit = floor(lit * 3.0 + 0.5) / 3.0;   // three light bands
+    col *= lit;
 
     // Cracks from this segment's depth-map rows (the cut ends have none). The end of face k's row
     // and the start of face k+1's row are the same edge.
@@ -107,8 +115,14 @@ void main() {
         }
     }
 
+    col = clamp(col, 0.0, 1.0);
+    if (item) {                                      // four flat bands of brightness, colour kept
+        float lum = max(dot(col, vec3(0.3, 0.59, 0.11)), 1e-4);
+        col *= (floor(lum * 4.0 + 0.5) / 4.0) / lum;
+    }
     float halfLine = LineWidth * 0.5;
-    float line = 1.0 - smoothstep(halfLine - 0.5, halfLine + 0.5, edgePixels(k));
-    col = mix(clamp(col, 0.0, 1.0), vec3(0.0), line);
+    float line = item ? step(edgePixels(k), max(0.6, halfLine))   // crisp, no anti-aliasing
+                      : 1.0 - smoothstep(halfLine - 0.5, halfLine + 0.5, edgePixels(k));
+    col = mix(col, vec3(0.0), line);
     fragColor = vec4(col, 1.0);
 }

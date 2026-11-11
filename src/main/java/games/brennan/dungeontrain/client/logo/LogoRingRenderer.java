@@ -18,7 +18,8 @@ import org.slf4j.Logger;
  *       viewer. A port of the website's {@code logo-ring/logo-ring.js}, with Brennan's tuned look.</li>
  *   <li>{@link #drawBar}: the same tube unrolled into a straight line of carriages, the loading
  *       bar. Its front grows with the progress, a carriage at a time; the twist keeps rolling. At
- *       100% the train drives off up the screen, loops and draws in to the logo ({@link BarMorph}).</li>
+ *       100% the train drives into a portal and its last four come out as the logo ({@link BarMorph}).
+ *       Drawn as a Minecraft item sprite.</li>
  * </ul>
  *
  * <p>Each shape renders into its own {@link LogoCanvas} and is blitted into the GUI. One shared
@@ -100,7 +101,7 @@ public final class LogoRingRenderer {
         Matrix4f view = new Matrix4f().lookAt(CAMERA_AT, new Vector3f(), new Vector3f(0f, 1f, 0f));
         Matrix4f projection = new Matrix4f().perspective(FOV, 1f, 0.1f, 50f);
         float segLen = (float) LogoRingGeometry.segmentLength();
-        ringCanvas.render(shader, texture, px, px, view, projection, Math.max(1f, LINE_PER_PIXEL * px),
+        ringCanvas.render(shader, texture, px, px, view, projection, Math.max(1f, LINE_PER_PIXEL * px), false,
                 sink -> LogoRingGeometry.build(offset, faceOn, sink.withSegLen(segLen)));
         ringCanvas.blit(g, x, y, size, size, alpha * shown);
         return true;
@@ -109,12 +110,14 @@ public final class LogoRingRenderer {
     /**
      * The loading bar: the tube laid straight across {@code width} GUI units, centred on
      * {@code centreY}, its carriages filling in from the left as {@code progress} goes 0 to 1.
-     * Once it reads 100% the train drives off along its track, loops and draws in to the logo
-     * ({@link BarMorph}); it draws over the whole screen so it can leave the bar's area.
+     * Once it reads 100% it finishes into the logo ({@link BarMorph}: the train drives into a portal
+     * and its last four come out round the logo); it draws over the whole screen so it can leave the
+     * bar's area. Drawn as a Minecraft item sprite: flat banded shading and a 1-pixel outline, at
+     * {@link LogoCanvas#ITEM_PIXEL} screen pixels to the logo pixel.
      *
      * @return false while it can't draw, so the caller can fall back to its own bar
      */
-    public boolean drawBar(GuiGraphics g, float x, float centreY, float width, double progress, float alpha, float renderScale) {
+    public boolean drawBar(GuiGraphics g, float x, float centreY, float width, double progress, float alpha) {
         if (alpha <= 0f || width <= 0f) return false;
         int texture = prepare();
         if (texture < 0) return false;
@@ -143,15 +146,16 @@ public final class LogoRingRenderer {
                 new Vector3f((float) lookX, (float) lookY, 0f), new Vector3f(0f, 1f, 0f));
         float halfW = (float) (screenW / (2 * k)), halfH = (float) (screenH / (2 * k));
         Matrix4f projection = new Matrix4f().ortho(-halfW, halfW, -halfH, halfH, 0.1f, 50f);
-        int pxW = pixels(screenW, renderScale), pxH = pixels(screenH, renderScale);
+        // Drawn as a Minecraft item sprite: one logo pixel to ITEM_PIXEL screen pixels, scaled up with hard edges.
+        int pxW = pixels(screenW, 1f / LogoCanvas.ITEM_PIXEL), pxH = pixels(screenH, 1f / LogoCanvas.ITEM_PIXEL);
         float tubePx = (float) (pxW / (double) screenW * k * 2 * LogoRingGeometry.HALF);
         double front = barFront, drift = FACE_ON + barDrift, spin = barSpin;
         g.flush();
-        barCanvas.render(shader, texture, pxW, pxH, view, projection, Math.max(1f, 0.03f * tubePx),
+        barCanvas.render(shader, texture, pxW, pxH, view, projection, Math.max(1f, 0.03f * tubePx), true,
                 sink -> BarMorph.emit(t, front, drift, spin, sink));
         BarMorph.Finish finish = BarMorph.finish();
         if (t >= 0 && finish.fadeAlpha(t) > 0) {
-            fadeCanvas.render(shader, texture, pxW, pxH, view, projection, Math.max(1f, 0.03f * tubePx),
+            fadeCanvas.render(shader, texture, pxW, pxH, view, projection, Math.max(1f, 0.03f * tubePx), true,
                     sink -> finish.emitFading(t, drift, sink));
             fadeCanvas.blit(g, 0, 0, screenW, screenH, alpha * shown * finish.fadeAlpha(t));
         }

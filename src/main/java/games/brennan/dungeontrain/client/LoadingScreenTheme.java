@@ -200,7 +200,7 @@ public final class LoadingScreenTheme {
     public static void drawFillingTrain(GuiGraphics g, Font font, int railLeft, int railW, int railY, double progress, long animNanos, float alpha) {
         float a = Mth.clamp(alpha, 0.0f, 1.0f);
         if (a <= 0.0f) return;
-        if (LogoRingRenderer.get().drawBar(g, railLeft, railY - LOGO_BAR_LIFT, railW, progress, a, 1.5f)) return;
+        if (LogoRingRenderer.get().drawBar(g, railLeft, railY - LOGO_BAR_LIFT, railW, progress, a)) return;
         int railRight = railLeft + railW;
         int startX = railLeft + 2;
         int slots = Math.max(1, (railW - INF_RESERVE) / SPACING);
