@@ -121,6 +121,8 @@ public enum ClientOptionsTab {
         OTHER_ADVANCEMENT_TABS("gui.dungeontrain.options.other_advancement_tabs"),
         /** The earned card for advancements outside Dungeon Train's tabs — hidden by default, see {@code AdvancementTabGate}. */
         OTHER_ADVANCEMENT_CARDS("gui.dungeontrain.options.other_advancement_cards"),
+        /** What the main menu shows behind its buttons: the logo over live stream / photos, photos only, or as it was. */
+        MENU_BACKDROP("gui.dungeontrain.options.menu_backdrop"),
         CINEMATIC_HOTKEY("gui.dungeontrain.options.cinematic_hotkey"),
         /** The top-left developer read-out — dev builds only, see {@code VersionHudOverlay}. */
         DEV_HUD("gui.dungeontrain.options.dev_hud"),
@@ -343,6 +345,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.OTHER_ADVANCEMENT_TABS);
                 rows.add(Row.OTHER_ADVANCEMENT_CARDS);
                 rows.add(Row.PROTECT_OWN_PETS);
+                rows.add(Row.MENU_BACKDROP);
                 rows.add(Row.CINEMATIC_HOTKEY);
                 // Release builds never draw the dev HUD, so the row is absent there, not inert.
                 if (devBuild) {
