@@ -66,7 +66,10 @@ public class EngineBlock extends BaseEntityBlock {
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        return defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
+        // Set down cold: a new engine holds no coal until it is fed, or until it converts an ordinary
+        // carriage and is handed the fresh carriage's coal (which lights it).
+        return defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite())
+                .setValue(LIT, false).setValue(LOW, false);
     }
 
     @Override

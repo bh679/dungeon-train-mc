@@ -111,7 +111,10 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
      */
     public void setCoal(int value) {
         int clamped = DriftEngine.clampCoal(value);
-        if (clamped == banked && input.isEmpty()) return;
+        if (clamped == banked && input.isEmpty()) {
+            syncFire(); // same coal, but the block may have been set down showing the wrong fire
+            return;
+        }
         banked = clamped;
         input = ItemStack.EMPTY;
         setChanged();
@@ -202,6 +205,14 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
     public void setChanged() {
         super.setChanged();
         if (level == null || level.isClientSide) return;
+        int coal = coal();
+        syncFire();
+        if (level instanceof ServerLevel server) EngineFuelTracker.onEngineChanged(server, worldPosition, coal);
+    }
+
+    /** The block shows this engine's fire: lit while it has coal, embers ({@code low}) on the last one. Server side. */
+    private void syncFire() {
+        if (level == null || level.isClientSide) return;
         BlockState state = getBlockState();
         int coal = coal();
         boolean lit = coal > 0;
@@ -210,7 +221,6 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
                 && (state.getValue(EngineBlock.LIT) != lit || state.getValue(EngineBlock.LOW) != low)) {
             level.setBlock(worldPosition, state.setValue(EngineBlock.LIT, lit).setValue(EngineBlock.LOW, low), Block.UPDATE_ALL);
         }
-        if (level instanceof ServerLevel server) EngineFuelTracker.onEngineChanged(server, worldPosition, coal);
     }
 
     // ---- NBT ----
