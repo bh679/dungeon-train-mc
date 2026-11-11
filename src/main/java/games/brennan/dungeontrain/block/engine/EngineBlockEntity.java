@@ -30,7 +30,8 @@ import net.minecraft.world.level.block.state.BlockState;
  *   <li><b>Banked</b>: what the engine arrived with — the three it spawned with, and whatever earlier
  *       worlds put in it, less one burnt for each world it has joined. Nobody can take it out; the
  *       screen's gauge shows it.</li>
- *   <li><b>Input</b>: the one slot, coal put in during this world. It counts as fuel straight away and
+ *   <li><b>Input</b>: the one slot, coal or charcoal put in during this world (one or the other, as
+ *       a slot holds one item). It counts as fuel straight away and
  *       can be taken back out until the carriage leaves; when it joins its next world it all becomes
  *       banked and the slot starts empty again.</li>
  * </ul>
@@ -46,6 +47,8 @@ import net.minecraft.world.level.block.state.BlockState;
 public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider {
 
     private static final int[] SLOTS = {0};
+    /** Set when the input holds charcoal rather than coal, so a reload gives back the same item. */
+    private static final String TAG_INPUT_CHARCOAL = "InputCharcoal";
 
     private int banked;
 
@@ -76,7 +79,12 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
     }
 
     private int inputCount() {
-        return input.is(Items.COAL) ? input.getCount() : 0;
+        return isFuel(input) ? input.getCount() : 0;
+    }
+
+    /** What the input takes: coal or charcoal, nothing else. */
+    public static boolean isFuel(ItemStack stack) {
+        return stack.is(Items.COAL) || stack.is(Items.CHARCOAL);
     }
 
     /** Room left in the input: whatever the banked coal leaves of {@link DriftEngine#MAX_COAL}. */
@@ -126,7 +134,7 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
     @Override
     public void setItem(int slot, ItemStack newStack) {
         if (slot != 0) return;
-        input = newStack.is(Items.COAL) ? newStack : ItemStack.EMPTY;
+        input = isFuel(newStack) ? newStack : ItemStack.EMPTY;
         if (input.getCount() > inputCapacity()) input.setCount(inputCapacity());
         setChanged();
     }
@@ -135,7 +143,7 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack candidate) {
-        return slot == 0 && candidate.is(Items.COAL) && inputCount() < inputCapacity();
+        return slot == 0 && isFuel(candidate) && inputCount() < inputCapacity();
     }
 
     @Override
@@ -197,6 +205,7 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
         super.saveAdditional(tag, registries);
         tag.putInt(DriftEngine.TAG_COAL, coal());
         if (inputCount() > 0) tag.putInt(DriftEngine.TAG_INPUT, inputCount());
+        if (input.is(Items.CHARCOAL)) tag.putBoolean(TAG_INPUT_CHARCOAL, true);
     }
 
     @Override
@@ -205,7 +214,7 @@ public class EngineBlockEntity extends BlockEntity implements WorldlyContainer, 
         int total = DriftEngine.clampCoal(tag.getInt(DriftEngine.TAG_COAL));
         int in = Math.max(0, Math.min(total, tag.getInt(DriftEngine.TAG_INPUT)));
         banked = total - in;
-        input = in > 0 ? new ItemStack(Items.COAL, in) : ItemStack.EMPTY;
+        input = in > 0 ? new ItemStack(tag.getBoolean(TAG_INPUT_CHARCOAL) ? Items.CHARCOAL : Items.COAL, in) : ItemStack.EMPTY;
     }
 
     @Override

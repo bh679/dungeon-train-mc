@@ -11,12 +11,11 @@ import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 
 /**
  * The Drifting Engine Block screen's container: the input slot over the player inventory, plus the
  * banked coal synced as menu data so the gauge and the "more worlds" line read it without a packet of
- * their own. The input takes coal only, up to what the banked coal leaves of
+ * their own. The input takes coal or charcoal only, up to what the banked coal leaves of
  * {@link DriftEngine#MAX_COAL}, and gives it back on request. The screen draws the faded coal an empty input shows.
  */
 public class EngineMenu extends AbstractContainerMenu {
@@ -40,7 +39,7 @@ public class EngineMenu extends AbstractContainerMenu {
         this.data = data;
         engine.startOpen(inventory.player);
         addSlot(new Slot(engine, 0, COAL_X, COAL_Y) {
-            @Override public boolean mayPlace(ItemStack stack) { return stack.is(Items.COAL); }
+            @Override public boolean mayPlace(ItemStack stack) { return EngineBlockEntity.isFuel(stack); }
             @Override public int getMaxStackSize() { return Math.max(0, DriftEngine.MAX_COAL - banked()); }
             @Override public int getMaxStackSize(ItemStack stack) { return getMaxStackSize(); }
         });
@@ -61,7 +60,7 @@ public class EngineMenu extends AbstractContainerMenu {
     /** Coal put in during this world: the input slot. */
     public int input() {
         ItemStack stack = slots.get(0).getItem();
-        return stack.is(Items.COAL) ? stack.getCount() : 0;
+        return EngineBlockEntity.isFuel(stack) ? stack.getCount() : 0;
     }
 
     /** All the fuel: banked plus input. */
@@ -77,7 +76,7 @@ public class EngineMenu extends AbstractContainerMenu {
         ItemStack before = stack.copy();
         if (index == 0) {
             if (!moveItemStackTo(stack, 1, slots.size(), true)) return ItemStack.EMPTY;
-        } else if (stack.is(Items.COAL)) {
+        } else if (EngineBlockEntity.isFuel(stack)) {
             if (!moveItemStackTo(stack, 0, 1, false)) return ItemStack.EMPTY;
         } else {
             return ItemStack.EMPTY;
