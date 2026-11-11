@@ -51,6 +51,7 @@ final class ClientOptionsIcons {
             case DIFFICULTY -> Icon.item(Items.IRON_SWORD);
             case CONTENT_MODE -> Icon.item(Items.CAKE);
             case DEV_CHAT -> Icon.item(Items.WRITABLE_BOOK);
+            case PUBLIC_POSTS -> Icon.item(Items.PAINTING);
             case POLITICAL_FILTER -> Icon.item(Items.BARRIER);
             case BOOK_AUTHOR_CHAT -> Icon.item(Items.BOOK);
             case PROTECT_OWN_PETS -> Icon.item(Items.BONE);
@@ -58,6 +59,7 @@ final class ClientOptionsIcons {
             case LOW_MEMORY_NOTICE_CHAT -> Icon.item(Items.REDSTONE);
             case OTHER_ADVANCEMENT_TABS -> Icon.item(Items.EXPERIENCE_BOTTLE);
             case OTHER_ADVANCEMENT_CARDS -> Icon.item(Items.PAPER);
+            case MENU_BACKDROP -> Icon.item(Items.ITEM_FRAME);
             case CINEMATIC_HOTKEY -> Icon.item(Items.SPYGLASS);
             case DEV_HUD -> Icon.item(Items.CLOCK);
             case BACKPACK_BUTTON -> Icon.item(games.brennan.ediblebackpacks.registry.ModItems.EDIBLE_BACKPACK.get());

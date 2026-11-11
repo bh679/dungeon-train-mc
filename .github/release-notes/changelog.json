@@ -34990,6 +34990,145 @@
       "released": true,
       "released_in": "v0.1767.0",
       "released_at": "2026-11-10T23:26:03Z"
+    },
+    {
+      "id": "carriage-ids",
+      "version": "0.1768.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "internal"
+      ],
+      "title": "Carriages remember how they were built",
+      "summary": "Every carriage now keeps a record of how it was built, laying the groundwork for an upcoming feature.",
+      "highlights": [],
+      "pr": 2603,
+      "date": "2026-11-10",
+      "released": true,
+      "released_in": "v0.1775.0",
+      "released_at": "2026-11-11T05:59:08Z"
+    },
+    {
+      "id": "dp-floor-two-column-card",
+      "version": "0.1771.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Welcome card fix",
+      "summary": "The welcome card now fits small screens in the CurseForge modpack too.",
+      "highlights": [],
+      "pr": 2606,
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1775.0",
+      "released_at": "2026-11-11T05:59:08Z"
+    },
+    {
+      "id": "drifting-engine-block",
+      "version": "0.1768.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "train"
+      ],
+      "title": "The Drifting Engine",
+      "summary": "Every drifting carriage now has a Drifting Engine Block built into it. It burns one coal each time the carriage drifts into a new world, and a carriage that runs out of fuel stops drifting for good. Feed it coal or charcoal to keep a carriage you love on the line.",
+      "highlights": [
+        "Coal you add counts straight away, and you can take it back out before you leave the world",
+        "The gauge shows how many more worlds the carriage can reach",
+        "Anyone can mine an engine, but it takes as long as obsidian"
+      ],
+      "pr": 2604,
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1775.0",
+      "released_at": "2026-11-11T05:59:08Z",
+      "major": true,
+      "notable": true,
+      "description": "It burns to keep your carriages alive. Taking them beyond your world, into the world of others. Let it extinguish, the train forgets it. Move it to a new carriage, and move which carriage drifts with the train.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-drifting-engine.gif"
+    },
+    {
+      "id": "gear-shift-details",
+      "version": "0.1771.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "ui"
+      ],
+      "title": "Gear remembers where it came from",
+      "summary": "Hold Shift over a weapon, tool or piece of armour to see who found, made or bought it, and when. Rare vault finds keep their number there now, out of the way.",
+      "highlights": [],
+      "pr": 2607,
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1775.0",
+      "released_at": "2026-11-11T05:59:08Z"
+    },
+    {
+      "id": "ingame-animated-logo",
+      "version": "0.1772.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "A living main menu and loading screen",
+      "summary": "The Dungeon Train logo now comes alive in the game. The main menu shows whoever is streaming live, or a slideshow of the community's tributed photos, behind a slowly turning logo. When a world finishes loading, the train drives through a portal and becomes the logo.",
+      "highlights": [
+        "Main menu: the live stream when someone is live, otherwise tributed photos credited to their photographer",
+        "Loading screen: the carriages fill in as it loads, then ride through a portal and turn into the logo",
+        "A Main Menu Backdrop option in Dungeon Train settings: live and photos, photos only, or none for the classic menu"
+      ],
+      "pr": 2608,
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1775.0",
+      "released_at": "2026-11-11T05:59:08Z"
+    },
+    {
+      "id": "public-posts-switch",
+      "version": "0.1770.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Public posts",
+      "summary": "When one of your photos or deaths is shared on our Instagram or Facebook story, you now get a chat message and an inbox note linking to it. A new Public posts switch keeps your photos and deaths off our Discord and socials if you would rather they stay private. It starts off in Kid mode.",
+      "highlights": [
+        "Chat and inbox message when you are featured, with each platform's name linking to the post",
+        "Public posts switch on the welcome card and in Options",
+        "The welcome card is now two columns so it fits small screens, and asks once more"
+      ],
+      "pr": 2605,
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1775.0",
+      "released_at": "2026-11-11T05:59:08Z"
+    },
+    {
+      "id": "trial-key-train-head",
+      "version": "0.1775.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot"
+      ],
+      "title": "Dungeon Trial Key has a new look",
+      "summary": "The Dungeon Trial Key now has a train carriage for a head.",
+      "highlights": [],
+      "pr": 2611,
+      "date": "2026-11-11",
+      "released": true,
+      "released_in": "v0.1775.0",
+      "released_at": "2026-11-11T05:59:08Z"
     }
   ]
 }

@@ -1,4 +1,145 @@
 {
+  "chat.dungeontrain.public_posts.death.two": {
+    "1": {
+      "label": "the carriage number the player died at",
+      "examples": [
+        "412",
+        "87"
+      ]
+    },
+    "2": {
+      "label": "the social platform's name, never translated; shown as a link",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    },
+    "3": {
+      "label": "the second social platform's name, never translated; shown as a link",
+      "examples": [
+        "Facebook"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.death.plain.two": {
+    "1": {
+      "label": "the social platform's name, never translated; shown as a link",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    },
+    "2": {
+      "label": "the second social platform's name, never translated; shown as a link",
+      "examples": [
+        "Facebook"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.photo.two": {
+    "1": {
+      "label": "the photo's title",
+      "examples": [
+        "Sunset Bridge"
+      ]
+    },
+    "2": {
+      "label": "the social platform's name, never translated; shown as a link",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    },
+    "3": {
+      "label": "the second social platform's name, never translated; shown as a link",
+      "examples": [
+        "Facebook"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.photo.plain.two": {
+    "1": {
+      "label": "the social platform's name, never translated; shown as a link",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    },
+    "2": {
+      "label": "the second social platform's name, never translated; shown as a link",
+      "examples": [
+        "Facebook"
+      ]
+    }
+  },
+  "gui.dungeontrain.menu.backdrop.live_named": {
+    "1": {
+      "label": "the name of the player streaming live, shown over the main menu",
+      "examples": [
+        "Iffy8251",
+        "Steve"
+      ]
+    }
+  },
+  "gui.dungeontrain.menu.backdrop.photo_by": {
+    "1": {
+      "label": "the name of the player who took the tributed photo behind the main menu",
+      "examples": [
+        "Iffy8251",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.death": {
+    "1": {
+      "label": "the carriage number the player died at",
+      "examples": [
+        "412",
+        "87"
+      ]
+    },
+    "2": {
+      "label": "the social platform's name, never translated",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.death.plain": {
+    "1": {
+      "label": "the social platform's name, never translated",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.photo": {
+    "1": {
+      "label": "the photo's title",
+      "examples": [
+        "Sunset Bridge",
+        "Ride photo"
+      ]
+    },
+    "2": {
+      "label": "the social platform's name, never translated",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    }
+  },
+  "chat.dungeontrain.public_posts.photo.plain": {
+    "1": {
+      "label": "the social platform's name, never translated",
+      "examples": [
+        "Instagram",
+        "Facebook"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.stages.delete_confirm": {
     "1": {
       "label": "the display name of the stage about to be deleted",
@@ -18048,6 +18189,185 @@
       "examples": [
         "3",
         "12"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.found_by": {
+    "1": {
+      "label": "the player who first held the item after it was found",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.made_by": {
+    "1": {
+      "label": "the player who crafted the item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.bought_by": {
+    "1": {
+      "label": "the player who bought the item from a villager",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.1": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.2": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.3": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.4": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.5": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.6": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.7": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.8": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.9": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.10": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.11": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.12": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.13": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "tooltip.dungeontrain.provenance.old.14": {
+    "1": {
+      "label": "the first player the train saw holding this old item",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "gui.dungeontrain.engine_block.worlds.one": {
+    "1": {
+      "label": "worlds the coal lasts (always 1)",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.engine_block.worlds.other": {
+    "1": {
+      "label": "how many more worlds the coal lasts",
+      "examples": [
+        "3",
+        "40"
+      ]
+    }
+  },
+  "gui.dungeontrain.engine_block.carriage": {
+    "1": {
+      "label": "how many more worlds all the carriage's engines together last",
+      "examples": [
+        "8",
+        "30"
       ]
     }
   }

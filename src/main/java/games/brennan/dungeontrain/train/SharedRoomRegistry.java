@@ -69,6 +69,8 @@ public final class SharedRoomRegistry {
         private final Set<BlockPos> outbox = ConcurrentHashMap.newKeySet();
         private final AtomicInteger seq;
         private volatile boolean culled;
+        /** Coal in this build's Drifting Engine Block; -1 until something reports it. See {@link SharedBuild#fuel}. */
+        private volatile int fuel = -1;
         private volatile boolean rebaseline;
         private volatile boolean callInFlight;
         private volatile long lastContactMs;
@@ -182,6 +184,8 @@ public final class SharedRoomRegistry {
         @Override public boolean isAttributed() { return attributed; }
         @Override public void markAttributed() { this.attributed = true; }
         @Override public String stageId() { return stageId; }
+        @Override public int fuel() { return fuel; }
+        @Override public void setFuel(int fuel) { this.fuel = fuel; }
         @Override public String describe() { return "pair=" + pairKey + " room=" + roomName; }
     }
 

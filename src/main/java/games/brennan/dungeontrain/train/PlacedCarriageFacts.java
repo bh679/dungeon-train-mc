@@ -91,7 +91,7 @@ public final class PlacedCarriageFacts {
         // Equal ids mean the group draw landed on the parent's own contents, or there is no group
         // at all — either way there is no sub-variant to name.
         String subVariantId = parentId.equals(resolvedId) ? "" : resolvedId;
-        BY_PIDX.put(carriagePIdx,
+        put(carriagePIdx,
             new Facts(variant == null ? "" : variant.id(), parentId, subVariantId,
                 ContentsFlip.label(flip)));
     }
@@ -104,7 +104,7 @@ public final class PlacedCarriageFacts {
     public static synchronized void recordShellOnly(int carriagePIdx, CarriageVariant variant) {
         // A flatbed has no interior to flip, which is "none" rather than the unknown a blank
         // would render as.
-        BY_PIDX.put(carriagePIdx,
+        put(carriagePIdx,
             new Facts(variant == null ? "" : variant.id(), "", "", ContentsFlip.LABEL_NONE));
     }
 
@@ -123,7 +123,7 @@ public final class PlacedCarriageFacts {
             : CarriageContentsGroupStore.findParentOf(resolvedId).orElse(resolvedId);
         String subVariantId = parentId.equals(resolvedId) ? "" : resolvedId;
         // A corridor's blocks must match its twin exactly, so it is never flipped.
-        BY_PIDX.put(carriagePIdx, new Facts("", parentId, subVariantId, ContentsFlip.LABEL_NONE));
+        put(carriagePIdx, new Facts("", parentId, subVariantId, ContentsFlip.LABEL_NONE));
     }
 
     /**
@@ -133,21 +133,30 @@ public final class PlacedCarriageFacts {
     public static synchronized void recordRelayBuild(int carriagePIdx, CarriageVariant variant) {
         // Never flipped: a leased build is stamped verbatim from its relay blob and never reaches
         // the contents placer, so there is no roll to report rather than an unknown one.
-        BY_PIDX.put(carriagePIdx,
+        put(carriagePIdx,
             new Facts(variant == null ? "" : variant.id(), RELAY_BUILD, "", ContentsFlip.LABEL_NONE));
     }
 
     /** What was placed at {@code carriagePIdx}, or null if this session never placed it. */
     /** A slot stamped from the whole-room pool — verbatim, no contents roll. */
     public static synchronized void recordWholeRoom(int carriagePIdx, CarriageVariant variant, String roomId) {
-        BY_PIDX.put(carriagePIdx,
+        put(carriagePIdx,
             new Facts(variant == null ? "" : variant.id(), WHOLE_ROOM + roomId, "", ContentsFlip.LABEL_NONE));
     }
 
     /** A slot inside a run stamped from the whole-group pool. */
     public static synchronized void recordWholeGroup(int carriagePIdx, CarriageVariant variant, String groupId) {
-        BY_PIDX.put(carriagePIdx,
+        put(carriagePIdx,
             new Facts(variant == null ? "" : variant.id(), WHOLE_GROUP + groupId, "", ContentsFlip.LABEL_NONE));
+    }
+
+    /**
+     * The one write. A carriage rebuilt from its id stands at no place on the line, so recording it
+     * would tell the debug panel something false about the carriage really at that index.
+     */
+    private static void put(int carriagePIdx, Facts facts) {
+        if (games.brennan.dungeontrain.train.id.RebuildScope.active()) return;
+        BY_PIDX.put(carriagePIdx, facts);
     }
 
     public static synchronized Facts get(int carriagePIdx) {

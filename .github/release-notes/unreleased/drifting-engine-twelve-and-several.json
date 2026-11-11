@@ -1,0 +1,22 @@
+{
+  "id": "drifting-engine-twelve-and-several",
+  "version": "0.1776.0",
+  "type": "feat",
+  "tags": [
+    "feature",
+    "train",
+    "balance"
+  ],
+  "title": "More engines, further drift",
+  "summary": "A Drifting Engine Block now holds up to 12 coal, and a carriage can carry as many engines as you can fit. They burn one at a time, so every engine you add carries the carriage through more worlds.",
+  "highlights": [
+    "Each engine burns until it runs dry and goes dark, then the next one takes over",
+    "The screen shows how many worlds all of the carriage's engines can reach together",
+    "Engines already holding more than 12 keep their coal until it burns away"
+  ],
+  "date": "2026-11-11",
+  "released": false,
+  "released_in": null,
+  "released_at": null,
+  "pr": 2612
+}

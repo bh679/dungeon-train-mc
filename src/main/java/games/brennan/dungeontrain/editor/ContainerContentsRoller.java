@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.provenance.ItemProvenance;
+import games.brennan.dungeontrain.provenance.ProvenanceScope;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
@@ -1116,6 +1118,18 @@ public final class ContainerContentsRoller {
                                            BlockPos localPos, long worldSeed,
                                            int carriageIndex, int diffIndex, int slot,
                                            HolderLookup.Provider registries) {
+        ItemStack stack = rollItemStackUnmarked(picked, rolledCount, localPos, worldSeed,
+            carriageIndex, diffIndex, slot, registries);
+        // New gear, with its carriage when a train carriage's stamp is in scope (tunnels and
+        // dimensional carriages roll here too, under other kinds of index).
+        ItemProvenance.markFresh(stack, ProvenanceScope.current());
+        return stack;
+    }
+
+    private static ItemStack rollItemStackUnmarked(ContainerContentsEntry picked, int rolledCount,
+                                                   BlockPos localPos, long worldSeed,
+                                                   int carriageIndex, int diffIndex, int slot,
+                                                   HolderLookup.Provider registries) {
         Item item = resolveItem(picked.itemId());
         if (item == null) return ItemStack.EMPTY;
 
