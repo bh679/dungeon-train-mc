@@ -53,6 +53,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
+import games.brennan.dungeontrain.config.MenuClientConfig;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.tabs.Tab;
 import net.minecraft.client.gui.components.tabs.TabManager;
@@ -1056,6 +1057,17 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case WIND_EFFECTS -> Setting.of(slider(games.brennan.dungeontrain.client.wind.WindEffectsOption.valueOnly()),
                     key + ".tip");
 
+            // What the main menu shows behind its buttons (MenuClientConfig): the change shows the next
+            // time the menu draws.
+            case MENU_BACKDROP -> new Setting(
+                    CycleButton.<MenuClientConfig.Backdrop>builder(DungeonTrainClientOptionsScreen::menuBackdropLabel)
+                            .withValues(MenuClientConfig.Backdrop.values())
+                            .withInitialValue(MenuClientConfig.backdrop())
+                            .displayOnlyValue()
+                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
+                                    (btn, backdrop) -> MenuClientConfig.setBackdrop(backdrop)),
+                    Component.translatable(key + ".tip"));
+
             // The standing answer to the start-of-world prompt shown when the player has Train Editor
             // edits or an imported dtpack. This is the "can be changed in options" half of that
             // prompt's "Remember decision" checkbox.
@@ -1386,6 +1398,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     private static Component autoCollectLabel(AutoCollectMode mode) {
         return Component.translatable("gui.dungeontrain.options.backpack_auto_collect."
                 + mode.name().toLowerCase(Locale.ROOT));
+    }
+
+    private static Component menuBackdropLabel(MenuClientConfig.Backdrop backdrop) {
+        return Component.translatable("gui.dungeontrain.options.menu_backdrop." + backdrop.name().toLowerCase(Locale.ROOT));
     }
 
     private static Component customContentLabel(CustomContentPreference preference) {

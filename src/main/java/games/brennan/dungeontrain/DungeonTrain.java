@@ -399,6 +399,11 @@ public class DungeonTrain {
                 ModConfig.Type.CLIENT,
                 games.brennan.dungeontrain.config.SupportClientConfig.SPEC,
                 "dungeontrain-support-client.toml");
+        // The main menu's backdrop choice (logo over live stream / photos, or as it was).
+        modContainer.registerConfig(
+                ModConfig.Type.CLIENT,
+                games.brennan.dungeontrain.config.MenuClientConfig.SPEC,
+                "dungeontrain-menu-client.toml");
 
         // Common gameplay defaults readable on the title screen (no world) and
         // on a dedicated server. Holds the global DEFAULT PlayerMob spawn rate;

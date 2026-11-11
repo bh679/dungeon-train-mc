@@ -57,13 +57,18 @@ public final class MenuBackdrop {
 
     public static MenuBackdrop get() { return INSTANCE; }
 
-    /** Draws the backdrop over the whole screen; the caller has already filled it with the plain gradient. */
-    public void draw(GuiGraphics g, int width, int height, int tick, float partialTick) {
+    /**
+     * Draws the backdrop over the whole screen; the caller has already filled it with the plain gradient.
+     *
+     * @param live whether the Live Feed may show (the player's menu setting); photos only when false
+     */
+    public void draw(GuiGraphics g, int width, int height, int tick, float partialTick, boolean live) {
         long now = System.nanoTime();
         float dt = lastNanos == 0 ? 0f : Math.min(0.1f, (now - lastNanos) / 1e9f);
         lastNanos = now;
         Font font = Minecraft.getInstance().font;
-        if (MenuLiveFeed.draw(g, width, height, tick, partialTick)) {
+        if (!live) MenuLiveFeed.close();
+        else if (MenuLiveFeed.draw(g, width, height, tick, partialTick)) {
             shade(g, width, height);
             String who = MenuLiveFeed.streamer();
             caption(g, font, width, Component.translatable(who == null || who.isBlank()

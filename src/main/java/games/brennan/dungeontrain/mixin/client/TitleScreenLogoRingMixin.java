@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.mixin.client;
 import games.brennan.dungeontrain.client.LoadingScreenTheme;
 import games.brennan.dungeontrain.client.logo.LogoRingRenderer;
 import games.brennan.dungeontrain.client.logo.MenuBackdrop;
+import games.brennan.dungeontrain.config.MenuClientConfig;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -20,6 +21,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * with the animated ring logo huge across it: half again the screen's longer side, centred low
  * and to the right so the ring sweeps in from the bottom-right corner and runs off the edges. The
  * buttons and wordmark draw on top.
+ *
+ * <p>{@link MenuClientConfig#backdrop()} picks it: the Live Feed and photos, photos only, or none
+ * (the vanilla panorama, untouched).</p>
  *
  * <p>Where the ring can't draw (its shader missing, or its cracks still building) the gradient
  * shows alone.</p>
@@ -43,8 +47,11 @@ public abstract class TitleScreenLogoRingMixin extends Screen {
 
     @Inject(method = "renderPanorama(Lnet/minecraft/client/gui/GuiGraphics;F)V", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$logoBackdrop(GuiGraphics g, float partialTick, CallbackInfo ci) {
+        MenuClientConfig.Backdrop choice = MenuClientConfig.backdrop();
+        if (choice == MenuClientConfig.Backdrop.NONE) return; // the menu as it was: Minecraft's panorama
         LoadingScreenTheme.fillBackground(g, this.width, this.height);
-        MenuBackdrop.get().draw(g, this.width, this.height, (int) (Util.getMillis() / 50L), partialTick);
+        MenuBackdrop.get().draw(g, this.width, this.height, (int) (Util.getMillis() / 50L), partialTick,
+                choice == MenuClientConfig.Backdrop.LIVE_AND_PHOTOS);
         float size = Math.max(this.width, this.height) * RING_SHARE;
         LogoRingRenderer.get().drawRing(g, this.width * CENTRE_X - size / 2f, this.height * CENTRE_Y - size / 2f, size, 1f, RING_RENDER_SCALE, RING_SPEED);
         ci.cancel();
