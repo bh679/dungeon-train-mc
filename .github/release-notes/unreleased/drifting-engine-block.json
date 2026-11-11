@@ -7,7 +7,7 @@
     "community",
     "train"
   ],
-  "title": "Drifting Engine Block",
+  "title": "The Drifting Engine",
   "summary": "Every drifting carriage now has a Drifting Engine Block built into it. It burns one coal each time the carriage drifts into a new world, and a carriage that runs out of fuel stops drifting for good. Feed it coal or charcoal to keep a carriage you love on the line.",
   "highlights": [
     "Coal you add counts straight away, and you can take it back out before you leave the world",
@@ -18,5 +18,9 @@
   "date": "2026-11-11",
   "released": false,
   "released_in": null,
-  "released_at": null
+  "released_at": null,
+  "major": true,
+  "notable": true,
+  "description": "It burns to keep your carriages alive. Taking them beyond your world, into the world of others. Let it extinguish, the train forgets it. Move it to a new carriage, and move which carriage drifts with the train.",
+  "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-drifting-engine.gif"
 }
