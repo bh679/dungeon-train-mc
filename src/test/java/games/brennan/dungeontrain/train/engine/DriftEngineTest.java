@@ -91,7 +91,7 @@ class DriftEngineTest {
         assertEquals(2, DriftEngine.burn(3));
         assertEquals(0, DriftEngine.burn(1));
         assertEquals(0, DriftEngine.burn(0));
-        assertEquals(63, DriftEngine.burn(99));
+        assertEquals(98, DriftEngine.burn(99), "a stored total is not held to the 12 an input takes");
     }
 
     // ---- arriving coal ----
@@ -262,8 +262,103 @@ class DriftEngineTest {
     }
 
     @Test
-    void clampsToAStack() {
-        assertEquals(DriftEngine.MAX_COAL, DriftEngine.coalIn(DriftEngine.withEngineCoal(shell(), 500)));
+    void coalAboveTheInputCapIsKeptUntilBurnt() {
+        // Fed to 30 before the cap came down to 12: it keeps all 30.
+        assertEquals(30, DriftEngine.coalIn(DriftEngine.withEngineCoal(shell(), 30)));
+        assertEquals(DriftEngine.MAX_STORED, DriftEngine.coalIn(DriftEngine.withEngineCoal(shell(), 1_000_000)));
+    }
+
+    // ---- several engines ----
+
+    private static CompoundTag engine(int x, int y, int z, int coal) {
+        CompoundTag c = cell(x, y, z, DriftEngine.ENGINE_ID);
+        CompoundTag props = new CompoundTag();
+        props.putString("lit", coal > 0 ? "true" : "false");
+        c.getCompound("s").put("Properties", props);
+        CompoundTag b = new CompoundTag();
+        b.putString("id", DriftEngine.ENGINE_ID);
+        b.putInt(DriftEngine.TAG_COAL, coal);
+        c.put("b", b);
+        return c;
+    }
+
+    /** Each engine's coal, in the order they burn. */
+    private static int[] coals(CompoundTag snap) {
+        ListTag cells = snap.getList("cells", Tag.TAG_COMPOUND);
+        return DriftEngine.findEngines(cells).stream()
+                .mapToInt(i -> cells.getCompound(i).getCompound("b").getInt(DriftEngine.TAG_COAL)).toArray();
+    }
+
+    private static String lit(CompoundTag snap, int k) {
+        ListTag cells = snap.getList("cells", Tag.TAG_COMPOUND);
+        return cells.getCompound(DriftEngine.findEngines(cells).get(k)).getCompound("s")
+                .getCompound("Properties").getString("lit");
+    }
+
+    @Test
+    void theCarriagesFuelIsEveryEngineTogether() {
+        CompoundTag snap = with(shell(), engine(2, 1, 1, 5), engine(6, 1, 1, 12), engine(4, 2, 1, 1));
+        assertEquals(18, DriftEngine.coalIn(snap));
+    }
+
+    @Test
+    void theFirstEngineBurnsUntilEmptyThenTheNext() {
+        CompoundTag snap = with(shell(), engine(2, 1, 1, 2), engine(6, 1, 1, 12));
+        snap = DriftEngine.burnOne(snap);
+        assertArrayEquals(new int[]{1, 12}, coals(snap));
+        snap = DriftEngine.burnOne(snap);
+        assertArrayEquals(new int[]{0, 12}, coals(snap), "the first runs dry");
+        assertEquals("false", lit(snap, 0), "and goes dark");
+        assertEquals("true", lit(snap, 1));
+        snap = DriftEngine.burnOne(snap);
+        assertArrayEquals(new int[]{0, 11}, coals(snap), "then the second takes over");
+    }
+
+    @Test
+    void burnOneLeavesAnEmptyCarriageAlone() {
+        CompoundTag snap = with(shell(), engine(2, 1, 1, 0), engine(6, 1, 1, 0));
+        assertSame(snap, DriftEngine.burnOne(snap));
+    }
+
+    @Test
+    void enginesThatAlreadyAddUpKeepTheirOwnCoal() {
+        CompoundTag snap = with(shell(), engine(2, 1, 1, 3), engine(6, 1, 1, 9));
+        assertArrayEquals(new int[]{3, 9}, coals(DriftEngine.withEngineCoal(snap, 12)));
+    }
+
+    @Test
+    void aStaleBlobIsSharedLastEnginesFirst() {
+        // The relay says 20 but the blob's engines hold 3 + 9: the later engine fills to 12, the first takes the rest.
+        CompoundTag snap = with(shell(), engine(2, 1, 1, 3), engine(6, 1, 1, 9));
+        assertArrayEquals(new int[]{8, 12}, coals(DriftEngine.withEngineCoal(snap, 20)));
+        // Three engines and 30: the last two are filled, the first holds 6.
+        CompoundTag three = with(shell(), engine(2, 1, 1, 0), engine(4, 1, 1, 0), engine(6, 1, 1, 0));
+        assertArrayEquals(new int[]{6, 12, 12}, coals(DriftEngine.withEngineCoal(three, 30)));
+        // More than every engine's 12 together: the first keeps the excess, to burn away.
+        assertArrayEquals(new int[]{20, 12}, coals(DriftEngine.withEngineCoal(snap, 32)));
+    }
+
+    @Test
+    void shareFillsLastEnginesToTwelveFirst() {
+        assertArrayEquals(new int[]{0, 5}, DriftEngine.share(5, 2));
+        assertArrayEquals(new int[]{1, 12}, DriftEngine.share(13, 2));
+        assertArrayEquals(new int[]{7}, DriftEngine.share(7, 1));
+        assertArrayEquals(new int[]{}, DriftEngine.share(7, 0));
+    }
+
+    @Test
+    void arrivingWithTwoEnginesBurnsFromTheFirst() {
+        // Arrives with the relay's 14 over two engines holding 2 + 12: the first burns, the second is untouched.
+        CompoundTag snap = with(shell(), engine(2, 1, 1, 2), engine(6, 1, 1, 12));
+        CompoundTag fuelled = DriftEngine.burnOne(DriftEngine.withEngineCoal(snap, DriftEngine.arrivingCoal(14, snap, null)));
+        assertArrayEquals(new int[]{1, 12}, coals(fuelled));
+        assertEquals(13, DriftEngine.coalIn(fuelled));
+    }
+
+    @Test
+    void anEngineAboveTheCapBurnsDownAsUsual() {
+        CompoundTag snap = with(shell(), engine(2, 1, 1, 40));
+        assertArrayEquals(new int[]{39}, coals(DriftEngine.burnOne(snap)));
     }
 
     // ---- retrofit ----

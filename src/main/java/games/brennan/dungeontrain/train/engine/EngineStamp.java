@@ -4,6 +4,9 @@ import games.brennan.dungeontrain.block.engine.EngineBlock;
 import games.brennan.dungeontrain.block.engine.EngineBlockEntity;
 import games.brennan.dungeontrain.registry.ModBlocks;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.SharedBuild;
+import games.brennan.dungeontrain.train.SharedCarriageRegistry;
+import games.brennan.dungeontrain.train.SharedRoomRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
@@ -12,8 +15,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Drifting Engine Blocks in placed boxes: finding one, and setting a fresh one down. Works at whatever
+ * Drifting Engine Blocks in placed boxes: finding them, adding up their coal, and setting a fresh one down. Works at whatever
  * coordinates the box was placed at — world space for a room, shipyard space for a carriage after
  * assembly, just as the contents pass writes.
  */
@@ -31,46 +37,70 @@ public final class EngineStamp {
         return ensure(level, origin, size(dims), coal);
     }
 
-    /** How many engines stand in the box, not counting the one at {@code except}. */
-    public static int countEngines(ServerLevel level, BlockPos origin, Vec3i size, BlockPos except) {
-        int n = 0;
-        for (int x = 0; x < size.getX(); x++) {
-            for (int y = 0; y < size.getY(); y++) {
-                for (int z = 0; z < size.getZ(); z++) {
-                    BlockPos pos = origin.offset(x, y, z);
-                    if (!pos.equals(except) && level.getBlockState(pos).getBlock() instanceof EngineBlock) n++;
-                }
-            }
-        }
-        return n;
-    }
+    /** A drifting build's box: where its blocks start, and how far they reach. */
+    public record Box(BlockPos origin, Vec3i size) {}
 
-    /** The engine in the box at {@code origin} of {@code size}, or null when there is none. */
-    public static EngineBlockEntity find(ServerLevel level, BlockPos origin, Vec3i size) {
-        for (int x = 0; x < size.getX(); x++) {
-            for (int y = 0; y < size.getY(); y++) {
-                for (int z = 0; z < size.getZ(); z++) {
-                    BlockPos pos = origin.offset(x, y, z);
-                    if (level.getBlockState(pos).getBlock() instanceof EngineBlock
-                            && level.getBlockEntity(pos) instanceof EngineBlockEntity engine) {
-                        return engine;
-                    }
-                }
-            }
-        }
+    /** The box a drifting carriage or room occupies, or null for any other kind of build. */
+    public static Box box(SharedBuild build) {
+        if (build instanceof SharedCarriageRegistry.Instance c) return new Box(c.shipyardOrigin, size(c.dims));
+        if (build instanceof SharedRoomRegistry.Instance r) return new Box(r.roomOrigin(), r.size);
         return null;
     }
 
     /**
-     * Make sure the box has an engine holding {@code coal}: the one already there, or a new one in place
-     * of a block facing the room, else on a free floor cell ({@link EngineSpot}). Returns the
-     * coal the box's engine holds afterwards, or -1 when there was no engine and nowhere to put one.
+     * Every engine in the box at {@code origin} of {@code size}, in the order a snapshot lists their cells
+     * (x, then y, then z — see {@code CarriageBlockSnapshot}): the order they burn in. Skips {@code except}.
+     */
+    public static List<EngineBlockEntity> findAll(ServerLevel level, BlockPos origin, Vec3i size, BlockPos except) {
+        List<EngineBlockEntity> out = new ArrayList<>();
+        for (int x = 0; x < size.getX(); x++) {
+            for (int y = 0; y < size.getY(); y++) {
+                for (int z = 0; z < size.getZ(); z++) {
+                    BlockPos pos = origin.offset(x, y, z);
+                    if (!pos.equals(except) && level.getBlockState(pos).getBlock() instanceof EngineBlock
+                            && level.getBlockEntity(pos) instanceof EngineBlockEntity engine) {
+                        out.add(engine);
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    /** The first engine in the box at {@code origin} of {@code size}, or null when there is none. */
+    public static EngineBlockEntity find(ServerLevel level, BlockPos origin, Vec3i size) {
+        List<EngineBlockEntity> all = findAll(level, origin, size, null);
+        return all.isEmpty() ? null : all.get(0);
+    }
+
+    /**
+     * Coal in every engine of {@code build} together, leaving out the one at {@code except} (one being
+     * broken); -1 when the build has no box to look in.
+     */
+    public static int totalCoal(ServerLevel level, SharedBuild build, BlockPos except) {
+        Box box = box(build);
+        if (box == null) return -1;
+        int total = 0;
+        for (EngineBlockEntity engine : findAll(level, box.origin(), box.size(), except)) total += engine.coal();
+        return DriftEngine.clampCoal(total);
+    }
+
+    /**
+     * Make sure the box has engines holding {@code coal} between them: those already there, shared out as
+     * {@link DriftEngine#share} does, or else a new one in place of a block facing the room, else on a
+     * free floor cell ({@link EngineSpot}). Returns the coal the box's engines hold afterwards, or -1 when
+     * there was no engine and nowhere to put one.
      */
     public static int ensure(ServerLevel level, BlockPos origin, Vec3i size, int coal) {
-        EngineBlockEntity existing = find(level, origin, size);
-        if (existing != null) {
-            existing.setCoal(coal);
-            return existing.coal();
+        List<EngineBlockEntity> existing = findAll(level, origin, size, null);
+        if (!existing.isEmpty()) {
+            int[] counts = DriftEngine.share(coal, existing.size());
+            int total = 0;
+            for (int i = 0; i < counts.length; i++) {
+                existing.get(i).setCoal(counts[i]);
+                total += existing.get(i).coal();
+            }
+            return total;
         }
         EngineSpot.Spot spot = EngineSpot.find(size.getX(), size.getY(), size.getZ(),
                 (x, y, z) -> !level.getBlockState(origin.offset(x, y, z)).isAir(),

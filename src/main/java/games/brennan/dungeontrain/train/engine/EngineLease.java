@@ -27,7 +27,9 @@ public final class EngineLease {
         int coal = DriftEngine.burn(arriving);
         LOGGER.debug("[DungeonTrain] drifting build id={} arrives with {} coal, burns one → {}{}",
                 lease.id(), arriving, coal, lease.fuel() < 0 ? " (no relay count)" : "");
-        return new Fuelled(DriftEngine.withEngineCoal(snap, coal), coal);
+        // Engines first hold what arrives between them, then the first with coal burns one.
+        CompoundTag fuelled = DriftEngine.withEngineCoal(snap, arriving);
+        return new Fuelled(arriving > 0 ? DriftEngine.burnOne(fuelled) : fuelled, coal);
     }
 
     /** The build as first uploaded, which the relay sends only when it has no fuel count; else null. */
