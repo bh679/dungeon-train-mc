@@ -2464,6 +2464,8 @@
   "gui.dungeontrain.engine_block.worlds.one": "Combustible pour %s monde de plus",
   "gui.dungeontrain.engine_block.worlds.other": "Combustible pour %s mondes de plus",
   "gui.dungeontrain.engine_block.empty": "Plus de combustible, terminus",
+  "gui.dungeontrain.engine_block.carriage": "%s avec tous les moteurs",
+  "gui.dungeontrain.engine_block.spent": "Ce moteur est épuisé",
   "block.dungeontrain.skybox_block": "Bloc de ciel",
   "block.dungeontrain.skybox_surface": "Bloc de ciel de surface",
   "block.dungeontrain.skybox_end": "Bloc de ciel de l'End",

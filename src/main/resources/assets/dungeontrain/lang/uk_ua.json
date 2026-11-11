@@ -3056,6 +3056,8 @@
   "gui.dungeontrain.engine_block.worlds.few": "Палива ще на %s світи",
   "gui.dungeontrain.engine_block.worlds.many": "Палива ще на %s світів",
   "gui.dungeontrain.engine_block.empty": "Немає палива, кінцева",
+  "gui.dungeontrain.engine_block.carriage": "%s на всіх двигунах",
+  "gui.dungeontrain.engine_block.spent": "Цей двигун вигорів",
   "block.dungeontrain.skybox_block": "Блок скайбоксу",
   "block.dungeontrain.skybox_surface": "Блок скайбоксу поверхні",
   "block.dungeontrain.skybox_end": "Блок скайбоксу Краю",

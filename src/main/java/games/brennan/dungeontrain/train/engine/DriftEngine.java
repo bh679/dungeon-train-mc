@@ -35,8 +35,8 @@ public final class DriftEngine {
      * before the cap came down keep their coal until it burns away, so a stored count is not held to it.
      */
     public static final int MAX_STORED = 10_000;
-    /** Coal a brand-new drifting carriage starts with. */
-    public static final int FRESH_COAL = 3;
+    /** Coal a brand-new drifting carriage starts with, and the base a legacy carriage is retrofitted from. */
+    public static final int FRESH_COAL = 2;
     /** A legacy carriage needs MORE than this many added blocks (or any added item) to earn extra coal. */
     public static final int RETROFIT_BLOCK_THRESHOLD = 5;
 
@@ -142,7 +142,7 @@ public final class DriftEngine {
             int coal = engineCoal(cell);
             if (coal <= 0) continue;
             cell.put("b", engineTag(cell.getCompound("b"), coal - 1));
-            setLit(cell.getCompound("s"), coal - 1 > 0);
+            setFire(cell.getCompound("s"), coal - 1);
             return out;
         }
         return snap;
@@ -172,7 +172,7 @@ public final class DriftEngine {
             for (int k = 0; k < counts.length; k++) {
                 CompoundTag cell = cells.getCompound(engines.get(k));
                 cell.put("b", engineTag(cell.getCompound("b"), counts[k]));
-                setLit(cell.getCompound("s"), counts[k] > 0);
+                setFire(cell.getCompound("s"), counts[k]);
             }
             return out;
         }
@@ -184,8 +184,8 @@ public final class DriftEngine {
         state.putString("Name", ENGINE_ID);
         CompoundTag props = new CompoundTag();
         props.putString("facing", spot.facing());
-        props.putString("lit", clamped > 0 ? "true" : "false");
         state.put("Properties", props);
+        setFire(state, clamped);
         CompoundTag cell = spot.replaces() ? cells.getCompound(occ.index(spot.x(), spot.y(), spot.z())) : new CompoundTag();
         cell.put("p", new IntArrayTag(spot.pos()));
         cell.put("s", state);
@@ -203,9 +203,11 @@ public final class DriftEngine {
         return b;
     }
 
-    private static void setLit(CompoundTag state, boolean lit) {
+    /** The engine's fire for {@code coal}: lit while there is any, burning as embers ({@code low}) on the last one. */
+    private static void setFire(CompoundTag state, int coal) {
         CompoundTag props = state.getCompound("Properties");
-        props.putString("lit", lit ? "true" : "false");
+        props.putString("lit", coal > 0 ? "true" : "false");
+        props.putString("low", coal == 1 ? "true" : "false");
         state.put("Properties", props);
     }
 

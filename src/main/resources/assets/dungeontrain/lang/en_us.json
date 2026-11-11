@@ -3005,6 +3005,8 @@
   "gui.dungeontrain.engine_block.worlds.one": "Fuel for %s more world",
   "gui.dungeontrain.engine_block.worlds.other": "Fuel for %s more worlds",
   "gui.dungeontrain.engine_block.empty": "No fuel, end of the line",
+  "gui.dungeontrain.engine_block.carriage": "%s across all engines",
+  "gui.dungeontrain.engine_block.spent": "This engine is spent",
   "block.dungeontrain.skybox_block": "Skybox Block",
   "block.dungeontrain.skybox_surface": "Surface Skybox Block",
   "block.dungeontrain.skybox_end": "End Skybox Block",

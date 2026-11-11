@@ -2949,6 +2949,8 @@
       "gui.dungeontrain.engine_block.worlds.few",
       "gui.dungeontrain.engine_block.worlds.many",
       "gui.dungeontrain.engine_block.empty",
+      "gui.dungeontrain.engine_block.carriage",
+      "gui.dungeontrain.engine_block.spent",
       "block.dungeontrain.skybox_block",
       "block.dungeontrain.skybox_surface",
       "block.dungeontrain.skybox_end",

@@ -2464,6 +2464,8 @@
   "gui.dungeontrain.engine_block.worlds.one": "Combustibile per %s altro mondo",
   "gui.dungeontrain.engine_block.worlds.other": "Combustibile per altri %s mondi",
   "gui.dungeontrain.engine_block.empty": "Niente combustibile, capolinea",
+  "gui.dungeontrain.engine_block.carriage": "%s con tutti i motori",
+  "gui.dungeontrain.engine_block.spent": "Questo motore è esaurito",
   "block.dungeontrain.skybox_block": "Blocco skybox",
   "block.dungeontrain.skybox_surface": "Blocco skybox di superficie",
   "block.dungeontrain.skybox_end": "Blocco skybox dell'End",

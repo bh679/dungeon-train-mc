@@ -18361,5 +18361,14 @@
         "40"
       ]
     }
+  },
+  "gui.dungeontrain.engine_block.carriage": {
+    "1": {
+      "label": "how many more worlds all the carriage's engines together last",
+      "examples": [
+        "8",
+        "30"
+      ]
+    }
   }
 }

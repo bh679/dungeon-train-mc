@@ -2415,6 +2415,8 @@
   "block.dungeontrain.drifting_engine_block": "Blok Enjin Hanyut",
   "gui.dungeontrain.engine_block.worlds.other": "Bahan api untuk %s dunia lagi",
   "gui.dungeontrain.engine_block.empty": "Tiada bahan api, hujung perjalanan",
+  "gui.dungeontrain.engine_block.carriage": "%s daripada semua enjin",
+  "gui.dungeontrain.engine_block.spent": "Enjin ini sudah habis",
   "block.dungeontrain.skybox_block": "Blok Kotak Langit",
   "block.dungeontrain.skybox_surface": "Blok Kotak Langit Permukaan",
   "block.dungeontrain.skybox_end": "Blok Kotak Langit End",

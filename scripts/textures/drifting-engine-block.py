@@ -3,6 +3,7 @@
 
 Writes into src/main/resources/assets/dungeontrain/textures/:
   block/drifting_engine_block_{front,side,top}.png        lit, 6-frame animated strips (+ .mcmeta)
+  block/drifting_engine_block_{front,side,top}_low.png    on its last coal: the same fire as embers (+ .mcmeta)
   block/drifting_engine_block_{front,side,top}_cold.png   0 coal
   block/drifting_engine_block_bottom.png
   gui/container/drifting_engine_block.png                 the coal screen
@@ -31,6 +32,8 @@ EDGE, HI, RIVET, SLOT = "#1c1c21", "#3d3d46", "#55555f", "#1e1e23"
 # Brushed grain, one entry per row: -1 a lighter streak, +1 a darker one.
 BRUSH = [0, 0, -1, 0, 1, 0, 0, -1, 0, 0, 1, 0, -1, 0, 0, 0]
 GLOW = ["#ffe28f", "#ffbf3c", "#f58a23", "#e0561c", "#a8321a"]
+# The last coal: the same fire in deep reds only (option A, "Embers", picked 2026-11-11).
+EMBERS = ["#c8401c", "#a8321a", "#8a2716", "#6e1f14", "#521811"]
 COLD = ["#0a0a0c", "#121012", "#1a1311"]
 
 
@@ -145,16 +148,25 @@ def face_image(g):
     return im
 
 
+def write_animated(out, key, name, palette):
+    """One face as a FRAMES-tall animated strip in `palette`, plus its .mcmeta."""
+    full = list(GLOW)
+    GLOW[:] = palette
+    strip = Image.new("RGB", (16, 16 * FRAMES))
+    for k in range(FRAMES):
+        strip.paste(face_image(textures(True, k)[key]), (0, 16 * k))
+    GLOW[:] = full
+    strip.save(os.path.join(out, f"{name}.png"))
+    with open(os.path.join(out, f"{name}.png.mcmeta"), "w") as f:
+        json.dump({"animation": {"frametime": FRAME_TICKS}}, f, indent=2)
+        f.write("\n")
+
+
 def write_block_textures(out):
     os.makedirs(out, exist_ok=True)
     for key, name in (("F", "front"), ("S", "side"), ("T", "top")):
-        strip = Image.new("RGB", (16, 16 * FRAMES))
-        for k in range(FRAMES):
-            strip.paste(face_image(textures(True, k)[key]), (0, 16 * k))
-        strip.save(os.path.join(out, f"drifting_engine_block_{name}.png"))
-        with open(os.path.join(out, f"drifting_engine_block_{name}.png.mcmeta"), "w") as f:
-            json.dump({"animation": {"frametime": FRAME_TICKS}}, f, indent=2)
-            f.write("\n")
+        write_animated(out, key, f"drifting_engine_block_{name}", GLOW)
+        write_animated(out, key, f"drifting_engine_block_{name}_low", EMBERS)
         face_image(textures(False)[key]).save(os.path.join(out, f"drifting_engine_block_{name}_cold.png"))
     face_image(textures(False)["B"]).save(os.path.join(out, "drifting_engine_block_bottom.png"))
 

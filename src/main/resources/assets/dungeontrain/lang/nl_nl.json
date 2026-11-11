@@ -2464,6 +2464,8 @@
   "gui.dungeontrain.engine_block.worlds.one": "Brandstof voor nog %s wereld",
   "gui.dungeontrain.engine_block.worlds.other": "Brandstof voor nog %s werelden",
   "gui.dungeontrain.engine_block.empty": "Geen brandstof, eindstation",
+  "gui.dungeontrain.engine_block.carriage": "%s met alle motoren",
+  "gui.dungeontrain.engine_block.spent": "Deze motor is opgebrand",
   "block.dungeontrain.skybox_block": "Skyboxblok",
   "block.dungeontrain.skybox_surface": "Oppervlakte-skyboxblok",
   "block.dungeontrain.skybox_end": "End-skyboxblok",

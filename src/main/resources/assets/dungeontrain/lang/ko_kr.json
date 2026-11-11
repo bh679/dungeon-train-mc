@@ -2415,6 +2415,8 @@
   "block.dungeontrain.drifting_engine_block": "떠도는 엔진 블록",
   "gui.dungeontrain.engine_block.worlds.other": "세계 %s곳을 더 갈 연료",
   "gui.dungeontrain.engine_block.empty": "연료 없음, 종착역",
+  "gui.dungeontrain.engine_block.carriage": "모든 엔진 합계 %s",
+  "gui.dungeontrain.engine_block.spent": "이 엔진은 다 탔다",
   "block.dungeontrain.skybox_block": "스카이박스 블록",
   "block.dungeontrain.skybox_surface": "지표 스카이박스 블록",
   "block.dungeontrain.skybox_end": "엔드 스카이박스 블록",
